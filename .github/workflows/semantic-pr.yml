@@ -1,0 +1,40 @@
+name: conventional-commits
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  validate:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Common Conventional Commit types
+          types: |
+            build
+            chore
+            ci
+            docs
+            feat
+            fix
+            perf
+            refactor
+            revert
+            style
+            test
+          # Optional: allow "chore(release)" etc. from bots
+          ignoreLabels: |
+            bot
+            dependencies
+          # Optional: If your repo enforces squash merges, the title becomes the commit message.
+          validateSingleCommit: true
+

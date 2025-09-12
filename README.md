@@ -199,6 +199,14 @@ flowchart LR
 - Plaid: Link token, exchange, accounts, sync, status, disconnect, clear synced data
 - Analytics: current month, categories, daily spending, monthly totals
 
+## Contributing
+
+- Workflow: create a feature branch and open a PR to `main` (protected). Squash-and-merge only.
+- PR titles must use Conventional Commits (enforced): e.g., `feat: add budgets UI`, `fix: handle empty Plaid accounts`. Use `feat!:` or add a `BREAKING CHANGE:` section in the PR description for majors.
+- Do not push tags or publish releases manually. GitHub Actions runs semantic-release on `main` pushes to create tags and GitHub Releases with notes.
+- Required to merge: all CI checks green (including Conventional Commit title check).
+- Local setup: see AGENTS.md “Quickstart” or the sections above; validate end‑to‑end at `http://localhost:8080`.
+
 ## Development (Local)
 
 Frontend (in `frontend/`):
