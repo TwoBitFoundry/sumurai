@@ -205,12 +205,14 @@ describe('BankCard', () => {
       const disconnectMenuButton = screen.getByRole('button', { name: /disconnect/i })
       await user.click(disconnectMenuButton)
 
-      // Confirm in modal
-      const confirmButton = screen.getAllByRole('button', { name: /^disconnect$/i })[1] // Get the modal button, not the menu button
+      // Wait for modal to render, then confirm
+      await screen.findByText('Disconnect Chase Bank?')
+      const buttons = await screen.findAllByRole('button', { name: /^disconnect$/i })
+      const confirmButton = buttons[buttons.length - 1] // pick the modal's Disconnect button
       await user.click(confirmButton)
 
-      // Check loading state
-      expect(screen.getByRole('button', { name: /disconnecting/i })).toBeInTheDocument()
+      // Wait for loading state to appear to avoid race conditions in CI
+      await screen.findByRole('button', { name: /disconnecting/i })
       expect(screen.getByRole('button', { name: /cancel/i })).toBeDisabled()
 
       resolveDisconnect()
