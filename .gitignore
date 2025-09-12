@@ -1,0 +1,188 @@
+# ================================
+# Frontend Dependencies (Node.js)
+# ================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ================================
+# Build Outputs
+# ================================
+# Frontend builds
+dist/
+build/
+*.tsbuildinfo
+
+# Rust backend builds
+backend/target/
+target/
+
+# Note: Root Cargo.lock is tracked for workspace dependencies
+# Individual package Cargo.lock files are ignored
+backend/Cargo.lock
+
+# ================================
+# Environment Variables & Config
+# ================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.backend
+
+# Database connection strings
+database.url
+.database_url
+
+# ================================
+# Logs & Runtime Data
+# ================================
+logs/
+*.log
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# ================================
+# Test Coverage
+# ================================
+coverage/
+*.lcov
+.nyc_output
+
+# ================================
+# Cache Directories
+# ================================
+# ESLint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# npm cache
+.npm
+
+# REPL history
+.node_repl_history
+
+# Vite cache
+.vite
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# ================================
+# Framework Build Outputs
+# ================================
+# Next.js
+.next
+
+# Nuxt.js
+.nuxt
+
+# Storybook
+.out
+.storybook-out
+
+# ================================
+# Package Archives
+# ================================
+*.tgz
+.yarn-integrity
+
+# ================================
+# Temporary Folders
+# ================================
+tmp/
+temp/
+
+# ================================
+# IDE and Editor Files
+# ================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ================================
+# OS Generated Files
+# ================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ================================
+# Docker & Container Data
+# ================================
+.dockerignore
+
+# Docker volumes and data
+docker-data/
+postgres-data/
+.docker/
+
+# Docker Compose override files
+docker-compose.override.yml
+docker-compose.*.override.yml
+
+# ================================
+# Database Files
+# ================================
+# SQLite databases (if used for local dev)
+*.db
+*.sqlite
+*.sqlite3
+
+# PostgreSQL dumps
+*.sql.gz
+*.dump
+
+# ================================
+# Rust-Specific
+# ================================
+# Backup files for Rust compilation
+**/*.rs.bk
+
+# Rust analyzer files
+rust-project.json
+
+# ================================
+# Security & Secrets
+# ================================
+# API keys and secrets
+.secrets
+secrets.json
+*.pem
+*.key
+
+# Plaid credentials
+plaid.env
+.plaid
+
+# ================================
+# Backup Files
+# ================================
+*.bak
+*.backup
+frontend/src/*.bak
+backend/src/*.bak
+
+# ================================
+# Local Assistant Docs
+# ================================
+AGENTS.md
+CLAUDE.md

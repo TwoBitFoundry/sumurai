@@ -1,0 +1,47 @@
+# Pre-built binary Dockerfile (fastest - ~5 seconds)
+# Requires: ./scripts/build-backend.sh to be run first
+FROM ubuntu:20.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl1.1 \
+    postgresql-client \
+    curl \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust and sqlx-cli
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    && . $HOME/.cargo/env \
+    && cargo install sqlx-cli --version 0.7.4 --no-default-features --features native-tls,postgres \
+    && cp $HOME/.cargo/bin/sqlx /usr/local/bin/ \
+    && rm -rf $HOME/.cargo \
+    && rm -rf $HOME/.rustup
+
+# Create app user
+RUN useradd --create-home --shell /bin/bash appuser
+
+# Create app directory and copy files
+WORKDIR /app
+COPY backend/migrations ./migrations
+COPY backend/target/x86_64-unknown-linux-gnu/release/accounting-backend ./accounting-backend
+
+# Set ownership and permissions
+RUN chown -R appuser:appuser /app && \
+    chmod +x /app/accounting-backend
+
+# Switch to app user
+USER appuser
+
+# Expose port
+EXPOSE 3000
+
+# Run the application
+CMD ["./accounting-backend"]

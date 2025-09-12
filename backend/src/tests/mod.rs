@@ -1,0 +1,17 @@
+mod analytics_service_tests;
+mod auth_middleware_tests;
+mod auth_service_tests;
+mod bank_level_sync_tests;
+mod budget_api_integration_tests;
+mod budget_service_tests;
+mod cache_service_tests;
+mod config_tests;
+mod connection_cache_integration_tests;
+mod integration_tests;
+mod migration_tests;
+mod models_tests;
+mod plaid_service_tests;
+mod repository_tests;
+mod sync_service_tests;
+mod security_resilience_edge_cases_tests;
+pub mod test_fixtures;

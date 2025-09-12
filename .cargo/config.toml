@@ -1,0 +1,4 @@
+[alias]
+# Run Clippy across the entire workspace with all features and targets, failing on warnings
+lint = "clippy --all-targets --all-features --workspace -- -D warnings"
+

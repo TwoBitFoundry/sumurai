@@ -1,0 +1,1561 @@
+use axum::{
+    extract::{Path, Query, State},
+    http::{HeaderMap, StatusCode},
+    response::Json,
+    routing::{delete, get, post, put},
+    Router,
+};
+use chrono::Utc;
+use serde::Deserialize;
+use std::sync::Arc;
+use tower_http::cors::CorsLayer;
+use uuid::Uuid;
+
+mod auth_middleware;
+mod services;
+mod config;
+mod models;
+mod traits;
+#[cfg(test)]
+mod tests;
+#[cfg(test)]
+pub use tests::test_fixtures;
+
+use crate::models::analytics::{BalanceCategory, CategorySpending, DailySpending, MonthlySpending, TopMerchant};
+use crate::models::plaid::{DisconnectResult, PlaidConnectionStatus};
+use services::{AnalyticsService, RealPlaidClient};
+use auth_middleware::auth_middleware;
+use crate::models::auth::{AuthContext, AuthMiddlewareState};
+use services::{
+    AuthService,
+    BudgetService,
+    CacheService,
+    ConnectionService,
+    PlaidService,
+    RedisCache,
+    SyncService,
+};
+use config::Config;
+use crate::models::{
+    api_error::ApiErrorResponse,
+    transaction::TransactionWithAccount,
+    auth::User,
+};
+use crate::models::app_state::AppState;
+use crate::models::{
+    account::AccountResponse,
+    analytics::{DateRangeQuery, MonthlyTotalsQuery},
+    auth as auth_models,
+    budget::{CreateBudgetRequest, UpdateBudgetRequest},
+    plaid::{ExchangeTokenRequest, LinkTokenRequest, SyncTransactionsRequest},
+    transaction::{SyncMetadata, SyncTransactionsResponse, TransactionsQuery},
+};
+use services::repository_service::{DatabaseRepository, PostgresRepository};
+use sqlx::PgPool;
+
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
+
+    let config = Config::from_env()?;
+
+    let plaid_client = Arc::new(RealPlaidClient::new(
+        std::env::var("PLAID_CLIENT_ID").unwrap_or_else(|_| "test_client_id".to_string()),
+        std::env::var("PLAID_SECRET").unwrap_or_else(|_| "test_secret".to_string()),
+        std::env::var("PLAID_ENV").unwrap_or_else(|_| "sandbox".to_string()),
+    ));
+    let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
+
+    let sync_service = Arc::new(SyncService::new(plaid_service.clone()));
+
+    let analytics_service = Arc::new(AnalyticsService::new());
+    let budget_service = Arc::new(BudgetService::new());
+
+    let database_url = std::env::var("DATABASE_URL")
+        .unwrap_or_else(|_| "postgresql://postgres:password@localhost:5432/accounting".to_string());
+
+    let pool = PgPool::connect(&database_url).await?;
+    let db_repository: Arc<dyn DatabaseRepository> = Arc::new(PostgresRepository::new(pool)?);
+
+    let redis_url =
+        std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
+    let cache_service: Arc<dyn CacheService> = Arc::new(RedisCache::new(&redis_url).await?);
+
+    cache_service.health_check().await.map_err(|e| {
+        anyhow::anyhow!(
+            "Redis connection failed: {}. Redis is required for production deployment.",
+            e
+        )
+    })?;
+    tracing::info!("Redis connection verified successfully");
+
+    // Clear all cached sessions on app startup for security
+    if let Err(e) = cache_service.invalidate_pattern("*_session_valid").await {
+        tracing::warn!("Failed to clear cached sessions on startup: {}", e);
+    } else {
+        tracing::info!("Cleared all cached sessions on app startup");
+    }
+
+    // Clear all JWT tokens on startup for security
+    if let Err(e) = cache_service.invalidate_pattern("*_session_token").await {
+        tracing::warn!("Failed to clear JWT tokens on startup: {}", e);
+    } else {
+        tracing::info!("Cleared all JWT tokens on app startup");
+    }
+
+    let connection_service = Arc::new(ConnectionService::new(
+        db_repository.clone(),
+        cache_service.clone(),
+    ));
+
+    let jwt_secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| {
+        "default_jwt_secret_key_for_development_only_please_change_in_production_12345".to_string()
+    });
+
+    let auth_service = Arc::new(AuthService::new(jwt_secret)?);
+
+    let state = AppState {
+        plaid_service,
+        plaid_client,
+        sync_service,
+        analytics_service,
+        budget_service,
+        config,
+        db_repository,
+        cache_service,
+        connection_service,
+        auth_service,
+    };
+
+    let app = create_app(state);
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
+    tracing::info!("Server running on http://0.0.0.0:3000");
+    axum::serve(listener, app).await?;
+
+    Ok(())
+}
+
+pub fn create_app(state: AppState) -> Router {
+    let public_routes = Router::new()
+        .route("/health", get(health_check))
+        .route("/api/auth/register", post(register_user))
+        .route("/api/auth/login", post(login_user))
+        .route("/api/auth/refresh", post(refresh_user_session))
+        .route("/api/auth/logout", post(logout_user));
+
+    let protected_routes = Router::new()
+        .route("/api/transactions", get(get_authenticated_transactions))
+        .route(
+            "/api/plaid/link-token",
+            post(create_authenticated_link_token),
+        )
+        .route(
+            "/api/plaid/exchange-token",
+            post(exchange_authenticated_public_token),
+        )
+        .route("/api/plaid/accounts", get(get_authenticated_plaid_accounts))
+        .route(
+            "/api/plaid/sync-transactions",
+            post(sync_authenticated_plaid_transactions),
+        )
+        .route(
+            "/api/plaid/status",
+            get(get_authenticated_plaid_connection_status),
+        )
+        .route(
+            "/api/plaid/disconnect",
+            post(disconnect_authenticated_plaid),
+        )
+        .route(
+            "/api/plaid/clear-synced-data",
+            post(clear_authenticated_synced_data),
+        )
+        .route(
+            "/api/analytics/spending/current-month",
+            get(get_authenticated_current_month_spending),
+        )
+        .route(
+            "/api/analytics/spending",
+            get(get_authenticated_spending_by_date_range),
+        )
+        .route(
+            "/api/analytics/daily-spending",
+            get(get_authenticated_daily_spending),
+        )
+        .route(
+            "/api/analytics/categories",
+            get(get_authenticated_category_spending),
+        )
+        .route(
+            "/api/analytics/monthly-totals",
+            get(get_authenticated_monthly_totals),
+        )
+        .route(
+            "/api/analytics/top-merchants",
+            get(get_authenticated_top_merchants),
+        )
+        .route(
+            "/api/analytics/balances/overview",
+            get(get_authenticated_balances_overview),
+        )
+        .route("/api/budgets", get(get_authenticated_budgets))
+        .route("/api/budgets", post(create_authenticated_budget))
+        .route("/api/budgets/{id}", put(update_authenticated_budget))
+        .route("/api/budgets/{id}", delete(delete_authenticated_budget))
+        .layer(axum::middleware::from_fn_with_state(
+            AuthMiddlewareState {
+                auth_service: state.auth_service.clone(),
+                cache_service: state.cache_service.clone(),
+            },
+            auth_middleware,
+        ));
+
+    Router::new()
+        .merge(public_routes)
+        .merge(protected_routes)
+        .layer(CorsLayer::permissive())
+        .with_state(state)
+}
+
+async fn register_user(
+    State(state): State<AppState>,
+    Json(req): Json<auth_models::RegisterRequest>,
+) -> Result<Json<auth_models::AuthResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    let password_hash = state
+        .auth_service
+        .hash_password(&req.password)
+        .map_err(|e| {
+            tracing::error!("Password hashing failed: {}", e);
+            ApiErrorResponse::internal_server_error("Failed to process password")
+        })?;
+
+    let user_id = Uuid::new_v4();
+    let user = User {
+        id: user_id,
+        email: req.email.clone(),
+        password_hash,
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+    };
+
+    if let Err(e) = state.db_repository.create_user(&user).await {
+        tracing::error!("User creation failed for email {}: {}", req.email, e);
+        return Err(ApiErrorResponse::conflict(
+            "Email address is already registered",
+        ));
+    }
+
+    let auth_token = state.auth_service.generate_token(user_id).map_err(|e| {
+        tracing::error!("Token generation failed for user {}: {}", user_id, e);
+        ApiErrorResponse::internal_server_error("Failed to generate authentication token")
+    })?;
+
+    let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
+    if ttl > 0 {
+        // Set session validity flag in cache with JWT TTL
+        if let Err(e) = state
+            .cache_service
+            .set_session_valid(&auth_token.jwt_id, ttl)
+            .await
+        {
+            tracing::warn!("Failed to set session validity in cache: {}", e);
+        }
+
+        // Cache JWT token for reuse
+        if let Err(e) = state
+            .cache_service
+            .set_jwt_token(&auth_token.jwt_id, &auth_token.token, ttl)
+            .await
+        {
+            tracing::warn!("Failed to cache JWT token: {}", e);
+        }
+    }
+
+    let expires_at = auth_token.expires_at.to_rfc3339();
+
+    Ok(Json(auth_models::AuthResponse {
+        token: auth_token.token,
+        user_id: user_id.to_string(),
+        expires_at,
+    }))
+}
+
+async fn login_user(
+    State(state): State<AppState>,
+    Json(req): Json<auth_models::LoginRequest>,
+) -> Result<Json<auth_models::AuthResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user = match state.db_repository.get_user_by_email(&req.email).await {
+        Ok(Some(user)) => user,
+        Ok(None) => {
+            tracing::info!("Login attempt with non-existent email: {}", req.email);
+            return Err(ApiErrorResponse::unauthorized("Invalid email or password"));
+        }
+        Err(e) => {
+            tracing::error!("Database error during login for email {}: {}", req.email, e);
+            return Err(ApiErrorResponse::internal_server_error(
+                "Authentication service temporarily unavailable",
+            ));
+        }
+    };
+
+    let is_valid = state
+        .auth_service
+        .verify_password(&req.password, &user.password_hash)
+        .map_err(|e| {
+            tracing::error!("Password verification failed for user {}: {}", user.id, e);
+            ApiErrorResponse::internal_server_error("Authentication service error")
+        })?;
+
+    if !is_valid {
+        tracing::info!(
+            "Login attempt with invalid password for email: {}",
+            req.email
+        );
+        return Err(ApiErrorResponse::unauthorized("Invalid email or password"));
+    }
+
+    let auth_token = state.auth_service.generate_token(user.id).map_err(|e| {
+        tracing::error!("Token generation failed for user {}: {}", user.id, e);
+        ApiErrorResponse::internal_server_error("Failed to generate authentication token")
+    })?;
+
+    let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
+    if ttl > 0 {
+        // Set session validity flag in cache with JWT TTL
+        if let Err(e) = state
+            .cache_service
+            .set_session_valid(&auth_token.jwt_id, ttl)
+            .await
+        {
+            tracing::warn!("Failed to set session validity in cache: {}", e);
+        }
+
+        // Cache JWT token for reuse
+        if let Err(e) = state
+            .cache_service
+            .set_jwt_token(&auth_token.jwt_id, &auth_token.token, ttl)
+            .await
+        {
+            tracing::warn!("Failed to cache JWT token: {}", e);
+        }
+    }
+
+    let expires_at = auth_token.expires_at.to_rfc3339();
+
+    Ok(Json(auth_models::AuthResponse {
+        token: auth_token.token,
+        user_id: user.id.to_string(),
+        expires_at,
+    }))
+}
+
+async fn logout_user(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let auth_header = headers
+        .get("authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    let claims = state
+        .auth_service
+        .validate_token(auth_header)
+        .map_err(|_| StatusCode::UNAUTHORIZED)?;
+
+    if let Err(e) = state.cache_service.invalidate_session(&claims.jti).await {
+        tracing::warn!("Failed to invalidate session during logout: {}", e);
+    }
+
+    if let Err(e) = state.cache_service.clear_jwt_scoped_data(&claims.jti).await {
+        tracing::warn!("Failed to clear JWT-scoped data during logout: {}", e);
+    }
+
+    if let Err(e) = state.cache_service.clear_transactions().await {
+        tracing::warn!("Failed to clear transaction cache during logout: {}", e);
+    }
+
+    Ok(Json(serde_json::json!({
+        "message": "Logged out successfully",
+        "cleared_session": claims.jti
+    })))
+}
+
+async fn refresh_user_session(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> Result<Json<auth_models::AuthResponse>, StatusCode> {
+    let auth_header = headers
+        .get("authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    let claims = state
+        .auth_service
+        .validate_token_for_refresh(auth_header)
+        .map_err(|_| StatusCode::UNAUTHORIZED)?;
+
+    let user_id = Uuid::parse_str(&claims.user_id()).map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    let auth_token = state
+        .auth_service
+        .generate_token(user_id)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let expires_at = chrono::Utc::now() + chrono::Duration::hours(1);
+
+    // Cache refreshed JWT in Redis with TTL
+    let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
+    if ttl > 0 {
+        if let Err(e) = state
+            .cache_service
+            .set_jwt_token(&auth_token.jwt_id, &auth_token.token, ttl)
+            .await
+        {
+            tracing::warn!("Failed to cache refreshed JWT token: {}", e);
+        }
+    }
+
+    Ok(Json(auth_models::AuthResponse {
+        token: auth_token.token,
+        user_id: claims.user_id(),
+        expires_at: expires_at.to_rfc3339(),
+    }))
+}
+
+
+async fn get_authenticated_transactions(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    _headers: HeaderMap,
+    Query(params): Query<TransactionsQuery>,
+) -> Result<Json<Vec<TransactionWithAccount>>, StatusCode> {
+    let user_id = auth_context.user_id;
+
+    match state
+        .db_repository
+        .get_transactions_with_account_for_user(&user_id)
+        .await
+    {
+        Ok(transactions) => {
+            if let Some(search) = params
+                .search
+                .as_ref()
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+            {
+                let needle = search.to_lowercase();
+                let filtered: Vec<TransactionWithAccount> = transactions
+                    .into_iter()
+                    .filter(|t| {
+                        let merchant = t.merchant_name.as_deref().unwrap_or("").to_lowercase();
+                        let cat_primary = t.category_primary.to_lowercase();
+                        let cat_detailed = t.category_detailed.to_lowercase();
+                        let account_name = t.account_name.to_lowercase();
+                        merchant.contains(&needle)
+                            || cat_primary.contains(&needle)
+                            || cat_detailed.contains(&needle)
+                            || account_name.contains(&needle)
+                    })
+                    .collect();
+                Ok(Json(filtered))
+            } else {
+                Ok(Json(transactions))
+            }
+        }
+        Err(_) => Ok(Json(vec![])),
+    }
+}
+
+async fn create_authenticated_link_token(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(_req): Json<LinkTokenRequest>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let user_id_str = auth_context.user_id.to_string();
+
+    match state.plaid_service.create_link_token(&user_id_str).await {
+        Ok(link_token) => Ok(Json(serde_json::json!({ "link_token": link_token }))),
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+async fn exchange_authenticated_public_token(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<ExchangeTokenRequest>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let user_id = auth_context.user_id;
+
+    match state
+        .plaid_service
+        .exchange_public_token(&req.public_token)
+        .await
+    {
+        Ok(access_token) => {
+            let (real_item_id, institution_id, institution_name) =
+                match state.plaid_client.get_item_info(&access_token).await {
+                    Ok((item_id, inst_id, inst_name)) => (item_id, inst_id, inst_name),
+                    Err(e) => {
+                        tracing::warn!("Failed to get item info from Plaid: {}", e);
+                        (
+                            format!("item_{}", uuid::Uuid::new_v4()),
+                            None,
+                            Some("Connected Bank".to_string()),
+                        )
+                    }
+                };
+
+            if let Err(e) = state
+                .db_repository
+                .store_plaid_credentials_for_user(&user_id, &real_item_id, &access_token)
+                .await
+            {
+                tracing::warn!("Failed to store Plaid credentials in database: {}", e);
+            }
+
+            if let Err(e) = state
+                .cache_service
+                .set_access_token(&auth_context.jwt_id, &real_item_id, &access_token)
+                .await
+            {
+                tracing::warn!("Failed to cache access token: {}", e);
+            }
+
+        let mut connection = crate::models::plaid::PlaidConnection::new(user_id, &real_item_id);
+
+            if let Some(inst_name) = &institution_name {
+                connection.mark_connected(inst_name);
+            } else {
+                connection.mark_connected("Connected Bank");
+            }
+
+            connection.institution_id = institution_id;
+
+            if let Err(e) = state.db_repository.save_plaid_connection(&connection).await {
+                tracing::warn!("Failed to save PlaidConnection: {}", e);
+            }
+
+            Ok(Json(serde_json::json!({
+                "access_token": access_token,
+                "item_id": real_item_id,
+                "institution_id": connection.institution_id,
+                "institution_name": institution_name.unwrap_or_else(|| "Connected Bank".to_string())
+            })))
+        }
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+async fn get_authenticated_plaid_accounts(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<Vec<AccountResponse>>, StatusCode> {
+    let user_id = auth_context.user_id;
+
+    // Get the user's Plaid connection to get the access token
+    let connection = match state
+        .db_repository
+        .get_plaid_connection_by_user(&user_id)
+        .await
+    {
+        Ok(Some(conn)) => conn,
+        Ok(None) => {
+            tracing::error!("Sync accounts: no Plaid connection for user {}", user_id);
+            return Err(StatusCode::NOT_FOUND);
+        }
+        Err(e) => {
+            tracing::error!(
+                "Sync accounts: failed to get connection for user {}: {}",
+                user_id,
+                e
+            );
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    // Ensure Plaid credentials exist for this item/user
+    match state
+        .db_repository
+        .get_plaid_credentials_for_user(&user_id, &connection.item_id)
+        .await
+    {
+        Ok(Some(_creds)) => (),
+        Ok(None) => {
+            tracing::error!(
+                "Sync accounts: no Plaid credentials for user {} and item {}",
+                user_id,
+                connection.item_id
+            );
+            return Err(StatusCode::NOT_FOUND);
+        }
+        Err(e) => {
+            tracing::error!(
+                "Sync accounts: failed to get credentials for user {} and item {}: {}",
+                user_id,
+                connection.item_id,
+                e
+            );
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    let db_accounts = match state.db_repository.get_accounts_for_user(&user_id).await {
+        Ok(accounts) => accounts,
+        Err(e) => {
+            tracing::error!("Failed to get accounts for user {}: {}", user_id, e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    let transaction_counts = state
+        .db_repository
+        .get_transaction_count_by_account_for_user(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to get transaction counts for user {}: {}",
+                user_id,
+                e
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    let account_responses: Vec<AccountResponse> = db_accounts
+        .into_iter()
+        .map(|account| {
+            let transaction_count = transaction_counts.get(&account.id).unwrap_or(&0);
+            AccountResponse {
+                id: account.id,
+                user_id: Some(user_id),
+                plaid_account_id: account.plaid_account_id.clone(),
+                plaid_connection_id: account.plaid_connection_id,
+                name: account.name,
+                account_type: account.account_type,
+                balance_current: account.balance_current,
+                mask: account.mask,
+                transaction_count: *transaction_count as i64,
+            }
+        })
+        .collect();
+
+    Ok(Json(account_responses))
+}
+
+async fn sync_authenticated_plaid_transactions(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<Option<SyncTransactionsRequest>>,
+) -> Result<Json<SyncTransactionsResponse>, StatusCode> {
+    let user_id = auth_context.user_id;
+    let sync_timestamp = chrono::Utc::now();
+
+    tracing::info!("Sync transactions requested for user {}", user_id);
+    let connection = if let Some(req) = &req {
+        if let Some(connection_id_str) = &req.connection_id {
+            let _connection_id =
+                Uuid::parse_str(connection_id_str).map_err(|_| StatusCode::BAD_REQUEST)?;
+
+            match state
+                .db_repository
+                .get_plaid_connection_by_user(&user_id)
+                .await
+            {
+                Ok(Some(conn)) => {
+                    if conn.id.to_string() != *connection_id_str {
+                        tracing::error!(
+                            "Connection ID {} does not match user's connection {}",
+                            connection_id_str,
+                            conn.id
+                        );
+                        return Err(StatusCode::NOT_FOUND);
+                    }
+                    conn
+                }
+                Ok(None) => {
+                    tracing::error!("No Plaid connection for user {}", user_id);
+                    return Err(StatusCode::NOT_FOUND);
+                }
+                Err(e) => {
+                    tracing::error!("Failed to get connection for user {}: {}", user_id, e);
+                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                }
+            }
+        } else {
+            match state
+                .db_repository
+                .get_plaid_connection_by_user(&user_id)
+                .await
+            {
+                Ok(Some(conn)) => conn,
+                Ok(None) => {
+                    tracing::error!("No Plaid connection for user {}", user_id);
+                    return Err(StatusCode::NOT_FOUND);
+                }
+                Err(e) => {
+                    tracing::error!("Failed to get connection for user {}: {}", user_id, e);
+                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                }
+            }
+        }
+    } else {
+        match state
+            .db_repository
+            .get_plaid_connection_by_user(&user_id)
+            .await
+        {
+            Ok(Some(conn)) => conn,
+            Ok(None) => {
+                tracing::error!("No Plaid connection for user {}", user_id);
+                return Err(StatusCode::NOT_FOUND);
+            }
+            Err(e) => {
+                tracing::error!("Failed to get connection for user {}: {}", user_id, e);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        }
+    };
+
+    let plaid_credentials = match state
+        .db_repository
+        .get_plaid_credentials_for_user(&user_id, &connection.item_id)
+        .await
+    {
+        Ok(Some(creds)) => creds,
+        Ok(None) => {
+            tracing::error!(
+                "Sync transactions: no Plaid credentials for user {} and item {}",
+                user_id,
+                connection.item_id
+            );
+            return Err(StatusCode::NOT_FOUND);
+        }
+        Err(e) => {
+            tracing::error!(
+                "Sync transactions: failed to get credentials for user {} and item {}: {}",
+                user_id,
+                connection.item_id,
+                e
+            );
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    let db_accounts = match state.db_repository.get_accounts_for_user(&user_id).await {
+        Ok(accounts) => accounts,
+        Err(e) => {
+            tracing::error!("Failed to fetch accounts from database: {}", e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    let (sync_start_date, sync_end_date) = state
+        .sync_service
+        .calculate_sync_date_range(connection.last_sync_at);
+
+    let sync_result = state
+        .sync_service
+        .sync_bank_connection_transactions(
+            &plaid_credentials.access_token,
+            &connection,
+            &db_accounts,
+        )
+        .await;
+
+    let accounts_result = state
+        .plaid_service
+        .get_accounts(&plaid_credentials.access_token)
+        .await;
+
+    match (sync_result, accounts_result) {
+        (Ok((mut transactions, new_cursor)), Ok(accounts)) => {
+            // Get existing transactions for duplicate detection
+            let existing_transactions = match state
+                .db_repository
+                .get_transactions_for_user(&user_id)
+                .await
+            {
+                Ok(existing) => existing,
+                Err(e) => {
+                    tracing::error!(
+                        "Failed to fetch existing transactions for duplicate detection: {}",
+                        e
+                    );
+                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                }
+            };
+
+            // Filter out duplicates using Plaid service duplicate detection
+            transactions = state
+                .plaid_service
+                .detect_duplicates(&existing_transactions, &transactions);
+            tracing::info!(
+                "After duplicate filtering: {} new transactions",
+                transactions.len()
+            );
+
+            for account in &accounts {
+                let mut acct = account.clone();
+                acct.user_id = Some(user_id);
+                if let Err(e) = state.db_repository.upsert_account(&acct).await {
+                    tracing::warn!("Failed to persist account to database during sync: {}", e);
+                }
+            }
+
+            // Get the actual accounts from database (with correct UUIDs after upsert)
+            let db_accounts = match state.db_repository.get_accounts_for_user(&user_id).await {
+                Ok(accounts) => accounts,
+                Err(e) => {
+                    tracing::error!("Failed to fetch accounts from database: {}", e);
+                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                }
+            };
+
+            use std::collections::HashMap;
+            let mut account_map: HashMap<String, uuid::Uuid> = HashMap::new();
+            for acct in &db_accounts {
+                if let Some(plaid_id) = &acct.plaid_account_id {
+                    account_map.insert(plaid_id.clone(), acct.id);
+                    tracing::info!("Account mapping: {} -> {}", plaid_id, acct.id);
+                }
+            }
+            tracing::info!("Built account mapping with {} entries", account_map.len());
+
+            for txn in &mut transactions {
+                txn.user_id = Some(user_id);
+                if let Some(plaid_acc_id) = &txn.plaid_account_id {
+                    if let Some(&internal_id) = account_map.get(plaid_acc_id) {
+                        txn.account_id = internal_id;
+                    } else {
+                        tracing::warn!(
+                            "Transaction references unknown plaid_account_id: {} (available: {:?})",
+                            plaid_acc_id,
+                            account_map.keys().collect::<Vec<_>>()
+                        );
+                    }
+                } else {
+                    tracing::warn!("Transaction missing plaid_account_id: {:?}", txn.id);
+                }
+            }
+
+            // Persist transactions - only those with valid account mappings
+            for transaction in &transactions {
+                if let Some(plaid_acc_id) = &transaction.plaid_account_id {
+                    if !account_map.contains_key(plaid_acc_id) {
+                        tracing::warn!(
+                            "Skipping transaction with unmapped plaid_account_id: {}",
+                            plaid_acc_id
+                        );
+                        continue;
+                    }
+                }
+
+                if let Err(e) = state.db_repository.upsert_transaction(transaction).await {
+                    tracing::warn!("Failed to persist transaction to database: {} - Transaction ID: {:?}, Account ID: {}", 
+                        e, transaction.id, transaction.account_id);
+                }
+            }
+
+            // Cache transactions
+            for transaction in &transactions {
+                if let Err(e) = state.cache_service.add_transaction(transaction).await {
+                    tracing::warn!("Failed to cache transaction: {}", e);
+                }
+            }
+
+            // Update connection sync info with total counts from database
+            let total_transactions = state
+                .db_repository
+                .get_transactions_for_user(&user_id)
+                .await
+                .map(|txns| txns.len() as i32)
+                .unwrap_or(0);
+
+            let total_accounts = db_accounts.len() as i32;
+
+            let mut updated_connection = connection;
+            updated_connection.update_sync_info(total_transactions, total_accounts);
+            updated_connection.sync_cursor = Some(new_cursor);
+            updated_connection.last_sync_at = Some(sync_timestamp);
+            if let Err(e) = state
+                .db_repository
+                .save_plaid_connection(&updated_connection)
+                .await
+            {
+                tracing::warn!("Failed to update PlaidConnection: {}", e);
+            }
+
+            // Update JWT-scoped caches (connection + accounts) and invalidate balances overview
+            if let Err(e) = state
+                .connection_service
+                .complete_sync_with_jwt_cache_update(
+                    &user_id,
+                    &auth_context.jwt_id,
+                    &updated_connection,
+                    &db_accounts,
+                )
+                .await
+            {
+                tracing::warn!("Failed to update JWT-scoped caches after sync: {}", e);
+            }
+
+            let response = SyncTransactionsResponse {
+                transactions: transactions.clone(),
+                metadata: SyncMetadata {
+                    transaction_count: total_transactions,
+                    account_count: total_accounts,
+                    sync_timestamp: sync_timestamp.to_rfc3339(),
+                    start_date: sync_start_date.to_string(),
+                    end_date: sync_end_date.to_string(),
+                    connection_updated: true,
+                },
+            };
+
+            Ok(Json(response))
+        }
+        (Err(e), Ok(_)) => {
+            tracing::error!("Plaid transactions sync failed: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        (Ok(_), Err(e)) => {
+            tracing::error!("Plaid accounts fetch failed: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        (Err(e1), Err(e2)) => {
+            tracing::error!(
+                "Plaid sync failed: transactions error: {}, accounts error: {}",
+                e1,
+                e2
+            );
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+
+
+async fn get_authenticated_current_month_spending(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    _headers: HeaderMap,
+) -> Result<Json<rust_decimal::Decimal>, StatusCode> {
+    let user_id = auth_context.user_id;
+
+    match state
+        .db_repository
+        .get_transactions_for_user(&user_id)
+        .await
+    {
+        Ok(transactions) => {
+            let total = state
+                .analytics_service
+                .calculate_current_month_spending(&transactions);
+            Ok(Json(total))
+        }
+        Err(e) => {
+            tracing::error!("Failed to get transactions for user {}: {}", user_id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+async fn get_authenticated_daily_spending(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Query(params): Query<DailySpendingQuery>,
+) -> Result<Json<Vec<DailySpending>>, StatusCode> {
+    let user_id = auth_context.user_id;
+
+    let (year, month) = if let Some(month_str) = params.month {
+        let parts: Vec<&str> = month_str.split('-').collect();
+        if parts.len() == 2 {
+            let year = parts[0]
+                .parse::<i32>()
+                .map_err(|_| StatusCode::BAD_REQUEST)?;
+            let month = parts[1]
+                .parse::<u32>()
+                .map_err(|_| StatusCode::BAD_REQUEST)?;
+            (year, month)
+        } else {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    } else {
+        use chrono::Datelike;
+        let now = chrono::Utc::now().naive_utc().date();
+        (now.year(), now.month())
+    };
+
+    match state
+        .db_repository
+        .get_transactions_for_user(&user_id)
+        .await
+    {
+        Ok(transactions) => {
+            let daily_spending =
+                state
+                    .analytics_service
+                    .calculate_daily_spending(&transactions, year, month);
+            Ok(Json(daily_spending))
+        }
+        Err(e) => {
+            tracing::error!("Failed to get transactions for user {}: {}", user_id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+async fn clear_authenticated_synced_data(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let user_id = auth_context.user_id;
+
+    match state.cache_service.clear_transactions().await {
+        Ok(_) => Ok(Json(
+            serde_json::json!({"cleared": true, "user_id": user_id}),
+        )),
+        Err(e) => {
+            tracing::error!("Failed to clear synced data for user {}: {}", user_id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+async fn get_authenticated_spending_by_date_range(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    _headers: HeaderMap,
+    Query(params): Query<DateRangeQuery>,
+) -> Result<Json<rust_decimal::Decimal>, StatusCode> {
+    let user_id = auth_context.user_id;
+    let start = params
+        .start_date
+        .as_deref()
+        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+    let end = params
+        .end_date
+        .as_deref()
+        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+
+    match state
+        .db_repository
+        .get_transactions_for_user(&user_id)
+        .await
+    {
+        Ok(transactions) => {
+            let filtered = state
+                .analytics_service
+                .filter_by_date_range(&transactions, start, end);
+            let total: rust_decimal::Decimal = filtered.into_iter().map(|t| t.amount).sum();
+            Ok(Json(total))
+        }
+        Err(e) => {
+            tracing::error!("Failed to get transactions for user {}: {}", user_id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+async fn get_authenticated_category_spending(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    _headers: HeaderMap,
+    Query(params): Query<DateRangeQuery>,
+) -> Result<Json<Vec<CategorySpending>>, StatusCode> {
+    let user_id = auth_context.user_id;
+
+    let start_date = params
+        .start_date
+        .as_ref()
+        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+    let end_date = params
+        .end_date
+        .as_ref()
+        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+
+    match state
+        .db_repository
+        .get_transactions_for_user(&user_id)
+        .await
+    {
+        Ok(transactions) => {
+            let categories = state.analytics_service.group_by_category_with_date_range(
+                &transactions,
+                start_date,
+                end_date,
+            );
+            Ok(Json(categories))
+        }
+        Err(e) => {
+            tracing::error!("Failed to get transactions for user {}: {}", user_id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+async fn get_authenticated_monthly_totals(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    _headers: HeaderMap,
+    Query(params): Query<MonthlyTotalsQuery>,
+) -> Result<Json<Vec<MonthlySpending>>, StatusCode> {
+    let user_id = auth_context.user_id;
+    let months = params.months.unwrap_or(6);
+
+    match state
+        .db_repository
+        .get_transactions_for_user(&user_id)
+        .await
+    {
+        Ok(transactions) => {
+            let monthly_totals = state
+                .analytics_service
+                .calculate_monthly_totals(&transactions, months);
+            Ok(Json(monthly_totals))
+        }
+        Err(e) => {
+            tracing::error!("Failed to get transactions for user {}: {}", user_id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+async fn get_authenticated_top_merchants(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    _headers: HeaderMap,
+    Query(params): Query<DateRangeQuery>,
+) -> Result<Json<Vec<TopMerchant>>, StatusCode> {
+    let user_id = auth_context.user_id;
+    let limit = 10usize;
+
+    let start_date = params
+        .start_date
+        .as_ref()
+        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+    let end_date = params
+        .end_date
+        .as_ref()
+        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+
+    match state
+        .db_repository
+        .get_transactions_for_user(&user_id)
+        .await
+    {
+        Ok(transactions) => {
+            let top_merchants = state.analytics_service.get_top_merchants_with_date_range(
+                &transactions,
+                start_date,
+                end_date,
+                limit,
+            );
+            Ok(Json(top_merchants))
+        }
+        Err(e) => {
+            tracing::error!("Failed to get transactions for user {}: {}", user_id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+async fn get_authenticated_plaid_connection_status(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<PlaidConnectionStatus>, StatusCode> {
+    let user_id = auth_context.user_id;
+
+    match state
+        .connection_service
+        .get_connection_status(&user_id)
+        .await
+    {
+        Ok(status) => Ok(Json(status)),
+        Err(e) => {
+            tracing::error!("Failed to get connection status: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+async fn get_authenticated_budgets(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<Vec<crate::models::budget::Budget>>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user_id = auth_context.user_id;
+
+    let cache_key = format!("budgets:user:{}", user_id);
+    if let Ok(Some(serialized)) = state.cache_service.get_string(&cache_key).await {
+        if let Ok(cached) = serde_json::from_str::<Vec<crate::models::budget::Budget>>(&serialized) {
+            return Ok(Json(cached));
+        }
+    }
+
+    match state
+        .budget_service
+        .get_budgets_for_user(&*state.db_repository, user_id)
+        .await
+    {
+        Ok(budgets) => {
+            if let Ok(serialized) = serde_json::to_string(&budgets) {
+                let _ = state
+                    .cache_service
+                    .set_with_ttl(&cache_key, &serialized, 300)
+                    .await;
+            }
+            Ok(Json(budgets))
+        }
+        Err(e) => {
+            tracing::error!("Failed to get budgets for user {}: {}", user_id, e);
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to fetch budgets",
+            ))
+        }
+    }
+}
+
+async fn create_authenticated_budget(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<CreateBudgetRequest>,
+) -> Result<Json<crate::models::budget::Budget>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user_id = auth_context.user_id;
+
+    match state
+        .budget_service
+        .create_budget_for_user(&*state.db_repository, user_id, req.category, req.amount)
+        .await
+    {
+        Ok(created_budget) => {
+            let _ = state
+                .cache_service
+                .invalidate_pattern(&format!("budgets:user:{}", user_id))
+                .await;
+            Ok(Json(created_budget))
+        }
+        Err(e) => {
+            tracing::error!("Failed to create budget for user {}: {}", user_id, e);
+            if e.contains("greater than zero") {
+                Err(
+                    ApiErrorResponse::new("BAD_REQUEST", "Budget amount must be greater than zero")
+                        .into_response(StatusCode::BAD_REQUEST),
+                )
+            } else if e.contains("already exists") {
+                Err(
+                    ApiErrorResponse::new("CONFLICT", "Budget category already exists")
+                        .into_response(StatusCode::CONFLICT),
+                )
+            } else {
+                Err(ApiErrorResponse::internal_server_error(
+                    "Failed to create budget",
+                ))
+            }
+        }
+    }
+}
+
+async fn update_authenticated_budget(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Path(budget_id): Path<String>,
+    Json(req): Json<UpdateBudgetRequest>,
+) -> Result<Json<crate::models::budget::Budget>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user_id = auth_context.user_id;
+    let budget_uuid = Uuid::parse_str(&budget_id).map_err(|_| {
+        ApiErrorResponse::new("BAD_REQUEST", "Invalid budget id")
+            .into_response(StatusCode::BAD_REQUEST)
+    })?;
+
+    match state
+        .budget_service
+        .update_budget_for_user(&*state.db_repository, budget_uuid, user_id, req.amount)
+        .await
+    {
+        Ok(updated_budget) => {
+            let _ = state
+                .cache_service
+                .invalidate_pattern(&format!("budgets:user:{}", user_id))
+                .await;
+            Ok(Json(updated_budget))
+        }
+        Err(e) => {
+            tracing::error!(
+                "Failed to update budget {} for user {}: {}",
+                budget_id,
+                user_id,
+                e
+            );
+            if e.contains("greater than zero") {
+                Err(
+                    ApiErrorResponse::new("BAD_REQUEST", "Budget amount must be greater than zero")
+                        .into_response(StatusCode::BAD_REQUEST),
+                )
+            } else if e.contains("not found") || e.contains("access denied") {
+                Err(ApiErrorResponse::new("NOT_FOUND", "Budget not found")
+                    .into_response(StatusCode::NOT_FOUND))
+            } else {
+                Err(ApiErrorResponse::internal_server_error(
+                    "Failed to update budget",
+                ))
+            }
+        }
+    }
+}
+
+async fn delete_authenticated_budget(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Path(budget_id): Path<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user_id = auth_context.user_id;
+    let budget_uuid = Uuid::parse_str(&budget_id).map_err(|_| {
+        ApiErrorResponse::new("BAD_REQUEST", "Invalid budget id")
+            .into_response(StatusCode::BAD_REQUEST)
+    })?;
+
+    match state
+        .budget_service
+        .delete_budget_for_user(&*state.db_repository, budget_uuid, user_id)
+        .await
+    {
+        Ok(_) => {
+            let _ = state
+                .cache_service
+                .invalidate_pattern(&format!("budgets:user:{}", user_id))
+                .await;
+            Ok(Json(
+                serde_json::json!({"deleted": true, "budget_id": budget_id}),
+            ))
+        }
+        Err(e) => {
+            tracing::error!(
+                "Failed to delete budget {} for user {}: {}",
+                budget_id,
+                user_id,
+                e
+            );
+            if e.contains("not found") || e.contains("access denied") {
+                Err(ApiErrorResponse::new("NOT_FOUND", "Budget not found")
+                    .into_response(StatusCode::NOT_FOUND))
+            } else {
+                Err(ApiErrorResponse::internal_server_error(
+                    "Failed to delete budget",
+                ))
+            }
+        }
+    }
+}
+
+async fn disconnect_authenticated_plaid(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<DisconnectResult>, StatusCode> {
+    let user_id = auth_context.user_id;
+
+    match state
+        .connection_service
+        .disconnect_plaid(&user_id, &auth_context.jwt_id)
+        .await
+    {
+        Ok(result) => Ok(Json(result)),
+        Err(e) => {
+            tracing::error!("Failed to disconnect Plaid: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+async fn health_check() -> &'static str {
+    "OK"
+}
+
+#[derive(Deserialize)]
+struct DailySpendingQuery {
+    month: Option<String>, // Format: YYYY-MM
+}
+
+
+async fn get_authenticated_balances_overview(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<models::analytics::BalancesOverviewResponse>, StatusCode> {
+    let user_id = auth_context.user_id;
+
+    let cache_key = format!("{}_balances_overview", auth_context.jwt_id);
+    if let Ok(Some(serialized)) = state.cache_service.get_string(&cache_key).await {
+        if let Ok(cached) =
+            serde_json::from_str::<models::analytics::BalancesOverviewResponse>(&serialized)
+        {
+            return Ok(Json(cached));
+        }
+    }
+
+    let latest_rows = state
+        .db_repository
+        .get_latest_account_balances_for_user(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to fetch latest account balances: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    let mut latest_map: std::collections::HashMap<
+        String,
+        Vec<(String, Option<String>, String, rust_decimal::Decimal)>,
+    > = std::collections::HashMap::new();
+    let mut name_map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+    let mut mixed_currency = false;
+    for row in latest_rows.into_iter() {
+        if row.currency.to_uppercase() != "USD" {
+            mixed_currency = true;
+            continue;
+        }
+        if let Some(ref inst_name) = row.institution_name {
+            name_map
+                .entry(row.institution_id.clone())
+                .or_insert(inst_name.clone());
+        }
+        latest_map.entry(row.institution_id).or_default().push((
+            row.account_type,
+            row.account_subtype,
+            row.currency,
+            row.current_balance,
+        ));
+    }
+
+    let connection_status = match state
+        .connection_service
+        .get_connection_status(&user_id)
+        .await
+    {
+        Ok(status) => status,
+        Err(e) => {
+            tracing::warn!(
+                "Failed to fetch connection status for user {}: {}",
+                user_id,
+                e
+            );
+            PlaidConnectionStatus {
+                is_connected: false,
+                last_sync_at: None,
+                institution_name: None,
+                connection_id: None,
+                transaction_count: 0,
+                account_count: 0,
+                sync_in_progress: false,
+            }
+        }
+    };
+
+    // Fallback: if no snapshots present, use current account balances
+    if latest_map.is_empty() {
+        let accounts = state
+            .db_repository
+            .get_accounts_for_user(&user_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to fetch accounts for fallback: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+        for acc in accounts.into_iter() {
+            let bal = acc.balance_current.unwrap_or(rust_decimal::Decimal::ZERO);
+            latest_map
+                .entry("unknown_institution".to_string())
+                .or_default()
+                .push((acc.account_type, None, "USD".to_string(), bal));
+        }
+    }
+
+    use rust_decimal::Decimal;
+    let mut overall_cash = Decimal::ZERO;
+    let mut overall_credit = Decimal::ZERO;
+    let mut overall_loan = Decimal::ZERO;
+    let mut overall_investments = Decimal::ZERO;
+    let mut banks: Vec<models::analytics::BankTotals> = Vec::new();
+
+    for (bank_id, accounts) in latest_map.iter() {
+        let mut cash = Decimal::ZERO;
+        let mut credit = Decimal::ZERO;
+        let mut loan = Decimal::ZERO;
+        let mut investments = Decimal::ZERO;
+
+        for (account_type, account_subtype, _currency, balance) in accounts.iter() {
+            let category = AnalyticsService::map_account_to_balance_category(
+                account_type,
+                account_subtype.as_deref(),
+            );
+            match category {
+                BalanceCategory::Cash => {
+                    cash += *balance;
+                }
+                BalanceCategory::Investments => {
+                    investments += *balance;
+                }
+                BalanceCategory::Credit => {
+                    credit += -balance.abs();
+                }
+                BalanceCategory::Loan => {
+                    loan += -balance.abs();
+                }
+            }
+        }
+
+        let totals = models::analytics::finalize_totals(cash, credit, loan, investments);
+
+        let bank_name = name_map
+            .get(bank_id)
+            .cloned()
+            .or_else(|| connection_status.institution_name.clone())
+            .unwrap_or_else(|| bank_id.clone());
+        banks.push(models::analytics::BankTotals {
+            bank_id: bank_id.clone(),
+            bank_name,
+            totals: totals.clone(),
+        });
+
+        overall_cash += cash;
+        overall_credit += credit;
+        overall_loan += loan;
+        overall_investments += investments;
+    }
+
+    let overall = models::analytics::finalize_totals(
+        overall_cash,
+        overall_credit,
+        overall_loan,
+        overall_investments,
+    );
+    let response = models::analytics::BalancesOverviewResponse {
+        as_of: "latest".to_string(),
+        overall,
+        banks,
+        mixed_currency,
+    };
+
+    if let Ok(serialized) = serde_json::to_string(&response) {
+        // Use JWT's remaining TTL to align cache lifetime with session
+        let mut ttl_seconds: u64 = 1800; // fallback
+        if let Ok(Some(jwt_token)) = state
+            .cache_service
+            .get_jwt_token(&auth_context.jwt_id)
+            .await
+        {
+            if let Ok(claims) = state.auth_service.validate_token(&jwt_token) {
+                let now = chrono::Utc::now().timestamp() as usize;
+                if claims.exp > now {
+                    ttl_seconds = (claims.exp - now) as u64;
+                }
+            }
+        }
+        let _ = state
+            .cache_service
+            .set_with_ttl(&cache_key, &serialized, ttl_seconds)
+            .await;
+    }
+
+    Ok(Json(response))
+}

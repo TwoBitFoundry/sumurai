@@ -1,0 +1,138 @@
+openapi: 3.0.3
+info:
+  title: Budgets API
+  version: 1.0.0
+  description: Monthless budget endpoints for creating and managing user budgets.
+paths:
+  /api/budgets:
+    get:
+      summary: List budgets for the authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Array of budgets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Budget'
+        '401':
+          description: Unauthorized
+    post:
+      summary: Create a new budget
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBudgetRequest'
+      responses:
+        '200':
+          description: Created budget
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Budget'
+        '400':
+          description: Invalid payload (e.g., amount <= 0)
+        '401':
+          description: Unauthorized
+        '409':
+          description: Duplicate category
+  /api/budgets/{id}:
+    put:
+      summary: Update budget amount
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBudgetRequest'
+      responses:
+        '200':
+          description: Updated budget
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Budget'
+        '400':
+          description: Invalid payload or id
+        '401':
+          description: Unauthorized
+        '404':
+          description: Budget not found
+    delete:
+      summary: Delete a budget
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Deleted
+        '401':
+          description: Unauthorized
+        '404':
+          description: Budget not found
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Budget:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        category:
+          type: string
+        amount:
+          type: string
+          description: Decimal string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [id, user_id, category, amount, created_at, updated_at]
+    CreateBudgetRequest:
+      type: object
+      required: [category, amount]
+      properties:
+        category:
+          type: string
+        amount:
+          type: string
+          description: Decimal string; must be > 0
+    UpdateBudgetRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: string
+          description: Decimal string; must be > 0
