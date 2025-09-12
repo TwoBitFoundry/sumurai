@@ -21,12 +21,12 @@ Sumaura is a full‑stack personal finance dashboard that connects to your bank 
 - Budgets: create, update, delete with category mapping
 - Robust caching and RLS‑backed multi‑tenant isolation
 
-Screenshots (add your images under `docs/images/`):
+### Screenshots
 
-- Dashboard: ![Dashboard](docs/images/dashboard.png)
+- Dashboard: ![Dashboard](docs/images/dashboard-hero.png)![Dashboard](docs/images/dashboard-extras.png)
 - Transactions: ![Transactions](docs/images/transactions.png)
 - Budgets: ![Budgets](docs/images/budgets.png)
-- Analytics: ![Analytics](docs/images/analytics.png)
+- Connect: ![Connect](docs/images/connect.png)
 
 ## Security & Privacy
 
