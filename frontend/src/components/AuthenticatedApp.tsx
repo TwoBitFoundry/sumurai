@@ -29,6 +29,7 @@ import { Toast } from "./Toast";
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus, RefreshCw, Link2, Calendar as CalendarIcon } from "lucide-react";
 import BalancesOverview from "./BalancesOverview";
+import { NetWorthOverTimeWidget } from "./NetWorthOverTimeWidget";
 const fmtUSD = (n: number | string) => {
   const num = Number(n);
   if (!Number.isFinite(num) || isNaN(num)) {
@@ -1176,106 +1177,7 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
                   </Card>
 
                   <Card className="h-full">
-                    <div className="text-sm text-slate-600 dark:text-slate-400 mb-4 font-medium">Period Comparison</div>
-                    <div className="space-y-6">
-                      
-                      <div className="space-y-4">
-                        
-                        <div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Current Period</span>
-                            <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{fmtUSD(periodComparison.current)}</span>
-                          </div>
-                          <div className="relative h-8 bg-slate-200 dark:bg-slate-700 rounded-lg overflow-hidden">
-                            <div 
-                              className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-400 to-emerald-400 rounded-lg transition-all duration-1000 ease-out"
-                              style={{ 
-                                width: `${Math.max(5, (periodComparison.current / Math.max(periodComparison.current, periodComparison.previous)) * 100)}%` 
-                              }}
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-xs font-medium text-slate-900 dark:text-slate-100 mix-blend-difference">
-                                Current
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        
-                        <div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Previous Period</span>
-                            <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{fmtUSD(periodComparison.previous)}</span>
-                          </div>
-                          <div className="relative h-8 bg-slate-200 dark:bg-slate-700 rounded-lg overflow-hidden">
-                            <div 
-                              className="absolute inset-y-0 left-0 bg-gradient-to-r from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-600 rounded-lg transition-all duration-1000 ease-out"
-                              style={{ 
-                                width: `${Math.max(5, (periodComparison.previous / Math.max(periodComparison.current, periodComparison.previous)) * 100)}%` 
-                              }}
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-xs font-medium text-white mix-blend-difference">
-                                Previous
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      
-                      <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
-                              periodComparison.change > 0 
-                                ? 'bg-red-100 dark:bg-red-900/30' 
-                                : periodComparison.change < 0 
-                                  ? 'bg-green-100 dark:bg-green-900/30' 
-                                  : 'bg-slate-100 dark:bg-slate-700'
-                            }`}>
-                              <span className={`text-lg ${
-                                periodComparison.change > 0 
-                                  ? 'text-red-600 dark:text-red-400' 
-                                  : periodComparison.change < 0 
-                                    ? 'text-green-600 dark:text-green-400' 
-                                    : 'text-slate-600 dark:text-slate-400'
-                              }`}>
-                                {periodComparison.change > 0 ? '↗' : periodComparison.change < 0 ? '↘' : '→'}
-                              </span>
-                            </div>
-                            <div>
-                              <div className={`text-lg font-bold ${
-                                periodComparison.change > 0 
-                                  ? 'text-red-600 dark:text-red-400' 
-                                  : periodComparison.change < 0 
-                                    ? 'text-green-600 dark:text-green-400' 
-                                    : 'text-slate-600 dark:text-slate-400'
-                              }`}>
-                                {periodComparison.change > 0 ? '+' : ''}{fmtUSD(periodComparison.change)}
-                              </div>
-                              <div className="text-xs text-slate-500 dark:text-slate-400">
-                                {periodComparison.change > 0 ? 'More spent' : periodComparison.change < 0 ? 'Less spent' : 'No change'}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className={`text-2xl font-bold ${
-                              periodComparison.change > 0 
-                                ? 'text-red-600 dark:text-red-400' 
-                                : periodComparison.change < 0 
-                                  ? 'text-green-600 dark:text-green-400' 
-                                  : 'text-slate-600 dark:text-slate-400'
-                            }`}>
-                              {periodComparison.changePercent > 0 ? '+' : ''}{Number(periodComparison.changePercent).toFixed(2)}%
-                            </div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400">
-                              vs previous
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <NetWorthOverTimeWidget dark={dark} />
                   </Card>
                 </div>
 
