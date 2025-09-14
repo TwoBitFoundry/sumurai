@@ -54,6 +54,17 @@ export class AnalyticsService {
   static async getBalancesOverview(): Promise<BalancesOverview> {
     return ApiClient.get<BalancesOverview>(`/analytics/balances/overview`)
   }
+
+  // Net Worth Over Time (Depository ledger-based)
+  static async getNetWorthOverTime(startDate: string, endDate: string): Promise<{ date: string; value: number }[]> {
+    let endpoint = '/analytics/net-worth-over-time'
+    const params = new URLSearchParams()
+    params.append('start_date', startDate)
+    params.append('end_date', endDate)
+    endpoint += `?${params.toString()}`
+    const result = await ApiClient.get<{ series: { date: string; value: number }[]; currency: string }>(endpoint)
+    return result.series || []
+  }
 }
 
 // --- Balances Overview helpers (Phase 0) ---

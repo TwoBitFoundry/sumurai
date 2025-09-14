@@ -43,6 +43,18 @@ pub struct DailyTrend {
     pub display_date: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NetWorthSeriesPoint {
+    pub date: String,
+    pub value: Decimal,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NetWorthOverTimeResponse {
+    pub series: Vec<NetWorthSeriesPoint>,
+    pub currency: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BalanceCategory {
     Cash,

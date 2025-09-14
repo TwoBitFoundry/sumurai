@@ -3,6 +3,7 @@ import {
   ResponsiveContainer,
   PieChart, Pie, Tooltip, Cell,
   XAxis, YAxis, CartesianGrid,
+  AreaChart, Area,
 } from "recharts";
 import { usePlaidConnections } from "../hooks/usePlaidConnections";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
@@ -366,7 +367,10 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
   const [monthSpend, setMonthSpend] = useState(0);
   const [byCat, setByCat] = useState<{ name: string; value: number }[]>([]);
   const [topMerchants, setTopMerchants] = useState<any[]>([]);
-  const [periodComparison, setPeriodComparison] = useState({ current: 0, previous: 0, change: 0, changePercent: 0 });
+  // Net worth over time (cash) state
+  const [netSeries, setNetSeries] = useState<{ date: string; value: number }[]>([]);
+  const [netLoading, setNetLoading] = useState(false);
+  const [netError, setNetError] = useState<string | null>(null);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   // Lightweight loading state for debounced searches; keeps table visible
@@ -478,6 +482,23 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     return filtered;
   }, []);
 
+  // Fetch Net Worth Over Time whenever dashboard dateRange changes
+  useEffect(() => {
+    const { start, end } = computeDateRange(dateRange);
+    if (!start || !end) {
+      setNetSeries([]);
+      return;
+    }
+    let cancelled = false;
+    setNetLoading(true);
+    setNetError(null);
+    AnalyticsService.getNetWorthOverTime(start, end)
+      .then(series => { if (!cancelled) setNetSeries(series || []); })
+      .catch((e: any) => { if (!cancelled) setNetError(e?.message || 'Failed to load net worth'); })
+      .finally(() => { if (!cancelled) setNetLoading(false); });
+    return () => { cancelled = true; };
+  }, [dateRange, computeDateRange]);
+
   const calculateCategorySpendingFromTransactions = useCallback((transactions: Txn[]): { name: string; value: number }[] => {
     const categoryTotals = transactions.reduce((acc, txn) => {
       const categoryName = txn.category.name || 'Unknown';
@@ -564,85 +585,46 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     return Number.isFinite(total) ? total : 0;
   }, []);
 
-  const calculatePeriodComparison = useCallback((dateRangeKey: DateRange, transactions: Txn[]): { current: number; previous: number; change: number; changePercent: number } => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth(); // 0-based
-    const fmt = (d: Date) => d.toISOString().slice(0,10);
-
-    let currentStart: string, currentEnd: string, previousStart: string, previousEnd: string;
-
-    switch (dateRangeKey) {
-      case 'current-month': {
-        // Current: this month, Previous: last month
-        currentStart = fmt(new Date(y, m, 1));
-        currentEnd = fmt(new Date(y, m + 1, 0));
-        previousStart = fmt(new Date(y, m - 1, 1));
-        previousEnd = fmt(new Date(y, m, 0));
-        break;
-      }
-      case 'past-2-months': {
-        // Current: last 2 months, Previous: 2 months before that
-        currentStart = fmt(new Date(y, m - 1, 1));
-        currentEnd = fmt(new Date(y, m + 1, 0));
-        previousStart = fmt(new Date(y, m - 3, 1));
-        previousEnd = fmt(new Date(y, m - 1, 0));
-        break;
-      }
-      case 'past-3-months': {
-        // Current: last 3 months, Previous: 3 months before that
-        currentStart = fmt(new Date(y, m - 2, 1));
-        currentEnd = fmt(new Date(y, m + 1, 0));
-        previousStart = fmt(new Date(y, m - 5, 1));
-        previousEnd = fmt(new Date(y, m - 2, 0));
-        break;
-      }
-      case 'past-6-months': {
-        // Current: last 6 months, Previous: 6 months before that
-        currentStart = fmt(new Date(y, m - 5, 1));
-        currentEnd = fmt(new Date(y, m + 1, 0));
-        previousStart = fmt(new Date(y, m - 11, 1));
-        previousEnd = fmt(new Date(y, m - 5, 0));
-        break;
-      }
-      case 'past-year': {
-        // Current: last 12 months, Previous: 12 months before that
-        currentStart = fmt(new Date(y, m - 11, 1));
-        currentEnd = fmt(new Date(y, m + 1, 0));
-        previousStart = fmt(new Date(y, m - 23, 1));
-        previousEnd = fmt(new Date(y, m - 11, 0));
-        break;
-      }
-      case 'all-time': {
-        // For all-time, compare last year vs year before that
-        currentStart = fmt(new Date(y - 1, 0, 1));
-        currentEnd = fmt(new Date(y, 0, 0));
-        previousStart = fmt(new Date(y - 2, 0, 1));
-        previousEnd = fmt(new Date(y - 1, 0, 0));
-        break;
-      }
-      default: {
-        return { current: 0, previous: 0, change: 0, changePercent: 0 };
-      }
+  // Adaptive dot renderer: show dots only on days with changes (proxy for transactions),
+  // and cap visible dots to ~30 to reduce clutter.
+  const netDotRenderer = useMemo(() => {
+    const n = netSeries?.length || 0;
+    const fill = dark ? '#0b1220' : '#ffffff';
+    const stroke = '#10b981';
+    if (!n) {
+      return () => null;
     }
 
-    const currentTransactions = transactions.filter(txn => {
-      const txnDate = new Date(txn.date).toISOString().slice(0, 10);
-      return txnDate >= currentStart && txnDate <= currentEnd;
-    });
+    // Determine indices where value changed vs previous day -> likely transaction days
+    const changeIdx: number[] = [];
+    for (let i = 1; i < n; i++) {
+      const prev = Number(netSeries[i - 1]?.value ?? 0);
+      const curr = Number(netSeries[i]?.value ?? 0);
+      if (!Number.isFinite(prev) || !Number.isFinite(curr)) continue;
+      if (curr !== prev) changeIdx.push(i);
+    }
 
-    const previousTransactions = transactions.filter(txn => {
-      const txnDate = new Date(txn.date).toISOString().slice(0, 10);
-      return txnDate >= previousStart && txnDate <= previousEnd;
-    });
+    // Cap the number of dots to ~30 using stride sampling over change indices
+    const maxDots = 30;
+    const selected = new Set<number>();
+    if (changeIdx.length > 0) {
+      const stride = Math.max(1, Math.ceil(changeIdx.length / maxDots));
+      for (let k = 0; k < changeIdx.length; k += stride) {
+        selected.add(changeIdx[k]);
+      }
+      // Always include the last change day for emphasis
+      selected.add(changeIdx[changeIdx.length - 1]);
+    }
 
-    const current = calculateTotalSpendingFromTransactions(currentTransactions);
-    const previous = calculateTotalSpendingFromTransactions(previousTransactions);
-    const change = current - previous;
-    const changePercent = previous > 0 ? (change / previous) * 100 : 0;
+    return (props: any) => {
+      const { index, cx, cy } = props || {};
+      if (index == null || cx == null || cy == null) return null;
+      if (!selected.has(index)) return null;
+      return <circle cx={cx} cy={cy} r={3} stroke={stroke} strokeWidth={1} fill={fill} />;
+    };
+  }, [netSeries, dark]);
 
-    return { current, previous, change, changePercent };
-  }, [calculateTotalSpendingFromTransactions]);
+  // Period comparison removed
 
 
   // Removed daily trend and day-of-week derived analytics
@@ -881,7 +863,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
         totalSpending: 0,
         categories: [],
         topMerchants: [],
-        periodComparison: { current: 0, previous: 0, change: 0, changePercent: 0 }
       };
     }
 
@@ -892,17 +873,11 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     const totalSpending = calculateTotalSpendingFromTransactions(filteredTransactions);
     const categories = calculateCategorySpendingFromTransactions(filteredTransactions);
     const topMerchants = calculateTopMerchantsFromTransactions(filteredTransactions);
-    
-    // Calculate period comparison based on selected date range and all transactions
-    const periodComparison = calculatePeriodComparison(dateRange, allTimeTransactions);
-    
-    
     return {
       transactions: filteredTransactions,
       totalSpending,
       categories,
       topMerchants,
-      periodComparison
     };
   }, [
     dateRange, 
@@ -910,8 +885,7 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     filterTransactionsByDateRange, 
     calculateTotalSpendingFromTransactions, 
     calculateCategorySpendingFromTransactions, 
-    calculateTopMerchantsFromTransactions,
-    calculatePeriodComparison
+    calculateTopMerchantsFromTransactions
   ]);
 
   // Update analytics display state when filtered data changes (single source of truth)
@@ -929,12 +903,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     setTopMerchants(prev => 
       JSON.stringify(prev) !== JSON.stringify(filteredData.topMerchants) 
         ? filteredData.topMerchants 
-        : prev
-    );
-    
-    setPeriodComparison(prev => 
-      JSON.stringify(prev) !== JSON.stringify(filteredData.periodComparison) 
-        ? filteredData.periodComparison 
         : prev
     );
   }, [filteredData, dateRange]);
@@ -1176,106 +1144,84 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
                   </Card>
 
                   <Card className="h-full">
-                    <div className="text-sm text-slate-600 dark:text-slate-400 mb-4 font-medium">Period Comparison</div>
-                    <div className="space-y-6">
-                      
-                      <div className="space-y-4">
-                        
-                        <div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Current Period</span>
-                            <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{fmtUSD(periodComparison.current)}</span>
-                          </div>
-                          <div className="relative h-8 bg-slate-200 dark:bg-slate-700 rounded-lg overflow-hidden">
-                            <div 
-                              className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-400 to-emerald-400 rounded-lg transition-all duration-1000 ease-out"
-                              style={{ 
-                                width: `${Math.max(5, (periodComparison.current / Math.max(periodComparison.current, periodComparison.previous)) * 100)}%` 
+                    <div className="text-sm text-slate-600 dark:text-slate-400 mb-4 font-medium">Net Worth Over Time</div>
+                    {netLoading ? (
+                      <div className="h-40 rounded-xl bg-slate-100/60 dark:bg-slate-900/40 animate-pulse border border-slate-200/60 dark:border-slate-700/60" />
+                    ) : netError ? (
+                      <div className="text-sm text-rose-600 dark:text-rose-400">{netError}</div>
+                    ) : netSeries.length === 0 ? (
+                      <div className="text-sm text-slate-500 dark:text-slate-400">No data for this range.</div>
+                    ) : (
+                      <div className="w-full overflow-hidden" style={{ height: 'clamp(240px, 36vh, 28rem)' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={netSeries} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="netGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0.05} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#94a3b833" />
+                            <XAxis
+                              dataKey="date"
+                              tick={{ fill: "#94a3b8", fontSize: 12 }}
+                              interval="preserveStartEnd"
+                              minTickGap={24}
+                              tickFormatter={(value: string) => {
+                                // Smart, compact date labels based on visible span
+                                try {
+                                  if (!value) return ''
+                                  const first = netSeries[0]?.date
+                                  const last = netSeries[netSeries.length - 1]?.date
+                                  const d = new Date(value)
+                                  const spanDays = first && last
+                                    ? Math.max(1, Math.round((new Date(last).getTime() - new Date(first).getTime()) / 86400000))
+                                    : 0
+                                  if (!isFinite(d.getTime())) return value
+                                  if (spanDays && spanDays <= 92) {
+                                    // Up to ~3 months → "MMM d"
+                                    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                  }
+                                  if (spanDays && spanDays <= 400) {
+                                    // ~1 year window → include year on all ticks with apostrophe
+                                    const mm = d.toLocaleString('en-US', { month: 'short' })
+                                    const yy = d.toLocaleString('en-US', { year: '2-digit' })
+                                    return `${mm} ’${yy}`
+                                  }
+                                  // >1 year → always include 2-digit year with apostrophe
+                                  {
+                                    const mm = d.toLocaleString('en-US', { month: 'short' })
+                                    const yy = d.toLocaleString('en-US', { year: '2-digit' })
+                                    return `${mm} ’${yy}`
+                                  }
+                                } catch {
+                                  return value
+                                }
                               }}
                             />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-xs font-medium text-slate-900 dark:text-slate-100 mix-blend-difference">
-                                Current
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        
-                        <div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Previous Period</span>
-                            <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{fmtUSD(periodComparison.previous)}</span>
-                          </div>
-                          <div className="relative h-8 bg-slate-200 dark:bg-slate-700 rounded-lg overflow-hidden">
-                            <div 
-                              className="absolute inset-y-0 left-0 bg-gradient-to-r from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-600 rounded-lg transition-all duration-1000 ease-out"
-                              style={{ 
-                                width: `${Math.max(5, (periodComparison.previous / Math.max(periodComparison.current, periodComparison.previous)) * 100)}%` 
-                              }}
+                            <YAxis tick={{ fill: "#94a3b8", fontSize: 12 }} tickFormatter={(v) => {
+                              const n = Math.abs(Number(v));
+                              const s = Number(v) < 0 ? '-' : '';
+                              if (n >= 1e9) return s + '$' + (n/1e9).toFixed(0) + 'B';
+                              if (n >= 1e6) return s + '$' + (n/1e6).toFixed(0) + 'M';
+                              if (n >= 1e3) return s + '$' + (n/1e3).toFixed(0) + 'k';
+                              return fmtUSD(v as number).replace(/\.00$/, '');
+                            }} />
+                            <Tooltip contentStyle={getTooltipStyle(dark)} formatter={(v: any) => [fmtUSD(v), 'Net']} labelFormatter={l => l} />
+                            <Area
+                              type="monotone"
+                              dataKey="value"
+                              stroke="#10b981"
+                              strokeWidth={2}
+                              fillOpacity={1}
+                              fill="url(#netGradient)"
+                              dot={netDotRenderer as any}
+                              activeDot={{ r: 6 }}
                             />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-xs font-medium text-white mix-blend-difference">
-                                Previous
-                              </span>
-                            </div>
-                          </div>
-                        </div>
+                          </AreaChart>
+                        </ResponsiveContainer>
                       </div>
-
-                      
-                      <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
-                              periodComparison.change > 0 
-                                ? 'bg-red-100 dark:bg-red-900/30' 
-                                : periodComparison.change < 0 
-                                  ? 'bg-green-100 dark:bg-green-900/30' 
-                                  : 'bg-slate-100 dark:bg-slate-700'
-                            }`}>
-                              <span className={`text-lg ${
-                                periodComparison.change > 0 
-                                  ? 'text-red-600 dark:text-red-400' 
-                                  : periodComparison.change < 0 
-                                    ? 'text-green-600 dark:text-green-400' 
-                                    : 'text-slate-600 dark:text-slate-400'
-                              }`}>
-                                {periodComparison.change > 0 ? '↗' : periodComparison.change < 0 ? '↘' : '→'}
-                              </span>
-                            </div>
-                            <div>
-                              <div className={`text-lg font-bold ${
-                                periodComparison.change > 0 
-                                  ? 'text-red-600 dark:text-red-400' 
-                                  : periodComparison.change < 0 
-                                    ? 'text-green-600 dark:text-green-400' 
-                                    : 'text-slate-600 dark:text-slate-400'
-                              }`}>
-                                {periodComparison.change > 0 ? '+' : ''}{fmtUSD(periodComparison.change)}
-                              </div>
-                              <div className="text-xs text-slate-500 dark:text-slate-400">
-                                {periodComparison.change > 0 ? 'More spent' : periodComparison.change < 0 ? 'Less spent' : 'No change'}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className={`text-2xl font-bold ${
-                              periodComparison.change > 0 
-                                ? 'text-red-600 dark:text-red-400' 
-                                : periodComparison.change < 0 
-                                  ? 'text-green-600 dark:text-green-400' 
-                                  : 'text-slate-600 dark:text-slate-400'
-                            }`}>
-                              {periodComparison.changePercent > 0 ? '+' : ''}{Number(periodComparison.changePercent).toFixed(2)}%
-                            </div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400">
-                              vs previous
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    )}
                   </Card>
                 </div>
 

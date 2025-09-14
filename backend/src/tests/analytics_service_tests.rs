@@ -173,56 +173,7 @@ fn calculate_daily_spending(
         .collect()
 }
 
-fn get_period_comparison(
-    transactions: &[Transaction],
-    period: &str,
-) -> (rust_decimal::Decimal, rust_decimal::Decimal) {
-    if let Some((start, end)) = get_period_date_range(period) {
-        let current: rust_decimal::Decimal = transactions
-            .iter()
-            .filter(|t| t.date >= start && t.date <= end)
-            .map(|t| t.amount)
-            .sum();
-        let (py, pm) = {
-            let year = start.year();
-            let month = start.month();
-            if month == 1 {
-                (year - 1, 12)
-            } else {
-                (year, month - 1)
-            }
-        };
-        let (pstart, pend) = get_month_range(py, pm);
-        let previous: rust_decimal::Decimal = transactions
-            .iter()
-            .filter(|t| t.date >= pstart && t.date <= pend)
-            .map(|t| t.amount)
-            .sum();
-        (current, previous)
-    } else {
-        // all-time: split by half of the date span [earliest..latest]
-        if transactions.is_empty() {
-            return (rust_decimal::Decimal::ZERO, rust_decimal::Decimal::ZERO);
-        }
-        let mut dates: Vec<NaiveDate> = transactions.iter().map(|t| t.date).collect();
-        dates.sort();
-        let earliest = dates[0];
-        let latest = dates[dates.len() - 1];
-        let total_days = (latest - earliest).num_days();
-        let half_point = earliest + chrono::Duration::days(total_days / 2);
-        let current: rust_decimal::Decimal = transactions
-            .iter()
-            .filter(|t| t.date >= half_point && t.date <= latest)
-            .map(|t| t.amount)
-            .sum();
-        let previous: rust_decimal::Decimal = transactions
-            .iter()
-            .filter(|t| t.date >= earliest && t.date <= half_point)
-            .map(|t| t.amount)
-            .sum();
-        (current, previous)
-    }
-}
+// Period comparison helpers removed (feature replaced)
 
 // Day-of-week spending helpers and tests removed (no API route)
 
@@ -444,71 +395,10 @@ fn given_many_categories_when_limiting_to_ten_then_combines_bottom_ones_as_other
 }
 
 #[test]
-fn given_transactions_when_getting_current_month_period_comparison_then_compares_with_previous_month(
-) {
-    let _analytics = AnalyticsService::new();
-    let now = chrono::Utc::now().naive_utc().date();
-    let (cy, cm) = (now.year(), now.month());
-    let (py, pm) = if cm == 1 { (cy - 1, 12) } else { (cy, cm - 1) };
-
-    let txns = vec![
-        create_test_transaction(
-            dec!(100.00),
-            NaiveDate::from_ymd_opt(cy, cm, 10).unwrap(),
-            "Food",
-        ),
-        create_test_transaction(
-            dec!(50.00),
-            NaiveDate::from_ymd_opt(cy, cm, 15).unwrap(),
-            "Transport",
-        ),
-        create_test_transaction(
-            dec!(75.00),
-            NaiveDate::from_ymd_opt(py, pm, 10).unwrap(),
-            "Food",
-        ),
-        create_test_transaction(
-            dec!(25.00),
-            NaiveDate::from_ymd_opt(py, pm, 15).unwrap(),
-            "Transport",
-        ),
-    ];
-
-    let (current, previous) = get_period_comparison(&txns, "current-month");
-    assert_eq!(current, dec!(150.00));
-    assert_eq!(previous, dec!(100.00));
-}
+// Period comparison tests removed
 
 #[test]
-fn given_transactions_when_getting_all_time_period_comparison_then_splits_timeframe_in_half() {
-    let _analytics = AnalyticsService::new();
-    let txns = vec![
-        create_test_transaction(
-            dec!(50.00),
-            NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
-            "Food",
-        ),
-        create_test_transaction(
-            dec!(30.00),
-            NaiveDate::from_ymd_opt(2024, 2, 10).unwrap(),
-            "Transport",
-        ),
-        create_test_transaction(
-            dec!(100.00),
-            NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
-            "Food",
-        ),
-        create_test_transaction(
-            dec!(75.00),
-            NaiveDate::from_ymd_opt(2024, 7, 10).unwrap(),
-            "Transport",
-        ),
-    ];
-
-    let (current, previous) = get_period_comparison(&txns, "all-time");
-    assert_eq!(current, dec!(175.00));
-    assert_eq!(previous, dec!(80.00));
-}
+// Period comparison tests removed
 
 #[test]
 fn given_transactions_when_grouping_by_category_with_date_range_then_filters_and_groups_correctly()
