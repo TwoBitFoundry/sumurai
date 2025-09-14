@@ -200,6 +200,10 @@ pub fn create_app(state: AppState) -> Router {
             "/api/analytics/balances/overview",
             get(get_authenticated_balances_overview),
         )
+        .route(
+            "/api/analytics/net-worth-over-time",
+            get(get_authenticated_net_worth_over_time),
+        )
         .route("/api/budgets", get(get_authenticated_budgets))
         .route("/api/budgets", post(create_authenticated_budget))
         .route("/api/budgets/{id}", put(update_authenticated_budget))
@@ -1538,6 +1542,177 @@ async fn get_authenticated_balances_overview(
 
     if let Ok(serialized) = serde_json::to_string(&response) {
         // Use JWT's remaining TTL to align cache lifetime with session
+        let mut ttl_seconds: u64 = 1800; // fallback
+        if let Ok(Some(jwt_token)) = state
+            .cache_service
+            .get_jwt_token(&auth_context.jwt_id)
+            .await
+        {
+            if let Ok(claims) = state.auth_service.validate_token(&jwt_token) {
+                let now = chrono::Utc::now().timestamp() as usize;
+                if claims.exp > now {
+                    ttl_seconds = (claims.exp - now) as u64;
+                }
+            }
+        }
+        let _ = state
+            .cache_service
+            .set_with_ttl(&cache_key, &serialized, ttl_seconds)
+            .await;
+    }
+
+    Ok(Json(response))
+}
+
+async fn get_authenticated_net_worth_over_time(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Query(params): Query<models::analytics::DateRangeQuery>,
+) -> Result<Json<models::analytics::NetWorthOverTimeResponse>, StatusCode> {
+    use rust_decimal::Decimal;
+    use std::collections::{BTreeMap, HashMap, HashSet};
+
+    let user_id = auth_context.user_id;
+
+    // Parse and validate dates
+    let (start_date, end_date) = match (&params.start_date, &params.end_date) {
+        (Some(s), Some(e)) => {
+            let s = chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d")
+                .map_err(|_| StatusCode::BAD_REQUEST)?;
+            let e = chrono::NaiveDate::parse_from_str(e, "%Y-%m-%d")
+                .map_err(|_| StatusCode::BAD_REQUEST)?;
+            if e < s {
+                return Err(StatusCode::BAD_REQUEST);
+            }
+            (s, e)
+        }
+        _ => return Err(StatusCode::BAD_REQUEST),
+    };
+
+    // Cache lookup
+    let cache_key = format!(
+        "{}_net_worth_over_time_{}_{}",
+        auth_context.jwt_id, start_date, end_date
+    );
+    if let Ok(Some(serialized)) = state.cache_service.get_string(&cache_key).await {
+        if let Ok(cached) =
+            serde_json::from_str::<models::analytics::NetWorthOverTimeResponse>(&serialized)
+        {
+            return Ok(Json(cached));
+        }
+    }
+
+    // Load depository accounts (checking/savings fall under 'depository')
+    let accounts = state
+        .db_repository
+        .get_accounts_for_user(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to fetch accounts: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    let mut depository_ids: HashSet<uuid::Uuid> = HashSet::new();
+    let mut balance_current_by_id: HashMap<uuid::Uuid, Decimal> = HashMap::new();
+    for acc in accounts.into_iter() {
+        if acc.account_type.to_lowercase() == "depository" {
+            depository_ids.insert(acc.id);
+            balance_current_by_id
+                .entry(acc.id)
+                .or_insert(acc.balance_current.unwrap_or(Decimal::ZERO));
+        }
+    }
+
+    if depository_ids.is_empty() {
+        let response = models::analytics::NetWorthOverTimeResponse {
+            series: Vec::new(),
+            currency: "USD".to_string(),
+        };
+        return Ok(Json(response));
+    }
+
+    // Determine the anchor dates
+    let today = chrono::Utc::now().naive_utc().date();
+    let end_anchor = std::cmp::min(end_date, today);
+
+    // Fetch transactions from start_date..=today (inclusive) for baseline + series
+    let txns = state
+        .db_repository
+        .get_transactions_by_date_range_for_user(&user_id, start_date, today)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to fetch transactions for ledger: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    // Group flows by account and date; filter to depository account_ids
+    let mut flows_by_account: HashMap<uuid::Uuid, BTreeMap<chrono::NaiveDate, Decimal>> =
+        HashMap::new();
+    for t in txns.into_iter() {
+        if !depository_ids.contains(&t.account_id) {
+            continue;
+        }
+        flows_by_account
+            .entry(t.account_id)
+            .or_default()
+            .entry(t.date)
+            .and_modify(|v| *v += t.amount)
+            .or_insert(t.amount);
+    }
+
+    // Compute baseline at start_date for each account:
+    // base_start = balance_current - sum(flows in (start_date, today]]
+    let mut base_start_by_account: HashMap<uuid::Uuid, Decimal> = HashMap::new();
+    for acc_id in depository_ids.iter() {
+        let current_balance = *balance_current_by_id.get(acc_id).unwrap_or(&Decimal::ZERO);
+        let mut rollback_sum = Decimal::ZERO;
+        if let Some(map) = flows_by_account.get(acc_id) {
+            for (d, amt) in map.range((start_date.succ_opt().unwrap_or(start_date))..=today) {
+                let _ = d; // unused binding except for range
+                rollback_sum += *amt;
+            }
+        }
+        base_start_by_account.insert(*acc_id, current_balance - rollback_sum);
+    }
+
+    // Build daily cumulative series for the requested range (carry forward past end_anchor)
+    let mut series: Vec<models::analytics::NetWorthSeriesPoint> = Vec::new();
+    let mut day = start_date;
+    let mut per_account_cum: HashMap<uuid::Uuid, Decimal> = HashMap::new();
+    while day <= end_date {
+        // Update cumulative flows up to this day for each account
+        if day <= end_anchor {
+            for (acc_id, fmap) in flows_by_account.iter() {
+                let acc_entry = per_account_cum.entry(*acc_id).or_insert(Decimal::ZERO);
+                if let Some(amt) = fmap.get(&day) {
+                    *acc_entry += *amt;
+                }
+            }
+        }
+        // Sum account balances for this day
+        let mut total = Decimal::ZERO;
+        for acc_id in depository_ids.iter() {
+            let base = *base_start_by_account.get(acc_id).unwrap_or(&Decimal::ZERO);
+            let delta = *per_account_cum.get(acc_id).unwrap_or(&Decimal::ZERO);
+            total += base + delta;
+        }
+        series.push(models::analytics::NetWorthSeriesPoint {
+            date: day.format("%Y-%m-%d").to_string(),
+            value: total,
+        });
+
+        day = day.succ_opt().unwrap_or(day);
+        if day == end_date { /* loop condition handles push next */ }
+        if day > end_date { break; }
+    }
+
+    let response = models::analytics::NetWorthOverTimeResponse {
+        series,
+        currency: "USD".to_string(),
+    };
+
+    if let Ok(serialized) = serde_json::to_string(&response) {
+        // Align cache TTL with JWT expiry
         let mut ttl_seconds: u64 = 1800; // fallback
         if let Ok(Some(jwt_token)) = state
             .cache_service
