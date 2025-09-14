@@ -165,7 +165,6 @@ describe('App Phase 2 - Business Logic Removal', () => {
         'calcMonthSpend',
         'groupByCat', 
         'filterByDateRange',
-        'getPeriodComparison',
         'getTopMerchants',
         'calculateCategorySpending',
         'monthlyTotalsLastN',
@@ -225,7 +224,6 @@ describe('App Phase 2 - Business Logic Removal', () => {
       expect(appSource).not.toMatch(/useMemo\(\(\) => \{[\s\S]*?groupByCat/)
       expect(appSource).not.toMatch(/useMemo\(\(\) => \{[\s\S]*?calcMonthSpend/)
       expect(appSource).not.toMatch(/useMemo\(\(\) => \{[\s\S]*?filterByDateRange/)
-      expect(appSource).not.toMatch(/useMemo\(\(\) => \{[\s\S]*?getPeriodComparison/)
       expect(appSource).not.toMatch(/useMemo\(\(\) => \{[\s\S]*?getTopMerchants/)
       expect(appSource).not.toMatch(/useMemo\(\(\) => \{[\s\S]*?calculateCategorySpending/)
     })

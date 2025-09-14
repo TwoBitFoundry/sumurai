@@ -1,5 +1,5 @@
 use crate::models::analytics::{
-    BalanceCategory, CategorySpending, DailySpending, DailyTrend, MonthlySpending, PeriodComparison, TopMerchant,
+    BalanceCategory, CategorySpending, DailySpending, DailyTrend, MonthlySpending, NetWorthDataPoint, PeriodComparison, TopMerchant,
 };
 use crate::models::transaction::Transaction;
 use chrono::Datelike;
@@ -561,5 +561,42 @@ impl AnalyticsService {
 
     fn get_month_range(&self, year: i32, month: u32) -> (chrono::NaiveDate, chrono::NaiveDate) {
         Self::get_month_range_static(year, month)
+    }
+
+    pub fn get_net_worth_over_time(
+        &self,
+        transactions: &[Transaction],
+        start_date: chrono::NaiveDate,
+        end_date: chrono::NaiveDate,
+    ) -> Vec<NetWorthDataPoint> {
+        use rust_decimal_macros::dec;
+        use std::collections::BTreeMap;
+
+        // Filter transactions within date range
+        let mut filtered_transactions: Vec<&Transaction> = transactions
+            .iter()
+            .filter(|t| t.date >= start_date && t.date <= end_date)
+            .collect();
+
+        // Sort transactions by date
+        filtered_transactions.sort_by_key(|t| t.date);
+
+        // Group transactions by date and calculate running balance
+        let mut daily_balances = BTreeMap::new();
+        let mut running_balance = dec!(0.00);
+
+        for transaction in &filtered_transactions {
+            running_balance += transaction.amount;
+            daily_balances.insert(transaction.date, running_balance);
+        }
+
+        // Convert to data points
+        daily_balances
+            .into_iter()
+            .map(|(date, net_worth)| NetWorthDataPoint {
+                date: date.to_string(),
+                net_worth,
+            })
+            .collect()
     }
 }

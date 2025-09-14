@@ -1,5 +1,5 @@
 use crate::services::analytics_service::AnalyticsService;
-use crate::models::analytics::CategorySpending;
+use crate::models::analytics::{CategorySpending, NetWorthDataPoint};
 use crate::models::transaction::Transaction;
 use chrono::{Datelike, NaiveDate};
 use rust_decimal::Decimal;
@@ -489,6 +489,40 @@ fn given_transactions_when_getting_top_merchants_with_date_range_then_filters_an
     assert_eq!(merchant.name, "Test Merchant");
     assert_eq!(merchant.amount, dec!(325.00));
     assert_eq!(merchant.count, 3);
+}
+
+#[test]
+fn given_transactions_when_calculating_net_worth_over_time_then_returns_cumulative_balance_progression() {
+    let analytics = AnalyticsService::new();
+    let txns = vec![
+        create_test_transaction(
+            dec!(-100.00), // expense
+            NaiveDate::from_ymd_opt(2024, 3, 5).unwrap(),
+            "Food",
+        ),
+        create_test_transaction(
+            dec!(-50.00), // expense
+            NaiveDate::from_ymd_opt(2024, 3, 15).unwrap(),
+            "Transport",
+        ),
+        create_test_transaction(
+            dec!(200.00), // income
+            NaiveDate::from_ymd_opt(2024, 3, 25).unwrap(),
+            "Income",
+        ),
+    ];
+
+    let start_date = NaiveDate::from_ymd_opt(2024, 3, 1).unwrap();
+    let end_date = NaiveDate::from_ymd_opt(2024, 3, 31).unwrap();
+
+    let result = analytics.get_net_worth_over_time(&txns, start_date, end_date);
+    
+    // Should return data points showing cumulative net worth progression
+    assert!(!result.is_empty());
+    
+    // Last data point should show final net worth of +50.00 (-100 - 50 + 200)
+    let final_net_worth = result.last().unwrap().net_worth;
+    assert_eq!(final_net_worth, dec!(50.00));
 }
 
 // Day-of-week spending test removed

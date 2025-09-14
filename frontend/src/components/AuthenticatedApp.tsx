@@ -30,6 +30,7 @@ import { Toast } from "./Toast";
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus, RefreshCw, Link2, Calendar as CalendarIcon } from "lucide-react";
 import BalancesOverview from "./BalancesOverview";
+import { NetWorthOverTimeWidget } from "./NetWorthOverTimeWidget";
 const fmtUSD = (n: number | string) => {
   const num = Number(n);
   if (!Number.isFinite(num) || isNaN(num)) {
