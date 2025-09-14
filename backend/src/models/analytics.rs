@@ -49,6 +49,12 @@ pub struct NetWorthSeriesPoint {
     pub value: Decimal,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct NetWorthDataPoint {
+    pub date: String,
+    pub net_worth: Decimal,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NetWorthOverTimeResponse {
     pub series: Vec<NetWorthSeriesPoint>,
