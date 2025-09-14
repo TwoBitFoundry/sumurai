@@ -10,18 +10,17 @@ This document provides a deeper look at Sumaura’s runtime architecture, data f
 - Deployed locally via Docker Compose; macOS → Linux cross‑compile for backend binary.
 
 ## Diagram
-
 ```mermaid
 flowchart LR
 
   A["Browser (React SPA)"] -->|SPA assets| B["Nginx (8080)"]
   A -->|/health| B
-  A -->|/api/*| B
+  A -->|/api/&#42;| B
 
   B -->|proxy /health| C["Backend (Axum, 3000)"]
-  B -->|proxy /api/*| C
+  B -->|proxy /api/&#42;| C
 
-  C -->|cache (required)| D[(Redis)]
+  C -->|cache &#40;required&#41;| D[(Redis)]
   D --> C
   C -->|SQLx| E[(PostgreSQL)]
   E --> C
