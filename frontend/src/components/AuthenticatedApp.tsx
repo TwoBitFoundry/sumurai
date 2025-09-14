@@ -10,7 +10,6 @@ import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { usePlaidLink } from 'react-plaid-link';
 import { TransactionService } from "../services/TransactionService";
 import { AnalyticsService } from "../services/AnalyticsService";
-// Budgets are front-end only for now
 import { PlaidService } from "../services/PlaidService";
 import { ApiClient } from "../services/ApiClient";
 import { BudgetService } from "../services/BudgetService";
@@ -76,7 +75,6 @@ const getTooltipStyle = (isDark: boolean) => ({
   fontWeight: '500',
 });
 
-// Category tag color themes (Tailwind-safe literal classes)
 const TAG_THEMES = [
   { key: 'sky',      tag: 'bg-sky-100 dark:bg-sky-400/10 text-sky-800 dark:text-sky-200 border border-sky-300/20 dark:border-sky-300/20', ring: 'ring-sky-400', ringHex: '#38bdf8' },
   { key: 'emerald',  tag: 'bg-emerald-100 dark:bg-emerald-400/10 text-emerald-800 dark:text-emerald-200 border border-emerald-300/20 dark:border-emerald-300/20', ring: 'ring-emerald-400', ringHex: '#34d399' },
@@ -111,8 +109,6 @@ function generateId() {
   }
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
-
-// Removed custom inline icons; using Heroicons
 
 type Txn = {
   id: string;
@@ -184,25 +180,19 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
   const [search, setSearch] = useState(""); 
   const debouncedSearch = useDebouncedValue(search, 300);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
-  const prevDateRangeRef = useRef<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>("current-month");
   const spendingOverviewRef = useRef<HTMLDivElement | null>(null);
-  // Track Balances Overview visibility to toggle the floating time bar
   const balancesOverviewRef = useRef<HTMLDivElement | null>(null);
   const [showTimeBar, setShowTimeBar] = useState(false);
   const [budgets, setBudgets] = useState<Budget[]>([]);
-  // Budgets tab month navigation (separate from dashboard range)
   const [budgetsMonth, setBudgetsMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
-  // Budgets editor state
   const [isAddingBudget, setIsAddingBudget] = useState(false);
   const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
   const [budgetFormAmount, setBudgetFormAmount] = useState('');
   const [budgetFormCategory, setBudgetFormCategory] = useState<string>('');
-
-  // Derived values for budgets tab (after allTimeTransactions is defined below)
 
   const startAddBudget = useCallback(() => {
     setIsAddingBudget(true);
@@ -219,14 +209,12 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
   }, []);
 
   useEffect(() => {
-    // Show the floating time bar only when Balances Overview is not fully visible
     if (tab !== 'dashboard') {
       setShowTimeBar(false);
       return;
     }
     const target = balancesOverviewRef.current;
     if (!target) {
-      // If we cannot observe, default to showing the bar
       setShowTimeBar(true);
       return;
     }
@@ -237,12 +225,10 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
         setShowTimeBar(!fullyVisible);
       },
       {
-        // Use strict threshold to require full visibility
         threshold: [0, 1],
       }
     );
     observer.observe(target);
-    // Perform an immediate visibility check to avoid initial flicker
     const rect = target.getBoundingClientRect();
     const viewportH = window.innerHeight || document.documentElement.clientHeight;
     const fullyVisibleNow = rect.top >= 0 && rect.bottom <= viewportH;
@@ -253,7 +239,7 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
   const submitAddBudget = useCallback(async () => {
     const amountNum = Number(budgetFormAmount);
     if (!budgetFormCategory || !Number.isFinite(amountNum) || amountNum <= 0) return;
-    // Optimistic add
+
     const temp: Budget = { id: generateId(), category: budgetFormCategory, amount: amountNum } as Budget;
     cancelBudgetEdit();
     try {
@@ -306,15 +292,10 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
       setError(msg)
     }
   }, []);
-  // Transactions tab: category filter state
+
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-
-  // Connect tab: new bank connection UI state
   const [toast, setToast] = useState<string | null>(null);
-
   const plaidConnections = usePlaidConnections();
-  
-  // Convert plaidConnections to BankConnection format for compatibility
   const banks = useMemo(() => {
     return plaidConnections.connections.map(conn => ({
       id: conn.connectionId,
@@ -334,7 +315,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     monthlyTotals: [] as any[]
   });
 
-  // Budgets derived values (now that transactions state exists)
   const budgetsMonthLabel = useMemo(() => new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(budgetsMonth), [budgetsMonth]);
   const budgetsMonthRange = useMemo(() => {
     const start = new Date(budgetsMonth.getFullYear(), budgetsMonth.getMonth(), 1);
@@ -346,7 +326,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
   const budgetsComputed = useMemo(() => {
     const { start, end } = budgetsMonthRange;
     return budgets.map(b => {
-      // Match either the raw category id or the formatted name
       const catId = b.category;
       const catName = formatCategoryName(b.category).toLowerCase();
       const spent = allTimeTransactions
@@ -364,36 +343,31 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
   const usedBudgetCategories = useMemo(() => new Set(budgets.map(b => b.category)), [budgets]);
   const allCategoryIds = useMemo(() => Array.from(new Set(allTimeTransactions.map(t => t.category?.id || 'other'))).sort(), [allTimeTransactions]);
 
-  // Display state (filtered from all-time data)
   const [monthSpend, setMonthSpend] = useState(0);
   const [byCat, setByCat] = useState<{ name: string; value: number }[]>([]);
   const [topMerchants, setTopMerchants] = useState<any[]>([]);
-  // Net worth over time (cash) state
   const [netSeries, setNetSeries] = useState<{ date: string; value: number }[]>([]);
   const [netLoading, setNetLoading] = useState(false);
   const [netError, setNetError] = useState<string | null>(null);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
-  // Lightweight loading state for debounced searches; keeps table visible
   const [isSearching, setIsSearching] = useState(false);
-  // Shrink header when page is scrolled (sticky state)
   const [scrolled, setScrolled] = useState(false);
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 0);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
   const isLoadingAnalyticsRef = useRef(false);
-  // Transactions tab pagination
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
-
-  // Create ref to access latest allTimeTransactions without causing re-renders
   const allTimeTransactionsRef = useRef<Txn[]>([]);
+
   allTimeTransactionsRef.current = allTimeTransactions;
 
-  // Maintain base list after search filtering; category filter applies on top
   const [baseTxns, setBaseTxns] = useState<Txn[]>([]);
 
   const applyCategoryFilter = useCallback((list: Txn[], category: string | null): Txn[] => {
@@ -403,7 +377,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
   }, []);
 
   const updateTransactions = useCallback((searchTerm?: string) => {
-    // Local, cache-only filtering of all transactions using ref
     const term = (searchTerm || '').trim().toLowerCase();
     const transactions = allTimeTransactionsRef.current;
     
@@ -412,15 +385,17 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
       setTxns(applyCategoryFilter(transactions, selectedCategory));
       return;
     }
+
     const filtered = transactions.filter((t) => {
       const name = (t.name || '').toLowerCase();
       const merchant = (t.merchant || '').toLowerCase();
       const category = (t.category?.name || '').toLowerCase();
       return name.includes(term) || merchant.includes(term) || category.includes(term);
     });
+
     setBaseTxns(filtered);
     setTxns(applyCategoryFilter(filtered, selectedCategory));
-  }, [applyCategoryFilter, selectedCategory]); // Stable reference
+  }, [applyCategoryFilter, selectedCategory]);
 
   const computeDateRange = useCallback((key?: DateRange): { start?: string, end?: string } => {
     const now = new Date();
@@ -483,7 +458,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     return filtered;
   }, []);
 
-  // Fetch Net Worth Over Time whenever dashboard dateRange changes
   useEffect(() => {
     const { start, end } = computeDateRange(dateRange);
     if (!start || !end) {
@@ -569,7 +543,7 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
         percentage: totalSpending > 0 ? ((data.amount / totalSpending) * 100).toFixed(1) : '0.0'
       }))
       .sort((a, b) => b.amount - a.amount)
-      .slice(0, 5); // Top 5 merchants
+      .slice(0, 5);
     
     return result;
   }, []);
@@ -586,8 +560,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     return Number.isFinite(total) ? total : 0;
   }, []);
 
-  // Adaptive dot renderer: show dots only on days with changes (proxy for transactions),
-  // and cap visible dots to ~30 to reduce clutter.
   const netDotRenderer = useMemo(() => {
     const n = netSeries?.length || 0;
     const fill = dark ? '#0b1220' : '#ffffff';
@@ -596,7 +568,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
       return () => null;
     }
 
-    // Determine indices where value changed vs previous day -> likely transaction days
     const changeIdx: number[] = [];
     for (let i = 1; i < n; i++) {
       const prev = Number(netSeries[i - 1]?.value ?? 0);
@@ -605,7 +576,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
       if (curr !== prev) changeIdx.push(i);
     }
 
-    // Cap the number of dots to ~30 using stride sampling over change indices
     const maxDots = 30;
     const selected = new Set<number>();
     if (changeIdx.length > 0) {
@@ -613,7 +583,7 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
       for (let k = 0; k < changeIdx.length; k += stride) {
         selected.add(changeIdx[k]);
       }
-      // Always include the last change day for emphasis
+
       selected.add(changeIdx[changeIdx.length - 1]);
     }
 
@@ -624,12 +594,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
       return <circle cx={cx} cy={cy} r={3} stroke={stroke} strokeWidth={1} fill={fill} />;
     };
   }, [netSeries, dark]);
-
-  // Period comparison removed
-
-
-  // Removed daily trend and day-of-week derived analytics
-
 
   const handleDisconnect = async () => {
     try {
@@ -644,10 +608,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     }
   }
 
-
-
-
-  // Multi-connection bank handlers
   const handleSyncBank = async (bankId: string) => {
     const connection = plaidConnections.getConnection(bankId)
     if (!connection) return
@@ -695,7 +655,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     }
   };
 
-  // Plaid Link callbacks
   const handlePlaidOnSuccess = useCallback(async (publicToken: string) => {
     try {
       const data = await ApiClient.post<{ access_token: string }>(
@@ -705,19 +664,14 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
       setAccessToken(data.access_token)
       setToast('Bank connected successfully!')
 
-      // Immediately query backend for connection details and add to UI state
-      // so the Connect tab reflects the new connection without a hard reload.
       try {
         const status = await PlaidService.getStatus()
         if (status?.connected) {
-          // Backend status doesn’t include institution/connection id in current type
           await plaidConnections.addConnection('Connected Bank', 'legacy')
         } else {
-          // Fallback: refresh if status isn’t yet updated
           await plaidConnections.refresh()
         }
       } catch {
-        // If status fetch fails, at least attempt a refresh
         await plaidConnections.refresh()
       }
     } catch (error) {
@@ -737,7 +691,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     onExit: handlePlaidOnExit,
   })
 
-  // Direct Plaid Link handler - replaces AddBankModal
   const handleAddBankDirect = useCallback(async () => {
     try {
       const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
@@ -755,7 +708,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     }
   }, [open, ready]);
 
-  // Effect to open Plaid Link when token is ready
   useEffect(() => {
     if (linkToken && ready && open) {
       open()
@@ -767,9 +719,7 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     try {
       const transactions = await TransactionService.getTransactions();
       
-      // Store all-time transactions for client-side filtering
       setAllTimeTransactions(transactions);
-      // Initialize the transactions list with backend data
       setBaseTxns(transactions);
       setTxns(applyCategoryFilter(transactions, selectedCategory));
       
@@ -783,7 +733,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
   }, [applyCategoryFilter, selectedCategory]);
 
   const loadAllTimeAnalyticsData = useCallback(async () => {
-    // Prevent multiple concurrent loads using ref to avoid dependency issues
     if (isLoadingAnalyticsRef.current) return;
     
     isLoadingAnalyticsRef.current = true;
@@ -797,14 +746,12 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
         AnalyticsService.getTopMerchantsByDateRange(allTimeStart, allTimeEnd)
       ]);
 
-      // Store raw all-time analytics data for client-side filtering
       setAllTimeAnalytics({
         categories: categoryData as any[],
         topMerchants: topMerchantsData as any[],
         monthlyTotals: monthlyData as any[]
       });
 
-      // Set other analytics display data (not transaction-based)
       setTopMerchants(topMerchantsData);
       
       setError(null);
@@ -823,10 +770,8 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
       const list = await BudgetService.getBudgets()
       setBudgets(list)
     } catch (e: any) {
-      // Leave budgets empty; UI shows friendly empty state
       setBudgets([])
       console.error('Failed to load budgets', e)
-      // Non-blocking error surface
       const status = typeof e?.status === 'number' ? e.status : undefined
       if (status === 401) {
         setError('You are not authenticated. Please log in again.')
@@ -841,22 +786,16 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
       await Promise.all([loadTransactions(), loadAllTimeAnalyticsData()]);
       await plaidConnections.refresh();
     } catch (error) {
-      // Individual functions handle their own errors, don't retry the whole refresh
       console.error('Some services failed during refresh:', error);
     }
   }, [loadTransactions, loadAllTimeAnalyticsData, plaidConnections]);
 
-
-  // Load data once on mount, without dependency on refreshData to prevent loops
   useEffect(() => {
     loadTransactions();
     loadAllTimeAnalyticsData();
     loadBudgets();
-  }, []); // Only run once on mount
+  }, []); 
 
-  // (Removed backend search effect) Searching now handled entirely by consolidated effect below.
-
-  // Unified client-side filtering using useMemo for smooth animations
   const filteredData = useMemo(() => {
     if (allTimeTransactions.length === 0) {
       return {
@@ -867,10 +806,8 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
       };
     }
 
-    // Filter transactions by date range
     const filteredTransactions = filterTransactionsByDateRange(allTimeTransactions, dateRange);
     
-    // Calculate metrics from filtered transactions (primary source of truth)
     const totalSpending = calculateTotalSpendingFromTransactions(filteredTransactions);
     const categories = calculateCategorySpendingFromTransactions(filteredTransactions);
     const topMerchants = calculateTopMerchantsFromTransactions(filteredTransactions);
@@ -889,12 +826,9 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     calculateTopMerchantsFromTransactions
   ]);
 
-  // Update analytics display state when filtered data changes (single source of truth)
   useEffect(() => {
-    // Only update state if values have actually changed to prevent unnecessary re-renders
     setMonthSpend(prev => prev !== filteredData.totalSpending ? filteredData.totalSpending : prev);
     
-    // For arrays/objects, compare JSON strings for deep equality
     setByCat(prev => 
       JSON.stringify(prev) !== JSON.stringify(filteredData.categories) 
         ? filteredData.categories 
@@ -908,27 +842,21 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     );
   }, [filteredData, dateRange]);
 
-  // Consolidated transaction tab management (debounced search)
   useEffect(() => {
-    // Early return if not on transactions tab
     if (tab !== 'transactions') {
       return;
     }
 
-    // Always reset to first page when entering transactions tab or debounced search changes
     setCurrentPage(1);
 
-    // If base data has never been loaded, fetch once
     if (allTimeTransactionsRef.current.length === 0) {
       loadTransactions();
-      return; // Don't update transactions until data is loaded
+      return;
     }
 
-    // Update displayed transactions based on debounced search term
     updateTransactions(debouncedSearch !== '' ? debouncedSearch : undefined);
   }, [tab, debouncedSearch, loadTransactions, updateTransactions]);
 
-  // Clamp page number if transaction count changes
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(txns.length / pageSize));
     if (currentPage > totalPages) {
@@ -936,20 +864,16 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     }
   }, [txns.length, currentPage]);
 
-  // Re-apply category filter when selection changes
   useEffect(() => {
-    // Only adjust when on transactions tab
     if (tab !== 'transactions') return;
     setCurrentPage(1);
     setTxns(applyCategoryFilter(baseTxns, selectedCategory));
   }, [selectedCategory, baseTxns, tab, applyCategoryFilter]);
 
-  // Reset category filter when navigating between tabs
   useEffect(() => {
     setSelectedCategory(null);
   }, [tab]);
 
-  // Available category options based on the base (search-filtered) list
   const categoryOptions = useMemo(() => {
     const names = new Set<string>();
     for (const t of baseTxns) {

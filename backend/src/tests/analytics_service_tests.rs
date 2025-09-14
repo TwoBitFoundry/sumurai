@@ -1,5 +1,5 @@
 use crate::services::analytics_service::AnalyticsService;
-use crate::models::analytics::{CategorySpending, NetWorthDataPoint};
+use crate::models::analytics::{CategorySpending};
 use crate::models::transaction::Transaction;
 use chrono::{Datelike, NaiveDate};
 use rust_decimal::Decimal;
@@ -172,10 +172,6 @@ fn calculate_daily_spending(
         })
         .collect()
 }
-
-// Period comparison helpers removed (feature replaced)
-
-// Day-of-week spending helpers and tests removed (no API route)
 
 #[test]
 fn given_current_month_transactions_when_calculating_spending_then_sums_correctly() {
@@ -395,12 +391,6 @@ fn given_many_categories_when_limiting_to_ten_then_combines_bottom_ones_as_other
 }
 
 #[test]
-// Period comparison tests removed
-
-#[test]
-// Period comparison tests removed
-
-#[test]
 fn given_transactions_when_grouping_by_category_with_date_range_then_filters_and_groups_correctly()
 {
     let analytics = AnalyticsService::new();
@@ -517,12 +507,8 @@ fn given_transactions_when_calculating_net_worth_over_time_then_returns_cumulati
 
     let result = analytics.get_net_worth_over_time(&txns, start_date, end_date);
     
-    // Should return data points showing cumulative net worth progression
     assert!(!result.is_empty());
     
-    // Last data point should show final net worth of +50.00 (-100 - 50 + 200)
     let final_net_worth = result.last().unwrap().net_worth;
     assert_eq!(final_net_worth, dec!(50.00));
 }
-
-// Day-of-week spending test removed
