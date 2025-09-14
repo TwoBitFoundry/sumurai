@@ -1,14 +1,6 @@
 import { ApiClient } from './ApiClient'
 import type { Transaction } from '../types/api'
-
-function formatCategoryName(categoryPrimary: string | undefined | null): string {
-  if (!categoryPrimary) return 'Other'
-  
-  return categoryPrimary
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ')
-}
+import { formatCategoryName } from '../utils/categories'
 
 export interface TransactionFilters {
   startDate?: string
