@@ -21,16 +21,28 @@ Sumaura is a full‑stack personal finance dashboard that connects to your bank 
 - Budgets: create, update, delete with category mapping
 - Robust caching and RLS‑backed multi‑tenant isolation
 
+## Repo Structure
+
+- `frontend/` — React 18 + TypeScript + Vite; Tailwind; Recharts
+- `backend/` — Rust + Axum + SQLx; Redis caching; RLS policies
+- `scripts/` — build helpers (e.g., `build-backend.sh`)
+- `docs/` — images/diagrams used in README
+
 ### Screenshots
 
-- Dashboard: ![Dashboard](docs/images/dashboard-hero.png)![Dashboard](docs/images/dashboard-extras.png)
+<details>
+<summary>Show screenshots</summary>
+
+- Dashboard: ![Dashboard](docs/images/dashboard-hero.png) ![Dashboard extras](docs/images/dashboard-extras.png)
 - Transactions: ![Transactions](docs/images/transactions.png)
 - Budgets: ![Budgets](docs/images/budgets.png)
 - Connect: ![Connect](docs/images/connect.png)
 
+</details>
+
 ## Security & Privacy
 
-- **Self‑hosted by default:** There is no vendor‑hosted backend. When you run with Docker Compose, all data stays within your infrastructure (Postgres + Redis on your host). We do not collect or transmit your data to any external server we control.
+- **Self‑hosted by default:** There is no vendor‑hosted backend. When you run with Docker Compose, all data stays within your infrastructure (PostgreSQL + Redis on your host). We do not collect or transmit your data to any external server we control.
 - **No bank credentials stored:** Plaid Link runs in the browser; your banking credentials never pass through the backend and are never stored anywhere.
 - **Encrypted secrets at rest:** Plaid access tokens are encrypted with AES‑256‑GCM using `ENCRYPTION_KEY` (64‑char hex). Keys are environment‑scoped and never committed to the repo or images.
 - **Session‑scoped caching:** Redis caches are namespaced to a user session and TTL‑aligned to JWTs. On logout/expiry, caches become invalid and are purged automatically by TTL.
@@ -39,7 +51,7 @@ Sumaura is a full‑stack personal finance dashboard that connects to your bank 
 
 ### Data Storage Policy
 
-- **Stored (within your environment):** minimal user auth data, transactions, budgets, and derived analytics required for the product features. All persisted in your Postgres when self‑hosting.
+- **Stored (within your environment):** minimal user auth data, transactions, budgets, and derived analytics required for the product features. All persisted in your PostgreSQL when self‑hosting.
 - **Never stored:** bank credentials (handled by Plaid Link), raw Plaid passwords, or your data on third‑party servers we operate.
 - **Encrypted tokens:** Plaid access tokens only, encrypted at rest; short‑lived session data in Redis (e.g., link sessions, mappings) with conservative TTLs.
 - **Purge options:** remove all local data with `docker compose down -v`, or drop tables/migrate reset via `sqlx database reset -y` using your `DATABASE_URL`.
@@ -78,7 +90,7 @@ Prerequisites: Docker and Docker Compose. For the fastest backend image build, u
 ./scripts/build-backend.sh
 ```
 
-2) Start everything (frontend, backend, Redis, Postgres):
+2) Start everything (frontend, backend, Redis, PostgreSQL):
 
 ```bash
 docker compose up -d --build
@@ -114,82 +126,15 @@ docker compose down -v       # stop and remove volumes (data)
 
 ## Architecture
 
-### Diagram
+- SPA served by Nginx on 8080, proxying to a Rust (Axum) backend.
+- Data: PostgreSQL for persistence and Redis for caching (required).
+- Multi‑tenancy enforced via PostgreSQL Row‑Level Security (RLS).
 
-```mermaid
-flowchart LR
-
-  A["Browser (React SPA)"] -->|SPA assets| B["Nginx (8080)"]
-  A -->|/health| B
-  A -->|/api/&#42;| B
-
-  B -->|proxy /health| C["Backend (Axum, 3000)"]
-  B -->|proxy /api/&#42;| C
-
-  C -->|cache &#40;required&#41;| D[(Redis)]
-  D --> C
-  C -->|SQLx| E[(PostgreSQL)]
-  E --> C
-
-  C -.->|Plaid API| F["Plaid"]
-  A -->|Plaid Link SDK| F
-
-  subgraph "Docker Compose Network"
-    B
-    C
-    D
-    E
-  end
-```
-
-### End‑to‑End Data Flow
-
-1. Frontend requests `link_token` → opens Plaid Link.
-2. Browser receives `public_token` → sends to backend `/api/plaid/exchange-token`.
-3. Backend exchanges for `access_token`, encrypts (AES‑256‑GCM), stores, and seeds initial sync (cursor cached; transactions inserted into Postgres).
-4. Frontend polls `/api/plaid/status` and reads accounts via `/api/plaid/accounts`.
-5. Analytics requests compute over Postgres (optionally using the transaction cache for speed) and return aggregated results.
-
-### Frontend
-
-- SPA built with Vite and served by Nginx on port 8080.
-- HTTP via a centralized `ApiClient` with retry + auto token refresh; domain services: `TransactionService`, `PlaidService`, `AnalyticsService`, `BudgetService`.
-- Plaid integration with `react-plaid-link`; the browser receives a `link_token`, opens Link, and returns a short‑lived `public_token` which the backend exchanges.
-- State via React hooks and custom hooks: `usePlaidConnection` (single) and `usePlaidConnections` (multi) to track connection status, accounts, and sync progress.
-- Charts with Recharts; Tailwind CSS for styling.
-
-### Backend
-
-- Axum + SQLx service layout with trait‑based DI for testability.
-- Auth with JWT access/refresh; middleware validates tokens and current user, backed by Redis for session cache.
-- Plaid endpoints: link token generation, token exchange, accounts fetch, transaction sync, status, disconnect, and data clear. Plaid access tokens are encrypted using AES‑256‑GCM and stored server‑side.
-- Analytics endpoints compute spending summaries and time‑series over transactions stored in Postgres (some results may leverage the transaction cache for speed).
-
-### API Proxy
-
-- Nginx serves static assets and proxies `GET /health` and `/api/*` to the backend at `backend:3000` inside the Compose network.
-
-### Caching (Redis)
-
-- Keys and intent:
-  - `jwt:{jti}`: JWT session/allowlist with TTL matching token expiry (auth middleware checks).
-- Invalidation:
-  - On JWT expiry/logout: session‑scoped keys expire by TTL.
-  - On Plaid disconnect or “clear synced data”: delete item‑scoped tokens, mappings, and transaction cache for the user/item.
-
-### Database (PostgreSQL)
-
-- Core tables include users, accounts, transactions, budgets, and Plaid items/tokens.
-- RLS policies restrict every query to `current_setting('app.current_user_id')` to enforce per‑user isolation.
-- Migrations managed by `sqlx migrate` and executed on container start.
+See `docs/ARCHITECTURE.md` for the full diagram, data flow, caching, and RLS details.
 
 ## Multi‑Tenancy
 
-- **Enforcement:** PostgreSQL Row‑Level Security (RLS) policies restrict every read/write to the authenticated user. Policies are defined per table (e.g., `transactions`, `accounts`, `budgets`) using `user_id = current_setting('app.current_user_id', true)::uuid`.
-- **Request scoping:** After JWT validation, the backend sets `SET LOCAL app.current_user_id = '<uuid>';` for the request context so that all SQLx queries automatically obey RLS policies (no special query filters required).
-- **Least privilege:** The application uses a DB role that cannot bypass RLS. Admin‑level access is never used by the API.
-- **Caching isolation:** Redis keys are namespaced by session and/or user (e.g., `jwt:{jti}`) and by Plaid item where applicable. TTLs align with session lifetime so cached data cannot leak across users.
-- Tenant‑safe analytics: All aggregations run against RLS‑protected views/tables, ensuring cross‑tenant queries are not possible even for summary data.
+- Tenant isolation is enforced via PostgreSQL RLS; details in `docs/ARCHITECTURE.md`.
 
 ## API Highlights
 
@@ -201,44 +146,14 @@ flowchart LR
 
 ## Development (Local)
 
-Frontend (in `frontend/`):
-
-```bash
-cd frontend
-npm install
-npm run build         # or: npm run dev (port 5173)
-npm test              # unit tests (Vitest + RTL)
-npm run test:ui       # UI test runner
-```
-
-Backend (in repository root):
-
-```bash
-cargo check
-cargo test
-cargo build --release
-
-# Run with local Redis
-docker compose up -d redis
-REDIS_URL=redis://localhost:6379 cargo run
-```
-
-Migrations (from `backend/`):
-
-```bash
-# Example local DB URL
-DATABASE_URL=postgresql://postgres:password@localhost:5432/accounting \
-  sqlx migrate run
-```
+See `CONTRIBUTING.md` for full local setup, including:
+- Frontend: dev server, tests, type‑checking
+- Backend: running with local Redis, tests
+- Migrations: running sqlx locally
 
 ## Contributing
 
-Issues and PRs are welcome! Please keep changes focused, write clear commit messages, and add tests for business logic where it makes sense.
-
-- Workflow: create a feature branch and open a PR to `main` (protected). Squash-and-merge only.
-- PR titles must use Conventional Commits (enforced): e.g., `feat: add budgets UI`, `fix: handle empty Plaid accounts`. Use `feat!:` or add a `BREAKING CHANGE:` section in the PR description for majors.
-- Do not push tags or publish releases manually. GitHub Actions runs semantic-release on `main` pushes to create tags and GitHub Releases with notes.
-- Required to merge: all CI checks green (including Conventional Commit title check).
+We welcome focused PRs. Please read `CONTRIBUTING.md` for setup, coding standards, Conventional Commits, and the PR checklist.
 
 ## License
 
