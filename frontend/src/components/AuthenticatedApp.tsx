@@ -30,22 +30,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Plus, RefreshCw, Link2, Calendar as CalendarIcon } from "lucide-react";
 import BalancesOverview from "./BalancesOverview";
 import { NetWorthOverTimeWidget } from "./NetWorthOverTimeWidget";
-const fmtUSD = (n: number | string) => {
-  const num = Number(n);
-  if (!Number.isFinite(num) || isNaN(num)) {
-    return '$0.00';
-  }
-  return new Intl.NumberFormat('en-US', { style: "currency", currency: "USD" }).format(num);
-};
-
-const formatCategoryName = (categoryPrimary: string | undefined | null): string => {
-  if (!categoryPrimary) return 'Other'
-  
-  return categoryPrimary
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ')
-};
+import { fmtUSD } from "../utils/format";
+import { formatCategoryName, getTagThemeForCategory } from "../utils/categories";
+import { computeDateRange as computeDateRangeUtil, type DateRangeKey as DateRange } from "../utils/dateRanges";
+import Card from "./ui/Card";
+import { Th, Td } from "./ui/Table";
 
 const getChartColors = (isDark: boolean) => ({
   primary: isDark ? '#38bdf8' : '#0ea5e9',
@@ -75,33 +64,6 @@ const getTooltipStyle = (isDark: boolean) => ({
   fontWeight: '500',
 });
 
-const TAG_THEMES = [
-  { key: 'sky',      tag: 'bg-sky-100 dark:bg-sky-400/10 text-sky-800 dark:text-sky-200 border border-sky-300/20 dark:border-sky-300/20', ring: 'ring-sky-400', ringHex: '#38bdf8' },
-  { key: 'emerald',  tag: 'bg-emerald-100 dark:bg-emerald-400/10 text-emerald-800 dark:text-emerald-200 border border-emerald-300/20 dark:border-emerald-300/20', ring: 'ring-emerald-400', ringHex: '#34d399' },
-  { key: 'cyan',     tag: 'bg-cyan-100 dark:bg-cyan-400/10 text-cyan-800 dark:text-cyan-200 border border-cyan-300/20 dark:border-cyan-300/20', ring: 'ring-cyan-400', ringHex: '#22d3ee' },
-  { key: 'violet',   tag: 'bg-violet-100 dark:bg-violet-400/10 text-violet-800 dark:text-violet-200 border border-violet-300/20 dark:border-violet-300/20', ring: 'ring-violet-400', ringHex: '#a78bfa' },
-  { key: 'amber',    tag: 'bg-amber-100 dark:bg-amber-400/10 text-amber-800 dark:text-amber-200 border border-amber-300/20 dark:border-amber-300/20', ring: 'ring-amber-400', ringHex: '#fbbf24' },
-  { key: 'rose',     tag: 'bg-rose-100 dark:bg-rose-400/10 text-rose-800 dark:text-rose-200 border border-rose-300/20 dark:border-rose-300/20', ring: 'ring-rose-400', ringHex: '#fb7185' },
-  { key: 'indigo',   tag: 'bg-indigo-100 dark:bg-indigo-400/10 text-indigo-800 dark:text-indigo-200 border border-indigo-300/20 dark:border-indigo-300/20', ring: 'ring-indigo-400', ringHex: '#818cf8' },
-  { key: 'fuchsia',  tag: 'bg-fuchsia-100 dark:bg-fuchsia-400/10 text-fuchsia-800 dark:text-fuchsia-200 border border-fuchsia-300/20 dark:border-fuchsia-300/20', ring: 'ring-fuchsia-400', ringHex: '#e879f9' },
-  { key: 'teal',     tag: 'bg-teal-100 dark:bg-teal-400/10 text-teal-800 dark:text-teal-200 border border-teal-300/20 dark:border-teal-300/20', ring: 'ring-teal-400', ringHex: '#2dd4bf' },
-  { key: 'lime',     tag: 'bg-lime-100 dark:bg-lime-400/10 text-lime-800 dark:text-lime-200 border border-lime-300/20 dark:border-lime-300/20', ring: 'ring-lime-400', ringHex: '#a3e635' },
-];
-
-function hashString(str: string): number {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) {
-    h = (h << 5) - h + str.charCodeAt(i);
-    h |= 0;
-  }
-  return Math.abs(h);
-}
-
-function getTagThemeForCategory(name?: string | null) {
-  const key = (name || 'Uncategorized').toLowerCase();
-  const idx = hashString(key) % TAG_THEMES.length;
-  return TAG_THEMES[idx];
-}
 
 function generateId() {
   if (typeof globalThis !== 'undefined' && (globalThis as any).crypto && (globalThis.crypto as any).randomUUID) {
@@ -129,23 +91,6 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err
   render(){ if(this.state.err){ return (<div style={{padding:16,color:'#e5e7eb'}}><h3>Something went wrong</h3><pre style={{whiteSpace:'pre-wrap'}}>{String(this.state.err)}</pre></div>);} return this.props.children as any; }
 }
 
-function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-lg dark:shadow-2xl ${className}`}>
-      {children}
-    </div>
-  );
-}
-type ThProps = React.ComponentProps<'th'>;
-function Th({ children, className = "", ...rest }: ThProps) {
-  return <th {...rest} className={`text-left p-3 ${className}`}>{children}</th>;
-}
-type TdProps = React.ComponentProps<'td'>;
-function Td({ children, className = "", ...rest }: TdProps) {
-  return <td {...rest} className={`p-3 ${className}`}>{children}</td>;
-}
-
-type DateRange = "current-month" | "past-2-months" | "past-3-months" | "past-6-months" | "past-year" | "all-time";
 
 interface BankConnection {
   id: string;
@@ -398,49 +343,7 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
   }, [applyCategoryFilter, selectedCategory]);
 
   const computeDateRange = useCallback((key?: DateRange): { start?: string, end?: string } => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth(); // 0-based
-    const firstOfMonth = (year: number, month0: number) => new Date(year, month0, 1);
-    const lastOfMonth = (year: number, month0: number) => new Date(year, month0 + 1, 0);
-    const fmt = (d: Date) => d.toISOString().slice(0,10);
-
-    switch (key) {
-      case 'current-month': {
-        return { start: fmt(firstOfMonth(y, m)), end: fmt(lastOfMonth(y, m)) };
-      }
-      case 'past-2-months': {
-        const start = firstOfMonth(y, m - 1);
-        const end = lastOfMonth(y, m);
-        return { start: fmt(start), end: fmt(end) };
-      }
-      case 'past-3-months': {
-        const start = firstOfMonth(y, m - 2);
-        const end = lastOfMonth(y, m);
-        return { start: fmt(start), end: fmt(end) };
-      }
-      case 'past-6-months': {
-        const start = firstOfMonth(y, m - 5);
-        const end = lastOfMonth(y, m);
-        return { start: fmt(start), end: fmt(end) };
-      }
-      case 'past-year': {
-        const start = firstOfMonth(y, m - 11);
-        const end = lastOfMonth(y, m);
-        return { start: fmt(start), end: fmt(end) };
-      }
-      case 'all-time': {
-        // Limit all-time to 5 years from current date
-        const now = new Date();
-        const fiveYearsAgo = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
-        return { 
-          start: fmt(fiveYearsAgo), 
-          end: fmt(now) 
-        };
-      }
-      default:
-        return {};
-    }
+    return computeDateRangeUtil(key);
   }, []);
 
   const filterTransactionsByDateRange = useCallback((transactions: Txn[], dateRangeKey: DateRange): Txn[] => {
