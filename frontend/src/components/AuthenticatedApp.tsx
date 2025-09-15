@@ -35,6 +35,7 @@ import { formatCategoryName, getTagThemeForCategory } from "../utils/categories"
 import { computeDateRange as computeDateRangeUtil, type DateRangeKey as DateRange } from "../utils/dateRanges";
 import Card from "./ui/Card";
 import { Th, Td } from "./ui/Table";
+import TransactionsPage from "../pages/TransactionsPage";
 
 const getChartColors = (isDark: boolean) => ({
   primary: isDark ? '#38bdf8' : '#0ea5e9',
@@ -116,14 +117,12 @@ interface AuthenticatedAppProps {
 
 export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppProps) {
   const [tab, setTab] = useState<"dashboard" | "transactions" | "budgets" | "connect">("dashboard");
-  const [txns, setTxns] = useState<Txn[]>([]);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [syncingAll, setSyncingAll] = useState(false);
-  const [search, setSearch] = useState(""); 
-  const debouncedSearch = useDebouncedValue(search, 300);
+  const [search, setSearch] = useState(""); // kept for other tabs inputs if needed
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>("current-month");
   const spendingOverviewRef = useRef<HTMLDivElement | null>(null);
@@ -238,7 +237,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     }
   }, []);
 
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const plaidConnections = usePlaidConnections();
   const banks = useMemo(() => {
@@ -307,40 +305,10 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
   }, []);
 
   const isLoadingAnalyticsRef = useRef(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
   const allTimeTransactionsRef = useRef<Txn[]>([]);
 
   allTimeTransactionsRef.current = allTimeTransactions;
 
-  const [baseTxns, setBaseTxns] = useState<Txn[]>([]);
-
-  const applyCategoryFilter = useCallback((list: Txn[], category: string | null): Txn[] => {
-    if (!category) return list;
-    const catLower = category.toLowerCase();
-    return list.filter(t => (t.category?.name || '').toLowerCase() === catLower);
-  }, []);
-
-  const updateTransactions = useCallback((searchTerm?: string) => {
-    const term = (searchTerm || '').trim().toLowerCase();
-    const transactions = allTimeTransactionsRef.current;
-    
-    if (term === '') {
-      setBaseTxns(transactions);
-      setTxns(applyCategoryFilter(transactions, selectedCategory));
-      return;
-    }
-
-    const filtered = transactions.filter((t) => {
-      const name = (t.name || '').toLowerCase();
-      const merchant = (t.merchant || '').toLowerCase();
-      const category = (t.category?.name || '').toLowerCase();
-      return name.includes(term) || merchant.includes(term) || category.includes(term);
-    });
-
-    setBaseTxns(filtered);
-    setTxns(applyCategoryFilter(filtered, selectedCategory));
-  }, [applyCategoryFilter, selectedCategory]);
 
   const computeDateRange = useCallback((key?: DateRange): { start?: string, end?: string } => {
     return computeDateRangeUtil(key);
@@ -505,7 +473,7 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
       plaidConnections.connections.forEach(conn => plaidConnections.removeConnection(conn.connectionId))
       setAccessToken(null)
       setError(null)
-      setTxns([])
+      setAllTimeTransactions([])
     } catch (error) {
       setError('Failed to disconnect: ' + (error instanceof Error ? error.message : 'Unknown error'))
     }
@@ -621,10 +589,7 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     setIsLoadingTransactions(true);
     try {
       const transactions = await TransactionService.getTransactions();
-      
       setAllTimeTransactions(transactions);
-      setBaseTxns(transactions);
-      setTxns(applyCategoryFilter(transactions, selectedCategory));
       
       setError(null);
     } catch (error) {
@@ -633,7 +598,7 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     } finally {
       setIsLoadingTransactions(false);
     }
-  }, [applyCategoryFilter, selectedCategory]);
+  }, []);
 
   const loadAllTimeAnalyticsData = useCallback(async () => {
     if (isLoadingAnalyticsRef.current) return;
@@ -745,46 +710,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     );
   }, [filteredData, dateRange]);
 
-  useEffect(() => {
-    if (tab !== 'transactions') {
-      return;
-    }
-
-    setCurrentPage(1);
-
-    if (allTimeTransactionsRef.current.length === 0) {
-      loadTransactions();
-      return;
-    }
-
-    updateTransactions(debouncedSearch !== '' ? debouncedSearch : undefined);
-  }, [tab, debouncedSearch, loadTransactions, updateTransactions]);
-
-  useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(txns.length / pageSize));
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [txns.length, currentPage]);
-
-  useEffect(() => {
-    if (tab !== 'transactions') return;
-    setCurrentPage(1);
-    setTxns(applyCategoryFilter(baseTxns, selectedCategory));
-  }, [selectedCategory, baseTxns, tab, applyCategoryFilter]);
-
-  useEffect(() => {
-    setSelectedCategory(null);
-  }, [tab]);
-
-  const categoryOptions = useMemo(() => {
-    const names = new Set<string>();
-    for (const t of baseTxns) {
-      const name = t.category?.name || 'Uncategorized';
-      if (name) names.add(name);
-    }
-    return Array.from(names).sort((a, b) => a.localeCompare(b));
-  }, [baseTxns]);
 
   return (
     <ErrorBoundary>
@@ -1053,150 +978,12 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
                   </Card>
                 </div>
 
-                
+
               </div>
             )}
-
             {tab === "transactions" && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Transactions</h2>
-                    <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">Search, filter, and review all your transactions.</p>
-                  </div>
-                  <div className="relative w-full max-w-sm">
-                    <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search transactions" className="w-full pl-3 pr-3 py-2 rounded-2xl bg-white/10 border border-white/15 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/40" />
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 pl-1">
-                  {categoryOptions.map((name, idx) => {
-                    const isSelected = selectedCategory === name;
-                    // Standardized category color mapping by name hash
-                    const theme = getTagThemeForCategory(name);
-                    return (
-                      <button
-                        key={name}
-                        type="button"
-                        onClick={() => setSelectedCategory(isSelected ? null : name)}
-                        className="transition-all"
-                        title={isSelected ? `Remove filter: ${name}` : `Filter by ${name}`}
-                        aria-pressed={isSelected}
-                      >
-                        <span
-                          className={`inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs ${theme.tag} ${isSelected ? `ring-2 ${theme.ring}` : 'hover:brightness-110'}`}
-                          style={isSelected ? { boxShadow: `0 0 0 3px ${theme.ringHex}40` } : undefined}
-                        >
-                          ● {name}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <Card className="p-0 overflow-hidden">
-                  {isLoadingTransactions ? (
-                    <div className="flex items-center justify-center py-16">
-                      <div className="text-center">
-                        <div className="text-lg font-medium text-slate-600 dark:text-slate-400 mb-2">Loading transactions...</div>
-                        <div className="text-sm text-slate-500 dark:text-slate-500">
-                          Fetching data from server
-                        </div>
-                      </div>
-                    </div>
-                  ) : txns.length > 0 ? (
-                    (() => {
-                      const sorted = [...txns].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-                      const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
-                      const start = (currentPage - 1) * pageSize;
-                      const pageItems = sorted.slice(start, start + pageSize);
-                      const from = Math.min(sorted.length, start + 1);
-                      const to = Math.min(sorted.length, start + pageSize);
-
-                      return (
-                        <>
-                          <table className="min-w-full text-sm table-fixed">
-                            <thead className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-600">
-                              <tr>
-                                <Th className="w-[15%] whitespace-nowrap">Date</Th>
-                                <Th className="w-[30%]">Merchant</Th>
-                                <Th className="w-[15%] text-right whitespace-nowrap">Amount</Th>
-                                <Th className="w-[20%] whitespace-nowrap">Account</Th>
-                                <Th className="w-[20%] whitespace-nowrap">Category</Th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {pageItems.map((r, i) => (
-                                <tr key={r.id} className={`border-b border-slate-200 dark:border-slate-700 ${i % 2 ? "bg-slate-50 dark:bg-slate-700/50" : ""}`}>
-                                  <Td className="whitespace-nowrap align-middle">{new Date(r.date).toLocaleDateString()}</Td>
-                                  <Td className="truncate align-middle" title={r.name || r.merchant || "-"}>
-                                    <span className="block truncate">{r.name || r.merchant || "-"}</span>
-                                  </Td>
-                                  <Td className={`text-right tabular-nums whitespace-nowrap font-medium align-middle ${
-                                    r.amount > 0
-                                      ? 'text-red-600 dark:text-red-400'
-                                      : r.amount < 0
-                                        ? 'text-green-600 dark:text-green-400'
-                                        : 'text-slate-600 dark:text-slate-400'
-                                  }`}>{fmtUSD(r.amount)}</Td>
-                                  <Td className="whitespace-nowrap align-middle">
-                                    <span className="text-xs text-slate-600 dark:text-slate-400">
-                                      {r.account_name}
-                                      {r.account_mask && (
-                                        <span className="text-slate-400 dark:text-slate-500 ml-1">
-                                          ••••{r.account_mask}
-                                        </span>
-                                      )}
-                                    </span>
-                                  </Td>
-                                  <Td className="whitespace-nowrap align-middle">
-                                    {(() => {
-                                      const catName = r.category?.name || 'Uncategorized';
-                                      const theme = getTagThemeForCategory(catName);
-                                      return (
-                                        <span className={`inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs ${theme.tag}`}>
-                                          ● {catName}
-                                        </span>
-                                      );
-                                    })()}
-                                  </Td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          <div className="flex items-center justify-between p-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                            <div className="text-xs text-slate-600 dark:text-slate-400">Showing {from}-{to} of {sorted.length}</div>
-                            <div className="flex items-center gap-2">
-                              <button
-                                className="px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 text-sm disabled:opacity-50"
-                                disabled={currentPage <= 1}
-                                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                              >
-                                Previous
-                              </button>
-                              <div className="text-xs text-slate-600 dark:text-slate-400">Page {currentPage} of {totalPages}</div>
-                              <button
-                                className="px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 text-sm disabled:opacity-50"
-                                disabled={currentPage >= totalPages}
-                                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                              >
-                                Next
-                              </button>
-                            </div>
-                          </div>
-                        </>
-                      );
-                    })()
-                  ) : (
-                    <div className="flex items-center justify-center py-16">
-                      <div className="text-center">
-                        <div className="text-6xl mb-4 opacity-30">📋</div>
-                        <div className="text-lg font-medium text-slate-600 dark:text-slate-400 mb-2">No transactions found</div>
-                        <div className="text-sm text-slate-500 dark:text-slate-500">
-                          {search ? `No transactions match "${search}"` : 'No transaction data available'}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </Card>
+                <TransactionsPage />
               </div>
             )}
 
