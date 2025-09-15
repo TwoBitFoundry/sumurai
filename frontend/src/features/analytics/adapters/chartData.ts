@@ -1,11 +1,22 @@
 import type { AnalyticsCategoryResponse, AnalyticsTopMerchantsResponse } from '../../../types/api'
+import { formatCategoryName } from '../../../utils/categories'
 
 export type DonutDatum = { name: string; value: number }
 
-export function categoriesToDonut(categories: AnalyticsCategoryResponse[]): DonutDatum[] {
-  const arr = (categories || []).map(c => ({ name: c.category, value: Number(c.amount) || 0 }))
-  arr.sort((a, b) => b.value - a.value)
-  return arr
+// Accepts both backend shapes:
+// - { category: string, amount: number }
+// - { name: string, value: string|number }
+export function categoriesToDonut(categories: any[]): DonutDatum[] {
+  const mapped = (categories || []).map((c: any) => {
+    const rawName: string = (c.category ?? c.name ?? 'Unknown') as string
+    const rawAmount: unknown = (c.amount ?? c.value ?? 0)
+    const value = typeof rawAmount === 'string' ? Number(rawAmount) : Number(rawAmount || 0)
+    return { name: formatCategoryName(rawName), value: Number.isFinite(value) ? value : 0 }
+  })
+  // Only positive values are considered for the spending donut (matches prior behavior)
+  const positive = mapped.filter(d => d.value > 0)
+  positive.sort((a, b) => b.value - a.value)
+  return positive
 }
 
 export type MerchantItem = AnalyticsTopMerchantsResponse
@@ -32,4 +43,3 @@ export const getTooltipStyle = (isDark: boolean) => ({
   fontSize: '14px',
   fontWeight: '500',
 })
-

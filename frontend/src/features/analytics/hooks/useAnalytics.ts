@@ -44,7 +44,8 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
         AnalyticsService.getMonthlyTotals(6),
       ])
       if (ac.signal.aborted) return
-      setSpendingTotal(Number(total) || 0)
+      const totalNum = Number(total) || 0
+      setSpendingTotal(totalNum)
       setCategories(Array.isArray(cats) ? cats : [])
       setTopMerchants(Array.isArray(merch) ? merch : [])
       setMonthlyTotals(Array.isArray(monthly) ? monthly : [])
@@ -64,4 +65,3 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
 
   return { loading, error, spendingTotal, categories, topMerchants, monthlyTotals, start, end }
 }
-

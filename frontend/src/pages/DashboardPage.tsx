@@ -178,8 +178,47 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke={dark ? '#334155' : '#e2e8f0'} />
-                  <XAxis dataKey="date" tick={{ fill: dark ? '#94a3b8' : '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: dark ? '#94a3b8' : '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: dark ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                    interval="preserveStartEnd"
+                    minTickGap={24}
+                    tickFormatter={(value: string) => {
+                      try {
+                        if (!value) return ''
+                        const first = netSeries[0]?.date
+                        const last = netSeries[netSeries.length - 1]?.date
+                        const d = new Date(value)
+                        const spanDays = first && last
+                          ? Math.max(1, Math.round((new Date(last).getTime() - new Date(first).getTime()) / 86400000))
+                          : 0
+                        if (!isFinite(d.getTime())) return value
+                        if (spanDays && spanDays <= 92) {
+                          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                        }
+                        const mm = d.toLocaleString('en-US', { month: 'short' })
+                        const yy = d.toLocaleString('en-US', { year: '2-digit' })
+                        return `${mm} ’${yy}`
+                      } catch {
+                        return value
+                      }
+                    }}
+                  />
+                  <YAxis
+                    tick={{ fill: dark ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => {
+                      const n = Math.abs(Number(v))
+                      const sign = Number(v) < 0 ? '-' : ''
+                      if (n >= 1e9) return `${sign}$${(n / 1e9).toFixed(0)}b`
+                      if (n >= 1e6) return `${sign}$${(n / 1e6).toFixed(0)}m`
+                      if (n >= 1e3) return `${sign}$${(n / 1e3).toFixed(0)}k`
+                      return `${sign}$${Number(n).toFixed(0)}`
+                    }}
+                  />
                   <Tooltip formatter={(v: any) => fmtUSD(Number(v))} contentStyle={{ background: dark ? '#0b1220' : '#ffffff' }} />
                   <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#netGradient)" dot={netDotRenderer as any} activeDot={{ r: 6 }} />
                 </AreaChart>
@@ -220,4 +259,3 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
 }
 
 export default DashboardPage
-

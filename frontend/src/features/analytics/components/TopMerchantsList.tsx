@@ -8,7 +8,7 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants }) => {
   return (
     <div className="space-y-3">
       {merchants.length > 0 ? (
-        merchants.map((merchant, index) => (
+        merchants.slice(0, 5).map((merchant, index) => (
           <div key={merchant.name + index} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-900 text-xs font-bold">
@@ -37,4 +37,3 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants }) => {
 }
 
 export default TopMerchantsList
-
