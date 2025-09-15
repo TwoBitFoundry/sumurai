@@ -473,7 +473,7 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
       plaidConnections.connections.forEach(conn => plaidConnections.removeConnection(conn.connectionId))
       setAccessToken(null)
       setError(null)
-      setTxns([])
+      setAllTimeTransactions([])
     } catch (error) {
       setError('Failed to disconnect: ' + (error instanceof Error ? error.message : 'Unknown error'))
     }
