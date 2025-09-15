@@ -34,8 +34,20 @@ const TransactionsPage: React.FC = () => {
           categories={categories}
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
+          showSearch
+          showCategories={false}
         />
       </div>
+
+      <TransactionsFilters
+        search={search}
+        onSearch={setSearch}
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+        showSearch={false}
+        showCategories
+      />
 
       {error && (
         <Card className="border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20">
@@ -68,4 +80,3 @@ const TransactionsPage: React.FC = () => {
 }
 
 export default TransactionsPage
-
