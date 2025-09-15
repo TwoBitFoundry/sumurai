@@ -3,9 +3,6 @@ import { formatCategoryName } from '../../../utils/categories'
 
 export type DonutDatum = { name: string; value: number }
 
-// Accepts both backend shapes:
-// - { category: string, amount: number }
-// - { name: string, value: string|number }
 export function categoriesToDonut(categories: any[]): DonutDatum[] {
   const mapped = (categories || []).map((c: any) => {
     const rawName: string = (c.category ?? c.name ?? 'Unknown') as string
@@ -13,7 +10,7 @@ export function categoriesToDonut(categories: any[]): DonutDatum[] {
     const value = typeof rawAmount === 'string' ? Number(rawAmount) : Number(rawAmount || 0)
     return { name: formatCategoryName(rawName), value: Number.isFinite(value) ? value : 0 }
   })
-  // Only positive values are considered for the spending donut (matches prior behavior)
+
   const positive = mapped.filter(d => d.value > 0)
   positive.sort((a, b) => b.value - a.value)
   return positive

@@ -1023,8 +1023,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
             )}
           </main>
 
-          {/* Floating time bar moved into DashboardPage */}
-
           <footer className="relative border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
             <div className="px-4 py-4 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
               <span className="inline-flex items-center gap-1">💼 Sumaura — Powered by Plaid</span>
