@@ -29,13 +29,14 @@ import { Toast } from "./Toast";
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus, RefreshCw, Link2, Calendar as CalendarIcon } from "lucide-react";
 import BalancesOverview from "./BalancesOverview";
-import { NetWorthOverTimeWidget } from "./NetWorthOverTimeWidget";
+// Dashboard charts moved into DashboardPage
 import { fmtUSD } from "../utils/format";
 import { formatCategoryName, getTagThemeForCategory } from "../utils/categories";
 import { computeDateRange as computeDateRangeUtil, type DateRangeKey as DateRange } from "../utils/dateRanges";
 import Card from "./ui/Card";
 import { Th, Td } from "./ui/Table";
 import TransactionsPage from "../pages/TransactionsPage";
+import DashboardPage from "../pages/DashboardPage";
 
 const getChartColors = (isDark: boolean) => ({
   primary: isDark ? '#38bdf8' : '#0ea5e9',
