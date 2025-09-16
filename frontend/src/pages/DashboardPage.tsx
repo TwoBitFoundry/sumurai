@@ -1,14 +1,14 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Card from '../components/ui/Card'
 import BalancesOverview from '../components/BalancesOverview'
 import { SpendingByCategoryChart } from '../features/analytics/components/SpendingByCategoryChart'
 import { TopMerchantsList } from '../features/analytics/components/TopMerchantsList'
 import { useAnalytics } from '../features/analytics/hooks/useAnalytics'
+import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries'
 import { categoriesToDonut, getChartColorArray } from '../features/analytics/adapters/chartData'
 import { fmtUSD } from '../utils/format'
-import { computeDateRange, type DateRangeKey as DateRange } from '../utils/dateRanges'
+import { type DateRangeKey as DateRange } from '../utils/dateRanges'
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
-import { AnalyticsService } from '../services/AnalyticsService'
 
 type Props = { dark: boolean }
 
@@ -22,27 +22,10 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
 
   const analytics = useAnalytics(dateRange)
   const byCat = useMemo(() => categoriesToDonut(analytics.categories), [analytics.categories])
-
-  const [netSeries, setNetSeries] = useState<{ date: string; value: number }[]>([])
-  const [netLoading, setNetLoading] = useState(false)
-  const [netError, setNetError] = useState<string | null>(null)
-
-  const loadNet = useCallback(async () => {
-    const { start, end } = computeDateRange(dateRange)
-    if (!start || !end) { setNetSeries([]); return }
-    setNetLoading(true)
-    setNetError(null)
-    try {
-      const series = await AnalyticsService.getNetWorthOverTime(start, end)
-      setNetSeries(series || [])
-    } catch (e: any) {
-      setNetError(e?.message || 'Failed to load net worth')
-    } finally {
-      setNetLoading(false)
-    }
-  }, [dateRange])
-
-  useEffect(() => { loadNet() }, [loadNet])
+  const netWorth = useNetWorthSeries(dateRange)
+  const netSeries = netWorth.series
+  const netLoading = netWorth.loading
+  const netError = netWorth.error
 
   useEffect(() => {
     const target = balancesOverviewRef.current
