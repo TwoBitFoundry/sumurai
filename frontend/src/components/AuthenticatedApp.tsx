@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import DashboardPage from '../pages/DashboardPage'
 import TransactionsPage from '../pages/TransactionsPage'
 import BudgetsPage from '../pages/BudgetsPage'
@@ -23,7 +23,6 @@ const TABS: Array<{ key: TabKey; label: string }> = [
 
 export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppProps) {
   const [tab, setTab] = useState<TabKey>('dashboard')
-  const budgetsLoadedRef = useRef(false)
   const [error, setError] = useState<string | null>(null)
   const [scrolled, setScrolled] = useState(false)
 
@@ -101,9 +100,13 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
               </div>
             )}
 
-            <div className={tab === 'budgets' ? '' : 'hidden'}>
+            <div
+              className={tab === 'budgets' ? '' : 'hidden'}
+              aria-hidden={tab === 'budgets' ? undefined : true}
+              hidden={tab !== 'budgets'}
+            >
               <div className="space-y-6">
-                <BudgetsPage loadedFlag={budgetsLoadedRef} active={tab === 'budgets'} />
+                <BudgetsPage />
               </div>
             </div>
 
