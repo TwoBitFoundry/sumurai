@@ -1,11 +1,9 @@
-import type { MutableRefObject } from 'react'
 import { render, screen, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { AuthenticatedApp } from './AuthenticatedApp'
 
 type DashboardProps = { dark: boolean }
-type BudgetsProps = { active: boolean; loadedFlag: MutableRefObject<boolean> }
 
 let DashboardPageMock: ReturnType<typeof vi.fn>
 let TransactionsPageMock: ReturnType<typeof vi.fn>
@@ -21,10 +19,9 @@ vi.mock('../pages/TransactionsPage', () => ({
   __esModule: true,
   default: () => TransactionsPageMock(),
 }))
-
 vi.mock('../pages/BudgetsPage', () => ({
   __esModule: true,
-  default: (props: BudgetsProps) => BudgetsPageMock(props),
+  default: () => BudgetsPageMock(),
 }))
 
 vi.mock('../pages/ConnectPage', () => ({
@@ -42,11 +39,7 @@ describe('AuthenticatedApp shell', () => {
       <div data-testid="dashboard-page">dashboard-{dark ? 'dark' : 'light'}</div>
     ))
     TransactionsPageMock = vi.fn(() => <div data-testid="transactions-page">transactions</div>)
-    BudgetsPageMock = vi.fn(({ active, loadedFlag }: BudgetsProps) => (
-      <div data-testid="budgets-page">
-        budgets-{active ? 'active' : 'inactive'}-{String(loadedFlag.current)}
-      </div>
-    ))
+    BudgetsPageMock = vi.fn(() => <div data-testid="budgets-page">budgets</div>)
     ConnectPageMock = vi.fn(({ onError }: { onError?: (value: string | null) => void }) => (
       <div data-testid="connect-page">
         <button onClick={() => onError?.('connect-error')} data-testid="trigger-connect-error">
@@ -75,25 +68,28 @@ describe('AuthenticatedApp shell', () => {
     expect(screen.queryByTestId('connect-page')).not.toBeInTheDocument()
   })
 
-  it('navigates between tabs and toggles budgets active flag', async () => {
+  it('navigates between tabs and toggles budgets visibility without extra props', async () => {
     const user = userEvent.setup()
     renderApp()
 
-    const initialBudgetsProps = BudgetsPageMock.mock.calls.at(-1)?.[0] as BudgetsProps | undefined
-    expect(initialBudgetsProps?.active).toBe(false)
-    expect(initialBudgetsProps?.loadedFlag?.current).toBe(false)
+    const budgetsSection = screen.getByTestId('budgets-page').parentElement?.parentElement
+    expect(BudgetsPageMock.mock.calls.at(-1)).toEqual([])
+    expect(budgetsSection).toHaveClass('hidden')
+    expect(budgetsSection).toHaveAttribute('aria-hidden', 'true')
 
     await user.click(screen.getByRole('button', { name: /transactions/i }))
     expect(screen.getByTestId('transactions-page')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /budgets/i }))
-    expect(screen.getByTestId('budgets-page')).toBeInTheDocument()
-    const activeBudgetsProps = BudgetsPageMock.mock.calls.at(-1)?.[0] as BudgetsProps
-    expect(activeBudgetsProps.active).toBe(true)
-    expect(activeBudgetsProps.loadedFlag.current).toBe(false)
+    const activeBudgetsSection = screen.getByTestId('budgets-page').parentElement?.parentElement
+    expect(activeBudgetsSection).not.toHaveClass('hidden')
+    expect(activeBudgetsSection).not.toHaveAttribute('aria-hidden')
 
     await user.click(screen.getByRole('button', { name: /connect/i }))
     expect(screen.getByTestId('connect-page')).toBeInTheDocument()
+    const hiddenBudgetsSection = screen.getByTestId('budgets-page').parentElement?.parentElement
+    expect(hiddenBudgetsSection).toHaveClass('hidden')
+    expect(hiddenBudgetsSection).toHaveAttribute('aria-hidden', 'true')
   })
 
   it('surfaces errors from the connect page and clears them', async () => {

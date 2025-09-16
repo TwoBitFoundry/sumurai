@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Card from '../components/ui/Card'
 import { Calendar as CalendarIcon, Plus } from 'lucide-react'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
@@ -6,7 +6,7 @@ import { BudgetForm, type BudgetFormValue } from '../features/budgets/components
 import { BudgetList, type BudgetWithProgress } from '../features/budgets/components/BudgetList'
 import { useBudgets } from '../features/budgets/hooks/useBudgets'
 
-export default function BudgetsPage({ loadedFlag, active = true }: { loadedFlag?: React.MutableRefObject<boolean>, active?: boolean }) {
+export default function BudgetsPage() {
   const {
     load,
     add,
@@ -25,9 +25,8 @@ export default function BudgetsPage({ loadedFlag, active = true }: { loadedFlag?
   const [form, setForm] = useState<BudgetFormValue>({ category: '', amount: '' })
 
   useEffect(() => {
-    if (loadedFlag?.current) return
-    load().then(() => { if (loadedFlag) loadedFlag.current = true })
-  }, [load, loadedFlag])
+    void load()
+  }, [load])
 
   const startAdd = () => { setIsAdding(true); setEditingId(null); setForm({ category: '', amount: '' }) }
   const cancel = () => { setIsAdding(false); setEditingId(null); setForm({ category: '', amount: '' }) }
@@ -53,46 +52,44 @@ export default function BudgetsPage({ loadedFlag, active = true }: { loadedFlag?
 
   return (
     <div className="space-y-6">
-      {active && (
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Budgets</h2>
-            <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">Plan monthly spending and track progress by category.</p>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">{monthLabel}</div>
-              <div className="flex items-center gap-2">
-                <button onClick={goToPreviousMonth} aria-label="Previous month" className="p-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700" title="Previous month">
-                  <ChevronLeftIcon className="w-4 h-4" />
-                </button>
-                <button onClick={goToNextMonth} aria-label="Next month" className="p-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700" title="Next month">
-                  <ChevronRightIcon className="w-4 h-4" />
-                </button>
-                <button onClick={goToCurrentMonth} className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-600 px-3 text-sm font-medium whitespace-nowrap shadow-sm bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600" title="Jump to current month">
-                  <CalendarIcon className="w-4 h-4" />
-                  Today
-                </button>
-              </div>
-            </div>
-            {!isAdding ? (
-              <button onClick={startAdd} className="inline-flex h-9 items-center gap-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 dark:bg-cyan-600 dark:hover:bg-cyan-500 px-3 text-sm font-semibold text-white shadow whitespace-nowrap">
-                <Plus className="h-4 w-4" />
-                Add budget
-              </button>
-            ) : (
-              <BudgetForm
-                categories={categoryOptions}
-                usedCategories={usedCategories}
-                value={form}
-                onChange={setForm}
-                onSave={onSaveAdd}
-                onCancel={cancel}
-              />
-            )}
-          </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Budgets overview</h2>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">Plan monthly spending and track progress by category.</p>
         </div>
-      )}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">{monthLabel}</div>
+            <div className="flex items-center gap-2">
+              <button onClick={goToPreviousMonth} aria-label="Previous month" className="p-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700" title="Previous month">
+                <ChevronLeftIcon className="w-4 h-4" />
+              </button>
+              <button onClick={goToNextMonth} aria-label="Next month" className="p-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700" title="Next month">
+                <ChevronRightIcon className="w-4 h-4" />
+              </button>
+              <button onClick={goToCurrentMonth} className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-600 px-3 text-sm font-medium whitespace-nowrap shadow-sm bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600" title="Jump to current month">
+                <CalendarIcon className="w-4 h-4" />
+                Today
+              </button>
+            </div>
+          </div>
+          {!isAdding ? (
+            <button onClick={startAdd} className="inline-flex h-9 items-center gap-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 dark:bg-cyan-600 dark:hover:bg-cyan-500 px-3 text-sm font-semibold text-white shadow whitespace-nowrap">
+              <Plus className="h-4 w-4" />
+              Add budget
+            </button>
+          ) : (
+            <BudgetForm
+              categories={categoryOptions}
+              usedCategories={usedCategories}
+              value={form}
+              onChange={setForm}
+              onSave={onSaveAdd}
+              onCancel={cancel}
+            />
+          )}
+        </div>
+      </div>
       <Card className="p-0 overflow-hidden">
         {computedBudgets.length > 0 ? (
           <BudgetList
@@ -114,4 +111,3 @@ export default function BudgetsPage({ loadedFlag, active = true }: { loadedFlag?
     </div>
   )
 }
-
