@@ -17,6 +17,8 @@ import { Toast } from "./Toast";
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus, RefreshCw, Link2 } from "lucide-react";
 import BalancesOverview from "./BalancesOverview";
+import { fmtUSD } from "../utils/format";
+import { formatCategoryName, getTagThemeForCategory } from "../utils/categories";
 import { computeDateRange as computeDateRangeUtil, type DateRangeKey as DateRange } from "../utils/dateRanges";
 import Card from "./ui/Card";
 import { Th, Td } from "./ui/Table";
