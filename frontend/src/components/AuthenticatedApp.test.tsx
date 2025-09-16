@@ -1,246 +1,127 @@
-import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { AuthenticatedApp } from './AuthenticatedApp';
-import { installFetchRoutes } from '../test/fetchRoutes';
+import type { MutableRefObject } from 'react'
+import { render, screen, cleanup } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { AuthenticatedApp } from './AuthenticatedApp'
 
-// Mock only UI components and hooks for stability, not services
-vi.mock('../hooks/usePlaidConnection');
+type DashboardProps = { dark: boolean }
+type BudgetsProps = { active: boolean; loadedFlag: MutableRefObject<boolean> }
 
-// No service-level mocks for ApiClient — use boundary-level fetch routing
+let DashboardPageMock: ReturnType<typeof vi.fn>
+let TransactionsPageMock: ReturnType<typeof vi.fn>
+let BudgetsPageMock: ReturnType<typeof vi.fn>
+let ConnectPageMock: ReturnType<typeof vi.fn>
 
-// Mock all recharts components to prevent rendering issues
-vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
-  PieChart: () => <div data-testid="pie-chart" />,
-  Pie: () => <div data-testid="pie" />,
-  Cell: () => <div data-testid="cell" />,
-  LineChart: () => <div data-testid="line-chart" />,
-  Line: () => <div data-testid="line" />,
-  AreaChart: () => <div data-testid="area-chart" />,
-  Area: () => <div data-testid="area" />,
-  BarChart: () => <div data-testid="bar-chart" />,
-  Bar: () => <div data-testid="bar" />,
-  XAxis: () => <div data-testid="x-axis" />,
-  YAxis: () => <div data-testid="y-axis" />,
-  CartesianGrid: () => <div data-testid="cartesian-grid" />,
-  Tooltip: () => <div data-testid="tooltip" />,
-  Legend: () => <div data-testid="legend" />
-}));
+vi.mock('../pages/DashboardPage', () => ({
+  __esModule: true,
+  default: (props: DashboardProps) => DashboardPageMock(props),
+}))
 
-// Mock hooks with static data
-const mockPlaidConnection = {
-  isConnected: false,
-  institutionName: null,
-  transactionCount: 0,
-  accountCount: 0,
-  lastSyncAt: null,
-  syncInProgress: false,
-  loading: false,
-  error: null,
-  connectionId: null,
-  markConnected: vi.fn(),
-  disconnect: vi.fn().mockResolvedValue(undefined),
-  setSyncInProgress: vi.fn(),
-  updateSyncInfo: vi.fn(),
-  refresh: vi.fn().mockResolvedValue(undefined)
-};
+vi.mock('../pages/TransactionsPage', () => ({
+  __esModule: true,
+  default: () => TransactionsPageMock(),
+}))
 
-vi.mock('../hooks/usePlaidConnection', () => ({
-  usePlaidConnection: () => mockPlaidConnection
-}));
+vi.mock('../pages/BudgetsPage', () => ({
+  __esModule: true,
+  default: (props: BudgetsProps) => BudgetsPageMock(props),
+}))
 
-describe('AuthenticatedApp - Systematic Testing', () => {
-  const mockOnLogout = vi.fn();
-  let fetchMock: ReturnType<typeof installFetchRoutes>;
-  
+vi.mock('../pages/ConnectPage', () => ({
+  __esModule: true,
+  default: (props: { onError?: (value: string | null) => void }) => ConnectPageMock(props),
+}))
+
+describe('AuthenticatedApp shell', () => {
+  const onLogout = vi.fn()
+  const setDark = vi.fn()
+
   beforeEach(() => {
-    vi.clearAllMocks();
-    // Use real timers; keeping time unfrozen avoids waitFor interplay issues
-    
-    // Default boundary-level routes
-    fetchMock = installFetchRoutes({
-      'GET /api/plaid/status': { is_connected: false, account_count: 0, last_sync_at: null, institution_name: null, connection_id: null, sync_in_progress: false, transaction_count: 0 },
-      'GET /api/transactions': [
-        {
-          id: '1',
-          date: '2025-08-15',
-          name: 'Coffee Shop',
-          merchantName: 'Starbucks',
-          amount: 5.99,
-          category: { id: 'food', name: 'Food & Dining' }
-        }
-      ],
-      // Allow any date-range variants via wildcard
-      'GET /api/analytics/spending*': 1234.56,
-      'GET /api/analytics/categories*': [
-        { category: 'Food & Dining', amount: 450.25, count: 15, percentage: 36.5 },
-        { category: 'Transportation', amount: 280.5, count: 8, percentage: 22.7 }
-      ],
-      'GET /api/analytics/daily-spending-range*': [],
-      'GET /api/analytics/monthly-totals*': [
-        { month: '2025-07', amount: 1000 },
-        { month: '2025-08', amount: 1100 }
-      ],
-      'GET /api/analytics/top-merchants*': [],
-      'GET /api/budgets': [
-        { id: '1', category: 'Food', month: '2025-08', amount: 500.0, spent: 350.0, remaining: 150.0, percentage: 70.0 }
-      ],
-    });
-  });
+    vi.clearAllMocks()
+    DashboardPageMock = vi.fn(({ dark }: DashboardProps) => (
+      <div data-testid="dashboard-page">dashboard-{dark ? 'dark' : 'light'}</div>
+    ))
+    TransactionsPageMock = vi.fn(() => <div data-testid="transactions-page">transactions</div>)
+    BudgetsPageMock = vi.fn(({ active, loadedFlag }: BudgetsProps) => (
+      <div data-testid="budgets-page">
+        budgets-{active ? 'active' : 'inactive'}-{String(loadedFlag.current)}
+      </div>
+    ))
+    ConnectPageMock = vi.fn(({ onError }: { onError?: (value: string | null) => void }) => (
+      <div data-testid="connect-page">
+        <button onClick={() => onError?.('connect-error')} data-testid="trigger-connect-error">
+          trigger error
+        </button>
+        <button onClick={() => onError?.(null)} data-testid="clear-connect-error">
+          clear error
+        </button>
+      </div>
+    ))
+  })
 
   afterEach(() => {
-    cleanup();
-    vi.clearAllMocks();
-  });
+    cleanup()
+    vi.clearAllMocks()
+  })
 
-  it('should render dashboard without infinite loops', async () => {
-    render(<AuthenticatedApp onLogout={mockOnLogout} />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Spending')).toBeInTheDocument();
-    });
-    
-    expect(screen.getByRole('main')).toBeInTheDocument();
-  });
+  const renderApp = (dark = false) =>
+    render(<AuthenticatedApp onLogout={onLogout} dark={dark} setDark={setDark} />)
 
-  it('should call backend APIs on initial load', async () => {
-    render(<AuthenticatedApp onLogout={mockOnLogout} />);
-    
-    await waitFor(() => {
-      const called = (fetchMock as any).mock.calls.map((c: any[]) => String(c[0]));
-      expect(called.find((u: string) => u === '/api/transactions')).toBeTruthy();
-    });
-    
-    // Verify some analytics endpoints were called
-    const called = (fetchMock as any).mock.calls.map((c: any[]) => String(c[0]));
-    expect(called.some((u: string) => u.startsWith('/api/analytics/'))).toBe(true);
-  });
+  it('renders dashboard by default', () => {
+    renderApp()
 
-  it('should navigate between tabs', async () => {
-    render(<AuthenticatedApp onLogout={mockOnLogout} />);
-    
-    // Wait for initial render
-    await waitFor(() => {
-      expect(screen.getByText('Spending')).toBeInTheDocument();
-    });
-    
-    // Navigate to transactions tab
-    const transactionsButton = screen.getByRole('button', { name: /transactions/i });
-    transactionsButton.click();
-    
-    // Should show transactions interface
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Search transactions')).toBeInTheDocument();
-    });
-    
-    // Navigate to budgets tab  
-    const budgetsButton = screen.getByRole('button', { name: /budgets/i });
-    budgetsButton.click();
-    
-    // Should show budgets interface
-    await waitFor(() => {
-      expect(screen.getByText(/budgets/i)).toBeInTheDocument();
-    });
-  });
+    expect(screen.getByTestId('dashboard-page')).toBeInTheDocument()
+    expect(screen.queryByTestId('transactions-page')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('connect-page')).not.toBeInTheDocument()
+  })
 
-  it('filters transactions client-side without backend search', async () => {
-    // Seed initial transactions from the standard mock in beforeEach
-    render(<AuthenticatedApp onLogout={mockOnLogout} />);
+  it('navigates between tabs and toggles budgets active flag', async () => {
+    const user = userEvent.setup()
+    renderApp()
 
-    // Navigate to transactions tab
-    fireEvent.click(screen.getByRole('button', { name: /transactions/i }));
+    const initialBudgetsProps = BudgetsPageMock.mock.calls.at(-1)?.[0] as BudgetsProps | undefined
+    expect(initialBudgetsProps?.active).toBe(false)
+    expect(initialBudgetsProps?.loadedFlag?.current).toBe(false)
 
-    // Find search input
-    const searchInput = await waitFor(() => 
-      screen.getByPlaceholderText('Search transactions')
-    );
+    await user.click(screen.getByRole('button', { name: /transactions/i }))
+    expect(screen.getByTestId('transactions-page')).toBeInTheDocument()
 
-    // Clear mock call history to isolate search behavior
-    ;(fetchMock as any).mockClear();
+    await user.click(screen.getByRole('button', { name: /budgets/i }))
+    expect(screen.getByTestId('budgets-page')).toBeInTheDocument()
+    const activeBudgetsProps = BudgetsPageMock.mock.calls.at(-1)?.[0] as BudgetsProps
+    expect(activeBudgetsProps.active).toBe(true)
+    expect(activeBudgetsProps.loadedFlag.current).toBe(false)
 
-    // Perform search
-    fireEvent.change(searchInput, { target: { value: 'coffee' } });
+    await user.click(screen.getByRole('button', { name: /connect/i }))
+    expect(screen.getByTestId('connect-page')).toBeInTheDocument()
+  })
 
-    // Verify no backend call made for search
-    await waitFor(() => {
-      const calls = (fetchMock as any).mock.calls.map((c: any[]) => String(c[0]));
-      expect(calls.some((u: string) => u.includes('search='))).toBe(false);
-    });
-  });
+  it('surfaces errors from the connect page and clears them', async () => {
+    const user = userEvent.setup()
+    renderApp()
 
-  
+    await user.click(screen.getByRole('button', { name: /connect/i }))
+    await user.click(screen.getByTestId('trigger-connect-error'))
+    expect(screen.getByText('connect-error')).toBeInTheDocument()
 
-  it('should handle error states gracefully', async () => {
-    // Mock fetch to throw for analytics, leave others minimal
-    fetchMock = installFetchRoutes({
-      'GET /api/plaid/status': { is_connected: false },
-      'GET /api/transactions': [],
-      'GET /api/analytics/spending*': new Response('Server error', { status: 500 }),
-      'GET /api/analytics/categories*': [],
-      'GET /api/analytics/daily-spending-range*': [],
-      'GET /api/analytics/monthly-totals*': [
-        { month: '2025-07', amount: 0 },
-        { month: '2025-08', amount: 0 }
-      ],
-      'GET /api/analytics/top-merchants*': [],
-      'GET /api/budgets': [],
-    });
+    await user.click(screen.getByTestId('clear-connect-error'))
+    expect(screen.queryByText('connect-error')).not.toBeInTheDocument()
+  })
 
-    render(<AuthenticatedApp onLogout={mockOnLogout} />);
-    
-    // Component should still render despite API errors
-    await waitFor(() => {
-      expect(screen.getByText('Spending')).toBeInTheDocument();
-    });
-    
-    // Should have attempted to call analytics
-    const called = (fetchMock as any).mock.calls.map((c: any[]) => String(c[0]));
-    expect(called.some((u: string) => u.startsWith('/api/analytics/'))).toBe(true);
-  });
+  it('toggles theme and supports logout', async () => {
+    const user = userEvent.setup()
+    renderApp(false)
 
+    await user.click(screen.getByLabelText(/toggle theme/i))
+    expect(setDark).toHaveBeenCalledWith(true)
 
-  it('colors positive amounts red and negative amounts green in Transactions', async () => {
-    // Arrange: return one positive and one negative transaction
-    fetchMock = installFetchRoutes({
-      'GET /api/plaid/status': { is_connected: false },
-      'GET /api/transactions': [
-        {
-          id: 't1',
-          date: '2025-08-20',
-          name: 'Salary',
-          amount: 100.0,
-          category: { id: 'income', name: 'Income' },
-        },
-        {
-          id: 't2',
-          date: '2025-08-21',
-          name: 'Groceries',
-          amount: -25.0,
-          category: { id: 'food', name: 'Food & Dining' },
-        },
-      ],
-      'GET /api/analytics/spending*': 0,
-      'GET /api/analytics/categories*': [],
-      'GET /api/analytics/daily-spending-range*': [],
-      'GET /api/analytics/monthly-totals*': [
-        { month: '2025-07', amount: 0 },
-        { month: '2025-08', amount: 0 }
-      ],
-      'GET /api/analytics/top-merchants*': [],
-      'GET /api/budgets': [],
-    });
+    await user.click(screen.getByRole('button', { name: /logout/i }))
+    expect(onLogout).toHaveBeenCalled()
+  })
 
-    render(<AuthenticatedApp onLogout={mockOnLogout} />);
-
-    // Act: go to Transactions tab
-    fireEvent.click(screen.getByRole('button', { name: /transactions/i }));
-
-    // Assert: amounts are present and colored as specified
-    const positive = await waitFor(() => screen.getByText(/\$100\.00/));
-    expect(positive).toHaveClass('text-red-600');
-
-    // Negative may render with a leading minus sign, e.g. -$25.00
-    const negative = screen.getByText(/-?\$25\.00/);
-    expect(negative).toHaveClass('text-green-600');
-  });
-});
+  it('passes dark mode flag to dashboard', () => {
+    renderApp(true)
+    expect(DashboardPageMock).toHaveBeenCalledWith(expect.objectContaining({ dark: true }))
+    expect(DashboardPageMock).toHaveBeenCalledTimes(1)
+  })
+})
