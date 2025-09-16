@@ -1,14 +1,18 @@
 # ---------- Build stage ----------
 FROM node:20-alpine AS builder
 WORKDIR /app/frontend
-COPY frontend/package.json .
+
+# Copy dependency manifests first to leverage Docker layer caching
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+# Copy configuration and source files for the build
 COPY frontend/tsconfig.json .
 COPY frontend/vite.config.ts .
 COPY frontend/tailwind.config.js .
 COPY frontend/postcss.config.js .
 COPY frontend/index.html .
 COPY frontend/src ./src
-RUN npm install
 RUN npm run build
 
 # ---------- Runtime stage ----------

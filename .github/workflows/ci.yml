@@ -28,9 +28,6 @@ jobs:
           workspaces: |
             backend
 
-      - name: Cargo check
-        run: cargo check --all
-
       - name: Cargo tests
         env:
           RUST_BACKTRACE: 1
