@@ -12,22 +12,10 @@ import { TransactionService } from "../services/TransactionService";
 import { AnalyticsService } from "../services/AnalyticsService";
 import { PlaidService } from "../services/PlaidService";
 import { ApiClient } from "../services/ApiClient";
-import { BudgetService } from "../services/BudgetService";
-import { optimisticCreate, optimisticUpdate, optimisticDelete } from "../utils/optimistic";
-import { 
-  PencilSquareIcon, 
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ArrowPathIcon,
-  CheckIcon,
-  XMarkIcon
-} from '@heroicons/react/24/outline'
-import { TrashIcon as TrashSolidIcon } from '@heroicons/react/24/solid'
-import type { Budget } from "../types/api";
 import { BankCard } from "./BankCard";
 import { Toast } from "./Toast";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, RefreshCw, Link2, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, RefreshCw, Link2 } from "lucide-react";
 import BalancesOverview from "./BalancesOverview";
 import { fmtUSD } from "../utils/format";
 import { formatCategoryName, getTagThemeForCategory } from "../utils/categories";
@@ -36,6 +24,7 @@ import Card from "./ui/Card";
 import { Th, Td } from "./ui/Table";
 import TransactionsPage from "../pages/TransactionsPage";
 import DashboardPage from "../pages/DashboardPage";
+import BudgetsPage from "../pages/BudgetsPage";
 
 const getChartColors = (isDark: boolean) => ({
   primary: isDark ? '#38bdf8' : '#0ea5e9',
@@ -117,6 +106,7 @@ interface AuthenticatedAppProps {
 
 export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppProps) {
   const [tab, setTab] = useState<"dashboard" | "transactions" | "budgets" | "connect">("dashboard");
+  const budgetsLoadedRef = useRef(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
@@ -128,29 +118,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
   const spendingOverviewRef = useRef<HTMLDivElement | null>(null);
   const balancesOverviewRef = useRef<HTMLDivElement | null>(null);
   const [showTimeBar, setShowTimeBar] = useState(false);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [budgetsMonth, setBudgetsMonth] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
-  const [isAddingBudget, setIsAddingBudget] = useState(false);
-  const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
-  const [budgetFormAmount, setBudgetFormAmount] = useState('');
-  const [budgetFormCategory, setBudgetFormCategory] = useState<string>('');
-
-  const startAddBudget = useCallback(() => {
-    setIsAddingBudget(true);
-    setEditingBudgetId(null);
-    setBudgetFormAmount('');
-    setBudgetFormCategory('');
-  }, []);
-
-  const cancelBudgetEdit = useCallback(() => {
-    setIsAddingBudget(false);
-    setEditingBudgetId(null);
-    setBudgetFormAmount('');
-    setBudgetFormCategory('');
-  }, []);
 
   useEffect(() => {
     if (tab !== 'dashboard') {
@@ -180,63 +147,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     return () => observer.disconnect();
   }, [tab]);
 
-  const submitAddBudget = useCallback(async () => {
-    const amountNum = Number(budgetFormAmount);
-    if (!budgetFormCategory || !Number.isFinite(amountNum) || amountNum <= 0) return;
-
-    const temp: Budget = { id: generateId(), category: budgetFormCategory, amount: amountNum } as Budget;
-    cancelBudgetEdit();
-    try {
-      await optimisticCreate(setBudgets, temp, () => BudgetService.createBudget({ category: temp.category, amount: temp.amount }));
-    } catch (e: any) {
-      console.error('Failed to create budget', e);
-      const status = typeof e?.status === 'number' ? e.status : undefined
-      const msg = status === 409
-        ? `A budget for "${temp.category}" already exists.`
-        : status === 401
-          ? 'You are not authenticated. Please log in again.'
-          : 'Failed to create budget.'
-      setError(msg)
-    }
-  }, [budgetFormAmount, budgetFormCategory, cancelBudgetEdit]);
-
-  const startEditBudget = useCallback((b: Budget) => {
-    setEditingBudgetId(b.id);
-    setIsAddingBudget(false);
-    setBudgetFormAmount(String(b.amount));
-    setBudgetFormCategory(b.category);
-  }, []);
-
-  const submitEditBudget = useCallback(async (id: string) => {
-    const amountNum = Number(budgetFormAmount);
-    if (!Number.isFinite(amountNum) || amountNum <= 0) return;
-    try {
-      await optimisticUpdate(setBudgets, id, (item) => ({ ...item, amount: amountNum } as Budget), () => BudgetService.updateBudget(id, { amount: amountNum }))
-    } catch (e: any) {
-      console.error('Failed to update budget', e)
-      const status = typeof e?.status === 'number' ? e.status : undefined
-      const msg = status === 401
-        ? 'You are not authenticated. Please log in again.'
-        : 'Failed to update budget.'
-      setError(msg)
-    } finally {
-      cancelBudgetEdit();
-    }
-  }, [budgetFormAmount, cancelBudgetEdit]);
-
-  const deleteBudget = useCallback(async (id: string) => {
-    try {
-      await optimisticDelete(setBudgets, id, () => BudgetService.deleteBudget(id))
-    } catch (e: any) {
-      console.error('Failed to delete budget', e)
-      const status = typeof e?.status === 'number' ? e.status : undefined
-      const msg = status === 401
-        ? 'You are not authenticated. Please log in again.'
-        : 'Failed to delete budget.'
-      setError(msg)
-    }
-  }, []);
-
   const [toast, setToast] = useState<string | null>(null);
   const plaidConnections = usePlaidConnections();
   const banks = useMemo(() => {
@@ -257,34 +167,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     topMerchants: [] as any[],
     monthlyTotals: [] as any[]
   });
-
-  const budgetsMonthLabel = useMemo(() => new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(budgetsMonth), [budgetsMonth]);
-  const budgetsMonthRange = useMemo(() => {
-    const start = new Date(budgetsMonth.getFullYear(), budgetsMonth.getMonth(), 1);
-    const end = new Date(budgetsMonth.getFullYear(), budgetsMonth.getMonth() + 1, 0);
-    const fmt = (d: Date) => d.toISOString().slice(0, 10);
-    return { start: fmt(start), end: fmt(end) };
-  }, [budgetsMonth]);
-
-  const budgetsComputed = useMemo(() => {
-    const { start, end } = budgetsMonthRange;
-    return budgets.map(b => {
-      const catId = b.category;
-      const catName = formatCategoryName(b.category).toLowerCase();
-      const spent = allTimeTransactions
-        .filter(t => (t.category?.id === catId) || ((t.category?.name || '').toLowerCase() === catName))
-        .filter(t => {
-          const ds = new Date(t.date).toISOString().slice(0,10);
-          return ds >= start && ds <= end;
-        })
-        .reduce((sum, t) => sum + Number(t.amount || 0), 0);
-      const percentage = b.amount > 0 ? Math.min(100, (spent / b.amount) * 100) : 0;
-      return { ...b, spent, percentage } as any;
-    });
-  }, [budgets, allTimeTransactions, budgetsMonthRange]);
-
-  const usedBudgetCategories = useMemo(() => new Set(budgets.map(b => b.category)), [budgets]);
-  const allCategoryIds = useMemo(() => Array.from(new Set(allTimeTransactions.map(t => t.category?.id || 'other'))).sort(), [allTimeTransactions]);
 
   const [monthSpend, setMonthSpend] = useState(0);
   const [byCat, setByCat] = useState<{ name: string; value: number }[]>([]);
@@ -633,21 +515,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     }
   }, []);
 
-  const loadBudgets = useCallback(async () => {
-    try {
-      const list = await BudgetService.getBudgets()
-      setBudgets(list)
-    } catch (e: any) {
-      setBudgets([])
-      console.error('Failed to load budgets', e)
-      const status = typeof e?.status === 'number' ? e.status : undefined
-      if (status === 401) {
-        setError('You are not authenticated. Please log in again.')
-      } else {
-        setError('Failed to load budgets.')
-      }
-    }
-  }, []);
 
   const refreshData = useCallback(async () => {
     try {
@@ -661,7 +528,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
   useEffect(() => {
     loadTransactions();
     loadAllTimeAnalyticsData();
-    loadBudgets();
   }, []); 
 
   const filteredData = useMemo(() => {
@@ -752,200 +618,11 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
               </div>
             )}
 
-            {tab === "budgets" && (
+            <div className={tab === 'budgets' ? '' : 'hidden'}>
               <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Budgets</h2>
-                    <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">Plan monthly spending and track progress by category.</p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                      <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">
-                        {budgetsMonthLabel}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setBudgetsMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-                          aria-label="Previous month"
-                          className="p-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
-                          title="Previous month"
-                        >
-                          <ChevronLeftIcon className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setBudgetsMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-                          aria-label="Next month"
-                          className="p-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
-                          title="Next month"
-                        >
-                          <ChevronRightIcon className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => { const now = new Date(); setBudgetsMonth(new Date(now.getFullYear(), now.getMonth(), 1)); }}
-                          className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-600 px-3 text-sm font-medium whitespace-nowrap shadow-sm bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600"
-                          title="Jump to current month"
-                        >
-                          <CalendarIcon className="w-4 h-4" />
-                          Today
-                        </button>
-                      </div>
-                    </div>
-                    {!isAddingBudget ? (
-                      <button
-                        onClick={startAddBudget}
-                        className="inline-flex h-9 items-center gap-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 dark:bg-cyan-600 dark:hover:bg-cyan-500 px-3 text-sm font-semibold text-white shadow whitespace-nowrap"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add budget
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <select
-                          data-testid="budget-category-select"
-                          value={budgetFormCategory}
-                          onChange={e => setBudgetFormCategory(e.target.value)}
-                          className="px-2 py-1 text-sm rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
-                        >
-                          <option value="" disabled>Select category</option>
-                          {allCategoryIds.map(cat => (
-                            <option key={cat} value={cat} disabled={usedBudgetCategories.has(cat)}>
-                              {formatCategoryName(cat)}{usedBudgetCategories.has(cat) ? ' (used)' : ''}
-                            </option>
-                          ))}
-                        </select>
-                        <input
-                          data-testid="budget-amount-input"
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          placeholder="Amount"
-                          value={budgetFormAmount}
-                          onChange={e => setBudgetFormAmount(e.target.value)}
-                          className="w-28 px-2 py-1 text-sm rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
-                        />
-                        <button data-testid="budget-save" onClick={submitAddBudget} className="px-3 py-1.5 text-sm rounded-lg bg-emerald-600 text-white inline-flex items-center gap-1">
-                          <CheckIcon className="w-4 h-4" />
-                          Save
-                        </button>
-                        <button onClick={cancelBudgetEdit} className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 inline-flex items-center gap-1">
-                          <XMarkIcon className="w-4 h-4" />
-                          Cancel
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-
-                <Card className="p-0 overflow-hidden">
-                  {budgetsComputed.length > 0 ? (
-                    <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 p-3">
-                      {budgetsComputed.map((b) => {
-                        const isOverBudget = (b as any).spent > b.amount;
-                        const percent = (b as any).percentage || 0;
-                        const tagTheme = getTagThemeForCategory(formatCategoryName(b.category));
-                        const isEditing = editingBudgetId === b.id;
-                        return (
-                          <li
-                            key={b.id}
-                            className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-6 transition
-                            hover:border-sky-300 dark:hover:border-sky-500 hover:ring-2 hover:ring-sky-400/50 dark:hover:ring-sky-500/40
-                            focus-within:ring-2 focus-within:ring-sky-400/50 dark:focus-within:ring-sky-500/40"
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className={`inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs ${tagTheme.tag}`}>
-                                ● {formatCategoryName(b.category)}
-                              </div>
-                              <div className="flex gap-2 text-xs">
-                                {isEditing ? (
-                                  <>
-                                    <button
-                                      onClick={() => submitEditBudget(b.id)}
-                                      title="Save"
-                                      aria-label="Save budget"
-                                      className="p-1.5 rounded-md bg-emerald-600 text-white hover:bg-emerald-700"
-                                    >
-                                      <CheckIcon className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                      onClick={cancelBudgetEdit}
-                                      title="Cancel"
-                                      aria-label="Cancel edit"
-                                      className="p-1.5 rounded-md border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
-                                    >
-                                      <XMarkIcon className="w-4 h-4" />
-                                    </button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <button
-                                      onClick={() => startEditBudget(b)}
-                                      title="Edit budget"
-                                      aria-label="Edit budget"
-                                      className="p-1.5 rounded-md border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300"
-                                    >
-                                      <PencilSquareIcon className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => deleteBudget(b.id)}
-                                      title="Delete budget"
-                                      aria-label="Delete budget"
-                                      className="p-1.5 rounded-md border border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
-                                    >
-                                      <TrashSolidIcon className="w-4 h-4" />
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="mt-3 flex items-center justify-between">
-                              {isEditing ? (
-                                <>
-                                  <input
-                                    data-testid="budget-amount-input"
-                                    type="number"
-                                    min={0}
-                                    step="0.01"
-                                    value={budgetFormAmount}
-                                    onChange={e => setBudgetFormAmount(e.target.value)}
-                                    className="w-28 px-2 py-1 text-sm rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
-                                  />
-                                  <div className="text-sm text-slate-600 dark:text-slate-400">{fmtUSD((b as any).spent)}</div>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="text-lg">{fmtUSD(b.amount)}</div>
-                                  <div className={`text-sm font-medium ${isOverBudget ? 'text-red-600 dark:text-red-400' : 'text-slate-600 dark:text-slate-400'}`}>{fmtUSD((b as any).spent)}</div>
-                                </>
-                              )}
-                            </div>
-                            <div className="mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-600">
-                              <div
-                                className={`h-2 rounded-full transition-all duration-500 ${isOverBudget ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-cyan-400 to-emerald-400'}`}
-                                style={{ width: `${Math.min(100, percent)}%` }}
-                              />
-                            </div>
-                            <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 text-center">
-                              {percent.toFixed(0)}% used {isOverBudget && (
-                                <span className="text-red-500 dark:text-red-400 ml-1">({fmtUSD((b as any).spent - b.amount)} over)</span>
-                              )}
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : (
-                    <div className="text-center py-16 px-3" data-testid="budgets-empty-state">
-                      <div className="text-6xl mb-4 opacity-30">💰</div>
-                      <div className="text-lg font-medium text-slate-600 dark:text-slate-400 mb-2">No budgets found</div>
-                      <div className="text-sm text-slate-500 dark:text-slate-500">Add a budget to get started</div>
-                    </div>
-                  )}
-                </Card>
+                <BudgetsPage loadedFlag={budgetsLoadedRef} active={tab === 'budgets'} />
               </div>
-            )}
+            </div>
 
             {tab === "connect" && (
               <div className="space-y-6">
