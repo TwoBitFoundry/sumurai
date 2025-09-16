@@ -5,17 +5,8 @@ import {
   XAxis, YAxis, CartesianGrid,
   AreaChart, Area,
 } from "recharts";
-import { usePlaidConnections } from "../hooks/usePlaidConnections";
-import { useDebouncedValue } from "../hooks/useDebouncedValue";
-import { usePlaidLink } from 'react-plaid-link';
 import { TransactionService } from "../services/TransactionService";
 import { AnalyticsService } from "../services/AnalyticsService";
-import { PlaidService } from "../services/PlaidService";
-import { ApiClient } from "../services/ApiClient";
-import { BankCard } from "./BankCard";
-import { Toast } from "./Toast";
-import { AnimatePresence, motion } from "framer-motion";
-import { Plus, RefreshCw, Link2 } from "lucide-react";
 import BalancesOverview from "./BalancesOverview";
 import { fmtUSD } from "../utils/format";
 import { formatCategoryName, getTagThemeForCategory } from "../utils/categories";
@@ -25,6 +16,7 @@ import { Th, Td } from "./ui/Table";
 import TransactionsPage from "../pages/TransactionsPage";
 import DashboardPage from "../pages/DashboardPage";
 import BudgetsPage from "../pages/BudgetsPage";
+import ConnectPage from "../pages/ConnectPage";
 
 const getChartColors = (isDark: boolean) => ({
   primary: isDark ? '#38bdf8' : '#0ea5e9',
@@ -54,13 +46,6 @@ const getTooltipStyle = (isDark: boolean) => ({
   fontWeight: '500',
 });
 
-
-function generateId() {
-  if (typeof globalThis !== 'undefined' && (globalThis as any).crypto && (globalThis.crypto as any).randomUUID) {
-    return (globalThis.crypto as any).randomUUID();
-  }
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
 
 type Txn = {
   id: string;
@@ -107,11 +92,7 @@ interface AuthenticatedAppProps {
 export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppProps) {
   const [tab, setTab] = useState<"dashboard" | "transactions" | "budgets" | "connect">("dashboard");
   const budgetsLoadedRef = useRef(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [syncStatus, setSyncStatus] = useState<string | null>(null);
-  const [linkToken, setLinkToken] = useState<string | null>(null);
-  const [syncingAll, setSyncingAll] = useState(false);
   const [search, setSearch] = useState(""); // kept for other tabs inputs if needed
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>("current-month");
@@ -146,19 +127,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     setShowTimeBar(!fullyVisibleNow);
     return () => observer.disconnect();
   }, [tab]);
-
-  const [toast, setToast] = useState<string | null>(null);
-  const plaidConnections = usePlaidConnections();
-  const banks = useMemo(() => {
-    return plaidConnections.connections.map(conn => ({
-      id: conn.connectionId,
-      name: conn.institutionName,
-      short: conn.institutionName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
-      status: conn.isConnected ? 'connected' as const : 'error' as const,
-      lastSync: conn.lastSyncAt,
-      accounts: conn.accounts
-    }))
-  }, [plaidConnections.connections]);
 
   // All-time cached data for client-side filtering
   const [allTimeTransactions, setAllTimeTransactions] = useState<Txn[]>([]);
@@ -348,125 +316,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     };
   }, [netSeries, dark]);
 
-  const handleDisconnect = async () => {
-    try {
-      // Disconnect all connections
-      await Promise.all(plaidConnections.connections.map(conn => PlaidService.disconnect()))
-      plaidConnections.connections.forEach(conn => plaidConnections.removeConnection(conn.connectionId))
-      setAccessToken(null)
-      setError(null)
-      setAllTimeTransactions([])
-    } catch (error) {
-      setError('Failed to disconnect: ' + (error instanceof Error ? error.message : 'Unknown error'))
-    }
-  }
-
-  const handleSyncBank = async (bankId: string) => {
-    const connection = plaidConnections.getConnection(bankId)
-    if (!connection) return
-
-    try {
-      plaidConnections.setConnectionSyncInProgress(bankId, true)
-      
-      const result = await PlaidService.syncTransactions(bankId)
-      const { transactions, metadata } = result
-      
-      plaidConnections.updateConnectionSyncInfo(
-        bankId,
-        metadata.transaction_count,
-        metadata.account_count,
-        metadata.sync_timestamp
-      )
-      
-      setToast(`Synced ${transactions.length} new transactions from ${connection.institutionName}`)
-    } catch (error) {
-      setError(`Sync failed for ${connection.institutionName}: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    } finally {
-      plaidConnections.setConnectionSyncInProgress(bankId, false)
-    }
-  };
-
-  const handleSyncAll = async () => {
-    setSyncingAll(true);
-    try {
-      await Promise.all(plaidConnections.connections.map((conn) => handleSyncBank(conn.connectionId)));
-    } finally {
-      setSyncingAll(false);
-    }
-  };
-
-  const handleDisconnectBank = async (bankId: string) => {
-    const connection = plaidConnections.getConnection(bankId)
-    if (!connection) return
-
-    try {
-      await PlaidService.disconnect()
-      plaidConnections.removeConnection(bankId)
-      setToast(`${connection.institutionName} disconnected successfully`)
-    } catch (error) {
-      setError(`Failed to disconnect ${connection.institutionName}: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
-  };
-
-  const handlePlaidOnSuccess = useCallback(async (publicToken: string) => {
-    try {
-      const data = await ApiClient.post<{ access_token: string }>(
-        '/plaid/exchange-token',
-        { public_token: publicToken }
-      )
-      setAccessToken(data.access_token)
-      setToast('Bank connected successfully!')
-
-      try {
-        const status = await PlaidService.getStatus()
-        if (status?.connected) {
-          await plaidConnections.addConnection('Connected Bank', 'legacy')
-        } else {
-          await plaidConnections.refresh()
-        }
-      } catch {
-        await plaidConnections.refresh()
-      }
-    } catch (error) {
-      setError(`Failed to exchange token: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
-  }, [plaidConnections])
-
-  const handlePlaidOnExit = useCallback((error: any) => {
-    if (error) {
-      setError(`Plaid Link exited with error: ${error.error_message || 'Unknown error'}`)
-    }
-  }, [])
-
-  const { open, ready } = usePlaidLink({
-    token: linkToken,
-    onSuccess: handlePlaidOnSuccess,
-    onExit: handlePlaidOnExit,
-  })
-
-  const handleAddBankDirect = useCallback(async () => {
-    try {
-      const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
-      const data = await ApiClient.post<{ link_token: string }>(
-        '/plaid/link-token',
-        { user_id: userId }
-      )
-      setLinkToken(data.link_token)
-      
-      if (open && ready) {
-        open()
-      }
-    } catch (error) {
-      setError(`Failed to start bank connection: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
-  }, [open, ready]);
-
-  useEffect(() => {
-    if (linkToken && ready && open) {
-      open()
-    }
-  }, [linkToken, ready, open])
-
   const loadTransactions = useCallback(async () => {
     setIsLoadingTransactions(true);
     try {
@@ -514,17 +363,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
       setIsLoadingAnalytics(false);
     }
   }, []);
-
-
-  const refreshData = useCallback(async () => {
-    try {
-      await Promise.all([loadTransactions(), loadAllTimeAnalyticsData()]);
-      await plaidConnections.refresh();
-    } catch (error) {
-      console.error('Some services failed during refresh:', error);
-    }
-  }, [loadTransactions, loadAllTimeAnalyticsData, plaidConnections]);
-
   useEffect(() => {
     loadTransactions();
     loadAllTimeAnalyticsData();
@@ -626,76 +464,7 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
 
             {tab === "connect" && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Bank Connections</h2>
-                    <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">Securely connect your bank accounts to sync transactions.</p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {banks.length > 0 && (
-                      <button
-                        onClick={handleSyncAll}
-                        disabled={syncingAll}
-                        className={`inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-600 px-3 text-sm font-medium whitespace-nowrap shadow-sm ${
-                          syncingAll 
-                            ? 'bg-slate-50 dark:bg-slate-700 text-slate-400 dark:text-slate-400 cursor-not-allowed' 
-                            : 'bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600'
-                        }`}
-                      >
-                        <RefreshCw className={`h-4 w-4 ${syncingAll ? 'animate-spin' : ''}`} />
-                        {syncingAll ? 'Syncing...' : 'Sync all'}
-                      </button>
-                    )}
-                    <button
-                      onClick={handleAddBankDirect}
-                      className="inline-flex h-9 items-center gap-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 dark:bg-cyan-600 dark:hover:bg-cyan-500 px-3 text-sm font-semibold text-white shadow whitespace-nowrap"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add bank
-                    </button>
-                  </div>
-                </div>
-
-                {/* Bank Cards or Empty State */}
-                {banks.length === 0 ? (
-                    <div className="w-full rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-100/40 dark:bg-slate-800/40 p-10 text-center">
-                      <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-slate-200/60 dark:bg-slate-700/60">
-                        <Link2 className="h-6 w-6 text-slate-500 dark:text-slate-300" />
-                      </div>
-                      <h3 className="text-slate-900 dark:text-slate-100 font-semibold">No banks connected yet</h3>
-                      <p className="text-slate-600 dark:text-slate-400 mt-1">Connect a bank to start syncing transactions.</p>
-                      <button
-                        onClick={handleAddBankDirect}
-                        className="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-transparent text-slate-600 dark:text-slate-200 px-4 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700/60"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add bank
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {banks.map((bank) => (
-                        <BankCard
-                          key={bank.id}
-                          bank={bank}
-                          onSync={handleSyncBank}
-                          onDisconnect={handleDisconnectBank}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-
-                  {/* Toast Notifications */}
-                  <AnimatePresence>
-                    {toast && <Toast message={toast} onClose={() => setToast(null)} />}
-                  </AnimatePresence>
-
-
-                {/* Footer hint to match app style */}
-                <div className="mt-6 text-xs text-slate-500 dark:text-slate-500">
-                  Sumaura — Powered by Plaid (12 demo + real connections)
-                </div>
+                <ConnectPage onError={setError} />
               </div>
             )}
           </main>
