@@ -145,8 +145,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     return () => observer.disconnect();
   }, [tab]);
 
-  // budgets: moved to BudgetsPage
-
   const [toast, setToast] = useState<string | null>(null);
   const plaidConnections = usePlaidConnections();
   const banks = useMemo(() => {
@@ -167,8 +165,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     topMerchants: [] as any[],
     monthlyTotals: [] as any[]
   });
-
-  // budgets: moved to BudgetsPage
 
   const [monthSpend, setMonthSpend] = useState(0);
   const [byCat, setByCat] = useState<{ name: string; value: number }[]>([]);
