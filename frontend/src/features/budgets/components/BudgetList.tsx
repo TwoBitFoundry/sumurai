@@ -1,12 +1,12 @@
 import React from 'react'
-import type { Budget } from '../../../types/api'
 import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories'
 import { fmtUSD } from '../../../utils/format'
 import { PencilSquareIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { TrashIcon as TrashSolidIcon } from '@heroicons/react/24/solid'
 import BudgetProgress from './BudgetProgress'
+import type { BudgetProgressEntry } from '../hooks/useBudgets'
 
-export interface BudgetWithProgress extends Budget { spent: number; percentage: number }
+export interface BudgetWithProgress extends BudgetProgressEntry {}
 
 export function BudgetList({
   items,
