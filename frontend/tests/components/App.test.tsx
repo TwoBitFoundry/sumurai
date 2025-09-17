@@ -4,7 +4,6 @@ import { App } from '@/App'
 
 global.fetch = vi.fn()
 
-// Helper to mock the network boundary for auth/session endpoints per-test
 const mockFetchAuthOk = () => {
   const original = global.fetch as any
   const stub = vi.fn().mockImplementation((input: RequestInfo | URL) => {
@@ -20,10 +19,8 @@ const mockFetchAuthOk = () => {
     }
     return Promise.reject(new Error(`Unhandled fetch: ${url}`))
   })
-  // @ts-expect-error override for test
   global.fetch = stub
   return () => {
-    // @ts-expect-error restore
     global.fetch = original
   }
 }
@@ -120,23 +117,18 @@ describe('App Phase 2 - Business Logic Removal', () => {
       }
       return Promise.reject(new Error(`Unhandled fetch: ${url}`))
     })
-    // @ts-expect-error override for test
     global.fetch = stub
     return () => {
-      // @ts-expect-error restore
       global.fetch = original
     }
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
-    // Mock console.error to suppress expected error logs during tests
     console.error = vi.fn()
     
-    // Ensure clean DOM state between tests
     document.body.innerHTML = ''
     
-    // Mock sessionStorage for tests that need authentication
     Object.defineProperty(window, 'sessionStorage', {
       value: {
         getItem: vi.fn(),
@@ -150,9 +142,7 @@ describe('App Phase 2 - Business Logic Removal', () => {
   })
 
   afterEach(() => {
-    // Restore console.error
     console.error = originalConsoleError
-    // Ensure clean DOM between tests to prevent duplicate elements
     cleanup()
   })
 
@@ -203,8 +193,18 @@ describe('App Phase 2 - Business Logic Removal', () => {
     it('should not perform local calculations with useMemo for spending data', async () => {
       const validToken = 'header.' + btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })) + '.signature'
       ;(window.sessionStorage.getItem as any).mockReturnValue(validToken)
+
+      Object.defineProperty(window, 'localStorage', {
+        value: {
+          getItem: vi.fn((key) => key === 'onboarding_completed' ? 'true' : null),
+          setItem: vi.fn(),
+          removeItem: vi.fn(),
+        },
+        writable: true
+      })
+
       const restore = mockFetchAuthOk()
-      
+
       await act(async () => {
         render(<App />)
         await new Promise(resolve => setTimeout(resolve, 100))
@@ -265,7 +265,6 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
   })
   
   afterEach(() => {
-    // Ensure DOM is reset between tests in this suite
     cleanup()
   })
 

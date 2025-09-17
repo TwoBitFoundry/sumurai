@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { LoginScreen, RegisterScreen } from "./Auth";
 import { SessionManager } from "./SessionManager";
 import { AuthenticatedApp } from "./components/AuthenticatedApp";
+import { OnboardingWizard } from "./components/onboarding/OnboardingWizard";
 import { AuthService } from "./services/authService";
 import { getInitialTheme, setTheme } from "./utils/theme";
 
@@ -26,14 +27,14 @@ export function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login')
-  // Global theme state
+  const [showOnboarding, setShowOnboarding] = useState(false)
+
   const [dark, setDark] = useState(() => getInitialTheme())
 
   useEffect(() => {
     const checkAuth = async () => {
       const token = sessionStorage.getItem('auth_token')
       
-      // First check if token exists and is not expired locally
       if (!token || isTokenExpired(token)) {
         setIsAuthenticated(false)
         sessionStorage.removeItem('auth_token')
@@ -41,21 +42,22 @@ export function App() {
         return
       }
 
-      // Token exists and looks valid, now validate with backend
       try {
         const isValidSession = await AuthService.validateSession()
         if (isValidSession) {
           setIsAuthenticated(true)
+
+          const hasCompletedOnboarding = localStorage.getItem('onboarding_completed') === 'true'
+          setShowOnboarding(!hasCompletedOnboarding)
         } else {
           setIsAuthenticated(false)
-          // Token was already cleared by validateSession() if invalid
         }
       } catch (error) {
         console.warn('Auth validation error:', error)
         setIsAuthenticated(false)
         AuthService.clearToken()
       }
-      
+
       setIsLoading(false)
     }
 
@@ -65,6 +67,9 @@ export function App() {
   const handleAuthSuccess = useCallback((token: string) => {
     sessionStorage.setItem('auth_token', token)
     setIsAuthenticated(true)
+
+    const hasCompletedOnboarding = localStorage.getItem('onboarding_completed') === 'true'
+    setShowOnboarding(!hasCompletedOnboarding)
   }, [])
 
   const handleLogout = useCallback(async () => {
@@ -73,9 +78,14 @@ export function App() {
     } catch (error) {
       console.error('Logout error:', error)
     }
-    
+
     setIsAuthenticated(false)
+    setShowOnboarding(false)
     setAuthScreen('login')
+  }, [])
+
+  const handleOnboardingComplete = useCallback(() => {
+    setShowOnboarding(false)
   }, [])
 
   if (isLoading) {
@@ -128,15 +138,24 @@ export function App() {
     )
   }
 
+  if (showOnboarding) {
+    return (
+      <OnboardingWizard
+        onComplete={handleOnboardingComplete}
+        dark={dark}
+      />
+    )
+  }
+
   return (
     <SessionManager onLogout={handleLogout}>
-      <AuthenticatedApp 
-        onLogout={handleLogout} 
-        dark={dark} 
+      <AuthenticatedApp
+        onLogout={handleLogout}
+        dark={dark}
         setDark={(newTheme: boolean) => {
           setDark(newTheme);
           setTheme(newTheme);
-        }} 
+        }}
       />
     </SessionManager>
   )
