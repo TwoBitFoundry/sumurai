@@ -6,27 +6,25 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - VITE_API_BASE_URL=http://backend:3000
+      VITE_API_BASE_URL: /api
     depends_on:
       - backend
-      - redis
 
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile.prebuilt
-      platforms:
-        - linux/amd64
     platform: linux/amd64
     ports:
       - "3000:3000"
     environment:
-      - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/accounting
-      - PLAID_CLIENT_ID=${PLAID_CLIENT_ID:-test_client_id}
-      - PLAID_SECRET=${PLAID_SECRET:-test_secret}
-      - PLAID_ENV=${PLAID_ENV:-sandbox}
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      PLAID_CLIENT_ID: ${PLAID_CLIENT_ID}
+      PLAID_SECRET: ${PLAID_SECRET}
+      PLAID_ENV: ${PLAID_ENV}
+      JWT_SECRET: ${JWT_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,9 +51,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_DB=accounting
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+      POSTGRES_DB: accounting
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
