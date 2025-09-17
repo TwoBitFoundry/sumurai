@@ -1,3 +1,4 @@
+use anyhow::Context;
 use axum::{
     extract::{Path, Query, State},
     http::{HeaderMap, StatusCode},
@@ -109,9 +110,9 @@ async fn main() -> anyhow::Result<()> {
         cache_service.clone(),
     ));
 
-    let jwt_secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| {
-        "default_jwt_secret_key_for_development_only_please_change_in_production_12345".to_string()
-    });
+    let jwt_secret = std::env::var("JWT_SECRET").context(
+        "JWT_SECRET environment variable is required. Generate one with `openssl rand -hex 32`.",
+    )?;
 
     let auth_service = Arc::new(AuthService::new(jwt_secret)?);
 
