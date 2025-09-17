@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { AuthService } from './services/authService'
+import { useRegistrationValidation } from './hooks/useRegistrationValidation'
 
 interface LoginScreenProps {
   onNavigateToRegister: () => void
@@ -124,51 +125,29 @@ interface RegisterScreenProps {
 }
 
 export function RegisterScreen({ onNavigateToLogin }: RegisterScreenProps) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
-  }
-
-  const validatePassword = (password: string) => {
-    const minLength = password.length >= 8
-    const hasCapital = /[A-Z]/.test(password)
-    const hasNumber = /\d/.test(password)
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password)
-
-    return {
-      minLength,
-      hasCapital,
-      hasNumber,
-      hasSpecial,
-      isValid: minLength && hasCapital && hasNumber && hasSpecial
-    }
-  }
-
-  const isEmailValid = validateEmail(email)
-  const passwordValidation = validatePassword(password)
+  const {
+    email,
+    password,
+    confirmPassword,
+    isEmailValid,
+    passwordValidation,
+    isPasswordMatch,
+    setEmail,
+    setPassword,
+    setConfirmPassword,
+    validateForm
+  } = useRegistrationValidation()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    if (!isEmailValid) {
-      setError('Please enter a valid email address')
-      return
-    }
-
-    if (!passwordValidation.isValid) {
-      setError('Password does not meet requirements')
-      return
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match')
+    const validationError = validateForm()
+    if (validationError) {
+      setError(validationError)
       return
     }
 
@@ -267,14 +246,14 @@ export function RegisterScreen({ onNavigateToLogin }: RegisterScreenProps) {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className={`w-full px-4 py-3 rounded-lg border bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 transition-colors ${
-                confirmPassword && password !== confirmPassword
+                confirmPassword && !isPasswordMatch
                   ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500'
                   : 'border-slate-300 dark:border-slate-600 focus:ring-blue-500 focus:border-blue-500'
               }`}
               placeholder="Confirm your password"
               disabled={isLoading}
             />
-            {confirmPassword && password !== confirmPassword && (
+            {confirmPassword && !isPasswordMatch && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">
                 Passwords do not match
               </p>
