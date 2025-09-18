@@ -9,12 +9,16 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, 'src'),
       '@tests': path.resolve(__dirname, 'tests'),
+      '@docs': path.resolve(__dirname, '../docs'),
     },
   },
   css: {
     postcss: './postcss.config.js',
   },
   server: {
+    fs: {
+      allow: [path.resolve(__dirname, '..')],
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:3000',

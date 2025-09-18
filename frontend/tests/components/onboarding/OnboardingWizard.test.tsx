@@ -53,12 +53,12 @@ describe('OnboardingWizard', () => {
 
     render(<OnboardingWizard onComplete={onComplete} />)
 
-    expect(screen.getByText(/welcome to sumaura/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /next/i })).toBeInTheDocument()
+    expect(screen.getByText(/your new finance hub/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /skip for now/i })).not.toBeInTheDocument()
   })
 
-  it('given wizard at step 2 when rendered then shows progress indicator', () => {
+  it('given wizard at step 2 when rendered then shows simple step info', () => {
     mockUseOnboardingWizard.mockReturnValue({
       ...mockWizardHook,
       currentStep: 'connectAccount',
@@ -68,7 +68,6 @@ describe('OnboardingWizard', () => {
 
     render(<OnboardingWizard onComplete={vi.fn()} />)
 
-    expect(screen.getByText('100%')).toBeInTheDocument()
     expect(screen.getByText('Step 2 of 2')).toBeInTheDocument()
   })
 
@@ -87,7 +86,7 @@ describe('OnboardingWizard', () => {
 
     render(<OnboardingWizard onComplete={vi.fn()} />)
 
-    const nextButton = screen.getByRole('button', { name: 'Next' })
+    const nextButton = screen.getByRole('button', { name: 'Continue' })
     expect(nextButton).toBeEnabled()
     fireEvent.click(nextButton)
     expect(mockGoToNext).toHaveBeenCalled()
