@@ -76,6 +76,29 @@ describe('useOnboardingPlaidFlow', () => {
     expect(result.current.isConnected).toBe(true)
     expect(result.current.institutionName).toBe('Connected Bank')
     expect(onConnectionSuccess).toHaveBeenCalledWith('Connected Bank')
+    expect(mockPlaidService.getStatus).toHaveBeenCalled()
+  })
+
+  it('given plaid status fetch fails after exchange then still marks connected', async () => {
+    const onConnectionSuccess = vi.fn()
+    mockPlaidService.exchangeToken.mockResolvedValue({})
+    mockPlaidService.getStatus.mockRejectedValue(new Error('status error'))
+
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const { result } = renderHook(() =>
+      useOnboardingPlaidFlow({ onConnectionSuccess })
+    )
+
+    await act(async () => {
+      await result.current.handlePlaidSuccess('test-public-token')
+    })
+
+    expect(result.current.isConnected).toBe(true)
+    expect(onConnectionSuccess).toHaveBeenCalledWith('Connected Bank')
+    expect(consoleSpy).toHaveBeenCalled()
+
+    consoleSpy.mockRestore()
   })
 
   it('given plaid connection when failed then shows error state', async () => {

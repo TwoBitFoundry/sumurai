@@ -23,6 +23,7 @@ pub trait DatabaseRepository: Send + Sync {
     async fn get_user_by_email(&self, email: &str) -> Result<Option<User>>;
     async fn get_user_by_id(&self, user_id: &Uuid) -> Result<Option<User>>;
     async fn delete_user(&self, user_id: &Uuid) -> Result<()>;
+    async fn mark_onboarding_complete(&self, user_id: &Uuid) -> Result<()>;
 
     async fn get_transactions_for_user(&self, user_id: &Uuid) -> Result<Vec<Transaction>>;
     async fn get_transactions_with_account_for_user(
@@ -161,12 +162,13 @@ impl PostgresRepository {
     }
 
     fn map_user_row(
-        (id, email, password_hash, created_at, updated_at): (
+        (id, email, password_hash, created_at, updated_at, onboarding_completed): (
             uuid::Uuid,
             String,
             String,
             chrono::DateTime<chrono::Utc>,
             chrono::DateTime<chrono::Utc>,
+            bool,
         ),
     ) -> User {
         User {
@@ -175,6 +177,7 @@ impl PostgresRepository {
             password_hash,
             created_at,
             updated_at,
+            onboarding_completed,
         }
     }
 }
@@ -184,8 +187,8 @@ impl DatabaseRepository for PostgresRepository {
     async fn create_user(&self, user: &User) -> Result<()> {
         sqlx::query(
             r#"
-            INSERT INTO users (id, email, password_hash, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO users (id, email, password_hash, created_at, updated_at, onboarding_completed)
+            VALUES ($1, $2, $3, $4, $5, $6)
             "#,
         )
         .bind(user.id)
@@ -193,6 +196,7 @@ impl DatabaseRepository for PostgresRepository {
         .bind(&user.password_hash)
         .bind(user.created_at)
         .bind(user.updated_at)
+        .bind(user.onboarding_completed)
         .execute(&self.pool)
         .await?;
 
@@ -208,9 +212,10 @@ impl DatabaseRepository for PostgresRepository {
                 String,
                 chrono::DateTime<chrono::Utc>,
                 chrono::DateTime<chrono::Utc>,
+                bool,
             ),
         >(
-            "SELECT id, email, password_hash, created_at, updated_at FROM users WHERE email = $1",
+            "SELECT id, email, password_hash, created_at, updated_at, onboarding_completed FROM users WHERE email = $1",
         )
         .bind(email)
         .fetch_optional(&self.pool)
@@ -228,9 +233,10 @@ impl DatabaseRepository for PostgresRepository {
                 String,
                 chrono::DateTime<chrono::Utc>,
                 chrono::DateTime<chrono::Utc>,
+                bool,
             ),
         >(
-            "SELECT id, email, password_hash, created_at, updated_at FROM users WHERE id = $1",
+            "SELECT id, email, password_hash, created_at, updated_at, onboarding_completed FROM users WHERE id = $1",
         )
         .bind(user_id)
         .fetch_optional(&self.pool)
@@ -271,6 +277,21 @@ impl DatabaseRepository for PostgresRepository {
         );
 
         tx.commit().await?;
+        Ok(())
+    }
+
+    async fn mark_onboarding_complete(&self, user_id: &Uuid) -> Result<()> {
+        sqlx::query(
+            r#"
+            UPDATE users
+            SET onboarding_completed = true, updated_at = NOW()
+            WHERE id = $1
+            "#,
+        )
+        .bind(user_id)
+        .execute(&self.pool)
+        .await?;
+
         Ok(())
     }
 

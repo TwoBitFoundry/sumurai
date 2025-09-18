@@ -29,6 +29,7 @@ export function useOnboardingPlaidFlow(
   const [connectionInProgress, setConnectionInProgress] = useState(false)
   const [institutionName, setInstitutionName] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [shouldOpenLink, setShouldOpenLink] = useState(false)
 
   const handleError = useCallback((errorMessage: string) => {
     setError(errorMessage)
@@ -37,18 +38,23 @@ export function useOnboardingPlaidFlow(
   }, [onError])
 
   const handleSuccess = useCallback(async (publicToken: string) => {
-    try {
-      setConnectionInProgress(true)
-      setError(null)
+    setConnectionInProgress(true)
+    setError(null)
 
+    try {
       await PlaidService.exchangeToken(publicToken)
 
-      const status = await PlaidService.getStatus()
+      setIsConnected(true)
+      setInstitutionName('Connected Bank')
+      onConnectionSuccess?.('Connected Bank')
 
-      if (status.connected) {
-        setIsConnected(true)
-        setInstitutionName('Connected Bank')
-        onConnectionSuccess?.('Connected Bank')
+      try {
+        const status = await PlaidService.getStatus()
+        if (status.connected) {
+          setInstitutionName('Connected Bank')
+        }
+      } catch (statusError) {
+        console.warn('Failed to refresh Plaid status after connection', statusError)
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Connection failed'
@@ -58,15 +64,23 @@ export function useOnboardingPlaidFlow(
     }
   }, [handleError, onConnectionSuccess])
 
-  const { open } = usePlaidLink({
+  const { open, ready } = usePlaidLink({
     token: linkToken,
     onSuccess: handleSuccess,
     onExit: () => {
       setConnectionInProgress(false)
+      setShouldOpenLink(false)
     },
     onEvent: () => {
     },
   })
+
+  useEffect(() => {
+    if (shouldOpenLink && ready) {
+      open()
+      setShouldOpenLink(false)
+    }
+  }, [shouldOpenLink, ready, open])
 
   const getLinkToken = useCallback(async () => {
     try {
@@ -85,11 +99,12 @@ export function useOnboardingPlaidFlow(
     try {
       setConnectionInProgress(true)
       await getLinkToken()
-      open()
+      setShouldOpenLink(true)
     } catch (error) {
       setConnectionInProgress(false)
+      setShouldOpenLink(false)
     }
-  }, [getLinkToken, open])
+  }, [getLinkToken])
 
   const retryConnection = useCallback(async () => {
     setError(null)
@@ -102,6 +117,7 @@ export function useOnboardingPlaidFlow(
     setInstitutionName(null)
     setError(null)
     setLinkToken(null)
+    setShouldOpenLink(false)
   }, [])
 
   const handlePlaidSuccess = useCallback(async (publicToken: string) => {

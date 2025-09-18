@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
+import { AuthService } from '../services/authService'
 
-export type OnboardingStep = 'welcome' | 'mockData' | 'connectAccount'
+export type OnboardingStep = 'welcome' | 'connectAccount'
 
-const ONBOARDING_STEPS: OnboardingStep[] = ['welcome', 'mockData', 'connectAccount']
-const STORAGE_KEY = 'onboarding_completed'
+const ONBOARDING_STEPS: OnboardingStep[] = ['welcome', 'connectAccount']
 
 export interface UseOnboardingWizardReturn {
   currentStep: OnboardingStep
@@ -15,18 +15,13 @@ export interface UseOnboardingWizardReturn {
   progress: number
   goToNext: () => void
   goToPrevious: () => void
-  skipWizard: () => void
-  completeWizard: () => void
+  skipWizard: () => Promise<void>
+  completeWizard: () => Promise<void>
 }
 
 export function useOnboardingWizard(): UseOnboardingWizardReturn {
   const [stepIndex, setStepIndex] = useState(0)
   const [isComplete, setIsComplete] = useState(false)
-
-  useEffect(() => {
-    const completed = localStorage.getItem(STORAGE_KEY) === 'true'
-    setIsComplete(completed)
-  }, [])
 
   const currentStep = ONBOARDING_STEPS[stepIndex]
   const canGoBack = stepIndex > 0
@@ -46,17 +41,22 @@ export function useOnboardingWizard(): UseOnboardingWizardReturn {
     }
   }, [canGoBack])
 
-  const markComplete = useCallback(() => {
-    setIsComplete(true)
-    localStorage.setItem(STORAGE_KEY, 'true')
+  const markComplete = useCallback(async () => {
+    try {
+      await AuthService.completeOnboarding()
+    } catch (error) {
+      console.error('Failed to mark onboarding as complete:', error)
+    } finally {
+      setIsComplete(true)
+    }
   }, [])
 
-  const skipWizard = useCallback(() => {
-    markComplete()
+  const skipWizard = useCallback(async () => {
+    await markComplete()
   }, [markComplete])
 
-  const completeWizard = useCallback(() => {
-    markComplete()
+  const completeWizard = useCallback(async () => {
+    await markComplete()
   }, [markComplete])
 
   return {

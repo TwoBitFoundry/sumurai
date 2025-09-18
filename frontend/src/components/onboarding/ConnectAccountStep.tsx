@@ -7,7 +7,6 @@ interface ConnectAccountStepProps {
   error: string | null
   onConnect: () => void
   onRetry: () => void
-  selectedMockData: boolean
 }
 
 export function ConnectAccountStep({
@@ -17,33 +16,7 @@ export function ConnectAccountStep({
   error,
   onConnect,
   onRetry,
-  selectedMockData,
 }: ConnectAccountStepProps) {
-  if (selectedMockData) {
-    return (
-      <div className="text-center space-y-6">
-        <div className="space-y-4">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-            You're All Set!
-          </h1>
-          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Demo mode is enabled. You'll have access to sample data to explore all features.
-            You can connect real accounts anytime from the Connect tab.
-          </p>
-        </div>
-
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-6 max-w-2xl mx-auto">
-          <div className="text-4xl mb-4">🎭</div>
-          <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
-            Demo Mode Active
-          </h3>
-          <p className="text-slate-600 dark:text-slate-400">
-            Sample transactions, budgets, and analytics are ready for you to explore.
-          </p>
-        </div>
-      </div>
-    )
-  }
 
   if (isConnected) {
     return (

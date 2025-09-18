@@ -15,7 +15,16 @@ const mockFetchAuthOk = () => {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({ message: 'ok', cleared_session: '' }) } as any)
     }
     if (url.includes('/api/auth/refresh')) {
-      return Promise.resolve({ ok: true, status: 200, json: async () => ({ token: 'new.token.value' }) } as any)
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          token: 'new.token.value',
+          user_id: 'test-user',
+          expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          onboarding_completed: true,
+        }),
+      } as any)
     }
     return Promise.reject(new Error(`Unhandled fetch: ${url}`))
   })
@@ -113,7 +122,16 @@ describe('App Phase 2 - Business Logic Removal', () => {
         return Promise.resolve({ ok: true, status: 200, json: async () => ({ message: 'ok', cleared_session: '' }) } as any)
       }
       if (url.includes('/api/auth/refresh')) {
-        return Promise.resolve({ ok: true, status: 200, json: async () => ({ token: 'new.token.value' }) } as any)
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            token: 'new.token.value',
+            user_id: 'test-user',
+            expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+            onboarding_completed: true,
+          }),
+        } as any)
       }
       return Promise.reject(new Error(`Unhandled fetch: ${url}`))
     })
@@ -193,15 +211,6 @@ describe('App Phase 2 - Business Logic Removal', () => {
     it('should not perform local calculations with useMemo for spending data', async () => {
       const validToken = 'header.' + btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })) + '.signature'
       ;(window.sessionStorage.getItem as any).mockReturnValue(validToken)
-
-      Object.defineProperty(window, 'localStorage', {
-        value: {
-          getItem: vi.fn((key) => key === 'onboarding_completed' ? 'true' : null),
-          setItem: vi.fn(),
-          removeItem: vi.fn(),
-        },
-        writable: true
-      })
 
       const restore = mockFetchAuthOk()
 

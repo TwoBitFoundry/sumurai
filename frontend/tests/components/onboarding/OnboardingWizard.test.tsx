@@ -1,14 +1,12 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
 import { vi, afterEach } from 'vitest'
 
 // Mock the hooks
 vi.mock('@/hooks/useOnboardingWizard')
-vi.mock('@/hooks/useOnboardingPreferences')
 vi.mock('@/hooks/useOnboardingPlaidFlow')
 
 const mockUseOnboardingWizard = vi.mocked(await import('@/hooks/useOnboardingWizard')).useOnboardingWizard
-const mockUseOnboardingPreferences = vi.mocked(await import('@/hooks/useOnboardingPreferences')).useOnboardingPreferences
 const mockUseOnboardingPlaidFlow = vi.mocked(await import('@/hooks/useOnboardingPlaidFlow')).useOnboardingPlaidFlow
 
 describe('OnboardingWizard', () => {
@@ -19,21 +17,13 @@ describe('OnboardingWizard', () => {
     canGoBack: false,
     canGoNext: true,
     isLastStep: false,
-    progress: 33,
+    progress: 50,
     goToNext: vi.fn(),
     goToPrevious: vi.fn(),
     skipWizard: vi.fn(),
     completeWizard: vi.fn(),
   }
 
-  const mockPreferencesHook = {
-    preferences: { enableMockData: false },
-    hasSetPreferences: false,
-    setMockDataEnabled: vi.fn(),
-    savePreferences: vi.fn(),
-    applyPreferences: vi.fn(),
-    resetPreferences: vi.fn(),
-  }
 
   const mockPlaidFlowHook = {
     isConnected: false,
@@ -50,7 +40,6 @@ describe('OnboardingWizard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockUseOnboardingWizard.mockReturnValue(mockWizardHook)
-    mockUseOnboardingPreferences.mockReturnValue(mockPreferencesHook)
     mockUseOnboardingPlaidFlow.mockReturnValue(mockPlaidFlowHook)
   })
 
@@ -66,26 +55,25 @@ describe('OnboardingWizard', () => {
 
     expect(screen.getByText(/welcome to sumaura/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /next/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /skip for now/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /skip for now/i })).not.toBeInTheDocument()
   })
 
   it('given wizard at step 2 when rendered then shows progress indicator', () => {
     mockUseOnboardingWizard.mockReturnValue({
       ...mockWizardHook,
-      currentStep: 'mockData',
+      currentStep: 'connectAccount',
       stepIndex: 1,
-      progress: 67,
+      progress: 100,
     })
 
     render(<OnboardingWizard onComplete={vi.fn()} />)
 
-    expect(screen.getByText('67%')).toBeInTheDocument()
-    expect(screen.getByText('Step 2 of 3')).toBeInTheDocument()
+    expect(screen.getByText('100%')).toBeInTheDocument()
+    expect(screen.getByText('Step 2 of 2')).toBeInTheDocument()
   })
 
-  it('given navigation buttons when clicked then calls hook methods', () => {
+  it('given navigation buttons on welcome when next clicked then advances', () => {
     const mockGoToNext = vi.fn()
-    const mockSkipWizard = vi.fn()
 
     mockUseOnboardingWizard.mockReturnValue({
       ...mockWizardHook,
@@ -94,13 +82,8 @@ describe('OnboardingWizard', () => {
       canGoBack: false,
       canGoNext: true,
       goToNext: mockGoToNext,
-      skipWizard: mockSkipWizard,
     })
 
-    mockUseOnboardingPreferences.mockReturnValue({
-      ...mockPreferencesHook,
-      hasSetPreferences: false,
-    })
 
     render(<OnboardingWizard onComplete={vi.fn()} />)
 
@@ -109,49 +92,68 @@ describe('OnboardingWizard', () => {
     fireEvent.click(nextButton)
     expect(mockGoToNext).toHaveBeenCalled()
 
-    const skipButton = screen.getByRole('button', { name: 'Skip for now' })
-    fireEvent.click(skipButton)
-    expect(mockSkipWizard).toHaveBeenCalled()
   })
 
-  it('given any step when rendered then shows skip option', () => {
+  it('given connect account step when rendered then shows skip option', () => {
     mockUseOnboardingWizard.mockReturnValue({
       ...mockWizardHook,
-      currentStep: 'welcome',
-      stepIndex: 0,
+      currentStep: 'connectAccount',
+      stepIndex: 1,
+      isLastStep: true,
     })
 
     render(<OnboardingWizard onComplete={vi.fn()} />)
 
-    const skipButtons = screen.getAllByRole('button', { name: /skip for now/i })
-    expect(skipButtons.length).toBeGreaterThan(0)
+    const skipButton = screen.getByRole('button', { name: /skip for now/i })
+    fireEvent.click(skipButton)
+    expect(mockWizardHook.skipWizard).toHaveBeenCalled()
   })
 
-  it('given last step when complete button clicked then calls completion handlers', () => {
+  it('given final step when plaid connection succeeds then completes automatically', async () => {
     const onComplete = vi.fn()
-    const mockCompleteWizard = vi.fn()
+    const mockCompleteWizard = vi.fn().mockResolvedValue(undefined)
+    let capturedOptions: any
 
     mockUseOnboardingWizard.mockReturnValue({
       ...mockWizardHook,
       currentStep: 'connectAccount',
-      stepIndex: 2,
+      stepIndex: 1,
       isLastStep: true,
       canGoNext: false,
       completeWizard: mockCompleteWizard,
     })
 
-    mockUseOnboardingPreferences.mockReturnValue({
-      ...mockPreferencesHook,
-      preferences: { enableMockData: true },
-      hasSetPreferences: true,
+    mockUseOnboardingPlaidFlow.mockImplementation((options: any) => {
+      capturedOptions = options
+      return {
+        ...mockPlaidFlowHook,
+        isConnected: true,
+      }
     })
 
     render(<OnboardingWizard onComplete={onComplete} />)
 
-    fireEvent.click(screen.getByRole('button', { name: /complete/i }))
+    expect(capturedOptions?.onConnectionSuccess).toBeDefined()
+
+    await act(async () => {
+      await capturedOptions?.onConnectionSuccess?.('Connected Bank')
+    })
 
     expect(mockCompleteWizard).toHaveBeenCalled()
-    expect(onComplete).toHaveBeenCalled()
+  })
+
+  it('does not render a complete button on the final step', () => {
+    mockUseOnboardingWizard.mockReturnValue({
+      ...mockWizardHook,
+      currentStep: 'connectAccount',
+      stepIndex: 1,
+      isLastStep: true,
+      canGoNext: false,
+    })
+
+    render(<OnboardingWizard onComplete={vi.fn()} />)
+
+    expect(screen.queryByRole('button', { name: /complete/i })).not.toBeInTheDocument()
   })
 
   it('given wizard when wizard is completed then calls onComplete callback', () => {

@@ -1,36 +1,50 @@
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { useOnboardingWizard } from '@/hooks/useOnboardingWizard'
 
 describe('useOnboardingWizard', () => {
-  let localStorageData: Record<string, string> = {}
-  let originalLocalStorage: Storage
+  let sessionStorageData: Record<string, string> = {}
+  let originalSessionStorage: Storage
+  let originalFetch: typeof global.fetch
 
   beforeEach(() => {
-    originalLocalStorage = window.localStorage
-    localStorageData = {}
+    originalSessionStorage = window.sessionStorage
+    sessionStorageData = {}
 
-    Object.defineProperty(window, 'localStorage', {
+    Object.defineProperty(window, 'sessionStorage', {
       value: {
-        getItem: vi.fn((key: string) => localStorageData[key] || null),
+        getItem: vi.fn((key: string) => sessionStorageData[key] || null),
         setItem: vi.fn((key: string, value: string) => {
-          localStorageData[key] = value
+          sessionStorageData[key] = value
         }),
         removeItem: vi.fn((key: string) => {
-          delete localStorageData[key]
+          delete sessionStorageData[key]
         }),
         clear: vi.fn(() => {
-          localStorageData = {}
+          sessionStorageData = {}
         }),
       },
       writable: true
     })
+
+    sessionStorageData['auth_token'] = 'mock-token'
+
+    originalFetch = global.fetch
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        message: 'Onboarding completed',
+        onboarding_completed: true
+      })
+    })
   })
 
   afterEach(() => {
-    Object.defineProperty(window, 'localStorage', {
-      value: originalLocalStorage,
+    Object.defineProperty(window, 'sessionStorage', {
+      value: originalSessionStorage,
       writable: true
     })
+    global.fetch = originalFetch
+    vi.clearAllMocks()
   })
 
   it('given new wizard when initialized then starts at welcome step', () => {
@@ -41,18 +55,18 @@ describe('useOnboardingWizard', () => {
     expect(result.current.isComplete).toBe(false)
   })
 
-  it('given wizard at welcome when next clicked then navigates to mock data step', () => {
+  it('given wizard at welcome when next clicked then navigates to connect account step', () => {
     const { result } = renderHook(() => useOnboardingWizard())
 
     act(() => {
       result.current.goToNext()
     })
 
-    expect(result.current.currentStep).toBe('mockData')
+    expect(result.current.currentStep).toBe('connectAccount')
     expect(result.current.stepIndex).toBe(1)
   })
 
-  it('given wizard at mock data when back clicked then returns to welcome', () => {
+  it('given wizard at connect account when back clicked then returns to welcome', () => {
     const { result } = renderHook(() => useOnboardingWizard())
 
     act(() => {
@@ -67,55 +81,44 @@ describe('useOnboardingWizard', () => {
     expect(result.current.stepIndex).toBe(0)
   })
 
-  it('given wizard at any step when skip clicked then marks wizard complete', () => {
+  it('given wizard at any step when skip clicked then marks wizard complete', async () => {
     const { result } = renderHook(() => useOnboardingWizard())
 
-    act(() => {
-      result.current.skipWizard()
+    await act(async () => {
+      await result.current.skipWizard()
     })
 
-    expect(result.current.isComplete).toBe(true)
-    expect(localStorage.getItem('onboarding_completed')).toBe('true')
+    await waitFor(() => {
+      expect(result.current.isComplete).toBe(true)
+    })
+    expect(global.fetch).toHaveBeenCalledWith('/api/auth/onboarding/complete', expect.objectContaining({
+      method: 'PUT'
+    }))
   })
 
-  it('given wizard at final step when completed then persists completion state', () => {
+  it('given wizard at final step when completed then persists completion state', async () => {
     const { result } = renderHook(() => useOnboardingWizard())
 
     act(() => {
       result.current.goToNext()
     })
-    act(() => {
-      result.current.goToNext()
+
+    await act(async () => {
+      await result.current.completeWizard()
     })
 
-    act(() => {
-      result.current.completeWizard()
+    await waitFor(() => {
+      expect(result.current.isComplete).toBe(true)
     })
-
-    expect(result.current.isComplete).toBe(true)
-    expect(localStorage.getItem('onboarding_completed')).toBe('true')
-  })
-
-  it('given completed wizard when reinitialized then remains complete', () => {
-    localStorageData['onboarding_completed'] = 'true'
-
-    const { result } = renderHook(() => useOnboardingWizard())
-
-    expect(result.current.isComplete).toBe(true)
+    expect(global.fetch).toHaveBeenCalledWith('/api/auth/onboarding/complete', expect.objectContaining({
+      method: 'PUT'
+    }))
   })
 
   it('given wizard when checking navigation then provides correct availability', () => {
     const { result } = renderHook(() => useOnboardingWizard())
 
     expect(result.current.canGoBack).toBe(false)
-    expect(result.current.canGoNext).toBe(true)
-    expect(result.current.isLastStep).toBe(false)
-
-    act(() => {
-      result.current.goToNext()
-    })
-
-    expect(result.current.canGoBack).toBe(true)
     expect(result.current.canGoNext).toBe(true)
     expect(result.current.isLastStep).toBe(false)
 
@@ -131,13 +134,7 @@ describe('useOnboardingWizard', () => {
   it('given wizard when checking progress then calculates correctly', () => {
     const { result } = renderHook(() => useOnboardingWizard())
 
-    expect(result.current.progress).toBe(33)
-
-    act(() => {
-      result.current.goToNext()
-    })
-
-    expect(result.current.progress).toBe(67)
+    expect(result.current.progress).toBe(50)
 
     act(() => {
       result.current.goToNext()

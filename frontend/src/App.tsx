@@ -43,15 +43,12 @@ export function App() {
       }
 
       try {
-        const isValidSession = await AuthService.validateSession()
-        if (isValidSession) {
-          setIsAuthenticated(true)
-
-          const hasCompletedOnboarding = localStorage.getItem('onboarding_completed') === 'true'
-          setShowOnboarding(!hasCompletedOnboarding)
-        } else {
-          setIsAuthenticated(false)
-        }
+        // Use refresh token to validate session and get current onboarding status
+        const refreshResponse = await AuthService.refreshToken()
+        setIsAuthenticated(true)
+        setShowOnboarding(!refreshResponse.onboarding_completed)
+        // Update the token with the refreshed one
+        sessionStorage.setItem('auth_token', refreshResponse.token)
       } catch (error) {
         console.warn('Auth validation error:', error)
         setIsAuthenticated(false)
@@ -64,12 +61,10 @@ export function App() {
     checkAuth()
   }, [])
 
-  const handleAuthSuccess = useCallback((token: string) => {
-    sessionStorage.setItem('auth_token', token)
+  const handleAuthSuccess = useCallback((authResponse: { token: string; onboarding_completed: boolean }) => {
+    sessionStorage.setItem('auth_token', authResponse.token)
     setIsAuthenticated(true)
-
-    const hasCompletedOnboarding = localStorage.getItem('onboarding_completed') === 'true'
-    setShowOnboarding(!hasCompletedOnboarding)
+    setShowOnboarding(!authResponse.onboarding_completed)
   }, [])
 
   const handleLogout = useCallback(async () => {
@@ -129,7 +124,10 @@ export function App() {
                   onLoginSuccess={handleAuthSuccess}
                 />
               ) : (
-                <RegisterScreen onNavigateToLogin={() => setAuthScreen('login')} />
+                <RegisterScreen
+                  onNavigateToLogin={() => setAuthScreen('login')}
+                  onRegisterSuccess={handleAuthSuccess}
+                />
               )}
             </div>
           </main>
