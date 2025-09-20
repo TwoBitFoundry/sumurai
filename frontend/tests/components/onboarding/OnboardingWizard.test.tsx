@@ -1,10 +1,24 @@
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act, cleanup } from '@testing-library/react'
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
-import { vi, afterEach } from 'vitest'
+import { vi, beforeEach, afterEach } from 'vitest'
 
 // Mock the hooks
 vi.mock('@/hooks/useOnboardingWizard')
 vi.mock('@/hooks/useOnboardingPlaidFlow')
+
+// Mock boundary components so copy tweaks do not break contract tests
+const { mockWelcomeStep, mockConnectAccountStep } = vi.hoisted(() => ({
+  mockWelcomeStep: vi.fn(() => <div data-testid="welcome-step">Welcome Step</div>),
+  mockConnectAccountStep: vi.fn(() => <div data-testid="connect-step">Connect Step</div>),
+}))
+
+vi.mock('@/components/onboarding/WelcomeStep', () => ({
+  WelcomeStep: mockWelcomeStep,
+}))
+
+vi.mock('@/components/onboarding/ConnectAccountStep', () => ({
+  ConnectAccountStep: mockConnectAccountStep,
+}))
 
 const mockUseOnboardingWizard = vi.mocked(await import('@/hooks/useOnboardingWizard')).useOnboardingWizard
 const mockUseOnboardingPlaidFlow = vi.mocked(await import('@/hooks/useOnboardingPlaidFlow')).useOnboardingPlaidFlow
@@ -38,12 +52,16 @@ describe('OnboardingWizard', () => {
   }
 
   beforeEach(() => {
+    cleanup()
     vi.clearAllMocks()
     mockUseOnboardingWizard.mockReturnValue(mockWizardHook)
     mockUseOnboardingPlaidFlow.mockReturnValue(mockPlaidFlowHook)
+    mockWelcomeStep.mockClear()
+    mockConnectAccountStep.mockClear()
   })
 
   afterEach(() => {
+    cleanup()
     vi.resetAllMocks()
     document.body.innerHTML = ''
   })
@@ -53,7 +71,7 @@ describe('OnboardingWizard', () => {
 
     render(<OnboardingWizard onComplete={onComplete} />)
 
-    expect(screen.getByText(/your new finance hub/i)).toBeInTheDocument()
+    expect(screen.getByTestId('welcome-step')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /skip for now/i })).not.toBeInTheDocument()
   })
@@ -68,7 +86,7 @@ describe('OnboardingWizard', () => {
 
     render(<OnboardingWizard onComplete={vi.fn()} />)
 
-    expect(screen.getByText('Step 2 of 2')).toBeInTheDocument()
+    expect(screen.getByTestId('connect-step')).toBeInTheDocument()
   })
 
   it('given navigation buttons on welcome when next clicked then advances', () => {
