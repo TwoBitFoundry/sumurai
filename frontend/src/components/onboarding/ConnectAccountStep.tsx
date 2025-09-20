@@ -1,4 +1,110 @@
 import React from 'react'
+import type { LucideIcon } from 'lucide-react'
+import { Building2, Eye, Fingerprint, Landmark, ShieldCheck, Zap } from 'lucide-react'
+
+type HighlightPalette = {
+  gradient: string
+  ring: string
+  icon: string
+  glow: string
+}
+
+type PlaidHighlight = {
+  icon: LucideIcon
+  title: string
+  body: string
+  palette: HighlightPalette
+}
+
+type FeatureHighlight = {
+  icon: LucideIcon
+  title: string
+  body: string
+  palette: HighlightPalette
+}
+
+const plaidHighlights: PlaidHighlight[] = [
+  {
+    icon: Building2,
+    title: 'Independent linking',
+    body: 'Credentials never touch our servers—Plaid brokers every session.',
+    palette: {
+      gradient: 'from-amber-400/55 via-amber-500/25 to-amber-500/5',
+      ring: 'ring-amber-300/35',
+      icon: 'text-amber-200',
+      glow: 'shadow-[0_18px_45px_-25px_rgba(245,158,11,0.65)]',
+    },
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Protected access',
+    body: 'MFA, device fingerprinting, and tokenization guard each sync.',
+    palette: {
+      gradient: 'from-sky-400/55 via-sky-500/25 to-sky-500/5',
+      ring: 'ring-sky-300/35',
+      icon: 'text-sky-200',
+      glow: 'shadow-[0_18px_45px_-25px_rgba(14,165,233,0.6)]',
+    },
+  },
+  {
+    icon: Fingerprint,
+    title: 'You stay in control',
+    body: 'Disconnect anytime from Settings—data access stops instantly.',
+    palette: {
+      gradient: 'from-violet-400/55 via-violet-500/25 to-violet-500/5',
+      ring: 'ring-violet-300/35',
+      icon: 'text-violet-200',
+      glow: 'shadow-[0_18px_45px_-25px_rgba(139,92,246,0.6)]',
+    },
+  },
+  {
+    icon: Eye,
+    title: 'Preview first',
+    body: 'Not ready yet? Explore demo insights and link when you are.',
+    palette: {
+      gradient: 'from-fuchsia-400/55 via-fuchsia-500/25 to-fuchsia-500/5',
+      ring: 'ring-fuchsia-300/35',
+      icon: 'text-fuchsia-200',
+      glow: 'shadow-[0_18px_45px_-25px_rgba(217,70,239,0.62)]',
+    },
+  },
+]
+
+const featureHighlights: FeatureHighlight[] = [
+  {
+    icon: ShieldCheck,
+    title: 'Secure',
+    body: 'Bank-grade encryption and read-only access.',
+    palette: {
+      gradient: 'from-sky-400/55 via-sky-500/25 to-sky-500/5',
+      ring: 'ring-sky-300/35',
+      icon: 'text-sky-100',
+      glow: 'shadow-[0_16px_40px_-24px_rgba(14,165,233,0.55)]',
+    },
+  },
+  {
+    icon: Zap,
+    title: 'Fast',
+    body: 'Most connections finish in under a minute.',
+    palette: {
+      gradient: 'from-amber-400/55 via-amber-500/25 to-amber-500/5',
+      ring: 'ring-amber-300/35',
+      icon: 'text-amber-100',
+      glow: 'shadow-[0_16px_40px_-24px_rgba(245,158,11,0.55)]',
+    },
+  },
+  {
+    icon: Landmark,
+    title: '11k+ banks',
+    body: 'Covering major institutions and credit unions.',
+    palette: {
+      gradient: 'from-emerald-400/55 via-emerald-500/25 to-emerald-500/5',
+      ring: 'ring-emerald-300/35',
+      icon: 'text-emerald-100',
+      glow: 'shadow-[0_16px_40px_-24px_rgba(16,185,129,0.55)]',
+    },
+  },
+]
 
 interface ConnectAccountStepProps {
   isConnected: boolean
@@ -91,17 +197,21 @@ export function ConnectAccountStep({
 
         <div className="mt-6 flex flex-1 flex-col gap-4 rounded-2xl border border-white/60 bg-white/75 p-5 shadow-sm backdrop-blur dark:border-slate-800/50 dark:bg-slate-900/70">
           <div className="grid auto-rows-fr gap-3 sm:grid-cols-3">
-            {[
-              { icon: '🔒', title: 'Secure', body: 'Bank-grade encryption and read-only access.' },
-              { icon: '⚡', title: 'Fast', body: 'Most connections finish in under a minute.' },
-              { icon: '🏦', title: '11k+ banks', body: 'Covering major institutions and credit unions.' },
-            ].map(feature => (
-              <div key={feature.title} className="flex h-full flex-col items-center justify-start rounded-xl bg-slate-100/70 px-4 py-3 text-center dark:bg-slate-800/70">
-                <div className="text-xl">{feature.icon}</div>
-                <h4 className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  {feature.title}
-                </h4>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{feature.body}</p>
+            {featureHighlights.map(({ icon: Icon, title, body, palette }) => (
+              <div
+                key={title}
+                className="flex h-full flex-col items-center justify-start rounded-xl border border-white/10 bg-slate-900/80 px-4 py-4 text-center text-slate-300 shadow-[0_18px_42px_-26px_rgba(15,23,42,0.85)] backdrop-blur dark:border-slate-700/60 dark:bg-slate-950/60"
+              >
+                <span
+                  className={`relative inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-slate-950/60 ring-1 ring-inset ${palette.ring} ${palette.glow}`}
+                  aria-hidden="true"
+                >
+                  <span className={`absolute inset-0 bg-gradient-to-br ${palette.gradient}`} />
+                  <span className="absolute inset-[20%] rounded-full bg-black/20 blur-[6px] opacity-40" />
+                  <Icon className={`relative h-5 w-5 ${palette.icon}`} strokeWidth={1.7} />
+                </span>
+                <h4 className="mt-2 text-sm font-semibold text-slate-100">{title}</h4>
+                <p className="mt-1 text-xs text-slate-400">{body}</p>
               </div>
             ))}
           </div>
@@ -119,33 +229,22 @@ export function ConnectAccountStep({
           </div>
           <div className="flex flex-col gap-4">
             <div className="grid auto-rows-fr gap-3 sm:grid-cols-2">
-              {[
-                {
-                  icon: '🏛️',
-                  title: 'Independent linking',
-                  body: 'Credentials never touch our servers—Plaid brokers every session.',
-                },
-                {
-                  icon: '🛡️',
-                  title: 'Protected access',
-                  body: 'MFA, device fingerprinting, and tokenization guard each sync.',
-                },
-                {
-                  icon: '📜',
-                  title: 'You stay in control',
-                  body: 'Disconnect anytime from Settings—data access stops instantly.',
-                },
-                {
-                  icon: '👀',
-                  title: 'Preview first',
-                  body: 'Not ready yet? Explore demo insights and link when you are.',
-                },
-              ].map(item => (
-                <div key={item.title} className="flex h-full items-start gap-3 rounded-2xl bg-slate-100/70 p-4 text-[13px] text-slate-600 shadow-sm dark:bg-slate-800/60 dark:text-slate-300">
-                  <span className="mt-0.5 text-base">{item.icon}</span>
+              {plaidHighlights.map(({ icon: Icon, title, body, palette }) => (
+                <div
+                  key={title}
+                  className="group relative flex h-full items-start gap-4 overflow-hidden rounded-2xl border border-white/5 bg-slate-900/60 p-4 text-[13px] text-slate-300 shadow-[0_18px_46px_-28px_rgba(15,23,42,0.9)] transition-colors duration-300 backdrop-blur-sm dark:border-slate-700/40 dark:bg-slate-950/40"
+                >
+                  <span
+                    className={`relative inline-flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-950/70 ring-1 ring-inset ${palette.ring} ${palette.glow} transition-transform duration-300 group-hover:scale-[1.04] group-hover:shadow-[0_20px_46px_-28px_rgba(15,23,42,0.95)]`}
+                    aria-hidden="true"
+                  >
+                    <span className={`absolute inset-0 bg-gradient-to-br ${palette.gradient}`} />
+                    <span className="absolute inset-[18%] rounded-full bg-black/20 blur-[6px] opacity-50" />
+                    <Icon className={`relative h-5 w-5 ${palette.icon}`} strokeWidth={1.7} />
+                  </span>
                   <div className="leading-tight">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{item.title}</p>
-                    <p className="mt-1 text-[12px] text-slate-500 dark:text-slate-400">{item.body}</p>
+                    <p className="text-sm font-semibold text-slate-100">{title}</p>
+                    <p className="mt-1 text-[12px] text-slate-400">{body}</p>
                   </div>
                 </div>
               ))}
