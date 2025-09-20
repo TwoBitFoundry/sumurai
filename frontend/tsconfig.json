@@ -14,7 +14,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@tests/*": ["tests/*"]
+      "@tests/*": ["tests/*"],
+      "@docs/*": ["../docs/*"]
     },
     "resolveJsonModule": true,
     "isolatedModules": true,

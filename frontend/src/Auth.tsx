@@ -4,7 +4,7 @@ import { useRegistrationValidation } from './hooks/useRegistrationValidation'
 
 interface LoginScreenProps {
   onNavigateToRegister: () => void
-  onLoginSuccess?: (token: string) => void
+  onLoginSuccess?: (authResponse: { token: string; onboarding_completed: boolean }) => void
 }
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -29,7 +29,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
     try {
       const response = await AuthService.login({ email, password })
       AuthService.storeToken(response.token)
-      onLoginSuccess?.(response.token)
+      onLoginSuccess?.(response)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed. Please check your credentials.'
       setError(errorMessage)
@@ -122,9 +122,10 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
 
 interface RegisterScreenProps {
   onNavigateToLogin: () => void
+  onRegisterSuccess?: (authResponse: { token: string; onboarding_completed: boolean }) => void
 }
 
-export function RegisterScreen({ onNavigateToLogin }: RegisterScreenProps) {
+export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: RegisterScreenProps) {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -154,8 +155,9 @@ export function RegisterScreen({ onNavigateToLogin }: RegisterScreenProps) {
     setIsLoading(true)
 
     try {
-      await AuthService.register({ email, password })
-      onNavigateToLogin()
+      const response = await AuthService.register({ email, password })
+      AuthService.storeToken(response.token)
+      onRegisterSuccess?.(response)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed'
       setError(errorMessage)

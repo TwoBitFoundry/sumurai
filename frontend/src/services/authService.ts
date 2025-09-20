@@ -10,10 +10,16 @@ interface RegisterCredentials {
 
 interface AuthResponse {
   token: string
+  user_id: string
+  expires_at: string
+  onboarding_completed: boolean
 }
 
 interface RefreshResponse {
   token: string
+  user_id: string
+  expires_at: string
+  onboarding_completed: boolean
 }
 
 interface RegisterResponse {
@@ -34,7 +40,7 @@ export class AuthService {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials)
     })
-    
+
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error('Invalid email or password')
@@ -44,7 +50,7 @@ export class AuthService {
         throw new Error('Login failed')
       }
     }
-    
+
     return response.json()
   }
   
@@ -131,13 +137,13 @@ export class AuthService {
     return response.json()
   }
   
-  static async register(credentials: RegisterCredentials): Promise<RegisterResponse> {
+  static async register(credentials: RegisterCredentials): Promise<AuthResponse> {
     const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials)
     })
-    
+
     if (!response.ok) {
       if (response.status === 409) {
         throw new Error('Email already exists')
@@ -147,7 +153,7 @@ export class AuthService {
         throw new Error('Registration failed')
       }
     }
-    
+
     return response.json()
   }
 
@@ -190,6 +196,33 @@ export class AuthService {
       }
     }
     
+    return response.json()
+  }
+
+  static async completeOnboarding(): Promise<{ message: string; onboarding_completed: boolean }> {
+    const token = this.getToken()
+    if (!token) {
+      throw new Error('No authentication token')
+    }
+
+    const response = await fetch('/api/auth/onboarding/complete', {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Authentication required')
+      } else if (response.status === 500) {
+        throw new Error('Server error. Please try again later.')
+      } else {
+        throw new Error('Failed to complete onboarding')
+      }
+    }
+
     return response.json()
   }
 }

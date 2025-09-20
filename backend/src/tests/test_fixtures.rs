@@ -355,6 +355,7 @@ impl TestFixtures {
             password_hash: auth_service.hash_password("SecurePass123!").unwrap(),
             created_at: Utc::now(),
             updated_at: Utc::now(),
+            onboarding_completed: false,
         };
 
         let auth_token = auth_service.generate_token(user_id).unwrap();

@@ -147,6 +147,7 @@ pub fn create_app(state: AppState) -> Router {
         .route("/api/auth/logout", post(logout_user));
 
     let protected_routes = Router::new()
+        .route("/api/auth/onboarding/complete", put(complete_user_onboarding))
         .route("/api/transactions", get(get_authenticated_transactions))
         .route(
             "/api/plaid/link-token",
@@ -243,6 +244,7 @@ async fn register_user(
         password_hash,
         created_at: Utc::now(),
         updated_at: Utc::now(),
+        onboarding_completed: false,
     };
 
     if let Err(e) = state.db_repository.create_user(&user).await {
@@ -284,6 +286,7 @@ async fn register_user(
         token: auth_token.token,
         user_id: user_id.to_string(),
         expires_at,
+        onboarding_completed: false,
     }))
 }
 
@@ -353,6 +356,7 @@ async fn login_user(
         token: auth_token.token,
         user_id: user.id.to_string(),
         expires_at,
+        onboarding_completed: user.onboarding_completed,
     }))
 }
 
@@ -406,6 +410,14 @@ async fn refresh_user_session(
 
     let user_id = Uuid::parse_str(&claims.user_id()).map_err(|_| StatusCode::BAD_REQUEST)?;
 
+    // Get user from database to fetch onboarding status
+    let user = state
+        .db_repository
+        .get_user_by_id(&user_id)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
     let auth_token = state
         .auth_service
         .generate_token(user_id)
@@ -416,6 +428,14 @@ async fn refresh_user_session(
     // Cache refreshed JWT in Redis with TTL
     let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
     if ttl > 0 {
+        if let Err(e) = state
+            .cache_service
+            .set_session_valid(&auth_token.jwt_id, ttl)
+            .await
+        {
+            tracing::warn!("Failed to set refreshed session validity in cache: {}", e);
+        }
+
         if let Err(e) = state
             .cache_service
             .set_jwt_token(&auth_token.jwt_id, &auth_token.token, ttl)
@@ -429,9 +449,32 @@ async fn refresh_user_session(
         token: auth_token.token,
         user_id: claims.user_id(),
         expires_at: expires_at.to_rfc3339(),
+        onboarding_completed: user.onboarding_completed,
     }))
 }
 
+async fn complete_user_onboarding(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user_id = auth_context.user_id;
+
+    match state.db_repository.mark_onboarding_complete(&user_id).await {
+        Ok(_) => {
+            tracing::info!("User {} completed onboarding", user_id);
+            Ok(Json(serde_json::json!({
+                "message": "Onboarding completed successfully",
+                "onboarding_completed": true
+            })))
+        }
+        Err(e) => {
+            tracing::error!("Failed to mark onboarding complete for user {}: {}", user_id, e);
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to update onboarding status"
+            ))
+        }
+    }
+}
 
 async fn get_authenticated_transactions(
     State(state): State<AppState>,
