@@ -133,7 +133,7 @@ export function OnboardingWizard({ onComplete, dark = false }: OnboardingWizardP
 
   return (
     <div className={dark ? 'dark' : ''}>
-      <div className="h-dvh bg-gradient-to-br from-slate-100/80 via-slate-50 to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-4 md:p-8">
+      <div className="min-h-dvh w-full bg-gradient-to-br from-slate-100/80 via-slate-50 to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-4 md:p-8">
         <Card className="relative w-full max-w-6xl overflow-hidden rounded-3xl border border-white/40 bg-white/70 p-6 shadow-2xl backdrop-blur-xl dark:border-slate-800/40 dark:bg-slate-900/70 md:p-8 lg:p-10">
           <div className="pointer-events-none absolute inset-0 opacity-60">
             <div className="absolute -left-32 top-16 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl" />
