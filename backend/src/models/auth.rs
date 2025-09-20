@@ -22,6 +22,7 @@ pub struct AuthResponse {
     pub token: String,
     pub user_id: String,
     pub expires_at: String,
+    pub onboarding_completed: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -105,4 +106,5 @@ pub struct User {
     pub password_hash: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub onboarding_completed: bool,
 }

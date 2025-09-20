@@ -21,6 +21,7 @@ mod fixtures {
             password_hash: "hashed_password".to_string(),
             created_at: Utc::now(),
             updated_at: Utc::now(),
+            onboarding_completed: false,
         }
     }
 
@@ -31,6 +32,7 @@ mod fixtures {
             password_hash: "hashed_password2".to_string(),
             created_at: Utc::now(),
             updated_at: Utc::now(),
+            onboarding_completed: false,
         }
     }
 
@@ -306,6 +308,7 @@ async fn given_user_foreign_keys_when_adding_to_existing_tables_then_enforces_re
         password_hash: "hashed_password".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     mock_repo
@@ -380,6 +383,7 @@ async fn given_row_level_security_policies_when_querying_then_enforces_user_isol
         password_hash: "hashed_password1".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     let user2 = User {
@@ -388,6 +392,7 @@ async fn given_row_level_security_policies_when_querying_then_enforces_user_isol
         password_hash: "hashed_password2".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     let user1_transaction = Transaction {
@@ -500,6 +505,7 @@ async fn given_user_context_when_querying_accounts_then_returns_only_user_accoun
         password_hash: "hashed_password1".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     let user2 = User {
@@ -508,6 +514,7 @@ async fn given_user_context_when_querying_accounts_then_returns_only_user_accoun
         password_hash: "hashed_password2".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     let user1_account = Account {
@@ -601,6 +608,7 @@ async fn given_database_indexes_when_querying_user_data_then_uses_efficient_quer
         password_hash: "hashed_password".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     mock_repo
@@ -635,6 +643,7 @@ async fn given_user_deletion_when_cascading_then_removes_all_related_session_dat
         password_hash: "hashed_password".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     let account = Account {
@@ -727,6 +736,7 @@ async fn given_two_users_when_querying_transactions_then_each_sees_only_their_ow
         password_hash: "hashed_password1".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     let user2 = User {
@@ -735,6 +745,7 @@ async fn given_two_users_when_querying_transactions_then_each_sees_only_their_ow
         password_hash: "hashed_password2".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     let _user1_clone = user1.clone();
@@ -1240,6 +1251,7 @@ async fn given_database_rls_policies_when_user_queries_data_then_enforces_user_c
         password_hash: "hashed_password1".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     let user2 = User {
@@ -1248,6 +1260,7 @@ async fn given_database_rls_policies_when_user_queries_data_then_enforces_user_c
         password_hash: "hashed_password2".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     mock_repo
@@ -1517,6 +1530,7 @@ async fn given_repository_queries_when_no_user_context_set_then_returns_empty_re
         password_hash: "hashed_password".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     mock_repo
@@ -1725,6 +1739,7 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
         password_hash: "hashed_password1".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     let user2 = User {
@@ -1733,6 +1748,7 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
         password_hash: "hashed_password2".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     let user3 = User {
@@ -1741,6 +1757,7 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
         password_hash: "hashed_password3".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     mock_repo
@@ -2256,6 +2273,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         password_hash: "hashed_password1".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     let user2 = User {
@@ -2264,6 +2282,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         password_hash: "hashed_password2".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     mock_repo
@@ -2630,6 +2649,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         password_hash: "hashed_password1".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     let user2 = User {
@@ -2638,6 +2658,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         password_hash: "hashed_password2".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     let user3 = User {
@@ -2646,6 +2667,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         password_hash: "hashed_password3".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        onboarding_completed: false,
     };
 
     mock_repo.create_user(&user1).await.unwrap();

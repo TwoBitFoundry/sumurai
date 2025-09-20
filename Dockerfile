@@ -13,6 +13,7 @@ COPY frontend/tailwind.config.js .
 COPY frontend/postcss.config.js .
 COPY frontend/index.html .
 COPY frontend/src ./src
+COPY docs /app/docs
 RUN npm run build
 
 # ---------- Runtime stage ----------
