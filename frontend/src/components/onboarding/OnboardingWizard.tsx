@@ -178,9 +178,6 @@ export function OnboardingWizard({ onComplete, dark = false }: OnboardingWizardP
                     )
                   })}
                 </ol>
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Step {stepIndex + 1} of {steps.length}
-                </span>
               </div>
               {renderCurrentStep()}
             </div>
