@@ -102,12 +102,18 @@ export function WelcomeStep() {
         <div className="pointer-events-none absolute -top-6 right-0 h-24 w-24 rounded-full bg-blue-400/20 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-10 left-8 h-32 w-32 rounded-full bg-purple-400/20 blur-3xl" />
 
-        <div className="relative overflow-hidden rounded-2xl ring-1 ring-white/50 shadow-2xl dark:ring-slate-800/50">
-          <img
-            src={dashboardHero}
-            alt="Sumaura dashboard preview"
-            className="block w-full h-auto object-contain object-top"
-          />
+        <div className="relative z-10 flex flex-col gap-4 rounded-2xl bg-white/80 p-6 shadow-2xl ring-1 ring-white/50 backdrop-blur dark:bg-slate-900/70 dark:ring-slate-800/50">
+          <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400 sm:mb-1">
+            <span>What you'll see</span>
+            <span className="hidden text-[10px] tracking-[0.25em] text-slate-400 sm:inline">Live dashboard preview</span>
+          </div>
+          <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70 ring-1 ring-inset ring-white/15 ring-offset-2 ring-offset-white/70 shadow-[0_18px_46px_-28px_rgba(15,23,42,0.9)] dark:border-slate-800/40 dark:bg-slate-950/50 dark:ring-slate-800/60 dark:ring-offset-slate-900/80 sm:aspect-[18/10]">
+            <img
+              src={dashboardHero}
+              alt="Sumaura dashboard preview"
+              className="absolute inset-0 h-full w-full object-cover object-top"
+            />
+          </div>
         </div>
       </div>
     </div>

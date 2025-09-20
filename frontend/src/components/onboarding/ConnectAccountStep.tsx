@@ -74,7 +74,7 @@ const featureHighlights: FeatureHighlight[] = [
   {
     icon: ShieldCheck,
     title: 'Secure',
-    body: 'Bank-grade encryption and read-only access.',
+    body: 'Bank-grade encryption and limited access.',
     palette: {
       gradient: 'from-sky-400/55 via-sky-500/25 to-sky-500/5',
       ring: 'ring-sky-300/35',
@@ -85,7 +85,7 @@ const featureHighlights: FeatureHighlight[] = [
   {
     icon: Zap,
     title: 'Fast',
-    body: 'Most connections finish in under a minute.',
+    body: 'All accounts synced in a snap.',
     palette: {
       gradient: 'from-amber-400/55 via-amber-500/25 to-amber-500/5',
       ring: 'ring-amber-300/35',
@@ -196,7 +196,7 @@ export function ConnectAccountStep({
         )}
 
         <div className="mt-6 flex flex-1 flex-col gap-4 rounded-2xl border border-white/60 bg-white/75 p-5 shadow-sm backdrop-blur dark:border-slate-800/50 dark:bg-slate-900/70">
-          <div className="grid auto-rows-fr gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 items-start sm:grid-cols-3">
             {featureHighlights.map(({ icon: Icon, title, body, palette }) => (
               <div
                 key={title}
