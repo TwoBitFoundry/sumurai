@@ -89,38 +89,36 @@ export function ConnectAccountStep({
           </div>
         )}
 
-        <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-white/60 bg-white/75 p-5 shadow-sm backdrop-blur dark:border-slate-800/50 dark:bg-slate-900/70">
+        <div className="mt-6 flex flex-1 flex-col gap-4 rounded-2xl border border-white/60 bg-white/75 p-5 shadow-sm backdrop-blur dark:border-slate-800/50 dark:bg-slate-900/70">
           <div className="grid auto-rows-fr gap-3 sm:grid-cols-3">
             {[
               { icon: '🔒', title: 'Secure', body: 'Bank-grade encryption and read-only access.' },
               { icon: '⚡', title: 'Fast', body: 'Most connections finish in under a minute.' },
               { icon: '🏦', title: '11k+ banks', body: 'Covering major institutions and credit unions.' },
             ].map(feature => (
-              <div key={feature.title} className="flex h-full flex-col justify-between rounded-xl bg-slate-100/70 px-4 py-3 text-center dark:bg-slate-800/70">
+              <div key={feature.title} className="flex h-full flex-col items-center justify-start rounded-xl bg-slate-100/70 px-4 py-3 text-center dark:bg-slate-800/70">
                 <div className="text-xl">{feature.icon}</div>
-                <div>
-                  <h4 className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {feature.title}
-                  </h4>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{feature.body}</p>
-                </div>
+                <h4 className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {feature.title}
+                </h4>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{feature.body}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="relative flex h-full flex-col lg:mt-[2.45rem]">
+      <div className="relative flex flex-col self-start lg:mt-[2.45rem]">
         <div className="pointer-events-none absolute -top-6 right-0 h-24 w-24 rounded-full bg-blue-400/20 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-10 left-8 h-32 w-32 rounded-full bg-purple-400/20 blur-3xl" />
 
         <div className="relative z-10 flex flex-col rounded-2xl bg-white/80 p-6 shadow-2xl ring-1 ring-white/50 backdrop-blur dark:bg-slate-900/70 dark:ring-slate-800/50">
-          <div className="mb-4 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
+          <div className="mb-3 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400 sm:mb-4">
             <span>Why Plaid?</span>
             <span>Trusted by 12k+ apps</span>
           </div>
-          <div className="flex flex-1 flex-col justify-between gap-4">
-            <div className="grid auto-rows-max gap-2 sm:grid-cols-2">
+          <div className="flex flex-col gap-4">
+            <div className="grid auto-rows-fr gap-3 sm:grid-cols-2">
               {[
                 {
                   icon: '🏛️',
@@ -143,16 +141,15 @@ export function ConnectAccountStep({
                   body: 'Not ready yet? Explore demo insights and link when you are.',
                 },
               ].map(item => (
-                <div key={item.title} className="flex items-start gap-2 rounded-xl bg-slate-100/70 px-3 py-2 text-[13px] text-slate-600 shadow-sm dark:bg-slate-800/60 dark:text-slate-300">
-                  <span className="mt-px text-base">{item.icon}</span>
-                  <div className="space-y-0.5">
+                <div key={item.title} className="flex h-full items-start gap-3 rounded-2xl bg-slate-100/70 p-4 text-[13px] text-slate-600 shadow-sm dark:bg-slate-800/60 dark:text-slate-300">
+                  <span className="mt-0.5 text-base">{item.icon}</span>
+                  <div className="leading-tight">
                     <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{item.title}</p>
-                    <p className="text-[11px] leading-tight text-slate-500 dark:text-slate-400">{item.body}</p>
+                    <p className="mt-1 text-[12px] text-slate-500 dark:text-slate-400">{item.body}</p>
                   </div>
                 </div>
               ))}
             </div>
-
             <button
               onClick={error ? onRetry : onConnect}
               disabled={connectionInProgress}

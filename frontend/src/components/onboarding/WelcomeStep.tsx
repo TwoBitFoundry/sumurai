@@ -21,15 +21,18 @@ export function WelcomeStep() {
           </div>
         </div>
 
-        <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-white/60 bg-white/75 p-5 shadow-sm backdrop-blur dark:border-slate-800/50 dark:bg-slate-900/60">
-          <div className="grid gap-3 sm:grid-cols-3">
+        {/* Cards container flexes to fill remaining space so its bottom aligns with the image */}
+        <div className="mt-6 flex flex-1 flex-col gap-4 rounded-2xl border border-white/60 bg-white/75 p-5 shadow-sm backdrop-blur dark:border-slate-800/50 dark:bg-slate-900/60">
+          <div className="grid h-full auto-rows-fr gap-3 items-stretch sm:grid-cols-3">
             {[
-              { icon: '📊', title: 'Dashboard', copy: 'Gain real insights' },
-              { icon: '🧾', title: 'Transactions', copy: "Track your spending" },
-              { icon: '🎯', title: 'Budgets', copy: 'Meet your goals' },
+              { icon: '📊', title: 'Dashboard', copy: 'Gain real insights to what happens with your money' },
+              { icon: '🧾', title: 'Transactions', copy: "Track your spending line by line" },
+              { icon: '🎯', title: 'Budgets', copy: 'Set goals for your spending habits' },
             ].map(item => (
-              <div key={item.title} className="rounded-xl bg-slate-100/70 px-4 py-3 text-center dark:bg-slate-800/70">
-                <div className="text-xl" aria-hidden>{item.icon}</div>
+              <div key={item.title} className="flex h-full flex-col items-center justify-start rounded-xl bg-slate-100/70 px-4 py-3 text-center dark:bg-slate-800/70">
+                <div className="text-xl" aria-hidden>
+                  {item.icon}
+                </div>
                 <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{item.title}</p>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{item.copy}</p>
               </div>
@@ -39,20 +42,17 @@ export function WelcomeStep() {
       </div>
 
       {/* Right: dashboard hero image */}
-      <div className="relative flex h-full flex-col lg:mt-[2.45rem]">
+      <div className="relative flex flex-col self-start lg:mt-[2.45rem]">
         <div className="pointer-events-none absolute -top-6 right-0 h-24 w-24 rounded-full bg-blue-400/20 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-10 left-8 h-32 w-32 rounded-full bg-purple-400/20 blur-3xl" />
 
-        <div className="relative flex-1 overflow-hidden rounded-2xl ring-1 ring-white/50 shadow-2xl dark:ring-slate-800/50">
+        <div className="relative overflow-hidden rounded-2xl ring-1 ring-white/50 shadow-2xl dark:ring-slate-800/50">
           <img
             src={dashboardHero}
             alt="Sumaura dashboard preview"
-            className="block h-full w-full object-cover object-left-top"
+            className="block w-full h-auto object-contain object-top"
           />
         </div>
-      </div>
-      <div className="hidden md:block md:col-span-2" aria-hidden="true">
-        <div className="h-10 lg:h-14 xl:h-16" />
       </div>
     </div>
   )
