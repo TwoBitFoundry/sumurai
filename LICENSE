@@ -1,95 +1,93 @@
-# Sustainable Use License (SUL-Community-1.0)
+SUSTAINABLE USE LICENSE (SUL-COMMUNITY-1.0)
 
-**SPDX-License-Identifier:** LicenseRef-SUL-Community-1.0
+SPDX-License-Identifier: LicenseRef-SUL-Community-1.0
 
----
 
-## Preamble (Informational)
+PREAMBLE (INFORMATIONAL)
 
-Here’s a quick summary of the terms:
+This summary is provided for convenience only. The legal terms below are the source of truth.
 
 - You can use, modify, and share this project.
 - You can run it for yourself, your team, or your company.
 - You can offer services, support, or integrations around it.
 - If you deploy at larger scale, please be mindful of energy use.
 
-What’s not allowed without a separate commercial license:
+What is not allowed without a separate commercial license:
 
 - Selling the software itself as a hosted product (SaaS) or similar.
-- Embedding or white‑labeling it for third parties.
+- Embedding or white-labeling it for third parties.
 - Using it primarily for fossil fuel extraction or combustion.
 
-If you need one of the restricted uses, contact the Licensor. This preamble is a friendly summary only; the legal terms below are the source of truth.
+If you need one of the restricted uses, contact the Licensor.
 
----
 
-## 1. Definitions
+1. DEFINITIONS
 
-* **“Licensor”** means the copyright holder(s) granting this License.
-* **“Software”** means the code and other works made available under this License.
-* **“You”** (or **“Your”**) means the licensee receiving rights under this License.
-* **“Deploy”** means to make the Software available for use by You or others, including hosting, offering as a service, or embedding in other products.
-* **“Community Use”** means personal, educational, research, or internal business use of the Software.
-* **“Commercial Hosting”** means offering the Software itself, directly or indirectly, as a paid service or product where the core value comes from the Software.
+"Licensor" means the copyright holder(s) granting this License.
 
----
+"Software" means the code and other works made available under this License.
 
-## 2. Grant of Rights
+"You" (or "Your") means the licensee receiving rights under this License.
+
+"Deploy" means to make the Software available for use by You or others, including hosting, offering as a service, or embedding in other products.
+
+"Community Use" means personal, educational, research, or internal business use of the Software.
+
+"Commercial Hosting" means offering the Software itself, directly or indirectly, as a paid service or product where the core value comes from the Software.
+
+
+2. GRANT OF RIGHTS
 
 Subject to the terms of this License, Licensor grants You a worldwide, royalty-free, non-exclusive, irrevocable license to:
 
-* Use, reproduce, modify, and distribute the Software, in source or object form;
-* Deploy the Software for Community Use, including in internal business environments;
-* Provide consulting, support, or integration services based on the Software.
+- Use, reproduce, modify, and distribute the Software, in source or object form;
+- Deploy the Software for Community Use, including in internal business environments;
+- Provide consulting, support, or integration services based on the Software.
 
----
 
-## 3. Conditions
+3. CONDITIONS
 
-* You must retain this License and all copyright notices in copies of the Software.
-* If You modify the Software, You must document the changes.
-* For deployments materially above personal or experimental scale, You are encouraged to make reasonable efforts to minimize unnecessary energy use and greenhouse gas emissions.
+- You must retain this License and all copyright notices in copies of the Software.
+- If You modify the Software, You must document the changes.
+- For deployments materially above personal or experimental scale, You are encouraged to make reasonable efforts to minimize unnecessary energy use and greenhouse gas emissions.
 
----
 
-## 4. Prohibited Uses
+4. PROHIBITED USES
 
 You may not:
 
-* Use the Software in projects whose primary purpose is fossil fuel extraction or combustion.
-* Offer the Software itself as a paid hosted service, SaaS, or product where the principal value derives from the Software, without a separate commercial license from the Licensor.
-* White-label, embed, or redistribute the Software in a product for third parties, without explicit permission from the Licensor.
+- Use the Software in projects whose primary purpose is fossil fuel extraction or combustion.
+- Offer the Software itself as a paid hosted service, SaaS, or product where the principal value derives from the Software, without a separate commercial license from the Licensor.
+- White-label, embed, or redistribute the Software in a product for third parties, without explicit permission from the Licensor.
 
----
 
-## 5. Downstream Distribution
+5. DOWNSTREAM DISTRIBUTION
 
 Any redistribution of the Software must include this License.
 
----
 
-## 6. Disclaimer of Warranty
+6. DISCLAIMER OF WARRANTY
 
-THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, OR NON-INFRINGEMENT.
 
----
 
-## 7. Limitation of Liability
+7. LIMITATION OF LIABILITY
 
-TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE LICENSOR IS NOT LIABLE FOR ANY INDIRECT, SPECIAL, INCIDENTAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES ARISING OUT OF OR RELATING TO THE SOFTWARE OR THIS LICENSE.
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE LICENSOR IS NOT LIABLE FOR ANY INDIRECT,
+SPECIAL, INCIDENTAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES ARISING OUT OF OR
+RELATING TO THE SOFTWARE OR THIS LICENSE.
 
----
 
-## 8. Termination
+8. TERMINATION
 
 This License terminates automatically if You materially breach Section 4. Upon termination, Your rights under this License cease, except for reasonable archival copies.
 
----
 
-## 9. Entire Agreement
+9. ENTIRE AGREEMENT
 
 This License is the complete agreement between You and the Licensor concerning the Software.
 
----
 
-📌 **Note:** This is a source-available license, not an OSI-approved open-source license.
+NOTE: This is a source-available license, not an OSI-approved open-source license.
