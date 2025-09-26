@@ -196,55 +196,13 @@ Common solutions for Docker issues, environment variables, and service connectiv
 
 Sumaura is designed to be self-hosted with no vendor data path. Plaid credentials stay on the client, encrypted access tokens live in your database, and Redis caches are session-scoped with automatic TTL expiry. There is no telemetry or third-party analytics baked in.
 
-<details>
-<summary>Data storage policy (what stays where)</summary>
-
-- **Stored locally:** user auth metadata, transactions, budgets, and derived analytics in your PostgreSQL instance.
-- **Never stored:** bank usernames/passwords (Plaid Link handles them in the browser) or any data on our servers.
-- **Encrypted secrets:** Plaid access tokens are encrypted with AES-256-GCM using `ENCRYPTION_KEY`; Redis holds only short-lived session data.
-- **Purge options:** run `docker compose down -v` to wipe containers/volumes, or `sqlx database reset -y` against your `DATABASE_URL`.
-
-</details>
-
-<details>
-<summary>Production hardening checklist</summary>
-
-- Terminate TLS in a reverse proxy/ingress and enforce secure cookies.
-- Rotate `JWT_SECRET` and `ENCRYPTION_KEY`; store them in a secrets manager.
-- Restrict outbound traffic to Plaid endpoints and audit outbound logs.
-- Run Postgres with least-privilege roles and keep RLS enforced.
-- Define retention policies that match your compliance requirements.
-
-</details>
+- **Your Data Belongs to You:** user auth metadata, transactions, budgets, and derived analytics in your PostgreSQL instance.
+- **Bank Credentials are Never Stored:** bank usernames/passwords (Plaid Link handles them in the browser) or any data on our servers.
+- **Secrets are Secure:** Plaid access tokens are encrypted with AES-256-GCM using `ENCRYPTION_KEY`; Redis holds only short-lived session data.
+- **Delete Your Data Anytime:** run `docker compose down -v` to wipe containers/volumes, or `sqlx database reset -y` against your `DATABASE_URL`.
 
 ## Architecture
-Nginx-served SPA with Rust backend, PostgreSQL database, Redis cache, and multi-tenant Row-Level Security.
-
-- SPA served by Nginx on 8080, proxying to a Rust (Axum) backend.
-- Data: PostgreSQL for persistence and Redis for caching (required).
-- Multi‑tenancy enforced via PostgreSQL Row‑Level Security (RLS).
-
-See `docs/ARCHITECTURE.md` for the full diagram, data flow, caching, and RLS details.
-
-### Multi‑Tenancy
-PostgreSQL Row-Level Security ensures complete data isolation between users.
-
-- Tenant isolation is enforced via PostgreSQL RLS; details in `docs/ARCHITECTURE.md`.
-
-### Repo Structure
-Organized codebase with separate frontend, backend, build scripts, and documentation directories.
-
-- `frontend/` — React 18 + TypeScript + Vite; Tailwind; Recharts
-- `backend/` — Rust + Axum + SQLx; Redis caching; RLS policies
-- `scripts/` — build helpers (e.g., `build-backend.sh`)
-- `docs/` — images/diagrams used in README
-
-## Development (Local)
-
-See `CONTRIBUTING.md` for full local setup, including:
-- Frontend dev server, tests, and type-checking commands
-- Backend workflows (Redis/Postgres, `cargo` tasks, sqlx migrations)
-- CI expectations, Conventional Commits, and pull-request checklist
+Nginx-served SPA with Rust backend, PostgreSQL database, Redis cache, and multi-tenant Row-Level Security. See `docs/ARCHITECTURE.md` for the full diagram, data flow, caching, and RLS details.
 
 ## Contributing
 
