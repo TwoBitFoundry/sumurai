@@ -18,8 +18,6 @@ Track balances, recent activity, and deeper spending insights on a single dashbo
 ### Transactions Workspace
 Advanced transaction management with search, filtering, and categorization across all connected bank accounts.
 
-Search, filter, and inspect synced transactions across all linked accounts, merchants, and categories.
-
 ![Transactions](docs/images/transactions.png)
 
 ### Budget Tracking
@@ -33,13 +31,26 @@ Secure bank account linking through Plaid with sandbox testing and on-demand tra
 
 ![Connect](docs/images/connect.png)
 
-### At a Glance
+## At a Glance
 Modern full-stack architecture with React frontend, Rust backend, PostgreSQL database, and Docker deployment.
+
+### Architecture
+Nginx-served SPA with Rust backend, PostgreSQL database, Redis cache, and multi-tenant Row-Level Security. See `docs/ARCHITECTURE.md` for the full diagram, data flow, caching, and RLS details.
 
 - **Frontend**: React 18 + TypeScript + Vite, Tailwind CSS, Recharts
 - **Backend**: Rust (Axum) + SQLx, PostgreSQL, Redis cache (required)
 - **Auth**: JWT with refresh tokens
 - **Deploy**: Nginx SPA + API proxy, Docker Compose
+
+### Security & Privacy
+
+Sumaura is designed to be self-hosted with no vendor data path. Plaid credentials stay on the client, encrypted access tokens live in your database, and Redis caches are session-scoped with automatic TTL expiry. There is no telemetry or third-party analytics baked in.
+
+- **Your Data Belongs to You:** user auth metadata, transactions, budgets, and derived analytics in your PostgreSQL instance.
+- **Bank Credentials are Never Stored:** bank usernames/passwords (Plaid Link handles them in the browser) or any data on our servers.
+- **Secrets are Secure:** Plaid access tokens are encrypted with AES-256-GCM using `ENCRYPTION_KEY`; Redis holds only short-lived session data.
+- **Delete Your Data Anytime:** run `docker compose down -v` to wipe containers/volumes, or `sqlx database reset -y` against your `DATABASE_URL`.
+
 
 ## Getting Started
 
@@ -190,19 +201,6 @@ Common solutions for Docker issues, environment variables, and service connectiv
 - Check logs: `docker compose logs -f <service>`
 - Reset local data: `docker compose down -v`
 - Backend exits immediately with `JWT_SECRET` error → define it in `.env` (see Environment Variables).
-
-
-## Security & Privacy
-
-Sumaura is designed to be self-hosted with no vendor data path. Plaid credentials stay on the client, encrypted access tokens live in your database, and Redis caches are session-scoped with automatic TTL expiry. There is no telemetry or third-party analytics baked in.
-
-- **Your Data Belongs to You:** user auth metadata, transactions, budgets, and derived analytics in your PostgreSQL instance.
-- **Bank Credentials are Never Stored:** bank usernames/passwords (Plaid Link handles them in the browser) or any data on our servers.
-- **Secrets are Secure:** Plaid access tokens are encrypted with AES-256-GCM using `ENCRYPTION_KEY`; Redis holds only short-lived session data.
-- **Delete Your Data Anytime:** run `docker compose down -v` to wipe containers/volumes, or `sqlx database reset -y` against your `DATABASE_URL`.
-
-## Architecture
-Nginx-served SPA with Rust backend, PostgreSQL database, Redis cache, and multi-tenant Row-Level Security. See `docs/ARCHITECTURE.md` for the full diagram, data flow, caching, and RLS details.
 
 ## Contributing
 
