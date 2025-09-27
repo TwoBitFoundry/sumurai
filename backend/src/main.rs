@@ -1113,15 +1113,34 @@ async fn get_authenticated_spending_by_date_range(
     State(state): State<AppState>,
     auth_context: AuthContext,
     _headers: HeaderMap,
-    Query(params): Query<DateRangeQuery>,
+    uri: Uri,
 ) -> Result<Json<rust_decimal::Decimal>, StatusCode> {
     let user_id = auth_context.user_id;
-    let start = params
-        .start_date
+
+    let query_string = uri.query().unwrap_or("");
+    let mut start_date_param = None;
+    let mut end_date_param = None;
+    let mut account_ids_params = Vec::new();
+
+    for pair in query_string.split('&') {
+        if let Some((key, value)) = pair.split_once('=') {
+            match key {
+                "start_date" => start_date_param = Some(value.to_string()),
+                "end_date" => end_date_param = Some(value.to_string()),
+                "account_ids" => account_ids_params.push(value.to_string()),
+                _ => {}
+            }
+        }
+    }
+
+    if !account_ids_params.is_empty() {
+        utils::account_validation::validate_account_ownership(&account_ids_params, &user_id, &state.db_repository).await?;
+    }
+
+    let start = start_date_param
         .as_deref()
         .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
-    let end = params
-        .end_date
+    let end = end_date_param
         .as_deref()
         .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
 
@@ -1130,7 +1149,20 @@ async fn get_authenticated_spending_by_date_range(
         .get_transactions_for_user(&user_id)
         .await
     {
-        Ok(transactions) => {
+        Ok(mut transactions) => {
+            if !account_ids_params.is_empty() {
+                let account_ids: Vec<Uuid> = account_ids_params
+                    .iter()
+                    .filter_map(|s| Uuid::parse_str(s).ok())
+                    .collect();
+
+                let account_id_set: std::collections::HashSet<Uuid> = account_ids.into_iter().collect();
+                transactions = transactions
+                    .into_iter()
+                    .filter(|t| account_id_set.contains(&t.account_id))
+                    .collect();
+            }
+
             let filtered = state
                 .analytics_service
                 .filter_by_date_range(&transactions, start, end);
@@ -1148,16 +1180,34 @@ async fn get_authenticated_category_spending(
     State(state): State<AppState>,
     auth_context: AuthContext,
     _headers: HeaderMap,
-    Query(params): Query<DateRangeQuery>,
+    uri: Uri,
 ) -> Result<Json<Vec<CategorySpending>>, StatusCode> {
     let user_id = auth_context.user_id;
 
-    let start_date = params
-        .start_date
+    let query_string = uri.query().unwrap_or("");
+    let mut start_date_param = None;
+    let mut end_date_param = None;
+    let mut account_ids_params = Vec::new();
+
+    for pair in query_string.split('&') {
+        if let Some((key, value)) = pair.split_once('=') {
+            match key {
+                "start_date" => start_date_param = Some(value.to_string()),
+                "end_date" => end_date_param = Some(value.to_string()),
+                "account_ids" => account_ids_params.push(value.to_string()),
+                _ => {}
+            }
+        }
+    }
+
+    if !account_ids_params.is_empty() {
+        utils::account_validation::validate_account_ownership(&account_ids_params, &user_id, &state.db_repository).await?;
+    }
+
+    let start_date = start_date_param
         .as_ref()
         .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
-    let end_date = params
-        .end_date
+    let end_date = end_date_param
         .as_ref()
         .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
 
@@ -1166,7 +1216,20 @@ async fn get_authenticated_category_spending(
         .get_transactions_for_user(&user_id)
         .await
     {
-        Ok(transactions) => {
+        Ok(mut transactions) => {
+            if !account_ids_params.is_empty() {
+                let account_ids: Vec<Uuid> = account_ids_params
+                    .iter()
+                    .filter_map(|s| Uuid::parse_str(s).ok())
+                    .collect();
+
+                let account_id_set: std::collections::HashSet<Uuid> = account_ids.into_iter().collect();
+                transactions = transactions
+                    .into_iter()
+                    .filter(|t| account_id_set.contains(&t.account_id))
+                    .collect();
+            }
+
             let categories = state.analytics_service.group_by_category_with_date_range(
                 &transactions,
                 start_date,
@@ -1467,10 +1530,32 @@ struct DailySpendingQuery {
 async fn get_authenticated_balances_overview(
     State(state): State<AppState>,
     auth_context: AuthContext,
+    uri: Uri,
 ) -> Result<Json<models::analytics::BalancesOverviewResponse>, StatusCode> {
     let user_id = auth_context.user_id;
 
-    let cache_key = format!("{}_balances_overview", auth_context.jwt_id);
+    let query_string = uri.query().unwrap_or("");
+    let mut account_ids_params = Vec::new();
+    for pair in query_string.split('&') {
+        if pair.starts_with("account_ids=") {
+            if let Some(value) = pair.split('=').nth(1) {
+                account_ids_params.push(value.to_string());
+            }
+        }
+    }
+
+    let filtered_account_ids = if !account_ids_params.is_empty() {
+        let validated_account_ids = utils::account_validation::validate_account_ownership(&account_ids_params, &user_id, &state.db_repository).await?;
+        Some(validated_account_ids.into_iter().collect::<std::collections::HashSet<_>>())
+    } else {
+        None
+    };
+
+    let base_cache_key = format!("{}_balances_overview", auth_context.jwt_id);
+    let cache_key = utils::cache_keys::generate_cache_key_with_account_filter(
+        &base_cache_key,
+        filtered_account_ids.as_ref(),
+    );
     if let Ok(Some(serialized)) = state.cache_service.get_string(&cache_key).await {
         if let Ok(cached) =
             serde_json::from_str::<models::analytics::BalancesOverviewResponse>(&serialized)
@@ -1547,6 +1632,11 @@ async fn get_authenticated_balances_overview(
                 StatusCode::INTERNAL_SERVER_ERROR
             })?;
         for acc in accounts.into_iter() {
+            if let Some(ref filter_ids) = filtered_account_ids {
+                if !filter_ids.contains(&acc.id) {
+                    continue;
+                }
+            }
             let bal = acc.balance_current.unwrap_or(rust_decimal::Decimal::ZERO);
             latest_map
                 .entry("unknown_institution".to_string())
