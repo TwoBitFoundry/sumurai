@@ -5,6 +5,7 @@ import BudgetsPage from '../pages/BudgetsPage'
 import ConnectPage from '../pages/ConnectPage'
 import Card from './ui/Card'
 import { ErrorBoundary } from './ErrorBoundary'
+import { HeaderAccountFilter } from './HeaderAccountFilter'
 
 type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'connect'
 
@@ -42,41 +43,48 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
           <header className="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
             <div className={`px-4 ${scrolled ? 'h-14' : 'h-16'} flex items-center justify-between transition-all duration-200 ease-out`}>
               <div className={`flex items-center gap-2 font-semibold ${scrolled ? 'text-base' : 'text-lg'}`}>Sumaura</div>
-              <nav className={`flex gap-2 ${scrolled ? 'text-xs' : 'text-sm'}`} aria-label="Primary">
-                {TABS.map(({ key, label }) => (
+              <div className="flex items-center gap-2">
+                <nav className={`flex gap-2 ${scrolled ? 'text-xs' : 'text-sm'}`} aria-label="Primary">
+                  {TABS.map(({ key, label }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setTab(key)}
+                      className={`${
+                        scrolled ? 'px-2.5 py-1' : 'px-3 py-1.5'
+                      } rounded-xl border transition-all duration-200 ${
+                        tab === key
+                          ? 'bg-primary-100 dark:bg-slate-600 border-primary-300 dark:border-slate-500 text-primary-700 dark:text-slate-100'
+                          : 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-600'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+
+                <HeaderAccountFilter />
+
+                <div className="flex items-center gap-2">
                   <button
-                    key={key}
                     type="button"
-                    onClick={() => setTab(key)}
-                    className={`${
-                      scrolled ? 'px-2.5 py-1' : 'px-3 py-1.5'
-                    } rounded-xl border transition-all duration-200 ${
-                      tab === key
-                        ? 'bg-primary-100 dark:bg-slate-600 border-primary-300 dark:border-slate-500 text-primary-700 dark:text-slate-100'
-                        : 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-600'
-                    }`}
+                    onClick={toggleTheme}
+                    className={`${scrolled ? 'px-2 py-1' : 'px-2 py-1.5'} rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all duration-200`}
+                    aria-label="Toggle theme"
+                    title="Toggle theme"
                   >
-                    {label}
+                    {dark ? '🌞' : '🌙'}
                   </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  className={`ml-2 ${scrolled ? 'px-2 py-1' : 'px-2 py-1.5'} rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all duration-200`}
-                  aria-label="Toggle theme"
-                  title="Toggle theme"
-                >
-                  {dark ? '🌞' : '🌙'}
-                </button>
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className={`ml-2 ${scrolled ? 'px-2.5 py-1' : 'px-3 py-1.5'} rounded-xl border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200`}
-                  title="Logout"
-                >
-                  Logout
-                </button>
-              </nav>
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    className={`${scrolled ? 'px-2.5 py-1' : 'px-3 py-1.5'} rounded-xl border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200`}
+                    title="Logout"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
             </div>
           </header>
 

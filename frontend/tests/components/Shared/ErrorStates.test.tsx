@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AuthenticatedApp } from '@/components/AuthenticatedApp'
+import { AccountFilterProvider } from '@/hooks/useAccountFilter'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 
 describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () => {
@@ -15,6 +16,7 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
     // Default boundary routes
     fetchMock = installFetchRoutes({
       'GET /api/plaid/status': { is_connected: false },
+      'GET /api/plaid/accounts': [],
       'GET /api/transactions*': [],
       'GET /api/analytics/spending*': 0,
       'GET /api/analytics/categories*': [],
@@ -37,6 +39,7 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
     it('renders dashboard when analytics API is unreachable (500)', async () => {
       fetchMock = installFetchRoutes({
         'GET /api/plaid/status': { is_connected: false },
+        'GET /api/plaid/accounts': [],
         'GET /api/transactions*': [],
         'GET /api/analytics/spending*': new Response('Server error', { status: 500 }),
         'GET /api/analytics/categories*': [],
@@ -49,7 +52,11 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
         'GET /api/budgets': [],
       })
 
-      render(<AuthenticatedApp />)
+      render(
+        <AccountFilterProvider>
+          <AuthenticatedApp />
+        </AccountFilterProvider>
+      )
       await waitFor(() => {
         expect(screen.getByText('Spending')).toBeInTheDocument()
       })
@@ -58,6 +65,7 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
     it('continues rendering on timeout-like errors', async () => {
       fetchMock = installFetchRoutes({
         'GET /api/plaid/status': { is_connected: false },
+        'GET /api/plaid/accounts': [],
         'GET /api/transactions*': [],
         'GET /api/analytics/spending*': () => { throw new Error('Request timeout') },
         'GET /api/analytics/categories*': [],
@@ -67,7 +75,11 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
         'GET /api/budgets': [],
       })
 
-      render(<AuthenticatedApp />)
+      render(
+        <AccountFilterProvider>
+          <AuthenticatedApp />
+        </AccountFilterProvider>
+      )
       await waitFor(() => {
         expect(screen.getByText('Spending')).toBeInTheDocument()
       })
@@ -78,6 +90,7 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
     it('shows friendly message when no transactions exist', async () => {
       fetchMock = installFetchRoutes({
         'GET /api/plaid/status': { is_connected: false },
+        'GET /api/plaid/accounts': [],
         'GET /api/transactions': [],
         'GET /api/analytics/spending*': 0,
         'GET /api/analytics/categories*': [],
@@ -87,7 +100,11 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
         'GET /api/budgets': [],
       })
 
-      render(<AuthenticatedApp />)
+      render(
+        <AccountFilterProvider>
+          <AuthenticatedApp />
+        </AccountFilterProvider>
+      )
       await waitFor(() => {
         expect(screen.getByText(/No transactions found/i)).toBeInTheDocument()
         expect(screen.getByText(/No transaction data available/i)).toBeInTheDocument()
@@ -97,6 +114,7 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
     it('shows message when budgets are not set up', async () => {
       fetchMock = installFetchRoutes({
         'GET /api/plaid/status': { is_connected: false },
+        'GET /api/plaid/accounts': [],
         'GET /api/transactions': [],
         'GET /api/analytics/spending*': 0,
         'GET /api/analytics/categories*': [],
@@ -106,7 +124,11 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
         'GET /api/budgets': [],
       })
 
-      render(<AuthenticatedApp />)
+      render(
+        <AccountFilterProvider>
+          <AuthenticatedApp />
+        </AccountFilterProvider>
+      )
       await user.click(screen.getByText('Budgets'))
       await waitFor(() => {
         expect(screen.getByText(/No budgets found/i)).toBeInTheDocument()
@@ -118,6 +140,7 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
     it('continues showing partial data when some services fail', async () => {
       fetchMock = installFetchRoutes({
         'GET /api/plaid/status': { is_connected: false },
+        'GET /api/plaid/accounts': [],
         // Return backend transaction shape; service maps merchant_name -> name
         'GET /api/transactions*': [
           { id: '1', date: '2023-01-01', merchant_name: 'Test', amount: 100, category_primary: 'other' },
@@ -130,7 +153,11 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
         'GET /api/budgets': [],
       })
 
-      render(<AuthenticatedApp />)
+      render(
+        <AccountFilterProvider>
+          <AuthenticatedApp />
+        </AccountFilterProvider>
+      )
       await user.click(screen.getByText('Transactions'))
       await waitFor(() => {
         expect(screen.getByText('Test')).toBeInTheDocument()
@@ -143,6 +170,7 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
       let attempts = 0
       fetchMock = installFetchRoutes({
         'GET /api/plaid/status': { is_connected: false },
+        'GET /api/plaid/accounts': [],
         'GET /api/transactions*': () => {
           attempts += 1
           if (attempts === 1) throw new Error('Network error')
@@ -159,7 +187,11 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
         'GET /api/budgets': [],
       })
 
-      render(<AuthenticatedApp />)
+      render(
+        <AccountFilterProvider>
+          <AuthenticatedApp />
+        </AccountFilterProvider>
+      )
       await user.click(screen.getByText('Transactions'))
       await waitFor(() => {
         expect(screen.getByText(/Retry Success/)).toBeInTheDocument()
@@ -169,6 +201,7 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
     it('continues rendering when budgets fail to load', async () => {
       fetchMock = installFetchRoutes({
         'GET /api/plaid/status': { is_connected: false },
+        'GET /api/plaid/accounts': [],
         'GET /api/transactions': [],
         'GET /api/analytics/spending*': 0,
         'GET /api/analytics/categories*': [],
@@ -178,7 +211,11 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
         'GET /api/budgets': new Response('Not found', { status: 404 }),
       })
 
-      render(<AuthenticatedApp />)
+      render(
+        <AccountFilterProvider>
+          <AuthenticatedApp />
+        </AccountFilterProvider>
+      )
       await waitFor(() => {
         expect(screen.getByText('Spending')).toBeInTheDocument()
       })

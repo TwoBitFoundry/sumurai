@@ -1,12 +1,12 @@
 import { createContext } from 'react'
+import type { Account } from '../types/api'
 
 export interface PlaidAccount {
   id: string
   name: string
-  official_name?: string
-  type: string
-  subtype: string
-  balance: number
+  account_type: string
+  balance_current: number | null
+  mask: string | null
   institution_name: string
 }
 

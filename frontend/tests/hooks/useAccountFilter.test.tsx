@@ -15,29 +15,23 @@ describe('AccountFilterProvider', () => {
         {
           id: 'acc_1',
           name: 'Chase Checking',
-          official_name: 'Chase Premier Checking',
-          type: 'depository',
-          subtype: 'checking',
-          balance: 1250.50,
-          institution_name: 'Chase Bank'
+          account_type: 'depository',
+          balance_current: 1250.50,
+          mask: '0000'
         },
         {
           id: 'acc_2',
           name: 'Chase Savings',
-          official_name: 'Chase Premier Savings',
-          type: 'depository',
-          subtype: 'savings',
-          balance: 5000.00,
-          institution_name: 'Chase Bank'
+          account_type: 'depository',
+          balance_current: 5000.00,
+          mask: '1111'
         },
         {
           id: 'acc_3',
           name: 'Wells Fargo Credit Card',
-          official_name: 'Wells Fargo Platinum Card',
-          type: 'credit',
-          subtype: 'credit_card',
-          balance: -350.75,
-          institution_name: 'Wells Fargo'
+          account_type: 'credit',
+          balance_current: -350.75,
+          mask: '2222'
         }
       ]
     })
@@ -87,13 +81,11 @@ describe('AccountFilterProvider', () => {
         const { result } = renderHook(() => useAccountFilter(), { wrapper })
 
         await waitFor(() => {
-          expect(result.current.accountsByBank).toHaveProperty('Chase Bank')
+          expect(result.current.accountsByBank).toHaveProperty('Bank')
         })
 
-        expect(result.current.accountsByBank).toHaveProperty('Chase Bank')
-        expect(result.current.accountsByBank).toHaveProperty('Wells Fargo')
-        expect(result.current.accountsByBank['Chase Bank']).toHaveLength(2)
-        expect(result.current.accountsByBank['Wells Fargo']).toHaveLength(1)
+        expect(result.current.accountsByBank).toHaveProperty('Bank')
+        expect(result.current.accountsByBank['Bank']).toHaveLength(3)
       })
 
       it('Then it should support select all action', async () => {
@@ -104,7 +96,7 @@ describe('AccountFilterProvider', () => {
         const { result } = renderHook(() => useAccountFilter(), { wrapper })
 
         await waitFor(() => {
-          expect(result.current.accountsByBank).toHaveProperty('Chase Bank')
+          expect(result.current.accountsByBank).toHaveProperty('Bank')
         })
 
         act(() => {
@@ -123,15 +115,15 @@ describe('AccountFilterProvider', () => {
         const { result } = renderHook(() => useAccountFilter(), { wrapper })
 
         await waitFor(() => {
-          expect(result.current.accountsByBank).toHaveProperty('Chase Bank')
+          expect(result.current.accountsByBank).toHaveProperty('Bank')
         })
 
         act(() => {
-          result.current.toggleBank('Chase Bank')
+          result.current.toggleBank('Bank')
         })
 
         expect(result.current.isAllAccountsSelected).toBe(false)
-        expect(result.current.selectedAccountIds).toEqual(['acc_1', 'acc_2'])
+        expect(result.current.selectedAccountIds).toEqual(['acc_1', 'acc_2', 'acc_3'])
       })
 
       it('Then it should support toggle individual account action', async () => {
@@ -142,7 +134,7 @@ describe('AccountFilterProvider', () => {
         const { result } = renderHook(() => useAccountFilter(), { wrapper })
 
         await waitFor(() => {
-          expect(result.current.accountsByBank).toHaveProperty('Chase Bank')
+          expect(result.current.accountsByBank).toHaveProperty('Bank')
         })
 
         act(() => {

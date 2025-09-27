@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, cleanup, act } from '@testing-library/react'
 import { App } from '@/App'
+import { AccountFilterProvider } from '@/hooks/useAccountFilter'
+import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 
 global.fetch = vi.fn()
 
@@ -90,7 +92,56 @@ vi.mock('@/services/ApiClient', () => ({
     put: vi.fn().mockResolvedValue({}),
     delete: vi.fn().mockResolvedValue({}),
   },
+  ApiError: class ApiError extends Error {
+    constructor(message = 'API Error') {
+      super(message)
+      this.name = 'ApiError'
+    }
+  },
+  AuthenticationError: class AuthenticationError extends Error {
+    constructor(message = 'Authentication required') {
+      super(message)
+      this.name = 'AuthenticationError'
+    }
+  },
+  ValidationError: class ValidationError extends Error {
+    constructor(message = 'Validation Error') {
+      super(message)
+      this.name = 'ValidationError'
+    }
+  },
+  NetworkError: class NetworkError extends Error {
+    constructor(message = 'Network Error') {
+      super(message)
+      this.name = 'NetworkError'
+    }
+  },
+  ServerError: class ServerError extends Error {
+    constructor(message = 'Server Error') {
+      super(message)
+      this.name = 'ServerError'
+    }
+  },
+  ConflictError: class ConflictError extends Error {
+    constructor(message = 'Conflict Error') {
+      super(message)
+      this.name = 'ConflictError'
+    }
+  },
+  NotFoundError: class NotFoundError extends Error {
+    constructor(message = 'Not Found Error') {
+      super(message)
+      this.name = 'NotFoundError'
+    }
+  },
+  ForbiddenError: class ForbiddenError extends Error {
+    constructor(message = 'Forbidden Error') {
+      super(message)
+      this.name = 'ForbiddenError'
+    }
+  },
 }))
+
 
 vi.mock('@/hooks/usePlaidConnection', () => ({
   usePlaidConnection: () => ({
@@ -111,6 +162,8 @@ vi.mock('@/hooks/usePlaidConnection', () => ({
 
 describe('App Phase 2 - Business Logic Removal', () => {
   const originalConsoleError = console.error
+  let fetchMock: ReturnType<typeof installFetchRoutes>
+
   const mockFetchAuthOk = () => {
     const original = global.fetch as any
     const stub = vi.fn().mockImplementation((input: RequestInfo | URL) => {
@@ -144,9 +197,9 @@ describe('App Phase 2 - Business Logic Removal', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     console.error = vi.fn()
-    
+
     document.body.innerHTML = ''
-    
+
     Object.defineProperty(window, 'sessionStorage', {
       value: {
         getItem: vi.fn(),
@@ -157,6 +210,16 @@ describe('App Phase 2 - Business Logic Removal', () => {
       writable: true
     })
 
+    fetchMock = installFetchRoutes({
+      'GET /api/plaid/accounts': [],
+      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/transactions': [],
+      'GET /api/analytics/spending*': 0,
+      'GET /api/analytics/categories*': [],
+      'GET /api/analytics/monthly-totals*': [],
+      'GET /api/analytics/top-merchants*': [],
+      'GET /api/budgets': [],
+    })
   })
 
   afterEach(() => {
@@ -215,7 +278,11 @@ describe('App Phase 2 - Business Logic Removal', () => {
       const restore = mockFetchAuthOk()
 
       await act(async () => {
-        render(<App />)
+        render(
+          <AccountFilterProvider>
+            <App />
+          </AccountFilterProvider>
+        )
         await new Promise(resolve => setTimeout(resolve, 100))
       })
       expect(screen.getAllByText('Spending').length).toBeGreaterThan(0)
@@ -258,9 +325,11 @@ describe('App Phase 2 - Business Logic Removal', () => {
 })
 
 describe('App Phase 3 - Authentication-First Architecture', () => {
+  let fetchMock: ReturnType<typeof installFetchRoutes>
+
   beforeEach(() => {
     vi.clearAllMocks()
-    
+
     Object.defineProperty(window, 'sessionStorage', {
       value: {
         getItem: vi.fn(),
@@ -271,6 +340,16 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
       writable: true
     })
 
+    fetchMock = installFetchRoutes({
+      'GET /api/plaid/accounts': [],
+      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/transactions': [],
+      'GET /api/analytics/spending*': 0,
+      'GET /api/analytics/categories*': [],
+      'GET /api/analytics/monthly-totals*': [],
+      'GET /api/analytics/top-merchants*': [],
+      'GET /api/budgets': [],
+    })
   })
   
   afterEach(() => {
@@ -281,7 +360,11 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
     it('should render login screen when no auth token exists', async () => {
       ;(window.sessionStorage.getItem as any).mockReturnValue(null)
       
-      render(<App />)
+      render(
+        <AccountFilterProvider>
+          <App />
+        </AccountFilterProvider>
+      )
       
       expect(screen.getAllByText('Sumaura').length).toBeGreaterThan(0)
       expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
@@ -293,7 +376,11 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
       const expiredToken = 'header.' + btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) - 3600 })) + '.signature'
       ;(window.sessionStorage.getItem as any).mockReturnValue(expiredToken)
       
-      render(<App />)
+      render(
+        <AccountFilterProvider>
+          <App />
+        </AccountFilterProvider>
+      )
       
       expect(screen.getAllByText('Welcome Back').length).toBeGreaterThan(0)
       expect(screen.getAllByText('Sumaura').length).toBeGreaterThan(0)
@@ -308,7 +395,11 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
       const restore = mockFetchAuthOk()
       
       await act(async () => {
-        render(<App />)
+        render(
+          <AccountFilterProvider>
+            <App />
+          </AccountFilterProvider>
+        )
         await new Promise(resolve => setTimeout(resolve, 100))
       })
       expect(screen.getAllByText('Sumaura').length).toBeGreaterThan(0)
@@ -348,7 +439,11 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
       const restore = mockFetchAuthOk()
       
       await act(async () => {
-        render(<App />)
+        render(
+          <AccountFilterProvider>
+            <App />
+          </AccountFilterProvider>
+        )
         await new Promise(resolve => setTimeout(resolve, 100))
       })
       
@@ -366,7 +461,11 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
       const restore = mockFetchAuthOk()
       
       await act(async () => {
-        render(<App />)
+        render(
+          <AccountFilterProvider>
+            <App />
+          </AccountFilterProvider>
+        )
         await new Promise(resolve => setTimeout(resolve, 100))
       })
       
@@ -394,7 +493,11 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
         return null
       })
       
-      render(<App />)
+      render(
+        <AccountFilterProvider>
+          <App />
+        </AccountFilterProvider>
+      )
       
       expect(screen.getAllByText('Welcome Back').length).toBeGreaterThan(0)
       expect(screen.getAllByText('Sumaura').length).toBeGreaterThan(0)
@@ -409,7 +512,11 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
       const restore = mockFetchAuthOk()
       
       await act(async () => {
-        render(<App />)
+        render(
+          <AccountFilterProvider>
+            <App />
+          </AccountFilterProvider>
+        )
         await new Promise(resolve => setTimeout(resolve, 100))
       })
       
@@ -425,7 +532,11 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
       const restore = mockFetchAuthOk()
       
       await act(async () => {
-        render(<App />)
+        render(
+          <AccountFilterProvider>
+            <App />
+          </AccountFilterProvider>
+        )
         await new Promise(resolve => setTimeout(resolve, 100))
       })
       

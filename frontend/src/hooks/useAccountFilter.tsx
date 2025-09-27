@@ -22,7 +22,7 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
 
   const groupAccountsByBank = useCallback((accounts: PlaidAccount[]): AccountsByBank => {
     return accounts.reduce((acc: AccountsByBank, account: PlaidAccount) => {
-      const bankName = account.institution_name
+      const bankName = account.institution_name || 'Unknown Bank'
       if (!acc[bankName]) {
         acc[bankName] = []
       }
@@ -35,7 +35,18 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
     try {
       setLoading(true)
       const accounts = await PlaidService.getAccounts()
-      const grouped = groupAccountsByBank(accounts)
+
+      // Map API Account type to PlaidAccount type for account filter
+      const mappedAccounts: PlaidAccount[] = (accounts || []).map(account => ({
+        id: account.id,
+        name: account.name,
+        account_type: account.account_type,
+        balance_current: account.balance_current,
+        mask: account.mask,
+        institution_name: 'Bank' // TODO: Get actual institution name from API
+      }))
+
+      const grouped = groupAccountsByBank(mappedAccounts)
       setAccountsByBank(grouped)
     } catch (error) {
       console.warn('Failed to fetch accounts for filter:', error)

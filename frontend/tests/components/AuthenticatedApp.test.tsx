@@ -2,6 +2,8 @@ import { render, screen, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { AuthenticatedApp } from '@/components/AuthenticatedApp'
+import { AccountFilterProvider } from '@/hooks/useAccountFilter'
+import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 
 type DashboardProps = { dark: boolean }
 
@@ -32,9 +34,16 @@ vi.mock('@/pages/ConnectPage', () => ({
 describe('AuthenticatedApp shell', () => {
   const onLogout = vi.fn()
   const setDark = vi.fn()
+  let fetchMock: ReturnType<typeof installFetchRoutes>
 
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
+
+    fetchMock = installFetchRoutes({
+      'GET /api/plaid/accounts': []
+    })
+
     DashboardPageMock = vi.fn(({ dark }: DashboardProps) => (
       <div data-testid="dashboard-page">dashboard-{dark ? 'dark' : 'light'}</div>
     ))
@@ -55,10 +64,15 @@ describe('AuthenticatedApp shell', () => {
   afterEach(() => {
     cleanup()
     vi.clearAllMocks()
+    localStorage.clear()
   })
 
   const renderApp = (dark = false) =>
-    render(<AuthenticatedApp onLogout={onLogout} dark={dark} setDark={setDark} />)
+    render(
+      <AccountFilterProvider>
+        <AuthenticatedApp onLogout={onLogout} dark={dark} setDark={setDark} />
+      </AccountFilterProvider>
+    )
 
   it('renders dashboard by default', () => {
     renderApp()
@@ -119,5 +133,22 @@ describe('AuthenticatedApp shell', () => {
     renderApp(true)
     expect(DashboardPageMock).toHaveBeenCalledWith(expect.objectContaining({ dark: true }))
     expect(DashboardPageMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('includes HeaderAccountFilter in the header', () => {
+    renderApp()
+    expect(screen.getByRole('button', { name: /all accounts/i })).toBeInTheDocument()
+  })
+
+  it('maintains responsive layout with HeaderAccountFilter', () => {
+    renderApp()
+    const header = screen.getByRole('banner')
+    expect(header).toBeInTheDocument()
+
+    const accountFilter = screen.getByRole('button', { name: /all accounts/i })
+    expect(accountFilter).toBeInTheDocument()
+
+    const nav = screen.getByRole('navigation', { name: /primary/i })
+    expect(nav).toBeInTheDocument()
   })
 })

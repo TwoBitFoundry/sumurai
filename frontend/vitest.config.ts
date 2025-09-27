@@ -17,14 +17,15 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['tests/**/*.{test,spec}.{ts,tsx}'],
     setupFiles: ['./tests/setup/setup.ts'],
-    testTimeout: 10000,
-    hookTimeout: 10000,
-    teardownTimeout: 10000,
+    testTimeout: 5000,
+    hookTimeout: 3000,
+    teardownTimeout: 3000,
     reporters: ['default'],
     pool: 'threads',
     poolOptions: {
       threads: {
-        singleThread: true,
+        singleThread: false,
+        isolate: true,
       },
     },
     // Add React testing environment configuration
@@ -33,5 +34,12 @@ export default defineConfig({
         resources: 'usable',
       },
     },
+    // Better test isolation
+    sequence: {
+      shuffle: false,
+    },
+    // Clear mocks between tests
+    clearMocks: true,
+    restoreMocks: true,
   },
 })

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { LoginScreen, RegisterScreen } from "./Auth";
 import { SessionManager } from "./SessionManager";
 import { AuthenticatedApp } from "./components/AuthenticatedApp";
+import { AccountFilterProvider } from "./hooks/useAccountFilter";
 import { OnboardingWizard } from "./components/onboarding/OnboardingWizard";
 import { AuthService } from "./services/authService";
 import { getInitialTheme, setTheme } from "./utils/theme";
@@ -147,14 +148,16 @@ export function App() {
 
   return (
     <SessionManager onLogout={handleLogout}>
-      <AuthenticatedApp
-        onLogout={handleLogout}
-        dark={dark}
-        setDark={(newTheme: boolean) => {
-          setDark(newTheme);
-          setTheme(newTheme);
-        }}
-      />
+      <AccountFilterProvider>
+        <AuthenticatedApp
+          onLogout={handleLogout}
+          dark={dark}
+          setDark={(newTheme: boolean) => {
+            setDark(newTheme);
+            setTheme(newTheme);
+          }}
+        />
+      </AccountFilterProvider>
     </SessionManager>
   )
 }
