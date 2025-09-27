@@ -64,6 +64,38 @@ describe('TransactionService', () => {
         .rejects.toThrow(AuthenticationError)
     })
 
+    it('should serialize account_ids parameter when provided', async () => {
+      const filters = {
+        accountIds: ['acc_1', 'acc_2', 'acc_3']
+      }
+      const mockBackendTransactions: any[] = []
+      vi.mocked(ApiClient.get).mockResolvedValue(mockBackendTransactions)
+
+      const result = await TransactionService.getTransactions(filters)
+
+      expect(ApiClient.get).toHaveBeenCalledWith(
+        '/transactions?account_ids%5B%5D=acc_1&account_ids%5B%5D=acc_2&account_ids%5B%5D=acc_3'
+      )
+      expect(result).toEqual([])
+    })
+
+    it('should combine account_ids with other filters', async () => {
+      const filters = {
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        accountIds: ['acc_1', 'acc_2']
+      }
+      const mockBackendTransactions: any[] = []
+      vi.mocked(ApiClient.get).mockResolvedValue(mockBackendTransactions)
+
+      const result = await TransactionService.getTransactions(filters)
+
+      expect(ApiClient.get).toHaveBeenCalledWith(
+        '/transactions?startDate=2024-01-01&endDate=2024-01-31&account_ids%5B%5D=acc_1&account_ids%5B%5D=acc_2'
+      )
+      expect(result).toEqual([])
+    })
+
     it('should NOT perform any client-side filtering or business logic', async () => {
       const backendTransactions = [
         {
@@ -74,7 +106,7 @@ describe('TransactionService', () => {
           category_primary: 'food'
         },
         {
-          id: '2', 
+          id: '2',
           date: '2023-12-01',
           merchant_name: 'Very Old Transaction',
           amount: 50,
@@ -91,7 +123,7 @@ describe('TransactionService', () => {
           category: { id: 'food', name: 'Food' }
         },
         {
-          id: '2', 
+          id: '2',
           date: '2023-12-01',
           name: 'Very Old Transaction',
           merchant: 'Very Old Transaction',

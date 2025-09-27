@@ -6,6 +6,7 @@ import type {
   AnalyticsTopMerchantsResponse,
 } from '../types/api'
 import type { BalancesOverview } from '../types/analytics'
+import { appendAccountQueryParams } from '../utils/queryParams'
 
 
 export class AnalyticsService {
@@ -13,11 +14,12 @@ export class AnalyticsService {
     return ApiClient.get<AnalyticsSpendingResponse>('/analytics/spending/current-month')
   }
 
-  static async getSpendingTotal(startDate?: string, endDate?: string): Promise<number> {
+  static async getSpendingTotal(startDate?: string, endDate?: string, accountIds?: string[]): Promise<number> {
     let endpoint = '/analytics/spending'
     const params = new URLSearchParams()
     if (startDate) params.append('start_date', startDate)
     if (endDate) params.append('end_date', endDate)
+    appendAccountQueryParams(params, accountIds)
     const qs = params.toString()
     if (qs) endpoint += `?${qs}`
     // Backend returns a decimal as JSON number/string; ApiClient will parse JSON value.
@@ -25,11 +27,12 @@ export class AnalyticsService {
     return typeof result === 'number' ? result : Number(result)
   }
 
-  static async getCategorySpendingByDateRange(startDate?: string, endDate?: string): Promise<AnalyticsCategoryResponse[]> {
+  static async getCategorySpendingByDateRange(startDate?: string, endDate?: string, accountIds?: string[]): Promise<AnalyticsCategoryResponse[]> {
     let endpoint = '/analytics/categories'
     const params = new URLSearchParams()
     if (startDate) params.append('start_date', startDate)
     if (endDate) params.append('end_date', endDate)
+    appendAccountQueryParams(params, accountIds)
     const qs = params.toString()
     if (qs) endpoint += `?${qs}`
     return ApiClient.get<AnalyticsCategoryResponse[]>(endpoint)
