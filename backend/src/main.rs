@@ -1,7 +1,7 @@
 use anyhow::Context;
 use axum::{
     extract::{Path, Query, State},
-    http::{HeaderMap, StatusCode},
+    http::{HeaderMap, StatusCode, Uri},
     response::Json,
     routing::{delete, get, post, put},
     Router,
@@ -15,6 +15,7 @@ use uuid::Uuid;
 mod auth_middleware;
 mod services;
 mod config;
+mod utils;
 mod models;
 mod traits;
 #[cfg(test)]
@@ -479,19 +480,54 @@ async fn complete_user_onboarding(
 async fn get_authenticated_transactions(
     State(state): State<AppState>,
     auth_context: AuthContext,
-    _headers: HeaderMap,
-    Query(params): Query<TransactionsQuery>,
+    headers: HeaderMap,
+    uri: Uri,
 ) -> Result<Json<Vec<TransactionWithAccount>>, StatusCode> {
     let user_id = auth_context.user_id;
+
+    let query_string = uri.query().unwrap_or("");
+    tracing::info!("Query string: {}", query_string);
+
+    let mut search_param = None;
+    let mut account_ids_params = Vec::new();
+
+    for pair in query_string.split('&') {
+        if let Some((key, value)) = pair.split_once('=') {
+            match key {
+                "search" => search_param = Some(value.to_string()),
+                "account_ids" => account_ids_params.push(value.to_string()),
+                _ => {}
+            }
+        }
+    }
+
+    tracing::info!("Account IDs from query: {:?}", account_ids_params);
+
+    if !account_ids_params.is_empty() {
+        tracing::info!("Account ID strings: {:?}", account_ids_params);
+        utils::account_validation::validate_account_ownership(&account_ids_params, &user_id, &state.db_repository).await?;
+    }
 
     match state
         .db_repository
         .get_transactions_with_account_for_user(&user_id)
         .await
     {
-        Ok(transactions) => {
-            if let Some(search) = params
-                .search
+        Ok(mut transactions) => {
+            if !account_ids_params.is_empty() {
+                let account_ids: Vec<Uuid> = account_ids_params
+                    .iter()
+                    .filter_map(|s| Uuid::parse_str(s).ok())
+                    .collect();
+
+                let account_id_set: std::collections::HashSet<Uuid> = account_ids.into_iter().collect();
+                transactions = transactions
+                    .into_iter()
+                    .filter(|t| account_id_set.contains(&t.account_id))
+                    .collect();
+            }
+
+            if let Some(search) = search_param
                 .as_ref()
                 .map(|s| s.trim())
                 .filter(|s| !s.is_empty())
@@ -1420,6 +1456,7 @@ async fn disconnect_authenticated_plaid(
 async fn health_check() -> &'static str {
     "OK"
 }
+
 
 #[derive(Deserialize)]
 struct DailySpendingQuery {

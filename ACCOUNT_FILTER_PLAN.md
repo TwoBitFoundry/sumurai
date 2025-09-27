@@ -1,94 +1,419 @@
-# Account Filter Implementation Plan (TDD Phases)
+# Account Filter Implementation Plan (TDD Micro-Phases)
 
-## Phase 1 – Backend Filtering Core
+## Phase 1A – Transactions Endpoint Filtering
 
-### Red
-- Update existing integration tests in `backend/tests` for `GET /api/transactions` so they now expect `account_ids[]` filtering (cover happy path and unauthorized account IDs) and fail until support exists.
-- Extend current analytics endpoint suites (spending total, categories, balances overview) so they assert `account_ids[]` behavior and reject foreign account IDs.
-- Adjust repository-level unit tests to verify account-scoped queries use only accounts owned by the authenticated user.
+### Red (15 mins)
+- Update integration test in `backend/tests/transactions.rs` for `GET /api/transactions?account_ids[]=uuid1&account_ids[]=uuid2`
+- Test happy path: filtered results contain only specified account transactions
+- Test unauthorized: foreign account IDs return 403 with appropriate error message
 
-### Green
-- Parse `account_ids[]` in `TransactionsQuery`, validate ownership via repository lookups, and use the filtered list in `get_transactions_with_account_for_user` queries.
-- Thread the account filter into analytics services, ensuring calculations and cached responses reflect only the selected accounts.
-- Introduce deterministic cache key extensions (e.g., SHA1 of sorted account UUIDs) so filtered responses don’t reuse “all accounts” data.
-- Run `cargo test` to confirm new and existing tests pass.
+### Green (20 mins)
+- Parse `account_ids[]` query parameter in `TransactionsQuery` struct
+- Add account ownership validation in transactions handler
+- Filter transactions query to only include owned, specified accounts
+- Run `cargo test transactions` to confirm tests pass
 
-### Refactor
-- Consolidate validation helpers for account ownership to avoid duplication across endpoints.
-- Prune log statements to avoid leaking account identifiers, re-run `cargo test` to ensure nothing regressed.
-
----
-
-## Phase 2 – Shared Filter State & Services
-
-### Red
-- Update existing frontend test suites to cover the forthcoming `AccountFilterProvider` (hook + context), ensuring they now fail until the provider defaults to “All accounts”, persists selections, and exposes grouped account metadata.
-- Extend service-layer unit tests so current expectations require `TransactionService.getTransactions` to serialize `account_ids` when provided.
-
-### Green
-- Implement the provider near `App`/`SessionManager`, loading Plaid connections via `usePlaidConnections` and exposing helper actions (select all, toggle bank, toggle account). Place new context/hooks under existing `frontend/src/hooks`/`context` patterns so the project structure stays consistent.
-- Update `TransactionService` (and analytics service wrappers) to accept optional account IDs, including them in request URLs.
-- Run `npm test -- AccountFilter` (or equivalent Vitest filter) followed by the full frontend test suite.
-
-### Refactor
-- Extract reusable utility (e.g., `buildAccountQueryParams`) to share between services, keeping tests green.
-- Remove redundant local state in hooks that now rely on the context.
+### Refactor (10 mins)
+- Extract `validate_account_ownership` helper function
+- Run `cargo test` to ensure no regressions
 
 ---
 
-## Phase 3 – Header Filter UI
+## Phase 1B – Analytics Spending Endpoint Filtering
 
-### Red
-- Update header/navigation component tests to expect the new `HeaderAccountFilter` popover (default “All accounts”, context updates, keyboard navigation, dark mode styling) so they fail until implemented.
-- Expand existing accessibility snapshots to cover the popover and checkbox labeling.
+### Red (10 mins)
+- Update test in `backend/tests/analytics.rs` for `GET /api/analytics/spending?account_ids[]=uuid1`
+- Test spending calculations only include specified accounts
+- Test foreign account rejection
 
-### Green
-- Insert the new trigger into `AuthenticatedApp`’s header, styled with existing glassmorphism patterns (`bg-white/80`, `backdrop-blur`), and build grouped checklists by bank using the provider state. Keep component files within established `components` subfolders and adhere to current naming conventions.
-- Ensure the trigger reflects active selections (badge/count) and the “All accounts” toggle clears custom selections.
-- Re-run targeted component tests, then the full Vitest suite.
+### Green (15 mins)
+- Thread account_ids through `AnalyticsService::get_spending_total`
+- Update spending calculation queries to filter by account ownership + selection
+- Run `cargo test analytics::spending` to confirm
 
-### Refactor
-- Merge overlapping button/pill styles with existing Tailwind utility helpers to keep header styling consistent.
-- Verify no unused props remain and re-run tests to confirm stability.
-
----
-
-## Phase 4 – Feature Integrations (Dashboard, Transactions, Budgets)
-
-### Red
-- Expand existing `useTransactions` tests so they now expect refetching when the account filter changes and pagination/search reset accordingly.
-- Update analytics hook suites (`useAnalytics`, `useBalancesOverview`, `useNetWorthSeries`) so current expectations require forwarding account IDs downstream.
-- Adjust `useBudgets` tests to expect filtered transaction totals when the provider selection changes.
-
-### Green
-- Subscribe each hook/component to the `AccountFilterProvider`, forwarding the selected IDs to their service calls and local memoization.
-- Confirm the Transactions page pipes filtered data through tables and totals; adjust Dashboard/Balances charts and Budgets progress calculations to honor the filtered datasets.
-- Execute `npm test` and key smoke tests (`cargo test` for analytics backfill if needed) after each integration.
-
-### Refactor
-- Remove any leftover per-component account state that’s superseded by the provider.
-- Co-locate shared hook utilities (e.g., pagination reset logic) following existing folder conventions before rerunning the entire test suite.
+### Refactor (5 mins)
+- Reuse `validate_account_ownership` helper
+- Run `cargo test` to ensure stability
 
 ---
 
-## Phase 5 – UX & Security Hardening
+## Phase 1C – Analytics Categories Endpoint Filtering
 
-### Red
-- Update regression suites to simulate rapid bank/account toggling so they fail until debounced fetch logic prevents stale selections.
-- Extend existing security-focused integration tests so they now require foreign account IDs to return 403/400 responses with appropriate logging.
+### Red (10 mins)
+- Update test for `GET /api/analytics/categories?account_ids[]=uuid1`
+- Test category spending reflects only specified accounts
 
-### Green
-- Implement debouncing/backoff where necessary to avoid redundant API calls while maintaining responsiveness.
-- Harden validation/error messaging in the UI so users get clear feedback when filters produce empty results or invalid selections.
-- Re-run both backend and frontend test suites, plus manual accessibility checks (keyboard traversal, screen-reader labels).
+### Green (15 mins)
+- Thread account_ids through `AnalyticsService::get_category_spending_by_date_range`
+- Update category calculation queries with account filtering
+- Run `cargo test analytics::categories`
 
-- Review caching TTL alignment with JWT lifetime, tidy helper naming, and remove temporary debug instrumentation.
-- Finalize documentation (inline comments where essential) and perform a full `cargo fmt`, `cargo clippy`, and `npm run lint` to finish with clean builds.
-- Double-check new code respects existing module/file naming conventions across frontend and backend paths.
+### Refactor (5 mins)
+- Consolidate account filtering logic in analytics service
+- Run `cargo test`
 
 ---
 
-## Continuous Testing Reminder
-- Every phase follows Red → Green → Refactor; do not progress until all tests in the current phase are green.
-- Prefer updating existing tests over introducing new files/specs so coverage stays consolidated.
-- Record manual verification steps (e.g., end-to-end smoke on `http://localhost:8080`) after each phase to ensure the shared filter behaves consistently across tabs.
+## Phase 1D – Analytics Balances Endpoint Filtering
+
+### Red (10 mins)
+- Update test for `GET /api/analytics/balances/overview?account_ids[]=uuid1`
+- Test balance calculations only include specified accounts
+
+### Green (15 mins)
+- Thread account_ids through `AnalyticsService::get_balances_overview`
+- Update balance queries with account filtering
+- Run `cargo test analytics::balances`
+
+### Refactor (5 mins)
+- Clean up duplicate validation logic
+- Run `cargo test`
+
+---
+
+## Phase 1E – Cache Key Isolation
+
+### Red (15 mins)
+- Add test to verify different account selections produce different cache keys
+- Test filtered cache doesn't return "all accounts" data
+
+### Green (20 mins)
+- Implement deterministic cache key extension using sorted account UUIDs hash
+- Update cache key generation in all analytics endpoints
+- Run `cargo test` to confirm cache isolation
+
+### Refactor (10 mins)
+- Extract `build_cache_key_with_accounts` utility
+- Remove log statements that might leak account identifiers
+- Run `cargo test`
+
+---
+
+## Phase 2A – Account Filter Context Foundation
+
+### Red (15 mins)
+- Create test file `frontend/src/hooks/__tests__/AccountFilterProvider.test.tsx`
+- Test provider defaults to "All accounts" selection
+- Test provider exposes current selection state
+
+### Green (25 mins)
+- Create `frontend/src/context/AccountFilterContext.tsx`
+- Create `frontend/src/hooks/useAccountFilter.ts`
+- Implement basic provider with "All accounts" default state
+- Run `npm test AccountFilter`
+
+### Refactor (10 mins)
+- Optimize provider structure and prop drilling
+- Run `npm test`
+
+---
+
+## Phase 2B – Account Metadata Integration
+
+### Red (10 mins)
+- Extend AccountFilterProvider tests to expect grouped account metadata (by bank)
+- Test select all / toggle bank / toggle account actions
+
+### Green (20 mins)
+- Integrate `usePlaidConnections` hook into AccountFilterProvider
+- Implement helper actions for account selection
+- Expose grouped account data by institution
+- Run `npm test AccountFilter`
+
+### Refactor (10 mins)
+- Extract reusable account grouping logic
+- Run `npm test`
+
+---
+
+## Phase 2C – Service Layer Integration
+
+### Red (15 mins)
+- Update `frontend/src/services/__tests__/TransactionService.test.ts`
+- Test `getTransactions` serializes `account_ids` parameter when provided
+- Add similar tests for AnalyticsService methods
+
+### Green (20 mins)
+- Update `TransactionService.getTransactions` to accept optional accountIds parameter
+- Update `AnalyticsService` methods to accept and serialize account_ids
+- Implement `buildAccountQueryParams` utility
+- Run `npm test services`
+
+### Refactor (10 mins)
+- Consolidate query parameter building logic
+- Remove redundant parameter serialization
+- Run `npm test`
+
+---
+
+## Phase 3A – Header Filter Component Foundation
+
+### Red (15 mins)
+- Create test file `frontend/src/components/__tests__/HeaderAccountFilter.test.tsx`
+- Test component renders "All accounts" by default
+- Test popover opens/closes on trigger click
+
+### Green (25 mins)
+- Create `frontend/src/components/HeaderAccountFilter.tsx`
+- Implement basic trigger button with glassmorphism styling
+- Add popover with basic structure (no functionality yet)
+- Run `npm test HeaderAccountFilter`
+
+### Refactor (5 mins)
+- Align styling with existing header patterns
+- Run `npm test`
+
+---
+
+## Phase 3B – Filter Popover Content
+
+### Red (15 mins)
+- Extend HeaderAccountFilter tests to expect grouped checklists by bank
+- Test "All accounts" toggle clears custom selections
+- Test individual account toggle functionality
+
+### Green (30 mins)
+- Implement popover content with grouped account checkboxes
+- Add "All accounts" toggle functionality
+- Connect to AccountFilterProvider for state management
+- Implement selection badge/count on trigger
+- Run `npm test HeaderAccountFilter`
+
+### Refactor (10 mins)
+- Extract checkbox group components for reusability
+- Optimize re-renders with useMemo/useCallback
+- Run `npm test`
+
+---
+
+## Phase 3C – Accessibility & Keyboard Navigation
+
+### Red (15 mins)
+- Add accessibility tests for keyboard navigation
+- Test screen reader labels and ARIA attributes
+- Test focus management when popover opens/closes
+
+### Green (20 mins)
+- Implement proper ARIA labels and roles
+- Add keyboard navigation support (Tab, Enter, Escape)
+- Ensure focus returns to trigger when popover closes
+- Run accessibility tests and manual keyboard testing
+
+### Refactor (10 mins)
+- Consolidate ARIA patterns with existing components
+- Run `npm test`
+
+---
+
+## Phase 3D – Header Integration
+
+### Red (10 mins)
+- Update `AuthenticatedApp` tests to expect HeaderAccountFilter in header
+- Test header layout accommodates new filter component
+
+### Green (15 mins)
+- Integrate HeaderAccountFilter into `AuthenticatedApp` header
+- Ensure responsive layout and proper spacing
+- Run `npm test AuthenticatedApp`
+
+### Refactor (5 mins)
+- Remove unused props and verify clean integration
+- Run `npm test`
+
+---
+
+## Phase 4A – Transactions Hook Integration
+
+### Red (15 mins)
+- Update `frontend/src/hooks/__tests__/useTransactions.test.ts`
+- Test hook refetches when account filter changes
+- Test pagination resets when filter changes
+
+### Green (20 mins)
+- Update `useTransactions` hook to subscribe to AccountFilterProvider
+- Forward selected account IDs to TransactionService calls
+- Implement pagination reset on filter change
+- Run `npm test useTransactions`
+
+### Refactor (10 mins)
+- Extract pagination reset logic for reuse
+- Optimize hook dependencies and memoization
+- Run `npm test`
+
+---
+
+## Phase 4B – Analytics Hooks Integration
+
+### Red (15 mins)
+- Update tests for `useAnalytics`, `useBalancesOverview`, `useNetWorthSeries`
+- Test hooks forward account IDs to analytics service
+- Test hooks refetch when account filter changes
+
+### Green (25 mins)
+- Update each analytics hook to subscribe to AccountFilterProvider
+- Forward selected account IDs to respective AnalyticsService methods
+- Ensure proper memoization to prevent unnecessary refetches
+- Run `npm test analytics`
+
+### Refactor (10 mins)
+- Consolidate account filter subscription logic across hooks
+- Remove duplicate dependency arrays
+- Run `npm test`
+
+---
+
+## Phase 4C – Budgets Integration
+
+### Red (15 mins)
+- Update `useBudgets` tests to expect filtered transaction totals
+- Test budget progress calculations reflect account filter
+
+### Green (20 mins)
+- Update `useBudgets` hook to use filtered transaction data
+- Ensure budget progress calculations honor account selection
+- Run `npm test budgets`
+
+### Refactor (5 mins)
+- Clean up any leftover hardcoded account logic
+- Run `npm test`
+
+---
+
+## Phase 4D – Dashboard Page Integration
+
+### Red (10 mins)
+- Update Dashboard component tests to verify filtered data flows through charts
+- Test dashboard reflects account filter changes
+
+### Green (15 mins)
+- Verify Dashboard components use filtered hooks (no direct changes needed if hooks are updated)
+- Test dashboard updates when account filter changes
+- Run manual verification of dashboard filtering
+
+### Refactor (5 mins)
+- Remove any component-level account state that's superseded
+- Run `npm test dashboard`
+
+---
+
+## Phase 4E – Transactions Page Integration
+
+### Red (10 mins)
+- Update Transactions page tests to verify filtered data in tables and totals
+- Test transaction list reflects account filter
+
+### Green (15 mins)
+- Verify Transactions page uses filtered useTransactions hook
+- Test transaction tables and totals update with filter changes
+- Run manual verification of transactions filtering
+
+### Refactor (5 mins)
+- Clean up unused local state
+- Run `npm test transactions`
+
+---
+
+## Phase 5A – Performance Optimization
+
+### Red (15 mins)
+- Add test to simulate rapid account toggling
+- Test debounced fetch logic prevents redundant API calls
+- Test UI remains responsive during rapid changes
+
+### Green (25 mins)
+- Implement debouncing for account filter changes (300ms delay)
+- Add loading states during filter changes
+- Optimize hook dependencies to prevent unnecessary re-renders
+- Run performance tests and manual rapid-clicking verification
+
+### Refactor (10 mins)
+- Extract debouncing logic for reuse
+- Optimize component re-render patterns
+- Run `npm test`
+
+---
+
+## Phase 5B – Error Handling & Validation
+
+### Red (15 mins)
+- Add tests for empty filter results (no accounts selected)
+- Test error states when invalid account IDs are used
+- Test user feedback for edge cases
+
+### Green (20 mins)
+- Implement proper error messaging for empty results
+- Add validation for account selection edge cases
+- Ensure graceful fallback to "All accounts" on errors
+- Run error scenario tests
+
+### Refactor (10 mins)
+- Consolidate error handling patterns
+- Clean up error message consistency
+- Run `npm test`
+
+---
+
+## Phase 5C – Security Hardening
+
+### Red (10 mins)
+- Update security integration tests to require 403/400 for foreign account IDs
+- Test appropriate error logging for security violations
+
+### Green (15 mins)
+- Verify backend properly rejects foreign account IDs
+- Ensure no sensitive account data leaks in error responses
+- Test security logging is appropriate but not excessive
+- Run security-focused tests
+
+### Refactor (5 mins)
+- Clean up any debug logging that could leak sensitive data
+- Run `cargo test` and `npm test`
+
+---
+
+## Phase 5D – Final Polish & Documentation
+
+### Red (10 mins)
+- Run full test suites to catch any regressions
+- Perform manual accessibility audit (keyboard + screen reader)
+- Test end-to-end workflow at `http://localhost:8080`
+
+### Green (20 mins)
+- Add essential inline documentation for complex logic
+- Ensure all new code follows existing naming conventions
+- Verify cache TTL alignment with JWT lifecycle
+- Run `cargo fmt`, `cargo clippy`, `npm run lint`
+
+### Refactor (15 mins)
+- Remove any temporary debug instrumentation
+- Consolidate duplicate utilities across frontend/backend
+- Final test suite run to ensure everything is green
+- Manual smoke test of complete feature across all tabs
+
+---
+
+## Micro-Phase Guidelines
+
+### Timing & Focus
+- Each micro-phase should take 5-30 minutes max
+- Red phase: Write failing tests only (no implementation)
+- Green phase: Minimal code to make tests pass
+- Refactor phase: Clean up without changing behavior
+
+### Testing Strategy
+- Update existing test files rather than creating new ones
+- Run targeted test commands (e.g., `cargo test transactions`, `npm test AccountFilter`)
+- Verify `cargo test` and `npm test` pass at end of each refactor phase
+- Manual verification at `http://localhost:8080` after every 3-4 micro-phases
+
+### Progression Rules
+- Do not advance to next micro-phase until current one is 100% complete
+- If a micro-phase takes longer than estimated, break it down further
+- If tests fail in unexpected ways, stop and fix before proceeding
+- Each micro-phase should have a clear, single deliverable
+
+### Dependencies
+- Backend phases (1A-1E) must complete before frontend phases (2A+)
+- Context foundation (2A-2B) must complete before UI phases (3A+)
+- Service integration (2C) must complete before hook integration (4A+)
+- Core functionality (1-4) must complete before optimization/polish (5A+)

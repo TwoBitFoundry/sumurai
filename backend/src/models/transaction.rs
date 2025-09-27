@@ -45,6 +45,8 @@ pub struct TransactionWithAccount {
 #[derive(Deserialize)]
 pub struct TransactionsQuery {
     pub search: Option<String>,
+    #[serde(rename = "account_ids")]
+    pub account_ids: Option<Vec<String>>,
 }
 
 #[derive(Serialize)]
