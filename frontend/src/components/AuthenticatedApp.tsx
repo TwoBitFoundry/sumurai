@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Sun, Moon } from 'lucide-react'
 import DashboardPage from '../pages/DashboardPage'
 import TransactionsPage from '../pages/TransactionsPage'
 import BudgetsPage from '../pages/BudgetsPage'
@@ -41,44 +42,49 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
       <div className={dark ? 'dark' : ''}>
         <div className="min-h-screen flex flex-col bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300">
           <header className="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-            <div className={`px-4 ${scrolled ? 'h-14' : 'h-16'} flex items-center justify-between transition-all duration-200 ease-out`}>
-              <div className={`flex items-center gap-2 font-semibold ${scrolled ? 'text-base' : 'text-lg'}`}>Sumaura</div>
-              <div className="flex items-center gap-2">
-                <nav className={`flex gap-2 ${scrolled ? 'text-xs' : 'text-sm'}`} aria-label="Primary">
-                  {TABS.map(({ key, label }) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setTab(key)}
-                      className={`${
-                        scrolled ? 'px-2.5 py-1' : 'px-3 py-1.5'
-                      } rounded-xl border transition-all duration-200 ${
-                        tab === key
-                          ? 'bg-primary-100 dark:bg-slate-600 border-primary-300 dark:border-slate-500 text-primary-700 dark:text-slate-100'
-                          : 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-600'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </nav>
+            <div className={`px-4 ${scrolled ? 'h-14' : 'h-16'} transition-all duration-200 ease-out`}>
+              <div className="flex items-center justify-between h-full">
+                <div className="flex items-center gap-6">
+                  <div className={`flex items-center gap-2 font-semibold ${scrolled ? 'text-base' : 'text-lg'}`}>Sumaura</div>
 
-                <HeaderAccountFilter />
+                  <nav className={`flex gap-2 ${scrolled ? 'text-xs' : 'text-sm'}`} aria-label="Primary">
+                    {TABS.map(({ key, label }) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setTab(key)}
+                        className={`${
+                          scrolled ? 'px-2.5 py-1' : 'px-3 py-1.5'
+                        } rounded-xl border transition-all duration-200 ${
+                          tab === key
+                            ? 'bg-primary-100 dark:bg-slate-600 border-primary-300 dark:border-slate-500 text-primary-700 dark:text-slate-100'
+                            : 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-600'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </nav>
+                </div>
 
                 <div className="flex items-center gap-2">
+                  <HeaderAccountFilter scrolled={scrolled} />
+
+                  <div className="w-px h-6 bg-slate-200 dark:bg-slate-600"></div>
+
                   <button
                     type="button"
                     onClick={toggleTheme}
-                    className={`${scrolled ? 'px-2 py-1' : 'px-2 py-1.5'} rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all duration-200`}
+                    className={`${scrolled ? 'px-2.5 py-1' : 'px-3 py-1.5'} rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all duration-200`}
                     aria-label="Toggle theme"
                     title="Toggle theme"
                   >
-                    {dark ? '🌞' : '🌙'}
+                    {dark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
                   </button>
                   <button
                     type="button"
                     onClick={onLogout}
-                    className={`${scrolled ? 'px-2.5 py-1' : 'px-3 py-1.5'} rounded-xl border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200`}
+                    className={`${scrolled ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm'} rounded-xl border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200`}
                     title="Logout"
                   >
                     Logout

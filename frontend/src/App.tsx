@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { Sun, Moon } from 'lucide-react';
 import { LoginScreen, RegisterScreen } from "./Auth";
 import { SessionManager } from "./SessionManager";
 import { AuthenticatedApp } from "./components/AuthenticatedApp";
@@ -99,7 +100,7 @@ export function App() {
       <div className={dark ? 'dark' : ''}>
         <div className="min-h-screen bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300">
           <header className="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-            <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between">
+            <div className="px-4 h-16 flex items-center justify-between">
               <div className="flex items-center gap-2 font-semibold text-lg">Sumaura</div>
               <div className="flex items-center">
                 <button
@@ -112,7 +113,7 @@ export function App() {
                   aria-label="Toggle theme"
                   title="Toggle theme"
                 >
-                  {dark ? '🌞' : '🌙'}
+                  {dark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
                 </button>
               </div>
             </div>

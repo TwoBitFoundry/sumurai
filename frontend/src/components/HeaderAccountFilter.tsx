@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
+import { ChevronDown, Building2 } from 'lucide-react'
 import { useAccountFilter } from '@/hooks/useAccountFilter'
 
-export function HeaderAccountFilter() {
+interface HeaderAccountFilterProps {
+  scrolled: boolean
+}
+
+export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
   const [isOpen, setIsOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const {
@@ -56,11 +61,17 @@ export function HeaderAccountFilter() {
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
-        className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-100/80 dark:bg-slate-700/80 backdrop-blur-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-all duration-200 text-sm"
+        className={`${
+          scrolled ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm'
+        } rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-100/80 dark:bg-slate-700/80 backdrop-blur-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-all duration-200 flex items-center gap-2`}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
       >
-        {displayText}
+        <Building2 className="h-4 w-4" />
+        <span>{displayText}</span>
+        <ChevronDown
+          className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {isOpen && (
