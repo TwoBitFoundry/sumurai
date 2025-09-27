@@ -7,7 +7,6 @@ use axum::{
     Router,
 };
 use chrono::Utc;
-use serde::Deserialize;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
@@ -1050,7 +1049,7 @@ async fn get_authenticated_current_month_spending(
 async fn get_authenticated_daily_spending(
     State(state): State<AppState>,
     auth_context: AuthContext,
-    Query(params): Query<DailySpendingQuery>,
+    Query(params): Query<models::query::DailySpendingQuery>,
 ) -> Result<Json<Vec<DailySpending>>, StatusCode> {
     let user_id = auth_context.user_id;
 
@@ -1521,10 +1520,6 @@ async fn health_check() -> &'static str {
 }
 
 
-#[derive(Deserialize)]
-struct DailySpendingQuery {
-    month: Option<String>, // Format: YYYY-MM
-}
 
 
 async fn get_authenticated_balances_overview(

@@ -1,4 +1,4 @@
-use crate::utils::query_params::{AnalyticsQueryParams, BalancesQueryParams};
+use crate::models::query::{AnalyticsQueryParams, BalancesQueryParams};
 use axum::http::Uri;
 
 #[test]

@@ -7,3 +7,4 @@ pub mod plaid;
 pub mod budget;
 pub mod app_state;
 pub mod cache;
+pub mod query;

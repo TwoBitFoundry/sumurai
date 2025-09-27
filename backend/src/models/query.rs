@@ -1,5 +1,5 @@
 use axum::http::Uri;
-use uuid::Uuid;
+use serde::Deserialize;
 
 #[derive(Debug, Default)]
 pub struct AnalyticsQueryParams {
@@ -62,3 +62,7 @@ impl BalancesQueryParams {
     }
 }
 
+#[derive(Deserialize)]
+pub struct DailySpendingQuery {
+    pub month: Option<String>, // Format: YYYY-MM
+}
