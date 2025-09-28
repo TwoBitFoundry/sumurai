@@ -1,8 +1,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor, cleanup } from '@testing-library/react'
+import { ReactNode } from 'react'
 import { useBalancesOverview } from '@/hooks/useBalancesOverview'
+import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 import { ApiClient } from '@/services/ApiClient'
+
+vi.mock('@/services/PlaidService', () => ({
+  PlaidService: {
+    getAccounts: vi.fn(),
+  }
+}))
+
+const TestWrapper = ({ children }: { children: ReactNode }) => (
+  <AccountFilterProvider>
+    {children}
+  </AccountFilterProvider>
+)
 
 describe('useBalancesOverview (Phase 6)', () => {
   beforeEach(() => {
@@ -29,7 +43,7 @@ describe('useBalancesOverview (Phase 6)', () => {
     }
     installFetchRoutes({ 'GET /api/analytics/balances/overview': mock })
 
-    const { result } = renderHook(() => useBalancesOverview())
+    const { result } = renderHook(() => useBalancesOverview(), { wrapper: TestWrapper })
     expect(result.current.loading).toBe(true)
     expect(result.current.data).toBeNull()
 
@@ -56,7 +70,7 @@ describe('useBalancesOverview (Phase 6)', () => {
 
     // Controlled range state within the test component wrapper
     let end = '2024-01-01'
-    const { result, rerender } = renderHook(({ endDate }) => useBalancesOverview({ endDate }, 10), { initialProps: { endDate: end } })
+    const { result, rerender } = renderHook(({ endDate }) => useBalancesOverview({ endDate }, 10), { initialProps: { endDate: end }, wrapper: TestWrapper })
 
     await waitFor(() => { expect(result.current.loading).toBe(false) })
     expect(calls).toBe(1)
@@ -71,7 +85,7 @@ describe('useBalancesOverview (Phase 6)', () => {
   it('returns error when API fails', async () => {
     installFetchRoutes({ 'GET /api/analytics/balances/overview': new Response('Boom', { status: 500 }) })
 
-    const { result } = renderHook(() => useBalancesOverview())
+    const { result } = renderHook(() => useBalancesOverview(), { wrapper: TestWrapper })
     await waitFor(() => { expect(result.current.loading).toBe(false) })
     expect(result.current.error).toBeTruthy()
     expect(result.current.data).toBeNull()
@@ -89,12 +103,90 @@ describe('useBalancesOverview (Phase 6)', () => {
       'GET /api/analytics/balances/overview': () => (toggle ? mock2 : mock1)
     })
 
-    const { result } = renderHook(() => useBalancesOverview())
+    const { result } = renderHook(() => useBalancesOverview(), { wrapper: TestWrapper })
     await waitFor(() => { expect(result.current.loading).toBe(false) })
     expect(result.current.data).toEqual(mock1)
 
     toggle = true
     await act(async () => { await result.current.refresh() })
     expect(result.current.data).toEqual(mock2)
+  })
+
+  it('should pass account filter to service when not all accounts selected', async () => {
+    let accountFilterHook: ReturnType<typeof useAccountFilter>
+    let lastRequestUrl: string | undefined
+
+    installFetchRoutes({
+      'GET /api/analytics/balances/overview': (request) => {
+        lastRequestUrl = request.url
+        return {
+          asOf: 'latest',
+          overall: { cash: 1, credit: -1, loan: -1, investments: 1, positivesTotal: 2, negativesTotal: -2, net: 0, ratio: 1 },
+          banks: [],
+          mixedCurrency: false
+        }
+      }
+    })
+
+    const { result } = renderHook(() => {
+      accountFilterHook = useAccountFilter()
+      return useBalancesOverview()
+    }, { wrapper: TestWrapper })
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+    })
+
+    // Change account filter to specific accounts
+    await act(async () => {
+      accountFilterHook!.setSelectedAccountIds(['account1', 'account2'])
+      accountFilterHook!.setAllAccountsSelected(false)
+    })
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+    })
+
+    // Should have made request with account filter
+    expect(lastRequestUrl).toContain('account_ids[]=account1')
+    expect(lastRequestUrl).toContain('account_ids[]=account2')
+  })
+
+  it('should refetch when account filter changes', async () => {
+    let accountFilterHook: ReturnType<typeof useAccountFilter>
+    let callCount = 0
+
+    installFetchRoutes({
+      'GET /api/analytics/balances/overview': () => {
+        callCount++
+        return {
+          asOf: 'latest',
+          overall: { cash: 1, credit: -1, loan: -1, investments: 1, positivesTotal: 2, negativesTotal: -2, net: 0, ratio: 1 },
+          banks: [],
+          mixedCurrency: false
+        }
+      }
+    })
+
+    const { result } = renderHook(() => {
+      accountFilterHook = useAccountFilter()
+      return useBalancesOverview()
+    }, { wrapper: TestWrapper })
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+    })
+
+    const initialCallCount = callCount
+
+    // Change account filter
+    await act(async () => {
+      accountFilterHook!.setSelectedAccountIds(['account1'])
+      accountFilterHook!.setAllAccountsSelected(false)
+    })
+
+    await waitFor(() => {
+      expect(callCount).toBeGreaterThan(initialCallCount)
+    })
   })
 })

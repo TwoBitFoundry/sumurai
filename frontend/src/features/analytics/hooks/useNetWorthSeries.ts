@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnalyticsService } from '../../../services/AnalyticsService'
+import { useAccountFilter } from '../../../hooks/useAccountFilter'
 import { computeDateRange, type DateRangeKey } from '../../../utils/dateRanges'
 
 export type NetWorthPoint = { date: string; value: number }
@@ -17,6 +18,8 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
   const [series, setSeries] = useState<NetWorthPoint[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const { selectedAccountIds, isAllAccountsSelected } = useAccountFilter()
 
   const abortRef = useRef<AbortController | null>(null)
 
@@ -39,7 +42,8 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
     setError(null)
 
     try {
-      const raw = await AnalyticsService.getNetWorthOverTime(start, end)
+      const accountIds = !isAllAccountsSelected && selectedAccountIds.length > 0 ? selectedAccountIds : undefined
+      const raw = await AnalyticsService.getNetWorthOverTime(start, end, accountIds)
       if (ac.signal.aborted) return
       const normalized = Array.isArray(raw)
         ? raw.map(point => ({
@@ -57,7 +61,7 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
         setLoading(false)
       }
     }
-  }, [start, end])
+  }, [start, end, isAllAccountsSelected, selectedAccountIds])
 
   useEffect(() => {
     load()

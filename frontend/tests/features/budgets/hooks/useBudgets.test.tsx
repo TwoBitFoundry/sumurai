@@ -1,8 +1,10 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { vi } from 'vitest'
+import { ReactNode } from 'react'
 import { useBudgets } from '@/features/budgets/hooks/useBudgets'
 import { BudgetService } from '@/services/BudgetService'
 import { TransactionService } from '@/services/TransactionService'
+import { AccountFilterProvider } from '@/hooks/useAccountFilter'
 
 vi.mock('@/services/BudgetService', () => ({
   BudgetService: {
@@ -18,6 +20,18 @@ vi.mock('@/services/TransactionService', () => ({
     getTransactions: vi.fn(),
   }
 }))
+
+vi.mock('@/services/PlaidService', () => ({
+  PlaidService: {
+    getAccounts: vi.fn(),
+  }
+}))
+
+const TestWrapper = ({ children }: { children: ReactNode }) => (
+  <AccountFilterProvider>
+    {children}
+  </AccountFilterProvider>
+)
 
 const asBudget = (id: string, category: string, amount: number) => ({ id, category, amount })
 const asTransaction = (id: string, categoryId: string, amount: number, date = '2024-02-10') => ({
@@ -60,7 +74,7 @@ describe('useBudgets', () => {
       asTransaction('t3', 'groceries', 30, '2024-02-15'),
     ] as any)
 
-    const { result } = renderHook(() => useBudgets())
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })
 
     await act(async () => {
       result.current.setMonth(new Date(2024, 1, 1))
@@ -82,7 +96,7 @@ describe('useBudgets', () => {
   it('guards against duplicate budget loads but refetches transactions for month changes', async () => {
     vi.mocked(BudgetService.getBudgets).mockResolvedValueOnce([asBudget('1', 'groceries', 100)] as any)
 
-    const { result } = renderHook(() => useBudgets())
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })
 
     await act(async () => {
       result.current.setMonth(new Date(2024, 1, 1))
@@ -112,7 +126,7 @@ describe('useBudgets', () => {
     const deferred = createDeferred<any[]>()
     vi.mocked(TransactionService.getTransactions).mockReturnValueOnce(deferred.promise as any)
 
-    const { result } = renderHook(() => useBudgets())
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })
 
     await act(async () => {
       result.current.setMonth(new Date(2024, 1, 1))
@@ -140,7 +154,7 @@ describe('useBudgets', () => {
     vi.mocked(BudgetService.getBudgets).mockResolvedValueOnce([] as any)
     vi.mocked(BudgetService.createBudget).mockResolvedValueOnce(asBudget('server-1', 'groceries', 200) as any)
 
-    const { result } = renderHook(() => useBudgets())
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })
     await act(async () => {
       result.current.setMonth(new Date(2024, 1, 1))
     })
@@ -157,7 +171,7 @@ describe('useBudgets', () => {
     vi.mocked(BudgetService.getBudgets).mockResolvedValueOnce([] as any)
     vi.mocked(BudgetService.createBudget).mockRejectedValueOnce(Object.assign(new Error('fail'), { status: 500 }))
 
-    const { result } = renderHook(() => useBudgets())
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })
     await act(async () => {
       result.current.setMonth(new Date(2024, 1, 1))
     })
@@ -172,7 +186,7 @@ describe('useBudgets', () => {
   it('validates duplicate categories', async () => {
     vi.mocked(BudgetService.getBudgets).mockResolvedValueOnce([asBudget('1', 'groceries', 100)] as any)
 
-    const { result } = renderHook(() => useBudgets())
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })
     await act(async () => {
       result.current.setMonth(new Date(2024, 1, 1))
     })
@@ -188,7 +202,7 @@ describe('useBudgets', () => {
     vi.mocked(BudgetService.getBudgets).mockResolvedValueOnce([asBudget('1', 'groceries', 100)] as any)
     vi.mocked(BudgetService.updateBudget).mockResolvedValueOnce(asBudget('1', 'groceries', 250) as any)
 
-    const { result } = renderHook(() => useBudgets())
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })
     await act(async () => {
       result.current.setMonth(new Date(2024, 1, 1))
     })
@@ -204,7 +218,7 @@ describe('useBudgets', () => {
     vi.mocked(BudgetService.getBudgets).mockResolvedValueOnce([asBudget('1', 'groceries', 100)] as any)
     vi.mocked(BudgetService.updateBudget).mockRejectedValueOnce(Object.assign(new Error('fail'), { status: 500 }))
 
-    const { result } = renderHook(() => useBudgets())
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })
     await act(async () => {
       result.current.setMonth(new Date(2024, 1, 1))
     })
@@ -220,7 +234,7 @@ describe('useBudgets', () => {
     vi.mocked(BudgetService.getBudgets).mockResolvedValueOnce([asBudget('1', 'groceries', 100)] as any)
     vi.mocked(BudgetService.deleteBudget).mockResolvedValueOnce(undefined as any)
 
-    const { result } = renderHook(() => useBudgets())
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })
     await act(async () => {
       result.current.setMonth(new Date(2024, 1, 1))
     })
@@ -236,7 +250,7 @@ describe('useBudgets', () => {
     vi.mocked(BudgetService.getBudgets).mockResolvedValueOnce([asBudget('1', 'groceries', 100)] as any)
     vi.mocked(BudgetService.deleteBudget).mockRejectedValueOnce(Object.assign(new Error('fail'), { status: 500 }))
 
-    const { result } = renderHook(() => useBudgets())
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })
     await act(async () => {
       result.current.setMonth(new Date(2024, 1, 1))
     })

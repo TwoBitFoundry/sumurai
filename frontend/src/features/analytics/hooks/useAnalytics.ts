@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnalyticsService } from '../../../services/AnalyticsService'
+import { useAccountFilter } from '../../../hooks/useAccountFilter'
 import type {
   AnalyticsCategoryResponse,
   AnalyticsTopMerchantsResponse,
@@ -26,6 +27,8 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
   const [topMerchants, setTopMerchants] = useState<AnalyticsTopMerchantsResponse[]>([])
   const [monthlyTotals, setMonthlyTotals] = useState<AnalyticsMonthlyTotalsResponse[]>([])
 
+  const { selectedAccountIds, isAllAccountsSelected } = useAccountFilter()
+
   const abortRef = useRef<AbortController | null>(null)
 
   const { start, end } = useMemo(() => computeDateRange(range), [range])
@@ -37,11 +40,12 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
     setLoading(true)
     setError(null)
     try {
+      const accountIds = !isAllAccountsSelected && selectedAccountIds.length > 0 ? selectedAccountIds : undefined
       const [total, cats, merch, monthly] = await Promise.all([
-        AnalyticsService.getSpendingTotal(start, end),
-        AnalyticsService.getCategorySpendingByDateRange(start, end),
-        AnalyticsService.getTopMerchantsByDateRange(start, end),
-        AnalyticsService.getMonthlyTotals(6),
+        AnalyticsService.getSpendingTotal(start, end, accountIds),
+        AnalyticsService.getCategorySpendingByDateRange(start, end, accountIds),
+        AnalyticsService.getTopMerchantsByDateRange(start, end, accountIds),
+        AnalyticsService.getMonthlyTotals(6, accountIds),
       ])
       if (ac.signal.aborted) return
       const totalNum = Number(total) || 0
@@ -56,7 +60,7 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
     } finally {
       if (!ac.signal.aborted) setLoading(false)
     }
-  }, [start, end])
+  }, [start, end, isAllAccountsSelected, selectedAccountIds])
 
   useEffect(() => {
     load()

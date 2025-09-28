@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { TransactionService, type TransactionFilters } from '../../../services/TransactionService'
 import type { Transaction } from '../../../types/api'
+import { useAccountFilter } from '../../../hooks/useAccountFilter'
 
 export type DateRangeKey = string | undefined
 
@@ -41,6 +42,8 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
   const [dateRange, setDateRange] = useState<DateRangeKey>(initialDateRange)
   const [currentPage, setCurrentPage] = useState(1)
 
+  const { selectedAccountIds, isAllAccountsSelected } = useAccountFilter()
+
   const debounceTimer = useRef<number | null>(null)
 
   const load = useCallback(async () => {
@@ -49,6 +52,9 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     try {
       const filters: TransactionFilters = {}
       if (dateRange) filters.dateRange = String(dateRange)
+      if (!isAllAccountsSelected && selectedAccountIds.length > 0) {
+        filters.accountIds = selectedAccountIds
+      }
       const txns = await TransactionService.getTransactions(filters)
       setAll(txns)
     } catch (e: any) {
@@ -59,7 +65,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     } finally {
       setIsLoading(false)
     }
-  }, [dateRange])
+  }, [dateRange, isAllAccountsSelected, selectedAccountIds])
 
   useEffect(() => {
     load()
@@ -67,7 +73,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [search, selectedCategory, dateRange])
+  }, [search, selectedCategory, dateRange, isAllAccountsSelected, selectedAccountIds])
 
   const debouncedSearch = useDebounce(search, 300)
 
