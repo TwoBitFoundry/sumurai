@@ -1,5 +1,6 @@
 use crate::models::analytics::{
-    BalanceCategory, CategorySpending, DailySpending, DailyTrend, MonthlySpending, NetWorthDataPoint, PeriodComparison, TopMerchant,
+    BalanceCategory, CategorySpending, DailySpending, DailyTrend, MonthlySpending,
+    NetWorthDataPoint, PeriodComparison, TopMerchant,
 };
 use crate::models::transaction::Transaction;
 use chrono::Datelike;

@@ -1,11 +1,8 @@
-use crate::models::{
-    account::Account, 
-    transaction::Transaction
-};
+use crate::models::{account::Account, transaction::Transaction};
 
 use crate::services::{
     plaid_service::{PlaidService, RealPlaidClient},
-    sync_service::SyncService
+    sync_service::SyncService,
 };
 
 use chrono::{Duration, NaiveDate, Utc};
@@ -179,7 +176,7 @@ mod sync_recent_transactions_integration_tests {
         let (start_date, end_date) = sync_service.calculate_sync_date_range(None);
         let expected_start = Utc::now().date_naive() - Duration::days(90);
         let expected_end = Utc::now().date_naive();
-        
+
         assert_eq!(start_date, expected_start);
         assert_eq!(end_date, expected_end);
     }
@@ -189,7 +186,7 @@ mod sync_recent_transactions_integration_tests {
     ) {
         let last_sync = Utc::now() - Duration::days(3);
         let sync_service = create_test_sync_service_for_integration();
-        
+
         let (start_date, end_date) = sync_service.calculate_sync_date_range(Some(last_sync));
         let expected_end = Utc::now().date_naive();
         let expected_start = (last_sync - Duration::days(2)).date_naive();

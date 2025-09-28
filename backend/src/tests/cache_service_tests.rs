@@ -1,8 +1,8 @@
-use crate::services::cache_service::{CacheService, MockCacheService};
 use crate::models::cache::{
     BankConnectionSyncStatus, CachedBankAccounts, CachedBankConnection, CachedTransaction,
 };
 use crate::models::{account::Account, plaid::PlaidConnection};
+use crate::services::cache_service::{CacheService, MockCacheService};
 use chrono::Utc;
 use rust_decimal::Decimal;
 use tokio;

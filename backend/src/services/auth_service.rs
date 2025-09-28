@@ -1,9 +1,9 @@
+use crate::models::auth::{AuthError, AuthToken, Claims};
 use argon2::password_hash::{rand_core::OsRng, SaltString};
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use uuid::Uuid;
-use crate::models::auth::{AuthError, AuthToken, Claims};
 
 const MIN_SECRET_LENGTH: usize = 32;
 const TOKEN_EXPIRATION_HOURS: i64 = 24;

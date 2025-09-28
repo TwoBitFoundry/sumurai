@@ -1,11 +1,10 @@
 use crate::models::{
-    account::Account, 
-    cache::{CachedBankAccounts, CachedBankConnection}, 
-    plaid::{DisconnectResult, PlaidConnection}
+    account::Account,
+    cache::{CachedBankAccounts, CachedBankConnection},
+    plaid::{DisconnectResult, PlaidConnection},
 };
 use crate::services::{
-    cache_service::MockCacheService,
-    connection_service::ConnectionService,
+    cache_service::MockCacheService, connection_service::ConnectionService,
     repository_service::MockDatabaseRepository,
 };
 use chrono::Utc;

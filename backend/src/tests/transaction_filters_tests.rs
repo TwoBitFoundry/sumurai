@@ -7,16 +7,14 @@ use uuid::Uuid;
 #[test]
 fn given_empty_account_filter_when_filtering_then_returns_all_transactions() {
     let account_id = Uuid::new_v4();
-    let transactions = vec![
-        Transaction::new_mock(
-            account_id,
-            dec!(100.00),
-            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-            Some("Test".to_string()),
-            "Food".to_string(),
-            "Restaurants".to_string(),
-        )
-    ];
+    let transactions = vec![Transaction::new_mock(
+        account_id,
+        dec!(100.00),
+        NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+        Some("Test".to_string()),
+        "Food".to_string(),
+        "Restaurants".to_string(),
+    )];
 
     let result = filter_transactions_by_account_ids(transactions.clone(), &[]);
     assert_eq!(result.len(), 1);
@@ -59,16 +57,14 @@ fn given_non_matching_account_filter_when_filtering_then_returns_empty() {
     let account_id = Uuid::new_v4();
     let other_account_id = Uuid::new_v4();
 
-    let transactions = vec![
-        Transaction::new_mock(
-            account_id,
-            dec!(100.00),
-            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-            Some("Test".to_string()),
-            "Food".to_string(),
-            "Restaurants".to_string(),
-        )
-    ];
+    let transactions = vec![Transaction::new_mock(
+        account_id,
+        dec!(100.00),
+        NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+        Some("Test".to_string()),
+        "Food".to_string(),
+        "Restaurants".to_string(),
+    )];
 
     let filter = vec![other_account_id.to_string()];
     let result = filter_transactions_by_account_ids(transactions, &filter);
@@ -80,16 +76,14 @@ fn given_non_matching_account_filter_when_filtering_then_returns_empty() {
 fn given_invalid_uuid_in_filter_when_filtering_then_ignores_invalid_uuid() {
     let account_id = Uuid::new_v4();
 
-    let transactions = vec![
-        Transaction::new_mock(
-            account_id,
-            dec!(100.00),
-            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-            Some("Test".to_string()),
-            "Food".to_string(),
-            "Restaurants".to_string(),
-        )
-    ];
+    let transactions = vec![Transaction::new_mock(
+        account_id,
+        dec!(100.00),
+        NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+        Some("Test".to_string()),
+        "Food".to_string(),
+        "Restaurants".to_string(),
+    )];
 
     let filter = vec!["invalid-uuid".to_string(), account_id.to_string()];
     let result = filter_transactions_by_account_ids(transactions, &filter);

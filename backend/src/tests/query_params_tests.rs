@@ -3,7 +3,10 @@ use axum::http::Uri;
 
 #[test]
 fn given_analytics_query_with_params_when_parsing_then_extracts_all_values() {
-    let uri: Uri = "/test?start_date=2024-01-01&end_date=2024-01-31&account_ids=123&account_ids=456".parse().unwrap();
+    let uri: Uri =
+        "/test?start_date=2024-01-01&end_date=2024-01-31&account_ids=123&account_ids=456"
+            .parse()
+            .unwrap();
     let params = AnalyticsQueryParams::from_uri(&uri);
 
     assert_eq!(params.start_date, Some("2024-01-01".to_string()));

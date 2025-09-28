@@ -1,6 +1,6 @@
 use crate::models::{
     cache::{CachedBankAccounts, CachedBankConnection, CachedTransaction},
-    transaction::Transaction
+    transaction::Transaction,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -22,7 +22,6 @@ const TRANSACTIONS_TTL: u64 = 1800;
 const BANK_CONNECTION_TTL: u64 = 7200;
 const BANK_ACCOUNTS_TTL: u64 = 7200;
 const CONNECTION_LIST_TTL: u64 = 3600;
-
 
 #[async_trait]
 #[cfg_attr(test, mockall::automock)]
@@ -273,7 +272,6 @@ impl RedisCache {
         Ok(())
     }
 
-
     pub async fn add_transaction(&self, transaction: &Transaction) -> Result<()> {
         let mut conn = self.connection_manager.clone();
         let key = self.transactions_key();
@@ -294,7 +292,8 @@ impl RedisCache {
             cached_at: chrono::Utc::now(),
         };
         let serialized = serde_json::to_string(&cached_transactions)?;
-        conn.set_ex::<_, _, ()>(&key, serialized, TRANSACTIONS_TTL).await?;
+        conn.set_ex::<_, _, ()>(&key, serialized, TRANSACTIONS_TTL)
+            .await?;
         Ok(())
     }
 
@@ -400,7 +399,12 @@ impl CacheService for RedisCache {
         self.health_check().await
     }
 
-    async fn set_access_token(&self, jwt_id: &str, item_id: &str, access_token: &str) -> Result<()> {
+    async fn set_access_token(
+        &self,
+        jwt_id: &str,
+        item_id: &str,
+        access_token: &str,
+    ) -> Result<()> {
         self.set_access_token(jwt_id, item_id, access_token).await
     }
 
@@ -445,7 +449,8 @@ impl CacheService for RedisCache {
         jwt_id: &str,
         cached_connection: &CachedBankConnection,
     ) -> Result<()> {
-        self.cache_jwt_scoped_bank_connection(jwt_id, cached_connection).await
+        self.cache_jwt_scoped_bank_connection(jwt_id, cached_connection)
+            .await
     }
 
     async fn get_jwt_scoped_bank_connection(
@@ -453,7 +458,8 @@ impl CacheService for RedisCache {
         jwt_id: &str,
         connection_id: Uuid,
     ) -> Result<Option<CachedBankConnection>> {
-        self.get_jwt_scoped_bank_connection(jwt_id, connection_id).await
+        self.get_jwt_scoped_bank_connection(jwt_id, connection_id)
+            .await
     }
 
     async fn cache_jwt_scoped_bank_accounts(
@@ -462,7 +468,8 @@ impl CacheService for RedisCache {
         connection_id: Uuid,
         cached_accounts: &CachedBankAccounts,
     ) -> Result<()> {
-        self.cache_jwt_scoped_bank_accounts(jwt_id, connection_id, cached_accounts).await
+        self.cache_jwt_scoped_bank_accounts(jwt_id, connection_id, cached_accounts)
+            .await
     }
 
     async fn get_jwt_scoped_bank_accounts(
@@ -470,7 +477,8 @@ impl CacheService for RedisCache {
         jwt_id: &str,
         connection_id: Uuid,
     ) -> Result<Option<CachedBankAccounts>> {
-        self.get_jwt_scoped_bank_accounts(jwt_id, connection_id).await
+        self.get_jwt_scoped_bank_accounts(jwt_id, connection_id)
+            .await
     }
 
     async fn cache_jwt_scoped_connection_list(
@@ -478,7 +486,8 @@ impl CacheService for RedisCache {
         jwt_id: &str,
         connection_ids: &[Uuid],
     ) -> Result<()> {
-        self.cache_jwt_scoped_connection_list(jwt_id, connection_ids).await
+        self.cache_jwt_scoped_connection_list(jwt_id, connection_ids)
+            .await
     }
 
     async fn get_jwt_scoped_connection_list(&self, jwt_id: &str) -> Result<Option<Vec<Uuid>>> {
@@ -490,7 +499,8 @@ impl CacheService for RedisCache {
         jwt_id: &str,
         connection_id: Uuid,
     ) -> Result<()> {
-        self.clear_jwt_scoped_bank_connection_cache(jwt_id, connection_id).await
+        self.clear_jwt_scoped_bank_connection_cache(jwt_id, connection_id)
+            .await
     }
 
     async fn refresh_jwt_scoped_connections_cache(
@@ -498,7 +508,8 @@ impl CacheService for RedisCache {
         jwt_id: &str,
         remaining_connections: &[Uuid],
     ) -> Result<()> {
-        self.refresh_jwt_scoped_connections_cache(jwt_id, remaining_connections).await
+        self.refresh_jwt_scoped_connections_cache(jwt_id, remaining_connections)
+            .await
     }
 
     async fn set_session_valid(&self, jwt_id: &str, ttl_seconds: u64) -> Result<()> {

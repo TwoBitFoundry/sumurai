@@ -1,10 +1,10 @@
+pub mod account;
 pub mod analytics;
 pub mod api_error;
-pub mod auth;
-pub mod transaction;
-pub mod account;
-pub mod plaid;
-pub mod budget;
 pub mod app_state;
+pub mod auth;
+pub mod budget;
 pub mod cache;
+pub mod plaid;
 pub mod query;
+pub mod transaction;

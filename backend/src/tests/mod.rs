@@ -15,7 +15,7 @@ mod models_tests;
 mod plaid_service_tests;
 mod query_params_tests;
 mod repository_tests;
-mod sync_service_tests;
 mod security_resilience_edge_cases_tests;
+mod sync_service_tests;
 pub mod test_fixtures;
 mod transaction_filters_tests;

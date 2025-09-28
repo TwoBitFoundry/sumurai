@@ -15,7 +15,6 @@ use chrono::Datelike;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-
 #[async_trait]
 #[cfg_attr(test, mockall::automock)]
 pub trait DatabaseRepository: Send + Sync {

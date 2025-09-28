@@ -21,10 +21,8 @@ pub async fn validate_account_ownership(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let owned_account_ids: std::collections::HashSet<Uuid> = user_accounts
-        .iter()
-        .map(|a| a.id)
-        .collect();
+    let owned_account_ids: std::collections::HashSet<Uuid> =
+        user_accounts.iter().map(|a| a.id).collect();
 
     for account_id in &account_ids {
         if !owned_account_ids.contains(account_id) {
@@ -34,4 +32,3 @@ pub async fn validate_account_ownership(
 
     Ok(account_ids)
 }
-

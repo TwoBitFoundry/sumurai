@@ -32,15 +32,13 @@ async fn given_valid_owned_accounts_when_validate_then_returns_uuids() {
             account_type: "savings".to_string(),
             balance_current: Some(rust_decimal_macros::dec!(5000.00)),
             mask: Some("0002".to_string()),
-        }
+        },
     ];
 
-    mock_db
-        .expect_get_accounts_for_user()
-        .returning(move |_| {
-            let accounts_clone = accounts.clone();
-            Box::pin(async { Ok(accounts_clone) })
-        });
+    mock_db.expect_get_accounts_for_user().returning(move |_| {
+        let accounts_clone = accounts.clone();
+        Box::pin(async { Ok(accounts_clone) })
+    });
 
     let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
     let account_strings = vec![account_id_1.to_string(), account_id_2.to_string()];

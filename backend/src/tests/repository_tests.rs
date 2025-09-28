@@ -2,8 +2,8 @@ use crate::models::{
     account::Account, auth::User, plaid::PlaidConnection, transaction::Transaction,
 };
 
-use crate::services::repository_service::{DatabaseRepository, MockDatabaseRepository};
 use crate::models::plaid::PlaidCredentials;
+use crate::services::repository_service::{DatabaseRepository, MockDatabaseRepository};
 
 use chrono::{NaiveDate, Utc};
 use rust_decimal_macros::dec;

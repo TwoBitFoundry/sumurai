@@ -21,4 +21,3 @@ pub fn generate_cache_key_with_account_filter(
         base_key.to_string()
     }
 }
-

@@ -1,6 +1,6 @@
+use crate::models::transaction::Transaction;
 use std::collections::HashSet;
 use uuid::Uuid;
-use crate::models::transaction::Transaction;
 
 pub fn filter_transactions_by_account_ids(
     transactions: Vec<Transaction>,
@@ -20,4 +20,3 @@ pub fn filter_transactions_by_account_ids(
         .filter(|t| account_ids.contains(&t.account_id))
         .collect()
 }
-

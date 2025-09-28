@@ -14,6 +14,8 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
     selectedAccountIds,
     accountsByBank,
     loading,
+    setSelectedAccountIds,
+    setAllAccountsSelected,
     selectAllAccounts,
     toggleBank,
     toggleAccount
@@ -97,7 +99,14 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                     type="checkbox"
                     id="all-accounts"
                     checked={isAllAccountsSelected}
-                    onChange={selectAllAccounts}
+                    onChange={() => {
+                      if (isAllAccountsSelected) {
+                        setSelectedAccountIds([])
+                        setAllAccountsSelected(false)
+                      } else {
+                        selectAllAccounts()
+                      }
+                    }}
                     className="rounded border-slate-300 dark:border-slate-600 text-primary-600 focus:ring-primary-500"
                   />
                   <label htmlFor="all-accounts" className="text-sm font-medium text-slate-900 dark:text-slate-100">
