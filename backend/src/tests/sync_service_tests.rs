@@ -33,6 +33,7 @@ fn test_calculate_account_mapping_creates_correct_mapping() {
             account_type: "depository".into(),
             balance_current: Some(dec!(100.00)),
             mask: Some("1234".to_string()),
+            institution_name: None,
         },
         Account {
             id: Uuid::new_v4(),
@@ -43,6 +44,7 @@ fn test_calculate_account_mapping_creates_correct_mapping() {
             account_type: "depository".into(),
             balance_current: Some(dec!(200.00)),
             mask: Some("5678".to_string()),
+            institution_name: None,
         },
     ];
 
@@ -67,6 +69,7 @@ fn test_calculate_account_mapping_handles_accounts_without_plaid_ids() {
         account_type: "manual".to_string(),
         balance_current: Some(dec!(500.00)),
         mask: None,
+        institution_name: None,
     }];
 
     let mapping = sync_service.calculate_account_mapping(&accounts);

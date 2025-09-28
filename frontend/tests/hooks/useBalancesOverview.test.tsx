@@ -4,6 +4,7 @@ import { ReactNode } from 'react'
 import { useBalancesOverview } from '@/hooks/useBalancesOverview'
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter'
 import { AnalyticsService } from '@/services/AnalyticsService'
+import { PlaidService } from '@/services/PlaidService'
 
 vi.mock('@/services/AnalyticsService', () => ({
   AnalyticsService: {
@@ -14,6 +15,7 @@ vi.mock('@/services/AnalyticsService', () => ({
 vi.mock('@/services/PlaidService', () => ({
   PlaidService: {
     getAccounts: vi.fn(),
+    getStatus: vi.fn(),
   }
 }))
 
@@ -42,6 +44,12 @@ describe('useBalancesOverview (Phase 6)', () => {
       banks: [],
       mixedCurrency: false
     } as any)
+    vi.mocked(PlaidService.getStatus).mockResolvedValue({
+      is_connected: true,
+      institution_name: 'First Platypus Bank',
+      connection_id: 'conn_1',
+    } as any)
+    vi.mocked(PlaidService.getAccounts).mockResolvedValue([] as any)
   })
 
   afterEach(() => {

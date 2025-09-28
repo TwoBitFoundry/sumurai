@@ -4,6 +4,7 @@ import { ReactNode } from 'react'
 import { useAnalytics } from '@/features/analytics/hooks/useAnalytics'
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter'
 import { AnalyticsService } from '@/services/AnalyticsService'
+import { PlaidService } from '@/services/PlaidService'
 
 vi.mock('@/services/AnalyticsService', () => ({
   AnalyticsService: {
@@ -17,6 +18,7 @@ vi.mock('@/services/AnalyticsService', () => ({
 vi.mock('@/services/PlaidService', () => ({
   PlaidService: {
     getAccounts: vi.fn(),
+    getStatus: vi.fn(),
   }
 }))
 
@@ -43,6 +45,12 @@ describe('useAnalytics', () => {
     vi.mocked(AnalyticsService.getCategorySpendingByDateRange).mockResolvedValue([])
     vi.mocked(AnalyticsService.getTopMerchantsByDateRange).mockResolvedValue([])
     vi.mocked(AnalyticsService.getMonthlyTotals).mockResolvedValue([])
+    vi.mocked(PlaidService.getStatus).mockResolvedValue({
+      is_connected: true,
+      institution_name: 'First Platypus Bank',
+      connection_id: 'conn_1',
+    } as any)
+    vi.mocked(PlaidService.getAccounts).mockResolvedValue([] as any)
   })
 
   afterEach(() => {

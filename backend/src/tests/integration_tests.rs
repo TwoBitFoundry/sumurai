@@ -108,6 +108,7 @@ async fn given_authenticated_user_when_get_transactions_with_account_ids_then_re
                 account_type: "checking".to_string(),
                 balance_current: Some(rust_decimal_macros::dec!(1000.00)),
                 mask: Some("0001".to_string()),
+                institution_name: Some("Test Bank".to_string()),
             },
             Account {
                 id: account_id_2,
@@ -118,6 +119,7 @@ async fn given_authenticated_user_when_get_transactions_with_account_ids_then_re
                 account_type: "savings".to_string(),
                 balance_current: Some(rust_decimal_macros::dec!(5000.00)),
                 mask: Some("0002".to_string()),
+                institution_name: Some("Test Bank".to_string()),
             },
         ];
         Box::pin(async { Ok(accounts) })
@@ -245,6 +247,7 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
                 account_type: "checking".to_string(),
                 balance_current: Some(rust_decimal_macros::dec!(1000.00)),
                 mask: Some("0001".to_string()),
+                institution_name: Some("Test Bank".to_string()),
             },
             Account {
                 id: account_id_2,
@@ -255,6 +258,7 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
                 account_type: "savings".to_string(),
                 balance_current: Some(rust_decimal_macros::dec!(5000.00)),
                 mask: Some("0002".to_string()),
+                institution_name: Some("Test Bank".to_string()),
             },
         ];
         Box::pin(async { Ok(accounts) })
@@ -396,6 +400,7 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
                 account_type: "checking".to_string(),
                 balance_current: Some(rust_decimal_macros::dec!(1000.00)),
                 mask: Some("0001".to_string()),
+                institution_name: None,
             },
             Account {
                 id: account_id_2,
@@ -406,6 +411,7 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
                 account_type: "savings".to_string(),
                 balance_current: Some(rust_decimal_macros::dec!(5000.00)),
                 mask: Some("0002".to_string()),
+                institution_name: None,
             },
         ];
         Box::pin(async { Ok(accounts) })
@@ -545,6 +551,7 @@ async fn given_authenticated_user_when_get_balances_with_account_ids_then_return
             account_type: "checking".to_string(),
             balance_current: Some(rust_decimal_macros::dec!(1000.00)),
             mask: Some("0001".to_string()),
+            institution_name: None,
         },
         Account {
             id: account_id_2,
@@ -555,6 +562,7 @@ async fn given_authenticated_user_when_get_balances_with_account_ids_then_return
             account_type: "savings".to_string(),
             balance_current: Some(rust_decimal_macros::dec!(5000.00)),
             mask: Some("0002".to_string()),
+            institution_name: None,
         },
     ];
 
@@ -690,6 +698,7 @@ async fn given_different_account_filters_when_caching_then_uses_different_cache_
             account_type: "checking".to_string(),
             balance_current: Some(rust_decimal_macros::dec!(1000.00)),
             mask: Some("0001".to_string()),
+            institution_name: None,
         },
         crate::models::account::Account {
             id: account_id_2,
@@ -700,6 +709,7 @@ async fn given_different_account_filters_when_caching_then_uses_different_cache_
             account_type: "savings".to_string(),
             balance_current: Some(rust_decimal_macros::dec!(5000.00)),
             mask: Some("0002".to_string()),
+            institution_name: None,
         },
     ];
 

@@ -377,8 +377,20 @@ impl DatabaseRepository for PostgresRepository {
     }
 
     async fn get_account_by_plaid_id(&self, plaid_account_id: &str) -> Result<Option<Account>> {
-        let row = sqlx::query_as::<_, (Uuid, Option<Uuid>, Option<String>, Option<Uuid>, String, String, Option<rust_decimal::Decimal>, Option<String>)>(
-            "SELECT id, user_id, plaid_account_id, plaid_connection_id, name, account_type, balance_current, mask FROM accounts WHERE plaid_account_id = $1"
+        let row = sqlx::query_as::<_, (
+            Uuid,
+            Option<Uuid>,
+            Option<String>,
+            Option<Uuid>,
+            String,
+            String,
+            Option<rust_decimal::Decimal>,
+            Option<String>,
+            Option<String>,
+        )>(
+            "SELECT a.id, a.user_id, a.plaid_account_id, a.plaid_connection_id, a.name, a.account_type, a.balance_current, a.mask, pc.institution_name \
+             FROM accounts a LEFT JOIN plaid_connections pc ON pc.id = a.plaid_connection_id \
+             WHERE a.plaid_account_id = $1"
         )
         .bind(plaid_account_id)
         .fetch_optional(&self.pool)
@@ -394,6 +406,7 @@ impl DatabaseRepository for PostgresRepository {
                 account_type,
                 balance_current,
                 mask,
+                institution_name,
             )| Account {
                 id,
                 user_id,
@@ -403,6 +416,7 @@ impl DatabaseRepository for PostgresRepository {
                 account_type,
                 balance_current,
                 mask,
+                institution_name,
             },
         ))
     }
@@ -1108,13 +1122,15 @@ impl DatabaseRepository for PostgresRepository {
                 String,
                 Option<rust_decimal::Decimal>,
                 Option<String>,
+                Option<String>,
             ),
         >(
             r#"
-            SELECT id, user_id, plaid_account_id, plaid_connection_id, name, account_type, balance_current, mask 
-            FROM accounts 
-            WHERE user_id = $1
-            ORDER BY name
+            SELECT a.id, a.user_id, a.plaid_account_id, a.plaid_connection_id, a.name, a.account_type, a.balance_current, a.mask, pc.institution_name
+            FROM accounts a
+            LEFT JOIN plaid_connections pc ON pc.id = a.plaid_connection_id
+            WHERE a.user_id = $1
+            ORDER BY a.name
             "#,
         )
         .bind(user_id)
@@ -1135,6 +1151,7 @@ impl DatabaseRepository for PostgresRepository {
                     account_type,
                     balance_current,
                     mask,
+                    institution_name,
                 )| Account {
                     id,
                     user_id,
@@ -1144,6 +1161,7 @@ impl DatabaseRepository for PostgresRepository {
                     account_type,
                     balance_current,
                     mask,
+                    institution_name,
                 },
             )
             .collect())

@@ -46,6 +46,7 @@ mod fixtures {
             account_type: "depository".to_string(),
             balance_current: Some(dec!(1000.00)),
             mask: None,
+            institution_name: None,
         }
     }
 
@@ -331,6 +332,7 @@ async fn given_user_foreign_keys_when_adding_to_existing_tables_then_enforces_re
         account_type: "depository".to_string(),
         balance_current: Some(rust_decimal::Decimal::new(100000, 2)),
         mask: None,
+        institution_name: None,
     };
 
     let account_result = mock_repo.upsert_account(&account).await;
@@ -526,6 +528,7 @@ async fn given_user_context_when_querying_accounts_then_returns_only_user_accoun
         account_type: "depository".to_string(),
         balance_current: Some(rust_decimal::Decimal::new(100000, 2)),
         mask: None,
+        institution_name: None,
     };
 
     let user2_account = Account {
@@ -537,6 +540,7 @@ async fn given_user_context_when_querying_accounts_then_returns_only_user_accoun
         account_type: "depository".to_string(),
         balance_current: Some(rust_decimal::Decimal::new(500000, 2)),
         mask: None,
+        institution_name: None,
     };
 
     mock_repo
@@ -655,6 +659,7 @@ async fn given_user_deletion_when_cascading_then_removes_all_related_session_dat
         account_type: "depository".to_string(),
         balance_current: Some(rust_decimal::Decimal::new(100000, 2)),
         mask: None,
+        institution_name: None,
     };
 
     let transaction = Transaction {
@@ -774,6 +779,7 @@ async fn given_two_users_when_querying_transactions_then_each_sees_only_their_ow
         account_type: "depository".to_string(),
         balance_current: Some(rust_decimal::Decimal::new(100000, 2)),
         mask: None,
+        institution_name: None,
     };
 
     let user2_account = Account {
@@ -785,6 +791,7 @@ async fn given_two_users_when_querying_transactions_then_each_sees_only_their_ow
         account_type: "depository".to_string(),
         balance_current: Some(rust_decimal::Decimal::new(200000, 2)),
         mask: None,
+        institution_name: None,
     };
 
     mock_repo
@@ -917,6 +924,7 @@ async fn given_user_session_when_accessing_accounts_then_only_returns_user_owned
         account_type: "depository".to_string(),
         balance_current: Some(dec!(1000.00)),
         mask: None,
+        institution_name: None,
     };
 
     let user1_account2 = Account {
@@ -928,6 +936,7 @@ async fn given_user_session_when_accessing_accounts_then_only_returns_user_owned
         account_type: "depository".to_string(),
         balance_current: Some(dec!(2500.00)),
         mask: None,
+        institution_name: None,
     };
 
     let user2_account1 = Account {
@@ -939,6 +948,7 @@ async fn given_user_session_when_accessing_accounts_then_only_returns_user_owned
         account_type: "depository".to_string(),
         balance_current: Some(dec!(750.00)),
         mask: None,
+        institution_name: None,
     };
 
     mock_repo
@@ -1287,6 +1297,7 @@ async fn given_database_rls_policies_when_user_queries_data_then_enforces_user_c
         account_type: "depository".to_string(),
         balance_current: Some(dec!(1500.00)),
         mask: None,
+        institution_name: None,
     };
 
     let user2_account = Account {
@@ -1298,6 +1309,7 @@ async fn given_database_rls_policies_when_user_queries_data_then_enforces_user_c
         account_type: "depository".to_string(),
         balance_current: Some(dec!(2500.00)),
         mask: None,
+        institution_name: None,
     };
 
     mock_repo
@@ -1562,6 +1574,7 @@ async fn given_repository_queries_when_no_user_context_set_then_returns_empty_re
         account_type: "depository".to_string(),
         balance_current: Some(dec!(1000.00)),
         mask: None,
+        institution_name: None,
     };
 
     let transaction = Transaction {
@@ -1828,6 +1841,7 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
                     account_type: "depository".to_string(),
                     balance_current: Some(rust_decimal::Decimal::new(100000, 2)),
                     mask: None,
+                    institution_name: None,
                 };
                 Box::pin(async { Ok(vec![account]) })
             } else if *user_id == user2_id {
@@ -1840,6 +1854,7 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
                     account_type: "depository".to_string(),
                     balance_current: Some(rust_decimal::Decimal::new(250000, 2)),
                     mask: None,
+                    institution_name: None,
                 };
                 Box::pin(async { Ok(vec![account]) })
             } else if *user_id == user3_id {
@@ -1852,6 +1867,7 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
                     account_type: "credit".to_string(),
                     balance_current: Some(rust_decimal::Decimal::new(500000, 2)),
                     mask: None,
+                    institution_name: None,
                 };
                 Box::pin(async { Ok(vec![account]) })
             } else {
@@ -1937,6 +1953,7 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
                 account_type: "depository".to_string(),
                 balance_current: Some(dec!(1000.00)),
                 mask: None,
+                institution_name: None,
             };
 
             let transaction1 = Transaction {
@@ -1978,6 +1995,7 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
                 account_type: "depository".to_string(),
                 balance_current: Some(dec!(2500.00)),
                 mask: None,
+                institution_name: None,
             };
 
             let transaction2 = Transaction {
@@ -2019,6 +2037,7 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
                 account_type: "credit".to_string(),
                 balance_current: Some(dec!(500.00)),
                 mask: None,
+                institution_name: None,
             };
 
             let transaction3 = Transaction {
@@ -2309,6 +2328,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         account_type: "depository".to_string(),
         balance_current: Some(dec!(5000.00)),
         mask: None,
+        institution_name: None,
     };
 
     let user1_transaction = Transaction {
@@ -2506,6 +2526,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
                     account_type: "depository".to_string(),
                     balance_current: Some(rust_decimal::Decimal::new(150000, 2)),
                     mask: None,
+                    institution_name: None,
                 };
                 let account2 = Account {
                     id: Uuid::new_v4(),
@@ -2516,6 +2537,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
                     account_type: "depository".to_string(),
                     balance_current: Some(rust_decimal::Decimal::new(350000, 2)),
                     mask: None,
+                    institution_name: None,
                 };
                 Box::pin(async { Ok(vec![account1, account2]) })
             } else if *query_user_id == user2_id {
@@ -2528,6 +2550,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
                     account_type: "credit".to_string(),
                     balance_current: Some(rust_decimal::Decimal::new(200000, 2)),
                     mask: None,
+                    institution_name: None,
                 };
                 Box::pin(async { Ok(vec![account]) })
             } else {
@@ -2683,6 +2706,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         account_type: "depository".to_string(),
         balance_current: Some(dec!(1500.00)),
         mask: None,
+        institution_name: None,
     };
 
     let user1_account2 = Account {
@@ -2694,6 +2718,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         account_type: "depository".to_string(),
         balance_current: Some(dec!(5000.00)),
         mask: None,
+        institution_name: None,
     };
 
     let user1_transaction1 = Transaction {
@@ -2757,6 +2782,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         account_type: "credit".to_string(),
         balance_current: Some(dec!(2000.00)),
         mask: None,
+        institution_name: None,
     };
 
     let user2_transaction = Transaction {

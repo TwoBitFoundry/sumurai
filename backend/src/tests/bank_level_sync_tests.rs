@@ -30,6 +30,7 @@ fn create_test_accounts_for_bank(connection_id: Uuid, user_id: Uuid) -> Vec<Acco
             account_type: "depository".to_string(),
             balance_current: Some(dec!(1500.00)),
             mask: Some("1234".to_string()),
+            institution_name: None,
         },
         Account {
             id: Uuid::new_v4(),
@@ -40,6 +41,7 @@ fn create_test_accounts_for_bank(connection_id: Uuid, user_id: Uuid) -> Vec<Acco
             account_type: "depository".to_string(),
             balance_current: Some(dec!(5000.00)),
             mask: Some("5678".to_string()),
+            institution_name: None,
         },
         Account {
             id: Uuid::new_v4(),
@@ -50,6 +52,7 @@ fn create_test_accounts_for_bank(connection_id: Uuid, user_id: Uuid) -> Vec<Acco
             account_type: "credit".to_string(),
             balance_current: Some(dec!(-250.00)),
             mask: Some("9012".to_string()),
+            institution_name: None,
         },
     ]
 }

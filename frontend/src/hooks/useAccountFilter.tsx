@@ -43,7 +43,10 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
         account_type: account.account_type,
         balance_current: account.balance_current,
         mask: account.mask,
-        institution_name: 'Bank' // TODO: Get actual institution name from API
+        institution_name:
+          (account as any).institution_name ??
+          (account as any).institutionName ??
+          'Unknown Bank',
       }))
 
       const grouped = groupAccountsByBank(mappedAccounts)

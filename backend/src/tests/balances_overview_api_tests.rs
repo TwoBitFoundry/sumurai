@@ -148,6 +148,7 @@ async fn given_no_snapshots_when_get_balances_overview_then_falls_back_to_accoun
                     account_type: "depository".to_string(),
                     balance_current: Some(dec!(500.00)),
                     mask: None,
+                    institution_name: None,
                 },
                 Account {
                     id: Uuid::new_v4(),
@@ -158,6 +159,7 @@ async fn given_no_snapshots_when_get_balances_overview_then_falls_back_to_accoun
                     account_type: "credit".to_string(),
                     balance_current: Some(dec!(200.00)),
                     mask: None,
+                    institution_name: None,
                 },
             ])
         })

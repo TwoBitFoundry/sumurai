@@ -193,6 +193,7 @@ impl RealPlaidClient {
                             .to_string(),
                         balance_current,
                         mask,
+                        institution_name: None,
                     };
                     accounts.push(account);
                 }

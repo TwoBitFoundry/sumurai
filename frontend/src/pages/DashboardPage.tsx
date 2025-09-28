@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { RefreshCcw } from 'lucide-react'
 import Card from '../components/ui/Card'
 import BalancesOverview from '../components/BalancesOverview'
 import { SpendingByCategoryChart } from '../features/analytics/components/SpendingByCategoryChart'
@@ -91,7 +92,10 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
           <div className="mb-4 flex items-center justify-between">
             <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Spending</div>
             {!analyticsLoading && analyticsRefreshing && (
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 animate-pulse">Updating…</span>
+              <RefreshCcw
+                aria-label="Refreshing analytics"
+                className="h-4 w-4 text-slate-500 dark:text-slate-400 animate-spin"
+              />
             )}
           </div>
           {analyticsLoading && (
@@ -149,7 +153,10 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
           <div className="mb-3 flex items-center justify-between">
             <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Top Merchants</div>
             {!analyticsLoading && analyticsRefreshing && (
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 animate-pulse">Updating…</span>
+              <RefreshCcw
+                aria-label="Refreshing analytics"
+                className="h-4 w-4 text-slate-500 dark:text-slate-400 animate-spin"
+              />
             )}
           </div>
           <TopMerchantsList merchants={analytics.topMerchants} />
@@ -159,7 +166,10 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
           <div className="mb-4 flex items-center justify-between">
             <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Net Worth Over Time</div>
             {!netLoading && netRefreshing && (
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 animate-pulse">Updating…</span>
+              <RefreshCcw
+                aria-label="Refreshing net worth"
+                className="h-4 w-4 text-slate-500 dark:text-slate-400 animate-spin"
+              />
             )}
           </div>
           {netLoading ? (

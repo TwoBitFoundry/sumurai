@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { RefreshCcw } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Amount, fmtUSD } from "./Amount";
 import { useBalancesOverview } from "../hooks/useBalancesOverview";
@@ -87,7 +88,10 @@ export function BalancesOverview() {
         </div>
         <div className="flex items-center gap-2">
           {!loading && refreshing && (
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 animate-pulse">Updating…</span>
+            <RefreshCcw
+              aria-label="Refreshing balances"
+              className="h-4 w-4 text-slate-500 dark:text-slate-400 animate-spin"
+            />
           )}
           <RatioPill ratio={data?.overall?.ratio ?? null} />
         </div>

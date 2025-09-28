@@ -32,6 +32,8 @@ export interface Account {
   account_type: string
   balance_current: number | null
   mask: string | null
+  plaid_connection_id?: string | null
+  institution_name?: string | null
 }
 
 export interface PlaidLinkTokenResponse {
@@ -59,9 +61,16 @@ export interface PlaidSyncResponse {
 }
 
 export interface PlaidStatusResponse {
-  connected: boolean
+  connected?: boolean
+  is_connected?: boolean
   last_sync?: string
-  accounts_count: number
+  last_sync_at?: string
+  accounts_count?: number
+  account_count?: number
+  institution_name?: string | null
+  connection_id?: string | null
+  transaction_count?: number
+  sync_in_progress?: boolean
 }
 
 export interface DataCleared {

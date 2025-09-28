@@ -4,6 +4,7 @@ import { ReactNode } from 'react'
 import { useBudgets } from '@/features/budgets/hooks/useBudgets'
 import { BudgetService } from '@/services/BudgetService'
 import { TransactionService } from '@/services/TransactionService'
+import { PlaidService } from '@/services/PlaidService'
 import { AccountFilterProvider } from '@/hooks/useAccountFilter'
 
 vi.mock('@/services/BudgetService', () => ({
@@ -24,6 +25,7 @@ vi.mock('@/services/TransactionService', () => ({
 vi.mock('@/services/PlaidService', () => ({
   PlaidService: {
     getAccounts: vi.fn(),
+    getStatus: vi.fn(),
   }
 }))
 
@@ -61,6 +63,12 @@ describe('useBudgets', () => {
     vi.resetAllMocks()
     vi.mocked(BudgetService.getBudgets).mockResolvedValue([] as any)
     vi.mocked(TransactionService.getTransactions).mockResolvedValue([] as any)
+    vi.mocked(PlaidService.getAccounts).mockResolvedValue([] as any)
+    vi.mocked(PlaidService.getStatus).mockResolvedValue({
+      is_connected: true,
+      institution_name: 'First Platypus Bank',
+      connection_id: 'conn_1'
+    } as any)
   })
 
   it('loads budgets once, aggregates transactions, and exposes derived data', async () => {

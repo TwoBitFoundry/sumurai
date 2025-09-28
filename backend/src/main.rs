@@ -701,6 +701,8 @@ async fn get_authenticated_plaid_accounts(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
+    let default_institution = connection.institution_name.clone();
+
     let account_responses: Vec<AccountResponse> = db_accounts
         .into_iter()
         .map(|account| {
@@ -715,6 +717,10 @@ async fn get_authenticated_plaid_accounts(
                 balance_current: account.balance_current,
                 mask: account.mask,
                 transaction_count: *transaction_count as i64,
+                institution_name: account
+                    .institution_name
+                    .clone()
+                    .or_else(|| default_institution.clone()),
             }
         })
         .collect();

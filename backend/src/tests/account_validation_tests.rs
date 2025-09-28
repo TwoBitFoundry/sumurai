@@ -22,6 +22,7 @@ async fn given_valid_owned_accounts_when_validate_then_returns_uuids() {
             account_type: "checking".to_string(),
             balance_current: Some(rust_decimal_macros::dec!(1000.00)),
             mask: Some("0001".to_string()),
+            institution_name: None,
         },
         Account {
             id: account_id_2,
@@ -32,6 +33,7 @@ async fn given_valid_owned_accounts_when_validate_then_returns_uuids() {
             account_type: "savings".to_string(),
             balance_current: Some(rust_decimal_macros::dec!(5000.00)),
             mask: Some("0002".to_string()),
+            institution_name: None,
         },
     ];
 

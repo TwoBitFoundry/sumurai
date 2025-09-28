@@ -4,6 +4,7 @@ import { ReactNode } from 'react'
 import { useNetWorthSeries } from '@/features/analytics/hooks/useNetWorthSeries'
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter'
 import { AnalyticsService } from '@/services/AnalyticsService'
+import { PlaidService } from '@/services/PlaidService'
 import { computeDateRange, type DateRangeKey } from '@/utils/dateRanges'
 
 vi.mock('@/services/AnalyticsService', () => ({
@@ -15,6 +16,7 @@ vi.mock('@/services/AnalyticsService', () => ({
 vi.mock('@/services/PlaidService', () => ({
   PlaidService: {
     getAccounts: vi.fn(),
+    getStatus: vi.fn(),
   }
 }))
 
@@ -41,6 +43,12 @@ describe('useNetWorthSeries', () => {
       { date: '2024-04-01', value: 3400 },
       { date: '2024-04-02', value: 3500 },
     ])
+    vi.mocked(PlaidService.getStatus).mockResolvedValue({
+      is_connected: true,
+      institution_name: 'First Platypus Bank',
+      connection_id: 'conn_1',
+    } as any)
+    vi.mocked(PlaidService.getAccounts).mockResolvedValue([] as any)
   })
 
   afterEach(() => {

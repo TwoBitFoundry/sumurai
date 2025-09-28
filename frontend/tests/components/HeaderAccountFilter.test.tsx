@@ -18,24 +18,36 @@ describe('HeaderAccountFilter', () => {
           id: 'acc_1',
           name: 'Chase Checking',
           account_type: 'depository',
-          balance_current: 1250.50,
-          mask: '0000'
+          balance_current: 1250.5,
+          mask: '0000',
+          plaid_connection_id: 'conn_1',
+          institution_name: 'First Platypus Bank'
         },
         {
           id: 'acc_2',
           name: 'Chase Savings',
           account_type: 'depository',
-          balance_current: 5000.00,
-          mask: '1111'
+          balance_current: 5000.0,
+          mask: '1111',
+          plaid_connection_id: 'conn_1',
+          institution_name: 'First Platypus Bank'
         },
         {
           id: 'acc_3',
           name: 'Wells Fargo Credit Card',
           account_type: 'credit',
           balance_current: -350.75,
-          mask: '2222'
+          mask: '2222',
+          plaid_connection_id: 'conn_2',
+          institution_name: 'Second Platypus Bank'
         }
-      ]
+      ],
+      'GET /api/plaid/status': {
+        is_connected: true,
+        connection_id: 'conn_1',
+        institution_name: 'First Platypus Bank',
+        account_count: 3,
+      }
     })
   })
 
@@ -109,7 +121,8 @@ describe('HeaderAccountFilter', () => {
         })
 
         await waitFor(() => {
-          expect(screen.getByText('Bank')).toBeInTheDocument()
+          expect(screen.getByText('First Platypus Bank')).toBeInTheDocument()
+          expect(screen.getByText('Second Platypus Bank')).toBeInTheDocument()
         })
 
         expect(screen.getByText('Chase Checking')).toBeInTheDocument()
@@ -129,7 +142,7 @@ describe('HeaderAccountFilter', () => {
         })
 
         await waitFor(() => {
-          expect(screen.getByText('Bank')).toBeInTheDocument()
+          expect(screen.getByText('First Platypus Bank')).toBeInTheDocument()
         })
 
         const chaseCheckingCheckbox = screen.getByLabelText('Chase Checking')
@@ -159,7 +172,7 @@ describe('HeaderAccountFilter', () => {
         })
 
         await waitFor(() => {
-          expect(screen.getByText('Bank')).toBeInTheDocument()
+          expect(screen.getByText('First Platypus Bank')).toBeInTheDocument()
         })
 
         const chaseCheckingCheckbox = screen.getByLabelText('Chase Checking')

@@ -14,26 +14,38 @@ describe('AccountFilterProvider', () => {
       'GET /api/plaid/accounts': [
         {
           id: 'acc_1',
-          name: 'Chase Checking',
+          name: 'Everyday Checking',
           account_type: 'depository',
-          balance_current: 1250.50,
-          mask: '0000'
+          balance_current: 1250.5,
+          mask: '0000',
+          plaid_connection_id: 'conn_1',
+          institution_name: 'First Platypus Bank'
         },
         {
           id: 'acc_2',
-          name: 'Chase Savings',
+          name: 'High-Yield Savings',
           account_type: 'depository',
-          balance_current: 5000.00,
-          mask: '1111'
+          balance_current: 5000.0,
+          mask: '1111',
+          plaid_connection_id: 'conn_1',
+          institution_name: 'First Platypus Bank'
         },
         {
           id: 'acc_3',
-          name: 'Wells Fargo Credit Card',
+          name: 'Rewards Credit Card',
           account_type: 'credit',
           balance_current: -350.75,
-          mask: '2222'
+          mask: '2222',
+          plaid_connection_id: 'conn_2',
+          institution_name: 'Second Platypus Bank'
         }
-      ]
+      ],
+      'GET /api/plaid/status': {
+        is_connected: true,
+        connection_id: 'conn_1',
+        institution_name: 'First Platypus Bank',
+        account_count: 3,
+      }
     })
   })
 
@@ -81,11 +93,12 @@ describe('AccountFilterProvider', () => {
         const { result } = renderHook(() => useAccountFilter(), { wrapper })
 
         await waitFor(() => {
-          expect(result.current.accountsByBank).toHaveProperty('Bank')
+          expect(result.current.accountsByBank).toHaveProperty('First Platypus Bank')
+          expect(result.current.accountsByBank).toHaveProperty('Second Platypus Bank')
         })
 
-        expect(result.current.accountsByBank).toHaveProperty('Bank')
-        expect(result.current.accountsByBank['Bank']).toHaveLength(3)
+        expect(result.current.accountsByBank['First Platypus Bank']).toHaveLength(2)
+        expect(result.current.accountsByBank['Second Platypus Bank']).toHaveLength(1)
       })
 
       it('Then it should support select all action', async () => {
@@ -96,7 +109,7 @@ describe('AccountFilterProvider', () => {
         const { result } = renderHook(() => useAccountFilter(), { wrapper })
 
         await waitFor(() => {
-          expect(result.current.accountsByBank).toHaveProperty('Bank')
+          expect(result.current.accountsByBank).toHaveProperty('First Platypus Bank')
         })
 
         act(() => {
@@ -115,15 +128,21 @@ describe('AccountFilterProvider', () => {
         const { result } = renderHook(() => useAccountFilter(), { wrapper })
 
         await waitFor(() => {
-          expect(result.current.accountsByBank).toHaveProperty('Bank')
+          expect(result.current.accountsByBank).toHaveProperty('First Platypus Bank')
         })
 
         act(() => {
-          result.current.toggleBank('Bank')
+          result.current.toggleBank('First Platypus Bank')
         })
 
         expect(result.current.isAllAccountsSelected).toBe(false)
-        expect(result.current.selectedAccountIds).toEqual(['acc_1', 'acc_2', 'acc_3'])
+        expect(result.current.selectedAccountIds.sort()).toEqual(['acc_1', 'acc_2'])
+
+        act(() => {
+          result.current.toggleBank('Second Platypus Bank')
+        })
+
+        expect(result.current.selectedAccountIds.sort()).toEqual(['acc_1', 'acc_2', 'acc_3'])
       })
 
       it('Then it should support toggle individual account action', async () => {
@@ -134,7 +153,7 @@ describe('AccountFilterProvider', () => {
         const { result } = renderHook(() => useAccountFilter(), { wrapper })
 
         await waitFor(() => {
-          expect(result.current.accountsByBank).toHaveProperty('Bank')
+          expect(result.current.accountsByBank).toHaveProperty('First Platypus Bank')
         })
 
         act(() => {
