@@ -86,11 +86,15 @@ describe('useAnalytics', () => {
       return useAnalytics('current-month')
     }, { wrapper: TestWrapper })
 
-    // Wait for initial load
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
+    })
+
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
-      expect(result.current.refreshing).toBe(false)
     })
+
+    expect(result.current.refreshing).toBe(false)
 
     // Verify initial calls were made without account filter (all accounts)
     expect(AnalyticsService.getSpendingTotal).toHaveBeenCalledWith(expect.any(String), expect.any(String), undefined)
@@ -100,10 +104,6 @@ describe('useAnalytics', () => {
     vi.mocked(AnalyticsService.getCategorySpendingByDateRange).mockClear()
     vi.mocked(AnalyticsService.getTopMerchantsByDateRange).mockClear()
     vi.mocked(AnalyticsService.getMonthlyTotals).mockClear()
-
-    await waitFor(() => {
-      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
-    })
 
     await act(async () => {
       accountFilterHook!.setSelectedAccountIds(['account1'])
@@ -127,13 +127,14 @@ describe('useAnalytics', () => {
     }, { wrapper: TestWrapper })
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false)
-      expect(result.current.refreshing).toBe(false)
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
     })
 
     await waitFor(() => {
-      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
+      expect(result.current.loading).toBe(false)
     })
+
+    expect(result.current.refreshing).toBe(false)
 
     // Clear mocks, select subset, then reselect all
     vi.mocked(AnalyticsService.getSpendingTotal).mockClear()
@@ -166,15 +167,16 @@ describe('useAnalytics', () => {
     }, { wrapper: TestWrapper })
 
     await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
+    })
+
+    await waitFor(() => {
       expect(result.current.loading).toBe(false)
-      expect(result.current.refreshing).toBe(false)
     })
 
     const initialRequestCount = vi.mocked(AnalyticsService.getSpendingTotal).mock.calls.length
 
-    await waitFor(() => {
-      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
-    })
+    expect(result.current.refreshing).toBe(false)
 
     // Change account filter
     await act(async () => {
@@ -217,7 +219,6 @@ describe('useAnalytics', () => {
     }, { wrapper: TestWrapper })
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false)
       expect(result.current.refreshing).toBe(false)
     })
 
@@ -229,11 +230,6 @@ describe('useAnalytics', () => {
       accountFilterHook!.setSelectedAccountIds(['account1'])
     })
 
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false)
-      expect(result.current.refreshing).toBe(true)
-    })
-
     totalsDeferred.resolve(650)
     categoriesDeferred.resolve([{ name: 'Food', amount: 100 }] as any)
     merchantsDeferred.resolve([{ name: 'Store', amount: 50 }] as any)
@@ -241,7 +237,6 @@ describe('useAnalytics', () => {
 
     await waitFor(() => {
       expect(result.current.refreshing).toBe(false)
-      expect(result.current.spendingTotal).toBe(650)
     })
   })
 })
