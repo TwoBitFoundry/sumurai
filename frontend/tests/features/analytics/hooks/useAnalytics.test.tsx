@@ -3,8 +3,16 @@ import { vi, beforeEach, afterEach } from 'vitest'
 import { ReactNode } from 'react'
 import { useAnalytics } from '@/features/analytics/hooks/useAnalytics'
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter'
-import { installFetchRoutes } from '@tests/utils/fetchRoutes'
-import { ApiClient } from '@/services/ApiClient'
+import { AnalyticsService } from '@/services/AnalyticsService'
+
+vi.mock('@/services/AnalyticsService', () => ({
+  AnalyticsService: {
+    getSpendingTotal: vi.fn(),
+    getCategorySpendingByDateRange: vi.fn(),
+    getTopMerchantsByDateRange: vi.fn(),
+    getMonthlyTotals: vi.fn(),
+  }
+}))
 
 vi.mock('@/services/PlaidService', () => ({
   PlaidService: {
@@ -21,7 +29,10 @@ const TestWrapper = ({ children }: { children: ReactNode }) => (
 describe('useAnalytics', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    ApiClient.setTestMaxRetries(0)
+    vi.mocked(AnalyticsService.getSpendingTotal).mockResolvedValue(1000)
+    vi.mocked(AnalyticsService.getCategorySpendingByDateRange).mockResolvedValue([])
+    vi.mocked(AnalyticsService.getTopMerchantsByDateRange).mockResolvedValue([])
+    vi.mocked(AnalyticsService.getMonthlyTotals).mockResolvedValue([])
   })
 
   afterEach(() => {
@@ -30,26 +41,6 @@ describe('useAnalytics', () => {
 
   it('should pass account filter to analytics services when not all accounts selected', async () => {
     let accountFilterHook: ReturnType<typeof useAccountFilter>
-    let lastRequestUrls: string[] = []
-
-    installFetchRoutes({
-      'GET /api/analytics/spending': (request) => {
-        lastRequestUrls.push(request.url)
-        return 1000
-      },
-      'GET /api/analytics/categories': (request) => {
-        lastRequestUrls.push(request.url)
-        return []
-      },
-      'GET /api/analytics/top-merchants': (request) => {
-        lastRequestUrls.push(request.url)
-        return []
-      },
-      'GET /api/analytics/monthly-totals': (request) => {
-        lastRequestUrls.push(request.url)
-        return []
-      }
-    })
 
     const { result } = renderHook(() => {
       accountFilterHook = useAccountFilter()
@@ -61,43 +52,28 @@ describe('useAnalytics', () => {
       expect(result.current.loading).toBe(false)
     })
 
-    // Clear tracked URLs and set specific accounts
-    lastRequestUrls = []
+    // Verify initial calls were made without account filter (all accounts)
+    expect(AnalyticsService.getSpendingTotal).toHaveBeenCalledWith(expect.any(String), expect.any(String), undefined)
+
+    // Clear the mocks to track new calls
+    vi.mocked(AnalyticsService.getSpendingTotal).mockClear()
+    vi.mocked(AnalyticsService.getCategorySpendingByDateRange).mockClear()
+    vi.mocked(AnalyticsService.getTopMerchantsByDateRange).mockClear()
+    vi.mocked(AnalyticsService.getMonthlyTotals).mockClear()
 
     await act(async () => {
       accountFilterHook!.setSelectedAccountIds(['account1', 'account2'])
       accountFilterHook!.setAllAccountsSelected(false)
     })
 
+    // Should refetch with account filter
     await waitFor(() => {
-      expect(lastRequestUrls.some(url =>
-        url.includes('account_ids[]=account1') && url.includes('account_ids[]=account2')
-      )).toBe(true)
+      expect(AnalyticsService.getSpendingTotal).toHaveBeenCalledWith(expect.any(String), expect.any(String), ['account1', 'account2'])
     })
   })
 
   it('should not pass account filter when all accounts selected', async () => {
     let accountFilterHook: ReturnType<typeof useAccountFilter>
-    let lastRequestUrls: string[] = []
-
-    installFetchRoutes({
-      'GET /api/analytics/spending': (request) => {
-        lastRequestUrls.push(request.url)
-        return 1000
-      },
-      'GET /api/analytics/categories': (request) => {
-        lastRequestUrls.push(request.url)
-        return []
-      },
-      'GET /api/analytics/top-merchants': (request) => {
-        lastRequestUrls.push(request.url)
-        return []
-      },
-      'GET /api/analytics/monthly-totals': (request) => {
-        lastRequestUrls.push(request.url)
-        return []
-      }
-    })
 
     const { result } = renderHook(() => {
       accountFilterHook = useAccountFilter()
@@ -108,31 +84,20 @@ describe('useAnalytics', () => {
       expect(result.current.loading).toBe(false)
     })
 
-    // Clear tracked URLs and ensure all accounts is selected
-    lastRequestUrls = []
+    // Clear mocks and ensure all accounts is selected
+    vi.mocked(AnalyticsService.getSpendingTotal).mockClear()
 
     await act(async () => {
       accountFilterHook!.selectAllAccounts()
     })
 
     await waitFor(() => {
-      expect(lastRequestUrls.some(url => url.includes('account_ids'))).toBe(false)
+      expect(AnalyticsService.getSpendingTotal).toHaveBeenCalledWith(expect.any(String), expect.any(String), undefined)
     })
   })
 
   it('should refetch analytics when account filter changes', async () => {
     let accountFilterHook: ReturnType<typeof useAccountFilter>
-    let requestCount = 0
-
-    installFetchRoutes({
-      'GET /api/analytics/spending': () => {
-        requestCount++
-        return 1000
-      },
-      'GET /api/analytics/categories': () => [],
-      'GET /api/analytics/top-merchants': () => [],
-      'GET /api/analytics/monthly-totals': () => []
-    })
 
     const { result } = renderHook(() => {
       accountFilterHook = useAccountFilter()
@@ -143,7 +108,7 @@ describe('useAnalytics', () => {
       expect(result.current.loading).toBe(false)
     })
 
-    const initialRequestCount = requestCount
+    const initialRequestCount = vi.mocked(AnalyticsService.getSpendingTotal).mock.calls.length
 
     // Change account filter
     await act(async () => {
@@ -151,9 +116,9 @@ describe('useAnalytics', () => {
       accountFilterHook!.setAllAccountsSelected(false)
     })
 
-    // Should refetch with new filter
+    // Should refetch and increase request count
     await waitFor(() => {
-      expect(requestCount).toBeGreaterThan(initialRequestCount)
+      expect(AnalyticsService.getSpendingTotal).toHaveBeenCalledTimes(initialRequestCount + 1)
     })
   })
 })

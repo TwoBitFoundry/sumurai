@@ -3,9 +3,14 @@ import { vi, beforeEach, afterEach } from 'vitest'
 import { ReactNode } from 'react'
 import { useNetWorthSeries } from '@/features/analytics/hooks/useNetWorthSeries'
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter'
-import { installFetchRoutes } from '@tests/utils/fetchRoutes'
-import { ApiClient } from '@/services/ApiClient'
+import { AnalyticsService } from '@/services/AnalyticsService'
 import { computeDateRange, type DateRangeKey } from '@/utils/dateRanges'
+
+vi.mock('@/services/AnalyticsService', () => ({
+  AnalyticsService: {
+    getNetWorthOverTime: vi.fn(),
+  }
+}))
 
 vi.mock('@/services/PlaidService', () => ({
   PlaidService: {
@@ -32,7 +37,10 @@ const createDeferred = <T,>() => {
 describe('useNetWorthSeries', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    ApiClient.setTestMaxRetries(0)
+    vi.mocked(AnalyticsService.getNetWorthOverTime).mockResolvedValue([
+      { date: '2024-04-01', value: 3400 },
+      { date: '2024-04-02', value: 3500 },
+    ])
   })
 
   afterEach(() => {
@@ -46,9 +54,7 @@ describe('useNetWorthSeries', () => {
       { date: '2024-04-02', value: 3500 },
     ]
 
-    installFetchRoutes({
-      'GET /api/analytics/net-worth-over-time': { series, currency: 'USD' }
-    })
+    vi.mocked(AnalyticsService.getNetWorthOverTime).mockResolvedValueOnce(series)
 
     const { result } = renderHook(({ range }) => useNetWorthSeries(range), {
       initialProps: { range: 'current-month' as DateRangeKey },
@@ -72,6 +78,7 @@ describe('useNetWorthSeries', () => {
 
     const { result, rerender } = renderHook(({ range }) => useNetWorthSeries(range), {
       initialProps: { range: 'past-2-months' as DateRangeKey },
+      wrapper: TestWrapper
     })
 
     await waitFor(() => {
@@ -109,6 +116,7 @@ describe('useNetWorthSeries', () => {
 
     const { result } = renderHook(({ range }) => useNetWorthSeries(range), {
       initialProps: { range: 'past-year' as DateRangeKey },
+      wrapper: TestWrapper
     })
 
     await waitFor(() => {
@@ -121,14 +129,6 @@ describe('useNetWorthSeries', () => {
 
   it('should pass account filter to service when not all accounts selected', async () => {
     let accountFilterHook: ReturnType<typeof useAccountFilter>
-    let lastRequestUrl: string | undefined
-
-    installFetchRoutes({
-      'GET /api/analytics/net-worth-over-time': (request) => {
-        lastRequestUrl = request.url
-        return { series: [{ date: '2024-04-01', value: 3400 }], currency: 'USD' }
-      }
-    })
 
     const { result } = renderHook(() => {
       accountFilterHook = useAccountFilter()
@@ -138,6 +138,12 @@ describe('useNetWorthSeries', () => {
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
     })
+
+    // Verify initial call was made without account filter (all accounts)
+    expect(AnalyticsService.getNetWorthOverTime).toHaveBeenCalledWith(expect.any(String), expect.any(String), undefined)
+
+    // Clear the mock to track new calls
+    vi.mocked(AnalyticsService.getNetWorthOverTime).mockClear()
 
     // Set specific accounts
     await act(async () => {
@@ -145,22 +151,14 @@ describe('useNetWorthSeries', () => {
       accountFilterHook!.setAllAccountsSelected(false)
     })
 
+    // Should refetch with account filter
     await waitFor(() => {
-      expect(lastRequestUrl).toContain('account_ids[]=account1')
-      expect(lastRequestUrl).toContain('account_ids[]=account2')
+      expect(AnalyticsService.getNetWorthOverTime).toHaveBeenCalledWith(expect.any(String), expect.any(String), ['account1', 'account2'])
     })
   })
 
   it('should refetch when account filter changes', async () => {
     let accountFilterHook: ReturnType<typeof useAccountFilter>
-    let requestCount = 0
-
-    installFetchRoutes({
-      'GET /api/analytics/net-worth-over-time': () => {
-        requestCount++
-        return { series: [{ date: '2024-04-01', value: 3400 }], currency: 'USD' }
-      }
-    })
 
     const { result } = renderHook(() => {
       accountFilterHook = useAccountFilter()
@@ -171,7 +169,7 @@ describe('useNetWorthSeries', () => {
       expect(result.current.loading).toBe(false)
     })
 
-    const initialRequestCount = requestCount
+    const initialRequestCount = vi.mocked(AnalyticsService.getNetWorthOverTime).mock.calls.length
 
     // Change account filter
     await act(async () => {
@@ -181,7 +179,7 @@ describe('useNetWorthSeries', () => {
 
     // Should refetch with new filter
     await waitFor(() => {
-      expect(requestCount).toBeGreaterThan(initialRequestCount)
+      expect(AnalyticsService.getNetWorthOverTime).toHaveBeenCalledTimes(initialRequestCount + 1)
     })
   })
 })

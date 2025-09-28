@@ -4,6 +4,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import BalancesOverview from '@/components/BalancesOverview'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 import { ApiClient } from '@/services/ApiClient'
+import { AccountFilterProvider } from '@/hooks/useAccountFilter'
+
+const TestWrapper = ({ children }: { children: React.ReactNode }) => (
+  <AccountFilterProvider>
+    {children}
+  </AccountFilterProvider>
+)
 
 describe("BalancesOverview (Phase 7)", () => {
   beforeEach(() => {
@@ -37,7 +44,7 @@ describe("BalancesOverview (Phase 7)", () => {
     };
     installFetchRoutes({ "GET /api/analytics/balances/overview": mock });
 
-    render(<BalancesOverview />);
+    render(<BalancesOverview />, { wrapper: TestWrapper });
     // Loading skeleton appears first
     expect(screen.getByTestId("balances-loading")).toBeInTheDocument();
 
@@ -67,7 +74,7 @@ describe("BalancesOverview (Phase 7)", () => {
       "GET /api/analytics/balances/overview": () => (failure ? new Response("boom", { status: 500 }) : ok),
     });
 
-    render(<BalancesOverview />);
+    render(<BalancesOverview />, { wrapper: TestWrapper });
     await waitFor(() => {
       expect(screen.getByTestId("balances-error")).toBeInTheDocument();
     });
@@ -97,7 +104,7 @@ describe("BalancesOverview (Phase 7)", () => {
       },
     });
 
-    const { rerender } = render(<BalancesOverview />);
+    const { rerender } = render(<BalancesOverview />, { wrapper: TestWrapper });
     await waitFor(() => expect(calls).toBe(1));
 
     // Simulate page date context change by re-rendering component

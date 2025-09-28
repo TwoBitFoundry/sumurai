@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnalyticsService } from '../services/AnalyticsService'
 import { useAccountFilter } from './useAccountFilter'
 import type { BalancesOverview } from '../types/analytics'
@@ -42,11 +42,10 @@ export function useBalancesOverview(range?: DateRange, debounceMs = 300): UseBal
     }
   }, [isAllAccountsSelected, selectedAccountIds])
 
-  // Fetch on mount
+  // Load data when load function changes (includes account filter changes)
   useEffect(() => {
     load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [load])
 
   // Refetch when debounced endDate changes (ignore initial mount)
   const [mounted, setMounted] = useState(false)
@@ -60,12 +59,6 @@ export function useBalancesOverview(range?: DateRange, debounceMs = 300): UseBal
       }
     }
   }, [debouncedEnd, lastTriggeredEnd, load, mounted])
-
-  // Refetch when account filter changes
-  useEffect(() => {
-    if (!mounted) return
-    load()
-  }, [isAllAccountsSelected, selectedAccountIds, mounted, load])
 
   return useMemo(() => ({ loading, error, data, refresh: load }), [loading, error, data, load])
 }
