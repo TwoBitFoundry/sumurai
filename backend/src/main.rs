@@ -1117,8 +1117,9 @@ async fn get_authenticated_spending_by_date_range(
             match key {
                 "start_date" => start_date_param = Some(value.to_string()),
                 "end_date" => end_date_param = Some(value.to_string()),
-                "account_ids" => account_ids_params.push(value.to_string()),
-                "account_ids[]" => account_ids_params.push(value.to_string()),
+                "account_ids" | "account_ids[]" | "account_ids%5B%5D" => {
+                    account_ids_params.push(value.to_string())
+                }
                 _ => {}
             }
         }
@@ -1163,7 +1164,11 @@ async fn get_authenticated_spending_by_date_range(
             let filtered = state
                 .analytics_service
                 .filter_by_date_range(&transactions, start, end);
-            let total: rust_decimal::Decimal = filtered.into_iter().map(|t| t.amount).sum();
+            let total: rust_decimal::Decimal = filtered
+                .into_iter()
+                .filter(|t| t.amount > rust_decimal::Decimal::ZERO)
+                .map(|t| t.amount)
+                .sum();
             Ok(Json(total))
         }
         Err(e) => {
@@ -1191,8 +1196,9 @@ async fn get_authenticated_category_spending(
             match key {
                 "start_date" => start_date_param = Some(value.to_string()),
                 "end_date" => end_date_param = Some(value.to_string()),
-                "account_ids" => account_ids_params.push(value.to_string()),
-                "account_ids[]" => account_ids_params.push(value.to_string()),
+                "account_ids" | "account_ids[]" | "account_ids%5B%5D" => {
+                    account_ids_params.push(value.to_string())
+                }
                 _ => {}
             }
         }
@@ -1584,7 +1590,7 @@ async fn get_authenticated_balances_overview(
     let mut account_ids_params = Vec::new();
     for pair in query_string.split('&') {
         if let Some((key, value)) = pair.split_once('=') {
-            if matches!(key, "account_ids" | "account_ids[]") {
+            if matches!(key, "account_ids" | "account_ids[]" | "account_ids%5B%5D") {
                 account_ids_params.push(value.to_string());
             }
         }
@@ -1635,6 +1641,11 @@ async fn get_authenticated_balances_overview(
     let mut name_map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
     let mut mixed_currency = false;
     for row in latest_rows.into_iter() {
+        if let Some(ref filter_ids) = filtered_account_ids {
+            if !filter_ids.contains(&row.account_id) {
+                continue;
+            }
+        }
         if row.currency.to_uppercase() != "USD" {
             mixed_currency = true;
             continue;

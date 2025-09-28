@@ -1343,6 +1343,7 @@ impl DatabaseRepository for PostgresRepository {
         let rows = sqlx::query_as::<_, LatestAccountBalance>(
             r#"
             SELECT 
+                a.id AS account_id,
                 COALESCE(pc.institution_name, 'unknown_institution') AS institution_id,
                 a.account_type,
                 NULL::text AS account_subtype,

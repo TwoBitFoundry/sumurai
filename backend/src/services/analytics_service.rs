@@ -194,6 +194,9 @@ impl AnalyticsService {
         let mut category_map = std::collections::HashMap::new();
 
         for transaction in transactions {
+            if transaction.amount <= Decimal::ZERO {
+                continue;
+            }
             let category_name = Self::get_category_name(transaction);
             *category_map.entry(category_name).or_insert(Decimal::ZERO) += transaction.amount;
         }
@@ -224,15 +227,7 @@ impl AnalyticsService {
         end_date: Option<chrono::NaiveDate>,
     ) -> Vec<CategorySpending> {
         let filtered_transactions = self.filter_by_date_range(transactions, start_date, end_date);
-        let mut category_map = std::collections::HashMap::new();
-        for transaction in filtered_transactions {
-            let category_name = Self::get_category_name(transaction);
-            *category_map.entry(category_name).or_insert(Decimal::ZERO) += transaction.amount;
-        }
-        category_map
-            .into_iter()
-            .map(|(name, value)| CategorySpending { name, value })
-            .collect()
+        Self::group_transactions_by_category(filtered_transactions)
     }
 
     pub fn limit_categories_to_ten(
@@ -395,6 +390,9 @@ impl AnalyticsService {
         let mut merchant_map: HashMap<String, (Decimal, u32)> = HashMap::new();
 
         for transaction in transactions {
+            if transaction.amount <= Decimal::ZERO {
+                continue;
+            }
             let merchant_name = transaction
                 .merchant_name
                 .clone()
@@ -407,7 +405,11 @@ impl AnalyticsService {
             entry.1 += 1;
         }
 
-        let total_spend: Decimal = transactions.iter().map(|t| t.amount).sum();
+        let total_spend: Decimal = transactions
+            .iter()
+            .filter(|t| t.amount > Decimal::ZERO)
+            .map(|t| t.amount)
+            .sum();
 
         let mut merchants: Vec<TopMerchant> = merchant_map
             .into_iter()

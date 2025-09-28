@@ -128,6 +128,7 @@ pub struct DataCleared {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, sqlx::FromRow)]
 pub struct LatestAccountBalance {
+    pub account_id: Uuid,
     pub institution_id: String,
     pub account_type: String,
     pub account_subtype: Option<String>,

@@ -76,7 +76,7 @@ impl<'de> Deserialize<'de> for TransactionsQuery {
                             }
                             search = Some(map.next_value()?);
                         }
-                        "account_ids" | "account_ids[]" => {
+                        "account_ids" | "account_ids[]" | "account_ids%5B%5D" => {
                             let values: VecOrOne<String> = map.next_value()?;
                             account_ids.extend(values.into_vec());
                         }

@@ -149,7 +149,7 @@ impl<'de> Deserialize<'de> for DateRangeQuery {
                             }
                             end_date = Some(map.next_value()?);
                         }
-                        "account_ids" | "account_ids[]" => {
+                        "account_ids" | "account_ids[]" | "account_ids%5B%5D" => {
                             let values: VecOrOne<String> = map.next_value()?;
                             account_ids.extend(values.into_vec());
                         }
@@ -200,7 +200,7 @@ impl<'de> Deserialize<'de> for MonthlyTotalsQuery {
                             }
                             months = Some(map.next_value()?);
                         }
-                        "account_ids" | "account_ids[]" => {
+                        "account_ids" | "account_ids[]" | "account_ids%5B%5D" => {
                             let values: VecOrOne<String> = map.next_value()?;
                             account_ids.extend(values.into_vec());
                         }
