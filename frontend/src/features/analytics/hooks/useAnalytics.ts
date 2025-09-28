@@ -10,6 +10,7 @@ import { computeDateRange, type DateRangeKey } from '../../../utils/dateRanges'
 
 export type UseAnalyticsResult = {
   loading: boolean
+  refreshing: boolean
   error: string | null
   spendingTotal: number
   categories: AnalyticsCategoryResponse[]
@@ -20,7 +21,8 @@ export type UseAnalyticsResult = {
 }
 
 export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [spendingTotal, setSpendingTotal] = useState(0)
   const [categories, setCategories] = useState<AnalyticsCategoryResponse[]>([])
@@ -30,6 +32,7 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
   const { selectedAccountIds, isAllAccountsSelected } = useAccountFilter()
 
   const abortRef = useRef<AbortController | null>(null)
+  const hasLoadedRef = useRef(false)
 
   const { start, end } = useMemo(() => computeDateRange(range), [range])
 
@@ -37,7 +40,13 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
     abortRef.current?.abort()
     const ac = new AbortController()
     abortRef.current = ac
-    setLoading(true)
+    const showBlockingState = !hasLoadedRef.current
+    if (showBlockingState) {
+      setLoading(true)
+      setRefreshing(false)
+    } else {
+      setRefreshing(true)
+    }
     setError(null)
     try {
       const accountIds = !isAllAccountsSelected && selectedAccountIds.length > 0 ? selectedAccountIds : undefined
@@ -53,12 +62,18 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
       setCategories(Array.isArray(cats) ? cats : [])
       setTopMerchants(Array.isArray(merch) ? merch : [])
       setMonthlyTotals(Array.isArray(monthly) ? monthly : [])
+      hasLoadedRef.current = true
     } catch (e: any) {
       if (!ac.signal.aborted) {
         setError(e?.message || 'Failed to load analytics')
       }
     } finally {
-      if (!ac.signal.aborted) setLoading(false)
+      if (!ac.signal.aborted) {
+        if (showBlockingState) {
+          setLoading(false)
+        }
+        setRefreshing(false)
+      }
     }
   }, [start, end, isAllAccountsSelected, selectedAccountIds])
 
@@ -67,5 +82,5 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
     return () => abortRef.current?.abort()
   }, [load])
 
-  return { loading, error, spendingTotal, categories, topMerchants, monthlyTotals, start, end }
+  return { loading, refreshing, error, spendingTotal, categories, topMerchants, monthlyTotals, start, end }
 }

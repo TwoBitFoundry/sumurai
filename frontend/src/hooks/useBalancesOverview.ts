@@ -8,6 +8,7 @@ export type DateRange = { startDate?: string; endDate?: string }
 
 export type UseBalancesOverview = {
   loading: boolean
+  refreshing: boolean
   error: string | null
   data: BalancesOverview | null
   refresh: () => Promise<void>
@@ -19,6 +20,7 @@ export type UseBalancesOverview = {
  */
 export function useBalancesOverview(range?: DateRange, debounceMs = 300): UseBalancesOverview {
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<BalancesOverview | null>(null)
 
@@ -27,18 +29,29 @@ export function useBalancesOverview(range?: DateRange, debounceMs = 300): UseBal
   const endDate = range?.endDate
   const debouncedEnd = useDebouncedValue(endDate, debounceMs)
   const [lastTriggeredEnd, setLastTriggeredEnd] = useState<string | undefined>(debouncedEnd)
+  const hasLoadedRef = useRef(false)
 
   const load = useCallback(async () => {
-    setLoading(true)
+    const showBlockingState = !hasLoadedRef.current
+    if (showBlockingState) {
+      setLoading(true)
+      setRefreshing(false)
+    } else {
+      setRefreshing(true)
+    }
     setError(null)
     try {
       const accountIds = !isAllAccountsSelected && selectedAccountIds.length > 0 ? selectedAccountIds : undefined
       const result = await AnalyticsService.getBalancesOverview(accountIds)
       setData(result)
+      hasLoadedRef.current = true
     } catch (e: any) {
       setError(e?.message || 'Failed to load balances overview')
     } finally {
-      setLoading(false)
+      if (showBlockingState) {
+        setLoading(false)
+      }
+      setRefreshing(false)
     }
   }, [isAllAccountsSelected, selectedAccountIds])
 
@@ -60,5 +73,5 @@ export function useBalancesOverview(range?: DateRange, debounceMs = 300): UseBal
     }
   }, [debouncedEnd, lastTriggeredEnd, load, mounted])
 
-  return useMemo(() => ({ loading, error, data, refresh: load }), [loading, error, data, load])
+  return useMemo(() => ({ loading, refreshing, error, data, refresh: load }), [loading, refreshing, error, data, load])
 }

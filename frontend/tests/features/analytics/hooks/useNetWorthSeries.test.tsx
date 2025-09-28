@@ -63,6 +63,7 @@ describe('useNetWorthSeries', () => {
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(false)
     })
 
     expect(result.current.series).toEqual(series)
@@ -108,6 +109,7 @@ describe('useNetWorthSeries', () => {
     })
     expect(result.current.error).toBeNull()
     expect(result.current.loading).toBe(false)
+    expect(result.current.refreshing).toBe(false)
   })
 
   it('handles service errors and exposes message', async () => {
@@ -125,6 +127,7 @@ describe('useNetWorthSeries', () => {
 
     expect(result.current.series).toEqual([])
     expect(result.current.loading).toBe(false)
+    expect(result.current.refreshing).toBe(false)
   })
 
   it('should pass account filter to service when not all accounts selected', async () => {
@@ -137,6 +140,7 @@ describe('useNetWorthSeries', () => {
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(false)
     })
 
     // Verify initial call was made without account filter (all accounts)
@@ -155,6 +159,9 @@ describe('useNetWorthSeries', () => {
     await waitFor(() => {
       expect(AnalyticsService.getNetWorthOverTime).toHaveBeenCalledWith(expect.any(String), expect.any(String), ['account1', 'account2'])
     })
+    await waitFor(() => {
+      expect(result.current.refreshing).toBe(false)
+    })
   })
 
   it('should refetch when account filter changes', async () => {
@@ -167,6 +174,7 @@ describe('useNetWorthSeries', () => {
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(false)
     })
 
     const initialRequestCount = vi.mocked(AnalyticsService.getNetWorthOverTime).mock.calls.length
@@ -180,6 +188,55 @@ describe('useNetWorthSeries', () => {
     // Should refetch with new filter
     await waitFor(() => {
       expect(AnalyticsService.getNetWorthOverTime).toHaveBeenCalledTimes(initialRequestCount + 1)
+    })
+    await waitFor(() => {
+      expect(result.current.refreshing).toBe(false)
+    })
+  })
+
+  it('exposes refreshing during pending refetches', async () => {
+    const deferred = createDeferred<{ date: string; value: number }[]>()
+
+    vi.mocked(AnalyticsService.getNetWorthOverTime)
+      .mockResolvedValueOnce([
+        { date: '2024-04-01', value: 1000 },
+        { date: '2024-04-02', value: 1100 },
+      ])
+      .mockReturnValueOnce(deferred.promise as any)
+
+    let accountFilterHook: ReturnType<typeof useAccountFilter>
+
+    const { result } = renderHook(() => {
+      accountFilterHook = useAccountFilter()
+      return useNetWorthSeries('current-month')
+    }, { wrapper: TestWrapper })
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(false)
+    })
+
+    await act(async () => {
+      accountFilterHook!.setSelectedAccountIds(['account1'])
+      accountFilterHook!.setAllAccountsSelected(false)
+    })
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(true)
+    })
+
+    deferred.resolve([
+      { date: '2024-04-01', value: 1200 },
+      { date: '2024-04-02', value: 1300 },
+    ])
+
+    await waitFor(() => {
+      expect(result.current.refreshing).toBe(false)
+      expect(result.current.series).toEqual([
+        { date: '2024-04-01', value: 1200 },
+        { date: '2024-04-02', value: 1300 },
+      ])
     })
   })
 })

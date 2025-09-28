@@ -23,6 +23,16 @@ const TestWrapper = ({ children }: { children: ReactNode }) => (
   </AccountFilterProvider>
 )
 
+const createDeferred = <T,>() => {
+  let resolve!: (value: T | PromiseLike<T>) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
 describe('useBalancesOverview (Phase 6)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -57,6 +67,7 @@ describe('useBalancesOverview (Phase 6)', () => {
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(false)
     })
     expect(result.current.error).toBeNull()
     expect(result.current.data).toEqual(mock)
@@ -67,7 +78,10 @@ describe('useBalancesOverview (Phase 6)', () => {
     let end = '2024-01-01'
     const { result, rerender } = renderHook(({ endDate }) => useBalancesOverview({ endDate }, 10), { initialProps: { endDate: end }, wrapper: TestWrapper })
 
-    await waitFor(() => { expect(result.current.loading).toBe(false) })
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(false)
+    })
     const initialCalls = vi.mocked(AnalyticsService.getBalancesOverview).mock.calls.length
 
     // Change endDate -> should trigger debounced refetch
@@ -77,13 +91,19 @@ describe('useBalancesOverview (Phase 6)', () => {
     await waitFor(() => {
       expect(AnalyticsService.getBalancesOverview).toHaveBeenCalledTimes(initialCalls + 1)
     })
+    await waitFor(() => {
+      expect(result.current.refreshing).toBe(false)
+    })
   })
 
   it('returns error when API fails', async () => {
     vi.mocked(AnalyticsService.getBalancesOverview).mockRejectedValueOnce(new Error('Boom'))
 
     const { result } = renderHook(() => useBalancesOverview(), { wrapper: TestWrapper })
-    await waitFor(() => { expect(result.current.loading).toBe(false) })
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(false)
+    })
     expect(result.current.error).toBeTruthy()
     expect(result.current.data).toBeNull()
   })
@@ -101,11 +121,15 @@ describe('useBalancesOverview (Phase 6)', () => {
       .mockResolvedValueOnce(mock2 as any)
 
     const { result } = renderHook(() => useBalancesOverview(), { wrapper: TestWrapper })
-    await waitFor(() => { expect(result.current.loading).toBe(false) })
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(false)
+    })
     expect(result.current.data).toEqual(mock1)
 
     await act(async () => { await result.current.refresh() })
     expect(result.current.data).toEqual(mock2)
+    expect(result.current.refreshing).toBe(false)
   })
 
   it('should pass account filter to service when not all accounts selected', async () => {
@@ -118,6 +142,7 @@ describe('useBalancesOverview (Phase 6)', () => {
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(false)
     })
 
     // Verify initial call was made without account filter (all accounts)
@@ -136,6 +161,9 @@ describe('useBalancesOverview (Phase 6)', () => {
     await waitFor(() => {
       expect(AnalyticsService.getBalancesOverview).toHaveBeenCalledWith(['account1', 'account2'])
     })
+    await waitFor(() => {
+      expect(result.current.refreshing).toBe(false)
+    })
   })
 
   it('should refetch when account filter changes', async () => {
@@ -148,6 +176,7 @@ describe('useBalancesOverview (Phase 6)', () => {
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(false)
     })
 
     // Get initial call count
@@ -162,6 +191,56 @@ describe('useBalancesOverview (Phase 6)', () => {
     // Should refetch and increase call count
     await waitFor(() => {
       expect(AnalyticsService.getBalancesOverview).toHaveBeenCalledTimes(initialCallCount + 1)
+    })
+    await waitFor(() => {
+      expect(result.current.refreshing).toBe(false)
+    })
+  })
+
+  it('exposes refreshing while background refetch is pending', async () => {
+    const deferred = createDeferred<any>()
+
+    vi.mocked(AnalyticsService.getBalancesOverview)
+      .mockResolvedValueOnce({
+        asOf: 'latest',
+        overall: { cash: 1, credit: -1, loan: -1, investments: 1, positivesTotal: 2, negativesTotal: -2, net: 0, ratio: 1 },
+        banks: [],
+        mixedCurrency: false,
+      } as any)
+      .mockReturnValueOnce(deferred.promise as any)
+
+    let accountFilterHook: ReturnType<typeof useAccountFilter>
+
+    const { result } = renderHook(() => {
+      accountFilterHook = useAccountFilter()
+      return useBalancesOverview()
+    }, { wrapper: TestWrapper })
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(false)
+    })
+
+    await act(async () => {
+      accountFilterHook!.setSelectedAccountIds(['account1'])
+      accountFilterHook!.setAllAccountsSelected(false)
+    })
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(true)
+    })
+
+    deferred.resolve({
+      asOf: 'latest',
+      overall: { cash: 2, credit: -2, loan: -1, investments: 2, positivesTotal: 4, negativesTotal: -3, net: 1, ratio: 1.5 },
+      banks: [],
+      mixedCurrency: false,
+    } as any)
+
+    await waitFor(() => {
+      expect(result.current.refreshing).toBe(false)
+      expect(result.current.data?.overall?.cash).toBe(2)
     })
   })
 })

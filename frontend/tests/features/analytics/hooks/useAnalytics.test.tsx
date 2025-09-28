@@ -26,6 +26,16 @@ const TestWrapper = ({ children }: { children: ReactNode }) => (
   </AccountFilterProvider>
 )
 
+const createDeferred = <T,>() => {
+  let resolve!: (value: T | PromiseLike<T>) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
 describe('useAnalytics', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -50,6 +60,7 @@ describe('useAnalytics', () => {
     // Wait for initial load
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(false)
     })
 
     // Verify initial calls were made without account filter (all accounts)
@@ -70,6 +81,9 @@ describe('useAnalytics', () => {
     await waitFor(() => {
       expect(AnalyticsService.getSpendingTotal).toHaveBeenCalledWith(expect.any(String), expect.any(String), ['account1', 'account2'])
     })
+    await waitFor(() => {
+      expect(result.current.refreshing).toBe(false)
+    })
   })
 
   it('should not pass account filter when all accounts selected', async () => {
@@ -82,6 +96,7 @@ describe('useAnalytics', () => {
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(false)
     })
 
     // Clear mocks and ensure all accounts is selected
@@ -106,6 +121,7 @@ describe('useAnalytics', () => {
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(false)
     })
 
     const initialRequestCount = vi.mocked(AnalyticsService.getSpendingTotal).mock.calls.length
@@ -119,6 +135,61 @@ describe('useAnalytics', () => {
     // Should refetch and increase request count
     await waitFor(() => {
       expect(AnalyticsService.getSpendingTotal).toHaveBeenCalledTimes(initialRequestCount + 1)
+    })
+    await waitFor(() => {
+      expect(result.current.refreshing).toBe(false)
+    })
+  })
+
+  it('exposes refreshing during in-flight background refetches', async () => {
+    const totalsDeferred = createDeferred<number>()
+    const categoriesDeferred = createDeferred<any[]>()
+    const merchantsDeferred = createDeferred<any[]>()
+    const monthlyDeferred = createDeferred<any[]>()
+
+    vi.mocked(AnalyticsService.getSpendingTotal)
+      .mockResolvedValueOnce(500)
+      .mockReturnValueOnce(totalsDeferred.promise as any)
+    vi.mocked(AnalyticsService.getCategorySpendingByDateRange)
+      .mockResolvedValueOnce([])
+      .mockReturnValueOnce(categoriesDeferred.promise as any)
+    vi.mocked(AnalyticsService.getTopMerchantsByDateRange)
+      .mockResolvedValueOnce([])
+      .mockReturnValueOnce(merchantsDeferred.promise as any)
+    vi.mocked(AnalyticsService.getMonthlyTotals)
+      .mockResolvedValueOnce([])
+      .mockReturnValueOnce(monthlyDeferred.promise as any)
+
+    let accountFilterHook: ReturnType<typeof useAccountFilter>
+
+    const { result } = renderHook(() => {
+      accountFilterHook = useAccountFilter()
+      return useAnalytics('current-month')
+    }, { wrapper: TestWrapper })
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(false)
+    })
+
+    await act(async () => {
+      accountFilterHook!.setSelectedAccountIds(['account1'])
+      accountFilterHook!.setAllAccountsSelected(false)
+    })
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+      expect(result.current.refreshing).toBe(true)
+    })
+
+    totalsDeferred.resolve(650)
+    categoriesDeferred.resolve([{ name: 'Food', amount: 100 }] as any)
+    merchantsDeferred.resolve([{ name: 'Store', amount: 50 }] as any)
+    monthlyDeferred.resolve([])
+
+    await waitFor(() => {
+      expect(result.current.refreshing).toBe(false)
+      expect(result.current.spendingTotal).toBe(650)
     })
   })
 })

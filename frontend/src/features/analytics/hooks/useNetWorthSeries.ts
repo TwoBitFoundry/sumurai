@@ -8,6 +8,7 @@ export type NetWorthPoint = { date: string; value: number }
 export type UseNetWorthSeriesResult = {
   series: NetWorthPoint[]
   loading: boolean
+  refreshing: boolean
   error: string | null
   start?: string
   end?: string
@@ -16,12 +17,14 @@ export type UseNetWorthSeriesResult = {
 
 export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult {
   const [series, setSeries] = useState<NetWorthPoint[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const { selectedAccountIds, isAllAccountsSelected } = useAccountFilter()
 
   const abortRef = useRef<AbortController | null>(null)
+  const hasLoadedRef = useRef(false)
 
   const { start, end } = useMemo(() => computeDateRange(range), [range])
 
@@ -31,14 +34,22 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
     if (!start || !end) {
       setSeries([])
       setLoading(false)
+      setRefreshing(false)
       setError(null)
+      hasLoadedRef.current = true
       return
     }
 
     const ac = new AbortController()
     abortRef.current = ac
 
-    setLoading(true)
+    const showBlockingState = !hasLoadedRef.current
+    if (showBlockingState) {
+      setLoading(true)
+      setRefreshing(false)
+    } else {
+      setRefreshing(true)
+    }
     setError(null)
 
     try {
@@ -52,13 +63,17 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
           }))
         : []
       setSeries(normalized)
+      hasLoadedRef.current = true
     } catch (err: any) {
       if (ac.signal.aborted || err?.name === 'AbortError') return
       setError(err?.message || 'Failed to load net worth')
       setSeries([])
     } finally {
       if (!ac.signal.aborted) {
-        setLoading(false)
+        if (showBlockingState) {
+          setLoading(false)
+        }
+        setRefreshing(false)
       }
     }
   }, [start, end, isAllAccountsSelected, selectedAccountIds])
@@ -70,6 +85,5 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
     }
   }, [load])
 
-  return { series, loading, error, start, end, reload: load }
+  return { series, loading, refreshing, error, start, end, reload: load }
 }
-
