@@ -28,6 +28,27 @@ const TestWrapper = ({ children }: { children: ReactNode }) => (
   </AccountFilterProvider>
 )
 
+const mockPlaidAccounts = [
+  {
+    id: 'account1',
+    name: 'Mock Checking',
+    account_type: 'depository',
+    balance_current: 1200,
+    mask: '1111',
+    plaid_connection_id: 'conn_1',
+    institution_name: 'Mock Bank'
+  },
+  {
+    id: 'account2',
+    name: 'Mock Savings',
+    account_type: 'depository',
+    balance_current: 5400,
+    mask: '2222',
+    plaid_connection_id: 'conn_1',
+    institution_name: 'Mock Bank'
+  }
+]
+
 const createDeferred = <T,>() => {
   let resolve!: (value: T | PromiseLike<T>) => void
   let reject!: (reason?: unknown) => void
@@ -50,7 +71,7 @@ describe('useAnalytics', () => {
       institution_name: 'First Platypus Bank',
       connection_id: 'conn_1',
     } as any)
-    vi.mocked(PlaidService.getAccounts).mockResolvedValue([] as any)
+    vi.mocked(PlaidService.getAccounts).mockResolvedValue(mockPlaidAccounts as any)
   })
 
   afterEach(() => {
@@ -80,14 +101,17 @@ describe('useAnalytics', () => {
     vi.mocked(AnalyticsService.getTopMerchantsByDateRange).mockClear()
     vi.mocked(AnalyticsService.getMonthlyTotals).mockClear()
 
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
+    })
+
     await act(async () => {
-      accountFilterHook!.setSelectedAccountIds(['account1', 'account2'])
-      accountFilterHook!.setAllAccountsSelected(false)
+      accountFilterHook!.setSelectedAccountIds(['account1'])
     })
 
     // Should refetch with account filter
     await waitFor(() => {
-      expect(AnalyticsService.getSpendingTotal).toHaveBeenCalledWith(expect.any(String), expect.any(String), ['account1', 'account2'])
+      expect(AnalyticsService.getSpendingTotal).toHaveBeenCalledWith(expect.any(String), expect.any(String), ['account1'])
     })
     await waitFor(() => {
       expect(result.current.refreshing).toBe(false)
@@ -107,11 +131,25 @@ describe('useAnalytics', () => {
       expect(result.current.refreshing).toBe(false)
     })
 
-    // Clear mocks and ensure all accounts is selected
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
+    })
+
+    // Clear mocks, select subset, then reselect all
     vi.mocked(AnalyticsService.getSpendingTotal).mockClear()
 
     await act(async () => {
-      accountFilterHook!.selectAllAccounts()
+      accountFilterHook!.setSelectedAccountIds(['account1'])
+    })
+
+    await waitFor(() => {
+      expect(AnalyticsService.getSpendingTotal).toHaveBeenCalledWith(expect.any(String), expect.any(String), ['account1'])
+    })
+
+    vi.mocked(AnalyticsService.getSpendingTotal).mockClear()
+
+    await act(async () => {
+      accountFilterHook!.setSelectedAccountIds([...accountFilterHook!.allAccountIds])
     })
 
     await waitFor(() => {
@@ -134,10 +172,13 @@ describe('useAnalytics', () => {
 
     const initialRequestCount = vi.mocked(AnalyticsService.getSpendingTotal).mock.calls.length
 
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
+    })
+
     // Change account filter
     await act(async () => {
       accountFilterHook!.setSelectedAccountIds(['account1'])
-      accountFilterHook!.setAllAccountsSelected(false)
     })
 
     // Should refetch and increase request count
@@ -180,9 +221,12 @@ describe('useAnalytics', () => {
       expect(result.current.refreshing).toBe(false)
     })
 
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
+    })
+
     await act(async () => {
       accountFilterHook!.setSelectedAccountIds(['account1'])
-      accountFilterHook!.setAllAccountsSelected(false)
     })
 
     await waitFor(() => {

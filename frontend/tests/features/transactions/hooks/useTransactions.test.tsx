@@ -31,6 +31,27 @@ const asTransaction = (id: string, date = '2024-02-10') => ({
   account_mask: '1234',
 })
 
+const mockPlaidAccounts = [
+  {
+    id: 'account1',
+    name: 'Mock Checking',
+    account_type: 'depository',
+    balance_current: 1200,
+    mask: '1111',
+    plaid_connection_id: 'conn_1',
+    institution_name: 'Mock Bank'
+  },
+  {
+    id: 'account2',
+    name: 'Mock Savings',
+    account_type: 'depository',
+    balance_current: 5400,
+    mask: '2222',
+    plaid_connection_id: 'conn_1',
+    institution_name: 'Mock Bank'
+  }
+]
+
 const TestWrapper = ({ children }: { children: ReactNode }) => (
   <AccountFilterProvider>
     {children}
@@ -41,7 +62,7 @@ describe('useTransactions', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     vi.mocked(TransactionService.getTransactions).mockResolvedValue([])
-    vi.mocked(PlaidService.getAccounts).mockResolvedValue([] as any)
+    vi.mocked(PlaidService.getAccounts).mockResolvedValue(mockPlaidAccounts as any)
     vi.mocked(PlaidService.getStatus).mockResolvedValue({
       is_connected: true,
       institution_name: 'First Platypus Bank',
@@ -75,15 +96,18 @@ describe('useTransactions', () => {
     vi.mocked(TransactionService.getTransactions).mockClear()
 
     // Change account filter to specific accounts
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
+    })
+
     await act(async () => {
-      accountFilterHook!.setSelectedAccountIds(['account1', 'account2'])
-      accountFilterHook!.setAllAccountsSelected(false)
+      accountFilterHook!.setSelectedAccountIds(['account1'])
     })
 
     // Should refetch with account filter
     await waitFor(() => {
       expect(TransactionService.getTransactions).toHaveBeenCalledWith({
-        accountIds: ['account1', 'account2']
+        accountIds: ['account1']
       })
     })
   })
@@ -113,9 +137,12 @@ describe('useTransactions', () => {
     expect(result.current.currentPage).toBe(2)
 
     // Change account filter
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
+    })
+
     await act(async () => {
       accountFilterHook!.setSelectedAccountIds(['account1'])
-      accountFilterHook!.setAllAccountsSelected(false)
     })
 
     // Pagination should reset to page 1
@@ -141,14 +168,17 @@ describe('useTransactions', () => {
     // Clear mock and set specific accounts
     vi.mocked(TransactionService.getTransactions).mockClear()
 
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
+    })
+
     await act(async () => {
-      accountFilterHook!.setSelectedAccountIds(['account1', 'account2'])
-      accountFilterHook!.setAllAccountsSelected(false)
+      accountFilterHook!.setSelectedAccountIds(['account1'])
     })
 
     await waitFor(() => {
       expect(TransactionService.getTransactions).toHaveBeenCalledWith({
-        accountIds: ['account1', 'account2']
+        accountIds: ['account1']
       })
     })
   })
@@ -167,11 +197,27 @@ describe('useTransactions', () => {
       expect(TransactionService.getTransactions).toHaveBeenCalledTimes(1)
     })
 
-    // Clear mock and ensure all accounts is selected
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
+    })
+
+    // Clear mock and select a subset first
     vi.mocked(TransactionService.getTransactions).mockClear()
 
     await act(async () => {
-      accountFilterHook!.selectAllAccounts()
+      accountFilterHook!.setSelectedAccountIds(['account1'])
+    })
+
+    await waitFor(() => {
+      expect(TransactionService.getTransactions).toHaveBeenCalledWith({
+        accountIds: ['account1']
+      })
+    })
+
+    vi.mocked(TransactionService.getTransactions).mockClear()
+
+    await act(async () => {
+      accountFilterHook!.setSelectedAccountIds([...accountFilterHook!.allAccountIds])
     })
 
     await waitFor(() => {

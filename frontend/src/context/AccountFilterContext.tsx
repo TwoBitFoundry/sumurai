@@ -16,12 +16,11 @@ export interface AccountsByBank {
 
 export interface AccountFilterContextType {
   selectedAccountIds: string[]
+  allAccountIds: string[]
   isAllAccountsSelected: boolean
   accountsByBank: AccountsByBank
   loading: boolean
   setSelectedAccountIds: (accountIds: string[]) => void
-  setAllAccountsSelected: (isAll: boolean) => void
-  selectAllAccounts: () => void
   toggleBank: (bankName: string) => void
   toggleAccount: (accountId: string) => void
 }

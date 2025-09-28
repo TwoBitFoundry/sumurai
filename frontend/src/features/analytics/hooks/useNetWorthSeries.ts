@@ -21,7 +21,7 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const { selectedAccountIds, isAllAccountsSelected } = useAccountFilter()
+  const { selectedAccountIds, isAllAccountsSelected, allAccountIds, loading: accountsLoading } = useAccountFilter()
 
   const abortRef = useRef<AbortController | null>(null)
   const hasLoadedRef = useRef(false)
@@ -40,6 +40,10 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
       return
     }
 
+    if (accountsLoading) {
+      return
+    }
+
     const ac = new AbortController()
     abortRef.current = ac
 
@@ -53,6 +57,12 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
     setError(null)
 
     try {
+      if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
+        setSeries([])
+        hasLoadedRef.current = true
+        return
+      }
+
       const accountIds = !isAllAccountsSelected && selectedAccountIds.length > 0 ? selectedAccountIds : undefined
       const raw = await AnalyticsService.getNetWorthOverTime(start, end, accountIds)
       if (ac.signal.aborted) return
@@ -76,7 +86,7 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
         setRefreshing(false)
       }
     }
-  }, [start, end, isAllAccountsSelected, selectedAccountIds])
+  }, [start, end, isAllAccountsSelected, selectedAccountIds, allAccountIds, accountsLoading])
 
   useEffect(() => {
     load()

@@ -44,7 +44,7 @@ export function useBudgets(): UseBudgetsResult {
   const [month, setMonthState] = useState(() => normalizeMonth(new Date()))
   const [budgetsReady, setBudgetsReady] = useState(false)
 
-  const { selectedAccountIds, isAllAccountsSelected } = useAccountFilter()
+  const { selectedAccountIds, isAllAccountsSelected, allAccountIds, loading: accountsLoading } = useAccountFilter()
 
   const loadedRef = useRef(false)
   const lastRangeRef = useRef<string | null>(null)
@@ -54,9 +54,26 @@ export function useBudgets(): UseBudgetsResult {
   const monthLabel = useMemo(() => monthFormatter.format(month), [month, monthFormatter])
 
   const loadTransactions = useCallback(async (start: string, end: string) => {
-    const accountIds = !isAllAccountsSelected && selectedAccountIds.length > 0 ? selectedAccountIds : undefined
-    const key = `${start}:${end}:${accountIds?.join(',') || 'all'}`
+    const shouldFilter = selectedAccountIds.length > 0 && !isAllAccountsSelected
+    const keySuffix = selectedAccountIds.length === 0 && allAccountIds.length > 0
+      ? 'none'
+      : shouldFilter
+        ? selectedAccountIds.join(',')
+        : 'all'
+
+    const key = `${start}:${end}:${keySuffix}`
     lastRangeRef.current = key
+
+    if (accountsLoading) {
+      return
+    }
+
+    if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
+      setTransactions([])
+      return
+    }
+
+    const accountIds = shouldFilter ? selectedAccountIds : undefined
     setTransactionsLoading(true)
     try {
       const items = await TransactionService.getTransactions({ startDate: start, endDate: end, accountIds })
@@ -66,7 +83,7 @@ export function useBudgets(): UseBudgetsResult {
     } finally {
       setTransactionsLoading(false)
     }
-  }, [isAllAccountsSelected, selectedAccountIds])
+  }, [allAccountIds, isAllAccountsSelected, selectedAccountIds, accountsLoading])
 
   const load = useCallback(async () => {
     setError(null)
@@ -102,11 +119,17 @@ export function useBudgets(): UseBudgetsResult {
 
   useEffect(() => {
     if (!budgetsReady) return
-    const accountIds = !isAllAccountsSelected && selectedAccountIds.length > 0 ? selectedAccountIds : undefined
-    const key = `${range.start}:${range.end}:${accountIds?.join(',') || 'all'}`
+    const shouldFilter = selectedAccountIds.length > 0 && !isAllAccountsSelected
+    const keySuffix = selectedAccountIds.length === 0 && allAccountIds.length > 0
+      ? 'none'
+      : shouldFilter
+        ? selectedAccountIds.join(',')
+        : 'all'
+
+    const key = `${range.start}:${range.end}:${keySuffix}`
     if (key === lastRangeRef.current) return
     loadTransactions(range.start, range.end)
-  }, [budgetsReady, loadTransactions, range.end, range.start, isAllAccountsSelected, selectedAccountIds])
+  }, [budgetsReady, loadTransactions, range.end, range.start, isAllAccountsSelected, selectedAccountIds, allAccountIds])
 
   const categories = useMemo(() => budgets.map(b => b.category).sort(), [budgets])
 
@@ -253,4 +276,3 @@ function generateId(): string {
   }
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
-

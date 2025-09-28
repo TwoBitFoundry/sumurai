@@ -24,7 +24,7 @@ export function useBalancesOverview(range?: DateRange, debounceMs = 300): UseBal
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<BalancesOverview | null>(null)
 
-  const { selectedAccountIds, isAllAccountsSelected } = useAccountFilter()
+  const { selectedAccountIds, isAllAccountsSelected, allAccountIds, loading: accountsLoading } = useAccountFilter()
 
   const endDate = range?.endDate
   const debouncedEnd = useDebouncedValue(endDate, debounceMs)
@@ -32,6 +32,10 @@ export function useBalancesOverview(range?: DateRange, debounceMs = 300): UseBal
   const hasLoadedRef = useRef(false)
 
   const load = useCallback(async () => {
+    if (accountsLoading) {
+      return
+    }
+
     const showBlockingState = !hasLoadedRef.current
     if (showBlockingState) {
       setLoading(true)
@@ -41,6 +45,12 @@ export function useBalancesOverview(range?: DateRange, debounceMs = 300): UseBal
     }
     setError(null)
     try {
+      if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
+        setData(null)
+        hasLoadedRef.current = true
+        return
+      }
+
       const accountIds = !isAllAccountsSelected && selectedAccountIds.length > 0 ? selectedAccountIds : undefined
       const result = await AnalyticsService.getBalancesOverview(accountIds)
       setData(result)
@@ -53,7 +63,7 @@ export function useBalancesOverview(range?: DateRange, debounceMs = 300): UseBal
       }
       setRefreshing(false)
     }
-  }, [isAllAccountsSelected, selectedAccountIds])
+  }, [isAllAccountsSelected, selectedAccountIds, allAccountIds, accountsLoading])
 
   // Load data when load function changes (includes account filter changes)
   useEffect(() => {

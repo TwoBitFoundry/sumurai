@@ -58,28 +58,37 @@ describe('AccountFilterProvider', () => {
 
   describe('Given the provider is initialized', () => {
     describe('When no custom selection is made', () => {
-      it('Then it should default to "All accounts" selection', () => {
+      it('Then it should default to all accounts selected', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
           <AccountFilterProvider>{children}</AccountFilterProvider>
         )
 
         const { result } = renderHook(() => useAccountFilter(), { wrapper })
 
+        await waitFor(() => {
+          expect(result.current.allAccountIds.sort()).toEqual(['acc_1', 'acc_2', 'acc_3'])
+        })
+
         expect(result.current.isAllAccountsSelected).toBe(true)
-        expect(result.current.selectedAccountIds).toEqual([])
+        expect(result.current.selectedAccountIds.sort()).toEqual(['acc_1', 'acc_2', 'acc_3'])
       })
     })
 
     describe('When checking current selection state', () => {
-      it('Then it should expose current selection state', () => {
+      it('Then it should expose current selection state', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
           <AccountFilterProvider>{children}</AccountFilterProvider>
         )
 
         const { result } = renderHook(() => useAccountFilter(), { wrapper })
 
+        await waitFor(() => {
+          expect(result.current.allAccountIds).toHaveLength(3)
+        })
+
         expect(result.current.isAllAccountsSelected).toBeDefined()
         expect(result.current.selectedAccountIds).toBeDefined()
+        expect(Array.isArray(result.current.allAccountIds)).toBe(true)
         expect(Array.isArray(result.current.selectedAccountIds)).toBe(true)
       })
     })
@@ -101,25 +110,6 @@ describe('AccountFilterProvider', () => {
         expect(result.current.accountsByBank['Second Platypus Bank']).toHaveLength(1)
       })
 
-      it('Then it should support select all action', async () => {
-        const wrapper = ({ children }: { children: React.ReactNode }) => (
-          <AccountFilterProvider>{children}</AccountFilterProvider>
-        )
-
-        const { result } = renderHook(() => useAccountFilter(), { wrapper })
-
-        await waitFor(() => {
-          expect(result.current.accountsByBank).toHaveProperty('First Platypus Bank')
-        })
-
-        act(() => {
-          result.current.selectAllAccounts()
-        })
-
-        expect(result.current.isAllAccountsSelected).toBe(true)
-        expect(result.current.selectedAccountIds).toEqual([])
-      })
-
       it('Then it should support toggle bank action', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
           <AccountFilterProvider>{children}</AccountFilterProvider>
@@ -136,13 +126,21 @@ describe('AccountFilterProvider', () => {
         })
 
         expect(result.current.isAllAccountsSelected).toBe(false)
-        expect(result.current.selectedAccountIds.sort()).toEqual(['acc_1', 'acc_2'])
+        expect(result.current.selectedAccountIds.sort()).toEqual(['acc_3'])
 
         act(() => {
           result.current.toggleBank('Second Platypus Bank')
         })
 
+        expect(result.current.selectedAccountIds).toEqual([])
+
+        act(() => {
+          result.current.toggleBank('First Platypus Bank')
+          result.current.toggleBank('Second Platypus Bank')
+        })
+
         expect(result.current.selectedAccountIds.sort()).toEqual(['acc_1', 'acc_2', 'acc_3'])
+        expect(result.current.isAllAccountsSelected).toBe(true)
       })
 
       it('Then it should support toggle individual account action', async () => {
@@ -161,7 +159,14 @@ describe('AccountFilterProvider', () => {
         })
 
         expect(result.current.isAllAccountsSelected).toBe(false)
-        expect(result.current.selectedAccountIds).toEqual(['acc_1'])
+        expect(result.current.selectedAccountIds.sort()).toEqual(['acc_2', 'acc_3'])
+
+        act(() => {
+          result.current.toggleAccount('acc_1')
+        })
+
+        expect(result.current.selectedAccountIds.sort()).toEqual(['acc_1', 'acc_2', 'acc_3'])
+        expect(result.current.isAllAccountsSelected).toBe(true)
       })
     })
   })

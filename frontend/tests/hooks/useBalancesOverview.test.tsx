@@ -25,6 +25,27 @@ const TestWrapper = ({ children }: { children: ReactNode }) => (
   </AccountFilterProvider>
 )
 
+const mockPlaidAccounts = [
+  {
+    id: 'account1',
+    name: 'Mock Checking',
+    account_type: 'depository',
+    balance_current: 1200,
+    mask: '1111',
+    plaid_connection_id: 'conn_1',
+    institution_name: 'Mock Bank'
+  },
+  {
+    id: 'account2',
+    name: 'Mock Savings',
+    account_type: 'depository',
+    balance_current: 5400,
+    mask: '2222',
+    plaid_connection_id: 'conn_1',
+    institution_name: 'Mock Bank'
+  }
+]
+
 const createDeferred = <T,>() => {
   let resolve!: (value: T | PromiseLike<T>) => void
   let reject!: (reason?: unknown) => void
@@ -49,7 +70,7 @@ describe('useBalancesOverview (Phase 6)', () => {
       institution_name: 'First Platypus Bank',
       connection_id: 'conn_1',
     } as any)
-    vi.mocked(PlaidService.getAccounts).mockResolvedValue([] as any)
+    vi.mocked(PlaidService.getAccounts).mockResolvedValue(mockPlaidAccounts as any)
   })
 
   afterEach(() => {
@@ -159,15 +180,18 @@ describe('useBalancesOverview (Phase 6)', () => {
     // Clear the mock to track new calls
     vi.mocked(AnalyticsService.getBalancesOverview).mockClear()
 
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
+    })
+
     // Change account filter to specific accounts
     await act(async () => {
-      accountFilterHook!.setSelectedAccountIds(['account1', 'account2'])
-      accountFilterHook!.setAllAccountsSelected(false)
+      accountFilterHook!.setSelectedAccountIds(['account1'])
     })
 
     // Should refetch with account filter
     await waitFor(() => {
-      expect(AnalyticsService.getBalancesOverview).toHaveBeenCalledWith(['account1', 'account2'])
+      expect(AnalyticsService.getBalancesOverview).toHaveBeenCalledWith(['account1'])
     })
     await waitFor(() => {
       expect(result.current.refreshing).toBe(false)
@@ -190,10 +214,13 @@ describe('useBalancesOverview (Phase 6)', () => {
     // Get initial call count
     const initialCallCount = vi.mocked(AnalyticsService.getBalancesOverview).mock.calls.length
 
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
+    })
+
     // Change account filter
     await act(async () => {
       accountFilterHook!.setSelectedAccountIds(['account1'])
-      accountFilterHook!.setAllAccountsSelected(false)
     })
 
     // Should refetch and increase call count
@@ -229,9 +256,12 @@ describe('useBalancesOverview (Phase 6)', () => {
       expect(result.current.refreshing).toBe(false)
     })
 
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
+    })
+
     await act(async () => {
       accountFilterHook!.setSelectedAccountIds(['account1'])
-      accountFilterHook!.setAllAccountsSelected(false)
     })
 
     await waitFor(() => {

@@ -68,10 +68,11 @@ describe('HeaderAccountFilter', () => {
 
   describe('Given the component is rendered', () => {
     describe('When no custom selection is made', () => {
-      it('Then it should render "All accounts" by default', async () => {
+      it('Then it should render "All accounts" once accounts load', async () => {
         renderComponent()
 
-        expect(screen.getByText('All accounts')).toBeInTheDocument()
+        const trigger = await screen.findByRole('button', { name: /all accounts/i })
+        expect(trigger).toBeInTheDocument()
       })
     })
 
@@ -80,7 +81,7 @@ describe('HeaderAccountFilter', () => {
         const user = userEvent.setup()
         renderComponent()
 
-        const trigger = screen.getByRole('button', { name: /all accounts/i })
+        const trigger = await screen.findByRole('button', { name: /all accounts/i })
         expect(trigger).toBeInTheDocument()
 
         await user.click(trigger)
@@ -94,7 +95,7 @@ describe('HeaderAccountFilter', () => {
         const user = userEvent.setup()
         renderComponent()
 
-        const trigger = screen.getByRole('button', { name: /all accounts/i })
+        const trigger = await screen.findByRole('button', { name: /all accounts/i })
 
         await user.click(trigger)
         await waitFor(() => {
@@ -113,7 +114,7 @@ describe('HeaderAccountFilter', () => {
         const user = userEvent.setup()
         renderComponent()
 
-        const trigger = screen.getByRole('button', { name: /all accounts/i })
+        const trigger = await screen.findByRole('button', { name: /all accounts/i })
         await user.click(trigger)
 
         await waitFor(() => {
@@ -130,33 +131,28 @@ describe('HeaderAccountFilter', () => {
         expect(screen.getByText('Wells Fargo Credit Card')).toBeInTheDocument()
       })
 
-      it('Then "All accounts" toggle should clear custom selections', async () => {
+      it('Then clearing all bank selections updates the header state', async () => {
         const user = userEvent.setup()
         renderComponent()
 
-        const trigger = screen.getByRole('button', { name: /all accounts/i })
+        const trigger = await screen.findByRole('button', { name: /all accounts/i })
         await user.click(trigger)
 
         await waitFor(() => {
           expect(screen.getByRole('dialog')).toBeInTheDocument()
         })
 
-        await waitFor(() => {
-          expect(screen.getByText('First Platypus Bank')).toBeInTheDocument()
-        })
+        const firstBankToggle = screen.getByLabelText('First Platypus Bank')
+        const secondBankToggle = screen.getByLabelText('Second Platypus Bank')
 
-        const chaseCheckingCheckbox = screen.getByLabelText('Chase Checking')
-        await user.click(chaseCheckingCheckbox)
+        expect(firstBankToggle).toBeChecked()
+        expect(secondBankToggle).toBeChecked()
 
-        await waitFor(() => {
-          expect(screen.getByRole('button', { name: /1 accounts/i })).toBeInTheDocument()
-        })
-
-        const allAccountsToggle = screen.getByLabelText('All accounts')
-        await user.click(allAccountsToggle)
+        await user.click(firstBankToggle)
+        await user.click(secondBankToggle)
 
         await waitFor(() => {
-          expect(screen.getByRole('button', { name: /all accounts/i })).toBeInTheDocument()
+          expect(screen.getByRole('button', { name: /no accounts selected/i })).toBeInTheDocument()
         })
       })
 
@@ -164,7 +160,7 @@ describe('HeaderAccountFilter', () => {
         const user = userEvent.setup()
         renderComponent()
 
-        const trigger = screen.getByRole('button', { name: /all accounts/i })
+        const trigger = await screen.findByRole('button', { name: /all accounts/i })
         await user.click(trigger)
 
         await waitFor(() => {
@@ -176,13 +172,13 @@ describe('HeaderAccountFilter', () => {
         })
 
         const chaseCheckingCheckbox = screen.getByLabelText('Chase Checking')
-        expect(chaseCheckingCheckbox).not.toBeChecked()
-
-        await user.click(chaseCheckingCheckbox)
         expect(chaseCheckingCheckbox).toBeChecked()
 
         await user.click(chaseCheckingCheckbox)
         expect(chaseCheckingCheckbox).not.toBeChecked()
+
+        await user.click(chaseCheckingCheckbox)
+        expect(chaseCheckingCheckbox).toBeChecked()
       })
     })
 
@@ -191,7 +187,7 @@ describe('HeaderAccountFilter', () => {
         const user = userEvent.setup()
         renderComponent()
 
-        const trigger = screen.getByRole('button', { name: /all accounts/i })
+        const trigger = await screen.findByRole('button', { name: /all accounts/i })
 
         trigger.focus()
         expect(trigger).toHaveFocus()
@@ -212,7 +208,7 @@ describe('HeaderAccountFilter', () => {
         const user = userEvent.setup()
         renderComponent()
 
-        const trigger = screen.getByRole('button', { name: /all accounts/i })
+        const trigger = await screen.findByRole('button', { name: /all accounts/i })
         expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
         expect(trigger).toHaveAttribute('aria-expanded', 'false')
 
@@ -229,7 +225,7 @@ describe('HeaderAccountFilter', () => {
         const user = userEvent.setup()
         renderComponent()
 
-        const trigger = screen.getByRole('button', { name: /all accounts/i })
+        const trigger = await screen.findByRole('button', { name: /all accounts/i })
 
         await user.click(trigger)
         await waitFor(() => {

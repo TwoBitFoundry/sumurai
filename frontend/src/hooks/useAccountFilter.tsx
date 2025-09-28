@@ -1,4 +1,4 @@
-import { useContext, useState, useMemo, useCallback, useEffect, ReactNode } from 'react'
+import { useContext, useState, useMemo, useCallback, useEffect, useRef, ReactNode } from 'react'
 import { AccountFilterContext, AccountFilterContextType, PlaidAccount, AccountsByBank } from '@/context/AccountFilterContext'
 import { PlaidService } from '@/services/PlaidService'
 
@@ -15,13 +15,13 @@ interface AccountFilterProviderProps {
 }
 
 export function AccountFilterProvider({ children }: AccountFilterProviderProps) {
+  const [accounts, setAccounts] = useState<PlaidAccount[]>([])
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([])
-  const [isAllAccountsSelected, setAllAccountsSelected] = useState(true)
-  const [accountsByBank, setAccountsByBank] = useState<AccountsByBank>({})
   const [loading, setLoading] = useState(false)
+  const previousAllAccountIdsRef = useRef<string[]>([])
 
-  const groupAccountsByBank = useCallback((accounts: PlaidAccount[]): AccountsByBank => {
-    return accounts.reduce((acc: AccountsByBank, account: PlaidAccount) => {
+  const groupAccountsByBank = useCallback((items: PlaidAccount[]): AccountsByBank => {
+    return items.reduce<AccountsByBank>((acc, account) => {
       const bankName = account.institution_name || 'Unknown Bank'
       if (!acc[bankName]) {
         acc[bankName] = []
@@ -31,13 +31,17 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
     }, {})
   }, [])
 
+  const accountsByBank = useMemo(() => groupAccountsByBank(accounts), [accounts, groupAccountsByBank])
+  const allAccountIds = useMemo(() => accounts.map(account => account.id), [accounts])
+  const isAllAccountsSelected = allAccountIds.length > 0 && selectedAccountIds.length === allAccountIds.length
+
   const fetchAccounts = useCallback(async () => {
     try {
       setLoading(true)
-      const accounts = await PlaidService.getAccounts()
+      const accountsResponse = await PlaidService.getAccounts()
 
       // Map API Account type to PlaidAccount type for account filter
-      const mappedAccounts: PlaidAccount[] = (accounts || []).map(account => ({
+      const mappedAccounts: PlaidAccount[] = (accountsResponse || []).map(account => ({
         id: account.id,
         name: account.name,
         account_type: account.account_type,
@@ -49,24 +53,49 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
           'Unknown Bank',
       }))
 
-      const grouped = groupAccountsByBank(mappedAccounts)
-      setAccountsByBank(grouped)
+      setAccounts(mappedAccounts)
+
+      const newAccountIds = mappedAccounts.map(account => account.id)
+
+      setSelectedAccountIds(prev => {
+        if (prev.length === 0) {
+          return newAccountIds
+        }
+
+        const newIdSet = new Set(newAccountIds)
+        const filteredSelection = prev.filter(id => newIdSet.has(id))
+
+        const prevAllIds = previousAllAccountIdsRef.current
+        const previouslyHadAllSelected =
+          prevAllIds.length > 0 &&
+          prev.length === prevAllIds.length &&
+          prevAllIds.every(id => prev.includes(id))
+
+        if (previouslyHadAllSelected) {
+          return newAccountIds
+        }
+
+        if (arraysEqual(prev, filteredSelection)) {
+          return prev
+        }
+
+        return filteredSelection
+      })
+
+      previousAllAccountIdsRef.current = newAccountIds
     } catch (error) {
       console.warn('Failed to fetch accounts for filter:', error)
-      setAccountsByBank({})
+      setAccounts([])
+      setSelectedAccountIds([])
+      previousAllAccountIdsRef.current = []
     } finally {
       setLoading(false)
     }
-  }, [groupAccountsByBank])
+  }, [])
 
   useEffect(() => {
     fetchAccounts()
   }, [fetchAccounts])
-
-  const selectAllAccounts = useCallback(() => {
-    setSelectedAccountIds([])
-    setAllAccountsSelected(true)
-  }, [])
 
   const toggleBank = useCallback((bankName: string) => {
     const bankAccounts = accountsByBank[bankName] || []
@@ -87,8 +116,6 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
         return newIds
       }
     })
-
-    setAllAccountsSelected(false)
   }, [accountsByBank])
 
   const toggleAccount = useCallback((accountId: string) => {
@@ -99,24 +126,30 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
         return [...prev, accountId]
       }
     })
-    setAllAccountsSelected(false)
   }, [])
 
   const value = useMemo((): AccountFilterContextType => ({
     selectedAccountIds,
+    allAccountIds,
     isAllAccountsSelected,
     accountsByBank,
     loading,
     setSelectedAccountIds,
-    setAllAccountsSelected,
-    selectAllAccounts,
     toggleBank,
     toggleAccount,
-  }), [selectedAccountIds, isAllAccountsSelected, accountsByBank, loading, selectAllAccounts, toggleBank, toggleAccount])
+  }), [selectedAccountIds, allAccountIds, isAllAccountsSelected, accountsByBank, loading, toggleBank, toggleAccount])
 
   return (
     <AccountFilterContext.Provider value={value}>
       {children}
     </AccountFilterContext.Provider>
   )
+}
+
+function arraysEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false
+  }
+  return true
 }

@@ -12,16 +12,28 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
   const {
     isAllAccountsSelected,
     selectedAccountIds,
+    allAccountIds,
     accountsByBank,
     loading,
-    setSelectedAccountIds,
-    setAllAccountsSelected,
-    selectAllAccounts,
     toggleBank,
     toggleAccount
   } = useAccountFilter()
 
-  const displayText = isAllAccountsSelected ? 'All accounts' : `${selectedAccountIds.length} accounts`
+  const totalAccounts = allAccountIds.length
+  const selectedCount = selectedAccountIds.length
+
+  const displayText = (() => {
+    if (totalAccounts === 0) {
+      return loading ? 'Loading accounts...' : 'No accounts'
+    }
+    if (selectedCount === 0) {
+      return 'No accounts selected'
+    }
+    if (isAllAccountsSelected) {
+      return 'All accounts'
+    }
+    return `${selectedCount} ${selectedCount === 1 ? 'account' : 'accounts'}`
+  })()
 
   const closePopover = () => {
     setIsOpen(false)
@@ -94,26 +106,6 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="all-accounts"
-                    checked={isAllAccountsSelected}
-                    onChange={() => {
-                      if (isAllAccountsSelected) {
-                        setSelectedAccountIds([])
-                        setAllAccountsSelected(false)
-                      } else {
-                        selectAllAccounts()
-                      }
-                    }}
-                    className="rounded border-slate-300 dark:border-slate-600 text-primary-600 focus:ring-primary-500"
-                  />
-                  <label htmlFor="all-accounts" className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                    All accounts
-                  </label>
-                </div>
-
                 {Object.entries(accountsByBank).map(([bankName, accounts]) => {
                   const bankAccountIds = accounts.map(account => account.id)
                   const allBankAccountsSelected = bankAccountIds.every(id => selectedAccountIds.includes(id))
@@ -156,6 +148,11 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                     </div>
                   )
                 })}
+                {Object.keys(accountsByBank).length === 0 && !loading && (
+                  <div className="text-sm text-slate-600 dark:text-slate-400">
+                    No accounts available.
+                  </div>
+                )}
               </div>
             )}
           </div>

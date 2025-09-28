@@ -29,7 +29,7 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
   const [topMerchants, setTopMerchants] = useState<AnalyticsTopMerchantsResponse[]>([])
   const [monthlyTotals, setMonthlyTotals] = useState<AnalyticsMonthlyTotalsResponse[]>([])
 
-  const { selectedAccountIds, isAllAccountsSelected } = useAccountFilter()
+  const { selectedAccountIds, isAllAccountsSelected, allAccountIds, loading: accountsLoading } = useAccountFilter()
 
   const abortRef = useRef<AbortController | null>(null)
   const hasLoadedRef = useRef(false)
@@ -38,6 +38,9 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
 
   const load = useCallback(async () => {
     abortRef.current?.abort()
+    if (accountsLoading) {
+      return
+    }
     const ac = new AbortController()
     abortRef.current = ac
     const showBlockingState = !hasLoadedRef.current
@@ -49,6 +52,15 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
     }
     setError(null)
     try {
+      if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
+        setSpendingTotal(0)
+        setCategories([])
+        setTopMerchants([])
+        setMonthlyTotals([])
+        hasLoadedRef.current = true
+        return
+      }
+
       const accountIds = !isAllAccountsSelected && selectedAccountIds.length > 0 ? selectedAccountIds : undefined
       const [total, cats, merch, monthly] = await Promise.all([
         AnalyticsService.getSpendingTotal(start, end, accountIds),
@@ -75,7 +87,7 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
         setRefreshing(false)
       }
     }
-  }, [start, end, isAllAccountsSelected, selectedAccountIds])
+  }, [start, end, isAllAccountsSelected, selectedAccountIds, allAccountIds, accountsLoading])
 
   useEffect(() => {
     load()
