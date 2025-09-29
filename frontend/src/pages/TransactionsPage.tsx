@@ -19,7 +19,7 @@ const TransactionsPage: React.FC = () => {
     pageItems,
     totalItems,
     totalPages,
-  } = useTransactions({ pageSize: 10 })
+  } = useTransactions({ pageSize: 8 })
 
   return (
     <div className="space-y-4">
