@@ -1,48 +1,33 @@
 use anyhow::Context;
 use axum::{
     extract::{Path, Query, State},
-    http::{HeaderMap, StatusCode},
+    http::{HeaderMap, StatusCode, Uri},
     response::Json,
     routing::{delete, get, post, put},
     Router,
 };
 use chrono::Utc;
-use serde::Deserialize;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
 mod auth_middleware;
-mod services;
 mod config;
 mod models;
-mod traits;
+mod services;
 #[cfg(test)]
 mod tests;
+mod traits;
+mod utils;
 #[cfg(test)]
 pub use tests::test_fixtures;
 
-use crate::models::analytics::{BalanceCategory, CategorySpending, DailySpending, MonthlySpending, TopMerchant};
-use crate::models::plaid::{DisconnectResult, PlaidConnectionStatus};
-use services::{AnalyticsService, RealPlaidClient};
-use auth_middleware::auth_middleware;
-use crate::models::auth::{AuthContext, AuthMiddlewareState};
-use services::{
-    AuthService,
-    BudgetService,
-    CacheService,
-    ConnectionService,
-    PlaidService,
-    RedisCache,
-    SyncService,
-};
-use config::Config;
-use crate::models::{
-    api_error::ApiErrorResponse,
-    transaction::TransactionWithAccount,
-    auth::User,
+use crate::models::analytics::{
+    BalanceCategory, CategorySpending, DailySpending, MonthlySpending, TopMerchant,
 };
 use crate::models::app_state::AppState;
+use crate::models::auth::{AuthContext, AuthMiddlewareState};
+use crate::models::plaid::{DisconnectResult, PlaidConnectionStatus};
 use crate::models::{
     account::AccountResponse,
     analytics::{DateRangeQuery, MonthlyTotalsQuery},
@@ -51,9 +36,16 @@ use crate::models::{
     plaid::{ExchangeTokenRequest, LinkTokenRequest, SyncTransactionsRequest},
     transaction::{SyncMetadata, SyncTransactionsResponse, TransactionsQuery},
 };
+use crate::models::{api_error::ApiErrorResponse, auth::User, transaction::TransactionWithAccount};
+use auth_middleware::auth_middleware;
+use config::Config;
 use services::repository_service::{DatabaseRepository, PostgresRepository};
+use services::{AnalyticsService, RealPlaidClient};
+use services::{
+    AuthService, BudgetService, CacheService, ConnectionService, PlaidService, RedisCache,
+    SyncService,
+};
 use sqlx::PgPool;
-
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -147,7 +139,10 @@ pub fn create_app(state: AppState) -> Router {
         .route("/api/auth/logout", post(logout_user));
 
     let protected_routes = Router::new()
-        .route("/api/auth/onboarding/complete", put(complete_user_onboarding))
+        .route(
+            "/api/auth/onboarding/complete",
+            put(complete_user_onboarding),
+        )
         .route("/api/transactions", get(get_authenticated_transactions))
         .route(
             "/api/plaid/link-token",
@@ -468,9 +463,13 @@ async fn complete_user_onboarding(
             })))
         }
         Err(e) => {
-            tracing::error!("Failed to mark onboarding complete for user {}: {}", user_id, e);
+            tracing::error!(
+                "Failed to mark onboarding complete for user {}: {}",
+                user_id,
+                e
+            );
             Err(ApiErrorResponse::internal_server_error(
-                "Failed to update onboarding status"
+                "Failed to update onboarding status",
             ))
         }
     }
@@ -479,23 +478,52 @@ async fn complete_user_onboarding(
 async fn get_authenticated_transactions(
     State(state): State<AppState>,
     auth_context: AuthContext,
-    _headers: HeaderMap,
-    Query(params): Query<TransactionsQuery>,
+    Query(query): Query<TransactionsQuery>,
 ) -> Result<Json<Vec<TransactionWithAccount>>, StatusCode> {
     let user_id = auth_context.user_id;
+
+    let TransactionsQuery {
+        search,
+        account_ids,
+    } = query;
+    let account_ids_params = account_ids;
+
+    tracing::info!(
+        account_ids = ?account_ids_params,
+        search = ?search,
+        "Transactions query params"
+    );
+
+    if !account_ids_params.is_empty() {
+        utils::account_validation::validate_account_ownership(
+            &account_ids_params,
+            &user_id,
+            &state.db_repository,
+        )
+        .await?;
+    }
 
     match state
         .db_repository
         .get_transactions_with_account_for_user(&user_id)
         .await
     {
-        Ok(transactions) => {
-            if let Some(search) = params
-                .search
-                .as_ref()
-                .map(|s| s.trim())
-                .filter(|s| !s.is_empty())
-            {
+        Ok(mut transactions) => {
+            if !account_ids_params.is_empty() {
+                let account_ids: Vec<Uuid> = account_ids_params
+                    .iter()
+                    .filter_map(|s| Uuid::parse_str(s).ok())
+                    .collect();
+
+                let account_id_set: std::collections::HashSet<Uuid> =
+                    account_ids.into_iter().collect();
+                transactions = transactions
+                    .into_iter()
+                    .filter(|t| account_id_set.contains(&t.account_id))
+                    .collect();
+            }
+
+            if let Some(search) = search.as_ref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
                 let needle = search.to_lowercase();
                 let filtered: Vec<TransactionWithAccount> = transactions
                     .into_iter()
@@ -574,7 +602,7 @@ async fn exchange_authenticated_public_token(
                 tracing::warn!("Failed to cache access token: {}", e);
             }
 
-        let mut connection = crate::models::plaid::PlaidConnection::new(user_id, &real_item_id);
+            let mut connection = crate::models::plaid::PlaidConnection::new(user_id, &real_item_id);
 
             if let Some(inst_name) = &institution_name {
                 connection.mark_connected(inst_name);
@@ -673,6 +701,8 @@ async fn get_authenticated_plaid_accounts(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
+    let default_institution = connection.institution_name.clone();
+
     let account_responses: Vec<AccountResponse> = db_accounts
         .into_iter()
         .map(|account| {
@@ -687,6 +717,10 @@ async fn get_authenticated_plaid_accounts(
                 balance_current: account.balance_current,
                 mask: account.mask,
                 transaction_count: *transaction_count as i64,
+                institution_name: account
+                    .institution_name
+                    .clone()
+                    .or_else(|| default_institution.clone()),
             }
         })
         .collect();
@@ -984,8 +1018,6 @@ async fn sync_authenticated_plaid_transactions(
     }
 }
 
-
-
 async fn get_authenticated_current_month_spending(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -1014,7 +1046,7 @@ async fn get_authenticated_current_month_spending(
 async fn get_authenticated_daily_spending(
     State(state): State<AppState>,
     auth_context: AuthContext,
-    Query(params): Query<DailySpendingQuery>,
+    Query(params): Query<models::query::DailySpendingQuery>,
 ) -> Result<Json<Vec<DailySpending>>, StatusCode> {
     let user_id = auth_context.user_id;
 
@@ -1077,15 +1109,41 @@ async fn get_authenticated_spending_by_date_range(
     State(state): State<AppState>,
     auth_context: AuthContext,
     _headers: HeaderMap,
-    Query(params): Query<DateRangeQuery>,
+    uri: Uri,
 ) -> Result<Json<rust_decimal::Decimal>, StatusCode> {
     let user_id = auth_context.user_id;
-    let start = params
-        .start_date
+
+    let query_string = uri.query().unwrap_or("");
+    let mut start_date_param = None;
+    let mut end_date_param = None;
+    let mut account_ids_params = Vec::new();
+
+    for pair in query_string.split('&') {
+        if let Some((key, value)) = pair.split_once('=') {
+            match key {
+                "start_date" => start_date_param = Some(value.to_string()),
+                "end_date" => end_date_param = Some(value.to_string()),
+                "account_ids" | "account_ids[]" | "account_ids%5B%5D" => {
+                    account_ids_params.push(value.to_string())
+                }
+                _ => {}
+            }
+        }
+    }
+
+    if !account_ids_params.is_empty() {
+        utils::account_validation::validate_account_ownership(
+            &account_ids_params,
+            &user_id,
+            &state.db_repository,
+        )
+        .await?;
+    }
+
+    let start = start_date_param
         .as_deref()
         .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
-    let end = params
-        .end_date
+    let end = end_date_param
         .as_deref()
         .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
 
@@ -1094,11 +1152,29 @@ async fn get_authenticated_spending_by_date_range(
         .get_transactions_for_user(&user_id)
         .await
     {
-        Ok(transactions) => {
+        Ok(mut transactions) => {
+            if !account_ids_params.is_empty() {
+                let account_ids: Vec<Uuid> = account_ids_params
+                    .iter()
+                    .filter_map(|s| Uuid::parse_str(s).ok())
+                    .collect();
+
+                let account_id_set: std::collections::HashSet<Uuid> =
+                    account_ids.into_iter().collect();
+                transactions = transactions
+                    .into_iter()
+                    .filter(|t| account_id_set.contains(&t.account_id))
+                    .collect();
+            }
+
             let filtered = state
                 .analytics_service
                 .filter_by_date_range(&transactions, start, end);
-            let total: rust_decimal::Decimal = filtered.into_iter().map(|t| t.amount).sum();
+            let total: rust_decimal::Decimal = filtered
+                .into_iter()
+                .filter(|t| t.amount > rust_decimal::Decimal::ZERO)
+                .map(|t| t.amount)
+                .sum();
             Ok(Json(total))
         }
         Err(e) => {
@@ -1112,16 +1188,41 @@ async fn get_authenticated_category_spending(
     State(state): State<AppState>,
     auth_context: AuthContext,
     _headers: HeaderMap,
-    Query(params): Query<DateRangeQuery>,
+    uri: Uri,
 ) -> Result<Json<Vec<CategorySpending>>, StatusCode> {
     let user_id = auth_context.user_id;
 
-    let start_date = params
-        .start_date
+    let query_string = uri.query().unwrap_or("");
+    let mut start_date_param = None;
+    let mut end_date_param = None;
+    let mut account_ids_params = Vec::new();
+
+    for pair in query_string.split('&') {
+        if let Some((key, value)) = pair.split_once('=') {
+            match key {
+                "start_date" => start_date_param = Some(value.to_string()),
+                "end_date" => end_date_param = Some(value.to_string()),
+                "account_ids" | "account_ids[]" | "account_ids%5B%5D" => {
+                    account_ids_params.push(value.to_string())
+                }
+                _ => {}
+            }
+        }
+    }
+
+    if !account_ids_params.is_empty() {
+        utils::account_validation::validate_account_ownership(
+            &account_ids_params,
+            &user_id,
+            &state.db_repository,
+        )
+        .await?;
+    }
+
+    let start_date = start_date_param
         .as_ref()
         .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
-    let end_date = params
-        .end_date
+    let end_date = end_date_param
         .as_ref()
         .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
 
@@ -1130,7 +1231,21 @@ async fn get_authenticated_category_spending(
         .get_transactions_for_user(&user_id)
         .await
     {
-        Ok(transactions) => {
+        Ok(mut transactions) => {
+            if !account_ids_params.is_empty() {
+                let account_ids: Vec<Uuid> = account_ids_params
+                    .iter()
+                    .filter_map(|s| Uuid::parse_str(s).ok())
+                    .collect();
+
+                let account_id_set: std::collections::HashSet<Uuid> =
+                    account_ids.into_iter().collect();
+                transactions = transactions
+                    .into_iter()
+                    .filter(|t| account_id_set.contains(&t.account_id))
+                    .collect();
+            }
+
             let categories = state.analytics_service.group_by_category_with_date_range(
                 &transactions,
                 start_date,
@@ -1154,12 +1269,36 @@ async fn get_authenticated_monthly_totals(
     let user_id = auth_context.user_id;
     let months = params.months.unwrap_or(6);
 
+    let filtered_account_ids = if !params.account_ids.is_empty() {
+        let validated_ids = utils::account_validation::validate_account_ownership(
+            &params.account_ids,
+            &user_id,
+            &state.db_repository,
+        )
+        .await?;
+        Some(
+            validated_ids
+                .into_iter()
+                .collect::<std::collections::HashSet<_>>(),
+        )
+    } else {
+        None
+    };
+
     match state
         .db_repository
         .get_transactions_for_user(&user_id)
         .await
     {
         Ok(transactions) => {
+            let transactions = if let Some(ref allowed_ids) = filtered_account_ids {
+                transactions
+                    .into_iter()
+                    .filter(|t| allowed_ids.contains(&t.account_id))
+                    .collect()
+            } else {
+                transactions
+            };
             let monthly_totals = state
                 .analytics_service
                 .calculate_monthly_totals(&transactions, months);
@@ -1190,12 +1329,36 @@ async fn get_authenticated_top_merchants(
         .as_ref()
         .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
 
+    let filtered_account_ids = if !params.account_ids.is_empty() {
+        let validated_ids = utils::account_validation::validate_account_ownership(
+            &params.account_ids,
+            &user_id,
+            &state.db_repository,
+        )
+        .await?;
+        Some(
+            validated_ids
+                .into_iter()
+                .collect::<std::collections::HashSet<_>>(),
+        )
+    } else {
+        None
+    };
+
     match state
         .db_repository
         .get_transactions_for_user(&user_id)
         .await
     {
         Ok(transactions) => {
+            let transactions = if let Some(ref allowed_ids) = filtered_account_ids {
+                transactions
+                    .into_iter()
+                    .filter(|t| allowed_ids.contains(&t.account_id))
+                    .collect()
+            } else {
+                transactions
+            };
             let top_merchants = state.analytics_service.get_top_merchants_with_date_range(
                 &transactions,
                 start_date,
@@ -1238,7 +1401,8 @@ async fn get_authenticated_budgets(
 
     let cache_key = format!("budgets:user:{}", user_id);
     if let Ok(Some(serialized)) = state.cache_service.get_string(&cache_key).await {
-        if let Ok(cached) = serde_json::from_str::<Vec<crate::models::budget::Budget>>(&serialized) {
+        if let Ok(cached) = serde_json::from_str::<Vec<crate::models::budget::Budget>>(&serialized)
+        {
             return Ok(Json(cached));
         }
     }
@@ -1421,19 +1585,44 @@ async fn health_check() -> &'static str {
     "OK"
 }
 
-#[derive(Deserialize)]
-struct DailySpendingQuery {
-    month: Option<String>, // Format: YYYY-MM
-}
-
-
 async fn get_authenticated_balances_overview(
     State(state): State<AppState>,
     auth_context: AuthContext,
+    uri: Uri,
 ) -> Result<Json<models::analytics::BalancesOverviewResponse>, StatusCode> {
     let user_id = auth_context.user_id;
 
-    let cache_key = format!("{}_balances_overview", auth_context.jwt_id);
+    let query_string = uri.query().unwrap_or("");
+    let mut account_ids_params = Vec::new();
+    for pair in query_string.split('&') {
+        if let Some((key, value)) = pair.split_once('=') {
+            if matches!(key, "account_ids" | "account_ids[]" | "account_ids%5B%5D") {
+                account_ids_params.push(value.to_string());
+            }
+        }
+    }
+
+    let filtered_account_ids = if !account_ids_params.is_empty() {
+        let validated_account_ids = utils::account_validation::validate_account_ownership(
+            &account_ids_params,
+            &user_id,
+            &state.db_repository,
+        )
+        .await?;
+        Some(
+            validated_account_ids
+                .into_iter()
+                .collect::<std::collections::HashSet<_>>(),
+        )
+    } else {
+        None
+    };
+
+    let base_cache_key = format!("{}_balances_overview", auth_context.jwt_id);
+    let cache_key = utils::cache_keys::generate_cache_key_with_account_filter(
+        &base_cache_key,
+        filtered_account_ids.as_ref(),
+    );
     if let Ok(Some(serialized)) = state.cache_service.get_string(&cache_key).await {
         if let Ok(cached) =
             serde_json::from_str::<models::analytics::BalancesOverviewResponse>(&serialized)
@@ -1458,6 +1647,11 @@ async fn get_authenticated_balances_overview(
     let mut name_map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
     let mut mixed_currency = false;
     for row in latest_rows.into_iter() {
+        if let Some(ref filter_ids) = filtered_account_ids {
+            if !filter_ids.contains(&row.account_id) {
+                continue;
+            }
+        }
         if row.currency.to_uppercase() != "USD" {
             mixed_currency = true;
             continue;
@@ -1510,6 +1704,11 @@ async fn get_authenticated_balances_overview(
                 StatusCode::INTERNAL_SERVER_ERROR
             })?;
         for acc in accounts.into_iter() {
+            if let Some(ref filter_ids) = filtered_account_ids {
+                if !filter_ids.contains(&acc.id) {
+                    continue;
+                }
+            }
             let bal = acc.balance_current.unwrap_or(rust_decimal::Decimal::ZERO);
             latest_map
                 .entry("unknown_institution".to_string())
@@ -1633,10 +1832,26 @@ async fn get_authenticated_net_worth_over_time(
         _ => return Err(StatusCode::BAD_REQUEST),
     };
 
+    let filtered_account_ids = if !params.account_ids.is_empty() {
+        let validated_ids = utils::account_validation::validate_account_ownership(
+            &params.account_ids,
+            &user_id,
+            &state.db_repository,
+        )
+        .await?;
+        Some(validated_ids.into_iter().collect::<HashSet<_>>())
+    } else {
+        None
+    };
+
     // Cache lookup
-    let cache_key = format!(
+    let base_cache_key = format!(
         "{}_net_worth_over_time_{}_{}",
         auth_context.jwt_id, start_date, end_date
+    );
+    let cache_key = utils::cache_keys::generate_cache_key_with_account_filter(
+        &base_cache_key,
+        filtered_account_ids.as_ref(),
     );
     if let Ok(Some(serialized)) = state.cache_service.get_string(&cache_key).await {
         if let Ok(cached) =
@@ -1659,6 +1874,11 @@ async fn get_authenticated_net_worth_over_time(
     let mut depository_ids: HashSet<uuid::Uuid> = HashSet::new();
     let mut balance_current_by_id: HashMap<uuid::Uuid, Decimal> = HashMap::new();
     for acc in accounts.into_iter() {
+        if let Some(ref allowed_ids) = filtered_account_ids {
+            if !allowed_ids.contains(&acc.id) {
+                continue;
+            }
+        }
         if acc.account_type.to_lowercase() == "depository" {
             depository_ids.insert(acc.id);
             balance_current_by_id
@@ -1693,6 +1913,11 @@ async fn get_authenticated_net_worth_over_time(
     let mut flows_by_account: HashMap<uuid::Uuid, BTreeMap<chrono::NaiveDate, Decimal>> =
         HashMap::new();
     for t in txns.into_iter() {
+        if let Some(ref allowed_ids) = filtered_account_ids {
+            if !allowed_ids.contains(&t.account_id) {
+                continue;
+            }
+        }
         if !depository_ids.contains(&t.account_id) {
             continue;
         }
@@ -1747,7 +1972,9 @@ async fn get_authenticated_net_worth_over_time(
 
         day = day.succ_opt().unwrap_or(day);
         if day == end_date { /* loop condition handles push next */ }
-        if day > end_date { break; }
+        if day > end_date {
+            break;
+        }
     }
 
     let response = models::analytics::NetWorthOverTimeResponse {

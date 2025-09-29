@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Budget, Transaction } from '../../../types/api'
 import { BudgetService } from '../../../services/BudgetService'
 import { TransactionService } from '../../../services/TransactionService'
+import { useAccountFilter } from '../../../hooks/useAccountFilter'
 import { optimisticCreate } from '../../../utils/optimistic'
 import { formatCategoryName } from '../../../utils/categories'
 
@@ -43,6 +44,8 @@ export function useBudgets(): UseBudgetsResult {
   const [month, setMonthState] = useState(() => normalizeMonth(new Date()))
   const [budgetsReady, setBudgetsReady] = useState(false)
 
+  const { selectedAccountIds, isAllAccountsSelected, allAccountIds, loading: accountsLoading } = useAccountFilter()
+
   const loadedRef = useRef(false)
   const lastRangeRef = useRef<string | null>(null)
   const monthFormatter = useMemo(() => new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }), [])
@@ -51,18 +54,36 @@ export function useBudgets(): UseBudgetsResult {
   const monthLabel = useMemo(() => monthFormatter.format(month), [month, monthFormatter])
 
   const loadTransactions = useCallback(async (start: string, end: string) => {
-    const key = `${start}:${end}`
+    const shouldFilter = selectedAccountIds.length > 0 && !isAllAccountsSelected
+    const keySuffix = selectedAccountIds.length === 0 && allAccountIds.length > 0
+      ? 'none'
+      : shouldFilter
+        ? selectedAccountIds.join(',')
+        : 'all'
+
+    const key = `${start}:${end}:${keySuffix}`
     lastRangeRef.current = key
+
+    if (accountsLoading) {
+      return
+    }
+
+    if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
+      setTransactions([])
+      return
+    }
+
+    const accountIds = shouldFilter ? selectedAccountIds : undefined
     setTransactionsLoading(true)
     try {
-      const items = await TransactionService.getTransactions({ startDate: start, endDate: end })
+      const items = await TransactionService.getTransactions({ startDate: start, endDate: end, accountIds })
       setTransactions(items)
     } catch {
       setTransactions([])
     } finally {
       setTransactionsLoading(false)
     }
-  }, [])
+  }, [allAccountIds, isAllAccountsSelected, selectedAccountIds, accountsLoading])
 
   const load = useCallback(async () => {
     setError(null)
@@ -98,10 +119,17 @@ export function useBudgets(): UseBudgetsResult {
 
   useEffect(() => {
     if (!budgetsReady) return
-    const key = `${range.start}:${range.end}`
+    const shouldFilter = selectedAccountIds.length > 0 && !isAllAccountsSelected
+    const keySuffix = selectedAccountIds.length === 0 && allAccountIds.length > 0
+      ? 'none'
+      : shouldFilter
+        ? selectedAccountIds.join(',')
+        : 'all'
+
+    const key = `${range.start}:${range.end}:${keySuffix}`
     if (key === lastRangeRef.current) return
     loadTransactions(range.start, range.end)
-  }, [budgetsReady, loadTransactions, range.end, range.start])
+  }, [budgetsReady, loadTransactions, range.end, range.start, isAllAccountsSelected, selectedAccountIds, allAccountIds])
 
   const categories = useMemo(() => budgets.map(b => b.category).sort(), [budgets])
 
@@ -248,4 +276,3 @@ function generateId(): string {
   }
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
-

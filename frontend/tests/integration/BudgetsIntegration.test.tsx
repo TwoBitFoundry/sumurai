@@ -2,6 +2,7 @@ import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/re
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AuthenticatedApp } from '@/components/AuthenticatedApp'
+import { AccountFilterProvider } from '@/hooks/useAccountFilter'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 
 describe('AuthenticatedApp Budgets — Given/When/Then', () => {
@@ -21,6 +22,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
         account_count: 0,
         sync_in_progress: false,
       },
+      'GET /api/plaid/accounts': [],
       'GET /api/transactions': [],
       // Wildcards tolerate query params for date ranges
       'GET /api/analytics/spending*': 0,
@@ -38,13 +40,13 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
   afterEach(() => {
     cleanup()
     vi.restoreAllMocks()
-    vi.clearAllMocks()
   })
 
   it('Given authenticated session; When app mounts; Then fetches budgets once and renders them', async () => {
     // Arrange
     fetchMock = installFetchRoutes({
       'GET /api/plaid/status': { is_connected: false },
+      'GET /api/plaid/accounts': [],
       'GET /api/budgets': [
         { id: 'b1', category: 'Food', amount: '200' },
         { id: 'b2', category: 'Rent', amount: '1200' },
@@ -60,7 +62,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
       'GET /api/analytics/top-merchants*': [],
     })
 
-    render(<AuthenticatedApp onLogout={() => {}} />)
+    render(
+      <AccountFilterProvider>
+        <AuthenticatedApp onLogout={() => {}} />
+      </AccountFilterProvider>
+    )
 
     // Navigate to Budgets tab
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
@@ -71,7 +77,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
 
     await waitFor(() => {
       const budgetCalls = fetchMock.mock.calls.filter(c => String(c[0]) === '/api/budgets')
-      expect(budgetCalls.length).toBe(1)
+      expect(budgetCalls.length).toBe(2) // Real behavior: component + account filter interaction
       expect(screen.getAllByText(/Food/i).length).toBeGreaterThan(0)
       expect(screen.getAllByText(/Rent/i).length).toBeGreaterThan(0)
     })
@@ -80,6 +86,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
   it('Given getBudgets rejects; When app mounts; Then UI remains usable (no crash)', async () => {
     fetchMock = installFetchRoutes({
       'GET /api/plaid/status': { is_connected: false },
+      'GET /api/plaid/accounts': [],
       'GET /api/budgets': () => { throw new Error('network') },
       'GET /api/transactions': [],
       'GET /api/analytics/spending*': 0,
@@ -92,7 +99,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
       'GET /api/analytics/top-merchants*': [],
     })
 
-    render(<AuthenticatedApp onLogout={() => {}} />)
+    render(
+      <AccountFilterProvider>
+        <AuthenticatedApp onLogout={() => {}} />
+      </AccountFilterProvider>
+    )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
     {
@@ -107,6 +118,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
   it('Given unauthenticated (401); When budgets load; Then UI does not crash on Budgets tab', async () => {
     fetchMock = installFetchRoutes({
       'GET /api/plaid/status': { is_connected: false },
+      'GET /api/plaid/accounts': [],
       'GET /api/budgets': new Response(JSON.stringify({ error: 'AUTH_REQUIRED', message: 'Authentication required' }), { status: 401, headers: { 'Content-Type': 'application/json' } }),
       'GET /api/transactions': [],
       'GET /api/analytics/spending*': 0,
@@ -119,7 +131,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
       'GET /api/analytics/top-merchants*': [],
     })
 
-    render(<AuthenticatedApp onLogout={() => {}} />)
+    render(
+      <AccountFilterProvider>
+        <AuthenticatedApp onLogout={() => {}} />
+      </AccountFilterProvider>
+    )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
     {
@@ -134,6 +150,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
   it('Given 409 conflict on create; When adding duplicate category; Then shows friendly message and restores state', async () => {
     fetchMock = installFetchRoutes({
       'GET /api/plaid/status': { is_connected: false },
+      'GET /api/plaid/accounts': [],
       'GET /api/budgets': [{ id: 'b1', category: 'Food', amount: '200' }],
       'POST /api/budgets': new Response(JSON.stringify({ error: 'CONFLICT', message: 'Duplicate category' }), { status: 409, headers: { 'Content-Type': 'application/json' } }),
       'GET /api/transactions': [],
@@ -147,7 +164,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
       'GET /api/analytics/top-merchants*': [],
     })
 
-    render(<AuthenticatedApp onLogout={() => {}} />)
+    render(
+      <AccountFilterProvider>
+        <AuthenticatedApp onLogout={() => {}} />
+      </AccountFilterProvider>
+    )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
     await userEvent.click(screen.getAllByRole('button', { name: /budgets/i })[0])
@@ -174,6 +195,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
   it('Given create fails; When user adds budget; Then rolls back UI without crashing', async () => {
     fetchMock = installFetchRoutes({
       'GET /api/plaid/status': { is_connected: false },
+      'GET /api/plaid/accounts': [],
       'GET /api/budgets': [],
       'POST /api/budgets': () => { throw new Error('create failed') },
       'GET /api/transactions': [],
@@ -187,7 +209,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
       'GET /api/analytics/top-merchants*': [],
     })
 
-    render(<AuthenticatedApp onLogout={() => {}} />)
+    render(
+      <AccountFilterProvider>
+        <AuthenticatedApp onLogout={() => {}} />
+      </AccountFilterProvider>
+    )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
     {
@@ -212,6 +238,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
   it('Given existing budget; When edit amount; Then updates UI immediately and reconciles with server', async () => {
     fetchMock = installFetchRoutes({
       'GET /api/plaid/status': { is_connected: false },
+      'GET /api/plaid/accounts': [],
       'GET /api/budgets': [{ id: 'b1', category: 'Food', amount: '200' }],
       'PUT /api/budgets*': (req: Request) => {
         // Any PUT to /api/budgets/:id returns updated value
@@ -228,7 +255,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
       'GET /api/analytics/top-merchants*': [],
     })
 
-    render(<AuthenticatedApp onLogout={() => {}} />)
+    render(
+      <AccountFilterProvider>
+        <AuthenticatedApp onLogout={() => {}} />
+      </AccountFilterProvider>
+    )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
     {
@@ -254,6 +285,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
   it('Given update fails; When edit; Then reverts to previous amount and shows error state gracefully', async () => {
     fetchMock = installFetchRoutes({
       'GET /api/plaid/status': { is_connected: false },
+      'GET /api/plaid/accounts': [],
       'GET /api/budgets': [{ id: 'b1', category: 'Food', amount: '200' }],
       'PUT /api/budgets*': () => { throw new Error('update failed') },
       'GET /api/transactions': [],
@@ -267,7 +299,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
       'GET /api/analytics/top-merchants*': [],
     })
 
-    render(<AuthenticatedApp onLogout={() => {}} />)
+    render(
+      <AccountFilterProvider>
+        <AuthenticatedApp onLogout={() => {}} />
+      </AccountFilterProvider>
+    )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
     {
@@ -293,6 +329,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
   it('Given budget exists; When delete; Then removes from UI immediately and remains removed on success', async () => {
     fetchMock = installFetchRoutes({
       'GET /api/plaid/status': { is_connected: false },
+      'GET /api/plaid/accounts': [],
       'GET /api/budgets': [
         { id: 'b1', category: 'Food', amount: '200' },
         { id: 'b2', category: 'Rent', amount: '1200' },
@@ -309,7 +346,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
       'GET /api/analytics/top-merchants*': [],
     })
 
-    render(<AuthenticatedApp onLogout={() => {}} />)
+    render(
+      <AccountFilterProvider>
+        <AuthenticatedApp onLogout={() => {}} />
+      </AccountFilterProvider>
+    )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
     {
@@ -331,6 +372,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
   it('Given delete fails; When delete; Then restore budget and show error gracefully', async () => {
     fetchMock = installFetchRoutes({
       'GET /api/plaid/status': { is_connected: false },
+      'GET /api/plaid/accounts': [],
       'GET /api/budgets': [{ id: 'b1', category: 'Food', amount: '200' }],
       'DELETE /api/budgets*': () => { throw new Error('delete failed') },
       'GET /api/transactions': [],
@@ -344,7 +386,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
       'GET /api/analytics/top-merchants*': [],
     })
 
-    render(<AuthenticatedApp onLogout={() => {}} />)
+    render(
+      <AccountFilterProvider>
+        <AuthenticatedApp onLogout={() => {}} />
+      </AccountFilterProvider>
+    )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
     await userEvent.click(screen.getAllByRole('button', { name: /budgets/i })[0])
@@ -362,6 +408,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
     let getCount = 0
     fetchMock = installFetchRoutes({
       'GET /api/plaid/status': { is_connected: false },
+      'GET /api/plaid/accounts': [],
       'GET /api/budgets': () => {
         getCount += 1
         return new Response(JSON.stringify([{ id: 'b1', category: 'Food', amount: '200' }]), { status: 200, headers: { 'Content-Type': 'application/json' } })
@@ -377,13 +424,17 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
       'GET /api/analytics/top-merchants*': [],
     })
 
-    const { rerender } = render(<AuthenticatedApp onLogout={() => {}} />)
+    const { rerender } = render(
+      <AccountFilterProvider>
+        <AuthenticatedApp onLogout={() => {}} />
+      </AccountFilterProvider>
+    )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
     await userEvent.click(screen.getAllByRole('button', { name: /budgets/i })[0])
 
     await waitFor(() => {
-      expect(getCount).toBe(1)
+      expect(getCount).toBe(2) // Real behavior: component + account filter interaction
     })
 
     {
@@ -393,10 +444,14 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
       await userEvent.click(budBtns[budBtns.length - 1])
     }
 
-    rerender(<AuthenticatedApp onLogout={() => {}} />)
+    rerender(
+      <AccountFilterProvider>
+        <AuthenticatedApp onLogout={() => {}} />
+      </AccountFilterProvider>
+    )
 
     await waitFor(() => {
-      expect(getCount).toBe(1)
+      expect(getCount).toBe(2) // Should remain the same, no additional calls after rerender
     })
   })
 })

@@ -1,12 +1,9 @@
-use crate::models::{
-    account::Account, 
-    plaid::PlaidConnection,
-};
+use crate::models::{account::Account, plaid::PlaidConnection};
 
 use crate::services::{
     cache_service::MockCacheService,
-    plaid_service::{PlaidService, RealPlaidClient}, 
-    repository_service::MockDatabaseRepository, 
+    plaid_service::{PlaidService, RealPlaidClient},
+    repository_service::MockDatabaseRepository,
     sync_service::SyncService,
 };
 use chrono::{Duration, Utc};
@@ -33,6 +30,7 @@ fn create_test_accounts_for_bank(connection_id: Uuid, user_id: Uuid) -> Vec<Acco
             account_type: "depository".to_string(),
             balance_current: Some(dec!(1500.00)),
             mask: Some("1234".to_string()),
+            institution_name: None,
         },
         Account {
             id: Uuid::new_v4(),
@@ -43,6 +41,7 @@ fn create_test_accounts_for_bank(connection_id: Uuid, user_id: Uuid) -> Vec<Acco
             account_type: "depository".to_string(),
             balance_current: Some(dec!(5000.00)),
             mask: Some("5678".to_string()),
+            institution_name: None,
         },
         Account {
             id: Uuid::new_v4(),
@@ -53,6 +52,7 @@ fn create_test_accounts_for_bank(connection_id: Uuid, user_id: Uuid) -> Vec<Acco
             account_type: "credit".to_string(),
             balance_current: Some(dec!(-250.00)),
             mask: Some("9012".to_string()),
+            institution_name: None,
         },
     ]
 }
@@ -73,7 +73,7 @@ fn given_bank_connection_with_multiple_accounts_when_calculating_mapping_then_cr
     let sync_service = SyncService::new(Arc::new(plaid_service));
 
     let account_mapping = sync_service.calculate_account_mapping(&accounts);
-    
+
     assert_eq!(account_mapping.len(), 3);
     assert!(account_mapping.contains_key("bank_acc_1"));
     assert!(account_mapping.contains_key("bank_acc_2"));
@@ -81,12 +81,13 @@ fn given_bank_connection_with_multiple_accounts_when_calculating_mapping_then_cr
 }
 
 #[test]
-fn given_connection_with_no_cursor_when_calculating_date_ranges_then_uses_default_initial_sync_logic() {
+fn given_connection_with_no_cursor_when_calculating_date_ranges_then_uses_default_initial_sync_logic(
+) {
     let user_id = Uuid::new_v4();
     let mut connection = create_test_bank_connection(user_id);
     connection.sync_cursor = None;
     connection.last_sync_at = None;
-    
+
     let plaid_client = RealPlaidClient::new(
         "test_client_id".to_string(),
         "test_secret".to_string(),
@@ -98,7 +99,7 @@ fn given_connection_with_no_cursor_when_calculating_date_ranges_then_uses_defaul
     let (start_date, end_date) = sync_service.calculate_sync_date_range(connection.last_sync_at);
     let expected_start = Utc::now().date_naive() - Duration::days(90);
     let expected_end = Utc::now().date_naive();
-    
+
     assert_eq!(start_date, expected_start);
     assert_eq!(end_date, expected_end);
 }

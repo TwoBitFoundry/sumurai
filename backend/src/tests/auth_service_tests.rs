@@ -1,5 +1,5 @@
-use crate::services::auth_service::*;
 use crate::models::auth::AuthError;
+use crate::services::auth_service::*;
 use chrono::Utc;
 use uuid::Uuid;
 

@@ -1,11 +1,8 @@
-use crate::models::{
-    account::Account, 
-    transaction::Transaction
-};
+use crate::models::{account::Account, transaction::Transaction};
 
 use crate::services::{
     plaid_service::{PlaidService, RealPlaidClient},
-    sync_service::SyncService
+    sync_service::SyncService,
 };
 
 use chrono::{Duration, NaiveDate, Utc};
@@ -36,6 +33,7 @@ fn test_calculate_account_mapping_creates_correct_mapping() {
             account_type: "depository".into(),
             balance_current: Some(dec!(100.00)),
             mask: Some("1234".to_string()),
+            institution_name: None,
         },
         Account {
             id: Uuid::new_v4(),
@@ -46,6 +44,7 @@ fn test_calculate_account_mapping_creates_correct_mapping() {
             account_type: "depository".into(),
             balance_current: Some(dec!(200.00)),
             mask: Some("5678".to_string()),
+            institution_name: None,
         },
     ];
 
@@ -70,6 +69,7 @@ fn test_calculate_account_mapping_handles_accounts_without_plaid_ids() {
         account_type: "manual".to_string(),
         balance_current: Some(dec!(500.00)),
         mask: None,
+        institution_name: None,
     }];
 
     let mapping = sync_service.calculate_account_mapping(&accounts);
@@ -179,7 +179,7 @@ mod sync_recent_transactions_integration_tests {
         let (start_date, end_date) = sync_service.calculate_sync_date_range(None);
         let expected_start = Utc::now().date_naive() - Duration::days(90);
         let expected_end = Utc::now().date_naive();
-        
+
         assert_eq!(start_date, expected_start);
         assert_eq!(end_date, expected_end);
     }
@@ -189,7 +189,7 @@ mod sync_recent_transactions_integration_tests {
     ) {
         let last_sync = Utc::now() - Duration::days(3);
         let sync_service = create_test_sync_service_for_integration();
-        
+
         let (start_date, end_date) = sync_service.calculate_sync_date_range(Some(last_sync));
         let expected_end = Utc::now().date_naive();
         let expected_start = (last_sync - Duration::days(2)).date_naive();

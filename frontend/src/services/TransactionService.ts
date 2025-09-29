@@ -1,6 +1,7 @@
 import { ApiClient } from './ApiClient'
 import type { Transaction } from '../types/api'
 import { formatCategoryName } from '../utils/categories'
+import { appendAccountQueryParams } from '../utils/queryParams'
 
 export interface TransactionFilters {
   startDate?: string
@@ -9,6 +10,7 @@ export interface TransactionFilters {
   searchTerm?: string
   search?: string
   dateRange?: string
+  accountIds?: string[]
 }
 
 interface BackendTransaction {
@@ -25,17 +27,18 @@ interface BackendTransaction {
 export class TransactionService {
   static async getTransactions(filters?: TransactionFilters): Promise<Transaction[]> {
     let endpoint = '/transactions'
-    
+
     if (filters) {
       const params = new URLSearchParams()
-      
+
       if (filters.startDate) params.append('startDate', filters.startDate)
       if (filters.endDate) params.append('endDate', filters.endDate)
       if (filters.categoryId) params.append('categoryId', filters.categoryId)
       if (filters.searchTerm) params.append('searchTerm', filters.searchTerm)
       if (filters.search) params.append('search', filters.search)
       if (filters.dateRange) params.append('dateRange', filters.dateRange)
-      
+      appendAccountQueryParams(params, filters.accountIds)
+
       const queryString = params.toString()
       if (queryString) {
         endpoint += `?${queryString}`

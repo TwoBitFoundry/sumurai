@@ -1,7 +1,9 @@
-import { render, screen, cleanup } from '@testing-library/react'
+import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { AuthenticatedApp } from '@/components/AuthenticatedApp'
+import { AccountFilterProvider } from '@/hooks/useAccountFilter'
+import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 
 type DashboardProps = { dark: boolean }
 
@@ -32,9 +34,40 @@ vi.mock('@/pages/ConnectPage', () => ({
 describe('AuthenticatedApp shell', () => {
   const onLogout = vi.fn()
   const setDark = vi.fn()
+  let fetchMock: ReturnType<typeof installFetchRoutes>
 
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
+
+    fetchMock = installFetchRoutes({
+      'GET /api/plaid/accounts': [
+        {
+          id: 'account1',
+          name: 'Test Checking',
+          account_type: 'depository',
+          balance_current: 1200,
+          mask: '1111',
+          plaid_connection_id: 'conn_1',
+          institution_name: 'Test Bank'
+        },
+        {
+          id: 'account2',
+          name: 'Test Savings',
+          account_type: 'depository',
+          balance_current: 5400,
+          mask: '2222',
+          plaid_connection_id: 'conn_1',
+          institution_name: 'Test Bank'
+        }
+      ],
+      'GET /api/plaid/status': {
+        is_connected: true,
+        institution_name: 'Test Bank',
+        connection_id: 'conn_1'
+      }
+    })
+
     DashboardPageMock = vi.fn(({ dark }: DashboardProps) => (
       <div data-testid="dashboard-page">dashboard-{dark ? 'dark' : 'light'}</div>
     ))
@@ -55,10 +88,15 @@ describe('AuthenticatedApp shell', () => {
   afterEach(() => {
     cleanup()
     vi.clearAllMocks()
+    localStorage.clear()
   })
 
   const renderApp = (dark = false) =>
-    render(<AuthenticatedApp onLogout={onLogout} dark={dark} setDark={setDark} />)
+    render(
+      <AccountFilterProvider>
+        <AuthenticatedApp onLogout={onLogout} dark={dark} setDark={setDark} />
+      </AccountFilterProvider>
+    )
 
   it('renders dashboard by default', () => {
     renderApp()
@@ -119,5 +157,26 @@ describe('AuthenticatedApp shell', () => {
     renderApp(true)
     expect(DashboardPageMock).toHaveBeenCalledWith(expect.objectContaining({ dark: true }))
     expect(DashboardPageMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('includes HeaderAccountFilter in the header', async () => {
+    renderApp()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /all accounts/i })).toBeInTheDocument()
+    })
+  })
+
+  it('maintains responsive layout with HeaderAccountFilter', async () => {
+    renderApp()
+    const header = screen.getByRole('banner')
+    expect(header).toBeInTheDocument()
+
+    await waitFor(() => {
+      const accountFilter = screen.getByRole('button', { name: /all accounts/i })
+      expect(accountFilter).toBeInTheDocument()
+    })
+
+    const nav = screen.getByRole('navigation', { name: /primary/i })
+    expect(nav).toBeInTheDocument()
   })
 })

@@ -1,7 +1,7 @@
 use chrono::{NaiveDate, Utc};
 use rust_decimal_macros::dec;
-use uuid::Uuid;
 use std::sync::Arc;
+use uuid::Uuid;
 
 use crate::models::{auth::User, transaction::Transaction};
 
@@ -14,7 +14,7 @@ use crate::services::{
     plaid_service::{PlaidService, RealPlaidClient},
     repository_service::DatabaseRepository,
     repository_service::MockDatabaseRepository,
-    sync_service::SyncService
+    sync_service::SyncService,
 };
 
 use crate::{create_app, AppState, Config, Router};

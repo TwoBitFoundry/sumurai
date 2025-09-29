@@ -1,6 +1,6 @@
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
+use serde::{de::IgnoredAny, Deserialize, Deserializer, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -42,9 +42,75 @@ pub struct TransactionWithAccount {
     pub account_mask: Option<String>,
 }
 
-#[derive(Deserialize)]
 pub struct TransactionsQuery {
     pub search: Option<String>,
+    pub account_ids: Vec<String>,
+}
+
+impl<'de> Deserialize<'de> for TransactionsQuery {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct TransactionsQueryVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for TransactionsQueryVisitor {
+            type Value = TransactionsQuery;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("transactions query parameters")
+            }
+
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::MapAccess<'de>,
+            {
+                let mut search: Option<Option<String>> = None;
+                let mut account_ids: Vec<String> = Vec::new();
+
+                while let Some(key) = map.next_key::<String>()? {
+                    match key.as_str() {
+                        "search" => {
+                            if search.is_some() {
+                                return Err(serde::de::Error::duplicate_field("search"));
+                            }
+                            search = Some(map.next_value()?);
+                        }
+                        "account_ids" | "account_ids[]" | "account_ids%5B%5D" => {
+                            let values: VecOrOne<String> = map.next_value()?;
+                            account_ids.extend(values.into_vec());
+                        }
+                        _ => {
+                            map.next_value::<IgnoredAny>()?;
+                        }
+                    }
+                }
+
+                Ok(TransactionsQuery {
+                    search: search.unwrap_or(None),
+                    account_ids,
+                })
+            }
+        }
+
+        deserializer.deserialize_map(TransactionsQueryVisitor)
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum VecOrOne<T> {
+    Vec(Vec<T>),
+    One(T),
+}
+
+impl<T> VecOrOne<T> {
+    fn into_vec(self) -> Vec<T> {
+        match self {
+            VecOrOne::Vec(vec) => vec,
+            VecOrOne::One(item) => vec![item],
+        }
+    }
 }
 
 #[derive(Serialize)]

@@ -1,12 +1,10 @@
 use std::sync::Arc;
 
 use crate::config::Config;
-use crate::services::{
-    AuthService, BudgetService, CacheService, ConnectionService,
-};
-use crate::services::repository_service::DatabaseRepository;
 use crate::services::plaid_service::{PlaidService, RealPlaidClient};
+use crate::services::repository_service::DatabaseRepository;
 use crate::services::sync_service::SyncService;
+use crate::services::{AuthService, BudgetService, CacheService, ConnectionService};
 
 // Application state shared across handlers
 pub struct AppState {
@@ -38,4 +36,3 @@ impl Clone for AppState {
         }
     }
 }
-

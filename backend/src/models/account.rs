@@ -12,6 +12,7 @@ pub struct Account {
     pub account_type: String,
     pub balance_current: Option<Decimal>,
     pub mask: Option<String>,
+    pub institution_name: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -25,4 +26,5 @@ pub struct AccountResponse {
     pub balance_current: Option<rust_decimal::Decimal>,
     pub mask: Option<String>,
     pub transaction_count: i64,
+    pub institution_name: Option<String>,
 }

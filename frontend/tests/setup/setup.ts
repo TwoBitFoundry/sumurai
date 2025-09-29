@@ -24,11 +24,16 @@ if (!(globalThis as any).cancelAnimationFrame) {
   ;(globalThis as any).cancelAnimationFrame = (id: number) => clearTimeout(id as unknown as any)
 }
 
-if (!(globalThis as any).scrollTo) {
-  ;(globalThis as any).scrollTo = () => {}
-}
-if (typeof window !== 'undefined' && !window.scrollTo) {
-  window.scrollTo = () => {}
+Object.defineProperty(globalThis, 'scrollTo', {
+  value: () => {},
+  writable: true
+})
+
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'scrollTo', {
+    value: () => {},
+    writable: true
+  })
 }
 
 Object.defineProperty(window, 'localStorage', {

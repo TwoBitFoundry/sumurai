@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { RefreshCcw } from 'lucide-react'
 import Card from '../components/ui/Card'
 import BalancesOverview from '../components/BalancesOverview'
 import { SpendingByCategoryChart } from '../features/analytics/components/SpendingByCategoryChart'
@@ -21,10 +22,13 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
   const [showTimeBar, setShowTimeBar] = useState(false)
 
   const analytics = useAnalytics(dateRange)
+  const analyticsLoading = analytics.loading
+  const analyticsRefreshing = analytics.refreshing
   const byCat = useMemo(() => categoriesToDonut(analytics.categories), [analytics.categories])
   const netWorth = useNetWorthSeries(dateRange)
   const netSeries = netWorth.series
   const netLoading = netWorth.loading
+  const netRefreshing = netWorth.refreshing
   const netError = netWorth.error
 
   useEffect(() => {
@@ -85,8 +89,16 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
 
       <div ref={spendingOverviewRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
         <Card className="h-full">
-          <div className="text-sm text-slate-600 dark:text-slate-400 mb-4 font-medium">Spending</div>
-          {analytics.loading && (
+          <div className="mb-4 flex items-center justify-between">
+            <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Spending</div>
+            {!analyticsLoading && analyticsRefreshing && (
+              <RefreshCcw
+                aria-label="Refreshing analytics"
+                className="h-4 w-4 text-slate-500 dark:text-slate-400 animate-spin"
+              />
+            )}
+          </div>
+          {analyticsLoading && (
             <div className="mb-2 text-xs text-slate-500 dark:text-slate-400">Loading analytics...</div>
           )}
           <SpendingByCategoryChart
@@ -138,12 +150,28 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
         </Card>
 
         <Card className="h-full">
-          <div className="text-sm text-slate-600 dark:text-slate-400 mb-3 font-medium">Top Merchants</div>
+          <div className="mb-3 flex items-center justify-between">
+            <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Top Merchants</div>
+            {!analyticsLoading && analyticsRefreshing && (
+              <RefreshCcw
+                aria-label="Refreshing analytics"
+                className="h-4 w-4 text-slate-500 dark:text-slate-400 animate-spin"
+              />
+            )}
+          </div>
           <TopMerchantsList merchants={analytics.topMerchants} />
         </Card>
 
         <Card className="h-full">
-          <div className="text-sm text-slate-600 dark:text-slate-400 mb-4 font-medium">Net Worth Over Time</div>
+          <div className="mb-4 flex items-center justify-between">
+            <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Net Worth Over Time</div>
+            {!netLoading && netRefreshing && (
+              <RefreshCcw
+                aria-label="Refreshing net worth"
+                className="h-4 w-4 text-slate-500 dark:text-slate-400 animate-spin"
+              />
+            )}
+          </div>
           {netLoading ? (
             <div className="h-40 rounded-xl bg-slate-100/60 dark:bg-slate-900/40 animate-pulse border border-slate-200/60 dark:border-slate-700/60" />
           ) : netError ? (
