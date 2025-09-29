@@ -185,29 +185,66 @@ export const BankCard: React.FC<BankCardProps> = ({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="mt-5 space-y-3"
+            className="mt-4 space-y-6"
           >
-            {bank.accounts
-              .slice()
-              .sort((a, b) => {
-                // Define sort order for account types
-                const typeOrder = { checking: 1, savings: 1, credit: 2, loan: 3, other: 4 };
-                const aOrder = typeOrder[a.type] || 4;
-                const bOrder = typeOrder[b.type] || 4;
-                
-                // First sort by type group
-                if (aOrder !== bOrder) {
-                  return aOrder - bOrder;
-                }
-                
-                // Within same type group, sort by balance (highest to lowest)
-                const aBalance = a.balance || 0;
-                const bBalance = b.balance || 0;
-                return bBalance - aBalance;
-              })
-              .map((account) => (
-                <AccountRow account={account} key={account.id} />
-              ))}
+            {(() => {
+              const sortedAccounts = bank.accounts
+                .slice()
+                .sort((a, b) => {
+                  const typeOrder = { checking: 1, savings: 1, credit: 2, loan: 3, other: 4 };
+                  const aOrder = typeOrder[a.type] || 4;
+                  const bOrder = typeOrder[b.type] || 4;
+
+                  if (aOrder !== bOrder) {
+                    return aOrder - bOrder;
+                  }
+
+                  const aBalance = a.balance || 0;
+                  const bBalance = b.balance || 0;
+                  return bBalance - aBalance;
+                });
+
+              const cashAccounts = sortedAccounts.filter(a => a.type === 'checking' || a.type === 'savings');
+              const debtAccounts = sortedAccounts.filter(a => a.type === 'credit' || a.type === 'loan');
+              const investmentAccounts = sortedAccounts.filter(a => a.type === 'other');
+
+              return (
+                <>
+                  {cashAccounts.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Cash</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {cashAccounts.map((account) => (
+                          <AccountRow account={account} key={account.id} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {debtAccounts.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Debt</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {debtAccounts.map((account) => (
+                          <AccountRow account={account} key={account.id} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {investmentAccounts.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Investments</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {investmentAccounts.map((account) => (
+                          <AccountRow account={account} key={account.id} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </motion.div>
         )}
       </AnimatePresence>
