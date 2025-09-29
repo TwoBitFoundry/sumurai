@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 
-// Mock the AuthenticatedApp component Connect tab section
+// Mock the AuthenticatedApp component Accounts tab section
 const mockBanks = [
   {
     id: 'bank-1',
@@ -41,11 +41,11 @@ const mockBanks = [
   }
 ]
 
-const ConnectTabMock = ({ 
-  banks, 
-  onSyncBank, 
-  onDisconnectBank, 
-  onAddBank 
+const AccountsTabMock = ({
+  banks,
+  onSyncBank,
+  onDisconnectBank,
+  onAddBank
 }: {
   banks: typeof mockBanks
   onSyncBank: (bankId: string) => Promise<void>
@@ -53,17 +53,17 @@ const ConnectTabMock = ({
   onAddBank: () => void
 }) => {
   return (
-    <div data-testid="connect-tab">
+    <div data-testid="accounts-tab">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h2>Bank Connections</h2>
+        <h2>Accounts</h2>
         <button onClick={onAddBank} data-testid="add-bank-button">
-          Add bank
+          Add account
         </button>
       </div>
-      
+
       {banks.length === 0 ? (
         <div data-testid="banks-empty-state">
-          <h3>No banks connected yet</h3>
+          <h3>No accounts connected yet</h3>
         </div>
       ) : (
         <div className="space-y-6">
@@ -122,7 +122,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('ConnectTab Integration', () => {
+describe('AccountsTab Integration', () => {
   describe('when displaying bank connections', () => {
     it('shows connected banks with bank-level operations', () => {
       const mockOnSyncBank = vi.fn().mockResolvedValue(undefined)
@@ -130,7 +130,7 @@ describe('ConnectTab Integration', () => {
       const mockOnAddBank = vi.fn()
 
       render(
-        <ConnectTabMock
+        <AccountsTabMock
           banks={mockBanks}
           onSyncBank={mockOnSyncBank}
           onDisconnectBank={mockOnDisconnectBank}
@@ -153,7 +153,7 @@ describe('ConnectTab Integration', () => {
       const mockOnAddBank = vi.fn()
 
       render(
-        <ConnectTabMock
+        <AccountsTabMock
           banks={mockBanks}
           onSyncBank={mockOnSyncBank}
           onDisconnectBank={mockOnDisconnectBank}
@@ -179,7 +179,7 @@ describe('ConnectTab Integration', () => {
       const mockOnAddBank = vi.fn()
 
       render(
-        <ConnectTabMock
+        <AccountsTabMock
           banks={[]}
           onSyncBank={mockOnSyncBank}
           onDisconnectBank={mockOnDisconnectBank}
@@ -188,7 +188,7 @@ describe('ConnectTab Integration', () => {
       )
 
       expect(screen.getByTestId('banks-empty-state')).toBeInTheDocument()
-      expect(screen.getByText('No banks connected yet')).toBeInTheDocument()
+      expect(screen.getByText('No accounts connected yet')).toBeInTheDocument()
     })
   })
 
@@ -200,7 +200,7 @@ describe('ConnectTab Integration', () => {
       const mockOnAddBank = vi.fn()
 
       render(
-        <ConnectTabMock
+        <AccountsTabMock
           banks={mockBanks}
           onSyncBank={mockOnSyncBank}
           onDisconnectBank={mockOnDisconnectBank}
@@ -221,7 +221,7 @@ describe('ConnectTab Integration', () => {
       const mockOnAddBank = vi.fn()
 
       render(
-        <ConnectTabMock
+        <AccountsTabMock
           banks={mockBanks}
           onSyncBank={mockOnSyncBank}
           onDisconnectBank={mockOnDisconnectBank}
@@ -242,7 +242,7 @@ describe('ConnectTab Integration', () => {
       const mockOnAddBank = vi.fn()
 
       render(
-        <ConnectTabMock
+        <AccountsTabMock
           banks={mockBanks}
           onSyncBank={mockOnSyncBank}
           onDisconnectBank={mockOnDisconnectBank}
@@ -264,7 +264,7 @@ describe('ConnectTab Integration', () => {
       const mockOnAddBank = vi.fn()
 
       render(
-        <ConnectTabMock
+        <AccountsTabMock
           banks={mockBanks}
           onSyncBank={mockOnSyncBank}
           onDisconnectBank={mockOnDisconnectBank}

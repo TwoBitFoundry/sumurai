@@ -3,12 +3,12 @@ import { Sun, Moon } from 'lucide-react'
 import DashboardPage from '../pages/DashboardPage'
 import TransactionsPage from '../pages/TransactionsPage'
 import BudgetsPage from '../pages/BudgetsPage'
-import ConnectPage from '../pages/ConnectPage'
+import AccountsPage from '../pages/AccountsPage'
 import Card from './ui/Card'
 import { ErrorBoundary } from './ErrorBoundary'
 import { HeaderAccountFilter } from './HeaderAccountFilter'
 
-type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'connect'
+type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts'
 
 interface AuthenticatedAppProps {
   onLogout: () => void
@@ -20,7 +20,7 @@ const TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'transactions', label: 'Transactions' },
   { key: 'budgets', label: 'Budgets' },
-  { key: 'connect', label: 'Connect' },
+  { key: 'accounts', label: 'Accounts' },
 ]
 
 export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppProps) {
@@ -124,9 +124,9 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
               </div>
             </div>
 
-            {tab === 'connect' && (
+            {tab === 'accounts' && (
               <div className="space-y-6">
-                <ConnectPage onError={setError} />
+                <AccountsPage onError={setError} />
               </div>
             )}
           </main>

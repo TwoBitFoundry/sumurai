@@ -6,11 +6,11 @@ import ConnectionsList from '../features/plaid/components/ConnectionsList'
 import ConnectButton from '../features/plaid/components/ConnectButton'
 import { usePlaidLinkFlow } from '../features/plaid/hooks/usePlaidLinkFlow'
 
-interface ConnectPageProps {
+interface AccountsPageProps {
   onError?: (message: string | null) => void
 }
 
-const ConnectPage = ({ onError }: ConnectPageProps) => {
+const AccountsPage = ({ onError }: AccountsPageProps) => {
   const {
     connections,
     toast,
@@ -35,8 +35,8 @@ const ConnectPage = ({ onError }: ConnectPageProps) => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Bank Connections</h2>
-          <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">Securely connect your bank accounts to sync transactions.</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Accounts</h2>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">Manage your connected accounts and sync transactions.</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {banks.length > 0 && (
@@ -64,10 +64,10 @@ const ConnectPage = ({ onError }: ConnectPageProps) => {
       </AnimatePresence>
 
       <div className="mt-6 text-xs text-slate-500 dark:text-slate-500">
-        Sumaura — Powered by Plaid (12 demo + real connections)
+        Sumaura — Powered by Plaid (12 demo + real accounts)
       </div>
     </div>
   )
 }
 
-export default ConnectPage
+export default AccountsPage
