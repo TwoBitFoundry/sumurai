@@ -46,7 +46,6 @@ async fn given_no_auth_token_when_protected_endpoint_then_returns_unauthorized()
 
 #[tokio::test]
 async fn given_authenticated_user_when_get_transactions_no_filter_then_returns_all_transactions() {
-    use crate::models::transaction::TransactionWithAccount;
     use crate::services::repository_service::MockDatabaseRepository;
 
     let mut mock_db = MockDatabaseRepository::new();

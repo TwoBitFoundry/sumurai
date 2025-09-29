@@ -249,13 +249,13 @@ impl DatabaseRepository for PostgresRepository {
 
         let _session_count: (i64,) = (0,);
 
-        let account_count: (i64,) =
+        let _account_count: (i64,) =
             sqlx::query_as("SELECT COUNT(*) FROM accounts WHERE user_id = $1")
                 .bind(user_id)
                 .fetch_one(&mut *tx)
                 .await?;
 
-        let transaction_count: (i64,) =
+        let _transaction_count: (i64,) =
             sqlx::query_as("SELECT COUNT(*) FROM transactions WHERE user_id = $1")
                 .bind(user_id)
                 .fetch_one(&mut *tx)
@@ -269,11 +269,6 @@ impl DatabaseRepository for PostgresRepository {
         if result.rows_affected() == 0 {
             return Err(anyhow::anyhow!("User not found"));
         }
-
-        println!(
-            "Deleted user {} with {} accounts, {} transactions",
-            user_id, account_count.0, transaction_count.0
-        );
 
         tx.commit().await?;
         Ok(())

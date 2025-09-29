@@ -5,7 +5,6 @@ use crate::models::{account::Account, plaid::PlaidConnection};
 use crate::services::cache_service::{CacheService, MockCacheService};
 use chrono::Utc;
 use rust_decimal::Decimal;
-use tokio;
 use uuid::Uuid;
 
 #[tokio::test]
