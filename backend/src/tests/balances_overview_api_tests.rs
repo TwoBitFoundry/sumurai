@@ -4,6 +4,7 @@ use crate::test_fixtures::TestFixtures;
 use axum::body::to_bytes;
 use rust_decimal_macros::dec;
 use tower::ServiceExt;
+use uuid::Uuid;
 
 #[tokio::test]
 async fn given_snapshots_when_get_balances_overview_then_groups_and_computes_totals() {
@@ -19,6 +20,7 @@ async fn given_snapshots_when_get_balances_overview_then_groups_and_computes_tot
     // Provide latest balances: two institutions, mixed categories
     let rows = vec![
         LatestAccountBalance {
+            account_id: Uuid::new_v4(),
             institution_id: "ins_123".to_string(),
             account_type: "depository".to_string(),
             account_subtype: Some("checking".to_string()),
@@ -26,6 +28,7 @@ async fn given_snapshots_when_get_balances_overview_then_groups_and_computes_tot
             current_balance: dec!(12500.00),
         },
         LatestAccountBalance {
+            account_id: Uuid::new_v4(),
             institution_id: "ins_123".to_string(),
             account_type: "credit".to_string(),
             account_subtype: None,
@@ -33,6 +36,7 @@ async fn given_snapshots_when_get_balances_overview_then_groups_and_computes_tot
             current_balance: dec!(2500.10),
         },
         LatestAccountBalance {
+            account_id: Uuid::new_v4(),
             institution_id: "ins_456".to_string(),
             account_type: "loan".to_string(),
             account_subtype: None,
@@ -40,6 +44,7 @@ async fn given_snapshots_when_get_balances_overview_then_groups_and_computes_tot
             current_balance: dec!(15400.00),
         },
         LatestAccountBalance {
+            account_id: Uuid::new_v4(),
             institution_id: "ins_456".to_string(),
             account_type: "investment".to_string(),
             account_subtype: None,
@@ -82,6 +87,7 @@ async fn given_mixed_currency_when_get_balances_overview_then_excludes_non_usd_a
 
     let rows = vec![
         LatestAccountBalance {
+            account_id: Uuid::new_v4(),
             institution_id: "ins_789".to_string(),
             account_type: "depository".to_string(),
             account_subtype: Some("checking".to_string()),
@@ -89,6 +95,7 @@ async fn given_mixed_currency_when_get_balances_overview_then_excludes_non_usd_a
             current_balance: dec!(100.00),
         },
         LatestAccountBalance {
+            account_id: Uuid::new_v4(),
             institution_id: "ins_789".to_string(),
             account_type: "credit".to_string(),
             account_subtype: None,
@@ -141,6 +148,7 @@ async fn given_no_snapshots_when_get_balances_overview_then_falls_back_to_accoun
                     account_type: "depository".to_string(),
                     balance_current: Some(dec!(500.00)),
                     mask: None,
+                    institution_name: None,
                 },
                 Account {
                     id: Uuid::new_v4(),
@@ -151,6 +159,7 @@ async fn given_no_snapshots_when_get_balances_overview_then_falls_back_to_accoun
                     account_type: "credit".to_string(),
                     balance_current: Some(dec!(200.00)),
                     mask: None,
+                    institution_name: None,
                 },
             ])
         })

@@ -1,7 +1,7 @@
-use crate::services::auth_service::AuthService;
-use crate::models::auth::AuthError;
 use crate::models::api_error::ApiErrorResponse;
+use crate::models::auth::AuthError;
 pub use crate::models::auth::{AuthContext, AuthMiddlewareState};
+use crate::services::auth_service::AuthService;
 use axum::{
     extract::{Request, State},
     http::{HeaderMap, StatusCode},

@@ -1,11 +1,10 @@
 use crate::models::{
-    account::Account, 
-    cache::{CachedBankAccounts, CachedBankConnection}, 
-    plaid::{DisconnectResult, PlaidConnection}
+    account::Account,
+    cache::{CachedBankAccounts, CachedBankConnection},
+    plaid::{DisconnectResult, PlaidConnection},
 };
 use crate::services::{
-    cache_service::MockCacheService,
-    connection_service::ConnectionService,
+    cache_service::MockCacheService, connection_service::ConnectionService,
     repository_service::MockDatabaseRepository,
 };
 use chrono::Utc;
@@ -44,6 +43,7 @@ fn create_test_accounts() -> Vec<Account> {
             account_type: "depository".to_string(),
             balance_current: Some(Decimal::new(150000, 2)),
             mask: Some("1234".to_string()),
+            institution_name: None,
         },
         Account {
             id: Uuid::new_v4(),
@@ -54,6 +54,7 @@ fn create_test_accounts() -> Vec<Account> {
             account_type: "depository".to_string(),
             balance_current: Some(Decimal::new(300000, 2)),
             mask: Some("5678".to_string()),
+            institution_name: None,
         },
     ]
 }

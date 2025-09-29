@@ -37,6 +37,18 @@ describe('AnalyticsService (date-range endpoints)', () => {
       expect(ApiClient.get).toHaveBeenCalledWith('/analytics/spending')
       expect(result).toBe(0)
     })
+
+    it('serializes account_ids parameter when provided', async () => {
+      const start = '2024-01-01';
+      const end = '2024-01-31';
+      const accountIds = ['acc_1', 'acc_2'];
+      vi.mocked(ApiClient.get).mockResolvedValue(500.25)
+
+      const result = await AnalyticsService.getSpendingTotal(start, end, accountIds)
+
+      expect(ApiClient.get).toHaveBeenCalledWith(`/analytics/spending?start_date=${start}&end_date=${end}&account_ids%5B%5D=acc_1&account_ids%5B%5D=acc_2`)
+      expect(result).toBe(500.25)
+    })
   })
 
   describe('getCategorySpendingByDateRange', () => {
@@ -62,6 +74,21 @@ describe('AnalyticsService (date-range endpoints)', () => {
       const result = await AnalyticsService.getCategorySpendingByDateRange()
 
       expect(ApiClient.get).toHaveBeenCalledWith('/analytics/categories')
+      expect(result).toEqual(mockCategories)
+    })
+
+    it('serializes account_ids parameter when provided', async () => {
+      const start = '2024-01-01';
+      const end = '2024-01-31';
+      const accountIds = ['acc_1', 'acc_2'];
+      const mockCategories: AnalyticsCategoryResponse[] = [
+        { category: 'Food & Dining', amount: 250.25, percentage: 50.05 }
+      ]
+      vi.mocked(ApiClient.get).mockResolvedValue(mockCategories)
+
+      const result = await AnalyticsService.getCategorySpendingByDateRange(start, end, accountIds)
+
+      expect(ApiClient.get).toHaveBeenCalledWith(`/analytics/categories?start_date=${start}&end_date=${end}&account_ids%5B%5D=acc_1&account_ids%5B%5D=acc_2`)
       expect(result).toEqual(mockCategories)
     })
   })

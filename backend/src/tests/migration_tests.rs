@@ -7,7 +7,7 @@ async fn connect_pool() -> Option<PgPool> {
         eprintln!("[migration_tests] Skipping: DATABASE_URL not set for integration tests");
         return None;
     }
-    
+
     let database_url = std::env::var("DATABASE_URL").unwrap();
     match PgPool::connect(&database_url).await {
         Ok(pool) => Some(pool),

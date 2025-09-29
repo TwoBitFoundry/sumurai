@@ -15,7 +15,6 @@ use chrono::Datelike;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-
 #[async_trait]
 #[cfg_attr(test, mockall::automock)]
 pub trait DatabaseRepository: Send + Sync {
@@ -250,13 +249,13 @@ impl DatabaseRepository for PostgresRepository {
 
         let _session_count: (i64,) = (0,);
 
-        let account_count: (i64,) =
+        let _account_count: (i64,) =
             sqlx::query_as("SELECT COUNT(*) FROM accounts WHERE user_id = $1")
                 .bind(user_id)
                 .fetch_one(&mut *tx)
                 .await?;
 
-        let transaction_count: (i64,) =
+        let _transaction_count: (i64,) =
             sqlx::query_as("SELECT COUNT(*) FROM transactions WHERE user_id = $1")
                 .bind(user_id)
                 .fetch_one(&mut *tx)
@@ -270,11 +269,6 @@ impl DatabaseRepository for PostgresRepository {
         if result.rows_affected() == 0 {
             return Err(anyhow::anyhow!("User not found"));
         }
-
-        println!(
-            "Deleted user {} with {} accounts, {} transactions",
-            user_id, account_count.0, transaction_count.0
-        );
 
         tx.commit().await?;
         Ok(())
@@ -378,8 +372,20 @@ impl DatabaseRepository for PostgresRepository {
     }
 
     async fn get_account_by_plaid_id(&self, plaid_account_id: &str) -> Result<Option<Account>> {
-        let row = sqlx::query_as::<_, (Uuid, Option<Uuid>, Option<String>, Option<Uuid>, String, String, Option<rust_decimal::Decimal>, Option<String>)>(
-            "SELECT id, user_id, plaid_account_id, plaid_connection_id, name, account_type, balance_current, mask FROM accounts WHERE plaid_account_id = $1"
+        let row = sqlx::query_as::<_, (
+            Uuid,
+            Option<Uuid>,
+            Option<String>,
+            Option<Uuid>,
+            String,
+            String,
+            Option<rust_decimal::Decimal>,
+            Option<String>,
+            Option<String>,
+        )>(
+            "SELECT a.id, a.user_id, a.plaid_account_id, a.plaid_connection_id, a.name, a.account_type, a.balance_current, a.mask, pc.institution_name \
+             FROM accounts a LEFT JOIN plaid_connections pc ON pc.id = a.plaid_connection_id \
+             WHERE a.plaid_account_id = $1"
         )
         .bind(plaid_account_id)
         .fetch_optional(&self.pool)
@@ -395,6 +401,7 @@ impl DatabaseRepository for PostgresRepository {
                 account_type,
                 balance_current,
                 mask,
+                institution_name,
             )| Account {
                 id,
                 user_id,
@@ -404,6 +411,7 @@ impl DatabaseRepository for PostgresRepository {
                 account_type,
                 balance_current,
                 mask,
+                institution_name,
             },
         ))
     }
@@ -1109,13 +1117,15 @@ impl DatabaseRepository for PostgresRepository {
                 String,
                 Option<rust_decimal::Decimal>,
                 Option<String>,
+                Option<String>,
             ),
         >(
             r#"
-            SELECT id, user_id, plaid_account_id, plaid_connection_id, name, account_type, balance_current, mask 
-            FROM accounts 
-            WHERE user_id = $1
-            ORDER BY name
+            SELECT a.id, a.user_id, a.plaid_account_id, a.plaid_connection_id, a.name, a.account_type, a.balance_current, a.mask, pc.institution_name
+            FROM accounts a
+            LEFT JOIN plaid_connections pc ON pc.id = a.plaid_connection_id
+            WHERE a.user_id = $1
+            ORDER BY a.name
             "#,
         )
         .bind(user_id)
@@ -1136,6 +1146,7 @@ impl DatabaseRepository for PostgresRepository {
                     account_type,
                     balance_current,
                     mask,
+                    institution_name,
                 )| Account {
                     id,
                     user_id,
@@ -1145,6 +1156,7 @@ impl DatabaseRepository for PostgresRepository {
                     account_type,
                     balance_current,
                     mask,
+                    institution_name,
                 },
             )
             .collect())
@@ -1344,6 +1356,7 @@ impl DatabaseRepository for PostgresRepository {
         let rows = sqlx::query_as::<_, LatestAccountBalance>(
             r#"
             SELECT 
+                a.id AS account_id,
                 COALESCE(pc.institution_name, 'unknown_institution') AS institution_id,
                 a.account_type,
                 NULL::text AS account_subtype,

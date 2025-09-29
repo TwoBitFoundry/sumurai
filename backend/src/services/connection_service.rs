@@ -1,17 +1,13 @@
 use crate::models::{
-    account::Account, 
+    account::Account,
     cache::{BankConnectionSyncStatus, CachedBankAccounts, CachedBankConnection},
-    plaid::{DataCleared, DisconnectResult, PlaidConnection, PlaidConnectionStatus}
+    plaid::{DataCleared, DisconnectResult, PlaidConnection, PlaidConnectionStatus},
 };
-use crate::services::{
-    cache_service::CacheService,
-    repository_service::DatabaseRepository,
-};
+use crate::services::{cache_service::CacheService, repository_service::DatabaseRepository};
 use anyhow::Result;
 use chrono::Utc;
 use std::sync::Arc;
 use uuid::Uuid;
-
 
 pub struct ConnectionService {
     db_repository: Arc<dyn DatabaseRepository>,

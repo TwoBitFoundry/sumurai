@@ -1,7 +1,7 @@
 use anyhow::Result;
 use chrono::NaiveDate;
-use rust_decimal::Decimal;
 use rust_decimal::prelude::FromPrimitive;
+use rust_decimal::Decimal;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -193,6 +193,7 @@ impl RealPlaidClient {
                             .to_string(),
                         balance_current,
                         mask,
+                        institution_name: None,
                     };
                     accounts.push(account);
                 }
@@ -236,10 +237,7 @@ impl RealPlaidClient {
 
             if let Some(transactions_array) = data.get("transactions").and_then(|v| v.as_array()) {
                 for t in transactions_array {
-                    let amount = t
-                        .get("amount")
-                        .and_then(|v| v.as_f64())
-                        .unwrap_or(0.0);
+                    let amount = t.get("amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
 
                     let name = t
                         .get("name")
@@ -290,10 +288,7 @@ impl RealPlaidClient {
                         .and_then(|v| v.as_str())
                         .map(|s| s.to_string());
 
-                    let pending = t
-                        .get("pending")
-                        .and_then(|v| v.as_bool())
-                        .unwrap_or(false);
+                    let pending = t.get("pending").and_then(|v| v.as_bool()).unwrap_or(false);
 
                     let transaction = Transaction {
                         id: Uuid::new_v4(),
@@ -302,8 +297,9 @@ impl RealPlaidClient {
                         plaid_account_id,
                         plaid_transaction_id,
                         amount: Decimal::from_f64(amount).unwrap_or(Decimal::ZERO),
-                        date: chrono::NaiveDate::parse_from_str(&date, "%Y-%m-%d")
-                            .unwrap_or_else(|_| chrono::NaiveDate::from_ymd_opt(1970, 1, 1).unwrap()),
+                        date: chrono::NaiveDate::parse_from_str(&date, "%Y-%m-%d").unwrap_or_else(
+                            |_| chrono::NaiveDate::from_ymd_opt(1970, 1, 1).unwrap(),
+                        ),
                         merchant_name: Some(name),
                         category_primary,
                         category_detailed,
@@ -414,7 +410,11 @@ impl PlaidService {
             .await
     }
 
-    pub fn detect_duplicates(&self, existing: &[Transaction], new: &[Transaction]) -> Vec<Transaction> {
+    pub fn detect_duplicates(
+        &self,
+        existing: &[Transaction],
+        new: &[Transaction],
+    ) -> Vec<Transaction> {
         let existing_plaid_ids: HashMap<String, bool> = existing
             .iter()
             .filter_map(|t| t.plaid_transaction_id.as_ref())

@@ -45,4 +45,3 @@ impl ApiErrorResponse {
         Self::new("CONFLICT", message).into_response(StatusCode::CONFLICT)
     }
 }
-

@@ -1,8 +1,8 @@
 use crate::auth_middleware::{
     auth_middleware, extract_bearer_token, extract_user_context, AuthContext, AuthMiddlewareState,
 };
-use crate::services::{auth_service::AuthService, cache_service::MockCacheService};
 use crate::models::auth::AuthError;
+use crate::services::{auth_service::AuthService, cache_service::MockCacheService};
 use axum::{
     body::Body,
     http::{header::AUTHORIZATION, request::Request, HeaderMap, StatusCode},

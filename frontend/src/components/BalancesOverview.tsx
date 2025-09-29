@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { RefreshCcw } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Amount, fmtUSD } from "./Amount";
 import { useBalancesOverview } from "../hooks/useBalancesOverview";
@@ -14,7 +15,7 @@ function RatioPill({ ratio }: { ratio: number | string | null }) {
 }
 
 export function BalancesOverview() {
-  const { loading, error, data, refresh } = useBalancesOverview();
+  const { loading, refreshing, error, data, refresh } = useBalancesOverview();
 
   // Bank names should come from the API. No client-side overrides.
 
@@ -80,12 +81,20 @@ export function BalancesOverview() {
 
   return (
     <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 p-6 shadow-lg overflow-hidden">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between gap-3">
         <div>
           <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Balances Overview</h3>
           <p className="text-sm text-slate-600 dark:text-slate-400">Assets vs liabilities across your banks</p>
         </div>
-        <RatioPill ratio={data?.overall?.ratio ?? null} />
+        <div className="flex items-center gap-2">
+          {!loading && refreshing && (
+            <RefreshCcw
+              aria-label="Refreshing balances"
+              className="h-4 w-4 text-slate-500 dark:text-slate-400 animate-spin"
+            />
+          )}
+          <RatioPill ratio={data?.overall?.ratio ?? null} />
+        </div>
       </div>
 
       {/* Loading state */}

@@ -1,6 +1,6 @@
-use crate::services::analytics_service::AnalyticsService;
-use crate::models::analytics::{CategorySpending};
+use crate::models::analytics::CategorySpending;
 use crate::models::transaction::Transaction;
+use crate::services::analytics_service::AnalyticsService;
 use chrono::{Datelike, NaiveDate};
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
@@ -482,7 +482,8 @@ fn given_transactions_when_getting_top_merchants_with_date_range_then_filters_an
 }
 
 #[test]
-fn given_transactions_when_calculating_net_worth_over_time_then_returns_cumulative_balance_progression() {
+fn given_transactions_when_calculating_net_worth_over_time_then_returns_cumulative_balance_progression(
+) {
     let analytics = AnalyticsService::new();
     let txns = vec![
         create_test_transaction(
@@ -506,9 +507,9 @@ fn given_transactions_when_calculating_net_worth_over_time_then_returns_cumulati
     let end_date = NaiveDate::from_ymd_opt(2024, 3, 31).unwrap();
 
     let result = analytics.get_net_worth_over_time(&txns, start_date, end_date);
-    
+
     assert!(!result.is_empty());
-    
+
     let final_net_worth = result.last().unwrap().net_worth;
     assert_eq!(final_net_worth, dec!(50.00));
 }
