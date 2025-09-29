@@ -30,7 +30,8 @@ export const TransactionsTable: React.FC<Props> = ({ items, total, currentPage, 
         </div>
       ) : (
         <>
-          <table className="min-w-full text-sm table-fixed">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm table-fixed">
             <thead className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-600">
               <tr>
                 <Th className="w-[15%] whitespace-nowrap">Date</Th>
@@ -69,6 +70,7 @@ export const TransactionsTable: React.FC<Props> = ({ items, total, currentPage, 
               ))}
             </tbody>
           </table>
+          </div>
           <div className="flex items-center justify-between p-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
             <div className="text-xs text-slate-600 dark:text-slate-400">Showing {from}-{to} of {total}</div>
             <div className="flex items-center gap-2">

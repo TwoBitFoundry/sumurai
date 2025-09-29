@@ -62,10 +62,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       <AnimatePresence>
         {toast && <Toast message={toast} onClose={() => setToast(null)} />}
       </AnimatePresence>
-
-      <div className="mt-6 text-xs text-slate-500 dark:text-slate-500">
-        Sumaura — Powered by Plaid (12 demo + real accounts)
-      </div>
     </div>
   )
 }
