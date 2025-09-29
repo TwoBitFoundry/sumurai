@@ -86,7 +86,7 @@ const AccountsTabMock = ({
                 <div key={account.id} data-testid={`account-${account.id}`}>
                   <span>{account.name}</span>
                   <span>••{account.mask}</span>
-                  <span>{account.transactions} txns</span>
+                  <span>{account.transactions} items</span>
                 </div>
               ))}
             </div>
@@ -163,10 +163,10 @@ describe('AccountsTab Integration', () => {
 
       expect(screen.getByText('Checking Account')).toBeInTheDocument()
       expect(screen.getByText('••1234')).toBeInTheDocument()
-      expect(screen.getByText('25 txns')).toBeInTheDocument()
+      expect(screen.getByText('25 items')).toBeInTheDocument()
       expect(screen.getByText('Savings Account')).toBeInTheDocument()
       expect(screen.getByText('••5678')).toBeInTheDocument()
-      expect(screen.getByText('10 txns')).toBeInTheDocument()
+      expect(screen.getByText('10 items')).toBeInTheDocument()
 
       // Ensure no individual account controls exist
       expect(screen.queryByText(/sync.*account/i)).not.toBeInTheDocument()

@@ -115,15 +115,15 @@ describe('AuthenticatedApp shell', () => {
     expect(budgetsSection).toHaveClass('hidden')
     expect(budgetsSection).toHaveAttribute('aria-hidden', 'true')
 
-    await user.click(screen.getByRole('button', { name: /transactions/i }))
+    await user.click(screen.getByRole('button', { name: /^transactions$/i }))
     expect(screen.getByTestId('transactions-page')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /budgets/i }))
+    await user.click(screen.getByRole('button', { name: /^budgets$/i }))
     const activeBudgetsSection = screen.getByTestId('budgets-page').parentElement?.parentElement
     expect(activeBudgetsSection).not.toHaveClass('hidden')
     expect(activeBudgetsSection).not.toHaveAttribute('aria-hidden')
 
-    await user.click(screen.getByRole('button', { name: /accounts/i }))
+    await user.click(screen.getByRole('button', { name: /^accounts$/i }))
     expect(screen.getByTestId('accounts-page')).toBeInTheDocument()
     const hiddenBudgetsSection = screen.getByTestId('budgets-page').parentElement?.parentElement
     expect(hiddenBudgetsSection).toHaveClass('hidden')
@@ -134,7 +134,7 @@ describe('AuthenticatedApp shell', () => {
     const user = userEvent.setup()
     renderApp()
 
-    await user.click(screen.getByRole('button', { name: /accounts/i }))
+    await user.click(screen.getByRole('button', { name: /^accounts$/i }))
     await user.click(screen.getByTestId('trigger-accounts-error'))
     expect(screen.getByText('accounts-error')).toBeInTheDocument()
 
