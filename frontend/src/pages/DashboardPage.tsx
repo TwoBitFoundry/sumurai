@@ -33,17 +33,12 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
 
   useEffect(() => {
     const target = balancesOverviewRef.current
-    if (!target) { setShowTimeBar(true); return }
+    if (!target) { setShowTimeBar(false); return }
     const observer = new IntersectionObserver((entries) => {
       const entry = entries[0]
-      const fullyVisible = entry.intersectionRatio >= 1
-      setShowTimeBar(!fullyVisible)
-    }, { threshold: [0, 1] })
+      setShowTimeBar(entry.intersectionRatio < 0.5)
+    }, { threshold: [0, 0.5, 1] })
     observer.observe(target)
-    const rect = target.getBoundingClientRect()
-    const viewportH = window.innerHeight || document.documentElement.clientHeight
-    const fullyVisibleNow = rect.top >= 0 && rect.bottom <= viewportH
-    setShowTimeBar(!fullyVisibleNow)
     return () => observer.disconnect()
   }, [])
 
