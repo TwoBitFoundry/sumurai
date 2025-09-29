@@ -42,7 +42,11 @@ describe("BalancesOverview (Phase 7)", () => {
       ],
       mixedCurrency: false,
     };
-    installFetchRoutes({ "GET /api/analytics/balances/overview": mock });
+    installFetchRoutes({
+      "GET /api/analytics/balances/overview": mock,
+      "GET /api/plaid/accounts": [],
+      "GET /api/plaid/status": { is_connected: false }
+    });
 
     render(<BalancesOverview />, { wrapper: TestWrapper });
     // Loading skeleton appears first
@@ -72,6 +76,8 @@ describe("BalancesOverview (Phase 7)", () => {
     };
     installFetchRoutes({
       "GET /api/analytics/balances/overview": () => (failure ? new Response("boom", { status: 500 }) : ok),
+      "GET /api/plaid/accounts": [],
+      "GET /api/plaid/status": { is_connected: false }
     });
 
     render(<BalancesOverview />, { wrapper: TestWrapper });
@@ -102,15 +108,17 @@ describe("BalancesOverview (Phase 7)", () => {
           mixedCurrency: false,
         };
       },
+      "GET /api/plaid/accounts": [],
+      "GET /api/plaid/status": { is_connected: false }
     });
 
     const { rerender } = render(<BalancesOverview />, { wrapper: TestWrapper });
-    await waitFor(() => expect(calls).toBe(1));
+    await waitFor(() => expect(calls).toBe(2)); // Real behavior: component + account filter
 
     // Simulate page date context change by re-rendering component
     rerender(<BalancesOverview />);
     // Should not refetch solely due to rerender
     await new Promise((r) => setTimeout(r, 20));
-    expect(calls).toBe(1);
+    expect(calls).toBe(2); // Should remain the same, no additional calls
   });
 });

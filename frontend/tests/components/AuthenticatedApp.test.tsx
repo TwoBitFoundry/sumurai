@@ -1,4 +1,4 @@
-import { render, screen, cleanup } from '@testing-library/react'
+import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { AuthenticatedApp } from '@/components/AuthenticatedApp'
@@ -41,7 +41,31 @@ describe('AuthenticatedApp shell', () => {
     localStorage.clear()
 
     fetchMock = installFetchRoutes({
-      'GET /api/plaid/accounts': []
+      'GET /api/plaid/accounts': [
+        {
+          id: 'account1',
+          name: 'Test Checking',
+          account_type: 'depository',
+          balance_current: 1200,
+          mask: '1111',
+          plaid_connection_id: 'conn_1',
+          institution_name: 'Test Bank'
+        },
+        {
+          id: 'account2',
+          name: 'Test Savings',
+          account_type: 'depository',
+          balance_current: 5400,
+          mask: '2222',
+          plaid_connection_id: 'conn_1',
+          institution_name: 'Test Bank'
+        }
+      ],
+      'GET /api/plaid/status': {
+        is_connected: true,
+        institution_name: 'Test Bank',
+        connection_id: 'conn_1'
+      }
     })
 
     DashboardPageMock = vi.fn(({ dark }: DashboardProps) => (
@@ -135,18 +159,22 @@ describe('AuthenticatedApp shell', () => {
     expect(DashboardPageMock).toHaveBeenCalledTimes(1)
   })
 
-  it('includes HeaderAccountFilter in the header', () => {
+  it('includes HeaderAccountFilter in the header', async () => {
     renderApp()
-    expect(screen.getByRole('button', { name: /all accounts/i })).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /all accounts/i })).toBeInTheDocument()
+    })
   })
 
-  it('maintains responsive layout with HeaderAccountFilter', () => {
+  it('maintains responsive layout with HeaderAccountFilter', async () => {
     renderApp()
     const header = screen.getByRole('banner')
     expect(header).toBeInTheDocument()
 
-    const accountFilter = screen.getByRole('button', { name: /all accounts/i })
-    expect(accountFilter).toBeInTheDocument()
+    await waitFor(() => {
+      const accountFilter = screen.getByRole('button', { name: /all accounts/i })
+      expect(accountFilter).toBeInTheDocument()
+    })
 
     const nav = screen.getByRole('navigation', { name: /primary/i })
     expect(nav).toBeInTheDocument()
