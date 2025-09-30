@@ -10,6 +10,7 @@ export interface UseOnboardingPlaidFlowOptions {
 export interface UseOnboardingPlaidFlowReturn {
   isConnected: boolean
   connectionInProgress: boolean
+  isSyncing: boolean
   institutionName: string | null
   error: string | null
   initiateConnection: () => Promise<void>
@@ -27,6 +28,7 @@ export function useOnboardingPlaidFlow(
   const [linkToken, setLinkToken] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [connectionInProgress, setConnectionInProgress] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
   const [institutionName, setInstitutionName] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [shouldOpenLink, setShouldOpenLink] = useState(false)
@@ -55,6 +57,15 @@ export function useOnboardingPlaidFlow(
         }
       } catch (statusError) {
         console.warn('Failed to refresh Plaid status after connection', statusError)
+      }
+
+      setIsSyncing(true)
+      try {
+        await PlaidService.syncTransactions()
+      } catch (syncError) {
+        console.warn('Failed to sync transactions during onboarding', syncError)
+      } finally {
+        setIsSyncing(false)
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Connection failed'
@@ -114,6 +125,7 @@ export function useOnboardingPlaidFlow(
   const reset = useCallback(() => {
     setIsConnected(false)
     setConnectionInProgress(false)
+    setIsSyncing(false)
     setInstitutionName(null)
     setError(null)
     setLinkToken(null)
@@ -127,6 +139,7 @@ export function useOnboardingPlaidFlow(
   return {
     isConnected,
     connectionInProgress,
+    isSyncing,
     institutionName,
     error,
     initiateConnection,

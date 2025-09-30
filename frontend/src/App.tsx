@@ -30,6 +30,7 @@ export function App() {
   const [isLoading, setIsLoading] = useState(true)
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login')
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [mainAppKey, setMainAppKey] = useState(0)
 
   const [dark, setDark] = useState(() => getInitialTheme())
 
@@ -88,6 +89,7 @@ export function App() {
 
   const handleOnboardingComplete = useCallback(() => {
     setShowOnboarding(false)
+    setMainAppKey(prev => prev + 1)
   }, [])
 
   if (isLoading) {
@@ -148,14 +150,20 @@ export function App() {
       <OnboardingWizard
         onComplete={handleOnboardingComplete}
         dark={dark}
+        setDark={(newTheme: boolean) => {
+          setDark(newTheme);
+          setTheme(newTheme);
+        }}
+        onLogout={handleLogout}
       />
     )
   }
 
   return (
     <SessionManager onLogout={handleLogout}>
-      <AccountFilterProvider>
+      <AccountFilterProvider key={`filter-${mainAppKey}`}>
         <AuthenticatedApp
+          key={`app-${mainAppKey}`}
           onLogout={handleLogout}
           dark={dark}
           setDark={(newTheme: boolean) => {
