@@ -31,7 +31,7 @@ pub struct ExchangeTokenRequest {
     pub public_token: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct SyncTransactionsRequest {
     pub connection_id: Option<String>,
 }

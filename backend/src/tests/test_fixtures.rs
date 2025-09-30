@@ -387,4 +387,19 @@ impl TestFixtures {
     pub fn create_get_request(uri: &str) -> Request<Body> {
         Self::create_unauthenticated_request(Method::GET, uri)
     }
+
+    pub fn create_authenticated_post_request<T: serde::Serialize>(
+        uri: &str,
+        token: &str,
+        body: T,
+    ) -> Request<Body> {
+        let body_json = serde_json::to_string(&body).unwrap();
+        Request::builder()
+            .method(Method::POST)
+            .uri(uri)
+            .header(AUTHORIZATION, format!("Bearer {}", token))
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(body_json))
+            .unwrap()
+    }
 }

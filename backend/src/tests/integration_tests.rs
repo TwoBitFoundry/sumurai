@@ -936,3 +936,67 @@ async fn given_user_with_multiple_banks_when_get_accounts_then_returns_all_accou
     assert_eq!(account_responses[1]["name"], "BofA Savings");
     assert_eq!(account_responses[1]["institution_name"], "Bank of America");
 }
+
+#[tokio::test]
+async fn given_connection_id_when_sync_then_uses_get_plaid_connection_by_id() {
+    use crate::services::repository_service::MockDatabaseRepository;
+    use crate::models::plaid::{PlaidConnection, SyncTransactionsRequest};
+    use uuid::Uuid;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+
+    let connection_id = Uuid::new_v4();
+    let mut expected_conn = PlaidConnection::new(user_id, "item_123");
+    expected_conn.id = connection_id;
+    expected_conn.mark_connected("Chase");
+
+    mock_db
+        .expect_get_plaid_connection_by_id()
+        .with(mockall::predicate::eq(connection_id))
+        .times(1)
+        .returning(move |_| {
+            let conn = expected_conn.clone();
+            Box::pin(async move { Ok(Some(conn)) })
+        });
+
+    mock_db
+        .expect_get_plaid_credentials_for_user()
+        .returning(|_, _| Box::pin(async { Ok(None) }));
+
+    mock_db
+        .expect_get_accounts_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_budgets_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_transactions_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_latest_account_balances_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db).await.unwrap();
+
+    let sync_request = SyncTransactionsRequest {
+        connection_id: Some(connection_id.to_string()),
+    };
+
+    let request = TestFixtures::create_authenticated_post_request(
+        "/api/plaid/sync-transactions",
+        &token,
+        sync_request,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 404);
+}

@@ -685,68 +685,41 @@ async fn sync_authenticated_plaid_transactions(
     let sync_timestamp = chrono::Utc::now();
 
     tracing::info!("Sync transactions requested for user {}", user_id);
-    let connection = if let Some(req) = &req {
-        if let Some(connection_id_str) = &req.connection_id {
-            let _connection_id =
-                Uuid::parse_str(connection_id_str).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-            match state
-                .db_repository
-                .get_plaid_connection_by_user(&user_id)
-                .await
-            {
-                Ok(Some(conn)) => {
-                    if conn.id.to_string() != *connection_id_str {
-                        tracing::error!(
-                            "Connection ID {} does not match user's connection {}",
-                            connection_id_str,
-                            conn.id
-                        );
-                        return Err(StatusCode::NOT_FOUND);
-                    }
-                    conn
-                }
-                Ok(None) => {
-                    tracing::error!("No Plaid connection for user {}", user_id);
-                    return Err(StatusCode::NOT_FOUND);
-                }
-                Err(e) => {
-                    tracing::error!("Failed to get connection for user {}: {}", user_id, e);
-                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
-                }
+    let connection_id_str = req
+        .as_ref()
+        .and_then(|r| r.connection_id.as_ref())
+        .ok_or_else(|| {
+            tracing::error!("connection_id is required for sync");
+            StatusCode::BAD_REQUEST
+        })?;
+
+    let connection_id = Uuid::parse_str(connection_id_str)
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    let connection = match state
+        .db_repository
+        .get_plaid_connection_by_id(&connection_id)
+        .await
+    {
+        Ok(Some(conn)) => {
+            if conn.user_id != user_id {
+                tracing::error!(
+                    "Connection {} does not belong to user {}",
+                    connection_id,
+                    user_id
+                );
+                return Err(StatusCode::FORBIDDEN);
             }
-        } else {
-            match state
-                .db_repository
-                .get_plaid_connection_by_user(&user_id)
-                .await
-            {
-                Ok(Some(conn)) => conn,
-                Ok(None) => {
-                    tracing::error!("No Plaid connection for user {}", user_id);
-                    return Err(StatusCode::NOT_FOUND);
-                }
-                Err(e) => {
-                    tracing::error!("Failed to get connection for user {}: {}", user_id, e);
-                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
-                }
-            }
+            conn
         }
-    } else {
-        match state
-            .db_repository
-            .get_plaid_connection_by_user(&user_id)
-            .await
-        {
-            Ok(Some(conn)) => conn,
-            Ok(None) => {
-                tracing::error!("No Plaid connection for user {}", user_id);
-                return Err(StatusCode::NOT_FOUND);
-            }
-            Err(e) => {
-                tracing::error!("Failed to get connection for user {}: {}", user_id, e);
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
-            }
+        Ok(None) => {
+            tracing::error!("Connection {} not found", connection_id);
+            return Err(StatusCode::NOT_FOUND);
+        }
+        Err(e) => {
+            tracing::error!("Failed to get connection {}: {}", connection_id, e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
 
