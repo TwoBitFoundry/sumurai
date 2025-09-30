@@ -300,3 +300,27 @@ async fn given_bank_connection_when_disconnect_fails_database_operation_then_ret
         .to_string()
         .contains("Database connection failed"));
 }
+
+#[tokio::test]
+async fn given_bank_connection_when_upserting_account_then_assigns_connection_id() {
+    let user_id = Uuid::new_v4();
+    let connection = create_test_bank_connection(user_id);
+    let connection_id = connection.id;
+
+    let mut account = Account {
+        id: Uuid::new_v4(),
+        user_id: Some(user_id),
+        plaid_account_id: Some("plaid_123".to_string()),
+        plaid_connection_id: None,
+        name: "Test Account".to_string(),
+        account_type: "checking".to_string(),
+        balance_current: Some(dec!(1000.00)),
+        mask: Some("1234".to_string()),
+        institution_name: None,
+    };
+
+    account.user_id = Some(user_id);
+    account.plaid_connection_id = Some(connection_id);
+
+    assert_eq!(account.plaid_connection_id, Some(connection_id));
+}

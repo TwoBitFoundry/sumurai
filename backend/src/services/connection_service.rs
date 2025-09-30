@@ -25,34 +25,6 @@ impl ConnectionService {
         }
     }
 
-    pub async fn get_connection_status(&self, user_id: &Uuid) -> Result<PlaidConnectionStatus> {
-        let connection = self
-            .db_repository
-            .get_plaid_connection_by_user(user_id)
-            .await?;
-
-        match connection {
-            Some(conn) => Ok(PlaidConnectionStatus {
-                is_connected: conn.is_connected,
-                last_sync_at: conn.last_sync_at.map(|dt| dt.to_rfc3339()),
-                institution_name: conn.institution_name,
-                connection_id: Some(conn.id.to_string()),
-                transaction_count: conn.transaction_count,
-                account_count: conn.account_count,
-                sync_in_progress: false,
-            }),
-            None => Ok(PlaidConnectionStatus {
-                is_connected: false,
-                last_sync_at: None,
-                institution_name: None,
-                connection_id: None,
-                transaction_count: 0,
-                account_count: 0,
-                sync_in_progress: false,
-            }),
-        }
-    }
-
     pub async fn disconnect_plaid(&self, user_id: &Uuid, jwt_id: &str) -> Result<DisconnectResult> {
         let connection = self
             .db_repository

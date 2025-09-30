@@ -28,8 +28,8 @@ async fn given_authenticated_user_when_get_budgets_then_returns_array() {
 #[tokio::test]
 async fn given_valid_payload_when_create_budget_then_returns_budget() {
     let mut mock = MockDatabaseRepository::new();
-    mock.expect_get_plaid_connection_by_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
+    mock.expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock.expect_get_transactions_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock.expect_get_budgets_for_user()
@@ -61,8 +61,8 @@ async fn given_valid_payload_when_update_budget_then_returns_budget() {
     let user_id = Uuid::new_v4();
 
     let mut mock = MockDatabaseRepository::new();
-    mock.expect_get_plaid_connection_by_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
+    mock.expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock.expect_get_transactions_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock.expect_get_budgets_for_user()
@@ -94,8 +94,8 @@ async fn given_valid_payload_when_update_budget_then_returns_budget() {
 #[tokio::test]
 async fn given_duplicate_category_when_create_budget_then_conflict() {
     let mut mock = MockDatabaseRepository::new();
-    mock.expect_get_plaid_connection_by_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
+    mock.expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock.expect_get_transactions_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock.expect_get_budgets_for_user()
