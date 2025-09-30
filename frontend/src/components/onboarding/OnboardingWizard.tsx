@@ -1,5 +1,6 @@
 import React, { useEffect, useCallback, useMemo, useRef, useState } from 'react'
 import { Card } from '@/components/ui/Card'
+import { AppHeader } from '@/components/ui/AppHeader'
 import { useOnboardingWizard, type OnboardingStep } from '@/hooks/useOnboardingWizard'
 import { useOnboardingPlaidFlow } from '@/hooks/useOnboardingPlaidFlow'
 import { WelcomeStep } from './WelcomeStep'
@@ -8,9 +9,11 @@ import { ConnectAccountStep } from './ConnectAccountStep'
 interface OnboardingWizardProps {
   onComplete: () => void
   dark?: boolean
+  setDark?: (dark: boolean) => void
+  onLogout?: () => void
 }
 
-export function OnboardingWizard({ onComplete, dark = false }: OnboardingWizardProps) {
+export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }: OnboardingWizardProps) {
   const {
     currentStep,
     stepIndex,
@@ -48,12 +51,8 @@ export function OnboardingWizard({ onComplete, dark = false }: OnboardingWizardP
   }, [])
 
   const handleConnectionSuccess = useCallback(async (_institutionName?: string) => {
-    try {
-      await completeWizard()
-    } catch (error) {
-      console.error('Failed to complete onboarding after Plaid connection:', error)
-    }
-  }, [completeWizard])
+    // Don't complete wizard here - wait for user to click Continue after sync
+  }, [])
 
   const plaidFlow = useOnboardingPlaidFlow({
     onConnectionSuccess: handleConnectionSuccess,
@@ -91,8 +90,12 @@ export function OnboardingWizard({ onComplete, dark = false }: OnboardingWizardP
     }
   }, [currentStep])
 
-  const handleNext = () => {
-    goToNext()
+  const handleNext = async () => {
+    if (isLastStep && currentStep === 'connectAccount' && plaidFlow.isConnected) {
+      await completeWizard()
+    } else {
+      goToNext()
+    }
   }
 
   const handleSkip = async () => {
@@ -133,8 +136,17 @@ export function OnboardingWizard({ onComplete, dark = false }: OnboardingWizardP
 
   return (
     <div className={dark ? 'dark' : ''}>
-      <div className="min-h-dvh w-full bg-gradient-to-br from-slate-100/80 via-slate-50 to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-4 md:p-8">
-        <Card className="relative w-full max-w-6xl overflow-hidden rounded-3xl border border-white/40 bg-white/70 p-6 shadow-2xl backdrop-blur-xl dark:border-slate-800/40 dark:bg-slate-900/70 md:p-8 lg:p-10">
+      <div className="min-h-screen w-full bg-gradient-to-br from-slate-100/80 via-slate-50 to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 flex flex-col transition-colors duration-300">
+        {setDark && onLogout && (
+          <AppHeader
+            dark={dark}
+            onToggleTheme={() => setDark(!dark)}
+            onLogout={onLogout}
+            variant="onboarding"
+          />
+        )}
+        <div className="flex-1 flex items-center justify-center p-4 md:p-6">
+          <Card className="relative w-full max-w-6xl overflow-hidden rounded-3xl border border-white/40 bg-white/70 p-5 shadow-2xl backdrop-blur-xl dark:border-slate-800/40 dark:bg-slate-900/70 md:p-6 lg:p-8 transition-colors duration-300">
           <div className="pointer-events-none absolute inset-0 opacity-60">
             <div className="absolute -left-32 top-16 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl" />
             <div className="absolute -right-24 bottom-12 h-56 w-56 rounded-full bg-indigo-500/20 blur-3xl" />
@@ -144,7 +156,7 @@ export function OnboardingWizard({ onComplete, dark = false }: OnboardingWizardP
             {/* Step content with simple inline stepper */}
             <div
               ref={stepContainerRef}
-              className="flex-1 overflow-x-hidden overflow-y-auto md:overflow-y-hidden rounded-2xl bg-white/80 p-5 shadow-sm ring-1 ring-white/70 backdrop-blur dark:bg-slate-900/70 dark:ring-slate-800 lg:p-6"
+              className="flex-1 overflow-x-hidden overflow-y-auto md:overflow-y-hidden rounded-2xl bg-white/80 p-5 shadow-sm ring-1 ring-white/70 backdrop-blur dark:bg-slate-900/70 dark:ring-slate-800 lg:p-6 transition-colors duration-300"
               style={baselineHeight !== null ? { minHeight: baselineHeight } : undefined}
             >
               <div className="mb-4 flex items-center justify-between">
@@ -155,7 +167,7 @@ export function OnboardingWizard({ onComplete, dark = false }: OnboardingWizardP
                     return (
                       <li key={index} className="flex items-center gap-2">
                         <span
-                          className={`inline-flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold ${
+                          className={`inline-flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold transition-colors duration-300 ${
                             isCompleteStep
                               ? 'border-blue-500 bg-blue-500 text-white'
                               : isActive
@@ -172,7 +184,7 @@ export function OnboardingWizard({ onComplete, dark = false }: OnboardingWizardP
                           )}
                         </span>
                         {index < steps.length - 1 && (
-                          <span className="h-px w-6 bg-slate-200 dark:bg-slate-700" aria-hidden="true" />
+                          <span className="h-px w-6 bg-slate-200 dark:bg-slate-700 transition-colors duration-300" aria-hidden="true" />
                         )}
                       </li>
                     )
@@ -184,7 +196,7 @@ export function OnboardingWizard({ onComplete, dark = false }: OnboardingWizardP
 
             {/* Footer actions */}
             <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 transition-colors duration-300">
                 🔒 Bank-level encryption keeps every credential private. Plaid only shares read-only data, so funds stay untouchable.
               </div>
 
@@ -207,19 +219,18 @@ export function OnboardingWizard({ onComplete, dark = false }: OnboardingWizardP
                   </button>
                 )}
 
-                {!isLastStep && (
-                  <button
-                    onClick={handleNext}
-                    disabled={!canProceed()}
-                    className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 px-6 py-2 text-sm font-semibold text-white shadow-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-slate-900"
-                  >
-                    Continue
-                  </button>
-                )}
+                <button
+                  onClick={handleNext}
+                  disabled={!canProceed()}
+                  className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 px-6 py-2 text-sm font-semibold text-white shadow-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-slate-900"
+                >
+                  {isLastStep && plaidFlow.isConnected ? 'Get started' : 'Continue'}
+                </button>
               </div>
             </div>
           </div>
-        </Card>
+          </Card>
+        </div>
       </div>
     </div>
   )

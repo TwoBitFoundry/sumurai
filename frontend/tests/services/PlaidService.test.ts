@@ -117,7 +117,7 @@ describe('PlaidService', () => {
 
       const result = await PlaidService.syncTransactions()
 
-      expect(ApiClient.post).toHaveBeenCalledWith('/plaid/sync-transactions')
+      expect(ApiClient.post).toHaveBeenCalledWith('/plaid/sync-transactions', {})
       expect(result).toEqual(mockResponse)
     })
     
