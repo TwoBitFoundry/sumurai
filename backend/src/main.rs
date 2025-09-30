@@ -27,7 +27,7 @@ use crate::models::analytics::{
 };
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, AuthMiddlewareState};
-use crate::models::plaid::{DisconnectResult, PlaidConnectionStatus};
+use crate::models::plaid::{DisconnectRequest, DisconnectResult, PlaidConnectionStatus};
 use crate::models::{
     account::AccountResponse,
     analytics::{DateRangeQuery, MonthlyTotalsQuery},
@@ -1498,17 +1498,20 @@ async fn delete_authenticated_budget(
 async fn disconnect_authenticated_plaid(
     State(state): State<AppState>,
     auth_context: AuthContext,
+    Json(req): Json<DisconnectRequest>,
 ) -> Result<Json<DisconnectResult>, StatusCode> {
     let user_id = auth_context.user_id;
+    let connection_id = Uuid::parse_str(&req.connection_id)
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
 
     match state
         .connection_service
-        .disconnect_plaid(&user_id, &auth_context.jwt_id)
+        .disconnect_plaid_by_id(&connection_id, &user_id, &auth_context.jwt_id)
         .await
     {
         Ok(result) => Ok(Json(result)),
         Err(e) => {
-            tracing::error!("Failed to disconnect Plaid: {}", e);
+            tracing::error!("Failed to disconnect: {}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }

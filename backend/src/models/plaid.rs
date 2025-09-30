@@ -36,6 +36,11 @@ pub struct SyncTransactionsRequest {
     pub connection_id: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct DisconnectRequest {
+    pub connection_id: String,
+}
+
 impl PlaidConnection {
     #[allow(dead_code)]
     pub fn new(user_id: Uuid, item_id: &str) -> Self {

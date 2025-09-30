@@ -9,6 +9,7 @@ mod cache_keys_tests;
 mod cache_service_tests;
 mod config_tests;
 mod connection_cache_integration_tests;
+mod connection_service_tests;
 mod integration_tests;
 mod migration_tests;
 mod models_tests;

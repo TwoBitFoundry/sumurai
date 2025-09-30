@@ -25,6 +25,68 @@ impl ConnectionService {
         }
     }
 
+    pub async fn disconnect_plaid_by_id(
+        &self,
+        connection_id: &Uuid,
+        user_id: &Uuid,
+        jwt_id: &str,
+    ) -> Result<DisconnectResult> {
+        let connection = self
+            .db_repository
+            .get_plaid_connection_by_id(connection_id)
+            .await?;
+
+        let Some(mut conn) = connection else {
+            return Ok(DisconnectResult {
+                success: false,
+                message: "Connection not found".to_string(),
+                data_cleared: DataCleared {
+                    transactions: 0,
+                    accounts: 0,
+                    cache_keys: vec![],
+                },
+            });
+        };
+
+        if conn.user_id != *user_id {
+            return Err(anyhow::anyhow!("Connection does not belong to user"));
+        }
+
+        conn.mark_disconnected();
+        self.db_repository.save_plaid_connection(&conn).await?;
+
+        let cleared_keys = self
+            .clear_all_plaid_cache_data(jwt_id, &conn.item_id)
+            .await?;
+
+        self.cache_service
+            .clear_jwt_scoped_bank_connection_cache(jwt_id, *connection_id)
+            .await?;
+
+        let deleted_transactions = self
+            .db_repository
+            .delete_plaid_transactions(&conn.item_id)
+            .await?;
+        let deleted_accounts = self
+            .db_repository
+            .delete_plaid_accounts(&conn.item_id)
+            .await?;
+
+        self.db_repository
+            .delete_plaid_credentials(&conn.item_id)
+            .await?;
+
+        Ok(DisconnectResult {
+            success: true,
+            message: "Successfully disconnected bank connection".to_string(),
+            data_cleared: DataCleared {
+                transactions: deleted_transactions,
+                accounts: deleted_accounts,
+                cache_keys: cleared_keys,
+            },
+        })
+    }
+
     pub async fn disconnect_plaid(&self, user_id: &Uuid, jwt_id: &str) -> Result<DisconnectResult> {
         let connection = self
             .db_repository
