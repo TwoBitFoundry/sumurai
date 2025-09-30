@@ -13,7 +13,7 @@ vi.mock('@/components/BankCard', () => ({
 }))
 
 vi.mock('@/features/plaid/components/ConnectButton', () => ({
-  default: ({ onClick }: any) => <button onClick={onClick}>Add bank</button>,
+  default: ({ onClick }: any) => <button onClick={onClick}>Add account</button>,
 }))
 
 describe('ConnectionsList', () => {
@@ -54,7 +54,7 @@ describe('ConnectionsList', () => {
       />
     )
 
-    const buttons = getAllByText(/add bank/i)
+    const buttons = getAllByText(/add account/i)
     fireEvent.click(buttons[buttons.length - 1])
     expect(onConnect).toHaveBeenCalled()
   })

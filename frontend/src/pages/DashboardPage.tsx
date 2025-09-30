@@ -85,7 +85,10 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
       <div ref={spendingOverviewRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
         <Card className="h-full">
           <div className="mb-4 flex items-center justify-between">
-            <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Spending</div>
+            <div>
+              <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Spending Over Time</h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400">Breakdown by category</p>
+            </div>
             {!analyticsLoading && analyticsRefreshing && (
               <RefreshCcw
                 aria-label="Refreshing analytics"
@@ -146,7 +149,10 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
 
         <Card className="h-full">
           <div className="mb-3 flex items-center justify-between">
-            <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Top Merchants</div>
+            <div>
+              <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Top Merchants Over Time</h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400">Highest spending locations</p>
+            </div>
             {!analyticsLoading && analyticsRefreshing && (
               <RefreshCcw
                 aria-label="Refreshing analytics"
@@ -159,7 +165,10 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
 
         <Card className="h-full">
           <div className="mb-4 flex items-center justify-between">
-            <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Net Worth Over Time</div>
+            <div>
+              <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Net Worth Over Time</h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400">Historical asset growth</p>
+            </div>
             {!netLoading && netRefreshing && (
               <RefreshCcw
                 aria-label="Refreshing net worth"

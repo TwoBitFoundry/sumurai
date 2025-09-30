@@ -34,8 +34,8 @@ const ConnectionsList = ({ banks, onConnect, onSync, onDisconnect }: Connections
         <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-slate-200/60 dark:bg-slate-700/60">
           <Link2 className="h-6 w-6 text-slate-500 dark:text-slate-300" />
         </div>
-        <h3 className="text-slate-900 dark:text-slate-100 font-semibold">No banks connected yet</h3>
-        <p className="text-slate-600 dark:text-slate-400 mt-1">Connect a bank to start syncing transactions.</p>
+        <h3 className="text-slate-900 dark:text-slate-100 font-semibold">No accounts connected yet</h3>
+        <p className="text-slate-600 dark:text-slate-400 mt-1">Connect an account to start syncing transactions.</p>
         <ConnectButton variant="secondary" onClick={onConnect} className="mt-4" />
       </div>
     )
