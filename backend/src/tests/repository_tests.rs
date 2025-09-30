@@ -6,6 +6,7 @@ use crate::models::plaid::PlaidCredentials;
 use crate::services::repository_service::{DatabaseRepository, MockDatabaseRepository};
 
 use chrono::{NaiveDate, Utc};
+use mockall::predicate;
 use rust_decimal_macros::dec;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -3068,4 +3069,44 @@ async fn given_user_with_no_transactions_when_get_transaction_count_by_account_t
     assert!(result.is_ok());
     let counts = result.unwrap();
     assert!(counts.is_empty());
+}
+
+#[tokio::test]
+async fn given_user_with_multiple_connections_when_get_all_then_returns_all_connections() {
+    let mut mock_repo = MockDatabaseRepository::new();
+    let user_id = Uuid::new_v4();
+
+    let conn1 = PlaidConnection::new(user_id, "item_1");
+    let conn2 = PlaidConnection::new(user_id, "item_2");
+    let conn1_clone = conn1.clone();
+    let conn2_clone = conn2.clone();
+
+    mock_repo
+        .expect_get_all_plaid_connections_by_user()
+        .with(predicate::eq(user_id))
+        .returning(move |_| {
+            let c1 = conn1_clone.clone();
+            let c2 = conn2_clone.clone();
+            Box::pin(async move {
+                Ok(vec![c1, c2])
+            })
+        });
+
+    let result = mock_repo.get_all_plaid_connections_by_user(&user_id).await;
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap().len(), 2);
+}
+
+#[tokio::test]
+async fn given_user_with_no_connections_when_get_all_then_returns_empty() {
+    let mut mock_repo = MockDatabaseRepository::new();
+    let user_id = Uuid::new_v4();
+
+    mock_repo
+        .expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let result = mock_repo.get_all_plaid_connections_by_user(&user_id).await;
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap().len(), 0);
 }

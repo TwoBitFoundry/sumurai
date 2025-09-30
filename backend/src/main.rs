@@ -883,6 +883,7 @@ async fn sync_authenticated_plaid_transactions(
             for account in &accounts {
                 let mut acct = account.clone();
                 acct.user_id = Some(user_id);
+                acct.plaid_connection_id = Some(connection.id);
                 if let Err(e) = state.db_repository.upsert_account(&acct).await {
                     tracing::warn!("Failed to persist account to database during sync: {}", e);
                 }
