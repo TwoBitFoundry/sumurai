@@ -24,12 +24,9 @@ export class PlaidService {
   }
 
   static async syncTransactions(connectionId?: string): Promise<PlaidSyncResponse> {
-    if (connectionId) {
-      return ApiClient.post<PlaidSyncResponse>('/plaid/sync-transactions', {
-        connection_id: connectionId
-      })
-    }
-    return ApiClient.post<PlaidSyncResponse>('/plaid/sync-transactions')
+    return ApiClient.post<PlaidSyncResponse>('/plaid/sync-transactions',
+      connectionId ? { connection_id: connectionId } : {}
+    )
   }
 
   static async getStatus(): Promise<PlaidStatusResponse> {

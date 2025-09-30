@@ -126,10 +126,9 @@ describe('OnboardingWizard', () => {
     expect(mockWizardHook.skipWizard).toHaveBeenCalled()
   })
 
-  it('given final step when plaid connection succeeds then completes automatically', async () => {
+  it('given final step when plaid connection succeeds then shows get started button', async () => {
     const onComplete = vi.fn()
     const mockCompleteWizard = vi.fn().mockResolvedValue(undefined)
-    let capturedOptions: any
 
     mockUseOnboardingWizard.mockReturnValue({
       ...mockWizardHook,
@@ -140,20 +139,18 @@ describe('OnboardingWizard', () => {
       completeWizard: mockCompleteWizard,
     })
 
-    mockUseOnboardingPlaidFlow.mockImplementation((options: any) => {
-      capturedOptions = options
-      return {
-        ...mockPlaidFlowHook,
-        isConnected: true,
-      }
+    mockUseOnboardingPlaidFlow.mockReturnValue({
+      ...mockPlaidFlowHook,
+      isConnected: true,
     })
 
     render(<OnboardingWizard onComplete={onComplete} />)
 
-    expect(capturedOptions?.onConnectionSuccess).toBeDefined()
+    const getStartedButton = screen.getByRole('button', { name: /get started/i })
+    expect(getStartedButton).toBeEnabled()
 
     await act(async () => {
-      await capturedOptions?.onConnectionSuccess?.('Connected Bank')
+      fireEvent.click(getStartedButton)
     })
 
     expect(mockCompleteWizard).toHaveBeenCalled()
