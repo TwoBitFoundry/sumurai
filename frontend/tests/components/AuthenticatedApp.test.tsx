@@ -10,7 +10,7 @@ type DashboardProps = { dark: boolean }
 let DashboardPageMock: ReturnType<typeof vi.fn>
 let TransactionsPageMock: ReturnType<typeof vi.fn>
 let BudgetsPageMock: ReturnType<typeof vi.fn>
-let ConnectPageMock: ReturnType<typeof vi.fn>
+let AccountsPageMock: ReturnType<typeof vi.fn>
 
 vi.mock('@/pages/DashboardPage', () => ({
   __esModule: true,
@@ -26,9 +26,9 @@ vi.mock('@/pages/BudgetsPage', () => ({
   default: () => BudgetsPageMock(),
 }))
 
-vi.mock('@/pages/ConnectPage', () => ({
+vi.mock('@/pages/AccountsPage', () => ({
   __esModule: true,
-  default: (props: { onError?: (value: string | null) => void }) => ConnectPageMock(props),
+  default: (props: { onError?: (value: string | null) => void }) => AccountsPageMock(props),
 }))
 
 describe('AuthenticatedApp shell', () => {
@@ -73,12 +73,12 @@ describe('AuthenticatedApp shell', () => {
     ))
     TransactionsPageMock = vi.fn(() => <div data-testid="transactions-page">transactions</div>)
     BudgetsPageMock = vi.fn(() => <div data-testid="budgets-page">budgets</div>)
-    ConnectPageMock = vi.fn(({ onError }: { onError?: (value: string | null) => void }) => (
-      <div data-testid="connect-page">
-        <button onClick={() => onError?.('connect-error')} data-testid="trigger-connect-error">
+    AccountsPageMock = vi.fn(({ onError }: { onError?: (value: string | null) => void }) => (
+      <div data-testid="accounts-page">
+        <button onClick={() => onError?.('accounts-error')} data-testid="trigger-accounts-error">
           trigger error
         </button>
-        <button onClick={() => onError?.(null)} data-testid="clear-connect-error">
+        <button onClick={() => onError?.(null)} data-testid="clear-accounts-error">
           clear error
         </button>
       </div>
@@ -103,7 +103,7 @@ describe('AuthenticatedApp shell', () => {
 
     expect(screen.getByTestId('dashboard-page')).toBeInTheDocument()
     expect(screen.queryByTestId('transactions-page')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('connect-page')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('accounts-page')).not.toBeInTheDocument()
   })
 
   it('navigates between tabs and toggles budgets visibility without extra props', async () => {
@@ -115,31 +115,31 @@ describe('AuthenticatedApp shell', () => {
     expect(budgetsSection).toHaveClass('hidden')
     expect(budgetsSection).toHaveAttribute('aria-hidden', 'true')
 
-    await user.click(screen.getByRole('button', { name: /transactions/i }))
+    await user.click(screen.getByRole('button', { name: /^transactions$/i }))
     expect(screen.getByTestId('transactions-page')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /budgets/i }))
+    await user.click(screen.getByRole('button', { name: /^budgets$/i }))
     const activeBudgetsSection = screen.getByTestId('budgets-page').parentElement?.parentElement
     expect(activeBudgetsSection).not.toHaveClass('hidden')
     expect(activeBudgetsSection).not.toHaveAttribute('aria-hidden')
 
-    await user.click(screen.getByRole('button', { name: /connect/i }))
-    expect(screen.getByTestId('connect-page')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^accounts$/i }))
+    expect(screen.getByTestId('accounts-page')).toBeInTheDocument()
     const hiddenBudgetsSection = screen.getByTestId('budgets-page').parentElement?.parentElement
     expect(hiddenBudgetsSection).toHaveClass('hidden')
     expect(hiddenBudgetsSection).toHaveAttribute('aria-hidden', 'true')
   })
 
-  it('surfaces errors from the connect page and clears them', async () => {
+  it('surfaces errors from the accounts page and clears them', async () => {
     const user = userEvent.setup()
     renderApp()
 
-    await user.click(screen.getByRole('button', { name: /connect/i }))
-    await user.click(screen.getByTestId('trigger-connect-error'))
-    expect(screen.getByText('connect-error')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^accounts$/i }))
+    await user.click(screen.getByTestId('trigger-accounts-error'))
+    expect(screen.getByText('accounts-error')).toBeInTheDocument()
 
-    await user.click(screen.getByTestId('clear-connect-error'))
-    expect(screen.queryByText('connect-error')).not.toBeInTheDocument()
+    await user.click(screen.getByTestId('clear-accounts-error'))
+    expect(screen.queryByText('accounts-error')).not.toBeInTheDocument()
   })
 
   it('toggles theme and supports logout', async () => {

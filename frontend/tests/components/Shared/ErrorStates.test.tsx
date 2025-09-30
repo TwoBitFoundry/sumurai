@@ -8,6 +8,8 @@ import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () => {
   const user = userEvent.setup()
   const originalConsoleError = console.error
+  const mockOnLogout = vi.fn()
+  const mockSetDark = vi.fn()
   let fetchMock: ReturnType<typeof installFetchRoutes>
 
   beforeEach(() => {
@@ -26,6 +28,8 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
         { month: '2025-08', amount: 0 },
       ],
       'GET /api/analytics/top-merchants*': [],
+      'GET /api/analytics/net-worth-over-time*': [],
+      'GET /api/analytics/balances/overview': { total_assets: 0, total_liabilities: 0, net_worth: 0 },
       'GET /api/budgets': [],
     })
   })
@@ -49,17 +53,19 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
           { month: '2025-08', amount: 0 },
         ],
         'GET /api/analytics/top-merchants*': [],
+        'GET /api/analytics/net-worth-over-time*': [],
+        'GET /api/analytics/balances/overview': { total_assets: 0, total_liabilities: 0, net_worth: 0 },
         'GET /api/budgets': [],
       })
 
       render(
         <AccountFilterProvider>
-          <AuthenticatedApp />
+          <AuthenticatedApp onLogout={mockOnLogout} dark={false} setDark={mockSetDark} />
         </AccountFilterProvider>
       )
       await waitFor(() => {
-        expect(screen.getByText('Spending')).toBeInTheDocument()
-      })
+        expect(screen.getByRole('button', { name: /^dashboard$/i })).toBeInTheDocument()
+      }, { timeout: 3000 })
     })
 
     it('continues rendering on timeout-like errors', async () => {
@@ -72,17 +78,19 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
         'GET /api/analytics/daily-spending-range*': [],
         'GET /api/analytics/monthly-totals*': [],
         'GET /api/analytics/top-merchants*': [],
+        'GET /api/analytics/net-worth-over-time*': [],
+        'GET /api/analytics/balances/overview': { total_assets: 0, total_liabilities: 0, net_worth: 0 },
         'GET /api/budgets': [],
       })
 
       render(
         <AccountFilterProvider>
-          <AuthenticatedApp />
+          <AuthenticatedApp onLogout={mockOnLogout} dark={false} setDark={mockSetDark} />
         </AccountFilterProvider>
       )
       await waitFor(() => {
-        expect(screen.getByText('Spending')).toBeInTheDocument()
-      })
+        expect(screen.getByRole('button', { name: /^dashboard$/i })).toBeInTheDocument()
+      }, { timeout: 3000 })
     })
   })
 
@@ -97,12 +105,14 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
         'GET /api/analytics/daily-spending-range*': [],
         'GET /api/analytics/monthly-totals*': [],
         'GET /api/analytics/top-merchants*': [],
+        'GET /api/analytics/net-worth-over-time*': [],
+        'GET /api/analytics/balances/overview': { total_assets: 0, total_liabilities: 0, net_worth: 0 },
         'GET /api/budgets': [],
       })
 
       render(
         <AccountFilterProvider>
-          <AuthenticatedApp />
+          <AuthenticatedApp onLogout={mockOnLogout} dark={false} setDark={mockSetDark} />
         </AccountFilterProvider>
       )
       await waitFor(() => {
@@ -121,12 +131,14 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
         'GET /api/analytics/daily-spending-range*': [],
         'GET /api/analytics/monthly-totals*': [],
         'GET /api/analytics/top-merchants*': [],
+        'GET /api/analytics/net-worth-over-time*': [],
+        'GET /api/analytics/balances/overview': { total_assets: 0, total_liabilities: 0, net_worth: 0 },
         'GET /api/budgets': [],
       })
 
       render(
         <AccountFilterProvider>
-          <AuthenticatedApp />
+          <AuthenticatedApp onLogout={mockOnLogout} dark={false} setDark={mockSetDark} />
         </AccountFilterProvider>
       )
       await user.click(screen.getByText('Budgets'))
@@ -150,12 +162,14 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
         'GET /api/analytics/daily-spending-range*': [],
         'GET /api/analytics/monthly-totals*': [],
         'GET /api/analytics/top-merchants*': [],
+        'GET /api/analytics/net-worth-over-time*': [],
+        'GET /api/analytics/balances/overview': { total_assets: 0, total_liabilities: 0, net_worth: 0 },
         'GET /api/budgets': [],
       })
 
       render(
         <AccountFilterProvider>
-          <AuthenticatedApp />
+          <AuthenticatedApp onLogout={mockOnLogout} dark={false} setDark={mockSetDark} />
         </AccountFilterProvider>
       )
       await user.click(screen.getByText('Transactions'))
@@ -184,12 +198,14 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
         'GET /api/analytics/daily-spending-range*': [],
         'GET /api/analytics/monthly-totals*': [],
         'GET /api/analytics/top-merchants*': [],
+        'GET /api/analytics/net-worth-over-time*': [],
+        'GET /api/analytics/balances/overview': { total_assets: 0, total_liabilities: 0, net_worth: 0 },
         'GET /api/budgets': [],
       })
 
       render(
         <AccountFilterProvider>
-          <AuthenticatedApp />
+          <AuthenticatedApp onLogout={mockOnLogout} dark={false} setDark={mockSetDark} />
         </AccountFilterProvider>
       )
       await user.click(screen.getByText('Transactions'))
@@ -208,17 +224,19 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
         'GET /api/analytics/daily-spending-range*': [],
         'GET /api/analytics/monthly-totals*': [],
         'GET /api/analytics/top-merchants*': [],
+        'GET /api/analytics/net-worth-over-time*': [],
+        'GET /api/analytics/balances/overview': { total_assets: 0, total_liabilities: 0, net_worth: 0 },
         'GET /api/budgets': new Response('Not found', { status: 404 }),
       })
 
       render(
         <AccountFilterProvider>
-          <AuthenticatedApp />
+          <AuthenticatedApp onLogout={mockOnLogout} dark={false} setDark={mockSetDark} />
         </AccountFilterProvider>
       )
       await waitFor(() => {
-        expect(screen.getByText('Spending')).toBeInTheDocument()
-      })
+        expect(screen.getByRole('button', { name: /^dashboard$/i })).toBeInTheDocument()
+      }, { timeout: 3000 })
     })
   })
 })

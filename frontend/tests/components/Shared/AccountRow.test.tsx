@@ -59,14 +59,14 @@ describe('AccountRow', () => {
       render(<AccountRow account={mockCheckingAccount} />)
 
       const balanceElement = screen.getByText('$1,500.50')
-      expect(balanceElement).toHaveClass('text-emerald-400')
+      expect(balanceElement).toHaveClass('dark:text-emerald-400')
     })
 
     it('formats credit account negative balance in red color', () => {
       render(<AccountRow account={mockCreditAccount} />)
 
       const balanceElement = screen.getByText('-$1,200.75')
-      expect(balanceElement).toHaveClass('text-red-400')
+      expect(balanceElement).toHaveClass('dark:text-red-400')
     })
 
     it('formats checking account negative balance in rose color', () => {
@@ -74,17 +74,17 @@ describe('AccountRow', () => {
         ...mockCheckingAccount,
         balance: -500.25
       }
-      
+
       render(<AccountRow account={checkingWithNegativeBalance} />)
 
       const balanceElement = screen.getByText('-$500.25')
-      expect(balanceElement).toHaveClass('text-rose-400')
+      expect(balanceElement).toHaveClass('dark:text-rose-400')
     })
 
     it('shows transaction count', () => {
       render(<AccountRow account={mockCheckingAccount} />)
 
-      expect(screen.getByText('25 txns')).toBeInTheDocument()
+      expect(screen.getByText('25 items')).toBeInTheDocument()
     })
   })
 
@@ -96,7 +96,7 @@ describe('AccountRow', () => {
       expect(screen.getByText('••5678')).toBeInTheDocument()
       expect(screen.getByText('savings')).toBeInTheDocument()
       expect(screen.getByText('$5,000.00')).toBeInTheDocument()
-      expect(screen.getByText('10 txns')).toBeInTheDocument()
+      expect(screen.getByText('10 items')).toBeInTheDocument()
     })
 
     it('displays credit account correctly', () => {
@@ -106,7 +106,7 @@ describe('AccountRow', () => {
       expect(screen.getByText('••9999')).toBeInTheDocument()
       expect(screen.getByText('credit')).toBeInTheDocument()
       expect(screen.getByText('-$1,200.75')).toBeInTheDocument()
-      expect(screen.getByText('35 txns')).toBeInTheDocument()
+      expect(screen.getByText('35 items')).toBeInTheDocument()
     })
   })
 
@@ -132,7 +132,7 @@ describe('AccountRow', () => {
 
       render(<AccountRow account={accountWithoutTransactions} />)
 
-      expect(screen.getByText('0 txns')).toBeInTheDocument()
+      expect(screen.getByText('0 items')).toBeInTheDocument()
     })
 
     it('handles zero balance correctly', () => {
@@ -144,7 +144,7 @@ describe('AccountRow', () => {
       render(<AccountRow account={accountWithZeroBalance} />)
 
       const balanceElement = screen.getByText('$0.00')
-      expect(balanceElement).toHaveClass('text-slate-200')
+      expect(balanceElement).toHaveClass('dark:text-slate-600')
     })
   })
 

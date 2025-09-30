@@ -42,40 +42,45 @@ const AccountTypeDot: React.FC<{ type: Account["type"] }> = ({ type }) => {
 export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
   const isDebtAccount = account.type === 'credit' || account.type === 'loan';
   const isOtherAccount = account.type === 'other';
-  
+
   return (
-    <div className="grid grid-cols-12 items-center gap-4 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/40 p-4">
-      <div className="col-span-6 flex min-w-0 items-center gap-3">
-        <AccountTypeDot type={account.type} />
-        <div className="min-w-0">
-          <div className="text-slate-900 dark:text-slate-100 font-medium break-words">
-            {account.name}{" "}
-            <span className="text-slate-600 dark:text-slate-400 font-normal">••{account.mask}</span>
-          </div>
-          <div className="text-slate-600 dark:text-slate-400 text-xs capitalize">{account.type}</div>
+    <div className="group rounded-xl border border-slate-200 dark:border-slate-700/60 bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/60 dark:to-slate-800/40 p-4 hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-slate-900 dark:text-slate-100 font-bold text-base">
+          {account.name}
+        </div>
+        <div
+          className={classNames(
+            "text-base font-mono font-bold tabular-nums",
+            account.balance != null
+              ? isDebtAccount
+                ? "text-red-500 dark:text-red-400"
+                : isOtherAccount
+                ? "text-slate-500 dark:text-slate-400"
+                : account.balance < 0
+                ? "text-rose-500 dark:text-rose-400"
+                : account.balance > 0
+                ? "text-emerald-500 dark:text-emerald-400"
+                : "text-slate-300 dark:text-slate-600"
+              : "text-slate-400"
+          )}
+        >
+          {formatMoney(account.balance)}
         </div>
       </div>
-      <div
-        className={classNames(
-          "col-span-3 text-right text-sm font-mono tabular-nums",
-          account.balance != null
-            ? isDebtAccount
-              ? "text-red-400"
-              : isOtherAccount
-              ? "text-slate-400" 
-              : account.balance < 0
-              ? "text-rose-400"
-              : account.balance > 0
-              ? "text-emerald-400"
-              : "text-slate-200"
-            : "text-slate-400"
-        )}
-      >
-        {formatMoney(account.balance)}
-      </div>
-      <div className="col-span-3 text-right">
-        <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 dark:bg-slate-700/60 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 whitespace-nowrap">
-          {account.transactions ?? 0} txns
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <AccountTypeDot type={account.type} />
+          <span className="text-slate-600 dark:text-slate-400 text-xs font-medium capitalize">
+            {account.type}
+          </span>
+          <span className="text-slate-500 dark:text-slate-500 text-xs font-mono">
+            ••{account.mask}
+          </span>
+        </div>
+        <span className="inline-flex items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
+          {account.transactions ?? 0} items
         </span>
       </div>
     </div>

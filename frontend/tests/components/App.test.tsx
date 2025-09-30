@@ -285,7 +285,7 @@ describe('App Phase 2 - Business Logic Removal', () => {
         )
         await new Promise(resolve => setTimeout(resolve, 100))
       })
-      expect(screen.getAllByText('Spending').length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/spending/i).length).toBeGreaterThan(0)
       restore()
     }, 15000)
 

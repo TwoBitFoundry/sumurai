@@ -20,7 +20,7 @@ const ConnectButton = ({ variant = 'primary', className = '', children, ...props
       {...props}
     >
       <Plus className="h-4 w-4" />
-      <span>{children ?? 'Add bank'}</span>
+      <span>{children ?? 'Add account'}</span>
     </button>
   )
 }

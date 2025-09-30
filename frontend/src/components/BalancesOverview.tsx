@@ -84,7 +84,7 @@ export function BalancesOverview() {
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>
           <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Balances Overview</h3>
-          <p className="text-sm text-slate-600 dark:text-slate-400">Assets vs liabilities across your banks</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Assets vs liabilities across your accounts</p>
         </div>
         <div className="flex items-center gap-2">
           {!loading && refreshing && (
@@ -241,7 +241,7 @@ export function BalancesOverview() {
       </div>
 
       {/* Labels beneath chart with bank name and ratio */}
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         {(data?.banks || []).map((b) => (
           <div key={b.bankId} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white/40 dark:bg-slate-900/30 p-3 flex items-center justify-between">
             <div className="text-sm font-medium">{b.bankName}</div>

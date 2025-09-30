@@ -3,6 +3,7 @@ import type { Transaction } from '../../../types/api'
 import { fmtUSD } from '../../../utils/format'
 import { getTagThemeForCategory } from '../../../utils/categories'
 import { Th, Td } from '../../../components/ui/Table'
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 
 interface Props {
   items: Transaction[]
@@ -14,8 +15,9 @@ interface Props {
 }
 
 export const TransactionsTable: React.FC<Props> = ({ items, total, currentPage, totalPages, onPrev, onNext }) => {
-  const from = total === 0 ? 0 : (currentPage - 1) * 10 + 1
-  const to = Math.min(total, currentPage * 10)
+  const pageSize = items.length > 0 ? Math.ceil(total / totalPages) : 8
+  const from = total === 0 ? 0 : (currentPage - 1) * pageSize + 1
+  const to = Math.min(total, currentPage * pageSize)
   return (
     <div className="p-0 overflow-hidden">
       {total === 0 ? (
@@ -28,7 +30,8 @@ export const TransactionsTable: React.FC<Props> = ({ items, total, currentPage, 
         </div>
       ) : (
         <>
-          <table className="min-w-full text-sm table-fixed">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm table-fixed">
             <thead className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-600">
               <tr>
                 <Th className="w-[15%] whitespace-nowrap">Date</Th>
@@ -67,12 +70,17 @@ export const TransactionsTable: React.FC<Props> = ({ items, total, currentPage, 
               ))}
             </tbody>
           </table>
+          </div>
           <div className="flex items-center justify-between p-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
             <div className="text-xs text-slate-600 dark:text-slate-400">Showing {from}-{to} of {total}</div>
             <div className="flex items-center gap-2">
-              <button className="px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 text-sm disabled:opacity-50" disabled={currentPage <= 1} onClick={onPrev}>Previous</button>
+              <button className="p-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50" disabled={currentPage <= 1} onClick={onPrev} aria-label="Previous page">
+                <ChevronLeftIcon className="w-4 h-4" />
+              </button>
               <div className="text-xs text-slate-600 dark:text-slate-400">Page {currentPage} of {totalPages}</div>
-              <button className="px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 text-sm disabled:opacity-50" disabled={currentPage >= totalPages} onClick={onNext}>Next</button>
+              <button className="p-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50" disabled={currentPage >= totalPages} onClick={onNext} aria-label="Next page">
+                <ChevronRightIcon className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </>
