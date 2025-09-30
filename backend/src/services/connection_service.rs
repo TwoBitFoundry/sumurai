@@ -87,55 +87,6 @@ impl ConnectionService {
         })
     }
 
-    pub async fn disconnect_plaid(&self, user_id: &Uuid, jwt_id: &str) -> Result<DisconnectResult> {
-        let connection = self
-            .db_repository
-            .get_plaid_connection_by_user(user_id)
-            .await?;
-
-        if let Some(mut conn) = connection {
-            conn.mark_disconnected();
-            self.db_repository.save_plaid_connection(&conn).await?;
-
-            let cleared_keys = self
-                .clear_all_plaid_cache_data(jwt_id, &conn.item_id)
-                .await?;
-
-            let deleted_transactions = self
-                .db_repository
-                .delete_plaid_transactions(&conn.item_id)
-                .await?;
-            let deleted_accounts = self
-                .db_repository
-                .delete_plaid_accounts(&conn.item_id)
-                .await?;
-
-            self.db_repository
-                .delete_plaid_credentials(&conn.item_id)
-                .await?;
-
-            Ok(DisconnectResult {
-                success: true,
-                message: "Successfully disconnected and cleared all Plaid data".to_string(),
-                data_cleared: DataCleared {
-                    transactions: deleted_transactions,
-                    accounts: deleted_accounts,
-                    cache_keys: cleared_keys,
-                },
-            })
-        } else {
-            Ok(DisconnectResult {
-                success: true,
-                message: "No active Plaid connection found".to_string(),
-                data_cleared: DataCleared {
-                    transactions: 0,
-                    accounts: 0,
-                    cache_keys: vec![],
-                },
-            })
-        }
-    }
-
     async fn clear_all_plaid_cache_data(&self, jwt_id: &str, item_id: &str) -> Result<Vec<String>> {
         let mut cleared_keys = vec![];
 
@@ -173,73 +124,6 @@ impl ConnectionService {
         }
 
         Ok(cleared_keys)
-    }
-
-    pub async fn disconnect_plaid_with_jwt_context(
-        &self,
-        user_id: &Uuid,
-        jwt_id: &str,
-    ) -> Result<DisconnectResult> {
-        let connection_opt = self
-            .db_repository
-            .get_plaid_connection_by_user(user_id)
-            .await?;
-
-        if let Some(mut conn) = connection_opt {
-            let connection_id = conn.id;
-
-            // Mark as disconnected in database
-            conn.mark_disconnected();
-            self.db_repository.save_plaid_connection(&conn).await?;
-
-            // Clear legacy cache
-            let cleared_keys = self
-                .clear_all_plaid_cache_data(jwt_id, &conn.item_id)
-                .await?;
-
-            // Clear JWT-scoped cache for this connection and refresh connection list
-            self.cache_service
-                .clear_jwt_scoped_bank_connection_cache(jwt_id, connection_id)
-                .await?;
-
-            self.cache_service
-                .refresh_jwt_scoped_connections_cache(jwt_id, &[])
-                .await?;
-
-            // Remove persisted Plaid data
-            let deleted_transactions = self
-                .db_repository
-                .delete_plaid_transactions(&conn.item_id)
-                .await?;
-            let deleted_accounts = self
-                .db_repository
-                .delete_plaid_accounts(&conn.item_id)
-                .await?;
-
-            self.db_repository
-                .delete_plaid_credentials(&conn.item_id)
-                .await?;
-
-            Ok(DisconnectResult {
-                success: true,
-                message: "Successfully disconnected and cleared all Plaid data".to_string(),
-                data_cleared: DataCleared {
-                    transactions: deleted_transactions,
-                    accounts: deleted_accounts,
-                    cache_keys: cleared_keys,
-                },
-            })
-        } else {
-            Ok(DisconnectResult {
-                success: true,
-                message: "No active Plaid connection found".to_string(),
-                data_cleared: DataCleared {
-                    transactions: 0,
-                    accounts: 0,
-                    cache_keys: vec![],
-                },
-            })
-        }
     }
 
     pub async fn complete_sync_with_jwt_cache_update(

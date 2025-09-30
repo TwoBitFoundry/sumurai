@@ -71,8 +71,6 @@ pub trait DatabaseRepository: Send + Sync {
     ) -> Result<Option<PlaidCredentials>>;
 
     async fn save_plaid_connection(&self, connection: &PlaidConnection) -> Result<()>;
-    async fn get_plaid_connection_by_user(&self, user_id: &Uuid)
-        -> Result<Option<PlaidConnection>>;
     async fn get_all_plaid_connections_by_user(&self, user_id: &Uuid) -> Result<Vec<PlaidConnection>>;
     async fn get_plaid_connection_by_id(&self, connection_id: &Uuid) -> Result<Option<PlaidConnection>>;
     async fn get_plaid_connection_by_item(&self, item_id: &str) -> Result<Option<PlaidConnection>>;
@@ -656,88 +654,6 @@ impl DatabaseRepository for PostgresRepository {
         Ok(())
     }
 
-    async fn get_plaid_connection_by_user(
-        &self,
-        user_id: &Uuid,
-    ) -> Result<Option<PlaidConnection>> {
-        let mut tx = self.pool.begin().await?;
-        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
-            .bind(user_id.to_string())
-            .execute(&mut *tx)
-            .await?;
-
-        let row = sqlx::query_as::<
-            _,
-            (
-                Uuid,
-                Uuid,
-                String,
-                bool,
-                Option<chrono::DateTime<chrono::Utc>>,
-                Option<chrono::DateTime<chrono::Utc>>,
-                Option<chrono::DateTime<chrono::Utc>>,
-                Option<String>,
-                Option<String>,
-                Option<String>,
-                Option<String>,
-                i32,
-                i32,
-                Option<chrono::DateTime<chrono::Utc>>,
-                Option<chrono::DateTime<chrono::Utc>>,
-            ),
-        >(
-            r#"
-            SELECT id, user_id, item_id, is_connected, last_sync_at, connected_at,
-                   disconnected_at, institution_id, institution_name, institution_logo_url, sync_cursor,
-                   transaction_count, account_count, created_at, updated_at
-            FROM plaid_connections 
-            WHERE user_id = $1 
-            ORDER BY created_at DESC 
-            LIMIT 1
-            "#,
-        )
-        .bind(user_id)
-        .fetch_optional(&mut *tx)
-        .await?;
-
-        tx.commit().await?;
-
-        Ok(row.map(
-            |(
-                id,
-                user_id,
-                item_id,
-                is_connected,
-                last_sync_at,
-                connected_at,
-                disconnected_at,
-                institution_id,
-                institution_name,
-                institution_logo_url,
-                sync_cursor,
-                transaction_count,
-                account_count,
-                created_at,
-                updated_at,
-            )| PlaidConnection {
-                id,
-                user_id,
-                item_id,
-                is_connected,
-                last_sync_at,
-                connected_at,
-                disconnected_at,
-                institution_id,
-                institution_name,
-                institution_logo_url,
-                sync_cursor,
-                transaction_count,
-                account_count,
-                created_at,
-                updated_at,
-            },
-        ))
-    }
 
     async fn get_all_plaid_connections_by_user(&self, user_id: &Uuid) -> Result<Vec<PlaidConnection>> {
         let mut tx = self.pool.begin().await?;
