@@ -74,6 +74,7 @@ pub trait DatabaseRepository: Send + Sync {
     async fn get_plaid_connection_by_user(&self, user_id: &Uuid)
         -> Result<Option<PlaidConnection>>;
     async fn get_all_plaid_connections_by_user(&self, user_id: &Uuid) -> Result<Vec<PlaidConnection>>;
+    async fn get_plaid_connection_by_id(&self, connection_id: &Uuid) -> Result<Option<PlaidConnection>>;
     async fn get_plaid_connection_by_item(&self, item_id: &str) -> Result<Option<PlaidConnection>>;
     async fn delete_plaid_transactions(&self, item_id: &str) -> Result<i32>;
     async fn delete_plaid_accounts(&self, item_id: &str) -> Result<i32>;
@@ -774,6 +775,35 @@ impl DatabaseRepository for PostgresRepository {
                 disconnected_at, institution_id, institution_name, institution_logo_url,
                 sync_cursor, transaction_count, account_count, created_at, updated_at,
             }).collect())
+    }
+
+    async fn get_plaid_connection_by_id(&self, connection_id: &Uuid) -> Result<Option<PlaidConnection>> {
+        let row = sqlx::query_as::<
+            _,
+            (Uuid, Uuid, String, bool, Option<chrono::DateTime<chrono::Utc>>, Option<chrono::DateTime<chrono::Utc>>,
+             Option<chrono::DateTime<chrono::Utc>>, Option<String>, Option<String>, Option<String>,
+             Option<String>, i32, i32, Option<chrono::DateTime<chrono::Utc>>, Option<chrono::DateTime<chrono::Utc>>),
+        >(
+            r#"
+            SELECT id, user_id, item_id, is_connected, last_sync_at, connected_at,
+                   disconnected_at, institution_id, institution_name, institution_logo_url,
+                   sync_cursor, transaction_count, account_count, created_at, updated_at
+            FROM plaid_connections
+            WHERE id = $1
+            "#,
+        )
+        .bind(connection_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|(id, user_id, item_id, is_connected, last_sync_at, connected_at,
+            disconnected_at, institution_id, institution_name, institution_logo_url,
+            sync_cursor, transaction_count, account_count, created_at, updated_at)|
+            PlaidConnection {
+                id, user_id, item_id, is_connected, last_sync_at, connected_at,
+                disconnected_at, institution_id, institution_name, institution_logo_url,
+                sync_cursor, transaction_count, account_count, created_at, updated_at,
+            }))
     }
 
     async fn get_plaid_connection_by_item(&self, item_id: &str) -> Result<Option<PlaidConnection>> {

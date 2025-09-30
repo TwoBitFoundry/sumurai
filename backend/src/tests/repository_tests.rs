@@ -3110,3 +3110,40 @@ async fn given_user_with_no_connections_when_get_all_then_returns_empty() {
     assert!(result.is_ok());
     assert_eq!(result.unwrap().len(), 0);
 }
+
+#[tokio::test]
+async fn given_valid_connection_id_when_get_by_id_then_returns_connection() {
+    let mut mock_repo = MockDatabaseRepository::new();
+    let connection_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+
+    let mut conn = PlaidConnection::new(user_id, "item_1");
+    conn.id = connection_id;
+    let conn_clone = conn.clone();
+
+    mock_repo
+        .expect_get_plaid_connection_by_id()
+        .with(predicate::eq(connection_id))
+        .returning(move |_| {
+            let c = conn_clone.clone();
+            Box::pin(async move { Ok(Some(c)) })
+        });
+
+    let result = mock_repo.get_plaid_connection_by_id(&connection_id).await;
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap().unwrap().id, connection_id);
+}
+
+#[tokio::test]
+async fn given_invalid_connection_id_when_get_by_id_then_returns_none() {
+    let mut mock_repo = MockDatabaseRepository::new();
+    let connection_id = Uuid::new_v4();
+
+    mock_repo
+        .expect_get_plaid_connection_by_id()
+        .returning(|_| Box::pin(async { Ok(None) }));
+
+    let result = mock_repo.get_plaid_connection_by_id(&connection_id).await;
+    assert!(result.is_ok());
+    assert!(result.unwrap().is_none());
+}
