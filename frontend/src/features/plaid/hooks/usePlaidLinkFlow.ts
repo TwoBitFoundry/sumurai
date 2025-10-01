@@ -42,17 +42,10 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
   const handleSuccess = useCallback(async (publicToken: string) => {
     try {
       clearError()
-      await PlaidService.exchangeToken(publicToken)
+      const exchangeResult = await PlaidService.exchangeToken(publicToken)
       setToast('Bank connected successfully!')
       try {
-        const status: any = await PlaidService.getStatus()
-        if (status?.connected) {
-          const institution = status.institution_name || 'Connected Bank'
-          const connectionId = status.connection_id || 'legacy'
-          await plaidConnections.addConnection(institution, connectionId)
-        } else {
-          await plaidConnections.refresh()
-        }
+        await plaidConnections.refresh()
       } catch {
         await plaidConnections.refresh()
       }
@@ -105,22 +98,13 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
     try {
       const result = await PlaidService.syncTransactions(connectionId)
       const { transactions = [], metadata } = result || {}
-      if (metadata) {
-        plaidConnections.updateConnectionSyncInfo(
-          connectionId,
-          metadata.transaction_count ?? connection.transactionCount,
-          metadata.account_count ?? connection.accountCount,
-          metadata.sync_timestamp ?? connection.lastSyncAt ?? ''
-        )
-      } else {
-        plaidConnections.setConnectionSyncInProgress(connectionId, false)
-      }
       const count = Array.isArray(transactions) ? transactions.length : 0
       setToast(`Synced ${count} new transactions from ${connection.institutionName}`)
+
+      await plaidConnections.refresh()
     } catch (e: any) {
       const message = `Sync failed for ${connection.institutionName}: ${e instanceof Error ? e.message : 'Unknown error'}`
       handleError(message)
-    } finally {
       plaidConnections.setConnectionSyncInProgress(connectionId, false)
     }
   }, [clearError, handleError, plaidConnections])
@@ -131,10 +115,11 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
     try {
       const tasks = plaidConnections.connections.map(conn => syncOne(conn.connectionId))
       await Promise.all(tasks)
+      await plaidConnections.refresh()
     } finally {
       setSyncingAll(false)
     }
-  }, [clearError, plaidConnections.connections, syncOne])
+  }, [clearError, plaidConnections, syncOne])
 
   const disconnect = useCallback(async (connectionId: string) => {
     const connection = plaidConnections.getConnection(connectionId)
@@ -142,9 +127,9 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
 
     clearError()
     try {
-      await PlaidService.disconnect()
-      plaidConnections.removeConnection(connectionId)
+      await PlaidService.disconnect(connectionId)
       setToast(`${connection.institutionName} disconnected successfully`)
+      await plaidConnections.refresh()
     } catch (e: any) {
       const message = `Failed to disconnect ${connection.institutionName}: ${e instanceof Error ? e.message : 'Unknown error'}`
       handleError(message)

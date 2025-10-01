@@ -6,6 +6,7 @@ use crate::models::plaid::PlaidCredentials;
 use crate::services::repository_service::{DatabaseRepository, MockDatabaseRepository};
 
 use chrono::{NaiveDate, Utc};
+use mockall::predicate;
 use rust_decimal_macros::dec;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -1131,21 +1132,21 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
     let user1_conn_result = user1_connection1.clone();
     let user2_conn_result = user2_connection1.clone();
     mock_repo
-        .expect_get_plaid_connection_by_user()
+        .expect_get_all_plaid_connections_by_user()
         .with(mockall::predicate::eq(user1_id))
         .times(1)
         .returning(move |_| {
             let conn = user1_conn_result.clone();
-            Box::pin(async move { Ok(Some(conn)) })
+            Box::pin(async move { Ok(vec![conn]) })
         });
 
     mock_repo
-        .expect_get_plaid_connection_by_user()
+        .expect_get_all_plaid_connections_by_user()
         .with(mockall::predicate::eq(user2_id))
         .times(1)
         .returning(move |_| {
             let conn = user2_conn_result.clone();
-            Box::pin(async move { Ok(Some(conn)) })
+            Box::pin(async move { Ok(vec![conn]) })
         });
 
     let user1_conn_by_item = user1_connection1.clone();
@@ -1177,18 +1178,18 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
         .await
         .expect("Failed to create user2 connection1");
 
-    let user1_connection = mock_repo
-        .get_plaid_connection_by_user(&user1_id)
+    let user1_connections = mock_repo
+        .get_all_plaid_connections_by_user(&user1_id)
         .await
         .expect("Failed to get user1 connections");
 
-    let user2_connection = mock_repo
-        .get_plaid_connection_by_user(&user2_id)
+    let user2_connections = mock_repo
+        .get_all_plaid_connections_by_user(&user2_id)
         .await
         .expect("Failed to get user2 connections");
 
-    assert!(user1_connection.is_some(), "User1 should have a connection");
-    let user1_conn = user1_connection.unwrap();
+    assert!(!user1_connections.is_empty(), "User1 should have a connection");
+    let user1_conn = &user1_connections[0];
     assert_eq!(
         user1_conn.user_id, user1_id,
         "User1 connection should belong to user1"
@@ -1198,8 +1199,8 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
         "User1 should see their connection"
     );
 
-    assert!(user2_connection.is_some(), "User2 should have a connection");
-    let user2_conn = user2_connection.unwrap();
+    assert!(!user2_connections.is_empty(), "User2 should have a connection");
+    let user2_conn = &user2_connections[0];
     assert_eq!(
         user2_conn.user_id, user2_id,
         "User2 connection should belong to user2"
@@ -1635,13 +1636,13 @@ async fn given_repository_queries_when_no_user_context_set_then_returns_empty_re
         });
 
     mock_repo
-        .expect_get_plaid_connection_by_user()
+        .expect_get_all_plaid_connections_by_user()
         .times(1..)
         .returning(move |query_user_id| {
             if *query_user_id == user_id {
-                Box::pin(async { Ok(None) })
+                Box::pin(async { Ok(vec![]) })
             } else {
-                Box::pin(async { Ok(None) })
+                Box::pin(async { Ok(vec![]) })
             }
         });
 
@@ -1656,7 +1657,7 @@ async fn given_repository_queries_when_no_user_context_set_then_returns_empty_re
     let user_no_context = mock_repo.get_user_by_id(&no_context_uuid).await;
 
     let connection_no_context = mock_repo
-        .get_plaid_connection_by_user(&no_context_uuid)
+        .get_all_plaid_connections_by_user(&no_context_uuid)
         .await;
 
     assert!(accounts_no_context.is_ok());
@@ -1679,8 +1680,8 @@ async fn given_repository_queries_when_no_user_context_set_then_returns_empty_re
         "User query without context should return None"
     );
     assert!(
-        connection_no_context.unwrap().is_none(),
-        "Plaid connection query without context should return None"
+        connection_no_context.unwrap().is_empty(),
+        "Plaid connection query without context should return empty vec"
     );
 
     let valid_accounts = mock_repo
@@ -2395,9 +2396,9 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_repo
-        .expect_get_plaid_connection_by_user()
+        .expect_get_all_plaid_connections_by_user()
         .times(1..)
-        .returning(move |_| Box::pin(async { Ok(None) }));
+        .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_repo.upsert_account(&user1_account).await.unwrap();
     mock_repo
@@ -2413,7 +2414,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
 
     let cross_user_accounts = mock_repo.get_accounts_for_user(&user1_id).await;
 
-    let cross_user_plaid = mock_repo.get_plaid_connection_by_user(&user1_id).await;
+    let cross_user_plaid = mock_repo.get_all_plaid_connections_by_user(&user1_id).await;
 
     assert!(
         cross_user_transactions.is_ok(),
@@ -2434,7 +2435,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         .unwrap();
     let user2_accounts = mock_repo.get_accounts_for_user(&user2_id).await.unwrap();
     let user2_plaid = mock_repo
-        .get_plaid_connection_by_user(&user2_id)
+        .get_all_plaid_connections_by_user(&user2_id)
         .await
         .unwrap();
 
@@ -2445,7 +2446,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
     );
     assert_eq!(user2_accounts.len(), 0, "User2 should see no accounts");
     assert!(
-        user2_plaid.is_none(),
+        user2_plaid.is_empty(),
         "User2 should see no Plaid connections"
     );
 
@@ -2620,7 +2621,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         });
 
     mock_repo
-        .expect_get_plaid_connection_by_user()
+        .expect_get_all_plaid_connections_by_user()
         .times(1..)
         .returning(move |query_user_id| {
             if *query_user_id == user1_id {
@@ -2641,7 +2642,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
                     created_at: Some(chrono::Utc::now()),
                     updated_at: Some(chrono::Utc::now()),
                 };
-                Box::pin(async { Ok(Some(conn)) })
+                Box::pin(async { Ok(vec![conn]) })
             } else if *query_user_id == user2_id {
                 let conn = PlaidConnection {
                     id: Uuid::new_v4(),
@@ -2660,9 +2661,9 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
                     created_at: Some(chrono::Utc::now()),
                     updated_at: Some(chrono::Utc::now()),
                 };
-                Box::pin(async { Ok(Some(conn)) })
+                Box::pin(async { Ok(vec![conn]) })
             } else {
-                Box::pin(async { Ok(None) })
+                Box::pin(async { Ok(vec![]) })
             }
         });
 
@@ -2852,7 +2853,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .await
         .unwrap();
     let user1_plaid_before = mock_repo
-        .get_plaid_connection_by_user(&user1_id)
+        .get_all_plaid_connections_by_user(&user1_id)
         .await
         .unwrap();
     let user2_accounts_before = mock_repo.get_accounts_for_user(&user2_id).await.unwrap();
@@ -2861,7 +2862,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .await
         .unwrap();
     let user2_plaid_before = mock_repo
-        .get_plaid_connection_by_user(&user2_id)
+        .get_all_plaid_connections_by_user(&user2_id)
         .await
         .unwrap();
 
@@ -2876,7 +2877,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         "User1 should have 2 transactions before deletion"
     );
     assert!(
-        user1_plaid_before.is_some(),
+        !user1_plaid_before.is_empty(),
         "User1 should have Plaid connection before deletion"
     );
     assert_eq!(
@@ -2890,7 +2891,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         "User2 should have 1 transaction before deletion"
     );
     assert!(
-        user2_plaid_before.is_some(),
+        !user2_plaid_before.is_empty(),
         "User2 should have Plaid connection before deletion"
     );
 
@@ -2907,7 +2908,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .await
         .unwrap();
     let _user1_plaid_after = mock_repo
-        .get_plaid_connection_by_user(&user1_id)
+        .get_all_plaid_connections_by_user(&user1_id)
         .await
         .unwrap();
 
@@ -2917,7 +2918,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .await
         .unwrap();
     let user2_plaid_after = mock_repo
-        .get_plaid_connection_by_user(&user2_id)
+        .get_all_plaid_connections_by_user(&user2_id)
         .await
         .unwrap();
     let user3_accounts_after = mock_repo.get_accounts_for_user(&user3_id).await.unwrap();
@@ -2933,7 +2934,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         "User2 transactions should remain after user1 deletion"
     );
     assert!(
-        user2_plaid_after.is_some(),
+        !user2_plaid_after.is_empty(),
         "User2 Plaid connection should remain after user1 deletion"
     );
     assert_eq!(
@@ -2944,7 +2945,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
 
     let remaining_user2_account = &user2_accounts_after[0];
     let remaining_user2_transaction = &user2_transactions_after[0];
-    let remaining_user2_plaid = user2_plaid_after.unwrap();
+    let remaining_user2_plaid = &user2_plaid_after[0];
 
     assert_eq!(
         remaining_user2_account.user_id,
@@ -2979,7 +2980,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .await
         .unwrap();
     let user3_plaid_after = mock_repo
-        .get_plaid_connection_by_user(&user3_id)
+        .get_all_plaid_connections_by_user(&user3_id)
         .await
         .unwrap();
 
@@ -2989,7 +2990,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         "User3 should have no transactions"
     );
     assert!(
-        user3_plaid_after.is_none(),
+        user3_plaid_after.is_empty(),
         "User3 should have no Plaid connections"
     );
 
@@ -3068,4 +3069,101 @@ async fn given_user_with_no_transactions_when_get_transaction_count_by_account_t
     assert!(result.is_ok());
     let counts = result.unwrap();
     assert!(counts.is_empty());
+}
+
+#[tokio::test]
+async fn given_user_with_multiple_connections_when_get_all_then_returns_all_connections() {
+    let mut mock_repo = MockDatabaseRepository::new();
+    let user_id = Uuid::new_v4();
+
+    let conn1 = PlaidConnection::new(user_id, "item_1");
+    let conn2 = PlaidConnection::new(user_id, "item_2");
+    let conn1_clone = conn1.clone();
+    let conn2_clone = conn2.clone();
+
+    mock_repo
+        .expect_get_all_plaid_connections_by_user()
+        .with(predicate::eq(user_id))
+        .returning(move |_| {
+            let c1 = conn1_clone.clone();
+            let c2 = conn2_clone.clone();
+            Box::pin(async move {
+                Ok(vec![c1, c2])
+            })
+        });
+
+    let result = mock_repo.get_all_plaid_connections_by_user(&user_id).await;
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap().len(), 2);
+}
+
+#[tokio::test]
+async fn given_user_with_no_connections_when_get_all_then_returns_empty() {
+    let mut mock_repo = MockDatabaseRepository::new();
+    let user_id = Uuid::new_v4();
+
+    mock_repo
+        .expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let result = mock_repo.get_all_plaid_connections_by_user(&user_id).await;
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap().len(), 0);
+}
+
+#[tokio::test]
+async fn given_valid_connection_id_when_get_by_id_then_returns_connection() {
+    let mut mock_repo = MockDatabaseRepository::new();
+    let connection_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+
+    let mut conn = PlaidConnection::new(user_id, "item_1");
+    conn.id = connection_id;
+    let conn_clone = conn.clone();
+
+    mock_repo
+        .expect_get_plaid_connection_by_id()
+        .with(predicate::eq(connection_id), predicate::eq(user_id))
+        .returning(move |_, _| {
+            let c = conn_clone.clone();
+            Box::pin(async move { Ok(Some(c)) })
+        });
+
+    let result = mock_repo.get_plaid_connection_by_id(&connection_id, &user_id).await;
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap().unwrap().id, connection_id);
+}
+
+#[tokio::test]
+async fn given_invalid_connection_id_when_get_by_id_then_returns_none() {
+    let mut mock_repo = MockDatabaseRepository::new();
+    let connection_id = Uuid::new_v4();
+
+    mock_repo
+        .expect_get_plaid_connection_by_id()
+        .returning(|_, _| Box::pin(async { Ok(None) }));
+
+    let result = mock_repo.get_plaid_connection_by_id(&connection_id, &Uuid::new_v4()).await;
+    assert!(result.is_ok());
+    assert!(result.unwrap().is_none());
+}
+
+#[tokio::test]
+async fn given_connection_exists_when_queried_by_different_user_then_returns_none() {
+    let mut mock_repo = MockDatabaseRepository::new();
+    let owner_user_id = Uuid::new_v4();
+    let other_user_id = Uuid::new_v4();
+    let connection_id = Uuid::new_v4();
+
+    let mut conn = PlaidConnection::new(owner_user_id, "item_1");
+    conn.id = connection_id;
+
+    mock_repo
+        .expect_get_plaid_connection_by_id()
+        .with(predicate::eq(connection_id), predicate::eq(other_user_id))
+        .returning(|_, _| Box::pin(async { Ok(None) }));
+
+    let result = mock_repo.get_plaid_connection_by_id(&connection_id, &other_user_id).await;
+    assert!(result.is_ok());
+    assert!(result.unwrap().is_none());
 }

@@ -27,7 +27,7 @@ use crate::models::analytics::{
 };
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, AuthMiddlewareState};
-use crate::models::plaid::{DisconnectResult, PlaidConnectionStatus};
+use crate::models::plaid::{DisconnectRequest, DisconnectResult, PlaidConnectionStatus};
 use crate::models::{
     account::AccountResponse,
     analytics::{DateRangeQuery, MonthlyTotalsQuery},
@@ -633,53 +633,6 @@ async fn get_authenticated_plaid_accounts(
 ) -> Result<Json<Vec<AccountResponse>>, StatusCode> {
     let user_id = auth_context.user_id;
 
-    // Get the user's Plaid connection to get the access token
-    let connection = match state
-        .db_repository
-        .get_plaid_connection_by_user(&user_id)
-        .await
-    {
-        Ok(Some(conn)) => conn,
-        Ok(None) => {
-            tracing::error!("Sync accounts: no Plaid connection for user {}", user_id);
-            return Err(StatusCode::NOT_FOUND);
-        }
-        Err(e) => {
-            tracing::error!(
-                "Sync accounts: failed to get connection for user {}: {}",
-                user_id,
-                e
-            );
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
-
-    // Ensure Plaid credentials exist for this item/user
-    match state
-        .db_repository
-        .get_plaid_credentials_for_user(&user_id, &connection.item_id)
-        .await
-    {
-        Ok(Some(_creds)) => (),
-        Ok(None) => {
-            tracing::error!(
-                "Sync accounts: no Plaid credentials for user {} and item {}",
-                user_id,
-                connection.item_id
-            );
-            return Err(StatusCode::NOT_FOUND);
-        }
-        Err(e) => {
-            tracing::error!(
-                "Sync accounts: failed to get credentials for user {} and item {}: {}",
-                user_id,
-                connection.item_id,
-                e
-            );
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
-
     let db_accounts = match state.db_repository.get_accounts_for_user(&user_id).await {
         Ok(accounts) => accounts,
         Err(e) => {
@@ -701,8 +654,6 @@ async fn get_authenticated_plaid_accounts(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    let default_institution = connection.institution_name.clone();
-
     let account_responses: Vec<AccountResponse> = db_accounts
         .into_iter()
         .map(|account| {
@@ -717,10 +668,7 @@ async fn get_authenticated_plaid_accounts(
                 balance_current: account.balance_current,
                 mask: account.mask,
                 transaction_count: *transaction_count as i64,
-                institution_name: account
-                    .institution_name
-                    .clone()
-                    .or_else(|| default_institution.clone()),
+                institution_name: account.institution_name,
             }
         })
         .collect();
@@ -737,68 +685,31 @@ async fn sync_authenticated_plaid_transactions(
     let sync_timestamp = chrono::Utc::now();
 
     tracing::info!("Sync transactions requested for user {}", user_id);
-    let connection = if let Some(req) = &req {
-        if let Some(connection_id_str) = &req.connection_id {
-            let _connection_id =
-                Uuid::parse_str(connection_id_str).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-            match state
-                .db_repository
-                .get_plaid_connection_by_user(&user_id)
-                .await
-            {
-                Ok(Some(conn)) => {
-                    if conn.id.to_string() != *connection_id_str {
-                        tracing::error!(
-                            "Connection ID {} does not match user's connection {}",
-                            connection_id_str,
-                            conn.id
-                        );
-                        return Err(StatusCode::NOT_FOUND);
-                    }
-                    conn
-                }
-                Ok(None) => {
-                    tracing::error!("No Plaid connection for user {}", user_id);
-                    return Err(StatusCode::NOT_FOUND);
-                }
-                Err(e) => {
-                    tracing::error!("Failed to get connection for user {}: {}", user_id, e);
-                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
-                }
-            }
-        } else {
-            match state
-                .db_repository
-                .get_plaid_connection_by_user(&user_id)
-                .await
-            {
-                Ok(Some(conn)) => conn,
-                Ok(None) => {
-                    tracing::error!("No Plaid connection for user {}", user_id);
-                    return Err(StatusCode::NOT_FOUND);
-                }
-                Err(e) => {
-                    tracing::error!("Failed to get connection for user {}: {}", user_id, e);
-                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
-                }
-            }
+    let connection_id_str = req
+        .as_ref()
+        .and_then(|r| r.connection_id.as_ref())
+        .ok_or_else(|| {
+            tracing::error!("connection_id is required for sync");
+            StatusCode::BAD_REQUEST
+        })?;
+
+    let connection_id = Uuid::parse_str(connection_id_str)
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    let connection = match state
+        .db_repository
+        .get_plaid_connection_by_id(&connection_id, &user_id)
+        .await
+    {
+        Ok(Some(conn)) => conn,
+        Ok(None) => {
+            tracing::error!("Connection {} not found for user {}", connection_id, user_id);
+            return Err(StatusCode::NOT_FOUND);
         }
-    } else {
-        match state
-            .db_repository
-            .get_plaid_connection_by_user(&user_id)
-            .await
-        {
-            Ok(Some(conn)) => conn,
-            Ok(None) => {
-                tracing::error!("No Plaid connection for user {}", user_id);
-                return Err(StatusCode::NOT_FOUND);
-            }
-            Err(e) => {
-                tracing::error!("Failed to get connection for user {}: {}", user_id, e);
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
-            }
+        Err(e) => {
+            tracing::error!("Failed to get connection {}: {}", connection_id, e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
 
@@ -883,6 +794,7 @@ async fn sync_authenticated_plaid_transactions(
             for account in &accounts {
                 let mut acct = account.clone();
                 acct.user_id = Some(user_id);
+                acct.plaid_connection_id = Some(connection.id);
                 if let Err(e) = state.db_repository.upsert_account(&acct).await {
                     tracing::warn!("Failed to persist account to database during sync: {}", e);
                 }
@@ -1377,20 +1289,31 @@ async fn get_authenticated_top_merchants(
 async fn get_authenticated_plaid_connection_status(
     State(state): State<AppState>,
     auth_context: AuthContext,
-) -> Result<Json<PlaidConnectionStatus>, StatusCode> {
+) -> Result<Json<Vec<PlaidConnectionStatus>>, StatusCode> {
     let user_id = auth_context.user_id;
 
-    match state
-        .connection_service
-        .get_connection_status(&user_id)
+    let connections = state.db_repository
+        .get_all_plaid_connections_by_user(&user_id)
         .await
-    {
-        Ok(status) => Ok(Json(status)),
-        Err(e) => {
-            tracing::error!("Failed to get connection status: {}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
+        .map_err(|e| {
+            tracing::error!("Failed to get connections: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    let statuses: Vec<PlaidConnectionStatus> = connections
+        .into_iter()
+        .map(|conn| PlaidConnectionStatus {
+            is_connected: conn.is_connected,
+            last_sync_at: conn.last_sync_at.map(|dt| dt.to_rfc3339()),
+            institution_name: conn.institution_name,
+            connection_id: Some(conn.id.to_string()),
+            transaction_count: conn.transaction_count,
+            account_count: conn.account_count,
+            sync_in_progress: false,
+        })
+        .collect();
+
+    Ok(Json(statuses))
 }
 
 async fn get_authenticated_budgets(
@@ -1565,17 +1488,20 @@ async fn delete_authenticated_budget(
 async fn disconnect_authenticated_plaid(
     State(state): State<AppState>,
     auth_context: AuthContext,
+    Json(req): Json<DisconnectRequest>,
 ) -> Result<Json<DisconnectResult>, StatusCode> {
     let user_id = auth_context.user_id;
+    let connection_id = Uuid::parse_str(&req.connection_id)
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
 
     match state
         .connection_service
-        .disconnect_plaid(&user_id, &auth_context.jwt_id)
+        .disconnect_plaid_by_id(&connection_id, &user_id, &auth_context.jwt_id)
         .await
     {
         Ok(result) => Ok(Json(result)),
         Err(e) => {
-            tracing::error!("Failed to disconnect Plaid: {}", e);
+            tracing::error!("Failed to disconnect: {}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -1669,30 +1595,6 @@ async fn get_authenticated_balances_overview(
         ));
     }
 
-    let connection_status = match state
-        .connection_service
-        .get_connection_status(&user_id)
-        .await
-    {
-        Ok(status) => status,
-        Err(e) => {
-            tracing::warn!(
-                "Failed to fetch connection status for user {}: {}",
-                user_id,
-                e
-            );
-            PlaidConnectionStatus {
-                is_connected: false,
-                last_sync_at: None,
-                institution_name: None,
-                connection_id: None,
-                transaction_count: 0,
-                account_count: 0,
-                sync_in_progress: false,
-            }
-        }
-    };
-
     // Fallback: if no snapshots present, use current account balances
     if latest_map.is_empty() {
         let accounts = state
@@ -1756,7 +1658,6 @@ async fn get_authenticated_balances_overview(
         let bank_name = name_map
             .get(bank_id)
             .cloned()
-            .or_else(|| connection_status.institution_name.clone())
             .unwrap_or_else(|| bank_id.clone());
         banks.push(models::analytics::BankTotals {
             bank_id: bank_id.clone(),

@@ -25,13 +25,63 @@ async fn given_test_app_when_health_check_then_returns_ok() {
 }
 
 #[tokio::test]
-async fn given_authenticated_user_when_get_connection_status_then_returns_status() {
-    let app = TestFixtures::create_test_app().await.unwrap();
+async fn given_authenticated_user_when_get_connection_status_then_returns_array() {
+    use crate::services::repository_service::MockDatabaseRepository;
+    use crate::models::plaid::{PlaidConnection, PlaidConnectionStatus};
+    use axum::body::to_bytes;
+
+    let mut mock_db = MockDatabaseRepository::new();
     let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let user_id = uuid::Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+
+    let mut conn1 = PlaidConnection::new(user_id, "item_1");
+    conn1.mark_connected("Bank A");
+    let mut conn2 = PlaidConnection::new(user_id, "item_2");
+    conn2.mark_connected("Bank B");
+
+    mock_db
+        .expect_get_all_plaid_connections_by_user()
+        .returning(move |_| {
+            let c1 = conn1.clone();
+            let c2 = conn2.clone();
+            Box::pin(async move { Ok(vec![c1, c2]) })
+        });
+
+    mock_db
+        .expect_get_transactions_with_account_for_user()
+        .returning(move |_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_transactions_for_user()
+        .returning(move |_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_budgets_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_latest_account_balances_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_accounts_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
 
     let request = TestFixtures::create_authenticated_get_request("/api/plaid/status", &token);
     let response = app.oneshot(request).await.unwrap();
+
     assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let statuses: Vec<PlaidConnectionStatus> = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(statuses.len(), 2);
+    assert_eq!(statuses[0].institution_name, Some("Bank A".to_string()));
+    assert_eq!(statuses[1].institution_name, Some("Bank B".to_string()));
 }
 
 #[tokio::test]
@@ -59,8 +109,8 @@ async fn given_authenticated_user_when_get_transactions_no_filter_then_returns_a
         });
 
     mock_db
-        .expect_get_plaid_connection_by_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
+        .expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
         .expect_get_budgets_for_user()
@@ -150,8 +200,8 @@ async fn given_authenticated_user_when_get_transactions_with_account_ids_then_re
         });
 
     mock_db
-        .expect_get_plaid_connection_by_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
+        .expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
         .expect_get_budgets_for_user()
@@ -194,8 +244,8 @@ async fn given_authenticated_user_when_get_transactions_with_foreign_account_ids
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
-        .expect_get_plaid_connection_by_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
+        .expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
         .expect_get_budgets_for_user()
@@ -304,8 +354,8 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
         });
 
     mock_db
-        .expect_get_plaid_connection_by_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
+        .expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
         .expect_get_budgets_for_user()
@@ -347,8 +397,8 @@ async fn given_authenticated_user_when_get_spending_with_foreign_account_ids_the
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
-        .expect_get_plaid_connection_by_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
+        .expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
         .expect_get_budgets_for_user()
@@ -457,8 +507,8 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
         });
 
     mock_db
-        .expect_get_plaid_connection_by_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
+        .expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
         .expect_get_budgets_for_user()
@@ -500,8 +550,8 @@ async fn given_authenticated_user_when_get_categories_with_foreign_account_ids_t
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
-        .expect_get_plaid_connection_by_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
+        .expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
         .expect_get_budgets_for_user()
@@ -575,8 +625,8 @@ async fn given_authenticated_user_when_get_balances_with_account_ids_then_return
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
-        .expect_get_plaid_connection_by_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
+        .expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
         .expect_get_budgets_for_user()
@@ -635,8 +685,8 @@ async fn given_authenticated_user_when_get_balances_with_foreign_account_ids_the
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
-        .expect_get_plaid_connection_by_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
+        .expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
         .expect_get_budgets_for_user()
@@ -722,8 +772,8 @@ async fn given_different_account_filters_when_caching_then_uses_different_cache_
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
-        .expect_get_plaid_connection_by_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
+        .expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
         .expect_get_budgets_for_user()
@@ -803,4 +853,150 @@ async fn given_different_account_filters_when_caching_then_uses_different_cache_
         "Expected different cache keys for different account filters, but got: {:?}",
         final_keys
     );
+}
+
+#[tokio::test]
+async fn given_user_with_multiple_banks_when_get_accounts_then_returns_all_accounts() {
+    use crate::services::repository_service::MockDatabaseRepository;
+    use crate::models::account::Account;
+    use axum::body::to_bytes;
+    use uuid::Uuid;
+    use rust_decimal_macros::dec;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let user_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+
+    let conn1_id = Uuid::new_v4();
+    let conn2_id = Uuid::new_v4();
+
+    let accounts = vec![
+        Account {
+            id: Uuid::new_v4(),
+            user_id: Some(user_id),
+            plaid_account_id: Some("acc1".to_string()),
+            plaid_connection_id: Some(conn1_id),
+            name: "Chase Checking".to_string(),
+            account_type: "checking".to_string(),
+            balance_current: Some(dec!(1000.00)),
+            mask: Some("1234".to_string()),
+            institution_name: Some("Chase".to_string()),
+        },
+        Account {
+            id: Uuid::new_v4(),
+            user_id: Some(user_id),
+            plaid_account_id: Some("acc2".to_string()),
+            plaid_connection_id: Some(conn2_id),
+            name: "BofA Savings".to_string(),
+            account_type: "savings".to_string(),
+            balance_current: Some(dec!(5000.00)),
+            mask: Some("5678".to_string()),
+            institution_name: Some("Bank of America".to_string()),
+        },
+    ];
+
+    mock_db
+        .expect_get_accounts_for_user()
+        .returning(move |_| {
+            let accts = accounts.clone();
+            Box::pin(async move { Ok(accts) })
+        });
+
+    mock_db
+        .expect_get_transaction_count_by_account_for_user()
+        .returning(|_| Box::pin(async { Ok(std::collections::HashMap::new()) }));
+
+    mock_db
+        .expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_budgets_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_transactions_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_latest_account_balances_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db).await.unwrap();
+    let request = TestFixtures::create_authenticated_get_request("/api/plaid/accounts", &token);
+    let response = app.oneshot(request).await.unwrap();
+
+    assert_eq!(response.status(), 200);
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let account_responses: Vec<serde_json::Value> = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(account_responses.len(), 2);
+    assert_eq!(account_responses[0]["name"], "Chase Checking");
+    assert_eq!(account_responses[0]["institution_name"], "Chase");
+    assert_eq!(account_responses[1]["name"], "BofA Savings");
+    assert_eq!(account_responses[1]["institution_name"], "Bank of America");
+}
+
+#[tokio::test]
+async fn given_connection_id_when_sync_then_uses_get_plaid_connection_by_id() {
+    use crate::services::repository_service::MockDatabaseRepository;
+    use crate::models::plaid::{PlaidConnection, SyncTransactionsRequest};
+    use uuid::Uuid;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+
+    let connection_id = Uuid::new_v4();
+    let mut expected_conn = PlaidConnection::new(user_id, "item_123");
+    expected_conn.id = connection_id;
+    expected_conn.mark_connected("Chase");
+
+    mock_db
+        .expect_get_plaid_connection_by_id()
+        .with(mockall::predicate::eq(connection_id), mockall::predicate::eq(user_id))
+        .times(1)
+        .returning(move |_, _| {
+            let conn = expected_conn.clone();
+            Box::pin(async move { Ok(Some(conn)) })
+        });
+
+    mock_db
+        .expect_get_plaid_credentials_for_user()
+        .returning(|_, _| Box::pin(async { Ok(None) }));
+
+    mock_db
+        .expect_get_accounts_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_budgets_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_transactions_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_latest_account_balances_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db).await.unwrap();
+
+    let sync_request = SyncTransactionsRequest {
+        connection_id: Some(connection_id.to_string()),
+    };
+
+    let request = TestFixtures::create_authenticated_post_request(
+        "/api/plaid/sync-transactions",
+        &token,
+        sync_request,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 404);
 }
