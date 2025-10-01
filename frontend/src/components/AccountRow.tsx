@@ -51,7 +51,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
         </div>
         <div
           className={classNames(
-            "text-base font-mono font-bold tabular-nums",
+            "text-base font-semibold tabular-nums",
             account.balance != null
               ? isDebtAccount
                 ? "text-red-500 dark:text-red-400"
