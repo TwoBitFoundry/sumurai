@@ -46,7 +46,7 @@ export const TransactionsFilters: React.FC<Props> = ({
             value={search}
             onChange={(e) => onSearch(e.target.value)}
             placeholder="Search transactions"
-            className="w-full pl-3 pr-3 py-2 rounded-2xl bg-white/10 border border-white/15 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/40"
+            className="w-full pl-3 pr-3 py-2 rounded-2xl bg-slate-100 dark:bg-white/10 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/40"
           />
         </div>
       )}
