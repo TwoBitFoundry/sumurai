@@ -99,20 +99,7 @@ impl ConnectionService {
             cleared_keys.push(format!("{}_access_token_{}", jwt_id, item_id));
         }
 
-        if self
-            .cache_service
-            .invalidate_pattern("account_mapping_*")
-            .await
-            .is_ok()
-        {
-            cleared_keys.push("account_mapping_*".to_string());
-        }
-
-        if self.cache_service.clear_transactions().await.is_ok() {
-            cleared_keys.push("synced_transactions".to_string());
-        }
-
-        // Also invalidate balances overview for this JWT
+        // Only invalidate balances overview (user-scoped, needs refresh after disconnect)
         let balances_key = format!("{}_balances_overview", jwt_id);
         if self
             .cache_service

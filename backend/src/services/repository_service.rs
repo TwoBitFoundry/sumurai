@@ -800,26 +800,47 @@ impl DatabaseRepository for PostgresRepository {
         ))
     }
 
-    async fn delete_plaid_transactions(&self, _item_id: &str) -> Result<i32> {
-        let plaid_account_ids: Vec<String> = sqlx::query_scalar(
-            "SELECT plaid_account_id FROM accounts WHERE plaid_account_id IS NOT NULL",
+    async fn delete_plaid_transactions(&self, item_id: &str) -> Result<i32> {
+        let connection_id: Option<Uuid> = sqlx::query_scalar(
+            "SELECT id FROM plaid_connections WHERE item_id = $1"
         )
-        .fetch_all(&self.pool)
+        .bind(item_id)
+        .fetch_optional(&self.pool)
         .await?;
 
-        if plaid_account_ids.is_empty() {
+        let Some(conn_id) = connection_id else {
             return Ok(0);
-        }
+        };
 
-        let result = sqlx::query("DELETE FROM transactions WHERE plaid_transaction_id IS NOT NULL")
-            .execute(&self.pool)
-            .await?;
+        let result = sqlx::query(
+            r#"
+            DELETE FROM transactions
+            WHERE account_id IN (
+                SELECT id FROM accounts WHERE plaid_connection_id = $1
+            )
+            "#
+        )
+        .bind(conn_id)
+        .execute(&self.pool)
+        .await?;
 
         Ok(result.rows_affected() as i32)
     }
 
-    async fn delete_plaid_accounts(&self, _item_id: &str) -> Result<i32> {
-        let result = sqlx::query("DELETE FROM accounts WHERE plaid_account_id IS NOT NULL")
+    async fn delete_plaid_accounts(&self, item_id: &str) -> Result<i32> {
+        let connection_id: Option<Uuid> = sqlx::query_scalar(
+            "SELECT id FROM plaid_connections WHERE item_id = $1"
+        )
+        .bind(item_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        let Some(conn_id) = connection_id else {
+            return Ok(0);
+        };
+
+        let result = sqlx::query("DELETE FROM accounts WHERE plaid_connection_id = $1")
+            .bind(conn_id)
             .execute(&self.pool)
             .await?;
 
