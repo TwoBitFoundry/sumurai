@@ -372,21 +372,10 @@ impl RedisCache {
     pub async fn clear_jwt_scoped_data(&self, jwt_id: &str) -> Result<()> {
         let mut conn = self.connection_manager.clone();
 
-        let patterns = vec![
-            format!("{}{}*", jwt_id, BANK_CONNECTION_SUFFIX),
-            format!("{}{}*", jwt_id, BANK_ACCOUNTS_SUFFIX),
-            format!("{}{}", jwt_id, BANK_CONNECTIONS_SUFFIX),
-            format!("{}{}*", jwt_id, ACCOUNT_MAPPING_SUFFIX),
-            format!("{}{}*", jwt_id, ACCESS_TOKEN_SUFFIX),
-            format!("{}{}", jwt_id, SESSION_TOKEN_SUFFIX),
-            format!("{}{}", jwt_id, SESSION_VALID_SUFFIX),
-        ];
-
-        for pattern in patterns {
-            let keys: Vec<String> = conn.keys(&pattern).await?;
-            for key in keys {
-                let _: () = conn.del(key).await?;
-            }
+        let pattern = format!("{}*", jwt_id);
+        let keys: Vec<String> = conn.keys(&pattern).await?;
+        for key in keys {
+            let _: () = conn.del(key).await?;
         }
 
         Ok(())

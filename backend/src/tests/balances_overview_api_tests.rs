@@ -10,8 +10,8 @@ use uuid::Uuid;
 async fn given_snapshots_when_get_balances_overview_then_groups_and_computes_totals() {
     let mut mock = MockDatabaseRepository::new();
     // Default expectations for unrelated endpoints
-    mock.expect_get_plaid_connection_by_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
+    mock.expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock.expect_get_transactions_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock.expect_get_budgets_for_user()
@@ -78,8 +78,8 @@ async fn given_snapshots_when_get_balances_overview_then_groups_and_computes_tot
 #[tokio::test]
 async fn given_mixed_currency_when_get_balances_overview_then_excludes_non_usd_and_sets_flag() {
     let mut mock = MockDatabaseRepository::new();
-    mock.expect_get_plaid_connection_by_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
+    mock.expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock.expect_get_transactions_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock.expect_get_budgets_for_user()
@@ -128,8 +128,8 @@ async fn given_no_snapshots_when_get_balances_overview_then_falls_back_to_accoun
     use uuid::Uuid;
 
     let mut mock = MockDatabaseRepository::new();
-    mock.expect_get_plaid_connection_by_user()
-        .returning(|_| Box::pin(async { Ok(None) }));
+    mock.expect_get_all_plaid_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock.expect_get_transactions_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock.expect_get_budgets_for_user()

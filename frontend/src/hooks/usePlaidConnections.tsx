@@ -66,48 +66,58 @@ export const usePlaidConnections = (): UsePlaidConnectionsReturn => {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }))
 
-      // Fetch all connections for this user
-      const data = await ApiClient.get<any>('/plaid/status')
-      
-      let accounts: Array<{
+      // Fetch all connections for this user (backend now returns array)
+      const statusArray = await ApiClient.get<any>('/plaid/status')
+
+      // Fetch accounts once for all connections
+      let allAccounts: Array<{
         id: string
         name: string
         mask: string
         type: 'checking' | 'savings' | 'credit' | 'loan' | 'other'
         balance?: number
         transactions?: number
+        plaid_connection_id?: string
       }> = []
-      // If connected, fetch accounts
-      if (data.is_connected) {
+
+      if (Array.isArray(statusArray) && statusArray.length > 0) {
         try {
           const backendAccounts = await PlaidService.getAccounts()
-          accounts = backendAccounts.map((account: any) => ({
+          allAccounts = backendAccounts.map((account: any) => ({
             id: account.id,
             name: account.name,
             mask: account.mask || '0000',
             type: mapAccountType(account.account_type),
             balance: account.balance_current ? parseFloat(account.balance_current) : undefined,
-            transactions: account.transaction_count || 0
+            transactions: account.transaction_count || 0,
+            plaid_connection_id: account.plaid_connection_id
           }))
         } catch (accountError) {
           console.warn('Failed to fetch accounts:', accountError)
-          // Don't fail the whole connection load if accounts fail
         }
       }
-      
-      // Transform single connection response to array format
-      // TODO: Update backend to return array of connections
-      const connections: PlaidConnection[] = data.is_connected ? [{
-        id: data.connection_id || 'legacy',
-        connectionId: data.connection_id || 'legacy',
-        institutionName: data.institution_name || 'Connected Bank',
-        lastSyncAt: data.last_sync_at,
-        transactionCount: data.transaction_count || 0,
-        accountCount: data.account_count || 0,
-        syncInProgress: data.sync_in_progress || false,
-        isConnected: true,
-        accounts: accounts
-      }] : []
+
+      // Map backend status array to PlaidConnection objects, filtering out disconnected ones
+      const connections: PlaidConnection[] = Array.isArray(statusArray)
+        ? statusArray
+            .filter((connStatus: any) => connStatus.is_connected)
+            .map((connStatus: any) => {
+              const connectionAccounts = allAccounts.filter(
+                acc => acc.plaid_connection_id === connStatus.connection_id
+              )
+              return {
+                id: connStatus.connection_id || 'unknown',
+                connectionId: connStatus.connection_id || 'unknown',
+                institutionName: connStatus.institution_name || 'Unknown Bank',
+                lastSyncAt: connStatus.last_sync_at,
+                transactionCount: connStatus.transaction_count || 0,
+                accountCount: connStatus.account_count || 0,
+                syncInProgress: connStatus.sync_in_progress || false,
+                isConnected: connStatus.is_connected,
+                accounts: connectionAccounts
+              }
+            })
+        : []
 
       setState(prev => ({
         ...prev,

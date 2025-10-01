@@ -102,7 +102,7 @@ describe('usePlaidLinkFlow', () => {
     })
 
     expect(plaidServiceMock.exchangeToken).toHaveBeenCalledWith('public-token')
-    expect(plaidConnectionsMock.addConnection).toHaveBeenCalledWith('Test Bank', 'conn-1')
+    expect(plaidConnectionsMock.refresh).toHaveBeenCalled()
     expect(result.current.toast).toBe('Bank connected successfully!')
     expect(onError).toHaveBeenCalled()
     expect(onError.mock.calls.every(call => call[0] === null)).toBe(true)
@@ -141,12 +141,7 @@ describe('usePlaidLinkFlow', () => {
     })
 
     expect(plaidServiceMock.syncTransactions).toHaveBeenCalledWith('bank-1')
-    expect(plaidConnectionsMock.updateConnectionSyncInfo).toHaveBeenCalledWith(
-      'bank-1',
-      1,
-      1,
-      '2024-01-01T00:00:00Z'
-    )
+    expect(plaidConnectionsMock.refresh).toHaveBeenCalled()
     expect(result.current.toast).toContain('Synced 1 new transactions from Bank One')
 
     await act(async () => {
@@ -160,8 +155,8 @@ describe('usePlaidLinkFlow', () => {
       await result.current.disconnect('bank-1')
     })
 
-    expect(plaidServiceMock.disconnect).toHaveBeenCalled()
-    expect(plaidConnectionsMock.removeConnection).toHaveBeenCalledWith('bank-1')
+    expect(plaidServiceMock.disconnect).toHaveBeenCalledWith('bank-1')
+    expect(plaidConnectionsMock.refresh).toHaveBeenCalled()
     expect(result.current.toast).toBe('Bank One disconnected successfully')
     expect(onError).toHaveBeenCalled()
     expect(onError.mock.calls.every(call => call[0] === null)).toBe(true)

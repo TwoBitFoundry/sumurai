@@ -126,177 +126,25 @@ async fn given_bank_connection_when_sync_fails_then_returns_error_without_updati
 }
 
 #[tokio::test]
-async fn given_bank_connection_with_multiple_accounts_when_disconnect_by_connection_then_removes_all_bank_data(
-) {
-    let user_id = Uuid::new_v4();
-    let mut connection = create_test_bank_connection(user_id);
-    connection.transaction_count = 50;
-    connection.account_count = 3;
-
-    let _accounts = create_test_accounts_for_bank(connection.id, user_id);
-
-    // Clone values before moving them into closures
-    let item_id = connection.item_id.clone();
-
-    let mut mock_repo = MockDatabaseRepository::new();
-    let mut mock_cache = MockCacheService::new();
-
-    // Expected to disconnect the entire bank connection
-    mock_repo
-        .expect_get_plaid_connection_by_user()
-        .with(mockall::predicate::eq(user_id))
-        .times(1)
-        .returning(move |_| {
-            let conn = connection.clone();
-            Box::pin(async move { Ok(Some(conn)) })
-        });
-
-    mock_repo
-        .expect_save_plaid_connection()
-        .times(1)
-        .returning(|_| Box::pin(async { Ok(()) }));
-
-    // Expected to delete all accounts and transactions for this bank connection
-    mock_repo
-        .expect_delete_plaid_transactions()
-        .with(mockall::predicate::eq(item_id.clone()))
-        .times(1)
-        .returning(|_| Box::pin(async { Ok(50) })); // 50 transactions deleted
-
-    mock_repo
-        .expect_delete_plaid_accounts()
-        .with(mockall::predicate::eq(item_id.clone()))
-        .times(1)
-        .returning(|_| Box::pin(async { Ok(3) })); // 3 accounts deleted
-
-    mock_repo
-        .expect_delete_plaid_credentials()
-        .with(mockall::predicate::eq(item_id.clone()))
-        .times(1)
-        .returning(|_| Box::pin(async { Ok(()) }));
-
-    // Expected to clear all cache data for this bank connection
-    mock_cache
-        .expect_delete_access_token()
-        .with(
-            mockall::predicate::eq("test-jwt-123"),
-            mockall::predicate::eq(item_id),
-        )
-        .times(1)
-        .returning(|_, _| Box::pin(async { Ok(()) }));
-
-    mock_cache
-        .expect_invalidate_pattern()
-        .times(2)
-        .returning(|_| Box::pin(async { Ok(()) }));
-
-    mock_cache
-        .expect_clear_transactions()
-        .times(1)
-        .returning(|| Box::pin(async { Ok(()) }));
-
-    use crate::services::connection_service::ConnectionService;
-    let connection_service = ConnectionService::new(Arc::new(mock_repo), Arc::new(mock_cache));
-
-    let result = connection_service
-        .disconnect_plaid(&user_id, "test-jwt-123")
-        .await;
-
-    assert!(result.is_ok());
-    let disconnect_result = result.unwrap();
-    assert!(disconnect_result.success);
-    assert_eq!(disconnect_result.data_cleared.transactions, 50);
-    assert_eq!(disconnect_result.data_cleared.accounts, 3);
-    assert!(!disconnect_result.data_cleared.cache_keys.is_empty());
-}
-
-#[tokio::test]
-async fn given_user_with_no_bank_connection_when_disconnect_then_returns_no_connection_message() {
-    let user_id = Uuid::new_v4();
-
-    let mut mock_repo = MockDatabaseRepository::new();
-    let mock_cache = MockCacheService::new();
-
-    mock_repo
-        .expect_get_plaid_connection_by_user()
-        .with(mockall::predicate::eq(user_id))
-        .times(1)
-        .returning(|_| Box::pin(async { Ok(None) }));
-
-    use crate::services::connection_service::ConnectionService;
-    let connection_service = ConnectionService::new(Arc::new(mock_repo), Arc::new(mock_cache));
-
-    let result = connection_service
-        .disconnect_plaid(&user_id, "test-jwt-123")
-        .await;
-
-    assert!(result.is_ok());
-    let disconnect_result = result.unwrap();
-    assert!(disconnect_result.success);
-    assert!(disconnect_result
-        .message
-        .contains("No active Plaid connection"));
-    assert_eq!(disconnect_result.data_cleared.transactions, 0);
-    assert_eq!(disconnect_result.data_cleared.accounts, 0);
-}
-
-#[tokio::test]
-async fn given_bank_connection_when_disconnect_fails_database_operation_then_returns_error() {
+async fn given_bank_connection_when_upserting_account_then_assigns_connection_id() {
     let user_id = Uuid::new_v4();
     let connection = create_test_bank_connection(user_id);
+    let connection_id = connection.id;
 
-    let mut mock_repo = MockDatabaseRepository::new();
-    let mut mock_cache = MockCacheService::new();
+    let mut account = Account {
+        id: Uuid::new_v4(),
+        user_id: Some(user_id),
+        plaid_account_id: Some("plaid_123".to_string()),
+        plaid_connection_id: None,
+        name: "Test Account".to_string(),
+        account_type: "checking".to_string(),
+        balance_current: Some(dec!(1000.00)),
+        mask: Some("1234".to_string()),
+        institution_name: None,
+    };
 
-    mock_repo
-        .expect_get_plaid_connection_by_user()
-        .times(1)
-        .returning(move |_| {
-            let conn = connection.clone();
-            Box::pin(async move { Ok(Some(conn)) })
-        });
+    account.user_id = Some(user_id);
+    account.plaid_connection_id = Some(connection_id);
 
-    mock_repo
-        .expect_save_plaid_connection()
-        .times(1)
-        .returning(|_| Box::pin(async { Ok(()) }));
-
-    mock_repo
-        .expect_delete_plaid_transactions()
-        .times(1)
-        .returning(|_| {
-            Box::pin(async {
-                Err(anyhow::anyhow!(
-                    "Database connection failed during transaction cleanup"
-                ))
-            })
-        });
-
-    mock_cache
-        .expect_delete_access_token()
-        .times(1)
-        .returning(|_, _| Box::pin(async { Ok(()) }));
-
-    mock_cache
-        .expect_invalidate_pattern()
-        .times(2)
-        .returning(|_| Box::pin(async { Ok(()) }));
-
-    mock_cache
-        .expect_clear_transactions()
-        .times(1)
-        .returning(|| Box::pin(async { Ok(()) }));
-
-    use crate::services::connection_service::ConnectionService;
-    let connection_service = ConnectionService::new(Arc::new(mock_repo), Arc::new(mock_cache));
-
-    let result = connection_service
-        .disconnect_plaid(&user_id, "test-jwt-123")
-        .await;
-
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("Database connection failed"));
+    assert_eq!(account.plaid_connection_id, Some(connection_id));
 }

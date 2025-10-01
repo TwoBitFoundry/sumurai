@@ -31,9 +31,14 @@ pub struct ExchangeTokenRequest {
     pub public_token: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct SyncTransactionsRequest {
     pub connection_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct DisconnectRequest {
+    pub connection_id: String,
 }
 
 impl PlaidConnection {
