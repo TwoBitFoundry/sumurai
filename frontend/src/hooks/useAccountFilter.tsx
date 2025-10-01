@@ -1,6 +1,7 @@
 import { useContext, useState, useMemo, useCallback, useEffect, useRef, ReactNode } from 'react'
 import { AccountFilterContext, AccountFilterContextType, PlaidAccount, AccountsByBank } from '@/context/AccountFilterContext'
 import { PlaidService } from '@/services/PlaidService'
+import { ACCOUNTS_CHANGED_EVENT } from '@/utils/events'
 
 export function useAccountFilter(): AccountFilterContextType {
   const context = useContext(AccountFilterContext)
@@ -95,6 +96,15 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
 
   useEffect(() => {
     fetchAccounts()
+  }, [fetchAccounts])
+
+  useEffect(() => {
+    const handleAccountsChanged = () => {
+      fetchAccounts()
+    }
+
+    window.addEventListener(ACCOUNTS_CHANGED_EVENT, handleAccountsChanged)
+    return () => window.removeEventListener(ACCOUNTS_CHANGED_EVENT, handleAccountsChanged)
   }, [fetchAccounts])
 
   const toggleBank = useCallback((bankName: string) => {

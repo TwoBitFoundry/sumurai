@@ -3,6 +3,7 @@ import { usePlaidLink } from 'react-plaid-link'
 import { ApiClient } from '../../../services/ApiClient'
 import { PlaidService } from '../../../services/PlaidService'
 import { usePlaidConnections, type PlaidConnection } from '../../../hooks/usePlaidConnections'
+import { dispatchAccountsChanged } from '../../../utils/events'
 
 interface UsePlaidLinkFlowOptions {
   onError?: (message: string | null) => void
@@ -43,11 +44,26 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
     try {
       clearError()
       const exchangeResult = await PlaidService.exchangeToken(publicToken)
-      setToast('Bank connected successfully!')
-      try {
-        await plaidConnections.refresh()
-      } catch {
-        await plaidConnections.refresh()
+
+      const updatedConnections = await plaidConnections.refresh()
+
+      if (updatedConnections.length > 0) {
+        const latestConnection = updatedConnections[0]
+        try {
+          const result = await PlaidService.syncTransactions(latestConnection.connectionId)
+          const { transactions = [] } = result || {}
+          const count = Array.isArray(transactions) ? transactions.length : 0
+          setToast(`Bank connected! Synced ${count} transactions`)
+          await plaidConnections.refresh()
+          dispatchAccountsChanged()
+        } catch (syncError) {
+          console.warn('Failed to sync transactions after connection', syncError)
+          setToast(`Bank connected to ${latestConnection.institutionName}`)
+          dispatchAccountsChanged()
+        }
+      } else {
+        setToast('Bank connected successfully!')
+        dispatchAccountsChanged()
       }
     } catch (e: any) {
       const message = `Failed to exchange token: ${e instanceof Error ? e.message : 'Unknown error'}`
@@ -130,6 +146,7 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
       await PlaidService.disconnect(connectionId)
       setToast(`${connection.institutionName} disconnected successfully`)
       await plaidConnections.refresh()
+      dispatchAccountsChanged()
     } catch (e: any) {
       const message = `Failed to disconnect ${connection.institutionName}: ${e instanceof Error ? e.message : 'Unknown error'}`
       handleError(message)
