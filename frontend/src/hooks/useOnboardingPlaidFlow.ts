@@ -50,22 +50,27 @@ export function useOnboardingPlaidFlow(
       setInstitutionName('Connected Bank')
       onConnectionSuccess?.('Connected Bank')
 
+      let connectionId: string | null = null
       try {
-        const status = await PlaidService.getStatus()
-        if (status.connected) {
-          setInstitutionName('Connected Bank')
+        const statuses = await PlaidService.getStatus()
+        if (Array.isArray(statuses) && statuses.length > 0) {
+          const latestConnection = statuses[0]
+          setInstitutionName(latestConnection.institution_name || 'Connected Bank')
+          connectionId = latestConnection.connection_id
         }
       } catch (statusError) {
         console.warn('Failed to refresh Plaid status after connection', statusError)
       }
 
-      setIsSyncing(true)
-      try {
-        await PlaidService.syncTransactions()
-      } catch (syncError) {
-        console.warn('Failed to sync transactions during onboarding', syncError)
-      } finally {
-        setIsSyncing(false)
+      if (connectionId) {
+        setIsSyncing(true)
+        try {
+          await PlaidService.syncTransactions(connectionId)
+        } catch (syncError) {
+          console.warn('Failed to sync transactions during onboarding', syncError)
+        } finally {
+          setIsSyncing(false)
+        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Connection failed'

@@ -19,8 +19,8 @@ async fn given_connection_id_when_disconnect_then_disconnects_specific_connectio
 
     mock_db
         .expect_get_plaid_connection_by_id()
-        .with(mockall::predicate::eq(connection_id))
-        .returning(move |_| {
+        .with(mockall::predicate::eq(connection_id), mockall::predicate::eq(user_id))
+        .returning(move |_, _| {
             let conn = expected_conn.clone();
             Box::pin(async move { Ok(Some(conn)) })
         });

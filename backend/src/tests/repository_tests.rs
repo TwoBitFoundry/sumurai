@@ -3123,13 +3123,13 @@ async fn given_valid_connection_id_when_get_by_id_then_returns_connection() {
 
     mock_repo
         .expect_get_plaid_connection_by_id()
-        .with(predicate::eq(connection_id))
-        .returning(move |_| {
+        .with(predicate::eq(connection_id), predicate::eq(user_id))
+        .returning(move |_, _| {
             let c = conn_clone.clone();
             Box::pin(async move { Ok(Some(c)) })
         });
 
-    let result = mock_repo.get_plaid_connection_by_id(&connection_id).await;
+    let result = mock_repo.get_plaid_connection_by_id(&connection_id, &user_id).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap().unwrap().id, connection_id);
 }
@@ -3141,9 +3141,29 @@ async fn given_invalid_connection_id_when_get_by_id_then_returns_none() {
 
     mock_repo
         .expect_get_plaid_connection_by_id()
-        .returning(|_| Box::pin(async { Ok(None) }));
+        .returning(|_, _| Box::pin(async { Ok(None) }));
 
-    let result = mock_repo.get_plaid_connection_by_id(&connection_id).await;
+    let result = mock_repo.get_plaid_connection_by_id(&connection_id, &Uuid::new_v4()).await;
+    assert!(result.is_ok());
+    assert!(result.unwrap().is_none());
+}
+
+#[tokio::test]
+async fn given_connection_exists_when_queried_by_different_user_then_returns_none() {
+    let mut mock_repo = MockDatabaseRepository::new();
+    let owner_user_id = Uuid::new_v4();
+    let other_user_id = Uuid::new_v4();
+    let connection_id = Uuid::new_v4();
+
+    let mut conn = PlaidConnection::new(owner_user_id, "item_1");
+    conn.id = connection_id;
+
+    mock_repo
+        .expect_get_plaid_connection_by_id()
+        .with(predicate::eq(connection_id), predicate::eq(other_user_id))
+        .returning(|_, _| Box::pin(async { Ok(None) }));
+
+    let result = mock_repo.get_plaid_connection_by_id(&connection_id, &other_user_id).await;
     assert!(result.is_ok());
     assert!(result.unwrap().is_none());
 }

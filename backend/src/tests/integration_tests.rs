@@ -954,9 +954,9 @@ async fn given_connection_id_when_sync_then_uses_get_plaid_connection_by_id() {
 
     mock_db
         .expect_get_plaid_connection_by_id()
-        .with(mockall::predicate::eq(connection_id))
+        .with(mockall::predicate::eq(connection_id), mockall::predicate::eq(user_id))
         .times(1)
-        .returning(move |_| {
+        .returning(move |_, _| {
             let conn = expected_conn.clone();
             Box::pin(async move { Ok(Some(conn)) })
         });

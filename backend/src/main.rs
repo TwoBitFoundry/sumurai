@@ -699,22 +699,12 @@ async fn sync_authenticated_plaid_transactions(
 
     let connection = match state
         .db_repository
-        .get_plaid_connection_by_id(&connection_id)
+        .get_plaid_connection_by_id(&connection_id, &user_id)
         .await
     {
-        Ok(Some(conn)) => {
-            if conn.user_id != user_id {
-                tracing::error!(
-                    "Connection {} does not belong to user {}",
-                    connection_id,
-                    user_id
-                );
-                return Err(StatusCode::FORBIDDEN);
-            }
-            conn
-        }
+        Ok(Some(conn)) => conn,
         Ok(None) => {
-            tracing::error!("Connection {} not found", connection_id);
+            tracing::error!("Connection {} not found for user {}", connection_id, user_id);
             return Err(StatusCode::NOT_FOUND);
         }
         Err(e) => {

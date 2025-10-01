@@ -33,8 +33,10 @@ export class PlaidService {
     return ApiClient.get<PlaidStatusResponse>('/plaid/status')
   }
 
-  static async disconnect(): Promise<PlaidDisconnectResponse> {
-    return ApiClient.post<PlaidDisconnectResponse>('/plaid/disconnect')
+  static async disconnect(connectionId: string): Promise<PlaidDisconnectResponse> {
+    return ApiClient.post<PlaidDisconnectResponse>('/plaid/disconnect', {
+      connection_id: connectionId
+    })
   }
 
   static async clearSyncedData(): Promise<{ cleared: boolean }> {

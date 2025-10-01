@@ -33,7 +33,7 @@ impl ConnectionService {
     ) -> Result<DisconnectResult> {
         let connection = self
             .db_repository
-            .get_plaid_connection_by_id(connection_id)
+            .get_plaid_connection_by_id(connection_id, user_id)
             .await?;
 
         let Some(mut conn) = connection else {
