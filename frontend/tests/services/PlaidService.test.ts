@@ -203,9 +203,9 @@ describe('PlaidService', () => {
       }
       vi.mocked(ApiClient.post).mockResolvedValue(mockResponse)
 
-      const result = await PlaidService.disconnect()
+      const result = await PlaidService.disconnect('conn-123')
 
-      expect(ApiClient.post).toHaveBeenCalledWith('/plaid/disconnect')
+      expect(ApiClient.post).toHaveBeenCalledWith('/plaid/disconnect', { connection_id: 'conn-123' })
       expect(result).toEqual(mockResponse)
     })
   })
