@@ -137,16 +137,13 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
   return (
     <div className={dark ? 'dark' : ''}>
       <div className="min-h-screen w-full flex flex-col relative overflow-hidden transition-colors duration-500 ease-out">
-        <div className="absolute inset-0 transition-colors duration-500 ease-out">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,#f8fafc_0%,#f1f5f9_50%,#ffffff_100%)] dark:bg-[radial-gradient(ellipse_at_50%_50%,#0f172a_0%,#0a0f1b_50%,#05070d_100%)]" />
-          <div className="absolute inset-0 opacity-[0.15] dark:opacity-[0.35] animate-[rotateAura_90s_linear_infinite]">
-            <div className="absolute top-[10%] left-[15%] h-[500px] w-[500px] rounded-full bg-[#93c5fd] dark:bg-[#38bdf8] blur-[120px]" />
-            <div className="absolute bottom-[15%] right-[10%] h-[600px] w-[600px] rounded-full bg-[#a78bfa] blur-[140px]" />
-            <div className="absolute top-[40%] right-[25%] h-[400px] w-[400px] rounded-full bg-[#34d399] blur-[100px]" />
-            <div className="absolute bottom-[30%] left-[20%] h-[450px] w-[450px] rounded-full bg-[#fbbf24] blur-[110px]" />
-            <div className="absolute top-[60%] left-[40%] h-[350px] w-[350px] rounded-full bg-[#f87171] dark:bg-[#f87171] blur-[90px] opacity-0 dark:opacity-100" />
+        <div className="pointer-events-none absolute inset-0 transition-colors duration-500 ease-out">
+          <div className="absolute inset-0 transition-all duration-500 bg-[radial-gradient(120%_90%_at_20%_-10%,#f8fafc_0%,#f1f5f9_45%,#ffffff_100%)] dark:bg-[radial-gradient(90%_70%_at_20%_0%,#0f172a_0%,#0a0f1b_50%,#05070d_100%)]" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute left-1/2 top-1/2 h-[70rem] w-[70rem] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.22] blur-3xl animate-[rotateAura_90s_linear_infinite] bg-[conic-gradient(from_0deg,#93c5fd_0deg,#34d399_140deg,#fbbf24_240deg,#a78bfa_320deg,#93c5fd_360deg)] transition-all duration-700 ease-out dark:opacity-[0.32] dark:bg-[conic-gradient(from_0deg,#38bdf8_0deg,#34d399_120deg,#a78bfa_210deg,#fbbf24_285deg,#f87171_330deg,#38bdf8_360deg)]" />
           </div>
-          <div className="absolute inset-0 bg-gradient-to-b from-[#ffffff99] via-[#ffffff66] to-transparent dark:from-[#0f172ab3] dark:via-[#0f172a66] dark:to-transparent" />
+          <div className="absolute inset-0 transition-colors duration-500 bg-gradient-to-b from-white/65 via-white/40 to-transparent dark:from-slate-900/70 dark:via-slate-900/40 dark:to-transparent" />
+          <div className="absolute inset-0 transition-colors duration-500 bg-[radial-gradient(120%_120%_at_50%_50%,transparent_62%,rgba(15,23,42,0.08)_100%)] dark:bg-[radial-gradient(120%_120%_at_50%_50%,transparent_60%,rgba(2,6,23,0.35)_100%)]" />
         </div>
         {setDark && onLogout && (
           <AppHeader
@@ -157,9 +154,16 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
           />
         )}
         <div className="flex-1 flex items-center justify-center p-4 md:p-6 relative z-10">
-          <Card className="relative w-full max-w-6xl overflow-hidden rounded-3xl border border-[#0000000d] dark:border-[#ffffff14] bg-white/70 p-5 shadow-2xl backdrop-blur-xl dark:bg-slate-900/70 md:p-6 lg:p-8 transition-all duration-500 ease-out animate-[fadeSlideUp_400ms_ease-out]">
+          <Card className="relative w-full max-w-6xl overflow-hidden rounded-[2.25rem] border border-[#0000001a] bg-white/25 p-5 shadow-[0_18px_55px_-30px_rgba(15,23,42,0.6)] backdrop-blur-[28px] backdrop-saturate-[140%] transition-all duration-500 ease-out animate-[fadeSlideUp_400ms_ease-out] dark:border-[#ffffff26] dark:bg-[#0f172a]/36 dark:shadow-[0_22px_60px_-28px_rgba(2,6,23,0.75)] md:p-6 lg:p-8">
+            <div className="pointer-events-none absolute inset-0">
+              <div className="absolute inset-[1px] rounded-[2.25rem] ring-1 ring-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(15,23,42,0.08)] dark:ring-white/8 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(2,6,23,0.4)]" />
+              <div className="absolute inset-0 rounded-[2.25rem] bg-[radial-gradient(120%_120%_at_12%_-4%,rgba(255,255,255,0.32)_0%,rgba(255,255,255,0.1)_40%,transparent_66%)] opacity-70 dark:bg-[radial-gradient(120%_120%_at_14%_-6%,rgba(248,250,252,0.18)_0%,rgba(148,163,184,0.14)_32%,transparent_62%)]" />
+              <div className="absolute inset-0 rounded-[2.25rem] bg-[radial-gradient(130%_160%_at_82%_110%,rgba(14,165,233,0.22)_0%,rgba(56,189,248,0.16)_28%,rgba(167,139,250,0.2)_52%,rgba(251,191,36,0.18)_68%,transparent_82%)] opacity-70 dark:bg-[radial-gradient(130%_160%_at_86%_116%,rgba(38,198,218,0.35)_0%,rgba(167,139,250,0.3)_44%,rgba(248,113,113,0.28)_62%,transparent_82%)]" />
+              <div className="absolute -left-32 top-16 h-64 w-64 rounded-full bg-[#0ea5e9]/18 blur-3xl dark:bg-[#38bdf8]/18" />
+              <div className="absolute -right-24 bottom-12 h-56 w-56 rounded-full bg-[#a78bfa]/18 blur-3xl dark:bg-[#a78bfa]/22" />
+            </div>
 
-          <div className="relative z-10 flex h-full flex-col">
+            <div className="relative z-10 flex h-full flex-col">
             <div className="mb-6 flex items-center justify-between">
               <ol className="flex items-center gap-2" aria-label="Onboarding steps">
                 {steps.map((_, index) => {
