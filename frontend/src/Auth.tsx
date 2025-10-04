@@ -9,8 +9,29 @@ interface LoginScreenProps {
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-lg dark:shadow-2xl ${className}`}>
-      {children}
+    <div className={`relative rounded-[2rem] border border-white/35 bg-white/20 p-8 shadow-[0_38px_120px_-60px_rgba(15,23,42,0.78)] backdrop-blur-[26px] backdrop-saturate-[140%] transition-all duration-300 ease-out dark:border-white/12 dark:bg-[#0f172a]/55 dark:shadow-[0_40px_120px_-58px_rgba(2,6,23,0.85)] ${className}`}>
+      <div className="pointer-events-none absolute inset-0 rounded-[2rem] ring-1 ring-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.25)] dark:ring-white/10 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(2,6,23,0.55)]" />
+      <div className="pointer-events-none absolute inset-0 rounded-[2rem] bg-[radial-gradient(120%_150%_at_85%_0%,rgba(14,165,233,0.18)_0%,rgba(167,139,250,0.18)_42%,transparent_72%)] opacity-70 dark:bg-[radial-gradient(120%_150%_at_90%_6%,rgba(38,198,218,0.28)_0%,rgba(167,139,250,0.24)_45%,transparent_75%)]" />
+      <div className="relative z-10">{children}</div>
+    </div>
+  )
+}
+
+function AuthShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(110%_90%_at_15%_-10%,#f8fafc_0%,#f1f5f9_45%,#ffffff_100%)] transition-colors duration-500 ease-out dark:bg-[radial-gradient(90%_70%_at_20%_0%,#0f172a_0%,#0a0f1b_50%,#05070d_100%)]" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute left-1/2 top-1/2 h-[60rem] w-[60rem] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.22] blur-3xl animate-[rotateAura_100s_linear_infinite] bg-[conic-gradient(from_0deg,#93c5fd_0deg,#34d399_150deg,#fbbf24_260deg,#a78bfa_340deg,#93c5fd_360deg)] transition-opacity duration-500 dark:opacity-[0.34] dark:bg-[conic-gradient(from_0deg,#38bdf8_0deg,#34d399_140deg,#a78bfa_250deg,#fbbf24_310deg,#f87171_350deg,#38bdf8_360deg)]" />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/45 to-transparent transition-colors duration-500 ease-out dark:from-slate-900/70 dark:via-slate-900/40 dark:to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(120%_120%_at_50%_50%,transparent_58%,rgba(15,23,42,0.1)_100%)] transition-opacity duration-500 ease-out dark:bg-[radial-gradient(120%_120%_at_50%_50%,transparent_56%,rgba(2,6,23,0.32)_100%)]" />
+      </div>
+
+      <div className="relative z-10 flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12 sm:px-6">
+        {children}
+      </div>
     </div>
   )
 }
@@ -40,83 +61,86 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-            Welcome Back
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400">
-            Sign in to your account
-          </p>
-        </div>
-        
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
-              <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
+    <AuthShell>
+      <Card className="w-full max-w-md p-10 sm:p-12">
+        <div className="space-y-10">
+          <div className="space-y-3 text-center">
+            <span className="inline-flex items-center justify-center rounded-full bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 shadow-[0_12px_32px_-22px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/70 dark:text-slate-200">
+              Welcome back
+            </span>
+            <h2 className="text-3xl font-semibold text-slate-900 dark:text-white">Sign in to Sumaura</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Access your financial workspace with live Plaid syncing and aura dashboards.
+            </p>
+          </div>
+
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {error && (
+              <div className="rounded-2xl border border-red-200/70 bg-red-50/80 px-4 py-3 text-left shadow-sm dark:border-red-700/60 dark:bg-red-900/25">
+                <p className="text-sm font-medium text-red-600 dark:text-red-300">{error}</p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium tracking-wide text-slate-700 dark:text-slate-200"
+              >
+                Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-medium text-slate-900 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/12 dark:bg-[#111a2f] dark:text-white dark:focus:ring-sky-400/80 dark:focus:ring-offset-[#0f172a]"
+                placeholder="you@example.com"
+                disabled={isLoading}
+              />
             </div>
-          )}
-          
-          <div>
-            <label 
-              htmlFor="email" 
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-            >
-              Email
-            </label>
-            <input 
-              type="email" 
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              placeholder="Enter your email"
+
+            <div className="space-y-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium tracking-wide text-slate-700 dark:text-slate-200"
+              >
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-medium text-slate-900 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/12 dark:bg-[#111a2f] dark:text-white dark:focus:ring-sky-400/80 dark:focus:ring-offset-[#0f172a]"
+                placeholder="••••••••"
+                disabled={isLoading}
+              />
+            </div>
+
+            <button
+              type="submit"
               disabled={isLoading}
-            />
-          </div>
-          
-          <div>
-            <label 
-              htmlFor="password" 
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+              className="inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-sky-500 via-sky-400 to-violet-500 px-5 py-3 text-base font-semibold text-white shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)] transition-transform duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-[#0f172a]"
             >
-              Password
-            </label>
-            <input 
-              type="password" 
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              placeholder="Enter your password"
-              disabled={isLoading}
-            />
+              {isLoading ? 'Signing in...' : 'Sign in'}
+            </button>
+          </form>
+
+          <div className="text-center text-sm text-slate-600 dark:text-slate-300">
+            <p className="mb-3">Don't have an account?</p>
+            <button
+              type="button"
+              onClick={onNavigateToRegister}
+              className="inline-flex items-center justify-center rounded-full border border-white/50 bg-white/70 px-5 py-2 font-semibold text-slate-800 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.45)] transition-transform duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/15 dark:bg-[#1e293b]/70 dark:text-slate-200 dark:focus-visible:ring-offset-[#0f172a]"
+            >
+              Create account
+            </button>
           </div>
-          
-          <button 
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Signing In...' : 'Sign In'}
-          </button>
-        </form>
-        
-        <div className="mt-6 text-center">
-          <p className="text-slate-600 dark:text-slate-400 mb-4">
-            Don't have an account?
-          </p>
-          <button 
-            type="button" 
-            onClick={onNavigateToRegister}
-            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors"
-          >
-            Create Account
-          </button>
         </div>
       </Card>
-    </div>
+    </AuthShell>
   )
 }
 
@@ -167,143 +191,152 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
     }
   }
 
+  const inputBaseClasses =
+    'w-full rounded-xl border bg-white px-4 text-sm font-medium text-slate-900 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)] transition-all duration-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#111a2f] dark:text-white'
+  const inputValidClasses =
+    'border-black/10 focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-white dark:border-white/12 dark:focus:ring-sky-400/80 dark:focus:ring-offset-[#0f172a]'
+  const inputInvalidClasses =
+    'border-red-300 focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-white dark:border-red-600/80 dark:focus:ring-red-400/75 dark:focus:ring-offset-[#0f172a]'
+
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-            Create Account
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400">
-            Join us today
-          </p>
-        </div>
+    <AuthShell>
+      <Card className="w-full max-w-md p-6 sm:p-8">
+        <div className="space-y-5">
+          <div className="space-y-2 text-center">
+            <span className="inline-flex items-center justify-center rounded-full bg-white/70 px-3 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.32em] text-slate-600 shadow-[0_10px_28px_-20px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/70 dark:text-slate-200">
+              Create access
+            </span>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Join Sumaura</h2>
+            <p className="text-[0.85rem] text-slate-600 dark:text-slate-400">
+              Finish sign up to unlock onboarding and Plaid sync.
+            </p>
+          </div>
 
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
-              <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            {error && (
+              <div className="rounded-2xl border border-red-200/70 bg-red-50/80 px-4 py-3 text-left shadow-sm dark:border-red-700/60 dark:bg-red-900/25">
+                <p className="text-sm font-medium text-red-600 dark:text-red-300">{error}</p>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label
+                htmlFor="email"
+                className="block text-xs font-semibold tracking-[0.18em] text-slate-700 uppercase dark:text-slate-200"
+              >
+                Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                className={`${inputBaseClasses} py-2.5 ${email && !isEmailValid ? inputInvalidClasses : inputValidClasses}`}
+                placeholder="you@example.com"
+                disabled={isLoading}
+              />
+              {email && !isEmailValid && (
+                <p className="text-xs text-red-600 dark:text-red-300">Please enter a valid email address.</p>
+              )}
             </div>
-          )}
 
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-            >
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={`w-full px-4 py-3 rounded-lg border bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 transition-colors ${
-                email && !isEmailValid
-                  ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500'
-                  : 'border-slate-300 dark:border-slate-600 focus:ring-blue-500 focus:border-blue-500'
-              }`}
-              placeholder="Enter your email"
-              disabled={isLoading}
-            />
-            {email && !isEmailValid && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                Please enter a valid email address
-              </p>
-            )}
-          </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="password"
+                  className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200"
+                >
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className={`${inputBaseClasses} py-2.5 ${
+                    password && !passwordValidation.isValid ? inputInvalidClasses : inputValidClasses
+                  }`}
+                  placeholder="Create a password"
+                  disabled={isLoading}
+                />
+              </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-            >
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={`w-full px-4 py-3 rounded-lg border bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 transition-colors ${
-                password && !passwordValidation.isValid
-                  ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500'
-                  : 'border-slate-300 dark:border-slate-600 focus:ring-blue-500 focus:border-blue-500'
-              }`}
-              placeholder="Enter your password"
-              disabled={isLoading}
-            />
-          </div>
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="confirm-password"
+                  className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200"
+                >
+                  Confirm password
+                </label>
+                <input
+                  type="password"
+                  id="confirm-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className={`${inputBaseClasses} py-2.5 ${
+                    confirmPassword && !isPasswordMatch ? inputInvalidClasses : inputValidClasses
+                  }`}
+                  placeholder="Re-enter password"
+                  disabled={isLoading}
+                />
+                {confirmPassword && !isPasswordMatch && (
+                  <p className="text-xs text-red-600 dark:text-red-300">Passwords do not match.</p>
+                )}
+              </div>
+            </div>
 
-          <div>
-            <label 
-              htmlFor="confirm-password" 
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-            >
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              id="confirm-password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className={`w-full px-4 py-3 rounded-lg border bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 transition-colors ${
-                confirmPassword && !isPasswordMatch
-                  ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500'
-                  : 'border-slate-300 dark:border-slate-600 focus:ring-blue-500 focus:border-blue-500'
-              }`}
-              placeholder="Confirm your password"
+            <div className="rounded-lg border border-white/55 bg-white/85 px-3.5 py-3 text-[0.7rem] shadow-[0_16px_42px_-38px_rgba(15,23,42,0.4)] dark:border-white/12 dark:bg-[#111a2f] dark:text-slate-300">
+              <h3 className="mb-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.26em] text-slate-700 dark:text-slate-200">
+                Password checklist
+              </h3>
+              <ul className="flex flex-wrap gap-1.5">
+                <li className={`rounded-full px-2.5 py-1 font-medium ${
+                  passwordValidation.minLength ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-white/60 text-slate-500 dark:bg-white/5 dark:text-slate-400'
+                }`}>
+                  8+ chars
+                </li>
+                <li className={`rounded-full px-2.5 py-1 font-medium ${
+                  passwordValidation.hasCapital ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-white/60 text-slate-500 dark:bg-white/5 dark:text-slate-400'
+                }`}>
+                  Uppercase
+                </li>
+                <li className={`rounded-full px-2.5 py-1 font-medium ${
+                  passwordValidation.hasNumber ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-white/60 text-slate-500 dark:bg-white/5 dark:text-slate-400'
+                }`}>
+                  Number
+                </li>
+                <li className={`rounded-full px-2.5 py-1 font-medium ${
+                  passwordValidation.hasSpecial ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-white/60 text-slate-500 dark:bg-white/5 dark:text-slate-400'
+                }`}>
+                  Symbol
+                </li>
+              </ul>
+            </div>
+
+            <button
+              type="submit"
               disabled={isLoading}
-            />
-            {confirmPassword && !isPasswordMatch && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                Passwords do not match
-              </p>
-            )}
+              className="inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-sky-500 via-sky-400 to-violet-500 px-5 py-2.5 text-[0.95rem] font-semibold text-white shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)] transition-transform duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-[#0f172a]"
+            >
+              {isLoading ? 'Creating account...' : 'Create account'}
+            </button>
+          </form>
+
+          <div className="space-y-1.5 text-center text-xs font-medium text-slate-600 dark:text-slate-300">
+            <p>Already have an account?</p>
+            <button
+              type="button"
+              onClick={onNavigateToLogin}
+              className="inline-flex items-center justify-center rounded-full border border-white/50 bg-white/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-slate-800 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.45)] transition-transform duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/15 dark:bg-[#1e293b]/70 dark:text-slate-200 dark:focus-visible:ring-offset-[#0f172a]"
+            >
+              Sign in
+            </button>
           </div>
-          
-          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Password Requirements:
-            </h3>
-            <ul className="text-xs space-y-1">
-              <li className={passwordValidation.minLength ? 'text-green-600 dark:text-green-400' : 'text-slate-600 dark:text-slate-400'}>
-                {passwordValidation.minLength ? '✓' : '•'} 8+ characters
-              </li>
-              <li className={passwordValidation.hasCapital ? 'text-green-600 dark:text-green-400' : 'text-slate-600 dark:text-slate-400'}>
-                {passwordValidation.hasCapital ? '✓' : '•'} 1 capital letter
-              </li>
-              <li className={passwordValidation.hasNumber ? 'text-green-600 dark:text-green-400' : 'text-slate-600 dark:text-slate-400'}>
-                {passwordValidation.hasNumber ? '✓' : '•'} 1 number
-              </li>
-              <li className={passwordValidation.hasSpecial ? 'text-green-600 dark:text-green-400' : 'text-slate-600 dark:text-slate-400'}>
-                {passwordValidation.hasSpecial ? '✓' : '•'} 1 special character
-              </li>
-            </ul>
-          </div>
-          
-          <button 
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Creating Account...' : 'Create Account'}
-          </button>
-        </form>
-        
-        <div className="mt-6 text-center">
-          <p className="text-slate-600 dark:text-slate-400 mb-4">
-            Already have an account?
-          </p>
-          <button 
-            type="button" 
-            onClick={onNavigateToLogin}
-            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors"
-          >
-            Sign In
-          </button>
         </div>
       </Card>
-    </div>
+    </AuthShell>
   )
 }
