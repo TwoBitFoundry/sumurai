@@ -41,12 +41,12 @@ export const TransactionsFilters: React.FC<Props> = ({
   return (
     <>
       {showSearch && (
-        <div className="relative w-full max-w-sm ml-auto">
+        <div className="relative w-full sm:w-64">
           <input
             value={search}
             onChange={(e) => onSearch(e.target.value)}
-            placeholder="Search transactions"
-            className="w-full pl-3 pr-3 py-2 rounded-2xl bg-slate-100 dark:bg-white/10 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/40"
+            placeholder="Search transactions..."
+            className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)] transition-all duration-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-white dark:border-white/12 dark:bg-[#111a2f] dark:text-white dark:placeholder:text-slate-500 dark:focus:ring-sky-400/80 dark:focus:ring-offset-[#0f172a]"
           />
         </div>
       )}
@@ -55,7 +55,7 @@ export const TransactionsFilters: React.FC<Props> = ({
           <div
             ref={scrollContainerRef}
             onScroll={checkScroll}
-            className="flex items-center gap-2 pl-1 w-full overflow-x-auto scrollbar-hide pb-1"
+            className="scrollbar-hide flex w-full items-center gap-2 overflow-x-auto pb-1 pl-1 pt-1"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {categories.map((name) => {
@@ -66,7 +66,9 @@ export const TransactionsFilters: React.FC<Props> = ({
                   key={name}
                   type="button"
                   onClick={() => onSelectCategory(isSelected ? null : name)}
-                  className={`px-2 py-1 rounded-full text-xs transition inline-flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${theme.tag} ${isSelected ? `ring-2 ${theme.ring}` : 'hover:opacity-90'}`}
+                  className={`inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-2 py-1 text-xs transition-all duration-150 ${theme.tag} ${
+                    isSelected ? `ring-2 ${theme.ring}` : 'hover:opacity-90'
+                  }`}
                   aria-pressed={isSelected}
                   title={isSelected ? `Remove filter: ${name}` : `Filter by ${name}`}
                 >
@@ -76,10 +78,10 @@ export const TransactionsFilters: React.FC<Props> = ({
             })}
           </div>
           {showLeftFade && (
-            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white dark:from-slate-900 to-transparent pointer-events-none" />
+            <div className="pointer-events-none absolute bottom-0 left-0 top-0 w-8 bg-gradient-to-r from-white to-transparent transition-opacity duration-200 dark:from-[#0f172a]" />
           )}
           {showRightFade && (
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-slate-900 to-transparent pointer-events-none" />
+            <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-8 bg-gradient-to-l from-white to-transparent transition-opacity duration-200 dark:from-[#0f172a]" />
           )}
         </div>
       )}
