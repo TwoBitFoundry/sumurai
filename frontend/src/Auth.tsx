@@ -42,6 +42,11 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
+  const inputBaseClasses =
+    'w-full rounded-xl border bg-white px-4 text-sm font-medium text-slate-900 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)] transition-all duration-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#111a2f] dark:text-white'
+  const inputFocusClasses =
+    'border-black/10 focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-white dark:border-white/12 dark:focus:ring-sky-400/80 dark:focus:ring-offset-[#0f172a]'
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -63,14 +68,14 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
   return (
     <AuthShell>
       <Card className="w-full max-w-md p-10 sm:p-12">
-        <div className="space-y-10">
+          <div className="space-y-10">
           <div className="space-y-3 text-center">
             <span className="inline-flex items-center justify-center rounded-full bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 shadow-[0_12px_32px_-22px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/70 dark:text-slate-200">
               Welcome back
             </span>
             <h2 className="text-3xl font-semibold text-slate-900 dark:text-white">Sign in to Sumaura</h2>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Access your financial workspace with live Plaid syncing and aura dashboards.
+              Access your latest financial dashboards and insights.
             </p>
           </div>
 
@@ -84,7 +89,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
             <div className="space-y-2">
               <label
                 htmlFor="email"
-                className="block text-sm font-medium tracking-wide text-slate-700 dark:text-slate-200"
+                className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200"
               >
                 Email
               </label>
@@ -94,7 +99,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
-                className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-medium text-slate-900 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/12 dark:bg-[#111a2f] dark:text-white dark:focus:ring-sky-400/80 dark:focus:ring-offset-[#0f172a]"
+                className={`${inputBaseClasses} py-2.5 ${inputFocusClasses}`}
                 placeholder="you@example.com"
                 disabled={isLoading}
               />
@@ -103,7 +108,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
             <div className="space-y-2">
               <label
                 htmlFor="password"
-                className="block text-sm font-medium tracking-wide text-slate-700 dark:text-slate-200"
+                className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200"
               >
                 Password
               </label>
@@ -113,7 +118,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
-                className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-medium text-slate-900 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/12 dark:bg-[#111a2f] dark:text-white dark:focus:ring-sky-400/80 dark:focus:ring-offset-[#0f172a]"
+                className={`${inputBaseClasses} py-2.5 ${inputFocusClasses}`}
                 placeholder="••••••••"
                 disabled={isLoading}
               />
@@ -133,9 +138,9 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
             <button
               type="button"
               onClick={onNavigateToRegister}
-              className="inline-flex items-center justify-center rounded-full border border-white/50 bg-white/70 px-5 py-2 font-semibold text-slate-800 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.45)] transition-transform duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/15 dark:bg-[#1e293b]/70 dark:text-slate-200 dark:focus-visible:ring-offset-[#0f172a]"
+              className="inline-flex items-center justify-center rounded-full border border-white/50 bg-white/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-slate-800 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.45)] transition-transform duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/15 dark:bg-[#1e293b]/70 dark:text-slate-200 dark:focus-visible:ring-offset-[#0f172a]"
             >
-              Create account
+              SIGN UP
             </button>
           </div>
         </div>
@@ -202,11 +207,11 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
     <AuthShell>
       <Card className="w-full max-w-md p-6 sm:p-8">
         <div className="space-y-5">
-          <div className="space-y-2 text-center">
-            <span className="inline-flex items-center justify-center rounded-full bg-white/70 px-3 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.32em] text-slate-600 shadow-[0_10px_28px_-20px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/70 dark:text-slate-200">
-              Create access
+          <div className="space-y-3 text-center">
+            <span className="inline-flex items-center justify-center rounded-full bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 shadow-[0_12px_32px_-22px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/70 dark:text-slate-200">
+              JOIN TODAY
             </span>
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Join Sumaura</h2>
+            <h2 className="text-3xl font-semibold text-slate-900 dark:text-white">Sign Up for Sumaura</h2>
             <p className="text-[0.85rem] text-slate-600 dark:text-slate-400">
               Finish sign up to unlock onboarding and Plaid sync.
             </p>
@@ -325,8 +330,8 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
             </button>
           </form>
 
-          <div className="space-y-1.5 text-center text-xs font-medium text-slate-600 dark:text-slate-300">
-            <p>Already have an account?</p>
+          <div className="text-center text-sm text-slate-600 dark:text-slate-300">
+            <p className="mb-3">Already have an account?</p>
             <button
               type="button"
               onClick={onNavigateToLogin}
