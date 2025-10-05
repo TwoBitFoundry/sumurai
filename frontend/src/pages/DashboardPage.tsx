@@ -72,12 +72,7 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
   }, [netSeries, dark])
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Dashboard</h2>
-        <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">Overview of balances, spending, and recent trends.</p>
-      </div>
-
+    <div className="space-y-8">
       <div ref={balancesOverviewRef}>
         <BalancesOverview />
       </div>
@@ -123,8 +118,8 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
                       return (
                         <div
                           key={`topcard-${cat.name}`}
-                          className={`p-2 rounded-lg border transition-all ${
-                            isHovered ? 'bg-slate-50 dark:bg-slate-700/40 border-slate-200 dark:border-slate-600' : 'border-slate-200 dark:border-slate-700'
+                          className={`p-2 rounded-lg border transition-all duration-300 ${
+                            isHovered ? 'bg-slate-50 dark:bg-slate-700/40 border-[#93c5fd] dark:border-[#38bdf8]' : 'border-slate-200 dark:border-slate-700'
                           }`}
                           onMouseEnter={() => setHoveredCategory(cat.name)}
                           onMouseLeave={() => setHoveredCategory(null)}

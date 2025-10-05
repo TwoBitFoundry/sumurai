@@ -125,6 +125,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         : 'Link your first institution',
       gradient: 'from-[#38bdf8]/25 via-[#0ea5e9]/10 to-transparent',
       ring: 'ring-[#93c5fd]/40',
+      border: 'border-sky-300 dark:border-sky-600',
+      hoverBorder: 'hover:border-sky-400 dark:hover:border-sky-500',
     },
     {
       label: 'Accounts tracked',
@@ -132,6 +134,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       detail: summary.accounts ? 'Balances stay in sync automatically' : 'Connect to start syncing',
       gradient: 'from-[#34d399]/28 via-[#10b981]/12 to-transparent',
       ring: 'ring-[#34d399]/35',
+      border: 'border-emerald-300 dark:border-emerald-600',
+      hoverBorder: 'hover:border-emerald-400 dark:hover:border-emerald-500',
     },
     {
       label: 'Last sync',
@@ -139,6 +143,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       detail: syncingAll ? 'Sync in progress' : lastSyncDetail,
       gradient: 'from-[#a78bfa]/28 via-[#7c3aed]/12 to-transparent',
       ring: 'ring-[#a78bfa]/35',
+      border: 'border-violet-300 dark:border-violet-600',
+      hoverBorder: 'hover:border-violet-400 dark:hover:border-violet-500',
     },
   ] as const
 
@@ -183,10 +189,10 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            {statTiles.map(({ label, value, detail, gradient, ring }) => (
+            {statTiles.map(({ label, value, detail, gradient, ring, border, hoverBorder }) => (
               <div
                 key={label}
-                className="group relative overflow-hidden rounded-[1.8rem] border border-white/40 bg-white/85 px-5 py-4 text-[#0f172a] shadow-[0_22px_60px_-42px_rgba(15,23,42,0.55)] transition-all duration-300 ease-out dark:border-white/12 dark:bg-[#0f172a]/82 dark:text-white"
+                className={`group relative overflow-hidden rounded-[1.8rem] border bg-white/85 px-5 py-4 text-[#0f172a] shadow-[0_22px_60px_-42px_rgba(15,23,42,0.55)] transition-all duration-300 ease-out dark:bg-[#0f172a]/82 dark:text-white ${border} ${hoverBorder}`}
               >
                 <div className={`pointer-events-none absolute inset-0 rounded-[1.8rem] bg-gradient-to-br ${gradient} opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100`} />
                 <div className={`pointer-events-none absolute inset-[2px] rounded-[1.65rem] ring-1 ${ring} opacity-70`} />
