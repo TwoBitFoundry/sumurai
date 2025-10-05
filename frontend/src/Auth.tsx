@@ -67,26 +67,26 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
 
   return (
     <AuthShell>
-      <Card className="w-full max-w-md p-10 sm:p-12">
-          <div className="space-y-10">
+      <Card className="w-full max-w-md p-6 sm:p-8">
+        <div className="space-y-5">
           <div className="space-y-3 text-center">
             <span className="inline-flex items-center justify-center rounded-full bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 shadow-[0_12px_32px_-22px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/70 dark:text-slate-200">
               Welcome back
             </span>
-            <h2 className="text-3xl font-semibold text-slate-900 dark:text-white">Sign in to Sumaura</h2>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <h2 className="text-3xl font-semibold text-slate-900 dark:text-white">Sign In to Sumaura</h2>
+            <p className="text-[0.85rem] text-slate-600 dark:text-slate-400">
               Access your latest financial dashboards and insights.
             </p>
           </div>
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handleSubmit}>
             {error && (
               <div className="rounded-2xl border border-red-200/70 bg-red-50/80 px-4 py-3 text-left shadow-sm dark:border-red-700/60 dark:bg-red-900/25">
                 <p className="text-sm font-medium text-red-600 dark:text-red-300">{error}</p>
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <label
                 htmlFor="email"
                 className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200"
@@ -105,7 +105,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <label
                 htmlFor="password"
                 className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200"
@@ -127,7 +127,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
             <button
               type="submit"
               disabled={isLoading}
-              className="inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-sky-500 via-sky-400 to-violet-500 px-5 py-3 text-base font-semibold text-white shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)] transition-transform duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-[#0f172a]"
+              className="inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-sky-500 via-sky-400 to-violet-500 px-5 py-2.5 text-[0.95rem] font-semibold text-white shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)] transition-transform duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-offset-[#0f172a]"
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
