@@ -28,7 +28,8 @@ export function BudgetList({
     <ul className="grid grid-cols-1 gap-6 p-6 sm:px-10 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {items.map((b) => {
         const isOver = b.spent > b.amount
-        const tagTheme = getTagThemeForCategory(formatCategoryName(b.category))
+        const displayName = formatCategoryName(b.category)
+        const tagTheme = getTagThemeForCategory(displayName)
         const isEditing = editingId === b.id
         const draft = amountDrafts[b.id] ?? String(b.amount)
         return (
@@ -40,7 +41,7 @@ export function BudgetList({
             <div className="flex items-start justify-between gap-3">
               <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold shadow-sm transition-colors duration-300 ${tagTheme.tag}`}>
                 <span className="block h-2 w-2 rounded-full bg-current opacity-80" aria-hidden="true" />
-                {formatCategoryName(b.category)}
+                {displayName}
               </div>
               <div className="flex items-center gap-2 text-xs">
                 {isEditing ? (

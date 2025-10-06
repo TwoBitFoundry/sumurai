@@ -210,37 +210,6 @@ export default function BudgetsPage() {
             </div>
 
             <div className="space-y-3">
-              <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white/80 p-5 text-slate-700 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-slate-300 dark:border-slate-700 dark:bg-[#111a2f]/70 dark:text-slate-200 dark:hover:border-slate-600">
-                <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-200/40 via-slate-100/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20" />
-                <div className="relative z-10 flex items-center justify-between gap-4">
-                  <div>
-                    <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Total Planned</div>
-                    <div className="mt-1 text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{fmtUSD(stats.totalBudgeted)}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Total Spent</div>
-                    <div className={`mt-1 text-2xl font-semibold transition-colors duration-500 ${stats.totalSpent > stats.totalBudgeted ? 'text-red-600 dark:text-red-300' : 'text-slate-700 dark:text-slate-200'}`}>{fmtUSD(stats.totalSpent)}</div>
-                  </div>
-                </div>
-                <div className="relative z-10 mt-4 space-y-2.5">
-                  <div className="relative h-2.5 overflow-hidden rounded-full bg-slate-200/70 shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)] transition-colors duration-300 dark:bg-slate-700/60 dark:shadow-[inset_0_1px_2px_rgba(2,6,23,0.35)]">
-                    <div
-                      className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${
-                        stats.totalSpent > stats.totalBudgeted
-                          ? 'bg-gradient-to-r from-rose-400 via-rose-500 to-rose-600 shadow-[0_0_12px_rgba(244,63,94,0.35)]'
-                          : 'bg-gradient-to-r from-sky-400 via-cyan-400 to-violet-500 shadow-[0_0_12px_rgba(14,165,233,0.35)]'
-                      }`}
-                      style={{ width: `${Math.min(100, utilization * 100)}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[0.75rem] text-slate-500 transition-colors duration-300 dark:text-slate-400">
-                    <span className="font-medium tracking-wide">{(utilization * 100).toFixed(0)}% used</span>
-                    <span className={stats.totalSpent > stats.totalBudgeted ? 'font-semibold text-red-600 dark:text-red-300' : 'font-semibold text-slate-600 dark:text-slate-300'}>
-                      {stats.totalSpent > stats.totalBudgeted ? `-${fmtUSD(stats.totalSpent - stats.totalBudgeted)} over` : `${fmtUSD(stats.remaining)} left`}
-                    </span>
-                  </div>
-                </div>
-              </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="group relative overflow-hidden rounded-2xl border border-emerald-300 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-emerald-400 dark:border-emerald-600 dark:bg-[#111a2f]/70 dark:hover:border-emerald-500">
                   <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#34d399]/28 via-[#10b981]/12 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
@@ -260,13 +229,14 @@ export default function BudgetsPage() {
                           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                         >
                           {stats.activeBudgetCategories.map((category) => {
-                            const theme = getTagThemeForCategory(category)
+                            const displayName = formatCategoryName(category)
+                            const theme = getTagThemeForCategory(displayName)
                             return (
                               <span
                                 key={category}
                                 className={`inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium ${theme.tag}`}
                               >
-                                {formatCategoryName(category)}
+                                {displayName}
                               </span>
                             )
                           })}
@@ -335,13 +305,14 @@ export default function BudgetsPage() {
                           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                         >
                           {stats.overBudgetCategories.map((category) => {
-                            const theme = getTagThemeForCategory(category)
+                            const displayName = formatCategoryName(category)
+                            const theme = getTagThemeForCategory(displayName)
                             return (
                               <span
                                 key={category}
                                 className={`inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium ${theme.tag}`}
                               >
-                                {formatCategoryName(category)}
+                                {displayName}
                               </span>
                             )
                           })}
@@ -354,6 +325,37 @@ export default function BudgetsPage() {
                         )}
                       </div>
                     )}
+                  </div>
+                </div>
+              </div>
+              <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white/80 p-5 text-slate-700 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-slate-300 dark:border-slate-700 dark:bg-[#111a2f]/70 dark:text-slate-200 dark:hover:border-slate-600">
+                <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-200/40 via-slate-100/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20" />
+                <div className="relative z-10 flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Total Planned</div>
+                    <div className="mt-1 text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{fmtUSD(stats.totalBudgeted)}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Total Spent</div>
+                    <div className={`mt-1 text-2xl font-semibold transition-colors duration-500 ${stats.totalSpent > stats.totalBudgeted ? 'text-red-600 dark:text-red-300' : 'text-slate-700 dark:text-slate-200'}`}>{fmtUSD(stats.totalSpent)}</div>
+                  </div>
+                </div>
+                <div className="relative z-10 mt-4 space-y-2.5">
+                  <div className="relative h-2.5 overflow-hidden rounded-full bg-slate-200/70 shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)] transition-colors duration-300 dark:bg-slate-700/60 dark:shadow-[inset_0_1px_2px_rgba(2,6,23,0.35)]">
+                    <div
+                      className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${
+                        stats.totalSpent > stats.totalBudgeted
+                          ? 'bg-gradient-to-r from-rose-400 via-rose-500 to-rose-600 shadow-[0_0_12px_rgba(244,63,94,0.35)]'
+                          : 'bg-gradient-to-r from-sky-400 via-cyan-400 to-violet-500 shadow-[0_0_12px_rgba(14,165,233,0.35)]'
+                      }`}
+                      style={{ width: `${Math.min(100, utilization * 100)}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[0.75rem] text-slate-500 transition-colors duration-300 dark:text-slate-400">
+                    <span className="font-medium tracking-wide">{(utilization * 100).toFixed(0)}% used</span>
+                    <span className={stats.totalSpent > stats.totalBudgeted ? 'font-semibold text-red-600 dark:text-red-300' : 'font-semibold text-slate-600 dark:text-slate-300'}>
+                      {stats.totalSpent > stats.totalBudgeted ? `-${fmtUSD(stats.totalSpent - stats.totalBudgeted)} over` : `${fmtUSD(stats.remaining)} left`}
+                    </span>
                   </div>
                 </div>
               </div>
