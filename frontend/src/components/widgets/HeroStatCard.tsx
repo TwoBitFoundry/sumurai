@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { getTagThemeForCategory } from '../../utils/categories'
 
-type Accent = 'emerald' | 'sky' | 'violet' | 'amber'
+type Accent = 'emerald' | 'sky' | 'violet' | 'amber' | 'slate' | 'rose'
 
 type Tone = 'success' | 'info' | 'warning' | 'danger'
 
@@ -41,6 +41,18 @@ const ACCENT_STYLES: Record<Accent, {
   defaultPill: string
   glowRgb: string
 }> = {
+  slate: {
+    border: 'border-slate-300',
+    borderDark: 'dark:border-slate-600',
+    hoverBorder: 'hover:border-slate-400',
+    hoverBorderDark: 'dark:hover:border-slate-500',
+    ringHex: '#64748b',
+    gradFrom: '#64748b',
+    gradVia: '#475569',
+    icon: 'text-slate-500 dark:text-slate-300',
+    defaultPill: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-300',
+    glowRgb: '100,116,139',
+  },
   emerald: {
     border: 'border-emerald-300',
     borderDark: 'dark:border-emerald-600',
@@ -88,6 +100,18 @@ const ACCENT_STYLES: Record<Accent, {
     icon: 'text-amber-500 dark:text-amber-400',
     defaultPill: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
     glowRgb: '251,191,36',
+  },
+  rose: {
+    border: 'border-rose-300',
+    borderDark: 'dark:border-rose-600',
+    hoverBorder: 'hover:border-rose-400',
+    hoverBorderDark: 'dark:hover:border-rose-500',
+    ringHex: '#f43f5e',
+    gradFrom: '#fb7185',
+    gradVia: '#f43f5e',
+    icon: 'text-rose-500 dark:text-rose-400',
+    defaultPill: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+    glowRgb: '244,63,94',
   },
 }
 

@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { RefreshCcw } from "lucide-react";
+import { CircleDollarSign, HandCoins, LineChart, PiggyBank, RefreshCcw, CreditCard } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Amount, fmtUSD } from "./Amount";
+import HeroStatCard from "./widgets/HeroStatCard";
 import { useBalancesOverview } from "../hooks/useBalancesOverview";
 import { formatRatio } from "../services/AnalyticsService";
 
@@ -72,6 +73,80 @@ export function BalancesOverview() {
   >(null);
 
   const cursorStroke = useMemo(() => "#38bdf8", []);
+  const overall = data?.overall;
+
+  const overviewCards = useMemo(
+    () => [
+      {
+        key: "net",
+        title: "Net",
+        accent: "slate" as const,
+        icon: <CircleDollarSign className="h-4 w-4" />,
+        value: (
+          <span data-testid="overall-net">
+            <Amount value={overall?.net ?? 0} />
+          </span>
+        ),
+      },
+      {
+        key: "cash",
+        title: "Cash",
+        accent: "emerald" as const,
+        icon: <PiggyBank className="h-4 w-4" />,
+        value: (
+          <span
+            data-testid="overall-cash"
+            className="text-emerald-500 dark:text-emerald-300"
+          >
+            {fmtUSD(overall?.cash ?? 0)}
+          </span>
+        ),
+      },
+      {
+        key: "investments",
+        title: "Investments",
+        accent: "sky" as const,
+        icon: <LineChart className="h-4 w-4" />,
+        value: (
+          <span
+            data-testid="overall-investments"
+            className="text-sky-500 dark:text-sky-300"
+          >
+            {fmtUSD(overall?.investments ?? 0)}
+          </span>
+        ),
+      },
+      {
+        key: "credit",
+        title: "Credit",
+        accent: "rose" as const,
+        icon: <CreditCard className="h-4 w-4" />,
+        value: (
+          <span
+            data-testid="overall-credit"
+            className="text-rose-500 dark:text-rose-300"
+          >
+            {fmtUSD(overall?.credit ?? 0)}
+          </span>
+        ),
+      },
+      {
+        key: "loan",
+        title: "Loan",
+        accent: "rose" as const,
+        icon: <HandCoins className="h-4 w-4" />,
+        value: (
+          <span
+            data-testid="overall-loan"
+            className="text-rose-600 dark:text-rose-400"
+          >
+            {fmtUSD(overall?.loan ?? 0)}
+          </span>
+        ),
+      },
+    ],
+    [overall?.cash, overall?.credit, overall?.investments, overall?.loan, overall?.net]
+  );
 
   return (
     <section className="relative overflow-hidden rounded-[2.25rem] border border-white/35 bg-white/24 p-8 shadow-[0_45px_140px_-80px_rgba(15,23,42,0.82)] backdrop-blur-2xl backdrop-saturate-[160%] transition-colors duration-500 ease-out sm:p-12 dark:border-white/12 dark:bg-[#0f172a]/55 dark:shadow-[0_48px_160px_-82px_rgba(2,6,23,0.85)]">
@@ -122,42 +197,17 @@ export function BalancesOverview() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <div className="group relative overflow-hidden rounded-2xl p-4 bg-white/80 dark:bg-[#111a2f]/70 border border-slate-300 dark:border-slate-600 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] transition-all duration-300 hover:border-slate-400 dark:hover:border-slate-500 hover:-translate-y-[2px]">
-            <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#64748b]/15 via-[#475569]/8 to-transparent opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100" />
-            <div className="relative z-10">
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-[#475569] dark:text-[#cbd5e1]">Net</div>
-              <div className="mt-2 text-xl font-semibold text-[#0f172a] dark:text-white" data-testid="overall-net"><Amount value={data?.overall?.net ?? 0} /></div>
-            </div>
-          </div>
-          <div className="group relative overflow-hidden rounded-2xl p-4 bg-white/80 dark:bg-[#111a2f]/70 border border-emerald-300 dark:border-emerald-600 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] transition-all duration-300 hover:border-emerald-400 dark:hover:border-emerald-500 hover:-translate-y-[2px]">
-            <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#34d399]/28 via-[#10b981]/12 to-transparent opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100" />
-            <div className="relative z-10">
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-[#475569] dark:text-[#cbd5e1]">Cash</div>
-              <div className="mt-2 text-xl font-semibold text-[#10b981] dark:text-[#34d399]" data-testid="overall-cash">{fmtUSD(data?.overall?.cash ?? 0)}</div>
-            </div>
-          </div>
-          <div className="group relative overflow-hidden rounded-2xl p-4 bg-white/80 dark:bg-[#111a2f]/70 border border-sky-300 dark:border-sky-600 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] transition-all duration-300 hover:border-sky-400 dark:hover:border-sky-500 hover:-translate-y-[2px]">
-            <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#38bdf8]/25 via-[#0ea5e9]/10 to-transparent opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100" />
-            <div className="relative z-10">
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-[#475569] dark:text-[#cbd5e1]">Investments</div>
-              <div className="mt-2 text-xl font-semibold text-[#0ea5e9] dark:text-[#38bdf8]" data-testid="overall-investments">{fmtUSD(data?.overall?.investments ?? 0)}</div>
-            </div>
-          </div>
-          <div className="group relative overflow-hidden rounded-2xl p-4 bg-white/80 dark:bg-[#111a2f]/70 border border-red-300 dark:border-red-600 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] transition-all duration-300 hover:border-red-400 dark:hover:border-red-500 hover:-translate-y-[2px]">
-            <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#f87171]/20 via-[#ef4444]/10 to-transparent opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100" />
-            <div className="relative z-10">
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-[#475569] dark:text-[#cbd5e1]">Credit</div>
-              <div className="mt-2 text-xl font-semibold text-[#ef4444] dark:text-[#f87171]" data-testid="overall-credit">{fmtUSD(data?.overall?.credit ?? 0)}</div>
-            </div>
-          </div>
-          <div className="group relative overflow-hidden rounded-2xl p-4 bg-white/80 dark:bg-[#111a2f]/70 border border-red-400 dark:border-red-700 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] transition-all duration-300 hover:border-red-500 dark:hover:border-red-600 hover:-translate-y-[2px]">
-            <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#f87171]/20 via-[#ef4444]/10 to-transparent opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100" />
-            <div className="relative z-10">
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-[#475569] dark:text-[#cbd5e1]">Loan</div>
-              <div className="mt-2 text-xl font-semibold text-[#ef4444] dark:text-[#f87171]" data-testid="overall-loan">{fmtUSD(data?.overall?.loan ?? 0)}</div>
-            </div>
-          </div>
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          {overviewCards.map((card) => (
+            <HeroStatCard
+              key={card.key}
+              title={card.title}
+              value={card.value}
+              icon={card.icon}
+              accent={card.accent}
+              className="h-full"
+            />
+          ))}
         </div>
 
         <div className="relative h-12">
