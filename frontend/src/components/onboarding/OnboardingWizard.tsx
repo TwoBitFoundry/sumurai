@@ -154,7 +154,10 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
           />
         )}
         <div className="flex-1 flex items-center justify-center p-4 md:p-6 relative z-10">
-          <Card className="relative w-full max-w-6xl overflow-hidden rounded-[2.25rem] border border-[#0000001a] bg-white/25 p-5 shadow-[0_18px_55px_-30px_rgba(15,23,42,0.6)] backdrop-blur-[28px] backdrop-saturate-[140%] transition-all duration-500 ease-out animate-[fadeSlideUp_400ms_ease-out] dark:border-[#ffffff26] dark:bg-[#0f172a]/36 dark:shadow-[0_22px_60px_-28px_rgba(2,6,23,0.75)] md:p-6 lg:p-8">
+          <Card
+            containerClassName="relative w-full max-w-6xl overflow-hidden rounded-[2.25rem] border border-[#0000001a] bg-white/25 shadow-[0_18px_55px_-30px_rgba(15,23,42,0.6)] backdrop-blur-[28px] backdrop-saturate-[140%] transition-all duration-500 ease-out animate-[fadeSlideUp_400ms_ease-out] dark:border-[#ffffff26] dark:bg-[#0f172a]/36 dark:shadow-[0_22px_60px_-28px_rgba(2,6,23,0.75)]"
+            className="p-5 md:p-6 lg:p-8"
+          >
             <div className="pointer-events-none absolute inset-0">
               <div className="absolute inset-[1px] rounded-[2.2rem] ring-1 ring-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(15,23,42,0.08)] dark:ring-white/8 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(2,6,23,0.4)]" />
               <div className="absolute inset-0 rounded-[2.2rem] bg-[radial-gradient(120%_120%_at_12%_-4%,rgba(255,255,255,0.32)_0%,rgba(255,255,255,0.1)_40%,transparent_66%)] opacity-70 dark:bg-[radial-gradient(120%_120%_at_14%_-6%,rgba(248,250,252,0.18)_0%,rgba(148,163,184,0.14)_32%,transparent_62%)]" />
@@ -164,8 +167,8 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
             </div>
 
             <div className="relative z-10 flex h-full flex-col">
-            <div className="mb-6 flex items-center justify-between">
-              <ol className="flex items-center gap-2" aria-label="Onboarding steps">
+              <div className="mb-6 flex items-center justify-between">
+                <ol className="flex items-center gap-2" aria-label="Onboarding steps">
                 {steps.map((_, index) => {
                   const isActive = stepIndex === index
                   const isCompleteStep = index < stepIndex
