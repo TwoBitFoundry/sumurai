@@ -1,10 +1,11 @@
 import { useMemo } from 'react'
 import { AnimatePresence } from 'framer-motion'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Building2, CreditCard, Clock } from 'lucide-react'
 import { Toast } from '../components/Toast'
 import ConnectionsList from '../features/plaid/components/ConnectionsList'
 import ConnectButton from '../features/plaid/components/ConnectButton'
 import { usePlaidLinkFlow } from '../features/plaid/hooks/usePlaidLinkFlow'
+import HeroStatCard from '../components/widgets/HeroStatCard'
 
 const formatRelativeTime = (iso: string): string => {
   const timestamp = Date.parse(iso)
@@ -114,46 +115,12 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
   const pendingInstitutions = Math.max(0, summary.institutions - summary.connectedInstitutions)
 
-  const statTiles = [
-    {
-      label: 'Active institutions',
-      value: hasConnections ? `${summary.connectedInstitutions}/${summary.institutions}` : '0',
-      detail: hasConnections
-        ? summary.connectedInstitutions === summary.institutions
-          ? 'All connections healthy'
-          : `${pendingInstitutions} ${pendingInstitutions === 1 ? 'needs' : 'need'} attention`
-        : 'Link your first institution',
-      gradient: 'from-[#38bdf8]/25 via-[#0ea5e9]/10 to-transparent',
-      ring: 'ring-[#93c5fd]/40',
-      border: 'border-sky-300 dark:border-sky-600',
-      hoverBorder: 'hover:border-sky-400 dark:hover:border-sky-500',
-    },
-    {
-      label: 'Accounts tracked',
-      value: summary.accounts.toLocaleString(),
-      detail: summary.accounts ? 'Balances stay in sync automatically' : 'Connect to start syncing',
-      gradient: 'from-[#34d399]/28 via-[#10b981]/12 to-transparent',
-      ring: 'ring-[#34d399]/35',
-      border: 'border-emerald-300 dark:border-emerald-600',
-      hoverBorder: 'hover:border-emerald-400 dark:hover:border-emerald-500',
-    },
-    {
-      label: 'Last sync',
-      value: lastSyncValue,
-      detail: syncingAll ? 'Sync in progress' : lastSyncDetail,
-      gradient: 'from-[#a78bfa]/28 via-[#7c3aed]/12 to-transparent',
-      ring: 'ring-[#a78bfa]/35',
-      border: 'border-violet-300 dark:border-violet-600',
-      hoverBorder: 'hover:border-violet-400 dark:hover:border-violet-500',
-    },
-  ] as const
-
   return (
     <div className="space-y-8">
       <section className="relative overflow-hidden rounded-[2.25rem] border border-white/35 bg-white/24 p-6 shadow-[0_32px_110px_-60px_rgba(15,23,42,0.75)] backdrop-blur-[28px] backdrop-saturate-[150%] transition-colors duration-500 ease-out dark:border-white/12 dark:bg-[#0f172a]/55 dark:shadow-[0_36px_120px_-62px_rgba(2,6,23,0.85)] sm:p-8">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-[1px] rounded-[2.25rem] ring-1 ring-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)] dark:ring-white/12 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.48)]" />
-          <div className="absolute inset-0 rounded-[2.25rem] bg-gradient-to-b from-white/72 via-white/28 to-transparent transition-colors duration-500 dark:from-slate-900/68 dark:via-slate-900/34 dark:to-transparent" />
+          <div className="absolute inset-[1px] rounded-[2.2rem] ring-1 ring-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)] dark:ring-white/12 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.48)]" />
+          <div className="absolute inset-0 rounded-[2.2rem] bg-gradient-to-b from-white/72 via-white/28 to-transparent transition-colors duration-500 dark:from-slate-900/68 dark:via-slate-900/34 dark:to-transparent" />
         </div>
 
         <div className="relative z-10 flex flex-col gap-8">
@@ -188,27 +155,36 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
-            {statTiles.map(({ label, value, detail, gradient, ring, border, hoverBorder }) => (
-              <div
-                key={label}
-                className={`group relative overflow-hidden rounded-[1.8rem] border bg-white/85 px-5 py-4 text-[#0f172a] shadow-[0_22px_60px_-42px_rgba(15,23,42,0.55)] transition-all duration-300 ease-out dark:bg-[#0f172a]/82 dark:text-white hover:-translate-y-[2px] ${border} ${hoverBorder}`}
-              >
-                <div className={`pointer-events-none absolute inset-0 rounded-[1.8rem] bg-gradient-to-br ${gradient} opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100`} />
-                <div className={`pointer-events-none absolute inset-[2px] rounded-[1.65rem] ring-1 ${ring} opacity-70`} />
-                <div className="relative z-10 space-y-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#64748b] transition-colors duration-300 ease-out dark:text-[#94a3b8]">
-                    {label}
-                  </p>
-                  <p className="text-2xl font-semibold tracking-tight text-[#0f172a] transition-colors duration-300 ease-out dark:text-white">
-                    {value}
-                  </p>
-                  <p className="text-xs text-[#475569] transition-colors duration-300 ease-out dark:text-[#cbd5e1]">
-                    {detail}
-                  </p>
-                </div>
-              </div>
-            ))}
+          <div className="grid gap-3 sm:grid-cols-3">
+            <HeroStatCard
+              index={1}
+              title="Active institutions"
+              icon={<Building2 className="h-4 w-4" />}
+              value={hasConnections ? summary.connectedInstitutions : 0}
+              suffix={`out of ${summary.institutions}`}
+              subtext={hasConnections
+                ? (summary.connectedInstitutions === summary.institutions
+                    ? 'All connections healthy'
+                    : `${pendingInstitutions} ${pendingInstitutions === 1 ? 'needs' : 'need'} attention`)
+                : 'Link your first institution'}
+            />
+
+            <HeroStatCard
+              index={2}
+              title="Accounts tracked"
+              icon={<CreditCard className="h-4 w-4" />}
+              value={summary.accounts}
+              suffix={summary.accounts === 1 ? 'account' : 'accounts'}
+              subtext={summary.accounts ? 'Balances stay in sync automatically' : 'Connect to start syncing'}
+            />
+
+            <HeroStatCard
+              index={3}
+              title="Last sync"
+              icon={<Clock className="h-4 w-4" />}
+              value={lastSyncValue}
+              subtext={syncingAll ? 'Sync in progress' : lastSyncDetail}
+            />
           </div>
         </div>
       </section>

@@ -32,8 +32,8 @@ const ConnectionsList = ({ banks, onConnect, onSync, onDisconnect }: Connections
     return (
       <div className="relative overflow-hidden rounded-[2.25rem] border border-white/35 bg-white/20 px-8 py-12 text-center shadow-[0_32px_110px_-62px_rgba(15,23,42,0.72)] backdrop-blur-2xl backdrop-saturate-[150%] transition-colors duration-500 ease-out dark:border-white/12 dark:bg-[#0f172a]/55 dark:shadow-[0_36px_120px_-64px_rgba(2,6,23,0.82)]">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-[1px] rounded-[2.25rem] ring-1 ring-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.12)] dark:ring-white/10 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.1),inset_0_-1px_0_rgba(2,6,23,0.48)]" />
-          <div className="absolute inset-0 rounded-[2.25rem] bg-gradient-to-b from-white/65 via-white/24 to-transparent transition-colors duration-500 dark:from-slate-900/66 dark:via-slate-900/32 dark:to-transparent" />
+          <div className="absolute inset-[1px] rounded-[2.2rem] ring-1 ring-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.12)] dark:ring-white/10 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.1),inset_0_-1px_0_rgba(2,6,23,0.48)]" />
+          <div className="absolute inset-0 rounded-[2.2rem] bg-gradient-to-b from-white/65 via-white/24 to-transparent transition-colors duration-500 dark:from-slate-900/66 dark:via-slate-900/32 dark:to-transparent" />
         </div>
 
         <div className="relative z-10 flex flex-col items-center gap-4">

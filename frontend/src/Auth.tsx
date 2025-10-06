@@ -9,9 +9,9 @@ interface LoginScreenProps {
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`relative rounded-[2rem] border border-white/35 bg-white/20 p-8 shadow-[0_38px_120px_-60px_rgba(15,23,42,0.78)] backdrop-blur-[26px] backdrop-saturate-[140%] transition-all duration-300 ease-out dark:border-white/12 dark:bg-[#0f172a]/55 dark:shadow-[0_40px_120px_-58px_rgba(2,6,23,0.85)] ${className}`}>
-      <div className="pointer-events-none absolute inset-0 rounded-[2rem] ring-1 ring-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.25)] dark:ring-white/10 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(2,6,23,0.55)]" />
-      <div className="pointer-events-none absolute inset-0 rounded-[2rem] bg-[radial-gradient(120%_150%_at_85%_0%,rgba(14,165,233,0.18)_0%,rgba(167,139,250,0.18)_42%,transparent_72%)] opacity-70 dark:bg-[radial-gradient(120%_150%_at_90%_6%,rgba(38,198,218,0.28)_0%,rgba(167,139,250,0.24)_45%,transparent_75%)]" />
+    <div className={`relative rounded-[2.25rem] border border-white/35 bg-white/20 p-8 shadow-[0_38px_120px_-60px_rgba(15,23,42,0.78)] backdrop-blur-[26px] backdrop-saturate-[140%] transition-all duration-300 ease-out dark:border-white/12 dark:bg-[#0f172a]/55 dark:shadow-[0_40px_120px_-58px_rgba(2,6,23,0.85)] ${className}`}>
+      <div className="pointer-events-none absolute inset-0 rounded-[2.2rem] ring-1 ring-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.25)] dark:ring-white/10 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(2,6,23,0.55)]" />
+      <div className="pointer-events-none absolute inset-0 rounded-[2.2rem] bg-[radial-gradient(120%_150%_at_85%_0%,rgba(14,165,233,0.18)_0%,rgba(167,139,250,0.18)_42%,transparent_72%)] opacity-70 dark:bg-[radial-gradient(120%_150%_at_90%_6%,rgba(38,198,218,0.28)_0%,rgba(167,139,250,0.24)_45%,transparent_75%)]" />
       <div className="relative z-10">{children}</div>
     </div>
   )

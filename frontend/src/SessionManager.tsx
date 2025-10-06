@@ -64,7 +64,7 @@ export function SessionExpiryModal({
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl max-w-md w-full mx-4">
+      <div className="mx-4 w-full max-w-md rounded-[2.25rem] bg-white p-6 shadow-xl transition-colors duration-300 dark:bg-slate-800">
         <div className="text-center">
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">
             Session Expiring
