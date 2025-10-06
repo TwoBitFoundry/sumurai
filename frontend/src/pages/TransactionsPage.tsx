@@ -1,9 +1,10 @@
-import React, { useMemo, useRef, useState, useEffect } from 'react'
+import React, { useMemo } from 'react'
 import { useTransactions } from '../features/transactions/hooks/useTransactions'
 import TransactionsFilters from '../features/transactions/components/TransactionsFilters'
 import TransactionsTable from '../features/transactions/components/TransactionsTable'
 import { fmtUSD } from '../utils/format'
 import { ReceiptText, TrendingUp, AlertTriangle, RefreshCcw } from 'lucide-react'
+import HeroStatCard from '../components/widgets/HeroStatCard'
 
 const TransactionsPage: React.FC = () => {
   const {
@@ -22,12 +23,7 @@ const TransactionsPage: React.FC = () => {
     totalPages,
   } = useTransactions({ pageSize: 8 })
 
-  const recurringScrollRef = useRef<HTMLDivElement>(null)
-  const [showLeftFade, setShowLeftFade] = useState(false)
-  const [showRightFade, setShowRightFade] = useState(false)
-  const largestScrollRef = useRef<HTMLDivElement>(null)
-  const [showLargestLeftFade, setShowLargestLeftFade] = useState(false)
-  const [showLargestRightFade, setShowLargestRightFade] = useState(false)
+  // Pills overflow handled within HeroStatCard
 
   const stats = useMemo(() => {
     const totalCount = transactions.length
@@ -80,33 +76,7 @@ const TransactionsPage: React.FC = () => {
     }
   }, [transactions])
 
-  const checkRecurringScroll = () => {
-    const el = recurringScrollRef.current
-    if (!el) return
-
-    setShowLeftFade(el.scrollLeft > 0)
-    setShowRightFade(el.scrollLeft < el.scrollWidth - el.clientWidth - 1)
-  }
-
-  const checkLargestScroll = () => {
-    const el = largestScrollRef.current
-    if (!el) return
-
-    setShowLargestLeftFade(el.scrollLeft > 0)
-    setShowLargestRightFade(el.scrollLeft < el.scrollWidth - el.clientWidth - 1)
-  }
-
-  useEffect(() => {
-    checkRecurringScroll()
-    window.addEventListener('resize', checkRecurringScroll)
-    return () => window.removeEventListener('resize', checkRecurringScroll)
-  }, [stats.recurringMerchants])
-
-  useEffect(() => {
-    checkLargestScroll()
-    window.addEventListener('resize', checkLargestScroll)
-    return () => window.removeEventListener('resize', checkLargestScroll)
-  }, [stats.largestTransaction])
+  // No local scroll fade management needed
 
   return (
     <div className="space-y-8">
@@ -141,118 +111,41 @@ const TransactionsPage: React.FC = () => {
           )}
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="group relative overflow-hidden rounded-2xl border border-sky-300 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-sky-400 dark:border-sky-600 dark:bg-[#111a2f]/70 dark:hover:border-sky-500">
-              <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#38bdf8]/25 via-[#0ea5e9]/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-              <div className="pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] ring-1 ring-[#93c5fd]/40 opacity-70" />
-              <div className="relative z-10">
-                <div className="flex items-center gap-2">
-                  <ReceiptText className="h-4 w-4 text-sky-500 dark:text-sky-400" />
-                  <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Total shown</div>
-                </div>
-                <div className="mt-2 text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">
-                  {stats.totalCount} {stats.totalCount === 1 ? 'item' : 'items'}
-                </div>
-                <div className="mt-1">
-                  <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-sky-100 px-1.5 py-0.5 text-[0.7rem] font-medium text-sky-700 dark:bg-sky-900/30 dark:text-sky-300">
-                    {fmtUSD(stats.totalSpent)}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <HeroStatCard
+              index={1}
+              title="Total shown"
+              icon={<ReceiptText className="h-4 w-4" />}
+              value={stats.totalCount}
+              suffix={stats.totalCount === 1 ? 'item' : 'items'}
+              subtext={fmtUSD(stats.totalSpent)}
+            />
 
-            <div className="group relative overflow-hidden rounded-2xl border border-emerald-300 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-emerald-400 dark:border-emerald-600 dark:bg-[#111a2f]/70 dark:hover:border-emerald-500">
-              <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#34d399]/28 via-[#10b981]/12 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-              <div className="pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] ring-1 ring-[#34d399]/35 opacity-70" />
-              <div className="relative z-10">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
-                  <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Average size</div>
-                </div>
-                <div className="mt-2 text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">
-                  {fmtUSD(stats.avgTransaction)}
-                </div>
-                {stats.categoryDriver && (
-                  <div className="mt-1">
-                    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-emerald-100 px-1.5 py-0.5 text-[0.7rem] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                      {stats.categoryDriver}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
+            <HeroStatCard
+              index={2}
+              title="Average size"
+              icon={<TrendingUp className="h-4 w-4" />}
+              value={fmtUSD(stats.avgTransaction)}
+              subtext={stats.categoryDriver || undefined}
+            />
 
-            <div className="group relative overflow-hidden rounded-2xl border border-amber-300 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-amber-400 dark:border-amber-600 dark:bg-[#111a2f]/80 dark:hover:border-amber-500">
-              <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#fbbf24]/28 via-[#f59e0b]/12 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-              <div className="pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] ring-1 ring-[#fbbf24]/35 opacity-70" />
-              <div className="relative z-10">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-500 dark:text-amber-400" />
-                  <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Largest Size</div>
-                </div>
-                <div className="mt-2 text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">
-                  {stats.largestTransaction ? fmtUSD(Math.abs(stats.largestTransaction.amount)) : '$0'}
-                </div>
-                {stats.largestTransaction && (
-                  <div className="relative mt-1 overflow-hidden">
-                    <div
-                      ref={largestScrollRef}
-                      onScroll={checkLargestScroll}
-                      className="scrollbar-hide flex items-center gap-1.5 overflow-x-auto"
-                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                    >
-                      <span className="inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-amber-100 px-1.5 py-0.5 text-[0.6rem] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-                        {stats.largestTransaction.merchant || stats.largestTransaction.name}
-                      </span>
-                    </div>
-                    {showLargestLeftFade && (
-                      <div className="pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80" />
-                    )}
-                    {showLargestRightFade && (
-                      <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80" />
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
+            <HeroStatCard
+              index={3}
+              title="Largest size"
+              icon={<AlertTriangle className="h-4 w-4" />}
+              value={stats.largestTransaction ? fmtUSD(Math.abs(stats.largestTransaction.amount)) : '$0'}
+              pills={stats.largestTransaction ? [
+                { label: (stats.largestTransaction.merchant || stats.largestTransaction.name) ?? '' }
+              ] : []}
+            />
 
-            <div className="group relative overflow-hidden rounded-2xl border border-violet-300 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-violet-400 dark:border-violet-600 dark:bg-[#111a2f]/70 dark:hover:border-violet-500">
-              <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#a78bfa]/28 via-[#7c3aed]/12 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-              <div className="pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] ring-1 ring-[#a78bfa]/35 opacity-70" />
-              <div className="relative z-10">
-                <div className="flex items-center gap-2">
-                  <RefreshCcw className="h-4 w-4 text-violet-500 dark:text-violet-400" />
-                  <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Recurring</div>
-                </div>
-                <div className="mt-2 text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">
-                  {stats.recurringCount} {stats.recurringCount === 1 ? 'merchant' : 'merchants'}
-                </div>
-                {stats.recurringMerchants.length > 0 && (
-                  <div className="relative mt-1 overflow-hidden">
-                    <div
-                      ref={recurringScrollRef}
-                      onScroll={checkRecurringScroll}
-                      className="scrollbar-hide flex items-center gap-1.5 overflow-x-auto"
-                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                    >
-                      {stats.recurringMerchants.map((merchant, i) => (
-                        <span
-                          key={i}
-                          className="inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-violet-100 px-1.5 py-0.5 text-[0.6rem] font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
-                        >
-                          {merchant}
-                        </span>
-                      ))}
-                    </div>
-                    {showLeftFade && (
-                      <div className="pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80" />
-                    )}
-                    {showRightFade && (
-                      <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80" />
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
+            <HeroStatCard
+              index={4}
+              title="Recurring"
+              icon={<RefreshCcw className="h-4 w-4" />}
+              value={stats.recurringCount}
+              suffix={stats.recurringCount === 1 ? 'merchant' : 'merchants'}
+              pills={stats.recurringMerchants.map(m => ({ label: m }))}
+            />
           </div>
         </div>
       </section>

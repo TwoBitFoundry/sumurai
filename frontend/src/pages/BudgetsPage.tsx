@@ -7,6 +7,7 @@ import { BudgetList, type BudgetWithProgress } from '../features/budgets/compone
 import { useBudgets } from '../features/budgets/hooks/useBudgets'
 import { fmtUSD } from '../utils/format'
 import { getTagThemeForCategory, formatCategoryName } from '../utils/categories'
+import HeroStatCard from '../components/widgets/HeroStatCard'
 
 export default function BudgetsPage() {
   const {
@@ -30,44 +31,15 @@ export default function BudgetsPage() {
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<BudgetFormValue>({ category: '', amount: '' })
-  const overagesScrollRef = useRef<HTMLDivElement>(null)
-  const [showLeftFade, setShowLeftFade] = useState(false)
-  const [showRightFade, setShowRightFade] = useState(false)
-  const activeBudgetsScrollRef = useRef<HTMLDivElement>(null)
-  const [showActiveBudgetsLeftFade, setShowActiveBudgetsLeftFade] = useState(false)
-  const [showActiveBudgetsRightFade, setShowActiveBudgetsRightFade] = useState(false)
+  // removed per standardized HeroStatCard; fades handled internally
 
   useEffect(() => {
     void load()
   }, [load])
 
-  const checkOveragesScroll = () => {
-    const el = overagesScrollRef.current
-    if (!el) return
+  // no local scroll fade handling needed here
 
-    setShowLeftFade(el.scrollLeft > 0)
-    setShowRightFade(el.scrollLeft < el.scrollWidth - el.clientWidth - 1)
-  }
-
-  const checkActiveBudgetsScroll = () => {
-    const el = activeBudgetsScrollRef.current
-    if (!el) return
-
-    setShowActiveBudgetsLeftFade(el.scrollLeft > 0)
-    setShowActiveBudgetsRightFade(el.scrollLeft < el.scrollWidth - el.clientWidth - 1)
-  }
-
-  useEffect(() => {
-    checkOveragesScroll()
-    window.addEventListener('resize', checkOveragesScroll)
-    return () => window.removeEventListener('resize', checkOveragesScroll)
-  }, [computedBudgets])
-
-  useEffect(() => {
-    checkActiveBudgetsScroll()
-    window.addEventListener('resize', checkActiveBudgetsScroll)
-    return () => window.removeEventListener('resize', checkActiveBudgetsScroll)
-  }, [computedBudgets])
+  // HeroStatCard internally manages its own horizontal fade for pills
 
   const startAdd = () => { setIsAdding(true); setEditingId(null); setForm({ category: '', amount: '' }) }
   const cancel = () => { setIsAdding(false); setEditingId(null); setForm({ category: '', amount: '' }) }
@@ -159,9 +131,10 @@ export default function BudgetsPage() {
 
   const utilization = stats.totalBudgeted > 0 ? stats.totalSpent / stats.totalBudgeted : 0
   const utilizationPercent = utilization * 100
-  const utilizationLabel = utilizationPercent > 100
-    ? `${(utilizationPercent / 100).toFixed(1)}x over budget`
-    : `${utilizationPercent.toFixed(0)}% of budget`
+  const utilizationValue = utilizationPercent > 100
+    ? `${(utilizationPercent / 100).toFixed(1)}x`
+    : `${utilizationPercent.toFixed(0)}%`
+  const utilizationSuffix = utilizationPercent > 100 ? 'over budget' : 'of budget'
   const getUtilizationZone = (percent: number) => {
     if (percent <= 80) return { label: 'Healthy', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' }
     if (percent <= 100) return { label: 'On Track', color: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300' }
@@ -211,122 +184,50 @@ export default function BudgetsPage() {
 
             <div className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="group relative overflow-hidden rounded-2xl border border-emerald-300 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-emerald-400 dark:border-emerald-600 dark:bg-[#111a2f]/70 dark:hover:border-emerald-500">
-                  <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#34d399]/28 via-[#10b981]/12 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                  <div className="pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] ring-1 ring-[#34d399]/35 opacity-70" />
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
-                      <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Active budgets</div>
-                    </div>
-                    <div className="mt-2 text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{computedBudgets.length} out of {categoryOptions.length}</div>
-                    {stats.activeBudgetCategories.length > 0 && (
-                      <div className="relative mt-1 overflow-hidden">
-                        <div
-                          ref={activeBudgetsScrollRef}
-                          onScroll={checkActiveBudgetsScroll}
-                          className="scrollbar-hide flex items-center gap-1.5 overflow-x-auto"
-                          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                        >
-                          {stats.activeBudgetCategories.map((category) => {
-                            const displayName = formatCategoryName(category)
-                            const theme = getTagThemeForCategory(displayName)
-                            return (
-                              <span
-                                key={category}
-                                className={`inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium ${theme.tag}`}
-                              >
-                                {displayName}
-                              </span>
-                            )
-                          })}
-                        </div>
-                        {showActiveBudgetsLeftFade && (
-                          <div className="pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80" />
-                        )}
-                        {showActiveBudgetsRightFade && (
-                          <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80" />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="group relative overflow-hidden rounded-2xl border border-sky-300 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-sky-400 dark:border-sky-600 dark:bg-[#111a2f]/70 dark:hover:border-sky-500">
-                  <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#38bdf8]/25 via-[#0ea5e9]/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                  <div className="pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] ring-1 ring-[#93c5fd]/40 opacity-70" />
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-4 w-4 text-sky-500 dark:text-sky-400" />
-                      <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Monitor</div>
-                    </div>
-                    <div className="mt-2 flex items-baseline gap-2">
-                      <div className="text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{utilizationLabel}</div>
-                    </div>
-                    <div className="mt-1">
-                      <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium ${zone.color}`}>
-                        {zone.label}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="group relative overflow-hidden rounded-2xl border border-violet-300 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-violet-400 dark:border-violet-600 dark:bg-[#111a2f]/70 dark:hover:border-violet-500">
-                  <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#a78bfa]/28 via-[#7c3aed]/12 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                  <div className="pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] ring-1 ring-[#a78bfa]/35 opacity-70" />
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-violet-500 dark:text-violet-400" />
-                      <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Days remaining</div>
-                    </div>
-                    <div className="mt-2 text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{stats.daysRemaining}</div>
-                    <div className="mt-1">
-                      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-violet-100 px-1.5 py-0.5 text-[0.6rem] font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
-                        {stats.totalDays} total days
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="group relative overflow-hidden rounded-2xl border border-amber-300 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-amber-400 dark:border-amber-600 dark:bg-[#111a2f]/80 dark:hover:border-amber-500">
-                  <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#fbbf24]/28 via-[#f59e0b]/12 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                  <div className="pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] ring-1 ring-[#fbbf24]/35 opacity-70" />
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-amber-500 dark:text-amber-400" />
-                      <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Overages</div>
-                    </div>
-                    <div className="mt-2 text-2xl font-semibold transition-colors duration-500 text-slate-900 dark:text-white">
-                      {stats.overBudgetCount}
-                    </div>
-                    {stats.overBudgetCategories.length > 0 && (
-                      <div className="relative mt-1 overflow-hidden">
-                        <div
-                          ref={overagesScrollRef}
-                          onScroll={checkOveragesScroll}
-                          className="scrollbar-hide flex items-center gap-1.5 overflow-x-auto"
-                          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                        >
-                          {stats.overBudgetCategories.map((category) => {
-                            const displayName = formatCategoryName(category)
-                            const theme = getTagThemeForCategory(displayName)
-                            return (
-                              <span
-                                key={category}
-                                className={`inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium ${theme.tag}`}
-                              >
-                                {displayName}
-                              </span>
-                            )
-                          })}
-                        </div>
-                        {showLeftFade && (
-                          <div className="pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80" />
-                        )}
-                        {showRightFade && (
-                          <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80" />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <HeroStatCard
+                  index={1}
+                  title="Active budgets"
+                  icon={<CheckCircle2 className="h-4 w-4" />}
+                  value={`${computedBudgets.length}`}
+                  suffix={`out of ${categoryOptions.length}`}
+                  pills={stats.activeBudgetCategories.map((category) => ({
+                    label: formatCategoryName(category),
+                    type: 'category' as const,
+                    categoryName: formatCategoryName(category),
+                  }))}
+                />
+                <HeroStatCard
+                  index={2}
+                  title="Monitor"
+                  icon={<Activity className="h-4 w-4" />}
+                  value={utilizationValue}
+                  suffix={utilizationSuffix}
+                  pills={[{ label: zone.label, type: 'semantic', tone: (
+                    zone.label === 'Healthy' ? 'success' :
+                    zone.label === 'On Track' ? 'info' :
+                    zone.label === 'Overextended' ? 'warning' : 'danger'
+                  ) }]}
+                />
+                <HeroStatCard
+                  index={3}
+                  title="Days remaining"
+                  icon={<Clock className="h-4 w-4" />}
+                  value={stats.daysRemaining}
+                  suffix={`out of`}
+                  subtext={`${stats.totalDays} total days`}
+                />
+                <HeroStatCard
+                  index={4}
+                  title="Overages"
+                  icon={<AlertTriangle className="h-4 w-4" />}
+                  value={stats.overBudgetCount}
+                  suffix="over budget"
+                  pills={stats.overBudgetCategories.map((category) => ({
+                    label: formatCategoryName(category),
+                    type: 'category' as const,
+                    categoryName: formatCategoryName(category),
+                  }))}
+                />
               </div>
               <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white/80 p-5 text-slate-700 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-slate-300 dark:border-slate-700 dark:bg-[#111a2f]/70 dark:text-slate-200 dark:hover:border-slate-600">
                 <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-200/40 via-slate-100/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20" />
