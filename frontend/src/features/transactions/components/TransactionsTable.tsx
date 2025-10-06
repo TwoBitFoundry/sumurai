@@ -47,7 +47,7 @@ export const TransactionsTable: React.FC<Props> = ({ items, total, currentPage, 
                   return (
                     <tr
                       key={r.id}
-                      className={`group relative border-b border-slate-200/70 transition-all duration-150 ease-out hover:ring-2 hover:ring-sky-400/60 dark:border-slate-700/50 dark:hover:ring-sky-400/50 ${
+                      className={`group relative border-b border-slate-200/70 transition-all duration-150 ease-out hover:-translate-y-[2px] hover:ring-2 hover:ring-sky-400/60 dark:border-slate-700/50 dark:hover:ring-sky-400/50 ${
                         i % 2 ? 'bg-slate-100 dark:bg-slate-700/20' : 'bg-white dark:bg-transparent'
                       }`}
                     >
@@ -79,7 +79,7 @@ export const TransactionsTable: React.FC<Props> = ({ items, total, currentPage, 
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 align-middle">
-                        <span className={`inline-flex items-center gap-2 rounded-full px-2 py-0.5 text-xs transition-all duration-150 hover:scale-105 ${theme.tag}`}>
+                        <span className={`inline-flex items-center gap-2 rounded-full px-2 py-0.5 text-xs ${theme.tag}`}>
                           ● {catName}
                         </span>
                       </td>

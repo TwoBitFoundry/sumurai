@@ -2,7 +2,7 @@ import React from 'react'
 import { fmtUSD } from '../../../utils/format'
 
 export function BudgetProgress({ amount, spent }: { amount: number; spent: number }) {
-  const percent = amount > 0 ? Math.min(100, (spent / amount) * 100) : 0
+  const percent = amount > 0 ? (spent / amount) * 100 : 0
   const isOver = spent > amount
   const remaining = Math.max(0, amount - spent)
   return (

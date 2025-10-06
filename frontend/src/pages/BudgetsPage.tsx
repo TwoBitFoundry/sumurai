@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Card from '../components/ui/Card'
 import { Calendar as CalendarIcon, Loader2, Plus } from 'lucide-react'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
@@ -6,6 +6,7 @@ import { BudgetForm, type BudgetFormValue } from '../features/budgets/components
 import { BudgetList, type BudgetWithProgress } from '../features/budgets/components/BudgetList'
 import { useBudgets } from '../features/budgets/hooks/useBudgets'
 import { fmtUSD } from '../utils/format'
+import { getTagThemeForCategory } from '../utils/categories'
 
 export default function BudgetsPage() {
   const {
@@ -20,6 +21,7 @@ export default function BudgetsPage() {
     computedBudgets,
     categoryOptions,
     usedCategories,
+    month,
     monthLabel,
     goToPreviousMonth,
     goToNextMonth,
@@ -28,10 +30,27 @@ export default function BudgetsPage() {
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<BudgetFormValue>({ category: '', amount: '' })
+  const overagesScrollRef = useRef<HTMLDivElement>(null)
+  const [showLeftFade, setShowLeftFade] = useState(false)
+  const [showRightFade, setShowRightFade] = useState(false)
 
   useEffect(() => {
     void load()
   }, [load])
+
+  const checkOveragesScroll = () => {
+    const el = overagesScrollRef.current
+    if (!el) return
+
+    setShowLeftFade(el.scrollLeft > 0)
+    setShowRightFade(el.scrollLeft < el.scrollWidth - el.clientWidth - 1)
+  }
+
+  useEffect(() => {
+    checkOveragesScroll()
+    window.addEventListener('resize', checkOveragesScroll)
+    return () => window.removeEventListener('resize', checkOveragesScroll)
+  }, [computedBudgets])
 
   const startAdd = () => { setIsAdding(true); setEditingId(null); setForm({ category: '', amount: '' }) }
   const cancel = () => { setIsAdding(false); setEditingId(null); setForm({ category: '', amount: '' }) }
@@ -61,31 +80,53 @@ export default function BudgetsPage() {
         totalBudgeted: 0,
         totalSpent: 0,
         remaining: 0,
-        averageUsage: 0,
+        variance: 0,
         overBudgetCount: 0,
+        overBudgetCategories: [] as string[],
+        daysRemaining: 0,
+        totalDays: 0,
       }
     }
     const totals = computedBudgets.reduce(
       (acc, budget) => {
         acc.totalBudgeted += budget.amount
         acc.totalSpent += budget.spent
-        acc.averageUsage += budget.percentage
-        if (budget.spent > budget.amount) acc.overBudgetCount += 1
+        if (budget.spent > budget.amount) {
+          acc.overBudgetCount += 1
+          acc.overBudgetCategories.push(budget.category)
+        }
         return acc
       },
-      { totalBudgeted: 0, totalSpent: 0, averageUsage: 0, overBudgetCount: 0 }
+      { totalBudgeted: 0, totalSpent: 0, overBudgetCount: 0, overBudgetCategories: [] as string[] }
     )
+
+    const variance = totals.totalBudgeted - totals.totalSpent
+
+    const now = new Date()
+    const year = month.getFullYear()
+    const monthNum = month.getMonth()
+    const lastDay = new Date(year, monthNum + 1, 0).getDate()
+
+    let daysRemaining = 0
+    if (now.getFullYear() === year && now.getMonth() === monthNum) {
+      daysRemaining = Math.max(0, lastDay - now.getDate())
+    } else if (now.getFullYear() < year || (now.getFullYear() === year && now.getMonth() < monthNum)) {
+      daysRemaining = lastDay
+    }
 
     return {
       totalBudgeted: totals.totalBudgeted,
       totalSpent: totals.totalSpent,
       remaining: Math.max(0, totals.totalBudgeted - totals.totalSpent),
-      averageUsage: totals.averageUsage / computedBudgets.length,
+      variance,
       overBudgetCount: totals.overBudgetCount,
+      overBudgetCategories: totals.overBudgetCategories,
+      daysRemaining,
+      totalDays: lastDay,
     }
-  }, [computedBudgets])
+  }, [computedBudgets, month])
 
-  const utilization = stats.totalBudgeted > 0 ? Math.min(1, stats.totalSpent / stats.totalBudgeted) : 0
+  const utilization = stats.totalBudgeted > 0 ? stats.totalSpent / stats.totalBudgeted : 0
   const budgetsLoading = isLoading || transactionsLoading
   const hasBudgets = computedBudgets.length > 0
 
@@ -100,11 +141,11 @@ export default function BudgetsPage() {
           <div className="relative z-10 flex flex-col gap-8">
             <div className="space-y-5">
               <span className="inline-flex items-center justify-center rounded-full border border-white/60 bg-white/70 px-4 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-slate-600 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.55)] transition-colors duration-500 dark:border-white/15 dark:bg-[#1e293b]/70 dark:text-slate-200">
-                Monthly envelopes
+                Monthly Budgets
               </span>
               <div className="space-y-3">
                 <h2 className="text-3xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white sm:text-4xl">
-                  Budgets orchestrated around your month
+                  Budgets at a glance
                 </h2>
                 <p className="text-sm leading-relaxed text-slate-600 transition-colors duration-500 dark:text-slate-300">
                   Shape your spending plan, watch commitments, and stay ahead before the month runs away.
@@ -126,45 +167,117 @@ export default function BudgetsPage() {
               )}
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-2xl border border-white/55 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-colors duration-500 dark:border-white/10 dark:bg-[#111a2f]/70">
-                <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Utilization</div>
-                <div className="mt-2 text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{(utilization * 100).toFixed(0)}%</div>
-                <div className="mt-1 text-[0.7rem] text-slate-500 transition-colors duration-500 dark:text-slate-400">Across all active budgets</div>
-              </div>
-              <div className="rounded-2xl border border-white/55 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-colors duration-500 dark:border-white/10 dark:bg-[#111a2f]/70">
-                <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Active budgets</div>
-                <div className="mt-2 text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{computedBudgets.length}</div>
-                <div className="mt-1 text-[0.7rem] text-slate-500 transition-colors duration-500 dark:text-slate-400">Ready for this window</div>
-              </div>
-              <div className="rounded-2xl border border-white/55 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-colors duration-500 dark:border-white/10 dark:bg-[#111a2f]/70">
-                <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Average usage</div>
-                <div className="mt-2 text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{stats.averageUsage.toFixed(0)}%</div>
-                <div className="mt-1 text-[0.7rem] text-slate-500 transition-colors duration-500 dark:text-slate-400">Per category this month</div>
-              </div>
-              <div className="rounded-2xl border border-white/55 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-colors duration-500 dark:border-white/10 dark:bg-[#111a2f]/80">
-                <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Overages</div>
-                <div className={`mt-2 text-2xl font-semibold transition-colors duration-500 ${stats.overBudgetCount > 0 ? 'text-red-600 dark:text-red-300' : 'text-slate-900 dark:text-white'}`}>
-                  {stats.overBudgetCount}
+            <div className="space-y-3">
+              <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white/80 p-5 text-slate-700 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-slate-300 dark:border-slate-700 dark:bg-[#111a2f]/70 dark:text-slate-200 dark:hover:border-slate-600">
+                <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-200/40 via-slate-100/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20" />
+                <div className="relative z-10 flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Total Planned</div>
+                    <div className="mt-1 text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{fmtUSD(stats.totalBudgeted)}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Total Spent</div>
+                    <div className={`mt-1 text-2xl font-semibold transition-colors duration-500 ${stats.totalSpent > stats.totalBudgeted ? 'text-red-600 dark:text-red-300' : 'text-slate-700 dark:text-slate-200'}`}>{fmtUSD(stats.totalSpent)}</div>
+                  </div>
                 </div>
-                <div className="mt-1 text-[0.7rem] text-slate-500 transition-colors duration-500 dark:text-slate-400">Budgets above their plan</div>
+                <div className="relative z-10 mt-4 space-y-2.5">
+                  <div className="relative h-2.5 overflow-hidden rounded-full bg-slate-200/70 shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)] transition-colors duration-300 dark:bg-slate-700/60 dark:shadow-[inset_0_1px_2px_rgba(2,6,23,0.35)]">
+                    <div
+                      className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${
+                        stats.totalSpent > stats.totalBudgeted
+                          ? 'bg-gradient-to-r from-rose-400 via-rose-500 to-rose-600 shadow-[0_0_12px_rgba(244,63,94,0.35)]'
+                          : 'bg-gradient-to-r from-sky-400 via-cyan-400 to-violet-500 shadow-[0_0_12px_rgba(14,165,233,0.35)]'
+                      }`}
+                      style={{ width: `${Math.min(100, utilization * 100)}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[0.75rem] text-slate-500 transition-colors duration-300 dark:text-slate-400">
+                    <span className="font-medium tracking-wide">{(utilization * 100).toFixed(0)}% used</span>
+                    <span className={stats.totalSpent > stats.totalBudgeted ? 'font-semibold text-red-600 dark:text-red-300' : 'font-semibold text-slate-600 dark:text-slate-300'}>
+                      {stats.totalSpent > stats.totalBudgeted ? `-${fmtUSD(stats.totalSpent - stats.totalBudgeted)} over` : `${fmtUSD(stats.remaining)} left`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="group relative overflow-hidden rounded-2xl border border-emerald-300 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-emerald-400 dark:border-emerald-600 dark:bg-[#111a2f]/70 dark:hover:border-emerald-500">
+                  <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#34d399]/28 via-[#10b981]/12 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  <div className="pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] ring-1 ring-[#34d399]/35 opacity-70" />
+                  <div className="relative z-10">
+                    <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Active budgets</div>
+                    <div className="mt-2 text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{computedBudgets.length} out of {categoryOptions.length}</div>
+                    <div className="mt-1 text-[0.7rem] text-slate-500 transition-colors duration-500 dark:text-slate-400">Categories with budgets</div>
+                  </div>
+                </div>
+                <div className="group relative overflow-hidden rounded-2xl border border-sky-300 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-sky-400 dark:border-sky-600 dark:bg-[#111a2f]/70 dark:hover:border-sky-500">
+                  <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#38bdf8]/25 via-[#0ea5e9]/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  <div className="pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] ring-1 ring-[#93c5fd]/40 opacity-70" />
+                  <div className="relative z-10">
+                    <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Utilization</div>
+                    <div className="mt-2 text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{(utilization * 100).toFixed(0)}%</div>
+                    <div className="mt-1 text-[0.7rem] text-slate-500 transition-colors duration-500 dark:text-slate-400">Across all active budgets</div>
+                  </div>
+                </div>
+                <div className="group relative overflow-hidden rounded-2xl border border-violet-300 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-violet-400 dark:border-violet-600 dark:bg-[#111a2f]/70 dark:hover:border-violet-500">
+                  <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#a78bfa]/28 via-[#7c3aed]/12 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  <div className="pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] ring-1 ring-[#a78bfa]/35 opacity-70" />
+                  <div className="relative z-10">
+                    <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Days remaining</div>
+                    <div className="mt-2 text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{stats.daysRemaining}</div>
+                    <div className="mt-1 text-[0.7rem] text-slate-500 transition-colors duration-500 dark:text-slate-400">Out of {stats.totalDays} days this month</div>
+                  </div>
+                </div>
+                <div className="group relative overflow-hidden rounded-2xl border border-amber-300 bg-white/80 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-amber-400 dark:border-amber-600 dark:bg-[#111a2f]/80 dark:hover:border-amber-500">
+                  <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#fbbf24]/28 via-[#f59e0b]/12 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  <div className="pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] ring-1 ring-[#fbbf24]/35 opacity-70" />
+                  <div className="relative z-10">
+                    <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Overages</div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className={`text-2xl font-semibold transition-colors duration-500 ${stats.overBudgetCount > 0 ? 'text-red-600 dark:text-red-300' : 'text-slate-900 dark:text-white'}`}>
+                        {stats.overBudgetCount}
+                      </div>
+                      {stats.overBudgetCategories.length > 0 && (
+                        <div className="relative flex-1 overflow-hidden">
+                          <div
+                            ref={overagesScrollRef}
+                            onScroll={checkOveragesScroll}
+                            className="scrollbar-hide flex items-center gap-1.5 overflow-x-auto"
+                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                          >
+                            {stats.overBudgetCategories.map((category) => {
+                              const theme = getTagThemeForCategory(category)
+                              return (
+                                <span
+                                  key={category}
+                                  className={`inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[0.65rem] font-medium ${theme.tag}`}
+                                >
+                                  ● {category}
+                                </span>
+                              )
+                            })}
+                          </div>
+                          {showLeftFade && (
+                            <div className="pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80" />
+                          )}
+                          {showRightFade && (
+                            <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-1 text-[0.7rem] text-slate-500 transition-colors duration-500 dark:text-slate-400">Budgets above their plan</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
       </section>
 
-      <Card className="relative overflow-hidden rounded-[2.25rem] bg-white/18 p-0 shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)] backdrop-blur-2xl backdrop-saturate-[150%] transition-colors duration-500 dark:bg-[#0f172a]/55 dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)]">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-white/65 via-white/25 to-transparent transition-colors duration-500 dark:from-slate-900/68 dark:via-slate-900/34 dark:to-transparent" />
-        </div>
-        <div className="relative z-10">
+      <Card className="p-0">
           {hasBudgets ? (
             <>
               <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
                 <div className="flex items-center gap-3">
-                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600 transition-colors duration-500 dark:text-slate-300">
-                    {monthLabel}
-                  </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={goToPreviousMonth}
@@ -182,6 +295,9 @@ export default function BudgetsPage() {
                     >
                       <ChevronRightIcon className="h-4 w-4" />
                     </button>
+                  </div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600 transition-colors duration-500 dark:text-slate-300">
+                    {monthLabel}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -212,34 +328,8 @@ export default function BudgetsPage() {
                   ) : null}
                 </div>
               </div>
-              <div className="flex flex-col gap-3 px-6 pb-6">
-                <div className="grid flex-1 gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-white/55 bg-white/80 p-4 text-slate-700 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] transition-colors duration-500 dark:border-white/10 dark:bg-[#111a2f]/70 dark:text-slate-200">
-                    <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Planned</div>
-                    <div className="mt-2 text-xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{fmtUSD(stats.totalBudgeted)}</div>
-                    <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-700/70">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-sky-400 via-cyan-400 to-violet-500 shadow-[0_0_12px_rgba(14,165,233,0.35)]"
-                        style={{ width: `${Math.min(100, utilization * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-white/55 bg-white/80 p-4 text-slate-700 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] transition-colors duration-500 dark:border-white/10 dark:bg-[#111a2f]/70 dark:text-slate-200">
-                    <div className="flex items-center justify-between">
-                      <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">Remaining</div>
-                      {stats.overBudgetCount > 0 && (
-                        <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-red-600 transition-colors duration-500 dark:bg-red-500/20 dark:text-red-300">
-                          {stats.overBudgetCount} over
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-2 text-xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{fmtUSD(stats.remaining)}</div>
-                    <div className="mt-1 text-[0.7rem] text-slate-500 transition-colors duration-500 dark:text-slate-400">
-                      {fmtUSD(stats.totalSpent)} spent of {fmtUSD(stats.totalBudgeted)}
-                    </div>
-                  </div>
-                </div>
-                {isAdding && (
+              {isAdding && (
+                <div className="px-6 pb-6">
                   <BudgetForm
                     categories={categoryOptions}
                     usedCategories={usedCategories}
@@ -248,8 +338,8 @@ export default function BudgetsPage() {
                     onSave={onSaveAdd}
                     onCancel={cancel}
                   />
-                )}
-              </div>
+                </div>
+              )}
               <BudgetList
                 items={computedBudgets}
                 editingId={editingId}
@@ -279,7 +369,6 @@ export default function BudgetsPage() {
               )}
             </div>
           )}
-        </div>
       </Card>
     </div>
   )

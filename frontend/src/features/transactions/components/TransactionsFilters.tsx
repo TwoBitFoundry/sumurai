@@ -51,38 +51,43 @@ export const TransactionsFilters: React.FC<Props> = ({
         </div>
       )}
       {showCategories && (
-        <div className="relative w-full">
-          <div
-            ref={scrollContainerRef}
-            onScroll={checkScroll}
-            className="scrollbar-hide flex w-full items-center gap-2 overflow-x-auto pb-1 pl-1 pt-1"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            {categories.map((name) => {
-              const isSelected = selectedCategory === name
-              const theme = getTagThemeForCategory(name)
-              return (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => onSelectCategory(isSelected ? null : name)}
-                  className={`inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-2 py-1 text-xs transition-all duration-150 ${theme.tag} ${
-                    isSelected ? `ring-2 ${theme.ring}` : 'hover:opacity-90'
-                  }`}
-                  aria-pressed={isSelected}
-                  title={isSelected ? `Remove filter: ${name}` : `Filter by ${name}`}
-                >
-                  ● {name}
-                </button>
-              )
-            })}
+        <div className="flex w-full items-center gap-3">
+          <span className="flex-shrink-0 text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">
+            Filter
+          </span>
+          <div className="relative min-w-0 flex-1">
+            <div
+              ref={scrollContainerRef}
+              onScroll={checkScroll}
+              className="scrollbar-hide flex items-center gap-2 overflow-x-auto pb-1 pl-1 pt-1"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {categories.map((name) => {
+                const isSelected = selectedCategory === name
+                const theme = getTagThemeForCategory(name)
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => onSelectCategory(isSelected ? null : name)}
+                    className={`inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-2 py-1 text-xs transition-all duration-150 ${theme.tag} ${
+                      isSelected ? `ring-2 ${theme.ring}` : 'hover:-translate-y-[2px] hover:opacity-90'
+                    }`}
+                    aria-pressed={isSelected}
+                    title={isSelected ? `Remove filter: ${name}` : `Filter by ${name}`}
+                  >
+                    ● {name}
+                  </button>
+                )
+              })}
+            </div>
+            {showLeftFade && (
+              <div className="pointer-events-none absolute bottom-0 left-0 top-0 w-8 bg-gradient-to-r from-white to-transparent transition-opacity duration-200 dark:from-[#0f172a]" />
+            )}
+            {showRightFade && (
+              <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-8 bg-gradient-to-l from-white to-transparent transition-opacity duration-200 dark:from-[#0f172a]" />
+            )}
           </div>
-          {showLeftFade && (
-            <div className="pointer-events-none absolute bottom-0 left-0 top-0 w-8 bg-gradient-to-r from-white to-transparent transition-opacity duration-200 dark:from-[#0f172a]" />
-          )}
-          {showRightFade && (
-            <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-8 bg-gradient-to-l from-white to-transparent transition-opacity duration-200 dark:from-[#0f172a]" />
-          )}
         </div>
       )}
     </>

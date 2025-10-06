@@ -192,7 +192,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
             {statTiles.map(({ label, value, detail, gradient, ring, border, hoverBorder }) => (
               <div
                 key={label}
-                className={`group relative overflow-hidden rounded-[1.8rem] border bg-white/85 px-5 py-4 text-[#0f172a] shadow-[0_22px_60px_-42px_rgba(15,23,42,0.55)] transition-all duration-300 ease-out dark:bg-[#0f172a]/82 dark:text-white ${border} ${hoverBorder}`}
+                className={`group relative overflow-hidden rounded-[1.8rem] border bg-white/85 px-5 py-4 text-[#0f172a] shadow-[0_22px_60px_-42px_rgba(15,23,42,0.55)] transition-all duration-300 ease-out dark:bg-[#0f172a]/82 dark:text-white hover:-translate-y-[2px] ${border} ${hoverBorder}`}
               >
                 <div className={`pointer-events-none absolute inset-0 rounded-[1.8rem] bg-gradient-to-br ${gradient} opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100`} />
                 <div className={`pointer-events-none absolute inset-[2px] rounded-[1.65rem] ring-1 ${ring} opacity-70`} />

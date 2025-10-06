@@ -25,7 +25,7 @@ export function BudgetList({
 }) {
   const [amountDrafts, setAmountDrafts] = React.useState<Record<string, string>>({})
   return (
-    <ul className="grid grid-cols-1 gap-6 px-6 pb-10 pt-8 sm:px-10 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+    <ul className="grid grid-cols-1 gap-6 p-6 sm:px-10 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {items.map((b) => {
         const isOver = b.spent > b.amount
         const tagTheme = getTagThemeForCategory(formatCategoryName(b.category))
