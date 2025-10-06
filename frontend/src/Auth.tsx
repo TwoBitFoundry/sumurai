@@ -71,9 +71,9 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
         <div className="space-y-5">
           <div className="space-y-3 text-center">
             <span className="inline-flex items-center justify-center rounded-full bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600 shadow-[0_12px_32px_-22px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/70 dark:text-slate-200">
-              Welcome back
+              Welcome Back
             </span>
-            <h2 className="text-3xl font-semibold text-slate-900 dark:text-white">Sign In to Sumaura</h2>
+            <h2 className="text-3xl font-semibold text-slate-900 dark:text-white">Sign in to your account</h2>
             <p className="text-[0.85rem] text-slate-600 dark:text-slate-400">
               Access your latest financial dashboards and insights.
             </p>
@@ -140,7 +140,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
               onClick={onNavigateToRegister}
               className="inline-flex items-center justify-center rounded-full border border-white/50 bg-white/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-slate-800 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.45)] transition-transform duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/15 dark:bg-[#1e293b]/70 dark:text-slate-200 dark:focus-visible:ring-offset-[#0f172a]"
             >
-              SIGN UP
+              Create account
             </button>
           </div>
         </div>
@@ -301,22 +301,22 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
                 <li className={`rounded-full px-2.5 py-1 font-medium ${
                   passwordValidation.minLength ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-white/60 text-slate-500 dark:bg-white/5 dark:text-slate-400'
                 }`}>
-                  8+ chars
+                  8+ characters
                 </li>
                 <li className={`rounded-full px-2.5 py-1 font-medium ${
                   passwordValidation.hasCapital ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-white/60 text-slate-500 dark:bg-white/5 dark:text-slate-400'
                 }`}>
-                  Uppercase
+                  1 capital letter
                 </li>
                 <li className={`rounded-full px-2.5 py-1 font-medium ${
                   passwordValidation.hasNumber ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-white/60 text-slate-500 dark:bg-white/5 dark:text-slate-400'
                 }`}>
-                  Number
+                  1 number
                 </li>
                 <li className={`rounded-full px-2.5 py-1 font-medium ${
                   passwordValidation.hasSpecial ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-white/60 text-slate-500 dark:bg-white/5 dark:text-slate-400'
                 }`}>
-                  Symbol
+                  1 special character
                 </li>
               </ul>
             </div>

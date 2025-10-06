@@ -93,7 +93,7 @@ export const BankCard: React.FC<BankCardProps> = ({
   onSync,
   onDisconnect,
 }) => {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [disconnectLoading, setDisconnectLoading] = useState(false);
@@ -159,7 +159,8 @@ export const BankCard: React.FC<BankCardProps> = ({
             onClick={handleSync}
             disabled={loading}
             className={classNames(
-              'inline-flex items-center gap-2 rounded-full border border-[#e2e8f0] bg-white/90 px-4 py-2 text-sm font-semibold text-[#475569] shadow-[0_14px_38px_-30px_rgba(15,23,42,0.35)] transition-all duration-200 ease-out hover:-translate-y-[1px] hover:border-[#93c5fd] hover:text-[#0f172a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9] focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none dark:border-[#334155] dark:bg-[#1e293b]/90 dark:text-[#cbd5e1] dark:hover:border-[#38bdf8] dark:hover:text-white dark:focus-visible:ring-offset-slate-900'
+              'inline-flex items-center gap-2 rounded-full border border-[#e2e8f0] bg-white/90 px-4 py-2 text-sm font-semibold text-[#475569] shadow-[0_14px_38px_-30px_rgba(15,23,42,0.35)] transition-all duration-200 ease-out hover:-translate-y-[1px] hover:border-[#93c5fd] hover:text-[#0f172a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9] focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none dark:border-[#334155] dark:bg-[#1e293b]/90 dark:text-[#cbd5e1] dark:hover:border-[#38bdf8] dark:hover:text-white dark:focus-visible:ring-offset-slate-900',
+              loading && 'pointer-events-none opacity-60 cursor-not-allowed'
             )}
           >
             <RefreshCw

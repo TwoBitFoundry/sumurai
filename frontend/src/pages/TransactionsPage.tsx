@@ -133,7 +133,7 @@ const TransactionsPage: React.FC = () => {
               title="Largest size"
               icon={<AlertTriangle className="h-4 w-4" />}
               value={stats.largestTransaction ? fmtUSD(Math.abs(stats.largestTransaction.amount)) : '$0'}
-              pills={stats.largestTransaction ? [
+              pills={stats.largestTransaction && stats.totalCount > 1 ? [
                 { label: (stats.largestTransaction.merchant || stats.largestTransaction.name) ?? '' }
               ] : []}
             />

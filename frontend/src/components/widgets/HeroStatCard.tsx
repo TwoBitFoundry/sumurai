@@ -211,7 +211,11 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
                         pillClass = theme.tag
                       }
                       return (
-                        <span key={idx} className={classNames('inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium', pillClass)}>
+                        <span
+                          key={idx}
+                          aria-hidden={p.type === 'category' ? true : undefined}
+                          className={classNames('inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium', pillClass)}
+                        >
                           {p.label}
                         </span>
                       )

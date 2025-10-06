@@ -93,7 +93,7 @@ export const DisconnectModal: React.FC<DisconnectModalProps> = ({
                 disabled={loading}
                 className={classNames(
                   "inline-flex items-center justify-center rounded-full border border-[#e2e8f0] bg-white/90 px-4 py-2 text-sm font-semibold text-[#475569] shadow-[0_14px_38px_-30px_rgba(15,23,42,0.35)] transition-all duration-200 ease-out hover:-translate-y-[1px] hover:border-[#93c5fd] hover:text-[#0f172a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9] focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none dark:border-[#334155] dark:bg-[#1e293b]/85 dark:text-[#cbd5e1] dark:hover:border-[#38bdf8] dark:hover:text-white dark:focus-visible:ring-offset-slate-900",
-                  loading && "pointer-events-none"
+                  loading && "pointer-events-none opacity-60 cursor-not-allowed"
                 )}
               >
                 Cancel
@@ -103,7 +103,7 @@ export const DisconnectModal: React.FC<DisconnectModalProps> = ({
                 disabled={loading}
                 className={classNames(
                   "inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#f87171] via-[#f97316] to-[#fbbf24] px-5 py-2 text-sm font-semibold text-white shadow-[0_22px_60px_-32px_rgba(248,113,113,0.68)] transition-all duration-200 ease-out hover:-translate-y-[1px] hover:shadow-[0_26px_72px_-34px_rgba(248,113,113,0.78)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f97316] focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none dark:focus-visible:ring-offset-[#0f172a]",
-                  loading && "pointer-events-none"
+                  loading && "pointer-events-none opacity-60 cursor-not-allowed"
                 )}
               >
                 {loading && <Loader2 className="h-4 w-4 animate-spin" />}

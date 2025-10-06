@@ -190,11 +190,15 @@ export default function BudgetsPage() {
                   icon={<CheckCircle2 className="h-4 w-4" />}
                   value={`${computedBudgets.length}`}
                   suffix={`out of ${categoryOptions.length}`}
-                  pills={stats.activeBudgetCategories.map((category) => ({
-                    label: formatCategoryName(category),
-                    type: 'category' as const,
-                    categoryName: formatCategoryName(category),
-                  }))}
+                  pills={
+                    stats.activeBudgetCategories.length > 0
+                      ? [{
+                          label: `${stats.activeBudgetCategories.length} categories`,
+                          type: 'semantic' as const,
+                          tone: 'info'
+                        }]
+                      : []
+                  }
                 />
                 <HeroStatCard
                   index={2}
@@ -222,11 +226,15 @@ export default function BudgetsPage() {
                   icon={<AlertTriangle className="h-4 w-4" />}
                   value={stats.overBudgetCount}
                   suffix="over budget"
-                  pills={stats.overBudgetCategories.map((category) => ({
-                    label: formatCategoryName(category),
-                    type: 'category' as const,
-                    categoryName: formatCategoryName(category),
-                  }))}
+                  pills={
+                    stats.overBudgetCount > 0
+                      ? [{
+                          label: 'Review flagged budgets',
+                          type: 'semantic' as const,
+                          tone: 'warning'
+                        }]
+                      : []
+                  }
                 />
               </div>
               <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white/80 p-5 text-slate-700 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-slate-300 dark:border-slate-700 dark:bg-[#111a2f]/70 dark:text-slate-200 dark:hover:border-slate-600">
@@ -341,24 +349,38 @@ export default function BudgetsPage() {
               />
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center gap-4 px-6 py-20 text-center sm:px-12" data-testid="budgets-empty-state">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-sky-400/20 via-sky-300/25 to-violet-500/20 text-4xl">
-                💰
+            <>
+              <div className="flex flex-col items-center justify-center gap-4 px-6 py-20 text-center sm:px-12" data-testid="budgets-empty-state">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-sky-400/20 via-sky-300/25 to-violet-500/20 text-4xl">
+                  💰
+                </div>
+                <div className="text-lg font-semibold text-slate-700 transition-colors duration-500 dark:text-slate-200">No budgets found</div>
+                <div className="text-sm text-slate-500 transition-colors duration-500 dark:text-slate-400">
+                  Create your first category plan to watch spending settle into rhythm.
+                </div>
+                {!isAdding && (
+                  <button
+                    onClick={startAdd}
+                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 via-sky-400 to-violet-500 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)] transition-transform duration-300 hover:-translate-y-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add budget
+                  </button>
+                )}
               </div>
-              <div className="text-lg font-semibold text-slate-700 transition-colors duration-500 dark:text-slate-200">No budgets yet</div>
-              <div className="text-sm text-slate-500 transition-colors duration-500 dark:text-slate-400">
-                Create your first category plan to watch spending settle into rhythm.
-              </div>
-              {!isAdding && (
-                <button
-                  onClick={startAdd}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 via-sky-400 to-violet-500 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)] transition-transform duration-300 hover:-translate-y-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add budget
-                </button>
+              {isAdding && (
+                <div className="px-6 pb-6">
+                  <BudgetForm
+                    categories={categoryOptions}
+                    usedCategories={usedCategories}
+                    value={form}
+                    onChange={setForm}
+                    onSave={onSaveAdd}
+                    onCancel={cancel}
+                  />
+                </div>
               )}
-            </div>
+            </>
           )}
       </Card>
     </div>

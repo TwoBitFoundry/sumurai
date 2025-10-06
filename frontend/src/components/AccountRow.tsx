@@ -18,7 +18,7 @@ const classNames = (...classes: (string | false | null | undefined)[]) => {
 };
 
 const formatMoney = (amount?: number) => {
-  if (typeof amount !== "number") return "—"
+  if (typeof amount !== "number") return "PLACEHOLDER"
   return amount.toLocaleString(undefined, { style: "currency", currency: "USD" })
 }
 
@@ -43,6 +43,29 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
   const isDebtAccount = account.type === "credit" || account.type === "loan"
   const isOtherAccount = account.type === "other"
 
+  const rawBalance = account.balance
+  const balanceText = formatMoney(rawBalance)
+  let balanceClass =
+    'text-slate-500 dark:text-slate-600'
+
+  if (rawBalance == null) {
+    balanceClass = 'text-slate-400 dark:text-slate-500'
+  } else if (rawBalance < 0) {
+    balanceClass = isDebtAccount
+      ? 'text-red-500 dark:text-red-400'
+      : 'text-rose-500 dark:text-rose-400'
+  } else if (rawBalance > 0) {
+    if (isOtherAccount) {
+      balanceClass = 'text-slate-500 dark:text-slate-400'
+    } else if (isDebtAccount) {
+      balanceClass = 'text-amber-500 dark:text-amber-400'
+    } else {
+      balanceClass = 'text-emerald-500 dark:text-emerald-400'
+    }
+  } else {
+    balanceClass = 'text-slate-500 dark:text-slate-600'
+  }
+
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-[#e2e8f0] bg-white/92 px-4 py-4 shadow-[0_18px_48px_-32px_rgba(15,23,42,0.35)] transition-all duration-200 ease-out hover:-translate-y-[1px] hover:border-[#93c5fd] hover:shadow-[0_22px_60px_-34px_rgba(15,23,42,0.45)] dark:border-[#334155] dark:bg-[#101a2d]/92 dark:shadow-[0_20px_54px_-34px_rgba(2,6,23,0.65)]">
       <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#0ea5e9]/12 via-transparent to-[#a78bfa]/14 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 dark:from-[#38bdf8]/18 dark:via-transparent dark:to-[#a78bfa]/18" />
@@ -54,20 +77,10 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
           <div
             className={classNames(
               'text-sm font-semibold tabular-nums transition-colors duration-300 ease-out',
-              account.balance != null
-                ? isDebtAccount
-                  ? 'text-[#f87171] dark:text-[#fca5a5]'
-                  : isOtherAccount
-                    ? 'text-[#64748b] dark:text-[#94a3b8]'
-                    : account.balance < 0
-                      ? 'text-[#f87171] dark:text-[#fca5a5]'
-                      : account.balance > 0
-                        ? 'text-[#10b981] dark:text-[#34d399]'
-                        : 'text-[#94a3b8] dark:text-[#475569]'
-                : 'text-[#94a3b8] dark:text-[#475569]'
+              balanceClass
             )}
           >
-            {formatMoney(account.balance)}
+            {balanceText}
           </div>
         </div>
 

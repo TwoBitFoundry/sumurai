@@ -39,6 +39,12 @@ const mockFetchAuthOk = () => {
 vi.mock('@/services/ApiClient', () => ({
   ApiClient: {
     get: vi.fn().mockImplementation((endpoint: string) => {
+      if (endpoint.includes('/plaid/accounts')) {
+        return Promise.resolve([])
+      }
+      if (endpoint.includes('/plaid/status')) {
+        return Promise.resolve({ is_connected: false })
+      }
       if (endpoint.startsWith('/analytics/spending')) {
         return Promise.resolve({ total: 1234.56, currency: 'USD' })
       }

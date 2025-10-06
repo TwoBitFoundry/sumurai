@@ -24,6 +24,18 @@ export function BudgetList({
   onDelete: (id: string) => void
 }) {
   const [amountDrafts, setAmountDrafts] = React.useState<Record<string, string>>({})
+
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 rounded-[1.75rem] border border-slate-200/70 bg-white/90 p-10 text-center text-sm text-slate-500 shadow-[0_32px_80px_-58px_rgba(15,23,42,0.45)] transition-colors duration-300 dark:border-white/10 dark:bg-[#111a2f]/85 dark:text-slate-400 dark:shadow-[0_32px_90px_-60px_rgba(2,6,23,0.65)]">
+        <div className="text-lg font-semibold text-slate-700 dark:text-slate-200">No budgets found</div>
+        <p className="max-w-sm text-xs text-slate-500 dark:text-slate-400">
+          Create your first budget to start tracking spending targets for each category.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <ul className="grid grid-cols-1 gap-6 p-6 sm:px-10 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {items.map((b) => {
