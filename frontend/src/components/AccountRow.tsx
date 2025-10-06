@@ -50,15 +50,13 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
 
   if (rawBalance == null) {
     balanceClass = 'text-slate-400 dark:text-slate-500'
+  } else if (isDebtAccount) {
+    balanceClass = 'text-red-500 dark:text-red-400'
   } else if (rawBalance < 0) {
-    balanceClass = isDebtAccount
-      ? 'text-red-500 dark:text-red-400'
-      : 'text-rose-500 dark:text-rose-400'
+    balanceClass = 'text-rose-500 dark:text-rose-400'
   } else if (rawBalance > 0) {
     if (isOtherAccount) {
       balanceClass = 'text-slate-500 dark:text-slate-400'
-    } else if (isDebtAccount) {
-      balanceClass = 'text-amber-500 dark:text-amber-400'
     } else {
       balanceClass = 'text-emerald-500 dark:text-emerald-400'
     }

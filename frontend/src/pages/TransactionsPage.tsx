@@ -59,10 +59,12 @@ const TransactionsPage: React.FC = () => {
       .slice(0, 2)
       .map(([name, _]) => name)
 
+    const warningSymbol = '\u26A0'
+
     const categoryDriver = topCategories.length > 0
       ? topCategories.length === 1
-        ? `Mostly ${topCategories[0]}`
-        : `Mostly ${topCategories[0]} & ${topCategories[1]}`
+        ? `${warningSymbol} ${topCategories[0]}`
+        : `${warningSymbol} ${topCategories[0]} & ${topCategories[1]}`
       : null
 
     return {

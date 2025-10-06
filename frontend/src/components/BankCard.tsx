@@ -93,6 +93,9 @@ export const BankCard: React.FC<BankCardProps> = ({
   onSync,
   onDisconnect,
 }) => {
+  const sectionTitleClass =
+    "mb-3 text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-600 transition-colors duration-300 ease-out dark:text-slate-200";
+
   const [expanded, setExpanded] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
@@ -217,7 +220,7 @@ export const BankCard: React.FC<BankCardProps> = ({
                 <>
                   {cashAccounts.length > 0 && (
                     <div>
-                      <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#64748b] transition-colors duration-300 ease-out dark:text-[#94a3b8]">Cash</h4>
+                      <h4 className={sectionTitleClass}>Cash</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {cashAccounts.map((account) => (
                           <AccountRow account={account} key={account.id} />
@@ -228,7 +231,7 @@ export const BankCard: React.FC<BankCardProps> = ({
 
                   {debtAccounts.length > 0 && (
                     <div>
-                      <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#64748b] transition-colors duration-300 ease-out dark:text-[#94a3b8]">Debt</h4>
+                      <h4 className={sectionTitleClass}>Debt</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {debtAccounts.map((account) => (
                           <AccountRow account={account} key={account.id} />
@@ -239,7 +242,7 @@ export const BankCard: React.FC<BankCardProps> = ({
 
                   {investmentAccounts.length > 0 && (
                     <div>
-                      <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#64748b] transition-colors duration-300 ease-out dark:text-[#94a3b8]">Investments</h4>
+                      <h4 className={sectionTitleClass}>Investments</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {investmentAccounts.map((account) => (
                           <AccountRow account={account} key={account.id} />

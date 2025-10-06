@@ -80,11 +80,11 @@ export function BalancesOverview() {
       {
         key: "net",
         title: "Net",
-        accent: "slate" as const,
+        accent: "violet" as const,
         icon: <CircleDollarSign className="h-4 w-4" />,
         value: (
           <span data-testid="overall-net">
-            <Amount value={overall?.net ?? 0} />
+            <Amount value={overall?.net ?? 0} className="text-violet-500 dark:text-violet-300" />
           </span>
         ),
       },
@@ -133,12 +133,12 @@ export function BalancesOverview() {
       {
         key: "loan",
         title: "Loan",
-        accent: "rose" as const,
+        accent: "amber" as const,
         icon: <HandCoins className="h-4 w-4" />,
         value: (
           <span
             data-testid="overall-loan"
-            className="text-rose-600 dark:text-rose-400"
+            className="text-amber-600 dark:text-amber-400"
           >
             {fmtUSD(overall?.loan ?? 0)}
           </span>
@@ -218,7 +218,7 @@ export function BalancesOverview() {
                 <span className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300"><span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />Cash: {fmtUSD(hoverInfo.cash ?? 0)}</span>
                 <span className="flex items-center gap-2 text-cyan-700 dark:text-cyan-300"><span className="inline-block w-2 h-2 rounded-full bg-cyan-500" />Investments: {fmtUSD(hoverInfo.investments ?? 0)}</span>
                 <span className="flex items-center gap-2 text-rose-700 dark:text-rose-300"><span className="inline-block w-2 h-2 rounded-full bg-rose-500" />Credit: {fmtUSD(hoverInfo.credit ?? 0)}</span>
-                <span className="flex items-center gap-2 text-red-700 dark:text-red-300"><span className="inline-block w-2 h-2 rounded-full bg-red-600" />Loan: {fmtUSD(hoverInfo.loan ?? 0)}</span>
+                <span className="flex items-center gap-2 text-amber-700 dark:text-amber-300"><span className="inline-block w-2 h-2 rounded-full bg-amber-500" />Loan: {fmtUSD(hoverInfo.loan ?? 0)}</span>
               </div>
             </div>
           )}
@@ -291,7 +291,7 @@ export function BalancesOverview() {
                 dataKey="loan"
                 name="Loan"
                 stackId="neg"
-                fill="#dc2626"
+                fill="#f59e0b"
                 legendType="circle"
                 onMouseEnter={(entry: any) => {
                   const p = entry?.payload as any;
