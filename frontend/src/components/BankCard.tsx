@@ -34,6 +34,11 @@ interface BankCardProps {
   onDisconnect: (id: string) => Promise<void>;
 }
 
+const BANK_CARD_ACCENT = {
+  gradFrom: "#38bdf8",
+  gradVia: "#0ea5e9",
+} as const;
+
 const classNames = (...classes: (string | false | null | undefined)[]) => {
   return classes.filter(Boolean).join(" ");
 };
@@ -136,12 +141,17 @@ export const BankCard: React.FC<BankCardProps> = ({
   };
 
   return (
-    <div className="relative rounded-[1.9rem] border border-white/35 bg-white/85 p-6 shadow-[0_24px_68px_-38px_rgba(15,23,42,0.45)] backdrop-blur-xl transition-all duration-300 ease-out hover:-translate-y-[2px] hover:shadow-[0_28px_82px_-36px_rgba(15,23,42,0.58)] dark:border-white/12 dark:bg-[#0f172a]/78 dark:shadow-[0_28px_90px_-40px_rgba(2,6,23,0.8)]">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[1.9rem]">
-        <div className="absolute inset-[1px] rounded-[1.75rem] ring-1 ring-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.38),inset_0_-1px_0_rgba(15,23,42,0.12)] dark:ring-white/10 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.45)]" />
-        <div className="absolute inset-0 rounded-[1.9rem] bg-gradient-to-b from-white/70 via-transparent to-transparent transition-colors duration-500 dark:from-slate-900/68 dark:via-transparent dark:to-transparent" />
-      </div>
-
+    <div
+      className={classNames(
+        "relative overflow-hidden rounded-2xl border border-white/40 bg-white/85 p-6 backdrop-blur-sm transition-colors duration-300 dark:border-white/10 dark:bg-[#111a2f]/75"
+      )}
+    >
+      <div
+        className="pointer-events-none absolute inset-0 rounded-2xl"
+        style={{
+          backgroundImage: `linear-gradient(180deg, ${BANK_CARD_ACCENT.gradFrom}20 0%, ${BANK_CARD_ACCENT.gradVia}14 34%, rgba(14,165,233,0.06) 55%, transparent 85%)`,
+        }}
+      />
       <div className="relative z-10 flex w-full flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4 min-w-0 flex-1">
           {Avatar}

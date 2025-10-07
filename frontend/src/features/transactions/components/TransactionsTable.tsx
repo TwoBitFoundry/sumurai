@@ -3,6 +3,7 @@ import type { Transaction } from '../../../types/api'
 import { fmtUSD } from '../../../utils/format'
 import { getTagThemeForCategory } from '../../../utils/categories'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
+import { AnimatePresence, motion } from 'framer-motion'
 
 interface Props {
   items: Transaction[]
@@ -40,8 +41,15 @@ export const TransactionsTable: React.FC<Props> = ({ items, total, currentPage, 
                   <th className="w-[20%] whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em]">Category</th>
                 </tr>
               </thead>
-              <tbody>
-                {items.map((r, i) => {
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.tbody
+                  key={currentPage}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.24, ease: [0.22, 0.61, 0.36, 1] }}
+                >
+                  {items.map((r, i) => {
                   const catName = r.category?.name || 'Uncategorized'
                   const theme = getTagThemeForCategory(catName)
                   return (
@@ -92,7 +100,8 @@ export const TransactionsTable: React.FC<Props> = ({ items, total, currentPage, 
                     </tr>
                   )
                 })}
-              </tbody>
+                </motion.tbody>
+              </AnimatePresence>
             </table>
           </div>
           <div className="flex items-center justify-between border-t border-slate-200/70 bg-slate-50/50 px-4 py-4 transition-colors duration-500 dark:border-slate-700/50 dark:bg-slate-800/30">
