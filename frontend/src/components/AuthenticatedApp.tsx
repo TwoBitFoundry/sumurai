@@ -40,9 +40,11 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
   return (
     <ErrorBoundary>
       <div className={dark ? 'dark' : ''}>
-        <div className="relative min-h-screen flex flex-col overflow-hidden text-slate-900 dark:text-slate-100 transition-colors duration-300 bg-[radial-gradient(115%_85%_at_15%_-12%,#f8fafc_0%,#f1f5f9_45%,#ffffff_90%)] dark:bg-[radial-gradient(100%_85%_at_20%_-10%,#0f172a_0%,#0b162c_55%,#05070d_100%)]">
+        <div className="relative min-h-screen flex flex-col overflow-hidden text-slate-900 dark:text-slate-100 transition-colors duration-300 bg-[radial-gradient(128%_96%_at_18%_-20%,#c4e2ff_0%,#dbeafe_30%,#e5f2ff_56%,#ffffff_96%)] dark:bg-[radial-gradient(100%_85%_at_20%_-10%,#0f172a_0%,#0b162c_55%,#05070d_100%)]">
           <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_18%_-10%,#f8fafc_0%,#f1f5f9_45%,#ffffff_100%)] transition-colors duration-700 dark:bg-[radial-gradient(92%_80%_at_20%_-6%,#0f172a_0%,#0a1224_50%,#05070d_100%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(136%_108%_at_20%_-18%,rgba(14,165,233,0.42)_0%,#e1f2ff_36%,#ffffff_100%)] transition-colors duration-700 dark:bg-[radial-gradient(92%_80%_at_20%_-6%,#0f172a_0%,#0a1224_50%,#05070d_100%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(86%_64%_at_86%_18%,rgba(167,139,250,0.28)_0%,rgba(59,130,246,0.14)_55%,transparent_78%)] transition-opacity duration-700 dark:bg-transparent" />
+            <div className="absolute inset-0 bg-[radial-gradient(92%_68%_at_12%_24%,rgba(56,189,248,0.28)_0%,rgba(129,140,248,0.12)_52%,transparent_80%)] transition-opacity duration-700 dark:bg-transparent" />
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="absolute left-1/2 top-1/2 h-[72rem] w-[72rem] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.28] blur-3xl animate-[rotateAura_95s_linear_infinite] bg-[conic-gradient(from_90deg,#93c5fd,#34d399,#fbbf24,#a78bfa,#fb7185,#93c5fd)] transition-all duration-700 ease-out dark:opacity-[0.4] dark:bg-[conic-gradient(from_110deg,#38bdf8,#34d399,#a78bfa,#fbbf24,#f87171,#38bdf8)]" />
             </div>

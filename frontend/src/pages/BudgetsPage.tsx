@@ -6,8 +6,8 @@ import { BudgetForm, type BudgetFormValue } from '../features/budgets/components
 import { BudgetList, type BudgetWithProgress } from '../features/budgets/components/BudgetList'
 import { useBudgets } from '../features/budgets/hooks/useBudgets'
 import { fmtUSD } from '../utils/format'
-import { getTagThemeForCategory, formatCategoryName } from '../utils/categories'
-import HeroStatCard from '../components/widgets/HeroStatCard'
+import { formatCategoryName } from '../utils/categories'
+import HeroStatCard, { type HeroPill } from '../components/widgets/HeroStatCard'
 
 export default function BudgetsPage() {
   const {
@@ -129,6 +129,52 @@ export default function BudgetsPage() {
     }
   }, [computedBudgets, month])
 
+  const activeBudgetPills: HeroPill[] = useMemo(() => {
+    if (!stats.activeBudgetCategories?.length) return []
+    const unique = Array.from(new Set(stats.activeBudgetCategories))
+    return unique
+      .map(category => ({
+        raw: category,
+        label: formatCategoryName(category),
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .map(({ raw, label }) => ({
+        label,
+        type: 'category' as const,
+        categoryName: raw,
+      }))
+  }, [stats.activeBudgetCategories])
+
+  const overBudgetCategoryPills: HeroPill[] = useMemo(() => {
+    if (!stats.overBudgetCategories?.length) return []
+    const unique = Array.from(new Set(stats.overBudgetCategories))
+    return unique
+      .map(category => ({
+        raw: category,
+        label: formatCategoryName(category),
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .map(({ raw, label }) => ({
+        label,
+        type: 'category' as const,
+        categoryName: raw,
+      }))
+  }, [stats.overBudgetCategories])
+
+  const overBudgetPills: HeroPill[] = useMemo(() => {
+    if (overBudgetCategoryPills.length > 0) {
+      return overBudgetCategoryPills
+    }
+    if (stats.overBudgetCount === 0 && computedBudgets.length > 0) {
+      return [{
+        label: 'All budgets on track',
+        type: 'semantic' as const,
+        tone: 'success' as const,
+      }]
+    }
+    return []
+  }, [overBudgetCategoryPills, stats.overBudgetCount, computedBudgets.length])
+
   const utilization = stats.totalBudgeted > 0 ? stats.totalSpent / stats.totalBudgeted : 0
   const utilizationPercent = utilization * 100
   const utilizationValue = utilizationPercent > 100
@@ -190,15 +236,7 @@ export default function BudgetsPage() {
                   icon={<CheckCircle2 className="h-4 w-4" />}
                   value={`${computedBudgets.length}`}
                   suffix={`out of ${categoryOptions.length}`}
-                  pills={
-                    stats.activeBudgetCategories.length > 0
-                      ? [{
-                          label: `${stats.activeBudgetCategories.length} categories`,
-                          type: 'semantic' as const,
-                          tone: 'info'
-                        }]
-                      : []
-                  }
+                  pills={activeBudgetPills}
                 />
                 <HeroStatCard
                   index={2}
@@ -226,15 +264,7 @@ export default function BudgetsPage() {
                   icon={<AlertTriangle className="h-4 w-4" />}
                   value={stats.overBudgetCount}
                   suffix="over budget"
-                  pills={
-                    stats.overBudgetCount > 0
-                      ? [{
-                          label: 'Review flagged budgets',
-                          type: 'semantic' as const,
-                          tone: 'warning'
-                        }]
-                      : []
-                  }
+                  pills={overBudgetPills}
                 />
               </div>
               <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white/80 p-5 text-slate-700 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-slate-300 dark:border-slate-700 dark:bg-[#111a2f]/70 dark:text-slate-200 dark:hover:border-slate-600">

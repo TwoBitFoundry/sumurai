@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { getTagThemeForCategory } from '../../utils/categories'
 
 type Accent = 'emerald' | 'sky' | 'violet' | 'amber' | 'slate' | 'rose'
@@ -39,6 +39,7 @@ const ACCENT_STYLES: Record<Accent, {
   gradVia: string
   icon: string
   defaultPill: string
+  defaultDot: string
   glowRgb: string
 }> = {
   slate: {
@@ -50,7 +51,8 @@ const ACCENT_STYLES: Record<Accent, {
     gradFrom: '#64748b',
     gradVia: '#475569',
     icon: 'text-slate-500 dark:text-slate-300',
-    defaultPill: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-300',
+    defaultPill: 'border border-slate-200/70 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 bg-[linear-gradient(135deg,_rgba(226,232,240,0.95),_rgba(248,250,252,0.65))] dark:bg-[linear-gradient(135deg,_rgba(30,41,59,0.75),_rgba(15,23,42,0.6))] shadow-[0_16px_44px_-30px_rgba(15,23,42,0.55)] backdrop-blur-sm ring-1 ring-white/65 dark:ring-white/12',
+    defaultDot: 'bg-slate-400/85 dark:bg-slate-200/80',
     glowRgb: '100,116,139',
   },
   emerald: {
@@ -62,7 +64,8 @@ const ACCENT_STYLES: Record<Accent, {
     gradFrom: '#34d399',
     gradVia: '#10b981',
     icon: 'text-emerald-500 dark:text-emerald-400',
-    defaultPill: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+    defaultPill: 'border border-emerald-200/70 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-200 bg-[linear-gradient(135deg,_rgba(16,185,129,0.22),_rgba(16,185,129,0.08))] dark:bg-[linear-gradient(135deg,_rgba(34,197,94,0.22),_rgba(34,197,94,0.08))] shadow-[0_18px_46px_-32px_rgba(16,185,129,0.55)] backdrop-blur-sm ring-1 ring-white/65 dark:ring-white/12',
+    defaultDot: 'bg-emerald-500/90 dark:bg-emerald-300/80',
     glowRgb: '16,185,129',
   },
   sky: {
@@ -74,7 +77,8 @@ const ACCENT_STYLES: Record<Accent, {
     gradFrom: '#38bdf8',
     gradVia: '#0ea5e9',
     icon: 'text-sky-500 dark:text-sky-400',
-    defaultPill: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
+    defaultPill: 'border border-sky-200/70 dark:border-sky-500/40 text-sky-700 dark:text-sky-200 bg-[linear-gradient(135deg,_rgba(14,165,233,0.2),_rgba(14,165,233,0.08))] dark:bg-[linear-gradient(135deg,_rgba(56,189,248,0.2),_rgba(56,189,248,0.08))] shadow-[0_18px_46px_-32px_rgba(14,165,233,0.55)] backdrop-blur-sm ring-1 ring-white/65 dark:ring-white/12',
+    defaultDot: 'bg-sky-500/90 dark:bg-sky-300/80',
     glowRgb: '14,165,233',
   },
   violet: {
@@ -86,7 +90,8 @@ const ACCENT_STYLES: Record<Accent, {
     gradFrom: '#a78bfa',
     gradVia: '#7c3aed',
     icon: 'text-violet-500 dark:text-violet-400',
-    defaultPill: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
+    defaultPill: 'border border-violet-200/70 dark:border-violet-500/40 text-violet-700 dark:text-violet-200 bg-[linear-gradient(135deg,_rgba(139,92,246,0.22),_rgba(139,92,246,0.08))] dark:bg-[linear-gradient(135deg,_rgba(167,139,250,0.22),_rgba(167,139,250,0.08))] shadow-[0_18px_46px_-32px_rgba(139,92,246,0.55)] backdrop-blur-sm ring-1 ring-white/65 dark:ring-white/12',
+    defaultDot: 'bg-violet-500/90 dark:bg-violet-300/80',
     glowRgb: '167,139,250',
   },
   amber: {
@@ -98,7 +103,8 @@ const ACCENT_STYLES: Record<Accent, {
     gradFrom: '#fbbf24',
     gradVia: '#f59e0b',
     icon: 'text-amber-500 dark:text-amber-400',
-    defaultPill: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+    defaultPill: 'border border-amber-200/70 dark:border-amber-500/40 text-amber-700 dark:text-amber-200 bg-[linear-gradient(135deg,_rgba(245,158,11,0.22),_rgba(245,158,11,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,191,36,0.22),_rgba(251,191,36,0.08))] shadow-[0_18px_46px_-32px_rgba(245,158,11,0.52)] backdrop-blur-sm ring-1 ring-white/65 dark:ring-white/12',
+    defaultDot: 'bg-amber-500/90 dark:bg-amber-300/85',
     glowRgb: '251,191,36',
   },
   rose: {
@@ -110,7 +116,8 @@ const ACCENT_STYLES: Record<Accent, {
     gradFrom: '#fb7185',
     gradVia: '#f43f5e',
     icon: 'text-rose-500 dark:text-rose-400',
-    defaultPill: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+    defaultPill: 'border border-rose-200/70 dark:border-rose-500/40 text-rose-700 dark:text-rose-200 bg-[linear-gradient(135deg,_rgba(244,63,94,0.22),_rgba(244,63,94,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,113,133,0.22),_rgba(251,113,133,0.08))] shadow-[0_18px_46px_-32px_rgba(244,63,94,0.5)] backdrop-blur-sm ring-1 ring-white/65 dark:ring-white/12',
+    defaultDot: 'bg-rose-500/90 dark:bg-rose-300/80',
     glowRgb: '244,63,94',
   },
 }
@@ -127,19 +134,23 @@ function accentFromIndex(index?: number): Accent {
   }
 }
 
-function semanticPillClass(tone: Tone): string {
-  switch (tone) {
-    case 'success':
-      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-    case 'info':
-      return 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300'
-    case 'warning':
-      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-    case 'danger':
-      return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
-    default:
-      return ''
-  }
+const SEMANTIC_PILLS: Record<Tone, { wrapper: string; dot: string }> = {
+  success: {
+    wrapper: 'border border-emerald-200/70 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-200 bg-[linear-gradient(135deg,_rgba(16,185,129,0.24),_rgba(16,185,129,0.1))] dark:bg-[linear-gradient(135deg,_rgba(34,197,94,0.22),_rgba(34,197,94,0.08))] shadow-[0_14px_40px_-28px_rgba(16,185,129,0.52)] backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
+    dot: 'bg-emerald-500/90 dark:bg-emerald-300/80',
+  },
+  info: {
+    wrapper: 'border border-sky-200/70 dark:border-sky-500/40 text-sky-700 dark:text-sky-200 bg-[linear-gradient(135deg,_rgba(14,165,233,0.22),_rgba(14,165,233,0.08))] dark:bg-[linear-gradient(135deg,_rgba(56,189,248,0.22),_rgba(56,189,248,0.08))] shadow-[0_14px_40px_-28px_rgba(14,165,233,0.52)] backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
+    dot: 'bg-sky-500/90 dark:bg-sky-300/80',
+  },
+  warning: {
+    wrapper: 'border border-amber-200/70 dark:border-amber-500/40 text-amber-700 dark:text-amber-200 bg-[linear-gradient(135deg,_rgba(245,158,11,0.24),_rgba(245,158,11,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,191,36,0.22),_rgba(251,191,36,0.08))] shadow-[0_14px_40px_-28px_rgba(245,158,11,0.5)] backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
+    dot: 'bg-amber-500/90 dark:bg-amber-300/85',
+  },
+  danger: {
+    wrapper: 'border border-rose-200/70 dark:border-rose-500/40 text-rose-700 dark:text-rose-200 bg-[linear-gradient(135deg,_rgba(244,63,94,0.24),_rgba(244,63,94,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,113,133,0.22),_rgba(251,113,133,0.08))] shadow-[0_14px_40px_-28px_rgba(244,63,94,0.48)] backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
+    dot: 'bg-rose-500/90 dark:bg-rose-300/80',
+  },
 }
 
 export const HeroStatCard: React.FC<HeroStatCardProps> = ({
@@ -176,10 +187,6 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pills?.length])
 
-  const ringStyle = useMemo(() => ({
-    // used by inline style to match existing ring tint
-  }), [])
-
   const hasFooter = Boolean(subtext) || Boolean(pills && pills.length > 0)
 
   return (
@@ -213,46 +220,83 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
             ) : null}
           </div>
           {(subtext || (pills && pills.length > 0)) ? (
-            <div className="relative overflow-hidden">
-              {subtext ? (
-                <span className={classNames('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium', styles.defaultPill)}>
-                  {subtext}
-                </span>
-              ) : null}
-              {pills && pills.length > 0 ? (
-                <>
-                  <div
-                    ref={pillsRef}
-                    onScroll={checkScroll}
-                    className="scrollbar-hide flex items-center gap-1.5 overflow-x-auto"
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                  >
-                    {pills.map((p, idx) => {
-                      let pillClass = styles.defaultPill
-                      if (p.type === 'semantic' && p.tone) pillClass = semanticPillClass(p.tone)
-                      if (p.type === 'category') {
-                        const theme = getTagThemeForCategory(p.categoryName || p.label)
-                        pillClass = theme.tag
-                      }
-                      return (
+            <div className="relative">
+              <div
+                ref={pillsRef}
+                onScroll={checkScroll}
+                className="scrollbar-hide flex items-center gap-1.5 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {subtext ? (
+                  <span className={classNames('inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-[0.18em]', styles.defaultPill)}>
+                    <span
+                      className={classNames(
+                        'h-2 w-2 flex-shrink-0 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.85)] dark:shadow-[0_0_0_1px_rgba(15,23,42,0.7)]',
+                        styles.defaultDot,
+                      )}
+                      aria-hidden="true"
+                    />
+                    <span className="whitespace-nowrap">{subtext}</span>
+                  </span>
+                ) : null}
+
+                {pills?.map((p, idx) => {
+                  if (p.type === 'category') {
+                    const theme = getTagThemeForCategory(p.categoryName || p.label)
+                    return (
+                      <span
+                        key={idx}
+                        className={classNames(
+                          'inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-[0.18em]',
+                          theme.tag,
+                        )}
+                      >
                         <span
-                          key={idx}
-                          aria-hidden={p.type === 'category' ? true : undefined}
-                          className={classNames('inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium', pillClass)}
-                        >
-                          {p.label}
-                        </span>
-                      )
-                    })}
-                  </div>
-                  {showLeftFade && (
-                    <div className="pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80" />
-                  )}
-                  {showRightFade && (
-                    <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80" />
-                  )}
-                </>
-              ) : null}
+                          className={classNames(
+                            'h-2 w-2 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.85)] dark:shadow-[0_0_0_1px_rgba(15,23,42,0.7)]',
+                            theme.dot,
+                          )}
+                          aria-hidden="true"
+                        />
+                        <span className="whitespace-nowrap">{p.label}</span>
+                      </span>
+                    )
+                  }
+
+                  let wrapperClass = styles.defaultPill
+                  let dotClass = styles.defaultDot
+                  if (p.type === 'semantic' && p.tone) {
+                    const semantic = SEMANTIC_PILLS[p.tone]
+                    wrapperClass = semantic.wrapper
+                    dotClass = semantic.dot
+                  }
+
+                  return (
+                    <span
+                      key={idx}
+                      className={classNames(
+                        'inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-[0.18em]',
+                        wrapperClass,
+                      )}
+                    >
+                      <span
+                        className={classNames(
+                          'h-2 w-2 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.85)] dark:shadow-[0_0_0_1px_rgba(15,23,42,0.7)]',
+                          dotClass,
+                        )}
+                        aria-hidden="true"
+                      />
+                      <span className="whitespace-nowrap">{p.label}</span>
+                    </span>
+                  )
+                })}
+              </div>
+              {showLeftFade && (
+                <div className="pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80" />
+              )}
+              {showRightFade && (
+                <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80" />
+              )}
             </div>
           ) : null}
         </div>

@@ -79,8 +79,14 @@ export const TransactionsTable: React.FC<Props> = ({ items, total, currentPage, 
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 align-middle">
-                        <span className={`inline-flex items-center gap-2 rounded-full px-2 py-0.5 text-xs ${theme.tag}`}>
-                          ● {catName}
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 transition-all duration-200 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10 ${theme.tag}`}
+                        >
+                          <span
+                            className={`h-2 w-2 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.85)] dark:shadow-[0_0_0_1px_rgba(15,23,42,0.7)] ${theme.dot}`}
+                            aria-hidden="true"
+                          />
+                          {catName}
                         </span>
                       </td>
                     </tr>
@@ -122,4 +128,3 @@ export const TransactionsTable: React.FC<Props> = ({ items, total, currentPage, 
 }
 
 export default TransactionsTable
-

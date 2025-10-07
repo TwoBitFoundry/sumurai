@@ -70,13 +70,17 @@ export const TransactionsFilters: React.FC<Props> = ({
                     key={name}
                     type="button"
                     onClick={() => onSelectCategory(isSelected ? null : name)}
-                    className={`inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-2 py-1 text-xs transition-all duration-150 ${theme.tag} ${
-                      isSelected ? `ring-2 ${theme.ring}` : 'hover:-translate-y-[2px] hover:opacity-90'
+                    className={`inline-flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 transition-all duration-150 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10 ${theme.tag} ${
+                      isSelected ? `ring-2 ${theme.ring}` : 'hover:-translate-y-[2px] hover:shadow-lg'
                     }`}
                     aria-pressed={isSelected}
                     title={isSelected ? `Remove filter: ${name}` : `Filter by ${name}`}
                   >
-                    ● {name}
+                    <span
+                      className={`h-2 w-2 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.85)] dark:shadow-[0_0_0_1px_rgba(15,23,42,0.7)] ${theme.dot}`}
+                      aria-hidden="true"
+                    />
+                    {name}
                   </button>
                 )
               })}

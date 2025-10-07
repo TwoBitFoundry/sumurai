@@ -51,8 +51,11 @@ export function BudgetList({
           >
             <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:via-white/20" />
             <div className="flex items-start justify-between gap-3">
-              <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold shadow-sm transition-colors duration-300 ${tagTheme.tag}`}>
-                <span className="block h-2 w-2 rounded-full bg-current opacity-80" aria-hidden="true" />
+              <div className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10 ${tagTheme.tag}`}>
+                <span
+                  className={`h-2 w-2 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.85)] dark:shadow-[0_0_0_1px_rgba(15,23,42,0.7)] ${tagTheme.dot}`}
+                  aria-hidden="true"
+                />
                 {displayName}
               </div>
               <div className="flex items-center gap-2 text-xs">
