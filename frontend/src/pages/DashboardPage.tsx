@@ -20,6 +20,7 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
   const spendingOverviewRef = useRef<HTMLDivElement | null>(null)
   const balancesOverviewRef = useRef<HTMLDivElement | null>(null)
   const [showTimeBar, setShowTimeBar] = useState(false)
+  const [timeBarBottom, setTimeBarBottom] = useState(24)
 
   const analytics = useAnalytics(dateRange)
   const analyticsLoading = analytics.loading
@@ -40,6 +41,42 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
     }, { threshold: [0, 0.5, 1] })
     observer.observe(target)
     return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const footer = typeof document !== 'undefined' ? document.querySelector('footer') : null
+    if (!footer) {
+      setTimeBarBottom(24)
+      return
+    }
+
+    const footerVisibleRef = { current: false }
+    const computeBottom = (visible: boolean) => {
+      const height = footer.getBoundingClientRect().height || 0
+      return visible ? Math.max(24, height + 16) : 24
+    }
+
+    const handleResize = () => {
+      setTimeBarBottom(computeBottom(footerVisibleRef.current))
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        footerVisibleRef.current = entry.isIntersecting && entry.intersectionRatio > 0
+        setTimeBarBottom(computeBottom(footerVisibleRef.current))
+      },
+      { threshold: [0, 0.25, 0.5, 1] }
+    )
+
+    observer.observe(footer)
+    setTimeBarBottom(computeBottom(footerVisibleRef.current))
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', handleResize)
+    }
   }, [])
 
   const monthSpend = analytics.spendingTotal
@@ -70,6 +107,26 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
       return <circle cx={cx} cy={cy} r={3} stroke={stroke} strokeWidth={1} fill={fill} />
     }
   }, [netSeries, dark])
+
+  const netYAxisDomain = useMemo(() => {
+    if (!netSeries || netSeries.length === 0) return null
+    let min = Number.POSITIVE_INFINITY
+    let max = Number.NEGATIVE_INFINITY
+    for (const point of netSeries) {
+      const value = Number(point?.value)
+      if (!Number.isFinite(value)) continue
+      if (value < min) min = value
+      if (value > max) max = value
+    }
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return null
+    if (min === max) {
+      const padding = Math.max(Math.abs(max) * 0.1, 500)
+      return [max - padding, max + padding]
+    }
+    const span = Math.abs(max - min)
+    const padding = Math.max(span * 0.08, 500)
+    return [min - padding, max + padding]
+  }, [netSeries])
 
   return (
     <div className="space-y-8">
@@ -142,7 +199,7 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
           </div>
         </Card>
 
-        <Card className="h-full">
+        <Card className="h-full flex flex-col">
           <div className="mb-3 flex items-center justify-between">
             <div>
               <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Top Merchants Over Time</h3>
@@ -155,10 +212,15 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
               />
             )}
           </div>
-          <TopMerchantsList merchants={analytics.topMerchants} />
+          <div className="flex-1 overflow-hidden">
+            <TopMerchantsList
+              merchants={analytics.topMerchants}
+              className="h-full overflow-y-auto pr-1"
+            />
+          </div>
         </Card>
 
-        <Card className="h-full">
+        <Card className="h-full flex flex-col">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Net Worth Over Time</h3>
@@ -172,13 +234,13 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
             )}
           </div>
           {netLoading ? (
-            <div className="h-40 rounded-xl bg-slate-100/60 dark:bg-slate-900/40 animate-pulse border border-slate-200/60 dark:border-slate-700/60" />
+            <div className="flex-1 min-h-[220px] rounded-xl bg-slate-100/60 dark:bg-slate-900/40 animate-pulse border border-slate-200/60 dark:border-slate-700/60" />
           ) : netError ? (
-            <div className="text-sm text-rose-600 dark:text-rose-400">{netError}</div>
+            <div className="flex-1 min-h-[220px] text-sm text-rose-600 dark:text-rose-400">{netError}</div>
           ) : netSeries.length === 0 ? (
-            <div className="text-sm text-slate-500 dark:text-slate-400">No data for this range.</div>
+            <div className="flex-1 min-h-[220px] text-sm text-slate-500 dark:text-slate-400">No data for this range.</div>
           ) : (
-            <div className="w-full overflow-hidden" style={{ height: 'clamp(240px, 36vh, 28rem)' }}>
+            <div className="flex-1 min-h-[240px] overflow-hidden">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={netSeries} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
                   <defs>
@@ -220,6 +282,7 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
                     tick={{ fill: dark ? '#94a3b8' : '#64748b', fontSize: 12 }}
                     axisLine={false}
                     tickLine={false}
+                    domain={netYAxisDomain ?? ['auto', 'auto']}
                     tickFormatter={(v) => {
                       const n = Math.abs(Number(v))
                       const sign = Number(v) < 0 ? '-' : ''
@@ -239,7 +302,10 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
       </div>
 
       {showTimeBar && (
-        <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center">
+        <div
+          className="fixed left-0 right-0 z-50 flex justify-center transition-[bottom] duration-300 ease-out"
+          style={{ bottom: timeBarBottom }}
+        >
           <div className="flex gap-2 px-3 py-2 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70 shadow-xl backdrop-blur-md ring-1 ring-slate-200/60 dark:ring-slate-700/60">
             {[
               { key: 'current-month', label: 'Current Month' },

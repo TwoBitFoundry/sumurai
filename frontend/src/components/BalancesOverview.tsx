@@ -183,7 +183,7 @@ export function BalancesOverview() {
         </div>
 
         {loading && (
-          <div data-testid="balances-loading" className="grid grid-cols-2 md:grid-cols-5 gap-3 animate-pulse">
+          <div data-testid="balances-loading" className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))] animate-pulse">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="h-16 rounded-xl bg-slate-100/60 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-700/60" />
             ))}
@@ -197,7 +197,7 @@ export function BalancesOverview() {
           </div>
         )}
 
-        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+        <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">
           {overviewCards.map((card) => (
             <HeroStatCard
               key={card.key}
@@ -206,6 +206,7 @@ export function BalancesOverview() {
               icon={card.icon}
               accent={card.accent}
               className="h-full"
+              minHeightClassName="min-h-0"
             />
           ))}
         </div>
@@ -301,18 +302,6 @@ export function BalancesOverview() {
               />
             </BarChart>
           </ResponsiveContainer>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-          {(data?.banks || []).map((b) => (
-            <div key={b.bankId} className="rounded-2xl border border-white/55 dark:border-white/10 bg-white/80 dark:bg-[#111a2f]/70 p-3 flex items-center justify-between shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] transition-colors duration-500">
-              <div className="text-sm font-medium text-slate-900 dark:text-slate-100">{b.bankName}</div>
-              <div className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                <span>Ratio</span>
-                <span data-testid={`bank-${b.bankName}-ratio`}>{formatRatio(b.ratio)}</span>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     </section>
