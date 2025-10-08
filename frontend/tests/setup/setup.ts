@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
+import React from 'react'
 
 ;(globalThis as any).ResizeObserver = class ResizeObserver {
   observe() {}
@@ -53,3 +54,98 @@ vi.mock('react-plaid-link', () => ({
     error: null,
   })
 }))
+
+const filterProps = (props: Record<string, unknown>) => {
+  const safe: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(props)) {
+    if (key.startsWith('data-') || key.startsWith('aria-')) {
+      safe[key] = value
+    } else if (/^on[A-Z]/.test(key)) {
+      safe[key] = value
+    } else if (['className', 'style', 'id', 'role', 'tabIndex', 'title'].includes(key)) {
+      safe[key] = value
+    }
+  }
+  return safe
+}
+
+const createRechartsComponent = (name: string) =>
+  React.forwardRef<any, Record<string, unknown>>(({ children, ...rest }, ref) =>
+    React.createElement(
+      'div',
+      {
+        ref,
+        'data-recharts-mock': name,
+        ...filterProps(rest as Record<string, unknown>)
+      },
+      children
+    )
+  )
+
+vi.mock('recharts', () => {
+  const ResponsiveContainer = ({
+    width,
+    height,
+    children,
+    style,
+    ...rest
+  }: {
+    width?: number | string
+    height?: number | string
+    children: React.ReactNode | ((dimensions: { width: number; height: number }) => React.ReactNode)
+    style?: React.CSSProperties
+  }) => {
+    const fallbackWidth = 400
+    const fallbackHeight = 300
+    const resolvedWidth = typeof width === 'number' ? width : fallbackWidth
+    const resolvedHeight = typeof height === 'number' ? height : fallbackHeight
+    const content =
+      typeof children === 'function'
+        ? children({ width: resolvedWidth, height: resolvedHeight })
+        : children
+
+    return React.createElement(
+      'div',
+      {
+        'data-recharts-mock': 'ResponsiveContainer',
+        style: {
+          width: typeof width === 'string' ? fallbackWidth : resolvedWidth,
+          height: typeof height === 'string' ? fallbackHeight : resolvedHeight,
+          ...style
+        },
+        ...filterProps(rest as Record<string, unknown>)
+      },
+      content
+    )
+  }
+
+  return {
+    ResponsiveContainer,
+    Area: createRechartsComponent('Area'),
+    AreaChart: createRechartsComponent('AreaChart'),
+    Bar: createRechartsComponent('Bar'),
+    BarChart: createRechartsComponent('BarChart'),
+    CartesianGrid: createRechartsComponent('CartesianGrid'),
+    Cell: createRechartsComponent('Cell'),
+    ComposedChart: createRechartsComponent('ComposedChart'),
+    Legend: createRechartsComponent('Legend'),
+    Line: createRechartsComponent('Line'),
+    LineChart: createRechartsComponent('LineChart'),
+    Pie: createRechartsComponent('Pie'),
+    PieChart: createRechartsComponent('PieChart'),
+    RadialBar: createRechartsComponent('RadialBar'),
+    RadialBarChart: createRechartsComponent('RadialBarChart'),
+    ReferenceLine: createRechartsComponent('ReferenceLine'),
+    Scatter: createRechartsComponent('Scatter'),
+    ScatterChart: createRechartsComponent('ScatterChart'),
+    Tooltip: createRechartsComponent('Tooltip'),
+    Treemap: createRechartsComponent('Treemap'),
+    XAxis: createRechartsComponent('XAxis'),
+    YAxis: createRechartsComponent('YAxis'),
+    PolarAngleAxis: createRechartsComponent('PolarAngleAxis'),
+    PolarGrid: createRechartsComponent('PolarGrid'),
+    PolarRadiusAxis: createRechartsComponent('PolarRadiusAxis'),
+    Radar: createRechartsComponent('Radar'),
+    RadarChart: createRechartsComponent('RadarChart'),
+  }
+})

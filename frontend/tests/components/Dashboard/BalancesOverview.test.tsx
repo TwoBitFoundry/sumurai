@@ -60,10 +60,8 @@ describe("BalancesOverview (Phase 7)", () => {
     expect(screen.getByTestId("overall-loan").textContent).toContain("-$15,400.00");
     expect(screen.getByTestId("overall-net").textContent).toContain("$41,600.45");
 
-    // Banks labels and ratios
-    expect(screen.getAllByText("Chase")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("Vanguard")[0]).toBeInTheDocument();
-    expect(screen.getAllByTestId("bank-Chase-ratio")[0].textContent).toBe("5.00");
+    // Bank ratio chips removed
+    expect(screen.queryByTestId("bank-Chase-ratio")).not.toBeInTheDocument();
   });
 
   it("shows friendly error state and recovers on retry", async () => {
