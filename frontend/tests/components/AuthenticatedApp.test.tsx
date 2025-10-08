@@ -110,24 +110,23 @@ describe('AuthenticatedApp shell', () => {
     const user = userEvent.setup()
     renderApp()
 
-    const budgetsSection = screen.getByTestId('budgets-page').parentElement?.parentElement
-    expect(BudgetsPageMock.mock.calls.at(-1)).toEqual([])
-    expect(budgetsSection).toHaveClass('hidden')
-    expect(budgetsSection).toHaveAttribute('aria-hidden', 'true')
+    expect(BudgetsPageMock).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('budgets-page')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /^transactions$/i }))
-    expect(screen.getByTestId('transactions-page')).toBeInTheDocument()
+    expect(await screen.findByTestId('transactions-page')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /^budgets$/i }))
-    const activeBudgetsSection = screen.getByTestId('budgets-page').parentElement?.parentElement
-    expect(activeBudgetsSection).not.toHaveClass('hidden')
-    expect(activeBudgetsSection).not.toHaveAttribute('aria-hidden')
+    await waitFor(() => {
+      expect(BudgetsPageMock).toHaveBeenCalled()
+    })
+    expect(await screen.findByTestId('budgets-page')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /^accounts$/i }))
-    expect(screen.getByTestId('accounts-page')).toBeInTheDocument()
-    const hiddenBudgetsSection = screen.getByTestId('budgets-page').parentElement?.parentElement
-    expect(hiddenBudgetsSection).toHaveClass('hidden')
-    expect(hiddenBudgetsSection).toHaveAttribute('aria-hidden', 'true')
+    expect(await screen.findByTestId('accounts-page')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.queryByTestId('budgets-page')).not.toBeInTheDocument()
+    })
   })
 
   it('surfaces errors from the accounts page and clears them', async () => {
@@ -135,10 +134,12 @@ describe('AuthenticatedApp shell', () => {
     renderApp()
 
     await user.click(screen.getByRole('button', { name: /^accounts$/i }))
-    await user.click(screen.getByTestId('trigger-accounts-error'))
+    expect(await screen.findByTestId('accounts-page')).toBeInTheDocument()
+
+    await user.click(await screen.findByTestId('trigger-accounts-error'))
     expect(screen.getByText('accounts-error')).toBeInTheDocument()
 
-    await user.click(screen.getByTestId('clear-accounts-error'))
+    await user.click(await screen.findByTestId('clear-accounts-error'))
     expect(screen.queryByText('accounts-error')).not.toBeInTheDocument()
   })
 
