@@ -84,32 +84,37 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
 
   const debouncedSearch = useDebounce(search, 300)
 
-  const filtered = useMemo(() => {
+  const searchFiltered = useMemo(() => {
     const s = debouncedSearch.trim().toLowerCase()
-    let list = all
-    if (s) {
-      list = list.filter(t => {
-        const name = (t.name || '').toLowerCase()
-        const merchant = (t.merchant || '').toLowerCase()
-        const cat = (t.category?.name || '').toLowerCase()
-        return name.includes(s) || merchant.includes(s) || cat.includes(s)
-      })
-    }
-    if (selectedCategory) {
-      const catLower = selectedCategory.toLowerCase()
-      list = list.filter(t => (t.category?.name || '').toLowerCase() === catLower)
-    }
-    return list
-  }, [all, debouncedSearch, selectedCategory])
+    if (!s) return all
+    return all.filter(t => {
+      const name = (t.name || '').toLowerCase()
+      const merchant = (t.merchant || '').toLowerCase()
+      const cat = (t.category?.name || '').toLowerCase()
+      return name.includes(s) || merchant.includes(s) || cat.includes(s)
+    })
+  }, [all, debouncedSearch])
 
   const categories = useMemo(() => {
     const names = new Set<string>()
-    for (const t of all) {
+    for (const t of searchFiltered) {
       const name = t.category?.name || 'Uncategorized'
       if (name) names.add(name)
     }
     return Array.from(names).sort((a, b) => a.localeCompare(b))
-  }, [all])
+  }, [searchFiltered])
+
+  useEffect(() => {
+    if (selectedCategory && !categories.includes(selectedCategory)) {
+      setSelectedCategory(null)
+    }
+  }, [categories, selectedCategory])
+
+  const filtered = useMemo(() => {
+    if (!selectedCategory) return searchFiltered
+    const catLower = selectedCategory.toLowerCase()
+    return searchFiltered.filter(t => (t.category?.name || '').toLowerCase() === catLower)
+  }, [searchFiltered, selectedCategory])
 
   const totalItems = filtered.length
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))

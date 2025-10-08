@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, cleanup, act } from '@testing-library/react'
+import { render, screen, cleanup, act, waitFor } from '@testing-library/react'
 import { App } from '@/App'
 import { AccountFilterProvider } from '@/hooks/useAccountFilter'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
@@ -39,6 +39,12 @@ const mockFetchAuthOk = () => {
 vi.mock('@/services/ApiClient', () => ({
   ApiClient: {
     get: vi.fn().mockImplementation((endpoint: string) => {
+      if (endpoint.includes('/plaid/accounts')) {
+        return Promise.resolve([])
+      }
+      if (endpoint.includes('/plaid/status')) {
+        return Promise.resolve({ is_connected: false })
+      }
       if (endpoint.startsWith('/analytics/spending')) {
         return Promise.resolve({ total: 1234.56, currency: 'USD' })
       }
@@ -366,10 +372,12 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
         </AccountFilterProvider>
       )
       
-      expect(screen.getAllByText('Sumaura').length).toBeGreaterThan(0)
+      const brandMarks = await screen.findAllByText('Sumaura')
+      expect(brandMarks.length).toBeGreaterThan(0)
       expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
-      expect(screen.getAllByText('Welcome Back').length).toBeGreaterThan(0)
-      expect(screen.getByText('Sign in to your account')).toBeInTheDocument()
+      const welcomeMessages = await screen.findAllByText('Welcome Back')
+      expect(welcomeMessages.length).toBeGreaterThan(0)
+      expect(await screen.findByText('Sign in to your account')).toBeInTheDocument()
     })
 
     it('should render login screen when auth token is expired', async () => {
@@ -382,8 +390,10 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
         </AccountFilterProvider>
       )
       
-      expect(screen.getAllByText('Welcome Back').length).toBeGreaterThan(0)
-      expect(screen.getAllByText('Sumaura').length).toBeGreaterThan(0)
+      const welcomeMessages = await screen.findAllByText('Welcome Back')
+      expect(welcomeMessages.length).toBeGreaterThan(0)
+      const brandMarks = await screen.findAllByText('Sumaura')
+      expect(brandMarks.length).toBeGreaterThan(0)
     })
 
     it('should render AuthenticatedApp when valid token exists', async () => {
@@ -400,11 +410,14 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
             <App />
           </AccountFilterProvider>
         )
-        await new Promise(resolve => setTimeout(resolve, 100))
       })
-      expect(screen.getAllByText('Sumaura').length).toBeGreaterThan(0)
-      expect(screen.getAllByText('Dashboard')).toHaveLength(2) // Navigation and page heading
-      expect(screen.queryAllByText('Welcome Back').length).toBe(0)
+      const brandMarks = await screen.findAllByText('Sumaura')
+      expect(brandMarks.length).toBeGreaterThan(0)
+      const dashboardLabels = await screen.findAllByText('Dashboard')
+      expect(dashboardLabels).toHaveLength(2) // Navigation and page heading
+      await waitFor(() => {
+        expect(screen.queryByText('Welcome Back')).not.toBeInTheDocument()
+      })
       restore()
     }, 15000)
   })
@@ -499,8 +512,10 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
         </AccountFilterProvider>
       )
       
-      expect(screen.getAllByText('Welcome Back').length).toBeGreaterThan(0)
-      expect(screen.getAllByText('Sumaura').length).toBeGreaterThan(0)
+      const welcomeMessages = await screen.findAllByText('Welcome Back')
+      expect(welcomeMessages.length).toBeGreaterThan(0)
+      const brandMarks = await screen.findAllByText('Sumaura')
+      expect(brandMarks.length).toBeGreaterThan(0)
     })
 
     it('should clear session storage on logout', async () => {

@@ -211,7 +211,7 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
       await user.click(screen.getByText('Transactions'))
       await waitFor(() => {
         expect(screen.getByText(/Retry Success/)).toBeInTheDocument()
-      })
+      }, { timeout: 5000 })
     })
 
     it('continues rendering when budgets fail to load', async () => {

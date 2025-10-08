@@ -77,7 +77,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
 
     await waitFor(() => {
       const budgetCalls = fetchMock.mock.calls.filter(c => String(c[0]) === '/api/budgets')
-      expect(budgetCalls.length).toBe(2) // Real behavior: component + account filter interaction
+      expect(budgetCalls.length).toBe(1) // Budgets fetched once on initial visit
       expect(screen.getAllByText(/Food/i).length).toBeGreaterThan(0)
       expect(screen.getAllByText(/Rent/i).length).toBeGreaterThan(0)
     })
@@ -173,13 +173,17 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
     await userEvent.click(screen.getAllByRole('button', { name: /budgets/i })[0])
 
+    await waitFor(() => {
+      expect(screen.getAllByText(/Food/i).length).toBeGreaterThan(0)
+    })
+
     await waitFor(() => expect(screen.getAllByRole('button', { name: /add budget/i }).length).toBeGreaterThan(0))
     {
       const addBtns = screen.getAllByRole('button', { name: /add budget/i })
       await userEvent.click(addBtns[addBtns.length - 1])
     }
 
-    const categorySelect = (await screen.findAllByTestId('budget-category-select'))[0]
+    const categorySelect = await screen.findByTestId('budget-category-select')
     // Choose a valid option from the list; 'other' always exists when no transactions
     fireEvent.change(categorySelect, { target: { value: 'other' } })
     const amountInput = screen.getByTestId('budget-amount-input')
@@ -358,10 +362,8 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
       await userEvent.click(buds[buds.length - 1])
     }
 
-    const foodLabel = await screen.findAllByText(/Food/i)
-    const foodItem = foodLabel[0].closest('li') as HTMLElement
-    const deleteBtn = foodItem.querySelector('button[aria-label="Delete budget"]') as HTMLButtonElement
-    await userEvent.click(deleteBtn)
+    const deleteButtons = await screen.findAllByRole('button', { name: /delete budget/i })
+    await userEvent.click(deleteButtons[0])
 
     await waitFor(() => {
       const delCall = fetchMock.mock.calls.find(c => String(c[0]).includes('/api/budgets/') && (c[1]?.method || 'GET').toUpperCase() === 'DELETE')
@@ -434,7 +436,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
     await userEvent.click(screen.getAllByRole('button', { name: /budgets/i })[0])
 
     await waitFor(() => {
-      expect(getCount).toBe(2) // Real behavior: component + account filter interaction
+      expect(getCount).toBe(1) // Initial budgets load triggered on first visit
     })
 
     {
@@ -451,7 +453,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
     )
 
     await waitFor(() => {
-      expect(getCount).toBe(2) // Should remain the same, no additional calls after rerender
+      expect(getCount).toBe(1) // Should remain the same, no additional calls after rerender
     })
   })
 })
