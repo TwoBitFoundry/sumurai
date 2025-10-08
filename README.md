@@ -26,10 +26,10 @@ Create and adjust category budgets, monitor progress, and quickly spot overspend
 
 ![Budgets](docs/images/budgets.png)
 
-### Plaid Connection flow
+### Connect Accounts
 Secure bank account linking through Plaid with sandbox testing and on-demand transaction syncing.
 
-![Connect](docs/images/connect.png)
+![Accounts](docs/images/accounts.png)
 
 ## At a Glance
 Modern full-stack architecture with React frontend, Rust backend, PostgreSQL database, and Docker deployment.
