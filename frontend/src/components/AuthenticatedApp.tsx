@@ -50,7 +50,7 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
   return (
     <ErrorBoundary>
       <div className={dark ? 'dark' : ''}>
-        <div className="relative min-h-screen flex flex-col overflow-x-hidden text-slate-900 dark:text-slate-100 transition-colors duration-300 bg-[radial-gradient(128%_96%_at_18%_-20%,#c4e2ff_0%,#dbeafe_30%,#e5f2ff_56%,#ffffff_96%)] dark:bg-[radial-gradient(100%_85%_at_20%_-10%,#0f172a_0%,#0b162c_55%,#05070d_100%)]">
+        <div className="relative min-h-screen flex flex-col text-slate-900 dark:text-slate-100 transition-colors duration-300 bg-[radial-gradient(128%_96%_at_18%_-20%,#c4e2ff_0%,#dbeafe_30%,#e5f2ff_56%,#ffffff_96%)] dark:bg-[radial-gradient(100%_85%_at_20%_-10%,#0f172a_0%,#0b162c_55%,#05070d_100%)]">
           <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
             <div className="absolute inset-0 bg-[radial-gradient(136%_108%_at_20%_-18%,rgba(14,165,233,0.42)_0%,#e1f2ff_36%,#ffffff_100%)] transition-colors duration-700 dark:bg-[radial-gradient(92%_80%_at_20%_-6%,#0f172a_0%,#0a1224_50%,#05070d_100%)]" />
             <div className="absolute inset-0 bg-[radial-gradient(86%_64%_at_86%_18%,rgba(167,139,250,0.28)_0%,rgba(59,130,246,0.14)_55%,transparent_78%)] transition-opacity duration-700 dark:bg-transparent" />
