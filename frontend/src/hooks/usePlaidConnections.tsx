@@ -55,7 +55,8 @@ export interface PlaidConnectionsActions {
 
 export type UsePlaidConnectionsReturn = PlaidConnectionsState & PlaidConnectionsActions
 
-export const usePlaidConnections = (): UsePlaidConnectionsReturn => {
+export const usePlaidConnections = (options: { enabled?: boolean } = {}): UsePlaidConnectionsReturn => {
+  const enabled = options.enabled ?? true
   const [state, setState] = useState<PlaidConnectionsState>({
     connections: [],
     loading: true,
@@ -63,6 +64,10 @@ export const usePlaidConnections = (): UsePlaidConnectionsReturn => {
   })
 
   const fetchConnections = useCallback(async (): Promise<PlaidConnection[]> => {
+    if (!enabled) {
+      setState(prev => ({ ...prev, connections: [], loading: false, error: null }))
+      return []
+    }
     try {
       setState(prev => ({ ...prev, loading: true, error: null }))
 
@@ -88,9 +93,9 @@ export const usePlaidConnections = (): UsePlaidConnectionsReturn => {
             name: account.name,
             mask: account.mask || '0000',
             type: mapAccountType(account.account_type),
-            balance: account.balance_current ? parseFloat(account.balance_current) : undefined,
+            balance: typeof account.balance_ledger === 'number' ? account.balance_ledger : undefined,
             transactions: account.transaction_count || 0,
-            plaid_connection_id: account.plaid_connection_id
+            plaid_connection_id: account.connection_id || account.plaid_connection_id
           }))
         } catch (accountError) {
           console.warn('Failed to fetch accounts:', accountError)
@@ -134,7 +139,7 @@ export const usePlaidConnections = (): UsePlaidConnectionsReturn => {
       }))
       return []
     }
-  }, [])
+  }, [enabled])
 
   const addConnection = useCallback(async (institutionName: string, connectionId: string): Promise<void> => {
     let accounts: Array<{
@@ -153,7 +158,7 @@ export const usePlaidConnections = (): UsePlaidConnectionsReturn => {
         name: account.name,
         mask: account.mask || '0000',
         type: mapAccountType(account.account_type),
-        balance: account.balance_current ? parseFloat(account.balance_current) : undefined,
+        balance: typeof account.balance_ledger === 'number' ? account.balance_ledger : undefined,
         transactions: account.transaction_count || 0
       }))
     } catch (accountError) {

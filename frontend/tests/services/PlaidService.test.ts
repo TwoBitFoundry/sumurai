@@ -61,8 +61,15 @@ describe('PlaidService', () => {
         {
           id: 'account-1',
           name: 'Checking Account',
-          type: 'depository',
-          balance: 1250.50
+          provider: 'plaid',
+          account_type: 'depository',
+          account_subtype: null,
+          balance_ledger: 1250.50,
+          balance_available: 1200.0,
+          mask: '1111',
+          status: 'active',
+          institution_name: 'Mock Bank',
+          connection_id: 'conn_1'
         }
       ]
       vi.mocked(ApiClient.get).mockResolvedValue(mockAccounts)
@@ -78,8 +85,15 @@ describe('PlaidService', () => {
         {
           id: 'weird-id-format',
           name: 'Account with Spaces and $pecial Ch@rs',
-          type: 'unknown_type',
-          balance: -500.75
+          provider: 'plaid',
+          account_type: 'unknown_type',
+          account_subtype: null,
+          balance_ledger: -500.75,
+          balance_available: -500.75,
+          mask: null,
+          status: null,
+          institution_name: null,
+          connection_id: 'conn_x'
         }
       ]
       vi.mocked(ApiClient.get).mockResolvedValue(rawAccounts)
@@ -87,7 +101,7 @@ describe('PlaidService', () => {
       const result = await PlaidService.getAccounts()
 
       expect(result).toEqual(rawAccounts)
-      expect(result[0].balance).toBe(-500.75)
+      expect(result[0].balance_ledger).toBe(-500.75)
       expect(result[0].name).toBe('Account with Spaces and $pecial Ch@rs')
     })
   })
@@ -101,7 +115,10 @@ describe('PlaidService', () => {
             date: '2025-01-15',
             name: 'Coffee Shop',
             amount: 4.50,
-            category: { id: 'food', name: 'Food & Dining' }
+            category: { primary: 'FOOD_AND_DRINK', detailed: 'COFFEE' },
+            provider: 'plaid',
+            account_name: 'Checking',
+            account_type: 'depository'
           }
         ],
         metadata: {
@@ -130,7 +147,10 @@ describe('PlaidService', () => {
             date: '2025-01-15',
             name: 'Coffee Shop',
             amount: 4.50,
-            category: { id: 'food', name: 'Food & Dining' }
+            category: { primary: 'FOOD_AND_DRINK', detailed: 'COFFEE' },
+            provider: 'plaid',
+            account_name: 'Checking',
+            account_type: 'depository'
           }
         ],
         metadata: {

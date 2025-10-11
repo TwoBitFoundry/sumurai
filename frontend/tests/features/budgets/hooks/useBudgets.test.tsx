@@ -25,7 +25,8 @@ const asTransaction = (id: string, categoryId: string, amount: number, date?: st
     name: 'Txn',
     merchant: 'Store',
     amount,
-    category: { id: categoryId, name: categoryId },
+    category: { primary: categoryId.toUpperCase(), detailed: categoryId.toUpperCase() },
+    provider: 'plaid' as const,
     account_name: 'Checking',
     account_type: 'depository',
     account_mask: '1234',
@@ -37,10 +38,13 @@ const mockPlaidAccounts = [
     id: 'account1',
     name: 'Mock Checking',
     account_type: 'depository',
+    balance_ledger: 1200,
+    balance_available: 1180,
     balance_current: 1200,
     mask: '1111',
     plaid_connection_id: 'conn_1',
-    institution_name: 'Mock Bank'
+    institution_name: 'Mock Bank',
+    provider: 'plaid'
   }
 ]
 

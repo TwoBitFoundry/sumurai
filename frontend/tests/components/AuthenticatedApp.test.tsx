@@ -46,19 +46,25 @@ describe('AuthenticatedApp shell', () => {
           id: 'account1',
           name: 'Test Checking',
           account_type: 'depository',
+          balance_ledger: 1200,
+          balance_available: 1180,
           balance_current: 1200,
           mask: '1111',
           plaid_connection_id: 'conn_1',
-          institution_name: 'Test Bank'
+          institution_name: 'Test Bank',
+          provider: 'plaid'
         },
         {
           id: 'account2',
           name: 'Test Savings',
           account_type: 'depository',
+          balance_ledger: 5400,
+          balance_available: 5400,
           balance_current: 5400,
           mask: '2222',
           plaid_connection_id: 'conn_1',
-          institution_name: 'Test Bank'
+          institution_name: 'Test Bank',
+          provider: 'plaid'
         }
       ],
       'GET /api/plaid/status': {

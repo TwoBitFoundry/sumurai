@@ -1,6 +1,6 @@
 import { useContext, useState, useMemo, useCallback, useEffect, useRef, ReactNode } from 'react'
-import { AccountFilterContext, AccountFilterContextType, PlaidAccount, AccountsByBank } from '@/context/AccountFilterContext'
-import { PlaidService } from '@/services/PlaidService'
+import { AccountFilterContext, AccountFilterContextType, ProviderAccount, AccountsByBank } from '@/context/AccountFilterContext'
+import { ProviderCatalog } from '@/services/ProviderCatalog'
 import { ACCOUNTS_CHANGED_EVENT } from '@/utils/events'
 
 export function useAccountFilter(): AccountFilterContextType {
@@ -16,12 +16,12 @@ interface AccountFilterProviderProps {
 }
 
 export function AccountFilterProvider({ children }: AccountFilterProviderProps) {
-  const [accounts, setAccounts] = useState<PlaidAccount[]>([])
+  const [accounts, setAccounts] = useState<ProviderAccount[]>([])
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const previousAllAccountIdsRef = useRef<string[]>([])
 
-  const groupAccountsByBank = useCallback((items: PlaidAccount[]): AccountsByBank => {
+  const groupAccountsByBank = useCallback((items: ProviderAccount[]): AccountsByBank => {
     return items.reduce<AccountsByBank>((acc, account) => {
       const bankName = account.institution_name || 'Unknown Bank'
       if (!acc[bankName]) {
@@ -39,20 +39,37 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
   const fetchAccounts = useCallback(async () => {
     try {
       setLoading(true)
-      const accountsResponse = await PlaidService.getAccounts()
+      const accountsResponse = await ProviderCatalog.getAccounts()
 
-      // Map API Account type to PlaidAccount type for account filter
-      const mappedAccounts: PlaidAccount[] = (accountsResponse || []).map(account => ({
-        id: account.id,
-        name: account.name,
-        account_type: account.account_type,
-        balance_current: account.balance_current,
-        mask: account.mask,
-        institution_name:
-          (account as any).institution_name ??
-          (account as any).institutionName ??
-          'Unknown Bank',
-      }))
+      const mappedAccounts: ProviderAccount[] = (accountsResponse || []).map(account => {
+        const ledger =
+          typeof account.balance_ledger === 'number'
+            ? account.balance_ledger
+            : typeof (account as any).balance_current === 'number'
+              ? (account as any).balance_current
+              : null
+
+        const available =
+          typeof account.balance_available === 'number'
+            ? account.balance_available
+            : typeof (account as any).balance_current === 'number'
+              ? (account as any).balance_current
+              : null
+
+        return {
+          id: account.id,
+          name: account.name,
+          account_type: account.account_type,
+          balance_ledger: ledger,
+          balance_available: available,
+          mask: account.mask ?? null,
+          provider: account.provider ?? 'plaid',
+          institution_name:
+            account.institution_name ??
+            (account as any).institutionName ??
+            'Unknown Bank',
+        }
+      })
 
       setAccounts(mappedAccounts)
 

@@ -75,7 +75,10 @@ vi.mock('@/services/ApiClient', () => ({
             name: 'Coffee Shop',
             merchantName: 'Starbucks',
             amount: 5.99,
-            category: { id: 'food', name: 'Food & Dining' }
+            category: { primary: 'FOOD_AND_DRINK', detailed: 'COFFEE' },
+            provider: 'plaid',
+            account_name: 'Checking',
+            account_type: 'depository'
           }
         ])
       }

@@ -1,11 +1,44 @@
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { RefreshCw, Building2, CreditCard, Clock } from 'lucide-react'
 import { Toast } from '../components/Toast'
 import ConnectionsList from '../features/plaid/components/ConnectionsList'
 import ConnectButton from '../features/plaid/components/ConnectButton'
 import { usePlaidLinkFlow } from '../features/plaid/hooks/usePlaidLinkFlow'
+import { useTellerLinkFlow } from '../hooks/useTellerLinkFlow'
+import { useProviderInfo } from '../hooks/useProviderInfo'
 import HeroStatCard from '../components/widgets/HeroStatCard'
+import type { FinancialProvider } from '../types/api'
+
+const PROVIDER_CARDS: Record<FinancialProvider, {
+  title: string
+  badge: string
+  description: string
+  bullets: string[]
+}> = {
+  plaid: {
+    title: 'Plaid',
+    badge: 'Premium',
+    description: 'Enterprise-grade data enrichment with the broadest institution coverage.',
+    bullets: [
+      'Enhanced categorization with confidence scores',
+      '12,000+ supported institutions',
+      'Merchant enrichment and location data',
+      'Managed compliance under our SaaS offering'
+    ]
+  },
+  teller: {
+    title: 'Teller',
+    badge: 'Self-hosted friendly',
+    description: 'Bring your own Teller credentials for lightweight, developer-first access.',
+    bullets: [
+      'Unlimited sandbox with 100 free live connections',
+      'Direct connections with running balances',
+      'Simple category strings that map into your budgets',
+      'Ideal for self-hosted deployments'
+    ]
+  }
+}
 
 const formatRelativeTime = (iso: string): string => {
   const timestamp = Date.parse(iso)
@@ -49,6 +82,29 @@ interface AccountsPageProps {
 }
 
 const AccountsPage = ({ onError }: AccountsPageProps) => {
+  const providerInfo = useProviderInfo()
+  const selectedProvider = providerInfo.selectedProvider
+  const providerLoading = providerInfo.loading
+  const providerError = providerInfo.error
+  const [selectingProvider, setSelectingProvider] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (providerError) {
+      onError?.(providerError)
+    } else if (!providerLoading && selectedProvider) {
+      onError?.(null)
+    }
+  }, [onError, providerError, providerLoading, selectedProvider])
+
+  const plaidFlow = usePlaidLinkFlow({ onError, enabled: selectedProvider === 'plaid' })
+  const tellerFlow = useTellerLinkFlow({
+    applicationId: providerInfo.tellerApplicationId,
+    onError,
+    enabled: selectedProvider === 'teller'
+  })
+
+  const flow = selectedProvider === 'teller' ? tellerFlow : plaidFlow
+
   const {
     connections,
     toast,
@@ -58,7 +114,104 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     syncAll,
     disconnect,
     syncingAll,
-  } = usePlaidLinkFlow({ onError })
+    loading: flowLoading,
+    error: flowError,
+  } = flow
+
+  const handleProviderSelect = useCallback(async (provider: FinancialProvider) => {
+    setSelectingProvider(provider)
+    try {
+      await providerInfo.chooseProvider(provider)
+    } catch (err) {
+      console.warn('Failed to select provider', err)
+      onError?.('Failed to select provider')
+    } finally {
+      setSelectingProvider(null)
+    }
+  }, [onError, providerInfo])
+
+  if (providerLoading) {
+    return (
+      <section className="relative overflow-hidden rounded-[2.25rem] border border-white/35 bg-white/24 p-12 text-center shadow-[0_32px_110px_-60px_rgba(15,23,42,0.75)] backdrop-blur-[28px] dark:border-white/12 dark:bg-[#0f172a]/55 dark:shadow-[0_36px_120px_-62px_rgba(2,6,23,0.85)]">
+        <div className="text-sm font-medium text-slate-600 dark:text-slate-300">Loading provider catalogue…</div>
+      </section>
+    )
+  }
+
+  if (providerError) {
+    return (
+      <section className="relative overflow-hidden rounded-[2.25rem] border border-red-200/70 bg-red-50/80 p-12 text-center shadow-[0_32px_110px_-60px_rgba(220,38,38,0.45)] backdrop-blur-[28px] dark:border-red-700/60 dark:bg-red-900/25">
+        <div className="text-sm font-semibold text-red-600 dark:text-red-300">{providerError}</div>
+        <div className="mt-2 text-xs text-red-500 dark:text-red-200">Please refresh or try again later.</div>
+      </section>
+    )
+  }
+
+  if (!selectedProvider) {
+    return (
+      <section className="relative overflow-hidden rounded-[2.25rem] border border-white/35 bg-white/24 p-10 shadow-[0_32px_110px_-60px_rgba(15,23,42,0.75)] backdrop-blur-[28px] dark:border-white/12 dark:bg-[#0f172a]/55 dark:shadow-[0_36px_120px_-62px_rgba(2,6,23,0.85)]">
+        <div className="relative z-10 flex flex-col gap-8">
+          <div className="space-y-3 text-center">
+            <span className="inline-flex items-center justify-center rounded-full bg-white/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#475569] shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/75 dark:text-[#cbd5e1]">
+              Select Provider
+            </span>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+              Choose how you connect accounts
+            </h1>
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              Pick the data provider that matches your deployment. You can change this later from account settings.
+            </p>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            {providerInfo.availableProviders.map(provider => {
+              const details = PROVIDER_CARDS[provider]
+              return (
+                <button
+                  key={provider}
+                  type="button"
+                  onClick={() => handleProviderSelect(provider)}
+                  disabled={selectingProvider === provider}
+                  className="relative flex h-full flex-col gap-4 rounded-[1.75rem] border border-white/45 bg-white/80 p-6 text-left transition-all duration-200 hover:-translate-y-[2px] hover:shadow-[0_24px_80px_-50px_rgba(15,23,42,0.55)] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-75 dark:border-white/10 dark:bg-[#111a2f]/85 dark:hover:border-sky-400/40 dark:hover:shadow-[0_28px_90px_-60px_rgba(2,6,23,0.7)] dark:focus-visible:ring-offset-[#0f172a]"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-lg font-semibold text-slate-900 dark:text-white">{details.title}</div>
+                    <span className="rounded-full bg-sky-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-sky-700 dark:bg-sky-500/15 dark:text-sky-200">
+                      {details.badge}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">{details.description}</p>
+                  <ul className="space-y-2 text-sm text-slate-500 dark:text-slate-400">
+                    {details.bullets.map(bullet => (
+                      <li key={bullet} className="flex items-start gap-2">
+                        <span className="mt-[5px] h-1.5 w-1.5 rounded-full bg-sky-400 dark:bg-sky-500" />
+                        <span>{bullet}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-auto inline-flex items-center justify-center rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_48px_-32px_rgba(14,165,233,0.65)]">
+                    {selectingProvider === provider ? 'Selecting…' : `Use ${details.title}`}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  const providerLabel = selectedProvider === 'plaid' ? 'Plaid' : 'Teller'
+  const providerDescription = selectedProvider === 'plaid'
+    ? 'Securely connect institutions with Plaid. Your credentials never touch Sumaura and you can revoke access at any time.'
+    : 'Launch Teller Connect to link accounts using your own Teller credentials. Connections stay in your control and can be revoked instantly.'
+
+  const syncFooter = selectedProvider === 'plaid'
+    ? 'Plaid keeps credentials read-only and disconnectable anytime.'
+    : 'Teller connections respect your API keys and can be rotated from your Teller dashboard.'
+
+  const otherProviders = providerInfo.availableProviders.filter(p => p !== selectedProvider)
+  const connectDisabled = flowLoading || selectingProvider !== null || (selectedProvider === 'teller' && !providerInfo.tellerApplicationId)
 
   const banks = useMemo(
     () =>
@@ -103,12 +256,14 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const hasConnections = summary.institutions > 0
   const lastSyncValue = syncingAll
     ? 'Syncing...'
-    : summary.latestSync
+    : flowLoading
+      ? 'Loading...'
+      : summary.latestSync
       ? formatRelativeTime(summary.latestSync)
       : 'Awaiting first sync'
   const lastSyncDetail = summary.latestSync
     ? `Refreshed ${formatAbsoluteTime(summary.latestSync)}`
-    : 'Plaid keeps credentials read-only and disconnectable anytime.'
+    : syncFooter
 
   const syncButtonClasses =
     'inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/85 px-5 py-2 text-sm font-semibold text-[#0f172a] shadow-[0_18px_48px_-32px_rgba(15,23,42,0.45)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[#93c5fd] hover:text-[#0f172a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9] focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none dark:border-[#334155] dark:bg-[#1e293b]/90 dark:text-[#cbd5e1] dark:hover:border-[#38bdf8] dark:hover:text-white dark:focus-visible:ring-offset-slate-900'
@@ -127,15 +282,14 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-2xl space-y-4">
               <span className="inline-flex items-center justify-center rounded-full bg-white/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#475569] shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/75 dark:text-[#cbd5e1]">
-                Accounts
+                {providerLabel} Accounts
               </span>
               <div className="space-y-3">
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900 transition-colors duration-300 ease-out dark:text-white sm:text-4xl">
                   Link banks and keep balances current
                 </h1>
                 <p className="text-base leading-relaxed text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300">
-                  Securely connect institutions with Plaid. Your credentials never touch Sumaura and
-                  you control access with a single click.
+                  {providerDescription}
                 </p>
               </div>
             </div>
@@ -144,18 +298,36 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
               {hasConnections && (
                 <button
                   onClick={syncAll}
-                  disabled={syncingAll}
+                  disabled={syncingAll || flowLoading}
                   className={syncButtonClasses}
                 >
                   <RefreshCw className={`h-4 w-4 ${syncingAll ? 'animate-spin' : ''}`} />
                   {syncingAll ? 'Syncing...' : 'Sync all'}
                 </button>
               )}
-              <ConnectButton onClick={connect} />
+              <ConnectButton onClick={connect} disabled={connectDisabled}>
+                {selectedProvider === 'teller' ? 'Launch Teller Connect' : 'Add account'}
+              </ConnectButton>
+              {otherProviders.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => handleProviderSelect(otherProviders[0] as FinancialProvider)}
+                  disabled={selectingProvider === otherProviders[0]}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-4 py-2 text-xs font-semibold text-slate-600 shadow-[0_14px_38px_-30px_rgba(15,23,42,0.35)] transition-all duration-200 hover:-translate-y-[1px] hover:border-sky-300/60 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-[#1e293b]/70 dark:text-slate-200 dark:hover:border-sky-400/60 dark:hover:text-white dark:focus-visible:ring-offset-[#0f172a]"
+                >
+                  Switch to {otherProviders[0] === 'plaid' ? 'Plaid' : 'Teller'}
+                </button>
+              )}
             </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
+            {flowError && (
+              <div className="sm:col-span-3 rounded-2xl border border-red-200/70 bg-red-50/80 px-5 py-3 text-left shadow-sm dark:border-red-700/60 dark:bg-red-900/25">
+                <div className="text-sm font-medium text-red-600 dark:text-red-300">{flowError}</div>
+              </div>
+            )}
+
             <HeroStatCard
               index={1}
               title="Active institutions"

@@ -25,7 +25,8 @@ const asTransaction = (id: string, date = '2024-02-10') => ({
   name: 'Transaction',
   merchant: 'Store',
   amount: 100,
-  category: { id: 'groceries', name: 'Groceries' },
+  category: { primary: 'GROCERIES', detailed: 'GROCERIES' },
+  provider: 'plaid' as const,
   account_name: 'Checking',
   account_type: 'depository',
   account_mask: '1234',
@@ -36,19 +37,25 @@ const mockPlaidAccounts = [
     id: 'account1',
     name: 'Mock Checking',
     account_type: 'depository',
+    balance_ledger: 1200,
+    balance_available: 1190,
     balance_current: 1200,
     mask: '1111',
     plaid_connection_id: 'conn_1',
-    institution_name: 'Mock Bank'
+    institution_name: 'Mock Bank',
+    provider: 'plaid'
   },
   {
     id: 'account2',
     name: 'Mock Savings',
     account_type: 'depository',
+    balance_ledger: 5400,
+    balance_available: 5400,
     balance_current: 5400,
     mask: '2222',
     plaid_connection_id: 'conn_1',
-    institution_name: 'Mock Bank'
+    institution_name: 'Mock Bank',
+    provider: 'plaid'
   }
 ]
 

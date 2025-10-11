@@ -25,7 +25,10 @@ describe('Plaid Sync Integration Tests (Boundary-Only Mocking)', () => {
             date: '2025-01-19',
             name: 'New Coffee Purchase',
             amount: 5.25,
-            category: { id: 'food', name: 'Food & Dining' }
+            category: { primary: 'FOOD_AND_DRINK', detailed: 'COFFEE' },
+            provider: 'plaid',
+            account_name: 'Checking',
+            account_type: 'depository'
           }
         ],
         metadata: {

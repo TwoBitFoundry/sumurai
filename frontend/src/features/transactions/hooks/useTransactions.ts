@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { TransactionService, type TransactionFilters } from '../../../services/TransactionService'
 import type { Transaction } from '../../../types/api'
 import { useAccountFilter } from '../../../hooks/useAccountFilter'
+import { formatCategoryName } from '../../../utils/categories'
 
 export type DateRangeKey = string | undefined
 
@@ -84,25 +85,34 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
 
   const debouncedSearch = useDebounce(search, 300)
 
+  const resolveCategoryLabel = useCallback((t: Transaction) => {
+    if (!t.category) {
+      return 'Uncategorized'
+    }
+    return t.category.detailed
+      ? formatCategoryName(t.category.detailed)
+      : formatCategoryName(t.category.primary)
+  }, [])
+
   const searchFiltered = useMemo(() => {
     const s = debouncedSearch.trim().toLowerCase()
     if (!s) return all
     return all.filter(t => {
       const name = (t.name || '').toLowerCase()
       const merchant = (t.merchant || '').toLowerCase()
-      const cat = (t.category?.name || '').toLowerCase()
+      const cat = resolveCategoryLabel(t).toLowerCase()
       return name.includes(s) || merchant.includes(s) || cat.includes(s)
     })
-  }, [all, debouncedSearch])
+  }, [all, debouncedSearch, resolveCategoryLabel])
 
   const categories = useMemo(() => {
     const names = new Set<string>()
     for (const t of searchFiltered) {
-      const name = t.category?.name || 'Uncategorized'
+      const name = resolveCategoryLabel(t) || 'Uncategorized'
       if (name) names.add(name)
     }
     return Array.from(names).sort((a, b) => a.localeCompare(b))
-  }, [searchFiltered])
+  }, [searchFiltered, resolveCategoryLabel])
 
   useEffect(() => {
     if (selectedCategory && !categories.includes(selectedCategory)) {
@@ -113,8 +123,8 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
   const filtered = useMemo(() => {
     if (!selectedCategory) return searchFiltered
     const catLower = selectedCategory.toLowerCase()
-    return searchFiltered.filter(t => (t.category?.name || '').toLowerCase() === catLower)
-  }, [searchFiltered, selectedCategory])
+    return searchFiltered.filter(t => resolveCategoryLabel(t).toLowerCase() === catLower)
+  }, [searchFiltered, selectedCategory, resolveCategoryLabel])
 
   const totalItems = filtered.length
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))

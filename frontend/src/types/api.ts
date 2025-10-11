@@ -1,16 +1,31 @@
+export type FinancialProvider = 'plaid' | 'teller'
+
+export interface TransactionLocation {
+  address?: string
+  city?: string
+  region?: string
+  postal_code?: string
+}
+
+export interface TransactionCategory {
+  primary: string
+  detailed?: string
+  confidence_level?: string
+}
+
 export interface Transaction {
   id: string
   date: string
   name: string
   merchant?: string
   amount: number
-  category: {
-    id: string
-    name: string
-  }
+  category: TransactionCategory
+  provider: FinancialProvider
   account_name: string
   account_type: string
   account_mask?: string
+  running_balance?: number
+  location?: TransactionLocation
 }
 
 export interface Budget {
@@ -29,11 +44,15 @@ export interface LegacyBudgetWithMonth extends Budget {
 export interface Account {
   id: string
   name: string
+  provider: FinancialProvider
   account_type: string
-  balance_current: number | null
+  account_subtype?: string | null
+  balance_ledger: number | null
+  balance_available?: number | null
   mask: string | null
-  plaid_connection_id?: string | null
+  status?: string | null
   institution_name?: string | null
+  connection_id?: string | null
 }
 
 export interface PlaidLinkTokenResponse {

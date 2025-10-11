@@ -1,7 +1,7 @@
 import React from 'react'
 import type { Transaction } from '../../../types/api'
 import { fmtUSD } from '../../../utils/format'
-import { getTagThemeForCategory } from '../../../utils/categories'
+import { getTagThemeForCategory, formatCategoryName } from '../../../utils/categories'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import { AnimatePresence, motion } from 'framer-motion'
 
@@ -12,6 +12,16 @@ interface Props {
   totalPages: number
   onPrev: () => void
   onNext: () => void
+}
+
+const resolveCategoryName = (transaction: Transaction): string => {
+  if (!transaction.category) {
+    return 'Uncategorized'
+  }
+  if (transaction.category.detailed) {
+    return formatCategoryName(transaction.category.detailed)
+  }
+  return formatCategoryName(transaction.category.primary)
 }
 
 export const TransactionsTable: React.FC<Props> = ({ items, total, currentPage, totalPages, onPrev, onNext }) => {
@@ -50,7 +60,7 @@ export const TransactionsTable: React.FC<Props> = ({ items, total, currentPage, 
                   transition={{ duration: 0.24, ease: [0.22, 0.61, 0.36, 1] }}
                 >
                   {items.map((r, i) => {
-                  const catName = r.category?.name || 'Uncategorized'
+                  const catName = resolveCategoryName(r)
                   const theme = getTagThemeForCategory(catName)
                   return (
                     <tr

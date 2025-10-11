@@ -18,28 +18,37 @@ describe('HeaderAccountFilter', () => {
           id: 'acc_1',
           name: 'Chase Checking',
           account_type: 'depository',
+          balance_ledger: 1250.5,
+          balance_available: 1200,
           balance_current: 1250.5,
           mask: '0000',
           plaid_connection_id: 'conn_1',
-          institution_name: 'First Platypus Bank'
+          institution_name: 'First Platypus Bank',
+          provider: 'plaid'
         },
         {
           id: 'acc_2',
           name: 'Chase Savings',
           account_type: 'depository',
+          balance_ledger: 5000.0,
+          balance_available: 5000.0,
           balance_current: 5000.0,
           mask: '1111',
           plaid_connection_id: 'conn_1',
-          institution_name: 'First Platypus Bank'
+          institution_name: 'First Platypus Bank',
+          provider: 'plaid'
         },
         {
           id: 'acc_3',
           name: 'Wells Fargo Credit Card',
           account_type: 'credit',
+          balance_ledger: -350.75,
+          balance_available: -350.75,
           balance_current: -350.75,
           mask: '2222',
           plaid_connection_id: 'conn_2',
-          institution_name: 'Second Platypus Bank'
+          institution_name: 'Second Platypus Bank',
+          provider: 'plaid'
         }
       ],
       'GET /api/plaid/status': {
