@@ -20,6 +20,8 @@ mod repository_tests;
 mod security_resilience_edge_cases_tests;
 mod sync_service_tests;
 mod sync_service_with_provider_tests;
+mod teller_model_tests;
+mod teller_provider_tests;
 pub mod test_fixtures;
 mod transaction_filters_tests;
 mod user_model_tests;

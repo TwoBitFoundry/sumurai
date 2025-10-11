@@ -1,6 +1,7 @@
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use serde::{de::IgnoredAny, Deserialize, Deserializer, Serialize};
+use std::str::FromStr;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -155,5 +156,52 @@ impl Transaction {
             pending: false,
             created_at: Some(chrono::Utc::now()),
         }
+    }
+
+    pub fn from_teller(teller_txn: &serde_json::Value, account_id: &Uuid) -> Self {
+        let amount_str = teller_txn["amount"].as_str().unwrap_or("0");
+        let amount = Decimal::from_str(amount_str)
+            .unwrap_or(Decimal::ZERO)
+            .abs();
+
+        let date = teller_txn["date"]
+            .as_str()
+            .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok())
+            .unwrap_or_else(|| chrono::Utc::now().date_naive());
+
+        let category = teller_txn["details"]["category"]
+            .as_str()
+            .unwrap_or("general");
+
+        let merchant_name = teller_txn["details"]["counterparty"]["name"]
+            .as_str()
+            .or_else(|| teller_txn["description"].as_str())
+            .map(String::from);
+
+        Self {
+            id: Uuid::new_v4(),
+            account_id: *account_id,
+            user_id: None,
+            plaid_account_id: None,
+            plaid_transaction_id: teller_txn["id"].as_str().map(String::from),
+            amount,
+            date,
+            merchant_name,
+            category_primary: Self::normalize_teller_category(category),
+            category_detailed: String::new(),
+            category_confidence: String::new(),
+            payment_channel: None,
+            pending: teller_txn["status"].as_str() != Some("posted"),
+            created_at: Some(chrono::Utc::now()),
+        }
+    }
+
+    fn normalize_teller_category(teller_cat: &str) -> String {
+        match teller_cat {
+            "general" => "GENERAL_MERCHANDISE",
+            "service" => "GENERAL_SERVICES",
+            _ => "OTHER",
+        }
+        .to_string()
     }
 }
