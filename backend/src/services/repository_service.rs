@@ -161,8 +161,9 @@ impl PostgresRepository {
     }
 
     fn map_user_row(
-        (id, email, password_hash, created_at, updated_at, onboarding_completed): (
+        (id, email, password_hash, provider, created_at, updated_at, onboarding_completed): (
             uuid::Uuid,
+            String,
             String,
             String,
             chrono::DateTime<chrono::Utc>,
@@ -174,6 +175,7 @@ impl PostgresRepository {
             id,
             email,
             password_hash,
+            provider,
             created_at,
             updated_at,
             onboarding_completed,
@@ -186,13 +188,14 @@ impl DatabaseRepository for PostgresRepository {
     async fn create_user(&self, user: &User) -> Result<()> {
         sqlx::query(
             r#"
-            INSERT INTO users (id, email, password_hash, created_at, updated_at, onboarding_completed)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO users (id, email, password_hash, provider, created_at, updated_at, onboarding_completed)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             "#,
         )
         .bind(user.id)
         .bind(&user.email)
         .bind(&user.password_hash)
+        .bind(&user.provider)
         .bind(user.created_at)
         .bind(user.updated_at)
         .bind(user.onboarding_completed)
@@ -209,12 +212,13 @@ impl DatabaseRepository for PostgresRepository {
                 uuid::Uuid,
                 String,
                 String,
+                String,
                 chrono::DateTime<chrono::Utc>,
                 chrono::DateTime<chrono::Utc>,
                 bool,
             ),
         >(
-            "SELECT id, email, password_hash, created_at, updated_at, onboarding_completed FROM users WHERE email = $1",
+            "SELECT id, email, password_hash, provider, created_at, updated_at, onboarding_completed FROM users WHERE email = $1",
         )
         .bind(email)
         .fetch_optional(&self.pool)
@@ -230,12 +234,13 @@ impl DatabaseRepository for PostgresRepository {
                 uuid::Uuid,
                 String,
                 String,
+                String,
                 chrono::DateTime<chrono::Utc>,
                 chrono::DateTime<chrono::Utc>,
                 bool,
             ),
         >(
-            "SELECT id, email, password_hash, created_at, updated_at, onboarding_completed FROM users WHERE id = $1",
+            "SELECT id, email, password_hash, provider, created_at, updated_at, onboarding_completed FROM users WHERE id = $1",
         )
         .bind(user_id)
         .fetch_optional(&self.pool)

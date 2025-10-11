@@ -20,3 +20,4 @@ mod security_resilience_edge_cases_tests;
 mod sync_service_tests;
 pub mod test_fixtures;
 mod transaction_filters_tests;
+mod user_model_tests;

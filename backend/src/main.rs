@@ -237,6 +237,7 @@ async fn register_user(
         id: user_id,
         email: req.email.clone(),
         password_hash,
+        provider: state.config.get_default_provider().to_string(),
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: false,
