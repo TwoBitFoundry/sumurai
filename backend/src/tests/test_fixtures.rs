@@ -158,7 +158,8 @@ impl TestFixtures {
         let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
         let plaid_service_arc = plaid_service.clone();
         let plaid_client_arc = plaid_client.clone();
-        let sync_service = Arc::new(SyncService::new(plaid_service_arc.clone()));
+        let plaid_provider = Arc::new(crate::providers::PlaidProvider::new(plaid_client.clone()));
+        let sync_service = Arc::new(SyncService::new(plaid_provider.clone()));
         let analytics_service = Arc::new(AnalyticsService::new());
         let config = Config::default();
 
@@ -242,7 +243,8 @@ impl TestFixtures {
         let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
         let plaid_service_arc = plaid_service.clone();
         let plaid_client_arc = plaid_client.clone();
-        let sync_service = Arc::new(SyncService::new(plaid_service_arc.clone()));
+        let plaid_provider = Arc::new(crate::providers::PlaidProvider::new(plaid_client.clone()));
+        let sync_service = Arc::new(SyncService::new(plaid_provider.clone()));
         let analytics_service = Arc::new(AnalyticsService::new());
         let config = Config::default();
 
@@ -311,7 +313,8 @@ impl TestFixtures {
         let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
         let plaid_service_arc = plaid_service.clone();
         let plaid_client_arc = plaid_client.clone();
-        let sync_service = Arc::new(SyncService::new(plaid_service_arc.clone()));
+        let plaid_provider = Arc::new(crate::providers::PlaidProvider::new(plaid_client.clone()));
+        let sync_service = Arc::new(SyncService::new(plaid_provider.clone()));
         let analytics_service = Arc::new(AnalyticsService::new());
         let config = Config::default();
 

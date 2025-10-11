@@ -1,4 +1,5 @@
 use crate::models::{account::Account, transaction::Transaction};
+use crate::providers::PlaidProvider;
 
 use crate::services::{
     plaid_service::{PlaidService, RealPlaidClient},
@@ -11,13 +12,13 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 fn create_test_sync_service() -> SyncService {
-    let plaid_client = RealPlaidClient::new(
+    let plaid_client = Arc::new(RealPlaidClient::new(
         "test_client_id".to_string(),
         "test_secret".to_string(),
         "sandbox".to_string(),
-    );
-    let plaid_service = PlaidService::new(Arc::new(plaid_client));
-    SyncService::new(Arc::new(plaid_service))
+    ));
+    let plaid_provider = Arc::new(PlaidProvider::new(plaid_client.clone()));
+    SyncService::new(plaid_provider)
 }
 
 #[test]
@@ -162,13 +163,13 @@ mod sync_recent_transactions_integration_tests {
     use super::*;
 
     fn create_test_sync_service_for_integration() -> SyncService {
-        let plaid_client = RealPlaidClient::new(
+        let plaid_client = Arc::new(RealPlaidClient::new(
             "test_client_id".to_string(),
             "test_secret".to_string(),
             "sandbox".to_string(),
-        );
-        let plaid_service = PlaidService::new(Arc::new(plaid_client));
-        SyncService::new(Arc::new(plaid_service))
+        ));
+        let plaid_provider = Arc::new(PlaidProvider::new(plaid_client.clone()));
+        SyncService::new(plaid_provider)
     }
 
     #[tokio::test]

@@ -1,4 +1,5 @@
 use crate::models::{account::Account, plaid::PlaidConnection};
+use crate::providers::PlaidProvider;
 
 use crate::services::{
     cache_service::MockCacheService,
@@ -64,13 +65,13 @@ fn given_bank_connection_with_multiple_accounts_when_calculating_mapping_then_cr
     let connection = create_test_bank_connection(user_id);
     let accounts = create_test_accounts_for_bank(connection.id, user_id);
 
-    let plaid_client = RealPlaidClient::new(
+    let plaid_client = Arc::new(RealPlaidClient::new(
         "test_client_id".to_string(),
         "test_secret".to_string(),
         "sandbox".to_string(),
-    );
-    let plaid_service = PlaidService::new(Arc::new(plaid_client));
-    let sync_service = SyncService::new(Arc::new(plaid_service));
+    ));
+    let plaid_provider = Arc::new(PlaidProvider::new(plaid_client.clone()));
+    let sync_service = SyncService::new(plaid_provider);
 
     let account_mapping = sync_service.calculate_account_mapping(&accounts);
 
@@ -88,13 +89,13 @@ fn given_connection_with_no_cursor_when_calculating_date_ranges_then_uses_defaul
     connection.sync_cursor = None;
     connection.last_sync_at = None;
 
-    let plaid_client = RealPlaidClient::new(
+    let plaid_client = Arc::new(RealPlaidClient::new(
         "test_client_id".to_string(),
         "test_secret".to_string(),
         "sandbox".to_string(),
-    );
-    let plaid_service = PlaidService::new(Arc::new(plaid_client));
-    let sync_service = SyncService::new(Arc::new(plaid_service));
+    ));
+    let plaid_provider = Arc::new(PlaidProvider::new(plaid_client.clone()));
+    let sync_service = SyncService::new(plaid_provider);
 
     let (start_date, end_date) = sync_service.calculate_sync_date_range(connection.last_sync_at);
     let expected_start = Utc::now().date_naive() - Duration::days(90);
@@ -110,16 +111,24 @@ async fn given_bank_connection_when_sync_fails_then_returns_error_without_updati
     let connection = create_test_bank_connection(user_id);
     let accounts = create_test_accounts_for_bank(connection.id, user_id);
 
-    let plaid_client = RealPlaidClient::new(
+    let plaid_client = Arc::new(RealPlaidClient::new(
         "invalid_client_id".to_string(),
         "invalid_secret".to_string(),
         "sandbox".to_string(),
-    );
-    let plaid_service = PlaidService::new(Arc::new(plaid_client));
-    let sync_service = SyncService::new(Arc::new(plaid_service));
+    ));
+    let plaid_provider = Arc::new(PlaidProvider::new(plaid_client.clone()));
+    let sync_service = SyncService::new(plaid_provider);
+
+    let credentials = crate::providers::ProviderCredentials {
+        provider: "plaid".to_string(),
+        access_token: "invalid_token".to_string(),
+        item_id: connection.item_id.clone(),
+        certificate: None,
+        private_key: None,
+    };
 
     let result = sync_service
-        .sync_bank_connection_transactions("invalid_token", &connection, &accounts)
+        .sync_bank_connection_transactions(&credentials, &connection, &accounts)
         .await;
 
     assert!(result.is_err());

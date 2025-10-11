@@ -5,34 +5,32 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::models::{account::Account, plaid::PlaidConnection, transaction::Transaction};
-use crate::services::plaid_service::PlaidService;
+use crate::providers::{FinancialDataProvider, ProviderCredentials};
 
 const MAX_SYNC_YEARS: i64 = 5;
 const SAFETY_MARGIN_DAYS: i64 = 2;
 const DEFAULT_FIRST_SYNC_DAYS: i64 = 90;
 
 pub struct SyncService {
-    plaid_service: Arc<PlaidService>,
+    provider: Arc<dyn FinancialDataProvider>,
 }
 
 impl SyncService {
-    pub fn new(plaid_service: Arc<PlaidService>) -> Self {
-        Self { plaid_service }
+    pub fn new(provider: Arc<dyn FinancialDataProvider>) -> Self {
+        Self { provider }
     }
 
     pub async fn sync_bank_connection_transactions(
         &self,
-        access_token: &str,
+        credentials: &ProviderCredentials,
         connection: &PlaidConnection,
         accounts: &[Account],
     ) -> Result<(Vec<Transaction>, String)> {
-        let (transactions, new_cursor) = self
-            .plaid_service
-            .sync_bank_connection_transactions(
-                access_token,
-                connection.sync_cursor.clone(),
-                connection.last_sync_at,
-            )
+        let (start_date, end_date) = self.calculate_sync_date_range(connection.last_sync_at);
+
+        let transactions = self
+            .provider
+            .get_transactions(credentials, start_date, end_date)
             .await?;
 
         let account_mapping = self.calculate_account_mapping(accounts);
@@ -46,26 +44,53 @@ impl SyncService {
             }
         }
 
+        let new_cursor = format!(
+            "cursor_{}_{}",
+            Utc::now().timestamp(),
+            uuid::Uuid::new_v4().to_string()[..8].to_string()
+        );
+
         Ok((mapped_transactions, new_cursor))
     }
     pub async fn sync_recent_transactions(
         &self,
-        access_token: &str,
+        credentials: &ProviderCredentials,
         existing_transactions: &[Transaction],
         last_sync_at: Option<DateTime<Utc>>,
     ) -> Result<Vec<Transaction>> {
         let (start_date, end_date) = self.calculate_sync_date_range(last_sync_at);
 
-        let plaid_transactions = self
-            .plaid_service
-            .get_transactions(access_token, start_date, end_date)
+        let provider_transactions = self
+            .provider
+            .get_transactions(credentials, start_date, end_date)
             .await?;
 
-        let new_transactions = self
-            .plaid_service
-            .detect_duplicates(existing_transactions, &plaid_transactions);
+        let new_transactions = self.detect_duplicates(existing_transactions, &provider_transactions);
 
         Ok(new_transactions)
+    }
+
+    fn detect_duplicates(
+        &self,
+        existing: &[Transaction],
+        new: &[Transaction],
+    ) -> Vec<Transaction> {
+        let existing_plaid_ids: HashMap<String, bool> = existing
+            .iter()
+            .filter_map(|t| t.plaid_transaction_id.as_ref())
+            .map(|id| (id.clone(), true))
+            .collect();
+
+        new.iter()
+            .filter(|t| {
+                if let Some(plaid_id) = &t.plaid_transaction_id {
+                    !existing_plaid_ids.contains_key(plaid_id)
+                } else {
+                    true
+                }
+            })
+            .cloned()
+            .collect()
     }
 
     pub fn calculate_sync_date_range(

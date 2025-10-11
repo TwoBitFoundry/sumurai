@@ -14,6 +14,7 @@ use uuid::Uuid;
 mod auth_middleware;
 mod config;
 mod models;
+pub mod providers;
 mod services;
 #[cfg(test)]
 mod tests;
@@ -59,8 +60,9 @@ async fn main() -> anyhow::Result<()> {
         std::env::var("PLAID_ENV").unwrap_or_else(|_| "sandbox".to_string()),
     ));
     let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
+    let plaid_provider = Arc::new(providers::PlaidProvider::new(plaid_client.clone()));
 
-    let sync_service = Arc::new(SyncService::new(plaid_service.clone()));
+    let sync_service = Arc::new(SyncService::new(plaid_provider.clone()));
 
     let analytics_service = Arc::new(AnalyticsService::new());
     let budget_service = Arc::new(BudgetService::new());
@@ -751,10 +753,18 @@ async fn sync_authenticated_plaid_transactions(
         .sync_service
         .calculate_sync_date_range(connection.last_sync_at);
 
+    let provider_credentials = providers::ProviderCredentials {
+        provider: "plaid".to_string(),
+        access_token: plaid_credentials.access_token.clone(),
+        item_id: connection.item_id.clone(),
+        certificate: None,
+        private_key: None,
+    };
+
     let sync_result = state
         .sync_service
         .sync_bank_connection_transactions(
-            &plaid_credentials.access_token,
+            &provider_credentials,
             &connection,
             &db_accounts,
         )
