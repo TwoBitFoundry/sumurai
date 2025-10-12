@@ -79,30 +79,25 @@ export class AuthService {
     }
 
     try {
-      // Use a lightweight protected endpoint to validate the session
-      // This will fail if the backend has restarted and cleared sessions
       const response = await fetch('/api/plaid/status', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       })
 
-      // If we get a 200, the session is valid
-      // If we get a 401, the session was cleared (e.g., backend restart)
       if (response.ok) {
         return true
-      } else if (response.status === 401) {
-        // Session is invalid, clear the token
+      }
+
+      if (response.status === 401) {
         this.clearToken()
         return false
-      } else {
-        // Other errors, assume valid for now but log
-        console.warn('Session validation returned unexpected status:', response.status)
-        return true
       }
+
+      console.warn('Session validation returned unexpected status:', response.status)
+      return true
     } catch (error) {
-      // Network error or other issues, assume invalid
       console.warn('Session validation failed:', error)
       return false
     }

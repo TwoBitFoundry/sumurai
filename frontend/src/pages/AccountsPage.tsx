@@ -130,6 +130,46 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     }
   }, [onError, providerInfo])
 
+  const banks = useMemo(
+    () =>
+      (connections || []).map(conn => ({
+        id: conn.connectionId,
+        name: conn.institutionName,
+        short: conn.institutionName.split(' ').map((word) => word[0]).join('').slice(0, 2).toUpperCase(),
+        status: conn.isConnected ? ('connected' as const) : ('error' as const),
+        lastSync: conn.lastSyncAt,
+        accounts: conn.accounts,
+      })),
+    [connections],
+  )
+
+  const summary = useMemo(() => {
+    let connectedInstitutions = 0
+    let totalAccounts = 0
+    let latestSyncIso: string | null = null
+    let latestSyncTime = 0
+
+    for (const bank of banks) {
+      if (bank.status === 'connected') connectedInstitutions += 1
+      totalAccounts += bank.accounts.length
+
+      if (bank.lastSync) {
+        const parsed = Date.parse(bank.lastSync)
+        if (!Number.isNaN(parsed) && parsed > latestSyncTime) {
+          latestSyncTime = parsed
+          latestSyncIso = bank.lastSync
+        }
+      }
+    }
+
+    return {
+      institutions: banks.length,
+      connectedInstitutions,
+      accounts: totalAccounts,
+      latestSync: latestSyncIso,
+    }
+  }, [banks])
+
   if (providerLoading) {
     return (
       <section className="relative overflow-hidden rounded-[2.25rem] border border-white/35 bg-white/24 p-12 text-center shadow-[0_32px_110px_-60px_rgba(15,23,42,0.75)] backdrop-blur-[28px] dark:border-white/12 dark:bg-[#0f172a]/55 dark:shadow-[0_36px_120px_-62px_rgba(2,6,23,0.85)]">
@@ -212,46 +252,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
   const otherProviders = (providerInfo.availableProviders || []).filter(p => p !== selectedProvider)
   const connectDisabled = flowLoading || selectingProvider !== null || (selectedProvider === 'teller' && !providerInfo.tellerApplicationId)
-
-  const banks = useMemo(
-    () =>
-      (connections || []).map(conn => ({
-        id: conn.connectionId,
-        name: conn.institutionName,
-        short: conn.institutionName.split(' ').map((word) => word[0]).join('').slice(0, 2).toUpperCase(),
-        status: conn.isConnected ? ('connected' as const) : ('error' as const),
-        lastSync: conn.lastSyncAt,
-        accounts: conn.accounts,
-      })),
-    [connections],
-  )
-
-  const summary = useMemo(() => {
-    let connectedInstitutions = 0
-    let totalAccounts = 0
-    let latestSyncIso: string | null = null
-    let latestSyncTime = 0
-
-    for (const bank of banks) {
-      if (bank.status === 'connected') connectedInstitutions += 1
-      totalAccounts += bank.accounts.length
-
-      if (bank.lastSync) {
-        const parsed = Date.parse(bank.lastSync)
-        if (!Number.isNaN(parsed) && parsed > latestSyncTime) {
-          latestSyncTime = parsed
-          latestSyncIso = bank.lastSync
-        }
-      }
-    }
-
-    return {
-      institutions: banks.length,
-      connectedInstitutions,
-      accounts: totalAccounts,
-      latestSync: latestSyncIso,
-    }
-  }, [banks])
 
   const hasConnections = summary.institutions > 0
   const lastSyncValue = syncingAll

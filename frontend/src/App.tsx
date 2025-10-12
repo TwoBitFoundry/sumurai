@@ -54,16 +54,16 @@ export function App() {
 
       try {
         const refreshResponse = await AuthService.refreshToken()
+        AuthService.storeToken(refreshResponse.token)
         setIsAuthenticated(true)
         setShowOnboarding(!refreshResponse.onboarding_completed)
-        sessionStorage.setItem('auth_token', refreshResponse.token)
       } catch (error) {
         console.warn('Auth validation error:', error)
         setIsAuthenticated(false)
         AuthService.clearToken()
+      } finally {
+        setIsLoading(false)
       }
-
-      setIsLoading(false)
     }
 
     checkAuth()
