@@ -3,7 +3,7 @@ import type {
   PlaidLinkTokenResponse,
   PlaidExchangeTokenResponse,
   PlaidSyncResponse,
-  PlaidStatusResponse,
+  ProviderStatusResponse,
   PlaidDisconnectResponse,
   Account
 } from '../types/api'
@@ -29,8 +29,8 @@ export class PlaidService {
     )
   }
 
-  static async getStatus(): Promise<PlaidStatusResponse> {
-    return ApiClient.get<PlaidStatusResponse>('/plaid/status')
+  static async getStatus(): Promise<ProviderStatusResponse> {
+    return ApiClient.get<ProviderStatusResponse>('/providers/status')
   }
 
   static async disconnect(connectionId: string): Promise<PlaidDisconnectResponse> {

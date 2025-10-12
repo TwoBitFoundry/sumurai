@@ -73,10 +73,7 @@ fn given_teller_transaction_json_when_from_teller_then_maps_fields_correctly() {
         Some("txn_test_123".to_string())
     );
     assert_eq!(transaction.amount, Decimal::from_str("89.40").unwrap());
-    assert_eq!(
-        transaction.date.to_string(),
-        "2024-01-15"
-    );
+    assert_eq!(transaction.date.to_string(), "2024-01-15");
     assert_eq!(transaction.merchant_name, Some("Starbucks".to_string()));
     assert_eq!(transaction.category_primary, "GENERAL_MERCHANDISE");
     assert_eq!(transaction.category_detailed, "");
@@ -104,8 +101,8 @@ fn given_teller_transaction_with_positive_amount_when_from_teller_then_converts_
 }
 
 #[test]
-fn given_teller_transaction_with_service_category_when_from_teller_then_normalizes_to_general_services()
-{
+fn given_teller_transaction_with_service_category_when_from_teller_then_normalizes_to_general_services(
+) {
     let account_id = Uuid::new_v4();
     let teller_json = serde_json::json!({
         "id": "txn_service",
@@ -162,8 +159,8 @@ fn given_teller_transaction_with_pending_status_when_from_teller_then_pending_is
 }
 
 #[test]
-fn given_teller_transaction_without_counterparty_when_from_teller_then_uses_description_as_merchant()
-{
+fn given_teller_transaction_without_counterparty_when_from_teller_then_uses_description_as_merchant(
+) {
     let account_id = Uuid::new_v4();
     let teller_json = serde_json::json!({
         "id": "txn_no_counterparty",

@@ -79,17 +79,19 @@ export interface PlaidSyncResponse {
   }
 }
 
-export interface PlaidStatusResponse {
-  connected?: boolean
-  is_connected?: boolean
-  last_sync?: string
-  last_sync_at?: string
-  accounts_count?: number
-  account_count?: number
-  institution_name?: string | null
-  connection_id?: string | null
-  transaction_count?: number
-  sync_in_progress?: boolean
+export interface ProviderConnectionStatus {
+  is_connected: boolean
+  last_sync_at: string | null
+  institution_name: string | null
+  connection_id: string | null
+  transaction_count: number
+  account_count: number
+  sync_in_progress: boolean
+}
+
+export interface ProviderStatusResponse {
+  provider: FinancialProvider
+  connections: ProviderConnectionStatus[]
 }
 
 export interface DataCleared {

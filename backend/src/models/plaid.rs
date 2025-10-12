@@ -118,6 +118,12 @@ pub struct PlaidConnectionStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProviderStatusResponse {
+    pub provider: String,
+    pub connections: Vec<PlaidConnectionStatus>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DisconnectResult {
     pub success: bool,
     pub message: String,

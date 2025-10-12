@@ -163,7 +163,8 @@ fn given_jwt_id_and_connection_id_when_creating_cache_keys_then_uses_underscore_
     let expected_connection_list_key = format!("{}_bank_connections", jwt_id);
     let expected_session_token_key = format!("{}_session_token", jwt_id);
     let expected_access_token_key = format!("{}_access_token_{}", jwt_id, item_id);
-    let expected_account_mapping_key = format!("{}_account_mapping_{}", jwt_id, provider_account_id);
+    let expected_account_mapping_key =
+        format!("{}_account_mapping_{}", jwt_id, provider_account_id);
     let expected_transaction_key = format!("{}_transaction_{}", jwt_id, transaction_id);
 
     // Verify the format matches our expectations

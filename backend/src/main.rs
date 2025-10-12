@@ -28,7 +28,9 @@ use crate::models::analytics::{
 };
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, AuthMiddlewareState};
-use crate::models::plaid::{DisconnectRequest, DisconnectResult, PlaidConnectionStatus};
+use crate::models::plaid::{
+    DisconnectRequest, DisconnectResult, PlaidConnectionStatus, ProviderStatusResponse,
+};
 use crate::models::{
     account::AccountResponse,
     analytics::{DateRangeQuery, MonthlyTotalsQuery},
@@ -148,7 +150,14 @@ pub fn create_app(state: AppState) -> Router {
         .route("/api/transactions", get(get_authenticated_transactions))
         .route("/api/providers/info", get(get_authenticated_provider_info))
         .route("/api/providers/select", post(select_authenticated_provider))
-        .route("/api/providers/accounts", get(get_authenticated_plaid_accounts))
+        .route(
+            "/api/providers/status",
+            get(get_authenticated_provider_status),
+        )
+        .route(
+            "/api/providers/accounts",
+            get(get_authenticated_plaid_accounts),
+        )
         .route(
             "/api/plaid/link-token",
             post(create_authenticated_link_token),
@@ -161,10 +170,6 @@ pub fn create_app(state: AppState) -> Router {
         .route(
             "/api/plaid/sync-transactions",
             post(sync_authenticated_plaid_transactions),
-        )
-        .route(
-            "/api/plaid/status",
-            get(get_authenticated_plaid_connection_status),
         )
         .route(
             "/api/plaid/disconnect",
@@ -700,8 +705,7 @@ async fn sync_authenticated_plaid_transactions(
             StatusCode::BAD_REQUEST
         })?;
 
-    let connection_id = Uuid::parse_str(connection_id_str)
-        .map_err(|_| StatusCode::BAD_REQUEST)?;
+    let connection_id = Uuid::parse_str(connection_id_str).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     let connection = match state
         .db_repository
@@ -710,7 +714,11 @@ async fn sync_authenticated_plaid_transactions(
     {
         Ok(Some(conn)) => conn,
         Ok(None) => {
-            tracing::error!("Connection {} not found for user {}", connection_id, user_id);
+            tracing::error!(
+                "Connection {} not found for user {}",
+                connection_id,
+                user_id
+            );
             return Err(StatusCode::NOT_FOUND);
         }
         Err(e) => {
@@ -766,11 +774,7 @@ async fn sync_authenticated_plaid_transactions(
 
     let sync_result = state
         .sync_service
-        .sync_bank_connection_transactions(
-            &provider_credentials,
-            &connection,
-            &db_accounts,
-        )
+        .sync_bank_connection_transactions(&provider_credentials, &connection, &db_accounts)
         .await;
 
     let accounts_result = state
@@ -1300,21 +1304,20 @@ async fn get_authenticated_top_merchants(
     }
 }
 
-async fn get_authenticated_plaid_connection_status(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-) -> Result<Json<Vec<PlaidConnectionStatus>>, StatusCode> {
-    let user_id = auth_context.user_id;
-
-    let connections = state.db_repository
-        .get_all_plaid_connections_by_user(&user_id)
+async fn load_connection_statuses(
+    state: &AppState,
+    user_id: &Uuid,
+) -> Result<Vec<PlaidConnectionStatus>, StatusCode> {
+    let connections = state
+        .db_repository
+        .get_all_plaid_connections_by_user(user_id)
         .await
         .map_err(|e| {
-            tracing::error!("Failed to get connections: {}", e);
+            tracing::error!("Failed to get connections for user {}: {}", user_id, e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    let statuses: Vec<PlaidConnectionStatus> = connections
+    Ok(connections
         .into_iter()
         .map(|conn| PlaidConnectionStatus {
             is_connected: conn.is_connected,
@@ -1325,9 +1328,34 @@ async fn get_authenticated_plaid_connection_status(
             account_count: conn.account_count,
             sync_in_progress: false,
         })
-        .collect();
+        .collect())
+}
 
-    Ok(Json(statuses))
+async fn get_authenticated_provider_status(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<ProviderStatusResponse>, StatusCode> {
+    let user_id = auth_context.user_id;
+
+    let provider = match state.db_repository.get_user_by_id(&user_id).await {
+        Ok(Some(user)) => user.provider,
+        Ok(None) => state.config.get_default_provider().to_string(),
+        Err(e) => {
+            tracing::error!(
+                "Failed to load user {} for provider status: {}",
+                user_id,
+                e
+            );
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    let connections = load_connection_statuses(&state, &user_id).await?;
+
+    Ok(Json(ProviderStatusResponse {
+        provider,
+        connections,
+    }))
 }
 
 async fn get_authenticated_budgets(
@@ -1505,8 +1533,7 @@ async fn disconnect_authenticated_plaid(
     Json(req): Json<DisconnectRequest>,
 ) -> Result<Json<DisconnectResult>, StatusCode> {
     let user_id = auth_context.user_id;
-    let connection_id = Uuid::parse_str(&req.connection_id)
-        .map_err(|_| StatusCode::BAD_REQUEST)?;
+    let connection_id = Uuid::parse_str(&req.connection_id).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     match state
         .connection_service
@@ -1551,6 +1578,7 @@ async fn get_authenticated_provider_info(
         "available_providers": available_providers,
         "default_provider": default_provider,
         "user_provider": user.provider,
+        "teller_application_id": state.config.get_teller_application_id(),
     })))
 }
 
@@ -1570,10 +1598,11 @@ async fn select_authenticated_provider(
         })?;
 
     if provider != "plaid" && provider != "teller" {
-        return Err(
-            ApiErrorResponse::new("BAD_REQUEST", "Invalid provider. Must be 'plaid' or 'teller'")
-                .into_response(StatusCode::BAD_REQUEST),
-        );
+        return Err(ApiErrorResponse::new(
+            "BAD_REQUEST",
+            "Invalid provider. Must be 'plaid' or 'teller'",
+        )
+        .into_response(StatusCode::BAD_REQUEST));
     }
 
     match state

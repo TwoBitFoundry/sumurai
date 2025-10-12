@@ -55,6 +55,8 @@ export interface UseTellerConnectOptions {
   environment?: TellerEnvironment
   gateway?: TellerConnectGateway
   onConnected?: () => Promise<void> | void
+  onExit?: () => Promise<void> | void
+  onError?: (error: unknown) => Promise<void> | void
 }
 
 export interface UseTellerConnectResult {
@@ -63,7 +65,14 @@ export interface UseTellerConnectResult {
 }
 
 export function useTellerConnect(options: UseTellerConnectOptions): UseTellerConnectResult {
-  const { applicationId, environment = 'development', gateway = apiGateway, onConnected } = options
+  const {
+    applicationId,
+    environment = 'development',
+    gateway = apiGateway,
+    onConnected,
+    onExit,
+    onError,
+  } = options
   const [instance, setInstance] = useState<TellerInstance | null>(null)
 
   useEffect(() => {
@@ -91,11 +100,12 @@ export function useTellerConnect(options: UseTellerConnectOptions): UseTellerCon
           await onConnected?.()
         } catch (err) {
           console.warn('Failed to persist Teller enrollment', err)
+          await onError?.(err)
           throw err
         }
       },
       onExit: () => {
-        // noop hook for now
+        onExit?.()
       }
     })
 
@@ -105,7 +115,7 @@ export function useTellerConnect(options: UseTellerConnectOptions): UseTellerCon
       tellerInstance.destroy()
       setInstance(null)
     }
-  }, [applicationId, environment, gateway])
+  }, [applicationId, environment, gateway, onConnected, onExit, onError])
 
   const open = useCallback(() => {
     instance?.open()

@@ -72,8 +72,15 @@ pub trait DatabaseRepository: Send + Sync {
     ) -> Result<Option<PlaidCredentials>>;
 
     async fn save_plaid_connection(&self, connection: &PlaidConnection) -> Result<()>;
-    async fn get_all_plaid_connections_by_user(&self, user_id: &Uuid) -> Result<Vec<PlaidConnection>>;
-    async fn get_plaid_connection_by_id(&self, connection_id: &Uuid, user_id: &Uuid) -> Result<Option<PlaidConnection>>;
+    async fn get_all_plaid_connections_by_user(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Vec<PlaidConnection>>;
+    async fn get_plaid_connection_by_id(
+        &self,
+        connection_id: &Uuid,
+        user_id: &Uuid,
+    ) -> Result<Option<PlaidConnection>>;
     async fn get_plaid_connection_by_item(&self, item_id: &str) -> Result<Option<PlaidConnection>>;
     async fn delete_plaid_transactions(&self, item_id: &str) -> Result<i32>;
     async fn delete_plaid_accounts(&self, item_id: &str) -> Result<i32>;
@@ -676,8 +683,10 @@ impl DatabaseRepository for PostgresRepository {
         Ok(())
     }
 
-
-    async fn get_all_plaid_connections_by_user(&self, user_id: &Uuid) -> Result<Vec<PlaidConnection>> {
+    async fn get_all_plaid_connections_by_user(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Vec<PlaidConnection>> {
         let mut tx = self.pool.begin().await?;
         sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
             .bind(user_id.to_string())
@@ -686,9 +695,23 @@ impl DatabaseRepository for PostgresRepository {
 
         let rows = sqlx::query_as::<
             _,
-            (Uuid, Uuid, String, bool, Option<chrono::DateTime<chrono::Utc>>, Option<chrono::DateTime<chrono::Utc>>,
-             Option<chrono::DateTime<chrono::Utc>>, Option<String>, Option<String>, Option<String>,
-             Option<String>, i32, i32, Option<chrono::DateTime<chrono::Utc>>, Option<chrono::DateTime<chrono::Utc>>),
+            (
+                Uuid,
+                Uuid,
+                String,
+                bool,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                i32,
+                i32,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<chrono::DateTime<chrono::Utc>>,
+            ),
         >(
             r#"
             SELECT id, user_id, item_id, is_connected, last_sync_at, connected_at,
@@ -705,17 +728,51 @@ impl DatabaseRepository for PostgresRepository {
 
         tx.commit().await?;
 
-        Ok(rows.into_iter().map(|(id, user_id, item_id, is_connected, last_sync_at,
-            connected_at, disconnected_at, institution_id, institution_name,
-            institution_logo_url, sync_cursor, transaction_count, account_count,
-            created_at, updated_at)| PlaidConnection {
-                id, user_id, item_id, is_connected, last_sync_at, connected_at,
-                disconnected_at, institution_id, institution_name, institution_logo_url,
-                sync_cursor, transaction_count, account_count, created_at, updated_at,
-            }).collect())
+        Ok(rows
+            .into_iter()
+            .map(
+                |(
+                    id,
+                    user_id,
+                    item_id,
+                    is_connected,
+                    last_sync_at,
+                    connected_at,
+                    disconnected_at,
+                    institution_id,
+                    institution_name,
+                    institution_logo_url,
+                    sync_cursor,
+                    transaction_count,
+                    account_count,
+                    created_at,
+                    updated_at,
+                )| PlaidConnection {
+                    id,
+                    user_id,
+                    item_id,
+                    is_connected,
+                    last_sync_at,
+                    connected_at,
+                    disconnected_at,
+                    institution_id,
+                    institution_name,
+                    institution_logo_url,
+                    sync_cursor,
+                    transaction_count,
+                    account_count,
+                    created_at,
+                    updated_at,
+                },
+            )
+            .collect())
     }
 
-    async fn get_plaid_connection_by_id(&self, connection_id: &Uuid, user_id: &Uuid) -> Result<Option<PlaidConnection>> {
+    async fn get_plaid_connection_by_id(
+        &self,
+        connection_id: &Uuid,
+        user_id: &Uuid,
+    ) -> Result<Option<PlaidConnection>> {
         let mut tx = self.pool.begin().await?;
         sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
             .bind(user_id.to_string())
@@ -724,9 +781,23 @@ impl DatabaseRepository for PostgresRepository {
 
         let row = sqlx::query_as::<
             _,
-            (Uuid, Uuid, String, bool, Option<chrono::DateTime<chrono::Utc>>, Option<chrono::DateTime<chrono::Utc>>,
-             Option<chrono::DateTime<chrono::Utc>>, Option<String>, Option<String>, Option<String>,
-             Option<String>, i32, i32, Option<chrono::DateTime<chrono::Utc>>, Option<chrono::DateTime<chrono::Utc>>),
+            (
+                Uuid,
+                Uuid,
+                String,
+                bool,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                i32,
+                i32,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<chrono::DateTime<chrono::Utc>>,
+            ),
         >(
             r#"
             SELECT id, user_id, item_id, is_connected, last_sync_at, connected_at,
@@ -742,14 +813,41 @@ impl DatabaseRepository for PostgresRepository {
 
         tx.commit().await?;
 
-        Ok(row.map(|(id, user_id, item_id, is_connected, last_sync_at, connected_at,
-            disconnected_at, institution_id, institution_name, institution_logo_url,
-            sync_cursor, transaction_count, account_count, created_at, updated_at)|
-            PlaidConnection {
-                id, user_id, item_id, is_connected, last_sync_at, connected_at,
-                disconnected_at, institution_id, institution_name, institution_logo_url,
-                sync_cursor, transaction_count, account_count, created_at, updated_at,
-            }))
+        Ok(row.map(
+            |(
+                id,
+                user_id,
+                item_id,
+                is_connected,
+                last_sync_at,
+                connected_at,
+                disconnected_at,
+                institution_id,
+                institution_name,
+                institution_logo_url,
+                sync_cursor,
+                transaction_count,
+                account_count,
+                created_at,
+                updated_at,
+            )| PlaidConnection {
+                id,
+                user_id,
+                item_id,
+                is_connected,
+                last_sync_at,
+                connected_at,
+                disconnected_at,
+                institution_id,
+                institution_name,
+                institution_logo_url,
+                sync_cursor,
+                transaction_count,
+                account_count,
+                created_at,
+                updated_at,
+            },
+        ))
     }
 
     async fn get_plaid_connection_by_item(&self, item_id: &str) -> Result<Option<PlaidConnection>> {
@@ -823,12 +921,11 @@ impl DatabaseRepository for PostgresRepository {
     }
 
     async fn delete_plaid_transactions(&self, item_id: &str) -> Result<i32> {
-        let connection_id: Option<Uuid> = sqlx::query_scalar(
-            "SELECT id FROM plaid_connections WHERE item_id = $1"
-        )
-        .bind(item_id)
-        .fetch_optional(&self.pool)
-        .await?;
+        let connection_id: Option<Uuid> =
+            sqlx::query_scalar("SELECT id FROM plaid_connections WHERE item_id = $1")
+                .bind(item_id)
+                .fetch_optional(&self.pool)
+                .await?;
 
         let Some(conn_id) = connection_id else {
             return Ok(0);
@@ -840,7 +937,7 @@ impl DatabaseRepository for PostgresRepository {
             WHERE account_id IN (
                 SELECT id FROM accounts WHERE provider_connection_id = $1
             )
-            "#
+            "#,
         )
         .bind(conn_id)
         .execute(&self.pool)
@@ -850,12 +947,11 @@ impl DatabaseRepository for PostgresRepository {
     }
 
     async fn delete_plaid_accounts(&self, item_id: &str) -> Result<i32> {
-        let connection_id: Option<Uuid> = sqlx::query_scalar(
-            "SELECT id FROM plaid_connections WHERE item_id = $1"
-        )
-        .bind(item_id)
-        .fetch_optional(&self.pool)
-        .await?;
+        let connection_id: Option<Uuid> =
+            sqlx::query_scalar("SELECT id FROM plaid_connections WHERE item_id = $1")
+                .bind(item_id)
+                .fetch_optional(&self.pool)
+                .await?;
 
         let Some(conn_id) = connection_id else {
             return Ok(0);

@@ -11,6 +11,7 @@ fn given_no_env_vars_when_from_env_provider_then_uses_defaults() {
         "postgresql://postgres:password@localhost:5432/accounting"
     );
     assert_eq!(config.get_default_provider(), "teller");
+    assert_eq!(config.get_teller_application_id(), None);
 }
 
 #[test]
@@ -51,4 +52,14 @@ fn given_no_provider_specified_when_from_env_provider_then_defaults_to_teller() 
     let config = Config::from_env_provider(&env).unwrap();
 
     assert_eq!(config.get_default_provider(), "teller");
+}
+
+#[test]
+fn given_teller_application_id_when_from_env_provider_then_exposes_id() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_APPLICATION_ID", "app-123");
+
+    let config = Config::from_env_provider(&env).unwrap();
+
+    assert_eq!(config.get_teller_application_id(), Some("app-123"));
 }

@@ -6,7 +6,7 @@ import type {
   PlaidExchangeTokenRequest,
   PlaidExchangeTokenResponse,
   PlaidSyncResponse,
-  PlaidStatusResponse,
+  ProviderStatusResponse,
   Account
 } from '@/types/api'
 
@@ -196,16 +196,25 @@ describe('PlaidService', () => {
 
   describe('getStatus', () => {
     it('should call authenticated endpoint for Plaid connection status', async () => {
-      const mockStatus: PlaidStatusResponse = {
-        connected: true,
-        last_sync: '2024-01-15T10:30:00Z',
-        accounts_count: 2
+      const mockStatus: ProviderStatusResponse = {
+        provider: 'plaid',
+        connections: [
+          {
+            is_connected: true,
+            last_sync_at: '2024-01-15T10:30:00Z',
+            institution_name: 'Bank A',
+            connection_id: 'conn-123',
+            transaction_count: 25,
+            account_count: 2,
+            sync_in_progress: false,
+          }
+        ]
       }
       vi.mocked(ApiClient.get).mockResolvedValue(mockStatus)
 
       const result = await PlaidService.getStatus()
 
-      expect(ApiClient.get).toHaveBeenCalledWith('/plaid/status')
+      expect(ApiClient.get).toHaveBeenCalledWith('/providers/status')
       expect(result).toEqual(mockStatus)
     })
   })

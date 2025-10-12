@@ -65,16 +65,13 @@ impl SyncService {
             .get_transactions(credentials, start_date, end_date)
             .await?;
 
-        let new_transactions = self.detect_duplicates(existing_transactions, &provider_transactions);
+        let new_transactions =
+            self.detect_duplicates(existing_transactions, &provider_transactions);
 
         Ok(new_transactions)
     }
 
-    fn detect_duplicates(
-        &self,
-        existing: &[Transaction],
-        new: &[Transaction],
-    ) -> Vec<Transaction> {
+    fn detect_duplicates(&self, existing: &[Transaction], new: &[Transaction]) -> Vec<Transaction> {
         let existing_plaid_ids: HashMap<String, bool> = existing
             .iter()
             .filter_map(|t| t.provider_transaction_id.as_ref())

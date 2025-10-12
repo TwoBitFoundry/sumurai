@@ -3,6 +3,7 @@ import { render, screen, cleanup, act, waitFor } from '@testing-library/react'
 import { App } from '@/App'
 import { AccountFilterProvider } from '@/hooks/useAccountFilter'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
+import { createProviderStatus } from '@tests/utils/fixtures'
 
 global.fetch = vi.fn()
 
@@ -10,8 +11,8 @@ const mockFetchAuthOk = () => {
   const original = global.fetch as any
   const stub = vi.fn().mockImplementation((input: RequestInfo | URL) => {
     const url = String(input)
-    if (url.includes('/api/plaid/status')) {
-      return Promise.resolve({ ok: true, status: 200, json: async () => ({ connected: true, accounts_count: 0 }) } as any)
+    if (url.includes('/api/providers/status')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => createProviderStatus() } as any)
     }
     if (url.includes('/api/auth/logout')) {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({ message: 'ok', cleared_session: '' }) } as any)
@@ -42,8 +43,8 @@ vi.mock('@/services/ApiClient', () => ({
       if (endpoint.includes('/plaid/accounts')) {
         return Promise.resolve([])
       }
-      if (endpoint.includes('/plaid/status')) {
-        return Promise.resolve({ is_connected: false })
+      if (endpoint.includes('/providers/status')) {
+        return Promise.resolve(createProviderStatus())
       }
       if (endpoint.startsWith('/analytics/spending')) {
         return Promise.resolve({ total: 1234.56, currency: 'USD' })
@@ -177,8 +178,8 @@ describe('App Phase 2 - Business Logic Removal', () => {
     const original = global.fetch as any
     const stub = vi.fn().mockImplementation((input: RequestInfo | URL) => {
       const url = String(input)
-      if (url.includes('/api/plaid/status')) {
-        return Promise.resolve({ ok: true, status: 200, json: async () => ({ connected: true, accounts_count: 0 }) } as any)
+      if (url.includes('/api/providers/status')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => createProviderStatus() } as any)
       }
       if (url.includes('/api/auth/logout')) {
         return Promise.resolve({ ok: true, status: 200, json: async () => ({ message: 'ok', cleared_session: '' }) } as any)
@@ -221,7 +222,7 @@ describe('App Phase 2 - Business Logic Removal', () => {
 
     fetchMock = installFetchRoutes({
       'GET /api/plaid/accounts': [],
-      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/providers/status': createProviderStatus(),
       'GET /api/transactions': [],
       'GET /api/analytics/spending*': 0,
       'GET /api/analytics/categories*': [],
@@ -351,7 +352,7 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
 
     fetchMock = installFetchRoutes({
       'GET /api/plaid/accounts': [],
-      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/providers/status': createProviderStatus(),
       'GET /api/transactions': [],
       'GET /api/analytics/spending*': 0,
       'GET /api/analytics/categories*': [],

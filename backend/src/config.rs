@@ -18,6 +18,7 @@ pub struct Config {
     #[allow(dead_code)]
     pub database_url: String,
     default_provider: String,
+    teller_application_id: Option<String>,
 }
 
 impl Config {
@@ -31,12 +32,15 @@ impl Config {
             "postgresql://postgres:password@localhost:5432/accounting".to_string()
         });
 
-        let default_provider = env.get_var("DEFAULT_PROVIDER")
+        let default_provider = env
+            .get_var("DEFAULT_PROVIDER")
             .unwrap_or_else(|| "teller".to_string());
+        let teller_application_id = env.get_var("TELLER_APPLICATION_ID");
 
         Ok(Self {
             database_url,
             default_provider,
+            teller_application_id,
         })
     }
 
@@ -45,11 +49,16 @@ impl Config {
         Self {
             database_url: "postgresql://postgres:password@localhost:5432/accounting".to_string(),
             default_provider: "teller".to_string(),
+            teller_application_id: None,
         }
     }
 
     pub fn get_default_provider(&self) -> &str {
         &self.default_provider
+    }
+
+    pub fn get_teller_application_id(&self) -> Option<&str> {
+        self.teller_application_id.as_deref()
     }
 }
 

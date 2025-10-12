@@ -4,6 +4,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { AuthenticatedApp } from '@/components/AuthenticatedApp'
 import { AccountFilterProvider } from '@/hooks/useAccountFilter'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
+import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures'
 
 type DashboardProps = { dark: boolean }
 
@@ -67,11 +68,15 @@ describe('AuthenticatedApp shell', () => {
           provider: 'plaid'
         }
       ],
-      'GET /api/plaid/status': {
-        is_connected: true,
-        institution_name: 'Test Bank',
-        connection_id: 'conn_1'
-      }
+      'GET /api/providers/status': createProviderStatus({
+        connections: [
+          createProviderConnection({
+            is_connected: true,
+            institution_name: 'Test Bank',
+            connection_id: 'conn_1',
+          }),
+        ],
+      }),
     })
 
     DashboardPageMock = vi.fn(({ dark }: DashboardProps) => (

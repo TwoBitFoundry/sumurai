@@ -26,8 +26,8 @@ async fn given_test_app_when_health_check_then_returns_ok() {
 
 #[tokio::test]
 async fn given_authenticated_user_when_get_connection_status_then_returns_array() {
+    use crate::models::plaid::{PlaidConnection, ProviderStatusResponse};
     use crate::services::repository_service::MockDatabaseRepository;
-    use crate::models::plaid::{PlaidConnection, PlaidConnectionStatus};
     use axum::body::to_bytes;
 
     let mut mock_db = MockDatabaseRepository::new();
@@ -67,28 +67,40 @@ async fn given_authenticated_user_when_get_connection_status_then_returns_array(
         .expect_get_accounts_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
+    mock_db
+        .expect_get_user_by_id()
+        .returning(|_| Box::pin(async { Ok(None) }));
+
     let app = TestFixtures::create_test_app_with_db(mock_db)
         .await
         .unwrap();
 
-    let request = TestFixtures::create_authenticated_get_request("/api/plaid/status", &token);
+    let request =
+        TestFixtures::create_authenticated_get_request("/api/providers/status", &token);
     let response = app.oneshot(request).await.unwrap();
 
     assert_eq!(response.status(), 200);
 
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-    let statuses: Vec<PlaidConnectionStatus> = serde_json::from_slice(&body).unwrap();
+    let statuses: ProviderStatusResponse = serde_json::from_slice(&body).unwrap();
 
-    assert_eq!(statuses.len(), 2);
-    assert_eq!(statuses[0].institution_name, Some("Bank A".to_string()));
-    assert_eq!(statuses[1].institution_name, Some("Bank B".to_string()));
+    assert_eq!(statuses.provider, "teller");
+    assert_eq!(statuses.connections.len(), 2);
+    assert_eq!(
+        statuses.connections[0].institution_name,
+        Some("Bank A".to_string())
+    );
+    assert_eq!(
+        statuses.connections[1].institution_name,
+        Some("Bank B".to_string())
+    );
 }
 
 #[tokio::test]
 async fn given_no_auth_token_when_protected_endpoint_then_returns_unauthorized() {
     let app = TestFixtures::create_test_app().await.unwrap();
 
-    let request = TestFixtures::create_get_request("/api/plaid/status");
+    let request = TestFixtures::create_get_request("/api/providers/status");
     let response = app.oneshot(request).await.unwrap();
 
     assert_eq!(response.status(), 401);
@@ -857,11 +869,11 @@ async fn given_different_account_filters_when_caching_then_uses_different_cache_
 
 #[tokio::test]
 async fn given_user_with_multiple_banks_when_get_accounts_then_returns_all_accounts() {
-    use crate::services::repository_service::MockDatabaseRepository;
     use crate::models::account::Account;
+    use crate::services::repository_service::MockDatabaseRepository;
     use axum::body::to_bytes;
-    use uuid::Uuid;
     use rust_decimal_macros::dec;
+    use uuid::Uuid;
 
     let mut mock_db = MockDatabaseRepository::new();
     let (_user, token) = TestFixtures::create_authenticated_user_with_token();
@@ -895,12 +907,10 @@ async fn given_user_with_multiple_banks_when_get_accounts_then_returns_all_accou
         },
     ];
 
-    mock_db
-        .expect_get_accounts_for_user()
-        .returning(move |_| {
-            let accts = accounts.clone();
-            Box::pin(async move { Ok(accts) })
-        });
+    mock_db.expect_get_accounts_for_user().returning(move |_| {
+        let accts = accounts.clone();
+        Box::pin(async move { Ok(accts) })
+    });
 
     mock_db
         .expect_get_transaction_count_by_account_for_user()
@@ -922,7 +932,9 @@ async fn given_user_with_multiple_banks_when_get_accounts_then_returns_all_accou
         .expect_get_latest_account_balances_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
-    let app = TestFixtures::create_test_app_with_db(mock_db).await.unwrap();
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
     let request = TestFixtures::create_authenticated_get_request("/api/plaid/accounts", &token);
     let response = app.oneshot(request).await.unwrap();
 
@@ -939,8 +951,8 @@ async fn given_user_with_multiple_banks_when_get_accounts_then_returns_all_accou
 
 #[tokio::test]
 async fn given_connection_id_when_sync_then_uses_get_plaid_connection_by_id() {
-    use crate::services::repository_service::MockDatabaseRepository;
     use crate::models::plaid::{PlaidConnection, SyncTransactionsRequest};
+    use crate::services::repository_service::MockDatabaseRepository;
     use uuid::Uuid;
 
     let mut mock_db = MockDatabaseRepository::new();
@@ -954,7 +966,10 @@ async fn given_connection_id_when_sync_then_uses_get_plaid_connection_by_id() {
 
     mock_db
         .expect_get_plaid_connection_by_id()
-        .with(mockall::predicate::eq(connection_id), mockall::predicate::eq(user_id))
+        .with(
+            mockall::predicate::eq(connection_id),
+            mockall::predicate::eq(user_id),
+        )
         .times(1)
         .returning(move |_, _| {
             let conn = expected_conn.clone();
@@ -985,7 +1000,9 @@ async fn given_connection_id_when_sync_then_uses_get_plaid_connection_by_id() {
         .expect_get_latest_account_balances_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
-    let app = TestFixtures::create_test_app_with_db(mock_db).await.unwrap();
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
 
     let sync_request = SyncTransactionsRequest {
         connection_id: Some(connection_id.to_string()),

@@ -46,7 +46,7 @@ flowchart LR
 1. Frontend requests a Plaid `link_token` from the backend and opens Plaid Link.
 2. Browser receives `public_token` from Plaid → posts to `/api/plaid/exchange-token`.
 3. Backend exchanges for `access_token`, encrypts it (AES‑256‑GCM), stores it, and starts initial sync (cursor cached; transactions inserted into PostgreSQL).
-4. Frontend polls `/api/plaid/status` and fetches accounts via `/api/plaid/accounts`.
+4. Frontend polls `/api/providers/status` and fetches accounts via `/api/plaid/accounts`.
 5. Analytics endpoints compute over PostgreSQL (optionally leveraging a transaction cache) and return aggregates.
 
 **Teller (self-hosted path)**

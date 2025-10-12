@@ -4,6 +4,7 @@ import { ReactNode } from 'react'
 import { useBudgets } from '@/features/budgets/hooks/useBudgets'
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
+import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures'
 
 const TestWrapper = ({ children }: { children: ReactNode }) => (
   <AccountFilterProvider>
@@ -59,17 +60,24 @@ const createDeferred = <T,>() => {
 }
 
 describe('useBudgets', () => {
+const createConnectedStatus = () =>
+  createProviderStatus({
+    connections: [
+      createProviderConnection({
+        is_connected: true,
+        institution_name: 'Mock Bank',
+        connection_id: 'conn_1',
+      }),
+    ],
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     fetchMock = installFetchRoutes({
       'GET /api/budgets': [],
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
-      'GET /api/plaid/status': {
-        is_connected: true,
-        institution_name: 'Mock Bank',
-        connection_id: 'conn_1',
-      }
+      'GET /api/providers/status': createConnectedStatus(),
     })
   })
 
@@ -78,11 +86,7 @@ describe('useBudgets', () => {
       'GET /api/budgets': [asBudget('1', 'groceries', 100)],
       'GET /api/transactions': [asTransaction('t1', 'groceries', -50)],
       'GET /api/plaid/accounts': mockPlaidAccounts,
-      'GET /api/plaid/status': {
-        is_connected: true,
-        institution_name: 'Mock Bank',
-        connection_id: 'conn_1',
-      }
+      'GET /api/providers/status': createConnectedStatus(),
     })
 
     const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })
@@ -106,11 +110,7 @@ describe('useBudgets', () => {
       'GET /api/budgets': [asBudget('1', 'groceries', 100)],
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
-      'GET /api/plaid/status': {
-        is_connected: true,
-        institution_name: 'Mock Bank',
-        connection_id: 'conn_1',
-      }
+      'GET /api/providers/status': createConnectedStatus(),
     })
 
     const { result } = renderHook(() => {
@@ -147,11 +147,7 @@ describe('useBudgets', () => {
       'POST /api/budgets': asBudget('server-1', 'groceries', 200),
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
-      'GET /api/plaid/status': {
-        is_connected: true,
-        institution_name: 'Mock Bank',
-        connection_id: 'conn_1',
-      }
+      'GET /api/providers/status': createConnectedStatus(),
     })
 
     const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })
@@ -175,11 +171,7 @@ describe('useBudgets', () => {
       'POST /api/budgets': () => new Response('fail', { status: 500 }),
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
-      'GET /api/plaid/status': {
-        is_connected: true,
-        institution_name: 'Mock Bank',
-        connection_id: 'conn_1',
-      }
+      'GET /api/providers/status': createConnectedStatus(),
     })
 
     const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })
@@ -209,11 +201,7 @@ describe('useBudgets', () => {
       'PUT /api/budgets/1': asBudget('1', 'groceries', 250),
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
-      'GET /api/plaid/status': {
-        is_connected: true,
-        institution_name: 'Mock Bank',
-        connection_id: 'conn_1',
-      }
+      'GET /api/providers/status': createConnectedStatus(),
     })
 
     const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })
@@ -239,11 +227,7 @@ describe('useBudgets', () => {
       'PUT /api/budgets/1': () => { throw Object.assign(new Error('fail'), { status: 500 }) },
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
-      'GET /api/plaid/status': {
-        is_connected: true,
-        institution_name: 'Mock Bank',
-        connection_id: 'conn_1',
-      }
+      'GET /api/providers/status': createConnectedStatus(),
     })
 
     const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })
@@ -269,11 +253,7 @@ describe('useBudgets', () => {
       'DELETE /api/budgets/1': new Response(null, { status: 204 }),
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
-      'GET /api/plaid/status': {
-        is_connected: true,
-        institution_name: 'Mock Bank',
-        connection_id: 'conn_1',
-      }
+      'GET /api/providers/status': createConnectedStatus(),
     })
 
     const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })
@@ -299,11 +279,7 @@ describe('useBudgets', () => {
       'DELETE /api/budgets/1': () => { throw Object.assign(new Error('fail'), { status: 500 }) },
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
-      'GET /api/plaid/status': {
-        is_connected: true,
-        institution_name: 'Mock Bank',
-        connection_id: 'conn_1',
-      }
+      'GET /api/providers/status': createConnectedStatus(),
     })
 
     const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper })

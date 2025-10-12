@@ -1199,7 +1199,10 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
         .await
         .expect("Failed to get user2 connections");
 
-    assert!(!user1_connections.is_empty(), "User1 should have a connection");
+    assert!(
+        !user1_connections.is_empty(),
+        "User1 should have a connection"
+    );
     let user1_conn = &user1_connections[0];
     assert_eq!(
         user1_conn.user_id, user1_id,
@@ -1210,7 +1213,10 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
         "User1 should see their connection"
     );
 
-    assert!(!user2_connections.is_empty(), "User2 should have a connection");
+    assert!(
+        !user2_connections.is_empty(),
+        "User2 should have a connection"
+    );
     let user2_conn = &user2_connections[0];
     assert_eq!(
         user2_conn.user_id, user2_id,
@@ -3109,9 +3115,7 @@ async fn given_user_with_multiple_connections_when_get_all_then_returns_all_conn
         .returning(move |_| {
             let c1 = conn1_clone.clone();
             let c2 = conn2_clone.clone();
-            Box::pin(async move {
-                Ok(vec![c1, c2])
-            })
+            Box::pin(async move { Ok(vec![c1, c2]) })
         });
 
     let result = mock_repo.get_all_plaid_connections_by_user(&user_id).await;
@@ -3151,7 +3155,9 @@ async fn given_valid_connection_id_when_get_by_id_then_returns_connection() {
             Box::pin(async move { Ok(Some(c)) })
         });
 
-    let result = mock_repo.get_plaid_connection_by_id(&connection_id, &user_id).await;
+    let result = mock_repo
+        .get_plaid_connection_by_id(&connection_id, &user_id)
+        .await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap().unwrap().id, connection_id);
 }
@@ -3165,7 +3171,9 @@ async fn given_invalid_connection_id_when_get_by_id_then_returns_none() {
         .expect_get_plaid_connection_by_id()
         .returning(|_, _| Box::pin(async { Ok(None) }));
 
-    let result = mock_repo.get_plaid_connection_by_id(&connection_id, &Uuid::new_v4()).await;
+    let result = mock_repo
+        .get_plaid_connection_by_id(&connection_id, &Uuid::new_v4())
+        .await;
     assert!(result.is_ok());
     assert!(result.unwrap().is_none());
 }
@@ -3185,7 +3193,9 @@ async fn given_connection_exists_when_queried_by_different_user_then_returns_non
         .with(predicate::eq(connection_id), predicate::eq(other_user_id))
         .returning(|_, _| Box::pin(async { Ok(None) }));
 
-    let result = mock_repo.get_plaid_connection_by_id(&connection_id, &other_user_id).await;
+    let result = mock_repo
+        .get_plaid_connection_by_id(&connection_id, &other_user_id)
+        .await;
     assert!(result.is_ok());
     assert!(result.unwrap().is_none());
 }

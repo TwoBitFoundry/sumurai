@@ -5,6 +5,8 @@ import { vi, beforeEach, afterEach } from 'vitest'
 // Mock the hooks
 vi.mock('@/hooks/useOnboardingWizard')
 vi.mock('@/hooks/useOnboardingPlaidFlow')
+vi.mock('@/hooks/useOnboardingTellerFlow')
+vi.mock('@/hooks/useProviderInfo')
 
 // Mock boundary components so copy tweaks do not break contract tests
 const { mockWelcomeStep, mockConnectAccountStep } = vi.hoisted(() => ({
@@ -16,12 +18,47 @@ vi.mock('@/components/onboarding/WelcomeStep', () => ({
   WelcomeStep: mockWelcomeStep,
 }))
 
-vi.mock('@/components/onboarding/ConnectAccountStep', () => ({
-  ConnectAccountStep: mockConnectAccountStep,
-}))
+vi.mock('@/components/onboarding/ConnectAccountStep', () => {
+  const baseContent = {
+    eyebrow: {
+      text: '',
+      backgroundClassName: '',
+      textClassName: '',
+    },
+    heroTitle: '',
+    heroDescription: '',
+    highlightLabel: '',
+    highlightMeta: '',
+    features: [],
+    highlights: [],
+    cta: {
+      defaultLabel: '',
+    },
+    securityNote: '',
+  }
+
+  return {
+    ConnectAccountStep: mockConnectAccountStep,
+    CONNECT_ACCOUNT_PROVIDER_CONTENT: {
+      plaid: {
+        ...baseContent,
+        displayName: 'Plaid',
+        securityNote: 'Plaid security note',
+      },
+      teller: {
+        ...baseContent,
+        displayName: 'Teller',
+        securityNote: 'Teller security note',
+        requiresApplicationId: true,
+      },
+    },
+  }
+})
 
 const mockUseOnboardingWizard = vi.mocked(await import('@/hooks/useOnboardingWizard')).useOnboardingWizard
 const mockUseOnboardingPlaidFlow = vi.mocked(await import('@/hooks/useOnboardingPlaidFlow')).useOnboardingPlaidFlow
+const mockUseOnboardingTellerFlow = vi.mocked(await import('@/hooks/useOnboardingTellerFlow')).useOnboardingTellerFlow
+const mockUseProviderInfo = vi.mocked(await import('@/hooks/useProviderInfo')).useProviderInfo
 
 describe('OnboardingWizard', () => {
   const mockWizardHook = {
@@ -51,11 +88,35 @@ describe('OnboardingWizard', () => {
     setError: vi.fn(),
   }
 
+  const mockTellerFlowHook = {
+    isConnected: false,
+    connectionInProgress: false,
+    isSyncing: false,
+    institutionName: null,
+    error: null,
+    initiateConnection: vi.fn(),
+    retryConnection: vi.fn(),
+    reset: vi.fn(),
+    setError: vi.fn(),
+  }
+
   beforeEach(() => {
     cleanup()
     vi.clearAllMocks()
     mockUseOnboardingWizard.mockReturnValue(mockWizardHook)
     mockUseOnboardingPlaidFlow.mockReturnValue(mockPlaidFlowHook)
+    mockUseOnboardingTellerFlow.mockReturnValue(mockTellerFlowHook)
+    mockUseProviderInfo.mockReturnValue({
+      loading: false,
+      error: null,
+      availableProviders: ['plaid'],
+      selectedProvider: 'plaid',
+      defaultProvider: 'plaid',
+      userProvider: 'plaid',
+      tellerApplicationId: null,
+      refresh: vi.fn(),
+      chooseProvider: vi.fn(),
+    })
     mockWelcomeStep.mockClear()
     mockConnectAccountStep.mockClear()
   })

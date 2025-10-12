@@ -160,9 +160,7 @@ impl Transaction {
 
     pub fn from_teller(teller_txn: &serde_json::Value, account_id: &Uuid) -> Self {
         let amount_str = teller_txn["amount"].as_str().unwrap_or("0");
-        let amount = Decimal::from_str(amount_str)
-            .unwrap_or(Decimal::ZERO)
-            .abs();
+        let amount = Decimal::from_str(amount_str).unwrap_or(Decimal::ZERO).abs();
 
         let date = teller_txn["date"]
             .as_str()

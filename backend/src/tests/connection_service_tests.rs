@@ -1,9 +1,9 @@
-use crate::services::repository_service::MockDatabaseRepository;
+use crate::models::plaid::PlaidConnection;
 use crate::services::cache_service::MockCacheService;
 use crate::services::connection_service::ConnectionService;
-use crate::models::plaid::PlaidConnection;
-use uuid::Uuid;
+use crate::services::repository_service::MockDatabaseRepository;
 use std::sync::Arc;
+use uuid::Uuid;
 
 #[tokio::test]
 async fn given_connection_id_when_disconnect_then_disconnects_specific_connection() {
@@ -19,7 +19,10 @@ async fn given_connection_id_when_disconnect_then_disconnects_specific_connectio
 
     mock_db
         .expect_get_plaid_connection_by_id()
-        .with(mockall::predicate::eq(connection_id), mockall::predicate::eq(user_id))
+        .with(
+            mockall::predicate::eq(connection_id),
+            mockall::predicate::eq(user_id),
+        )
         .returning(move |_, _| {
             let conn = expected_conn.clone();
             Box::pin(async move { Ok(Some(conn)) })
@@ -57,10 +60,7 @@ async fn given_connection_id_when_disconnect_then_disconnects_specific_connectio
         .expect_clear_jwt_scoped_bank_connection_cache()
         .returning(|_, _| Box::pin(async { Ok(()) }));
 
-    let service = ConnectionService::new(
-        Arc::new(mock_db),
-        Arc::new(mock_cache),
-    );
+    let service = ConnectionService::new(Arc::new(mock_db), Arc::new(mock_cache));
 
     let result = service
         .disconnect_plaid_by_id(&connection_id, &user_id, "jwt_123")

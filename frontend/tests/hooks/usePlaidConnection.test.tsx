@@ -3,6 +3,7 @@ import { renderHook, act, waitFor, cleanup } from '@testing-library/react'
 import { usePlaidConnection } from '@/hooks/usePlaidConnection'
 import { ApiClient } from '@/services/ApiClient'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
+import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures'
 
 describe('usePlaidConnection Hook', () => {
   let fetchMock: ReturnType<typeof installFetchRoutes>
@@ -15,15 +16,7 @@ describe('usePlaidConnection Hook', () => {
     
     // Default routes
     fetchMock = installFetchRoutes({
-      'GET /api/plaid/status': {
-        is_connected: false,
-        last_sync_at: null,
-        institution_name: null,
-        connection_id: null,
-        transaction_count: 0,
-        account_count: 0,
-        sync_in_progress: false
-      },
+      'GET /api/providers/status': createProviderStatus(),
       'POST /api/plaid/disconnect': {
         success: true,
         message: 'Successfully disconnected',
@@ -67,18 +60,18 @@ describe('usePlaidConnection Hook', () => {
 
     describe('When previous connection exists', () => {
       it('Then it should load and return connected state', async () => {
-        const mockConnectionData = {
+        const mockConnectionData = createProviderConnection({
           is_connected: true,
           last_sync_at: '2024-01-15T10:30:00Z',
           institution_name: 'Chase Bank',
           connection_id: 'conn_123',
           transaction_count: 25,
           account_count: 2,
-          sync_in_progress: false
-        }
+          sync_in_progress: false,
+        })
         
         installFetchRoutes({
-          'GET /api/plaid/status': mockConnectionData
+          'GET /api/providers/status': createProviderStatus({ connections: [mockConnectionData] })
         })
 
         const { result } = renderHook(() => usePlaidConnection())
@@ -99,7 +92,7 @@ describe('usePlaidConnection Hook', () => {
     describe('When API call fails', () => {
       it('Then it should handle error gracefully', async () => {
         installFetchRoutes({
-          'GET /api/plaid/status': new Response('Network error', { status: 500 })
+          'GET /api/providers/status': new Response('Network error', { status: 500 })
         })
 
         const { result } = renderHook(() => usePlaidConnection())
@@ -136,15 +129,19 @@ describe('usePlaidConnection Hook', () => {
     describe('When disconnect is called', () => {
       it('Then it should call API and update state to disconnected', async () => {
         installFetchRoutes({
-          'GET /api/plaid/status': {
-            is_connected: true,
-            last_sync_at: '2024-01-15T10:30:00Z',
-            institution_name: 'Chase Bank',
-            connection_id: 'conn_123',
-            transaction_count: 25,
-            account_count: 2,
-            sync_in_progress: false
-          },
+          'GET /api/providers/status': createProviderStatus({
+            connections: [
+              createProviderConnection({
+                is_connected: true,
+                last_sync_at: '2024-01-15T10:30:00Z',
+                institution_name: 'Chase Bank',
+                connection_id: 'conn_123',
+                transaction_count: 25,
+                account_count: 2,
+                sync_in_progress: false,
+              }),
+            ],
+          }),
           'POST /api/plaid/disconnect': {
             success: true,
             message: 'Successfully disconnected',
@@ -180,15 +177,19 @@ describe('usePlaidConnection Hook', () => {
     describe('When updateSyncInfo is called', () => {
       it('Then it should update sync metadata', async () => {
         installFetchRoutes({
-          'GET /api/plaid/status': {
-            is_connected: true,
-            last_sync_at: '2024-01-15T10:30:00Z',
-            institution_name: 'Chase Bank',
-            connection_id: 'conn_123',
-            transaction_count: 25,
-            account_count: 2,
-            sync_in_progress: false
-          }
+          'GET /api/providers/status': createProviderStatus({
+            connections: [
+              createProviderConnection({
+                is_connected: true,
+                last_sync_at: '2024-01-15T10:30:00Z',
+                institution_name: 'Chase Bank',
+                connection_id: 'conn_123',
+                transaction_count: 25,
+                account_count: 2,
+                sync_in_progress: false,
+              }),
+            ],
+          }),
         })
 
         const { result } = renderHook(() => usePlaidConnection())
@@ -212,15 +213,9 @@ describe('usePlaidConnection Hook', () => {
       it('Then it should fetch latest connection status', async () => {
         // Start with disconnected state, then set up to return connected state on refresh
         installFetchRoutes({
-          'GET /api/plaid/status': {
-            is_connected: false,
-            last_sync_at: null,
-            institution_name: null,
-            connection_id: null,
-            transaction_count: 0,
-            account_count: 0,
-            sync_in_progress: false
-          }
+          'GET /api/providers/status': createProviderStatus({
+            connections: [createProviderConnection()],
+          }),
         })
 
         const { result } = renderHook(() => usePlaidConnection())
@@ -233,15 +228,19 @@ describe('usePlaidConnection Hook', () => {
 
         // Override route for refresh call
         installFetchRoutes({
-          'GET /api/plaid/status': {
-            is_connected: true,
-            last_sync_at: '2024-01-15T16:00:00Z',
-            institution_name: 'Bank of America',
-            connection_id: 'conn_789',
-            transaction_count: 40,
-            account_count: 3,
-            sync_in_progress: false
-          }
+          'GET /api/providers/status': createProviderStatus({
+            connections: [
+              createProviderConnection({
+                is_connected: true,
+                last_sync_at: '2024-01-15T16:00:00Z',
+                institution_name: 'Bank of America',
+                connection_id: 'conn_789',
+                transaction_count: 40,
+                account_count: 3,
+                sync_in_progress: false,
+              }),
+            ],
+          }),
         })
 
         await act(async () => {
@@ -260,15 +259,19 @@ describe('usePlaidConnection Hook', () => {
     describe('When setSyncInProgress is called', () => {
       it('Then it should update sync progress state', async () => {
         installFetchRoutes({
-          'GET /api/plaid/status': {
-            is_connected: true,
-            last_sync_at: '2024-01-15T10:30:00Z',
-            institution_name: 'Chase Bank',
-            connection_id: 'conn_123',
-            transaction_count: 25,
-            account_count: 2,
-            sync_in_progress: false
-          }
+          'GET /api/providers/status': createProviderStatus({
+            connections: [
+              createProviderConnection({
+                is_connected: true,
+                last_sync_at: '2024-01-15T10:30:00Z',
+                institution_name: 'Chase Bank',
+                connection_id: 'conn_123',
+                transaction_count: 25,
+                account_count: 2,
+                sync_in_progress: false,
+              }),
+            ],
+          }),
         })
 
         const { result } = renderHook(() => usePlaidConnection())

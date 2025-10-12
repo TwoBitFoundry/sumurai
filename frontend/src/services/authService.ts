@@ -79,7 +79,7 @@ export class AuthService {
     }
 
     try {
-      const response = await fetch('/api/plaid/status', {
+      const response = await fetch('/api/providers/status', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,

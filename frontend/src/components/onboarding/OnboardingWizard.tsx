@@ -4,7 +4,10 @@ import { AppHeader } from '@/components/ui/AppHeader'
 import { useOnboardingWizard, type OnboardingStep } from '@/hooks/useOnboardingWizard'
 import { useOnboardingPlaidFlow } from '@/hooks/useOnboardingPlaidFlow'
 import { WelcomeStep } from './WelcomeStep'
-import { ConnectAccountStep } from './ConnectAccountStep'
+import { ConnectAccountStep, CONNECT_ACCOUNT_PROVIDER_CONTENT } from './ConnectAccountStep'
+import { useProviderInfo } from '@/hooks/useProviderInfo'
+import type { FinancialProvider } from '@/types/api'
+import { useOnboardingTellerFlow } from '@/hooks/useOnboardingTellerFlow'
 
 interface OnboardingWizardProps {
   onComplete: () => void
@@ -28,6 +31,13 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
     completeWizard,
   } = useOnboardingWizard()
 
+  const providerInfo = useProviderInfo()
+  const resolvedDefaultProvider = (providerInfo.defaultProvider ?? 'plaid') as FinancialProvider
+  const activeProvider = (providerInfo.userProvider ?? resolvedDefaultProvider) as FinancialProvider
+  const providerContent = CONNECT_ACCOUNT_PROVIDER_CONTENT[activeProvider]
+  const providerDisplayName = providerContent.displayName
+  const providerLoading = providerInfo.loading && !providerInfo.userProvider && !providerInfo.defaultProvider
+
   const stepContainerRef = useRef<HTMLDivElement>(null)
   const [baselineHeight, setBaselineHeight] = useState<number | null>(null)
 
@@ -39,7 +49,7 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
       },
       connectAccount: {
         label: 'Connect account',
-        description: 'Securely link via Plaid',
+        description: `Securely link via ${providerDisplayName}`,
       },
     }
 
@@ -48,7 +58,7 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
       id: step,
       ...details[step],
     }))
-  }, [])
+  }, [providerDisplayName])
 
   const handleConnectionSuccess = useCallback(async (_institutionName?: string) => {
     // Don't complete wizard here - wait for user to click Continue after sync
@@ -60,6 +70,17 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
       console.error('Plaid connection error:', error)
     },
   })
+
+  const tellerFlow = useOnboardingTellerFlow({
+    applicationId: providerInfo.tellerApplicationId ?? null,
+    enabled: activeProvider === 'teller',
+    onConnectionSuccess: handleConnectionSuccess,
+    onError: (error) => {
+      console.error('Teller connection error:', error)
+    },
+  })
+
+  const connectionFlow = activeProvider === 'teller' ? tellerFlow : plaidFlow
 
   useEffect(() => {
     if (isComplete) {
@@ -91,7 +112,7 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
   }, [currentStep])
 
   const handleNext = async () => {
-    if (isLastStep && currentStep === 'connectAccount' && plaidFlow.isConnected) {
+    if (isLastStep && currentStep === 'connectAccount' && connectionFlow.isConnected) {
       await completeWizard()
     } else {
       goToNext()
@@ -110,12 +131,18 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
       case 'connectAccount':
         return (
           <ConnectAccountStep
-            isConnected={plaidFlow.isConnected}
-            connectionInProgress={plaidFlow.connectionInProgress}
-            institutionName={plaidFlow.institutionName}
-            error={plaidFlow.error}
-            onConnect={plaidFlow.initiateConnection}
-            onRetry={plaidFlow.retryConnection}
+            provider={activeProvider}
+            content={providerContent}
+            providerLoading={providerLoading}
+            providerError={providerInfo.error}
+            onRetryProvider={providerInfo.refresh}
+            tellerApplicationId={providerInfo.tellerApplicationId ?? null}
+            isConnected={connectionFlow.isConnected}
+            connectionInProgress={connectionFlow.connectionInProgress}
+            institutionName={connectionFlow.institutionName}
+            error={connectionFlow.error}
+            onConnect={connectionFlow.initiateConnection}
+            onRetry={connectionFlow.retryConnection}
           />
         )
 
@@ -129,7 +156,7 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
       return true
     }
     if (currentStep === 'connectAccount') {
-      return plaidFlow.isConnected
+      return connectionFlow.isConnected
     }
     return canGoNext
   }
@@ -204,8 +231,8 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
             </div>
 
             <div className="mt-8 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center animate-[fadeSlideUp_400ms_ease-out_200ms_backwards]">
-              <div className="flex items-center gap-2 text-xs text-[#475569] dark:text-[#cbd5e1] transition-colors duration-300 ease-out">
-                🔒 Bank-level encryption keeps every credential private. Plaid only shares read-only data, so funds stay untouchable.
+              <div className="flex items-center gap-2 text-xs text-[#475569] transition-colors duration-300 ease-out dark:text-[#cbd5e1]">
+                {providerContent.securityNote}
               </div>
 
               <div className="flex gap-3">
@@ -232,7 +259,7 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
                   disabled={!canProceed()}
                   className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#0ea5e9] to-[#a78bfa] px-6 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-200 ease-out hover:scale-[1.03] hover:shadow-[0_0_24px_rgba(14,165,233,0.4)] active:scale-[0.98] active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9] focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 disabled:hover:shadow-lg dark:focus-visible:ring-offset-slate-900"
                 >
-                  {isLastStep && plaidFlow.isConnected ? 'Get started' : 'Continue'}
+                  {isLastStep && connectionFlow.isConnected ? 'Get started' : 'Continue'}
                 </button>
               </div>
             </div>

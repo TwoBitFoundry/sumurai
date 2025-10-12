@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ApiClient } from '../services/ApiClient'
 import { PlaidService } from '../services/PlaidService'
 
 const mapAccountType = (backendType?: string): 'checking' | 'savings' | 'credit' | 'loan' | 'other' => {
@@ -138,7 +137,8 @@ export const usePlaidConnections = (options: { enabled?: boolean } = {}): UsePla
       setState(prev => ({ ...prev, loading: true, error: null }))
 
       // Fetch all connections for this user (backend now returns array)
-      const statusArray = await ApiClient.get<any>('/plaid/status')
+      const status = await PlaidService.getStatus()
+      const statusArray = Array.isArray(status.connections) ? status.connections : []
 
       // Fetch accounts once for all connections
       let allAccounts: NormalizedAccount[] = []
@@ -153,11 +153,10 @@ export const usePlaidConnections = (options: { enabled?: boolean } = {}): UsePla
       }
 
       // Map backend status array to PlaidConnection objects, filtering out disconnected ones
-      const connections: PlaidConnection[] = Array.isArray(statusArray)
-        ? statusArray
-            .filter((connStatus: any) => connStatus.is_connected)
-            .map((connStatus: any) => {
-              const connectionId = connStatus.connection_id ? String(connStatus.connection_id) : null
+      const connections: PlaidConnection[] = statusArray
+        .filter((connStatus: any) => connStatus.is_connected)
+        .map((connStatus: any) => {
+          const connectionId = connStatus.connection_id ? String(connStatus.connection_id) : null
               let matchingAccounts: NormalizedAccount[]
 
               if (connectionId) {

@@ -243,16 +243,16 @@ async fn given_teller_transactions_when_get_transactions_then_filters_by_date_ra
 
     assert_eq!(transactions.len(), 2);
     assert_eq!(transactions[0].merchant_name, Some("Starbucks".to_string()));
+    assert_eq!(transactions[0].amount, Decimal::from_str("89.40").unwrap());
     assert_eq!(
-        transactions[0].amount,
-        Decimal::from_str("89.40").unwrap()
+        transactions[1].merchant_name,
+        Some("Gas Station".to_string())
     );
-    assert_eq!(transactions[1].merchant_name, Some("Gas Station".to_string()));
 }
 
 #[tokio::test]
-async fn given_teller_accounts_when_get_institution_info_then_returns_institution_from_first_account()
-{
+async fn given_teller_accounts_when_get_institution_info_then_returns_institution_from_first_account(
+) {
     let mut server = Server::new_async().await;
 
     let accounts_response = serde_json::json!([

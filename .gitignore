@@ -168,6 +168,7 @@ rust-project.json
 secrets.json
 *.pem
 *.key
+.certs/
 
 # Plaid credentials
 plaid.env
