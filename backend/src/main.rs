@@ -146,6 +146,9 @@ pub fn create_app(state: AppState) -> Router {
             put(complete_user_onboarding),
         )
         .route("/api/transactions", get(get_authenticated_transactions))
+        .route("/api/providers/info", get(get_authenticated_provider_info))
+        .route("/api/providers/select", post(select_authenticated_provider))
+        .route("/api/providers/accounts", get(get_authenticated_plaid_accounts))
         .route(
             "/api/plaid/link-token",
             post(create_authenticated_link_token),
@@ -664,8 +667,8 @@ async fn get_authenticated_plaid_accounts(
             AccountResponse {
                 id: account.id,
                 user_id: Some(user_id),
-                plaid_account_id: account.plaid_account_id.clone(),
-                plaid_connection_id: account.plaid_connection_id,
+                provider_account_id: account.provider_account_id.clone(),
+                provider_connection_id: account.provider_connection_id,
                 name: account.name,
                 account_type: account.account_type,
                 balance_current: account.balance_current,
@@ -805,7 +808,7 @@ async fn sync_authenticated_plaid_transactions(
             for account in &accounts {
                 let mut acct = account.clone();
                 acct.user_id = Some(user_id);
-                acct.plaid_connection_id = Some(connection.id);
+                acct.provider_connection_id = Some(connection.id);
                 if let Err(e) = state.db_repository.upsert_account(&acct).await {
                     tracing::warn!("Failed to persist account to database during sync: {}", e);
                 }
@@ -823,7 +826,7 @@ async fn sync_authenticated_plaid_transactions(
             use std::collections::HashMap;
             let mut account_map: HashMap<String, uuid::Uuid> = HashMap::new();
             for acct in &db_accounts {
-                if let Some(plaid_id) = &acct.plaid_account_id {
+                if let Some(plaid_id) = &acct.provider_account_id {
                     account_map.insert(plaid_id.clone(), acct.id);
                     tracing::info!("Account mapping: {} -> {}", plaid_id, acct.id);
                 }
@@ -832,27 +835,27 @@ async fn sync_authenticated_plaid_transactions(
 
             for txn in &mut transactions {
                 txn.user_id = Some(user_id);
-                if let Some(plaid_acc_id) = &txn.plaid_account_id {
+                if let Some(plaid_acc_id) = &txn.provider_account_id {
                     if let Some(&internal_id) = account_map.get(plaid_acc_id) {
                         txn.account_id = internal_id;
                     } else {
                         tracing::warn!(
-                            "Transaction references unknown plaid_account_id: {} (available: {:?})",
+                            "Transaction references unknown provider_account_id: {} (available: {:?})",
                             plaid_acc_id,
                             account_map.keys().collect::<Vec<_>>()
                         );
                     }
                 } else {
-                    tracing::warn!("Transaction missing plaid_account_id: {:?}", txn.id);
+                    tracing::warn!("Transaction missing provider_account_id: {:?}", txn.id);
                 }
             }
 
             // Persist transactions - only those with valid account mappings
             for transaction in &transactions {
-                if let Some(plaid_acc_id) = &transaction.plaid_account_id {
+                if let Some(plaid_acc_id) = &transaction.provider_account_id {
                     if !account_map.contains_key(plaid_acc_id) {
                         tracing::warn!(
-                            "Skipping transaction with unmapped plaid_account_id: {}",
+                            "Skipping transaction with unmapped provider_account_id: {}",
                             plaid_acc_id
                         );
                         continue;
@@ -1520,6 +1523,77 @@ async fn disconnect_authenticated_plaid(
 
 async fn health_check() -> &'static str {
     "OK"
+}
+
+async fn get_authenticated_provider_info(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let user_id = auth_context.user_id;
+
+    let user = state
+        .db_repository
+        .get_user_by_id(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to get user {}: {}", user_id, e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .ok_or_else(|| {
+            tracing::error!("User {} not found", user_id);
+            StatusCode::NOT_FOUND
+        })?;
+
+    let default_provider = state.config.get_default_provider();
+    let available_providers = vec!["plaid", "teller"];
+
+    Ok(Json(serde_json::json!({
+        "available_providers": available_providers,
+        "default_provider": default_provider,
+        "user_provider": user.provider,
+    })))
+}
+
+async fn select_authenticated_provider(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user_id = auth_context.user_id;
+
+    let provider = req
+        .get("provider")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| {
+            ApiErrorResponse::new("BAD_REQUEST", "Missing provider field")
+                .into_response(StatusCode::BAD_REQUEST)
+        })?;
+
+    if provider != "plaid" && provider != "teller" {
+        return Err(
+            ApiErrorResponse::new("BAD_REQUEST", "Invalid provider. Must be 'plaid' or 'teller'")
+                .into_response(StatusCode::BAD_REQUEST),
+        );
+    }
+
+    match state
+        .db_repository
+        .update_user_provider(&user_id, provider)
+        .await
+    {
+        Ok(_) => {
+            tracing::info!("User {} selected provider: {}", user_id, provider);
+            Ok(Json(serde_json::json!({
+                "user_provider": provider,
+            })))
+        }
+        Err(e) => {
+            tracing::error!("Failed to update provider for user {}: {}", user_id, e);
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to update provider selection",
+            ))
+        }
+    }
 }
 
 async fn get_authenticated_balances_overview(

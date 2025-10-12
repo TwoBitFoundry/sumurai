@@ -18,7 +18,7 @@ fn test_detect_duplicates_filters_existing_transactions() {
 
     assert_eq!(unique_transactions.len(), 1);
     assert_eq!(
-        unique_transactions[0].plaid_transaction_id.as_deref(),
+        unique_transactions[0].provider_transaction_id.as_deref(),
         Some("new_txn_001")
     );
 }
@@ -54,7 +54,7 @@ fn test_detect_duplicates_handles_transactions_without_plaid_ids() {
 
     let existing = TestFixtures::empty_transactions();
     let mut new_transaction = TestFixtures::sample_transactions()[0].clone();
-    new_transaction.plaid_transaction_id = None;
+    new_transaction.provider_transaction_id = None;
     let new_transactions = vec![new_transaction.clone()];
 
     let unique_transactions = service.detect_duplicates(&existing, &new_transactions);

@@ -429,7 +429,7 @@ async fn create_test_accounts_table(pool: &PgPool, table: &str) -> Result<(), sq
     let sql = format!(
         r#"CREATE TABLE IF NOT EXISTS {table} (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            plaid_account_id VARCHAR UNIQUE,
+            provider_account_id VARCHAR UNIQUE,
             name VARCHAR NOT NULL,
             account_type VARCHAR NOT NULL,
             balance_current DECIMAL(12,2),
@@ -547,7 +547,7 @@ async fn given_pre_migration_schema_when_bank_operations_migration_runs_then_add
     let connection_id = Uuid::new_v4();
 
     let insert_account_sql = format!(
-        "INSERT INTO {} (id, plaid_account_id, name, account_type, balance_current) VALUES ($1, $2, $3, $4, $5)",
+        "INSERT INTO {} (id, provider_account_id, name, account_type, balance_current) VALUES ($1, $2, $3, $4, $5)",
         accounts_table
     );
     sqlx::query(&insert_account_sql)
@@ -619,7 +619,7 @@ async fn given_pre_migration_schema_when_bank_operations_migration_runs_then_add
         .unwrap());
 
     let account_check_sql = format!(
-        "SELECT plaid_account_id, name, account_type, balance_current FROM {} WHERE id = $1",
+        "SELECT provider_account_id, name, account_type, balance_current FROM {} WHERE id = $1",
         accounts_table
     );
     let account_row = sqlx::query(&account_check_sql)
@@ -629,7 +629,7 @@ async fn given_pre_migration_schema_when_bank_operations_migration_runs_then_add
         .unwrap();
 
     assert_eq!(
-        account_row.get::<String, _>("plaid_account_id"),
+        account_row.get::<String, _>("provider_account_id"),
         "test_account_123"
     );
     assert_eq!(account_row.get::<String, _>("name"), "Test Checking");
@@ -756,7 +756,7 @@ async fn given_post_migration_schema_when_inserting_new_fields_then_succeeds() {
 
     let account_id = Uuid::new_v4();
     let insert_account_sql = format!(
-        "INSERT INTO {} (id, plaid_account_id, name, account_type, balance_current, mask, subtype, official_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        "INSERT INTO {} (id, provider_account_id, name, account_type, balance_current, mask, subtype, official_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         accounts_table
     );
     sqlx::query(&insert_account_sql)

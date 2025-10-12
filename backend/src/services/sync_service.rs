@@ -37,8 +37,8 @@ impl SyncService {
         let mut mapped_transactions = transactions;
 
         for transaction in &mut mapped_transactions {
-            if let Some(plaid_account_id) = &transaction.plaid_account_id {
-                if let Some(&internal_account_id) = account_mapping.get(plaid_account_id) {
+            if let Some(provider_account_id) = &transaction.provider_account_id {
+                if let Some(&internal_account_id) = account_mapping.get(provider_account_id) {
                     transaction.account_id = internal_account_id;
                 }
             }
@@ -77,13 +77,13 @@ impl SyncService {
     ) -> Vec<Transaction> {
         let existing_plaid_ids: HashMap<String, bool> = existing
             .iter()
-            .filter_map(|t| t.plaid_transaction_id.as_ref())
+            .filter_map(|t| t.provider_transaction_id.as_ref())
             .map(|id| (id.clone(), true))
             .collect();
 
         new.iter()
             .filter(|t| {
-                if let Some(plaid_id) = &t.plaid_transaction_id {
+                if let Some(plaid_id) = &t.provider_transaction_id {
                     !existing_plaid_ids.contains_key(plaid_id)
                 } else {
                     true
@@ -115,7 +115,7 @@ impl SyncService {
         accounts
             .iter()
             .filter_map(|acc| {
-                acc.plaid_account_id
+                acc.provider_account_id
                     .as_ref()
                     .map(|plaid_id| (plaid_id.clone(), acc.id))
             })
@@ -128,7 +128,7 @@ impl SyncService {
         account_mapping: &HashMap<String, Uuid>,
     ) {
         for transaction in transactions {
-            if let Some(_plaid_id) = &transaction.plaid_transaction_id {
+            if let Some(_plaid_id) = &transaction.provider_transaction_id {
                 if let Some(&account_uuid) = account_mapping.values().next() {
                     transaction.account_id = account_uuid;
                 }

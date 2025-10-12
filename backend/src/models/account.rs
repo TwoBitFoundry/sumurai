@@ -6,8 +6,8 @@ use uuid::Uuid;
 pub struct Account {
     pub id: Uuid,
     pub user_id: Option<Uuid>,
-    pub plaid_account_id: Option<String>,
-    pub plaid_connection_id: Option<Uuid>,
+    pub provider_account_id: Option<String>,
+    pub provider_connection_id: Option<Uuid>,
     pub name: String,
     pub account_type: String,
     pub balance_current: Option<Decimal>,
@@ -19,8 +19,8 @@ pub struct Account {
 pub struct AccountResponse {
     pub id: Uuid,
     pub user_id: Option<Uuid>,
-    pub plaid_account_id: Option<String>,
-    pub plaid_connection_id: Option<Uuid>,
+    pub provider_account_id: Option<String>,
+    pub provider_connection_id: Option<Uuid>,
     pub name: String,
     pub account_type: String,
     pub balance_current: Option<rust_decimal::Decimal>,
@@ -34,8 +34,8 @@ impl Account {
         Self {
             id: Uuid::new_v4(),
             user_id: None,
-            plaid_account_id: teller_acc["id"].as_str().map(String::from),
-            plaid_connection_id: None,
+            provider_account_id: teller_acc["id"].as_str().map(String::from),
+            provider_connection_id: None,
             name: teller_acc["name"]
                 .as_str()
                 .unwrap_or("Unknown")
@@ -49,6 +49,28 @@ impl Account {
             institution_name: teller_acc["institution"]["name"]
                 .as_str()
                 .map(String::from),
+        }
+    }
+
+    pub fn from_plaid(plaid_acc: &serde_json::Value) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            user_id: None,
+            provider_account_id: plaid_acc["account_id"].as_str().map(String::from),
+            provider_connection_id: None,
+            name: plaid_acc["name"]
+                .as_str()
+                .unwrap_or("Unknown")
+                .to_string(),
+            account_type: plaid_acc["type"]
+                .as_str()
+                .unwrap_or("other")
+                .to_string(),
+            balance_current: plaid_acc["balances"]["current"]
+                .as_f64()
+                .and_then(|f| Decimal::from_f64_retain(f)),
+            mask: plaid_acc["mask"].as_str().map(String::from),
+            institution_name: None,
         }
     }
 }

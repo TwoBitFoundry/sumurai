@@ -142,8 +142,8 @@ async fn given_no_snapshots_when_get_balances_overview_then_falls_back_to_accoun
                 Account {
                     id: Uuid::new_v4(),
                     user_id: None,
-                    plaid_account_id: None,
-                    plaid_connection_id: None,
+                    provider_account_id: None,
+                    provider_connection_id: None,
                     name: "Check".to_string(),
                     account_type: "depository".to_string(),
                     balance_current: Some(dec!(500.00)),
@@ -153,8 +153,8 @@ async fn given_no_snapshots_when_get_balances_overview_then_falls_back_to_accoun
                 Account {
                     id: Uuid::new_v4(),
                     user_id: None,
-                    plaid_account_id: None,
-                    plaid_connection_id: None,
+                    provider_account_id: None,
+                    provider_connection_id: None,
                     name: "Card".to_string(),
                     account_type: "credit".to_string(),
                     balance_current: Some(dec!(200.00)),

@@ -210,12 +210,12 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     ? 'Plaid keeps credentials read-only and disconnectable anytime.'
     : 'Teller connections respect your API keys and can be rotated from your Teller dashboard.'
 
-  const otherProviders = providerInfo.availableProviders.filter(p => p !== selectedProvider)
+  const otherProviders = (providerInfo.availableProviders || []).filter(p => p !== selectedProvider)
   const connectDisabled = flowLoading || selectingProvider !== null || (selectedProvider === 'teller' && !providerInfo.tellerApplicationId)
 
   const banks = useMemo(
     () =>
-      connections.map(conn => ({
+      (connections || []).map(conn => ({
         id: conn.connectionId,
         name: conn.institutionName,
         short: conn.institutionName.split(' ').map((word) => word[0]).join('').slice(0, 2).toUpperCase(),

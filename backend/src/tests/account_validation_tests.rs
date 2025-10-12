@@ -16,8 +16,8 @@ async fn given_valid_owned_accounts_when_validate_then_returns_uuids() {
         Account {
             id: account_id_1,
             user_id: Some(user_id),
-            plaid_account_id: Some("acc1".to_string()),
-            plaid_connection_id: Some(Uuid::new_v4()),
+            provider_account_id: Some("acc1".to_string()),
+            provider_connection_id: Some(Uuid::new_v4()),
             name: "Account 1".to_string(),
             account_type: "checking".to_string(),
             balance_current: Some(rust_decimal_macros::dec!(1000.00)),
@@ -27,8 +27,8 @@ async fn given_valid_owned_accounts_when_validate_then_returns_uuids() {
         Account {
             id: account_id_2,
             user_id: Some(user_id),
-            plaid_account_id: Some("acc2".to_string()),
-            plaid_connection_id: Some(Uuid::new_v4()),
+            provider_account_id: Some("acc2".to_string()),
+            provider_connection_id: Some(Uuid::new_v4()),
             name: "Account 2".to_string(),
             account_type: "savings".to_string(),
             balance_current: Some(rust_decimal_macros::dec!(5000.00)),

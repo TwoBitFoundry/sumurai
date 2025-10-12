@@ -22,7 +22,7 @@ fn given_teller_account_json_when_from_teller_then_maps_fields_correctly() {
     let account = Account::from_teller(&teller_json);
 
     assert_eq!(
-        account.plaid_account_id,
+        account.provider_account_id,
         Some("acc_test_123".to_string())
     );
     assert_eq!(account.name, "Test Checking Account");
@@ -69,7 +69,7 @@ fn given_teller_transaction_json_when_from_teller_then_maps_fields_correctly() {
 
     assert_eq!(transaction.account_id, account_id);
     assert_eq!(
-        transaction.plaid_transaction_id,
+        transaction.provider_transaction_id,
         Some("txn_test_123".to_string())
     );
     assert_eq!(transaction.amount, Decimal::from_str("89.40").unwrap());

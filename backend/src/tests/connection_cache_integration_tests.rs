@@ -37,8 +37,8 @@ fn create_test_accounts() -> Vec<Account> {
         Account {
             id: Uuid::new_v4(),
             user_id: Some(Uuid::new_v4()),
-            plaid_account_id: Some("acc1".to_string()),
-            plaid_connection_id: None,
+            provider_account_id: Some("acc1".to_string()),
+            provider_connection_id: None,
             name: "Checking".to_string(),
             account_type: "depository".to_string(),
             balance_current: Some(Decimal::new(150000, 2)),
@@ -48,8 +48,8 @@ fn create_test_accounts() -> Vec<Account> {
         Account {
             id: Uuid::new_v4(),
             user_id: Some(Uuid::new_v4()),
-            plaid_account_id: Some("acc2".to_string()),
-            plaid_connection_id: None,
+            provider_account_id: Some("acc2".to_string()),
+            provider_connection_id: None,
             name: "Savings".to_string(),
             account_type: "depository".to_string(),
             balance_current: Some(Decimal::new(300000, 2)),

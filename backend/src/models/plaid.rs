@@ -139,7 +139,7 @@ pub struct LatestAccountBalance {
     pub account_subtype: Option<String>,
     pub currency: String,
     pub current_balance: Decimal,
-    pub plaid_connection_id: Option<Uuid>,
+    pub provider_connection_id: Option<Uuid>,
     pub institution_name: Option<String>,
 }
 

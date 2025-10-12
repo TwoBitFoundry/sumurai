@@ -137,7 +137,7 @@ impl FinancialDataProvider for TellerProvider {
 
         for account in accounts {
             let account_id = account
-                .plaid_account_id
+                .provider_account_id
                 .as_ref()
                 .ok_or_else(|| anyhow::anyhow!("Account missing ID"))?;
 

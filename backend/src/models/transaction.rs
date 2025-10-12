@@ -9,8 +9,8 @@ pub struct Transaction {
     pub id: Uuid,
     pub account_id: Uuid,
     pub user_id: Option<Uuid>,
-    pub plaid_account_id: Option<String>,
-    pub plaid_transaction_id: Option<String>,
+    pub provider_account_id: Option<String>,
+    pub provider_transaction_id: Option<String>,
     pub amount: Decimal,
     pub date: NaiveDate,
     pub merchant_name: Option<String>,
@@ -27,8 +27,8 @@ pub struct TransactionWithAccount {
     pub id: Uuid,
     pub account_id: Uuid,
     pub user_id: Option<Uuid>,
-    pub plaid_account_id: Option<String>,
-    pub plaid_transaction_id: Option<String>,
+    pub provider_account_id: Option<String>,
+    pub provider_transaction_id: Option<String>,
     pub amount: Decimal,
     pub date: NaiveDate,
     pub merchant_name: Option<String>,
@@ -144,8 +144,8 @@ impl Transaction {
             id: Uuid::new_v4(),
             account_id,
             user_id: None,
-            plaid_account_id: None,
-            plaid_transaction_id: None,
+            provider_account_id: None,
+            provider_transaction_id: None,
             amount,
             date,
             merchant_name,
@@ -182,8 +182,8 @@ impl Transaction {
             id: Uuid::new_v4(),
             account_id: *account_id,
             user_id: None,
-            plaid_account_id: None,
-            plaid_transaction_id: teller_txn["id"].as_str().map(String::from),
+            provider_account_id: None,
+            provider_transaction_id: teller_txn["id"].as_str().map(String::from),
             amount,
             date,
             merchant_name,
@@ -192,6 +192,55 @@ impl Transaction {
             category_confidence: String::new(),
             payment_channel: None,
             pending: teller_txn["status"].as_str() != Some("posted"),
+            created_at: Some(chrono::Utc::now()),
+        }
+    }
+
+    pub fn from_plaid(plaid_txn: &serde_json::Value, account_id: &Uuid) -> Self {
+        let amount = plaid_txn["amount"]
+            .as_f64()
+            .and_then(|f| Decimal::from_f64_retain(f))
+            .unwrap_or(Decimal::ZERO)
+            .abs();
+
+        let date = plaid_txn["date"]
+            .as_str()
+            .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok())
+            .unwrap_or_else(|| chrono::Utc::now().date_naive());
+
+        let categories = plaid_txn["category"].as_array();
+        let category_primary = categories
+            .and_then(|arr| arr.first())
+            .and_then(|v| v.as_str())
+            .unwrap_or("OTHER")
+            .to_string();
+
+        let category_detailed = categories
+            .and_then(|arr| arr.get(1))
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+
+        Self {
+            id: Uuid::new_v4(),
+            account_id: *account_id,
+            user_id: None,
+            provider_account_id: plaid_txn["account_id"].as_str().map(String::from),
+            provider_transaction_id: plaid_txn["transaction_id"].as_str().map(String::from),
+            amount,
+            date,
+            merchant_name: plaid_txn["merchant_name"]
+                .as_str()
+                .or_else(|| plaid_txn["name"].as_str())
+                .map(String::from),
+            category_primary,
+            category_detailed,
+            category_confidence: plaid_txn["personal_finance_category"]["confidence_level"]
+                .as_str()
+                .unwrap_or("")
+                .to_string(),
+            payment_channel: plaid_txn["payment_channel"].as_str().map(String::from),
+            pending: plaid_txn["pending"].as_bool().unwrap_or(false),
             created_at: Some(chrono::Utc::now()),
         }
     }

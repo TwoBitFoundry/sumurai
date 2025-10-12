@@ -25,8 +25,8 @@ fn create_test_accounts_for_bank(connection_id: Uuid, user_id: Uuid) -> Vec<Acco
         Account {
             id: Uuid::new_v4(),
             user_id: Some(user_id),
-            plaid_account_id: Some("bank_acc_1".to_string()),
-            plaid_connection_id: Some(connection_id),
+            provider_account_id: Some("bank_acc_1".to_string()),
+            provider_connection_id: Some(connection_id),
             name: "Primary Checking".to_string(),
             account_type: "depository".to_string(),
             balance_current: Some(dec!(1500.00)),
@@ -36,8 +36,8 @@ fn create_test_accounts_for_bank(connection_id: Uuid, user_id: Uuid) -> Vec<Acco
         Account {
             id: Uuid::new_v4(),
             user_id: Some(user_id),
-            plaid_account_id: Some("bank_acc_2".to_string()),
-            plaid_connection_id: Some(connection_id),
+            provider_account_id: Some("bank_acc_2".to_string()),
+            provider_connection_id: Some(connection_id),
             name: "Savings Account".to_string(),
             account_type: "depository".to_string(),
             balance_current: Some(dec!(5000.00)),
@@ -47,8 +47,8 @@ fn create_test_accounts_for_bank(connection_id: Uuid, user_id: Uuid) -> Vec<Acco
         Account {
             id: Uuid::new_v4(),
             user_id: Some(user_id),
-            plaid_account_id: Some("bank_acc_3".to_string()),
-            plaid_connection_id: Some(connection_id),
+            provider_account_id: Some("bank_acc_3".to_string()),
+            provider_connection_id: Some(connection_id),
             name: "Credit Card".to_string(),
             account_type: "credit".to_string(),
             balance_current: Some(dec!(-250.00)),
@@ -143,8 +143,8 @@ async fn given_bank_connection_when_upserting_account_then_assigns_connection_id
     let mut account = Account {
         id: Uuid::new_v4(),
         user_id: Some(user_id),
-        plaid_account_id: Some("plaid_123".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("plaid_123".to_string()),
+        provider_connection_id: None,
         name: "Test Account".to_string(),
         account_type: "checking".to_string(),
         balance_current: Some(dec!(1000.00)),
@@ -153,7 +153,7 @@ async fn given_bank_connection_when_upserting_account_then_assigns_connection_id
     };
 
     account.user_id = Some(user_id);
-    account.plaid_connection_id = Some(connection_id);
+    account.provider_connection_id = Some(connection_id);
 
-    assert_eq!(account.plaid_connection_id, Some(connection_id));
+    assert_eq!(account.provider_connection_id, Some(connection_id));
 }

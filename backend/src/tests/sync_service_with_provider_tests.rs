@@ -61,13 +61,13 @@ impl FinancialDataProvider for MockProvider {
 #[tokio::test]
 async fn given_sync_service_with_provider_when_sync_then_maps_accounts_correctly() {
     let account_id = Uuid::new_v4();
-    let plaid_account_id = "plaid_acc_123".to_string();
+    let provider_account_id = "plaid_acc_123".to_string();
 
     let accounts = vec![Account {
         id: account_id,
         user_id: Some(Uuid::new_v4()),
-        plaid_account_id: Some(plaid_account_id.clone()),
-        plaid_connection_id: None,
+        provider_account_id: Some(provider_account_id.clone()),
+        provider_connection_id: None,
         name: "Test Account".to_string(),
         account_type: "checking".to_string(),
         balance_current: None,
@@ -79,8 +79,8 @@ async fn given_sync_service_with_provider_when_sync_then_maps_accounts_correctly
         id: Uuid::new_v4(),
         account_id: Uuid::new_v4(),
         user_id: None,
-        plaid_account_id: Some(plaid_account_id.clone()),
-        plaid_transaction_id: Some("txn_123".to_string()),
+        provider_account_id: Some(provider_account_id.clone()),
+        provider_transaction_id: Some("txn_123".to_string()),
         amount: rust_decimal::Decimal::new(5000, 2),
         date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
         merchant_name: Some("Coffee Shop".to_string()),
