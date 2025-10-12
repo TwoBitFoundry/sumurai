@@ -217,7 +217,7 @@ async fn given_api_endpoints_when_accessing_without_valid_jwt_then_returns_401_f
         )
         .route("/api/providers/status", get(|| async { "provider-status" }))
         .route(
-            "/api/plaid/disconnect",
+            "/api/providers/disconnect",
             axum::routing::post(|| async { "disconnect" }),
         )
         .route(
@@ -250,7 +250,7 @@ async fn given_api_endpoints_when_accessing_without_valid_jwt_then_returns_401_f
         ("/api/plaid/accounts", "GET"),
         ("/api/plaid/sync-transactions", "POST"),
         ("/api/providers/status", "GET"),
-        ("/api/plaid/disconnect", "POST"),
+        ("/api/providers/disconnect", "POST"),
         ("/api/analytics/spending/current-month", "GET"),
         ("/api/analytics/categories", "GET"),
         ("/api/analytics/daily-spending", "GET"),

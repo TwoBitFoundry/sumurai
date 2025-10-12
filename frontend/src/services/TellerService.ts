@@ -35,6 +35,6 @@ export class TellerService {
   }
 
   static async disconnect(connectionId: string): Promise<void> {
-    await ApiClient.post('/teller/disconnect', { connection_id: connectionId })
+    await ApiClient.post('/providers/disconnect', { connection_id: connectionId })
   }
 }

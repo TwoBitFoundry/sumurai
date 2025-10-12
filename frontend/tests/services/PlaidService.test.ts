@@ -234,7 +234,7 @@ describe('PlaidService', () => {
 
       const result = await PlaidService.disconnect('conn-123')
 
-      expect(ApiClient.post).toHaveBeenCalledWith('/plaid/disconnect', { connection_id: 'conn-123' })
+      expect(ApiClient.post).toHaveBeenCalledWith('/providers/disconnect', { connection_id: 'conn-123' })
       expect(result).toEqual(mockResponse)
     })
   })

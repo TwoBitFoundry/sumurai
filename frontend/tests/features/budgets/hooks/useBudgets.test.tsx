@@ -60,16 +60,16 @@ const createDeferred = <T,>() => {
 }
 
 describe('useBudgets', () => {
-const createConnectedStatus = () =>
-  createProviderStatus({
-    connections: [
-      createProviderConnection({
-        is_connected: true,
-        institution_name: 'Mock Bank',
-        connection_id: 'conn_1',
-      }),
-    ],
-  })
+  const createConnectedStatus = () =>
+    createProviderStatus({
+      connections: [
+        createProviderConnection({
+          is_connected: true,
+          institution_name: 'Mock Bank',
+          connection_id: 'conn_1',
+        }),
+      ],
+    })
 
   beforeEach(() => {
     vi.clearAllMocks()

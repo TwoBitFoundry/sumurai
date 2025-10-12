@@ -17,7 +17,7 @@ describe('usePlaidConnection Hook', () => {
     // Default routes
     fetchMock = installFetchRoutes({
       'GET /api/providers/status': createProviderStatus(),
-      'POST /api/plaid/disconnect': {
+      'POST /api/providers/disconnect': {
         success: true,
         message: 'Successfully disconnected',
         data_cleared: {
@@ -142,7 +142,7 @@ describe('usePlaidConnection Hook', () => {
               }),
             ],
           }),
-          'POST /api/plaid/disconnect': {
+          'POST /api/providers/disconnect': {
             success: true,
             message: 'Successfully disconnected',
             data_cleared: {

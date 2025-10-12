@@ -34,7 +34,7 @@ export class PlaidService {
   }
 
   static async disconnect(connectionId: string): Promise<PlaidDisconnectResponse> {
-    return ApiClient.post<PlaidDisconnectResponse>('/plaid/disconnect', {
+    return ApiClient.post<PlaidDisconnectResponse>('/providers/disconnect', {
       connection_id: connectionId
     })
   }

@@ -172,8 +172,8 @@ pub fn create_app(state: AppState) -> Router {
             post(sync_authenticated_plaid_transactions),
         )
         .route(
-            "/api/plaid/disconnect",
-            post(disconnect_authenticated_plaid),
+            "/api/providers/disconnect",
+            post(disconnect_authenticated_connection),
         )
         .route(
             "/api/plaid/clear-synced-data",
@@ -1527,7 +1527,7 @@ async fn delete_authenticated_budget(
     }
 }
 
-async fn disconnect_authenticated_plaid(
+async fn disconnect_authenticated_connection(
     State(state): State<AppState>,
     auth_context: AuthContext,
     Json(req): Json<DisconnectRequest>,
@@ -1537,7 +1537,7 @@ async fn disconnect_authenticated_plaid(
 
     match state
         .connection_service
-        .disconnect_plaid_by_id(&connection_id, &user_id, &auth_context.jwt_id)
+        .disconnect_connection_by_id(&connection_id, &user_id, &auth_context.jwt_id)
         .await
     {
         Ok(result) => Ok(Json(result)),

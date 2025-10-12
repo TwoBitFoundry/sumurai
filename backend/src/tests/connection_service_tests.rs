@@ -63,7 +63,7 @@ async fn given_connection_id_when_disconnect_then_disconnects_specific_connectio
     let service = ConnectionService::new(Arc::new(mock_db), Arc::new(mock_cache));
 
     let result = service
-        .disconnect_plaid_by_id(&connection_id, &user_id, "jwt_123")
+        .disconnect_connection_by_id(&connection_id, &user_id, "jwt_123")
         .await;
 
     assert!(result.is_ok());

@@ -25,7 +25,7 @@ impl ConnectionService {
         }
     }
 
-    pub async fn disconnect_plaid_by_id(
+    pub async fn disconnect_connection_by_id(
         &self,
         connection_id: &Uuid,
         user_id: &Uuid,

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ApiClient } from '../services/ApiClient'
 import { PlaidService } from '../services/PlaidService'
 import type { ProviderConnectionStatus } from '../types/api'
 
@@ -81,7 +80,18 @@ export const usePlaidConnection = (): UsePlaidConnectionReturn => {
 
   const disconnect = useCallback(async (): Promise<void> => {
     try {
-      await ApiClient.post('/plaid/disconnect')
+      let connectionId = state.connectionId
+
+      if (!connectionId) {
+        const status = await PlaidService.getStatus()
+        connectionId = status.connections.find(conn => conn.is_connected)?.connection_id ?? null
+      }
+
+      if (!connectionId) {
+        throw new Error('No active connection to disconnect')
+      }
+
+      await PlaidService.disconnect(connectionId)
 
       setState(prev => ({
         ...prev,
@@ -100,7 +110,7 @@ export const usePlaidConnection = (): UsePlaidConnectionReturn => {
         error: 'Failed to disconnect Plaid integration'
       }))
     }
-  }, [])
+  }, [state.connectionId])
 
   const updateSyncInfo = useCallback((
     transactionCount: number, 
