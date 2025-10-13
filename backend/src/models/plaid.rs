@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct PlaidConnection {
+pub struct ProviderConnection {
     pub id: Uuid,
     pub user_id: Uuid,
     pub item_id: String,
@@ -31,6 +31,14 @@ pub struct ExchangeTokenRequest {
     pub public_token: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct ProviderConnectRequest {
+    pub provider: String,
+    pub access_token: String,
+    pub enrollment_id: String,
+    pub institution_name: Option<String>,
+}
+
 #[derive(Deserialize, Serialize)]
 pub struct SyncTransactionsRequest {
     pub connection_id: Option<String>,
@@ -41,7 +49,7 @@ pub struct DisconnectRequest {
     pub connection_id: String,
 }
 
-impl PlaidConnection {
+impl ProviderConnection {
     #[allow(dead_code)]
     pub fn new(user_id: Uuid, item_id: &str) -> Self {
         let now = Utc::now();
@@ -107,7 +115,7 @@ impl PlaidConnection {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PlaidConnectionStatus {
+pub struct ProviderConnectionStatus {
     pub is_connected: bool,
     pub last_sync_at: Option<String>,
     pub institution_name: Option<String>,
@@ -115,6 +123,18 @@ pub struct PlaidConnectionStatus {
     pub transaction_count: i32,
     pub account_count: i32,
     pub sync_in_progress: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProviderStatusResponse {
+    pub provider: String,
+    pub connections: Vec<ProviderConnectionStatus>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ProviderConnectResponse {
+    pub connection_id: String,
+    pub institution_name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -139,7 +159,7 @@ pub struct LatestAccountBalance {
     pub account_subtype: Option<String>,
     pub currency: String,
     pub current_balance: Decimal,
-    pub plaid_connection_id: Option<Uuid>,
+    pub provider_connection_id: Option<Uuid>,
     pub institution_name: Option<String>,
 }
 

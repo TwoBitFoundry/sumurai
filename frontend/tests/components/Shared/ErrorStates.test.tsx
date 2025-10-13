@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { AuthenticatedApp } from '@/components/AuthenticatedApp'
 import { AccountFilterProvider } from '@/hooks/useAccountFilter'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
+import { createProviderStatus } from '@tests/utils/fixtures'
 
 describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () => {
   const user = userEvent.setup()
@@ -11,13 +12,14 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
   const mockOnLogout = vi.fn()
   const mockSetDark = vi.fn()
   let fetchMock: ReturnType<typeof installFetchRoutes>
+  const disconnectedStatus = createProviderStatus()
 
   beforeEach(() => {
     vi.clearAllMocks()
     console.error = vi.fn()
     // Default boundary routes
     fetchMock = installFetchRoutes({
-      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/providers/status': disconnectedStatus,
       'GET /api/plaid/accounts': [],
       'GET /api/transactions*': [],
       'GET /api/analytics/spending*': 0,
@@ -42,7 +44,7 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
   describe('Network Error Messages', () => {
     it('renders dashboard when analytics API is unreachable (500)', async () => {
       fetchMock = installFetchRoutes({
-        'GET /api/plaid/status': { is_connected: false },
+        'GET /api/providers/status': disconnectedStatus,
         'GET /api/plaid/accounts': [],
         'GET /api/transactions*': [],
         'GET /api/analytics/spending*': new Response('Server error', { status: 500 }),
@@ -70,7 +72,7 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
 
     it('continues rendering on timeout-like errors', async () => {
       fetchMock = installFetchRoutes({
-        'GET /api/plaid/status': { is_connected: false },
+        'GET /api/providers/status': disconnectedStatus,
         'GET /api/plaid/accounts': [],
         'GET /api/transactions*': [],
         'GET /api/analytics/spending*': () => { throw new Error('Request timeout') },
@@ -97,7 +99,7 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
   describe('Empty State Messages', () => {
     it('shows friendly message when no transactions exist', async () => {
       fetchMock = installFetchRoutes({
-        'GET /api/plaid/status': { is_connected: false },
+        'GET /api/providers/status': disconnectedStatus,
         'GET /api/plaid/accounts': [],
         'GET /api/transactions': [],
         'GET /api/analytics/spending*': 0,
@@ -123,7 +125,7 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
 
     it('shows message when budgets are not set up', async () => {
       fetchMock = installFetchRoutes({
-        'GET /api/plaid/status': { is_connected: false },
+        'GET /api/providers/status': disconnectedStatus,
         'GET /api/plaid/accounts': [],
         'GET /api/transactions': [],
         'GET /api/analytics/spending*': 0,
@@ -151,7 +153,7 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
   describe('Graceful Degradation', () => {
     it('continues showing partial data when some services fail', async () => {
       fetchMock = installFetchRoutes({
-        'GET /api/plaid/status': { is_connected: false },
+        'GET /api/providers/status': disconnectedStatus,
         'GET /api/plaid/accounts': [],
         // Return backend transaction shape; service maps merchant_name -> name
         'GET /api/transactions*': [
@@ -183,7 +185,7 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
     it('allows retry on network errors for transactions', async () => {
       let attempts = 0
       fetchMock = installFetchRoutes({
-        'GET /api/plaid/status': { is_connected: false },
+        'GET /api/providers/status': disconnectedStatus,
         'GET /api/plaid/accounts': [],
         'GET /api/transactions*': () => {
           attempts += 1
@@ -216,7 +218,7 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
 
     it('continues rendering when budgets fail to load', async () => {
       fetchMock = installFetchRoutes({
-        'GET /api/plaid/status': { is_connected: false },
+        'GET /api/providers/status': disconnectedStatus,
         'GET /api/plaid/accounts': [],
         'GET /api/transactions': [],
         'GET /api/analytics/spending*': 0,

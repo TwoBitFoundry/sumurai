@@ -14,6 +14,7 @@ use uuid::Uuid;
 mod auth_middleware;
 mod config;
 mod models;
+pub mod providers;
 mod services;
 #[cfg(test)]
 mod tests;
@@ -27,7 +28,10 @@ use crate::models::analytics::{
 };
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, AuthMiddlewareState};
-use crate::models::plaid::{DisconnectRequest, DisconnectResult, PlaidConnectionStatus};
+use crate::models::plaid::{
+    DisconnectRequest, DisconnectResult, ProviderConnectRequest, ProviderConnectResponse,
+    ProviderConnectionStatus, ProviderStatusResponse,
+};
 use crate::models::{
     account::AccountResponse,
     analytics::{DateRangeQuery, MonthlyTotalsQuery},
@@ -43,7 +47,7 @@ use services::repository_service::{DatabaseRepository, PostgresRepository};
 use services::{AnalyticsService, RealPlaidClient};
 use services::{
     AuthService, BudgetService, CacheService, ConnectionService, PlaidService, RedisCache,
-    SyncService,
+    SyncService, TellerConnectError, TellerSyncError,
 };
 use sqlx::PgPool;
 
@@ -59,8 +63,9 @@ async fn main() -> anyhow::Result<()> {
         std::env::var("PLAID_ENV").unwrap_or_else(|_| "sandbox".to_string()),
     ));
     let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
+    let plaid_provider = Arc::new(providers::PlaidProvider::new(plaid_client.clone()));
 
-    let sync_service = Arc::new(SyncService::new(plaid_service.clone()));
+    let sync_service = Arc::new(SyncService::new(plaid_provider.clone()));
 
     let analytics_service = Arc::new(AnalyticsService::new());
     let budget_service = Arc::new(BudgetService::new());
@@ -144,6 +149,20 @@ pub fn create_app(state: AppState) -> Router {
             put(complete_user_onboarding),
         )
         .route("/api/transactions", get(get_authenticated_transactions))
+        .route("/api/providers/info", get(get_authenticated_provider_info))
+        .route("/api/providers/select", post(select_authenticated_provider))
+        .route(
+            "/api/providers/connect",
+            post(connect_authenticated_provider),
+        )
+        .route(
+            "/api/providers/status",
+            get(get_authenticated_provider_status),
+        )
+        .route(
+            "/api/providers/accounts",
+            get(get_authenticated_plaid_accounts),
+        )
         .route(
             "/api/plaid/link-token",
             post(create_authenticated_link_token),
@@ -154,16 +173,12 @@ pub fn create_app(state: AppState) -> Router {
         )
         .route("/api/plaid/accounts", get(get_authenticated_plaid_accounts))
         .route(
-            "/api/plaid/sync-transactions",
-            post(sync_authenticated_plaid_transactions),
+            "/api/providers/sync-transactions",
+            post(sync_authenticated_provider_transactions),
         )
         .route(
-            "/api/plaid/status",
-            get(get_authenticated_plaid_connection_status),
-        )
-        .route(
-            "/api/plaid/disconnect",
-            post(disconnect_authenticated_plaid),
+            "/api/providers/disconnect",
+            post(disconnect_authenticated_connection),
         )
         .route(
             "/api/plaid/clear-synced-data",
@@ -237,6 +252,7 @@ async fn register_user(
         id: user_id,
         email: req.email.clone(),
         password_hash,
+        provider: state.config.get_default_provider().to_string(),
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: false,
@@ -588,7 +604,7 @@ async fn exchange_authenticated_public_token(
 
             if let Err(e) = state
                 .db_repository
-                .store_plaid_credentials_for_user(&user_id, &real_item_id, &access_token)
+                .store_provider_credentials_for_user(&user_id, &real_item_id, &access_token)
                 .await
             {
                 tracing::warn!("Failed to store Plaid credentials in database: {}", e);
@@ -602,7 +618,8 @@ async fn exchange_authenticated_public_token(
                 tracing::warn!("Failed to cache access token: {}", e);
             }
 
-            let mut connection = crate::models::plaid::PlaidConnection::new(user_id, &real_item_id);
+            let mut connection =
+                crate::models::plaid::ProviderConnection::new(user_id, &real_item_id);
 
             if let Some(inst_name) = &institution_name {
                 connection.mark_connected(inst_name);
@@ -612,8 +629,12 @@ async fn exchange_authenticated_public_token(
 
             connection.institution_id = institution_id;
 
-            if let Err(e) = state.db_repository.save_plaid_connection(&connection).await {
-                tracing::warn!("Failed to save PlaidConnection: {}", e);
+            if let Err(e) = state
+                .db_repository
+                .save_provider_connection(&connection)
+                .await
+            {
+                tracing::warn!("Failed to save ProviderConnection: {}", e);
             }
 
             Ok(Json(serde_json::json!({
@@ -661,8 +682,8 @@ async fn get_authenticated_plaid_accounts(
             AccountResponse {
                 id: account.id,
                 user_id: Some(user_id),
-                plaid_account_id: account.plaid_account_id.clone(),
-                plaid_connection_id: account.plaid_connection_id,
+                provider_account_id: account.provider_account_id.clone(),
+                provider_connection_id: account.provider_connection_id,
                 name: account.name,
                 account_type: account.account_type,
                 balance_current: account.balance_current,
@@ -676,7 +697,7 @@ async fn get_authenticated_plaid_accounts(
     Ok(Json(account_responses))
 }
 
-async fn sync_authenticated_plaid_transactions(
+async fn sync_authenticated_provider_transactions(
     State(state): State<AppState>,
     auth_context: AuthContext,
     Json(req): Json<Option<SyncTransactionsRequest>>,
@@ -694,17 +715,20 @@ async fn sync_authenticated_plaid_transactions(
             StatusCode::BAD_REQUEST
         })?;
 
-    let connection_id = Uuid::parse_str(connection_id_str)
-        .map_err(|_| StatusCode::BAD_REQUEST)?;
+    let connection_id = Uuid::parse_str(connection_id_str).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    let connection = match state
+    let mut connection = match state
         .db_repository
-        .get_plaid_connection_by_id(&connection_id, &user_id)
+        .get_provider_connection_by_id(&connection_id, &user_id)
         .await
     {
         Ok(Some(conn)) => conn,
         Ok(None) => {
-            tracing::error!("Connection {} not found for user {}", connection_id, user_id);
+            tracing::error!(
+                "Connection {} not found for user {}",
+                connection_id,
+                user_id
+            );
             return Err(StatusCode::NOT_FOUND);
         }
         Err(e) => {
@@ -713,9 +737,69 @@ async fn sync_authenticated_plaid_transactions(
         }
     };
 
+    if connection.item_id.starts_with("teller_") {
+        match state
+            .connection_service
+            .sync_teller_connection(&user_id, &auth_context.jwt_id, &mut connection)
+            .await
+        {
+            Ok(response) => return Ok(Json(response)),
+            Err(TellerSyncError::CredentialsMissing) => {
+                tracing::error!(
+                    "No Teller credentials for user {} and item {}",
+                    user_id,
+                    connection.item_id
+                );
+                return Err(StatusCode::NOT_FOUND);
+            }
+            Err(TellerSyncError::CredentialAccess(e)) => {
+                tracing::error!(
+                    "Failed to load Teller credentials for user {} and item {}: {}",
+                    user_id,
+                    connection.item_id,
+                    e
+                );
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+            Err(TellerSyncError::ProviderInitialization(e)) => {
+                tracing::error!("Failed to initialize Teller provider: {}", e);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+            Err(TellerSyncError::ProviderRequest(e)) => {
+                tracing::error!("Teller provider request failed for user {}: {}", user_id, e);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+            Err(TellerSyncError::AccountLookup(e)) => {
+                tracing::error!(
+                    "Failed to fetch accounts from database for Teller user {}: {}",
+                    user_id,
+                    e
+                );
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+            Err(TellerSyncError::TransactionLookup(e)) => {
+                tracing::error!(
+                    "Failed to load transactions for Teller user {}: {}",
+                    user_id,
+                    e
+                );
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+            Err(TellerSyncError::ConnectionPersistence(e)) => {
+                tracing::error!(
+                    "Failed to update Teller connection {} for user {}: {}",
+                    connection_id,
+                    user_id,
+                    e
+                );
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        }
+    }
+
     let plaid_credentials = match state
         .db_repository
-        .get_plaid_credentials_for_user(&user_id, &connection.item_id)
+        .get_provider_credentials_for_user(&user_id, &connection.item_id)
         .await
     {
         Ok(Some(creds)) => creds,
@@ -750,13 +834,17 @@ async fn sync_authenticated_plaid_transactions(
         .sync_service
         .calculate_sync_date_range(connection.last_sync_at);
 
+    let provider_credentials = providers::ProviderCredentials {
+        provider: "plaid".to_string(),
+        access_token: plaid_credentials.access_token.clone(),
+        item_id: connection.item_id.clone(),
+        certificate: None,
+        private_key: None,
+    };
+
     let sync_result = state
         .sync_service
-        .sync_bank_connection_transactions(
-            &plaid_credentials.access_token,
-            &connection,
-            &db_accounts,
-        )
+        .sync_bank_connection_transactions(&provider_credentials, &connection, &db_accounts)
         .await;
 
     let accounts_result = state
@@ -794,7 +882,7 @@ async fn sync_authenticated_plaid_transactions(
             for account in &accounts {
                 let mut acct = account.clone();
                 acct.user_id = Some(user_id);
-                acct.plaid_connection_id = Some(connection.id);
+                acct.provider_connection_id = Some(connection.id);
                 if let Err(e) = state.db_repository.upsert_account(&acct).await {
                     tracing::warn!("Failed to persist account to database during sync: {}", e);
                 }
@@ -812,7 +900,7 @@ async fn sync_authenticated_plaid_transactions(
             use std::collections::HashMap;
             let mut account_map: HashMap<String, uuid::Uuid> = HashMap::new();
             for acct in &db_accounts {
-                if let Some(plaid_id) = &acct.plaid_account_id {
+                if let Some(plaid_id) = &acct.provider_account_id {
                     account_map.insert(plaid_id.clone(), acct.id);
                     tracing::info!("Account mapping: {} -> {}", plaid_id, acct.id);
                 }
@@ -821,27 +909,27 @@ async fn sync_authenticated_plaid_transactions(
 
             for txn in &mut transactions {
                 txn.user_id = Some(user_id);
-                if let Some(plaid_acc_id) = &txn.plaid_account_id {
+                if let Some(plaid_acc_id) = &txn.provider_account_id {
                     if let Some(&internal_id) = account_map.get(plaid_acc_id) {
                         txn.account_id = internal_id;
                     } else {
                         tracing::warn!(
-                            "Transaction references unknown plaid_account_id: {} (available: {:?})",
+                            "Transaction references unknown provider_account_id: {} (available: {:?})",
                             plaid_acc_id,
                             account_map.keys().collect::<Vec<_>>()
                         );
                     }
                 } else {
-                    tracing::warn!("Transaction missing plaid_account_id: {:?}", txn.id);
+                    tracing::warn!("Transaction missing provider_account_id: {:?}", txn.id);
                 }
             }
 
             // Persist transactions - only those with valid account mappings
             for transaction in &transactions {
-                if let Some(plaid_acc_id) = &transaction.plaid_account_id {
+                if let Some(plaid_acc_id) = &transaction.provider_account_id {
                     if !account_map.contains_key(plaid_acc_id) {
                         tracing::warn!(
-                            "Skipping transaction with unmapped plaid_account_id: {}",
+                            "Skipping transaction with unmapped provider_account_id: {}",
                             plaid_acc_id
                         );
                         continue;
@@ -877,10 +965,10 @@ async fn sync_authenticated_plaid_transactions(
             updated_connection.last_sync_at = Some(sync_timestamp);
             if let Err(e) = state
                 .db_repository
-                .save_plaid_connection(&updated_connection)
+                .save_provider_connection(&updated_connection)
                 .await
             {
-                tracing::warn!("Failed to update PlaidConnection: {}", e);
+                tracing::warn!("Failed to update ProviderConnection: {}", e);
             }
 
             // Update JWT-scoped caches (connection + accounts) and invalidate balances overview
@@ -1286,23 +1374,23 @@ async fn get_authenticated_top_merchants(
     }
 }
 
-async fn get_authenticated_plaid_connection_status(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-) -> Result<Json<Vec<PlaidConnectionStatus>>, StatusCode> {
-    let user_id = auth_context.user_id;
-
-    let connections = state.db_repository
-        .get_all_plaid_connections_by_user(&user_id)
+async fn load_connection_statuses(
+    state: &AppState,
+    user_id: &Uuid,
+) -> Result<Vec<ProviderConnectionStatus>, StatusCode> {
+    let connections = state
+        .db_repository
+        .get_all_provider_connections_by_user(user_id)
         .await
         .map_err(|e| {
-            tracing::error!("Failed to get connections: {}", e);
+            tracing::error!("Failed to get connections for user {}: {}", user_id, e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    let statuses: Vec<PlaidConnectionStatus> = connections
+    Ok(connections
         .into_iter()
-        .map(|conn| PlaidConnectionStatus {
+        .filter(|conn| conn.is_connected)
+        .map(|conn| ProviderConnectionStatus {
             is_connected: conn.is_connected,
             last_sync_at: conn.last_sync_at.map(|dt| dt.to_rfc3339()),
             institution_name: conn.institution_name,
@@ -1311,9 +1399,73 @@ async fn get_authenticated_plaid_connection_status(
             account_count: conn.account_count,
             sync_in_progress: false,
         })
-        .collect();
+        .collect())
+}
 
-    Ok(Json(statuses))
+async fn connect_authenticated_provider(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<ProviderConnectRequest>,
+) -> Result<Json<ProviderConnectResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    if req.provider != "teller" {
+        return Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
+            .into_response(StatusCode::BAD_REQUEST));
+    }
+
+    match state
+        .connection_service
+        .connect_teller_provider(&auth_context.user_id, &auth_context.jwt_id, &req)
+        .await
+    {
+        Ok(response) => Ok(Json(response)),
+        Err(TellerConnectError::InvalidProvider(_)) => {
+            Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
+                .into_response(StatusCode::BAD_REQUEST))
+        }
+        Err(TellerConnectError::CredentialStorage(e)) => {
+            tracing::error!(
+                "Failed to store Teller credentials for user {}: {}",
+                auth_context.user_id,
+                e
+            );
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to store credentials",
+            ))
+        }
+        Err(TellerConnectError::ConnectionPersistence(e)) => {
+            tracing::error!(
+                "Failed to persist Teller connection for user {}: {}",
+                auth_context.user_id,
+                e
+            );
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to save connection",
+            ))
+        }
+    }
+}
+
+async fn get_authenticated_provider_status(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<ProviderStatusResponse>, StatusCode> {
+    let user_id = auth_context.user_id;
+
+    let provider = match state.db_repository.get_user_by_id(&user_id).await {
+        Ok(Some(user)) => user.provider,
+        Ok(None) => state.config.get_default_provider().to_string(),
+        Err(e) => {
+            tracing::error!("Failed to load user {} for provider status: {}", user_id, e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    let connections = load_connection_statuses(&state, &user_id).await?;
+
+    Ok(Json(ProviderStatusResponse {
+        provider,
+        connections,
+    }))
 }
 
 async fn get_authenticated_budgets(
@@ -1485,18 +1637,17 @@ async fn delete_authenticated_budget(
     }
 }
 
-async fn disconnect_authenticated_plaid(
+async fn disconnect_authenticated_connection(
     State(state): State<AppState>,
     auth_context: AuthContext,
     Json(req): Json<DisconnectRequest>,
 ) -> Result<Json<DisconnectResult>, StatusCode> {
     let user_id = auth_context.user_id;
-    let connection_id = Uuid::parse_str(&req.connection_id)
-        .map_err(|_| StatusCode::BAD_REQUEST)?;
+    let connection_id = Uuid::parse_str(&req.connection_id).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     match state
         .connection_service
-        .disconnect_plaid_by_id(&connection_id, &user_id, &auth_context.jwt_id)
+        .disconnect_connection_by_id(&connection_id, &user_id, &auth_context.jwt_id)
         .await
     {
         Ok(result) => Ok(Json(result)),
@@ -1509,6 +1660,80 @@ async fn disconnect_authenticated_plaid(
 
 async fn health_check() -> &'static str {
     "OK"
+}
+
+async fn get_authenticated_provider_info(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let user_id = auth_context.user_id;
+
+    let user = state
+        .db_repository
+        .get_user_by_id(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to get user {}: {}", user_id, e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .ok_or_else(|| {
+            tracing::error!("User {} not found", user_id);
+            StatusCode::NOT_FOUND
+        })?;
+
+    let default_provider = state.config.get_default_provider();
+    let available_providers = vec!["plaid", "teller"];
+
+    Ok(Json(serde_json::json!({
+        "available_providers": available_providers,
+        "default_provider": default_provider,
+        "user_provider": user.provider,
+        "teller_application_id": state.config.get_teller_application_id(),
+        "teller_environment": state.config.get_teller_environment(),
+    })))
+}
+
+async fn select_authenticated_provider(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user_id = auth_context.user_id;
+
+    let provider = req
+        .get("provider")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| {
+            ApiErrorResponse::new("BAD_REQUEST", "Missing provider field")
+                .into_response(StatusCode::BAD_REQUEST)
+        })?;
+
+    if provider != "plaid" && provider != "teller" {
+        return Err(ApiErrorResponse::new(
+            "BAD_REQUEST",
+            "Invalid provider. Must be 'plaid' or 'teller'",
+        )
+        .into_response(StatusCode::BAD_REQUEST));
+    }
+
+    match state
+        .db_repository
+        .update_user_provider(&user_id, provider)
+        .await
+    {
+        Ok(_) => {
+            tracing::info!("User {} selected provider: {}", user_id, provider);
+            Ok(Json(serde_json::json!({
+                "user_provider": provider,
+            })))
+        }
+        Err(e) => {
+            tracing::error!("Failed to update provider for user {}: {}", user_id, e);
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to update provider selection",
+            ))
+        }
+    }
 }
 
 async fn get_authenticated_balances_overview(

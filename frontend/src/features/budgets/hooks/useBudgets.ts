@@ -138,8 +138,8 @@ export function useBudgets(): UseBudgetsResult {
   const categoryOptions = useMemo(() => {
     const unique = new Set<string>()
     for (const txn of transactions) {
-      const id = txn.category?.id || 'other'
-      unique.add(id)
+      const primary = txn.category?.primary || 'OTHER'
+      unique.add(primary)
     }
     return Array.from(unique).sort()
   }, [transactions])
@@ -151,7 +151,12 @@ export function useBudgets(): UseBudgetsResult {
       const catId = b.category
       const catNameLower = formatCategoryName(b.category).toLowerCase()
       const spent = transactions
-        .filter(t => t.category?.id === catId || (t.category?.name || '').toLowerCase() === catNameLower)
+        .filter(t => {
+          const primary = t.category?.primary || ''
+          const primaryMatches = primary.toLowerCase() === catId.toLowerCase()
+          const primaryFriendlyMatches = formatCategoryName(primary).toLowerCase() === catNameLower
+          return primaryMatches || primaryFriendlyMatches
+        })
         .filter(t => {
           const dateString = new Date(t.date).toISOString().slice(0, 10)
           return dateString >= start && dateString <= end

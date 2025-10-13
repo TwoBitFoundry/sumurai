@@ -252,7 +252,7 @@ fn given_user_data_operations_when_performed_then_logs_actions_for_audit_trail_w
             user_id: user2_id,
             jwt_id: user2_token.jwt_id.clone(),
             action: "CONNECT_PLAID".to_string(),
-            resource_type: "PlaidConnection".to_string(),
+            resource_type: "ProviderConnection".to_string(),
             resource_id: Some("item_456".to_string()),
             timestamp: chrono::Utc::now(),
             ip_address: Some("10.0.0.50".to_string()),

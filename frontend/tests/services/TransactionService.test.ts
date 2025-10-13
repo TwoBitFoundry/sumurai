@@ -17,8 +17,14 @@ describe('TransactionService', () => {
           id: '1',
           date: '2024-01-15',
           merchant_name: 'SuperMarket Inc',
-          amount: 45.50,
-          category_primary: 'food_and_dining'
+          amount: 45.5,
+          category_primary: 'FOOD_AND_DRINK',
+          category_detailed: 'FOOD_AND_DRINK_GROCERIES',
+          category_confidence: 'HIGH',
+          provider: 'plaid',
+          account_name: 'Everyday Checking',
+          account_type: 'depository',
+          account_mask: '1234'
         }
       ]
       const expectedFrontendTransactions: Transaction[] = [
@@ -27,8 +33,15 @@ describe('TransactionService', () => {
           date: '2024-01-15',
           name: 'SuperMarket Inc',
           merchant: 'SuperMarket Inc',
-          amount: 45.50,
-          category: { id: 'food_and_dining', name: 'Food And Dining' }
+          amount: 45.5,
+          category: {
+            primary: 'FOOD_AND_DRINK',
+            detailed: 'FOOD_AND_DRINK_GROCERIES',
+            confidence_level: 'HIGH'
+          },
+          account_name: 'Everyday Checking',
+          account_type: 'depository',
+          account_mask: '1234'
         }
       ]
       vi.mocked(ApiClient.get).mockResolvedValue(mockBackendTransactions)
@@ -96,39 +109,59 @@ describe('TransactionService', () => {
       expect(result).toEqual([])
     })
 
-    it('should NOT perform any client-side filtering or business logic', async () => {
+    it('normalizes teller specific metadata without client filtering', async () => {
       const backendTransactions = [
         {
           id: '1',
           date: '2024-01-15',
-          merchant_name: 'Old Transaction',
+          merchant_name: 'Ledger Update',
           amount: -100,
-          category_primary: 'food'
+          category_primary: 'GENERAL',
+          provider: 'teller',
+          running_balance: 900.12,
+          account_name: 'Main Checking',
+          account_type: 'depository'
         },
         {
           id: '2',
           date: '2023-12-01',
-          merchant_name: 'Very Old Transaction',
+          merchant_name: 'Legacy Payment',
           amount: 50,
-          category_primary: 'gas'
+          category_primary: 'UTILITIES',
+          provider: 'teller',
+          running_balance: 950.12,
+          account_name: 'Main Checking',
+          account_type: 'depository'
         }
       ]
       const expectedFrontendTransactions: Transaction[] = [
         {
           id: '1',
           date: '2024-01-15',
-          name: 'Old Transaction',
-          merchant: 'Old Transaction',
+          name: 'Ledger Update',
+          merchant: 'Ledger Update',
           amount: -100,
-          category: { id: 'food', name: 'Food' }
+          category: {
+            primary: 'GENERAL'
+          },
+          running_balance: 900.12,
+          account_name: 'Main Checking',
+          account_type: 'depository',
+          account_mask: undefined
         },
         {
           id: '2',
           date: '2023-12-01',
-          name: 'Very Old Transaction',
-          merchant: 'Very Old Transaction',
+          name: 'Legacy Payment',
+          merchant: 'Legacy Payment',
           amount: 50,
-          category: { id: 'gas', name: 'Gas' }
+          category: {
+            primary: 'UTILITIES'
+          },
+          running_balance: 950.12,
+          account_name: 'Main Checking',
+          account_type: 'depository',
+          account_mask: undefined
         }
       ]
       vi.mocked(ApiClient.get).mockResolvedValue(backendTransactions)
@@ -136,8 +169,8 @@ describe('TransactionService', () => {
       const result = await TransactionService.getTransactions()
 
       expect(result).toEqual(expectedFrontendTransactions)
-      expect(result[0].amount).toBe(-100)
       expect(result).toHaveLength(2)
+      expect(result[0]).not.toHaveProperty('provider')
     })
   })
 })

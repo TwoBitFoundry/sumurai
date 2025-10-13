@@ -103,7 +103,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   
   fetchMock = installFetchRoutes({
-    'POST /api/plaid/sync-transactions': { 
+    'POST /api/providers/sync-transactions': { 
       transactions: [], 
       metadata: { 
         transaction_count: 0,
@@ -113,7 +113,7 @@ beforeEach(() => {
         end_date: '2025-08-15'
       }
     },
-    'POST /api/plaid/disconnect': { success: true },
+    'POST /api/providers/disconnect': { success: true },
   })
 })
 

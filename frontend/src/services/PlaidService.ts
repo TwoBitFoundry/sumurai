@@ -3,7 +3,7 @@ import type {
   PlaidLinkTokenResponse,
   PlaidExchangeTokenResponse,
   PlaidSyncResponse,
-  PlaidStatusResponse,
+  ProviderStatusResponse,
   PlaidDisconnectResponse,
   Account
 } from '../types/api'
@@ -24,17 +24,17 @@ export class PlaidService {
   }
 
   static async syncTransactions(connectionId?: string): Promise<PlaidSyncResponse> {
-    return ApiClient.post<PlaidSyncResponse>('/plaid/sync-transactions',
+    return ApiClient.post<PlaidSyncResponse>('/providers/sync-transactions',
       connectionId ? { connection_id: connectionId } : {}
     )
   }
 
-  static async getStatus(): Promise<PlaidStatusResponse> {
-    return ApiClient.get<PlaidStatusResponse>('/plaid/status')
+  static async getStatus(): Promise<ProviderStatusResponse> {
+    return ApiClient.get<ProviderStatusResponse>('/providers/status')
   }
 
   static async disconnect(connectionId: string): Promise<PlaidDisconnectResponse> {
-    return ApiClient.post<PlaidDisconnectResponse>('/plaid/disconnect', {
+    return ApiClient.post<PlaidDisconnectResponse>('/providers/disconnect', {
       connection_id: connectionId
     })
   }

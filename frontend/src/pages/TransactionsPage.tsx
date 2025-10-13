@@ -5,6 +5,7 @@ import TransactionsTable from '../features/transactions/components/TransactionsT
 import { fmtUSD } from '../utils/format'
 import { ReceiptText, TrendingUp, AlertTriangle, RefreshCcw } from 'lucide-react'
 import HeroStatCard from '../components/widgets/HeroStatCard'
+import { formatCategoryName } from '../utils/categories'
 
 const TransactionsPage: React.FC = () => {
   const {
@@ -50,7 +51,7 @@ const TransactionsPage: React.FC = () => {
 
     const categoryCounts = new Map<string, number>()
     transactions.forEach(t => {
-      const cat = t.category?.name || 'Uncategorized'
+      const cat = formatCategoryName(t.category?.primary || 'Uncategorized')
       categoryCounts.set(cat, (categoryCounts.get(cat) || 0) + 1)
     })
 

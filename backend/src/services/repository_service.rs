@@ -2,7 +2,7 @@ use crate::models::{
     account::Account,
     auth::User,
     budget::Budget,
-    plaid::{LatestAccountBalance, PlaidConnection, PlaidCredentials},
+    plaid::{LatestAccountBalance, PlaidCredentials, ProviderConnection},
     transaction::{Transaction, TransactionWithAccount},
 };
 use aes_gcm::{
@@ -23,6 +23,7 @@ pub trait DatabaseRepository: Send + Sync {
     async fn get_user_by_id(&self, user_id: &Uuid) -> Result<Option<User>>;
     async fn delete_user(&self, user_id: &Uuid) -> Result<()>;
     async fn mark_onboarding_complete(&self, user_id: &Uuid) -> Result<()>;
+    async fn update_user_provider(&self, user_id: &Uuid, provider: &str) -> Result<()>;
 
     async fn get_transactions_for_user(&self, user_id: &Uuid) -> Result<Vec<Transaction>>;
     async fn get_transactions_with_account_for_user(
@@ -52,31 +53,42 @@ pub trait DatabaseRepository: Send + Sync {
 
     async fn upsert_account(&self, account: &Account) -> Result<()>;
     async fn upsert_transaction(&self, transaction: &Transaction) -> Result<()>;
-    async fn get_account_by_plaid_id(&self, plaid_account_id: &str) -> Result<Option<Account>>;
+    async fn get_account_by_plaid_id(&self, provider_account_id: &str) -> Result<Option<Account>>;
     async fn get_transactions(&self, limit: Option<i64>) -> Result<Vec<Transaction>>;
-    async fn store_plaid_credentials(&self, item_id: &str, access_token: &str) -> Result<Uuid>;
-    async fn get_plaid_credentials(&self, item_id: &str) -> Result<Option<PlaidCredentials>>;
+    async fn store_provider_credentials(&self, item_id: &str, access_token: &str) -> Result<Uuid>;
+    async fn get_provider_credentials(&self, item_id: &str) -> Result<Option<PlaidCredentials>>;
 
-    async fn store_plaid_credentials_for_user(
+    async fn store_provider_credentials_for_user(
         &self,
         user_id: &Uuid,
         item_id: &str,
         access_token: &str,
     ) -> Result<Uuid>;
 
-    async fn get_plaid_credentials_for_user(
+    async fn get_provider_credentials_for_user(
         &self,
         user_id: &Uuid,
         item_id: &str,
     ) -> Result<Option<PlaidCredentials>>;
 
-    async fn save_plaid_connection(&self, connection: &PlaidConnection) -> Result<()>;
-    async fn get_all_plaid_connections_by_user(&self, user_id: &Uuid) -> Result<Vec<PlaidConnection>>;
-    async fn get_plaid_connection_by_id(&self, connection_id: &Uuid, user_id: &Uuid) -> Result<Option<PlaidConnection>>;
-    async fn get_plaid_connection_by_item(&self, item_id: &str) -> Result<Option<PlaidConnection>>;
-    async fn delete_plaid_transactions(&self, item_id: &str) -> Result<i32>;
-    async fn delete_plaid_accounts(&self, item_id: &str) -> Result<i32>;
-    async fn delete_plaid_credentials(&self, item_id: &str) -> Result<()>;
+    async fn save_provider_connection(&self, connection: &ProviderConnection) -> Result<()>;
+    async fn get_all_provider_connections_by_user(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Vec<ProviderConnection>>;
+    async fn get_provider_connection_by_id(
+        &self,
+        connection_id: &Uuid,
+        user_id: &Uuid,
+    ) -> Result<Option<ProviderConnection>>;
+    async fn get_provider_connection_by_item(
+        &self,
+        item_id: &str,
+    ) -> Result<Option<ProviderConnection>>;
+    async fn delete_provider_transactions(&self, item_id: &str) -> Result<i32>;
+    async fn delete_provider_accounts(&self, item_id: &str) -> Result<i32>;
+    async fn delete_provider_connection(&self, user_id: &Uuid, item_id: &str) -> Result<()>;
+    async fn delete_provider_credentials(&self, item_id: &str) -> Result<()>;
     async fn get_budgets_for_user(&self, user_id: Uuid) -> Result<Vec<Budget>>;
     async fn create_budget_for_user(&self, budget: Budget) -> Result<Budget>;
 
@@ -161,8 +173,9 @@ impl PostgresRepository {
     }
 
     fn map_user_row(
-        (id, email, password_hash, created_at, updated_at, onboarding_completed): (
+        (id, email, password_hash, provider, created_at, updated_at, onboarding_completed): (
             uuid::Uuid,
+            String,
             String,
             String,
             chrono::DateTime<chrono::Utc>,
@@ -174,6 +187,7 @@ impl PostgresRepository {
             id,
             email,
             password_hash,
+            provider,
             created_at,
             updated_at,
             onboarding_completed,
@@ -186,13 +200,14 @@ impl DatabaseRepository for PostgresRepository {
     async fn create_user(&self, user: &User) -> Result<()> {
         sqlx::query(
             r#"
-            INSERT INTO users (id, email, password_hash, created_at, updated_at, onboarding_completed)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO users (id, email, password_hash, provider, created_at, updated_at, onboarding_completed)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             "#,
         )
         .bind(user.id)
         .bind(&user.email)
         .bind(&user.password_hash)
+        .bind(&user.provider)
         .bind(user.created_at)
         .bind(user.updated_at)
         .bind(user.onboarding_completed)
@@ -209,12 +224,13 @@ impl DatabaseRepository for PostgresRepository {
                 uuid::Uuid,
                 String,
                 String,
+                String,
                 chrono::DateTime<chrono::Utc>,
                 chrono::DateTime<chrono::Utc>,
                 bool,
             ),
         >(
-            "SELECT id, email, password_hash, created_at, updated_at, onboarding_completed FROM users WHERE email = $1",
+            "SELECT id, email, password_hash, provider, created_at, updated_at, onboarding_completed FROM users WHERE email = $1",
         )
         .bind(email)
         .fetch_optional(&self.pool)
@@ -230,12 +246,13 @@ impl DatabaseRepository for PostgresRepository {
                 uuid::Uuid,
                 String,
                 String,
+                String,
                 chrono::DateTime<chrono::Utc>,
                 chrono::DateTime<chrono::Utc>,
                 bool,
             ),
         >(
-            "SELECT id, email, password_hash, created_at, updated_at, onboarding_completed FROM users WHERE id = $1",
+            "SELECT id, email, password_hash, provider, created_at, updated_at, onboarding_completed FROM users WHERE id = $1",
         )
         .bind(user_id)
         .fetch_optional(&self.pool)
@@ -289,6 +306,22 @@ impl DatabaseRepository for PostgresRepository {
         Ok(())
     }
 
+    async fn update_user_provider(&self, user_id: &Uuid, provider: &str) -> Result<()> {
+        sqlx::query(
+            r#"
+            UPDATE users
+            SET provider = $2, updated_at = NOW()
+            WHERE id = $1
+            "#,
+        )
+        .bind(user_id)
+        .bind(provider)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
     async fn upsert_account(&self, account: &Account) -> Result<()> {
         // Ensure RLS permits this write by setting current user id (if provided)
         let mut tx = self.pool.begin().await?;
@@ -300,11 +333,11 @@ impl DatabaseRepository for PostgresRepository {
         }
         sqlx::query(
             r#"
-            INSERT INTO accounts (id, user_id, plaid_account_id, plaid_connection_id, name, account_type, balance_current, mask)
+            INSERT INTO accounts (id, user_id, provider_account_id, provider_connection_id, name, account_type, balance_current, mask)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            ON CONFLICT (plaid_account_id) 
+            ON CONFLICT (provider_account_id) 
             DO UPDATE SET 
-                plaid_connection_id = EXCLUDED.plaid_connection_id,
+                provider_connection_id = EXCLUDED.provider_connection_id,
                 name = EXCLUDED.name,
                 account_type = EXCLUDED.account_type,
                 balance_current = EXCLUDED.balance_current,
@@ -313,14 +346,14 @@ impl DatabaseRepository for PostgresRepository {
         )
         .bind(account.id)
         .bind(account.user_id)
-        .bind(&account.plaid_account_id)
-        .bind(account.plaid_connection_id)
+        .bind(&account.provider_account_id)
+        .bind(account.provider_connection_id)
         .bind(&account.name)
         .bind(&account.account_type)
         .bind(account.balance_current)
         .bind(&account.mask)
         .execute(&mut *tx)
-        .await?;
+            .await?;
         tx.commit().await?;
 
         Ok(())
@@ -339,12 +372,12 @@ impl DatabaseRepository for PostgresRepository {
         sqlx::query(
             r#"
             INSERT INTO transactions (
-                id, account_id, user_id, plaid_transaction_id, amount, date,
+                id, account_id, user_id, provider_transaction_id, amount, date,
                 merchant_name, category_primary, category_detailed,
                 category_confidence, payment_channel, pending, created_at
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-            ON CONFLICT (plaid_transaction_id)
+            ON CONFLICT (provider_transaction_id)
             DO UPDATE SET
                 amount = EXCLUDED.amount,
                 merchant_name = EXCLUDED.merchant_name,
@@ -354,7 +387,7 @@ impl DatabaseRepository for PostgresRepository {
         .bind(transaction.id)
         .bind(transaction.account_id)
         .bind(transaction.user_id)
-        .bind(&transaction.plaid_transaction_id)
+        .bind(&transaction.provider_transaction_id)
         .bind(transaction.amount)
         .bind(transaction.date)
         .bind(&transaction.merchant_name)
@@ -371,7 +404,7 @@ impl DatabaseRepository for PostgresRepository {
         Ok(())
     }
 
-    async fn get_account_by_plaid_id(&self, plaid_account_id: &str) -> Result<Option<Account>> {
+    async fn get_account_by_plaid_id(&self, provider_account_id: &str) -> Result<Option<Account>> {
         let row = sqlx::query_as::<_, (
             Uuid,
             Option<Uuid>,
@@ -383,11 +416,11 @@ impl DatabaseRepository for PostgresRepository {
             Option<String>,
             Option<String>,
         )>(
-            "SELECT a.id, a.user_id, a.plaid_account_id, a.plaid_connection_id, a.name, a.account_type, a.balance_current, a.mask, pc.institution_name \
-             FROM accounts a LEFT JOIN plaid_connections pc ON pc.id = a.plaid_connection_id \
-             WHERE a.plaid_account_id = $1"
+            "SELECT a.id, a.user_id, a.provider_account_id, a.provider_connection_id, a.name, a.account_type, a.balance_current, a.mask, pc.institution_name \
+             FROM accounts a LEFT JOIN provider_connections pc ON pc.id = a.provider_connection_id \
+             WHERE a.provider_account_id = $1"
         )
-        .bind(plaid_account_id)
+        .bind(provider_account_id)
         .fetch_optional(&self.pool)
         .await?;
 
@@ -395,8 +428,8 @@ impl DatabaseRepository for PostgresRepository {
             |(
                 id,
                 user_id,
-                plaid_account_id,
-                plaid_connection_id,
+                provider_account_id,
+                provider_connection_id,
                 name,
                 account_type,
                 balance_current,
@@ -405,8 +438,8 @@ impl DatabaseRepository for PostgresRepository {
             )| Account {
                 id,
                 user_id,
-                plaid_account_id,
-                plaid_connection_id,
+                provider_account_id,
+                provider_connection_id,
                 name,
                 account_type,
                 balance_current,
@@ -438,7 +471,7 @@ impl DatabaseRepository for PostgresRepository {
             ),
         >(
             r#"
-            SELECT id, account_id, user_id, plaid_transaction_id, amount, date,
+            SELECT id, account_id, user_id, provider_transaction_id, amount, date,
                    merchant_name, category_primary, category_detailed,
                    category_confidence, payment_channel, pending, created_at
             FROM transactions 
@@ -457,7 +490,7 @@ impl DatabaseRepository for PostgresRepository {
                     id,
                     account_id,
                     user_id,
-                    plaid_transaction_id,
+                    provider_transaction_id,
                     amount,
                     date,
                     merchant_name,
@@ -471,8 +504,8 @@ impl DatabaseRepository for PostgresRepository {
                     id,
                     account_id,
                     user_id,
-                    plaid_account_id: None,
-                    plaid_transaction_id,
+                    provider_account_id: None,
+                    provider_transaction_id,
                     amount,
                     date,
                     merchant_name,
@@ -487,7 +520,7 @@ impl DatabaseRepository for PostgresRepository {
             .collect())
     }
 
-    async fn store_plaid_credentials(&self, item_id: &str, access_token: &str) -> Result<Uuid> {
+    async fn store_provider_credentials(&self, item_id: &str, access_token: &str) -> Result<Uuid> {
         let id = Uuid::new_v4();
         let encrypted_token = self.encrypt_token(access_token)?;
 
@@ -510,7 +543,7 @@ impl DatabaseRepository for PostgresRepository {
         Ok(id)
     }
 
-    async fn get_plaid_credentials(&self, item_id: &str) -> Result<Option<PlaidCredentials>> {
+    async fn get_provider_credentials(&self, item_id: &str) -> Result<Option<PlaidCredentials>> {
         let row = sqlx::query_as::<_, (Uuid, String, Vec<u8>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
             "SELECT id, item_id, encrypted_access_token, created_at, updated_at FROM plaid_credentials WHERE item_id = $1"
         )
@@ -534,7 +567,7 @@ impl DatabaseRepository for PostgresRepository {
         }
     }
 
-    async fn store_plaid_credentials_for_user(
+    async fn store_provider_credentials_for_user(
         &self,
         user_id: &Uuid,
         item_id: &str,
@@ -571,7 +604,7 @@ impl DatabaseRepository for PostgresRepository {
         Ok(id)
     }
 
-    async fn get_plaid_credentials_for_user(
+    async fn get_provider_credentials_for_user(
         &self,
         user_id: &Uuid,
         item_id: &str,
@@ -606,7 +639,7 @@ impl DatabaseRepository for PostgresRepository {
         }
     }
 
-    async fn save_plaid_connection(&self, connection: &PlaidConnection) -> Result<()> {
+    async fn save_provider_connection(&self, connection: &ProviderConnection) -> Result<()> {
         let mut tx = self.pool.begin().await?;
         sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
             .bind(connection.user_id.to_string())
@@ -615,7 +648,7 @@ impl DatabaseRepository for PostgresRepository {
 
         sqlx::query(
             r#"
-            INSERT INTO plaid_connections (
+            INSERT INTO provider_connections (
                 id, user_id, item_id, is_connected, last_sync_at, connected_at,
                 disconnected_at, institution_id, institution_name, transaction_count, account_count,
                 created_at, updated_at
@@ -654,8 +687,10 @@ impl DatabaseRepository for PostgresRepository {
         Ok(())
     }
 
-
-    async fn get_all_plaid_connections_by_user(&self, user_id: &Uuid) -> Result<Vec<PlaidConnection>> {
+    async fn get_all_provider_connections_by_user(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Vec<ProviderConnection>> {
         let mut tx = self.pool.begin().await?;
         sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
             .bind(user_id.to_string())
@@ -664,15 +699,29 @@ impl DatabaseRepository for PostgresRepository {
 
         let rows = sqlx::query_as::<
             _,
-            (Uuid, Uuid, String, bool, Option<chrono::DateTime<chrono::Utc>>, Option<chrono::DateTime<chrono::Utc>>,
-             Option<chrono::DateTime<chrono::Utc>>, Option<String>, Option<String>, Option<String>,
-             Option<String>, i32, i32, Option<chrono::DateTime<chrono::Utc>>, Option<chrono::DateTime<chrono::Utc>>),
+            (
+                Uuid,
+                Uuid,
+                String,
+                bool,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                i32,
+                i32,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<chrono::DateTime<chrono::Utc>>,
+            ),
         >(
             r#"
             SELECT id, user_id, item_id, is_connected, last_sync_at, connected_at,
                    disconnected_at, institution_id, institution_name, institution_logo_url,
                    sync_cursor, transaction_count, account_count, created_at, updated_at
-            FROM plaid_connections
+            FROM provider_connections
             WHERE user_id = $1
             ORDER BY created_at DESC
             "#,
@@ -683,17 +732,51 @@ impl DatabaseRepository for PostgresRepository {
 
         tx.commit().await?;
 
-        Ok(rows.into_iter().map(|(id, user_id, item_id, is_connected, last_sync_at,
-            connected_at, disconnected_at, institution_id, institution_name,
-            institution_logo_url, sync_cursor, transaction_count, account_count,
-            created_at, updated_at)| PlaidConnection {
-                id, user_id, item_id, is_connected, last_sync_at, connected_at,
-                disconnected_at, institution_id, institution_name, institution_logo_url,
-                sync_cursor, transaction_count, account_count, created_at, updated_at,
-            }).collect())
+        Ok(rows
+            .into_iter()
+            .map(
+                |(
+                    id,
+                    user_id,
+                    item_id,
+                    is_connected,
+                    last_sync_at,
+                    connected_at,
+                    disconnected_at,
+                    institution_id,
+                    institution_name,
+                    institution_logo_url,
+                    sync_cursor,
+                    transaction_count,
+                    account_count,
+                    created_at,
+                    updated_at,
+                )| ProviderConnection {
+                    id,
+                    user_id,
+                    item_id,
+                    is_connected,
+                    last_sync_at,
+                    connected_at,
+                    disconnected_at,
+                    institution_id,
+                    institution_name,
+                    institution_logo_url,
+                    sync_cursor,
+                    transaction_count,
+                    account_count,
+                    created_at,
+                    updated_at,
+                },
+            )
+            .collect())
     }
 
-    async fn get_plaid_connection_by_id(&self, connection_id: &Uuid, user_id: &Uuid) -> Result<Option<PlaidConnection>> {
+    async fn get_provider_connection_by_id(
+        &self,
+        connection_id: &Uuid,
+        user_id: &Uuid,
+    ) -> Result<Option<ProviderConnection>> {
         let mut tx = self.pool.begin().await?;
         sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
             .bind(user_id.to_string())
@@ -702,15 +785,29 @@ impl DatabaseRepository for PostgresRepository {
 
         let row = sqlx::query_as::<
             _,
-            (Uuid, Uuid, String, bool, Option<chrono::DateTime<chrono::Utc>>, Option<chrono::DateTime<chrono::Utc>>,
-             Option<chrono::DateTime<chrono::Utc>>, Option<String>, Option<String>, Option<String>,
-             Option<String>, i32, i32, Option<chrono::DateTime<chrono::Utc>>, Option<chrono::DateTime<chrono::Utc>>),
+            (
+                Uuid,
+                Uuid,
+                String,
+                bool,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                i32,
+                i32,
+                Option<chrono::DateTime<chrono::Utc>>,
+                Option<chrono::DateTime<chrono::Utc>>,
+            ),
         >(
             r#"
             SELECT id, user_id, item_id, is_connected, last_sync_at, connected_at,
                    disconnected_at, institution_id, institution_name, institution_logo_url,
                    sync_cursor, transaction_count, account_count, created_at, updated_at
-            FROM plaid_connections
+            FROM provider_connections
             WHERE id = $1
             "#,
         )
@@ -720,17 +817,47 @@ impl DatabaseRepository for PostgresRepository {
 
         tx.commit().await?;
 
-        Ok(row.map(|(id, user_id, item_id, is_connected, last_sync_at, connected_at,
-            disconnected_at, institution_id, institution_name, institution_logo_url,
-            sync_cursor, transaction_count, account_count, created_at, updated_at)|
-            PlaidConnection {
-                id, user_id, item_id, is_connected, last_sync_at, connected_at,
-                disconnected_at, institution_id, institution_name, institution_logo_url,
-                sync_cursor, transaction_count, account_count, created_at, updated_at,
-            }))
+        Ok(row.map(
+            |(
+                id,
+                user_id,
+                item_id,
+                is_connected,
+                last_sync_at,
+                connected_at,
+                disconnected_at,
+                institution_id,
+                institution_name,
+                institution_logo_url,
+                sync_cursor,
+                transaction_count,
+                account_count,
+                created_at,
+                updated_at,
+            )| ProviderConnection {
+                id,
+                user_id,
+                item_id,
+                is_connected,
+                last_sync_at,
+                connected_at,
+                disconnected_at,
+                institution_id,
+                institution_name,
+                institution_logo_url,
+                sync_cursor,
+                transaction_count,
+                account_count,
+                created_at,
+                updated_at,
+            },
+        ))
     }
 
-    async fn get_plaid_connection_by_item(&self, item_id: &str) -> Result<Option<PlaidConnection>> {
+    async fn get_provider_connection_by_item(
+        &self,
+        item_id: &str,
+    ) -> Result<Option<ProviderConnection>> {
         let row = sqlx::query_as::<
             _,
             (
@@ -755,7 +882,7 @@ impl DatabaseRepository for PostgresRepository {
             SELECT id, user_id, item_id, is_connected, last_sync_at, connected_at,
                    disconnected_at, institution_id, institution_name, institution_logo_url, sync_cursor,
                    transaction_count, account_count, created_at, updated_at
-            FROM plaid_connections 
+            FROM provider_connections 
             WHERE item_id = $1
             "#,
         )
@@ -780,7 +907,7 @@ impl DatabaseRepository for PostgresRepository {
                 account_count,
                 created_at,
                 updated_at,
-            )| PlaidConnection {
+            )| ProviderConnection {
                 id,
                 user_id,
                 item_id,
@@ -800,13 +927,12 @@ impl DatabaseRepository for PostgresRepository {
         ))
     }
 
-    async fn delete_plaid_transactions(&self, item_id: &str) -> Result<i32> {
-        let connection_id: Option<Uuid> = sqlx::query_scalar(
-            "SELECT id FROM plaid_connections WHERE item_id = $1"
-        )
-        .bind(item_id)
-        .fetch_optional(&self.pool)
-        .await?;
+    async fn delete_provider_transactions(&self, item_id: &str) -> Result<i32> {
+        let connection_id: Option<Uuid> =
+            sqlx::query_scalar("SELECT id FROM provider_connections WHERE item_id = $1")
+                .bind(item_id)
+                .fetch_optional(&self.pool)
+                .await?;
 
         let Some(conn_id) = connection_id else {
             return Ok(0);
@@ -816,9 +942,9 @@ impl DatabaseRepository for PostgresRepository {
             r#"
             DELETE FROM transactions
             WHERE account_id IN (
-                SELECT id FROM accounts WHERE plaid_connection_id = $1
+                SELECT id FROM accounts WHERE provider_connection_id = $1
             )
-            "#
+            "#,
         )
         .bind(conn_id)
         .execute(&self.pool)
@@ -827,19 +953,18 @@ impl DatabaseRepository for PostgresRepository {
         Ok(result.rows_affected() as i32)
     }
 
-    async fn delete_plaid_accounts(&self, item_id: &str) -> Result<i32> {
-        let connection_id: Option<Uuid> = sqlx::query_scalar(
-            "SELECT id FROM plaid_connections WHERE item_id = $1"
-        )
-        .bind(item_id)
-        .fetch_optional(&self.pool)
-        .await?;
+    async fn delete_provider_accounts(&self, item_id: &str) -> Result<i32> {
+        let connection_id: Option<Uuid> =
+            sqlx::query_scalar("SELECT id FROM provider_connections WHERE item_id = $1")
+                .bind(item_id)
+                .fetch_optional(&self.pool)
+                .await?;
 
         let Some(conn_id) = connection_id else {
             return Ok(0);
         };
 
-        let result = sqlx::query("DELETE FROM accounts WHERE plaid_connection_id = $1")
+        let result = sqlx::query("DELETE FROM accounts WHERE provider_connection_id = $1")
             .bind(conn_id)
             .execute(&self.pool)
             .await?;
@@ -847,7 +972,24 @@ impl DatabaseRepository for PostgresRepository {
         Ok(result.rows_affected() as i32)
     }
 
-    async fn delete_plaid_credentials(&self, item_id: &str) -> Result<()> {
+    async fn delete_provider_connection(&self, user_id: &Uuid, item_id: &str) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        sqlx::query("DELETE FROM provider_connections WHERE user_id = $1 AND item_id = $2")
+            .bind(user_id)
+            .bind(item_id)
+            .execute(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn delete_provider_credentials(&self, item_id: &str) -> Result<()> {
         sqlx::query("DELETE FROM plaid_credentials WHERE item_id = $1")
             .bind(item_id)
             .execute(&self.pool)
@@ -883,7 +1025,7 @@ impl DatabaseRepository for PostgresRepository {
             ),
         >(
             r#"
-            SELECT id, account_id, user_id, plaid_transaction_id, amount, date,
+            SELECT id, account_id, user_id, provider_transaction_id, amount, date,
                    merchant_name, category_primary, category_detailed,
                    category_confidence, payment_channel, pending, created_at
             FROM transactions 
@@ -905,7 +1047,7 @@ impl DatabaseRepository for PostgresRepository {
                     id,
                     account_id,
                     user_id,
-                    plaid_transaction_id,
+                    provider_transaction_id,
                     amount,
                     date,
                     merchant_name,
@@ -919,8 +1061,8 @@ impl DatabaseRepository for PostgresRepository {
                     id,
                     account_id,
                     user_id,
-                    plaid_account_id: None,
-                    plaid_transaction_id,
+                    provider_account_id: None,
+                    provider_transaction_id,
                     amount,
                     date,
                     merchant_name,
@@ -967,7 +1109,7 @@ impl DatabaseRepository for PostgresRepository {
             ),
         >(
             r#"
-            SELECT t.id, t.account_id, t.user_id, t.plaid_transaction_id, t.amount, t.date,
+            SELECT t.id, t.account_id, t.user_id, t.provider_transaction_id, t.amount, t.date,
                    t.merchant_name, t.category_primary, t.category_detailed,
                    t.category_confidence, t.payment_channel, t.pending, t.created_at,
                    a.name as account_name, a.account_type, a.mask as account_mask
@@ -990,7 +1132,7 @@ impl DatabaseRepository for PostgresRepository {
                     id,
                     account_id,
                     user_id,
-                    plaid_transaction_id,
+                    provider_transaction_id,
                     amount,
                     date,
                     merchant_name,
@@ -1007,8 +1149,8 @@ impl DatabaseRepository for PostgresRepository {
                     id,
                     account_id,
                     user_id,
-                    plaid_account_id: None,
-                    plaid_transaction_id,
+                    provider_account_id: None,
+                    provider_transaction_id,
                     amount,
                     date,
                     merchant_name,
@@ -1058,7 +1200,7 @@ impl DatabaseRepository for PostgresRepository {
             ),
         >(
             r#"
-            SELECT id, account_id, user_id, plaid_transaction_id, amount, date,
+            SELECT id, account_id, user_id, provider_transaction_id, amount, date,
                    merchant_name, category_primary, category_detailed,
                    category_confidence, payment_channel, pending, created_at
             FROM transactions 
@@ -1082,7 +1224,7 @@ impl DatabaseRepository for PostgresRepository {
                     id,
                     account_id,
                     user_id,
-                    plaid_transaction_id,
+                    provider_transaction_id,
                     amount,
                     date,
                     merchant_name,
@@ -1096,8 +1238,8 @@ impl DatabaseRepository for PostgresRepository {
                     id,
                     account_id,
                     user_id,
-                    plaid_account_id: None,
-                    plaid_transaction_id,
+                    provider_account_id: None,
+                    provider_transaction_id,
                     amount,
                     date,
                     merchant_name,
@@ -1135,9 +1277,9 @@ impl DatabaseRepository for PostgresRepository {
             ),
         >(
             r#"
-            SELECT a.id, a.user_id, a.plaid_account_id, a.plaid_connection_id, a.name, a.account_type, a.balance_current, a.mask, pc.institution_name
+            SELECT a.id, a.user_id, a.provider_account_id, a.provider_connection_id, a.name, a.account_type, a.balance_current, a.mask, pc.institution_name
             FROM accounts a
-            LEFT JOIN plaid_connections pc ON pc.id = a.plaid_connection_id
+            LEFT JOIN provider_connections pc ON pc.id = a.provider_connection_id
             WHERE a.user_id = $1
             ORDER BY a.name
             "#,
@@ -1154,8 +1296,8 @@ impl DatabaseRepository for PostgresRepository {
                 |(
                     id,
                     user_id,
-                    plaid_account_id,
-                    plaid_connection_id,
+                    provider_account_id,
+                    provider_connection_id,
                     name,
                     account_type,
                     balance_current,
@@ -1164,8 +1306,8 @@ impl DatabaseRepository for PostgresRepository {
                 )| Account {
                     id,
                     user_id,
-                    plaid_account_id,
-                    plaid_connection_id,
+                    provider_account_id,
+                    provider_connection_id,
                     name,
                     account_type,
                     balance_current,
@@ -1376,10 +1518,10 @@ impl DatabaseRepository for PostgresRepository {
                 NULL::text AS account_subtype,
                 'USD'::text AS currency,
                 COALESCE(a.balance_current, 0) AS current_balance,
-                a.plaid_connection_id,
+                a.provider_connection_id,
                 pc.institution_name
             FROM accounts a
-            LEFT JOIN plaid_connections pc ON pc.id = a.plaid_connection_id
+            LEFT JOIN provider_connections pc ON pc.id = a.provider_connection_id
             WHERE a.user_id = $1
             ORDER BY a.name
             "#,

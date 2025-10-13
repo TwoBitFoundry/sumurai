@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, cleanup, act, waitFor } from '@testing-library/react'
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
+import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures'
 
 describe('AccountFilterProvider', () => {
   let fetchMock: ReturnType<typeof installFetchRoutes>
@@ -9,6 +10,17 @@ describe('AccountFilterProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
+
+    const providerStatus = createProviderStatus({
+      connections: [
+        createProviderConnection({
+          is_connected: true,
+          connection_id: 'conn_1',
+          institution_name: 'First Platypus Bank',
+          account_count: 3,
+        }),
+      ],
+    })
 
     fetchMock = installFetchRoutes({
       'GET /api/plaid/accounts': [
@@ -40,12 +52,7 @@ describe('AccountFilterProvider', () => {
           institution_name: 'Second Platypus Bank'
         }
       ],
-      'GET /api/plaid/status': {
-        is_connected: true,
-        connection_id: 'conn_1',
-        institution_name: 'First Platypus Bank',
-        account_count: 3,
-      }
+      'GET /api/providers/status': providerStatus,
     })
   })
 

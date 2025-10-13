@@ -7,6 +7,7 @@ import { AccountFilterProvider } from "./hooks/useAccountFilter";
 import { OnboardingWizard } from "./components/onboarding/OnboardingWizard";
 import { AuthService } from "./services/authService";
 import { getInitialTheme, setTheme } from "./utils/theme";
+import { ProviderMismatchCheck } from "./components/ProviderMismatchCheck";
 
 const parseJWT = (token: string) => {
   try {
@@ -31,6 +32,7 @@ export function App() {
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login')
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [mainAppKey, setMainAppKey] = useState(0)
+  const [showProviderMismatch, setShowProviderMismatch] = useState(false)
 
   const [dark, setDark] = useState(() => getInitialTheme())
 
@@ -54,16 +56,16 @@ export function App() {
 
       try {
         const refreshResponse = await AuthService.refreshToken()
+        AuthService.storeToken(refreshResponse.token)
         setIsAuthenticated(true)
         setShowOnboarding(!refreshResponse.onboarding_completed)
-        sessionStorage.setItem('auth_token', refreshResponse.token)
       } catch (error) {
         console.warn('Auth validation error:', error)
         setIsAuthenticated(false)
         AuthService.clearToken()
+      } finally {
+        setIsLoading(false)
       }
-
-      setIsLoading(false)
     }
 
     checkAuth()
@@ -91,6 +93,12 @@ export function App() {
     setShowOnboarding(false)
     setMainAppKey(prev => prev + 1)
   }, [])
+
+
+  const handleProviderMismatchConfirm = useCallback(async () => {
+    setShowProviderMismatch(false)
+    await handleLogout()
+  }, [handleLogout])
 
   if (isLoading) {
     return (
@@ -160,19 +168,27 @@ export function App() {
   }
 
   return (
-    <SessionManager onLogout={handleLogout}>
-      <AccountFilterProvider key={`filter-${mainAppKey}`}>
-        <AuthenticatedApp
-          key={`app-${mainAppKey}`}
-          onLogout={handleLogout}
-          dark={dark}
-          setDark={(newTheme: boolean) => {
-            setDark(newTheme);
-            setTheme(newTheme);
-          }}
-        />
-      </AccountFilterProvider>
-    </SessionManager>
+    <div className={dark ? 'dark' : ''}>
+      <SessionManager onLogout={handleLogout}>
+        <AccountFilterProvider key={`filter-${mainAppKey}`}>
+          <AuthenticatedApp
+            key={`app-${mainAppKey}`}
+            onLogout={handleLogout}
+            dark={dark}
+            setDark={(newTheme: boolean) => {
+              setDark(newTheme);
+              setTheme(newTheme);
+            }}
+          />
+        </AccountFilterProvider>
+      </SessionManager>
+
+      <ProviderMismatchCheck
+        showMismatch={showProviderMismatch}
+        onShowMismatch={setShowProviderMismatch}
+        onConfirm={handleProviderMismatchConfirm}
+      />
+    </div>
   )
 }
 

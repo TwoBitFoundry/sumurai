@@ -4,6 +4,7 @@ import { ReactNode } from 'react'
 import { useBalancesOverview } from '@/hooks/useBalancesOverview'
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
+import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures'
 
 const TestWrapper = ({ children }: { children: ReactNode }) => (
   <AccountFilterProvider>
@@ -45,6 +46,16 @@ const createDeferred = <T,>() => {
 }
 
 describe('useBalancesOverview (Phase 6)', () => {
+  const connectedStatus = createProviderStatus({
+    connections: [
+      createProviderConnection({
+        is_connected: true,
+        institution_name: 'First Platypus Bank',
+        connection_id: 'conn_1',
+      }),
+    ],
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     fetchMock = installFetchRoutes({
@@ -54,11 +65,7 @@ describe('useBalancesOverview (Phase 6)', () => {
         banks: [],
         mixedCurrency: false
       },
-      'GET /api/plaid/status': {
-        is_connected: true,
-        institution_name: 'First Platypus Bank',
-        connection_id: 'conn_1',
-      },
+      'GET /api/providers/status': connectedStatus,
       'GET /api/plaid/accounts': mockPlaidAccounts
     })
   })
@@ -80,11 +87,7 @@ describe('useBalancesOverview (Phase 6)', () => {
     }
     fetchMock = installFetchRoutes({
       'GET /api/analytics/balances/overview': mock,
-      'GET /api/plaid/status': {
-        is_connected: true,
-        institution_name: 'First Platypus Bank',
-        connection_id: 'conn_1',
-      },
+      'GET /api/providers/status': connectedStatus,
       'GET /api/plaid/accounts': mockPlaidAccounts
     })
 
@@ -126,11 +129,7 @@ describe('useBalancesOverview (Phase 6)', () => {
   it('returns error when API fails', async () => {
     fetchMock = installFetchRoutes({
       'GET /api/analytics/balances/overview': () => { throw new Error('Boom') },
-      'GET /api/plaid/status': {
-        is_connected: true,
-        institution_name: 'First Platypus Bank',
-        connection_id: 'conn_1',
-      },
+      'GET /api/providers/status': connectedStatus,
       'GET /api/plaid/accounts': mockPlaidAccounts
     })
 
@@ -162,11 +161,7 @@ describe('useBalancesOverview (Phase 6)', () => {
         callCount++
         return callCount === 1 ? mock1 : mock2
       },
-      'GET /api/plaid/status': {
-        is_connected: true,
-        institution_name: 'First Platypus Bank',
-        connection_id: 'conn_1',
-      },
+      'GET /api/providers/status': connectedStatus,
       'GET /api/plaid/accounts': mockPlaidAccounts
     })
 
@@ -283,11 +278,7 @@ describe('useBalancesOverview (Phase 6)', () => {
         }
         return deferred.promise
       },
-      'GET /api/plaid/status': {
-        is_connected: true,
-        institution_name: 'First Platypus Bank',
-        connection_id: 'conn_1',
-      },
+      'GET /api/providers/status': connectedStatus,
       'GET /api/plaid/accounts': mockPlaidAccounts
     })
 

@@ -1,5 +1,5 @@
 use crate::models::{
-    account::Account, auth::User, plaid::PlaidConnection, transaction::Transaction,
+    account::Account, auth::User, plaid::ProviderConnection, transaction::Transaction,
 };
 
 use crate::models::plaid::PlaidCredentials;
@@ -20,6 +20,7 @@ mod fixtures {
             id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap(),
             email: "test@example.com".to_string(),
             password_hash: "hashed_password".to_string(),
+            provider: "teller".to_string(),
             created_at: Utc::now(),
             updated_at: Utc::now(),
             onboarding_completed: false,
@@ -31,6 +32,7 @@ mod fixtures {
             id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440001").unwrap(),
             email: "user2@example.com".to_string(),
             password_hash: "hashed_password2".to_string(),
+            provider: "teller".to_string(),
             created_at: Utc::now(),
             updated_at: Utc::now(),
             onboarding_completed: false,
@@ -41,8 +43,8 @@ mod fixtures {
         Account {
             id: Uuid::parse_str("a50e8400-e29b-41d4-a716-446655440000").unwrap(),
             user_id,
-            plaid_account_id: Some("test_plaid_id".to_string()),
-            plaid_connection_id: None,
+            provider_account_id: Some("test_plaid_id".to_string()),
+            provider_connection_id: None,
             name: "Test Account".to_string(),
             account_type: "depository".to_string(),
             balance_current: Some(dec!(1000.00)),
@@ -56,8 +58,8 @@ mod fixtures {
             id: Uuid::parse_str("a50e8400-e29b-41d4-a716-446655440000").unwrap(),
             account_id,
             user_id: Some(Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap()),
-            plaid_account_id: None,
-            plaid_transaction_id: Some("plaid_txn_1".to_string()),
+            provider_account_id: None,
+            provider_transaction_id: Some("plaid_txn_1".to_string()),
             amount: dec!(-25.50),
             date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
             merchant_name: Some("Test Merchant".to_string()),
@@ -70,8 +72,8 @@ mod fixtures {
         }
     }
 
-    pub fn sample_plaid_connection(user_id: Uuid) -> PlaidConnection {
-        PlaidConnection {
+    pub fn sample_plaid_connection(user_id: Uuid) -> ProviderConnection {
+        ProviderConnection {
             id: Uuid::parse_str("a50e8400-e29b-41d4-a716-446655440002").unwrap(),
             user_id,
             item_id: "test_item_id".to_string(),
@@ -142,7 +144,7 @@ async fn given_known_plaid_id_when_get_account_then_found() {
     let account = result.unwrap();
     assert!(account.is_some());
     assert_eq!(
-        account.unwrap().plaid_account_id,
+        account.unwrap().provider_account_id,
         Some("test_plaid_id".to_string())
     );
 }
@@ -173,7 +175,7 @@ async fn given_valid_credentials_when_store_then_succeeds() {
     let expected_id = Uuid::new_v4();
 
     mock_repo
-        .expect_store_plaid_credentials()
+        .expect_store_provider_credentials()
         .with(
             mockall::predicate::eq(item_id),
             mockall::predicate::eq(access_token),
@@ -182,7 +184,7 @@ async fn given_valid_credentials_when_store_then_succeeds() {
         .returning(move |_, _| Box::pin(async move { Ok(expected_id) }));
 
     let result = mock_repo
-        .store_plaid_credentials(item_id, access_token)
+        .store_provider_credentials(item_id, access_token)
         .await;
 
     assert!(result.is_ok());
@@ -206,7 +208,7 @@ async fn given_known_item_id_when_get_credentials_then_found() {
     };
 
     mock_repo
-        .expect_get_plaid_credentials()
+        .expect_get_provider_credentials()
         .with(mockall::predicate::eq(item_id))
         .times(1)
         .returning({
@@ -219,7 +221,7 @@ async fn given_known_item_id_when_get_credentials_then_found() {
             }
         });
 
-    let result = mock_repo.get_plaid_credentials(item_id).await;
+    let result = mock_repo.get_provider_credentials(item_id).await;
 
     assert!(result.is_ok());
     let credentials = result.unwrap();
@@ -308,6 +310,7 @@ async fn given_user_foreign_keys_when_adding_to_existing_tables_then_enforces_re
         id: user_id,
         email: "test@example.com".to_string(),
         password_hash: "hashed_password".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -327,8 +330,8 @@ async fn given_user_foreign_keys_when_adding_to_existing_tables_then_enforces_re
     let account = Account {
         id: Uuid::new_v4(),
         user_id: Some(user_id),
-        plaid_account_id: Some("test_plaid_account".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("test_plaid_account".to_string()),
+        provider_connection_id: None,
         name: "Test Account".to_string(),
         account_type: "depository".to_string(),
         balance_current: Some(rust_decimal::Decimal::new(100000, 2)),
@@ -351,8 +354,8 @@ async fn given_invalid_user_id_when_creating_transaction_then_returns_foreign_ke
         id: Uuid::new_v4(),
         account_id,
         user_id: Some(non_existent_user_id),
-        plaid_account_id: None,
-        plaid_transaction_id: Some("test_txn".to_string()),
+        provider_account_id: None,
+        provider_transaction_id: Some("test_txn".to_string()),
         amount: rust_decimal::Decimal::new(2550, 2),
         date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
         merchant_name: Some("Test Merchant".to_string()),
@@ -384,6 +387,7 @@ async fn given_row_level_security_policies_when_querying_then_enforces_user_isol
         id: user1_id,
         email: "user1@test.com".to_string(),
         password_hash: "hashed_password1".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -393,6 +397,7 @@ async fn given_row_level_security_policies_when_querying_then_enforces_user_isol
         id: user2_id,
         email: "user2@test.com".to_string(),
         password_hash: "hashed_password2".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -402,8 +407,8 @@ async fn given_row_level_security_policies_when_querying_then_enforces_user_isol
         id: Uuid::new_v4(),
         account_id: Uuid::new_v4(),
         user_id: Some(user1_id),
-        plaid_account_id: None,
-        plaid_transaction_id: Some("user1_txn".to_string()),
+        provider_account_id: None,
+        provider_transaction_id: Some("user1_txn".to_string()),
         amount: rust_decimal::Decimal::new(5000, 2),
         date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
         merchant_name: Some("User1 Store".to_string()),
@@ -419,8 +424,8 @@ async fn given_row_level_security_policies_when_querying_then_enforces_user_isol
         id: Uuid::new_v4(),
         account_id: Uuid::new_v4(),
         user_id: Some(user2_id),
-        plaid_account_id: None,
-        plaid_transaction_id: Some("user2_txn".to_string()),
+        provider_account_id: None,
+        provider_transaction_id: Some("user2_txn".to_string()),
         amount: rust_decimal::Decimal::new(7500, 2),
         date: chrono::NaiveDate::from_ymd_opt(2024, 1, 16).unwrap(),
         merchant_name: Some("User2 Store".to_string()),
@@ -506,6 +511,7 @@ async fn given_user_context_when_querying_accounts_then_returns_only_user_accoun
         id: user1_id,
         email: "accountuser1@test.com".to_string(),
         password_hash: "hashed_password1".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -515,6 +521,7 @@ async fn given_user_context_when_querying_accounts_then_returns_only_user_accoun
         id: user2_id,
         email: "accountuser2@test.com".to_string(),
         password_hash: "hashed_password2".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -523,8 +530,8 @@ async fn given_user_context_when_querying_accounts_then_returns_only_user_accoun
     let user1_account = Account {
         id: Uuid::new_v4(),
         user_id: Some(user1_id),
-        plaid_account_id: Some("user1_checking".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("user1_checking".to_string()),
+        provider_connection_id: None,
         name: "User1 Checking".to_string(),
         account_type: "depository".to_string(),
         balance_current: Some(rust_decimal::Decimal::new(100000, 2)),
@@ -535,8 +542,8 @@ async fn given_user_context_when_querying_accounts_then_returns_only_user_accoun
     let user2_account = Account {
         id: Uuid::new_v4(),
         user_id: Some(user2_id),
-        plaid_account_id: Some("user2_savings".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("user2_savings".to_string()),
+        provider_connection_id: None,
         name: "User2 Savings".to_string(),
         account_type: "depository".to_string(),
         balance_current: Some(rust_decimal::Decimal::new(500000, 2)),
@@ -611,6 +618,7 @@ async fn given_database_indexes_when_querying_user_data_then_uses_efficient_quer
         id: user_id,
         email: "performance@test.com".to_string(),
         password_hash: "hashed_password".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -646,6 +654,7 @@ async fn given_user_deletion_when_cascading_then_removes_all_related_session_dat
         id: user_id,
         email: "cascade@test.com".to_string(),
         password_hash: "hashed_password".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -654,8 +663,8 @@ async fn given_user_deletion_when_cascading_then_removes_all_related_session_dat
     let account = Account {
         id: Uuid::new_v4(),
         user_id: Some(user_id),
-        plaid_account_id: Some("cascade_account".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("cascade_account".to_string()),
+        provider_connection_id: None,
         name: "Cascade Test Account".to_string(),
         account_type: "depository".to_string(),
         balance_current: Some(rust_decimal::Decimal::new(100000, 2)),
@@ -667,8 +676,8 @@ async fn given_user_deletion_when_cascading_then_removes_all_related_session_dat
         id: Uuid::new_v4(),
         account_id: account.id,
         user_id: Some(user_id),
-        plaid_account_id: None,
-        plaid_transaction_id: Some("cascade_txn".to_string()),
+        provider_account_id: None,
+        provider_transaction_id: Some("cascade_txn".to_string()),
         amount: rust_decimal::Decimal::new(5000, 2),
         date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
         merchant_name: Some("Cascade Store".to_string()),
@@ -740,6 +749,7 @@ async fn given_two_users_when_querying_transactions_then_each_sees_only_their_ow
         id: user1_id,
         email: "user1_isolation@test.com".to_string(),
         password_hash: "hashed_password1".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -749,6 +759,7 @@ async fn given_two_users_when_querying_transactions_then_each_sees_only_their_ow
         id: user2_id,
         email: "user2_isolation@test.com".to_string(),
         password_hash: "hashed_password2".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -774,8 +785,8 @@ async fn given_two_users_when_querying_transactions_then_each_sees_only_their_ow
     let user1_account = Account {
         id: Uuid::new_v4(),
         user_id: Some(user1_id),
-        plaid_account_id: Some("user1_account".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("user1_account".to_string()),
+        provider_connection_id: None,
         name: "User1 Account".to_string(),
         account_type: "depository".to_string(),
         balance_current: Some(rust_decimal::Decimal::new(100000, 2)),
@@ -786,8 +797,8 @@ async fn given_two_users_when_querying_transactions_then_each_sees_only_their_ow
     let user2_account = Account {
         id: Uuid::new_v4(),
         user_id: Some(user2_id),
-        plaid_account_id: Some("user2_account".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("user2_account".to_string()),
+        provider_connection_id: None,
         name: "User2 Account".to_string(),
         account_type: "depository".to_string(),
         balance_current: Some(rust_decimal::Decimal::new(200000, 2)),
@@ -814,8 +825,8 @@ async fn given_two_users_when_querying_transactions_then_each_sees_only_their_ow
         id: Uuid::new_v4(),
         account_id: user1_account.id,
         user_id: Some(user1_id),
-        plaid_account_id: None,
-        plaid_transaction_id: Some("user1_txn_123".to_string()),
+        provider_account_id: None,
+        provider_transaction_id: Some("user1_txn_123".to_string()),
         amount: rust_decimal::Decimal::new(2500, 2),
         date: chrono::NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
         merchant_name: Some("User1 Store".to_string()),
@@ -831,8 +842,8 @@ async fn given_two_users_when_querying_transactions_then_each_sees_only_their_ow
         id: Uuid::new_v4(),
         account_id: user2_account.id,
         user_id: Some(user2_id),
-        plaid_account_id: None,
-        plaid_transaction_id: Some("user2_txn_456".to_string()),
+        provider_account_id: None,
+        provider_transaction_id: Some("user2_txn_456".to_string()),
         amount: rust_decimal::Decimal::new(7500, 2),
         date: chrono::NaiveDate::from_ymd_opt(2024, 1, 11).unwrap(),
         merchant_name: Some("User2 Shop".to_string()),
@@ -919,8 +930,8 @@ async fn given_user_session_when_accessing_accounts_then_only_returns_user_owned
     let user1_account1 = Account {
         id: Uuid::new_v4(),
         user_id: Some(user1_id),
-        plaid_account_id: Some("user1_account_1".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("user1_account_1".to_string()),
+        provider_connection_id: None,
         name: "User1 Checking".to_string(),
         account_type: "depository".to_string(),
         balance_current: Some(dec!(1000.00)),
@@ -931,8 +942,8 @@ async fn given_user_session_when_accessing_accounts_then_only_returns_user_owned
     let user1_account2 = Account {
         id: Uuid::new_v4(),
         user_id: Some(user1_id),
-        plaid_account_id: Some("user1_account_2".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("user1_account_2".to_string()),
+        provider_connection_id: None,
         name: "User1 Savings".to_string(),
         account_type: "depository".to_string(),
         balance_current: Some(dec!(2500.00)),
@@ -943,8 +954,8 @@ async fn given_user_session_when_accessing_accounts_then_only_returns_user_owned
     let user2_account1 = Account {
         id: Uuid::new_v4(),
         user_id: Some(user2_id),
-        plaid_account_id: Some("user2_account_1".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("user2_account_1".to_string()),
+        provider_connection_id: None,
         name: "User2 Checking".to_string(),
         account_type: "depository".to_string(),
         balance_current: Some(dec!(750.00)),
@@ -1074,14 +1085,14 @@ async fn given_user_session_when_accessing_accounts_then_only_returns_user_owned
 }
 
 #[tokio::test]
-async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_only_own_connections()
-{
+async fn given_multiple_users_when_accessing_provider_connections_then_each_sees_only_own_connections(
+) {
     let mut mock_repo = MockDatabaseRepository::new();
 
     let user1_id = Uuid::new_v4();
     let user2_id = Uuid::new_v4();
 
-    let user1_connection1 = PlaidConnection {
+    let user1_connection1 = ProviderConnection {
         id: Uuid::new_v4(),
         user_id: user1_id,
         item_id: "user1_item_1".to_string(),
@@ -1099,7 +1110,7 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
         updated_at: Some(Utc::now()),
     };
 
-    let user2_connection1 = PlaidConnection {
+    let user2_connection1 = ProviderConnection {
         id: Uuid::new_v4(),
         user_id: user2_id,
         item_id: "user2_item_1".to_string(),
@@ -1118,13 +1129,13 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
     };
 
     mock_repo
-        .expect_save_plaid_connection()
+        .expect_save_provider_connection()
         .withf(move |conn| conn.item_id == "user1_item_1")
         .times(1)
         .returning(|_| Box::pin(async { Ok(()) }));
 
     mock_repo
-        .expect_save_plaid_connection()
+        .expect_save_provider_connection()
         .withf(move |conn| conn.item_id == "user2_item_1")
         .times(1)
         .returning(|_| Box::pin(async { Ok(()) }));
@@ -1132,7 +1143,7 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
     let user1_conn_result = user1_connection1.clone();
     let user2_conn_result = user2_connection1.clone();
     mock_repo
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .with(mockall::predicate::eq(user1_id))
         .times(1)
         .returning(move |_| {
@@ -1141,7 +1152,7 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
         });
 
     mock_repo
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .with(mockall::predicate::eq(user2_id))
         .times(1)
         .returning(move |_| {
@@ -1152,7 +1163,7 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
     let user1_conn_by_item = user1_connection1.clone();
     let user2_conn_by_item = user2_connection1.clone();
     mock_repo
-        .expect_get_plaid_connection_by_item()
+        .expect_get_provider_connection_by_item()
         .with(mockall::predicate::eq("user1_item_1"))
         .times(1)
         .returning(move |_| {
@@ -1161,7 +1172,7 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
         });
 
     mock_repo
-        .expect_get_plaid_connection_by_item()
+        .expect_get_provider_connection_by_item()
         .with(mockall::predicate::eq("user2_item_1"))
         .times(1)
         .returning(move |_| {
@@ -1170,25 +1181,28 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
         });
 
     mock_repo
-        .save_plaid_connection(&user1_connection1)
+        .save_provider_connection(&user1_connection1)
         .await
         .expect("Failed to create user1 connection1");
     mock_repo
-        .save_plaid_connection(&user2_connection1)
+        .save_provider_connection(&user2_connection1)
         .await
         .expect("Failed to create user2 connection1");
 
     let user1_connections = mock_repo
-        .get_all_plaid_connections_by_user(&user1_id)
+        .get_all_provider_connections_by_user(&user1_id)
         .await
         .expect("Failed to get user1 connections");
 
     let user2_connections = mock_repo
-        .get_all_plaid_connections_by_user(&user2_id)
+        .get_all_provider_connections_by_user(&user2_id)
         .await
         .expect("Failed to get user2 connections");
 
-    assert!(!user1_connections.is_empty(), "User1 should have a connection");
+    assert!(
+        !user1_connections.is_empty(),
+        "User1 should have a connection"
+    );
     let user1_conn = &user1_connections[0];
     assert_eq!(
         user1_conn.user_id, user1_id,
@@ -1199,7 +1213,10 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
         "User1 should see their connection"
     );
 
-    assert!(!user2_connections.is_empty(), "User2 should have a connection");
+    assert!(
+        !user2_connections.is_empty(),
+        "User2 should have a connection"
+    );
     let user2_conn = &user2_connections[0];
     assert_eq!(
         user2_conn.user_id, user2_id,
@@ -1220,11 +1237,11 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
     );
 
     let user1_query_by_item = mock_repo
-        .get_plaid_connection_by_item(&user1_conn.item_id)
+        .get_provider_connection_by_item(&user1_conn.item_id)
         .await
         .expect("Failed to query user1 connection by item_id");
     let user2_query_by_item = mock_repo
-        .get_plaid_connection_by_item(&user2_conn.item_id)
+        .get_provider_connection_by_item(&user2_conn.item_id)
         .await
         .expect("Failed to query user2 connection by item_id");
 
@@ -1260,6 +1277,7 @@ async fn given_database_rls_policies_when_user_queries_data_then_enforces_user_c
         id: user1_id,
         email: "rls_user1@test.com".to_string(),
         password_hash: "hashed_password1".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -1269,6 +1287,7 @@ async fn given_database_rls_policies_when_user_queries_data_then_enforces_user_c
         id: user2_id,
         email: "rls_user2@test.com".to_string(),
         password_hash: "hashed_password2".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -1292,8 +1311,8 @@ async fn given_database_rls_policies_when_user_queries_data_then_enforces_user_c
     let user1_account = Account {
         id: Uuid::new_v4(),
         user_id: Some(user1_id),
-        plaid_account_id: Some("rls_user1_account".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("rls_user1_account".to_string()),
+        provider_connection_id: None,
         name: "User1 RLS Account".to_string(),
         account_type: "depository".to_string(),
         balance_current: Some(dec!(1500.00)),
@@ -1304,8 +1323,8 @@ async fn given_database_rls_policies_when_user_queries_data_then_enforces_user_c
     let user2_account = Account {
         id: Uuid::new_v4(),
         user_id: Some(user2_id),
-        plaid_account_id: Some("rls_user2_account".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("rls_user2_account".to_string()),
+        provider_connection_id: None,
         name: "User2 RLS Account".to_string(),
         account_type: "depository".to_string(),
         balance_current: Some(dec!(2500.00)),
@@ -1332,8 +1351,8 @@ async fn given_database_rls_policies_when_user_queries_data_then_enforces_user_c
         id: Uuid::new_v4(),
         account_id: user1_account.id,
         user_id: Some(user1_id),
-        plaid_account_id: None,
-        plaid_transaction_id: Some("rls_user1_txn".to_string()),
+        provider_account_id: None,
+        provider_transaction_id: Some("rls_user1_txn".to_string()),
         amount: dec!(45.67),
         date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
         merchant_name: Some("RLS Store 1".to_string()),
@@ -1349,8 +1368,8 @@ async fn given_database_rls_policies_when_user_queries_data_then_enforces_user_c
         id: Uuid::new_v4(),
         account_id: user2_account.id,
         user_id: Some(user2_id),
-        plaid_account_id: None,
-        plaid_transaction_id: Some("rls_user2_txn".to_string()),
+        provider_account_id: None,
+        provider_transaction_id: Some("rls_user2_txn".to_string()),
         amount: dec!(78.90),
         date: chrono::NaiveDate::from_ymd_opt(2024, 1, 16).unwrap(),
         merchant_name: Some("RLS Store 2".to_string()),
@@ -1541,6 +1560,7 @@ async fn given_repository_queries_when_no_user_context_set_then_returns_empty_re
         id: user_id,
         email: "no_context_user@test.com".to_string(),
         password_hash: "hashed_password".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -1569,8 +1589,8 @@ async fn given_repository_queries_when_no_user_context_set_then_returns_empty_re
     let account = Account {
         id: Uuid::new_v4(),
         user_id: Some(user_id),
-        plaid_account_id: Some("no_context_account".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("no_context_account".to_string()),
+        provider_connection_id: None,
         name: "No Context Account".to_string(),
         account_type: "depository".to_string(),
         balance_current: Some(dec!(1000.00)),
@@ -1582,8 +1602,8 @@ async fn given_repository_queries_when_no_user_context_set_then_returns_empty_re
         id: Uuid::new_v4(),
         account_id: account.id,
         user_id: Some(user_id),
-        plaid_account_id: None,
-        plaid_transaction_id: Some("no_context_txn".to_string()),
+        provider_account_id: None,
+        provider_transaction_id: Some("no_context_txn".to_string()),
         amount: dec!(50.00),
         date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
         merchant_name: Some("No Context Store".to_string()),
@@ -1636,7 +1656,7 @@ async fn given_repository_queries_when_no_user_context_set_then_returns_empty_re
         });
 
     mock_repo
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .times(1..)
         .returning(move |query_user_id| {
             if *query_user_id == user_id {
@@ -1657,7 +1677,7 @@ async fn given_repository_queries_when_no_user_context_set_then_returns_empty_re
     let user_no_context = mock_repo.get_user_by_id(&no_context_uuid).await;
 
     let connection_no_context = mock_repo
-        .get_all_plaid_connections_by_user(&no_context_uuid)
+        .get_all_provider_connections_by_user(&no_context_uuid)
         .await;
 
     assert!(accounts_no_context.is_ok());
@@ -1751,6 +1771,7 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
         id: user1_id,
         email: "concurrent_user1@test.com".to_string(),
         password_hash: "hashed_password1".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -1760,6 +1781,7 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
         id: user2_id,
         email: "concurrent_user2@test.com".to_string(),
         password_hash: "hashed_password2".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -1769,6 +1791,7 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
         id: user3_id,
         email: "concurrent_user3@test.com".to_string(),
         password_hash: "hashed_password3".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -1836,8 +1859,8 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
                 let account = Account {
                     id: Uuid::new_v4(),
                     user_id: Some(user1_id),
-                    plaid_account_id: Some("concurrent_user1_checking".to_string()),
-                    plaid_connection_id: None,
+                    provider_account_id: Some("concurrent_user1_checking".to_string()),
+                    provider_connection_id: None,
                     name: "User1 Concurrent Checking".to_string(),
                     account_type: "depository".to_string(),
                     balance_current: Some(rust_decimal::Decimal::new(100000, 2)),
@@ -1849,8 +1872,8 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
                 let account = Account {
                     id: Uuid::new_v4(),
                     user_id: Some(user2_id),
-                    plaid_account_id: Some("concurrent_user2_savings".to_string()),
-                    plaid_connection_id: None,
+                    provider_account_id: Some("concurrent_user2_savings".to_string()),
+                    provider_connection_id: None,
                     name: "User2 Concurrent Savings".to_string(),
                     account_type: "depository".to_string(),
                     balance_current: Some(rust_decimal::Decimal::new(250000, 2)),
@@ -1862,8 +1885,8 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
                 let account = Account {
                     id: Uuid::new_v4(),
                     user_id: Some(user3_id),
-                    plaid_account_id: Some("concurrent_user3_credit".to_string()),
-                    plaid_connection_id: None,
+                    provider_account_id: Some("concurrent_user3_credit".to_string()),
+                    provider_connection_id: None,
                     name: "User3 Concurrent Credit".to_string(),
                     account_type: "credit".to_string(),
                     balance_current: Some(rust_decimal::Decimal::new(500000, 2)),
@@ -1885,8 +1908,8 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
                     id: Uuid::new_v4(),
                     account_id: Uuid::new_v4(),
                     user_id: Some(user1_id),
-                    plaid_account_id: None,
-                    plaid_transaction_id: Some("concurrent_user1_txn".to_string()),
+                    provider_account_id: None,
+                    provider_transaction_id: Some("concurrent_user1_txn".to_string()),
                     amount: rust_decimal::Decimal::new(2500, 2),
                     date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
                     merchant_name: Some("Concurrent Store 1".to_string()),
@@ -1903,8 +1926,8 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
                     id: Uuid::new_v4(),
                     account_id: Uuid::new_v4(),
                     user_id: Some(user2_id),
-                    plaid_account_id: None,
-                    plaid_transaction_id: Some("concurrent_user2_txn".to_string()),
+                    provider_account_id: None,
+                    provider_transaction_id: Some("concurrent_user2_txn".to_string()),
                     amount: rust_decimal::Decimal::new(7500, 2),
                     date: chrono::NaiveDate::from_ymd_opt(2024, 1, 16).unwrap(),
                     merchant_name: Some("Concurrent Store 2".to_string()),
@@ -1921,8 +1944,8 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
                     id: Uuid::new_v4(),
                     account_id: Uuid::new_v4(),
                     user_id: Some(user3_id),
-                    plaid_account_id: None,
-                    plaid_transaction_id: Some("concurrent_user3_txn".to_string()),
+                    provider_account_id: None,
+                    provider_transaction_id: Some("concurrent_user3_txn".to_string()),
                     amount: rust_decimal::Decimal::new(15000, 2),
                     date: chrono::NaiveDate::from_ymd_opt(2024, 1, 17).unwrap(),
                     merchant_name: Some("Concurrent Store 3".to_string()),
@@ -1948,8 +1971,8 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
             let account1 = Account {
                 id: Uuid::new_v4(),
                 user_id: Some(user1_id),
-                plaid_account_id: Some("concurrent_user1_checking".to_string()),
-                plaid_connection_id: None,
+                provider_account_id: Some("concurrent_user1_checking".to_string()),
+                provider_connection_id: None,
                 name: "User1 Concurrent Checking".to_string(),
                 account_type: "depository".to_string(),
                 balance_current: Some(dec!(1000.00)),
@@ -1961,8 +1984,8 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
                 id: Uuid::new_v4(),
                 account_id: account1.id,
                 user_id: Some(user1_id),
-                plaid_account_id: None,
-                plaid_transaction_id: Some("concurrent_user1_txn".to_string()),
+                provider_account_id: None,
+                provider_transaction_id: Some("concurrent_user1_txn".to_string()),
                 amount: dec!(25.00),
                 date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
                 merchant_name: Some("Concurrent Store 1".to_string()),
@@ -1990,8 +2013,8 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
             let account2 = Account {
                 id: Uuid::new_v4(),
                 user_id: Some(user2_id),
-                plaid_account_id: Some("concurrent_user2_savings".to_string()),
-                plaid_connection_id: None,
+                provider_account_id: Some("concurrent_user2_savings".to_string()),
+                provider_connection_id: None,
                 name: "User2 Concurrent Savings".to_string(),
                 account_type: "depository".to_string(),
                 balance_current: Some(dec!(2500.00)),
@@ -2003,8 +2026,8 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
                 id: Uuid::new_v4(),
                 account_id: account2.id,
                 user_id: Some(user2_id),
-                plaid_account_id: None,
-                plaid_transaction_id: Some("concurrent_user2_txn".to_string()),
+                provider_account_id: None,
+                provider_transaction_id: Some("concurrent_user2_txn".to_string()),
                 amount: dec!(75.00),
                 date: chrono::NaiveDate::from_ymd_opt(2024, 1, 16).unwrap(),
                 merchant_name: Some("Concurrent Store 2".to_string()),
@@ -2032,8 +2055,8 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
             let account3 = Account {
                 id: Uuid::new_v4(),
                 user_id: Some(user3_id),
-                plaid_account_id: Some("concurrent_user3_credit".to_string()),
-                plaid_connection_id: None,
+                provider_account_id: Some("concurrent_user3_credit".to_string()),
+                provider_connection_id: None,
                 name: "User3 Concurrent Credit".to_string(),
                 account_type: "credit".to_string(),
                 balance_current: Some(dec!(500.00)),
@@ -2045,8 +2068,8 @@ async fn given_concurrent_user_operations_when_executing_then_maintains_complete
                 id: Uuid::new_v4(),
                 account_id: account3.id,
                 user_id: Some(user3_id),
-                plaid_account_id: None,
-                plaid_transaction_id: Some("concurrent_user3_txn".to_string()),
+                provider_account_id: None,
+                provider_transaction_id: Some("concurrent_user3_txn".to_string()),
                 amount: dec!(150.00),
                 date: chrono::NaiveDate::from_ymd_opt(2024, 1, 17).unwrap(),
                 merchant_name: Some("Concurrent Store 3".to_string()),
@@ -2291,6 +2314,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         id: user1_id,
         email: "victim_user@test.com".to_string(),
         password_hash: "hashed_password1".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -2300,6 +2324,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         id: user2_id,
         email: "attacker_user@test.com".to_string(),
         password_hash: "hashed_password2".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -2323,8 +2348,8 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
     let user1_account = Account {
         id: Uuid::new_v4(),
         user_id: Some(user1_id),
-        plaid_account_id: Some("user1_secret_account".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("user1_secret_account".to_string()),
+        provider_connection_id: None,
         name: "User1 Private Account".to_string(),
         account_type: "depository".to_string(),
         balance_current: Some(dec!(5000.00)),
@@ -2336,8 +2361,8 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         id: Uuid::new_v4(),
         account_id: user1_account.id,
         user_id: Some(user1_id),
-        plaid_account_id: None,
-        plaid_transaction_id: Some("user1_secret_txn".to_string()),
+        provider_account_id: None,
+        provider_transaction_id: Some("user1_secret_txn".to_string()),
         amount: dec!(250.00),
         date: chrono::NaiveDate::from_ymd_opt(2024, 1, 20).unwrap(),
         merchant_name: Some("Private Store".to_string()),
@@ -2349,7 +2374,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         created_at: Some(chrono::Utc::now()),
     };
 
-    let user1_plaid_connection = PlaidConnection {
+    let user1_plaid_connection = ProviderConnection {
         id: Uuid::new_v4(),
         user_id: user1_id,
         item_id: "user1_secret_item".to_string(),
@@ -2380,7 +2405,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         .returning(|_| Box::pin(async { Ok(()) }));
 
     mock_repo
-        .expect_save_plaid_connection()
+        .expect_save_provider_connection()
         .withf(move |conn| conn.item_id == "user1_secret_item")
         .times(1)
         .returning(|_| Box::pin(async { Ok(()) }));
@@ -2396,7 +2421,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_repo
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .times(1..)
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
@@ -2406,7 +2431,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         .await
         .unwrap();
     mock_repo
-        .save_plaid_connection(&user1_plaid_connection)
+        .save_provider_connection(&user1_plaid_connection)
         .await
         .unwrap();
 
@@ -2414,7 +2439,9 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
 
     let cross_user_accounts = mock_repo.get_accounts_for_user(&user1_id).await;
 
-    let cross_user_plaid = mock_repo.get_all_plaid_connections_by_user(&user1_id).await;
+    let cross_user_plaid = mock_repo
+        .get_all_provider_connections_by_user(&user1_id)
+        .await;
 
     assert!(
         cross_user_transactions.is_ok(),
@@ -2435,7 +2462,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         .unwrap();
     let user2_accounts = mock_repo.get_accounts_for_user(&user2_id).await.unwrap();
     let user2_plaid = mock_repo
-        .get_all_plaid_connections_by_user(&user2_id)
+        .get_all_provider_connections_by_user(&user2_id)
         .await
         .unwrap();
 
@@ -2498,12 +2525,12 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .returning(|_| Box::pin(async { Ok(()) }));
 
     mock_repo
-        .expect_save_plaid_connection()
+        .expect_save_provider_connection()
         .times(2)
         .returning(|_| Box::pin(async { Ok(()) }));
 
     mock_repo
-        .expect_delete_plaid_transactions()
+        .expect_delete_provider_transactions()
         .with(mockall::predicate::eq("user1_item_delete"))
         .times(1)
         .returning(|_| Box::pin(async { Ok(2) }));
@@ -2521,8 +2548,8 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
                 let account1 = Account {
                     id: Uuid::new_v4(),
                     user_id: Some(user1_id),
-                    plaid_account_id: Some("user1_account_1".to_string()),
-                    plaid_connection_id: None,
+                    provider_account_id: Some("user1_account_1".to_string()),
+                    provider_connection_id: None,
                     name: "User1 Checking".to_string(),
                     account_type: "depository".to_string(),
                     balance_current: Some(rust_decimal::Decimal::new(150000, 2)),
@@ -2532,8 +2559,8 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
                 let account2 = Account {
                     id: Uuid::new_v4(),
                     user_id: Some(user1_id),
-                    plaid_account_id: Some("user1_account_2".to_string()),
-                    plaid_connection_id: None,
+                    provider_account_id: Some("user1_account_2".to_string()),
+                    provider_connection_id: None,
                     name: "User1 Savings".to_string(),
                     account_type: "depository".to_string(),
                     balance_current: Some(rust_decimal::Decimal::new(350000, 2)),
@@ -2545,8 +2572,8 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
                 let account = Account {
                     id: Uuid::new_v4(),
                     user_id: Some(user2_id),
-                    plaid_account_id: Some("user2_account_safe".to_string()),
-                    plaid_connection_id: None,
+                    provider_account_id: Some("user2_account_safe".to_string()),
+                    provider_connection_id: None,
                     name: "User2 Account".to_string(),
                     account_type: "credit".to_string(),
                     balance_current: Some(rust_decimal::Decimal::new(200000, 2)),
@@ -2568,8 +2595,8 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
                     id: Uuid::new_v4(),
                     account_id: Uuid::new_v4(),
                     user_id: Some(user1_id),
-                    plaid_account_id: None,
-                    plaid_transaction_id: Some("user1_txn_1".to_string()),
+                    provider_account_id: None,
+                    provider_transaction_id: Some("user1_txn_1".to_string()),
                     amount: rust_decimal::Decimal::new(2500, 2),
                     date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
                     merchant_name: Some("User1 Store 1".to_string()),
@@ -2584,8 +2611,8 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
                     id: Uuid::new_v4(),
                     account_id: Uuid::new_v4(),
                     user_id: Some(user1_id),
-                    plaid_account_id: None,
-                    plaid_transaction_id: Some("user1_txn_2".to_string()),
+                    provider_account_id: None,
+                    provider_transaction_id: Some("user1_txn_2".to_string()),
                     amount: rust_decimal::Decimal::new(4500, 2),
                     date: chrono::NaiveDate::from_ymd_opt(2024, 1, 16).unwrap(),
                     merchant_name: Some("User1 Store 2".to_string()),
@@ -2602,8 +2629,8 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
                     id: Uuid::new_v4(),
                     account_id: Uuid::new_v4(),
                     user_id: Some(user2_id),
-                    plaid_account_id: None,
-                    plaid_transaction_id: Some("user2_txn_safe".to_string()),
+                    provider_account_id: None,
+                    provider_transaction_id: Some("user2_txn_safe".to_string()),
                     amount: rust_decimal::Decimal::new(7500, 2),
                     date: chrono::NaiveDate::from_ymd_opt(2024, 1, 17).unwrap(),
                     merchant_name: Some("User2 Store".to_string()),
@@ -2621,11 +2648,11 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         });
 
     mock_repo
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .times(1..)
         .returning(move |query_user_id| {
             if *query_user_id == user1_id {
-                let conn = PlaidConnection {
+                let conn = ProviderConnection {
                     id: Uuid::new_v4(),
                     user_id: user1_id,
                     item_id: "user1_plaid_item".to_string(),
@@ -2644,7 +2671,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
                 };
                 Box::pin(async { Ok(vec![conn]) })
             } else if *query_user_id == user2_id {
-                let conn = PlaidConnection {
+                let conn = ProviderConnection {
                     id: Uuid::new_v4(),
                     user_id: user2_id,
                     item_id: "user2_item_safe".to_string(),
@@ -2671,6 +2698,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         id: user1_id,
         email: "user1_to_delete@test.com".to_string(),
         password_hash: "hashed_password1".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -2680,6 +2708,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         id: user2_id,
         email: "user2_to_keep@test.com".to_string(),
         password_hash: "hashed_password2".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -2689,6 +2718,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         id: user3_id,
         email: "user3_to_keep@test.com".to_string(),
         password_hash: "hashed_password3".to_string(),
+        provider: "teller".to_string(),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
         onboarding_completed: false,
@@ -2701,8 +2731,8 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
     let user1_account1 = Account {
         id: Uuid::new_v4(),
         user_id: Some(user1_id),
-        plaid_account_id: Some("user1_account_1".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("user1_account_1".to_string()),
+        provider_connection_id: None,
         name: "User1 Checking".to_string(),
         account_type: "depository".to_string(),
         balance_current: Some(dec!(1500.00)),
@@ -2713,8 +2743,8 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
     let user1_account2 = Account {
         id: Uuid::new_v4(),
         user_id: Some(user1_id),
-        plaid_account_id: Some("user1_account_2".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("user1_account_2".to_string()),
+        provider_connection_id: None,
         name: "User1 Savings".to_string(),
         account_type: "depository".to_string(),
         balance_current: Some(dec!(5000.00)),
@@ -2726,8 +2756,8 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         id: Uuid::new_v4(),
         account_id: user1_account1.id,
         user_id: Some(user1_id),
-        plaid_account_id: None,
-        plaid_transaction_id: Some("user1_txn_1".to_string()),
+        provider_account_id: None,
+        provider_transaction_id: Some("user1_txn_1".to_string()),
         amount: dec!(100.00),
         date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
         merchant_name: Some("User1 Store 1".to_string()),
@@ -2743,8 +2773,8 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         id: Uuid::new_v4(),
         account_id: user1_account2.id,
         user_id: Some(user1_id),
-        plaid_account_id: None,
-        plaid_transaction_id: Some("user1_txn_2".to_string()),
+        provider_account_id: None,
+        provider_transaction_id: Some("user1_txn_2".to_string()),
         amount: dec!(250.00),
         date: chrono::NaiveDate::from_ymd_opt(2024, 1, 16).unwrap(),
         merchant_name: Some("User1 Store 2".to_string()),
@@ -2756,7 +2786,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         created_at: Some(chrono::Utc::now()),
     };
 
-    let user1_plaid_connection = PlaidConnection {
+    let user1_plaid_connection = ProviderConnection {
         id: Uuid::new_v4(),
         user_id: user1_id,
         item_id: "user1_item_delete".to_string(),
@@ -2777,8 +2807,8 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
     let user2_account = Account {
         id: Uuid::new_v4(),
         user_id: Some(user2_id),
-        plaid_account_id: Some("user2_account_safe".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("user2_account_safe".to_string()),
+        provider_connection_id: None,
         name: "User2 Account".to_string(),
         account_type: "credit".to_string(),
         balance_current: Some(dec!(2000.00)),
@@ -2790,8 +2820,8 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         id: Uuid::new_v4(),
         account_id: user2_account.id,
         user_id: Some(user2_id),
-        plaid_account_id: None,
-        plaid_transaction_id: Some("user2_txn_safe".to_string()),
+        provider_account_id: None,
+        provider_transaction_id: Some("user2_txn_safe".to_string()),
         amount: dec!(75.00),
         date: chrono::NaiveDate::from_ymd_opt(2024, 1, 17).unwrap(),
         merchant_name: Some("User2 Store".to_string()),
@@ -2803,7 +2833,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         created_at: Some(chrono::Utc::now()),
     };
 
-    let user2_plaid_connection = PlaidConnection {
+    let user2_plaid_connection = ProviderConnection {
         id: Uuid::new_v4(),
         user_id: user2_id,
         item_id: "user2_item_safe".to_string(),
@@ -2839,11 +2869,11 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .unwrap();
 
     mock_repo
-        .save_plaid_connection(&user1_plaid_connection)
+        .save_provider_connection(&user1_plaid_connection)
         .await
         .unwrap();
     mock_repo
-        .save_plaid_connection(&user2_plaid_connection)
+        .save_provider_connection(&user2_plaid_connection)
         .await
         .unwrap();
 
@@ -2853,7 +2883,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .await
         .unwrap();
     let user1_plaid_before = mock_repo
-        .get_all_plaid_connections_by_user(&user1_id)
+        .get_all_provider_connections_by_user(&user1_id)
         .await
         .unwrap();
     let user2_accounts_before = mock_repo.get_accounts_for_user(&user2_id).await.unwrap();
@@ -2862,7 +2892,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .await
         .unwrap();
     let user2_plaid_before = mock_repo
-        .get_all_plaid_connections_by_user(&user2_id)
+        .get_all_provider_connections_by_user(&user2_id)
         .await
         .unwrap();
 
@@ -2896,7 +2926,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
     );
 
     let _deleted_transactions = mock_repo
-        .delete_plaid_transactions("user1_item_delete")
+        .delete_provider_transactions("user1_item_delete")
         .await
         .unwrap();
 
@@ -2908,7 +2938,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .await
         .unwrap();
     let _user1_plaid_after = mock_repo
-        .get_all_plaid_connections_by_user(&user1_id)
+        .get_all_provider_connections_by_user(&user1_id)
         .await
         .unwrap();
 
@@ -2918,7 +2948,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .await
         .unwrap();
     let user2_plaid_after = mock_repo
-        .get_all_plaid_connections_by_user(&user2_id)
+        .get_all_provider_connections_by_user(&user2_id)
         .await
         .unwrap();
     let user3_accounts_after = mock_repo.get_accounts_for_user(&user3_id).await.unwrap();
@@ -2980,7 +3010,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .await
         .unwrap();
     let user3_plaid_after = mock_repo
-        .get_all_plaid_connections_by_user(&user3_id)
+        .get_all_provider_connections_by_user(&user3_id)
         .await
         .unwrap();
 
@@ -3076,23 +3106,23 @@ async fn given_user_with_multiple_connections_when_get_all_then_returns_all_conn
     let mut mock_repo = MockDatabaseRepository::new();
     let user_id = Uuid::new_v4();
 
-    let conn1 = PlaidConnection::new(user_id, "item_1");
-    let conn2 = PlaidConnection::new(user_id, "item_2");
+    let conn1 = ProviderConnection::new(user_id, "item_1");
+    let conn2 = ProviderConnection::new(user_id, "item_2");
     let conn1_clone = conn1.clone();
     let conn2_clone = conn2.clone();
 
     mock_repo
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .with(predicate::eq(user_id))
         .returning(move |_| {
             let c1 = conn1_clone.clone();
             let c2 = conn2_clone.clone();
-            Box::pin(async move {
-                Ok(vec![c1, c2])
-            })
+            Box::pin(async move { Ok(vec![c1, c2]) })
         });
 
-    let result = mock_repo.get_all_plaid_connections_by_user(&user_id).await;
+    let result = mock_repo
+        .get_all_provider_connections_by_user(&user_id)
+        .await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap().len(), 2);
 }
@@ -3103,10 +3133,12 @@ async fn given_user_with_no_connections_when_get_all_then_returns_empty() {
     let user_id = Uuid::new_v4();
 
     mock_repo
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
-    let result = mock_repo.get_all_plaid_connections_by_user(&user_id).await;
+    let result = mock_repo
+        .get_all_provider_connections_by_user(&user_id)
+        .await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap().len(), 0);
 }
@@ -3117,19 +3149,21 @@ async fn given_valid_connection_id_when_get_by_id_then_returns_connection() {
     let connection_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
-    let mut conn = PlaidConnection::new(user_id, "item_1");
+    let mut conn = ProviderConnection::new(user_id, "item_1");
     conn.id = connection_id;
     let conn_clone = conn.clone();
 
     mock_repo
-        .expect_get_plaid_connection_by_id()
+        .expect_get_provider_connection_by_id()
         .with(predicate::eq(connection_id), predicate::eq(user_id))
         .returning(move |_, _| {
             let c = conn_clone.clone();
             Box::pin(async move { Ok(Some(c)) })
         });
 
-    let result = mock_repo.get_plaid_connection_by_id(&connection_id, &user_id).await;
+    let result = mock_repo
+        .get_provider_connection_by_id(&connection_id, &user_id)
+        .await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap().unwrap().id, connection_id);
 }
@@ -3140,10 +3174,12 @@ async fn given_invalid_connection_id_when_get_by_id_then_returns_none() {
     let connection_id = Uuid::new_v4();
 
     mock_repo
-        .expect_get_plaid_connection_by_id()
+        .expect_get_provider_connection_by_id()
         .returning(|_, _| Box::pin(async { Ok(None) }));
 
-    let result = mock_repo.get_plaid_connection_by_id(&connection_id, &Uuid::new_v4()).await;
+    let result = mock_repo
+        .get_provider_connection_by_id(&connection_id, &Uuid::new_v4())
+        .await;
     assert!(result.is_ok());
     assert!(result.unwrap().is_none());
 }
@@ -3155,15 +3191,17 @@ async fn given_connection_exists_when_queried_by_different_user_then_returns_non
     let other_user_id = Uuid::new_v4();
     let connection_id = Uuid::new_v4();
 
-    let mut conn = PlaidConnection::new(owner_user_id, "item_1");
+    let mut conn = ProviderConnection::new(owner_user_id, "item_1");
     conn.id = connection_id;
 
     mock_repo
-        .expect_get_plaid_connection_by_id()
+        .expect_get_provider_connection_by_id()
         .with(predicate::eq(connection_id), predicate::eq(other_user_id))
         .returning(|_, _| Box::pin(async { Ok(None) }));
 
-    let result = mock_repo.get_plaid_connection_by_id(&connection_id, &other_user_id).await;
+    let result = mock_repo
+        .get_provider_connection_by_id(&connection_id, &other_user_id)
+        .await;
     assert!(result.is_ok());
     assert!(result.unwrap().is_none());
 }

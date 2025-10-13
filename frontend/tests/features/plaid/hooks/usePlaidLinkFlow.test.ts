@@ -49,7 +49,7 @@ vi.mock('react-plaid-link', () => ({
 }))
 
 vi.mock('@/hooks/usePlaidConnections', () => ({
-  usePlaidConnections: () => plaidConnectionsMock,
+  usePlaidConnections: (_options?: any) => plaidConnectionsMock,
 }))
 
 vi.mock('@/services/PlaidService', () => ({

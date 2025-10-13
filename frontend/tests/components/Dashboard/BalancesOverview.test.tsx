@@ -3,6 +3,7 @@ import React from "react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import BalancesOverview from '@/components/BalancesOverview'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
+import { createProviderStatus } from '@tests/utils/fixtures'
 import { ApiClient } from '@/services/ApiClient'
 import { AccountFilterProvider } from '@/hooks/useAccountFilter'
 
@@ -45,7 +46,7 @@ describe("BalancesOverview (Phase 7)", () => {
     installFetchRoutes({
       "GET /api/analytics/balances/overview": mock,
       "GET /api/plaid/accounts": [],
-      "GET /api/plaid/status": { is_connected: false }
+      "GET /api/providers/status": createProviderStatus()
     });
 
     render(<BalancesOverview />, { wrapper: TestWrapper });
@@ -75,7 +76,7 @@ describe("BalancesOverview (Phase 7)", () => {
     installFetchRoutes({
       "GET /api/analytics/balances/overview": () => (failure ? new Response("boom", { status: 500 }) : ok),
       "GET /api/plaid/accounts": [],
-      "GET /api/plaid/status": { is_connected: false }
+      "GET /api/providers/status": createProviderStatus()
     });
 
     render(<BalancesOverview />, { wrapper: TestWrapper });
@@ -107,7 +108,7 @@ describe("BalancesOverview (Phase 7)", () => {
         };
       },
       "GET /api/plaid/accounts": [],
-      "GET /api/plaid/status": { is_connected: false }
+      "GET /api/providers/status": createProviderStatus()
     });
 
     const { rerender } = render(<BalancesOverview />, { wrapper: TestWrapper });

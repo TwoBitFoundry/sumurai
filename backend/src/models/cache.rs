@@ -1,4 +1,4 @@
-use crate::models::{account::Account, plaid::PlaidConnection, transaction::Transaction};
+use crate::models::{account::Account, plaid::ProviderConnection, transaction::Transaction};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -10,7 +10,7 @@ pub struct CachedTransaction {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CachedBankConnection {
-    pub connection: PlaidConnection,
+    pub connection: ProviderConnection,
     pub sync_status: BankConnectionSyncStatus,
     pub cached_at: DateTime<Utc>,
 }
