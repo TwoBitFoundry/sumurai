@@ -1,12 +1,56 @@
-# Sumaura — Personal Finance Dashboard
+# Sumaura, Your Personal Finance Dashboard
 
-Sumaura is a full‑stack personal finance dashboard that connects to your bank via Plaid, syncs transactions, and visualizes spending with a modern, responsive UI.
+Sumaura is a full‑stack personal finance dashboard that connects to your bank via modern aggregators, syncs transactions, and visualizes spending with a modern, responsive UI.
 
 **License**: Sustainable Use License – Community 1.0 (source-available, not OSI approved)
 
 ## Features
 
 Comprehensive personal finance management with bank connectivity, transaction tracking, budgeting, and visual analytics.
+
+### 📊 Teller API vs Plaid API
+Core data access and sync features provided by each service.
+
+| Capability | Teller | Plaid |
+|------------|--------|-------|
+| 🏦 Bank Coverage | ✅ ~7K U.S. institutions | ✅🌍 12K+ global institutions |
+| 🔄 Incremental Sync | ✅ Real‑time pull updates | ✅ Background sync via webhooks |
+| 📅 Historical Transactions | ⚠️ Recent data only | ✅ Up to 24 months |
+| 🧾 Transaction Enrichment | ⚠️ Basic details (merchant, date, amount) | ✅ Categories, logos, recurring detection |
+| 🔑 Bring Your Own API Key | ✅ Easily accessible | ⚠️ Difficult to get production keys |
+
+#### TL;DR
+- Teller (Self‑Host) → Private, real‑time, and user‑controlled.
+- Plaid (Hosted, roadmap) → Global, enriched, and analytics‑ready — with equal data privacy guarantees.
+
+### 💫 Experience Matrix
+How the app delivers data‑driven financial experiences.
+
+| Feature | 🧩 Self‑Host via Teller (BYOA) | 🏢 Hosted via Plaid |
+|---------|-------------------------------|---------------------|
+| 🔒 Data Privacy | ✅ You control your data — never sold or tracked | ✅ Data is never sold or tracked |
+| 🔐 Secure Login | ✅ Encrypted login with MFA | ✅ Bank‑branded OAuth login |
+| 📊 Rich Dashboard Insights | ✅ Included | ✅ Included |
+| 🧾 Review Transactions | ⚠️ Limited categories/merchant grouping | ✅ Full categorization and merchant context |
+| 💰 Budget Tracking | ⚠️ Limited categories/merchant grouping | ✅ Detailed categorization with merchant‑level insights |
+| 🧱 Best Fit | 🧠 Open‑source, indie, or self‑managed | 💼 Business, Premium|
+| 💵 Pricing | Pay‑for‑what‑you‑use (Teller API) | TBA |
+
+
+## Roadmap
+
+What’s coming next:
+
+- Hosted service via Plaid
+  - Richer transaction categories and merchant enrichment
+  - Agentic features: receipt matching, conversational insights about your data, and smart suggestions
+
+- For all
+  - Financial reports (monthly health score, export your data, and more)
+  - Notifications and alerts (balances, unusual activity, budget thresholds)
+  - Receipt uploads (attach and search receipts for transactions)
+
+## What You'll See
 
 ### Dashboard & Analytics
 
@@ -27,21 +71,10 @@ Create and adjust category budgets, monitor progress, and quickly spot overspend
 ![Budgets](docs/images/budgets.png)
 
 ### Connect Accounts
-Secure bank account linking through Plaid with sandbox testing and on-demand transaction syncing.
+Link bank accounts using Teller (self‑hosted) or Plaid (hosted) with on‑demand transaction syncing.
 
 ![Accounts](docs/images/accounts.png)
 
-## Multi-Provider Support
-
-Sumaura now supports multiple financial data providers so deployments can choose between our managed Plaid integration or a bring-your-own Teller setup.
-
-| Provider | Status | Highlights | Notes |
-| --- | --- | --- | --- |
-| **Plaid** | ✅ Production ready | Rich categorization, merchant enrichment, full backend + webhook support | Runs with our hosted credentials or your own. |
-| **Teller** | ✅ Production ready | Self-hosted API keys, mTLS security, parallelized balance fetch | Ideal for self-hosters who need direct control over credentials. |
-
-- Set `DEFAULT_PROVIDER=plaid` if you want the turnkey managed experience.
-- Set `DEFAULT_PROVIDER=teller` to run entirely on your own Teller credentials.
 
 ## At a Glance
 Modern full-stack architecture with React frontend, Rust backend, PostgreSQL database, and Docker deployment.
@@ -56,12 +89,19 @@ Nginx-served SPA with Rust backend, PostgreSQL database, Redis cache, and multi-
 
 ### Security & Privacy
 
-Sumaura is designed to be self-hosted with no vendor data path. Plaid credentials stay on the client, encrypted access tokens live in your database, and Redis caches are session-scoped with automatic TTL expiry. There is no telemetry or third-party analytics baked in.
+Sumaura is designed to be self‑hosted with no vendor data path. With Teller, you keep full control of credentials (mTLS); Plaid is offered as a hosted option for broader coverage and richer categories. Redis caches are session‑scoped with automatic TTL expiry. There is no telemetry or third‑party analytics baked in.
 
 - **Your Data Belongs to You:** user auth metadata, transactions, budgets, and derived analytics in your PostgreSQL instance.
-- **Bank Credentials are Never Stored:** bank usernames/passwords (Plaid Link handles them in the browser) or any data on our servers.
-- **Secrets are Secure:** Plaid access tokens are encrypted with AES-256-GCM using `ENCRYPTION_KEY`; Redis holds only short-lived session data.
+- **Bank Credentials are Never Stored:** user credentials are not persisted; Plaid Link handles them in the browser and Teller uses short‑lived tokens with mTLS.
+- **Secrets are Secure:** Provider access tokens are encrypted with AES‑256‑GCM using `ENCRYPTION_KEY`; Redis holds only short‑lived session data.
 - **Delete Your Data Anytime:** run `docker compose down -v` to wipe containers/volumes, or `sqlx database reset -y` against your `DATABASE_URL`.
+
+### Hosting Policy
+
+- “Hosted” means operated by the Sumaura team for customers. The hosted option is on the roadmap and not yet available.
+- “Self‑hosted” means private, non‑public deployments by the licensee. Teller supports bring‑your‑own API keys and is the recommended path.
+- Public hosting or re‑hosting of this software is not permitted under the Sustainable Use License.
+ - The hosted experience enables reliability, security posture, and data quality we can’t practically guarantee in self‑hosted setups (e.g., broader institution coverage, richer categorization via Plaid, proactive monitoring, and managed upgrades).
 
 
 ## Getting Started
@@ -140,7 +180,7 @@ sudo apt-get install -y openssl
 </details>
 
 ### Setting Up the Environment Variables
-Configure Plaid credentials, JWT secrets, and database connections for local development.
+Configure JWT secrets and database connections. For private self‑hosting, use Teller.
 
 1. Copy the sample environment file and edit it with your secrets:
 
@@ -149,7 +189,7 @@ Configure Plaid credentials, JWT secrets, and database connections for local dev
    ```
 
    - Generate fresh values for `JWT_SECRET` and `ENCRYPTION_KEY` with `openssl rand -hex 32`.
-   - Retrieve Plaid sandbox credentials (`PLAID_CLIENT_ID`, `PLAID_SECRET`) from the Plaid Dashboard.
+   - For self‑hosting, no Plaid credentials are required. Set `DEFAULT_PROVIDER=teller`.
 
 2. Build and start the stack:
 
@@ -174,46 +214,59 @@ Everything reads from `.env`. The defaults below match `.env.example` and the Do
 | `POSTGRES_PASSWORD` | Yes | `password` | Same as above—change for any shared environment. |
 | `POSTGRES_DB` | Yes | `accounting` | Database created by the container; referenced in `DATABASE_URL`. |
 | `JWT_SECRET` | Yes (non-local) | _none_ | 32+ character secret for signing access/refresh tokens. Generate with `openssl rand -hex 32`. |
-| `ENCRYPTION_KEY` | Yes (Plaid) | _none_ | 64 hex characters (32 bytes) for encrypting Plaid access tokens. Generate with `openssl rand -hex 32`. |
-| `PLAID_CLIENT_ID` | Yes (Plaid) | _none_ | Obtain from the Plaid Dashboard. Required even for sandbox testing. |
-| `PLAID_SECRET` | Yes (Plaid) | _none_ | Obtain from the Plaid Dashboard. |
-| `PLAID_ENV` | Optional | `sandbox` | Choose `sandbox`, `development`, or `production`. |
+| `ENCRYPTION_KEY` | Yes | _none_ | 64 hex characters (32 bytes) for encrypting provider access tokens. Generate with `openssl rand -hex 32`. |
 | `DEFAULT_PROVIDER` | Optional | `teller` | Choose which provider new users receive (`plaid` or `teller`). Defaults to `teller` for self-hosted scenarios. |
-| `TELLER_CERT_PATH` | Optional (Teller) | _none_ | Absolute path to your Teller client certificate (PEM). Required when `DEFAULT_PROVIDER=teller`. |
-| `TELLER_KEY_PATH` | Optional (Teller) | _none_ | Absolute path to the Teller private key (PEM). Keep this outside source control. |
-| `TELLER_ENV` | Optional (Teller) | `development` | Matches your Teller application environment (`sandbox`, `development`, `production`). |
+| `TELLER_APPLICATION_ID` | Yes (Teller) | _none_ | Your Teller application ID from the dashboard (used by Connect.js and backend). |
+| `TELLER_CERT_PATH` | Yes (Teller) | `.certs/teller/certificate.pem` | Absolute or repo‑relative path to your Teller client certificate (PEM). Store in `.certs/` (gitignored). |
+| `TELLER_KEY_PATH` | Yes (Teller) | `.certs/teller/private_key.pem` | Absolute or repo‑relative path to the Teller private key (PEM). Store in `.certs/` (gitignored). |
+| `TELLER_ENV` | Optional (Teller) | `development` | Matches your Teller application environment (`sandbox`, `development`, `production`). Use `sandbox` for testing; `development` for real data in private self‑hosting. |
 
 ### Provider-Specific Setup
 
-#### Plaid (Managed)
-
-- Retrieve sandbox credentials at https://dashboard.plaid.com.
-- Review the mock-data guide at https://plaid.com/docs/sandbox/ for testing institutions and workflows.
-- For production, request upgraded access from Plaid before enabling real customer traffic.
-
 #### Teller (Self-Hosted)
 
-1. Create a Teller developer account at https://teller.io and add an application in the dashboard.
-2. Download the mTLS certificate (`certificate.pem`) and private key (`private_key.pem`); store them outside the repository.
-3. Set `DEFAULT_PROVIDER=teller` and point `TELLER_CERT_PATH` / `TELLER_KEY_PATH` at the PEM files (mount them into the backend container when using Docker).
+1. Create a Teller developer account at https://teller.io and add an application in the dashboard (bring your own API keys).
+2. Download the mTLS certificate (`certificate.pem`) and private key (`private_key.pem`). Store them under `.certs/teller/` (this path is gitignored) or another secure, non‑tracked location.
+3. Set `DEFAULT_PROVIDER=teller`, `TELLER_APPLICATION_ID`, and point `TELLER_CERT_PATH` / `TELLER_KEY_PATH` at the PEM files (mount them into the backend container when using Docker).
 4. Pick the correct API environment with `TELLER_ENV` (`sandbox`, `development`, `production`).
 5. Launch Teller Connect from the **Connect** tab to link accounts and trigger syncs via the unified sync service.
 
 ### Self-Hosting Checklist
 
 1. Confirm Docker Compose, PostgreSQL, and Redis are available (either via `docker compose up` or external services).
-2. Copy `.env.example` to `.env`, fill in JWT/ENCRYPTION secrets, and set `DEFAULT_PROVIDER` to either `plaid` or `teller` for new users.
+2. Copy `.env.example` to `.env`, fill in JWT/ENCRYPTION secrets, and set `DEFAULT_PROVIDER=teller` for new users.
 3. Run `./scripts/build-backend.sh` followed by `docker compose up -d --build` to rebuild the Axum binary for Linux and start the stack.
 4. Store Teller PEM files securely and mount them for the backend container when using Teller.
 5. Verify inbound HTTPS termination at your reverse proxy (nginx, Traefik, Caddy) before exposing the SPA publicly.
 
-## Testing with Plaid Mock Data
-Use Plaid sandbox environment with mock institutions and transactions for development testing.
+## Testing with Teller Sandbox
+Use Teller’s sandbox to validate end‑to‑end flows in a private self‑hosted setup.
 
-- Set `PLAID_ENV=sandbox` in `.env`.
-- Launch the app and connect any sandbox institution via Plaid Link using `user_good` / `pass_good`.
-- Use the Connect tab to sync transactions; mock data flows through the normal analytics and budget views.
-- When ready for live data, swap to production credentials and update `PLAID_ENV`.
+- Prerequisites
+  - Set `DEFAULT_PROVIDER=teller` in `.env`.
+  - Ensure `TELLER_ENV=sandbox` for sandbox testing.
+  - Obtain sandbox application credentials from your Teller dashboard and configure your Connect.js integration (bring‑your‑own keys).
+  - For self‑hosting with real data, set `TELLER_ENV=development` and use your development Teller application credentials.
+
+- Launch the stack
+  ```bash
+  ./scripts/build-backend.sh
+  docker compose up -d --build
+  ```
+
+- Open the app at `http://localhost:8080`
+  - Sign in with the demo credentials from AGENTS.md.
+  - Go to the Connect tab and launch Teller Connect.
+  - Choose a sandbox institution and complete the flow using Teller’s documented sandbox test users.
+
+- Verify data
+  - Accounts appear under Accounts/Connect views once enrollment succeeds.
+  - Use `Sync transactions` to pull sandbox transactions; inspect the Dashboard, Transactions, and Analytics tabs.
+
+- Tips
+  - If Connect.js does not load, confirm your app is served at `http://localhost:8080` and that your Teller dashboard allows localhost origins for sandbox.
+  - Check backend logs for TLS/mTLS errors when hitting Teller APIs; verify `TELLER_CERT_PATH` and `TELLER_KEY_PATH` are mounted and readable by the container.
+  - Set `RUST_BACKTRACE=1` and `RUST_LOG=debug` when troubleshooting backend requests.
 
 ## Run with Docker
 Flexible Docker Compose commands for running individual services or the complete stack.
