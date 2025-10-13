@@ -29,8 +29,8 @@ use crate::models::analytics::{
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, AuthMiddlewareState};
 use crate::models::plaid::{
-    DisconnectRequest, DisconnectResult, PlaidConnectionStatus, ProviderConnectRequest,
-    ProviderConnectResponse, ProviderStatusResponse,
+    DisconnectRequest, DisconnectResult, ProviderConnectRequest, ProviderConnectResponse,
+    ProviderConnectionStatus, ProviderStatusResponse,
 };
 use crate::models::{
     account::AccountResponse,
@@ -618,7 +618,8 @@ async fn exchange_authenticated_public_token(
                 tracing::warn!("Failed to cache access token: {}", e);
             }
 
-            let mut connection = crate::models::plaid::PlaidConnection::new(user_id, &real_item_id);
+            let mut connection =
+                crate::models::plaid::ProviderConnection::new(user_id, &real_item_id);
 
             if let Some(inst_name) = &institution_name {
                 connection.mark_connected(inst_name);
@@ -633,7 +634,7 @@ async fn exchange_authenticated_public_token(
                 .save_provider_connection(&connection)
                 .await
             {
-                tracing::warn!("Failed to save PlaidConnection: {}", e);
+                tracing::warn!("Failed to save ProviderConnection: {}", e);
             }
 
             Ok(Json(serde_json::json!({
@@ -967,7 +968,7 @@ async fn sync_authenticated_provider_transactions(
                 .save_provider_connection(&updated_connection)
                 .await
             {
-                tracing::warn!("Failed to update PlaidConnection: {}", e);
+                tracing::warn!("Failed to update ProviderConnection: {}", e);
             }
 
             // Update JWT-scoped caches (connection + accounts) and invalidate balances overview
@@ -1376,7 +1377,7 @@ async fn get_authenticated_top_merchants(
 async fn load_connection_statuses(
     state: &AppState,
     user_id: &Uuid,
-) -> Result<Vec<PlaidConnectionStatus>, StatusCode> {
+) -> Result<Vec<ProviderConnectionStatus>, StatusCode> {
     let connections = state
         .db_repository
         .get_all_provider_connections_by_user(user_id)
@@ -1389,7 +1390,7 @@ async fn load_connection_statuses(
     Ok(connections
         .into_iter()
         .filter(|conn| conn.is_connected)
-        .map(|conn| PlaidConnectionStatus {
+        .map(|conn| ProviderConnectionStatus {
             is_connected: conn.is_connected,
             last_sync_at: conn.last_sync_at.map(|dt| dt.to_rfc3339()),
             institution_name: conn.institution_name,

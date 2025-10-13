@@ -1,4 +1,4 @@
-use crate::models::plaid::PlaidConnection;
+use crate::models::plaid::ProviderConnection;
 use crate::services::cache_service::MockCacheService;
 use crate::services::connection_service::ConnectionService;
 use crate::services::repository_service::MockDatabaseRepository;
@@ -13,7 +13,7 @@ async fn given_connection_id_when_disconnect_then_disconnects_specific_connectio
     let user_id = Uuid::new_v4();
     let connection_id = Uuid::new_v4();
 
-    let mut expected_conn = PlaidConnection::new(user_id, "item_123");
+    let mut expected_conn = ProviderConnection::new(user_id, "item_123");
     expected_conn.id = connection_id;
     expected_conn.mark_connected("Chase");
 

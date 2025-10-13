@@ -26,7 +26,7 @@ async fn given_test_app_when_health_check_then_returns_ok() {
 
 #[tokio::test]
 async fn given_authenticated_user_when_get_connection_status_then_returns_array() {
-    use crate::models::plaid::{PlaidConnection, ProviderStatusResponse};
+    use crate::models::plaid::{ProviderConnection, ProviderStatusResponse};
     use crate::services::repository_service::MockDatabaseRepository;
     use axum::body::to_bytes;
 
@@ -34,9 +34,9 @@ async fn given_authenticated_user_when_get_connection_status_then_returns_array(
     let (_user, token) = TestFixtures::create_authenticated_user_with_token();
     let user_id = uuid::Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
 
-    let mut conn1 = PlaidConnection::new(user_id, "item_1");
+    let mut conn1 = ProviderConnection::new(user_id, "item_1");
     conn1.mark_connected("Bank A");
-    let mut conn2 = PlaidConnection::new(user_id, "item_2");
+    let mut conn2 = ProviderConnection::new(user_id, "item_2");
     conn2.mark_connected("Bank B");
 
     mock_db
@@ -950,7 +950,7 @@ async fn given_user_with_multiple_banks_when_get_accounts_then_returns_all_accou
 
 #[tokio::test]
 async fn given_connection_id_when_sync_then_uses_get_provider_connection_by_id() {
-    use crate::models::plaid::{PlaidConnection, SyncTransactionsRequest};
+    use crate::models::plaid::{ProviderConnection, SyncTransactionsRequest};
     use crate::services::repository_service::MockDatabaseRepository;
     use uuid::Uuid;
 
@@ -959,7 +959,7 @@ async fn given_connection_id_when_sync_then_uses_get_provider_connection_by_id()
     let user_id = user.id;
 
     let connection_id = Uuid::new_v4();
-    let mut expected_conn = PlaidConnection::new(user_id, "item_123");
+    let mut expected_conn = ProviderConnection::new(user_id, "item_123");
     expected_conn.id = connection_id;
     expected_conn.mark_connected("Chase");
 

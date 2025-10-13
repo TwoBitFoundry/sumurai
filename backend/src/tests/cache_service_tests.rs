@@ -1,7 +1,7 @@
 use crate::models::cache::{
     BankConnectionSyncStatus, CachedBankAccounts, CachedBankConnection, CachedTransaction,
 };
-use crate::models::{account::Account, plaid::PlaidConnection};
+use crate::models::{account::Account, plaid::ProviderConnection};
 use crate::services::cache_service::{CacheService, MockCacheService};
 use chrono::Utc;
 use rust_decimal::Decimal;
@@ -13,7 +13,7 @@ async fn given_bank_connection_when_caching_with_jwt_scope_then_stores_with_corr
     let jwt_id = "test-jwt-123";
     let connection_id = Uuid::new_v4();
 
-    let connection = PlaidConnection {
+    let connection = ProviderConnection {
         id: connection_id,
         user_id: Uuid::new_v4(),
         item_id: "test-item".to_string(),

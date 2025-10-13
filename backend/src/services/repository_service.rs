@@ -2,7 +2,7 @@ use crate::models::{
     account::Account,
     auth::User,
     budget::Budget,
-    plaid::{LatestAccountBalance, PlaidConnection, PlaidCredentials},
+    plaid::{LatestAccountBalance, PlaidCredentials, ProviderConnection},
     transaction::{Transaction, TransactionWithAccount},
 };
 use aes_gcm::{
@@ -71,20 +71,20 @@ pub trait DatabaseRepository: Send + Sync {
         item_id: &str,
     ) -> Result<Option<PlaidCredentials>>;
 
-    async fn save_provider_connection(&self, connection: &PlaidConnection) -> Result<()>;
+    async fn save_provider_connection(&self, connection: &ProviderConnection) -> Result<()>;
     async fn get_all_provider_connections_by_user(
         &self,
         user_id: &Uuid,
-    ) -> Result<Vec<PlaidConnection>>;
+    ) -> Result<Vec<ProviderConnection>>;
     async fn get_provider_connection_by_id(
         &self,
         connection_id: &Uuid,
         user_id: &Uuid,
-    ) -> Result<Option<PlaidConnection>>;
+    ) -> Result<Option<ProviderConnection>>;
     async fn get_provider_connection_by_item(
         &self,
         item_id: &str,
-    ) -> Result<Option<PlaidConnection>>;
+    ) -> Result<Option<ProviderConnection>>;
     async fn delete_provider_transactions(&self, item_id: &str) -> Result<i32>;
     async fn delete_provider_accounts(&self, item_id: &str) -> Result<i32>;
     async fn delete_provider_connection(&self, user_id: &Uuid, item_id: &str) -> Result<()>;
@@ -417,7 +417,7 @@ impl DatabaseRepository for PostgresRepository {
             Option<String>,
         )>(
             "SELECT a.id, a.user_id, a.provider_account_id, a.provider_connection_id, a.name, a.account_type, a.balance_current, a.mask, pc.institution_name \
-             FROM accounts a LEFT JOIN plaid_connections pc ON pc.id = a.provider_connection_id \
+             FROM accounts a LEFT JOIN provider_connections pc ON pc.id = a.provider_connection_id \
              WHERE a.provider_account_id = $1"
         )
         .bind(provider_account_id)
@@ -639,7 +639,7 @@ impl DatabaseRepository for PostgresRepository {
         }
     }
 
-    async fn save_provider_connection(&self, connection: &PlaidConnection) -> Result<()> {
+    async fn save_provider_connection(&self, connection: &ProviderConnection) -> Result<()> {
         let mut tx = self.pool.begin().await?;
         sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
             .bind(connection.user_id.to_string())
@@ -648,7 +648,7 @@ impl DatabaseRepository for PostgresRepository {
 
         sqlx::query(
             r#"
-            INSERT INTO plaid_connections (
+            INSERT INTO provider_connections (
                 id, user_id, item_id, is_connected, last_sync_at, connected_at,
                 disconnected_at, institution_id, institution_name, transaction_count, account_count,
                 created_at, updated_at
@@ -690,7 +690,7 @@ impl DatabaseRepository for PostgresRepository {
     async fn get_all_provider_connections_by_user(
         &self,
         user_id: &Uuid,
-    ) -> Result<Vec<PlaidConnection>> {
+    ) -> Result<Vec<ProviderConnection>> {
         let mut tx = self.pool.begin().await?;
         sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
             .bind(user_id.to_string())
@@ -721,7 +721,7 @@ impl DatabaseRepository for PostgresRepository {
             SELECT id, user_id, item_id, is_connected, last_sync_at, connected_at,
                    disconnected_at, institution_id, institution_name, institution_logo_url,
                    sync_cursor, transaction_count, account_count, created_at, updated_at
-            FROM plaid_connections
+            FROM provider_connections
             WHERE user_id = $1
             ORDER BY created_at DESC
             "#,
@@ -751,7 +751,7 @@ impl DatabaseRepository for PostgresRepository {
                     account_count,
                     created_at,
                     updated_at,
-                )| PlaidConnection {
+                )| ProviderConnection {
                     id,
                     user_id,
                     item_id,
@@ -776,7 +776,7 @@ impl DatabaseRepository for PostgresRepository {
         &self,
         connection_id: &Uuid,
         user_id: &Uuid,
-    ) -> Result<Option<PlaidConnection>> {
+    ) -> Result<Option<ProviderConnection>> {
         let mut tx = self.pool.begin().await?;
         sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
             .bind(user_id.to_string())
@@ -807,7 +807,7 @@ impl DatabaseRepository for PostgresRepository {
             SELECT id, user_id, item_id, is_connected, last_sync_at, connected_at,
                    disconnected_at, institution_id, institution_name, institution_logo_url,
                    sync_cursor, transaction_count, account_count, created_at, updated_at
-            FROM plaid_connections
+            FROM provider_connections
             WHERE id = $1
             "#,
         )
@@ -834,7 +834,7 @@ impl DatabaseRepository for PostgresRepository {
                 account_count,
                 created_at,
                 updated_at,
-            )| PlaidConnection {
+            )| ProviderConnection {
                 id,
                 user_id,
                 item_id,
@@ -857,7 +857,7 @@ impl DatabaseRepository for PostgresRepository {
     async fn get_provider_connection_by_item(
         &self,
         item_id: &str,
-    ) -> Result<Option<PlaidConnection>> {
+    ) -> Result<Option<ProviderConnection>> {
         let row = sqlx::query_as::<
             _,
             (
@@ -882,7 +882,7 @@ impl DatabaseRepository for PostgresRepository {
             SELECT id, user_id, item_id, is_connected, last_sync_at, connected_at,
                    disconnected_at, institution_id, institution_name, institution_logo_url, sync_cursor,
                    transaction_count, account_count, created_at, updated_at
-            FROM plaid_connections 
+            FROM provider_connections 
             WHERE item_id = $1
             "#,
         )
@@ -907,7 +907,7 @@ impl DatabaseRepository for PostgresRepository {
                 account_count,
                 created_at,
                 updated_at,
-            )| PlaidConnection {
+            )| ProviderConnection {
                 id,
                 user_id,
                 item_id,
@@ -929,7 +929,7 @@ impl DatabaseRepository for PostgresRepository {
 
     async fn delete_provider_transactions(&self, item_id: &str) -> Result<i32> {
         let connection_id: Option<Uuid> =
-            sqlx::query_scalar("SELECT id FROM plaid_connections WHERE item_id = $1")
+            sqlx::query_scalar("SELECT id FROM provider_connections WHERE item_id = $1")
                 .bind(item_id)
                 .fetch_optional(&self.pool)
                 .await?;
@@ -955,7 +955,7 @@ impl DatabaseRepository for PostgresRepository {
 
     async fn delete_provider_accounts(&self, item_id: &str) -> Result<i32> {
         let connection_id: Option<Uuid> =
-            sqlx::query_scalar("SELECT id FROM plaid_connections WHERE item_id = $1")
+            sqlx::query_scalar("SELECT id FROM provider_connections WHERE item_id = $1")
                 .bind(item_id)
                 .fetch_optional(&self.pool)
                 .await?;
@@ -979,7 +979,7 @@ impl DatabaseRepository for PostgresRepository {
             .execute(&mut *tx)
             .await?;
 
-        sqlx::query("DELETE FROM plaid_connections WHERE user_id = $1 AND item_id = $2")
+        sqlx::query("DELETE FROM provider_connections WHERE user_id = $1 AND item_id = $2")
             .bind(user_id)
             .bind(item_id)
             .execute(&mut *tx)
@@ -1279,7 +1279,7 @@ impl DatabaseRepository for PostgresRepository {
             r#"
             SELECT a.id, a.user_id, a.provider_account_id, a.provider_connection_id, a.name, a.account_type, a.balance_current, a.mask, pc.institution_name
             FROM accounts a
-            LEFT JOIN plaid_connections pc ON pc.id = a.provider_connection_id
+            LEFT JOIN provider_connections pc ON pc.id = a.provider_connection_id
             WHERE a.user_id = $1
             ORDER BY a.name
             "#,
@@ -1521,7 +1521,7 @@ impl DatabaseRepository for PostgresRepository {
                 a.provider_connection_id,
                 pc.institution_name
             FROM accounts a
-            LEFT JOIN plaid_connections pc ON pc.id = a.provider_connection_id
+            LEFT JOIN provider_connections pc ON pc.id = a.provider_connection_id
             WHERE a.user_id = $1
             ORDER BY a.name
             "#,

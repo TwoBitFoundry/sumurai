@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct PlaidConnection {
+pub struct ProviderConnection {
     pub id: Uuid,
     pub user_id: Uuid,
     pub item_id: String,
@@ -49,7 +49,7 @@ pub struct DisconnectRequest {
     pub connection_id: String,
 }
 
-impl PlaidConnection {
+impl ProviderConnection {
     #[allow(dead_code)]
     pub fn new(user_id: Uuid, item_id: &str) -> Self {
         let now = Utc::now();
@@ -115,7 +115,7 @@ impl PlaidConnection {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PlaidConnectionStatus {
+pub struct ProviderConnectionStatus {
     pub is_connected: bool,
     pub last_sync_at: Option<String>,
     pub institution_name: Option<String>,
@@ -128,7 +128,7 @@ pub struct PlaidConnectionStatus {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderStatusResponse {
     pub provider: String,
-    pub connections: Vec<PlaidConnectionStatus>,
+    pub connections: Vec<ProviderConnectionStatus>,
 }
 
 #[derive(Debug, Serialize)]

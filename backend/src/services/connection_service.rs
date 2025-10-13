@@ -2,8 +2,8 @@ use crate::models::{
     account::Account,
     cache::{BankConnectionSyncStatus, CachedBankAccounts, CachedBankConnection},
     plaid::{
-        DataCleared, DisconnectResult, PlaidConnection, ProviderConnectRequest,
-        ProviderConnectResponse,
+        DataCleared, DisconnectResult, ProviderConnectRequest, ProviderConnectResponse,
+        ProviderConnection,
     },
     transaction::{SyncMetadata, SyncTransactionsResponse, Transaction},
 };
@@ -137,7 +137,7 @@ impl ConnectionService {
             .clone()
             .unwrap_or_else(|| "Connected Bank".to_string());
 
-        let mut connection = PlaidConnection::new(*user_id, &item_id);
+        let mut connection = ProviderConnection::new(*user_id, &item_id);
         connection.mark_connected(&institution_name);
         connection.institution_id = Some("teller".to_string());
         connection.transaction_count = 0;
@@ -241,7 +241,7 @@ impl ConnectionService {
         &self,
         user_id: &Uuid,
         jwt_id: &str,
-        connection: &mut PlaidConnection,
+        connection: &mut ProviderConnection,
     ) -> Result<SyncTransactionsResponse, TellerSyncError> {
         let sync_timestamp = Utc::now();
         let (sync_start_date, sync_end_date) =
@@ -468,7 +468,7 @@ impl ConnectionService {
         &self,
         _user_id: &Uuid,
         jwt_id: &str,
-        connection: &PlaidConnection,
+        connection: &ProviderConnection,
         accounts: &[Account],
     ) -> Result<()> {
         let _ = self

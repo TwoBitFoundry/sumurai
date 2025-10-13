@@ -1,4 +1,4 @@
-use crate::models::{account::Account, plaid::PlaidConnection, transaction::Transaction};
+use crate::models::{account::Account, plaid::ProviderConnection, transaction::Transaction};
 use crate::providers::{FinancialDataProvider, InstitutionInfo, ProviderCredentials};
 use crate::services::sync_service::SyncService;
 use anyhow::Result;
@@ -99,7 +99,7 @@ async fn given_sync_service_with_provider_when_sync_then_maps_accounts_correctly
 
     let sync_service = SyncService::new(provider);
 
-    let connection = PlaidConnection {
+    let connection = ProviderConnection {
         id: Uuid::new_v4(),
         user_id: Uuid::new_v4(),
         item_id: "item_123".to_string(),

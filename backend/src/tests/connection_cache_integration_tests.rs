@@ -1,7 +1,7 @@
 use crate::models::{
     account::Account,
     cache::{CachedBankAccounts, CachedBankConnection},
-    plaid::{DisconnectResult, PlaidConnection},
+    plaid::{DisconnectResult, ProviderConnection},
 };
 use crate::services::{
     cache_service::MockCacheService, connection_service::ConnectionService,
@@ -12,8 +12,8 @@ use rust_decimal::Decimal;
 use std::sync::Arc;
 use uuid::Uuid;
 
-fn create_test_connection(user_id: Uuid) -> PlaidConnection {
-    PlaidConnection {
+fn create_test_connection(user_id: Uuid) -> ProviderConnection {
+    ProviderConnection {
         id: Uuid::new_v4(),
         user_id,
         item_id: "test_item_123".to_string(),
@@ -113,7 +113,7 @@ async fn complete_sync_with_jwt_cache_update(
     service: &ConnectionService,
     user_id: &Uuid,
     jwt_id: &str,
-    connection: &PlaidConnection,
+    connection: &ProviderConnection,
     accounts: &[Account],
 ) -> anyhow::Result<()> {
     service

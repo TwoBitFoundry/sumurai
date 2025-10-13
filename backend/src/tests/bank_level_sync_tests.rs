@@ -1,4 +1,4 @@
-use crate::models::{account::Account, plaid::PlaidConnection};
+use crate::models::{account::Account, plaid::ProviderConnection};
 use crate::providers::PlaidProvider;
 
 use crate::services::{
@@ -12,8 +12,8 @@ use rust_decimal_macros::dec;
 use std::sync::Arc;
 use uuid::Uuid;
 
-fn create_test_bank_connection(user_id: Uuid) -> PlaidConnection {
-    let mut connection = PlaidConnection::new(user_id, "test_item_123");
+fn create_test_bank_connection(user_id: Uuid) -> ProviderConnection {
+    let mut connection = ProviderConnection::new(user_id, "test_item_123");
     connection.mark_connected("Test Bank");
     connection.last_sync_at = Some(Utc::now() - Duration::days(1)); // Last synced yesterday
     connection.sync_cursor = Some("cursor_abc123".to_string());

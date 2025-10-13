@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::models::{account::Account, plaid::PlaidConnection, transaction::Transaction};
+use crate::models::{account::Account, plaid::ProviderConnection, transaction::Transaction};
 use crate::providers::{FinancialDataProvider, ProviderCredentials};
 
 const MAX_SYNC_YEARS: i64 = 5;
@@ -23,7 +23,7 @@ impl SyncService {
     pub async fn sync_bank_connection_transactions(
         &self,
         credentials: &ProviderCredentials,
-        connection: &PlaidConnection,
+        connection: &ProviderConnection,
         accounts: &[Account],
     ) -> Result<(Vec<Transaction>, String)> {
         let (start_date, end_date) = self.calculate_sync_date_range(connection.last_sync_at);

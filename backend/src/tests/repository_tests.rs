@@ -1,5 +1,5 @@
 use crate::models::{
-    account::Account, auth::User, plaid::PlaidConnection, transaction::Transaction,
+    account::Account, auth::User, plaid::ProviderConnection, transaction::Transaction,
 };
 
 use crate::models::plaid::PlaidCredentials;
@@ -72,8 +72,8 @@ mod fixtures {
         }
     }
 
-    pub fn sample_plaid_connection(user_id: Uuid) -> PlaidConnection {
-        PlaidConnection {
+    pub fn sample_plaid_connection(user_id: Uuid) -> ProviderConnection {
+        ProviderConnection {
             id: Uuid::parse_str("a50e8400-e29b-41d4-a716-446655440002").unwrap(),
             user_id,
             item_id: "test_item_id".to_string(),
@@ -1085,14 +1085,14 @@ async fn given_user_session_when_accessing_accounts_then_only_returns_user_owned
 }
 
 #[tokio::test]
-async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_only_own_connections()
-{
+async fn given_multiple_users_when_accessing_provider_connections_then_each_sees_only_own_connections(
+) {
     let mut mock_repo = MockDatabaseRepository::new();
 
     let user1_id = Uuid::new_v4();
     let user2_id = Uuid::new_v4();
 
-    let user1_connection1 = PlaidConnection {
+    let user1_connection1 = ProviderConnection {
         id: Uuid::new_v4(),
         user_id: user1_id,
         item_id: "user1_item_1".to_string(),
@@ -1110,7 +1110,7 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
         updated_at: Some(Utc::now()),
     };
 
-    let user2_connection1 = PlaidConnection {
+    let user2_connection1 = ProviderConnection {
         id: Uuid::new_v4(),
         user_id: user2_id,
         item_id: "user2_item_1".to_string(),
@@ -2374,7 +2374,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         created_at: Some(chrono::Utc::now()),
     };
 
-    let user1_plaid_connection = PlaidConnection {
+    let user1_plaid_connection = ProviderConnection {
         id: Uuid::new_v4(),
         user_id: user1_id,
         item_id: "user1_secret_item".to_string(),
@@ -2652,7 +2652,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .times(1..)
         .returning(move |query_user_id| {
             if *query_user_id == user1_id {
-                let conn = PlaidConnection {
+                let conn = ProviderConnection {
                     id: Uuid::new_v4(),
                     user_id: user1_id,
                     item_id: "user1_plaid_item".to_string(),
@@ -2671,7 +2671,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
                 };
                 Box::pin(async { Ok(vec![conn]) })
             } else if *query_user_id == user2_id {
-                let conn = PlaidConnection {
+                let conn = ProviderConnection {
                     id: Uuid::new_v4(),
                     user_id: user2_id,
                     item_id: "user2_item_safe".to_string(),
@@ -2786,7 +2786,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         created_at: Some(chrono::Utc::now()),
     };
 
-    let user1_plaid_connection = PlaidConnection {
+    let user1_plaid_connection = ProviderConnection {
         id: Uuid::new_v4(),
         user_id: user1_id,
         item_id: "user1_item_delete".to_string(),
@@ -2833,7 +2833,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         created_at: Some(chrono::Utc::now()),
     };
 
-    let user2_plaid_connection = PlaidConnection {
+    let user2_plaid_connection = ProviderConnection {
         id: Uuid::new_v4(),
         user_id: user2_id,
         item_id: "user2_item_safe".to_string(),
@@ -3106,8 +3106,8 @@ async fn given_user_with_multiple_connections_when_get_all_then_returns_all_conn
     let mut mock_repo = MockDatabaseRepository::new();
     let user_id = Uuid::new_v4();
 
-    let conn1 = PlaidConnection::new(user_id, "item_1");
-    let conn2 = PlaidConnection::new(user_id, "item_2");
+    let conn1 = ProviderConnection::new(user_id, "item_1");
+    let conn2 = ProviderConnection::new(user_id, "item_2");
     let conn1_clone = conn1.clone();
     let conn2_clone = conn2.clone();
 
@@ -3149,7 +3149,7 @@ async fn given_valid_connection_id_when_get_by_id_then_returns_connection() {
     let connection_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
-    let mut conn = PlaidConnection::new(user_id, "item_1");
+    let mut conn = ProviderConnection::new(user_id, "item_1");
     conn.id = connection_id;
     let conn_clone = conn.clone();
 
@@ -3191,7 +3191,7 @@ async fn given_connection_exists_when_queried_by_different_user_then_returns_non
     let other_user_id = Uuid::new_v4();
     let connection_id = Uuid::new_v4();
 
-    let mut conn = PlaidConnection::new(owner_user_id, "item_1");
+    let mut conn = ProviderConnection::new(owner_user_id, "item_1");
     conn.id = connection_id;
 
     mock_repo

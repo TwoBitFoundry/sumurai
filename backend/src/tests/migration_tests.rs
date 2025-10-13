@@ -441,7 +441,7 @@ async fn create_test_accounts_table(pool: &PgPool, table: &str) -> Result<(), sq
     Ok(())
 }
 
-async fn create_test_plaid_connections_table(
+async fn create_test_provider_connections_table(
     pool: &PgPool,
     table: &str,
 ) -> Result<(), sqlx::Error> {
@@ -486,7 +486,7 @@ fn adapt_bank_migration_sql_for_table(
         &format!("ALTER TABLE {}", accounts_table),
     );
     out = out.replace(
-        "ALTER TABLE plaid_connections",
+        "ALTER TABLE provider_connections",
         &format!("ALTER TABLE {}", connections_table),
     );
 
@@ -499,13 +499,13 @@ fn adapt_bank_migration_sql_for_table(
         &format!("idx_{}_subtype", accounts_table.replace("test_", "")),
     );
     out = out.replace(
-        "idx_plaid_connections_sync_cursor",
+        "idx_provider_connections_sync_cursor",
         &format!("idx_{}_sync_cursor", connections_table.replace("test_", "")),
     );
 
     out = out.replace(" ON accounts(", &format!(" ON {}(", accounts_table));
     out = out.replace(
-        " ON plaid_connections(",
+        " ON provider_connections(",
         &format!(" ON {}(", connections_table),
     );
 
@@ -532,14 +532,14 @@ async fn given_pre_migration_schema_when_bank_operations_migration_runs_then_add
         &Uuid::new_v4().to_string().replace('-', "")[..8]
     );
     let connections_table = format!(
-        "test_plaid_connections_{}",
+        "test_provider_connections_{}",
         &Uuid::new_v4().to_string().replace('-', "")[..8]
     );
 
     create_test_accounts_table(&pool, &accounts_table)
         .await
         .unwrap();
-    create_test_plaid_connections_table(&pool, &connections_table)
+    create_test_provider_connections_table(&pool, &connections_table)
         .await
         .unwrap();
 
@@ -671,14 +671,14 @@ async fn given_bank_migration_when_run_twice_then_idempotent() {
         &Uuid::new_v4().to_string().replace('-', "")[..8]
     );
     let connections_table = format!(
-        "test_plaid_connections_{}",
+        "test_provider_connections_{}",
         &Uuid::new_v4().to_string().replace('-', "")[..8]
     );
 
     create_test_accounts_table(&pool, &accounts_table)
         .await
         .unwrap();
-    create_test_plaid_connections_table(&pool, &connections_table)
+    create_test_provider_connections_table(&pool, &connections_table)
         .await
         .unwrap();
 
@@ -731,14 +731,14 @@ async fn given_post_migration_schema_when_inserting_new_fields_then_succeeds() {
         &Uuid::new_v4().to_string().replace('-', "")[..8]
     );
     let connections_table = format!(
-        "test_plaid_connections_{}",
+        "test_provider_connections_{}",
         &Uuid::new_v4().to_string().replace('-', "")[..8]
     );
 
     create_test_accounts_table(&pool, &accounts_table)
         .await
         .unwrap();
-    create_test_plaid_connections_table(&pool, &connections_table)
+    create_test_provider_connections_table(&pool, &connections_table)
         .await
         .unwrap();
 
