@@ -1,11 +1,10 @@
 use crate::services::plaid_service::{PlaidService, RealPlaidClient};
-use serde_json::json;
+use crate::test_fixtures::TestFixtures;
+use serde_json::Value;
 use std::sync::Arc;
 
 #[test]
 fn test_detect_duplicates_filters_existing_transactions() {
-    use crate::test_fixtures::TestFixtures;
-
     let plaid_client = RealPlaidClient::new(
         "test_client_id".to_string(),
         "test_secret".to_string(),
@@ -25,8 +24,6 @@ fn test_detect_duplicates_filters_existing_transactions() {
 
 #[test]
 fn test_detect_duplicates_handles_empty_collections() {
-    use crate::test_fixtures::TestFixtures;
-
     let plaid_client = RealPlaidClient::new(
         "test_client_id".to_string(),
         "test_secret".to_string(),
@@ -43,8 +40,6 @@ fn test_detect_duplicates_handles_empty_collections() {
 
 #[test]
 fn test_detect_duplicates_handles_transactions_without_plaid_ids() {
-    use crate::test_fixtures::TestFixtures;
-
     let plaid_client = RealPlaidClient::new(
         "test_client_id".to_string(),
         "test_secret".to_string(),
@@ -65,20 +60,8 @@ fn test_detect_duplicates_handles_transactions_without_plaid_ids() {
 #[test]
 fn test_category_parsing_logic_extracts_correct_values() {
     // Test the category extraction logic from Plaid API responses
-    let plaid_transaction = json!({
-        "transaction_id": "test_txn_123",
-        "account_id": "test_acc_456",
-        "amount": 15.50,
-        "date": "2025-09-10",
-        "name": "Starbucks Coffee",
-        "personal_finance_category": {
-            "primary": "FOOD_AND_DRINK",
-            "detailed": "FOOD_AND_DRINK_RESTAURANTS",
-            "confidence_level": "VERY_HIGH"
-        },
-        "payment_channel": "in_store",
-        "pending": false
-    });
+    let plaid_transaction: Value =
+        serde_json::from_str(TestFixtures::plaid_transaction_with_category_json()).unwrap();
 
     // This mirrors the category extraction logic from PlaidService::get_transactions
     let category_primary = plaid_transaction
@@ -123,14 +106,8 @@ fn test_category_parsing_logic_extracts_correct_values() {
 #[test]
 fn test_category_parsing_handles_missing_fields() {
     // Test with minimal transaction data (missing optional fields)
-    let plaid_transaction = json!({
-        "transaction_id": "test_txn_minimal",
-        "account_id": "test_acc_minimal",
-        "amount": 25.00,
-        "date": "2025-09-10",
-        "name": "Unknown Merchant"
-        // No category, personal_finance_category, payment_channel, or pending fields
-    });
+    let plaid_transaction: Value =
+        serde_json::from_str(TestFixtures::plaid_transaction_minimal_json()).unwrap();
 
     let category_primary = plaid_transaction
         .get("personal_finance_category")

@@ -1,9 +1,10 @@
 use crate::providers::teller_provider::{MockTellerHttpClient, TellerHttpClient};
 use crate::providers::trait_definition::{FinancialDataProvider, ProviderCredentials};
 use crate::providers::TellerProvider;
+use crate::test_fixtures::TestFixtures;
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use serde_json::json;
+use serde_json::Value;
 use std::str::FromStr;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -59,44 +60,16 @@ async fn given_access_token_when_exchange_public_token_then_returns_credentials(
 
 #[tokio::test]
 async fn given_teller_accounts_when_get_accounts_then_fetches_balances_in_parallel() {
-    let accounts_response = vec![
-        json!({
-            "id": "acc_123",
-            "name": "My Checking",
-            "type": "depository",
-            "subtype": "checking",
-            "last_four": "1234",
-            "status": "open",
-            "currency": "USD",
-            "institution": {
-                "id": "chase",
-                "name": "Chase"
-            }
-        }),
-        json!({
-            "id": "acc_456",
-            "name": "My Savings",
-            "type": "depository",
-            "subtype": "savings",
-            "last_four": "5678",
-            "status": "open",
-            "currency": "USD",
-            "institution": {
-                "id": "chase",
-                "name": "Chase"
-            }
-        }),
+    let accounts_response: Vec<Value> = vec![
+        serde_json::from_str(TestFixtures::teller_account_my_checking()).unwrap(),
+        serde_json::from_str(TestFixtures::teller_account_my_savings()).unwrap(),
     ];
 
-    let balance_response_1 = json!({
-        "ledger": "1234.56",
-        "available": "1000.00"
-    });
+    let balance_response_1: Value =
+        serde_json::from_str(TestFixtures::teller_balance_primary()).unwrap();
 
-    let balance_response_2 = json!({
-        "ledger": "5678.90",
-        "available": "5678.90"
-    });
+    let balance_response_2: Value =
+        serde_json::from_str(TestFixtures::teller_balance_secondary()).unwrap();
 
     let mut mock_client = MockTellerHttpClient::new();
     let accounts_clone = accounts_response.clone();
@@ -148,61 +121,17 @@ async fn given_teller_accounts_when_get_accounts_then_fetches_balances_in_parall
 
 #[tokio::test]
 async fn given_teller_transactions_when_get_transactions_then_filters_by_date_range() {
-    let accounts_response = vec![json!({
-        "id": "acc_123",
-        "name": "My Checking",
-        "type": "depository",
-        "subtype": "checking",
-        "last_four": "1234",
-        "status": "open",
-        "currency": "USD",
-        "institution": {
-            "id": "chase",
-            "name": "Chase"
-        }
-    })];
+    let accounts_response: Vec<Value> =
+        vec![serde_json::from_str(TestFixtures::teller_account_my_checking()).unwrap()];
 
-    let transactions_response = vec![
-        json!({
-            "id": "txn_1",
-            "date": "2024-01-15",
-            "amount": "-89.40",
-            "description": "Starbucks",
-            "status": "posted",
-            "details": {
-                "category": "general",
-                "counterparty": {
-                    "type": "merchant",
-                    "name": "Starbucks"
-                }
-            }
-        }),
-        json!({
-            "id": "txn_2",
-            "date": "2023-12-20",
-            "amount": "-150.00",
-            "description": "Walmart",
-            "status": "posted",
-            "details": {
-                "category": "general"
-            }
-        }),
-        json!({
-            "id": "txn_3",
-            "date": "2024-01-20",
-            "amount": "-45.00",
-            "description": "Gas Station",
-            "status": "posted",
-            "details": {
-                "category": "service"
-            }
-        }),
+    let transactions_response: Vec<Value> = vec![
+        serde_json::from_str(TestFixtures::teller_transaction_starbucks()).unwrap(),
+        serde_json::from_str(TestFixtures::teller_transaction_walmart()).unwrap(),
+        serde_json::from_str(TestFixtures::teller_transaction_gas_station()).unwrap(),
     ];
 
-    let balance_response = json!({
-        "ledger": "1234.56",
-        "available": "1000.00"
-    });
+    let balance_response: Value =
+        serde_json::from_str(TestFixtures::teller_balance_primary()).unwrap();
 
     let mut mock_client = MockTellerHttpClient::new();
     let accounts_clone_for_accounts = accounts_response.clone();
@@ -254,19 +183,10 @@ async fn given_teller_transactions_when_get_transactions_then_filters_by_date_ra
 #[tokio::test]
 async fn given_teller_accounts_when_get_institution_info_then_returns_institution_from_first_account(
 ) {
-    let accounts_response = vec![json!({
-        "id": "acc_123",
-        "name": "My Checking",
-        "type": "depository",
-        "subtype": "checking",
-        "last_four": "1234",
-        "status": "open",
-        "currency": "USD",
-        "institution": {
-            "id": "chase",
-            "name": "Chase Bank"
-        }
-    })];
+    let accounts_response: Vec<Value> = vec![serde_json::from_str(
+        TestFixtures::teller_account_chase_bank(),
+    )
+    .unwrap()];
 
     let mut mock_client = MockTellerHttpClient::new();
     let accounts_clone = accounts_response.clone();
