@@ -103,7 +103,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   
   fetchMock = installFetchRoutes({
-    'POST /api/plaid/sync-transactions': { 
+    'POST /api/providers/sync-transactions': { 
       transactions: [], 
       metadata: { 
         transaction_count: 0,

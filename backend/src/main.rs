@@ -168,8 +168,8 @@ pub fn create_app(state: AppState) -> Router {
         )
         .route("/api/plaid/accounts", get(get_authenticated_plaid_accounts))
         .route(
-            "/api/plaid/sync-transactions",
-            post(sync_authenticated_plaid_transactions),
+            "/api/providers/sync-transactions",
+            post(sync_authenticated_provider_transactions),
         )
         .route(
             "/api/providers/disconnect",
@@ -687,7 +687,7 @@ async fn get_authenticated_plaid_accounts(
     Ok(Json(account_responses))
 }
 
-async fn sync_authenticated_plaid_transactions(
+async fn sync_authenticated_provider_transactions(
     State(state): State<AppState>,
     auth_context: AuthContext,
     Json(req): Json<Option<SyncTransactionsRequest>>,
@@ -1341,11 +1341,7 @@ async fn get_authenticated_provider_status(
         Ok(Some(user)) => user.provider,
         Ok(None) => state.config.get_default_provider().to_string(),
         Err(e) => {
-            tracing::error!(
-                "Failed to load user {} for provider status: {}",
-                user_id,
-                e
-            );
+            tracing::error!("Failed to load user {} for provider status: {}", user_id, e);
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };

@@ -1,9 +1,11 @@
+use crate::providers::teller_provider::{MockTellerHttpClient, TellerHttpClient};
 use crate::providers::trait_definition::{FinancialDataProvider, ProviderCredentials};
 use crate::providers::TellerProvider;
 use chrono::NaiveDate;
-use mockito::Server;
 use rust_decimal::Decimal;
+use serde_json::json;
 use std::str::FromStr;
+use std::sync::Arc;
 use uuid::Uuid;
 
 fn create_test_credentials() -> ProviderCredentials {
@@ -18,16 +20,18 @@ fn create_test_credentials() -> ProviderCredentials {
 
 #[tokio::test]
 async fn given_teller_provider_when_provider_name_then_returns_teller() {
-    let server = Server::new_async().await;
-    let provider = TellerProvider::new_for_test(server.url());
+    let mock_client = MockTellerHttpClient::new();
+    let client: Arc<dyn TellerHttpClient> = Arc::new(mock_client);
+    let provider = TellerProvider::new_for_test("http://test.teller".to_string(), client);
 
     assert_eq!(provider.provider_name(), "teller");
 }
 
 #[tokio::test]
 async fn given_user_id_when_create_link_token_then_returns_enrollment_placeholder() {
-    let server = Server::new_async().await;
-    let provider = TellerProvider::new_for_test(server.url());
+    let mock_client = MockTellerHttpClient::new();
+    let client: Arc<dyn TellerHttpClient> = Arc::new(mock_client);
+    let provider = TellerProvider::new_for_test("http://test.teller".to_string(), client);
     let user_id = Uuid::new_v4();
 
     let result = provider.create_link_token(&user_id).await;
@@ -39,8 +43,9 @@ async fn given_user_id_when_create_link_token_then_returns_enrollment_placeholde
 
 #[tokio::test]
 async fn given_access_token_when_exchange_public_token_then_returns_credentials() {
-    let server = Server::new_async().await;
-    let provider = TellerProvider::new_for_test(server.url());
+    let mock_client = MockTellerHttpClient::new();
+    let client: Arc<dyn TellerHttpClient> = Arc::new(mock_client);
+    let provider = TellerProvider::new_for_test("http://test.teller".to_string(), client);
     let access_token = "access_token_abc123".to_string();
 
     let result = provider.exchange_public_token(&access_token).await;
@@ -54,10 +59,8 @@ async fn given_access_token_when_exchange_public_token_then_returns_credentials(
 
 #[tokio::test]
 async fn given_teller_accounts_when_get_accounts_then_fetches_balances_in_parallel() {
-    let mut server = Server::new_async().await;
-
-    let accounts_response = serde_json::json!([
-        {
+    let accounts_response = vec![
+        json!({
             "id": "acc_123",
             "name": "My Checking",
             "type": "depository",
@@ -69,8 +72,8 @@ async fn given_teller_accounts_when_get_accounts_then_fetches_balances_in_parall
                 "id": "chase",
                 "name": "Chase"
             }
-        },
-        {
+        }),
+        json!({
             "id": "acc_456",
             "name": "My Savings",
             "type": "depository",
@@ -82,44 +85,45 @@ async fn given_teller_accounts_when_get_accounts_then_fetches_balances_in_parall
                 "id": "chase",
                 "name": "Chase"
             }
-        }
-    ]);
+        }),
+    ];
 
-    let balance_response_1 = serde_json::json!({
+    let balance_response_1 = json!({
         "ledger": "1234.56",
         "available": "1000.00"
     });
 
-    let balance_response_2 = serde_json::json!({
+    let balance_response_2 = json!({
         "ledger": "5678.90",
         "available": "5678.90"
     });
 
-    let _accounts_mock = server
-        .mock("GET", "/accounts")
-        .with_status(200)
-        .with_header("content-type", "application/json")
-        .with_body(accounts_response.to_string())
-        .create_async()
-        .await;
+    let mut mock_client = MockTellerHttpClient::new();
+    let accounts_clone = accounts_response.clone();
+    mock_client
+        .expect_get_json_array()
+        .withf(|url, token| url.ends_with("/accounts") && token == "test_access_token_123")
+        .times(1)
+        .returning(move |_, _| Ok(accounts_clone.clone()));
 
-    let _balance_mock_1 = server
-        .mock("GET", "/accounts/acc_123/balances")
-        .with_status(200)
-        .with_header("content-type", "application/json")
-        .with_body(balance_response_1.to_string())
-        .create_async()
-        .await;
+    mock_client
+        .expect_get_json_value()
+        .withf(|url, token| {
+            url.ends_with("/accounts/acc_123/balances") && token == "test_access_token_123"
+        })
+        .times(1)
+        .returning(move |_, _| Ok(balance_response_1.clone()));
 
-    let _balance_mock_2 = server
-        .mock("GET", "/accounts/acc_456/balances")
-        .with_status(200)
-        .with_header("content-type", "application/json")
-        .with_body(balance_response_2.to_string())
-        .create_async()
-        .await;
+    mock_client
+        .expect_get_json_value()
+        .withf(|url, token| {
+            url.ends_with("/accounts/acc_456/balances") && token == "test_access_token_123"
+        })
+        .times(1)
+        .returning(move |_, _| Ok(balance_response_2.clone()));
 
-    let provider = TellerProvider::new_for_test(server.url());
+    let client: Arc<dyn TellerHttpClient> = Arc::new(mock_client);
+    let provider = TellerProvider::new_for_test("http://test.teller".to_string(), client.clone());
     let credentials = create_test_credentials();
 
     let result = provider.get_accounts(&credentials).await;
@@ -144,26 +148,22 @@ async fn given_teller_accounts_when_get_accounts_then_fetches_balances_in_parall
 
 #[tokio::test]
 async fn given_teller_transactions_when_get_transactions_then_filters_by_date_range() {
-    let mut server = Server::new_async().await;
-
-    let accounts_response = serde_json::json!([
-        {
-            "id": "acc_123",
-            "name": "My Checking",
-            "type": "depository",
-            "subtype": "checking",
-            "last_four": "1234",
-            "status": "open",
-            "currency": "USD",
-            "institution": {
-                "id": "chase",
-                "name": "Chase"
-            }
+    let accounts_response = vec![json!({
+        "id": "acc_123",
+        "name": "My Checking",
+        "type": "depository",
+        "subtype": "checking",
+        "last_four": "1234",
+        "status": "open",
+        "currency": "USD",
+        "institution": {
+            "id": "chase",
+            "name": "Chase"
         }
-    ]);
+    })];
 
-    let transactions_response = serde_json::json!([
-        {
+    let transactions_response = vec![
+        json!({
             "id": "txn_1",
             "date": "2024-01-15",
             "amount": "-89.40",
@@ -176,8 +176,8 @@ async fn given_teller_transactions_when_get_transactions_then_filters_by_date_ra
                     "name": "Starbucks"
                 }
             }
-        },
-        {
+        }),
+        json!({
             "id": "txn_2",
             "date": "2023-12-20",
             "amount": "-150.00",
@@ -186,8 +186,8 @@ async fn given_teller_transactions_when_get_transactions_then_filters_by_date_ra
             "details": {
                 "category": "general"
             }
-        },
-        {
+        }),
+        json!({
             "id": "txn_3",
             "date": "2024-01-20",
             "amount": "-45.00",
@@ -196,39 +196,40 @@ async fn given_teller_transactions_when_get_transactions_then_filters_by_date_ra
             "details": {
                 "category": "service"
             }
-        }
-    ]);
+        }),
+    ];
 
-    let balance_response = serde_json::json!({
+    let balance_response = json!({
         "ledger": "1234.56",
         "available": "1000.00"
     });
 
-    let _accounts_mock = server
-        .mock("GET", "/accounts")
-        .with_status(200)
-        .with_header("content-type", "application/json")
-        .with_body(accounts_response.to_string())
-        .create_async()
-        .await;
+    let mut mock_client = MockTellerHttpClient::new();
+    let accounts_clone_for_accounts = accounts_response.clone();
+    mock_client
+        .expect_get_json_array()
+        .withf(|url, token| url.ends_with("/accounts") && token == "test_access_token_123")
+        .times(1)
+        .returning(move |_, _| Ok(accounts_clone_for_accounts.clone()));
 
-    let _balance_mock = server
-        .mock("GET", "/accounts/acc_123/balances")
-        .with_status(200)
-        .with_header("content-type", "application/json")
-        .with_body(balance_response.to_string())
-        .create_async()
-        .await;
+    mock_client
+        .expect_get_json_array()
+        .withf(|url, token| {
+            url.ends_with("/accounts/acc_123/transactions") && token == "test_access_token_123"
+        })
+        .times(1)
+        .returning(move |_, _| Ok(transactions_response.clone()));
 
-    let _transactions_mock = server
-        .mock("GET", "/accounts/acc_123/transactions")
-        .with_status(200)
-        .with_header("content-type", "application/json")
-        .with_body(transactions_response.to_string())
-        .create_async()
-        .await;
+    mock_client
+        .expect_get_json_value()
+        .withf(|url, token| {
+            url.ends_with("/accounts/acc_123/balances") && token == "test_access_token_123"
+        })
+        .times(1)
+        .returning(move |_, _| Ok(balance_response.clone()));
 
-    let provider = TellerProvider::new_for_test(server.url());
+    let client: Arc<dyn TellerHttpClient> = Arc::new(mock_client);
+    let provider = TellerProvider::new_for_test("http://test.teller".to_string(), client.clone());
     let credentials = create_test_credentials();
 
     let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
@@ -253,33 +254,30 @@ async fn given_teller_transactions_when_get_transactions_then_filters_by_date_ra
 #[tokio::test]
 async fn given_teller_accounts_when_get_institution_info_then_returns_institution_from_first_account(
 ) {
-    let mut server = Server::new_async().await;
-
-    let accounts_response = serde_json::json!([
-        {
-            "id": "acc_123",
-            "name": "My Checking",
-            "type": "depository",
-            "subtype": "checking",
-            "last_four": "1234",
-            "status": "open",
-            "currency": "USD",
-            "institution": {
-                "id": "chase",
-                "name": "Chase Bank"
-            }
+    let accounts_response = vec![json!({
+        "id": "acc_123",
+        "name": "My Checking",
+        "type": "depository",
+        "subtype": "checking",
+        "last_four": "1234",
+        "status": "open",
+        "currency": "USD",
+        "institution": {
+            "id": "chase",
+            "name": "Chase Bank"
         }
-    ]);
+    })];
 
-    let _accounts_mock = server
-        .mock("GET", "/accounts")
-        .with_status(200)
-        .with_header("content-type", "application/json")
-        .with_body(accounts_response.to_string())
-        .create_async()
-        .await;
+    let mut mock_client = MockTellerHttpClient::new();
+    let accounts_clone = accounts_response.clone();
+    mock_client
+        .expect_get_json_array()
+        .withf(|url, token| url.ends_with("/accounts") && token == "test_access_token_123")
+        .times(1)
+        .returning(move |_, _| Ok(accounts_clone.clone()));
 
-    let provider = TellerProvider::new_for_test(server.url());
+    let client: Arc<dyn TellerHttpClient> = Arc::new(mock_client);
+    let provider = TellerProvider::new_for_test("http://test.teller".to_string(), client.clone());
     let credentials = create_test_credentials();
 
     let result = provider.get_institution_info(&credentials).await;

@@ -5,6 +5,7 @@ use futures::future::join_all;
 use reqwest::Client;
 use rust_decimal::Decimal;
 use std::str::FromStr;
+use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::models::{account::Account, transaction::Transaction};
@@ -12,24 +13,86 @@ use crate::providers::trait_definition::{
     FinancialDataProvider, InstitutionInfo, ProviderCredentials,
 };
 
-pub struct TellerProvider {
+#[cfg_attr(test, mockall::automock)]
+#[async_trait]
+pub trait TellerHttpClient: Send + Sync {
+    async fn get_json_array(
+        &self,
+        url: &str,
+        access_token: &str,
+    ) -> anyhow::Result<Vec<serde_json::Value>>;
+
+    async fn get_json_value(
+        &self,
+        url: &str,
+        access_token: &str,
+    ) -> anyhow::Result<serde_json::Value>;
+}
+
+struct ReqwestTellerClient {
     client: Client,
+}
+
+impl ReqwestTellerClient {
+    fn new() -> anyhow::Result<Self> {
+        let client = Client::builder().build()?;
+        Ok(Self { client })
+    }
+}
+
+#[async_trait]
+impl TellerHttpClient for ReqwestTellerClient {
+    async fn get_json_array(
+        &self,
+        url: &str,
+        access_token: &str,
+    ) -> anyhow::Result<Vec<serde_json::Value>> {
+        let response = self
+            .client
+            .get(url)
+            .basic_auth(access_token, Some(""))
+            .send()
+            .await?;
+        let payload = response.json::<serde_json::Value>().await?;
+        if let Some(array) = payload.as_array() {
+            Ok(array.to_vec())
+        } else {
+            Err(anyhow::anyhow!("Expected array response from {}", url))
+        }
+    }
+
+    async fn get_json_value(
+        &self,
+        url: &str,
+        access_token: &str,
+    ) -> anyhow::Result<serde_json::Value> {
+        let response = self
+            .client
+            .get(url)
+            .basic_auth(access_token, Some(""))
+            .send()
+            .await?;
+        Ok(response.json::<serde_json::Value>().await?)
+    }
+}
+
+pub struct TellerProvider {
+    http_client: Arc<dyn TellerHttpClient>,
     base_url: String,
 }
 
 impl TellerProvider {
     pub fn new() -> Result<Self> {
-        let client = Client::builder().build()?;
         Ok(Self {
-            client,
+            http_client: Arc::new(ReqwestTellerClient::new()?),
             base_url: "https://api.teller.io".to_string(),
         })
     }
 
     #[cfg(test)]
-    pub fn new_for_test(base_url: String) -> Self {
+    pub fn new_for_test(base_url: String, http_client: Arc<dyn TellerHttpClient>) -> Self {
         Self {
-            client: Client::new(),
+            http_client,
             base_url,
         }
     }
@@ -40,14 +103,10 @@ impl TellerProvider {
         credentials: &ProviderCredentials,
     ) -> Result<TellerBalances> {
         let url = format!("{}/accounts/{}/balances", self.base_url, account_id);
-        let response = self
-            .client
-            .get(&url)
-            .basic_auth(&credentials.access_token, Some(""))
-            .send()
+        let balances = self
+            .http_client
+            .get_json_value(&url, &credentials.access_token)
             .await?;
-
-        let balances: serde_json::Value = response.json().await?;
 
         Ok(TellerBalances {
             ledger: balances["ledger"]
@@ -88,14 +147,10 @@ impl FinancialDataProvider for TellerProvider {
 
     async fn get_accounts(&self, credentials: &ProviderCredentials) -> Result<Vec<Account>> {
         let url = format!("{}/accounts", self.base_url);
-        let response = self
-            .client
-            .get(&url)
-            .basic_auth(&credentials.access_token, Some(""))
-            .send()
+        let teller_accounts = self
+            .http_client
+            .get_json_array(&url, &credentials.access_token)
             .await?;
-
-        let teller_accounts: Vec<serde_json::Value> = response.json().await?;
 
         let account_ids: Vec<String> = teller_accounts
             .iter()
@@ -142,14 +197,10 @@ impl FinancialDataProvider for TellerProvider {
                 .ok_or_else(|| anyhow::anyhow!("Account missing ID"))?;
 
             let url = format!("{}/accounts/{}/transactions", self.base_url, account_id);
-            let response = self
-                .client
-                .get(&url)
-                .basic_auth(&credentials.access_token, Some(""))
-                .send()
+            let teller_txns = self
+                .http_client
+                .get_json_array(&url, &credentials.access_token)
                 .await?;
-
-            let teller_txns: Vec<serde_json::Value> = response.json().await?;
 
             let transactions = teller_txns
                 .iter()
@@ -175,14 +226,10 @@ impl FinancialDataProvider for TellerProvider {
         credentials: &ProviderCredentials,
     ) -> Result<InstitutionInfo> {
         let url = format!("{}/accounts", self.base_url);
-        let response = self
-            .client
-            .get(&url)
-            .basic_auth(&credentials.access_token, Some(""))
-            .send()
+        let teller_accounts = self
+            .http_client
+            .get_json_array(&url, &credentials.access_token)
             .await?;
-
-        let teller_accounts: Vec<serde_json::Value> = response.json().await?;
 
         let account = teller_accounts
             .first()

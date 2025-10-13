@@ -18,7 +18,7 @@ describe('Plaid Sync Integration Tests (Boundary-Only Mocking)', () => {
   it('given_incremental_sync_when_calling_api_then_returns_correct_date_range', async () => {
     // Set up route for incremental sync scenario (boundary-only mocking)
     fetchMock = installFetchRoutes({
-      'POST /api/plaid/sync-transactions': {
+      'POST /api/providers/sync-transactions': {
         transactions: [
           {
             id: 'txn-new-1',
@@ -55,7 +55,7 @@ describe('Plaid Sync Integration Tests (Boundary-Only Mocking)', () => {
   it('given_first_time_sync_when_calling_api_then_returns_90_day_window', async () => {
     // Set up route for first-time sync scenario (90-day default)
     fetchMock = installFetchRoutes({
-      'POST /api/plaid/sync-transactions': {
+      'POST /api/providers/sync-transactions': {
         transactions: [],
         metadata: {
           transaction_count: 45,
@@ -80,7 +80,7 @@ describe('Plaid Sync Integration Tests (Boundary-Only Mocking)', () => {
   it('given_old_connection_when_calling_api_then_caps_at_5_year_window', async () => {
     // Set up route for very old connection (5-year cap applied)
     fetchMock = installFetchRoutes({
-      'POST /api/plaid/sync-transactions': {
+      'POST /api/providers/sync-transactions': {
         transactions: [],
         metadata: {
           transaction_count: 500,
@@ -104,7 +104,7 @@ describe('Plaid Sync Integration Tests (Boundary-Only Mocking)', () => {
   it('given_sync_error_when_calling_api_then_throws_error', async () => {
     // Set up route for error scenario
     fetchMock = installFetchRoutes({
-      'POST /api/plaid/sync-transactions': new Response('Server error', { status: 500 })
+      'POST /api/providers/sync-transactions': new Response('Server error', { status: 500 })
     })
     
     // Should throw error for failed sync

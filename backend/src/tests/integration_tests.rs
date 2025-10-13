@@ -75,8 +75,7 @@ async fn given_authenticated_user_when_get_connection_status_then_returns_array(
         .await
         .unwrap();
 
-    let request =
-        TestFixtures::create_authenticated_get_request("/api/providers/status", &token);
+    let request = TestFixtures::create_authenticated_get_request("/api/providers/status", &token);
     let response = app.oneshot(request).await.unwrap();
 
     assert_eq!(response.status(), 200);
@@ -1009,7 +1008,7 @@ async fn given_connection_id_when_sync_then_uses_get_plaid_connection_by_id() {
     };
 
     let request = TestFixtures::create_authenticated_post_request(
-        "/api/plaid/sync-transactions",
+        "/api/providers/sync-transactions",
         &token,
         sync_request,
     );

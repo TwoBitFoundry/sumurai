@@ -53,7 +53,8 @@ export function useOnboardingPlaidFlow(
       let connectionId: string | null = null
       try {
         const status = await PlaidService.getStatus()
-        const latestConnection = status.connections.find(conn => conn.is_connected) ?? status.connections[0]
+        const connections = Array.isArray(status?.connections) ? status.connections : []
+        const latestConnection = connections.find(conn => conn.is_connected) ?? connections[0]
         if (latestConnection) {
           setInstitutionName(latestConnection.institution_name || 'Connected Bank')
           connectionId = latestConnection.connection_id

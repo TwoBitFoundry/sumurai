@@ -31,7 +31,7 @@ export class TellerService {
   }
 
   static async syncTransactions(connectionId?: string): Promise<void> {
-    await ApiClient.post('/teller/sync-transactions', connectionId ? { connection_id: connectionId } : {})
+    await ApiClient.post('/providers/sync-transactions', connectionId ? { connection_id: connectionId } : {})
   }
 
   static async disconnect(connectionId: string): Promise<void> {
