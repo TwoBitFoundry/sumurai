@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, cleanup, act, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { App } from '@/App'
 import { AccountFilterProvider } from '@/hooks/useAccountFilter'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
@@ -42,6 +43,13 @@ vi.mock('@/services/ApiClient', () => ({
     get: vi.fn().mockImplementation((endpoint: string) => {
       if (endpoint.includes('/plaid/accounts')) {
         return Promise.resolve([])
+      }
+      if (endpoint.includes('/providers/info')) {
+        return Promise.resolve({
+          available_providers: ['plaid', 'teller'],
+          default_provider: 'plaid',
+          user_provider: 'plaid',
+        })
       }
       if (endpoint.includes('/providers/status')) {
         return Promise.resolve(createProviderStatus())
@@ -561,6 +569,58 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
       
       expect(screen.getAllByText('Sumaura').length).toBeGreaterThan(0)
       expect(screen.queryAllByText('Welcome Back').length).toBe(0)
+      restore()
+    }, 15000)
+  })
+
+  describe('Provider mismatch detection', () => {
+    it('should show ProviderMismatchModal when user provider does not match default provider', async () => {
+      const { ApiClient } = await import('@/services/ApiClient')
+      const mockApiGet = vi.spyOn(ApiClient, 'get').mockImplementation((endpoint: string) => {
+        if (endpoint.includes('/providers/info')) {
+          return Promise.resolve({
+            available_providers: ['plaid', 'teller'],
+            default_provider: 'plaid',
+            user_provider: 'teller',
+          } as any)
+        }
+        if (endpoint.includes('/plaid/accounts')) return Promise.resolve([])
+        if (endpoint.includes('/providers/status')) return Promise.resolve(createProviderStatus())
+        if (endpoint.startsWith('/analytics/spending')) return Promise.resolve({ total: 1234.56, currency: 'USD' })
+        if (endpoint.includes('/analytics/categories')) return Promise.resolve([])
+        if (endpoint.includes('/analytics/monthly-totals')) return Promise.resolve([])
+        if (endpoint.includes('/analytics/top-merchants')) return Promise.resolve([])
+        if (endpoint.includes('/transactions')) return Promise.resolve([])
+        if (endpoint.includes('/budgets')) return Promise.resolve([])
+        return Promise.resolve({})
+      })
+
+      const validToken = 'header.' + btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })) + '.signature'
+      ;(window.sessionStorage.getItem as any).mockImplementation((key: string) => {
+        if (key === 'auth_token') return validToken
+        return null
+      })
+
+      const restore = mockFetchAuthOk()
+
+      await act(async () => {
+        render(
+          <AccountFilterProvider>
+            <App />
+          </AccountFilterProvider>
+        )
+        await new Promise(resolve => setTimeout(resolve, 300))
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Provider Configuration Mismatch')).toBeInTheDocument()
+      }, { timeout: 3000 })
+
+      expect(screen.getByText(/Your account is configured to use/i)).toBeInTheDocument()
+      expect(screen.getByText('Teller')).toBeInTheDocument()
+      expect(screen.getByText('Plaid')).toBeInTheDocument()
+
+      mockApiGet.mockRestore()
       restore()
     }, 15000)
   })

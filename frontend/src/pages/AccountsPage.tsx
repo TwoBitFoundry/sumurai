@@ -251,7 +251,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     ? 'Plaid keeps credentials read-only and disconnectable anytime.'
     : 'Teller connections respect your API keys and can be rotated from your Teller dashboard.'
 
-  const otherProviders = (providerInfo.availableProviders || []).filter(p => p !== selectedProvider)
   const connectDisabled = flowLoading || selectingProvider !== null || (selectedProvider === 'teller' && !providerInfo.tellerApplicationId)
 
   const hasConnections = summary.institutions > 0
@@ -309,16 +308,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
               <ConnectButton onClick={connect} disabled={connectDisabled}>
                 {selectedProvider === 'teller' ? 'Launch Teller Connect' : 'Add account'}
               </ConnectButton>
-              {otherProviders.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => handleProviderSelect(otherProviders[0] as FinancialProvider)}
-                  disabled={selectingProvider === otherProviders[0]}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-4 py-2 text-xs font-semibold text-slate-600 shadow-[0_14px_38px_-30px_rgba(15,23,42,0.35)] transition-all duration-200 hover:-translate-y-[1px] hover:border-sky-300/60 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-[#1e293b]/70 dark:text-slate-200 dark:hover:border-sky-400/60 dark:hover:text-white dark:focus-visible:ring-offset-[#0f172a]"
-                >
-                  Switch to {otherProviders[0] === 'plaid' ? 'Plaid' : 'Teller'}
-                </button>
-              )}
             </div>
           </div>
 

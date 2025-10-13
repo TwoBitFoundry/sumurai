@@ -66,6 +66,7 @@ export function useProviderInfo(options: UseProviderInfoOptions = {}): ProviderI
     setError(null)
     try {
       const info = await gateway.fetchInfo()
+      console.log('useProviderInfo - received from API:', info)
       setCatalogue(info)
     } catch (err) {
       console.warn('Failed to fetch provider information', err)
