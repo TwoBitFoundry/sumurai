@@ -175,7 +175,7 @@ async fn given_valid_credentials_when_store_then_succeeds() {
     let expected_id = Uuid::new_v4();
 
     mock_repo
-        .expect_store_plaid_credentials()
+        .expect_store_provider_credentials()
         .with(
             mockall::predicate::eq(item_id),
             mockall::predicate::eq(access_token),
@@ -184,7 +184,7 @@ async fn given_valid_credentials_when_store_then_succeeds() {
         .returning(move |_, _| Box::pin(async move { Ok(expected_id) }));
 
     let result = mock_repo
-        .store_plaid_credentials(item_id, access_token)
+        .store_provider_credentials(item_id, access_token)
         .await;
 
     assert!(result.is_ok());
@@ -208,7 +208,7 @@ async fn given_known_item_id_when_get_credentials_then_found() {
     };
 
     mock_repo
-        .expect_get_plaid_credentials()
+        .expect_get_provider_credentials()
         .with(mockall::predicate::eq(item_id))
         .times(1)
         .returning({
@@ -221,7 +221,7 @@ async fn given_known_item_id_when_get_credentials_then_found() {
             }
         });
 
-    let result = mock_repo.get_plaid_credentials(item_id).await;
+    let result = mock_repo.get_provider_credentials(item_id).await;
 
     assert!(result.is_ok());
     let credentials = result.unwrap();
@@ -1129,13 +1129,13 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
     };
 
     mock_repo
-        .expect_save_plaid_connection()
+        .expect_save_provider_connection()
         .withf(move |conn| conn.item_id == "user1_item_1")
         .times(1)
         .returning(|_| Box::pin(async { Ok(()) }));
 
     mock_repo
-        .expect_save_plaid_connection()
+        .expect_save_provider_connection()
         .withf(move |conn| conn.item_id == "user2_item_1")
         .times(1)
         .returning(|_| Box::pin(async { Ok(()) }));
@@ -1143,7 +1143,7 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
     let user1_conn_result = user1_connection1.clone();
     let user2_conn_result = user2_connection1.clone();
     mock_repo
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .with(mockall::predicate::eq(user1_id))
         .times(1)
         .returning(move |_| {
@@ -1152,7 +1152,7 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
         });
 
     mock_repo
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .with(mockall::predicate::eq(user2_id))
         .times(1)
         .returning(move |_| {
@@ -1163,7 +1163,7 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
     let user1_conn_by_item = user1_connection1.clone();
     let user2_conn_by_item = user2_connection1.clone();
     mock_repo
-        .expect_get_plaid_connection_by_item()
+        .expect_get_provider_connection_by_item()
         .with(mockall::predicate::eq("user1_item_1"))
         .times(1)
         .returning(move |_| {
@@ -1172,7 +1172,7 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
         });
 
     mock_repo
-        .expect_get_plaid_connection_by_item()
+        .expect_get_provider_connection_by_item()
         .with(mockall::predicate::eq("user2_item_1"))
         .times(1)
         .returning(move |_| {
@@ -1181,21 +1181,21 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
         });
 
     mock_repo
-        .save_plaid_connection(&user1_connection1)
+        .save_provider_connection(&user1_connection1)
         .await
         .expect("Failed to create user1 connection1");
     mock_repo
-        .save_plaid_connection(&user2_connection1)
+        .save_provider_connection(&user2_connection1)
         .await
         .expect("Failed to create user2 connection1");
 
     let user1_connections = mock_repo
-        .get_all_plaid_connections_by_user(&user1_id)
+        .get_all_provider_connections_by_user(&user1_id)
         .await
         .expect("Failed to get user1 connections");
 
     let user2_connections = mock_repo
-        .get_all_plaid_connections_by_user(&user2_id)
+        .get_all_provider_connections_by_user(&user2_id)
         .await
         .expect("Failed to get user2 connections");
 
@@ -1237,11 +1237,11 @@ async fn given_multiple_users_when_accessing_plaid_connections_then_each_sees_on
     );
 
     let user1_query_by_item = mock_repo
-        .get_plaid_connection_by_item(&user1_conn.item_id)
+        .get_provider_connection_by_item(&user1_conn.item_id)
         .await
         .expect("Failed to query user1 connection by item_id");
     let user2_query_by_item = mock_repo
-        .get_plaid_connection_by_item(&user2_conn.item_id)
+        .get_provider_connection_by_item(&user2_conn.item_id)
         .await
         .expect("Failed to query user2 connection by item_id");
 
@@ -1656,7 +1656,7 @@ async fn given_repository_queries_when_no_user_context_set_then_returns_empty_re
         });
 
     mock_repo
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .times(1..)
         .returning(move |query_user_id| {
             if *query_user_id == user_id {
@@ -1677,7 +1677,7 @@ async fn given_repository_queries_when_no_user_context_set_then_returns_empty_re
     let user_no_context = mock_repo.get_user_by_id(&no_context_uuid).await;
 
     let connection_no_context = mock_repo
-        .get_all_plaid_connections_by_user(&no_context_uuid)
+        .get_all_provider_connections_by_user(&no_context_uuid)
         .await;
 
     assert!(accounts_no_context.is_ok());
@@ -2405,7 +2405,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         .returning(|_| Box::pin(async { Ok(()) }));
 
     mock_repo
-        .expect_save_plaid_connection()
+        .expect_save_provider_connection()
         .withf(move |conn| conn.item_id == "user1_secret_item")
         .times(1)
         .returning(|_| Box::pin(async { Ok(()) }));
@@ -2421,7 +2421,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_repo
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .times(1..)
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
@@ -2431,7 +2431,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         .await
         .unwrap();
     mock_repo
-        .save_plaid_connection(&user1_plaid_connection)
+        .save_provider_connection(&user1_plaid_connection)
         .await
         .unwrap();
 
@@ -2439,7 +2439,9 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
 
     let cross_user_accounts = mock_repo.get_accounts_for_user(&user1_id).await;
 
-    let cross_user_plaid = mock_repo.get_all_plaid_connections_by_user(&user1_id).await;
+    let cross_user_plaid = mock_repo
+        .get_all_provider_connections_by_user(&user1_id)
+        .await;
 
     assert!(
         cross_user_transactions.is_ok(),
@@ -2460,7 +2462,7 @@ async fn given_cross_user_access_attempt_when_using_another_users_id_then_return
         .unwrap();
     let user2_accounts = mock_repo.get_accounts_for_user(&user2_id).await.unwrap();
     let user2_plaid = mock_repo
-        .get_all_plaid_connections_by_user(&user2_id)
+        .get_all_provider_connections_by_user(&user2_id)
         .await
         .unwrap();
 
@@ -2523,12 +2525,12 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .returning(|_| Box::pin(async { Ok(()) }));
 
     mock_repo
-        .expect_save_plaid_connection()
+        .expect_save_provider_connection()
         .times(2)
         .returning(|_| Box::pin(async { Ok(()) }));
 
     mock_repo
-        .expect_delete_plaid_transactions()
+        .expect_delete_provider_transactions()
         .with(mockall::predicate::eq("user1_item_delete"))
         .times(1)
         .returning(|_| Box::pin(async { Ok(2) }));
@@ -2646,7 +2648,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         });
 
     mock_repo
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .times(1..)
         .returning(move |query_user_id| {
             if *query_user_id == user1_id {
@@ -2867,11 +2869,11 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .unwrap();
 
     mock_repo
-        .save_plaid_connection(&user1_plaid_connection)
+        .save_provider_connection(&user1_plaid_connection)
         .await
         .unwrap();
     mock_repo
-        .save_plaid_connection(&user2_plaid_connection)
+        .save_provider_connection(&user2_plaid_connection)
         .await
         .unwrap();
 
@@ -2881,7 +2883,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .await
         .unwrap();
     let user1_plaid_before = mock_repo
-        .get_all_plaid_connections_by_user(&user1_id)
+        .get_all_provider_connections_by_user(&user1_id)
         .await
         .unwrap();
     let user2_accounts_before = mock_repo.get_accounts_for_user(&user2_id).await.unwrap();
@@ -2890,7 +2892,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .await
         .unwrap();
     let user2_plaid_before = mock_repo
-        .get_all_plaid_connections_by_user(&user2_id)
+        .get_all_provider_connections_by_user(&user2_id)
         .await
         .unwrap();
 
@@ -2924,7 +2926,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
     );
 
     let _deleted_transactions = mock_repo
-        .delete_plaid_transactions("user1_item_delete")
+        .delete_provider_transactions("user1_item_delete")
         .await
         .unwrap();
 
@@ -2936,7 +2938,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .await
         .unwrap();
     let _user1_plaid_after = mock_repo
-        .get_all_plaid_connections_by_user(&user1_id)
+        .get_all_provider_connections_by_user(&user1_id)
         .await
         .unwrap();
 
@@ -2946,7 +2948,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .await
         .unwrap();
     let user2_plaid_after = mock_repo
-        .get_all_plaid_connections_by_user(&user2_id)
+        .get_all_provider_connections_by_user(&user2_id)
         .await
         .unwrap();
     let user3_accounts_after = mock_repo.get_accounts_for_user(&user3_id).await.unwrap();
@@ -3008,7 +3010,7 @@ async fn given_user_account_deletion_when_triggered_then_cascades_all_related_us
         .await
         .unwrap();
     let user3_plaid_after = mock_repo
-        .get_all_plaid_connections_by_user(&user3_id)
+        .get_all_provider_connections_by_user(&user3_id)
         .await
         .unwrap();
 
@@ -3110,7 +3112,7 @@ async fn given_user_with_multiple_connections_when_get_all_then_returns_all_conn
     let conn2_clone = conn2.clone();
 
     mock_repo
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .with(predicate::eq(user_id))
         .returning(move |_| {
             let c1 = conn1_clone.clone();
@@ -3118,7 +3120,9 @@ async fn given_user_with_multiple_connections_when_get_all_then_returns_all_conn
             Box::pin(async move { Ok(vec![c1, c2]) })
         });
 
-    let result = mock_repo.get_all_plaid_connections_by_user(&user_id).await;
+    let result = mock_repo
+        .get_all_provider_connections_by_user(&user_id)
+        .await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap().len(), 2);
 }
@@ -3129,10 +3133,12 @@ async fn given_user_with_no_connections_when_get_all_then_returns_empty() {
     let user_id = Uuid::new_v4();
 
     mock_repo
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
-    let result = mock_repo.get_all_plaid_connections_by_user(&user_id).await;
+    let result = mock_repo
+        .get_all_provider_connections_by_user(&user_id)
+        .await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap().len(), 0);
 }
@@ -3148,7 +3154,7 @@ async fn given_valid_connection_id_when_get_by_id_then_returns_connection() {
     let conn_clone = conn.clone();
 
     mock_repo
-        .expect_get_plaid_connection_by_id()
+        .expect_get_provider_connection_by_id()
         .with(predicate::eq(connection_id), predicate::eq(user_id))
         .returning(move |_, _| {
             let c = conn_clone.clone();
@@ -3156,7 +3162,7 @@ async fn given_valid_connection_id_when_get_by_id_then_returns_connection() {
         });
 
     let result = mock_repo
-        .get_plaid_connection_by_id(&connection_id, &user_id)
+        .get_provider_connection_by_id(&connection_id, &user_id)
         .await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap().unwrap().id, connection_id);
@@ -3168,11 +3174,11 @@ async fn given_invalid_connection_id_when_get_by_id_then_returns_none() {
     let connection_id = Uuid::new_v4();
 
     mock_repo
-        .expect_get_plaid_connection_by_id()
+        .expect_get_provider_connection_by_id()
         .returning(|_, _| Box::pin(async { Ok(None) }));
 
     let result = mock_repo
-        .get_plaid_connection_by_id(&connection_id, &Uuid::new_v4())
+        .get_provider_connection_by_id(&connection_id, &Uuid::new_v4())
         .await;
     assert!(result.is_ok());
     assert!(result.unwrap().is_none());
@@ -3189,12 +3195,12 @@ async fn given_connection_exists_when_queried_by_different_user_then_returns_non
     conn.id = connection_id;
 
     mock_repo
-        .expect_get_plaid_connection_by_id()
+        .expect_get_provider_connection_by_id()
         .with(predicate::eq(connection_id), predicate::eq(other_user_id))
         .returning(|_, _| Box::pin(async { Ok(None) }));
 
     let result = mock_repo
-        .get_plaid_connection_by_id(&connection_id, &other_user_id)
+        .get_provider_connection_by_id(&connection_id, &other_user_id)
         .await;
     assert!(result.is_ok());
     assert!(result.unwrap().is_none());

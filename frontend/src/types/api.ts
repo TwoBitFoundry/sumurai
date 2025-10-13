@@ -49,10 +49,15 @@ export interface Account {
   account_subtype?: string | null
   balance_ledger: number | null
   balance_available?: number | null
+  balance_current?: number | string | null
   mask: string | null
   status?: string | null
   institution_name?: string | null
   connection_id?: string | null
+  provider_connection_id?: string | null
+  plaid_connection_id?: string | null
+  provider_account_id?: string | null
+  transaction_count?: number | null
 }
 
 export interface PlaidLinkTokenResponse {

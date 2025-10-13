@@ -12,7 +12,7 @@ pub use budget_service::BudgetService;
 #[cfg(test)]
 pub use cache_service::MockCacheService;
 pub use cache_service::{CacheService, RedisCache};
-pub use connection_service::ConnectionService;
+pub use connection_service::{ConnectionService, TellerConnectError, TellerSyncError};
 pub use plaid_service::{PlaidService, RealPlaidClient};
 #[cfg(test)]
 pub use repository_service::MockDatabaseRepository;

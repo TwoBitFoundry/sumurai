@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FinancialProvider } from '../types/api'
+import type { TellerEnvironment } from './useTellerConnect'
 import { ApiClient } from '../services/ApiClient'
 
 export interface ProviderCatalogue {
@@ -7,6 +8,7 @@ export interface ProviderCatalogue {
   default_provider: FinancialProvider
   user_provider?: FinancialProvider
   teller_application_id?: string
+  teller_environment?: string
 }
 
 export interface ProviderSelectionResult {
@@ -39,6 +41,7 @@ export interface ProviderInfoState {
   defaultProvider: FinancialProvider | null
   userProvider: FinancialProvider | null
   tellerApplicationId: string | null
+  tellerEnvironment: TellerEnvironment
   refresh: () => Promise<void>
   chooseProvider: (provider: FinancialProvider) => Promise<void>
 }
@@ -100,6 +103,10 @@ export function useProviderInfo(options: UseProviderInfoOptions = {}): ProviderI
     load()
   }, [load])
 
+  const environment = catalogue?.teller_environment
+  const tellerEnvironment: TellerEnvironment =
+    environment === 'sandbox' || environment === 'production' ? environment : 'development'
+
   return {
     loading,
     error,
@@ -108,6 +115,7 @@ export function useProviderInfo(options: UseProviderInfoOptions = {}): ProviderI
     defaultProvider: catalogue?.default_provider ?? null,
     userProvider: catalogue?.user_provider ?? null,
     tellerApplicationId: catalogue?.teller_application_id ?? null,
+    tellerEnvironment,
     refresh: load,
     chooseProvider
   }

@@ -94,6 +94,12 @@ impl SyncService {
         &self,
         last_sync_at: Option<DateTime<Utc>>,
     ) -> (NaiveDate, NaiveDate) {
+        Self::calculate_sync_date_range_static(last_sync_at)
+    }
+
+    pub fn calculate_sync_date_range_static(
+        last_sync_at: Option<DateTime<Utc>>,
+    ) -> (NaiveDate, NaiveDate) {
         let end_date = Utc::now().date_naive();
         let max_lookback = end_date - Duration::days(365 * MAX_SYNC_YEARS);
 

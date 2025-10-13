@@ -55,36 +55,40 @@ pub trait DatabaseRepository: Send + Sync {
     async fn upsert_transaction(&self, transaction: &Transaction) -> Result<()>;
     async fn get_account_by_plaid_id(&self, provider_account_id: &str) -> Result<Option<Account>>;
     async fn get_transactions(&self, limit: Option<i64>) -> Result<Vec<Transaction>>;
-    async fn store_plaid_credentials(&self, item_id: &str, access_token: &str) -> Result<Uuid>;
-    async fn get_plaid_credentials(&self, item_id: &str) -> Result<Option<PlaidCredentials>>;
+    async fn store_provider_credentials(&self, item_id: &str, access_token: &str) -> Result<Uuid>;
+    async fn get_provider_credentials(&self, item_id: &str) -> Result<Option<PlaidCredentials>>;
 
-    async fn store_plaid_credentials_for_user(
+    async fn store_provider_credentials_for_user(
         &self,
         user_id: &Uuid,
         item_id: &str,
         access_token: &str,
     ) -> Result<Uuid>;
 
-    async fn get_plaid_credentials_for_user(
+    async fn get_provider_credentials_for_user(
         &self,
         user_id: &Uuid,
         item_id: &str,
     ) -> Result<Option<PlaidCredentials>>;
 
-    async fn save_plaid_connection(&self, connection: &PlaidConnection) -> Result<()>;
-    async fn get_all_plaid_connections_by_user(
+    async fn save_provider_connection(&self, connection: &PlaidConnection) -> Result<()>;
+    async fn get_all_provider_connections_by_user(
         &self,
         user_id: &Uuid,
     ) -> Result<Vec<PlaidConnection>>;
-    async fn get_plaid_connection_by_id(
+    async fn get_provider_connection_by_id(
         &self,
         connection_id: &Uuid,
         user_id: &Uuid,
     ) -> Result<Option<PlaidConnection>>;
-    async fn get_plaid_connection_by_item(&self, item_id: &str) -> Result<Option<PlaidConnection>>;
-    async fn delete_plaid_transactions(&self, item_id: &str) -> Result<i32>;
-    async fn delete_plaid_accounts(&self, item_id: &str) -> Result<i32>;
-    async fn delete_plaid_credentials(&self, item_id: &str) -> Result<()>;
+    async fn get_provider_connection_by_item(
+        &self,
+        item_id: &str,
+    ) -> Result<Option<PlaidConnection>>;
+    async fn delete_provider_transactions(&self, item_id: &str) -> Result<i32>;
+    async fn delete_provider_accounts(&self, item_id: &str) -> Result<i32>;
+    async fn delete_provider_connection(&self, user_id: &Uuid, item_id: &str) -> Result<()>;
+    async fn delete_provider_credentials(&self, item_id: &str) -> Result<()>;
     async fn get_budgets_for_user(&self, user_id: Uuid) -> Result<Vec<Budget>>;
     async fn create_budget_for_user(&self, budget: Budget) -> Result<Budget>;
 
@@ -349,7 +353,7 @@ impl DatabaseRepository for PostgresRepository {
         .bind(account.balance_current)
         .bind(&account.mask)
         .execute(&mut *tx)
-        .await?;
+            .await?;
         tx.commit().await?;
 
         Ok(())
@@ -516,7 +520,7 @@ impl DatabaseRepository for PostgresRepository {
             .collect())
     }
 
-    async fn store_plaid_credentials(&self, item_id: &str, access_token: &str) -> Result<Uuid> {
+    async fn store_provider_credentials(&self, item_id: &str, access_token: &str) -> Result<Uuid> {
         let id = Uuid::new_v4();
         let encrypted_token = self.encrypt_token(access_token)?;
 
@@ -539,7 +543,7 @@ impl DatabaseRepository for PostgresRepository {
         Ok(id)
     }
 
-    async fn get_plaid_credentials(&self, item_id: &str) -> Result<Option<PlaidCredentials>> {
+    async fn get_provider_credentials(&self, item_id: &str) -> Result<Option<PlaidCredentials>> {
         let row = sqlx::query_as::<_, (Uuid, String, Vec<u8>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
             "SELECT id, item_id, encrypted_access_token, created_at, updated_at FROM plaid_credentials WHERE item_id = $1"
         )
@@ -563,7 +567,7 @@ impl DatabaseRepository for PostgresRepository {
         }
     }
 
-    async fn store_plaid_credentials_for_user(
+    async fn store_provider_credentials_for_user(
         &self,
         user_id: &Uuid,
         item_id: &str,
@@ -600,7 +604,7 @@ impl DatabaseRepository for PostgresRepository {
         Ok(id)
     }
 
-    async fn get_plaid_credentials_for_user(
+    async fn get_provider_credentials_for_user(
         &self,
         user_id: &Uuid,
         item_id: &str,
@@ -635,7 +639,7 @@ impl DatabaseRepository for PostgresRepository {
         }
     }
 
-    async fn save_plaid_connection(&self, connection: &PlaidConnection) -> Result<()> {
+    async fn save_provider_connection(&self, connection: &PlaidConnection) -> Result<()> {
         let mut tx = self.pool.begin().await?;
         sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
             .bind(connection.user_id.to_string())
@@ -683,7 +687,7 @@ impl DatabaseRepository for PostgresRepository {
         Ok(())
     }
 
-    async fn get_all_plaid_connections_by_user(
+    async fn get_all_provider_connections_by_user(
         &self,
         user_id: &Uuid,
     ) -> Result<Vec<PlaidConnection>> {
@@ -768,7 +772,7 @@ impl DatabaseRepository for PostgresRepository {
             .collect())
     }
 
-    async fn get_plaid_connection_by_id(
+    async fn get_provider_connection_by_id(
         &self,
         connection_id: &Uuid,
         user_id: &Uuid,
@@ -850,7 +854,10 @@ impl DatabaseRepository for PostgresRepository {
         ))
     }
 
-    async fn get_plaid_connection_by_item(&self, item_id: &str) -> Result<Option<PlaidConnection>> {
+    async fn get_provider_connection_by_item(
+        &self,
+        item_id: &str,
+    ) -> Result<Option<PlaidConnection>> {
         let row = sqlx::query_as::<
             _,
             (
@@ -920,7 +927,7 @@ impl DatabaseRepository for PostgresRepository {
         ))
     }
 
-    async fn delete_plaid_transactions(&self, item_id: &str) -> Result<i32> {
+    async fn delete_provider_transactions(&self, item_id: &str) -> Result<i32> {
         let connection_id: Option<Uuid> =
             sqlx::query_scalar("SELECT id FROM plaid_connections WHERE item_id = $1")
                 .bind(item_id)
@@ -946,7 +953,7 @@ impl DatabaseRepository for PostgresRepository {
         Ok(result.rows_affected() as i32)
     }
 
-    async fn delete_plaid_accounts(&self, item_id: &str) -> Result<i32> {
+    async fn delete_provider_accounts(&self, item_id: &str) -> Result<i32> {
         let connection_id: Option<Uuid> =
             sqlx::query_scalar("SELECT id FROM plaid_connections WHERE item_id = $1")
                 .bind(item_id)
@@ -965,7 +972,24 @@ impl DatabaseRepository for PostgresRepository {
         Ok(result.rows_affected() as i32)
     }
 
-    async fn delete_plaid_credentials(&self, item_id: &str) -> Result<()> {
+    async fn delete_provider_connection(&self, user_id: &Uuid, item_id: &str) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        sqlx::query("DELETE FROM plaid_connections WHERE user_id = $1 AND item_id = $2")
+            .bind(user_id)
+            .bind(item_id)
+            .execute(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn delete_provider_credentials(&self, item_id: &str) -> Result<()> {
         sqlx::query("DELETE FROM plaid_credentials WHERE item_id = $1")
             .bind(item_id)
             .execute(&self.pool)

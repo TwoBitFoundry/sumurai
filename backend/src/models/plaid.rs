@@ -31,6 +31,14 @@ pub struct ExchangeTokenRequest {
     pub public_token: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct ProviderConnectRequest {
+    pub provider: String,
+    pub access_token: String,
+    pub enrollment_id: String,
+    pub institution_name: Option<String>,
+}
+
 #[derive(Deserialize, Serialize)]
 pub struct SyncTransactionsRequest {
     pub connection_id: Option<String>,
@@ -121,6 +129,12 @@ pub struct PlaidConnectionStatus {
 pub struct ProviderStatusResponse {
     pub provider: String,
     pub connections: Vec<PlaidConnectionStatus>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ProviderConnectResponse {
+    pub connection_id: String,
+    pub institution_name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

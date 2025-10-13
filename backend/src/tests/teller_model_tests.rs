@@ -50,6 +50,7 @@ fn given_teller_account_with_missing_fields_when_from_teller_then_uses_defaults(
 #[test]
 fn given_teller_transaction_json_when_from_teller_then_maps_fields_correctly() {
     let account_id = Uuid::new_v4();
+    let provider_account_id = "acc_test_123";
     let teller_json = serde_json::json!({
         "id": "txn_test_123",
         "date": "2024-01-15",
@@ -65,12 +66,17 @@ fn given_teller_transaction_json_when_from_teller_then_maps_fields_correctly() {
         }
     });
 
-    let transaction = Transaction::from_teller(&teller_json, &account_id);
+    let transaction =
+        Transaction::from_teller(&teller_json, &account_id, Some(provider_account_id));
 
     assert_eq!(transaction.account_id, account_id);
     assert_eq!(
         transaction.provider_transaction_id,
         Some("txn_test_123".to_string())
+    );
+    assert_eq!(
+        transaction.provider_account_id,
+        Some(provider_account_id.to_string())
     );
     assert_eq!(transaction.amount, Decimal::from_str("89.40").unwrap());
     assert_eq!(transaction.date.to_string(), "2024-01-15");
@@ -95,7 +101,7 @@ fn given_teller_transaction_with_positive_amount_when_from_teller_then_converts_
         }
     });
 
-    let transaction = Transaction::from_teller(&teller_json, &account_id);
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
     assert_eq!(transaction.amount, Decimal::from_str("1500.00").unwrap());
 }
@@ -115,7 +121,7 @@ fn given_teller_transaction_with_service_category_when_from_teller_then_normaliz
         }
     });
 
-    let transaction = Transaction::from_teller(&teller_json, &account_id);
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
     assert_eq!(transaction.category_primary, "GENERAL_SERVICES");
 }
@@ -134,7 +140,7 @@ fn given_teller_transaction_with_unknown_category_when_from_teller_then_normaliz
         }
     });
 
-    let transaction = Transaction::from_teller(&teller_json, &account_id);
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
     assert_eq!(transaction.category_primary, "OTHER");
 }
@@ -153,7 +159,7 @@ fn given_teller_transaction_with_pending_status_when_from_teller_then_pending_is
         }
     });
 
-    let transaction = Transaction::from_teller(&teller_json, &account_id);
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
     assert_eq!(transaction.pending, true);
 }
@@ -173,7 +179,7 @@ fn given_teller_transaction_without_counterparty_when_from_teller_then_uses_desc
         }
     });
 
-    let transaction = Transaction::from_teller(&teller_json, &account_id);
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
     assert_eq!(transaction.merchant_name, Some("Generic Store".to_string()));
 }
@@ -192,7 +198,7 @@ fn given_teller_transaction_with_invalid_date_when_from_teller_then_uses_current
         }
     });
 
-    let transaction = Transaction::from_teller(&teller_json, &account_id);
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
     let today = chrono::Utc::now().date_naive();
     assert_eq!(transaction.date, today);
@@ -212,7 +218,7 @@ fn given_teller_transaction_with_zero_amount_when_from_teller_then_handles_grace
         }
     });
 
-    let transaction = Transaction::from_teller(&teller_json, &account_id);
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
     assert_eq!(transaction.amount, Decimal::ZERO);
 }

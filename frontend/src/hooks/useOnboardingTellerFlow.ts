@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { TellerService } from '@/services/TellerService'
-import { useTellerConnect } from './useTellerConnect'
+import { useTellerConnect, type TellerEnvironment } from './useTellerConnect'
 
 export interface UseOnboardingTellerFlowOptions {
   applicationId: string | null
+  environment?: TellerEnvironment
   enabled?: boolean
   onConnectionSuccess?: (institutionName: string) => void
   onError?: (error: string) => void
@@ -28,6 +29,7 @@ export function useOnboardingTellerFlow(
 ): UseOnboardingTellerFlowResult {
   const {
     applicationId,
+    environment = 'development',
     enabled = true,
     onConnectionSuccess,
     onError,
@@ -97,6 +99,7 @@ export function useOnboardingTellerFlow(
 
   const { ready, open } = useTellerConnect({
     applicationId: enabled && applicationId ? applicationId : '',
+    environment,
     onConnected: async () => {
       if (!enabled) {
         return

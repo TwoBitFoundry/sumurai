@@ -18,7 +18,7 @@ async fn given_connection_id_when_disconnect_then_disconnects_specific_connectio
     expected_conn.mark_connected("Chase");
 
     mock_db
-        .expect_get_plaid_connection_by_id()
+        .expect_get_provider_connection_by_id()
         .with(
             mockall::predicate::eq(connection_id),
             mockall::predicate::eq(user_id),
@@ -29,20 +29,20 @@ async fn given_connection_id_when_disconnect_then_disconnects_specific_connectio
         });
 
     mock_db
-        .expect_save_plaid_connection()
-        .returning(|_| Box::pin(async { Ok(()) }));
-
-    mock_db
-        .expect_delete_plaid_transactions()
+        .expect_delete_provider_transactions()
         .returning(|_| Box::pin(async { Ok(10) }));
 
     mock_db
-        .expect_delete_plaid_accounts()
+        .expect_delete_provider_accounts()
         .returning(|_| Box::pin(async { Ok(2) }));
 
     mock_db
-        .expect_delete_plaid_credentials()
+        .expect_delete_provider_credentials()
         .returning(|_| Box::pin(async { Ok(()) }));
+
+    mock_db
+        .expect_delete_provider_connection()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
 
     mock_cache
         .expect_delete_access_token()

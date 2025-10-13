@@ -41,20 +41,36 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
       setLoading(true)
       const accountsResponse = await ProviderCatalog.getAccounts()
 
+      const parseBalance = (value: unknown): number | null => {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          return value
+        }
+        if (typeof value === 'string') {
+          const trimmed = value.trim()
+          const isNegativeParenthetical = trimmed.startsWith('(') && trimmed.endsWith(')')
+          const normalized = trimmed.replace(/[^0-9.\-]/g, '')
+          if (!normalized) {
+            return null
+          }
+          const parsed = Number(normalized)
+          if (!Number.isFinite(parsed)) {
+            return null
+          }
+          return isNegativeParenthetical ? -parsed : parsed
+        }
+        return null
+      }
+
       const mappedAccounts: ProviderAccount[] = (accountsResponse || []).map(account => {
         const ledger =
-          typeof account.balance_ledger === 'number'
-            ? account.balance_ledger
-            : typeof (account as any).balance_current === 'number'
-              ? (account as any).balance_current
-              : null
+          parseBalance(account.balance_ledger) ??
+          parseBalance((account as any).balance_current) ??
+          parseBalance((account as any).ledger)
 
         const available =
-          typeof account.balance_available === 'number'
-            ? account.balance_available
-            : typeof (account as any).balance_current === 'number'
-              ? (account as any).balance_current
-              : null
+          parseBalance(account.balance_available) ??
+          parseBalance((account as any).balance_current) ??
+          parseBalance((account as any).available)
 
         return {
           id: account.id,

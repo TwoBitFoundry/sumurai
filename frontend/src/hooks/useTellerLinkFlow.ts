@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ProviderCatalog } from '../services/ProviderCatalog'
 import { TellerService } from '../services/TellerService'
 import type { PlaidConnection } from './usePlaidConnections'
-import { useTellerConnect } from './useTellerConnect'
+import { useTellerConnect, type TellerEnvironment } from './useTellerConnect'
+import { dispatchAccountsChanged } from '../utils/events'
 
 export interface UseTellerLinkFlowOptions {
   applicationId: string | null
+  environment?: TellerEnvironment
   onError?: (message: string | null) => void
   enabled?: boolean
 }
@@ -23,14 +25,22 @@ export interface UseTellerLinkFlowResult {
   syncingAll: boolean
 }
 
+interface LoadResult {
+  hasPopulatedBalances: boolean
+  connectionIds: string[]
+}
+
 export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerLinkFlowResult {
-  const { applicationId, onError, enabled = true } = options
+  const { applicationId, environment = 'development', onError, enabled = true } = options
 
   const [connections, setConnections] = useState<PlaidConnection[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [syncingAll, setSyncingAll] = useState(false)
+  const retryTimeoutRef = useRef<number | null>(null)
+  const retryAttemptsRef = useRef(0)
+  const hasTriggeredFollowupSyncRef = useRef(false)
 
   const handleError = useCallback((message: string) => {
     if (enabled) {
@@ -46,9 +56,43 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
     }
   }, [enabled, onError])
 
-  const loadConnections = useCallback(async () => {
+  const loadConnections = useCallback(async (): Promise<LoadResult> => {
     if (!enabled) {
-      return
+      return { hasPopulatedBalances: false, connectionIds: [] }
+    }
+
+    const resolveConnectionId = (account: any): string | null => {
+      const raw =
+        account.provider_connection_id ??
+        account.connection_id ??
+        account.plaid_connection_id ??
+        account.providerConnectionId ??
+        account.connectionId ??
+        null
+
+      return raw != null ? String(raw) : null
+    }
+
+    const parseNumeric = (value: unknown): number | undefined => {
+      if (typeof value === 'number' && !Number.isNaN(value)) {
+        return value
+      }
+
+      if (typeof value === 'string') {
+        const trimmed = value.trim()
+        const isNegativeParenthetical = trimmed.startsWith('(') && trimmed.endsWith(')')
+        const stripped = trimmed.replace(/[^0-9.\-]/g, '')
+        if (stripped.length === 0) {
+          return undefined
+        }
+        const parsed = Number(stripped)
+        if (Number.isNaN(parsed)) {
+          return undefined
+        }
+        return isNegativeParenthetical ? -parsed : parsed
+      }
+
+      return undefined
     }
 
     setLoading(true)
@@ -72,24 +116,19 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
         .filter(status => status.is_connected)
         .map(status => {
           const connectionAccounts = accounts
-            .filter(account => (account.connection_id || (account as any).plaid_connection_id) === status.connection_id)
+            .filter(account => resolveConnectionId(account) === status.connection_id)
             .map(account => {
               const ledger =
-                typeof account.balance_ledger === 'number'
-                  ? account.balance_ledger
-                  : typeof (account as any).balance_current === 'number'
-                    ? (account as any).balance_current
-                    : undefined
+                parseNumeric(account.balance_ledger) ??
+                parseNumeric(account.balance_current) ??
+                parseNumeric((account as any).current_balance)
 
-              const txnCount =
-                typeof (account as any).transaction_count === 'number'
-                  ? (account as any).transaction_count
-                  : undefined
+              const txnCount = parseNumeric(account.transaction_count)
 
               return {
                 id: account.id,
                 name: account.name,
-                mask: account.mask ?? '0000',
+                mask: account.mask ?? (account as any).last_four ?? '0000',
                 type: mapAccountType(account.account_type),
                 balance: ledger,
                 transactions: txnCount,
@@ -110,18 +149,61 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
         })
 
       setConnections(mapped)
+      dispatchAccountsChanged()
+      const connectionIds = mapped.map(conn => conn.connectionId).filter(Boolean)
+      const hasBalances = mapped.some(conn =>
+        conn.accounts.some(acc => typeof acc.balance === 'number' && !Number.isNaN(acc.balance))
+      )
+      return { hasPopulatedBalances: hasBalances, connectionIds }
     } catch (err) {
       console.warn('Failed to load Teller connections', err)
       handleError('Failed to load Teller connections')
       setConnections([])
+      return { hasPopulatedBalances: false, connectionIds: [] }
     } finally {
       setLoading(false)
     }
   }, [clearError, enabled, handleError])
 
+  const loadConnectionsWithRetry = useCallback(async () => {
+    const { hasPopulatedBalances, connectionIds } = await loadConnections()
+    if (retryTimeoutRef.current) {
+      window.clearTimeout(retryTimeoutRef.current)
+    }
+    if (!hasPopulatedBalances && connectionIds.length > 0 && !hasTriggeredFollowupSyncRef.current) {
+      hasTriggeredFollowupSyncRef.current = true
+      try {
+        await Promise.all(connectionIds.map(id => TellerService.syncTransactions(id)))
+      } catch (err) {
+        console.warn('Follow-up Teller sync failed', err)
+      }
+    }
+    if (hasPopulatedBalances || retryAttemptsRef.current >= 5) {
+      retryAttemptsRef.current = 0
+      hasTriggeredFollowupSyncRef.current = false
+      retryTimeoutRef.current = null
+      return
+    }
+    retryAttemptsRef.current += 1
+    retryTimeoutRef.current = window.setTimeout(() => {
+      retryTimeoutRef.current = null
+      void loadConnectionsWithRetry()
+    }, 1500)
+  }, [loadConnections])
+
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        window.clearTimeout(retryTimeoutRef.current)
+        retryTimeoutRef.current = null
+      }
+    }
+  }, [])
+
   const { ready, open } = useTellerConnect({
     applicationId: enabled ? (applicationId ?? '') : '',
-    onConnected: enabled ? loadConnections : undefined
+    environment,
+    onConnected: enabled ? loadConnectionsWithRetry : undefined
   })
 
   useEffect(() => {
@@ -179,7 +261,16 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
     clearError()
     setSyncingAll(true)
     try {
-      await TellerService.syncTransactions()
+      const ids = connections
+        .map(connection => connection.connectionId)
+        .filter((id): id is string => Boolean(id))
+
+      if (ids.length === 0) {
+        setToast('No Teller connections to sync')
+        return
+      }
+
+      await Promise.all(ids.map(id => TellerService.syncTransactions(id)))
       await loadConnections()
       setToast('Sync started for all Teller connections')
     } catch (err) {
@@ -188,7 +279,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
     } finally {
       setSyncingAll(false)
     }
-  }, [clearError, loadConnections, handleError])
+  }, [clearError, connections, loadConnections, handleError])
 
   const disconnect = useCallback(async (connectionId: string) => {
     if (!enabled) {

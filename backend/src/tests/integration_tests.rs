@@ -40,7 +40,7 @@ async fn given_authenticated_user_when_get_connection_status_then_returns_array(
     conn2.mark_connected("Bank B");
 
     mock_db
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .returning(move |_| {
             let c1 = conn1.clone();
             let c2 = conn2.clone();
@@ -120,7 +120,7 @@ async fn given_authenticated_user_when_get_transactions_no_filter_then_returns_a
         });
 
     mock_db
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
@@ -211,7 +211,7 @@ async fn given_authenticated_user_when_get_transactions_with_account_ids_then_re
         });
 
     mock_db
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
@@ -255,7 +255,7 @@ async fn given_authenticated_user_when_get_transactions_with_foreign_account_ids
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
@@ -365,7 +365,7 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
         });
 
     mock_db
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
@@ -408,7 +408,7 @@ async fn given_authenticated_user_when_get_spending_with_foreign_account_ids_the
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
@@ -518,7 +518,7 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
         });
 
     mock_db
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
@@ -561,7 +561,7 @@ async fn given_authenticated_user_when_get_categories_with_foreign_account_ids_t
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
@@ -636,7 +636,7 @@ async fn given_authenticated_user_when_get_balances_with_account_ids_then_return
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
@@ -696,7 +696,7 @@ async fn given_authenticated_user_when_get_balances_with_foreign_account_ids_the
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
@@ -783,7 +783,7 @@ async fn given_different_account_filters_when_caching_then_uses_different_cache_
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
@@ -916,7 +916,7 @@ async fn given_user_with_multiple_banks_when_get_accounts_then_returns_all_accou
         .returning(|_| Box::pin(async { Ok(std::collections::HashMap::new()) }));
 
     mock_db
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
@@ -949,7 +949,7 @@ async fn given_user_with_multiple_banks_when_get_accounts_then_returns_all_accou
 }
 
 #[tokio::test]
-async fn given_connection_id_when_sync_then_uses_get_plaid_connection_by_id() {
+async fn given_connection_id_when_sync_then_uses_get_provider_connection_by_id() {
     use crate::models::plaid::{PlaidConnection, SyncTransactionsRequest};
     use crate::services::repository_service::MockDatabaseRepository;
     use uuid::Uuid;
@@ -964,7 +964,7 @@ async fn given_connection_id_when_sync_then_uses_get_plaid_connection_by_id() {
     expected_conn.mark_connected("Chase");
 
     mock_db
-        .expect_get_plaid_connection_by_id()
+        .expect_get_provider_connection_by_id()
         .with(
             mockall::predicate::eq(connection_id),
             mockall::predicate::eq(user_id),
@@ -976,7 +976,7 @@ async fn given_connection_id_when_sync_then_uses_get_plaid_connection_by_id() {
         });
 
     mock_db
-        .expect_get_plaid_credentials_for_user()
+        .expect_get_provider_credentials_for_user()
         .returning(|_, _| Box::pin(async { Ok(None) }));
 
     mock_db
@@ -984,7 +984,7 @@ async fn given_connection_id_when_sync_then_uses_get_plaid_connection_by_id() {
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db

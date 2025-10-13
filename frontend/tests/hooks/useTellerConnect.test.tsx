@@ -25,7 +25,10 @@ describe('useTellerConnect', () => {
   })
 
   const createGateway = (): TellerConnectGateway => ({
-    storeEnrollment: vi.fn().mockResolvedValue(undefined),
+    storeEnrollment: vi.fn().mockResolvedValue({
+      connection_id: 'conn-1',
+      institution_name: 'Sample Bank'
+    }),
     syncTransactions: vi.fn().mockResolvedValue(undefined)
   })
 
@@ -76,7 +79,6 @@ describe('useTellerConnect', () => {
       enrollment_id: 'enroll-1',
       institution_name: 'Sample Bank'
     })
-    expect(gateway.syncTransactions).toHaveBeenCalledTimes(1)
+    expect(gateway.syncTransactions).toHaveBeenCalledWith('conn-1')
   })
 })
-

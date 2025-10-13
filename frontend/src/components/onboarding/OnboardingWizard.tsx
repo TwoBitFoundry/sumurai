@@ -73,6 +73,7 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
 
   const tellerFlow = useOnboardingTellerFlow({
     applicationId: providerInfo.tellerApplicationId ?? null,
+    environment: providerInfo.tellerEnvironment,
     enabled: activeProvider === 'teller',
     onConnectionSuccess: handleConnectionSuccess,
     onError: (error) => {

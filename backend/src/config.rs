@@ -1,6 +1,4 @@
-use anyhow::Result;
-use std::collections::HashMap;
-
+use anyhow::{anyhow, Result};
 pub trait EnvironmentProvider {
     fn get_var(&self, key: &str) -> Option<String>;
 }
@@ -19,6 +17,7 @@ pub struct Config {
     pub database_url: String,
     default_provider: String,
     teller_application_id: Option<String>,
+    teller_environment: String,
 }
 
 impl Config {
@@ -36,11 +35,16 @@ impl Config {
             .get_var("DEFAULT_PROVIDER")
             .unwrap_or_else(|| "teller".to_string());
         let teller_application_id = env.get_var("TELLER_APPLICATION_ID");
+        let teller_environment = env
+            .get_var("TELLER_ENV")
+            .or_else(|| env.get_var("TELLER_ENVIRONMENT"))
+            .ok_or_else(|| anyhow!("TELLER_ENV (or TELLER_ENVIRONMENT) must be set"))?;
 
         Ok(Self {
             database_url,
             default_provider,
             teller_application_id,
+            teller_environment,
         })
     }
 
@@ -50,6 +54,7 @@ impl Config {
             database_url: "postgresql://postgres:password@localhost:5432/accounting".to_string(),
             default_provider: "teller".to_string(),
             teller_application_id: None,
+            teller_environment: "development".to_string(),
         }
     }
 
@@ -59,6 +64,10 @@ impl Config {
 
     pub fn get_teller_application_id(&self) -> Option<&str> {
         self.teller_application_id.as_deref()
+    }
+
+    pub fn get_teller_environment(&self) -> &str {
+        &self.teller_environment
     }
 }
 

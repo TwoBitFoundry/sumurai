@@ -109,12 +109,10 @@ impl TellerProvider {
             .await?;
 
         Ok(TellerBalances {
-            ledger: balances["ledger"]
-                .as_str()
-                .and_then(|s| Decimal::from_str(s).ok()),
-            available: balances["available"]
-                .as_str()
-                .and_then(|s| Decimal::from_str(s).ok()),
+            ledger: parse_balance_decimal(&balances["ledger"]),
+            current: parse_balance_decimal(&balances["current"]),
+            available: parse_balance_decimal(&balances["available"]),
+            statement: parse_balance_decimal(&balances["statement"]),
         })
     }
 }
@@ -122,7 +120,42 @@ impl TellerProvider {
 #[derive(Debug)]
 struct TellerBalances {
     ledger: Option<Decimal>,
+    current: Option<Decimal>,
     available: Option<Decimal>,
+    statement: Option<Decimal>,
+}
+
+fn parse_balance_decimal(value: &serde_json::Value) -> Option<Decimal> {
+    match value {
+        serde_json::Value::Null => None,
+        serde_json::Value::Bool(_) => None,
+        serde_json::Value::Number(num) => Decimal::from_str(&num.to_string()).ok(),
+        serde_json::Value::String(s) => {
+            use std::borrow::Cow;
+            let sanitized: String = s
+                .chars()
+                .filter(|c| c.is_ascii_digit() || *c == '.' || *c == '-')
+                .collect();
+            let candidate: Cow<'_, str> = if sanitized.is_empty() {
+                Cow::Borrowed(s.trim())
+            } else {
+                Cow::Owned(sanitized)
+            };
+            Decimal::from_str(candidate.as_ref()).ok()
+        }
+        serde_json::Value::Array(arr) => arr.iter().find_map(parse_balance_decimal),
+        serde_json::Value::Object(map) => {
+            if let Some(inner) = map.get("value") {
+                parse_balance_decimal(inner)
+            } else if let Some(amount) = map.get("amount") {
+                parse_balance_decimal(amount)
+            } else if let Some(current) = map.get("current") {
+                parse_balance_decimal(current)
+            } else {
+                None
+            }
+        }
+    }
 }
 
 #[async_trait]
@@ -171,7 +204,19 @@ impl FinancialDataProvider for TellerProvider {
                 let mut account = Account::from_teller(&acc_json);
 
                 if let Ok(bal) = balance_result {
-                    account.balance_current = bal.ledger.or(bal.available);
+                    account.balance_current = bal
+                        .ledger
+                        .or(bal.current)
+                        .or(bal.available)
+                        .or(bal.statement);
+                    if account.balance_current.is_none() {
+                        account.balance_current = parse_balance_decimal(&acc_json["balance"]);
+                    }
+                    if account.balance_current.is_none() {
+                        account.balance_current = acc_json["balance"]
+                            .as_str()
+                            .and_then(|s| Decimal::from_str(s).ok());
+                    }
                 }
 
                 account
@@ -212,7 +257,7 @@ impl FinancialDataProvider for TellerProvider {
                     }
                     false
                 })
-                .map(|t| Transaction::from_teller(t, &account.id))
+                .map(|t| Transaction::from_teller(t, &account.id, Some(account_id)))
                 .collect::<Vec<_>>();
 
             all_transactions.extend(transactions);

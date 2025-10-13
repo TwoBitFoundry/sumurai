@@ -166,7 +166,7 @@ impl TestFixtures {
         let mut mock_db = MockDatabaseRepository::new();
 
         mock_db
-            .expect_get_all_plaid_connections_by_user()
+            .expect_get_all_provider_connections_by_user()
             .returning(|_| Box::pin(async { Ok(vec![]) }));
 
         mock_db

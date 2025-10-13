@@ -99,6 +99,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const plaidFlow = usePlaidLinkFlow({ onError, enabled: selectedProvider === 'plaid' })
   const tellerFlow = useTellerLinkFlow({
     applicationId: providerInfo.tellerApplicationId,
+    environment: providerInfo.tellerEnvironment,
     onError,
     enabled: selectedProvider === 'teller'
   })
