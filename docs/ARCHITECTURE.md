@@ -7,7 +7,7 @@ This document provides a deeper look at Sumaura’s runtime architecture, data f
 - SPA served by Nginx on port 8080, proxying API requests to the backend.
 - Backend: Rust (Axum + SQLx) with Redis caching (required) and PostgreSQL persistence.
 - Multi‑tenant isolation enforced via PostgreSQL Row‑Level Security (RLS).
-- Multi-provider architecture with Plaid (managed) and Teller (self-hosted) sharing a unified backend trait.
+- Multi-provider architecture with Teller (self‑hosted, private) and Plaid (hosted service).
 - Deployed locally via Docker Compose; macOS → Linux cross‑compile for backend binary.
 
 ## Diagram
@@ -41,7 +41,7 @@ flowchart LR
 
 ## End‑to‑End Data Flow
 
-**Plaid (production path)**
+**Plaid (hosted service)**
 
 1. Frontend requests a Plaid `link_token` from the backend and opens Plaid Link.
 2. Browser receives `public_token` from Plaid → posts to `/api/plaid/exchange-token`.
@@ -49,7 +49,7 @@ flowchart LR
 4. Frontend polls `/api/providers/status` and fetches accounts via `/api/plaid/accounts`.
 5. Analytics endpoints compute over PostgreSQL (optionally leveraging a transaction cache) and return aggregates.
 
-**Teller (self-hosted path)**
+**Teller (self‑hosted path)**
 
 1. Frontend loads Teller Connect.js via `useTellerConnect` and posts successful enrollments to `/teller/connect`.
 2. Backend uses the `TellerProvider` (mTLS) to persist credentials, fetch accounts, and queue syncs.
@@ -57,7 +57,7 @@ flowchart LR
 
 ## Provider Connect Flows
 
-### Plaid Link Flow (Managed)
+### Plaid Link Flow (Hosted service)
 - `usePlaidLinkFlow` requests a short-lived `link_token` from `/api/plaid/link-token` and hands it to `react-plaid-link`.
 - Plaid Link runs entirely inside the Plaid-hosted modal; the SPA only receives a `public_token` and minimal metadata.
 - `usePlaidConnection` marks the connection as live once `/api/plaid/exchange-token` succeeds, then polls `/api/providers/status` for sync progress.
@@ -72,7 +72,7 @@ flowchart LR
 ### Key Differences
 - **Bootstrap:** Plaid only needs a `link_token`; Teller also needs application metadata and a Connect.js loader.
 - **Credential custody:** Plaid secrets stay with Plaid; Teller stores encrypted credentials server-side after Connect.
-- **Hosting:** Plaid Link is a managed hosted experience; Teller Connect is an embeddable script that hits your Teller tenant.
+- **Hosting:** Plaid Link is a hosted experience; Teller Connect targets your self‑hosted Teller tenant.
 - **Error handling:** Plaid uses Link callbacks; Teller emits postMessage events that the hook normalizes before notifying the backend.
 
 ## Components
