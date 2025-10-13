@@ -1,4 +1,4 @@
-# Sumaura — Personal Finance Dashboard
+# Sumaura, Your Personal Finance Dashboard
 
 Sumaura is a full‑stack personal finance dashboard that connects to your bank via modern aggregators, syncs transactions, and visualizes spending with a modern, responsive UI.
 
@@ -7,6 +7,51 @@ Sumaura is a full‑stack personal finance dashboard that connects to your bank 
 ## Features
 
 Comprehensive personal finance management with bank connectivity, transaction tracking, budgeting, and visual analytics.
+
+### 📊 Teller API vs Plaid API
+Core data access and sync features provided by each service.
+
+| Capability | Teller | Plaid |
+|------------|--------|-------|
+| 🏦 Bank Coverage | ✅ ~7K U.S. institutions | ✅🌍 12K+ global institutions |
+| 🔄 Incremental Sync | ✅ Real‑time pull updates | ✅ Background sync via webhooks |
+| 📅 Historical Transactions | ⚠️ Recent data only | ✅ Up to 24 months |
+| 🧾 Transaction Enrichment | ⚠️ Basic details (merchant, date, amount) | ✅ Categories, logos, recurring detection |
+| 🔑 Bring Your Own API Key | ✅ Easily accessible | ⚠️ Difficult to get production keys |
+
+#### TL;DR
+- Teller (Self‑Host) → Private, real‑time, and user‑controlled.
+- Plaid (Hosted, roadmap) → Global, enriched, and analytics‑ready — with equal data privacy guarantees.
+
+### 💫 Experience Matrix
+How the app delivers data‑driven financial experiences.
+
+| Feature | 🧩 Self‑Host via Teller (BYOA) | 🏢 Hosted via Plaid |
+|---------|-------------------------------|---------------------|
+| 🔒 Data Privacy | ✅ You control your data — never sold or tracked | ✅ Data is never sold or tracked |
+| 🔐 Secure Login | ✅ Encrypted login with MFA | ✅ Bank‑branded OAuth login |
+| 📊 Rich Dashboard Insights | ✅ Included | ✅ Included |
+| 🧾 Review Transactions | ⚠️ Limited categories/merchant grouping | ✅ Full categorization and merchant context |
+| 💰 Budget Tracking | ⚠️ Limited categories/merchant grouping | ✅ Detailed categorization with merchant‑level insights |
+| 🧱 Best Fit | 🧠 Open‑source, indie, or self‑managed | 💼 Business, Premium|
+| 💵 Pricing | Pay‑for‑what‑you‑use (Teller API) | TBA |
+
+
+
+## Roadmap
+
+What’s coming next:
+
+- Hosted service via Plaid
+  - Richer transaction categories and merchant enrichment
+  - Agentic features: receipt matching, conversational insights about your data, and smart suggestions
+
+- For all
+  - Financial reports (monthly health score, export your data, and more)
+  - Notifications and alerts (balances, unusual activity, budget thresholds)
+  - Receipt uploads (attach and search receipts for transactions)
+
+## What You'll See
 
 ### Dashboard & Analytics
 
@@ -31,20 +76,9 @@ Link bank accounts using Teller (self‑hosted) or Plaid (hosted) with on‑dema
 
 ![Accounts](docs/images/accounts.png)
 
-## Multi-Provider Support
-
-Sumaura supports two providers so you can choose a self‑hosted Teller setup or use our hosted Plaid integration.
-
-| Provider | Status | Highlights | Notes |
-| --- | --- | --- | --- |
-| **Teller** | ✅ Self‑hosted (private) | Supports ~7,000 US banks, mTLS security, parallelized balances | Recommended for private self‑hosting with bring‑your‑own API keys and full credential control. |
-| **Plaid** | ✅ Hosted service | Supports ~12,000 institutions and richer categories/merchant data | Available via the official hosted service; not for public re‑hosting. |
-
-- Set `DEFAULT_PROVIDER=teller` for self‑hosted deployments.
-
 ### Hosting Policy
 
-- “Hosted” means operated by the Sumaura team for customers. Plaid is available via the official hosted service.
+- “Hosted” means operated by the Sumaura team for customers. The hosted option is on the roadmap and not yet available.
 - “Self‑hosted” means private, non‑public deployments by the licensee. Teller supports bring‑your‑own API keys and is the recommended path.
 - Public hosting or re‑hosting of this software is not permitted under the Sustainable Use License.
  - The hosted experience enables reliability, security posture, and data quality we can’t practically guarantee in self‑hosted setups (e.g., broader institution coverage, richer categorization via Plaid, proactive monitoring, and managed upgrades).
