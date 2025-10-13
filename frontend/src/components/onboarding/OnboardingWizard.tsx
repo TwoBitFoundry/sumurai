@@ -4,10 +4,11 @@ import { AppHeader } from '@/components/ui/AppHeader'
 import { useOnboardingWizard, type OnboardingStep } from '@/hooks/useOnboardingWizard'
 import { useOnboardingPlaidFlow } from '@/hooks/useOnboardingPlaidFlow'
 import { WelcomeStep } from './WelcomeStep'
-import { ConnectAccountStep, CONNECT_ACCOUNT_PROVIDER_CONTENT } from './ConnectAccountStep'
+import { ConnectAccountStep } from './ConnectAccountStep'
 import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo'
 import type { FinancialProvider } from '@/types/api'
 import { useOnboardingTellerFlow } from '@/hooks/useOnboardingTellerFlow'
+import { CONNECT_ACCOUNT_PROVIDER_CONTENT } from '@/utils/providerCards'
 
 interface OnboardingWizardProps {
   onComplete: () => void

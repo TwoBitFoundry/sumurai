@@ -9,9 +9,49 @@ vi.mock('@/hooks/useOnboardingTellerFlow')
 vi.mock('@/hooks/useTellerProviderInfo')
 
 // Mock boundary components so copy tweaks do not break contract tests
-const { mockWelcomeStep, mockConnectAccountStep } = vi.hoisted(() => ({
+const { mockWelcomeStep, mockConnectAccountStep, mockProviderContent } = vi.hoisted(() => ({
   mockWelcomeStep: vi.fn(() => <div data-testid="welcome-step">Welcome Step</div>),
   mockConnectAccountStep: vi.fn(() => <div data-testid="connect-step">Connect Step</div>),
+  mockProviderContent: {
+    plaid: {
+      displayName: 'Plaid',
+      eyebrow: {
+        text: '',
+        backgroundClassName: '',
+        textClassName: '',
+      },
+      heroTitle: '',
+      heroDescription: '',
+      highlightLabel: '',
+      highlightMeta: '',
+      features: [],
+      highlights: [],
+      cta: {
+        defaultLabel: '',
+      },
+      securityNote: 'Plaid security note',
+    },
+    teller: {
+      displayName: 'Teller',
+      eyebrow: {
+        text: '',
+        backgroundClassName: '',
+        textClassName: '',
+      },
+      heroTitle: '',
+      heroDescription: '',
+      highlightLabel: '',
+      highlightMeta: '',
+      features: [],
+      highlights: [],
+      cta: {
+        defaultLabel: '',
+      },
+      securityNote: 'Teller security note',
+      requiresApplicationId: true,
+      applicationIdMissingCopy: 'Missing application ID',
+    },
+  },
 }))
 
 vi.mock('@/components/onboarding/WelcomeStep', () => ({
@@ -19,41 +59,17 @@ vi.mock('@/components/onboarding/WelcomeStep', () => ({
 }))
 
 vi.mock('@/components/onboarding/ConnectAccountStep', () => {
-  const baseContent = {
-    eyebrow: {
-      text: '',
-      backgroundClassName: '',
-      textClassName: '',
-    },
-    heroTitle: '',
-    heroDescription: '',
-    highlightLabel: '',
-    highlightMeta: '',
-    features: [],
-    highlights: [],
-    cta: {
-      defaultLabel: '',
-    },
-    securityNote: '',
-  }
-
   return {
     ConnectAccountStep: mockConnectAccountStep,
-    CONNECT_ACCOUNT_PROVIDER_CONTENT: {
-      plaid: {
-        ...baseContent,
-        displayName: 'Plaid',
-        securityNote: 'Plaid security note',
-      },
-      teller: {
-        ...baseContent,
-        displayName: 'Teller',
-        securityNote: 'Teller security note',
-        requiresApplicationId: true,
-      },
-    },
   }
 })
+
+vi.mock('@/utils/providerCards', () => ({
+  CONNECT_ACCOUNT_PROVIDER_CONTENT: mockProviderContent,
+  getProviderCardConfig: vi.fn(),
+  getConnectAccountProviderContent: (provider: keyof typeof mockProviderContent) =>
+    mockProviderContent[provider],
+}))
 
 const mockUseOnboardingWizard = vi.mocked(await import('@/hooks/useOnboardingWizard')).useOnboardingWizard
 const mockUseOnboardingPlaidFlow = vi.mocked(await import('@/hooks/useOnboardingPlaidFlow')).useOnboardingPlaidFlow

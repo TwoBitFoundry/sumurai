@@ -9,36 +9,7 @@ import { useTellerLinkFlow } from '../hooks/useTellerLinkFlow'
 import { useTellerProviderInfo } from '../hooks/useTellerProviderInfo'
 import HeroStatCard from '../components/widgets/HeroStatCard'
 import type { FinancialProvider } from '../types/api'
-
-const PROVIDER_CARDS: Record<FinancialProvider, {
-  title: string
-  badge: string
-  description: string
-  bullets: string[]
-}> = {
-  plaid: {
-    title: 'Plaid',
-    badge: 'Premium',
-    description: 'Enterprise-grade data enrichment with the broadest institution coverage.',
-    bullets: [
-      'Enhanced categorization with confidence scores',
-      '12,000+ supported institutions',
-      'Merchant enrichment and location data',
-      'Managed compliance under our SaaS offering'
-    ]
-  },
-  teller: {
-    title: 'Teller',
-    badge: 'Self-hosted friendly',
-    description: 'Bring your own Teller credentials for lightweight, developer-first access.',
-    bullets: [
-      'Unlimited sandbox with 100 free live connections',
-      'Direct connections with running balances',
-      'Simple category strings that map into your budgets',
-      'Ideal for self-hosted deployments'
-    ]
-  }
-}
+import { getProviderCardConfig } from '@/utils/providerCards'
 
 const formatRelativeTime = (iso: string): string => {
   const timestamp = Date.parse(iso)
@@ -206,7 +177,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
           <div className="grid gap-6 lg:grid-cols-2">
             {providerInfo.availableProviders.map(provider => {
-              const details = PROVIDER_CARDS[provider]
+              const details = getProviderCardConfig(provider)
               return (
                 <button
                   key={provider}
@@ -242,7 +213,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     )
   }
 
-  const providerLabel = selectedProvider === 'plaid' ? 'Plaid' : 'Teller'
+  const providerCardConfig = getProviderCardConfig(selectedProvider)
+  const providerLabel = providerCardConfig.title
   const providerDescription = selectedProvider === 'plaid'
     ? 'Securely connect institutions with Plaid. Your credentials never touch Sumaura and you can revoke access at any time.'
     : 'Launch Teller Connect to link accounts using your own Teller credentials. Connections stay in your control and can be revoked instantly.'
