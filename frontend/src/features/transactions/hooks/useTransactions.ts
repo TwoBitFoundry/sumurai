@@ -89,9 +89,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     if (!t.category) {
       return 'Uncategorized'
     }
-    return t.category.detailed
-      ? formatCategoryName(t.category.detailed)
-      : formatCategoryName(t.category.primary)
+    return formatCategoryName(t.category.primary)
   }, [])
 
   const searchFiltered = useMemo(() => {

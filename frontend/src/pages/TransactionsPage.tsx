@@ -51,9 +51,7 @@ const TransactionsPage: React.FC = () => {
 
     const categoryCounts = new Map<string, number>()
     transactions.forEach(t => {
-      const cat = t.category?.detailed
-        ? formatCategoryName(t.category.detailed)
-        : formatCategoryName(t.category?.primary || 'Uncategorized')
+      const cat = formatCategoryName(t.category?.primary || 'Uncategorized')
       categoryCounts.set(cat, (categoryCounts.get(cat) || 0) + 1)
     })
 

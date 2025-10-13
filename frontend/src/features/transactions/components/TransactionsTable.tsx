@@ -18,9 +18,6 @@ const resolveCategoryName = (transaction: Transaction): string => {
   if (!transaction.category) {
     return 'Uncategorized'
   }
-  if (transaction.category.detailed) {
-    return formatCategoryName(transaction.category.detailed)
-  }
   return formatCategoryName(transaction.category.primary)
 }
 

@@ -153,11 +153,9 @@ export function useBudgets(): UseBudgetsResult {
       const spent = transactions
         .filter(t => {
           const primary = t.category?.primary || ''
-          const detailed = t.category?.detailed
           const primaryMatches = primary.toLowerCase() === catId.toLowerCase()
           const primaryFriendlyMatches = formatCategoryName(primary).toLowerCase() === catNameLower
-          const detailedMatches = detailed ? formatCategoryName(detailed).toLowerCase() === catNameLower : false
-          return primaryMatches || primaryFriendlyMatches || detailedMatches
+          return primaryMatches || primaryFriendlyMatches
         })
         .filter(t => {
           const dateString = new Date(t.date).toISOString().slice(0, 10)
