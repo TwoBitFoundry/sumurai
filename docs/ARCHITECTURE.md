@@ -55,6 +55,26 @@ flowchart LR
 2. Backend uses the `TellerProvider` (mTLS) to persist credentials, fetch accounts, and queue syncs.
 3. Normalized transactions flow through the same Sync/Analytics services used by Plaid.
 
+## Provider Connect Flows
+
+### Plaid Link Flow (Managed)
+- `usePlaidLinkFlow` requests a short-lived `link_token` from `/api/plaid/link-token` and hands it to `react-plaid-link`.
+- Plaid Link runs entirely inside the Plaid-hosted modal; the SPA only receives a `public_token` and minimal metadata.
+- `usePlaidConnection` marks the connection as live once `/api/plaid/exchange-token` succeeds, then polls `/api/providers/status` for sync progress.
+- The backend stores the encrypted Plaid `access_token`, tracks cursor state, and fans out sync jobs via Redis-backed queues.
+
+### Teller Connect Flow (Self-Hosted)
+- `useTellerProviderInfo` hydrates Teller-specific bootstrap data (application id + environment) from `/providers/info`.
+- `useTellerLinkFlow` loads Teller’s Connect.js bundle, presents the iframe UI, and posts enrollments to `/teller/connect`.
+- Teller requires customer-owned credentials; the backend holds mTLS certificates, stores Teller enrollment secrets, and initiates syncs directly against Teller’s REST API.
+- Status updates still surface through `/api/providers/status`, but disconnections and reauth go through Teller-specific endpoints.
+
+### Key Differences
+- **Bootstrap:** Plaid only needs a `link_token`; Teller also needs application metadata and a Connect.js loader.
+- **Credential custody:** Plaid secrets stay with Plaid; Teller stores encrypted credentials server-side after Connect.
+- **Hosting:** Plaid Link is a managed hosted experience; Teller Connect is an embeddable script that hits your Teller tenant.
+- **Error handling:** Plaid uses Link callbacks; Teller emits postMessage events that the hook normalizes before notifying the backend.
+
 ## Components
 
 ### Frontend

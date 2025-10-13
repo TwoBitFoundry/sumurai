@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useProviderInfo } from '../hooks/useProviderInfo'
+import { useTellerProviderInfo } from '../hooks/useTellerProviderInfo'
 import { ProviderMismatchModal } from './ProviderMismatchModal'
 
 interface ProviderMismatchCheckProps {
@@ -9,7 +9,7 @@ interface ProviderMismatchCheckProps {
 }
 
 export const ProviderMismatchCheck = ({ showMismatch, onShowMismatch, onConfirm }: ProviderMismatchCheckProps) => {
-  const providerInfo = useProviderInfo()
+  const providerInfo = useTellerProviderInfo()
 
   useEffect(() => {
     if (providerInfo.loading) {

@@ -6,7 +6,7 @@ import { vi, beforeEach, afterEach } from 'vitest'
 vi.mock('@/hooks/useOnboardingWizard')
 vi.mock('@/hooks/useOnboardingPlaidFlow')
 vi.mock('@/hooks/useOnboardingTellerFlow')
-vi.mock('@/hooks/useProviderInfo')
+vi.mock('@/hooks/useTellerProviderInfo')
 
 // Mock boundary components so copy tweaks do not break contract tests
 const { mockWelcomeStep, mockConnectAccountStep } = vi.hoisted(() => ({
@@ -58,7 +58,7 @@ vi.mock('@/components/onboarding/ConnectAccountStep', () => {
 const mockUseOnboardingWizard = vi.mocked(await import('@/hooks/useOnboardingWizard')).useOnboardingWizard
 const mockUseOnboardingPlaidFlow = vi.mocked(await import('@/hooks/useOnboardingPlaidFlow')).useOnboardingPlaidFlow
 const mockUseOnboardingTellerFlow = vi.mocked(await import('@/hooks/useOnboardingTellerFlow')).useOnboardingTellerFlow
-const mockUseProviderInfo = vi.mocked(await import('@/hooks/useProviderInfo')).useProviderInfo
+const mockUseTellerProviderInfo = vi.mocked(await import('@/hooks/useTellerProviderInfo')).useTellerProviderInfo
 
 describe('OnboardingWizard', () => {
   const mockWizardHook = {
@@ -106,7 +106,7 @@ describe('OnboardingWizard', () => {
     mockUseOnboardingWizard.mockReturnValue(mockWizardHook)
     mockUseOnboardingPlaidFlow.mockReturnValue(mockPlaidFlowHook)
     mockUseOnboardingTellerFlow.mockReturnValue(mockTellerFlowHook)
-    mockUseProviderInfo.mockReturnValue({
+    mockUseTellerProviderInfo.mockReturnValue({
       loading: false,
       error: null,
       availableProviders: ['plaid'],
@@ -114,6 +114,7 @@ describe('OnboardingWizard', () => {
       defaultProvider: 'plaid',
       userProvider: 'plaid',
       tellerApplicationId: null,
+      tellerEnvironment: 'development',
       refresh: vi.fn(),
       chooseProvider: vi.fn(),
     })

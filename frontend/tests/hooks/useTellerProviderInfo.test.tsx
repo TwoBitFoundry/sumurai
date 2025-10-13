@@ -1,10 +1,10 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
-import type { ProviderGateway } from '@/hooks/useProviderInfo'
-import { useProviderInfo } from '@/hooks/useProviderInfo'
+import type { TellerProviderGateway } from '@/hooks/useTellerProviderInfo'
+import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo'
 
-describe('useProviderInfo', () => {
-  const createGateway = (): ProviderGateway => ({
+describe('useTellerProviderInfo', () => {
+  const createGateway = (): TellerProviderGateway => ({
     fetchInfo: vi.fn().mockResolvedValue({
       available_providers: ['plaid', 'teller'],
       default_provider: 'plaid',
@@ -17,7 +17,7 @@ describe('useProviderInfo', () => {
 
   it('loads provider catalogue on mount', async () => {
     const gateway = createGateway()
-    const { result } = renderHook(() => useProviderInfo({ gateway }))
+    const { result } = renderHook(() => useTellerProviderInfo({ gateway }))
 
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.availableProviders).toEqual(['plaid', 'teller'])
@@ -27,7 +27,7 @@ describe('useProviderInfo', () => {
 
   it('selects provider through gateway', async () => {
     const gateway = createGateway()
-    const { result } = renderHook(() => useProviderInfo({ gateway }))
+    const { result } = renderHook(() => useTellerProviderInfo({ gateway }))
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
@@ -38,4 +38,3 @@ describe('useProviderInfo', () => {
     expect(result.current.selectedProvider).toBe('teller')
   })
 })
-

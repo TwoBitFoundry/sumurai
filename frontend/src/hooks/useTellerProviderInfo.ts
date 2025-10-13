@@ -3,7 +3,7 @@ import type { FinancialProvider } from '../types/api'
 import type { TellerEnvironment } from './useTellerConnect'
 import { ApiClient } from '../services/ApiClient'
 
-export interface ProviderCatalogue {
+export interface TellerProviderCatalogue {
   available_providers: FinancialProvider[]
   default_provider: FinancialProvider
   user_provider?: FinancialProvider
@@ -11,29 +11,29 @@ export interface ProviderCatalogue {
   teller_environment?: string
 }
 
-export interface ProviderSelectionResult {
+export interface TellerProviderSelectionResult {
   user_provider: FinancialProvider
 }
 
-export interface ProviderGateway {
-  fetchInfo: () => Promise<ProviderCatalogue>
-  selectProvider: (provider: FinancialProvider) => Promise<ProviderSelectionResult>
+export interface TellerProviderGateway {
+  fetchInfo: () => Promise<TellerProviderCatalogue>
+  selectProvider: (provider: FinancialProvider) => Promise<TellerProviderSelectionResult>
 }
 
-const apiGateway: ProviderGateway = {
+const apiGateway: TellerProviderGateway = {
   async fetchInfo() {
-    return ApiClient.get<ProviderCatalogue>('/providers/info')
+    return ApiClient.get<TellerProviderCatalogue>('/providers/info')
   },
   async selectProvider(provider) {
-    return ApiClient.post<ProviderSelectionResult>('/providers/select', { provider })
+    return ApiClient.post<TellerProviderSelectionResult>('/providers/select', { provider })
   }
 }
 
-export interface UseProviderInfoOptions {
-  gateway?: ProviderGateway
+export interface UseTellerProviderInfoOptions {
+  gateway?: TellerProviderGateway
 }
 
-export interface ProviderInfoState {
+export interface TellerProviderInfoState {
   loading: boolean
   error: string | null
   availableProviders: FinancialProvider[]
@@ -48,11 +48,11 @@ export interface ProviderInfoState {
 
 const emptyProviders: FinancialProvider[] = []
 
-export function useProviderInfo(options: UseProviderInfoOptions = {}): ProviderInfoState {
+export function useTellerProviderInfo(options: UseTellerProviderInfoOptions = {}): TellerProviderInfoState {
   const gateway = options.gateway ?? apiGateway
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [catalogue, setCatalogue] = useState<ProviderCatalogue | null>(null)
+  const [catalogue, setCatalogue] = useState<TellerProviderCatalogue | null>(null)
 
   const selectedProvider = useMemo<FinancialProvider | null>(() => {
     if (!catalogue) {
@@ -66,7 +66,7 @@ export function useProviderInfo(options: UseProviderInfoOptions = {}): ProviderI
     setError(null)
     try {
       const info = await gateway.fetchInfo()
-      console.log('useProviderInfo - received from API:', info)
+      console.log('useTellerProviderInfo - received from API:', info)
       setCatalogue(info)
     } catch (err) {
       console.warn('Failed to fetch provider information', err)

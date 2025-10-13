@@ -6,7 +6,7 @@ import ConnectionsList from '../features/plaid/components/ConnectionsList'
 import ConnectButton from '../features/plaid/components/ConnectButton'
 import { usePlaidLinkFlow } from '../features/plaid/hooks/usePlaidLinkFlow'
 import { useTellerLinkFlow } from '../hooks/useTellerLinkFlow'
-import { useProviderInfo } from '../hooks/useProviderInfo'
+import { useTellerProviderInfo } from '../hooks/useTellerProviderInfo'
 import HeroStatCard from '../components/widgets/HeroStatCard'
 import type { FinancialProvider } from '../types/api'
 
@@ -82,7 +82,7 @@ interface AccountsPageProps {
 }
 
 const AccountsPage = ({ onError }: AccountsPageProps) => {
-  const providerInfo = useProviderInfo()
+  const providerInfo = useTellerProviderInfo()
   const selectedProvider = providerInfo.selectedProvider
   const providerLoading = providerInfo.loading
   const providerError = providerInfo.error

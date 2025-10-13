@@ -5,7 +5,7 @@ import { useOnboardingWizard, type OnboardingStep } from '@/hooks/useOnboardingW
 import { useOnboardingPlaidFlow } from '@/hooks/useOnboardingPlaidFlow'
 import { WelcomeStep } from './WelcomeStep'
 import { ConnectAccountStep, CONNECT_ACCOUNT_PROVIDER_CONTENT } from './ConnectAccountStep'
-import { useProviderInfo } from '@/hooks/useProviderInfo'
+import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo'
 import type { FinancialProvider } from '@/types/api'
 import { useOnboardingTellerFlow } from '@/hooks/useOnboardingTellerFlow'
 
@@ -31,7 +31,7 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
     completeWizard,
   } = useOnboardingWizard()
 
-  const providerInfo = useProviderInfo()
+  const providerInfo = useTellerProviderInfo()
   const resolvedDefaultProvider = (providerInfo.defaultProvider ?? 'plaid') as FinancialProvider
   const activeProvider = (providerInfo.userProvider ?? resolvedDefaultProvider) as FinancialProvider
   const providerContent = CONNECT_ACCOUNT_PROVIDER_CONTENT[activeProvider]
