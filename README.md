@@ -37,7 +37,6 @@ How the app delivers data‑driven financial experiences.
 | 💵 Pricing | Pay‑for‑what‑you‑use (Teller API) | TBA |
 
 
-
 ## Roadmap
 
 What’s coming next:
@@ -76,12 +75,6 @@ Link bank accounts using Teller (self‑hosted) or Plaid (hosted) with on‑dema
 
 ![Accounts](docs/images/accounts.png)
 
-### Hosting Policy
-
-- “Hosted” means operated by the Sumaura team for customers. The hosted option is on the roadmap and not yet available.
-- “Self‑hosted” means private, non‑public deployments by the licensee. Teller supports bring‑your‑own API keys and is the recommended path.
-- Public hosting or re‑hosting of this software is not permitted under the Sustainable Use License.
- - The hosted experience enables reliability, security posture, and data quality we can’t practically guarantee in self‑hosted setups (e.g., broader institution coverage, richer categorization via Plaid, proactive monitoring, and managed upgrades).
 
 ## At a Glance
 Modern full-stack architecture with React frontend, Rust backend, PostgreSQL database, and Docker deployment.
@@ -102,6 +95,13 @@ Sumaura is designed to be self‑hosted with no vendor data path. With Teller, y
 - **Bank Credentials are Never Stored:** user credentials are not persisted; Plaid Link handles them in the browser and Teller uses short‑lived tokens with mTLS.
 - **Secrets are Secure:** Provider access tokens are encrypted with AES‑256‑GCM using `ENCRYPTION_KEY`; Redis holds only short‑lived session data.
 - **Delete Your Data Anytime:** run `docker compose down -v` to wipe containers/volumes, or `sqlx database reset -y` against your `DATABASE_URL`.
+
+### Hosting Policy
+
+- “Hosted” means operated by the Sumaura team for customers. The hosted option is on the roadmap and not yet available.
+- “Self‑hosted” means private, non‑public deployments by the licensee. Teller supports bring‑your‑own API keys and is the recommended path.
+- Public hosting or re‑hosting of this software is not permitted under the Sustainable Use License.
+ - The hosted experience enables reliability, security posture, and data quality we can’t practically guarantee in self‑hosted setups (e.g., broader institution coverage, richer categorization via Plaid, proactive monitoring, and managed upgrades).
 
 
 ## Getting Started
