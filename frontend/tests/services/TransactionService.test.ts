@@ -39,7 +39,6 @@ describe('TransactionService', () => {
             detailed: 'FOOD_AND_DRINK_GROCERIES',
             confidence_level: 'HIGH'
           },
-          provider: 'plaid',
           account_name: 'Everyday Checking',
           account_type: 'depository',
           account_mask: '1234'
@@ -145,7 +144,6 @@ describe('TransactionService', () => {
           category: {
             primary: 'GENERAL'
           },
-          provider: 'teller',
           running_balance: 900.12,
           account_name: 'Main Checking',
           account_type: 'depository',
@@ -160,7 +158,6 @@ describe('TransactionService', () => {
           category: {
             primary: 'UTILITIES'
           },
-          provider: 'teller',
           running_balance: 950.12,
           account_name: 'Main Checking',
           account_type: 'depository',
@@ -173,7 +170,7 @@ describe('TransactionService', () => {
 
       expect(result).toEqual(expectedFrontendTransactions)
       expect(result).toHaveLength(2)
-      expect(result.every(t => t.provider === 'teller')).toBe(true)
+      expect(result[0]).not.toHaveProperty('provider')
     })
   })
 })

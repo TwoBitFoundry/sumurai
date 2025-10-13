@@ -20,7 +20,6 @@ export interface Transaction {
   merchant?: string
   amount: number
   category: TransactionCategory
-  provider: FinancialProvider
   account_name: string
   account_type: string
   account_mask?: string

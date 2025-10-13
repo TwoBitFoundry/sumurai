@@ -26,7 +26,6 @@ const asTransaction = (id: string, date = '2024-02-10') => ({
   merchant: 'Store',
   amount: 100,
   category: { primary: 'GROCERIES', detailed: 'GROCERIES' },
-  provider: 'plaid' as const,
   account_name: 'Checking',
   account_type: 'depository',
   account_mask: '1234',

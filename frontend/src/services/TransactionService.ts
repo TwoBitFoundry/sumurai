@@ -1,5 +1,5 @@
 import { ApiClient } from './ApiClient'
-import type { FinancialProvider, Transaction, TransactionCategory, TransactionLocation } from '../types/api'
+import type { Transaction, TransactionCategory, TransactionLocation } from '../types/api'
 import { appendAccountQueryParams } from '../utils/queryParams'
 
 export interface TransactionFilters {
@@ -20,7 +20,6 @@ interface BackendTransaction {
   category_primary?: string
   category_detailed?: string
   category_confidence?: string
-  provider?: FinancialProvider
   account_name: string
   account_type: string
   account_mask?: string
@@ -74,7 +73,6 @@ export class TransactionService {
         merchant: bt.merchant_name,
         amount: bt.amount,
         category,
-        provider: bt.provider ?? 'plaid',
         account_name: bt.account_name,
         account_type: bt.account_type,
         account_mask: bt.account_mask,
