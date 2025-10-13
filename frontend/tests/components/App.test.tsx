@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, cleanup, act, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { App } from '@/App'
 import { AccountFilterProvider } from '@/hooks/useAccountFilter'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
+import { createProviderStatus } from '@tests/utils/fixtures'
 
 global.fetch = vi.fn()
 
@@ -10,8 +12,8 @@ const mockFetchAuthOk = () => {
   const original = global.fetch as any
   const stub = vi.fn().mockImplementation((input: RequestInfo | URL) => {
     const url = String(input)
-    if (url.includes('/api/plaid/status')) {
-      return Promise.resolve({ ok: true, status: 200, json: async () => ({ connected: true, accounts_count: 0 }) } as any)
+    if (url.includes('/api/providers/status')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => createProviderStatus() } as any)
     }
     if (url.includes('/api/auth/logout')) {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({ message: 'ok', cleared_session: '' }) } as any)
@@ -42,8 +44,15 @@ vi.mock('@/services/ApiClient', () => ({
       if (endpoint.includes('/plaid/accounts')) {
         return Promise.resolve([])
       }
-      if (endpoint.includes('/plaid/status')) {
-        return Promise.resolve({ is_connected: false })
+      if (endpoint.includes('/providers/info')) {
+        return Promise.resolve({
+          available_providers: ['plaid', 'teller'],
+          default_provider: 'plaid',
+          user_provider: 'plaid',
+        })
+      }
+      if (endpoint.includes('/providers/status')) {
+        return Promise.resolve(createProviderStatus())
       }
       if (endpoint.startsWith('/analytics/spending')) {
         return Promise.resolve({ total: 1234.56, currency: 'USD' })
@@ -75,7 +84,10 @@ vi.mock('@/services/ApiClient', () => ({
             name: 'Coffee Shop',
             merchantName: 'Starbucks',
             amount: 5.99,
-            category: { id: 'food', name: 'Food & Dining' }
+            category: { primary: 'FOOD_AND_DRINK', detailed: 'COFFEE' },
+            provider: 'plaid',
+            account_name: 'Checking',
+            account_type: 'depository'
           }
         ])
       }
@@ -174,8 +186,8 @@ describe('App Phase 2 - Business Logic Removal', () => {
     const original = global.fetch as any
     const stub = vi.fn().mockImplementation((input: RequestInfo | URL) => {
       const url = String(input)
-      if (url.includes('/api/plaid/status')) {
-        return Promise.resolve({ ok: true, status: 200, json: async () => ({ connected: true, accounts_count: 0 }) } as any)
+      if (url.includes('/api/providers/status')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => createProviderStatus() } as any)
       }
       if (url.includes('/api/auth/logout')) {
         return Promise.resolve({ ok: true, status: 200, json: async () => ({ message: 'ok', cleared_session: '' }) } as any)
@@ -218,7 +230,7 @@ describe('App Phase 2 - Business Logic Removal', () => {
 
     fetchMock = installFetchRoutes({
       'GET /api/plaid/accounts': [],
-      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/providers/status': createProviderStatus(),
       'GET /api/transactions': [],
       'GET /api/analytics/spending*': 0,
       'GET /api/analytics/categories*': [],
@@ -348,7 +360,7 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
 
     fetchMock = installFetchRoutes({
       'GET /api/plaid/accounts': [],
-      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/providers/status': createProviderStatus(),
       'GET /api/transactions': [],
       'GET /api/analytics/spending*': 0,
       'GET /api/analytics/categories*': [],
@@ -557,6 +569,58 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
       
       expect(screen.getAllByText('Sumaura').length).toBeGreaterThan(0)
       expect(screen.queryAllByText('Welcome Back').length).toBe(0)
+      restore()
+    }, 15000)
+  })
+
+  describe('Provider mismatch detection', () => {
+    it('should show ProviderMismatchModal when user provider does not match default provider', async () => {
+      const { ApiClient } = await import('@/services/ApiClient')
+      const mockApiGet = vi.spyOn(ApiClient, 'get').mockImplementation((endpoint: string) => {
+        if (endpoint.includes('/providers/info')) {
+          return Promise.resolve({
+            available_providers: ['plaid', 'teller'],
+            default_provider: 'plaid',
+            user_provider: 'teller',
+          } as any)
+        }
+        if (endpoint.includes('/plaid/accounts')) return Promise.resolve([])
+        if (endpoint.includes('/providers/status')) return Promise.resolve(createProviderStatus())
+        if (endpoint.startsWith('/analytics/spending')) return Promise.resolve({ total: 1234.56, currency: 'USD' })
+        if (endpoint.includes('/analytics/categories')) return Promise.resolve([])
+        if (endpoint.includes('/analytics/monthly-totals')) return Promise.resolve([])
+        if (endpoint.includes('/analytics/top-merchants')) return Promise.resolve([])
+        if (endpoint.includes('/transactions')) return Promise.resolve([])
+        if (endpoint.includes('/budgets')) return Promise.resolve([])
+        return Promise.resolve({})
+      })
+
+      const validToken = 'header.' + btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })) + '.signature'
+      ;(window.sessionStorage.getItem as any).mockImplementation((key: string) => {
+        if (key === 'auth_token') return validToken
+        return null
+      })
+
+      const restore = mockFetchAuthOk()
+
+      await act(async () => {
+        render(
+          <AccountFilterProvider>
+            <App />
+          </AccountFilterProvider>
+        )
+        await new Promise(resolve => setTimeout(resolve, 300))
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Provider Configuration Mismatch')).toBeInTheDocument()
+      }, { timeout: 3000 })
+
+      expect(screen.getByText(/Your account is configured to use/i)).toBeInTheDocument()
+      expect(screen.getByText('Teller')).toBeInTheDocument()
+      expect(screen.getByText('Plaid')).toBeInTheDocument()
+
+      mockApiGet.mockRestore()
       restore()
     }, 15000)
   })

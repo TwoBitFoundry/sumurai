@@ -1,4 +1,5 @@
 use crate::models::{account::Account, transaction::Transaction};
+use crate::providers::PlaidProvider;
 
 use crate::services::{
     plaid_service::{PlaidService, RealPlaidClient},
@@ -11,13 +12,13 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 fn create_test_sync_service() -> SyncService {
-    let plaid_client = RealPlaidClient::new(
+    let plaid_client = Arc::new(RealPlaidClient::new(
         "test_client_id".to_string(),
         "test_secret".to_string(),
         "sandbox".to_string(),
-    );
-    let plaid_service = PlaidService::new(Arc::new(plaid_client));
-    SyncService::new(Arc::new(plaid_service))
+    ));
+    let plaid_provider = Arc::new(PlaidProvider::new(plaid_client.clone()));
+    SyncService::new(plaid_provider)
 }
 
 #[test]
@@ -27,8 +28,8 @@ fn test_calculate_account_mapping_creates_correct_mapping() {
         Account {
             id: Uuid::new_v4(),
             user_id: None,
-            plaid_account_id: Some("mock_account_123".to_string()),
-            plaid_connection_id: None,
+            provider_account_id: Some("mock_account_123".to_string()),
+            provider_connection_id: None,
             name: "Checking".into(),
             account_type: "depository".into(),
             balance_current: Some(dec!(100.00)),
@@ -38,8 +39,8 @@ fn test_calculate_account_mapping_creates_correct_mapping() {
         Account {
             id: Uuid::new_v4(),
             user_id: None,
-            plaid_account_id: Some("mock_account_456".to_string()),
-            plaid_connection_id: None,
+            provider_account_id: Some("mock_account_456".to_string()),
+            provider_connection_id: None,
             name: "Savings".into(),
             account_type: "depository".into(),
             balance_current: Some(dec!(200.00)),
@@ -63,8 +64,8 @@ fn test_calculate_account_mapping_handles_accounts_without_plaid_ids() {
     let accounts = vec![Account {
         id: account_id,
         user_id: None,
-        plaid_account_id: None,
-        plaid_connection_id: None,
+        provider_account_id: None,
+        provider_connection_id: None,
         name: "Manual Account".to_string(),
         account_type: "manual".to_string(),
         balance_current: Some(dec!(500.00)),
@@ -87,8 +88,8 @@ fn test_map_transactions_to_accounts_updates_account_ids() {
         id: Uuid::new_v4(),
         account_id: Uuid::new_v4(),
         user_id: None,
-        plaid_account_id: None,
-        plaid_transaction_id: Some("plaid_txn_1".to_string()),
+        provider_account_id: None,
+        provider_transaction_id: Some("plaid_txn_1".to_string()),
         amount: dec!(100.00),
         date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
         merchant_name: Some("Store A".to_string()),
@@ -162,13 +163,13 @@ mod sync_recent_transactions_integration_tests {
     use super::*;
 
     fn create_test_sync_service_for_integration() -> SyncService {
-        let plaid_client = RealPlaidClient::new(
+        let plaid_client = Arc::new(RealPlaidClient::new(
             "test_client_id".to_string(),
             "test_secret".to_string(),
             "sandbox".to_string(),
-        );
-        let plaid_service = PlaidService::new(Arc::new(plaid_client));
-        SyncService::new(Arc::new(plaid_service))
+        ));
+        let plaid_provider = Arc::new(PlaidProvider::new(plaid_client.clone()));
+        SyncService::new(plaid_provider)
     }
 
     #[tokio::test]

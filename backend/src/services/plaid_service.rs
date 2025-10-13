@@ -183,8 +183,8 @@ impl RealPlaidClient {
                     let account = Account {
                         id: Uuid::new_v4(),
                         user_id: None,
-                        plaid_account_id: Some(id),
-                        plaid_connection_id: None,
+                        provider_account_id: Some(id),
+                        provider_connection_id: None,
                         name,
                         account_type: acc
                             .get("type")
@@ -251,12 +251,12 @@ impl RealPlaidClient {
                         .unwrap_or("1970-01-01")
                         .to_string();
 
-                    let plaid_transaction_id = t
+                    let provider_transaction_id = t
                         .get("transaction_id")
                         .and_then(|v| v.as_str())
                         .map(|s| s.to_string());
 
-                    let plaid_account_id = t
+                    let provider_account_id = t
                         .get("account_id")
                         .and_then(|v| v.as_str())
                         .map(|s| s.to_string());
@@ -294,8 +294,8 @@ impl RealPlaidClient {
                         id: Uuid::new_v4(),
                         account_id: Uuid::new_v4(),
                         user_id: None,
-                        plaid_account_id,
-                        plaid_transaction_id,
+                        provider_account_id,
+                        provider_transaction_id,
                         amount: Decimal::from_f64(amount).unwrap_or(Decimal::ZERO),
                         date: chrono::NaiveDate::parse_from_str(&date, "%Y-%m-%d").unwrap_or_else(
                             |_| chrono::NaiveDate::from_ymd_opt(1970, 1, 1).unwrap(),
@@ -417,13 +417,13 @@ impl PlaidService {
     ) -> Vec<Transaction> {
         let existing_plaid_ids: HashMap<String, bool> = existing
             .iter()
-            .filter_map(|t| t.plaid_transaction_id.as_ref())
+            .filter_map(|t| t.provider_transaction_id.as_ref())
             .map(|id| (id.clone(), true))
             .collect();
 
         new.iter()
             .filter(|t| {
-                if let Some(plaid_id) = &t.plaid_transaction_id {
+                if let Some(plaid_id) = &t.provider_transaction_id {
                     !existing_plaid_ids.contains_key(plaid_id)
                 } else {
                     true

@@ -4,24 +4,18 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AuthenticatedApp } from '@/components/AuthenticatedApp'
 import { AccountFilterProvider } from '@/hooks/useAccountFilter'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
+import { createProviderStatus } from '@tests/utils/fixtures'
 
 describe('AuthenticatedApp Budgets — Given/When/Then', () => {
   let fetchMock: ReturnType<typeof installFetchRoutes>
+  const disconnectedStatus = createProviderStatus()
 
   beforeEach(() => {
     vi.clearAllMocks()
 
     // Default: healthy dashboard minimal data via boundary routes
     fetchMock = installFetchRoutes({
-      'GET /api/plaid/status': {
-        is_connected: false,
-        last_sync_at: null,
-        institution_name: null,
-        connection_id: null,
-        transaction_count: 0,
-        account_count: 0,
-        sync_in_progress: false,
-      },
+      'GET /api/providers/status': createProviderStatus({ connections: [] }),
       'GET /api/plaid/accounts': [],
       'GET /api/transactions': [],
       // Wildcards tolerate query params for date ranges
@@ -45,7 +39,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
   it('Given authenticated session; When app mounts; Then fetches budgets once and renders them', async () => {
     // Arrange
     fetchMock = installFetchRoutes({
-      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/providers/status': createProviderStatus(),
       'GET /api/plaid/accounts': [],
       'GET /api/budgets': [
         { id: 'b1', category: 'Food', amount: '200' },
@@ -85,7 +79,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
 
   it('Given getBudgets rejects; When app mounts; Then UI remains usable (no crash)', async () => {
     fetchMock = installFetchRoutes({
-      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/providers/status': createProviderStatus(),
       'GET /api/plaid/accounts': [],
       'GET /api/budgets': () => { throw new Error('network') },
       'GET /api/transactions': [],
@@ -117,7 +111,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
 
   it('Given unauthenticated (401); When budgets load; Then UI does not crash on Budgets tab', async () => {
     fetchMock = installFetchRoutes({
-      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/providers/status': createProviderStatus(),
       'GET /api/plaid/accounts': [],
       'GET /api/budgets': new Response(JSON.stringify({ error: 'AUTH_REQUIRED', message: 'Authentication required' }), { status: 401, headers: { 'Content-Type': 'application/json' } }),
       'GET /api/transactions': [],
@@ -149,7 +143,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
 
   it('Given 409 conflict on create; When adding duplicate category; Then shows friendly message and restores state', async () => {
     fetchMock = installFetchRoutes({
-      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/providers/status': createProviderStatus(),
       'GET /api/plaid/accounts': [],
       'GET /api/budgets': [{ id: 'b1', category: 'Food', amount: '200' }],
       'POST /api/budgets': new Response(JSON.stringify({ error: 'CONFLICT', message: 'Duplicate category' }), { status: 409, headers: { 'Content-Type': 'application/json' } }),
@@ -198,7 +192,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
 
   it('Given create fails; When user adds budget; Then rolls back UI without crashing', async () => {
     fetchMock = installFetchRoutes({
-      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/providers/status': createProviderStatus(),
       'GET /api/plaid/accounts': [],
       'GET /api/budgets': [],
       'POST /api/budgets': () => { throw new Error('create failed') },
@@ -241,7 +235,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
 
   it('Given existing budget; When edit amount; Then updates UI immediately and reconciles with server', async () => {
     fetchMock = installFetchRoutes({
-      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/providers/status': createProviderStatus(),
       'GET /api/plaid/accounts': [],
       'GET /api/budgets': [{ id: 'b1', category: 'Food', amount: '200' }],
       'PUT /api/budgets*': (req: Request) => {
@@ -288,7 +282,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
 
   it('Given update fails; When edit; Then reverts to previous amount and shows error state gracefully', async () => {
     fetchMock = installFetchRoutes({
-      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/providers/status': createProviderStatus(),
       'GET /api/plaid/accounts': [],
       'GET /api/budgets': [{ id: 'b1', category: 'Food', amount: '200' }],
       'PUT /api/budgets*': () => { throw new Error('update failed') },
@@ -332,7 +326,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
 
   it('Given budget exists; When delete; Then removes from UI immediately and remains removed on success', async () => {
     fetchMock = installFetchRoutes({
-      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/providers/status': createProviderStatus(),
       'GET /api/plaid/accounts': [],
       'GET /api/budgets': [
         { id: 'b1', category: 'Food', amount: '200' },
@@ -373,7 +367,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
 
   it('Given delete fails; When delete; Then restore budget and show error gracefully', async () => {
     fetchMock = installFetchRoutes({
-      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/providers/status': createProviderStatus(),
       'GET /api/plaid/accounts': [],
       'GET /api/budgets': [{ id: 'b1', category: 'Food', amount: '200' }],
       'DELETE /api/budgets*': () => { throw new Error('delete failed') },
@@ -409,7 +403,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
   it('Given budgets cached; When switching tabs/rerender; Then no duplicate loads', async () => {
     let getCount = 0
     fetchMock = installFetchRoutes({
-      'GET /api/plaid/status': { is_connected: false },
+      'GET /api/providers/status': createProviderStatus(),
       'GET /api/plaid/accounts': [],
       'GET /api/budgets': () => {
         getCount += 1

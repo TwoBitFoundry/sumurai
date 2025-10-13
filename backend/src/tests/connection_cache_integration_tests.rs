@@ -1,7 +1,7 @@
 use crate::models::{
     account::Account,
     cache::{CachedBankAccounts, CachedBankConnection},
-    plaid::{DisconnectResult, PlaidConnection},
+    plaid::{DisconnectResult, ProviderConnection},
 };
 use crate::services::{
     cache_service::MockCacheService, connection_service::ConnectionService,
@@ -12,8 +12,8 @@ use rust_decimal::Decimal;
 use std::sync::Arc;
 use uuid::Uuid;
 
-fn create_test_connection(user_id: Uuid) -> PlaidConnection {
-    PlaidConnection {
+fn create_test_connection(user_id: Uuid) -> ProviderConnection {
+    ProviderConnection {
         id: Uuid::new_v4(),
         user_id,
         item_id: "test_item_123".to_string(),
@@ -37,8 +37,8 @@ fn create_test_accounts() -> Vec<Account> {
         Account {
             id: Uuid::new_v4(),
             user_id: Some(Uuid::new_v4()),
-            plaid_account_id: Some("acc1".to_string()),
-            plaid_connection_id: None,
+            provider_account_id: Some("acc1".to_string()),
+            provider_connection_id: None,
             name: "Checking".to_string(),
             account_type: "depository".to_string(),
             balance_current: Some(Decimal::new(150000, 2)),
@@ -48,8 +48,8 @@ fn create_test_accounts() -> Vec<Account> {
         Account {
             id: Uuid::new_v4(),
             user_id: Some(Uuid::new_v4()),
-            plaid_account_id: Some("acc2".to_string()),
-            plaid_connection_id: None,
+            provider_account_id: Some("acc2".to_string()),
+            provider_connection_id: None,
             name: "Savings".to_string(),
             account_type: "depository".to_string(),
             balance_current: Some(Decimal::new(300000, 2)),
@@ -113,7 +113,7 @@ async fn complete_sync_with_jwt_cache_update(
     service: &ConnectionService,
     user_id: &Uuid,
     jwt_id: &str,
-    connection: &PlaidConnection,
+    connection: &ProviderConnection,
     accounts: &[Account],
 ) -> anyhow::Result<()> {
     service

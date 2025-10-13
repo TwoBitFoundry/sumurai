@@ -1,16 +1,30 @@
+export type FinancialProvider = 'plaid' | 'teller'
+
+export interface TransactionLocation {
+  address?: string
+  city?: string
+  region?: string
+  postal_code?: string
+}
+
+export interface TransactionCategory {
+  primary: string
+  detailed?: string
+  confidence_level?: string
+}
+
 export interface Transaction {
   id: string
   date: string
   name: string
   merchant?: string
   amount: number
-  category: {
-    id: string
-    name: string
-  }
+  category: TransactionCategory
   account_name: string
   account_type: string
   account_mask?: string
+  running_balance?: number
+  location?: TransactionLocation
 }
 
 export interface Budget {
@@ -29,11 +43,20 @@ export interface LegacyBudgetWithMonth extends Budget {
 export interface Account {
   id: string
   name: string
+  provider: FinancialProvider
   account_type: string
-  balance_current: number | null
+  account_subtype?: string | null
+  balance_ledger: number | null
+  balance_available?: number | null
+  balance_current?: number | string | null
   mask: string | null
-  plaid_connection_id?: string | null
+  status?: string | null
   institution_name?: string | null
+  connection_id?: string | null
+  provider_connection_id?: string | null
+  plaid_connection_id?: string | null
+  provider_account_id?: string | null
+  transaction_count?: number | null
 }
 
 export interface PlaidLinkTokenResponse {
@@ -60,17 +83,19 @@ export interface PlaidSyncResponse {
   }
 }
 
-export interface PlaidStatusResponse {
-  connected?: boolean
-  is_connected?: boolean
-  last_sync?: string
-  last_sync_at?: string
-  accounts_count?: number
-  account_count?: number
-  institution_name?: string | null
-  connection_id?: string | null
-  transaction_count?: number
-  sync_in_progress?: boolean
+export interface ProviderConnectionStatus {
+  is_connected: boolean
+  last_sync_at: string | null
+  institution_name: string | null
+  connection_id: string | null
+  transaction_count: number
+  account_count: number
+  sync_in_progress: boolean
+}
+
+export interface ProviderStatusResponse {
+  provider: FinancialProvider
+  connections: ProviderConnectionStatus[]
 }
 
 export interface DataCleared {

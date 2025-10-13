@@ -8,7 +8,6 @@ use axum::{
     http::{Request, StatusCode},
 };
 use rust_decimal_macros::dec;
-use serde_json::json;
 use tower::ServiceExt;
 use uuid::Uuid;
 
@@ -28,7 +27,7 @@ async fn given_authenticated_user_when_get_budgets_then_returns_array() {
 #[tokio::test]
 async fn given_valid_payload_when_create_budget_then_returns_budget() {
     let mut mock = MockDatabaseRepository::new();
-    mock.expect_get_all_plaid_connections_by_user()
+    mock.expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock.expect_get_transactions_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
@@ -41,7 +40,7 @@ async fn given_valid_payload_when_create_budget_then_returns_budget() {
     let app = TestFixtures::create_test_app_with_db(mock).await.unwrap();
 
     let (_user, token) = TestFixtures::create_authenticated_user_with_token();
-    let payload = json!({ "category": "Groceries", "amount": "200.00" });
+    let payload = TestFixtures::budget_payload_create_groceries_200();
 
     let req = Request::builder()
         .method("POST")
@@ -61,7 +60,7 @@ async fn given_valid_payload_when_update_budget_then_returns_budget() {
     let user_id = Uuid::new_v4();
 
     let mut mock = MockDatabaseRepository::new();
-    mock.expect_get_all_plaid_connections_by_user()
+    mock.expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock.expect_get_transactions_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
@@ -78,13 +77,13 @@ async fn given_valid_payload_when_update_budget_then_returns_budget() {
     let app = TestFixtures::create_test_app_with_db(mock).await.unwrap();
     let (_user, token) = TestFixtures::create_authenticated_user_with_token();
 
-    let payload = json!({ "amount": "250.00" });
+    let payload = r#"{"amount":"250.00"}"#;
     let req = Request::builder()
         .method("PUT")
         .uri(&format!("/api/budgets/{}", budget_id))
         .header("authorization", format!("Bearer {}", token))
         .header("content-type", "application/json")
-        .body(Body::from(payload.to_string()))
+        .body(Body::from(payload))
         .unwrap();
 
     let res = app.clone().oneshot(req).await.unwrap();
@@ -94,7 +93,7 @@ async fn given_valid_payload_when_update_budget_then_returns_budget() {
 #[tokio::test]
 async fn given_duplicate_category_when_create_budget_then_conflict() {
     let mut mock = MockDatabaseRepository::new();
-    mock.expect_get_all_plaid_connections_by_user()
+    mock.expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock.expect_get_transactions_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
@@ -105,7 +104,7 @@ async fn given_duplicate_category_when_create_budget_then_conflict() {
 
     let app = TestFixtures::create_test_app_with_db(mock).await.unwrap();
     let (_user, token) = TestFixtures::create_authenticated_user_with_token();
-    let payload = json!({ "category": "Groceries", "amount": "100.00" });
+    let payload = TestFixtures::budget_payload_create_groceries_100();
 
     let req = Request::builder()
         .method("POST")
@@ -123,7 +122,7 @@ async fn given_duplicate_category_when_create_budget_then_conflict() {
 async fn given_non_positive_amount_when_create_budget_then_bad_request() {
     let app = TestFixtures::create_test_app().await.unwrap();
     let (_user, token) = TestFixtures::create_authenticated_user_with_token();
-    let payload = json!({ "category": "Groceries", "amount": "0" });
+    let payload = TestFixtures::budget_payload_create_groceries_0();
 
     let req = Request::builder()
         .method("POST")
@@ -142,14 +141,14 @@ async fn given_invalid_amount_when_update_budget_then_bad_request() {
     let app = TestFixtures::create_test_app().await.unwrap();
     let (_user, token) = TestFixtures::create_authenticated_user_with_token();
     let budget_id = Uuid::new_v4();
-    let payload = json!({ "amount": "-1" });
+    let payload = r#"{"amount":"-1"}"#;
 
     let req = Request::builder()
         .method("PUT")
         .uri(&format!("/api/budgets/{}", budget_id))
         .header("authorization", format!("Bearer {}", token))
         .header("content-type", "application/json")
-        .body(Body::from(payload.to_string()))
+        .body(Body::from(payload))
         .unwrap();
 
     let res = app.clone().oneshot(req).await.unwrap();
@@ -160,14 +159,14 @@ async fn given_invalid_amount_when_update_budget_then_bad_request() {
 async fn given_invalid_budget_id_when_update_then_bad_request() {
     let app = TestFixtures::create_test_app().await.unwrap();
     let (_user, token) = TestFixtures::create_authenticated_user_with_token();
-    let payload = json!({ "amount": "10" });
+    let payload = r#"{"amount":"10"}"#;
 
     let req = Request::builder()
         .method("PUT")
         .uri("/api/budgets/not-a-uuid")
         .header("authorization", format!("Bearer {}", token))
         .header("content-type", "application/json")
-        .body(Body::from(payload.to_string()))
+        .body(Body::from(payload))
         .unwrap();
 
     let res = app.clone().oneshot(req).await.unwrap();
@@ -222,7 +221,7 @@ async fn given_cache_hit_when_get_budgets_then_skips_db() {
 async fn given_create_budget_when_success_then_invalidate_cache() {
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
-        .expect_get_all_plaid_connections_by_user()
+        .expect_get_all_provider_connections_by_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
     mock_db
         .expect_get_transactions_for_user()
@@ -256,7 +255,7 @@ async fn given_create_budget_when_success_then_invalidate_cache() {
         .await
         .unwrap();
     let (_user, token) = TestFixtures::create_authenticated_user_with_token();
-    let payload = json!({ "category": "Rent", "amount": "1200.00" });
+    let payload = TestFixtures::budget_payload_create_rent_1200();
 
     let req = Request::builder()
         .method("POST")

@@ -1,7 +1,7 @@
 use crate::models::cache::{
     BankConnectionSyncStatus, CachedBankAccounts, CachedBankConnection, CachedTransaction,
 };
-use crate::models::{account::Account, plaid::PlaidConnection};
+use crate::models::{account::Account, plaid::ProviderConnection};
 use crate::services::cache_service::{CacheService, MockCacheService};
 use chrono::Utc;
 use rust_decimal::Decimal;
@@ -13,7 +13,7 @@ async fn given_bank_connection_when_caching_with_jwt_scope_then_stores_with_corr
     let jwt_id = "test-jwt-123";
     let connection_id = Uuid::new_v4();
 
-    let connection = PlaidConnection {
+    let connection = ProviderConnection {
         id: connection_id,
         user_id: Uuid::new_v4(),
         item_id: "test-item".to_string(),
@@ -66,8 +66,8 @@ async fn given_bank_accounts_when_caching_with_jwt_scope_then_stores_with_correc
         Account {
             id: Uuid::new_v4(),
             user_id: Some(Uuid::new_v4()),
-            plaid_account_id: Some("plaid-acc-1".to_string()),
-            plaid_connection_id: None,
+            provider_account_id: Some("plaid-acc-1".to_string()),
+            provider_connection_id: None,
             name: "Checking Account".to_string(),
             account_type: "depository".to_string(),
             balance_current: Some(Decimal::new(150000, 2)),
@@ -77,8 +77,8 @@ async fn given_bank_accounts_when_caching_with_jwt_scope_then_stores_with_correc
         Account {
             id: Uuid::new_v4(),
             user_id: Some(Uuid::new_v4()),
-            plaid_account_id: Some("plaid-acc-2".to_string()),
-            plaid_connection_id: None,
+            provider_account_id: Some("plaid-acc-2".to_string()),
+            provider_connection_id: None,
             name: "Savings Account".to_string(),
             account_type: "depository".to_string(),
             balance_current: Some(Decimal::new(300000, 2)),
@@ -156,14 +156,15 @@ fn given_jwt_id_and_connection_id_when_creating_cache_keys_then_uses_underscore_
     let jwt_id = "test-jwt-123";
     let connection_id = Uuid::new_v4();
     let item_id = "test-item-456";
-    let plaid_account_id = "test-plaid-account-789";
+    let provider_account_id = "test-plaid-account-789";
     let transaction_id = "test-transaction-123";
     let expected_bank_connection_key = format!("{}_bank_connection_{}", jwt_id, connection_id);
     let expected_bank_accounts_key = format!("{}_bank_accounts_{}", jwt_id, connection_id);
     let expected_connection_list_key = format!("{}_bank_connections", jwt_id);
     let expected_session_token_key = format!("{}_session_token", jwt_id);
     let expected_access_token_key = format!("{}_access_token_{}", jwt_id, item_id);
-    let expected_account_mapping_key = format!("{}_account_mapping_{}", jwt_id, plaid_account_id);
+    let expected_account_mapping_key =
+        format!("{}_account_mapping_{}", jwt_id, provider_account_id);
     let expected_transaction_key = format!("{}_transaction_{}", jwt_id, transaction_id);
 
     // Verify the format matches our expectations
@@ -189,7 +190,7 @@ fn given_jwt_id_and_connection_id_when_creating_cache_keys_then_uses_underscore_
     );
     assert_eq!(
         expected_account_mapping_key,
-        format!("{}_account_mapping_{}", jwt_id, plaid_account_id)
+        format!("{}_account_mapping_{}", jwt_id, provider_account_id)
     );
     assert_eq!(
         expected_transaction_key,
@@ -208,8 +209,8 @@ fn given_cached_transaction_when_serializing_then_includes_timestamp() {
         id: Uuid::new_v4(),
         account_id: Uuid::new_v4(),
         user_id: None,
-        plaid_account_id: None,
-        plaid_transaction_id: None,
+        provider_account_id: None,
+        provider_transaction_id: None,
         amount: Decimal::new(1234, 2),
         date: Utc::now().date_naive(),
         merchant_name: Some("Demo".to_string()),

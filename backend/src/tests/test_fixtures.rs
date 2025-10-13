@@ -39,8 +39,8 @@ impl TestFixtures {
                 id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440010").unwrap(),
                 account_id,
                 user_id: Some(user_id),
-                plaid_account_id: None,
-                plaid_transaction_id: Some("mock_txn_001".to_string()),
+                provider_account_id: None,
+                provider_transaction_id: Some("mock_txn_001".to_string()),
                 amount: dec!(-45.67),
                 date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
                 merchant_name: Some("Starbucks Coffee".to_string()),
@@ -55,8 +55,8 @@ impl TestFixtures {
                 id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440011").unwrap(),
                 account_id,
                 user_id: Some(user_id),
-                plaid_account_id: None,
-                plaid_transaction_id: Some("mock_txn_002".to_string()),
+                provider_account_id: None,
+                provider_transaction_id: Some("mock_txn_002".to_string()),
                 amount: dec!(-123.45),
                 date: NaiveDate::from_ymd_opt(2024, 1, 14).unwrap(),
                 merchant_name: Some("Whole Foods Market".to_string()),
@@ -71,8 +71,8 @@ impl TestFixtures {
                 id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440012").unwrap(),
                 account_id,
                 user_id: Some(user_id),
-                plaid_account_id: None,
-                plaid_transaction_id: Some("mock_txn_003".to_string()),
+                provider_account_id: None,
+                provider_transaction_id: Some("mock_txn_003".to_string()),
                 amount: dec!(2500.00),
                 date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
                 merchant_name: Some("Employer Direct Deposit".to_string()),
@@ -98,8 +98,8 @@ impl TestFixtures {
             id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440020").unwrap(),
             account_id,
             user_id: Some(user_id),
-            plaid_account_id: None,
-            plaid_transaction_id: Some("duplicate_txn_001".to_string()),
+            provider_account_id: None,
+            provider_transaction_id: Some("duplicate_txn_001".to_string()),
             amount: dec!(-25.00),
             date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
             merchant_name: Some("Coffee Shop".to_string()),
@@ -116,8 +116,8 @@ impl TestFixtures {
                 id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440021").unwrap(),
                 account_id,
                 user_id: Some(user_id),
-                plaid_account_id: None,
-                plaid_transaction_id: Some("duplicate_txn_001".to_string()),
+                provider_account_id: None,
+                provider_transaction_id: Some("duplicate_txn_001".to_string()),
                 amount: dec!(-25.00),
                 date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
                 merchant_name: Some("Coffee Shop".to_string()),
@@ -132,8 +132,8 @@ impl TestFixtures {
                 id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440022").unwrap(),
                 account_id,
                 user_id: Some(user_id),
-                plaid_account_id: None,
-                plaid_transaction_id: Some("new_txn_001".to_string()),
+                provider_account_id: None,
+                provider_transaction_id: Some("new_txn_001".to_string()),
                 amount: dec!(-50.00),
                 date: NaiveDate::from_ymd_opt(2024, 1, 11).unwrap(),
                 merchant_name: Some("Gas Station".to_string()),
@@ -158,14 +158,15 @@ impl TestFixtures {
         let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
         let plaid_service_arc = plaid_service.clone();
         let plaid_client_arc = plaid_client.clone();
-        let sync_service = Arc::new(SyncService::new(plaid_service_arc.clone()));
+        let plaid_provider = Arc::new(crate::providers::PlaidProvider::new(plaid_client.clone()));
+        let sync_service = Arc::new(SyncService::new(plaid_provider.clone()));
         let analytics_service = Arc::new(AnalyticsService::new());
         let config = Config::default();
 
         let mut mock_db = MockDatabaseRepository::new();
 
         mock_db
-            .expect_get_all_plaid_connections_by_user()
+            .expect_get_all_provider_connections_by_user()
             .returning(|_| Box::pin(async { Ok(vec![]) }));
 
         mock_db
@@ -242,7 +243,8 @@ impl TestFixtures {
         let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
         let plaid_service_arc = plaid_service.clone();
         let plaid_client_arc = plaid_client.clone();
-        let sync_service = Arc::new(SyncService::new(plaid_service_arc.clone()));
+        let plaid_provider = Arc::new(crate::providers::PlaidProvider::new(plaid_client.clone()));
+        let sync_service = Arc::new(SyncService::new(plaid_provider.clone()));
         let analytics_service = Arc::new(AnalyticsService::new());
         let config = Config::default();
 
@@ -311,7 +313,8 @@ impl TestFixtures {
         let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
         let plaid_service_arc = plaid_service.clone();
         let plaid_client_arc = plaid_client.clone();
-        let sync_service = Arc::new(SyncService::new(plaid_service_arc.clone()));
+        let plaid_provider = Arc::new(crate::providers::PlaidProvider::new(plaid_client.clone()));
+        let sync_service = Arc::new(SyncService::new(plaid_provider.clone()));
         let analytics_service = Arc::new(AnalyticsService::new());
         let config = Config::default();
 
@@ -353,6 +356,7 @@ impl TestFixtures {
             id: user_id,
             email: format!("test-{}@example.com", user_id),
             password_hash: auth_service.hash_password("SecurePass123!").unwrap(),
+            provider: "teller".to_string(),
             created_at: Utc::now(),
             updated_at: Utc::now(),
             onboarding_completed: false,
@@ -401,5 +405,101 @@ impl TestFixtures {
             .header(CONTENT_TYPE, "application/json")
             .body(Body::from(body_json))
             .unwrap()
+    }
+
+    pub fn budget_payload_create_groceries_200() -> &'static str {
+        r#"{"category":"Groceries","amount":"200.00"}"#
+    }
+
+    pub fn budget_payload_create_groceries_100() -> &'static str {
+        r#"{"category":"Groceries","amount":"100.00"}"#
+    }
+
+    pub fn budget_payload_create_groceries_0() -> &'static str {
+        r#"{"category":"Groceries","amount":"0"}"#
+    }
+
+    pub fn budget_payload_create_rent_1200() -> &'static str {
+        r#"{"category":"Rent","amount":"1200.00"}"#
+    }
+
+    pub fn teller_account_test_checking() -> &'static str {
+        r#"{"id":"acc_test_123","name":"Test Checking Account","type":"depository","subtype":"checking","last_four":"9876","status":"open","currency":"USD","institution":{"id":"test_bank","name":"Test Bank"}}"#
+    }
+
+    pub fn teller_account_minimal() -> &'static str {
+        r#"{"id":"acc_456","institution":{}}"#
+    }
+
+    pub fn teller_account_my_checking() -> &'static str {
+        r#"{"id":"acc_123","name":"My Checking","type":"depository","subtype":"checking","last_four":"1234","status":"open","currency":"USD","institution":{"id":"chase","name":"Chase"}}"#
+    }
+
+    pub fn teller_account_my_savings() -> &'static str {
+        r#"{"id":"acc_456","name":"My Savings","type":"depository","subtype":"savings","last_four":"5678","status":"open","currency":"USD","institution":{"id":"chase","name":"Chase"}}"#
+    }
+
+    pub fn teller_account_chase_bank() -> &'static str {
+        r#"{"id":"acc_123","name":"My Checking","type":"depository","subtype":"checking","last_four":"1234","status":"open","currency":"USD","institution":{"id":"chase","name":"Chase Bank"}}"#
+    }
+
+    pub fn teller_balance_primary() -> &'static str {
+        r#"{"ledger":"1234.56","available":"1000.00"}"#
+    }
+
+    pub fn teller_balance_secondary() -> &'static str {
+        r#"{"ledger":"5678.90","available":"5678.90"}"#
+    }
+
+    pub fn teller_transaction_starbucks() -> &'static str {
+        r#"{"id":"txn_1","date":"2024-01-15","amount":"-89.40","description":"Starbucks","status":"posted","details":{"category":"general","counterparty":{"type":"merchant","name":"Starbucks"}}}"#
+    }
+
+    pub fn teller_transaction_walmart() -> &'static str {
+        r#"{"id":"txn_2","date":"2023-12-20","amount":"-150.00","description":"Walmart","status":"posted","details":{"category":"general"}}"#
+    }
+
+    pub fn teller_transaction_gas_station() -> &'static str {
+        r#"{"id":"txn_3","date":"2024-01-20","amount":"-45.00","description":"Gas Station","status":"posted","details":{"category":"service"}}"#
+    }
+
+    pub fn teller_transaction_coffee_shop() -> &'static str {
+        r#"{"id":"txn_test_123","date":"2024-01-15","amount":"-89.40","description":"Coffee Shop","status":"posted","details":{"category":"general","counterparty":{"type":"merchant","name":"Starbucks"}}}"#
+    }
+
+    pub fn teller_transaction_deposit() -> &'static str {
+        r#"{"id":"txn_deposit","date":"2024-01-20","amount":"1500.00","description":"Paycheck","status":"posted","details":{"category":"service"}}"#
+    }
+
+    pub fn teller_transaction_service_category() -> &'static str {
+        r#"{"id":"txn_service","date":"2024-01-10","amount":"-45.00","description":"Haircut","status":"posted","details":{"category":"service"}}"#
+    }
+
+    pub fn teller_transaction_unknown_category() -> &'static str {
+        r#"{"id":"txn_unknown","date":"2024-01-05","amount":"-25.00","description":"Unknown","status":"posted","details":{"category":"some_unknown_category"}}"#
+    }
+
+    pub fn teller_transaction_pending_purchase() -> &'static str {
+        r#"{"id":"txn_pending","date":"2024-01-25","amount":"-100.00","description":"Pending Purchase","status":"pending","details":{"category":"general"}}"#
+    }
+
+    pub fn teller_transaction_generic_store() -> &'static str {
+        r#"{"id":"txn_no_counterparty","date":"2024-01-12","amount":"-75.00","description":"Generic Store","status":"posted","details":{"category":"general"}}"#
+    }
+
+    pub fn teller_transaction_invalid_date() -> &'static str {
+        r#"{"id":"txn_bad_date","date":"invalid-date","amount":"-50.00","description":"Test","status":"posted","details":{"category":"general"}}"#
+    }
+
+    pub fn teller_transaction_zero_amount() -> &'static str {
+        r#"{"id":"txn_zero","date":"2024-01-15","amount":"0.00","description":"Fee Reversal","status":"posted","details":{"category":"general"}}"#
+    }
+
+    pub fn plaid_transaction_with_category_json() -> &'static str {
+        r#"{"transaction_id":"test_txn_123","account_id":"test_acc_456","amount":15.5,"date":"2025-09-10","name":"Starbucks Coffee","personal_finance_category":{"primary":"FOOD_AND_DRINK","detailed":"FOOD_AND_DRINK_RESTAURANTS","confidence_level":"VERY_HIGH"},"payment_channel":"in_store","pending":false}"#
+    }
+
+    pub fn plaid_transaction_minimal_json() -> &'static str {
+        r#"{"transaction_id":"test_txn_minimal","account_id":"test_acc_minimal","amount":25.0,"date":"2025-09-10","name":"Unknown Merchant"}"#
     }
 }

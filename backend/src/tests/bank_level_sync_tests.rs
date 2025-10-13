@@ -1,4 +1,5 @@
-use crate::models::{account::Account, plaid::PlaidConnection};
+use crate::models::{account::Account, plaid::ProviderConnection};
+use crate::providers::PlaidProvider;
 
 use crate::services::{
     cache_service::MockCacheService,
@@ -11,8 +12,8 @@ use rust_decimal_macros::dec;
 use std::sync::Arc;
 use uuid::Uuid;
 
-fn create_test_bank_connection(user_id: Uuid) -> PlaidConnection {
-    let mut connection = PlaidConnection::new(user_id, "test_item_123");
+fn create_test_bank_connection(user_id: Uuid) -> ProviderConnection {
+    let mut connection = ProviderConnection::new(user_id, "test_item_123");
     connection.mark_connected("Test Bank");
     connection.last_sync_at = Some(Utc::now() - Duration::days(1)); // Last synced yesterday
     connection.sync_cursor = Some("cursor_abc123".to_string());
@@ -24,8 +25,8 @@ fn create_test_accounts_for_bank(connection_id: Uuid, user_id: Uuid) -> Vec<Acco
         Account {
             id: Uuid::new_v4(),
             user_id: Some(user_id),
-            plaid_account_id: Some("bank_acc_1".to_string()),
-            plaid_connection_id: Some(connection_id),
+            provider_account_id: Some("bank_acc_1".to_string()),
+            provider_connection_id: Some(connection_id),
             name: "Primary Checking".to_string(),
             account_type: "depository".to_string(),
             balance_current: Some(dec!(1500.00)),
@@ -35,8 +36,8 @@ fn create_test_accounts_for_bank(connection_id: Uuid, user_id: Uuid) -> Vec<Acco
         Account {
             id: Uuid::new_v4(),
             user_id: Some(user_id),
-            plaid_account_id: Some("bank_acc_2".to_string()),
-            plaid_connection_id: Some(connection_id),
+            provider_account_id: Some("bank_acc_2".to_string()),
+            provider_connection_id: Some(connection_id),
             name: "Savings Account".to_string(),
             account_type: "depository".to_string(),
             balance_current: Some(dec!(5000.00)),
@@ -46,8 +47,8 @@ fn create_test_accounts_for_bank(connection_id: Uuid, user_id: Uuid) -> Vec<Acco
         Account {
             id: Uuid::new_v4(),
             user_id: Some(user_id),
-            plaid_account_id: Some("bank_acc_3".to_string()),
-            plaid_connection_id: Some(connection_id),
+            provider_account_id: Some("bank_acc_3".to_string()),
+            provider_connection_id: Some(connection_id),
             name: "Credit Card".to_string(),
             account_type: "credit".to_string(),
             balance_current: Some(dec!(-250.00)),
@@ -64,13 +65,13 @@ fn given_bank_connection_with_multiple_accounts_when_calculating_mapping_then_cr
     let connection = create_test_bank_connection(user_id);
     let accounts = create_test_accounts_for_bank(connection.id, user_id);
 
-    let plaid_client = RealPlaidClient::new(
+    let plaid_client = Arc::new(RealPlaidClient::new(
         "test_client_id".to_string(),
         "test_secret".to_string(),
         "sandbox".to_string(),
-    );
-    let plaid_service = PlaidService::new(Arc::new(plaid_client));
-    let sync_service = SyncService::new(Arc::new(plaid_service));
+    ));
+    let plaid_provider = Arc::new(PlaidProvider::new(plaid_client.clone()));
+    let sync_service = SyncService::new(plaid_provider);
 
     let account_mapping = sync_service.calculate_account_mapping(&accounts);
 
@@ -88,13 +89,13 @@ fn given_connection_with_no_cursor_when_calculating_date_ranges_then_uses_defaul
     connection.sync_cursor = None;
     connection.last_sync_at = None;
 
-    let plaid_client = RealPlaidClient::new(
+    let plaid_client = Arc::new(RealPlaidClient::new(
         "test_client_id".to_string(),
         "test_secret".to_string(),
         "sandbox".to_string(),
-    );
-    let plaid_service = PlaidService::new(Arc::new(plaid_client));
-    let sync_service = SyncService::new(Arc::new(plaid_service));
+    ));
+    let plaid_provider = Arc::new(PlaidProvider::new(plaid_client.clone()));
+    let sync_service = SyncService::new(plaid_provider);
 
     let (start_date, end_date) = sync_service.calculate_sync_date_range(connection.last_sync_at);
     let expected_start = Utc::now().date_naive() - Duration::days(90);
@@ -110,16 +111,24 @@ async fn given_bank_connection_when_sync_fails_then_returns_error_without_updati
     let connection = create_test_bank_connection(user_id);
     let accounts = create_test_accounts_for_bank(connection.id, user_id);
 
-    let plaid_client = RealPlaidClient::new(
+    let plaid_client = Arc::new(RealPlaidClient::new(
         "invalid_client_id".to_string(),
         "invalid_secret".to_string(),
         "sandbox".to_string(),
-    );
-    let plaid_service = PlaidService::new(Arc::new(plaid_client));
-    let sync_service = SyncService::new(Arc::new(plaid_service));
+    ));
+    let plaid_provider = Arc::new(PlaidProvider::new(plaid_client.clone()));
+    let sync_service = SyncService::new(plaid_provider);
+
+    let credentials = crate::providers::ProviderCredentials {
+        provider: "plaid".to_string(),
+        access_token: "invalid_token".to_string(),
+        item_id: connection.item_id.clone(),
+        certificate: None,
+        private_key: None,
+    };
 
     let result = sync_service
-        .sync_bank_connection_transactions("invalid_token", &connection, &accounts)
+        .sync_bank_connection_transactions(&credentials, &connection, &accounts)
         .await;
 
     assert!(result.is_err());
@@ -134,8 +143,8 @@ async fn given_bank_connection_when_upserting_account_then_assigns_connection_id
     let mut account = Account {
         id: Uuid::new_v4(),
         user_id: Some(user_id),
-        plaid_account_id: Some("plaid_123".to_string()),
-        plaid_connection_id: None,
+        provider_account_id: Some("plaid_123".to_string()),
+        provider_connection_id: None,
         name: "Test Account".to_string(),
         account_type: "checking".to_string(),
         balance_current: Some(dec!(1000.00)),
@@ -144,7 +153,7 @@ async fn given_bank_connection_when_upserting_account_then_assigns_connection_id
     };
 
     account.user_id = Some(user_id);
-    account.plaid_connection_id = Some(connection_id);
+    account.provider_connection_id = Some(connection_id);
 
-    assert_eq!(account.plaid_connection_id, Some(connection_id));
+    assert_eq!(account.provider_connection_id, Some(connection_id));
 }

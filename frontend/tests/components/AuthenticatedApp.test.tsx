@@ -4,6 +4,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { AuthenticatedApp } from '@/components/AuthenticatedApp'
 import { AccountFilterProvider } from '@/hooks/useAccountFilter'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
+import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures'
 
 type DashboardProps = { dark: boolean }
 
@@ -46,26 +47,36 @@ describe('AuthenticatedApp shell', () => {
           id: 'account1',
           name: 'Test Checking',
           account_type: 'depository',
+          balance_ledger: 1200,
+          balance_available: 1180,
           balance_current: 1200,
           mask: '1111',
           plaid_connection_id: 'conn_1',
-          institution_name: 'Test Bank'
+          institution_name: 'Test Bank',
+          provider: 'plaid'
         },
         {
           id: 'account2',
           name: 'Test Savings',
           account_type: 'depository',
+          balance_ledger: 5400,
+          balance_available: 5400,
           balance_current: 5400,
           mask: '2222',
           plaid_connection_id: 'conn_1',
-          institution_name: 'Test Bank'
+          institution_name: 'Test Bank',
+          provider: 'plaid'
         }
       ],
-      'GET /api/plaid/status': {
-        is_connected: true,
-        institution_name: 'Test Bank',
-        connection_id: 'conn_1'
-      }
+      'GET /api/providers/status': createProviderStatus({
+        connections: [
+          createProviderConnection({
+            is_connected: true,
+            institution_name: 'Test Bank',
+            connection_id: 'conn_1',
+          }),
+        ],
+      }),
     })
 
     DashboardPageMock = vi.fn(({ dark }: DashboardProps) => (

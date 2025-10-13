@@ -7,6 +7,7 @@ import { dispatchAccountsChanged } from '../../../utils/events'
 
 interface UsePlaidLinkFlowOptions {
   onError?: (message: string | null) => void
+  enabled?: boolean
 }
 
 export interface UsePlaidLinkFlowResult {
@@ -23,24 +24,30 @@ export interface UsePlaidLinkFlowResult {
 }
 
 export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlaidLinkFlowResult {
-  const { onError } = options
-  const plaidConnections = usePlaidConnections()
+  const { onError, enabled = true } = options
+  const plaidConnections = usePlaidConnections({ enabled })
   const [linkToken, setLinkToken] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [syncingAll, setSyncingAll] = useState(false)
 
   const handleError = useCallback((message: string) => {
-    setError(message)
-    onError?.(message)
-  }, [onError])
+    if (enabled) {
+      setError(message)
+      onError?.(message)
+    }
+  }, [enabled, onError])
 
   const clearError = useCallback(() => {
-    setError(null)
-    onError?.(null)
-  }, [onError])
+    if (enabled) {
+      setError(null)
+      onError?.(null)
+    }
+  }, [enabled, onError])
 
   const handleSuccess = useCallback(async (publicToken: string) => {
+    if (!enabled) return
+
     try {
       clearError()
       const exchangeResult = await PlaidService.exchangeToken(publicToken)
@@ -72,24 +79,27 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
   }, [clearError, handleError, plaidConnections])
 
   const handleExit = useCallback((err: any) => {
+    if (!enabled) return
     if (err) {
       handleError(`Plaid Link exited with error: ${err.error_message || 'Unknown error'}`)
     }
-  }, [handleError])
+  }, [enabled, handleError])
 
   const { open, ready } = usePlaidLink({
-    token: linkToken ?? undefined,
+    token: enabled && linkToken ? linkToken : undefined,
     onSuccess: handleSuccess,
     onExit: handleExit,
   })
 
   useEffect(() => {
+    if (!enabled) return
     if (linkToken && ready && open) {
       open()
     }
-  }, [linkToken, ready, open])
+  }, [enabled, linkToken, ready, open])
 
   const connect = useCallback(async () => {
+    if (!enabled) return
     clearError()
     try {
       const userId = `user_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
@@ -106,6 +116,7 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
   }, [clearError, handleError, open, ready])
 
   const syncOne = useCallback(async (connectionId: string) => {
+    if (!enabled) return
     const connection = plaidConnections.getConnection(connectionId)
     if (!connection) return
 
@@ -126,6 +137,7 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
   }, [clearError, handleError, plaidConnections])
 
   const syncAll = useCallback(async () => {
+    if (!enabled) return
     clearError()
     setSyncingAll(true)
     try {
@@ -138,6 +150,7 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
   }, [clearError, plaidConnections, syncOne])
 
   const disconnect = useCallback(async (connectionId: string) => {
+    if (!enabled) return
     const connection = plaidConnections.getConnection(connectionId)
     if (!connection) return
 
@@ -154,17 +167,21 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
   }, [clearError, handleError, plaidConnections])
 
   const { connections, loading } = plaidConnections
+  const resolvedConnections = enabled ? connections : []
+  const resolvedLoading = enabled ? loading : false
+  const resolvedError = enabled ? error : null
+  const resolvedSyncingAll = enabled ? syncingAll : false
 
   return useMemo(() => ({
-    connections,
-    loading,
-    error,
+    connections: resolvedConnections,
+    loading: resolvedLoading,
+    error: resolvedError,
     toast,
     setToast,
     connect,
     syncOne,
     syncAll,
     disconnect,
-    syncingAll,
-  }), [connections, loading, error, toast, connect, syncOne, syncAll, disconnect, syncingAll])
+    syncingAll: resolvedSyncingAll,
+  }), [resolvedConnections, resolvedLoading, resolvedError, toast, connect, syncOne, syncAll, disconnect, resolvedSyncingAll])
 }
