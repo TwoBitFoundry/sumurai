@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::config::Config;
+use crate::providers::ProviderRegistry;
 use crate::services::plaid_service::{PlaidService, RealPlaidClient};
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::sync_service::SyncService;
@@ -18,6 +19,7 @@ pub struct AppState {
     pub(crate) cache_service: Arc<dyn CacheService>,
     pub(crate) connection_service: Arc<ConnectionService>,
     pub(crate) auth_service: Arc<AuthService>,
+    pub(crate) provider_registry: Arc<ProviderRegistry>,
 }
 
 impl Clone for AppState {
@@ -33,6 +35,7 @@ impl Clone for AppState {
             cache_service: self.cache_service.clone(),
             connection_service: self.connection_service.clone(),
             auth_service: self.auth_service.clone(),
+            provider_registry: self.provider_registry.clone(),
         }
     }
 }

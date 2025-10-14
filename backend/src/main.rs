@@ -37,8 +37,10 @@ use crate::models::{
     analytics::{DateRangeQuery, MonthlyTotalsQuery},
     auth as auth_models,
     budget::{CreateBudgetRequest, UpdateBudgetRequest},
-    plaid::{ExchangeTokenRequest, LinkTokenRequest, SyncTransactionsRequest},
-    transaction::{SyncMetadata, SyncTransactionsResponse, TransactionsQuery},
+    plaid::{
+        ExchangeTokenRequest, ExchangeTokenResponse, LinkTokenRequest, SyncTransactionsRequest,
+    },
+    transaction::{SyncTransactionsResponse, TransactionsQuery},
 };
 use crate::models::{api_error::ApiErrorResponse, auth::User, transaction::TransactionWithAccount};
 use auth_middleware::auth_middleware;
@@ -46,8 +48,9 @@ use config::Config;
 use services::repository_service::{DatabaseRepository, PostgresRepository};
 use services::{AnalyticsService, RealPlaidClient};
 use services::{
-    AuthService, BudgetService, CacheService, ConnectionService, PlaidService, RedisCache,
-    SyncService, TellerConnectError, TellerSyncError,
+    AuthService, BudgetService, CacheService, ConnectionService, ExchangeTokenError,
+    LinkTokenError, PlaidService, ProviderSyncError, RedisCache, SyncService, TellerConnectError,
+    TellerSyncError,
 };
 use sqlx::PgPool;
 
@@ -63,9 +66,20 @@ async fn main() -> anyhow::Result<()> {
         std::env::var("PLAID_ENV").unwrap_or_else(|_| "sandbox".to_string()),
     ));
     let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
-    let plaid_provider = Arc::new(providers::PlaidProvider::new(plaid_client.clone()));
+    let plaid_provider: Arc<dyn providers::FinancialDataProvider> =
+        Arc::new(providers::PlaidProvider::new(plaid_client.clone()));
+    let teller_provider: Arc<dyn providers::FinancialDataProvider> =
+        Arc::new(providers::TellerProvider::new()?);
 
-    let sync_service = Arc::new(SyncService::new(plaid_provider.clone()));
+    let provider_registry = Arc::new(providers::ProviderRegistry::from_providers([
+        ("plaid", Arc::clone(&plaid_provider)),
+        ("teller", Arc::clone(&teller_provider)),
+    ]));
+
+    let sync_service = Arc::new(SyncService::new(
+        provider_registry.clone(),
+        config.get_default_provider(),
+    ));
 
     let analytics_service = Arc::new(AnalyticsService::new());
     let budget_service = Arc::new(BudgetService::new());
@@ -105,6 +119,7 @@ async fn main() -> anyhow::Result<()> {
     let connection_service = Arc::new(ConnectionService::new(
         db_repository.clone(),
         cache_service.clone(),
+        provider_registry.clone(),
     ));
 
     let jwt_secret = std::env::var("JWT_SECRET").context(
@@ -124,6 +139,7 @@ async fn main() -> anyhow::Result<()> {
         cache_service,
         connection_service,
         auth_service,
+        provider_registry,
     };
 
     let app = create_app(state);
@@ -568,11 +584,31 @@ async fn create_authenticated_link_token(
     auth_context: AuthContext,
     Json(_req): Json<LinkTokenRequest>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let user_id_str = auth_context.user_id.to_string();
+    let provider = state.config.get_default_provider();
 
-    match state.plaid_service.create_link_token(&user_id_str).await {
+    match state
+        .connection_service
+        .create_link_token(provider, &auth_context.user_id)
+        .await
+    {
         Ok(link_token) => Ok(Json(serde_json::json!({ "link_token": link_token }))),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(LinkTokenError::ProviderUnavailable(p)) => {
+            tracing::error!(
+                "Link token requested for unsupported provider '{}' by user {}",
+                p,
+                auth_context.user_id
+            );
+            Err(StatusCode::BAD_REQUEST)
+        }
+        Err(LinkTokenError::ProviderRequest(e)) => {
+            tracing::error!(
+                "Failed to create link token for provider {} and user {}: {}",
+                provider,
+                auth_context.user_id,
+                e
+            );
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
     }
 }
 
@@ -580,71 +616,34 @@ async fn exchange_authenticated_public_token(
     State(state): State<AppState>,
     auth_context: AuthContext,
     Json(req): Json<ExchangeTokenRequest>,
-) -> Result<Json<serde_json::Value>, StatusCode> {
+) -> Result<Json<ExchangeTokenResponse>, StatusCode> {
     let user_id = auth_context.user_id;
 
+    let provider = state.config.get_default_provider();
+
     match state
-        .plaid_service
-        .exchange_public_token(&req.public_token)
+        .connection_service
+        .exchange_public_token(provider, &user_id, &auth_context.jwt_id, &req.public_token)
         .await
     {
-        Ok(access_token) => {
-            let (real_item_id, institution_id, institution_name) =
-                match state.plaid_client.get_item_info(&access_token).await {
-                    Ok((item_id, inst_id, inst_name)) => (item_id, inst_id, inst_name),
-                    Err(e) => {
-                        tracing::warn!("Failed to get item info from Plaid: {}", e);
-                        (
-                            format!("item_{}", uuid::Uuid::new_v4()),
-                            None,
-                            Some("Connected Bank".to_string()),
-                        )
-                    }
-                };
-
-            if let Err(e) = state
-                .db_repository
-                .store_provider_credentials_for_user(&user_id, &real_item_id, &access_token)
-                .await
-            {
-                tracing::warn!("Failed to store Plaid credentials in database: {}", e);
-            }
-
-            if let Err(e) = state
-                .cache_service
-                .set_access_token(&auth_context.jwt_id, &real_item_id, &access_token)
-                .await
-            {
-                tracing::warn!("Failed to cache access token: {}", e);
-            }
-
-            let mut connection =
-                crate::models::plaid::ProviderConnection::new(user_id, &real_item_id);
-
-            if let Some(inst_name) = &institution_name {
-                connection.mark_connected(inst_name);
-            } else {
-                connection.mark_connected("Connected Bank");
-            }
-
-            connection.institution_id = institution_id;
-
-            if let Err(e) = state
-                .db_repository
-                .save_provider_connection(&connection)
-                .await
-            {
-                tracing::warn!("Failed to save ProviderConnection: {}", e);
-            }
-
-            Ok(Json(serde_json::json!({
-                "access_token": access_token,
-                "item_id": real_item_id,
-                "institution_id": connection.institution_id,
-                "institution_name": institution_name.unwrap_or_else(|| "Connected Bank".to_string())
-            })))
+        Ok(response) => Ok(Json(response)),
+        Err(ExchangeTokenError::ProviderUnavailable(p)) => {
+            tracing::error!(
+                "Exchange token requested for unsupported provider '{}' by user {}",
+                p,
+                user_id
+            );
+            Err(StatusCode::BAD_REQUEST)
         }
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(ExchangeTokenError::ExchangeFailed(e)) => {
+            tracing::error!(
+                "Failed to exchange public token for provider {} and user {}: {}",
+                provider,
+                user_id,
+                e
+            );
+            Err(StatusCode::BAD_GATEWAY)
+        }
     }
 }
 
@@ -703,7 +702,6 @@ async fn sync_authenticated_provider_transactions(
     Json(req): Json<Option<SyncTransactionsRequest>>,
 ) -> Result<Json<SyncTransactionsResponse>, StatusCode> {
     let user_id = auth_context.user_id;
-    let sync_timestamp = chrono::Utc::now();
 
     tracing::info!("Sync transactions requested for user {}", user_id);
 
@@ -797,221 +795,76 @@ async fn sync_authenticated_provider_transactions(
         }
     }
 
-    let plaid_credentials = match state
-        .db_repository
-        .get_provider_credentials_for_user(&user_id, &connection.item_id)
+    match state
+        .connection_service
+        .sync_provider_connection(
+            state.config.get_default_provider(),
+            state.sync_service.as_ref(),
+            &user_id,
+            &auth_context.jwt_id,
+            &mut connection,
+        )
         .await
     {
-        Ok(Some(creds)) => creds,
-        Ok(None) => {
+        Ok(response) => Ok(Json(response)),
+        Err(ProviderSyncError::CredentialsMissing) => {
             tracing::error!(
-                "Sync transactions: no Plaid credentials for user {} and item {}",
+                "Sync transactions: no credentials for user {} and item {}",
                 user_id,
                 connection.item_id
             );
-            return Err(StatusCode::NOT_FOUND);
+            Err(StatusCode::NOT_FOUND)
         }
-        Err(e) => {
+        Err(ProviderSyncError::CredentialAccess(e)) => {
             tracing::error!(
-                "Sync transactions: failed to get credentials for user {} and item {}: {}",
+                "Sync transactions: failed to access credentials for user {} and item {}: {}",
                 user_id,
                 connection.item_id,
                 e
             );
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
-
-    let db_accounts = match state.db_repository.get_accounts_for_user(&user_id).await {
-        Ok(accounts) => accounts,
-        Err(e) => {
-            tracing::error!("Failed to fetch accounts from database: {}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
-
-    let (sync_start_date, sync_end_date) = state
-        .sync_service
-        .calculate_sync_date_range(connection.last_sync_at);
-
-    let provider_credentials = providers::ProviderCredentials {
-        provider: "plaid".to_string(),
-        access_token: plaid_credentials.access_token.clone(),
-        item_id: connection.item_id.clone(),
-        certificate: None,
-        private_key: None,
-    };
-
-    let sync_result = state
-        .sync_service
-        .sync_bank_connection_transactions(&provider_credentials, &connection, &db_accounts)
-        .await;
-
-    let accounts_result = state
-        .plaid_service
-        .get_accounts(&plaid_credentials.access_token)
-        .await;
-
-    match (sync_result, accounts_result) {
-        (Ok((mut transactions, new_cursor)), Ok(accounts)) => {
-            // Get existing transactions for duplicate detection
-            let existing_transactions = match state
-                .db_repository
-                .get_transactions_for_user(&user_id)
-                .await
-            {
-                Ok(existing) => existing,
-                Err(e) => {
-                    tracing::error!(
-                        "Failed to fetch existing transactions for duplicate detection: {}",
-                        e
-                    );
-                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
-                }
-            };
-
-            // Filter out duplicates using Plaid service duplicate detection
-            transactions = state
-                .plaid_service
-                .detect_duplicates(&existing_transactions, &transactions);
-            tracing::info!(
-                "After duplicate filtering: {} new transactions",
-                transactions.len()
-            );
-
-            for account in &accounts {
-                let mut acct = account.clone();
-                acct.user_id = Some(user_id);
-                acct.provider_connection_id = Some(connection.id);
-                if let Err(e) = state.db_repository.upsert_account(&acct).await {
-                    tracing::warn!("Failed to persist account to database during sync: {}", e);
-                }
-            }
-
-            // Get the actual accounts from database (with correct UUIDs after upsert)
-            let db_accounts = match state.db_repository.get_accounts_for_user(&user_id).await {
-                Ok(accounts) => accounts,
-                Err(e) => {
-                    tracing::error!("Failed to fetch accounts from database: {}", e);
-                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
-                }
-            };
-
-            use std::collections::HashMap;
-            let mut account_map: HashMap<String, uuid::Uuid> = HashMap::new();
-            for acct in &db_accounts {
-                if let Some(plaid_id) = &acct.provider_account_id {
-                    account_map.insert(plaid_id.clone(), acct.id);
-                    tracing::info!("Account mapping: {} -> {}", plaid_id, acct.id);
-                }
-            }
-            tracing::info!("Built account mapping with {} entries", account_map.len());
-
-            for txn in &mut transactions {
-                txn.user_id = Some(user_id);
-                if let Some(plaid_acc_id) = &txn.provider_account_id {
-                    if let Some(&internal_id) = account_map.get(plaid_acc_id) {
-                        txn.account_id = internal_id;
-                    } else {
-                        tracing::warn!(
-                            "Transaction references unknown provider_account_id: {} (available: {:?})",
-                            plaid_acc_id,
-                            account_map.keys().collect::<Vec<_>>()
-                        );
-                    }
-                } else {
-                    tracing::warn!("Transaction missing provider_account_id: {:?}", txn.id);
-                }
-            }
-
-            // Persist transactions - only those with valid account mappings
-            for transaction in &transactions {
-                if let Some(plaid_acc_id) = &transaction.provider_account_id {
-                    if !account_map.contains_key(plaid_acc_id) {
-                        tracing::warn!(
-                            "Skipping transaction with unmapped provider_account_id: {}",
-                            plaid_acc_id
-                        );
-                        continue;
-                    }
-                }
-
-                if let Err(e) = state.db_repository.upsert_transaction(transaction).await {
-                    tracing::warn!("Failed to persist transaction to database: {} - Transaction ID: {:?}, Account ID: {}", 
-                        e, transaction.id, transaction.account_id);
-                }
-            }
-
-            // Cache transactions
-            for transaction in &transactions {
-                if let Err(e) = state.cache_service.add_transaction(transaction).await {
-                    tracing::warn!("Failed to cache transaction: {}", e);
-                }
-            }
-
-            // Update connection sync info with total counts from database
-            let total_transactions = state
-                .db_repository
-                .get_transactions_for_user(&user_id)
-                .await
-                .map(|txns| txns.len() as i32)
-                .unwrap_or(0);
-
-            let total_accounts = db_accounts.len() as i32;
-
-            let mut updated_connection = connection;
-            updated_connection.update_sync_info(total_transactions, total_accounts);
-            updated_connection.sync_cursor = Some(new_cursor);
-            updated_connection.last_sync_at = Some(sync_timestamp);
-            if let Err(e) = state
-                .db_repository
-                .save_provider_connection(&updated_connection)
-                .await
-            {
-                tracing::warn!("Failed to update ProviderConnection: {}", e);
-            }
-
-            // Update JWT-scoped caches (connection + accounts) and invalidate balances overview
-            if let Err(e) = state
-                .connection_service
-                .complete_sync_with_jwt_cache_update(
-                    &user_id,
-                    &auth_context.jwt_id,
-                    &updated_connection,
-                    &db_accounts,
-                )
-                .await
-            {
-                tracing::warn!("Failed to update JWT-scoped caches after sync: {}", e);
-            }
-
-            let response = SyncTransactionsResponse {
-                transactions: transactions.clone(),
-                metadata: SyncMetadata {
-                    transaction_count: total_transactions,
-                    account_count: total_accounts,
-                    sync_timestamp: sync_timestamp.to_rfc3339(),
-                    start_date: sync_start_date.to_string(),
-                    end_date: sync_end_date.to_string(),
-                    connection_updated: true,
-                },
-            };
-
-            Ok(Json(response))
-        }
-        (Err(e), Ok(_)) => {
-            tracing::error!("Plaid transactions sync failed: {}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
-        (Ok(_), Err(e)) => {
-            tracing::error!("Plaid accounts fetch failed: {}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-        (Err(e1), Err(e2)) => {
+        Err(ProviderSyncError::ProviderUnavailable(p)) => {
             tracing::error!(
-                "Plaid sync failed: transactions error: {}, accounts error: {}",
-                e1,
-                e2
+                "Sync transactions: provider '{}' unavailable for user {}",
+                p,
+                user_id
+            );
+            Err(StatusCode::BAD_REQUEST)
+        }
+        Err(ProviderSyncError::ProviderRequest(e)) => {
+            tracing::error!(
+                "Provider request failed during sync for user {} and item {}: {}",
+                user_id,
+                connection.item_id,
+                e
+            );
+            Err(StatusCode::BAD_GATEWAY)
+        }
+        Err(ProviderSyncError::AccountLookup(e)) => {
+            tracing::error!(
+                "Failed to load accounts during sync for user {} and item {}: {}",
+                user_id,
+                connection.item_id,
+                e
+            );
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        Err(ProviderSyncError::TransactionLookup(e)) => {
+            tracing::error!(
+                "Failed to load transactions during sync for user {} and item {}: {}",
+                user_id,
+                connection.item_id,
+                e
+            );
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        Err(ProviderSyncError::SyncFailure(e)) => {
+            tracing::error!(
+                "Sync service failed for user {} and item {}: {}",
+                user_id,
+                connection.item_id,
+                e
             );
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }

@@ -1,12 +1,7 @@
 use crate::models::{account::Account, plaid::ProviderConnection};
-use crate::providers::PlaidProvider;
+use crate::providers::{PlaidProvider, ProviderRegistry};
 
-use crate::services::{
-    cache_service::MockCacheService,
-    plaid_service::{PlaidService, RealPlaidClient},
-    repository_service::MockDatabaseRepository,
-    sync_service::SyncService,
-};
+use crate::services::{plaid_service::RealPlaidClient, sync_service::SyncService};
 use chrono::{Duration, Utc};
 use rust_decimal_macros::dec;
 use std::sync::Arc;
@@ -58,6 +53,16 @@ fn create_test_accounts_for_bank(connection_id: Uuid, user_id: Uuid) -> Vec<Acco
     ]
 }
 
+fn build_sync_service(plaid_client: Arc<RealPlaidClient>) -> SyncService {
+    let plaid_provider: Arc<dyn crate::providers::FinancialDataProvider> =
+        Arc::new(PlaidProvider::new(plaid_client));
+    let provider_registry = Arc::new(ProviderRegistry::from_providers([(
+        "plaid",
+        Arc::clone(&plaid_provider),
+    )]));
+    SyncService::new(provider_registry, "plaid")
+}
+
 #[test]
 fn given_bank_connection_with_multiple_accounts_when_calculating_mapping_then_creates_correct_account_mapping(
 ) {
@@ -70,8 +75,7 @@ fn given_bank_connection_with_multiple_accounts_when_calculating_mapping_then_cr
         "test_secret".to_string(),
         "sandbox".to_string(),
     ));
-    let plaid_provider = Arc::new(PlaidProvider::new(plaid_client.clone()));
-    let sync_service = SyncService::new(plaid_provider);
+    let sync_service = build_sync_service(plaid_client);
 
     let account_mapping = sync_service.calculate_account_mapping(&accounts);
 
@@ -94,8 +98,7 @@ fn given_connection_with_no_cursor_when_calculating_date_ranges_then_uses_defaul
         "test_secret".to_string(),
         "sandbox".to_string(),
     ));
-    let plaid_provider = Arc::new(PlaidProvider::new(plaid_client.clone()));
-    let sync_service = SyncService::new(plaid_provider);
+    let sync_service = build_sync_service(plaid_client);
 
     let (start_date, end_date) = sync_service.calculate_sync_date_range(connection.last_sync_at);
     let expected_start = Utc::now().date_naive() - Duration::days(90);
@@ -116,8 +119,7 @@ async fn given_bank_connection_when_sync_fails_then_returns_error_without_updati
         "invalid_secret".to_string(),
         "sandbox".to_string(),
     ));
-    let plaid_provider = Arc::new(PlaidProvider::new(plaid_client.clone()));
-    let sync_service = SyncService::new(plaid_provider);
+    let sync_service = build_sync_service(plaid_client);
 
     let credentials = crate::providers::ProviderCredentials {
         provider: "plaid".to_string(),

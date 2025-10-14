@@ -183,10 +183,8 @@ async fn given_teller_transactions_when_get_transactions_then_filters_by_date_ra
 #[tokio::test]
 async fn given_teller_accounts_when_get_institution_info_then_returns_institution_from_first_account(
 ) {
-    let accounts_response: Vec<Value> = vec![serde_json::from_str(
-        TestFixtures::teller_account_chase_bank(),
-    )
-    .unwrap()];
+    let accounts_response: Vec<Value> =
+        vec![serde_json::from_str(TestFixtures::teller_account_chase_bank()).unwrap()];
 
     let mut mock_client = MockTellerHttpClient::new();
     let accounts_clone = accounts_response.clone();

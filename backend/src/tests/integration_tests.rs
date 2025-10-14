@@ -795,7 +795,7 @@ async fn given_different_account_filters_when_caching_then_uses_different_cache_
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     let mut mock_cache = crate::services::cache_service::MockCacheService::new();
-    let mut cache_keys = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    let cache_keys = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
 
     mock_cache
         .expect_get_string()

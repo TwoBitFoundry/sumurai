@@ -1,8 +1,9 @@
 use crate::models::{
     account::Account,
     cache::{CachedBankAccounts, CachedBankConnection},
-    plaid::{DisconnectResult, ProviderConnection},
+    plaid::ProviderConnection,
 };
+use crate::providers::ProviderRegistry;
 use crate::services::{
     cache_service::MockCacheService, connection_service::ConnectionService,
     repository_service::MockDatabaseRepository,
@@ -61,7 +62,7 @@ fn create_test_accounts() -> Vec<Account> {
 
 #[tokio::test]
 async fn given_bank_sync_operation_when_completing_then_updates_jwt_scoped_cache() {
-    let mut mock_db = MockDatabaseRepository::new();
+    let mock_db = MockDatabaseRepository::new();
     let mut mock_cache = MockCacheService::new();
 
     let user_id = Uuid::new_v4();
@@ -100,7 +101,9 @@ async fn given_bank_sync_operation_when_completing_then_updates_jwt_scoped_cache
         .times(1)
         .returning(|_| Box::pin(async { Ok(()) }));
 
-    let service = ConnectionService::new(Arc::new(mock_db), Arc::new(mock_cache));
+    let provider_registry = Arc::new(ProviderRegistry::new());
+    let service =
+        ConnectionService::new(Arc::new(mock_db), Arc::new(mock_cache), provider_registry);
 
     let result =
         complete_sync_with_jwt_cache_update(&service, &user_id, jwt_id, &connection, &accounts)
