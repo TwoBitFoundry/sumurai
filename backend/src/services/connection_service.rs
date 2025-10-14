@@ -2,12 +2,14 @@ use crate::models::{
     account::Account,
     cache::{BankConnectionSyncStatus, CachedBankAccounts, CachedBankConnection},
     plaid::{
-        DataCleared, DisconnectResult, ProviderConnectRequest, ProviderConnectResponse,
-        ProviderConnection,
+        DataCleared, DisconnectResult, ExchangeTokenResponse, ProviderConnectRequest,
+        ProviderConnectResponse, ProviderConnection,
     },
     transaction::{SyncMetadata, SyncTransactionsResponse, Transaction},
 };
-use crate::providers::{FinancialDataProvider, ProviderCredentials, TellerProvider};
+use crate::providers::{
+    FinancialDataProvider, InstitutionInfo, ProviderCredentials, ProviderRegistry,
+};
 use crate::services::{
     cache_service::CacheService, repository_service::DatabaseRepository, sync_service::SyncService,
 };
@@ -20,6 +22,7 @@ use uuid::Uuid;
 pub struct ConnectionService {
     db_repository: Arc<dyn DatabaseRepository>,
     cache_service: Arc<dyn CacheService>,
+    provider_registry: Arc<ProviderRegistry>,
 }
 
 #[derive(Debug)]
@@ -40,15 +43,44 @@ pub enum TellerSyncError {
     ConnectionPersistence(Error),
 }
 
+#[derive(Debug)]
+pub enum LinkTokenError {
+    ProviderUnavailable(String),
+    ProviderRequest(Error),
+}
+
+#[derive(Debug)]
+pub enum ExchangeTokenError {
+    ProviderUnavailable(String),
+    ExchangeFailed(Error),
+}
+
+#[derive(Debug)]
+pub enum ProviderSyncError {
+    CredentialsMissing,
+    CredentialAccess(Error),
+    ProviderUnavailable(String),
+    ProviderRequest(Error),
+    AccountLookup(Error),
+    TransactionLookup(Error),
+    SyncFailure(Error),
+}
+
 impl ConnectionService {
     pub fn new(
         db_repository: Arc<dyn DatabaseRepository>,
         cache_service: Arc<dyn CacheService>,
+        provider_registry: Arc<ProviderRegistry>,
     ) -> Self {
         Self {
             db_repository,
             cache_service,
+            provider_registry,
         }
+    }
+
+    fn resolve_provider(&self, provider: &str) -> Option<Arc<dyn FinancialDataProvider>> {
+        self.provider_registry.get(provider)
     }
 
     pub async fn disconnect_connection_by_id(
@@ -126,6 +158,10 @@ impl ConnectionService {
             ));
         }
 
+        let provider = self
+            .resolve_provider("teller")
+            .ok_or_else(|| TellerConnectError::InvalidProvider("teller".to_string()))?;
+
         let item_id = format!("teller_{}", request.enrollment_id);
         self.db_repository
             .store_provider_credentials_for_user(user_id, &item_id, &request.access_token)
@@ -160,39 +196,28 @@ impl ConnectionService {
 
         let mut persisted_accounts = Vec::new();
 
-        match TellerProvider::new() {
-            Ok(teller_provider) => {
-                match teller_provider.get_accounts(&provider_credentials).await {
-                    Ok(accounts) => {
-                        for mut account in accounts {
-                            account.user_id = Some(*user_id);
-                            account.provider_connection_id = Some(connection.id);
+        match provider.get_accounts(&provider_credentials).await {
+            Ok(accounts) => {
+                for mut account in accounts {
+                    account.user_id = Some(*user_id);
+                    account.provider_connection_id = Some(connection.id);
 
-                            match self.db_repository.upsert_account(&account).await {
-                                Ok(_) => persisted_accounts.push(account),
-                                Err(e) => {
-                                    tracing::warn!(
-                                        "Failed to persist Teller account {} for user {}: {}",
-                                        account.provider_account_id.as_deref().unwrap_or("unknown"),
-                                        user_id,
-                                        e
-                                    );
-                                }
-                            }
+                    match self.db_repository.upsert_account(&account).await {
+                        Ok(_) => persisted_accounts.push(account),
+                        Err(e) => {
+                            tracing::warn!(
+                                "Failed to persist Teller account {} for user {}: {}",
+                                account.provider_account_id.as_deref().unwrap_or("unknown"),
+                                user_id,
+                                e
+                            );
                         }
-                    }
-                    Err(e) => {
-                        tracing::warn!(
-                            "Failed to fetch Teller accounts during connect for user {}: {}",
-                            user_id,
-                            e
-                        );
                     }
                 }
             }
             Err(e) => {
                 tracing::warn!(
-                    "Failed to initialize Teller provider during connect for user {}: {}",
+                    "Failed to fetch Teller accounts during connect for user {}: {}",
                     user_id,
                     e
                 );
@@ -237,6 +262,274 @@ impl ConnectionService {
         })
     }
 
+    pub async fn create_link_token(
+        &self,
+        provider: &str,
+        user_id: &Uuid,
+    ) -> Result<String, LinkTokenError> {
+        let provider = self
+            .resolve_provider(provider)
+            .ok_or_else(|| LinkTokenError::ProviderUnavailable(provider.to_string()))?;
+
+        provider
+            .as_ref()
+            .create_link_token(user_id)
+            .await
+            .map_err(|e| LinkTokenError::ProviderRequest(e))
+    }
+
+    pub async fn exchange_public_token(
+        &self,
+        provider: &str,
+        user_id: &Uuid,
+        jwt_id: &str,
+        public_token: &str,
+    ) -> Result<ExchangeTokenResponse, ExchangeTokenError> {
+        let provider = self
+            .resolve_provider(provider)
+            .ok_or_else(|| ExchangeTokenError::ProviderUnavailable(provider.to_string()))?;
+
+        let credentials = provider
+            .as_ref()
+            .exchange_public_token(public_token)
+            .await
+            .map_err(|e| ExchangeTokenError::ExchangeFailed(e))?;
+
+        let institution_info = match provider.as_ref().get_institution_info(&credentials).await {
+            Ok(info) => info,
+            Err(e) => {
+                tracing::warn!(
+                    "Failed to fetch institution info for provider {} and user {}: {}. Using fallback metadata.",
+                    provider.provider_name(),
+                    user_id,
+                    e
+                );
+                InstitutionInfo {
+                    institution_id: credentials.item_id.clone(),
+                    name: "Connected Bank".to_string(),
+                    logo: None,
+                    color: None,
+                }
+            }
+        };
+
+        if let Err(e) = self
+            .db_repository
+            .store_provider_credentials_for_user(
+                user_id,
+                &credentials.item_id,
+                &credentials.access_token,
+            )
+            .await
+        {
+            tracing::warn!(
+                "Failed to store credentials for provider {} and user {}: {}",
+                provider.provider_name(),
+                user_id,
+                e
+            );
+        }
+
+        if let Err(e) = self
+            .cache_service
+            .set_access_token(jwt_id, &credentials.item_id, &credentials.access_token)
+            .await
+        {
+            tracing::warn!(
+                "Failed to cache access token for provider {} and user {}: {}",
+                provider.provider_name(),
+                user_id,
+                e
+            );
+        }
+
+        let mut connection = ProviderConnection::new(*user_id, &credentials.item_id);
+        connection.mark_connected(&institution_info.name);
+        connection.institution_id = Some(institution_info.institution_id.clone());
+        connection.institution_name = Some(institution_info.name.clone());
+
+        if let Err(e) = self
+            .db_repository
+            .save_provider_connection(&connection)
+            .await
+        {
+            tracing::warn!(
+                "Failed to persist provider connection {} for user {}: {}",
+                connection.id,
+                user_id,
+                e
+            );
+        }
+
+        Ok(ExchangeTokenResponse {
+            access_token: credentials.access_token,
+            item_id: connection.item_id,
+            institution_id: connection.institution_id.clone(),
+            institution_name: connection
+                .institution_name
+                .clone()
+                .unwrap_or_else(|| "Connected Bank".to_string()),
+        })
+    }
+
+    pub async fn sync_provider_connection(
+        &self,
+        provider: &str,
+        sync_service: &SyncService,
+        user_id: &Uuid,
+        jwt_id: &str,
+        connection: &mut ProviderConnection,
+    ) -> Result<SyncTransactionsResponse, ProviderSyncError> {
+        let sync_timestamp = Utc::now();
+        let (sync_start_date, sync_end_date) =
+            sync_service.calculate_sync_date_range(connection.last_sync_at);
+
+        let credentials_record = self
+            .db_repository
+            .get_provider_credentials_for_user(user_id, &connection.item_id)
+            .await
+            .map_err(|e| ProviderSyncError::CredentialAccess(e.into()))?
+            .ok_or(ProviderSyncError::CredentialsMissing)?;
+
+        let provider_credentials = ProviderCredentials {
+            provider: provider.to_string(),
+            access_token: credentials_record.access_token.clone(),
+            item_id: connection.item_id.clone(),
+            certificate: None,
+            private_key: None,
+        };
+
+        let provider_impl = self
+            .resolve_provider(provider)
+            .ok_or_else(|| ProviderSyncError::ProviderUnavailable(provider.to_string()))?;
+
+        let fetched_accounts = provider_impl
+            .as_ref()
+            .get_accounts(&provider_credentials)
+            .await
+            .map_err(|e| ProviderSyncError::ProviderRequest(e.into()))?;
+
+        for mut account in fetched_accounts {
+            account.user_id = Some(*user_id);
+            account.provider_connection_id = Some(connection.id);
+
+            if let Err(e) = self.db_repository.upsert_account(&account).await {
+                tracing::warn!(
+                    "Failed to persist account {} for user {}: {}",
+                    account.provider_account_id.as_deref().unwrap_or("unknown"),
+                    user_id,
+                    e
+                );
+            }
+        }
+
+        let db_accounts = self
+            .db_repository
+            .get_accounts_for_user(user_id)
+            .await
+            .map_err(|e| ProviderSyncError::AccountLookup(e.into()))?;
+
+        let (mut transactions, new_cursor) = sync_service
+            .sync_bank_connection_transactions(&provider_credentials, connection, &db_accounts)
+            .await
+            .map_err(|e| ProviderSyncError::SyncFailure(e))?;
+
+        let existing_transactions = self
+            .db_repository
+            .get_transactions_for_user(user_id)
+            .await
+            .map_err(|e| ProviderSyncError::TransactionLookup(e.into()))?;
+
+        transactions =
+            sync_service.filter_duplicate_transactions(&existing_transactions, &transactions);
+
+        for txn in &mut transactions {
+            txn.user_id = Some(*user_id);
+        }
+
+        let mut persisted_transactions = Vec::new();
+
+        for transaction in &transactions {
+            if transaction.account_id.is_nil() {
+                tracing::warn!(
+                    "Skipping transaction {:?} for user {} because account mapping is missing",
+                    transaction.provider_transaction_id,
+                    user_id
+                );
+                continue;
+            }
+
+            if let Err(e) = self.db_repository.upsert_transaction(transaction).await {
+                tracing::warn!(
+                    "Failed to persist transaction {:?} for user {}: {}",
+                    transaction.provider_transaction_id,
+                    user_id,
+                    e
+                );
+            }
+            if let Err(e) = self.cache_service.add_transaction(transaction).await {
+                tracing::warn!(
+                    "Failed to cache transaction {:?} for user {}: {}",
+                    transaction.provider_transaction_id,
+                    user_id,
+                    e
+                );
+            }
+
+            persisted_transactions.push(transaction.clone());
+        }
+
+        let transactions = persisted_transactions;
+
+        let total_transactions = self
+            .db_repository
+            .get_transactions_for_user(user_id)
+            .await
+            .map(|txns| txns.len() as i32)
+            .unwrap_or(0);
+        let total_accounts = db_accounts.len() as i32;
+
+        connection.update_sync_info(total_transactions, total_accounts);
+        connection.sync_cursor = Some(new_cursor);
+        connection.last_sync_at = Some(sync_timestamp);
+
+        if let Err(e) = self
+            .db_repository
+            .save_provider_connection(connection)
+            .await
+        {
+            tracing::warn!(
+                "Failed to update provider connection {} for user {}: {}",
+                connection.id,
+                user_id,
+                e
+            );
+        }
+
+        if let Err(e) = self
+            .complete_sync_with_jwt_cache_update(user_id, jwt_id, connection, &db_accounts)
+            .await
+        {
+            tracing::warn!(
+                "Failed to update JWT-scoped caches after sync for user {}: {}",
+                user_id,
+                e
+            );
+        }
+
+        Ok(SyncTransactionsResponse {
+            transactions,
+            metadata: SyncMetadata {
+                transaction_count: total_transactions,
+                account_count: total_accounts,
+                sync_timestamp: sync_timestamp.to_rfc3339(),
+                start_date: sync_start_date.to_string(),
+                end_date: sync_end_date.to_string(),
+                connection_updated: true,
+            },
+        })
+    }
+
     pub async fn sync_teller_connection(
         &self,
         user_id: &Uuid,
@@ -262,10 +555,14 @@ impl ConnectionService {
             private_key: None,
         };
 
-        let teller_provider =
-            TellerProvider::new().map_err(|e| TellerSyncError::ProviderInitialization(e.into()))?;
+        let provider = self.resolve_provider("teller").ok_or_else(|| {
+            TellerSyncError::ProviderInitialization(anyhow::anyhow!(
+                "Teller provider not registered"
+            ))
+        })?;
 
-        let mut fetched_accounts = teller_provider
+        let mut fetched_accounts = provider
+            .as_ref()
             .get_accounts(&provider_credentials)
             .await
             .map_err(|e| TellerSyncError::ProviderRequest(e.into()))?;
@@ -305,7 +602,8 @@ impl ConnectionService {
             })
             .collect();
 
-        let mut teller_transactions = teller_provider
+        let mut teller_transactions = provider
+            .as_ref()
             .get_transactions(&provider_credentials, sync_start_date, sync_end_date)
             .await
             .map_err(|e| TellerSyncError::ProviderRequest(e.into()))?;

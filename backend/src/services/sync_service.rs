@@ -1,23 +1,49 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use chrono::{DateTime, Duration, NaiveDate, Utc};
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::models::{account::Account, plaid::ProviderConnection, transaction::Transaction};
-use crate::providers::{FinancialDataProvider, ProviderCredentials};
+use crate::providers::{FinancialDataProvider, ProviderCredentials, ProviderRegistry};
 
 const MAX_SYNC_YEARS: i64 = 5;
 const SAFETY_MARGIN_DAYS: i64 = 2;
 const DEFAULT_FIRST_SYNC_DAYS: i64 = 90;
 
 pub struct SyncService {
-    provider: Arc<dyn FinancialDataProvider>,
+    providers: Arc<ProviderRegistry>,
+    default_provider: String,
 }
 
 impl SyncService {
-    pub fn new(provider: Arc<dyn FinancialDataProvider>) -> Self {
-        Self { provider }
+    pub fn new(providers: Arc<ProviderRegistry>, default_provider: impl Into<String>) -> Self {
+        let default_provider = default_provider.into().to_lowercase();
+        if providers.get(&default_provider).is_none() {
+            panic!(
+                "Default provider '{}' is not registered in the provider registry",
+                default_provider
+            );
+        }
+
+        Self {
+            providers,
+            default_provider,
+        }
+    }
+
+    fn resolve_provider(
+        &self,
+        provider_name: Option<&str>,
+    ) -> Result<Arc<dyn FinancialDataProvider>> {
+        let name = provider_name
+            .map(|s| s.to_lowercase())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| self.default_provider.clone());
+
+        self.providers
+            .get(&name)
+            .ok_or_else(|| anyhow!("Provider '{}' is not registered", name))
     }
 
     pub async fn sync_bank_connection_transactions(
@@ -28,8 +54,8 @@ impl SyncService {
     ) -> Result<(Vec<Transaction>, String)> {
         let (start_date, end_date) = self.calculate_sync_date_range(connection.last_sync_at);
 
-        let transactions = self
-            .provider
+        let provider = self.resolve_provider(Some(&credentials.provider))?;
+        let transactions = provider
             .get_transactions(credentials, start_date, end_date)
             .await?;
 
@@ -60,8 +86,8 @@ impl SyncService {
     ) -> Result<Vec<Transaction>> {
         let (start_date, end_date) = self.calculate_sync_date_range(last_sync_at);
 
-        let provider_transactions = self
-            .provider
+        let provider = self.resolve_provider(Some(&credentials.provider))?;
+        let provider_transactions = provider
             .get_transactions(credentials, start_date, end_date)
             .await?;
 
@@ -88,6 +114,14 @@ impl SyncService {
             })
             .cloned()
             .collect()
+    }
+
+    pub fn filter_duplicate_transactions(
+        &self,
+        existing: &[Transaction],
+        new: &[Transaction],
+    ) -> Vec<Transaction> {
+        self.detect_duplicates(existing, new)
     }
 
     pub fn calculate_sync_date_range(

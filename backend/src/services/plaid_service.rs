@@ -3,7 +3,6 @@ use chrono::NaiveDate;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use serde_json::json;
-use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -408,60 +407,5 @@ impl PlaidService {
         self.client
             .get_transactions(access_token, start_date, end_date)
             .await
-    }
-
-    pub fn detect_duplicates(
-        &self,
-        existing: &[Transaction],
-        new: &[Transaction],
-    ) -> Vec<Transaction> {
-        let existing_plaid_ids: HashMap<String, bool> = existing
-            .iter()
-            .filter_map(|t| t.provider_transaction_id.as_ref())
-            .map(|id| (id.clone(), true))
-            .collect();
-
-        new.iter()
-            .filter(|t| {
-                if let Some(plaid_id) = &t.provider_transaction_id {
-                    !existing_plaid_ids.contains_key(plaid_id)
-                } else {
-                    true
-                }
-            })
-            .cloned()
-            .collect()
-    }
-
-    pub async fn sync_bank_connection_transactions(
-        &self,
-        access_token: &str,
-        sync_cursor: Option<String>,
-        last_sync_at: Option<chrono::DateTime<chrono::Utc>>,
-    ) -> Result<(Vec<Transaction>, String)> {
-        use chrono::{Duration, Utc};
-
-        let (start_date, end_date) = if sync_cursor.is_some() && last_sync_at.is_some() {
-            let last_sync = last_sync_at.unwrap();
-            let start = (last_sync - Duration::days(2)).date_naive(); //
-            let end = Utc::now().date_naive();
-            (start, end)
-        } else {
-            let end = Utc::now().date_naive();
-            let start = end - Duration::days(90);
-            (start, end)
-        };
-
-        let transactions = self
-            .get_transactions(access_token, start_date, end_date)
-            .await?;
-
-        let new_cursor = format!(
-            "cursor_{}_{}",
-            Utc::now().timestamp(),
-            uuid::Uuid::new_v4().to_string()[..8].to_string()
-        );
-
-        Ok((transactions, new_cursor))
     }
 }

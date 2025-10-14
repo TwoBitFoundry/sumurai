@@ -1,5 +1,7 @@
 use crate::models::{account::Account, plaid::ProviderConnection, transaction::Transaction};
-use crate::providers::{FinancialDataProvider, InstitutionInfo, ProviderCredentials};
+use crate::providers::{
+    FinancialDataProvider, InstitutionInfo, ProviderCredentials, ProviderRegistry,
+};
 use crate::services::sync_service::SyncService;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -75,7 +77,7 @@ async fn given_sync_service_with_provider_when_sync_then_maps_accounts_correctly
         institution_name: None,
     }];
 
-    let mut transaction = Transaction {
+    let transaction = Transaction {
         id: Uuid::new_v4(),
         account_id: Uuid::new_v4(),
         user_id: None,
@@ -92,12 +94,15 @@ async fn given_sync_service_with_provider_when_sync_then_maps_accounts_correctly
         created_at: Some(Utc::now()),
     };
 
-    let provider = Arc::new(MockProvider {
+    let provider: Arc<dyn FinancialDataProvider> = Arc::new(MockProvider {
         transactions: vec![transaction.clone()],
         accounts: accounts.clone(),
     });
-
-    let sync_service = SyncService::new(provider);
+    let registry = Arc::new(ProviderRegistry::from_providers([(
+        "mock",
+        Arc::clone(&provider),
+    )]));
+    let sync_service = SyncService::new(registry, "mock");
 
     let connection = ProviderConnection {
         id: Uuid::new_v4(),
