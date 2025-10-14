@@ -75,7 +75,7 @@ async fn given_foreign_account_when_validate_then_returns_forbidden() {
 
 #[tokio::test]
 async fn given_invalid_uuid_when_validate_then_returns_bad_request() {
-    let mut mock_db = MockDatabaseRepository::new();
+    let mock_db = MockDatabaseRepository::new();
     let user_id = Uuid::new_v4();
 
     let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);

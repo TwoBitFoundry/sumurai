@@ -4,6 +4,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::models::{auth::User, transaction::Transaction};
+use crate::providers::ProviderRegistry;
 
 use crate::services::{
     analytics_service::AnalyticsService,
@@ -158,8 +159,13 @@ impl TestFixtures {
         let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
         let plaid_service_arc = plaid_service.clone();
         let plaid_client_arc = plaid_client.clone();
-        let plaid_provider = Arc::new(crate::providers::PlaidProvider::new(plaid_client.clone()));
-        let sync_service = Arc::new(SyncService::new(plaid_provider.clone()));
+        let plaid_provider: Arc<dyn crate::providers::FinancialDataProvider> =
+            Arc::new(crate::providers::PlaidProvider::new(plaid_client.clone()));
+        let provider_registry = Arc::new(ProviderRegistry::from_providers([(
+            "plaid",
+            Arc::clone(&plaid_provider),
+        )]));
+        let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
         let analytics_service = Arc::new(AnalyticsService::new());
         let config = Config::default();
 
@@ -209,6 +215,7 @@ impl TestFixtures {
         let connection_service = Arc::new(ConnectionService::new(
             db_repository.clone(),
             cache_service.clone(),
+            provider_registry.clone(),
         ));
 
         let auth_service = Arc::new(
@@ -227,6 +234,7 @@ impl TestFixtures {
             cache_service,
             connection_service,
             auth_service,
+            provider_registry,
         };
 
         Ok(create_app(state))
@@ -243,8 +251,13 @@ impl TestFixtures {
         let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
         let plaid_service_arc = plaid_service.clone();
         let plaid_client_arc = plaid_client.clone();
-        let plaid_provider = Arc::new(crate::providers::PlaidProvider::new(plaid_client.clone()));
-        let sync_service = Arc::new(SyncService::new(plaid_provider.clone()));
+        let plaid_provider: Arc<dyn crate::providers::FinancialDataProvider> =
+            Arc::new(crate::providers::PlaidProvider::new(plaid_client.clone()));
+        let provider_registry = Arc::new(ProviderRegistry::from_providers([(
+            "plaid",
+            Arc::clone(&plaid_provider),
+        )]));
+        let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
         let analytics_service = Arc::new(AnalyticsService::new());
         let config = Config::default();
 
@@ -277,6 +290,7 @@ impl TestFixtures {
         let connection_service = Arc::new(ConnectionService::new(
             db_repository.clone(),
             cache_service.clone(),
+            provider_registry.clone(),
         ));
 
         let auth_service = Arc::new(
@@ -296,6 +310,7 @@ impl TestFixtures {
             cache_service,
             connection_service,
             auth_service,
+            provider_registry,
         };
 
         Ok(create_app(state))
@@ -313,8 +328,13 @@ impl TestFixtures {
         let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
         let plaid_service_arc = plaid_service.clone();
         let plaid_client_arc = plaid_client.clone();
-        let plaid_provider = Arc::new(crate::providers::PlaidProvider::new(plaid_client.clone()));
-        let sync_service = Arc::new(SyncService::new(plaid_provider.clone()));
+        let plaid_provider: Arc<dyn crate::providers::FinancialDataProvider> =
+            Arc::new(crate::providers::PlaidProvider::new(plaid_client.clone()));
+        let provider_registry = Arc::new(ProviderRegistry::from_providers([(
+            "plaid",
+            Arc::clone(&plaid_provider),
+        )]));
+        let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
         let analytics_service = Arc::new(AnalyticsService::new());
         let config = Config::default();
 
@@ -324,6 +344,7 @@ impl TestFixtures {
         let connection_service = Arc::new(ConnectionService::new(
             db_repository.clone(),
             cache_service.clone(),
+            provider_registry.clone(),
         ));
 
         let auth_service = Arc::new(
@@ -343,6 +364,7 @@ impl TestFixtures {
             cache_service,
             connection_service,
             auth_service,
+            provider_registry,
         };
 
         Ok(create_app(state))

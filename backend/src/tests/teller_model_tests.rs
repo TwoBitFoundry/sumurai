@@ -6,8 +6,7 @@ use uuid::Uuid;
 
 #[test]
 fn given_teller_account_json_when_from_teller_then_maps_fields_correctly() {
-    let teller_json =
-        serde_json::from_str(TestFixtures::teller_account_test_checking()).unwrap();
+    let teller_json = serde_json::from_str(TestFixtures::teller_account_test_checking()).unwrap();
 
     let account = Account::from_teller(&teller_json);
 
@@ -132,8 +131,7 @@ fn given_teller_transaction_with_invalid_date_when_from_teller_then_uses_current
 #[test]
 fn given_teller_transaction_with_zero_amount_when_from_teller_then_handles_gracefully() {
     let account_id = Uuid::new_v4();
-    let teller_json =
-        serde_json::from_str(TestFixtures::teller_transaction_zero_amount()).unwrap();
+    let teller_json = serde_json::from_str(TestFixtures::teller_transaction_zero_amount()).unwrap();
 
     let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 

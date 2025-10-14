@@ -137,6 +137,14 @@ pub struct ProviderConnectResponse {
     pub institution_name: String,
 }
 
+#[derive(Debug, Serialize)]
+pub struct ExchangeTokenResponse {
+    pub access_token: String,
+    pub item_id: String,
+    pub institution_id: Option<String>,
+    pub institution_name: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DisconnectResult {
     pub success: bool,

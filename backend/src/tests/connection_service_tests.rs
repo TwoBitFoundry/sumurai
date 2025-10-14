@@ -1,4 +1,5 @@
 use crate::models::plaid::ProviderConnection;
+use crate::providers::ProviderRegistry;
 use crate::services::cache_service::MockCacheService;
 use crate::services::connection_service::ConnectionService;
 use crate::services::repository_service::MockDatabaseRepository;
@@ -60,7 +61,9 @@ async fn given_connection_id_when_disconnect_then_disconnects_specific_connectio
         .expect_clear_jwt_scoped_bank_connection_cache()
         .returning(|_, _| Box::pin(async { Ok(()) }));
 
-    let service = ConnectionService::new(Arc::new(mock_db), Arc::new(mock_cache));
+    let provider_registry = Arc::new(ProviderRegistry::new());
+    let service =
+        ConnectionService::new(Arc::new(mock_db), Arc::new(mock_cache), provider_registry);
 
     let result = service
         .disconnect_connection_by_id(&connection_id, &user_id, "jwt_123")
