@@ -5,6 +5,7 @@ import { Amount, fmtUSD } from "./Amount";
 import HeroStatCard from "./widgets/HeroStatCard";
 import { useBalancesOverview } from "../hooks/useBalancesOverview";
 import { formatRatio } from "../services/AnalyticsService";
+import { useTheme } from "../context/ThemeContext";
 
 function RatioPill({ ratio }: { ratio: number | string | null }) {
   const label = formatRatio(ratio as any);
@@ -17,6 +18,7 @@ function RatioPill({ ratio }: { ratio: number | string | null }) {
 
 export function BalancesOverview() {
   const { loading, refreshing, error, data, refresh } = useBalancesOverview();
+  const { colors } = useTheme();
 
   const banks = data?.banks || [];
   const fmtAxis = (n: number) => {
@@ -256,7 +258,7 @@ export function BalancesOverview() {
                 dataKey="cash"
                 name="Cash"
                 stackId="pos"
-                fill="#10b981"
+                fill={colors.semantic.cash}
                 legendType="circle"
                 onMouseEnter={(entry: any) => {
                   const p = entry?.payload as any;
@@ -268,7 +270,7 @@ export function BalancesOverview() {
                 dataKey="investments"
                 name="Investments"
                 stackId="pos"
-                fill="#06b6d4"
+                fill={colors.semantic.investments}
                 legendType="circle"
                 onMouseEnter={(entry: any) => {
                   const p = entry?.payload as any;
@@ -280,7 +282,7 @@ export function BalancesOverview() {
                 dataKey="credit"
                 name="Credit"
                 stackId="neg"
-                fill="#fb7185"
+                fill={colors.semantic.credit}
                 legendType="circle"
                 onMouseEnter={(entry: any) => {
                   const p = entry?.payload as any;
@@ -292,7 +294,7 @@ export function BalancesOverview() {
                 dataKey="loan"
                 name="Loan"
                 stackId="neg"
-                fill="#f59e0b"
+                fill={colors.semantic.loan}
                 legendType="circle"
                 onMouseEnter={(entry: any) => {
                   const p = entry?.payload as any;

@@ -1,6 +1,7 @@
 import React from 'react'
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { formatCategoryName } from '../../../utils/categories'
+import { Button, Input } from '../../../ui/primitives'
 
 export interface BudgetFormValue { category: string; amount: string }
 
@@ -34,7 +35,7 @@ export function BudgetForm({
           </option>
         ))}
       </select>
-      <input
+      <Input
         data-testid="budget-amount-input"
         type="number"
         min={0}
@@ -42,23 +43,24 @@ export function BudgetForm({
         placeholder="Amount"
         value={value.amount}
         onChange={e => onChange({ ...value, amount: e.target.value })}
-        className="min-w-[140px] rounded-full border border-white/60 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 shadow-[0_18px_45px_-32px_rgba(15,23,42,0.5)] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-sky-400/80 focus:ring-offset-2 focus:ring-offset-white dark:border-white/12 dark:bg-[#111a2f]/80 dark:text-slate-100 dark:focus:ring-offset-[#0f172a]"
+        variant="glass"
+        className="min-w-[140px] rounded-full"
       />
-      <button
+      <Button
         data-testid="budget-save"
         onClick={onSave}
-        className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400 px-5 py-2 text-sm font-semibold text-white shadow-[0_20px_55px_-28px_rgba(16,185,129,0.65)] transition-transform duration-300 hover:-translate-y-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]"
+        variant="success"
       >
         <CheckIcon className="h-4 w-4" />
         Save
-      </button>
-      <button
+      </Button>
+      <Button
         onClick={onCancel}
-        className="inline-flex items-center gap-1 rounded-full border border-white/55 bg-white/70 px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_18px_42px_-30px_rgba(15,23,42,0.5)] transition-transform duration-300 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/12 dark:bg-[#111a2f]/70 dark:text-slate-100 dark:focus-visible:ring-offset-[#0f172a]"
+        variant="ghost"
       >
         <XMarkIcon className="h-4 w-4" />
         Cancel
-      </button>
+      </Button>
     </div>
   )
 }

@@ -3,10 +3,9 @@ import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { AuthenticatedApp } from '@/components/AuthenticatedApp'
 import { AccountFilterProvider } from '@/hooks/useAccountFilter'
+import { ThemeTestProvider } from '@tests/utils/ThemeTestProvider'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures'
-
-type DashboardProps = { dark: boolean }
 
 let DashboardPageMock: ReturnType<typeof vi.fn>
 let TransactionsPageMock: ReturnType<typeof vi.fn>
@@ -15,7 +14,7 @@ let AccountsPageMock: ReturnType<typeof vi.fn>
 
 vi.mock('@/pages/DashboardPage', () => ({
   __esModule: true,
-  default: (props: DashboardProps) => DashboardPageMock(props),
+  default: () => DashboardPageMock(),
 }))
 
 vi.mock('@/pages/TransactionsPage', () => ({
@@ -34,7 +33,6 @@ vi.mock('@/pages/AccountsPage', () => ({
 
 describe('AuthenticatedApp shell', () => {
   const onLogout = vi.fn()
-  const setDark = vi.fn()
   let fetchMock: ReturnType<typeof installFetchRoutes>
 
   beforeEach(() => {
@@ -79,8 +77,8 @@ describe('AuthenticatedApp shell', () => {
       }),
     })
 
-    DashboardPageMock = vi.fn(({ dark }: DashboardProps) => (
-      <div data-testid="dashboard-page">dashboard-{dark ? 'dark' : 'light'}</div>
+    DashboardPageMock = vi.fn(() => (
+      <div data-testid="dashboard-page">dashboard</div>
     ))
     TransactionsPageMock = vi.fn(() => <div data-testid="transactions-page">transactions</div>)
     BudgetsPageMock = vi.fn(() => <div data-testid="budgets-page">budgets</div>)
@@ -102,11 +100,13 @@ describe('AuthenticatedApp shell', () => {
     localStorage.clear()
   })
 
-  const renderApp = (dark = false) =>
+  const renderApp = () =>
     render(
-      <AccountFilterProvider>
-        <AuthenticatedApp onLogout={onLogout} dark={dark} setDark={setDark} />
-      </AccountFilterProvider>
+      <ThemeTestProvider>
+        <AccountFilterProvider>
+          <AuthenticatedApp onLogout={onLogout} />
+        </AccountFilterProvider>
+      </ThemeTestProvider>
     )
 
   it('renders dashboard by default', () => {
@@ -154,21 +154,16 @@ describe('AuthenticatedApp shell', () => {
     expect(screen.queryByText('accounts-error')).not.toBeInTheDocument()
   })
 
-  it('toggles theme and supports logout', async () => {
+  it('supports theme toggle and logout', async () => {
     const user = userEvent.setup()
-    renderApp(false)
+    renderApp()
 
-    await user.click(screen.getByLabelText(/toggle theme/i))
-    expect(setDark).toHaveBeenCalledWith(true)
+    const themeButton = screen.getByLabelText(/toggle theme/i)
+    expect(themeButton).toBeInTheDocument()
+    await user.click(themeButton)
 
     await user.click(screen.getByRole('button', { name: /logout/i }))
     expect(onLogout).toHaveBeenCalled()
-  })
-
-  it('passes dark mode flag to dashboard', () => {
-    renderApp(true)
-    expect(DashboardPageMock).toHaveBeenCalledWith(expect.objectContaining({ dark: true }))
-    expect(DashboardPageMock).toHaveBeenCalledTimes(1)
   })
 
   it('includes HeaderAccountFilter in the header', async () => {

@@ -1,11 +1,9 @@
 import React from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { useTheme } from '../context/ThemeContext';
 
-interface NetWorthOverTimeWidgetProps {
-  dark: boolean;
-}
-
-export const NetWorthOverTimeWidget: React.FC<NetWorthOverTimeWidgetProps> = ({ dark }) => {
+export const NetWorthOverTimeWidget: React.FC = () => {
+  const { colors } = useTheme();
   const mockData = [
     { date: '2024-01', netWorth: 10000 },
     { date: '2024-02', netWorth: 10500 },
@@ -21,7 +19,7 @@ export const NetWorthOverTimeWidget: React.FC<NetWorthOverTimeWidgetProps> = ({ 
           <XAxis dataKey="date" />
           <YAxis />
           <Tooltip />
-          <Line type="monotone" dataKey="netWorth" stroke="#8884d8" />
+          <Line type="monotone" dataKey="netWorth" stroke={colors.semantic.netWorth} />
         </LineChart>
       </ResponsiveContainer>
     </div>

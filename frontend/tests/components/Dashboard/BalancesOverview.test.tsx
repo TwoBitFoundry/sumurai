@@ -6,11 +6,14 @@ import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 import { createProviderStatus } from '@tests/utils/fixtures'
 import { ApiClient } from '@/services/ApiClient'
 import { AccountFilterProvider } from '@/hooks/useAccountFilter'
+import { ThemeTestProvider } from '@tests/utils/ThemeTestProvider'
 
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-  <AccountFilterProvider>
-    {children}
-  </AccountFilterProvider>
+  <ThemeTestProvider>
+    <AccountFilterProvider>
+      {children}
+    </AccountFilterProvider>
+  </ThemeTestProvider>
 )
 
 describe("BalancesOverview (Phase 7)", () => {

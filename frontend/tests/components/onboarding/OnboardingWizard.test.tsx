@@ -261,9 +261,11 @@ describe('OnboardingWizard', () => {
     expect(onComplete).toHaveBeenCalled()
   })
 
-  it('given wizard when dark mode prop passed then applies correct theme classes', () => {
-    const { container } = render(<OnboardingWizard onComplete={vi.fn()} dark={true} />)
+  it('given wizard when rendered then theme is managed by ThemeProvider (no local dark class)', () => {
+    const { container } = render(<OnboardingWizard onComplete={vi.fn()} />)
 
-    expect(container.firstChild).toHaveClass('dark')
+    const topLevelDiv = container.firstChild as HTMLElement
+    expect(topLevelDiv).not.toHaveClass('dark')
   })
+
 })
