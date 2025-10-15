@@ -186,9 +186,55 @@ frontend/src/
   - Verify correct API endpoints and payloads
   - Test error handling paths
 
+## Phase 8: Unified ApiClient as HTTP Backbone
+
+### 18. Refactor ApiClient to accept IHttpClient injection
+- **Goal:** ApiClient becomes the single HTTP handler for all services
+- **Current state:** ApiClient uses fetch directly, services use IHttpClient separately
+- **Target state:** All HTTP traffic flows through ApiClient
+- **Approach:**
+  - Add static `configure(httpClient: IHttpClient)` to ApiClient
+  - ApiClient internally calls `httpClient.get/post/put/delete()`
+  - ApiClient wraps responses and adds retry/token-refresh/error-handling
+  - Return typed errors and successful data to callers
+
+### 19. Update all services to use ApiClient instead of IHttpClient
+- **Services to update:**
+  - `TransactionService` - Use `ApiClient.get/post` instead of direct http
+  - `AnalyticsService` - Use `ApiClient.get/post` instead of direct http
+  - `BudgetService` - Use `ApiClient.get/post` instead of direct http
+  - `PlaidService` - Use `ApiClient.get/post` instead of direct http
+  - `TellerService` - Use `ApiClient.get/post` instead of direct http
+  - `AuthService` - Use `ApiClient.post` for all endpoints except login/register/refresh (keep special handling there)
+- **Benefit:** All services benefit from retry logic, token refresh, and error handling
+
+### 20. Simplify service configuration
+- **Remove:** `TransactionService.configure({ http })`, `AnalyticsService.configure({ http })`, etc.
+- **Keep:** `AuthService.configure({ storage })` - Only needs storage
+- **New:** Single `ApiClient.configure(httpClient)` call in App.tsx setup
+- **Result:** Much simpler configuration, single point of control
+
+### 21. Update setupTestBoundaries utility
+- **Remove:** Individual service configuration with http boundary
+- **Add:** Single `ApiClient.configure(mockHttpClient)` call
+- **Simplify:** Tests automatically get mocked HTTP for all services
+- **Benefit:** Tests become cleaner and more maintainable
+
+### 22. Write integration tests verifying unified flow
+- **Test scenarios:**
+  - Service calls ApiClient → ApiClient retries on 503 → Success
+  - Service calls ApiClient → ApiClient refreshes token on 401 → Retry succeeds
+  - Multiple services use same ApiClient → Share retry/auth logic
+  - Error handling consistent across all services
+- **Test approach:**
+  - Mock IHttpClient at ApiClient level
+  - Verify services correctly call ApiClient methods
+  - Verify ApiClient correctly handles responses and errors
+  - Verify retry/token-refresh logic works across all service calls
+
 ## Execution Order
 
-Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7
+Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7 → Phase 8
 
 ## Key Benefits
 
@@ -210,13 +256,20 @@ Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7
 - Test infrastructure (mocks + setup utilities) ✅
 - 44 new tests for testing infrastructure ✅
 
-**Phase 7 (Remaining):**
-- 2 new boundary interfaces (LowLevelHttpClient + impl)
-- ApiClient refactor to use low-level boundary
-- AuthService refactor to use injected http boundary
-- 8 existing service test files migrated to setupTestBoundaries
-- 3-4 new integration test files with boundary mocks
-- ~20-30 additional integration tests
+**Phase 7 (Completed):**
+- Removed unnecessary abstraction layers (ILowLevelHttpClient, IFetcher)
+- ApiClient refactored to use fetch directly
+- AuthService refactored to use injected IHttpClient
+- Added error message translation for user-friendly errors
+- All tests passing (509/509) ✅
+
+**Phase 8 (Remaining - Unified HTTP Backbone):**
+- ApiClient refactored to accept IHttpClient injection
+- All services refactored to use ApiClient instead of direct http
+- Service configuration simplified to single ApiClient.configure() call
+- setupTestBoundaries utility updated for new architecture
+- Integration tests for unified HTTP flow
+- Result: All HTTP traffic flows through ApiClient with centralized retry/auth/error handling
 
 ## Architecture Principles
 
@@ -248,14 +301,24 @@ Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7
 | 4 | Update Hooks to Use Domain Logic | ✅ Complete | Hooks refactored to use domain classes |
 | 5 | Page Component Cleanup | ✅ Complete | BudgetsPage & DashboardPage business logic extracted |
 | 6 | Testing Infrastructure | ✅ Complete | Mock utilities + setupTestBoundaries + 44 new tests |
-| 7 | Service Boundary Integration | 🔄 Pending | Low-level http boundary + Service refactoring + Test migration |
+| 7 | Service Boundary Integration | ✅ Complete | ApiClient uses fetch directly, AuthService uses IHttpClient, All tests pass (509/509) |
+| 8 | Unified ApiClient as HTTP Backbone | 🔄 In Progress | ApiClient to become single HTTP handler for all services |
 
-## Test Coverage Summary (After Phase 6)
+## Test Coverage Summary
 
-- **Total Tests:** 490
-- **Test Files:** 64
+**After Phase 7 (Current):**
+- **Total Tests:** 509 ✅ (100% passing)
+- **Test Files:** 66 ✅ (all passing)
 - **Domain Tests:** 47 (BudgetCalculator, DashboardCalculator, TransactionFilter, TransactionTransformer, AccountNormalizer)
 - **Mock Utility Tests:** 20 (mockHttpClient, mockStorage)
 - **Setup Infrastructure Tests:** 10 (setupTestBoundaries)
-- **Boundary Infrastructure Tests:** 14 (ApiClient, AuthService boundaries)
+- **ApiClient Integration Tests:** 8 (fetch direct, retry logic, auth refresh, error handling)
+- **AuthService Integration Tests:** 13 (login, register, token storage, session validation)
+- **TransactionService Integration Tests:** 6 (filtering, transformation, API calls)
 - **Service/Integration/Component Tests:** 399
+
+**Phase 8 (Planned):**
+- Add unified HTTP flow integration tests
+- Test cross-service retry/auth scenarios
+- Verify ApiClient centralized error handling
+- Expected: ~20-30 additional integration tests
