@@ -3,6 +3,7 @@ import { TransactionService, type TransactionFilters } from '../../../services/T
 import type { Transaction } from '../../../types/api'
 import { useAccountFilter } from '../../../hooks/useAccountFilter'
 import { formatCategoryName } from '../../../utils/categories'
+import { TransactionFilter, type FilterCriteria } from '../../../domain/TransactionFilter'
 
 export type DateRangeKey = string | undefined
 
@@ -92,25 +93,22 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     return formatCategoryName(t.category.primary)
   }, [])
 
-  const searchFiltered = useMemo(() => {
-    const s = debouncedSearch.trim().toLowerCase()
-    if (!s) return all
-    return all.filter(t => {
-      const name = (t.name || '').toLowerCase()
-      const merchant = (t.merchant || '').toLowerCase()
-      const cat = resolveCategoryLabel(t).toLowerCase()
-      return name.includes(s) || merchant.includes(s) || cat.includes(s)
-    })
-  }, [all, debouncedSearch, resolveCategoryLabel])
+  const filtered = useMemo(() => {
+    const criteria: FilterCriteria = {
+      search: debouncedSearch.trim(),
+      category: selectedCategory || undefined
+    }
+    return TransactionFilter.filter(all, criteria)
+  }, [all, debouncedSearch, selectedCategory])
 
   const categories = useMemo(() => {
     const names = new Set<string>()
-    for (const t of searchFiltered) {
+    for (const t of filtered) {
       const name = resolveCategoryLabel(t) || 'Uncategorized'
       if (name) names.add(name)
     }
     return Array.from(names).sort((a, b) => a.localeCompare(b))
-  }, [searchFiltered, resolveCategoryLabel])
+  }, [filtered, resolveCategoryLabel])
 
   useEffect(() => {
     if (selectedCategory && !categories.includes(selectedCategory)) {
@@ -118,18 +116,11 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     }
   }, [categories, selectedCategory])
 
-  const filtered = useMemo(() => {
-    if (!selectedCategory) return searchFiltered
-    const catLower = selectedCategory.toLowerCase()
-    return searchFiltered.filter(t => resolveCategoryLabel(t).toLowerCase() === catLower)
-  }, [searchFiltered, selectedCategory, resolveCategoryLabel])
-
   const totalItems = filtered.length
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
   const start = (currentPage - 1) * pageSize
   const pageItems = useMemo(() => {
-    const sorted = [...filtered].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    return sorted.slice(start, start + pageSize)
+    return filtered.slice(start, start + pageSize)
   }, [filtered, start, pageSize])
 
   useEffect(() => {

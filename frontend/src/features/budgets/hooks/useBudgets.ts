@@ -5,6 +5,7 @@ import { TransactionService } from '../../../services/TransactionService'
 import { useAccountFilter } from '../../../hooks/useAccountFilter'
 import { optimisticCreate } from '../../../utils/optimistic'
 import { formatCategoryName } from '../../../utils/categories'
+import { BudgetCalculator } from '../../../domain/BudgetCalculator'
 
 export interface BudgetProgressEntry extends Budget {
   spent: number
@@ -145,24 +146,9 @@ export function useBudgets(): UseBudgetsResult {
   }, [transactions])
 
   const computedBudgets = useMemo(() => {
-    const start = range.start
-    const end = range.end
     return budgets.map<BudgetProgressEntry>(b => {
-      const catId = b.category
-      const catNameLower = formatCategoryName(b.category).toLowerCase()
-      const spent = transactions
-        .filter(t => {
-          const primary = t.category?.primary || ''
-          const primaryMatches = primary.toLowerCase() === catId.toLowerCase()
-          const primaryFriendlyMatches = formatCategoryName(primary).toLowerCase() === catNameLower
-          return primaryMatches || primaryFriendlyMatches
-        })
-        .filter(t => {
-          const dateString = new Date(t.date).toISOString().slice(0, 10)
-          return dateString >= start && dateString <= end
-        })
-        .reduce((sum, t) => sum + Number(t.amount || 0), 0)
-      const percentage = b.amount > 0 ? Math.min(100, (spent / b.amount) * 100) : 0
+      const spent = BudgetCalculator.calculateSpent(transactions, b.category, range.start, range.end)
+      const percentage = BudgetCalculator.calculatePercentage(b.amount, spent)
       return { ...b, spent, percentage }
     })
   }, [budgets, range.end, range.start, transactions])
