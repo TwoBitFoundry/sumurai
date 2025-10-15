@@ -14,6 +14,8 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/postcss": "^4.1.13",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.543.0",
     "react": "^19.1.1",

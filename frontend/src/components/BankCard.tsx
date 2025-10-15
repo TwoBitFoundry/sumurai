@@ -9,6 +9,7 @@ import {
 import { StatusPill } from "./StatusPill";
 import { AccountRow } from "./AccountRow";
 import { DisconnectModal } from "./DisconnectModal";
+import { Button, MenuDropdown, MenuItem, cn } from "../ui/primitives";
 
 interface Account {
   id: string;
@@ -39,10 +40,6 @@ const BANK_CARD_ACCENT = {
   gradVia: "#0ea5e9",
 } as const;
 
-const classNames = (...classes: (string | false | null | undefined)[]) => {
-  return classes.filter(Boolean).join(" ");
-};
-
 const relativeTime = (iso?: string) => {
   if (!iso) return "Never";
   const d = new Date(iso);
@@ -59,37 +56,25 @@ const relativeTime = (iso?: string) => {
 const CardMenu: React.FC<{
   onDisconnect: () => void;
 }> = ({ onDisconnect }) => {
-  const [open, setOpen] = useState(false);
   return (
-    <div className="relative">
-      <button
-        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-transparent bg-white/75 text-[#64748b] shadow-[0_14px_36px_-28px_rgba(15,23,42,0.45)] transition-all duration-200 ease-out hover:-translate-y-[1px] hover:border-[#93c5fd] hover:text-[#0f172a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:bg-[#1e293b]/85 dark:text-[#94a3b8] dark:hover:border-[#38bdf8] dark:hover:text-white dark:focus-visible:ring-offset-slate-900"
-        onClick={() => setOpen((v) => !v)}
-        aria-label="more"
+    <MenuDropdown
+      trigger={
+        <Button
+          variant="icon"
+          size="icon"
+          aria-label="more"
+        >
+          <MoreVertical className="h-5 w-5" />
+        </Button>
+      }
+    >
+      <MenuItem
+        icon={<Unlink className="h-4 w-4" />}
+        onClick={onDisconnect}
       >
-        <MoreVertical className="h-5 w-5" />
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            className="absolute right-0 z-20 mt-3 w-48 overflow-hidden rounded-2xl border border-white/45 bg-white/95 p-2 shadow-[0_22px_60px_-32px_rgba(15,23,42,0.45)] backdrop-blur-md dark:border-white/12 dark:bg-[#0f172a]/92 dark:shadow-[0_28px_70px_-36px_rgba(2,6,23,0.7)]"
-          >
-            <button
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[#475569] transition-colors duration-200 ease-out hover:bg-[#f8fafc] dark:text-[#cbd5e1] dark:hover:bg-[#1e293b]"
-              onClick={() => {
-                setOpen(false);
-                onDisconnect();
-              }}
-            >
-              <Unlink className="h-4 w-4 text-[#475569] dark:text-[#cbd5e1]" /> Disconnect
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+        Disconnect
+      </MenuItem>
+    </MenuDropdown>
   );
 };
 
@@ -142,9 +127,7 @@ export const BankCard: React.FC<BankCardProps> = ({
 
   return (
     <div
-      className={classNames(
-        "relative overflow-hidden rounded-2xl border border-white/40 bg-white/85 p-6 backdrop-blur-sm transition-colors duration-300 dark:border-white/10 dark:bg-[#111a2f]/75"
-      )}
+      className="relative overflow-hidden rounded-2xl border border-white/40 bg-white/85 p-6 backdrop-blur-sm transition-colors duration-300 dark:border-white/10 dark:bg-[#111a2f]/75"
     >
       <div
         className="pointer-events-none absolute inset-0 rounded-2xl"
@@ -168,31 +151,28 @@ export const BankCard: React.FC<BankCardProps> = ({
           </div>
         </div>
         <div className="flex flex-shrink-0 items-center justify-start gap-2 md:justify-end">
-          <button
+          <Button
             onClick={handleSync}
             disabled={loading}
-            className={classNames(
-              'inline-flex items-center gap-2 rounded-full border border-[#e2e8f0] bg-white/90 px-4 py-2 text-sm font-semibold text-[#475569] shadow-[0_14px_38px_-30px_rgba(15,23,42,0.35)] transition-all duration-200 ease-out hover:-translate-y-[1px] hover:border-[#93c5fd] hover:text-[#0f172a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9] focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none dark:border-[#334155] dark:bg-[#1e293b]/90 dark:text-[#cbd5e1] dark:hover:border-[#38bdf8] dark:hover:text-white dark:focus-visible:ring-offset-slate-900',
-              loading && 'pointer-events-none opacity-60 cursor-not-allowed'
-            )}
+            variant="secondary"
           >
             <RefreshCw
-              className={classNames('h-4 w-4', loading && 'animate-spin')}
+              className={cn('h-4 w-4', loading && 'animate-spin')}
             />
             Sync now
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setExpanded((v) => !v)}
-            className="inline-flex items-center gap-2 rounded-full border border-[#e2e8f0] bg-white/90 px-4 py-2 text-sm font-semibold text-[#475569] shadow-[0_14px_38px_-30px_rgba(15,23,42,0.35)] transition-all duration-200 ease-out hover:-translate-y-[1px] hover:border-[#93c5fd] hover:text-[#0f172a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-[#334155] dark:bg-[#1e293b]/90 dark:text-[#cbd5e1] dark:hover:border-[#38bdf8] dark:hover:text-white dark:focus-visible:ring-offset-slate-900"
+            variant="secondary"
           >
             <ChevronDown
-              className={classNames(
+              className={cn(
                 "h-4 w-4 transition-transform",
                 expanded && "rotate-180"
               )}
             />
             {expanded ? "Hide" : "Show"}
-          </button>
+          </Button>
           <CardMenu onDisconnect={handleDisconnectClick} />
         </div>
       </div>

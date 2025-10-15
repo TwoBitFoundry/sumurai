@@ -8,6 +8,7 @@ import AccountsPage from '../pages/AccountsPage'
 import Card from './ui/Card'
 import { ErrorBoundary } from './ErrorBoundary'
 import { HeaderAccountFilter } from './HeaderAccountFilter'
+import { Button } from '../ui/primitives'
 
 type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts'
 
@@ -37,15 +38,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
   }, [])
 
   const toggleTheme = () => setDark(!dark)
-  const tabButtonSizing = scrolled ? 'px-3 py-1 text-xs' : 'px-4 py-1.5 text-sm'
-  const tabButtonShared =
-    'group relative inline-flex items-center justify-center overflow-hidden rounded-full font-medium transition-all duration-300 ease-out backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900'
-  const tabButtonActive =
-    'border border-white/65 dark:border-white/20 bg-[linear-gradient(115deg,#38bdf8_0%,#22d3ee_46%,#a855f7_100%)] text-white shadow-[0_16px_42px_-18px_rgba(14,165,233,0.55)] dark:shadow-[0_16px_38px_-18px_rgba(56,189,248,0.55)] before:absolute before:inset-0 before:bg-[linear-gradient(140deg,rgba(255,255,255,0.38)_0%,rgba(255,255,255,0)_60%)] before:opacity-80 before:pointer-events-none'
-  const tabButtonInactive =
-    'border border-slate-200/70 dark:border-white/10 bg-white/70 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-sky-300/50 dark:hover:border-sky-500/60 hover:shadow-[0_14px_32px_-18px_rgba(56,189,248,0.35)]'
-  const tabButtonHalo =
-    'after:absolute after:inset-[-28%] after:rounded-[999px] after:bg-[radial-gradient(circle_at_35%_30%,rgba(14,165,233,0.16),transparent_62%)] after:opacity-0 after:transition-opacity after:duration-300 group-hover:after:opacity-90 dark:after:bg-[radial-gradient(circle_at_35%_30%,rgba(56,189,248,0.22),transparent_62%)]'
 
   return (
     <ErrorBoundary>
@@ -69,18 +61,19 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
                 <div className="flex items-center gap-6">
                   <div className={`flex items-center gap-2 font-semibold ${scrolled ? 'text-base' : 'text-lg'}`}>Sumaura</div>
 
-                  <nav className={`flex gap-2 ${scrolled ? 'text-xs' : 'text-sm'}`} aria-label="Primary">
+                  <nav className="flex gap-2" aria-label="Primary">
                     {TABS.map(({ key, label }) => (
-                      <button
+                      <Button
                         key={key}
                         type="button"
                         onClick={() => setTab(key)}
-                        className={`${tabButtonShared} ${tabButtonSizing} ${tabButtonHalo} ${
-                          tab === key ? tabButtonActive : tabButtonInactive
+                        variant={tab === key ? 'tabActive' : 'tab'}
+                        className={`${scrolled ? 'px-3 py-1 text-xs' : 'px-4 py-1.5 text-sm'} after:absolute after:inset-[-28%] after:rounded-[999px] after:bg-[radial-gradient(circle_at_35%_30%,rgba(14,165,233,0.16),transparent_62%)] after:opacity-0 after:transition-opacity after:duration-300 hover:after:opacity-90 dark:after:bg-[radial-gradient(circle_at_35%_30%,rgba(56,189,248,0.22),transparent_62%)] ${
+                          tab !== key ? 'border border-slate-200/70 dark:border-white/10 bg-white/70 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-sky-300/50 dark:hover:border-sky-500/60 hover:shadow-[0_14px_32px_-18px_rgba(56,189,248,0.35)]' : ''
                         }`}
                       >
                         {label}
-                      </button>
+                      </Button>
                     ))}
                   </nav>
                 </div>
@@ -90,23 +83,25 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
 
                   <div className="w-px h-6 bg-slate-200 dark:bg-slate-600"></div>
 
-                  <button
+                  <Button
                     type="button"
                     onClick={toggleTheme}
-                    className={`${scrolled ? 'px-2.5 py-1' : 'px-3 py-1.5'} rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all duration-200`}
+                    size={scrolled ? 'xs' : 'sm'}
+                    className="rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600"
                     aria-label="Toggle theme"
                     title="Toggle theme"
                   >
                     {dark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
                     onClick={onLogout}
-                    className={`${scrolled ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm'} rounded-xl border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200`}
+                    variant="danger"
+                    size={scrolled ? 'xs' : 'sm'}
                     title="Logout"
                   >
                     Logout
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

@@ -2,6 +2,7 @@ import React from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { LayoutDashboard, ReceiptText, Target } from 'lucide-react'
 import dashboardHero from '@docs/images/dashboard-hero.png'
+import { Badge } from '../../ui/primitives'
 
 type FeaturePalette = {
   gradient: string
@@ -62,9 +63,9 @@ export function WelcomeStep() {
     <div className="grid gap-8 items-start lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
       <div className="flex flex-col space-y-8">
         <div className="space-y-5">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[#93c5fd]/20 dark:bg-[#38bdf8]/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#0ea5e9] dark:text-[#38bdf8] transition-colors duration-300 ease-out">
+          <Badge variant="primary" size="sm">
             Welcome
-          </div>
+          </Badge>
 
           <div className="space-y-3">
             <h1 className="text-3xl font-bold tracking-tight text-[#0f172a] dark:text-white md:text-[2.6rem] transition-colors duration-300 ease-out">

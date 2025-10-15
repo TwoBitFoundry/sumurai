@@ -112,7 +112,7 @@ describe('BankCard', () => {
       await user.click(syncButton)
 
       expect(syncButton).toBeDisabled()
-      expect(screen.getByText(/sync now/i).closest('button')).toHaveClass('opacity-60', 'cursor-not-allowed')
+      expect(syncButton).toHaveClass('disabled:opacity-60', 'disabled:cursor-not-allowed')
 
       resolvePrims()
       await waitFor(() => {
