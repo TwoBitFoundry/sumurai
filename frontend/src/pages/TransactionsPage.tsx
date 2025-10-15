@@ -6,6 +6,7 @@ import { fmtUSD } from '../utils/format'
 import { ReceiptText, TrendingUp, AlertTriangle, RefreshCcw } from 'lucide-react'
 import HeroStatCard from '../components/widgets/HeroStatCard'
 import { formatCategoryName } from '../utils/categories'
+import { PageLayout } from '../layouts/PageLayout'
 
 const TransactionsPage: React.FC = () => {
   const {
@@ -82,76 +83,51 @@ const TransactionsPage: React.FC = () => {
   // No local scroll fade management needed
 
   return (
-    <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-[2.25rem] border border-white/35 bg-white/24 p-8 shadow-[0_32px_110px_-60px_rgba(15,23,42,0.75)] backdrop-blur-[28px] backdrop-saturate-[150%] transition-colors duration-500 ease-out dark:border-white/12 dark:bg-[#0f172a]/55 dark:shadow-[0_36px_120px_-62px_rgba(2,6,23,0.85)] sm:p-12">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-[1px] rounded-[2.2rem] ring-1 ring-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)] dark:ring-white/12 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.48)]" />
-          <div className="absolute inset-0 rounded-[2.2rem] bg-gradient-to-b from-white/72 via-white/28 to-transparent transition-colors duration-500 dark:from-slate-900/68 dark:via-slate-900/34 dark:to-transparent" />
+    <PageLayout
+      badge="Transaction History"
+      title="Review every dollar across accounts"
+      subtitle="Search and filter transactions across all connected accounts."
+      error={error}
+      stats={
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <HeroStatCard
+            index={1}
+            title="Total shown"
+            icon={<ReceiptText className="h-4 w-4" />}
+            value={stats.totalCount}
+            suffix={stats.totalCount === 1 ? 'item' : 'items'}
+            subtext={fmtUSD(stats.totalSpent)}
+          />
+
+          <HeroStatCard
+            index={2}
+            title="Average size"
+            icon={<TrendingUp className="h-4 w-4" />}
+            value={fmtUSD(stats.avgTransaction)}
+            subtext={stats.categoryDriver || undefined}
+          />
+
+          <HeroStatCard
+            index={3}
+            title="Largest size"
+            icon={<AlertTriangle className="h-4 w-4" />}
+            value={stats.largestTransaction ? fmtUSD(Math.abs(stats.largestTransaction.amount)) : '$0'}
+            pills={stats.largestTransaction && stats.totalCount > 1 ? [
+              { label: (stats.largestTransaction.merchant || stats.largestTransaction.name) ?? '' }
+            ] : []}
+          />
+
+          <HeroStatCard
+            index={4}
+            title="Recurring"
+            icon={<RefreshCcw className="h-4 w-4" />}
+            value={stats.recurringCount}
+            suffix={stats.recurringCount === 1 ? 'merchant' : 'merchants'}
+            pills={stats.recurringMerchants.map(m => ({ label: m }))}
+          />
         </div>
-
-        <div className="relative z-10 flex flex-col gap-6">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-2xl space-y-4">
-              <span className="inline-flex items-center justify-center rounded-full bg-white/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-600 shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/75 dark:text-slate-200">
-                Transaction History
-              </span>
-              <div className="space-y-3">
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900 transition-colors duration-300 ease-out dark:text-white sm:text-4xl">
-                  Review every dollar across accounts
-                </h1>
-                <p className="text-base leading-relaxed text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300">
-                  Search and filter transactions across all connected accounts.
-                </p>
-              </div>
-            </div>
-
-          </div>
-
-          {error && (
-            <div className="rounded-2xl border border-red-200/70 bg-red-50/80 px-5 py-3 shadow-sm dark:border-red-700/60 dark:bg-red-900/25">
-              <div className="text-sm font-medium text-red-600 dark:text-red-300">Error: {error}</div>
-            </div>
-          )}
-
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <HeroStatCard
-              index={1}
-              title="Total shown"
-              icon={<ReceiptText className="h-4 w-4" />}
-              value={stats.totalCount}
-              suffix={stats.totalCount === 1 ? 'item' : 'items'}
-              subtext={fmtUSD(stats.totalSpent)}
-            />
-
-            <HeroStatCard
-              index={2}
-              title="Average size"
-              icon={<TrendingUp className="h-4 w-4" />}
-              value={fmtUSD(stats.avgTransaction)}
-              subtext={stats.categoryDriver || undefined}
-            />
-
-            <HeroStatCard
-              index={3}
-              title="Largest size"
-              icon={<AlertTriangle className="h-4 w-4" />}
-              value={stats.largestTransaction ? fmtUSD(Math.abs(stats.largestTransaction.amount)) : '$0'}
-              pills={stats.largestTransaction && stats.totalCount > 1 ? [
-                { label: (stats.largestTransaction.merchant || stats.largestTransaction.name) ?? '' }
-              ] : []}
-            />
-
-            <HeroStatCard
-              index={4}
-              title="Recurring"
-              icon={<RefreshCcw className="h-4 w-4" />}
-              value={stats.recurringCount}
-              suffix={stats.recurringCount === 1 ? 'merchant' : 'merchants'}
-              pills={stats.recurringMerchants.map(m => ({ label: m }))}
-            />
-          </div>
-        </div>
-      </section>
+      }
+    >
 
       <div className="relative overflow-hidden rounded-[2.25rem] border border-white/35 bg-white/18 p-0 shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)] backdrop-blur-2xl backdrop-saturate-[150%] transition-colors duration-500 dark:border-white/12 dark:bg-[#0f172a]/55 dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)]">
         <div className="pointer-events-none absolute inset-0">
@@ -204,7 +180,7 @@ const TransactionsPage: React.FC = () => {
           )}
         </div>
       </div>
-    </div>
+    </PageLayout>
   )
 }
 

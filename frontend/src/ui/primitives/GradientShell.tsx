@@ -16,12 +16,14 @@ export function GradientShell({
     <div
       className={cn(
         'relative',
-        variant === 'auth' ? 'min-h-[calc(100vh-4rem)]' : 'min-h-screen',
-        'overflow-hidden',
+        variant === 'auth' ? 'min-h-[calc(100vh-4rem)] overflow-hidden' : 'min-h-screen',
         className
       )}
     >
-      <div className="pointer-events-none absolute inset-0">
+      <div className={cn(
+        'pointer-events-none',
+        variant === 'auth' ? 'absolute inset-0' : 'fixed inset-0'
+      )}>
         <div
           className={cn(
             'absolute inset-0',
@@ -99,8 +101,8 @@ export function GradientShell({
 
       <div
         className={cn(
-          'relative z-10',
-          variant === 'auth' ? 'flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12 sm:px-6' : 'flex min-h-screen flex-col'
+          'relative',
+          variant === 'auth' ? 'flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12 sm:px-6' : ''
         )}
       >
         {children}
