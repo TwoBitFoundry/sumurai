@@ -1,22 +1,7 @@
-import type { IHttpClient } from './boundaries'
-import { FetchHttpClient } from './boundaries'
-import { ApiClient, ConflictError } from './ApiClient'
+import { ApiClient } from './ApiClient'
 import type { Budget } from '../types/api'
 
-interface BudgetServiceDependencies {
-  http: IHttpClient
-}
-
 export class BudgetService {
-  private static deps: BudgetServiceDependencies = {
-    http: new FetchHttpClient()
-  }
-
-  static configure(deps: Partial<BudgetServiceDependencies>): void {
-    BudgetService.deps = {
-      http: deps.http ?? BudgetService.deps.http
-    }
-  }
   // Return plain budgets; map any legacy month field away.
   static async getBudgets(): Promise<Budget[]> {
     const budgets = await ApiClient.get<any[]>('/budgets')

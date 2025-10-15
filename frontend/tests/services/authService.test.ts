@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { AuthService } from '@/services/authService'
+import { ApiClient } from '@/services/ApiClient'
 import type { IHttpClient } from '@/services/boundaries/IHttpClient'
 import type { IStorageAdapter } from '@/services/boundaries/IStorageAdapter'
 
@@ -38,8 +39,8 @@ describe('AuthService logout functionality', () => {
   beforeEach(() => {
     mockHttpClient = new MockHttpClient()
     mockStorageAdapter = new MockStorageAdapter()
+    ApiClient.configure(mockHttpClient)
     AuthService.configure({
-      http: mockHttpClient,
       storage: mockStorageAdapter
     })
     mockStorageAdapter.clear()
@@ -59,7 +60,7 @@ describe('AuthService logout functionality', () => {
 
     const result = await AuthService.logout()
 
-    expect(mockHttpClient.post).toHaveBeenCalledWith('/auth/logout')
+    expect(mockHttpClient.post).toHaveBeenCalledWith('/auth/logout', undefined, expect.any(Object))
     expect(result).toEqual(mockResponse)
     expect(AuthService.getToken()).toBeNull()
   })

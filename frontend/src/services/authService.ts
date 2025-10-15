@@ -1,6 +1,6 @@
-import type { IHttpClient } from './boundaries'
 import type { IStorageAdapter } from './boundaries'
-import { FetchHttpClient, BrowserStorageAdapter } from './boundaries'
+import { BrowserStorageAdapter } from './boundaries'
+import { ApiClient, AuthenticationError } from './ApiClient'
 
 interface LoginCredentials {
   email: string
@@ -36,13 +36,14 @@ interface LogoutResponse {
 }
 
 interface AuthServiceDependencies {
-  http: IHttpClient
   storage: IStorageAdapter
 }
 
 export class AuthService {
   private static refreshPromise: Promise<RefreshResponse> | null = null
-  private static deps: AuthServiceDependencies
+  private static deps: AuthServiceDependencies = {
+    storage: new BrowserStorageAdapter()
+  }
 
   static configure(deps: AuthServiceDependencies): void {
     this.deps = deps
@@ -50,12 +51,12 @@ export class AuthService {
 
   static async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      return await this.deps.http.post<AuthResponse>('/auth/login', credentials)
+      return await ApiClient.post<AuthResponse>('/auth/login', credentials)
     } catch (error) {
+      if (error instanceof AuthenticationError) {
+        throw new Error('Invalid email or password')
+      }
       if (error instanceof Error) {
-        if (error.message.includes('401')) {
-          throw new Error('Invalid email or password')
-        }
         if (error.message.includes('500')) {
           throw new Error('Server error. Please try again later.')
         }
@@ -63,7 +64,7 @@ export class AuthService {
       throw error
     }
   }
-  
+
   static storeToken(token: string, refreshToken?: string): void {
     this.deps.storage.setItem('auth_token', token)
     if (refreshToken) {
@@ -89,7 +90,7 @@ export class AuthService {
     }
 
     try {
-      await this.deps.http.get('/providers/status')
+      await ApiClient.get('/providers/status')
       return true
     } catch (error) {
       if (error instanceof Error && error.message.includes('401')) {
@@ -103,16 +104,16 @@ export class AuthService {
 
   static async logout(): Promise<LogoutResponse> {
     try {
-      const response = await this.deps.http.post<LogoutResponse>('/auth/logout')
+      const response = await ApiClient.post<LogoutResponse>('/auth/logout')
       return response
     } finally {
       this.clearToken()
     }
   }
-  
+
   static async register(credentials: RegisterCredentials): Promise<AuthResponse> {
     try {
-      return await this.deps.http.post<AuthResponse>('/auth/register', credentials)
+      return await ApiClient.post<AuthResponse>('/auth/register', credentials)
     } catch (error) {
       if (error instanceof Error) {
         if (error.message.includes('409')) {
@@ -138,7 +139,7 @@ export class AuthService {
     }
 
     this.refreshPromise = this.performRefresh(currentToken)
-    
+
     try {
       const result = await this.refreshPromise
       return result
@@ -148,10 +149,10 @@ export class AuthService {
   }
 
   private static async performRefresh(currentToken: string): Promise<RefreshResponse> {
-    return this.deps.http.post<RefreshResponse>('/auth/refresh')
+    return ApiClient.post<RefreshResponse>('/auth/refresh')
   }
 
   static async completeOnboarding(): Promise<{ message: string; onboarding_completed: boolean }> {
-    return this.deps.http.put<{ message: string; onboarding_completed: boolean }>('/auth/onboarding/complete')
+    return ApiClient.put<{ message: string; onboarding_completed: boolean }>('/auth/onboarding/complete')
   }
 }

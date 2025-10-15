@@ -1,5 +1,3 @@
-import type { IHttpClient } from './boundaries'
-import { FetchHttpClient } from './boundaries'
 import { ApiClient } from './ApiClient'
 import type { ProviderStatusResponse } from '../types/api'
 
@@ -13,20 +11,7 @@ export interface TellerConnectionStatus {
   sync_in_progress?: boolean
 }
 
-interface TellerServiceDependencies {
-  http: IHttpClient
-}
-
 export class TellerService {
-  private static deps: TellerServiceDependencies = {
-    http: new FetchHttpClient()
-  }
-
-  static configure(deps: Partial<TellerServiceDependencies>): void {
-    TellerService.deps = {
-      http: deps.http ?? TellerService.deps.http
-    }
-  }
   static async getStatus(): Promise<TellerConnectionStatus[]> {
     const status = await ApiClient.get<ProviderStatusResponse>('/providers/status')
 

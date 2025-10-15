@@ -26,7 +26,6 @@ describe('ApiClient with Direct Fetch', () => {
   beforeEach(() => {
     fetchSpy = vi.spyOn(global, 'fetch')
     AuthService.configure({
-      http: new MockHttpClient(),
       storage: new MockStorage()
     })
     AuthService.clearToken()

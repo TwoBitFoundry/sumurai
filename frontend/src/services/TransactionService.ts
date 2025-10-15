@@ -1,5 +1,3 @@
-import type { IHttpClient } from './boundaries'
-import { FetchHttpClient } from './boundaries'
 import { ApiClient } from './ApiClient'
 import type { Transaction } from '../types/api'
 import { appendAccountQueryParams } from '../utils/queryParams'
@@ -15,20 +13,7 @@ export interface TransactionFilters {
   accountIds?: string[]
 }
 
-interface TransactionServiceDependencies {
-  http: IHttpClient
-}
-
 export class TransactionService {
-  private static deps: TransactionServiceDependencies = {
-    http: new FetchHttpClient()
-  }
-
-  static configure(deps: Partial<TransactionServiceDependencies>): void {
-    TransactionService.deps = {
-      http: deps.http ?? TransactionService.deps.http
-    }
-  }
   static async getTransactions(filters?: TransactionFilters): Promise<Transaction[]> {
     let endpoint = '/transactions'
 

@@ -33,6 +33,7 @@ interface RetryConfig {
 
 export class ApiClient {
   private static baseUrl = '/api'
+  private static httpClient: IHttpClient = new FetchHttpClient()
   private static retryConfig: RetryConfig = {
     maxRetries: 3,
     baseDelay: 1000,
@@ -47,6 +48,10 @@ export class ApiClient {
       'Connection reset',
       'Request aborted'
     ]
+  }
+
+  static configure(httpClient: IHttpClient): void {
+    this.httpClient = httpClient
   }
 
 
@@ -158,24 +163,33 @@ export class ApiClient {
     endpoint: string,
     options: RequestInit
   ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`
-    const response = await fetch(url, options)
+    const method = (options.method || 'GET').toUpperCase()
+    const body = options.body ? JSON.parse(options.body as string) : undefined
+    const requestOptions = { headers: options.headers as Record<string, string> }
 
-    if (!response.ok) {
-      const error = await this.createApiError(response)
+    try {
+      const result = await (async () => {
+        switch (method) {
+          case 'GET':
+            return this.httpClient.get<T>(endpoint, requestOptions)
+          case 'POST':
+            return this.httpClient.post<T>(endpoint, body, requestOptions)
+          case 'PUT':
+            return this.httpClient.put<T>(endpoint, body, requestOptions)
+          case 'DELETE':
+            return this.httpClient.delete<T>(endpoint, requestOptions)
+          default:
+            throw new Error(`Unsupported HTTP method: ${method}`)
+        }
+      })()
 
-      if (this.isRetryableStatus(response.status)) {
+      return result
+    } catch (error) {
+      if (error instanceof ApiError) {
         throw error
       }
-
       throw error
     }
-
-    if (response.status === 204) {
-      return {} as T
-    }
-
-    return response.json()
   }
 
   private static async handleAuthenticationError<T>(
@@ -183,17 +197,23 @@ export class ApiClient {
     options: RequestInit,
     attempt: number
   ): Promise<T> {
+    // Don't try to refresh if we're already refreshing
+    if (endpoint === '/auth/refresh') {
+      AuthService.clearToken()
+      throw new AuthenticationError()
+    }
+
     try {
       // Attempt to refresh the token
       const refreshResult = await AuthService.refreshToken()
       AuthService.storeToken(refreshResult.token)
-      
+
       // Retry the original request with the new token
       const newHeaders = {
         ...options.headers,
         Authorization: `Bearer ${refreshResult.token}`
       }
-      
+
       return this.makeRequestWithRetry<T>(endpoint, { ...options, headers: newHeaders }, 0)
     } catch (refreshError) {
       // Token refresh failed, clear tokens and throw authentication error
@@ -301,16 +321,14 @@ export class ApiClient {
   }
 
   static async healthCheck(): Promise<string> {
-    // Health check doesn't need authentication, so bypass the normal flow
-    const response = await fetch('/health', {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    })
-
-    if (!response.ok) {
-      throw new ApiError(response.status, 'Health check failed')
+    try {
+      const result = await this.httpClient.get<string>('/health', {})
+      return typeof result === 'string' ? result : 'OK'
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error
+      }
+      throw new ApiError(0, 'Health check failed')
     }
-
-    return response.text()
   }
 }

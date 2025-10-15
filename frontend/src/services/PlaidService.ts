@@ -1,5 +1,3 @@
-import type { IHttpClient } from './boundaries'
-import { FetchHttpClient } from './boundaries'
 import { ApiClient } from './ApiClient'
 import type {
   PlaidLinkTokenResponse,
@@ -10,20 +8,7 @@ import type {
   Account
 } from '../types/api'
 
-interface PlaidServiceDependencies {
-  http: IHttpClient
-}
-
 export class PlaidService {
-  private static deps: PlaidServiceDependencies = {
-    http: new FetchHttpClient()
-  }
-
-  static configure(deps: Partial<PlaidServiceDependencies>): void {
-    PlaidService.deps = {
-      http: deps.http ?? PlaidService.deps.http
-    }
-  }
   static async getLinkToken(): Promise<PlaidLinkTokenResponse> {
     return ApiClient.post<PlaidLinkTokenResponse>('/plaid/link-token', {})
   }

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AuthService } from '@/services/authService'
+import { ApiClient } from '@/services/ApiClient'
 import type { IHttpClient } from '@/services/boundaries/IHttpClient'
 import type { IStorageAdapter } from '@/services/boundaries/IStorageAdapter'
 
@@ -38,8 +39,8 @@ describe('AuthService with Injected Boundaries', () => {
   beforeEach(() => {
     mockHttpClient = new MockHttpClient()
     mockStorageAdapter = new MockStorageAdapter()
+    ApiClient.configure(mockHttpClient)
     AuthService.configure({
-      http: mockHttpClient,
       storage: mockStorageAdapter
     })
     mockStorageAdapter.clear()
@@ -67,7 +68,7 @@ describe('AuthService with Injected Boundaries', () => {
       expect(mockHttpClient.post).toHaveBeenCalledWith('/auth/login', {
         email: 'test@example.com',
         password: 'password123'
-      })
+      }, expect.any(Object))
       expect(result).toEqual(loginResponse)
     })
 
@@ -129,7 +130,7 @@ describe('AuthService with Injected Boundaries', () => {
       expect(mockHttpClient.post).toHaveBeenCalledWith('/auth/register', {
         email: 'newuser@example.com',
         password: 'password123'
-      })
+      }, expect.any(Object))
       expect(result).toEqual(registerResponse)
     })
   })

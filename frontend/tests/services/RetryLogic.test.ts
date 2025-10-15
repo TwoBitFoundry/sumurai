@@ -1,40 +1,30 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { ApiClient, ApiError } from '@/services/ApiClient'
+import { ApiClient, ApiError, ServerError, NetworkError } from '@/services/ApiClient'
 import { AuthService } from '@/services/authService'
+import { setupTestBoundaries } from '../setup/setupTestBoundaries'
 
-// Mock the AuthService
-vi.mock('@/services/authService', () => ({
-  AuthService: {
-    getToken: vi.fn(),
-    clearToken: vi.fn(),
-    logout: vi.fn(),
-  },
-}))
+vi.spyOn(AuthService, 'getToken')
+vi.spyOn(AuthService, 'clearToken')
+vi.spyOn(AuthService, 'logout')
 
-// Mock fetch globally for this suite
-const mockFetch = vi.fn()
-globalThis.fetch = mockFetch
-
-// Spy on setTimeout and make it synchronous within this suite only
 let setTimeoutSpy: ReturnType<typeof vi.spyOn>
 
 describe('Retry Logic and Exponential Backoff', () => {
   const originalConsoleError = console.error
+  let mockHttp: any
 
   beforeEach(() => {
     vi.clearAllMocks()
-    // Mock console.error to suppress expected error logs during tests
+    const boundaries = setupTestBoundaries()
+    mockHttp = boundaries.http
     console.error = vi.fn()
-    
-    vi.mocked(AuthService.getToken).mockReturnValue('mock-token')
-    vi.mocked(AuthService.logout).mockResolvedValue({ message: 'Logged out', cleared_session: 'test' })
-    // Ensure retries are enabled for this suite
+
+    vi.spyOn(AuthService, 'getToken').mockReturnValue('mock-token')
+    vi.spyOn(AuthService, 'logout').mockResolvedValue({ message: 'Logged out', cleared_session: 'test' })
     ApiClient.setTestMaxRetries(3)
-    // Make setTimeout invoke callbacks immediately and allow timing assertions
     setTimeoutSpy = vi
       .spyOn(globalThis, 'setTimeout')
       .mockImplementation(((cb: TimerHandler) => {
-        // invoke immediately; return a dummy id
         if (typeof cb === 'function') {
           ;(cb as Function)()
         }
@@ -43,203 +33,153 @@ describe('Retry Logic and Exponential Backoff', () => {
   })
 
   afterEach(() => {
-    // Restore console.error
     console.error = originalConsoleError
-    // Restore all spies (including setTimeout)
     vi.restoreAllMocks()
   })
 
   describe('Transient Network Errors', () => {
     it('should retry on network timeout errors with exponential backoff', async () => {
-      // First two calls timeout, third succeeds
-      mockFetch
+      mockHttp.get
         .mockRejectedValueOnce(new Error('Request timeout'))
         .mockRejectedValueOnce(new Error('Request timeout'))
-        .mockResolvedValueOnce(new Response(
-          JSON.stringify({ data: 'success' }),
-          { status: 200 }
-        ))
+        .mockResolvedValueOnce({ data: 'success' })
 
       const result = await ApiClient.get('/test')
-      
-      expect(mockFetch).toHaveBeenCalledTimes(3)
+
+      expect(mockHttp.get).toHaveBeenCalledTimes(3)
       expect(result).toEqual({ data: 'success' })
     })
 
     it('should retry on network connection errors', async () => {
-      mockFetch
+      mockHttp.get
         .mockRejectedValueOnce(new Error('Failed to fetch'))
         .mockRejectedValueOnce(new Error('Failed to fetch'))
-        .mockResolvedValueOnce(new Response(
-          JSON.stringify({ data: 'success' }),
-          { status: 200 }
-        ))
+        .mockResolvedValueOnce({ data: 'success' })
 
       const result = await ApiClient.get('/test')
-      
-      expect(mockFetch).toHaveBeenCalledTimes(3)
+
+      expect(mockHttp.get).toHaveBeenCalledTimes(3)
       expect(result).toEqual({ data: 'success' })
     })
 
     it('should retry on DNS resolution failures', async () => {
-      mockFetch
+      mockHttp.get
         .mockRejectedValueOnce(new Error('DNS resolution failed'))
-        .mockResolvedValueOnce(new Response(
-          JSON.stringify({ data: 'success' }),
-          { status: 200 }
-        ))
+        .mockResolvedValueOnce({ data: 'success' })
 
       const result = await ApiClient.get('/test')
-      
-      expect(mockFetch).toHaveBeenCalledTimes(2)
+
+      expect(mockHttp.get).toHaveBeenCalledTimes(2)
       expect(result).toEqual({ data: 'success' })
     })
   })
 
   describe('Server Error Retries', () => {
     it('should retry on 502 Bad Gateway errors', async () => {
-      mockFetch
-        .mockResolvedValueOnce(new Response('Bad Gateway', { status: 502 }))
-        .mockResolvedValueOnce(new Response('Bad Gateway', { status: 502 }))
-        .mockResolvedValueOnce(new Response(
-          JSON.stringify({ data: 'success' }),
-          { status: 200 }
-        ))
+      mockHttp.get
+        .mockRejectedValueOnce(new ServerError(502, 'Bad Gateway'))
+        .mockRejectedValueOnce(new ServerError(502, 'Bad Gateway'))
+        .mockResolvedValueOnce({ data: 'success' })
 
       const result = await ApiClient.get('/test')
-      
-      expect(mockFetch).toHaveBeenCalledTimes(3)
+
+      expect(mockHttp.get).toHaveBeenCalledTimes(3)
       expect(result).toEqual({ data: 'success' })
     })
 
     it('should retry on 503 Service Unavailable errors', async () => {
-      mockFetch
-        .mockResolvedValueOnce(new Response(
-          JSON.stringify({ error: 'Service temporarily unavailable' }),
-          { status: 503 }
-        ))
-        .mockResolvedValueOnce(new Response(
-          JSON.stringify({ data: 'success' }),
-          { status: 200 }
-        ))
+      mockHttp.get
+        .mockRejectedValueOnce(new ServerError(503, 'Service temporarily unavailable'))
+        .mockResolvedValueOnce({ data: 'success' })
 
       const result = await ApiClient.get('/test')
-      
-      expect(mockFetch).toHaveBeenCalledTimes(2)
+
+      expect(mockHttp.get).toHaveBeenCalledTimes(2)
       expect(result).toEqual({ data: 'success' })
     })
 
     it('should retry on 504 Gateway Timeout errors', async () => {
-      mockFetch
-        .mockResolvedValueOnce(new Response('Gateway Timeout', { status: 504 }))
-        .mockResolvedValueOnce(new Response(
-          JSON.stringify({ data: 'success' }),
-          { status: 200 }
-        ))
+      mockHttp.get
+        .mockRejectedValueOnce(new ServerError(504, 'Gateway Timeout'))
+        .mockResolvedValueOnce({ data: 'success' })
 
       const result = await ApiClient.get('/test')
-      
-      expect(mockFetch).toHaveBeenCalledTimes(2)
+
+      expect(mockHttp.get).toHaveBeenCalledTimes(2)
       expect(result).toEqual({ data: 'success' })
     })
   })
 
   describe('Non-Retryable Errors', () => {
     it('should not retry on 400 Bad Request errors', async () => {
-      mockFetch.mockResolvedValueOnce(new Response(
-        JSON.stringify({ error: 'Invalid request' }),
-        { status: 400 }
-      ))
+      mockHttp.get.mockRejectedValueOnce(new ApiError(400, 'Invalid request'))
 
       await expect(ApiClient.get('/test')).rejects.toThrow(ApiError)
-      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockHttp.get).toHaveBeenCalledTimes(1)
     })
 
     it('should not retry on 404 Not Found errors', async () => {
-      mockFetch.mockResolvedValueOnce(new Response(
-        JSON.stringify({ error: 'Not found' }),
-        { status: 404 }
-      ))
+      mockHttp.get.mockRejectedValueOnce(new ApiError(404, 'Not found'))
 
       await expect(ApiClient.get('/test')).rejects.toThrow(ApiError)
-      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockHttp.get).toHaveBeenCalledTimes(1)
     })
 
     it('should not retry on 403 Forbidden errors', async () => {
-      mockFetch.mockResolvedValueOnce(new Response(
-        JSON.stringify({ error: 'Forbidden' }),
-        { status: 403 }
-      ))
+      mockHttp.get.mockRejectedValueOnce(new ApiError(403, 'Forbidden'))
 
       await expect(ApiClient.get('/test')).rejects.toThrow(ApiError)
-      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockHttp.get).toHaveBeenCalledTimes(1)
     })
 
     it('should not retry on 422 Unprocessable Entity errors', async () => {
-      mockFetch.mockResolvedValueOnce(new Response(
-        JSON.stringify({ error: 'Validation failed' }),
-        { status: 422 }
-      ))
+      mockHttp.get.mockRejectedValueOnce(new ApiError(422, 'Validation failed'))
 
       await expect(ApiClient.get('/test')).rejects.toThrow(ApiError)
-      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockHttp.get).toHaveBeenCalledTimes(1)
     })
   })
 
   describe('Maximum Retry Limits', () => {
     it('should respect maximum retry count and fail after exhausting retries', async () => {
-      // Mock 4 consecutive failures (initial + 3 retries = max attempts)
-      mockFetch
+      mockHttp.get
         .mockRejectedValueOnce(new Error('Network error'))
         .mockRejectedValueOnce(new Error('Network error'))
         .mockRejectedValueOnce(new Error('Network error'))
         .mockRejectedValueOnce(new Error('Network error'))
 
-      await expect(ApiClient.get('/test')).rejects.toThrow('Network error')
-      expect(mockFetch).toHaveBeenCalledTimes(4) // Initial + 3 retries
+      await expect(ApiClient.get('/test')).rejects.toThrow(NetworkError)
+      expect(mockHttp.get).toHaveBeenCalledTimes(4)
     })
 
     it('should reset retry count between different requests', async () => {
-      // First request: fails then succeeds
-      mockFetch
+      mockHttp.get
         .mockRejectedValueOnce(new Error('Network error'))
-        .mockResolvedValueOnce(new Response(
-          JSON.stringify({ data: 'first' }),
-          { status: 200 }
-        ))
+        .mockResolvedValueOnce({ data: 'first' })
 
       const firstResult = await ApiClient.get('/test1')
       expect(firstResult).toEqual({ data: 'first' })
 
-      // Second request: should start fresh retry count
-      mockFetch
+      mockHttp.get
         .mockRejectedValueOnce(new Error('Network error'))
-        .mockResolvedValueOnce(new Response(
-          JSON.stringify({ data: 'second' }),
-          { status: 200 }
-        ))
+        .mockResolvedValueOnce({ data: 'second' })
 
       const secondResult = await ApiClient.get('/test2')
       expect(secondResult).toEqual({ data: 'second' })
-      expect(mockFetch).toHaveBeenCalledTimes(4) // 2 calls for each request
+      expect(mockHttp.get).toHaveBeenCalledTimes(4)
     })
   })
 
   describe('Exponential Backoff Timing', () => {
     it('should implement exponential backoff delay between retries', async () => {
-      mockFetch
+      mockHttp.get
         .mockRejectedValueOnce(new Error('Network error'))
         .mockRejectedValueOnce(new Error('Network error'))
-        .mockResolvedValueOnce(new Response(
-          JSON.stringify({ data: 'success' }),
-          { status: 200 }
-        ))
+        .mockResolvedValueOnce({ data: 'success' })
 
       await ApiClient.get('/test')
 
-      // Should have called setTimeout with increasing delays
       expect(setTimeoutSpy).toHaveBeenCalledTimes(2)
-      // First retry: ~1000ms, second retry: ~2000ms (exponential backoff)
       expect(setTimeoutSpy).toHaveBeenNthCalledWith(1, expect.any(Function), expect.any(Number))
       expect(setTimeoutSpy).toHaveBeenNthCalledWith(2, expect.any(Function), expect.any(Number))
     })
@@ -247,12 +187,9 @@ describe('Retry Logic and Exponential Backoff', () => {
     it('should add jitter to prevent thundering herd', async () => {
       const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5)
 
-      mockFetch
+      mockHttp.get
         .mockRejectedValueOnce(new Error('Network error'))
-        .mockResolvedValueOnce(new Response(
-          JSON.stringify({ data: 'success' }),
-          { status: 200 }
-        ))
+        .mockResolvedValueOnce({ data: 'success' })
 
       await ApiClient.get('/test')
 
@@ -263,41 +200,35 @@ describe('Retry Logic and Exponential Backoff', () => {
 
   describe('HTTP Method Retry Consistency', () => {
     it('should retry POST requests on transient errors', async () => {
-      mockFetch
+      mockHttp.post
         .mockRejectedValueOnce(new Error('Request timeout'))
-        .mockResolvedValueOnce(new Response(
-          JSON.stringify({ success: true }),
-          { status: 200 }
-        ))
+        .mockResolvedValueOnce({ success: true })
 
       const result = await ApiClient.post('/test', { data: 'test' })
-      
-      expect(mockFetch).toHaveBeenCalledTimes(2)
+
+      expect(mockHttp.post).toHaveBeenCalledTimes(2)
       expect(result).toEqual({ success: true })
     })
 
     it('should retry PUT requests on transient errors', async () => {
-      mockFetch
+      mockHttp.put
         .mockRejectedValueOnce(new Error('Connection reset'))
-        .mockResolvedValueOnce(new Response(
-          JSON.stringify({ updated: true }),
-          { status: 200 }
-        ))
+        .mockResolvedValueOnce({ updated: true })
 
       const result = await ApiClient.put('/test', { data: 'updated' })
-      
-      expect(mockFetch).toHaveBeenCalledTimes(2)
+
+      expect(mockHttp.put).toHaveBeenCalledTimes(2)
       expect(result).toEqual({ updated: true })
     })
 
     it('should retry DELETE requests on transient errors', async () => {
-      mockFetch
+      mockHttp.delete
         .mockRejectedValueOnce(new Error('Request aborted'))
-        .mockResolvedValueOnce(new Response(null, { status: 204 }))
+        .mockResolvedValueOnce({})
 
       const result = await ApiClient.delete('/test')
-      
-      expect(mockFetch).toHaveBeenCalledTimes(2)
+
+      expect(mockHttp.delete).toHaveBeenCalledTimes(2)
       expect(result).toEqual({})
     })
   })
