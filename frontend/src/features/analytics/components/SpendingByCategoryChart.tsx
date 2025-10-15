@@ -1,17 +1,18 @@
 import React from 'react'
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts'
 import { fmtUSD } from '../../../utils/format'
-import { DonutDatum, getChartColorArray, getTooltipStyle } from '../adapters/chartData'
+import { DonutDatum } from '../adapters/chartData'
+import { useTheme } from '../../../context/ThemeContext'
 
 type Props = {
-  dark: boolean
   data: DonutDatum[]
   total: number
   hoveredCategory: string | null
   setHoveredCategory: (name: string | null) => void
 }
 
-export const SpendingByCategoryChart: React.FC<Props> = ({ dark, data, total, hoveredCategory, setHoveredCategory }) => {
+export const SpendingByCategoryChart: React.FC<Props> = ({ data, total, hoveredCategory, setHoveredCategory }) => {
+  const { mode, colors } = useTheme()
   return (
     <div className="group relative flex items-center justify-center py-2">
       <div className="relative w-[260px] h-[260px]">
@@ -34,13 +35,13 @@ export const SpendingByCategoryChart: React.FC<Props> = ({ dark, data, total, ho
                   animationDuration={800}
                 >
                   {data.map((cat, index) => {
-                    const color = getChartColorArray(dark)[index % getChartColorArray(dark).length]
+                    const color = colors.chart.primary[index % colors.chart.primary.length]
                     const isHovered = hoveredCategory === cat.name
                     return (
                       <Cell
                         key={`cell-${cat.name}`}
                         fill={color}
-                        stroke={isHovered ? (dark ? '#f8fafc' : '#1e293b') : 'none'}
+                        stroke={isHovered ? colors.chart.tooltipText : 'none'}
                         strokeWidth={isHovered ? 3 : 0}
                         onMouseEnter={() => setHoveredCategory(cat.name)}
                         onMouseLeave={() => setHoveredCategory(null)}
@@ -54,9 +55,17 @@ export const SpendingByCategoryChart: React.FC<Props> = ({ dark, data, total, ho
                   })}
                 </Pie>
                 <Tooltip
-                  contentStyle={getTooltipStyle(dark)}
-                  itemStyle={{ color: dark ? '#ffffff' : '#0f172a' }}
-                  labelStyle={{ color: dark ? '#ffffff' : '#0f172a' }}
+                  contentStyle={{
+                    background: colors.chart.tooltipBg,
+                    border: `1px solid ${colors.chart.tooltipBorder}`,
+                    color: colors.chart.tooltipText,
+                    borderRadius: '8px',
+                    boxShadow: mode === 'dark' ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                  }}
+                  itemStyle={{ color: colors.chart.tooltipText }}
+                  labelStyle={{ color: colors.chart.tooltipText }}
                   formatter={(value: any, _name: any, props: any) => [fmtUSD(Number(value)), props?.payload?.name || '']}
                 />
               </PieChart>

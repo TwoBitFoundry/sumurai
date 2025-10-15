@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run frontend checks
+cd frontend
+
+echo "🔍 Running ESLint on staged files..."
+npx lint-staged
+
+echo "✅ Pre-commit checks passed!"

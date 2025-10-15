@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AuthenticatedApp } from '@/components/AuthenticatedApp'
 import { AccountFilterProvider } from '@/hooks/useAccountFilter'
+import { ThemeTestProvider } from '@tests/utils/ThemeTestProvider'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 import { createProviderStatus } from '@tests/utils/fixtures'
 
@@ -57,9 +58,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
     })
 
     render(
-      <AccountFilterProvider>
-        <AuthenticatedApp onLogout={() => {}} />
-      </AccountFilterProvider>
+      <ThemeTestProvider>
+        <AccountFilterProvider>
+          <AuthenticatedApp onLogout={() => {}} />
+        </AccountFilterProvider>
+      </ThemeTestProvider>
     )
 
     // Navigate to Budgets tab
@@ -94,9 +97,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
     })
 
     render(
-      <AccountFilterProvider>
-        <AuthenticatedApp onLogout={() => {}} />
-      </AccountFilterProvider>
+      <ThemeTestProvider>
+        <AccountFilterProvider>
+          <AuthenticatedApp onLogout={() => {}} />
+        </AccountFilterProvider>
+      </ThemeTestProvider>
     )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
@@ -126,9 +131,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
     })
 
     render(
-      <AccountFilterProvider>
-        <AuthenticatedApp onLogout={() => {}} />
-      </AccountFilterProvider>
+      <ThemeTestProvider>
+        <AccountFilterProvider>
+          <AuthenticatedApp onLogout={() => {}} />
+        </AccountFilterProvider>
+      </ThemeTestProvider>
     )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
@@ -159,9 +166,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
     })
 
     render(
-      <AccountFilterProvider>
-        <AuthenticatedApp onLogout={() => {}} />
-      </AccountFilterProvider>
+      <ThemeTestProvider>
+        <AccountFilterProvider>
+          <AuthenticatedApp onLogout={() => {}} />
+        </AccountFilterProvider>
+      </ThemeTestProvider>
     )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
@@ -208,9 +217,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
     })
 
     render(
-      <AccountFilterProvider>
-        <AuthenticatedApp onLogout={() => {}} />
-      </AccountFilterProvider>
+      <ThemeTestProvider>
+        <AccountFilterProvider>
+          <AuthenticatedApp onLogout={() => {}} />
+        </AccountFilterProvider>
+      </ThemeTestProvider>
     )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
@@ -254,9 +265,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
     })
 
     render(
-      <AccountFilterProvider>
-        <AuthenticatedApp onLogout={() => {}} />
-      </AccountFilterProvider>
+      <ThemeTestProvider>
+        <AccountFilterProvider>
+          <AuthenticatedApp onLogout={() => {}} />
+        </AccountFilterProvider>
+      </ThemeTestProvider>
     )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
@@ -298,9 +311,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
     })
 
     render(
-      <AccountFilterProvider>
-        <AuthenticatedApp onLogout={() => {}} />
-      </AccountFilterProvider>
+      <ThemeTestProvider>
+        <AccountFilterProvider>
+          <AuthenticatedApp onLogout={() => {}} />
+        </AccountFilterProvider>
+      </ThemeTestProvider>
     )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
@@ -345,9 +360,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
     })
 
     render(
-      <AccountFilterProvider>
-        <AuthenticatedApp onLogout={() => {}} />
-      </AccountFilterProvider>
+      <ThemeTestProvider>
+        <AccountFilterProvider>
+          <AuthenticatedApp onLogout={() => {}} />
+        </AccountFilterProvider>
+      </ThemeTestProvider>
     )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
@@ -383,9 +400,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
     })
 
     render(
-      <AccountFilterProvider>
-        <AuthenticatedApp onLogout={() => {}} />
-      </AccountFilterProvider>
+      <ThemeTestProvider>
+        <AccountFilterProvider>
+          <AuthenticatedApp onLogout={() => {}} />
+        </AccountFilterProvider>
+      </ThemeTestProvider>
     )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
@@ -421,9 +440,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
     })
 
     const { rerender } = render(
-      <AccountFilterProvider>
-        <AuthenticatedApp onLogout={() => {}} />
-      </AccountFilterProvider>
+      <ThemeTestProvider>
+        <AccountFilterProvider>
+          <AuthenticatedApp onLogout={() => {}} />
+        </AccountFilterProvider>
+      </ThemeTestProvider>
     )
 
     await waitFor(() => expect(screen.getAllByRole('button', { name: /budgets/i }).length).toBeGreaterThan(0))
@@ -441,9 +462,11 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
     }
 
     rerender(
-      <AccountFilterProvider>
-        <AuthenticatedApp onLogout={() => {}} />
-      </AccountFilterProvider>
+      <ThemeTestProvider>
+        <AccountFilterProvider>
+          <AuthenticatedApp onLogout={() => {}} />
+        </AccountFilterProvider>
+      </ThemeTestProvider>
     )
 
     await waitFor(() => {

@@ -8,6 +8,7 @@ import { useBudgets } from '../features/budgets/hooks/useBudgets'
 import { fmtUSD } from '../utils/format'
 import { formatCategoryName } from '../utils/categories'
 import HeroStatCard, { type HeroPill } from '../components/widgets/HeroStatCard'
+import { PageLayout } from '../layouts/PageLayout'
 
 export default function BudgetsPage() {
   const {
@@ -191,45 +192,9 @@ export default function BudgetsPage() {
   const budgetsLoading = isLoading || transactionsLoading
   const hasBudgets = computedBudgets.length > 0
 
-  return (
-    <div className="space-y-10">
-      <section className="relative overflow-hidden rounded-[2.25rem] border border-white/35 bg-white/24 p-8 shadow-[0_45px_140px_-80px_rgba(15,23,42,0.82)] backdrop-blur-2xl backdrop-saturate-[160%] transition-colors duration-500 ease-out sm:p-12 dark:border-white/12 dark:bg-[#0f172a]/55 dark:shadow-[0_48px_160px_-82px_rgba(2,6,23,0.85)]">
-          <div className="pointer-events-none absolute inset-0">
-            <div className="absolute inset-[1px] rounded-[2.2rem] ring-1 ring-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(15,23,42,0.12)] dark:ring-white/12 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(2,6,23,0.5)]" />
-            <div className="absolute inset-0 rounded-[2.2rem] bg-gradient-to-b from-white/70 via-white/28 to-transparent transition-colors duration-500 dark:from-slate-900/68 dark:via-slate-900/34 dark:to-transparent" />
-          </div>
-
-          <div className="relative z-10 flex flex-col gap-8">
-            <div className="space-y-5">
-              <span className="inline-flex items-center justify-center rounded-full bg-white/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-600 shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/75 dark:text-slate-200">
-                Monthly Budgets
-              </span>
-              <div className="space-y-3">
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900 transition-colors duration-300 ease-out dark:text-white sm:text-4xl">
-                  Budgets at a glance
-                </h1>
-                <p className="text-base leading-relaxed text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300">
-                  Shape your spending plan, watch commitments, and stay ahead before the month runs away.
-                </p>
-              </div>
-              {(error || validationError) && (
-                <div className="space-y-2">
-                  {error && (
-                    <div className="max-w-md rounded-2xl border border-red-200/70 bg-red-50/80 px-5 py-3 text-sm font-medium text-red-600 shadow-sm transition-colors duration-500 dark:border-red-700/60 dark:bg-red-900/25 dark:text-red-300">
-                      {error}
-                    </div>
-                  )}
-                  {!error && validationError && (
-                    <div className="max-w-md rounded-2xl border border-amber-200/80 bg-amber-50/80 px-5 py-3 text-sm font-medium text-amber-700 shadow-sm transition-colors duration-500 dark:border-amber-500/50 dark:bg-amber-500/15 dark:text-amber-200">
-                      {validationError}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+  const heroStats = (
+    <div className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <HeroStatCard
                   index={1}
                   title="Active budgets"
@@ -266,8 +231,8 @@ export default function BudgetsPage() {
                   suffix="over budget"
                   pills={overBudgetPills}
                 />
-              </div>
-              <div className="group relative overflow-hidden rounded-2xl border-2 border-slate-200 bg-white/80 p-5 text-slate-700 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-slate-300 dark:border-slate-700 dark:bg-[#111a2f]/70 dark:text-slate-200 dark:hover:border-slate-600">
+      </div>
+      <div className="group relative overflow-hidden rounded-2xl border-2 border-slate-200 bg-white/80 p-5 text-slate-700 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] transition-all duration-300 hover:-translate-y-[2px] hover:border-slate-300 dark:border-slate-700 dark:bg-[#111a2f]/70 dark:text-slate-200 dark:hover:border-slate-600">
                 <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-200/40 via-slate-100/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20" />
                 <div className="relative z-10 flex items-center justify-between gap-4">
                   <div>
@@ -297,10 +262,20 @@ export default function BudgetsPage() {
                     </span>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-      </section>
+      </div>
+    </div>
+  )
+
+  const errorMessage = error || (validationError && !error ? validationError : null)
+
+  return (
+    <PageLayout
+      badge="Monthly Budgets"
+      title="Budgets at a glance"
+      subtitle="Shape your spending plan, watch commitments, and stay ahead before the month runs away."
+      error={errorMessage}
+      stats={heroStats}
+    >
 
       <Card className="p-0">
           {hasBudgets ? (
@@ -413,6 +388,6 @@ export default function BudgetsPage() {
             </>
           )}
       </Card>
-    </div>
+    </PageLayout>
   )
 }

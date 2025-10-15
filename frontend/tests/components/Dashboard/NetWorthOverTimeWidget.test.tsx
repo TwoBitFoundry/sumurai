@@ -1,6 +1,7 @@
 import { render, screen, within, cleanup } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { NetWorthOverTimeWidget } from '@/components/NetWorthOverTimeWidget'
+import { ThemeTestProvider } from '@tests/utils/ThemeTestProvider'
 
 // Mock recharts
 vi.mock('recharts', () => ({
@@ -21,12 +22,20 @@ describe('NetWorthOverTimeWidget', () => {
   })
 
   it('renders without crashing', () => {
-    render(<NetWorthOverTimeWidget dark={false} />);
+    render(
+      <ThemeTestProvider>
+        <NetWorthOverTimeWidget />
+      </ThemeTestProvider>
+    );
     expect(screen.getByTestId('net-worth-widget')).toBeInTheDocument();
   });
 
   it('displays Net Worth Over Time heading and line chart structure', () => {
-    render(<NetWorthOverTimeWidget dark={false} />);
+    render(
+      <ThemeTestProvider>
+        <NetWorthOverTimeWidget />
+      </ThemeTestProvider>
+    );
     const widget = screen.getByTestId('net-worth-widget');
     expect(within(widget).getByText('Net Worth Over Time')).toBeInTheDocument();
     expect(screen.getByTestId('line-chart')).toBeInTheDocument();
