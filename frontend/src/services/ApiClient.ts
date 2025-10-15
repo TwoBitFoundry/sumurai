@@ -1,61 +1,26 @@
 import { AuthService } from './authService'
+import type { IHttpClient } from './boundaries'
+import { FetchHttpClient } from './boundaries'
+import {
+  ApiError,
+  AuthenticationError,
+  ValidationError,
+  NetworkError,
+  ServerError,
+  ConflictError,
+  NotFoundError,
+  ForbiddenError,
+} from './boundaries'
 
-export class ApiError extends Error {
-  constructor(
-    public status: number,
-    public message: string,
-    public code?: string
-  ) {
-    super(message)
-    this.name = 'ApiError'
-  }
-}
-
-export class AuthenticationError extends ApiError {
-  constructor(message = 'Authentication required') {
-    super(401, message, 'AUTH_REQUIRED')
-  }
-}
-
-export class ValidationError extends ApiError {
-  constructor(message = 'Invalid input data', details?: Record<string, string>) {
-    super(400, message, 'VALIDATION_ERROR')
-    if (details) {
-      this.details = details
-    }
-  }
-  
-  public details?: Record<string, string>
-}
-
-export class NetworkError extends ApiError {
-  constructor(message = 'Network connection failed') {
-    super(0, message, 'NETWORK_ERROR')
-  }
-}
-
-export class ServerError extends ApiError {
-  constructor(status: number, message = 'Server error occurred') {
-    super(status, message, 'SERVER_ERROR')
-  }
-}
-
-export class ConflictError extends ApiError {
-  constructor(message = 'Resource conflict') {
-    super(409, message, 'CONFLICT')
-  }
-}
-
-export class NotFoundError extends ApiError {
-  constructor(message = 'Resource not found') {
-    super(404, message, 'NOT_FOUND')
-  }
-}
-
-export class ForbiddenError extends ApiError {
-  constructor(message = 'Access forbidden') {
-    super(403, message, 'FORBIDDEN')
-  }
+export {
+  ApiError,
+  AuthenticationError,
+  ValidationError,
+  NetworkError,
+  ServerError,
+  ConflictError,
+  NotFoundError,
+  ForbiddenError,
 }
 
 interface RetryConfig {
@@ -68,6 +33,7 @@ interface RetryConfig {
 
 export class ApiClient {
   private static baseUrl = '/api'
+  private static httpClient: IHttpClient = new FetchHttpClient()
   private static retryConfig: RetryConfig = {
     maxRetries: 3,
     baseDelay: 1000,
@@ -82,6 +48,10 @@ export class ApiClient {
       'Connection reset',
       'Request aborted'
     ]
+  }
+
+  static configure(httpClient: IHttpClient): void {
+    this.httpClient = httpClient
   }
 
   private static isRetryableError(error: Error): boolean {
@@ -129,66 +99,87 @@ export class ApiClient {
     attempt: number
   ): Promise<T> {
     try {
-      const token = AuthService.getToken()
-      
-      const headers = {
+      const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
       }
 
-      const url = `${this.baseUrl}${endpoint}`
-      
-      const response = await fetch(url, {
+      if (options.headers) {
+        if (options.headers instanceof Headers) {
+          options.headers.forEach((value, key) => {
+            headers[key] = value
+          })
+        } else if (Array.isArray(options.headers)) {
+          options.headers.forEach(([key, value]) => {
+            headers[key] = value
+          })
+        } else {
+          Object.assign(headers, options.headers)
+        }
+      }
+
+      const token = AuthService.getToken()
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
+
+      const optionsWithAuth = {
         ...options,
         headers,
-      })
+      }
 
-      // Handle authentication errors with token refresh
-      if (response.status === 401) {
+      const response = await this.makeRawRequest<T>(endpoint, optionsWithAuth)
+      return response
+    } catch (error) {
+      if (error instanceof AuthenticationError && attempt === 0) {
         return this.handleAuthenticationError<T>(endpoint, options, attempt)
       }
 
-      // Handle other HTTP errors
-      if (!response.ok) {
-        const error = await this.createApiError(response)
-        
-        // Retry on retryable status codes
-        if (this.isRetryableStatus(response.status) && attempt < this.retryConfig.maxRetries) {
-          const delay = this.calculateBackoffDelay(attempt)
-          await this.delay(delay)
-          return this.makeRequestWithRetry<T>(endpoint, options, attempt + 1)
-        }
-        
-        throw error
+      if (error instanceof ApiError && this.isRetryableStatus(error.status) && attempt < this.retryConfig.maxRetries) {
+        const delay = this.calculateBackoffDelay(attempt)
+        await this.delay(delay)
+        return this.makeRequestWithRetry<T>(endpoint, options, attempt + 1)
       }
 
-      if (response.status === 204) {
-        return {} as T
-      }
-
-      return response.json()
-    } catch (error) {
-      // Handle network errors
       if (error instanceof Error && this.isRetryableError(error) && attempt < this.retryConfig.maxRetries) {
         const delay = this.calculateBackoffDelay(attempt)
         await this.delay(delay)
         return this.makeRequestWithRetry<T>(endpoint, options, attempt + 1)
       }
-      
-      // Re-throw ApiError instances directly
+
       if (error instanceof ApiError || error instanceof AuthenticationError) {
         throw error
       }
-      
-      // Convert network errors to NetworkError after all retries are exhausted
+
       if (error instanceof Error && this.isRetryableError(error)) {
         throw new NetworkError(error.message)
       }
-      
-      // For other errors, throw as-is
+
       throw error
     }
+  }
+
+  private static async makeRawRequest<T>(
+    endpoint: string,
+    options: RequestInit
+  ): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`
+    const response = await fetch(url, options)
+
+    if (!response.ok) {
+      const error = await this.createApiError(response)
+
+      if (this.isRetryableStatus(response.status)) {
+        throw error
+      }
+
+      throw error
+    }
+
+    if (response.status === 204) {
+      return {} as T
+    }
+
+    return response.json()
   }
 
   private static async handleAuthenticationError<T>(

@@ -1,3 +1,7 @@
+import type { IHttpClient } from './boundaries'
+import type { IStorageAdapter } from './boundaries'
+import { FetchHttpClient, BrowserStorageAdapter } from './boundaries'
+
 interface LoginCredentials {
   email: string
   password: string
@@ -31,8 +35,24 @@ interface LogoutResponse {
   cleared_session: string
 }
 
+interface AuthServiceDependencies {
+  http: IHttpClient
+  storage: IStorageAdapter
+}
+
 export class AuthService {
   private static refreshPromise: Promise<RefreshResponse> | null = null
+  private static deps: AuthServiceDependencies = {
+    http: new FetchHttpClient(),
+    storage: new BrowserStorageAdapter()
+  }
+
+  static configure(deps: Partial<AuthServiceDependencies>): void {
+    this.deps = {
+      http: deps.http ?? this.deps.http,
+      storage: deps.storage ?? this.deps.storage
+    }
+  }
 
   static async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const response = await fetch('/api/auth/login', {
@@ -55,19 +75,19 @@ export class AuthService {
   }
   
   static storeToken(token: string, refreshToken?: string): void {
-    sessionStorage.setItem('auth_token', token)
+    this.deps.storage.setItem('auth_token', token)
     if (refreshToken) {
-      sessionStorage.setItem('refresh_token', refreshToken)
+      this.deps.storage.setItem('refresh_token', refreshToken)
     }
   }
-  
+
   static getToken(): string | null {
-    return sessionStorage.getItem('auth_token')
+    return this.deps.storage.getItem('auth_token')
   }
-  
+
   static clearToken(): void {
-    sessionStorage.removeItem('auth_token')
-    sessionStorage.removeItem('refresh_token')
+    this.deps.storage.removeItem('auth_token')
+    this.deps.storage.removeItem('refresh_token')
     localStorage.removeItem('plaid_user_id')
     this.refreshPromise = null
   }
