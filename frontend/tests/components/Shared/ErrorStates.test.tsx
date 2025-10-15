@@ -3,6 +3,7 @@ import { render, screen, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AuthenticatedApp } from '@/components/AuthenticatedApp'
 import { AccountFilterProvider } from '@/hooks/useAccountFilter'
+import { ThemeTestProvider } from '@tests/utils/ThemeTestProvider'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 import { createProviderStatus } from '@tests/utils/fixtures'
 
@@ -10,7 +11,6 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
   const user = userEvent.setup()
   const originalConsoleError = console.error
   const mockOnLogout = vi.fn()
-  const mockSetDark = vi.fn()
   let fetchMock: ReturnType<typeof installFetchRoutes>
   const disconnectedStatus = createProviderStatus()
 
@@ -61,9 +61,11 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
       })
 
       render(
-        <AccountFilterProvider>
-          <AuthenticatedApp onLogout={mockOnLogout} dark={false} setDark={mockSetDark} />
-        </AccountFilterProvider>
+        <ThemeTestProvider>
+          <AccountFilterProvider>
+            <AuthenticatedApp onLogout={mockOnLogout} />
+          </AccountFilterProvider>
+        </ThemeTestProvider>
       )
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /^dashboard$/i })).toBeInTheDocument()
@@ -86,9 +88,11 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
       })
 
       render(
-        <AccountFilterProvider>
-          <AuthenticatedApp onLogout={mockOnLogout} dark={false} setDark={mockSetDark} />
-        </AccountFilterProvider>
+        <ThemeTestProvider>
+          <AccountFilterProvider>
+            <AuthenticatedApp onLogout={mockOnLogout} />
+          </AccountFilterProvider>
+        </ThemeTestProvider>
       )
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /^dashboard$/i })).toBeInTheDocument()
@@ -113,9 +117,11 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
       })
 
       render(
-        <AccountFilterProvider>
-          <AuthenticatedApp onLogout={mockOnLogout} dark={false} setDark={mockSetDark} />
-        </AccountFilterProvider>
+        <ThemeTestProvider>
+          <AccountFilterProvider>
+            <AuthenticatedApp onLogout={mockOnLogout} />
+          </AccountFilterProvider>
+        </ThemeTestProvider>
       )
       await waitFor(() => {
         expect(screen.getByText(/No transactions found/i)).toBeInTheDocument()
@@ -139,9 +145,11 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
       })
 
       render(
-        <AccountFilterProvider>
-          <AuthenticatedApp onLogout={mockOnLogout} dark={false} setDark={mockSetDark} />
-        </AccountFilterProvider>
+        <ThemeTestProvider>
+          <AccountFilterProvider>
+            <AuthenticatedApp onLogout={mockOnLogout} />
+          </AccountFilterProvider>
+        </ThemeTestProvider>
       )
       await user.click(screen.getByText('Budgets'))
       await waitFor(() => {
@@ -170,9 +178,11 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
       })
 
       render(
-        <AccountFilterProvider>
-          <AuthenticatedApp onLogout={mockOnLogout} dark={false} setDark={mockSetDark} />
-        </AccountFilterProvider>
+        <ThemeTestProvider>
+          <AccountFilterProvider>
+            <AuthenticatedApp onLogout={mockOnLogout} />
+          </AccountFilterProvider>
+        </ThemeTestProvider>
       )
       await user.click(screen.getByText('Transactions'))
       await waitFor(() => {
@@ -206,9 +216,11 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
       })
 
       render(
-        <AccountFilterProvider>
-          <AuthenticatedApp onLogout={mockOnLogout} dark={false} setDark={mockSetDark} />
-        </AccountFilterProvider>
+        <ThemeTestProvider>
+          <AccountFilterProvider>
+            <AuthenticatedApp onLogout={mockOnLogout} />
+          </AccountFilterProvider>
+        </ThemeTestProvider>
       )
       await user.click(screen.getByText('Transactions'))
       await waitFor(() => {
@@ -232,9 +244,11 @@ describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () =>
       })
 
       render(
-        <AccountFilterProvider>
-          <AuthenticatedApp onLogout={mockOnLogout} dark={false} setDark={mockSetDark} />
-        </AccountFilterProvider>
+        <ThemeTestProvider>
+          <AccountFilterProvider>
+            <AuthenticatedApp onLogout={mockOnLogout} />
+          </AccountFilterProvider>
+        </ThemeTestProvider>
       )
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /^dashboard$/i })).toBeInTheDocument()

@@ -9,13 +9,12 @@ import Card from './ui/Card'
 import { ErrorBoundary } from './ErrorBoundary'
 import { HeaderAccountFilter } from './HeaderAccountFilter'
 import { Button } from '../ui/primitives'
+import { useTheme } from '../context/ThemeContext'
 
 type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts'
 
 interface AuthenticatedAppProps {
   onLogout: () => void
-  dark: boolean
-  setDark: (next: boolean) => void
 }
 
 const TABS: Array<{ key: TabKey; label: string }> = [
@@ -25,10 +24,11 @@ const TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'accounts', label: 'Accounts' },
 ]
 
-export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppProps) {
+export function AuthenticatedApp({ onLogout }: AuthenticatedAppProps) {
   const [tab, setTab] = useState<TabKey>('dashboard')
   const [error, setError] = useState<string | null>(null)
   const [scrolled, setScrolled] = useState(false)
+  const { mode, toggle } = useTheme()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 0)
@@ -37,12 +37,9 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const toggleTheme = () => setDark(!dark)
-
   return (
     <ErrorBoundary>
-      <div className={dark ? 'dark' : ''}>
-        <div className="relative min-h-screen flex flex-col text-slate-900 dark:text-slate-100 transition-colors duration-300 bg-[radial-gradient(128%_96%_at_18%_-20%,#c4e2ff_0%,#dbeafe_30%,#e5f2ff_56%,#ffffff_96%)] dark:bg-[radial-gradient(100%_85%_at_20%_-10%,#0f172a_0%,#0b162c_55%,#05070d_100%)]">
+      <div className="relative min-h-screen flex flex-col text-slate-900 dark:text-slate-100 transition-colors duration-300 bg-[radial-gradient(128%_96%_at_18%_-20%,#c4e2ff_0%,#dbeafe_30%,#e5f2ff_56%,#ffffff_96%)] dark:bg-[radial-gradient(100%_85%_at_20%_-10%,#0f172a_0%,#0b162c_55%,#05070d_100%)]">
           <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
             <div className="absolute inset-0 bg-[radial-gradient(136%_108%_at_20%_-18%,rgba(14,165,233,0.42)_0%,#e1f2ff_36%,#ffffff_100%)] transition-colors duration-700 dark:bg-[radial-gradient(92%_80%_at_20%_-6%,#0f172a_0%,#0a1224_50%,#05070d_100%)]" />
             <div className="absolute inset-0 bg-[radial-gradient(86%_64%_at_86%_18%,rgba(167,139,250,0.28)_0%,rgba(59,130,246,0.14)_55%,transparent_78%)] transition-opacity duration-700 dark:bg-transparent" />
@@ -85,13 +82,13 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
 
                   <Button
                     type="button"
-                    onClick={toggleTheme}
+                    onClick={toggle}
                     size={scrolled ? 'xs' : 'sm'}
                     className="rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600"
                     aria-label="Toggle theme"
                     title="Toggle theme"
                   >
-                    {dark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                    {mode === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
                   </Button>
                   <Button
                     type="button"
@@ -125,7 +122,7 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
               >
                 {tab === 'dashboard' && (
                   <div className="space-y-4">
-                    <DashboardPage dark={dark} />
+                    <DashboardPage />
                   </div>
                 )}
 
@@ -156,7 +153,6 @@ export function AuthenticatedApp({ onLogout, dark, setDark }: AuthenticatedAppPr
               </div>
             </footer>
           </div>
-        </div>
       </div>
     </ErrorBoundary>
   )

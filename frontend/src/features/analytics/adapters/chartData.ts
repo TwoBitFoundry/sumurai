@@ -22,6 +22,9 @@ export function normalizeMerchants(items: AnalyticsTopMerchantsResponse[]): Merc
   return (items || []).slice().sort((a, b) => Number(b.amount) - Number(a.amount))
 }
 
+/**
+ * @deprecated Use colors.chart.primary from useTheme() instead
+ */
 export const getChartColorArray = (isDark: boolean) => [
   isDark ? '#38bdf8' : '#0ea5e9',
   isDark ? '#34d399' : '#10b981',
@@ -31,6 +34,9 @@ export const getChartColorArray = (isDark: boolean) => [
   isDark ? '#10b981' : '#059669',
 ]
 
+/**
+ * @deprecated Build tooltip style object from colors.chart properties instead
+ */
 export const getTooltipStyle = (isDark: boolean) => ({
   background: isDark ? '#1e293b' : '#ffffff',
   border: `1px solid ${isDark ? '#475569' : '#e2e8f0'}`,

@@ -6,14 +6,14 @@ import { SpendingByCategoryChart } from '../features/analytics/components/Spendi
 import { TopMerchantsList } from '../features/analytics/components/TopMerchantsList'
 import { useAnalytics } from '../features/analytics/hooks/useAnalytics'
 import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries'
-import { categoriesToDonut, getChartColorArray } from '../features/analytics/adapters/chartData'
+import { categoriesToDonut } from '../features/analytics/adapters/chartData'
 import { fmtUSD } from '../utils/format'
 import { type DateRangeKey as DateRange } from '../utils/dateRanges'
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
+import { useTheme } from '../context/ThemeContext'
 
-type Props = { dark: boolean }
-
-const DashboardPage: React.FC<Props> = ({ dark }) => {
+const DashboardPage: React.FC = () => {
+  const { mode, colors } = useTheme()
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
   // Default to past-year for richer data out of the box
   const [dateRange, setDateRange] = useState<DateRange>('past-year')
@@ -83,7 +83,7 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
 
   const netDotRenderer = useMemo(() => {
     const n = netSeries?.length || 0
-    const fill = dark ? '#0b1220' : '#ffffff'
+    const fill = colors.chart.dotFill
     const stroke = '#10b981'
     if (!n) return () => null as any
     const changeIdx: number[] = []
@@ -106,7 +106,7 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
       if (!selected.has(index)) return null
       return <circle cx={cx} cy={cy} r={3} stroke={stroke} strokeWidth={1} fill={fill} />
     }
-  }, [netSeries, dark])
+  }, [netSeries, colors.chart.dotFill])
 
   const netYAxisDomain = useMemo(() => {
     if (!netSeries || netSeries.length === 0) return null
@@ -152,7 +152,6 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
             <div className="mb-2 text-xs text-slate-500 dark:text-slate-400">Loading analytics...</div>
           )}
           <SpendingByCategoryChart
-            dark={dark}
             data={byCat}
             total={monthSpend}
             hoveredCategory={hoveredCategory}
@@ -170,7 +169,7 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
                   <div className="grid grid-cols-2 gap-2">
                     {top.map((cat, idx) => {
                       const percentage = categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0'
-                      const color = getChartColorArray(dark)[idx % getChartColorArray(dark).length]
+                      const color = colors.chart.primary[idx % colors.chart.primary.length]
                       const isHovered = hoveredCategory === cat.name
                       return (
                         <div
@@ -249,10 +248,10 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
                       <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={dark ? '#334155' : '#e2e8f0'} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
                   <XAxis
                     dataKey="date"
-                    tick={{ fill: dark ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                    tick={{ fill: colors.chart.axis, fontSize: 12 }}
                     axisLine={false}
                     tickLine={false}
                     interval="preserveStartEnd"
@@ -279,7 +278,7 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
                     }}
                   />
                   <YAxis
-                    tick={{ fill: dark ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                    tick={{ fill: colors.chart.axis, fontSize: 12 }}
                     axisLine={false}
                     tickLine={false}
                     domain={netYAxisDomain ?? ['auto', 'auto']}
@@ -292,7 +291,7 @@ const DashboardPage: React.FC<Props> = ({ dark }) => {
                       return `${sign}$${Number(n).toFixed(0)}`
                     }}
                   />
-                  <Tooltip formatter={(v: any) => fmtUSD(Number(v))} contentStyle={{ background: dark ? '#0b1220' : '#ffffff' }} />
+                  <Tooltip formatter={(v: any) => fmtUSD(Number(v))} contentStyle={{ background: colors.chart.tooltipBg }} />
                   <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#netGradient)" dot={netDotRenderer as any} activeDot={{ r: 6 }} />
                 </AreaChart>
               </ResponsiveContainer>

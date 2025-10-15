@@ -12,12 +12,10 @@ import { CONNECT_ACCOUNT_PROVIDER_CONTENT } from '@/utils/providerCards'
 
 interface OnboardingWizardProps {
   onComplete: () => void
-  dark?: boolean
-  setDark?: (dark: boolean) => void
   onLogout?: () => void
 }
 
-export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }: OnboardingWizardProps) {
+export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps) {
   const {
     currentStep,
     stepIndex,
@@ -164,8 +162,7 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
   }
 
   return (
-    <div className={dark ? 'dark' : ''}>
-      <div className="min-h-screen w-full flex flex-col relative overflow-hidden transition-colors duration-500 ease-out">
+    <div className="min-h-screen w-full flex flex-col relative overflow-hidden transition-colors duration-500 ease-out">
         <div className="pointer-events-none absolute inset-0 transition-colors duration-500 ease-out">
           <div className="absolute inset-0 transition-all duration-500 bg-[radial-gradient(120%_90%_at_20%_-10%,#f8fafc_0%,#f1f5f9_45%,#ffffff_100%)] dark:bg-[radial-gradient(90%_70%_at_20%_0%,#0f172a_0%,#0a0f1b_50%,#05070d_100%)]" />
           <div className="absolute inset-0 flex items-center justify-center">
@@ -174,10 +171,8 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
           <div className="absolute inset-0 transition-colors duration-500 bg-gradient-to-b from-white/65 via-white/40 to-transparent dark:from-slate-900/70 dark:via-slate-900/40 dark:to-transparent" />
           <div className="absolute inset-0 transition-colors duration-500 bg-[radial-gradient(120%_120%_at_50%_50%,transparent_62%,rgba(15,23,42,0.08)_100%)] dark:bg-[radial-gradient(120%_120%_at_50%_50%,transparent_60%,rgba(2,6,23,0.35)_100%)]" />
         </div>
-        {setDark && onLogout && (
+        {onLogout && (
           <AppHeader
-            dark={dark}
-            onToggleTheme={() => setDark(!dark)}
             onLogout={onLogout}
             variant="onboarding"
           />
@@ -268,7 +263,6 @@ export function OnboardingWizard({ onComplete, dark = false, setDark, onLogout }
           </div>
           </Card>
         </div>
-      </div>
     </div>
   )
 }
