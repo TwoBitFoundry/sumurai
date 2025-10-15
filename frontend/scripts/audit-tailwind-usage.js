@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-undef */
 
 /**
  * Tailwind Usage Audit Script
@@ -39,12 +40,10 @@ function countTailwindUtilities(classNameValue) {
   }).length
 }
 
-function extractClassNames(fileContent, filePath) {
+function extractClassNames(fileContent) {
   const classNameRegex = /className\s*=\s*["']([^"']*)["']/g
   const matches = []
 
-  let match
-  let lineNumber = 0
   const lines = fileContent.split('\n')
 
   for (let i = 0; i < lines.length; i++) {
