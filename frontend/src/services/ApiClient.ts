@@ -38,7 +38,7 @@ export class ApiClient {
     maxRetries: 3,
     baseDelay: 1000,
     maxDelay: 5000,
-    retryableStatuses: [502, 503, 504, 429], // Bad Gateway, Service Unavailable, Gateway Timeout, Rate Limited
+    retryableStatuses: [502, 503, 504, 429],
     retryableErrors: [
       'Failed to fetch',
       'Request timeout',
@@ -51,7 +51,11 @@ export class ApiClient {
   }
 
   static configure(httpClient: IHttpClient): void {
-    this.httpClient = httpClient
+    ApiClient.httpClient = httpClient
+  }
+
+  static getHttpClient(): IHttpClient {
+    return ApiClient.httpClient
   }
 
   private static isRetryableError(error: Error): boolean {

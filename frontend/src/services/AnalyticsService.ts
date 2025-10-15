@@ -1,3 +1,5 @@
+import type { IHttpClient } from './boundaries'
+import { FetchHttpClient } from './boundaries'
 import { ApiClient } from './ApiClient'
 import type {
   AnalyticsSpendingResponse,
@@ -8,8 +10,20 @@ import type {
 import type { BalancesOverview } from '../types/analytics'
 import { appendAccountQueryParams } from '../utils/queryParams'
 
+interface AnalyticsServiceDependencies {
+  http: IHttpClient
+}
 
 export class AnalyticsService {
+  private static deps: AnalyticsServiceDependencies = {
+    http: new FetchHttpClient()
+  }
+
+  static configure(deps: Partial<AnalyticsServiceDependencies>): void {
+    AnalyticsService.deps = {
+      http: deps.http ?? AnalyticsService.deps.http
+    }
+  }
   static async getCurrentMonthSpending(): Promise<AnalyticsSpendingResponse> {
     return ApiClient.get<AnalyticsSpendingResponse>('/analytics/spending/current-month')
   }
