@@ -45,6 +45,17 @@ export interface BadgeProps
   children: React.ReactNode
 }
 
+/**
+ * Small status indicator with semantic colors.
+ *
+ * @example
+ * ```tsx
+ * <Badge variant="primary" size="sm">NEW</Badge>
+ * <Badge variant="default" size="md">Status</Badge>
+ * ```
+ *
+ * @see {@link ../README.md} for detailed variant documentation
+ */
 export function Badge({
   variant,
   size,

@@ -66,6 +66,23 @@ export interface GlassCardProps
   containerClassName?: string
 }
 
+/**
+ * Container with glassmorphism effect (backdrop blur, semi-transparency, subtle borders).
+ *
+ * @example
+ * ```tsx
+ * <GlassCard variant="default" padding="lg">
+ *   <h2>Card Title</h2>
+ *   <p>Card content...</p>
+ * </GlassCard>
+ * ```
+ *
+ * @param withInnerEffects - Enable inner ring and gradient overlay (default: true)
+ * @param containerClassName - Applied to outer container
+ * @param className - Applied to inner content wrapper
+ *
+ * @see {@link ../README.md} for detailed variant documentation
+ */
 export function GlassCard({
   children,
   variant,

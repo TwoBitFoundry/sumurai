@@ -9,6 +9,22 @@ export interface MenuDropdownProps {
   contentClassName?: string
 }
 
+/**
+ * Dropdown menu with animated open/close transitions.
+ *
+ * @example
+ * ```tsx
+ * <MenuDropdown trigger={<button>Menu</button>}>
+ *   <MenuItem icon={<Icon />}>Action 1</MenuItem>
+ *   <MenuItem icon={<Icon />}>Action 2</MenuItem>
+ * </MenuDropdown>
+ * ```
+ *
+ * @param trigger - Element that opens menu when clicked
+ * @param contentClassName - Applied to dropdown content container
+ *
+ * @see {@link ../README.md} for detailed documentation
+ */
 export function MenuDropdown({
   trigger,
   children,
@@ -53,6 +69,16 @@ export interface MenuItemProps
   children: React.ReactNode
 }
 
+/**
+ * Menu item for use within MenuDropdown.
+ *
+ * @example
+ * ```tsx
+ * <MenuItem icon={<UserIcon />} onClick={handleClick}>
+ *   Profile
+ * </MenuItem>
+ * ```
+ */
 export function MenuItem({
   icon,
   children,

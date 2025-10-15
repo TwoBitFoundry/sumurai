@@ -9,7 +9,11 @@
     "preview": "vite preview",
     "test": "vitest --run --no-watch",
     "test:force": "vitest --run --no-watch --reporter=verbose && exit 0",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "audit:tailwind": "node scripts/audit-tailwind-usage.js",
+    "prepare": "husky"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -24,6 +28,7 @@
     "recharts": "^3.2.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.37.0",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -31,11 +36,21 @@
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.2",
     "autoprefixer": "^10.4.21",
+    "eslint": "^9.37.0",
+    "husky": "^9.1.7",
     "jsdom": "^26.1.0",
+    "lint-staged": "^16.2.4",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.13",
     "typescript": "^5.9.2",
+    "typescript-eslint": "^8.46.1",
     "vite": "^7.1.5",
     "vitest": "^3.2.4"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix --max-warnings 0",
+      "tsc --noEmit"
+    ]
   }
 }

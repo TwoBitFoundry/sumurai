@@ -64,6 +64,22 @@ export interface InputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
     VariantProps<typeof inputVariants> {}
 
+/**
+ * Form input field with focus states and validation variants.
+ *
+ * @example
+ * ```tsx
+ * <Input
+ *   type="email"
+ *   placeholder="you@example.com"
+ *   variant="default"
+ *   inputSize="md"
+ * />
+ * <Input variant="invalid" placeholder="Error state" />
+ * ```
+ *
+ * @see {@link ../README.md} for detailed variant documentation
+ */
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ variant, inputSize, className, ...props }, ref) => {
     return (

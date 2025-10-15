@@ -114,6 +114,18 @@ export interface ButtonProps
   children?: React.ReactNode
 }
 
+/**
+ * Interactive button component with multiple visual styles.
+ *
+ * @example
+ * ```tsx
+ * <Button variant="primary" size="lg">Submit</Button>
+ * <Button variant="secondary" size="md">Cancel</Button>
+ * <Button variant="icon" size="icon"><CloseIcon /></Button>
+ * ```
+ *
+ * @see {@link ../README.md} for detailed variant documentation
+ */
 export function Button({
   variant,
   size,

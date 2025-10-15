@@ -7,6 +7,20 @@ export interface GradientShellProps {
   variant?: 'auth' | 'app'
 }
 
+/**
+ * Full-page background container with animated aura effects.
+ *
+ * @example
+ * ```tsx
+ * <GradientShell variant="auth">
+ *   <LoginForm />
+ * </GradientShell>
+ * ```
+ *
+ * @param variant - 'auth' for centered auth pages, 'app' for full-screen app layout
+ *
+ * @see {@link ../README.md} for detailed variant documentation
+ */
 export function GradientShell({
   children,
   className,
