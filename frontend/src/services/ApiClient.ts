@@ -33,7 +33,6 @@ interface RetryConfig {
 
 export class ApiClient {
   private static baseUrl = '/api'
-  private static httpClient: IHttpClient = new FetchHttpClient()
   private static retryConfig: RetryConfig = {
     maxRetries: 3,
     baseDelay: 1000,
@@ -50,13 +49,6 @@ export class ApiClient {
     ]
   }
 
-  static configure(httpClient: IHttpClient): void {
-    ApiClient.httpClient = httpClient
-  }
-
-  static getHttpClient(): IHttpClient {
-    return ApiClient.httpClient
-  }
 
   private static isRetryableError(error: Error): boolean {
     return this.retryConfig.retryableErrors.some(retryableError =>

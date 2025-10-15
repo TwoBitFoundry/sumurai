@@ -23,7 +23,6 @@ export function setupTestBoundaries(
     storage: overrides?.storage ?? createMockStorage()
   }
 
-  ApiClient.configure(boundaries.http)
   AuthService.configure({ http: boundaries.http, storage: boundaries.storage })
   TransactionService.configure({ http: boundaries.http })
   AnalyticsService.configure({ http: boundaries.http })

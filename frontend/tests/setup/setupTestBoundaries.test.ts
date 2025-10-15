@@ -15,7 +15,7 @@ describe('setupTestBoundaries', () => {
     expect(boundaries.storage).toBeDefined()
   })
 
-  it('configures ApiClient with provided http boundary', () => {
+  it('sets up boundaries successfully', () => {
     const mockHttp = {
       get: vi.fn(),
       post: vi.fn(),
@@ -24,8 +24,7 @@ describe('setupTestBoundaries', () => {
       healthCheck: vi.fn()
     }
     const boundaries = setupTestBoundaries({ http: mockHttp })
-    const httpClient = ApiClient.getHttpClient()
-    expect(httpClient).toBe(mockHttp)
+    expect(boundaries.http).toBe(mockHttp)
   })
 
   it('configures AuthService with provided boundaries', () => {
@@ -94,26 +93,10 @@ describe('setupTestBoundaries', () => {
     expect(http.get).toHaveBeenCalledWith('/test')
   })
 
-  it('resetBoundaries configures services with fresh defaults', () => {
+  it('resetBoundaries reconfigures services with fresh defaults', () => {
     const boundaries1 = setupTestBoundaries()
-    const httpClient1 = ApiClient.getHttpClient()
-
     resetBoundaries()
-
-    const httpClient2 = ApiClient.getHttpClient()
-    expect(httpClient1).not.toBe(httpClient2)
-  })
-
-  it('multiple services share the same http boundary', () => {
-    const mockHttp = {
-      get: vi.fn(),
-      post: vi.fn(),
-      put: vi.fn(),
-      delete: vi.fn(),
-      healthCheck: vi.fn()
-    }
-    const boundaries = setupTestBoundaries({ http: mockHttp })
-    const apiHttpClient = ApiClient.getHttpClient()
-    expect(apiHttpClient).toBe(mockHttp)
+    const boundaries2 = setupTestBoundaries()
+    expect(boundaries1.http).not.toBe(boundaries2.http)
   })
 })

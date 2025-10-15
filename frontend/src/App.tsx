@@ -6,8 +6,14 @@ import { AuthenticatedApp } from "./components/AuthenticatedApp";
 import { AccountFilterProvider } from "./hooks/useAccountFilter";
 import { OnboardingWizard } from "./components/onboarding/OnboardingWizard";
 import { AuthService } from "./services/authService";
+import { FetchHttpClient, BrowserStorageAdapter } from "./services/boundaries";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { ProviderMismatchCheck } from "./components/ProviderMismatchCheck";
+
+AuthService.configure({
+  http: new FetchHttpClient(),
+  storage: new BrowserStorageAdapter()
+});
 
 const parseJWT = (token: string) => {
   try {

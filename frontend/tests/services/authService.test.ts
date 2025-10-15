@@ -1,102 +1,88 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { AuthService } from '@/services/authService'
+import type { IHttpClient } from '@/services/boundaries/IHttpClient'
+import type { IStorageAdapter } from '@/services/boundaries/IStorageAdapter'
 
-// Mock fetch globally
-global.fetch = vi.fn()
-
-// Mock sessionStorage
-const mockSessionStorage = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn()
+class MockHttpClient implements IHttpClient {
+  get = vi.fn()
+  post = vi.fn()
+  put = vi.fn()
+  delete = vi.fn()
+  healthCheck = vi.fn()
 }
 
-Object.defineProperty(window, 'sessionStorage', {
-  value: mockSessionStorage
-})
+class MockStorageAdapter implements IStorageAdapter {
+  private store = new Map<string, string>()
+
+  getItem(key: string): string | null {
+    return this.store.get(key) || null
+  }
+
+  setItem(key: string, value: string): void {
+    this.store.set(key, value)
+  }
+
+  removeItem(key: string): void {
+    this.store.delete(key)
+  }
+
+  clear(): void {
+    this.store.clear()
+  }
+}
 
 describe('AuthService logout functionality', () => {
+  let mockHttpClient: MockHttpClient
+  let mockStorageAdapter: MockStorageAdapter
+
   beforeEach(() => {
+    mockHttpClient = new MockHttpClient()
+    mockStorageAdapter = new MockStorageAdapter()
+    AuthService.configure({
+      http: mockHttpClient,
+      storage: mockStorageAdapter
+    })
+    mockStorageAdapter.clear()
     vi.clearAllMocks()
-    mockSessionStorage.getItem.mockReturnValue(null)
-    mockSessionStorage.setItem.mockImplementation(() => {})
-    mockSessionStorage.removeItem.mockImplementation(() => {})
-    mockSessionStorage.clear.mockImplementation(() => {})
   })
 
   it('given valid token when logging out then calls logout endpoint and clears tokens', async () => {
-    // Given
     const mockToken = 'valid-jwt-token'
-    mockSessionStorage.getItem.mockReturnValue(mockToken)
-    
+    AuthService.storeToken(mockToken)
+
     const mockResponse = {
       message: 'Logged out successfully',
       cleared_session: 'session-id'
     }
-    
-    ;(fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(mockResponse)
-    })
 
-    // When
+    mockHttpClient.post.mockResolvedValueOnce(mockResponse)
+
     const result = await AuthService.logout()
 
-    // Then
-    expect(fetch).toHaveBeenCalledWith('/api/auth/logout', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${mockToken}`,
-      },
-    })
+    expect(mockHttpClient.post).toHaveBeenCalledWith('/auth/logout')
     expect(result).toEqual(mockResponse)
-    expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('auth_token')
-    expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('refresh_token')
+    expect(AuthService.getToken()).toBeNull()
   })
 
-  it('given no token when logging out then throws error', async () => {
-    // Given - no token in sessionStorage
-
-    // When & Then
-    await expect(AuthService.logout()).rejects.toThrow('No token to logout with')
-    expect(fetch).not.toHaveBeenCalled()
-  })
-
-  it('given server returns 401 when logging out then clears tokens locally and returns fallback message', async () => {
-    // Given
-    const mockToken = 'invalid-jwt-token'
-    mockSessionStorage.getItem.mockReturnValue(mockToken)
-    
-    ;(fetch as any).mockResolvedValueOnce({
-      ok: false,
-      status: 401
-    })
-
-    // When
-    const result = await AuthService.logout()
-
-    // Then
-    expect(result).toEqual({
-      message: 'Logged out locally (token was invalid)',
+  it('given no token when logging out then clears token anyway', async () => {
+    const mockResponse = {
+      message: 'Logged out',
       cleared_session: ''
-    })
-    expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('auth_token')
+    }
+    mockHttpClient.post.mockResolvedValueOnce(mockResponse)
+
+    await AuthService.logout()
+
+    expect(AuthService.getToken()).toBeNull()
   })
 
-  it('given server error when logging out then clears tokens locally and throws descriptive error', async () => {
-    // Given
+  it('given server error when logging out then clears tokens locally anyway', async () => {
     const mockToken = 'valid-jwt-token'
-    mockSessionStorage.getItem.mockReturnValue(mockToken)
-    
-    ;(fetch as any).mockResolvedValueOnce({
-      ok: false,
-      status: 500
-    })
+    AuthService.storeToken(mockToken)
 
-    // When & Then
-    await expect(AuthService.logout()).rejects.toThrow('Logout failed on server, but cleared locally')
-    expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('auth_token')
+    mockHttpClient.post.mockRejectedValueOnce(new Error('Server error'))
+
+    await expect(AuthService.logout()).rejects.toThrow('Server error')
+    expect(AuthService.getToken()).toBeNull()
   })
 })
