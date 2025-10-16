@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { AuthService } from './services/authService'
+import { GlassCard, Button } from './ui/primitives'
 
 const SESSION_WARNING_THRESHOLD = 120 // 2 minutes in seconds
 const SESSION_CHECK_INTERVAL = 1000 // 1 second
@@ -38,7 +39,7 @@ export function SessionExpiryModal({
       handleSessionExpired()
     }
   }
-  
+
   const refreshUserSession = async (): Promise<boolean> => {
     try {
       const result = await AuthService.refreshToken()
@@ -46,7 +47,7 @@ export function SessionExpiryModal({
         sessionStorage.setItem('auth_token', result.token)
         return true
       }
-    } catch (_) {
+    } catch (_error) {
       // fall-through to false
     }
     return false
@@ -63,39 +64,50 @@ export function SessionExpiryModal({
   }
   
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="mx-4 w-full max-w-md rounded-[2.25rem] bg-white p-6 shadow-xl transition-colors duration-300 dark:bg-slate-800">
-        <div className="text-center">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">
-            Session Expiring
-          </h2>
-          <div className="text-3xl font-mono text-red-600 dark:text-red-400 mb-4">
-            {formatTime(timeRemaining)}
-          </div>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">
-            Your session will expire in {Math.ceil(timeRemaining / 60)} minutes. 
-            What would you like to do?
-          </p>
-          
-          <div className="space-y-3">
-            <button 
-              onClick={handleStayLoggedIn}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
-            >
-              Stay Logged In
-            </button>
-            
-            <button 
-              onClick={handleLogout}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
-            >
-              Logout
-            </button>
-            
-            <div className="text-sm text-slate-500 dark:text-slate-400">
-              <p>Do nothing - automatically log out when time reaches zero</p>
+    <div className="fixed inset-0 z-50">
+      <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" aria-hidden />
+      <div className="relative z-10 grid h-full place-items-center">
+        <div className="px-4">
+          <GlassCard
+            variant="accent"
+            rounded="xl"
+            padding="lg"
+            withInnerEffects={false}
+            containerClassName="w-full max-w-md"
+            className="text-center"
+          >
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+              Session expiring
+            </h2>
+            <div className="mt-4 text-3xl font-mono text-red-600 dark:text-red-400">
+              {formatTime(timeRemaining)}
             </div>
-          </div>
+            <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">
+              Your session will expire in {Math.ceil(timeRemaining / 60)} minutes.
+            </p>
+            <div className="mt-6 space-y-3">
+              <Button
+                type="button"
+                onClick={handleStayLoggedIn}
+                className="w-full"
+                size="lg"
+              >
+                Stay logged in
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                onClick={handleLogout}
+                className="w-full"
+                size="lg"
+              >
+                Logout now
+              </Button>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Do nothing to auto-logout when the timer reaches zero.
+              </p>
+            </div>
+          </GlassCard>
         </div>
       </div>
     </div>

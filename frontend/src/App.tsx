@@ -9,6 +9,7 @@ import { AuthService } from "./services/authService";
 import { BrowserStorageAdapter } from "./services/boundaries";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { ProviderMismatchCheck } from "./components/ProviderMismatchCheck";
+import { GlassCard, GradientShell, Button } from './ui/primitives';
 
 AuthService.configure({
   storage: new BrowserStorageAdapter()
@@ -107,45 +108,62 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
-        <div className="text-lg text-slate-600 dark:text-slate-400">Loading...</div>
-      </div>
+      <GradientShell variant="app">
+        <div className="flex min-h-screen items-center justify-center px-4">
+          <GlassCard
+            variant="accent"
+            rounded="lg"
+            padding="md"
+            withInnerEffects={false}
+            className="text-center text-sm text-slate-600 dark:text-slate-300"
+          >
+            Loading...
+          </GlassCard>
+        </div>
+      </GradientShell>
     )
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300">
-        <header className="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-          <div className="px-4 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2 font-semibold text-lg">Sumaura</div>
-            <div className="flex items-center">
-              <button
-                onClick={toggle}
-                className="px-2 py-1.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all duration-200"
-                aria-label="Toggle theme"
-                title="Toggle theme"
-              >
-                {mode === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-              </button>
-            </div>
+      <div className="min-h-screen">
+        <div className="bg-white dark:bg-slate-900">
+          <div className="text-slate-900 transition-colors duration-300 dark:text-slate-100">
+            <header className="sticky top-0 z-50">
+              <div className="bg-white/80 dark:bg-slate-800/80">
+                <div className="border-b border-slate-200 dark:border-slate-700 backdrop-blur-sm">
+                  <div className="px-4">
+                    <div className="flex h-16 items-center justify-between">
+                      <div className="flex items-center gap-2 text-lg font-semibold">Sumaura</div>
+                      <Button
+                        variant="icon"
+                        size="icon"
+                        onClick={toggle}
+                        aria-label="Toggle theme"
+                        title="Toggle theme"
+                      >
+                        {mode === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </header>
+            <main>
+              {authScreen === 'login' ? (
+                <LoginScreen
+                  onNavigateToRegister={() => setAuthScreen('register')}
+                  onLoginSuccess={handleAuthSuccess}
+                />
+              ) : (
+                <RegisterScreen
+                  onNavigateToLogin={() => setAuthScreen('login')}
+                  onRegisterSuccess={handleAuthSuccess}
+                />
+              )}
+            </main>
           </div>
-        </header>
-        <main>
-          <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-            {authScreen === 'login' ? (
-              <LoginScreen
-                onNavigateToRegister={() => setAuthScreen('register')}
-                onLoginSuccess={handleAuthSuccess}
-              />
-            ) : (
-              <RegisterScreen
-                onNavigateToLogin={() => setAuthScreen('login')}
-                onRegisterSuccess={handleAuthSuccess}
-              />
-            )}
-          </div>
-        </main>
+        </div>
       </div>
     )
   }

@@ -8,7 +8,7 @@ import { formatRatio } from "../services/AnalyticsService";
 import { useTheme } from "../context/ThemeContext";
 
 function RatioPill({ ratio }: { ratio: number | string | null }) {
-  const label = formatRatio(ratio as any);
+  const label = formatRatio(ratio);
   return (
     <span className="inline-flex items-center rounded-full border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 px-2 py-0.5 text-xs font-medium">
       A/L: {label}

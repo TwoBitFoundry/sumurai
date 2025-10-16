@@ -523,6 +523,113 @@ function ComplexCard() {
 
 ---
 
+### Alert
+
+Inline feedback banner for success, warning, info, or error states.
+
+**Use Cases:**
+- Authentication error messaging
+- Form level feedback
+- Inline status updates
+
+**Variants:**
+
+| Variant | Description |
+|---------|-------------|
+| `info` | Neutral informational banner |
+| `success` | Positive feedback |
+| `warning` | Cautionary notice |
+| `error` | Blocking error state |
+
+**Props:**
+```typescript
+interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: 'info' | 'success' | 'warning' | 'error'
+  tone?: 'solid' | 'subtle'
+  title?: string
+  icon?: React.ReactNode
+  children: React.ReactNode
+}
+```
+
+**Example:**
+```tsx
+import { Alert } from '@/ui/primitives'
+
+function ErrorBanner({ message }: { message: string }) {
+  return (
+    <Alert variant="error" title="Authentication error">
+      {message}
+    </Alert>
+  )
+}
+```
+
+---
+
+### FormLabel
+
+Consistent typography and spacing for form labels.
+
+**Use Cases:**
+- Login and registration forms
+- Settings panels
+- Input group headings
+
+**Variants:**
+
+| Variant | Description |
+|---------|-------------|
+| `default` | High contrast label |
+| `subtle` | Lower contrast secondary label |
+
+**Example:**
+```tsx
+import { FormLabel, Input } from '@/ui/primitives'
+
+function EmailField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <div className="space-y-1.5">
+      <FormLabel htmlFor="email">Email</FormLabel>
+      <Input id="email" type="email" value={value} onChange={(event) => onChange(event.target.value)} />
+    </div>
+  )
+}
+```
+
+---
+
+### RequirementPill
+
+Status pill to indicate whether a checklist item has been satisfied.
+
+**Use Cases:**
+- Password strength checklists
+- Onboarding requirement trackers
+- Multi-step validation summaries
+
+**Variants:**
+
+| Variant | Description |
+|---------|-------------|
+| `pending` | Neutral background for unmet requirement |
+| `met` | Highlighted background for satisfied requirement |
+
+**Example:**
+```tsx
+import { RequirementPill } from '@/ui/primitives'
+
+function PasswordRequirement({ met, label }: { met: boolean; label: string }) {
+  return (
+    <RequirementPill status={met ? 'met' : 'pending'}>
+      {label}
+    </RequirementPill>
+  )
+}
+```
+
+---
+
 ## Testing
 
 All primitives should have:

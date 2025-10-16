@@ -1,7 +1,16 @@
 import React, { useState } from 'react'
 import { AuthService } from './services/authService'
 import { useRegistrationValidation } from './hooks/useRegistrationValidation'
-import { GlassCard, GradientShell, Button, Input, Badge } from './ui/primitives'
+import {
+  GlassCard,
+  GradientShell,
+  Button,
+  Input,
+  Badge,
+  Alert,
+  FormLabel,
+  RequirementPill,
+} from './ui/primitives'
 
 interface LoginScreenProps {
   onNavigateToRegister: () => void
@@ -46,18 +55,13 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             {error && (
-              <div className="rounded-2xl border border-red-200/70 bg-red-50/80 px-4 py-3 text-left shadow-sm dark:border-red-700/60 dark:bg-red-900/25">
-                <p className="text-sm font-medium text-red-600 dark:text-red-300">{error}</p>
-              </div>
+              <Alert variant="error" title="Authentication error">
+                {error}
+              </Alert>
             )}
 
             <div className="space-y-1.5">
-              <label
-                htmlFor="email"
-                className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200"
-              >
-                Email
-              </label>
+              <FormLabel htmlFor="email">Email</FormLabel>
               <Input
                 type="email"
                 id="email"
@@ -70,12 +74,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
             </div>
 
             <div className="space-y-1.5">
-              <label
-                htmlFor="password"
-                className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200"
-              >
-                Password
-              </label>
+              <FormLabel htmlFor="password">Password</FormLabel>
               <Input
                 type="password"
                 id="password"
@@ -182,12 +181,7 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
             )}
 
             <div className="space-y-1.5">
-              <label
-                htmlFor="email"
-                className="block text-xs font-semibold tracking-[0.18em] text-slate-700 uppercase dark:text-slate-200"
-              >
-                Email
-              </label>
+              <FormLabel htmlFor="email">Email</FormLabel>
               <Input
                 type="email"
                 id="email"
@@ -205,12 +199,7 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
-                <label
-                  htmlFor="password"
-                  className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200"
-                >
-                  Password
-                </label>
+                <FormLabel htmlFor="password">Password</FormLabel>
                 <Input
                   type="password"
                   id="password"
@@ -224,12 +213,7 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
               </div>
 
               <div className="space-y-1.5">
-                <label
-                  htmlFor="confirm-password"
-                  className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200"
-                >
-                  Confirm password
-                </label>
+                <FormLabel htmlFor="confirm-password">Confirm password</FormLabel>
                 <Input
                   type="password"
                   id="confirm-password"
@@ -246,33 +230,31 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
               </div>
             </div>
 
-            <div className="rounded-lg border border-white/55 bg-white/85 px-3.5 py-3 text-[0.7rem] shadow-[0_16px_42px_-38px_rgba(15,23,42,0.4)] dark:border-white/12 dark:bg-[#111a2f] dark:text-slate-300">
-              <h3 className="mb-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.26em] text-slate-700 dark:text-slate-200">
+            <GlassCard
+              variant="accent"
+              rounded="lg"
+              padding="sm"
+              withInnerEffects={false}
+              className="space-y-1.5 text-[0.7rem] text-slate-600 dark:text-slate-300"
+            >
+              <h3 className="text-[0.65rem] font-semibold uppercase tracking-[0.26em] text-slate-700 dark:text-slate-200">
                 Password checklist
               </h3>
-              <ul className="flex flex-wrap gap-1.5">
-                <li className={`rounded-full px-2.5 py-1 font-medium ${
-                  passwordValidation.minLength ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-white/60 text-slate-500 dark:bg-white/5 dark:text-slate-400'
-                }`}>
+              <div className="flex flex-wrap gap-1.5">
+                <RequirementPill status={passwordValidation.minLength ? 'met' : 'pending'}>
                   8+ characters
-                </li>
-                <li className={`rounded-full px-2.5 py-1 font-medium ${
-                  passwordValidation.hasCapital ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-white/60 text-slate-500 dark:bg-white/5 dark:text-slate-400'
-                }`}>
+                </RequirementPill>
+                <RequirementPill status={passwordValidation.hasCapital ? 'met' : 'pending'}>
                   1 capital letter
-                </li>
-                <li className={`rounded-full px-2.5 py-1 font-medium ${
-                  passwordValidation.hasNumber ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-white/60 text-slate-500 dark:bg-white/5 dark:text-slate-400'
-                }`}>
+                </RequirementPill>
+                <RequirementPill status={passwordValidation.hasNumber ? 'met' : 'pending'}>
                   1 number
-                </li>
-                <li className={`rounded-full px-2.5 py-1 font-medium ${
-                  passwordValidation.hasSpecial ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-white/60 text-slate-500 dark:bg-white/5 dark:text-slate-400'
-                }`}>
+                </RequirementPill>
+                <RequirementPill status={passwordValidation.hasSpecial ? 'met' : 'pending'}>
                   1 special character
-                </li>
-              </ul>
-            </div>
+                </RequirementPill>
+              </div>
+            </GlassCard>
 
             <Button
               type="submit"
