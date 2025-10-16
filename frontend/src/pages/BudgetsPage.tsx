@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Card from '../components/ui/Card'
 import { Calendar as CalendarIcon, Loader2, Plus, CheckCircle2, Activity, Clock, AlertTriangle } from 'lucide-react'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
@@ -9,6 +9,7 @@ import { fmtUSD } from '../utils/format'
 import { formatCategoryName } from '../utils/categories'
 import HeroStatCard, { type HeroPill } from '../components/widgets/HeroStatCard'
 import { PageLayout } from '../layouts/PageLayout'
+import { BudgetCalculator } from '../domain/BudgetCalculator'
 
 export default function BudgetsPage() {
   const {
@@ -64,71 +65,7 @@ export default function BudgetsPage() {
   }
   const onDelete = async (id: string) => { await remove(id) }
 
-  const stats = useMemo(() => {
-    if (!computedBudgets.length) {
-      return {
-        totalBudgeted: 0,
-        totalSpent: 0,
-        remaining: 0,
-        variance: 0,
-        overBudgetCount: 0,
-        overBudgetCategories: [] as string[],
-        daysRemaining: 0,
-        totalDays: 0,
-        activeBudgetCategories: [] as string[],
-        nearLimitCategories: [] as string[],
-      }
-    }
-    const totals = computedBudgets.reduce(
-      (acc, budget) => {
-        acc.totalBudgeted += budget.amount
-        acc.totalSpent += budget.spent
-        if (budget.spent > budget.amount) {
-          acc.overBudgetCount += 1
-          acc.overBudgetCategories.push(budget.category)
-        }
-        return acc
-      },
-      { totalBudgeted: 0, totalSpent: 0, overBudgetCount: 0, overBudgetCategories: [] as string[] }
-    )
-
-    const variance = totals.totalBudgeted - totals.totalSpent
-
-    const now = new Date()
-    const year = month.getFullYear()
-    const monthNum = month.getMonth()
-    const lastDay = new Date(year, monthNum + 1, 0).getDate()
-
-    let daysRemaining = 0
-    if (now.getFullYear() === year && now.getMonth() === monthNum) {
-      daysRemaining = Math.max(0, lastDay - now.getDate())
-    } else if (now.getFullYear() < year || (now.getFullYear() === year && now.getMonth() < monthNum)) {
-      daysRemaining = lastDay
-    }
-
-    const activeBudgetCategories = computedBudgets.map(b => b.category)
-
-    const nearLimitCategories = computedBudgets
-      .filter(b => {
-        const utilization = b.amount > 0 ? b.spent / b.amount : 0
-        return utilization >= 0.8 && utilization < 1.0
-      })
-      .slice(0, 3)
-      .map(b => b.category)
-
-    return {
-      totalBudgeted: totals.totalBudgeted,
-      totalSpent: totals.totalSpent,
-      remaining: Math.max(0, totals.totalBudgeted - totals.totalSpent),
-      variance,
-      overBudgetCount: totals.overBudgetCount,
-      overBudgetCategories: totals.overBudgetCategories,
-      daysRemaining,
-      totalDays: lastDay,
-      activeBudgetCategories,
-      nearLimitCategories,
-    }
-  }, [computedBudgets, month])
+  const stats = useMemo(() => BudgetCalculator.computeStats(computedBudgets, month), [computedBudgets, month])
 
   const activeBudgetPills: HeroPill[] = useMemo(() => {
     if (!stats.activeBudgetCategories?.length) return []

@@ -1,61 +1,26 @@
 import { AuthService } from './authService'
+import type { IHttpClient } from './boundaries'
+import { FetchHttpClient } from './boundaries'
+import {
+  ApiError,
+  AuthenticationError,
+  ValidationError,
+  NetworkError,
+  ServerError,
+  ConflictError,
+  NotFoundError,
+  ForbiddenError,
+} from './boundaries'
 
-export class ApiError extends Error {
-  constructor(
-    public status: number,
-    public message: string,
-    public code?: string
-  ) {
-    super(message)
-    this.name = 'ApiError'
-  }
-}
-
-export class AuthenticationError extends ApiError {
-  constructor(message = 'Authentication required') {
-    super(401, message, 'AUTH_REQUIRED')
-  }
-}
-
-export class ValidationError extends ApiError {
-  constructor(message = 'Invalid input data', details?: Record<string, string>) {
-    super(400, message, 'VALIDATION_ERROR')
-    if (details) {
-      this.details = details
-    }
-  }
-  
-  public details?: Record<string, string>
-}
-
-export class NetworkError extends ApiError {
-  constructor(message = 'Network connection failed') {
-    super(0, message, 'NETWORK_ERROR')
-  }
-}
-
-export class ServerError extends ApiError {
-  constructor(status: number, message = 'Server error occurred') {
-    super(status, message, 'SERVER_ERROR')
-  }
-}
-
-export class ConflictError extends ApiError {
-  constructor(message = 'Resource conflict') {
-    super(409, message, 'CONFLICT')
-  }
-}
-
-export class NotFoundError extends ApiError {
-  constructor(message = 'Resource not found') {
-    super(404, message, 'NOT_FOUND')
-  }
-}
-
-export class ForbiddenError extends ApiError {
-  constructor(message = 'Access forbidden') {
-    super(403, message, 'FORBIDDEN')
-  }
+export {
+  ApiError,
+  AuthenticationError,
+  ValidationError,
+  NetworkError,
+  ServerError,
+  ConflictError,
+  NotFoundError,
+  ForbiddenError,
 }
 
 interface RetryConfig {
@@ -68,11 +33,12 @@ interface RetryConfig {
 
 export class ApiClient {
   private static baseUrl = '/api'
+  private static httpClient: IHttpClient = new FetchHttpClient()
   private static retryConfig: RetryConfig = {
     maxRetries: 3,
     baseDelay: 1000,
     maxDelay: 5000,
-    retryableStatuses: [502, 503, 504, 429], // Bad Gateway, Service Unavailable, Gateway Timeout, Rate Limited
+    retryableStatuses: [502, 503, 504, 429],
     retryableErrors: [
       'Failed to fetch',
       'Request timeout',
@@ -83,6 +49,11 @@ export class ApiClient {
       'Request aborted'
     ]
   }
+
+  static configure(httpClient: IHttpClient): void {
+    this.httpClient = httpClient
+  }
+
 
   private static isRetryableError(error: Error): boolean {
     return this.retryConfig.retryableErrors.some(retryableError =>
@@ -129,64 +100,94 @@ export class ApiClient {
     attempt: number
   ): Promise<T> {
     try {
-      const token = AuthService.getToken()
-      
-      const headers = {
+      const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
       }
 
-      const url = `${this.baseUrl}${endpoint}`
-      
-      const response = await fetch(url, {
+      if (options.headers) {
+        if (options.headers instanceof Headers) {
+          options.headers.forEach((value, key) => {
+            headers[key] = value
+          })
+        } else if (Array.isArray(options.headers)) {
+          options.headers.forEach(([key, value]) => {
+            headers[key] = value
+          })
+        } else {
+          Object.assign(headers, options.headers)
+        }
+      }
+
+      const token = AuthService.getToken()
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
+
+      const optionsWithAuth = {
         ...options,
         headers,
-      })
+      }
 
-      // Handle authentication errors with token refresh
-      if (response.status === 401) {
+      const response = await this.makeRawRequest<T>(endpoint, optionsWithAuth)
+      return response
+    } catch (error) {
+      if (error instanceof AuthenticationError && attempt === 0) {
         return this.handleAuthenticationError<T>(endpoint, options, attempt)
       }
 
-      // Handle other HTTP errors
-      if (!response.ok) {
-        const error = await this.createApiError(response)
-        
-        // Retry on retryable status codes
-        if (this.isRetryableStatus(response.status) && attempt < this.retryConfig.maxRetries) {
-          const delay = this.calculateBackoffDelay(attempt)
-          await this.delay(delay)
-          return this.makeRequestWithRetry<T>(endpoint, options, attempt + 1)
-        }
-        
-        throw error
+      if (error instanceof ApiError && this.isRetryableStatus(error.status) && attempt < this.retryConfig.maxRetries) {
+        const delay = this.calculateBackoffDelay(attempt)
+        await this.delay(delay)
+        return this.makeRequestWithRetry<T>(endpoint, options, attempt + 1)
       }
 
-      if (response.status === 204) {
-        return {} as T
-      }
-
-      return response.json()
-    } catch (error) {
-      // Handle network errors
       if (error instanceof Error && this.isRetryableError(error) && attempt < this.retryConfig.maxRetries) {
         const delay = this.calculateBackoffDelay(attempt)
         await this.delay(delay)
         return this.makeRequestWithRetry<T>(endpoint, options, attempt + 1)
       }
-      
-      // Re-throw ApiError instances directly
+
       if (error instanceof ApiError || error instanceof AuthenticationError) {
         throw error
       }
-      
-      // Convert network errors to NetworkError after all retries are exhausted
+
       if (error instanceof Error && this.isRetryableError(error)) {
         throw new NetworkError(error.message)
       }
-      
-      // For other errors, throw as-is
+
+      throw error
+    }
+  }
+
+  private static async makeRawRequest<T>(
+    endpoint: string,
+    options: RequestInit
+  ): Promise<T> {
+    const method = (options.method || 'GET').toUpperCase()
+    const body = options.body ? JSON.parse(options.body as string) : undefined
+    const requestOptions = { headers: options.headers as Record<string, string> }
+
+    try {
+      const result = await (async () => {
+        switch (method) {
+          case 'GET':
+            return this.httpClient.get<T>(endpoint, requestOptions)
+          case 'POST':
+            return this.httpClient.post<T>(endpoint, body, requestOptions)
+          case 'PUT':
+            return this.httpClient.put<T>(endpoint, body, requestOptions)
+          case 'DELETE':
+            return this.httpClient.delete<T>(endpoint, requestOptions)
+          default:
+            throw new Error(`Unsupported HTTP method: ${method}`)
+        }
+      })()
+
+      return result
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error
+      }
       throw error
     }
   }
@@ -196,17 +197,23 @@ export class ApiClient {
     options: RequestInit,
     attempt: number
   ): Promise<T> {
+    // Don't try to refresh if we're already refreshing
+    if (endpoint === '/auth/refresh') {
+      AuthService.clearToken()
+      throw new AuthenticationError()
+    }
+
     try {
       // Attempt to refresh the token
       const refreshResult = await AuthService.refreshToken()
       AuthService.storeToken(refreshResult.token)
-      
+
       // Retry the original request with the new token
       const newHeaders = {
         ...options.headers,
         Authorization: `Bearer ${refreshResult.token}`
       }
-      
+
       return this.makeRequestWithRetry<T>(endpoint, { ...options, headers: newHeaders }, 0)
     } catch (refreshError) {
       // Token refresh failed, clear tokens and throw authentication error
@@ -314,16 +321,14 @@ export class ApiClient {
   }
 
   static async healthCheck(): Promise<string> {
-    // Health check doesn't need authentication, so bypass the normal flow
-    const response = await fetch('/health', {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    })
-
-    if (!response.ok) {
-      throw new ApiError(response.status, 'Health check failed')
+    try {
+      const result = await this.httpClient.get<string>('/health', {})
+      return typeof result === 'string' ? result : 'OK'
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error
+      }
+      throw new ApiError(0, 'Health check failed')
     }
-
-    return response.text()
   }
 }

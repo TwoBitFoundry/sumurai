@@ -1,6 +1,13 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 import React from 'react'
+import { AuthService } from '@/services/authService'
+import { FetchHttpClient, BrowserStorageAdapter } from '@/services/boundaries'
+
+AuthService.configure({
+  http: new FetchHttpClient(),
+  storage: new BrowserStorageAdapter()
+})
 
 ;(globalThis as any).ResizeObserver = class ResizeObserver {
   observe() {}
