@@ -1,6 +1,5 @@
 import { type ReactNode } from 'react'
-import { cn } from '../ui/primitives/utils'
-import { cn } from '@/ui/primitives'
+import { cn } from '@/ui/primitives/utils'
 
 interface PageLayoutProps {
   badge?: string

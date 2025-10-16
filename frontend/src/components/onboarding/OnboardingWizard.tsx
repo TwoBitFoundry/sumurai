@@ -10,7 +10,8 @@ import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo'
 import type { FinancialProvider } from '@/types/api'
 import { useOnboardingTellerFlow } from '@/hooks/useOnboardingTellerFlow'
 import { CONNECT_ACCOUNT_PROVIDER_CONTENT } from '@/utils/providerCards'
-import { Badge, Button, GlassCard, GradientShell, cn } from '@/ui/primitives'
+import { Badge, Button, GlassCard, GradientShell } from '@/ui/primitives'
+import { cn } from '@/ui/primitives/utils'
 
 const stepIndicatorVariants = cva(
   ['flex', 'h-8', 'w-8', 'items-center', 'justify-center', 'rounded-full', 'border', 'text-xs', 'font-semibold', 'transition-colors'],
@@ -122,7 +123,6 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
       case 'connectAccount':
         return (
           <ConnectAccountStep
-            provider={activeProvider}
             content={providerContent}
             providerLoading={providerLoading}
             providerError={providerInfo.error}

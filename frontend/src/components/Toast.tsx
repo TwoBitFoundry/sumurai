@@ -2,6 +2,7 @@ import React from 'react'
 import { motion } from 'framer-motion'
 
 import { Button, GlassCard } from '@/ui/primitives'
+import { cn } from '@/ui/primitives/utils'
 
 interface ToastProps {
   message: string

@@ -1,5 +1,6 @@
 import React from 'react'
-import { Alert, Badge, Button, GlassCard, cn } from '@/ui/primitives'
+import { Alert, Badge, Button, GlassCard } from '@/ui/primitives'
+import { cn } from '@/ui/primitives/utils'
 import type { ConnectAccountProviderContent } from '@/utils/providerCards'
 
 type StatusTone = 'info' | 'warning' | 'error'
@@ -79,15 +80,15 @@ function FeatureCard({
       variant="accent"
       rounded="lg"
       padding="md"
-        className={cn('flex h-full flex-col', 'items-center gap-3', 'text-center')}
+      className={cn('flex h-full flex-col', 'items-center gap-3', 'text-center')}
+    >
+      <IconBurst
+        gradient={palette.gradient}
+        ring={palette.ring}
+        glow={palette.glow}
+        size="sm"
       >
-        <IconBurst
-          gradient={palette.gradient}
-          ring={palette.ring}
-          glow={palette.glow}
-          size="sm"
-        >
-          <Icon className={cn('h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)} strokeWidth={1.7} />
+        <Icon className={cn('h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)} strokeWidth={1.7} />
       </IconBurst>
       <h4 className={cn('text-sm', 'font-semibold', 'text-slate-900', 'dark:text-white')}>{title}</h4>
       <p className={cn('text-xs', 'text-slate-600', 'dark:text-slate-300')}>{body}</p>

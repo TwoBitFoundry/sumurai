@@ -1,7 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { ApiError, AuthenticationError } from '../services/ApiClient'
-import { Button, GlassCard, cn } from '../ui/primitives'
-import { cn } from '@/ui/primitives'
+import { Button, GlassCard } from '@/ui/primitives'
+import { cn } from '@/ui/primitives/utils'
 
 interface Props {
   children: ReactNode

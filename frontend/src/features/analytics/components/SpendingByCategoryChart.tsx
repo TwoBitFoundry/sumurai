@@ -3,7 +3,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts'
 import { fmtUSD } from '../../../utils/format'
 import { DonutDatum } from '../adapters/chartData'
 import { useTheme } from '../../../context/ThemeContext'
-import { cn } from '@/ui/primitives'
+import { cn } from '@/ui/primitives/utils'
 
 type Props = {
   data: DonutDatum[]

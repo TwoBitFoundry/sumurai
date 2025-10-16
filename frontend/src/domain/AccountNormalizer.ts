@@ -88,12 +88,14 @@ export class AccountNormalizer {
         account.institution_name ??
         'Account'
 
-      const mask =
+      const maskSource =
         account.mask ??
         account.account_mask ??
         account.last_four ??
         account.lastFour ??
         '0000'
+
+      const mask = maskSource != null ? String(maskSource) : '0000'
 
       return {
         id: String(account.id),

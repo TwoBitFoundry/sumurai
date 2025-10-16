@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { AlertTriangle } from 'lucide-react'
 
 import { Badge, Button, GlassCard, Modal } from '@/ui/primitives'
+import { cn } from '@/ui/primitives/utils'
 
 interface ProviderMismatchModalProps {
   userProvider: string
@@ -14,7 +15,7 @@ export const ProviderMismatchModal = ({ userProvider, defaultProvider, onConfirm
 
   const providerLabels: Record<string, string> = {
     plaid: 'Plaid',
-    teller: 'Teller'
+    teller: 'Teller',
   }
 
   const userProviderLabel = providerLabels[userProvider] || userProvider

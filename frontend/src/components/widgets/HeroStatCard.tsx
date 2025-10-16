@@ -188,7 +188,9 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
   }, [checkScroll, pills?.length])
 
   const hasFooter = Boolean(subtext) || Boolean(pills && pills.length > 0)
-  const ringColorStyle: CSSProperties = { '--tw-ring-color': `${styles.ringHex}66` }
+  const ringColorStyle = {
+    '--tw-ring-color': `${styles.ringHex}66`,
+  } as CSSProperties
 
   return (
     <div

@@ -118,8 +118,10 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       const mapped: PlaidConnection[] = statusList
         .filter(status => status.is_connected)
         .map(status => {
+          const statusConnectionId = status.connection_id != null ? String(status.connection_id) : null
+
           const connectionAccounts = typedAccounts
-            .filter(account => resolveConnectionId(account) === status.connection_id)
+            .filter(account => resolveConnectionId(account) === statusConnectionId)
             .map(account => {
               const ledger =
                 parseNumeric(account.balance_ledger) ??
@@ -128,23 +130,41 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
 
               const txnCount = parseNumeric(account.transaction_count)
 
+              const name =
+                account.name ??
+                account.account_name ??
+                account.official_name ??
+                account.institution_name ??
+                'Account'
+
+              const maskSource =
+                account.mask ??
+                account.account_mask ??
+                account.last_four ??
+                account.lastFour ??
+                '0000'
+
               return {
-                id: account.id,
-                name: account.name,
-                mask: account.mask ?? (account.last_four ? String(account.last_four) : '0000'),
-                type: mapAccountType(account.account_type),
-                balance: ledger,
-                transactions: txnCount,
+                id: String(account.id),
+                name,
+                mask: maskSource != null ? String(maskSource) : '0000',
+                type: mapAccountType(
+                  account.account_type ?? account.type ?? account.accountType ?? account.subtype ?? null
+                ),
+                balance: ledger ?? undefined,
+                transactions: txnCount ?? undefined,
               }
             })
 
+          const connectionId = statusConnectionId ?? 'unknown'
+
           return {
-            id: status.connection_id,
-            connectionId: status.connection_id,
+            id: connectionId,
+            connectionId,
             institutionName: status.institution_name || 'Unknown Bank',
-            lastSyncAt: status.last_sync_at,
-            transactionCount: status.transaction_count,
-            accountCount: status.account_count,
+            lastSyncAt: status.last_sync_at ?? null,
+            transactionCount: status.transaction_count ?? 0,
+            accountCount: status.account_count ?? connectionAccounts.length,
             syncInProgress: status.sync_in_progress ?? false,
             isConnected: status.is_connected,
             accounts: connectionAccounts

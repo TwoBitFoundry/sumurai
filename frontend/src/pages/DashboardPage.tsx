@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { RefreshCcw } from 'lucide-react'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import type { ActiveDotProps } from 'recharts/types/util/types'
+import type { ActiveDotProps, ActiveDotType } from 'recharts/types/util/types'
 import type { TooltipProps } from 'recharts'
 
 import BalancesOverview from '../components/BalancesOverview'
@@ -12,6 +12,8 @@ import { useTheme } from '../context/ThemeContext'
 import { categoriesToDonut } from '../features/analytics/adapters/chartData'
 import { useAnalytics } from '../features/analytics/hooks/useAnalytics'
 import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries'
+import { SpendingByCategoryChart } from '../features/analytics/components/SpendingByCategoryChart'
+import { TopMerchantsList } from '../features/analytics/components/TopMerchantsList'
 import { fmtUSD } from '../utils/format'
 import { type DateRangeKey as DateRange } from '../utils/dateRanges'
 
@@ -91,16 +93,18 @@ const DashboardPage: React.FC = () => {
 
   const monthSpend = analytics.spendingTotal
 
-  const netDotRenderer = useMemo<((props: ActiveDotProps) => React.ReactElement | null) | undefined>(() => {
+  const netDotRenderer = useMemo<ActiveDotType | undefined>(() => {
     const n = netSeries?.length || 0
     const fill = colors.chart.dotFill
     const stroke = '#10b981'
     if (!n) return undefined
     const selected = DashboardCalculator.calculateNetDotIndices(netSeries)
-    return ({ index, cx, cy }) => {
+    return ({ index, cx, cy }: ActiveDotProps) => {
       if (index == null || cx == null || cy == null) return null
       if (!selected.has(index)) return null
-      return <circle cx={cx} cy={cy} r={3} stroke={stroke} strokeWidth={1} fill={fill} />
+      return (
+        <circle cx={cx} cy={cy} r={3} stroke={stroke} strokeWidth={1} fill={fill} />
+      ) as React.ReactElement<SVGCircleElement>
     }
   }, [netSeries, colors.chart.dotFill])
 

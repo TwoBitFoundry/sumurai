@@ -1,5 +1,5 @@
 import React from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, type HTMLMotionProps } from 'framer-motion'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from './utils'
 
@@ -17,7 +17,7 @@ const contentVariants = cva('relative w-full', {
 })
 
 export interface ModalProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'>,
+  extends Omit<HTMLMotionProps<'div'>, 'children'>,
     VariantProps<typeof contentVariants> {
   isOpen: boolean
   onClose?: () => void
