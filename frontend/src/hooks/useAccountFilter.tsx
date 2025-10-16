@@ -48,7 +48,7 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
         if (typeof value === 'string') {
           const trimmed = value.trim()
           const isNegativeParenthetical = trimmed.startsWith('(') && trimmed.endsWith(')')
-          const normalized = trimmed.replace(/[^0-9.\-]/g, '')
+          const normalized = trimmed.replace(/[^0-9.-]/g, '')
           if (!normalized) {
             return null
           }

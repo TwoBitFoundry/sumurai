@@ -6,7 +6,7 @@ import { TrashIcon as TrashSolidIcon } from '@heroicons/react/24/solid'
 import BudgetProgress from './BudgetProgress'
 import type { BudgetProgressEntry } from '../hooks/useBudgets'
 
-export interface BudgetWithProgress extends BudgetProgressEntry {}
+export type BudgetWithProgress = BudgetProgressEntry
 
 export function BudgetList({
   items,

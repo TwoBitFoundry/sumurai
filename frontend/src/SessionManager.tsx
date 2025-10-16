@@ -47,7 +47,7 @@ export function SessionExpiryModal({
         sessionStorage.setItem('auth_token', result.token)
         return true
       }
-    } catch (_error) {
+    } catch {
       // fall-through to false
     }
     return false

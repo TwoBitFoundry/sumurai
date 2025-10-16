@@ -1,5 +1,4 @@
 import React from 'react'
-import type { FinancialProvider } from '@/types/api'
 import type { ConnectAccountProviderContent } from '@/utils/providerCards'
 
 type StatusTone = 'info' | 'warning' | 'error'
@@ -12,7 +11,6 @@ interface StatusMessage {
 }
 
 interface ConnectAccountStepProps {
-  provider: FinancialProvider
   content: ConnectAccountProviderContent
   providerLoading: boolean
   providerError: string | null
@@ -54,7 +52,6 @@ const STATUS_TONE_STYLES: Record<
 }
 
 export function ConnectAccountStep({
-  provider,
   content,
   providerLoading,
   providerError,

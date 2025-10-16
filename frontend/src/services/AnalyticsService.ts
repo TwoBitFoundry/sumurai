@@ -22,7 +22,7 @@ export class AnalyticsService {
     const qs = params.toString()
     if (qs) endpoint += `?${qs}`
     // Backend returns a decimal as JSON number/string; ApiClient will parse JSON value.
-    const result = await ApiClient.get<any>(endpoint)
+    const result = await ApiClient.get<number | string>(endpoint)
     return typeof result === 'number' ? result : Number(result)
   }
 

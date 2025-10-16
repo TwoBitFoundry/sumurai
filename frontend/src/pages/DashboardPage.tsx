@@ -1,20 +1,20 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { RefreshCcw } from 'lucide-react'
-import Card from '../components/ui/Card'
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import type { ActiveDotProps } from 'recharts/types/util/types'
+
 import BalancesOverview from '../components/BalancesOverview'
-import { SpendingByCategoryChart } from '../features/analytics/components/SpendingByCategoryChart'
-import { TopMerchantsList } from '../features/analytics/components/TopMerchantsList'
+import Card from '../components/ui/Card'
+import { DashboardCalculator } from '../domain/DashboardCalculator'
+import { useTheme } from '../context/ThemeContext'
+import { categoriesToDonut } from '../features/analytics/adapters/chartData'
 import { useAnalytics } from '../features/analytics/hooks/useAnalytics'
 import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries'
-import { categoriesToDonut } from '../features/analytics/adapters/chartData'
 import { fmtUSD } from '../utils/format'
 import { type DateRangeKey as DateRange } from '../utils/dateRanges'
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
-import { useTheme } from '../context/ThemeContext'
-import { DashboardCalculator } from '../domain/DashboardCalculator'
 
 const DashboardPage: React.FC = () => {
-  const { mode, colors } = useTheme()
+  const { colors } = useTheme()
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
   // Default to past-year for richer data out of the box
   const [dateRange, setDateRange] = useState<DateRange>('past-year')
@@ -82,14 +82,13 @@ const DashboardPage: React.FC = () => {
 
   const monthSpend = analytics.spendingTotal
 
-  const netDotRenderer = useMemo(() => {
+  const netDotRenderer = useMemo<((props: ActiveDotProps) => React.ReactElement | null) | undefined>(() => {
     const n = netSeries?.length || 0
     const fill = colors.chart.dotFill
     const stroke = '#10b981'
-    if (!n) return () => null as any
+    if (!n) return undefined
     const selected = DashboardCalculator.calculateNetDotIndices(netSeries)
-    return (props: any) => {
-      const { index, cx, cy } = props || {}
+    return ({ index, cx, cy }) => {
       if (index == null || cx == null || cy == null) return null
       if (!selected.has(index)) return null
       return <circle cx={cx} cy={cy} r={3} stroke={stroke} strokeWidth={1} fill={fill} />
@@ -262,7 +261,16 @@ const DashboardPage: React.FC = () => {
                     }}
                   />
                   <Tooltip formatter={(v: any) => fmtUSD(Number(v))} contentStyle={{ background: colors.chart.tooltipBg }} />
-                  <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#netGradient)" dot={netDotRenderer as any} activeDot={{ r: 6 }} />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#netGradient)"
+                    dot={netDotRenderer}
+                    activeDot={{ r: 6 }}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

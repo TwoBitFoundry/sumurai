@@ -81,7 +81,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       if (typeof value === 'string') {
         const trimmed = value.trim()
         const isNegativeParenthetical = trimmed.startsWith('(') && trimmed.endsWith(')')
-        const stripped = trimmed.replace(/[^0-9.\-]/g, '')
+        const stripped = trimmed.replace(/[^0-9.-]/g, '')
         if (stripped.length === 0) {
           return undefined
         }

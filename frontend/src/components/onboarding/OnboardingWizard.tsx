@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useCallback, useMemo } from 'react'
 import { Card } from '@/components/ui/Card'
 import { AppHeader } from '@/components/ui/AppHeader'
 import { useOnboardingWizard, type OnboardingStep } from '@/hooks/useOnboardingWizard'
@@ -23,7 +23,6 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
     canGoBack,
     canGoNext,
     isLastStep,
-    progress,
     goToNext,
     goToPrevious,
     skipWizard,
@@ -36,9 +35,6 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
   const providerContent = CONNECT_ACCOUNT_PROVIDER_CONTENT[activeProvider]
   const providerDisplayName = providerContent.displayName
   const providerLoading = providerInfo.loading && !providerInfo.userProvider && !providerInfo.defaultProvider
-
-  const stepContainerRef = useRef<HTMLDivElement>(null)
-  const [baselineHeight, setBaselineHeight] = useState<number | null>(null)
 
   const steps = useMemo(() => {
     const details: Record<OnboardingStep, { label: string; description: string }> = {
@@ -87,29 +83,6 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
       onComplete()
     }
   }, [isComplete, onComplete])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    const element = stepContainerRef.current
-    if (!element) return
-
-    const updateHeight = (height: number) => {
-      if (height <= 0) return
-      const h = Math.ceil(height) + 2 // small buffer to avoid sub‑pixel scroll
-      setBaselineHeight(prev => (prev === null ? h : Math.max(prev, h)))
-    }
-
-    updateHeight(element.getBoundingClientRect().height)
-
-    if (typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver(entries => {
-        for (const entry of entries) updateHeight(entry.contentRect.height)
-      })
-      observer.observe(element)
-      return () => observer.disconnect()
-    }
-  }, [currentStep])
 
   const handleNext = async () => {
     if (isLastStep && currentStep === 'connectAccount' && connectionFlow.isConnected) {

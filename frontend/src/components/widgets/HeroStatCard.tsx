@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { getTagThemeForCategory } from '../../utils/categories'
 
 type Accent = 'emerald' | 'sky' | 'violet' | 'amber' | 'slate' | 'rose'
@@ -173,19 +173,18 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
   const [showLeftFade, setShowLeftFade] = useState(false)
   const [showRightFade, setShowRightFade] = useState(false)
 
-  const checkScroll = () => {
+  const checkScroll = useCallback(() => {
     const el = pillsRef.current
     if (!el) return
     setShowLeftFade(el.scrollLeft > 0)
     setShowRightFade(el.scrollLeft < el.scrollWidth - el.clientWidth - 1)
-  }
+  }, [])
 
   useEffect(() => {
     checkScroll()
     window.addEventListener('resize', checkScroll)
     return () => window.removeEventListener('resize', checkScroll)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pills?.length])
+  }, [checkScroll, pills?.length])
 
   const hasFooter = Boolean(subtext) || Boolean(pills && pills.length > 0)
 
