@@ -22,7 +22,7 @@ import HeroStatCard from "./widgets/HeroStatCard";
 import { useBalancesOverview } from "../hooks/useBalancesOverview";
 import { formatRatio } from "../services/AnalyticsService";
 import { useTheme } from "../context/ThemeContext";
-import { Alert, Badge, Button, GlassCard, cn } from "../ui/primitives";
+import { Alert, Button, GlassCard, cn } from "../ui/primitives";
 
 type BankBarDatum = {
   bank: string;
@@ -191,41 +191,21 @@ export function BalancesOverview() {
   );
 
   return (
-    <GlassCard variant="default" rounded="xl" padding="lg" className="space-y-6">
-      <div className={cn("flex flex-col gap-6", "lg:flex-row lg:items-start lg:justify-between")}>
-        <div className="space-y-4">
-          <Badge
-            variant="feature"
-            size="sm"
-            className={cn(
-              'rounded-full',
-              'px-3',
-              'py-1',
-              'tracking-[0.32em]',
-              'shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)]',
-              'bg-white/75',
-              'text-slate-600',
-              'ring-0',
-              'dark:bg-[#1e293b]/75',
-              'dark:text-slate-200'
-            )}
-          >
-            Dashboard
-          </Badge>
-          <div className="space-y-3">
-            <h1 className={cn('text-3xl', 'font-bold', 'text-slate-900', 'dark:text-white', 'sm:text-4xl')}>
-              Overview of Balances
-            </h1>
-            <p className={cn('text-base', 'text-slate-600', 'dark:text-slate-300')}>
-              Track your assets and liabilities across all connected accounts with real-time balance updates.
-            </p>
-          </div>
+    <div className="space-y-6">
+      <div className={cn('flex', 'flex-col', 'gap-6', 'lg:flex-row', 'lg:items-start', 'lg:justify-between')}>
+        <div className="space-y-3">
+          <h2 className={cn('text-2xl', 'font-semibold', 'text-slate-900', 'dark:text-white', 'sm:text-[28px]')}>
+            Overview of Balances
+          </h2>
+          <p className={cn('text-sm', 'leading-relaxed', 'text-slate-600', 'dark:text-slate-300')}>
+            Track your assets and liabilities across all connected accounts with real-time balance updates.
+          </p>
         </div>
         <div className={cn('flex', 'items-center', 'gap-3')}>
           {!loading && refreshing && (
             <RefreshCcw
               aria-label="Refreshing balances"
-              className={cn("h-4 w-4 text-slate-500 dark:text-slate-400", refreshing && "animate-spin")}
+              className={cn('h-4', 'w-4', 'text-slate-500', 'dark:text-slate-400', refreshing && 'animate-spin')}
             />
           )}
           <RatioPill ratio={data?.overall?.ratio ?? null} />
@@ -247,7 +227,12 @@ export function BalancesOverview() {
       )}
 
       {!loading && error && (
-        <Alert variant="error" title="Balances unavailable" className={cn('flex', 'items-center', 'justify-between', 'gap-3')}>
+        <Alert
+          data-testid="balances-error"
+          variant="error"
+          title="Balances unavailable"
+          className={cn('flex', 'items-center', 'justify-between', 'gap-3')}
+        >
           <span>Failed to load balances. {error}</span>
           <Button variant="danger" size="sm" onClick={refresh}>
             Retry
@@ -361,7 +346,7 @@ export function BalancesOverview() {
           </BarChart>
         </ResponsiveContainer>
       </div>
-    </GlassCard>
+    </div>
   );
 }
 
