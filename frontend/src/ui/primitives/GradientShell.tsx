@@ -1,6 +1,5 @@
 import React from 'react'
 import { cn } from './utils'
-import { cn } from '@/ui/primitives'
 
 export interface GradientShellProps {
   children: React.ReactNode
