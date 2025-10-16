@@ -192,24 +192,14 @@ export function BalancesOverview() {
 
   return (
     <div className="space-y-6">
-      <div className={cn('flex', 'flex-col', 'gap-6', 'lg:flex-row', 'lg:items-start', 'lg:justify-between')}>
-        <div className="space-y-3">
-          <h2 className={cn('text-2xl', 'font-semibold', 'text-slate-900', 'dark:text-white', 'sm:text-[28px]')}>
-            Overview of Balances
-          </h2>
-          <p className={cn('text-sm', 'leading-relaxed', 'text-slate-600', 'dark:text-slate-300')}>
-            Track your assets and liabilities across all connected accounts with real-time balance updates.
-          </p>
-        </div>
-        <div className={cn('flex', 'items-center', 'gap-3')}>
-          {!loading && refreshing && (
-            <RefreshCcw
-              aria-label="Refreshing balances"
-              className={cn('h-4', 'w-4', 'text-slate-500', 'dark:text-slate-400', refreshing && 'animate-spin')}
-            />
-          )}
-          <RatioPill ratio={data?.overall?.ratio ?? null} />
-        </div>
+      <div className={cn('flex', 'flex-wrap', 'items-center', 'justify-start', 'gap-3', 'sm:justify-end')}>
+        {!loading && refreshing && (
+          <RefreshCcw
+            aria-label="Refreshing balances"
+            className={cn('h-4', 'w-4', 'text-slate-500', 'dark:text-slate-400', refreshing && 'animate-spin')}
+          />
+        )}
+        <RatioPill ratio={data?.overall?.ratio ?? null} />
       </div>
 
       {loading && (

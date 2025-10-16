@@ -114,8 +114,8 @@ const DashboardPage: React.FC = () => {
   return (
     <PageLayout
       badge="Dashboard"
-      title="Monitor balances and spending trends"
-      subtitle="Stay ahead of your finances with real-time insights across every connected account."
+      title="Overview of Balances"
+      subtitle="Track your assets and liabilities across all connected accounts with real-time balance updates."
       stats={(
         <div ref={balancesOverviewRef}>
           <BalancesOverview />
