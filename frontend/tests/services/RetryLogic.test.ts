@@ -26,7 +26,7 @@ describe('Retry Logic and Exponential Backoff', () => {
       .spyOn(globalThis, 'setTimeout')
       .mockImplementation(((cb: TimerHandler) => {
         if (typeof cb === 'function') {
-          ;(cb as Function)()
+          cb()
         }
         return 0 as unknown as number
       }) as unknown as typeof setTimeout)

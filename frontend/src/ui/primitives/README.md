@@ -130,6 +130,64 @@ function ProfileCard() {
 
 ---
 
+### Modal
+
+Accessible overlay container with backdrop handling and framer-motion transitions.
+
+**Use Cases:**
+- Confirmation dialogs
+- Session timeout prompts
+- Connection status messaging
+
+**Variants:**
+
+| Prop | Options | Description |
+|------|---------|-------------|
+| `size` | `sm` \| `md` \| `lg` | Sets max width for the dialog content |
+
+**Props:**
+```typescript
+interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
+  isOpen: boolean
+  onClose?: () => void
+  labelledBy?: string
+  description?: string
+  preventCloseOnBackdrop?: boolean
+  backdropClassName?: string
+  containerClassName?: string
+  size?: 'sm' | 'md' | 'lg'
+}
+```
+
+**Example:**
+```tsx
+import { Modal, GlassCard, Button } from '@/ui/primitives'
+
+function ConfirmDisconnect({ open, onClose, onConfirm }: Props) {
+  return (
+    <Modal isOpen={open} onClose={onClose} size="md">
+      <GlassCard variant="accent" rounded="xl" padding="lg">
+        <h2 className="text-lg font-semibold">Disconnect bank?</h2>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          This will remove all related accounts.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="danger" onClick={onConfirm}>Disconnect</Button>
+        </div>
+      </GlassCard>
+    </Modal>
+  )
+}
+```
+
+**Visual Characteristics:**
+- Backdrop blur with semi-transparent slate overlay
+- Scale and fade transitions for dialog content
+- Focusable backdrop button for accessibility
+
+---
+
 ### Button
 
 Interactive button with multiple visual styles.

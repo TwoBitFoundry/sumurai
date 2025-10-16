@@ -175,9 +175,9 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             {error && (
-              <div className="rounded-2xl border border-red-200/70 bg-red-50/80 px-4 py-3 text-left shadow-sm dark:border-red-700/60 dark:bg-red-900/25">
-                <p className="text-sm font-medium text-red-600 dark:text-red-300">{error}</p>
-              </div>
+              <Alert variant="error" title="Registration error">
+                {error}
+              </Alert>
             )}
 
             <div className="space-y-1.5">
@@ -237,7 +237,7 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
               withInnerEffects={false}
               className="space-y-1.5 text-[0.7rem] text-slate-600 dark:text-slate-300"
             >
-              <h3 className="text-[0.65rem] font-semibold uppercase tracking-[0.26em] text-slate-700 dark:text-slate-200">
+              <h3 className="text-[0.65rem] font-semibold uppercase text-slate-700 dark:text-slate-200">
                 Password checklist
               </h3>
               <div className="flex flex-wrap gap-1.5">

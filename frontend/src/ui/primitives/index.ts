@@ -13,6 +13,9 @@ export type { GlassCardProps } from './GlassCard'
 export { GradientShell } from './GradientShell'
 export type { GradientShellProps } from './GradientShell'
 
+export { Modal } from './Modal'
+export type { ModalProps } from './Modal'
+
 export { Input } from './Input'
 export type { InputProps } from './Input'
 

@@ -15,19 +15,22 @@ interface AccountRowProps {
 }
 
 const cardContainerClasses = cn(
-  'group relative overflow-hidden transition-transform duration-200 ease-out',
+  'group relative overflow-hidden',
+  'transition-transform duration-200 ease-out',
   'hover:-translate-y-[1px]'
 )
 
 const hoverOverlayClasses = cn(
-  'pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-200 ease-out',
+  'pointer-events-none absolute inset-0 rounded-[inherit] opacity-0',
+  'transition-opacity duration-200 ease-out',
   'bg-gradient-to-br from-sky-400/12 via-transparent to-violet-500/14',
   'group-hover:opacity-100',
   'dark:from-sky-400/18 dark:via-transparent dark:to-violet-500/18'
 )
 
 const accountMetaClasses = cn(
-  'flex items-center gap-2 text-xs font-medium capitalize',
+  'flex items-center gap-2',
+  'text-xs font-medium capitalize',
   'text-slate-600 transition-colors duration-300 ease-out',
   'dark:text-slate-300'
 )
@@ -38,7 +41,9 @@ const accountMaskClasses = cn(
 )
 
 const transactionsPillClasses = cn(
-  'inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-xs font-semibold',
+  'inline-flex items-center justify-center',
+  'rounded-full border',
+  'px-2.5 py-1 text-xs font-semibold',
   'border-slate-200 bg-slate-50 text-slate-600 transition-colors duration-300 ease-out',
   'dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300'
 )
@@ -73,7 +78,8 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
   const balanceText = formatMoney(rawBalance)
 
   const balanceColor = cn(
-    'text-sm font-semibold tabular-nums transition-colors duration-300 ease-out',
+    'text-sm font-semibold tabular-nums',
+    'transition-colors duration-300 ease-out',
     rawBalance == null && 'text-slate-400 dark:text-slate-500',
     rawBalance != null && !isDebtAccount && rawBalance > 0 && !isOtherAccount && 'text-emerald-500 dark:text-emerald-400',
     rawBalance != null && !isDebtAccount && rawBalance > 0 && isOtherAccount && 'text-slate-500 dark:text-slate-400',

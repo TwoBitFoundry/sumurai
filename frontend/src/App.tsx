@@ -21,7 +21,7 @@ const parseJWT = (token: string) => {
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
     const jsonPayload = atob(base64)
     return JSON.parse(jsonPayload)
-  } catch (error) {
+  } catch {
     return null
   }
 }
