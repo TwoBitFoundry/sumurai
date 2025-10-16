@@ -17,6 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import type { Props as DefaultLegendContentProps } from "recharts/types/component/DefaultLegendContent";
 import { Amount, fmtUSD } from "./Amount";
 import HeroStatCard from "./widgets/HeroStatCard";
 import { useBalancesOverview } from "../hooks/useBalancesOverview";
@@ -44,6 +45,51 @@ function RatioPill({ ratio }: { ratio: number | string | null }) {
     >
       A/L: {label}
     </span>
+  );
+}
+
+type BalancesLegendProps = DefaultLegendContentProps & { ratio: number | string | null };
+
+function BalancesLegend({ payload, ratio }: BalancesLegendProps) {
+  if (!payload?.length) {
+    return null;
+  }
+
+  return (
+    <div
+      className={cn(
+        "flex w-full flex-wrap items-center justify-between gap-3",
+        "text-xs text-slate-600",
+        "dark:text-slate-300"
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        {payload.map((entry) => {
+          const label =
+            typeof entry.value === "string"
+              ? entry.value
+              : entry.value != null
+                ? String(entry.value)
+                : entry.dataKey != null
+                  ? String(entry.dataKey)
+                  : "";
+          return (
+            <span key={`${entry.dataKey ?? label}`} className="flex items-center gap-2">
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: entry.color }}
+              />
+              <span className="font-medium">{label}</span>
+            </span>
+          );
+        })}
+      </div>
+      {ratio != null && (
+        <div className="flex w-full justify-end sm:w-auto">
+          <RatioPill ratio={ratio} />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -199,7 +245,6 @@ export function BalancesOverview() {
             className={cn('h-4', 'w-4', 'text-slate-500', 'dark:text-slate-400', refreshing && 'animate-spin')}
           />
         )}
-        <RatioPill ratio={data?.overall?.ratio ?? null} />
       </div>
 
       {loading && (
@@ -296,7 +341,15 @@ export function BalancesOverview() {
               tickMargin={6}
             />
             <Tooltip wrapperStyle={{ display: "none" }} cursor={hoverInfo ? { fill: "transparent", stroke: "#38bdf8", strokeWidth: 2, radius: 4 } : false} />
-            <Legend verticalAlign="bottom" height={28} iconSize={10} wrapperStyle={{ paddingTop: 4 }} />
+            <Legend
+              verticalAlign="bottom"
+              height={40}
+              iconSize={10}
+              wrapperStyle={{ paddingTop: 8 }}
+              content={(legendProps) => (
+                <BalancesLegend {...legendProps} ratio={data?.overall?.ratio ?? null} />
+              )}
+            />
             <Bar
               dataKey="cash"
               name="Cash"
