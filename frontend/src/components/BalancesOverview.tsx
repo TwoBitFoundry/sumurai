@@ -194,7 +194,22 @@ export function BalancesOverview() {
     <GlassCard variant="default" rounded="xl" padding="lg" className="space-y-6">
       <div className={cn("flex flex-col gap-6", "lg:flex-row lg:items-start lg:justify-between")}>
         <div className="space-y-4">
-          <Badge variant="feature" size="sm">
+          <Badge
+            variant="feature"
+            size="sm"
+            className={cn(
+              'rounded-full',
+              'px-3',
+              'py-1',
+              'tracking-[0.32em]',
+              'shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)]',
+              'bg-white/75',
+              'text-slate-600',
+              'ring-0',
+              'dark:bg-[#1e293b]/75',
+              'dark:text-slate-200'
+            )}
+          >
             Dashboard
           </Badge>
           <div className="space-y-3">
