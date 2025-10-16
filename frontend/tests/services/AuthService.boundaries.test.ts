@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setupTestBoundaries } from '../setup/setupTestBoundaries'
-import { AuthService } from '@/services/AuthService'
+import { AuthService } from '@/services/authService'
 
 describe('AuthService with injected boundaries', () => {
   beforeEach(() => {

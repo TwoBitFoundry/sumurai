@@ -1,7 +1,7 @@
 import type { IHttpClient } from '@/services/boundaries/IHttpClient'
 import type { IStorageAdapter } from '@/services/boundaries/IStorageAdapter'
 import { ApiClient } from '@/services/ApiClient'
-import { AuthService } from '@/services/AuthService'
+import { AuthService } from '@/services/authService'
 import { createMockHttpClient } from '../mocks/mockHttpClient'
 import { createMockStorage } from '../mocks/mockStorage'
 

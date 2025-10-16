@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setupTestBoundaries, resetBoundaries } from './setupTestBoundaries'
 import { ApiClient } from '@/services/ApiClient'
-import { AuthService } from '@/services/AuthService'
+import { AuthService } from '@/services/authService'
 
 describe('setupTestBoundaries', () => {
   beforeEach(() => {
