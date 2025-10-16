@@ -2,7 +2,7 @@ import React from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { LayoutDashboard, ReceiptText, Target } from 'lucide-react'
 import dashboardHero from '@docs/images/dashboard-hero.png'
-import { Badge } from '../../ui/primitives'
+import { Badge, GlassCard, cn } from '@/ui/primitives'
 
 type FeaturePalette = {
   gradient: string
@@ -58,59 +58,82 @@ const welcomeFeatures: WelcomeFeature[] = [
   },
 ]
 
+function FeatureCard({ icon: Icon, title, copy, palette }: WelcomeFeature) {
+  return (
+    <GlassCard
+      variant="accent"
+      rounded="lg"
+      padding="md"
+      className={cn('flex h-full flex-col', 'items-center gap-3', 'text-center')}
+    >
+      <span
+        className={cn(
+          'relative inline-flex',
+          'items-center justify-center',
+          'overflow-hidden rounded-full',
+          'h-11 w-11',
+          'ring-1 ring-inset',
+          'bg-slate-50',
+          'dark:bg-slate-900',
+          palette.ring,
+          palette.glow
+        )}
+        aria-hidden="true"
+      >
+        <span className={cn('absolute inset-0', 'bg-gradient-to-br', palette.gradient)} />
+        <span className={cn('absolute inset-[20%]', 'rounded-full bg-slate-300/30', 'opacity-40', 'blur-[6px]', 'dark:bg-black/20')} />
+        <Icon className={cn('relative h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)} strokeWidth={1.7} />
+      </span>
+      <p className="text-sm font-semibold text-slate-900 dark:text-white">{title}</p>
+      <p className="text-xs text-slate-600 dark:text-slate-300">{copy}</p>
+    </GlassCard>
+  )
+}
+
 export function WelcomeStep() {
   return (
-    <div className="grid gap-8 items-start lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
-      <div className="flex flex-col space-y-8">
-        <div className="space-y-5">
+    <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-5">
           <Badge variant="primary" size="sm">
             Welcome
           </Badge>
 
-          <div className="space-y-3">
-            <h1 className="text-3xl font-bold tracking-tight text-[#0f172a] dark:text-white md:text-[2.6rem] transition-colors duration-300 ease-out">
+          <div className="flex flex-col gap-3">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white md:text-[2.6rem]">
               Your new financial hub
             </h1>
-            <p className="text-base leading-relaxed text-[#475569] dark:text-[#cbd5e1] transition-colors duration-300 ease-out">
-              Bring every account into one secure place, watch budgets stay on track, and turn raw
-              transactions into insights you can actually act on.
+            <p className="text-base leading-relaxed text-slate-600 dark:text-slate-300">
+              Bring every account into one secure place, watch budgets stay on track, and turn raw transactions into insights you can actually act on.
             </p>
           </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
-          {welcomeFeatures.map(({ icon: Icon, title, copy, palette }, index) => (
-            <div
-              key={title}
-              className="group flex h-full flex-col items-center justify-start rounded-xl border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#0f172a] px-4 py-4 text-center shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:border-[#93c5fd] dark:hover:border-[#38bdf8]"
-              style={{ animationDelay: `${150 + index * 50}ms` }}
-            >
-              <span
-                className={`relative inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#f8fafc] dark:bg-[#1e293b] ring-1 ring-inset ${palette.ring} ${palette.glow} transition-all duration-200 ease-out group-hover:scale-105`}
-                aria-hidden="true"
-              >
-                <span className={`absolute inset-0 bg-gradient-to-br ${palette.gradient}`} />
-                <span className="absolute inset-[20%] rounded-full bg-slate-300/30 blur-[6px] opacity-40 dark:bg-black/20 transition-colors duration-300 ease-out" />
-                <Icon className={`relative h-5 w-5 ${palette.iconLight} dark:${palette.iconDark} transition-colors duration-300 ease-out`} strokeWidth={1.7} />
-              </span>
-              <p className="mt-3 text-sm font-semibold text-[#0f172a] dark:text-white transition-colors duration-300 ease-out">{title}</p>
-              <p className="mt-1 text-xs text-[#475569] dark:text-[#cbd5e1] transition-colors duration-300 ease-out">{copy}</p>
-            </div>
+          {welcomeFeatures.map(feature => (
+            <FeatureCard key={feature.title} {...feature} />
           ))}
         </div>
       </div>
 
-      <div className="relative flex flex-col self-start lg:mt-[2.45rem]">
-        <div className="mb-3 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-[#475569] dark:text-[#cbd5e1] sm:mb-4 transition-colors duration-300 ease-out">
-          <span>Live Dashboard Preview</span>
-        </div>
-        <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-[#e2e8f0] dark:border-[#334155] bg-[#0f172a] shadow-lg sm:aspect-[18/10] transition-all duration-300 ease-out">
+      <div className="flex flex-col gap-3 lg:mt-[2.45rem]">
+        <Badge variant="feature" size="sm" className="self-start tracking-[0.3em] text-slate-600 dark:text-slate-300">
+          Live Dashboard Preview
+        </Badge>
+        <GlassCard
+          variant="default"
+          rounded="lg"
+          padding="none"
+          withInnerEffects={false}
+          containerClassName="aspect-[16/10] sm:aspect-[18/10]"
+          className="h-full overflow-hidden"
+        >
           <img
             src={dashboardHero}
             alt="Sumaura dashboard preview"
-            className="absolute inset-0 h-full w-full object-cover object-top"
+            className="h-full w-full object-cover object-top"
           />
-        </div>
+        </GlassCard>
       </div>
     </div>
   )

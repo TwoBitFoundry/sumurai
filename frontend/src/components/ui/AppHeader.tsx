@@ -1,4 +1,7 @@
+import { cva } from 'class-variance-authority'
 import { Sun, Moon } from 'lucide-react'
+import { Button } from '@/ui/primitives'
+import { cn } from '@/ui/primitives/utils'
 import { useTheme } from '@/context/ThemeContext'
 
 interface AppHeaderProps {
@@ -6,34 +9,57 @@ interface AppHeaderProps {
   variant?: 'default' | 'onboarding'
 }
 
+const headerVariants = cva(
+  'sticky top-0 z-50 border-b transition-colors duration-300',
+  {
+    variants: {
+      variant: {
+        default: 'bg-white/80 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-800/80 border-slate-200',
+        onboarding: 'bg-white/40 backdrop-blur-xl border-white/30 dark:border-slate-700/30 dark:bg-slate-900/40',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  }
+)
+
 export function AppHeader({ onLogout, variant = 'default' }: AppHeaderProps) {
   const { mode, toggle } = useTheme()
-  const isOnboarding = variant === 'onboarding'
-
-  const containerClasses = isOnboarding
-    ? 'border-b bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border-white/30 dark:border-slate-700/30'
-    : 'border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm'
 
   return (
-    <header className={`sticky top-0 z-50 ${containerClasses} transition-colors duration-300`}>
-      <div className="px-4 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-2 font-semibold text-lg text-slate-900 dark:text-slate-100 transition-colors duration-300">Sumaura</div>
+    <header className={headerVariants({ variant })}>
+      <div className="flex h-14 items-center justify-between px-4">
+        <div
+          className={cn(
+            'flex items-center',
+            'text-lg font-semibold',
+            'text-slate-900 transition-colors',
+            'dark:text-slate-100'
+          )}
+        >
+          Sumaura
+        </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={toggle}
-            className="px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all duration-200 text-slate-700 dark:text-slate-300"
             aria-label="Toggle theme"
             title="Toggle theme"
+            className="px-2.5"
           >
             {mode === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
             onClick={onLogout}
-            className="px-2.5 py-1 text-xs rounded-xl border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200"
             title="Logout"
+            className={cn('px-3 py-1 text-xs')}
           >
             Logout
-          </button>
+          </Button>
         </div>
       </div>
     </header>
