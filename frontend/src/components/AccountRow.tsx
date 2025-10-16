@@ -131,37 +131,40 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
     <GlassCard
       variant="accent"
       rounded="xl"
-      padding="md"
+      padding="none"
       withInnerEffects={false}
       containerClassName={cardContainerClasses}
-      className={cn('relative', 'z-10', 'space-y-3')}
     >
-      <div className={hoverOverlayClasses} aria-hidden />
-      <div className={cn('flex', 'items-center', 'justify-between')}>
-        <div
-          className={cn(
-            'text-sm',
-            'font-semibold',
-            'text-slate-900',
-            'transition-colors',
-            'duration-300',
-            'ease-out',
-            'dark:text-white'
-          )}
-        >
-          {account.name}
+      <div className={cn('relative', 'p-6')}>
+        <div className={hoverOverlayClasses} aria-hidden />
+        <div className={cn('relative', 'z-10', 'space-y-3')}>
+          <div className={cn('flex', 'items-center', 'justify-between')}>
+            <div
+              className={cn(
+                'text-sm',
+                'font-semibold',
+                'text-slate-900',
+                'transition-colors',
+                'duration-300',
+                'ease-out',
+                'dark:text-white'
+              )}
+            >
+              {account.name}
+            </div>
+            <div className={balanceColor}>{balanceText}</div>
+          </div>
+          <div className={cn('flex', 'items-center', 'justify-between')}>
+            <div className={accountMetaClasses}>
+              <AccountTypeDot type={account.type} />
+              <span>{account.type}</span>
+              <span className={accountMaskClasses}>••{account.mask}</span>
+            </div>
+            <RequirementPill className={transactionsPillClasses} status="pending">
+              {account.transactions ?? 0} items
+            </RequirementPill>
+          </div>
         </div>
-        <div className={balanceColor}>{balanceText}</div>
-      </div>
-      <div className={cn('flex', 'items-center', 'justify-between')}>
-        <div className={accountMetaClasses}>
-          <AccountTypeDot type={account.type} />
-          <span>{account.type}</span>
-          <span className={accountMaskClasses}>••{account.mask}</span>
-        </div>
-        <RequirementPill className={transactionsPillClasses} status="pending">
-          {account.transactions ?? 0} items
-        </RequirementPill>
       </div>
     </GlassCard>
   )
