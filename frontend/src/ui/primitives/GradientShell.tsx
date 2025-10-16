@@ -1,5 +1,6 @@
 import React from 'react'
 import { cn } from './utils'
+import { cn } from '@/ui/primitives'
 
 export interface GradientShellProps {
   children: React.ReactNode
@@ -53,13 +54,13 @@ export function GradientShell({
 
         {variant === 'app' && (
           <>
-            <div className="absolute inset-0 bg-[radial-gradient(136%_108%_at_20%_-18%,rgba(14,165,233,0.42)_0%,#e1f2ff_36%,#ffffff_100%)] transition-colors duration-700 dark:bg-[radial-gradient(92%_80%_at_20%_-6%,#0f172a_0%,#0a1224_50%,#05070d_100%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(86%_64%_at_86%_18%,rgba(167,139,250,0.28)_0%,rgba(59,130,246,0.14)_55%,transparent_78%)] transition-opacity duration-700 dark:bg-transparent" />
-            <div className="absolute inset-0 bg-[radial-gradient(92%_68%_at_12%_24%,rgba(56,189,248,0.28)_0%,rgba(129,140,248,0.12)_52%,transparent_80%)] transition-opacity duration-700 dark:bg-transparent" />
+            <div className={cn('absolute', 'inset-0', 'bg-[radial-gradient(136%_108%_at_20%_-18%,rgba(14,165,233,0.42)_0%,#e1f2ff_36%,#ffffff_100%)]', 'transition-colors', 'duration-700', 'dark:bg-[radial-gradient(92%_80%_at_20%_-6%,#0f172a_0%,#0a1224_50%,#05070d_100%)]')} />
+            <div className={cn('absolute', 'inset-0', 'bg-[radial-gradient(86%_64%_at_86%_18%,rgba(167,139,250,0.28)_0%,rgba(59,130,246,0.14)_55%,transparent_78%)]', 'transition-opacity', 'duration-700', 'dark:bg-transparent')} />
+            <div className={cn('absolute', 'inset-0', 'bg-[radial-gradient(92%_68%_at_12%_24%,rgba(56,189,248,0.28)_0%,rgba(129,140,248,0.12)_52%,transparent_80%)]', 'transition-opacity', 'duration-700', 'dark:bg-transparent')} />
           </>
         )}
 
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className={cn('absolute', 'inset-0', 'flex', 'items-center', 'justify-center')}>
           <div
             className={cn(
               'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',

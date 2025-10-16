@@ -10,6 +10,7 @@ import {
   Alert,
   FormLabel,
   RequirementPill,
+  cn,
 } from './ui/primitives'
 
 interface LoginScreenProps {
@@ -43,12 +44,12 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
 
   return (
     <GradientShell variant="auth">
-      <GlassCard variant="auth" padding="lg" className="w-full max-w-md">
+      <GlassCard variant="auth" padding="lg" className={cn('w-full', 'max-w-md')}>
         <div className="space-y-5">
-          <div className="space-y-3 text-center">
+          <div className={cn('space-y-3', 'text-center')}>
             <Badge size="md">Welcome Back</Badge>
-            <h2 className="text-3xl font-semibold text-slate-900 dark:text-white">Sign in to your account</h2>
-            <p className="text-[0.85rem] text-slate-600 dark:text-slate-400">
+            <h2 className={cn('text-3xl', 'font-semibold', 'text-slate-900', 'dark:text-white')}>Sign in to your account</h2>
+            <p className={cn('text-[0.85rem]', 'text-slate-600', 'dark:text-slate-400')}>
               Access your latest financial dashboards and insights.
             </p>
           </div>
@@ -97,7 +98,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
             </Button>
           </form>
 
-          <div className="text-center text-sm text-slate-600 dark:text-slate-300">
+          <div className={cn('text-center', 'text-sm', 'text-slate-600', 'dark:text-slate-300')}>
             <p className="mb-3">Don't have an account?</p>
             <Button
               type="button"
@@ -163,12 +164,12 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
 
   return (
     <GradientShell variant="auth">
-      <GlassCard variant="auth" padding="lg" className="w-full max-w-md">
+      <GlassCard variant="auth" padding="lg" className={cn('w-full', 'max-w-md')}>
         <div className="space-y-5">
-          <div className="space-y-3 text-center">
+          <div className={cn('space-y-3', 'text-center')}>
             <Badge size="md">JOIN TODAY</Badge>
-            <h2 className="text-3xl font-semibold text-slate-900 dark:text-white">Sign Up for Sumaura</h2>
-            <p className="text-[0.85rem] text-slate-600 dark:text-slate-400">
+            <h2 className={cn('text-3xl', 'font-semibold', 'text-slate-900', 'dark:text-white')}>Sign Up for Sumaura</h2>
+            <p className={cn('text-[0.85rem]', 'text-slate-600', 'dark:text-slate-400')}>
               Finish sign up to unlock onboarding and Plaid sync.
             </p>
           </div>
@@ -193,11 +194,11 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
                 disabled={isLoading}
               />
               {email && !isEmailValid && (
-                <p className="text-xs text-red-600 dark:text-red-300">Please enter a valid email address.</p>
+                <p className={cn('text-xs', 'text-red-600', 'dark:text-red-300')}>Please enter a valid email address.</p>
               )}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className={cn('grid', 'gap-4', 'md:grid-cols-2')}>
               <div className="space-y-1.5">
                 <FormLabel htmlFor="password">Password</FormLabel>
                 <Input
@@ -225,7 +226,7 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
                   disabled={isLoading}
                 />
                 {confirmPassword && !isPasswordMatch && (
-                  <p className="text-xs text-red-600 dark:text-red-300">Passwords do not match.</p>
+                  <p className={cn('text-xs', 'text-red-600', 'dark:text-red-300')}>Passwords do not match.</p>
                 )}
               </div>
             </div>
@@ -235,12 +236,12 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
               rounded="lg"
               padding="sm"
               withInnerEffects={false}
-              className="space-y-1.5 text-[0.7rem] text-slate-600 dark:text-slate-300"
+              className={cn('space-y-1.5', 'text-[0.7rem]', 'text-slate-600', 'dark:text-slate-300')}
             >
-              <h3 className="text-[0.65rem] font-semibold uppercase text-slate-700 dark:text-slate-200">
+              <h3 className={cn('text-[0.65rem]', 'font-semibold', 'uppercase', 'text-slate-700', 'dark:text-slate-200')}>
                 Password checklist
               </h3>
-              <div className="flex flex-wrap gap-1.5">
+              <div className={cn('flex', 'flex-wrap', 'gap-1.5')}>
                 <RequirementPill status={passwordValidation.minLength ? 'met' : 'pending'}>
                   8+ characters
                 </RequirementPill>
@@ -267,7 +268,7 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
             </Button>
           </form>
 
-          <div className="text-center text-sm text-slate-600 dark:text-slate-300">
+          <div className={cn('text-center', 'text-sm', 'text-slate-600', 'dark:text-slate-300')}>
             <p className="mb-3">Already have an account?</p>
             <Button
               type="button"

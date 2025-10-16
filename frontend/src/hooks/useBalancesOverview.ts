@@ -55,8 +55,9 @@ export function useBalancesOverview(range?: DateRange, debounceMs = 300): UseBal
       const result = await AnalyticsService.getBalancesOverview(accountIds)
       setData(result)
       hasLoadedRef.current = true
-    } catch (e: any) {
-      setError(e?.message || 'Failed to load balances overview')
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load balances overview'
+      setError(message)
     } finally {
       if (showBlockingState) {
         setLoading(false)

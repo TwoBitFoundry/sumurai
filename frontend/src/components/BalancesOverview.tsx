@@ -135,10 +135,10 @@ export function BalancesOverview() {
         key: "net",
         title: "Net",
         accent: "violet" as const,
-        icon: <CircleDollarSign className="h-4 w-4" />,
+        icon: <CircleDollarSign className={cn('h-4', 'w-4')} />,
         value: (
           <span data-testid="overall-net">
-            <Amount value={overall?.net ?? 0} className="text-violet-500 dark:text-violet-300" />
+            <Amount value={overall?.net ?? 0} className={cn('text-violet-500', 'dark:text-violet-300')} />
           </span>
         ),
       },
@@ -146,9 +146,9 @@ export function BalancesOverview() {
         key: "cash",
         title: "Cash",
         accent: "emerald" as const,
-        icon: <PiggyBank className="h-4 w-4" />,
+        icon: <PiggyBank className={cn('h-4', 'w-4')} />,
         value: (
-          <span data-testid="overall-cash" className="text-emerald-500 dark:text-emerald-300">
+          <span data-testid="overall-cash" className={cn('text-emerald-500', 'dark:text-emerald-300')}>
             {fmtUSD(overall?.cash ?? 0)}
           </span>
         ),
@@ -157,9 +157,9 @@ export function BalancesOverview() {
         key: "investments",
         title: "Investments",
         accent: "sky" as const,
-        icon: <LineChart className="h-4 w-4" />,
+        icon: <LineChart className={cn('h-4', 'w-4')} />,
         value: (
-          <span data-testid="overall-investments" className="text-sky-500 dark:text-sky-300">
+          <span data-testid="overall-investments" className={cn('text-sky-500', 'dark:text-sky-300')}>
             {fmtUSD(overall?.investments ?? 0)}
           </span>
         ),
@@ -168,9 +168,9 @@ export function BalancesOverview() {
         key: "credit",
         title: "Credit",
         accent: "rose" as const,
-        icon: <CreditCard className="h-4 w-4" />,
+        icon: <CreditCard className={cn('h-4', 'w-4')} />,
         value: (
-          <span data-testid="overall-credit" className="text-rose-500 dark:text-rose-300">
+          <span data-testid="overall-credit" className={cn('text-rose-500', 'dark:text-rose-300')}>
             {fmtUSD(overall?.credit ?? 0)}
           </span>
         ),
@@ -179,9 +179,9 @@ export function BalancesOverview() {
         key: "loan",
         title: "Loan",
         accent: "amber" as const,
-        icon: <HandCoins className="h-4 w-4" />,
+        icon: <HandCoins className={cn('h-4', 'w-4')} />,
         value: (
-          <span data-testid="overall-loan" className="text-amber-600 dark:text-amber-400">
+          <span data-testid="overall-loan" className={cn('text-amber-600', 'dark:text-amber-400')}>
             {fmtUSD(overall?.loan ?? 0)}
           </span>
         ),
@@ -198,15 +198,15 @@ export function BalancesOverview() {
             Dashboard
           </Badge>
           <div className="space-y-3">
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white sm:text-4xl">
+            <h1 className={cn('text-3xl', 'font-bold', 'text-slate-900', 'dark:text-white', 'sm:text-4xl')}>
               Overview of Balances
             </h1>
-            <p className="text-base text-slate-600 dark:text-slate-300">
+            <p className={cn('text-base', 'text-slate-600', 'dark:text-slate-300')}>
               Track your assets and liabilities across all connected accounts with real-time balance updates.
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className={cn('flex', 'items-center', 'gap-3')}>
           {!loading && refreshing && (
             <RefreshCcw
               aria-label="Refreshing balances"
@@ -218,7 +218,7 @@ export function BalancesOverview() {
       </div>
 
       {loading && (
-        <div data-testid="balances-loading" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div data-testid="balances-loading" className={cn('grid', 'gap-3', 'sm:grid-cols-2', 'lg:grid-cols-5')}>
           {Array.from({ length: 5 }).map((_, index) => (
             <div
               key={index}
@@ -232,7 +232,7 @@ export function BalancesOverview() {
       )}
 
       {!loading && error && (
-        <Alert variant="error" title="Balances unavailable" className="flex items-center justify-between gap-3">
+        <Alert variant="error" title="Balances unavailable" className={cn('flex', 'items-center', 'justify-between', 'gap-3')}>
           <span>Failed to load balances. {error}</span>
           <Button variant="danger" size="sm" onClick={refresh}>
             Retry
@@ -240,7 +240,7 @@ export function BalancesOverview() {
         </Alert>
       )}
 
-      <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">
+      <div className={cn('grid', 'gap-3', '[grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]')}>
         {overviewCards.map((card) => (
           <HeroStatCard
             key={card.key}
@@ -254,9 +254,9 @@ export function BalancesOverview() {
         ))}
       </div>
 
-      <div className="relative h-12">
+      <div className={cn('relative', 'h-12')}>
         {hoverInfo && (
-          <div className="pointer-events-none absolute inset-0 grid place-items-center">
+          <div className={cn('pointer-events-none', 'absolute', 'inset-0', 'grid', 'place-items-center')}>
             <GlassCard
               variant="accent"
               rounded="lg"
@@ -268,20 +268,20 @@ export function BalancesOverview() {
               )}
             >
               <span className="font-semibold">{hoverInfo.bank}</span>
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-300">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <span className={cn('flex', 'items-center', 'gap-1', 'text-emerald-600', 'dark:text-emerald-300')}>
+                <span className={cn('h-2', 'w-2', 'rounded-full', 'bg-emerald-500')} />
                 Cash: {fmtUSD(hoverInfo.cash ?? 0)}
               </span>
-              <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-300">
-                <span className="h-2 w-2 rounded-full bg-cyan-500" />
+              <span className={cn('flex', 'items-center', 'gap-1', 'text-cyan-600', 'dark:text-cyan-300')}>
+                <span className={cn('h-2', 'w-2', 'rounded-full', 'bg-cyan-500')} />
                 Investments: {fmtUSD(hoverInfo.investments ?? 0)}
               </span>
-              <span className="flex items-center gap-1 text-rose-600 dark:text-rose-300">
-                <span className="h-2 w-2 rounded-full bg-rose-500" />
+              <span className={cn('flex', 'items-center', 'gap-1', 'text-rose-600', 'dark:text-rose-300')}>
+                <span className={cn('h-2', 'w-2', 'rounded-full', 'bg-rose-500')} />
                 Credit: {fmtUSD(hoverInfo.credit ?? 0)}
               </span>
-              <span className="flex items-center gap-1 text-amber-600 dark:text-amber-300">
-                <span className="h-2 w-2 rounded-full bg-amber-500" />
+              <span className={cn('flex', 'items-center', 'gap-1', 'text-amber-600', 'dark:text-amber-300')}>
+                <span className={cn('h-2', 'w-2', 'rounded-full', 'bg-amber-500')} />
                 Loan: {fmtUSD(hoverInfo.loan ?? 0)}
               </span>
             </GlassCard>
@@ -289,7 +289,7 @@ export function BalancesOverview() {
         )}
       </div>
 
-      <div className="h-64 w-full min-w-0">
+      <div className={cn('h-64', 'w-full', 'min-w-0')}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}

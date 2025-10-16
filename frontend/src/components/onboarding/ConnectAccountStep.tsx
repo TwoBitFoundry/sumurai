@@ -89,8 +89,8 @@ function FeatureCard({
         >
           <Icon className={cn('h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)} strokeWidth={1.7} />
       </IconBurst>
-      <h4 className="text-sm font-semibold text-slate-900 dark:text-white">{title}</h4>
-      <p className="text-xs text-slate-600 dark:text-slate-300">{body}</p>
+      <h4 className={cn('text-sm', 'font-semibold', 'text-slate-900', 'dark:text-white')}>{title}</h4>
+      <p className={cn('text-xs', 'text-slate-600', 'dark:text-slate-300')}>{body}</p>
     </GlassCard>
   )
 }
@@ -106,7 +106,7 @@ function HighlightCard({
       variant="default"
       rounded="lg"
       padding="md"
-      className="flex h-full items-start gap-4"
+      className={cn('flex', 'h-full', 'items-start', 'gap-4')}
     >
       <IconBurst
         gradient={palette.gradient}
@@ -116,8 +116,8 @@ function HighlightCard({
         <Icon className={cn('h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)} strokeWidth={1.7} />
       </IconBurst>
       <div className="space-y-1">
-        <p className="text-sm font-semibold text-slate-900 dark:text-white">{title}</p>
-        <p className="text-xs text-slate-600 dark:text-slate-300">{body}</p>
+        <p className={cn('text-sm', 'font-semibold', 'text-slate-900', 'dark:text-white')}>{title}</p>
+        <p className={cn('text-xs', 'text-slate-600', 'dark:text-slate-300')}>{body}</p>
       </div>
     </GlassCard>
   )
@@ -169,9 +169,9 @@ export function ConnectAccountStep({
   const disablePrimaryAction = providerLoading || missingApplicationId
 
   return (
-    <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-5">
+    <div className={cn('grid', 'items-start', 'gap-8', 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]', 'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]')}>
+      <div className={cn('flex', 'flex-col', 'gap-8')}>
+        <div className={cn('flex', 'flex-col', 'gap-5')}>
           <Badge
             variant="feature"
             size="sm"
@@ -179,24 +179,24 @@ export function ConnectAccountStep({
           >
             {content.eyebrow.text}
           </Badge>
-          <div className="flex flex-col gap-3">
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white md:text-[2.6rem]">
+          <div className={cn('flex', 'flex-col', 'gap-3')}>
+            <h1 className={cn('text-3xl', 'font-bold', 'text-slate-900', 'dark:text-white', 'md:text-[2.6rem]')}>
               {content.heroTitle}
             </h1>
-            <p className="text-base leading-relaxed text-slate-600 dark:text-slate-300">
+            <p className={cn('text-base', 'leading-relaxed', 'text-slate-600', 'dark:text-slate-300')}>
               {content.heroDescription}
             </p>
           </div>
         </div>
 
         {statusMessages.length > 0 && (
-          <div className="flex flex-col gap-3">
+          <div className={cn('flex', 'flex-col', 'gap-3')}>
             {statusMessages.map((status, index) => (
               <Alert
                 key={`${status.tone}-${index}`}
                 variant={statusVariantMap[status.tone]}
                 tone="subtle"
-                className="flex flex-col gap-2"
+                className={cn('flex', 'flex-col', 'gap-2')}
               >
                 <p className="font-semibold">{status.text}</p>
                 {status.action && status.actionLabel && (
@@ -204,7 +204,7 @@ export function ConnectAccountStep({
                     variant="ghost"
                     size="sm"
                     onClick={() => status.action?.()}
-                    className="self-start px-3 py-1 text-xs"
+                    className={cn('self-start', 'px-3', 'py-1', 'text-xs')}
                   >
                     {status.actionLabel}
                   </Button>
@@ -215,34 +215,34 @@ export function ConnectAccountStep({
         )}
 
         {error && (
-          <Alert variant="error" className="flex flex-col gap-1">
+          <Alert variant="error" className={cn('flex', 'flex-col', 'gap-1')}>
             <p className="font-semibold">Connection failed</p>
             <p className="text-xs">{error}</p>
           </Alert>
         )}
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className={cn('grid', 'gap-3', 'sm:grid-cols-3')}>
           {content.features.map(feature => (
             <FeatureCard key={feature.title} {...feature} />
           ))}
         </div>
       </div>
 
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+      <div className={cn('flex', 'flex-col', 'gap-4')}>
+        <div className={cn('flex', 'items-center', 'justify-between')}>
           <Badge
             variant="feature"
             size="sm"
-            className="tracking-[0.3em] text-slate-600 dark:text-slate-300"
+            className={cn('tracking-[0.3em]', 'text-slate-600', 'dark:text-slate-300')}
           >
             {content.highlightLabel}
           </Badge>
-          <span className="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300">
+          <span className={cn('text-xs', 'uppercase', 'tracking-[0.3em]', 'text-slate-500', 'dark:text-slate-300')}>
             {content.highlightMeta}
           </span>
         </div>
-        <div className="flex flex-col gap-4">
-          <div className="grid auto-rows-fr gap-3 sm:grid-cols-2">
+        <div className={cn('flex', 'flex-col', 'gap-4')}>
+          <div className={cn('grid', 'auto-rows-fr', 'gap-3', 'sm:grid-cols-2')}>
             {content.highlights.map(highlight => (
               <HighlightCard key={highlight.title} {...highlight} />
             ))}
@@ -255,12 +255,12 @@ export function ConnectAccountStep({
             disabled={connectionInProgress || isConnected || disablePrimaryAction}
           >
             {isConnected ? (
-              <span className="flex items-center gap-2">
+              <span className={cn('flex', 'items-center', 'gap-2')}>
                 <span aria-hidden="true">✓</span>
                 {institutionName ? `Connected to ${institutionName}` : 'Connected'}
               </span>
             ) : connectionInProgress ? (
-              <span className="flex items-center gap-2 text-sm">
+              <span className={cn('flex', 'items-center', 'gap-2', 'text-sm')}>
                 <span
                   className={cn(
                     'inline-flex h-4 w-4',
@@ -274,7 +274,7 @@ export function ConnectAccountStep({
             ) : error ? (
               'Try again'
             ) : (
-              <span className="flex items-center gap-2">
+              <span className={cn('flex', 'items-center', 'gap-2')}>
                 <span>{content.cta.defaultLabel}</span>
                 {content.cta.badge && (
                   <Badge variant="default" size="xs" className="tracking-[0.2em]">

@@ -1,6 +1,7 @@
 import React from "react";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { Alert, Button, GlassCard, Modal } from "../ui/primitives";
+import { cn } from '@/ui/primitives'
 
 interface Account {
   id: string;
@@ -56,16 +57,16 @@ export const DisconnectModal: React.FC<DisconnectModalProps> = ({
           id="disconnect-modal-title"
           variant="warning"
           title={`Disconnect ${bank.name}?`}
-          icon={<AlertTriangle className="h-5 w-5" />}
+          icon={<AlertTriangle className={cn('h-5', 'w-5')} />}
           className="text-left"
         >
-          <p className="text-sm text-slate-600 dark:text-slate-300">
+          <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-300')}>
             This will remove {accountText} and related transactions from your dashboard.
             This action cannot be undone.
           </p>
         </Alert>
 
-        <div className="flex justify-end gap-3">
+        <div className={cn('flex', 'justify-end', 'gap-3')}>
           <Button
             type="button"
             variant="secondary"
@@ -80,7 +81,7 @@ export const DisconnectModal: React.FC<DisconnectModalProps> = ({
             onClick={onConfirm}
             disabled={loading}
           >
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {loading && <Loader2 className={cn('h-4', 'w-4', 'animate-spin')} />}
             {loading ? "Disconnecting" : "Disconnect"}
           </Button>
         </div>

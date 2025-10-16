@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { getTagThemeForCategory } from '../../../utils/categories'
+import { cn } from '@/ui/primitives'
 
 interface Props {
   search: string
@@ -41,25 +42,25 @@ export const TransactionsFilters: React.FC<Props> = ({
   return (
     <>
       {showSearch && (
-        <div className="relative w-full sm:w-64">
+        <div className={cn('relative', 'w-full', 'sm:w-64')}>
           <input
             value={search}
             onChange={(e) => onSearch(e.target.value)}
             placeholder="Search transactions..."
-            className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)] transition-all duration-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-white dark:border-white/12 dark:bg-[#111a2f] dark:text-white dark:placeholder:text-slate-500 dark:focus:ring-sky-400/80 dark:focus:ring-offset-[#0f172a]"
+            className={cn('w-full', 'rounded-xl', 'border', 'border-black/10', 'bg-white', 'px-4', 'py-2.5', 'text-sm', 'font-medium', 'text-slate-900', 'shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)]', 'transition-all', 'duration-200', 'placeholder:text-slate-400', 'focus:outline-none', 'focus:ring-2', 'focus:ring-sky-400', 'focus:ring-offset-2', 'focus:ring-offset-white', 'dark:border-white/12', 'dark:bg-[#111a2f]', 'dark:text-white', 'dark:placeholder:text-slate-500', 'dark:focus:ring-sky-400/80', 'dark:focus:ring-offset-[#0f172a]')}
           />
         </div>
       )}
       {showCategories && (
-        <div className="flex w-full items-center gap-3">
-          <span className="flex-shrink-0 text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">
+        <div className={cn('flex', 'w-full', 'items-center', 'gap-3')}>
+          <span className={cn('flex-shrink-0', 'text-[0.65rem]', 'font-semibold', 'uppercase', 'tracking-[0.24em]', 'text-slate-500', 'transition-colors', 'duration-500', 'dark:text-slate-400')}>
             Filter
           </span>
-          <div className="relative min-w-0 flex-1">
+          <div className={cn('relative', 'min-w-0', 'flex-1')}>
             <div
               ref={scrollContainerRef}
               onScroll={checkScroll}
-              className="scrollbar-hide flex items-center gap-2 overflow-x-auto pb-1 pl-1 pt-1"
+              className={cn('scrollbar-hide', 'flex', 'items-center', 'gap-2', 'overflow-x-auto', 'pb-1', 'pl-1', 'pt-1')}
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {categories.map((name) => {
@@ -86,10 +87,10 @@ export const TransactionsFilters: React.FC<Props> = ({
               })}
             </div>
             {showLeftFade && (
-              <div className="pointer-events-none absolute bottom-0 left-0 top-0 w-8 bg-gradient-to-r from-white to-transparent transition-opacity duration-200 dark:from-[#0f172a]" />
+              <div className={cn('pointer-events-none', 'absolute', 'bottom-0', 'left-0', 'top-0', 'w-8', 'bg-gradient-to-r', 'from-white', 'to-transparent', 'transition-opacity', 'duration-200', 'dark:from-[#0f172a]')} />
             )}
             {showRightFade && (
-              <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-8 bg-gradient-to-l from-white to-transparent transition-opacity duration-200 dark:from-[#0f172a]" />
+              <div className={cn('pointer-events-none', 'absolute', 'bottom-0', 'right-0', 'top-0', 'w-8', 'bg-gradient-to-l', 'from-white', 'to-transparent', 'transition-opacity', 'duration-200', 'dark:from-[#0f172a]')} />
             )}
           </div>
         </div>

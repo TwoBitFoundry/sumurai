@@ -54,27 +54,27 @@ export const ProviderMismatchModal = ({ userProvider, defaultProvider, onConfirm
         rounded="xl"
         padding="lg"
         withInnerEffects={false}
-        className="space-y-6 text-center"
+        className={cn('space-y-6', 'text-center')}
       >
-        <div className="flex justify-center">
-          <span className="inline-flex rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
-            <AlertTriangle className="h-8 w-8 text-amber-600 dark:text-amber-500" />
+        <div className={cn('flex', 'justify-center')}>
+          <span className={cn('inline-flex', 'rounded-full', 'bg-amber-100', 'p-3', 'dark:bg-amber-900/30')}>
+            <AlertTriangle className={cn('h-8', 'w-8', 'text-amber-600', 'dark:text-amber-500')} />
           </span>
         </div>
 
         <div className="space-y-3">
-          <h2 id="provider-mismatch-title" className="text-2xl font-semibold text-slate-900 dark:text-white">
+          <h2 id="provider-mismatch-title" className={cn('text-2xl', 'font-semibold', 'text-slate-900', 'dark:text-white')}>
             Provider configuration mismatch
           </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-300">
+          <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-300')}>
             Your account is configured to use
-            <span className="font-semibold text-slate-900 dark:text-white"> {userProviderLabel} </span>
+            <span className={cn('font-semibold', 'text-slate-900', 'dark:text-white')}> {userProviderLabel} </span>
             but the application default is
-            <span className="font-semibold text-slate-900 dark:text-white"> {defaultProviderLabel}</span>.
+            <span className={cn('font-semibold', 'text-slate-900', 'dark:text-white')}> {defaultProviderLabel}</span>.
           </p>
-          <p className="text-sm text-slate-600 dark:text-slate-300">
+          <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-300')}>
             Update your environment to set
-            <Badge variant="feature" size="sm" className="mx-1 font-mono tracking-[0.2em]">
+            <Badge variant="feature" size="sm" className={cn('mx-1', 'font-mono', 'tracking-[0.2em]')}>
               DEFAULT_PROVIDER={userProvider}
             </Badge>
             and restart.

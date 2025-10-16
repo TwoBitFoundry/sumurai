@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { ApiError, AuthenticationError } from '../services/ApiClient'
 import { Button, GlassCard, cn } from '../ui/primitives'
+import { cn } from '@/ui/primitives'
 
 interface Props {
   children: ReactNode
@@ -116,16 +117,16 @@ export class ErrorBoundary extends Component<Props, State> {
         rounded="xl"
         padding="lg"
         withInnerEffects={false}
-        className="space-y-5 text-center"
+        className={cn('space-y-5', 'text-center')}
       >
         <div className="text-4xl" aria-hidden>
           {icon}
         </div>
         <div className="space-y-2">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white">{title}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-300">{message}</p>
+          <h2 className={cn('text-xl', 'font-semibold', 'text-slate-900', 'dark:text-white')}>{title}</h2>
+          <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-300')}>{message}</p>
         </div>
-        {actions && <div className="flex flex-wrap justify-center gap-3">{actions}</div>}
+        {actions && <div className={cn('flex', 'flex-wrap', 'justify-center', 'gap-3')}>{actions}</div>}
       </GlassCard>
     )
   }
@@ -201,7 +202,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className={cn('min-h-screen p-4', 'bg-slate-100 dark:bg-slate-900')}>
-          <div className="flex h-full items-center justify-center">
+          <div className={cn('flex', 'h-full', 'items-center', 'justify-center')}>
             {this.renderErrorContent()}
           </div>
         </div>

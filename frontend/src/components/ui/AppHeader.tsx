@@ -29,7 +29,7 @@ export function AppHeader({ onLogout, variant = 'default' }: AppHeaderProps) {
 
   return (
     <header className={headerVariants({ variant })}>
-      <div className="flex h-14 items-center justify-between px-4">
+      <div className={cn('flex', 'h-14', 'items-center', 'justify-between', 'px-4')}>
         <div
           className={cn(
             'flex items-center',
@@ -40,7 +40,7 @@ export function AppHeader({ onLogout, variant = 'default' }: AppHeaderProps) {
         >
           Sumaura
         </div>
-        <div className="flex items-center gap-2">
+        <div className={cn('flex', 'items-center', 'gap-2')}>
           <Button
             variant="secondary"
             size="sm"
@@ -49,7 +49,7 @@ export function AppHeader({ onLogout, variant = 'default' }: AppHeaderProps) {
             title="Toggle theme"
             className="px-2.5"
           >
-            {mode === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+            {mode === 'dark' ? <Moon className={cn('h-4', 'w-4')} /> : <Sun className={cn('h-4', 'w-4')} />}
           </Button>
           <Button
             variant="danger"

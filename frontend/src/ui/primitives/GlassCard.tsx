@@ -1,6 +1,7 @@
 import React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn, glassBackdropClasses } from './utils'
+import { cn } from '@/ui/primitives'
 
 const glassCardVariants = cva(
   [
@@ -101,7 +102,7 @@ export function GlassCard({
       {...props}
     >
       {withInnerEffects && (
-        <div className="pointer-events-none absolute inset-0">
+        <div className={cn('pointer-events-none', 'absolute', 'inset-0')}>
           <div
             className={cn(
               'absolute inset-0',

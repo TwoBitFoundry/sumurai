@@ -7,6 +7,7 @@ import { ReceiptText, TrendingUp, AlertTriangle, RefreshCcw } from 'lucide-react
 import HeroStatCard from '../components/widgets/HeroStatCard'
 import { formatCategoryName } from '../utils/categories'
 import { PageLayout } from '../layouts/PageLayout'
+import { cn } from '@/ui/primitives'
 
 const TransactionsPage: React.FC = () => {
   const {
@@ -89,11 +90,11 @@ const TransactionsPage: React.FC = () => {
       subtitle="Search and filter transactions across all connected accounts."
       error={error}
       stats={
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className={cn('grid', 'gap-3', 'sm:grid-cols-2', 'lg:grid-cols-4')}>
           <HeroStatCard
             index={1}
             title="Total shown"
-            icon={<ReceiptText className="h-4 w-4" />}
+            icon={<ReceiptText className={cn('h-4', 'w-4')} />}
             value={stats.totalCount}
             suffix={stats.totalCount === 1 ? 'item' : 'items'}
             subtext={fmtUSD(stats.totalSpent)}
@@ -102,7 +103,7 @@ const TransactionsPage: React.FC = () => {
           <HeroStatCard
             index={2}
             title="Average size"
-            icon={<TrendingUp className="h-4 w-4" />}
+            icon={<TrendingUp className={cn('h-4', 'w-4')} />}
             value={fmtUSD(stats.avgTransaction)}
             subtext={stats.categoryDriver || undefined}
           />
@@ -110,7 +111,7 @@ const TransactionsPage: React.FC = () => {
           <HeroStatCard
             index={3}
             title="Largest size"
-            icon={<AlertTriangle className="h-4 w-4" />}
+            icon={<AlertTriangle className={cn('h-4', 'w-4')} />}
             value={stats.largestTransaction ? fmtUSD(Math.abs(stats.largestTransaction.amount)) : '$0'}
             pills={stats.largestTransaction && stats.totalCount > 1 ? [
               { label: (stats.largestTransaction.merchant || stats.largestTransaction.name) ?? '' }
@@ -120,7 +121,7 @@ const TransactionsPage: React.FC = () => {
           <HeroStatCard
             index={4}
             title="Recurring"
-            icon={<RefreshCcw className="h-4 w-4" />}
+            icon={<RefreshCcw className={cn('h-4', 'w-4')} />}
             value={stats.recurringCount}
             suffix={stats.recurringCount === 1 ? 'merchant' : 'merchants'}
             pills={stats.recurringMerchants.map(m => ({ label: m }))}
@@ -129,15 +130,15 @@ const TransactionsPage: React.FC = () => {
       }
     >
 
-      <div className="relative overflow-hidden rounded-[2.25rem] border border-white/35 bg-white/18 p-0 shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)] backdrop-blur-2xl backdrop-saturate-[150%] transition-colors duration-500 dark:border-white/12 dark:bg-[#0f172a]/55 dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)]">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-[1px] rounded-[2.2rem] ring-1 ring-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)] dark:ring-white/10 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.5)]" />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/65 via-white/25 to-transparent transition-colors duration-500 dark:from-slate-900/68 dark:via-slate-900/34 dark:to-transparent" />
+      <div className={cn('relative', 'overflow-hidden', 'rounded-[2.25rem]', 'border', 'border-white/35', 'bg-white/18', 'p-0', 'shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)]', 'backdrop-blur-2xl', 'backdrop-saturate-[150%]', 'transition-colors', 'duration-500', 'dark:border-white/12', 'dark:bg-[#0f172a]/55', 'dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)]')}>
+        <div className={cn('pointer-events-none', 'absolute', 'inset-0')}>
+          <div className={cn('absolute', 'inset-[1px]', 'rounded-[2.2rem]', 'ring-1', 'ring-white/40', 'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]', 'dark:ring-white/10', 'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.5)]')} />
+          <div className={cn('absolute', 'inset-0', 'bg-gradient-to-b', 'from-white/65', 'via-white/25', 'to-transparent', 'transition-colors', 'duration-500', 'dark:from-slate-900/68', 'dark:via-slate-900/34', 'dark:to-transparent')} />
         </div>
-        <div className="relative z-10">
-          <div className="border-b border-slate-200/70 px-6 pb-4 pt-6 dark:border-slate-700/50">
-            <div className="flex items-center gap-4">
-              <div className="flex-1 min-w-0">
+        <div className={cn('relative', 'z-10')}>
+          <div className={cn('border-b', 'border-slate-200/70', 'px-6', 'pb-4', 'pt-6', 'dark:border-slate-700/50')}>
+            <div className={cn('flex', 'items-center', 'gap-4')}>
+              <div className={cn('flex-1', 'min-w-0')}>
                 <TransactionsFilters
                   search={search}
                   onSearch={setSearch}
@@ -162,10 +163,10 @@ const TransactionsPage: React.FC = () => {
             </div>
           </div>
           {isLoading ? (
-            <div className="flex items-center justify-center py-16">
+            <div className={cn('flex', 'items-center', 'justify-center', 'py-16')}>
               <div className="text-center">
-                <div className="text-lg font-medium text-slate-600 dark:text-slate-400 mb-2">Loading transactions...</div>
-                <div className="text-sm text-slate-500 dark:text-slate-500">Fetching data from server</div>
+                <div className={cn('text-lg', 'font-medium', 'text-slate-600', 'dark:text-slate-400', 'mb-2')}>Loading transactions...</div>
+                <div className={cn('text-sm', 'text-slate-500', 'dark:text-slate-500')}>Fetching data from server</div>
               </div>
             </div>
           ) : (

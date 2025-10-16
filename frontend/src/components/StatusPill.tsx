@@ -1,5 +1,6 @@
 import React from "react";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
+import { cn } from '@/ui/primitives'
 
 type ConnectionStatus = "connected" | "needs_reauth" | "error";
 
@@ -41,7 +42,7 @@ export const StatusPill: React.FC<StatusPillProps> = ({ status, className }) => 
         className
       )}
     >
-      <Icon className="h-3.5 w-3.5" />
+      <Icon className={cn('h-3.5', 'w-3.5')} />
       {label}
     </span>
   );

@@ -15,37 +15,76 @@ interface AccountRowProps {
 }
 
 const cardContainerClasses = cn(
-  'group relative overflow-hidden',
-  'transition-transform duration-200 ease-out',
+  'group',
+  'relative',
+  'overflow-hidden',
+  'transition-transform',
+  'duration-200',
+  'ease-out',
   'hover:-translate-y-[1px]'
 )
 
 const hoverOverlayClasses = cn(
-  'pointer-events-none absolute inset-0 rounded-[inherit] opacity-0',
-  'transition-opacity duration-200 ease-out',
-  'bg-gradient-to-br from-sky-400/12 via-transparent to-violet-500/14',
+  'pointer-events-none',
+  'absolute',
+  'inset-0',
+  'rounded-[inherit]',
+  'opacity-0',
+  'transition-opacity',
+  'duration-200',
+  'ease-out',
+  'bg-gradient-to-br',
+  'from-sky-400/12',
+  'via-transparent',
+  'to-violet-500/14',
   'group-hover:opacity-100',
-  'dark:from-sky-400/18 dark:via-transparent dark:to-violet-500/18'
+  'dark:from-sky-400/18',
+  'dark:via-transparent',
+  'dark:to-violet-500/18'
 )
 
 const accountMetaClasses = cn(
-  'flex items-center gap-2',
-  'text-xs font-medium capitalize',
-  'text-slate-600 transition-colors duration-300 ease-out',
+  'flex',
+  'items-center',
+  'gap-2',
+  'text-xs',
+  'font-medium',
+  'capitalize',
+  'text-slate-600',
+  'transition-colors',
+  'duration-300',
+  'ease-out',
   'dark:text-slate-300'
 )
 
 const accountMaskClasses = cn(
-  'font-mono text-slate-400 transition-colors duration-300 ease-out',
+  'font-mono',
+  'text-slate-400',
+  'transition-colors',
+  'duration-300',
+  'ease-out',
   'dark:text-slate-500'
 )
 
 const transactionsPillClasses = cn(
-  'inline-flex items-center justify-center',
-  'rounded-full border',
-  'px-2.5 py-1 text-xs font-semibold',
-  'border-slate-200 bg-slate-50 text-slate-600 transition-colors duration-300 ease-out',
-  'dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300'
+  'inline-flex',
+  'items-center',
+  'justify-center',
+  'rounded-full',
+  'border',
+  'px-2.5',
+  'py-1',
+  'text-xs',
+  'font-semibold',
+  'border-slate-200',
+  'bg-slate-50',
+  'text-slate-600',
+  'transition-colors',
+  'duration-300',
+  'ease-out',
+  'dark:border-slate-600',
+  'dark:bg-slate-800',
+  'dark:text-slate-300'
 )
 
 const formatMoney = (amount?: number) => {
@@ -64,7 +103,7 @@ const AccountTypeDot: React.FC<{ type: Account['type'] }> = ({ type }) => {
 
   return (
     <span
-      className="inline-block h-2.5 w-2.5 rounded-full"
+      className={cn('inline-block', 'h-2.5', 'w-2.5', 'rounded-full')}
       style={{ backgroundColor: colors[type] }}
     />
   )
@@ -95,16 +134,26 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
       padding="md"
       withInnerEffects={false}
       containerClassName={cardContainerClasses}
-      className="relative z-10 space-y-3"
+      className={cn('relative', 'z-10', 'space-y-3')}
     >
       <div className={hoverOverlayClasses} aria-hidden />
-      <div className="flex items-center justify-between">
-        <div className="text-sm font-semibold text-slate-900 transition-colors duration-300 ease-out dark:text-white">
+      <div className={cn('flex', 'items-center', 'justify-between')}>
+        <div
+          className={cn(
+            'text-sm',
+            'font-semibold',
+            'text-slate-900',
+            'transition-colors',
+            'duration-300',
+            'ease-out',
+            'dark:text-white'
+          )}
+        >
           {account.name}
         </div>
         <div className={balanceColor}>{balanceText}</div>
       </div>
-      <div className="flex items-center justify-between">
+      <div className={cn('flex', 'items-center', 'justify-between')}>
         <div className={accountMetaClasses}>
           <AccountTypeDot type={account.type} />
           <span>{account.type}</span>

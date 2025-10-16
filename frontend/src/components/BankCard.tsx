@@ -59,12 +59,12 @@ const CardMenu: React.FC<{
           size="icon"
           aria-label="more"
         >
-          <MoreVertical className="h-5 w-5" />
+          <MoreVertical className={cn('h-5', 'w-5')} />
         </Button>
       }
     >
       <MenuItem
-        icon={<Unlink className="h-4 w-4" />}
+        icon={<Unlink className={cn('h-4', 'w-4')} />}
         onClick={onDisconnect}
       >
         Disconnect
@@ -92,9 +92,9 @@ export const BankCard: React.FC<BankCardProps> = ({
         rounded="lg"
         padding="sm"
         withInnerEffects={false}
-        className="grid h-12 w-12 place-items-center text-sky-500 dark:text-sky-300"
+        className={cn('grid', 'h-12', 'w-12', 'place-items-center', 'text-sky-500', 'dark:text-sky-300')}
       >
-        <span className="text-sm font-semibold">{bank.short}</span>
+        <span className={cn('text-sm', 'font-semibold')}>{bank.short}</span>
       </GlassCard>
     ),
     [bank.short]
@@ -122,9 +122,9 @@ export const BankCard: React.FC<BankCardProps> = ({
   };
 
   const renderGroup = (title: string, accounts: Account[]) => (
-    <div key={title} className="space-y-3">
+    <div key={title} className={cn('space-y-3')}>
       <span className={sectionBadgeClass}>{title}</span>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className={cn('grid', 'grid-cols-1', 'gap-3', 'md:grid-cols-2')}>
         {accounts.map((account) => (
           <AccountRow account={account} key={account.id} />
         ))}
@@ -138,26 +138,26 @@ export const BankCard: React.FC<BankCardProps> = ({
       rounded="xl"
       padding="lg"
       withInnerEffects={false}
-      className="space-y-6"
+      className={cn('space-y-6')}
     >
-      <div className={cn('flex flex-col gap-4', 'md:flex-row md:gap-6')}>
-        <div className="flex-1 space-y-3">
-          <div className="flex items-center gap-3">
+      <div className={cn('flex', 'flex-col', 'gap-4', 'md:flex-row', 'md:gap-6')}>
+        <div className={cn('flex-1', 'space-y-3')}>
+          <div className={cn('flex', 'items-center', 'gap-3')}>
             {Avatar}
-            <div className="min-w-0 flex-1 space-y-1">
-              <h3 className="truncate text-lg font-semibold text-slate-900 dark:text-white">
+            <div className={cn('min-w-0', 'flex-1', 'space-y-1')}>
+              <h3 className={cn('truncate', 'text-lg', 'font-semibold', 'text-slate-900', 'dark:text-white')}>
                 {bank.name}
               </h3>
-              <div className="flex items-center gap-2 text-xs">
+              <div className={cn('flex', 'items-center', 'gap-2', 'text-xs')}>
                 <StatusPill status={bank.status} />
-                <span className="text-slate-600 dark:text-slate-300">
+                <span className={cn('text-slate-600', 'dark:text-slate-300')}>
                   Last sync {relativeTime(bank.lastSync)}
                 </span>
               </div>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className={cn('flex', 'items-center', 'gap-2')}>
           <Button onClick={handleSync} disabled={loading} variant="secondary">
             <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
             Sync now
@@ -176,7 +176,7 @@ export const BankCard: React.FC<BankCardProps> = ({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="space-y-6 border-t border-white/40 pt-4 dark:border-white/10"
+            className={cn('space-y-6', 'border-t', 'border-white/40', 'pt-4', 'dark:border-white/10')}
           >
             {(() => {
               const sortedAccounts = bank.accounts

@@ -10,6 +10,7 @@ import { BrowserStorageAdapter } from "./services/boundaries";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { ProviderMismatchCheck } from "./components/ProviderMismatchCheck";
 import { GlassCard, GradientShell, Button } from './ui/primitives';
+import { cn } from '@/ui/primitives'
 
 AuthService.configure({
   storage: new BrowserStorageAdapter()
@@ -109,13 +110,13 @@ function AppContent() {
   if (isLoading) {
     return (
       <GradientShell variant="app">
-        <div className="flex min-h-screen items-center justify-center px-4">
+        <div className={cn('flex', 'min-h-screen', 'items-center', 'justify-center', 'px-4')}>
           <GlassCard
             variant="accent"
             rounded="lg"
             padding="md"
             withInnerEffects={false}
-            className="text-center text-sm text-slate-600 dark:text-slate-300"
+            className={cn('text-center', 'text-sm', 'text-slate-600', 'dark:text-slate-300')}
           >
             Loading...
           </GlassCard>
@@ -127,14 +128,14 @@ function AppContent() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen">
-        <div className="bg-white dark:bg-slate-900">
-          <div className="text-slate-900 transition-colors duration-300 dark:text-slate-100">
-            <header className="sticky top-0 z-50">
-              <div className="bg-white/80 dark:bg-slate-800/80">
-                <div className="border-b border-slate-200 dark:border-slate-700 backdrop-blur-sm">
+        <div className={cn('bg-white', 'dark:bg-slate-900')}>
+          <div className={cn('text-slate-900', 'transition-colors', 'duration-300', 'dark:text-slate-100')}>
+            <header className={cn('sticky', 'top-0', 'z-50')}>
+              <div className={cn('bg-white/80', 'dark:bg-slate-800/80')}>
+                <div className={cn('border-b', 'border-slate-200', 'dark:border-slate-700', 'backdrop-blur-sm')}>
                   <div className="px-4">
-                    <div className="flex h-16 items-center justify-between">
-                      <div className="flex items-center gap-2 text-lg font-semibold">Sumaura</div>
+                    <div className={cn('flex', 'h-16', 'items-center', 'justify-between')}>
+                      <div className={cn('flex', 'items-center', 'gap-2', 'text-lg', 'font-semibold')}>Sumaura</div>
                       <Button
                         variant="icon"
                         size="icon"
@@ -142,7 +143,7 @@ function AppContent() {
                         aria-label="Toggle theme"
                         title="Toggle theme"
                       >
-                        {mode === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                        {mode === 'dark' ? <Moon className={cn('h-4', 'w-4')} /> : <Sun className={cn('h-4', 'w-4')} />}
                       </Button>
                     </div>
                   </div>

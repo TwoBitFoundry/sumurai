@@ -158,11 +158,11 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
       const isCompleteStep = index < stepIndex
       const state = isCompleteStep ? 'complete' : isActive ? 'active' : 'idle'
       return (
-        <li key={index} className="flex items-center gap-2">
+        <li key={index} className={cn('flex', 'items-center', 'gap-2')}>
           <span className={stepIndicatorVariants({ state })}>
-            {isCompleteStep ? <Check className="h-3.5 w-3.5" /> : index + 1}
+            {isCompleteStep ? <Check className={cn('h-3.5', 'w-3.5')} /> : index + 1}
           </span>
-          {index < steps.length - 1 && <span className="h-px w-6 bg-slate-200 dark:bg-slate-700" aria-hidden="true" />}
+          {index < steps.length - 1 && <span className={cn('h-px', 'w-6', 'bg-slate-200', 'dark:bg-slate-700')} aria-hidden="true" />}
         </li>
       )
     })
@@ -170,29 +170,29 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
 
   return (
     <GradientShell variant="auth">
-      <div className="flex w-full max-w-6xl flex-col gap-6">
+      <div className={cn('flex', 'w-full', 'max-w-6xl', 'flex-col', 'gap-6')}>
         {onLogout && <AppHeader onLogout={onLogout} variant="onboarding" />}
         <GlassCard
           containerClassName="w-full animate-[fadeSlideUp_400ms_ease-out]"
           rounded="xl"
           padding="lg"
-          className="flex flex-col gap-6"
+          className={cn('flex', 'flex-col', 'gap-6')}
         >
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex flex-col gap-2">
+          <div className={cn('flex', 'flex-wrap', 'items-start', 'justify-between', 'gap-4')}>
+            <div className={cn('flex', 'flex-col', 'gap-2')}>
               <Badge variant="primary" size="sm">
                 {steps[stepIndex]?.label}
               </Badge>
-              <div className="flex flex-col gap-1">
-                <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
+              <div className={cn('flex', 'flex-col', 'gap-1')}>
+                <h1 className={cn('text-2xl', 'font-semibold', 'text-slate-900', 'dark:text-white')}>
                   {steps[stepIndex]?.description}
                 </h1>
-                <p className="text-sm text-slate-500 dark:text-slate-300">
+                <p className={cn('text-sm', 'text-slate-500', 'dark:text-slate-300')}>
                   Step {stepIndex + 1} of {steps.length}
                 </p>
               </div>
             </div>
-            <ol className="flex flex-wrap items-center gap-2" aria-label="Onboarding steps">
+            <ol className={cn('flex', 'flex-wrap', 'items-center', 'gap-2')} aria-label="Onboarding steps">
               {stepIndicator}
             </ol>
           </div>
@@ -207,11 +207,11 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
               'sm:flex-row sm:items-center sm:justify-between'
             )}
           >
-            <p className="text-xs text-slate-500 dark:text-slate-300">
+            <p className={cn('text-xs', 'text-slate-500', 'dark:text-slate-300')}>
               {providerContent.securityNote}
             </p>
 
-            <div className="flex flex-wrap gap-2">
+            <div className={cn('flex', 'flex-wrap', 'gap-2')}>
               {canGoBack && (
                 <Button
                   variant="ghost"

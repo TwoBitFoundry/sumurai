@@ -117,7 +117,7 @@ export function useOnboardingPlaidFlow(
       setConnectionInProgress(true)
       await getLinkToken()
       setShouldOpenLink(true)
-    } catch (error) {
+    } catch {
       setConnectionInProgress(false)
       setShouldOpenLink(false)
     }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { AuthService } from './services/authService'
 import { GlassCard, Button, Modal } from './ui/primitives'
+import { cn } from '@/ui/primitives'
 
 const SESSION_WARNING_THRESHOLD = 120 // 2 minutes in seconds
 const SESSION_CHECK_INTERVAL = 1000 // 1 second
@@ -76,19 +77,19 @@ export function SessionExpiryModal({
         rounded="xl"
         padding="lg"
         withInnerEffects={false}
-        className="space-y-5 text-center"
+        className={cn('space-y-5', 'text-center')}
       >
         <div className="space-y-2">
           <h2
             id="session-expiry-heading"
-            className="text-xl font-semibold text-slate-900 dark:text-slate-100"
+            className={cn('text-xl', 'font-semibold', 'text-slate-900', 'dark:text-slate-100')}
           >
             Session expiring
           </h2>
-          <div className="text-3xl font-mono text-red-600 dark:text-red-400">
+          <div className={cn('text-3xl', 'font-mono', 'text-red-600', 'dark:text-red-400')}>
             {formatTime(timeRemaining)}
           </div>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400')}>
             Your session will expire in {Math.ceil(timeRemaining / 60)} minutes.
           </p>
         </div>
@@ -106,7 +107,7 @@ export function SessionExpiryModal({
           >
             Logout now
           </Button>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className={cn('text-xs', 'text-slate-500', 'dark:text-slate-400')}>
             Do nothing to auto-logout when the timer reaches zero.
           </p>
         </div>

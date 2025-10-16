@@ -1,5 +1,6 @@
 import { useContext, useState, useMemo, useCallback, useEffect, useRef, ReactNode } from 'react'
 import { AccountFilterContext, AccountFilterContextType, ProviderAccount, AccountsByBank } from '@/context/AccountFilterContext'
+import type { Account } from '@/types/api'
 import { ProviderCatalog } from '@/services/ProviderCatalog'
 import { ACCOUNTS_CHANGED_EVENT } from '@/utils/events'
 
@@ -61,16 +62,23 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
         return null
       }
 
+      type AccountWithLegacyFields = Account & {
+        ledger?: number | string | null
+        available?: number | string | null
+        institutionName?: string | null
+      }
+
       const mappedAccounts: ProviderAccount[] = (accountsResponse || []).map(account => {
+        const legacy = account as AccountWithLegacyFields
         const ledger =
           parseBalance(account.balance_ledger) ??
-          parseBalance((account as any).balance_current) ??
-          parseBalance((account as any).ledger)
+          parseBalance(account.balance_current) ??
+          parseBalance(legacy.ledger ?? null)
 
         const available =
           parseBalance(account.balance_available) ??
-          parseBalance((account as any).balance_current) ??
-          parseBalance((account as any).available)
+          parseBalance(account.balance_current) ??
+          parseBalance(legacy.available ?? null)
 
         return {
           id: account.id,
@@ -82,7 +90,7 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
           provider: account.provider ?? 'plaid',
           institution_name:
             account.institution_name ??
-            (account as any).institutionName ??
+            legacy.institutionName ??
             'Unknown Bank',
         }
       })

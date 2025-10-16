@@ -2,6 +2,7 @@ import React from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from './utils'
+import { cn } from '@/ui/primitives'
 
 const contentVariants = cva('relative w-full', {
   variants: {
@@ -57,7 +58,7 @@ export function Modal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          <div className="grid h-full place-items-center p-4">
+          <div className={cn('grid', 'h-full', 'place-items-center', 'p-4')}>
             <motion.button
               type="button"
               aria-hidden="true"

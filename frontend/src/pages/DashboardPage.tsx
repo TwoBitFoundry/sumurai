@@ -2,9 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { RefreshCcw } from 'lucide-react'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { ActiveDotProps } from 'recharts/types/util/types'
+import type { TooltipProps } from 'recharts'
 
 import BalancesOverview from '../components/BalancesOverview'
 import Card from '../components/ui/Card'
+import { cn } from '@/ui/primitives/utils'
 import { DashboardCalculator } from '../domain/DashboardCalculator'
 import { useTheme } from '../context/ThemeContext'
 import { categoriesToDonut } from '../features/analytics/adapters/chartData'
@@ -12,6 +14,13 @@ import { useAnalytics } from '../features/analytics/hooks/useAnalytics'
 import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries'
 import { fmtUSD } from '../utils/format'
 import { type DateRangeKey as DateRange } from '../utils/dateRanges'
+
+const netTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) => {
+  const numericValue = Array.isArray(value)
+    ? Number(value[0])
+    : Number(value)
+  return fmtUSD(Number.isFinite(numericValue) ? numericValue : 0)
+}
 
 const DashboardPage: React.FC = () => {
   const { colors } = useTheme()
@@ -103,22 +112,25 @@ const DashboardPage: React.FC = () => {
         <BalancesOverview />
       </div>
 
-      <div ref={spendingOverviewRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+      <div
+        ref={spendingOverviewRef}
+        className={cn('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-6', 'items-stretch')}
+      >
         <Card className="h-full">
-          <div className="mb-4 flex items-center justify-between">
+          <div className={cn('mb-4', 'flex', 'items-center', 'justify-between')}>
             <div>
-              <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Spending Over Time</h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Breakdown by category</p>
+              <h3 className={cn('text-base', 'font-semibold', 'text-slate-900', 'dark:text-slate-100')}>Spending Over Time</h3>
+              <p className={cn('text-xs', 'text-slate-600', 'dark:text-slate-400')}>Breakdown by category</p>
             </div>
             {!analyticsLoading && analyticsRefreshing && (
               <RefreshCcw
                 aria-label="Refreshing analytics"
-                className="h-4 w-4 text-slate-500 dark:text-slate-400 animate-spin"
+                className={cn('h-4', 'w-4', 'text-slate-500', 'dark:text-slate-400', 'animate-spin')}
               />
             )}
           </div>
           {analyticsLoading && (
-            <div className="mb-2 text-xs text-slate-500 dark:text-slate-400">Loading analytics...</div>
+            <div className={cn('mb-2', 'text-xs', 'text-slate-500', 'dark:text-slate-400')}>Loading analytics...</div>
           )}
           <SpendingByCategoryChart
             data={byCat}
@@ -134,8 +146,8 @@ const DashboardPage: React.FC = () => {
               const top = categories.slice(0, 4)
               return (
                 <div>
-                  <div className="text-xs text-slate-600 dark:text-slate-400 mb-2 font-medium">Top Categories</div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className={cn('text-xs', 'text-slate-600', 'dark:text-slate-400', 'mb-2', 'font-medium')}>Top Categories</div>
+                  <div className={cn('grid', 'grid-cols-2', 'gap-2')}>
                     {top.map((cat, idx) => {
                       const percentage = categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0'
                       const color = colors.chart.primary[idx % colors.chart.primary.length]
@@ -149,13 +161,13 @@ const DashboardPage: React.FC = () => {
                           onMouseEnter={() => setHoveredCategory(cat.name)}
                           onMouseLeave={() => setHoveredCategory(null)}
                         >
-                          <div className="flex items-center gap-2 min-w-0 mb-1">
-                            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                            <span className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">{cat.name}</span>
+                          <div className={cn('flex', 'items-center', 'gap-2', 'min-w-0', 'mb-1')}>
+                            <div className={cn('w-2.5', 'h-2.5', 'rounded-full', 'flex-shrink-0')} style={{ backgroundColor: color }} />
+                            <span className={cn('text-xs', 'font-medium', 'text-slate-800', 'dark:text-slate-200', 'truncate')}>{cat.name}</span>
                           </div>
-                          <div className="flex items-baseline justify-between">
-                            <div className="text-xs font-semibold text-slate-900 dark:text-slate-100">{fmtUSD(cat.value)}</div>
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400">{percentage}%</div>
+                          <div className={cn('flex', 'items-baseline', 'justify-between')}>
+                            <div className={cn('text-xs', 'font-semibold', 'text-slate-900', 'dark:text-slate-100')}>{fmtUSD(cat.value)}</div>
+                            <div className={cn('text-[10px]', 'text-slate-500', 'dark:text-slate-400')}>{percentage}%</div>
                           </div>
                         </div>
                       )
@@ -167,48 +179,48 @@ const DashboardPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="h-full flex flex-col">
-          <div className="mb-3 flex items-center justify-between">
+        <Card className={cn('h-full', 'flex', 'flex-col')}>
+          <div className={cn('mb-3', 'flex', 'items-center', 'justify-between')}>
             <div>
-              <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Top Merchants Over Time</h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Highest spending locations</p>
+              <h3 className={cn('text-base', 'font-semibold', 'text-slate-900', 'dark:text-slate-100')}>Top Merchants Over Time</h3>
+              <p className={cn('text-xs', 'text-slate-600', 'dark:text-slate-400')}>Highest spending locations</p>
             </div>
             {!analyticsLoading && analyticsRefreshing && (
               <RefreshCcw
                 aria-label="Refreshing analytics"
-                className="h-4 w-4 text-slate-500 dark:text-slate-400 animate-spin"
+                className={cn('h-4', 'w-4', 'text-slate-500', 'dark:text-slate-400', 'animate-spin')}
               />
             )}
           </div>
-          <div className="flex-1 overflow-hidden">
+          <div className={cn('flex-1', 'overflow-hidden')}>
             <TopMerchantsList
               merchants={analytics.topMerchants}
-              className="h-full overflow-y-auto pr-1"
+              className={cn('h-full', 'overflow-y-auto', 'pr-1')}
             />
           </div>
         </Card>
 
-        <Card className="h-full flex flex-col">
-          <div className="mb-4 flex items-center justify-between">
+        <Card className={cn('h-full', 'flex', 'flex-col')}>
+          <div className={cn('mb-4', 'flex', 'items-center', 'justify-between')}>
             <div>
-              <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Net Worth Over Time</h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Historical asset growth</p>
+              <h3 className={cn('text-base', 'font-semibold', 'text-slate-900', 'dark:text-slate-100')}>Net Worth Over Time</h3>
+              <p className={cn('text-xs', 'text-slate-600', 'dark:text-slate-400')}>Historical asset growth</p>
             </div>
             {!netLoading && netRefreshing && (
               <RefreshCcw
                 aria-label="Refreshing net worth"
-                className="h-4 w-4 text-slate-500 dark:text-slate-400 animate-spin"
+                className={cn('h-4', 'w-4', 'text-slate-500', 'dark:text-slate-400', 'animate-spin')}
               />
             )}
           </div>
           {netLoading ? (
-            <div className="flex-1 min-h-[220px] rounded-xl bg-slate-100/60 dark:bg-slate-900/40 animate-pulse border border-slate-200/60 dark:border-slate-700/60" />
+            <div className={cn('flex-1', 'min-h-[220px]', 'rounded-xl', 'bg-slate-100/60', 'dark:bg-slate-900/40', 'animate-pulse', 'border', 'border-slate-200/60', 'dark:border-slate-700/60')} />
           ) : netError ? (
-            <div className="flex-1 min-h-[220px] text-sm text-rose-600 dark:text-rose-400">{netError}</div>
+            <div className={cn('flex-1', 'min-h-[220px]', 'text-sm', 'text-rose-600', 'dark:text-rose-400')}>{netError}</div>
           ) : netSeries.length === 0 ? (
-            <div className="flex-1 min-h-[220px] text-sm text-slate-500 dark:text-slate-400">No data for this range.</div>
+            <div className={cn('flex-1', 'min-h-[220px]', 'text-sm', 'text-slate-500', 'dark:text-slate-400')}>No data for this range.</div>
           ) : (
-            <div className="flex-1 min-h-[240px] overflow-hidden">
+            <div className={cn('flex-1', 'min-h-[240px]', 'overflow-hidden')}>
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={netSeries} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
                   <defs>
@@ -260,7 +272,7 @@ const DashboardPage: React.FC = () => {
                       return `${sign}$${Number(n).toFixed(0)}`
                     }}
                   />
-                  <Tooltip formatter={(v: any) => fmtUSD(Number(v))} contentStyle={{ background: colors.chart.tooltipBg }} />
+                  <Tooltip formatter={netTooltipFormatter} contentStyle={{ background: colors.chart.tooltipBg }} />
                   <Area
                     type="monotone"
                     dataKey="value"
@@ -280,10 +292,10 @@ const DashboardPage: React.FC = () => {
 
       {showTimeBar && (
         <div
-          className="fixed left-0 right-0 z-50 flex justify-center transition-[bottom] duration-300 ease-out"
+          className={cn('fixed', 'left-0', 'right-0', 'z-50', 'flex', 'justify-center', 'transition-[bottom]', 'duration-300', 'ease-out')}
           style={{ bottom: timeBarBottom }}
         >
-          <div className="flex gap-2 px-3 py-2 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70 shadow-xl backdrop-blur-md ring-1 ring-slate-200/60 dark:ring-slate-700/60">
+          <div className={cn('flex', 'gap-2', 'px-3', 'py-2', 'rounded-2xl', 'bg-white/80', 'dark:bg-slate-800/80', 'border', 'border-slate-200/70', 'dark:border-slate-700/70', 'shadow-xl', 'backdrop-blur-md', 'ring-1', 'ring-slate-200/60', 'dark:ring-slate-700/60')}>
             {[
               { key: 'current-month', label: 'Current Month' },
               { key: 'past-2-months', label: '2 Months' },

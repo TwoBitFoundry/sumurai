@@ -1,6 +1,7 @@
 import React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from './utils'
+import { cn } from '@/ui/primitives'
 
 const alertVariants = cva(
   [
@@ -58,14 +59,14 @@ export function Alert({
 }: AlertProps) {
   return (
     <div className={cn(alertVariants({ variant, tone }), className)} {...props}>
-      {icon && <span className="mt-0.5 text-lg">{icon}</span>}
+      {icon && <span className={cn('mt-0.5', 'text-lg')}>{icon}</span>}
       <div className="space-y-1">
         {title && (
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] opacity-85">
+          <p className={cn('text-xs', 'font-semibold', 'uppercase', 'tracking-[0.24em]', 'opacity-85')}>
             {title}
           </p>
         )}
-        <div className="text-sm leading-relaxed">{children}</div>
+        <div className={cn('text-sm', 'leading-relaxed')}>{children}</div>
       </div>
     </div>
   )
