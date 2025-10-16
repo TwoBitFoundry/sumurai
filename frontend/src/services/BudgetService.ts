@@ -1,4 +1,4 @@
-import { ApiClient, ConflictError } from './ApiClient'
+import { ApiClient } from './ApiClient'
 import type { Budget } from '../types/api'
 
 export class BudgetService {

@@ -11,6 +11,7 @@ import { fmtUSD } from '../utils/format'
 import { type DateRangeKey as DateRange } from '../utils/dateRanges'
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import { useTheme } from '../context/ThemeContext'
+import { DashboardCalculator } from '../domain/DashboardCalculator'
 
 const DashboardPage: React.FC = () => {
   const { mode, colors } = useTheme()
@@ -86,20 +87,7 @@ const DashboardPage: React.FC = () => {
     const fill = colors.chart.dotFill
     const stroke = '#10b981'
     if (!n) return () => null as any
-    const changeIdx: number[] = []
-    for (let i = 1; i < n; i++) {
-      const prev = Number(netSeries[i - 1]?.value ?? 0)
-      const curr = Number(netSeries[i]?.value ?? 0)
-      if (!Number.isFinite(prev) || !Number.isFinite(curr)) continue
-      if (curr !== prev) changeIdx.push(i)
-    }
-    const maxDots = 30
-    const selected = new Set<number>()
-    if (changeIdx.length > 0) {
-      const stride = Math.max(1, Math.ceil(changeIdx.length / maxDots))
-      for (let k = 0; k < changeIdx.length; k += stride) selected.add(changeIdx[k])
-      selected.add(changeIdx[changeIdx.length - 1])
-    }
+    const selected = DashboardCalculator.calculateNetDotIndices(netSeries)
     return (props: any) => {
       const { index, cx, cy } = props || {}
       if (index == null || cx == null || cy == null) return null
@@ -108,25 +96,7 @@ const DashboardPage: React.FC = () => {
     }
   }, [netSeries, colors.chart.dotFill])
 
-  const netYAxisDomain = useMemo(() => {
-    if (!netSeries || netSeries.length === 0) return null
-    let min = Number.POSITIVE_INFINITY
-    let max = Number.NEGATIVE_INFINITY
-    for (const point of netSeries) {
-      const value = Number(point?.value)
-      if (!Number.isFinite(value)) continue
-      if (value < min) min = value
-      if (value > max) max = value
-    }
-    if (!Number.isFinite(min) || !Number.isFinite(max)) return null
-    if (min === max) {
-      const padding = Math.max(Math.abs(max) * 0.1, 500)
-      return [max - padding, max + padding]
-    }
-    const span = Math.abs(max - min)
-    const padding = Math.max(span * 0.08, 500)
-    return [min - padding, max + padding]
-  }, [netSeries])
+  const netYAxisDomain = useMemo(() => DashboardCalculator.calculateNetYAxisDomain(netSeries), [netSeries])
 
   return (
     <div className="space-y-8">

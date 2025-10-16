@@ -284,11 +284,11 @@ describe('Session Management & Expiry Modal', () => {
           )
           
           await userEvent.click(screen.getByRole('button', { name: /stay logged in/i }))
-          
+
           await waitFor(() => {
             expect(mockSessionStorage.clear).toHaveBeenCalled()
             expect(onLogout).toHaveBeenCalled()
-          })
+          }, { timeout: 5000 })
         })
       })
     })

@@ -8,7 +8,6 @@ import type {
 import type { BalancesOverview } from '../types/analytics'
 import { appendAccountQueryParams } from '../utils/queryParams'
 
-
 export class AnalyticsService {
   static async getCurrentMonthSpending(): Promise<AnalyticsSpendingResponse> {
     return ApiClient.get<AnalyticsSpendingResponse>('/analytics/spending/current-month')
