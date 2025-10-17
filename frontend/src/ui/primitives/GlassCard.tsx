@@ -64,6 +64,7 @@ export interface GlassCardProps
   children: React.ReactNode
   withInnerEffects?: boolean
   containerClassName?: string
+  beforeContent?: React.ReactNode
 }
 
 /**
@@ -91,6 +92,7 @@ export function GlassCard({
   withInnerEffects = true,
   className,
   containerClassName,
+  beforeContent,
   ...props
 }: GlassCardProps) {
   const roundedClass = rounded === 'default' ? 'rounded-[2.25rem]' : rounded === 'lg' ? 'rounded-2xl' : 'rounded-3xl'
@@ -125,6 +127,7 @@ export function GlassCard({
           />
         </div>
       )}
+      {beforeContent}
       <div className={cn('relative z-10', padding === 'none' ? '' : '', className)}>
         {children}
       </div>
