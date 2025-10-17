@@ -435,6 +435,22 @@ async fn refresh_user_session(
         .validate_token_for_refresh(auth_header)
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
+    match state
+        .cache_service
+        .is_session_valid(&claims.jti)
+        .await
+    {
+        Ok(true) => {}
+        Ok(false) => {
+            tracing::warn!("Refresh rejected: Session not found in cache (app may have restarted)");
+            return Err(StatusCode::UNAUTHORIZED);
+        }
+        Err(e) => {
+            tracing::error!("Cache error during refresh session validation: {}", e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    }
+
     let user_id = Uuid::parse_str(&claims.user_id()).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     // Get user from database to fetch onboarding status
