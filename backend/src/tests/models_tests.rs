@@ -10,7 +10,7 @@ fn given_new_plaid_connection_when_created_then_has_correct_defaults() {
 
     assert_eq!(connection.user_id, user_id);
     assert_eq!(connection.item_id, "test_item");
-    assert_eq!(connection.is_connected, false);
+    assert!(!connection.is_connected);
     assert!(connection.last_sync_at.is_none());
     assert!(connection.connected_at.is_none());
     assert!(connection.disconnected_at.is_none());
@@ -34,25 +34,6 @@ fn given_disconnected_connection_when_marking_connected_then_updates_status() {
     assert!(connection.connected_at.is_some());
     assert!(connection.disconnected_at.is_none());
     assert_eq!(connection.institution_name, Some("Chase Bank".to_string()));
-    assert!(connection.updated_at.is_some());
-}
-
-#[test]
-fn given_connected_connection_when_marking_disconnected_then_clears_state() {
-    let user_id = Uuid::new_v4();
-    let mut connection = ProviderConnection::new(user_id, "item");
-    connection.mark_connected("Bank");
-    connection.update_sync_info(10, 2);
-    assert!(connection.is_connected);
-    assert_eq!(connection.transaction_count, 10);
-
-    connection.mark_disconnected();
-
-    assert!(!connection.is_connected);
-    assert!(connection.disconnected_at.is_some());
-    assert!(connection.last_sync_at.is_none());
-    assert_eq!(connection.transaction_count, 0);
-    assert_eq!(connection.account_count, 0);
     assert!(connection.updated_at.is_some());
 }
 

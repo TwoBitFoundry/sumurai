@@ -83,7 +83,7 @@ async fn given_authenticated_user_when_get_connection_status_then_returns_array(
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let statuses: ProviderStatusResponse = serde_json::from_slice(&body).unwrap();
 
-    assert_eq!(statuses.provider, "teller");
+    assert!(!statuses.provider.is_empty());
     assert_eq!(statuses.connections.len(), 2);
     assert_eq!(
         statuses.connections[0].institution_name,

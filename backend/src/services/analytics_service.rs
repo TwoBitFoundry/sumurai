@@ -1,6 +1,5 @@
 use crate::models::analytics::{
-    BalanceCategory, CategorySpending, DailySpending, DailyTrend, MonthlySpending,
-    NetWorthDataPoint, PeriodComparison, TopMerchant,
+    BalanceCategory, CategorySpending, DailySpending, MonthlySpending, TopMerchant,
 };
 use crate::models::transaction::Transaction;
 use chrono::Datelike;
@@ -8,6 +7,7 @@ use rust_decimal::Decimal;
 
 pub struct AnalyticsService;
 
+#[allow(dead_code)]
 impl AnalyticsService {
     pub fn map_account_to_balance_category(
         account_type: &str,
@@ -142,21 +142,6 @@ impl AnalyticsService {
         }
     }
 
-    pub fn filter_by_period<'a>(
-        &self,
-        transactions: &'a [Transaction],
-        period: &str,
-    ) -> Vec<&'a Transaction> {
-        if let Some((start, end)) = Self::get_period_date_range(period) {
-            transactions
-                .iter()
-                .filter(|t| t.date >= start && t.date <= end)
-                .collect()
-        } else {
-            transactions.iter().collect()
-        }
-    }
-
     pub fn filter_by_date_range<'a>(
         &self,
         transactions: &'a [Transaction],
@@ -207,19 +192,6 @@ impl AnalyticsService {
             .collect()
     }
 
-    pub fn group_by_category(
-        &self,
-        transactions: &[Transaction],
-        period: &str,
-    ) -> Vec<CategorySpending> {
-        let filtered_transactions = self.filter_by_period(transactions, period);
-        Self::group_transactions_by_category(filtered_transactions)
-    }
-
-    pub fn group_by_cat(&self, transactions: &[Transaction]) -> Vec<CategorySpending> {
-        Self::group_transactions_by_category(transactions.iter().collect())
-    }
-
     pub fn group_by_category_with_date_range(
         &self,
         transactions: &[Transaction],
@@ -228,124 +200,6 @@ impl AnalyticsService {
     ) -> Vec<CategorySpending> {
         let filtered_transactions = self.filter_by_date_range(transactions, start_date, end_date);
         Self::group_transactions_by_category(filtered_transactions)
-    }
-
-    pub fn limit_categories_to_ten(
-        &self,
-        categories: Vec<CategorySpending>,
-    ) -> Vec<CategorySpending> {
-        let mut sorted = categories;
-        sorted.sort_by(|a, b| b.value.cmp(&a.value));
-
-        if sorted.len() <= 10 {
-            return sorted;
-        }
-
-        let mut result = sorted[0..9].to_vec();
-
-        let other_value: Decimal = sorted[9..].iter().map(|cat| cat.value).sum();
-
-        if other_value > Decimal::ZERO {
-            result.push(CategorySpending {
-                name: "Other".to_string(),
-                value: other_value,
-            });
-        }
-
-        result
-    }
-
-    pub fn get_period_comparison(
-        &self,
-        transactions: &[Transaction],
-        date_range: &str,
-    ) -> PeriodComparison {
-        use chrono::Duration;
-
-        let now = chrono::Utc::now().naive_utc().date();
-        let current_year = now.year();
-        let current_month = now.month();
-
-        let (current_start, current_end, previous_start, previous_end) = match date_range {
-            "current-month" => {
-                let (current_period_start, current_period_end) =
-                    Self::get_month_range_static(current_year, current_month);
-                let (previous_year, previous_month) =
-                    Self::get_previous_month_info(current_year, current_month);
-                let (previous_period_start, previous_period_end) =
-                    Self::get_month_range_static(previous_year, previous_month);
-
-                (
-                    current_period_start,
-                    current_period_end,
-                    previous_period_start,
-                    previous_period_end,
-                )
-            }
-            "all-time" => {
-                let mut dates: Vec<chrono::NaiveDate> =
-                    transactions.iter().map(|t| t.date).collect();
-                dates.sort();
-
-                if dates.is_empty() {
-                    let _today = now;
-                    return PeriodComparison {
-                        current: Decimal::ZERO,
-                        previous: Decimal::ZERO,
-                        change: Decimal::ZERO,
-                        change_percent: Decimal::ZERO,
-                    };
-                }
-
-                let earliest = dates[0];
-                let latest = dates[dates.len() - 1];
-                let total_days = latest.signed_duration_since(earliest).num_days();
-                let half_point = earliest + Duration::days(total_days / 2);
-
-                (half_point, latest, earliest, half_point)
-            }
-            _ => {
-                let (current_period_start, current_period_end) =
-                    Self::get_month_range_static(current_year, current_month);
-                let (previous_year, previous_month) =
-                    Self::get_previous_month_info(current_year, current_month);
-                let (previous_period_start, previous_period_end) =
-                    Self::get_month_range_static(previous_year, previous_month);
-
-                (
-                    current_period_start,
-                    current_period_end,
-                    previous_period_start,
-                    previous_period_end,
-                )
-            }
-        };
-
-        let current_spend: Decimal = transactions
-            .iter()
-            .filter(|t| t.date >= current_start && t.date <= current_end)
-            .map(|t| t.amount)
-            .sum();
-
-        let previous_spend: Decimal = transactions
-            .iter()
-            .filter(|t| t.date >= previous_start && t.date <= previous_end)
-            .map(|t| t.amount)
-            .sum();
-
-        let change = current_spend - previous_spend;
-        let change_percent = if previous_spend > Decimal::ZERO {
-            (change / previous_spend) * Decimal::from(100)
-        } else {
-            Decimal::ZERO
-        };
-
-        PeriodComparison {
-            current: Self::round_amount(current_spend),
-            previous: Self::round_amount(previous_spend),
-            change: Self::round_amount(change),
-            change_percent: Self::round_percentage(change_percent),
-        }
     }
 
     pub fn calculate_monthly_totals(
@@ -449,60 +303,6 @@ impl AnalyticsService {
         self.get_top_merchants(&transactions_slice, limit)
     }
 
-    pub fn get_daily_spending_by_date_range(
-        &self,
-        transactions: &[Transaction],
-        start_date: Option<chrono::NaiveDate>,
-        end_date: Option<chrono::NaiveDate>,
-    ) -> Vec<DailyTrend> {
-        use chrono::Duration;
-        use std::collections::HashMap;
-
-        let filtered_transactions = self.filter_by_date_range(transactions, start_date, end_date);
-
-        if filtered_transactions.is_empty() {
-            return vec![];
-        }
-
-        let (actual_start, actual_end) = if let (Some(s), Some(e)) = (start_date, end_date) {
-            (s, e)
-        } else {
-            let mut dates: Vec<chrono::NaiveDate> =
-                filtered_transactions.iter().map(|t| t.date).collect();
-            dates.sort();
-            (dates[0], dates[dates.len() - 1])
-        };
-
-        let mut day_map: HashMap<String, Decimal> = HashMap::new();
-        for transaction in filtered_transactions {
-            let date_key = transaction.date.format("%Y-%m-%d").to_string();
-            *day_map.entry(date_key).or_insert(Decimal::ZERO) += transaction.amount;
-        }
-
-        let mut result = Vec::new();
-        let mut current_date = actual_start;
-
-        while current_date <= actual_end {
-            let date_key = current_date.format("%Y-%m-%d").to_string();
-            let amount =
-                Self::round_amount(day_map.get(&date_key).copied().unwrap_or(Decimal::ZERO));
-
-            let display_date = current_date.format("%b %-d").to_string();
-
-            result.push(DailyTrend {
-                date: date_key,
-                amount,
-                display_date,
-            });
-
-            current_date += Duration::days(1);
-        }
-
-        result
-    }
-
-    // Removed: day-of-week spending helpers (no API route exposed)
-
     pub fn calculate_current_month_spending(&self, transactions: &[Transaction]) -> Decimal {
         let now = chrono::Utc::now().naive_utc().date();
         let (start, end) = self.get_month_range(now.year(), now.month());
@@ -566,40 +366,4 @@ impl AnalyticsService {
         Self::get_month_range_static(year, month)
     }
 
-    pub fn get_net_worth_over_time(
-        &self,
-        transactions: &[Transaction],
-        start_date: chrono::NaiveDate,
-        end_date: chrono::NaiveDate,
-    ) -> Vec<NetWorthDataPoint> {
-        use rust_decimal_macros::dec;
-        use std::collections::BTreeMap;
-
-        // Filter transactions within date range
-        let mut filtered_transactions: Vec<&Transaction> = transactions
-            .iter()
-            .filter(|t| t.date >= start_date && t.date <= end_date)
-            .collect();
-
-        // Sort transactions by date
-        filtered_transactions.sort_by_key(|t| t.date);
-
-        // Group transactions by date and calculate running balance
-        let mut daily_balances = BTreeMap::new();
-        let mut running_balance = dec!(0.00);
-
-        for transaction in &filtered_transactions {
-            running_balance += transaction.amount;
-            daily_balances.insert(transaction.date, running_balance);
-        }
-
-        // Convert to data points
-        daily_balances
-            .into_iter()
-            .map(|(date, net_worth)| NetWorthDataPoint {
-                date: date.to_string(),
-                net_worth,
-            })
-            .collect()
-    }
 }

@@ -28,7 +28,6 @@ pub struct AuthResponse {
 #[derive(Debug, Clone)]
 pub struct AuthContext {
     pub user_id: Uuid,
-    #[allow(dead_code)]
     pub jwt_id: String,
 }
 
@@ -55,15 +54,11 @@ impl Claims {
 pub struct AuthToken {
     pub token: String,
     pub jwt_id: String,
-    #[allow(dead_code)]
-    pub user_id: Uuid,
     pub expires_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug)]
 pub enum AuthError {
-    #[allow(dead_code)]
-    InvalidCredentials,
     TokenExpired,
     InvalidToken,
     HashingError,
@@ -73,7 +68,6 @@ pub enum AuthError {
 impl std::fmt::Display for AuthError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            AuthError::InvalidCredentials => write!(f, "Invalid credentials"),
             AuthError::TokenExpired => write!(f, "Token expired"),
             AuthError::InvalidToken => write!(f, "Invalid token"),
             AuthError::HashingError => write!(f, "Password hashing error"),

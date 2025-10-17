@@ -31,10 +31,6 @@ async fn given_extremely_long_email_when_registering_user_then_handles_gracefull
     )
     .unwrap();
     let _oversized_email = "a".repeat(10_000_000) + "@example.com";
-    assert!(
-        true,
-        "RED phase: This test should fail initially - no oversized input protection implemented"
-    );
 }
 
 #[tokio::test]
@@ -46,7 +42,7 @@ async fn given_malicious_jwt_with_injection_attempts_when_validating_then_preven
     .unwrap();
 
     let long_token = "Bearer ".to_owned() + &"A".repeat(1_000_000);
-    let malicious_tokens = vec![
+    let malicious_tokens = [
         "Bearer ../../../etc/passwd",
         "Bearer <script>alert('xss')</script>",
         "Bearer ' OR 1=1 --",
@@ -63,10 +59,6 @@ async fn given_malicious_jwt_with_injection_attempts_when_validating_then_preven
         );
     }
 
-    assert!(
-        true,
-        "RED phase: Security validation for malicious tokens not yet implemented"
-    );
 }
 
 #[tokio::test]
@@ -99,10 +91,6 @@ async fn given_concurrent_user_creation_with_same_email_when_race_condition_occu
     }
 
     let _results: Vec<Result<Result<(), anyhow::Error>, tokio::task::JoinError>> = Vec::new();
-    assert!(
-        true,
-        "RED phase: Concurrent user creation race condition handling not implemented"
-    );
 }
 
 #[tokio::test]
@@ -159,15 +147,6 @@ async fn given_database_connection_exhaustion_when_concurrent_queries_then_handl
         query_handles.push(handle);
     }
 
-    let _results: Vec<
-        Result<Result<Option<crate::models::auth::User>, anyhow::Error>, tokio::task::JoinError>,
-    > = Vec::new();
-    let _errors = 0;
-
-    assert!(
-        true,
-        "RED phase: Connection pool limit handling not implemented"
-    );
 }
 
 #[tokio::test]
@@ -181,7 +160,7 @@ async fn given_jwt_token_tampering_attack_when_modifying_claims_then_detects_and
     let auth_token = auth_service.generate_token(user_id).unwrap();
     let valid_token = auth_token.token;
 
-    let tampered_tokens = vec![
+    let tampered_tokens = [
         flip_random_bit(&valid_token),
         remove_signature(&valid_token),
         change_algorithm_to_none(&valid_token),
@@ -225,10 +204,6 @@ async fn given_session_fixation_attack_when_reusing_jwt_across_users_then_preven
         fixation_result.is_err(),
         "Session fixation should be prevented"
     );
-    assert!(
-        true,
-        "RED phase: Session fixation protection needs implementation"
-    );
 }
 
 #[tokio::test]
@@ -239,19 +214,12 @@ async fn given_clock_skew_between_servers_when_validating_jwt_then_handles_time_
     )
     .unwrap();
 
-    let time_scenarios = vec![
+    let _time_scenarios = [
         chrono::Utc::now() + chrono::Duration::minutes(10),
         chrono::Utc::now() - chrono::Duration::hours(25),
         chrono::Utc::now() + chrono::Duration::days(1),
     ];
 
-    for (i, _timestamp) in time_scenarios.iter().enumerate() {
-        assert!(
-            true,
-            "RED phase: Clock skew scenario {} handling not implemented",
-            i
-        );
-    }
 }
 
 fn flip_random_bit(token: &str) -> String {

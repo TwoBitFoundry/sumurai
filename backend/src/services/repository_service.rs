@@ -11,17 +11,16 @@ use aes_gcm::{
 };
 use anyhow::Result;
 use async_trait::async_trait;
-use chrono::Datelike;
 use sqlx::PgPool;
 use uuid::Uuid;
 
 #[async_trait]
 #[cfg_attr(test, mockall::automock)]
+#[allow(dead_code)]
 pub trait DatabaseRepository: Send + Sync {
     async fn create_user(&self, user: &User) -> Result<()>;
     async fn get_user_by_email(&self, email: &str) -> Result<Option<User>>;
     async fn get_user_by_id(&self, user_id: &Uuid) -> Result<Option<User>>;
-    async fn delete_user(&self, user_id: &Uuid) -> Result<()>;
     async fn mark_onboarding_complete(&self, user_id: &Uuid) -> Result<()>;
     async fn update_user_provider(&self, user_id: &Uuid, provider: &str) -> Result<()>;
 
@@ -42,21 +41,8 @@ pub trait DatabaseRepository: Send + Sync {
         user_id: &Uuid,
     ) -> Result<std::collections::HashMap<Uuid, i64>>;
 
-    async fn get_spending_summary_for_user(&self, user_id: &Uuid) -> Result<Vec<Transaction>>;
-    async fn get_category_breakdown_for_user(
-        &self,
-        user_id: &Uuid,
-        period: &str,
-    ) -> Result<Vec<Transaction>>;
-
-    async fn get_merchant_analytics_for_user(&self, user_id: &Uuid) -> Result<Vec<Transaction>>;
-
     async fn upsert_account(&self, account: &Account) -> Result<()>;
     async fn upsert_transaction(&self, transaction: &Transaction) -> Result<()>;
-    async fn get_account_by_plaid_id(&self, provider_account_id: &str) -> Result<Option<Account>>;
-    async fn get_transactions(&self, limit: Option<i64>) -> Result<Vec<Transaction>>;
-    async fn store_provider_credentials(&self, item_id: &str, access_token: &str) -> Result<Uuid>;
-    async fn get_provider_credentials(&self, item_id: &str) -> Result<Option<PlaidCredentials>>;
 
     async fn store_provider_credentials_for_user(
         &self,
@@ -80,10 +66,6 @@ pub trait DatabaseRepository: Send + Sync {
         &self,
         connection_id: &Uuid,
         user_id: &Uuid,
-    ) -> Result<Option<ProviderConnection>>;
-    async fn get_provider_connection_by_item(
-        &self,
-        item_id: &str,
     ) -> Result<Option<ProviderConnection>>;
     async fn delete_provider_transactions(&self, item_id: &str) -> Result<i32>;
     async fn delete_provider_accounts(&self, item_id: &str) -> Result<i32>;
@@ -261,36 +243,6 @@ impl DatabaseRepository for PostgresRepository {
         Ok(row.map(Self::map_user_row))
     }
 
-    async fn delete_user(&self, user_id: &Uuid) -> Result<()> {
-        let mut tx = self.pool.begin().await?;
-
-        let _session_count: (i64,) = (0,);
-
-        let _account_count: (i64,) =
-            sqlx::query_as("SELECT COUNT(*) FROM accounts WHERE user_id = $1")
-                .bind(user_id)
-                .fetch_one(&mut *tx)
-                .await?;
-
-        let _transaction_count: (i64,) =
-            sqlx::query_as("SELECT COUNT(*) FROM transactions WHERE user_id = $1")
-                .bind(user_id)
-                .fetch_one(&mut *tx)
-                .await?;
-
-        let result = sqlx::query("DELETE FROM users WHERE id = $1")
-            .bind(user_id)
-            .execute(&mut *tx)
-            .await?;
-
-        if result.rows_affected() == 0 {
-            return Err(anyhow::anyhow!("User not found"));
-        }
-
-        tx.commit().await?;
-        Ok(())
-    }
-
     async fn mark_onboarding_complete(&self, user_id: &Uuid) -> Result<()> {
         sqlx::query(
             r#"
@@ -402,169 +354,6 @@ impl DatabaseRepository for PostgresRepository {
         tx.commit().await?;
 
         Ok(())
-    }
-
-    async fn get_account_by_plaid_id(&self, provider_account_id: &str) -> Result<Option<Account>> {
-        let row = sqlx::query_as::<_, (
-            Uuid,
-            Option<Uuid>,
-            Option<String>,
-            Option<Uuid>,
-            String,
-            String,
-            Option<rust_decimal::Decimal>,
-            Option<String>,
-            Option<String>,
-        )>(
-            "SELECT a.id, a.user_id, a.provider_account_id, a.provider_connection_id, a.name, a.account_type, a.balance_current, a.mask, pc.institution_name \
-             FROM accounts a LEFT JOIN provider_connections pc ON pc.id = a.provider_connection_id \
-             WHERE a.provider_account_id = $1"
-        )
-        .bind(provider_account_id)
-        .fetch_optional(&self.pool)
-        .await?;
-
-        Ok(row.map(
-            |(
-                id,
-                user_id,
-                provider_account_id,
-                provider_connection_id,
-                name,
-                account_type,
-                balance_current,
-                mask,
-                institution_name,
-            )| Account {
-                id,
-                user_id,
-                provider_account_id,
-                provider_connection_id,
-                name,
-                account_type,
-                balance_current,
-                mask,
-                institution_name,
-            },
-        ))
-    }
-
-    async fn get_transactions(&self, limit: Option<i64>) -> Result<Vec<Transaction>> {
-        let limit = limit.unwrap_or(100);
-
-        let rows = sqlx::query_as::<
-            _,
-            (
-                Uuid,
-                Uuid,
-                Option<Uuid>,
-                Option<String>,
-                rust_decimal::Decimal,
-                chrono::NaiveDate,
-                Option<String>,
-                String,
-                String,
-                String,
-                Option<String>,
-                bool,
-                Option<chrono::DateTime<chrono::Utc>>,
-            ),
-        >(
-            r#"
-            SELECT id, account_id, user_id, provider_transaction_id, amount, date,
-                   merchant_name, category_primary, category_detailed,
-                   category_confidence, payment_channel, pending, created_at
-            FROM transactions 
-            ORDER BY date DESC, created_at DESC
-            LIMIT $1
-            "#,
-        )
-        .bind(limit)
-        .fetch_all(&self.pool)
-        .await?;
-
-        Ok(rows
-            .into_iter()
-            .map(
-                |(
-                    id,
-                    account_id,
-                    user_id,
-                    provider_transaction_id,
-                    amount,
-                    date,
-                    merchant_name,
-                    category_primary,
-                    category_detailed,
-                    category_confidence,
-                    payment_channel,
-                    pending,
-                    created_at,
-                )| Transaction {
-                    id,
-                    account_id,
-                    user_id,
-                    provider_account_id: None,
-                    provider_transaction_id,
-                    amount,
-                    date,
-                    merchant_name,
-                    category_primary,
-                    category_detailed,
-                    category_confidence,
-                    payment_channel,
-                    pending,
-                    created_at,
-                },
-            )
-            .collect())
-    }
-
-    async fn store_provider_credentials(&self, item_id: &str, access_token: &str) -> Result<Uuid> {
-        let id = Uuid::new_v4();
-        let encrypted_token = self.encrypt_token(access_token)?;
-
-        sqlx::query(
-            r#"
-            INSERT INTO plaid_credentials (id, item_id, encrypted_access_token)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (item_id)
-            DO UPDATE SET
-                encrypted_access_token = EXCLUDED.encrypted_access_token,
-                updated_at = NOW()
-            "#,
-        )
-        .bind(id)
-        .bind(item_id)
-        .bind(&encrypted_token)
-        .execute(&self.pool)
-        .await?;
-
-        Ok(id)
-    }
-
-    async fn get_provider_credentials(&self, item_id: &str) -> Result<Option<PlaidCredentials>> {
-        let row = sqlx::query_as::<_, (Uuid, String, Vec<u8>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
-            "SELECT id, item_id, encrypted_access_token, created_at, updated_at FROM plaid_credentials WHERE item_id = $1"
-        )
-        .bind(item_id)
-        .fetch_optional(&self.pool)
-        .await?;
-
-        if let Some((id, item_id, encrypted_access_token, created_at, updated_at)) = row {
-            let access_token = self.decrypt_token(&encrypted_access_token)?;
-
-            Ok(Some(PlaidCredentials {
-                id,
-                item_id,
-                user_id: None,
-                access_token,
-                created_at,
-                updated_at,
-            }))
-        } else {
-            Ok(None)
-        }
     }
 
     async fn store_provider_credentials_for_user(
@@ -816,79 +605,6 @@ impl DatabaseRepository for PostgresRepository {
         .await?;
 
         tx.commit().await?;
-
-        Ok(row.map(
-            |(
-                id,
-                user_id,
-                item_id,
-                is_connected,
-                last_sync_at,
-                connected_at,
-                disconnected_at,
-                institution_id,
-                institution_name,
-                institution_logo_url,
-                sync_cursor,
-                transaction_count,
-                account_count,
-                created_at,
-                updated_at,
-            )| ProviderConnection {
-                id,
-                user_id,
-                item_id,
-                is_connected,
-                last_sync_at,
-                connected_at,
-                disconnected_at,
-                institution_id,
-                institution_name,
-                institution_logo_url,
-                sync_cursor,
-                transaction_count,
-                account_count,
-                created_at,
-                updated_at,
-            },
-        ))
-    }
-
-    async fn get_provider_connection_by_item(
-        &self,
-        item_id: &str,
-    ) -> Result<Option<ProviderConnection>> {
-        let row = sqlx::query_as::<
-            _,
-            (
-                Uuid,
-                Uuid,
-                String,
-                bool,
-                Option<chrono::DateTime<chrono::Utc>>,
-                Option<chrono::DateTime<chrono::Utc>>,
-                Option<chrono::DateTime<chrono::Utc>>,
-                Option<String>,
-                Option<String>,
-                Option<String>,
-                Option<String>,
-                i32,
-                i32,
-                Option<chrono::DateTime<chrono::Utc>>,
-                Option<chrono::DateTime<chrono::Utc>>,
-            ),
-        >(
-            r#"
-            SELECT id, user_id, item_id, is_connected, last_sync_at, connected_at,
-                   disconnected_at, institution_id, institution_name, institution_logo_url, sync_cursor,
-                   transaction_count, account_count, created_at, updated_at
-            FROM provider_connections 
-            WHERE item_id = $1
-            "#,
-        )
-        .bind(item_id)
-        .fetch_optional(&self.pool)
-        .await?;
 
         Ok(row.map(
             |(
@@ -1344,44 +1060,6 @@ impl DatabaseRepository for PostgresRepository {
         tx.commit().await?;
 
         Ok(rows.into_iter().collect())
-    }
-
-    async fn get_spending_summary_for_user(&self, user_id: &Uuid) -> Result<Vec<Transaction>> {
-        self.get_transactions_for_user(user_id).await
-    }
-
-    async fn get_category_breakdown_for_user(
-        &self,
-        user_id: &Uuid,
-        period: &str,
-    ) -> Result<Vec<Transaction>> {
-        match period {
-            "current-month" => {
-                let now = chrono::Utc::now().naive_utc().date();
-                let start_date =
-                    chrono::NaiveDate::from_ymd_opt(now.year(), now.month(), 1).unwrap();
-                let end_date = if now.month() == 12 {
-                    chrono::NaiveDate::from_ymd_opt(now.year() + 1, 1, 1)
-                        .unwrap()
-                        .pred_opt()
-                        .unwrap()
-                } else {
-                    chrono::NaiveDate::from_ymd_opt(now.year(), now.month() + 1, 1)
-                        .unwrap()
-                        .pred_opt()
-                        .unwrap()
-                };
-                self.get_transactions_by_date_range_for_user(user_id, start_date, end_date)
-                    .await
-            }
-            _ => self.get_transactions_for_user(user_id).await,
-        }
-    }
-
-    async fn get_merchant_analytics_for_user(&self, user_id: &Uuid) -> Result<Vec<Transaction>> {
-        let mut transactions = self.get_transactions_for_user(user_id).await?;
-        transactions.sort_by(|a, b| b.amount.cmp(&a.amount));
-        Ok(transactions)
     }
 
     async fn get_budgets_for_user(&self, user_id: Uuid) -> Result<Vec<Budget>> {

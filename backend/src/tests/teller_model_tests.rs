@@ -57,7 +57,7 @@ fn given_teller_transaction_json_when_from_teller_then_maps_fields_correctly() {
     assert_eq!(transaction.category_primary, "GENERAL_MERCHANDISE");
     assert_eq!(transaction.category_detailed, "");
     assert_eq!(transaction.category_confidence, "");
-    assert_eq!(transaction.pending, false);
+    assert!(!transaction.pending);
 }
 
 #[test]
@@ -101,7 +101,7 @@ fn given_teller_transaction_with_pending_status_when_from_teller_then_pending_is
 
     let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
-    assert_eq!(transaction.pending, true);
+    assert!(transaction.pending);
 }
 
 #[test]

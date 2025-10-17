@@ -63,7 +63,6 @@ impl AuthService {
         Ok(AuthToken {
             token,
             jwt_id,
-            user_id,
             expires_at: expiration,
         })
     }
@@ -96,7 +95,6 @@ impl AuthService {
         Ok(AuthToken {
             token,
             jwt_id,
-            user_id,
             expires_at: expiration,
         })
     }

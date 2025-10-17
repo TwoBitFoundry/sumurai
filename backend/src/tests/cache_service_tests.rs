@@ -109,28 +109,6 @@ async fn given_bank_accounts_when_caching_with_jwt_scope_then_stores_with_correc
 }
 
 #[tokio::test]
-async fn given_multiple_connections_when_caching_connection_list_then_stores_with_jwt_scope() {
-    let mut cache_service = MockCacheService::new();
-    let jwt_id = "test-jwt-123";
-
-    let connection_ids = vec![Uuid::new_v4(), Uuid::new_v4()];
-
-    cache_service
-        .expect_cache_jwt_scoped_connection_list()
-        .with(
-            mockall::predicate::eq(jwt_id),
-            mockall::predicate::eq(connection_ids.clone()),
-        )
-        .times(1)
-        .returning(|_, _| Box::pin(async { Ok(()) }));
-
-    let result = cache_service
-        .cache_jwt_scoped_connection_list(jwt_id, &connection_ids)
-        .await;
-    assert!(result.is_ok());
-}
-
-#[tokio::test]
 async fn given_bank_connection_disconnect_when_clearing_cache_then_removes_all_connection_data() {
     let mut cache_service = MockCacheService::new();
     let jwt_id = "test-jwt-123";
@@ -266,7 +244,7 @@ async fn given_valid_session_when_checking_validity_then_returns_true() {
 
     let result = cache_service.is_session_valid(jwt_id).await;
     assert!(result.is_ok());
-    assert_eq!(result.unwrap(), true);
+    assert!(result.unwrap());
 }
 
 #[tokio::test]
@@ -282,7 +260,7 @@ async fn given_invalid_session_when_checking_validity_then_returns_false() {
 
     let result = cache_service.is_session_valid(jwt_id).await;
     assert!(result.is_ok());
-    assert_eq!(result.unwrap(), false);
+    assert!(!result.unwrap());
 }
 
 #[tokio::test]
