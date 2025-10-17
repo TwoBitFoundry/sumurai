@@ -54,7 +54,7 @@ impl Account {
             account_type: plaid_acc["type"].as_str().unwrap_or("other").to_string(),
             balance_current: plaid_acc["balances"]["current"]
                 .as_f64()
-                .and_then(|f| Decimal::from_f64_retain(f)),
+                .and_then(Decimal::from_f64_retain),
             mask: plaid_acc["mask"].as_str().map(String::from),
             institution_name: None,
         }

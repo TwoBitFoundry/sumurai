@@ -18,7 +18,6 @@ pub mod providers;
 mod services;
 #[cfg(test)]
 mod tests;
-mod traits;
 mod utils;
 #[cfg(test)]
 pub use tests::test_fixtures;
@@ -49,8 +48,8 @@ use services::repository_service::{DatabaseRepository, PostgresRepository};
 use services::{AnalyticsService, RealPlaidClient};
 use services::{
     AuthService, BudgetService, CacheService, ConnectionService, ExchangeTokenError,
-    LinkTokenError, PlaidService, ProviderSyncError, RedisCache, SyncService, TellerConnectError,
-    TellerSyncError,
+    LinkTokenError, PlaidService, ProviderSyncError, RedisCache, SyncConnectionParams, SyncService,
+    TellerConnectError, TellerSyncError,
 };
 use sqlx::PgPool;
 
@@ -565,10 +564,7 @@ async fn get_authenticated_transactions(
 
                 let account_id_set: std::collections::HashSet<Uuid> =
                     account_ids.into_iter().collect();
-                transactions = transactions
-                    .into_iter()
-                    .filter(|t| account_id_set.contains(&t.account_id))
-                    .collect();
+                transactions.retain(|t| account_id_set.contains(&t.account_id));
             }
 
             if let Some(search) = search.as_ref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
@@ -811,13 +807,17 @@ async fn sync_authenticated_provider_transactions(
         }
     }
 
+    let sync_params = SyncConnectionParams {
+        provider: state.config.get_default_provider(),
+        user_id: &user_id,
+        jwt_id: &auth_context.jwt_id,
+    };
+
     match state
         .connection_service
         .sync_provider_connection(
-            state.config.get_default_provider(),
+            sync_params,
             state.sync_service.as_ref(),
-            &user_id,
-            &auth_context.jwt_id,
             &mut connection,
         )
         .await
@@ -1030,10 +1030,7 @@ async fn get_authenticated_spending_by_date_range(
 
                 let account_id_set: std::collections::HashSet<Uuid> =
                     account_ids.into_iter().collect();
-                transactions = transactions
-                    .into_iter()
-                    .filter(|t| account_id_set.contains(&t.account_id))
-                    .collect();
+                transactions.retain(|t| account_id_set.contains(&t.account_id));
             }
 
             let filtered = state
@@ -1109,10 +1106,7 @@ async fn get_authenticated_category_spending(
 
                 let account_id_set: std::collections::HashSet<Uuid> =
                     account_ids.into_iter().collect();
-                transactions = transactions
-                    .into_iter()
-                    .filter(|t| account_id_set.contains(&t.account_id))
-                    .collect();
+                transactions.retain(|t| account_id_set.contains(&t.account_id));
             }
 
             let categories = state.analytics_service.group_by_category_with_date_range(
@@ -1660,10 +1654,9 @@ async fn get_authenticated_balances_overview(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    let mut latest_map: std::collections::HashMap<
-        String,
-        Vec<(String, Option<String>, String, rust_decimal::Decimal)>,
-    > = std::collections::HashMap::new();
+    type LatestMapValue = (String, Option<String>, String, rust_decimal::Decimal);
+    let mut latest_map: std::collections::HashMap<String, Vec<LatestMapValue>> =
+        std::collections::HashMap::new();
     let mut name_map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
     let mut mixed_currency = false;
     for row in latest_rows.into_iter() {

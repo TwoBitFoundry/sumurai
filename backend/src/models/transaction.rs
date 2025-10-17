@@ -131,33 +131,6 @@ pub struct SyncMetadata {
 }
 
 impl Transaction {
-    #[allow(dead_code)]
-    pub fn new_mock(
-        account_id: Uuid,
-        amount: Decimal,
-        date: NaiveDate,
-        merchant_name: Option<String>,
-        category_primary: String,
-        category_detailed: String,
-    ) -> Self {
-        Self {
-            id: Uuid::new_v4(),
-            account_id,
-            user_id: None,
-            provider_account_id: None,
-            provider_transaction_id: None,
-            amount,
-            date,
-            merchant_name,
-            category_primary,
-            category_detailed,
-            category_confidence: "VERY_HIGH".to_string(),
-            payment_channel: Some("in_store".to_string()),
-            pending: false,
-            created_at: Some(chrono::Utc::now()),
-        }
-    }
-
     pub fn from_teller(
         teller_txn: &serde_json::Value,
         account_id: &Uuid,
@@ -201,7 +174,7 @@ impl Transaction {
     pub fn from_plaid(plaid_txn: &serde_json::Value, account_id: &Uuid) -> Self {
         let amount = plaid_txn["amount"]
             .as_f64()
-            .and_then(|f| Decimal::from_f64_retain(f))
+            .and_then(Decimal::from_f64_retain)
             .unwrap_or(Decimal::ZERO)
             .abs();
 

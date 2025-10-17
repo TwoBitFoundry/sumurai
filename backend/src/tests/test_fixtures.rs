@@ -19,6 +19,7 @@ use crate::services::{
 };
 
 use crate::{create_app, AppState, Config, Router};
+use crate::config::MockEnvironment;
 
 use axum::{
     body::Body,
@@ -31,6 +32,13 @@ use axum::{
 pub struct TestFixtures;
 
 impl TestFixtures {
+    fn create_test_config() -> Config {
+        let mut test_env = MockEnvironment::new();
+        test_env.set("TELLER_ENV", "test");
+        test_env.set("DEFAULT_PROVIDER", "plaid");
+        Config::from_env_provider(&test_env).expect("Failed to create test config")
+    }
+
     pub fn sample_transactions() -> Vec<Transaction> {
         let account_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
         let user_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440001").unwrap();
@@ -167,7 +175,6 @@ impl TestFixtures {
         )]));
         let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
         let analytics_service = Arc::new(AnalyticsService::new());
-        let config = Config::default();
 
         let mut mock_db = MockDatabaseRepository::new();
 
@@ -222,6 +229,7 @@ impl TestFixtures {
             AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap(),
         );
         let budget_service = Arc::new(BudgetService::new());
+        let config = Self::create_test_config();
 
         let state = AppState {
             plaid_service: plaid_service_arc,
@@ -259,7 +267,6 @@ impl TestFixtures {
         )]));
         let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
         let analytics_service = Arc::new(AnalyticsService::new());
-        let config = Config::default();
 
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
 
@@ -298,6 +305,7 @@ impl TestFixtures {
         );
 
         let budget_service = Arc::new(BudgetService::new());
+        let config = Self::create_test_config();
 
         let state = AppState {
             plaid_service: plaid_service_arc,
@@ -336,7 +344,6 @@ impl TestFixtures {
         )]));
         let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
         let analytics_service = Arc::new(AnalyticsService::new());
-        let config = Config::default();
 
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
@@ -352,6 +359,7 @@ impl TestFixtures {
         );
 
         let budget_service = Arc::new(BudgetService::new());
+        let config = Self::create_test_config();
 
         let state = AppState {
             plaid_service: plaid_service_arc,

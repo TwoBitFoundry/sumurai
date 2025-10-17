@@ -7,4 +7,10 @@ cd frontend
 echo "🔍 Running ESLint on staged files..."
 npx lint-staged
 
+# Run backend checks
+cd ../backend
+
+echo "🔍 Running Clippy linting on backend..."
+cargo clippy --all-targets --all-features
+
 echo "✅ Pre-commit checks passed!"

@@ -11,8 +11,8 @@ pub use auth_service::AuthService;
 pub use budget_service::BudgetService;
 pub use cache_service::{CacheService, RedisCache};
 pub use connection_service::{
-    ConnectionService, ExchangeTokenError, LinkTokenError, ProviderSyncError, TellerConnectError,
-    TellerSyncError,
+    ConnectionService, ExchangeTokenError, LinkTokenError, ProviderSyncError, SyncConnectionParams,
+    TellerConnectError, TellerSyncError,
 };
 pub use plaid_service::{PlaidService, RealPlaidClient};
 pub use sync_service::SyncService;

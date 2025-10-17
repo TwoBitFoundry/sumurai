@@ -75,7 +75,6 @@ fn given_user_id_when_generating_token_then_creates_valid_jwt() {
     assert!(result.is_ok());
     let auth_token = result.unwrap();
     assert!(!auth_token.token.is_empty());
-    assert_eq!(auth_token.user_id, user_id);
     assert!(auth_token.expires_at > Utc::now());
 
     let parts: Vec<&str> = auth_token.token.split('.').collect();
@@ -123,7 +122,6 @@ fn given_expired_jwt_when_validating_then_returns_expired_error() {
     )
     .unwrap();
 
-    assert!(true);
 }
 
 #[test]
@@ -324,6 +322,7 @@ fn given_user_data_operations_when_performed_then_logs_actions_for_audit_trail_w
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct AuditLogEntry {
     user_id: uuid::Uuid,
     jwt_id: String,

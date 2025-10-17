@@ -9,19 +9,15 @@ use uuid::Uuid;
 
 const TRANSACTIONS_KEY: &str = "synced_transactions";
 const ACCESS_TOKEN_SUFFIX: &str = "_access_token";
-const ACCOUNT_MAPPING_SUFFIX: &str = "_account_mapping_";
 const SESSION_TOKEN_SUFFIX: &str = "_session_token";
 const BANK_CONNECTION_SUFFIX: &str = "_bank_connection_";
 const BANK_ACCOUNTS_SUFFIX: &str = "_bank_accounts_";
-const BANK_CONNECTIONS_SUFFIX: &str = "_bank_connections";
 const SESSION_VALID_SUFFIX: &str = "_session_valid";
 
 const ACCESS_TOKEN_TTL: u64 = 3600;
 const TRANSACTIONS_TTL: u64 = 1800;
-
 const BANK_CONNECTION_TTL: u64 = 7200;
 const BANK_ACCOUNTS_TTL: u64 = 7200;
-const CONNECTION_LIST_TTL: u64 = 3600;
 
 #[async_trait]
 #[cfg_attr(test, mockall::automock)]
@@ -39,19 +35,12 @@ pub trait CacheService: Send + Sync {
 
     async fn set_jwt_token(&self, jwt_id: &str, token: &str, ttl_seconds: u64) -> Result<()>;
     async fn get_jwt_token(&self, jwt_id: &str) -> Result<Option<String>>;
-    async fn delete_jwt_token(&self, jwt_id: &str) -> Result<()>;
 
     async fn cache_jwt_scoped_bank_connection(
         &self,
         jwt_id: &str,
         cached_connection: &CachedBankConnection,
     ) -> Result<()>;
-
-    async fn get_jwt_scoped_bank_connection(
-        &self,
-        jwt_id: &str,
-        connection_id: Uuid,
-    ) -> Result<Option<CachedBankConnection>>;
 
     async fn cache_jwt_scoped_bank_accounts(
         &self,
@@ -60,30 +49,10 @@ pub trait CacheService: Send + Sync {
         cached_accounts: &CachedBankAccounts,
     ) -> Result<()>;
 
-    async fn get_jwt_scoped_bank_accounts(
-        &self,
-        jwt_id: &str,
-        connection_id: Uuid,
-    ) -> Result<Option<CachedBankAccounts>>;
-
-    async fn cache_jwt_scoped_connection_list(
-        &self,
-        jwt_id: &str,
-        connection_ids: &[Uuid],
-    ) -> Result<()>;
-
-    async fn get_jwt_scoped_connection_list(&self, jwt_id: &str) -> Result<Option<Vec<Uuid>>>;
-
     async fn clear_jwt_scoped_bank_connection_cache(
         &self,
         jwt_id: &str,
         connection_id: Uuid,
-    ) -> Result<()>;
-
-    async fn refresh_jwt_scoped_connections_cache(
-        &self,
-        jwt_id: &str,
-        remaining_connections: &[Uuid],
     ) -> Result<()>;
 
     async fn set_session_valid(&self, jwt_id: &str, ttl_seconds: u64) -> Result<()>;
@@ -136,10 +105,6 @@ impl RedisCache {
         format!("{}{}{}", jwt_id, BANK_ACCOUNTS_SUFFIX, connection_id)
     }
 
-    fn jwt_scoped_connection_list_key(&self, jwt_id: &str) -> String {
-        format!("{}{}", jwt_id, BANK_CONNECTIONS_SUFFIX)
-    }
-
     pub async fn cache_jwt_scoped_bank_connection(
         &self,
         jwt_id: &str,
@@ -151,23 +116,6 @@ impl RedisCache {
         conn.set_ex::<_, _, ()>(&key, &serialized, BANK_CONNECTION_TTL)
             .await?;
         Ok(())
-    }
-
-    pub async fn get_jwt_scoped_bank_connection(
-        &self,
-        jwt_id: &str,
-        connection_id: Uuid,
-    ) -> Result<Option<CachedBankConnection>> {
-        let mut conn = self.connection_manager.clone();
-        let key = self.jwt_scoped_bank_connection_key(jwt_id, connection_id);
-        let result: Option<String> = conn.get(&key).await?;
-        match result {
-            Some(serialized) => {
-                let cached: CachedBankConnection = serde_json::from_str(&serialized)?;
-                Ok(Some(cached))
-            }
-            None => Ok(None),
-        }
     }
 
     pub async fn cache_jwt_scoped_bank_accounts(
@@ -184,49 +132,6 @@ impl RedisCache {
         Ok(())
     }
 
-    pub async fn get_jwt_scoped_bank_accounts(
-        &self,
-        jwt_id: &str,
-        connection_id: Uuid,
-    ) -> Result<Option<CachedBankAccounts>> {
-        let mut conn = self.connection_manager.clone();
-        let key = self.jwt_scoped_bank_accounts_key(jwt_id, connection_id);
-        let result: Option<String> = conn.get(&key).await?;
-        match result {
-            Some(serialized) => {
-                let cached: CachedBankAccounts = serde_json::from_str(&serialized)?;
-                Ok(Some(cached))
-            }
-            None => Ok(None),
-        }
-    }
-
-    pub async fn cache_jwt_scoped_connection_list(
-        &self,
-        jwt_id: &str,
-        connection_ids: &[Uuid],
-    ) -> Result<()> {
-        let mut conn = self.connection_manager.clone();
-        let key = self.jwt_scoped_connection_list_key(jwt_id);
-        let serialized = serde_json::to_string(connection_ids)?;
-        conn.set_ex::<_, _, ()>(&key, &serialized, CONNECTION_LIST_TTL)
-            .await?;
-        Ok(())
-    }
-
-    pub async fn get_jwt_scoped_connection_list(&self, jwt_id: &str) -> Result<Option<Vec<Uuid>>> {
-        let mut conn = self.connection_manager.clone();
-        let key = self.jwt_scoped_connection_list_key(jwt_id);
-        let result: Option<String> = conn.get(&key).await?;
-        match result {
-            Some(serialized) => {
-                let connection_ids: Vec<Uuid> = serde_json::from_str(&serialized)?;
-                Ok(Some(connection_ids))
-            }
-            None => Ok(None),
-        }
-    }
-
     pub async fn clear_jwt_scoped_bank_connection_cache(
         &self,
         jwt_id: &str,
@@ -238,16 +143,6 @@ impl RedisCache {
         self.invalidate_pattern(&connection_pattern).await?;
         self.invalidate_pattern(&accounts_pattern).await?;
 
-        Ok(())
-    }
-
-    pub async fn refresh_jwt_scoped_connections_cache(
-        &self,
-        jwt_id: &str,
-        remaining_connections: &[Uuid],
-    ) -> Result<()> {
-        self.cache_jwt_scoped_connection_list(jwt_id, remaining_connections)
-            .await?;
         Ok(())
     }
 
@@ -339,13 +234,6 @@ impl RedisCache {
         Ok(result)
     }
 
-    pub async fn delete_jwt_token(&self, jwt_id: &str) -> Result<()> {
-        let mut conn = self.connection_manager.clone();
-        let key = self.jwt_session_key(jwt_id);
-        conn.del::<_, ()>(&key).await?;
-        Ok(())
-    }
-
     pub async fn set_session_valid(&self, jwt_id: &str, ttl_seconds: u64) -> Result<()> {
         let mut conn = self.connection_manager.clone();
         let key = self.jwt_valid_key(jwt_id);
@@ -429,25 +317,12 @@ impl CacheService for RedisCache {
         self.get_jwt_token(jwt_id).await
     }
 
-    async fn delete_jwt_token(&self, jwt_id: &str) -> Result<()> {
-        self.delete_jwt_token(jwt_id).await
-    }
-
     async fn cache_jwt_scoped_bank_connection(
         &self,
         jwt_id: &str,
         cached_connection: &CachedBankConnection,
     ) -> Result<()> {
         self.cache_jwt_scoped_bank_connection(jwt_id, cached_connection)
-            .await
-    }
-
-    async fn get_jwt_scoped_bank_connection(
-        &self,
-        jwt_id: &str,
-        connection_id: Uuid,
-    ) -> Result<Option<CachedBankConnection>> {
-        self.get_jwt_scoped_bank_connection(jwt_id, connection_id)
             .await
     }
 
@@ -461,43 +336,12 @@ impl CacheService for RedisCache {
             .await
     }
 
-    async fn get_jwt_scoped_bank_accounts(
-        &self,
-        jwt_id: &str,
-        connection_id: Uuid,
-    ) -> Result<Option<CachedBankAccounts>> {
-        self.get_jwt_scoped_bank_accounts(jwt_id, connection_id)
-            .await
-    }
-
-    async fn cache_jwt_scoped_connection_list(
-        &self,
-        jwt_id: &str,
-        connection_ids: &[Uuid],
-    ) -> Result<()> {
-        self.cache_jwt_scoped_connection_list(jwt_id, connection_ids)
-            .await
-    }
-
-    async fn get_jwt_scoped_connection_list(&self, jwt_id: &str) -> Result<Option<Vec<Uuid>>> {
-        self.get_jwt_scoped_connection_list(jwt_id).await
-    }
-
     async fn clear_jwt_scoped_bank_connection_cache(
         &self,
         jwt_id: &str,
         connection_id: Uuid,
     ) -> Result<()> {
         self.clear_jwt_scoped_bank_connection_cache(jwt_id, connection_id)
-            .await
-    }
-
-    async fn refresh_jwt_scoped_connections_cache(
-        &self,
-        jwt_id: &str,
-        remaining_connections: &[Uuid],
-    ) -> Result<()> {
-        self.refresh_jwt_scoped_connections_cache(jwt_id, remaining_connections)
             .await
     }
 

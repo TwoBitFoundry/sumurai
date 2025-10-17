@@ -23,14 +23,6 @@ pub struct DailySpending {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PeriodComparison {
-    pub current: Decimal,
-    pub previous: Decimal,
-    pub change: Decimal,
-    pub change_percent: Decimal,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct TopMerchant {
     pub name: String,
     pub amount: Decimal,
@@ -39,22 +31,9 @@ pub struct TopMerchant {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct DailyTrend {
-    pub date: String,
-    pub amount: Decimal,
-    pub display_date: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct NetWorthSeriesPoint {
     pub date: String,
     pub value: Decimal,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub struct NetWorthDataPoint {
-    pub date: String,
-    pub net_worth: Decimal,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

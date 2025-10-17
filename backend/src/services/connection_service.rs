@@ -27,6 +27,7 @@ pub struct ConnectionService {
 
 #[derive(Debug)]
 pub enum TellerConnectError {
+    #[allow(dead_code)]
     InvalidProvider(String),
     CredentialStorage(Error),
     ConnectionPersistence(Error),
@@ -64,6 +65,12 @@ pub enum ProviderSyncError {
     AccountLookup(Error),
     TransactionLookup(Error),
     SyncFailure(Error),
+}
+
+pub struct SyncConnectionParams<'a> {
+    pub provider: &'a str,
+    pub user_id: &'a Uuid,
+    pub jwt_id: &'a str,
 }
 
 impl ConnectionService {
@@ -166,7 +173,7 @@ impl ConnectionService {
         self.db_repository
             .store_provider_credentials_for_user(user_id, &item_id, &request.access_token)
             .await
-            .map_err(|e| TellerConnectError::CredentialStorage(e.into()))?;
+            .map_err(TellerConnectError::CredentialStorage)?;
 
         let institution_name = request
             .institution_name
@@ -184,7 +191,7 @@ impl ConnectionService {
         self.db_repository
             .save_provider_connection(&connection)
             .await
-            .map_err(|e| TellerConnectError::ConnectionPersistence(e.into()))?;
+            .map_err(TellerConnectError::ConnectionPersistence)?;
 
         let provider_credentials = ProviderCredentials {
             provider: "teller".to_string(),
@@ -275,7 +282,7 @@ impl ConnectionService {
             .as_ref()
             .create_link_token(user_id)
             .await
-            .map_err(|e| LinkTokenError::ProviderRequest(e))
+            .map_err(LinkTokenError::ProviderRequest)
     }
 
     pub async fn exchange_public_token(
@@ -293,7 +300,7 @@ impl ConnectionService {
             .as_ref()
             .exchange_public_token(public_token)
             .await
-            .map_err(|e| ExchangeTokenError::ExchangeFailed(e))?;
+            .map_err(ExchangeTokenError::ExchangeFailed)?;
 
         let institution_info = match provider.as_ref().get_institution_info(&credentials).await {
             Ok(info) => info,
@@ -374,10 +381,8 @@ impl ConnectionService {
 
     pub async fn sync_provider_connection(
         &self,
-        provider: &str,
+        params: SyncConnectionParams<'_>,
         sync_service: &SyncService,
-        user_id: &Uuid,
-        jwt_id: &str,
         connection: &mut ProviderConnection,
     ) -> Result<SyncTransactionsResponse, ProviderSyncError> {
         let sync_timestamp = Utc::now();
@@ -386,13 +391,13 @@ impl ConnectionService {
 
         let credentials_record = self
             .db_repository
-            .get_provider_credentials_for_user(user_id, &connection.item_id)
+            .get_provider_credentials_for_user(params.user_id, &connection.item_id)
             .await
-            .map_err(|e| ProviderSyncError::CredentialAccess(e.into()))?
+            .map_err(ProviderSyncError::CredentialAccess)?
             .ok_or(ProviderSyncError::CredentialsMissing)?;
 
         let provider_credentials = ProviderCredentials {
-            provider: provider.to_string(),
+            provider: params.provider.to_string(),
             access_token: credentials_record.access_token.clone(),
             item_id: connection.item_id.clone(),
             certificate: None,
@@ -400,24 +405,24 @@ impl ConnectionService {
         };
 
         let provider_impl = self
-            .resolve_provider(provider)
-            .ok_or_else(|| ProviderSyncError::ProviderUnavailable(provider.to_string()))?;
+            .resolve_provider(params.provider)
+            .ok_or_else(|| ProviderSyncError::ProviderUnavailable(params.provider.to_string()))?;
 
         let fetched_accounts = provider_impl
             .as_ref()
             .get_accounts(&provider_credentials)
             .await
-            .map_err(|e| ProviderSyncError::ProviderRequest(e.into()))?;
+            .map_err(ProviderSyncError::ProviderRequest)?;
 
         for mut account in fetched_accounts {
-            account.user_id = Some(*user_id);
+            account.user_id = Some(*params.user_id);
             account.provider_connection_id = Some(connection.id);
 
             if let Err(e) = self.db_repository.upsert_account(&account).await {
                 tracing::warn!(
                     "Failed to persist account {} for user {}: {}",
                     account.provider_account_id.as_deref().unwrap_or("unknown"),
-                    user_id,
+                    params.user_id,
                     e
                 );
             }
@@ -425,26 +430,26 @@ impl ConnectionService {
 
         let db_accounts = self
             .db_repository
-            .get_accounts_for_user(user_id)
+            .get_accounts_for_user(params.user_id)
             .await
-            .map_err(|e| ProviderSyncError::AccountLookup(e.into()))?;
+            .map_err(ProviderSyncError::AccountLookup)?;
 
         let (mut transactions, new_cursor) = sync_service
             .sync_bank_connection_transactions(&provider_credentials, connection, &db_accounts)
             .await
-            .map_err(|e| ProviderSyncError::SyncFailure(e))?;
+            .map_err(ProviderSyncError::SyncFailure)?;
 
         let existing_transactions = self
             .db_repository
-            .get_transactions_for_user(user_id)
+            .get_transactions_for_user(params.user_id)
             .await
-            .map_err(|e| ProviderSyncError::TransactionLookup(e.into()))?;
+            .map_err(ProviderSyncError::TransactionLookup)?;
 
         transactions =
             sync_service.filter_duplicate_transactions(&existing_transactions, &transactions);
 
         for txn in &mut transactions {
-            txn.user_id = Some(*user_id);
+            txn.user_id = Some(*params.user_id);
         }
 
         let mut persisted_transactions = Vec::new();
@@ -454,7 +459,7 @@ impl ConnectionService {
                 tracing::warn!(
                     "Skipping transaction {:?} for user {} because account mapping is missing",
                     transaction.provider_transaction_id,
-                    user_id
+                    params.user_id
                 );
                 continue;
             }
@@ -463,7 +468,7 @@ impl ConnectionService {
                 tracing::warn!(
                     "Failed to persist transaction {:?} for user {}: {}",
                     transaction.provider_transaction_id,
-                    user_id,
+                    params.user_id,
                     e
                 );
             }
@@ -471,7 +476,7 @@ impl ConnectionService {
                 tracing::warn!(
                     "Failed to cache transaction {:?} for user {}: {}",
                     transaction.provider_transaction_id,
-                    user_id,
+                    params.user_id,
                     e
                 );
             }
@@ -483,7 +488,7 @@ impl ConnectionService {
 
         let total_transactions = self
             .db_repository
-            .get_transactions_for_user(user_id)
+            .get_transactions_for_user(params.user_id)
             .await
             .map(|txns| txns.len() as i32)
             .unwrap_or(0);
@@ -501,18 +506,18 @@ impl ConnectionService {
             tracing::warn!(
                 "Failed to update provider connection {} for user {}: {}",
                 connection.id,
-                user_id,
+                params.user_id,
                 e
             );
         }
 
         if let Err(e) = self
-            .complete_sync_with_jwt_cache_update(user_id, jwt_id, connection, &db_accounts)
+            .complete_sync_with_jwt_cache_update(params.user_id, params.jwt_id, connection, &db_accounts)
             .await
         {
             tracing::warn!(
                 "Failed to update JWT-scoped caches after sync for user {}: {}",
-                user_id,
+                params.user_id,
                 e
             );
         }
@@ -544,7 +549,7 @@ impl ConnectionService {
             .db_repository
             .get_provider_credentials_for_user(user_id, &connection.item_id)
             .await
-            .map_err(|e| TellerSyncError::CredentialAccess(e.into()))?
+            .map_err(TellerSyncError::CredentialAccess)?
             .ok_or(TellerSyncError::CredentialsMissing)?;
 
         let provider_credentials = ProviderCredentials {
@@ -565,7 +570,7 @@ impl ConnectionService {
             .as_ref()
             .get_accounts(&provider_credentials)
             .await
-            .map_err(|e| TellerSyncError::ProviderRequest(e.into()))?;
+            .map_err(TellerSyncError::ProviderRequest)?;
 
         for account in &mut fetched_accounts {
             account.user_id = Some(*user_id);
@@ -585,7 +590,7 @@ impl ConnectionService {
             .db_repository
             .get_accounts_for_user(user_id)
             .await
-            .map_err(|e| TellerSyncError::AccountLookup(e.into()))?;
+            .map_err(TellerSyncError::AccountLookup)?;
 
         let accounts_for_connection: Vec<_> = db_accounts
             .iter()
@@ -606,13 +611,13 @@ impl ConnectionService {
             .as_ref()
             .get_transactions(&provider_credentials, sync_start_date, sync_end_date)
             .await
-            .map_err(|e| TellerSyncError::ProviderRequest(e.into()))?;
+            .map_err(TellerSyncError::ProviderRequest)?;
 
         let existing_transactions = self
             .db_repository
             .get_transactions_for_user(user_id)
             .await
-            .map_err(|e| TellerSyncError::TransactionLookup(e.into()))?;
+            .map_err(TellerSyncError::TransactionLookup)?;
 
         let mut existing_ids: HashSet<String> = existing_transactions
             .iter()
@@ -703,7 +708,7 @@ impl ConnectionService {
         self.db_repository
             .save_provider_connection(connection)
             .await
-            .map_err(|e| TellerSyncError::ConnectionPersistence(e.into()))?;
+            .map_err(TellerSyncError::ConnectionPersistence)?;
 
         if let Err(e) = self
             .complete_sync_with_jwt_cache_update(
