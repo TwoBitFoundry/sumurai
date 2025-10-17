@@ -75,9 +75,10 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
       setTopMerchants(Array.isArray(merch) ? merch : [])
       setMonthlyTotals(Array.isArray(monthly) ? monthly : [])
       hasLoadedRef.current = true
-    } catch (e: any) {
+    } catch (error: unknown) {
       if (!ac.signal.aborted) {
-        setError(e?.message || 'Failed to load analytics')
+        const message = error instanceof Error ? error.message : 'Failed to load analytics'
+        setError(message)
       }
     } finally {
       if (!ac.signal.aborted) {

@@ -2,6 +2,7 @@ import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
+import { cn } from '@/ui/primitives'
 
 // Mock the AuthenticatedApp component Accounts tab section
 const mockBanks = [
@@ -54,7 +55,7 @@ const AccountsTabMock = ({
 }) => {
   return (
     <div data-testid="accounts-tab">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className={cn('mb-6', 'flex', 'flex-wrap', 'items-center', 'justify-between', 'gap-3')}>
         <h2>Accounts</h2>
         <button onClick={onAddBank} data-testid="add-bank-button">
           Add account

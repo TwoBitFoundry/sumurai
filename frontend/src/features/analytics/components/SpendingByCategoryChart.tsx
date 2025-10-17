@@ -3,6 +3,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts'
 import { fmtUSD } from '../../../utils/format'
 import { DonutDatum } from '../adapters/chartData'
 import { useTheme } from '../../../context/ThemeContext'
+import { cn } from '@/ui/primitives/utils'
 
 type Props = {
   data: DonutDatum[]
@@ -11,11 +12,22 @@ type Props = {
   setHoveredCategory: (name: string | null) => void
 }
 
+type TooltipItem = { payload?: DonutDatum }
+
+const tooltipFormatter = (
+  value: number | string,
+  _name: string,
+  item: TooltipItem
+): [string, string] => {
+  const numericValue = typeof value === 'number' ? value : Number(value)
+  return [fmtUSD(Number.isFinite(numericValue) ? numericValue : 0), item.payload?.name ?? '']
+}
+
 export const SpendingByCategoryChart: React.FC<Props> = ({ data, total, hoveredCategory, setHoveredCategory }) => {
   const { mode, colors } = useTheme()
   return (
-    <div className="group relative flex items-center justify-center py-2">
-      <div className="relative w-[260px] h-[260px]">
+    <div className={cn('group', 'relative', 'flex', 'items-center', 'justify-center', 'py-2')}>
+      <div className={cn('relative', 'w-[260px]', 'h-[260px]')}>
         {data.length > 0 ? (
           <>
             <ResponsiveContainer width="100%" height="100%">
@@ -66,20 +78,20 @@ export const SpendingByCategoryChart: React.FC<Props> = ({ data, total, hoveredC
                   }}
                   itemStyle={{ color: colors.chart.tooltipText }}
                   labelStyle={{ color: colors.chart.tooltipText }}
-                  formatter={(value: any, _name: any, props: any) => [fmtUSD(Number(value)), props?.payload?.name || '']}
+                  formatter={tooltipFormatter}
                 />
               </PieChart>
             </ResponsiveContainer>
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="text-2xl font-bold text-slate-900 dark:text-slate-50 tracking-tight">{fmtUSD(total)}</div>
+            <div className={cn('absolute', 'inset-0', 'flex', 'items-center', 'justify-center', 'pointer-events-none')}>
+              <div className={cn('text-2xl', 'font-bold', 'text-slate-900', 'dark:text-slate-50', 'tracking-tight')}>{fmtUSD(total)}</div>
             </div>
           </>
         ) : (
-          <div className="flex items-center justify-center h-full">
+          <div className={cn('flex', 'items-center', 'justify-center', 'h-full')}>
             <div className="text-center">
-              <div className="text-6xl mb-2 opacity-30">📊</div>
-              <div className="text-lg font-medium text-slate-600 dark:text-slate-400 mb-1">No transactions found</div>
-              <div className="text-sm text-slate-500 dark:text-slate-500">No transaction data available</div>
+              <div className={cn('text-6xl', 'mb-2', 'opacity-30')}>📊</div>
+              <div className={cn('text-lg', 'font-medium', 'text-slate-600', 'dark:text-slate-400', 'mb-1')}>No transactions found</div>
+              <div className={cn('text-sm', 'text-slate-500', 'dark:text-slate-500')}>No transaction data available</div>
             </div>
           </div>
         )}
@@ -89,4 +101,3 @@ export const SpendingByCategoryChart: React.FC<Props> = ({ data, total, hoveredC
 }
 
 export default SpendingByCategoryChart
-

@@ -1,6 +1,6 @@
 import type { Transaction, TransactionCategory, TransactionLocation } from '../types/api'
 
-interface BackendTransaction {
+export interface BackendTransaction {
   id: string
   date: string
   merchant_name?: string

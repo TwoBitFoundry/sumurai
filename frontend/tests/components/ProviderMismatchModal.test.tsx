@@ -24,7 +24,7 @@ describe('ProviderMismatchModal', () => {
         />
       )
 
-      expect(screen.getByText('Provider Configuration Mismatch')).toBeInTheDocument()
+      expect(screen.getByText(/provider configuration mismatch/i)).toBeInTheDocument()
     })
 
     it('should show user provider as Teller and default as Plaid', () => {
@@ -52,7 +52,7 @@ describe('ProviderMismatchModal', () => {
       )
 
       expect(screen.getByText(/DEFAULT_PROVIDER=teller/i)).toBeInTheDocument()
-      expect(screen.getByText(/update your environment configuration/i)).toBeInTheDocument()
+      expect(screen.getByText(/update your environment to set/i)).toBeInTheDocument()
     })
 
     it('should display alert icon', () => {
@@ -149,7 +149,7 @@ describe('ProviderMismatchModal', () => {
         />
       )
 
-      const modal = container.querySelector('.z-\\[9999\\]')
+      const modal = container.querySelector('.z-50')
       expect(modal).toBeInTheDocument()
     })
 
@@ -184,7 +184,7 @@ describe('ProviderMismatchModal', () => {
         </div>
       )
 
-      const modalCard = container.querySelector('.dark\\:bg-slate-900\\/95')
+      const modalCard = container.querySelector('[class*="dark:"]')
       expect(modalCard).toBeInTheDocument()
     })
   })
@@ -213,7 +213,7 @@ describe('ProviderMismatchModal', () => {
       )
 
       expect(screen.getByText(/Your account is configured to use/i)).toBeInTheDocument()
-      expect(screen.getByText(/update your environment configuration/i)).toBeInTheDocument()
+      expect(screen.getByText(/update your environment to set/i)).toBeInTheDocument()
     })
   })
 

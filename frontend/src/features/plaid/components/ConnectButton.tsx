@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react'
 import type { ButtonHTMLAttributes } from 'react'
+import { cn } from '@/ui/primitives'
 
 interface ConnectButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary'
@@ -23,7 +24,7 @@ const ConnectButton = ({ variant = 'primary', className = '', children, ...props
       className={`${baseClasses} ${variantClasses} ${className}`.trim()}
       {...props}
     >
-      <Plus className="h-4 w-4" />
+      <Plus className={cn('h-4', 'w-4')} />
       <span>{children ?? 'Add account'}</span>
     </button>
   )

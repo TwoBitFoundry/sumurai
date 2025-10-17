@@ -195,7 +195,7 @@ export class ApiClient {
   private static async handleAuthenticationError<T>(
     endpoint: string,
     options: RequestInit,
-    attempt: number
+    _attempt: number
   ): Promise<T> {
     // Don't try to refresh if we're already refreshing
     if (endpoint === '/auth/refresh') {
@@ -215,7 +215,7 @@ export class ApiClient {
       }
 
       return this.makeRequestWithRetry<T>(endpoint, { ...options, headers: newHeaders }, 0)
-    } catch (refreshError) {
+    } catch {
       // Token refresh failed, clear tokens and throw authentication error
       AuthService.clearToken()
       throw new AuthenticationError()
@@ -267,13 +267,14 @@ export class ApiClient {
       switch (response.status) {
         case 400:
           return new ValidationError(errorMessage)
-        case 401:
+        case 401: {
           const authError = new AuthenticationError(errorMessage)
           // Override the default code if we got a specific one
           if (errorCode) {
             authError.code = errorCode
           }
           return authError
+        }
         case 403:
           return new ForbiddenError(errorMessage)
         case 404:

@@ -1,5 +1,3 @@
-import type { IHttpClient } from './boundaries'
-import { FetchHttpClient } from './boundaries'
 import type { Account } from '../types/api'
 import { ApiClient, ApiError } from './ApiClient'
 import { PlaidService } from './PlaidService'

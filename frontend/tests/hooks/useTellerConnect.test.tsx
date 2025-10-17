@@ -20,7 +20,7 @@ describe('useTellerConnect', () => {
 
   afterEach(() => {
     cleanup()
-    // @ts-ignore
+    // @ts-expect-error - test cleanup removing mocked global
     delete globalThis.TellerConnect
   })
 

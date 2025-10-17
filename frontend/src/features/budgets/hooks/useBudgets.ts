@@ -4,7 +4,6 @@ import { BudgetService } from '../../../services/BudgetService'
 import { TransactionService } from '../../../services/TransactionService'
 import { useAccountFilter } from '../../../hooks/useAccountFilter'
 import { optimisticCreate } from '../../../utils/optimistic'
-import { formatCategoryName } from '../../../utils/categories'
 import { BudgetCalculator } from '../../../domain/BudgetCalculator'
 
 export interface BudgetProgressEntry extends Budget {
@@ -99,11 +98,11 @@ export function useBudgets(): UseBudgetsResult {
         setBudgets(list)
         loadedRef.current = true
         setBudgetsReady(true)
-      } catch (e: any) {
+      } catch (error: unknown) {
         setBudgets([])
         loadedRef.current = false
         shouldFetchTransactions = false
-        const status = typeof e?.status === 'number' ? e.status : undefined
+        const status = extractStatus(error)
         if (status === 401) setError('You are not authenticated. Please log in again.')
         else setError('Failed to load budgets.')
       } finally {
@@ -181,15 +180,15 @@ export function useBudgets(): UseBudgetsResult {
     const temp: Budget = { id: generateId(), category, amount }
     try {
       await optimisticCreate(setBudgets, temp, () => BudgetService.createBudget({ category, amount }))
-    } catch (e: any) {
-      const status = typeof e?.status === 'number' ? e.status : undefined
+    } catch (error: unknown) {
+      const status = extractStatus(error)
       const msg = status === 409
         ? `A budget for "${category}" already exists.`
         : status === 401
           ? 'You are not authenticated. Please log in again.'
           : 'Failed to create budget.'
       setError(msg)
-      throw e
+      throw error
     }
   }, [budgets])
 
@@ -200,9 +199,9 @@ export function useBudgets(): UseBudgetsResult {
     try {
       const updated = await BudgetService.updateBudget(id, { amount })
       setBudgets(prev => prev.map(b => (b.id === id ? updated : b)))
-    } catch (e: any) {
+    } catch (error: unknown) {
       setBudgets(snapshot)
-      const status = typeof e?.status === 'number' ? e.status : undefined
+      const status = extractStatus(error)
       const msg = status === 401
         ? 'You are not authenticated. Please log in again.'
         : 'Failed to update budget.'
@@ -216,9 +215,9 @@ export function useBudgets(): UseBudgetsResult {
     setBudgets(prev => prev.filter(b => b.id !== id))
     try {
       await BudgetService.deleteBudget(id)
-    } catch (e: any) {
+    } catch (error: unknown) {
       setBudgets(snapshot)
-      const status = typeof e?.status === 'number' ? e.status : undefined
+      const status = extractStatus(error)
       const msg = status === 401
         ? 'You are not authenticated. Please log in again.'
         : 'Failed to delete budget.'
@@ -262,8 +261,19 @@ function getMonthRange(date: Date): { start: string; end: string } {
 }
 
 function generateId(): string {
-  if (typeof globalThis !== 'undefined' && (globalThis as any).crypto && (globalThis.crypto as any).randomUUID) {
-    return (globalThis.crypto as any).randomUUID();
+  if (typeof globalThis !== 'undefined') {
+    const cryptoObj = (globalThis as { crypto?: Crypto }).crypto
+    if (cryptoObj?.randomUUID) {
+      return cryptoObj.randomUUID()
+    }
   }
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+  return Math.random().toString(36).slice(2) + Date.now().toString(36)
+}
+
+function extractStatus(error: unknown): number | undefined {
+  if (typeof error === 'object' && error !== null && 'status' in error) {
+    const status = (error as { status?: unknown }).status
+    return typeof status === 'number' ? status : undefined
+  }
+  return undefined
 }

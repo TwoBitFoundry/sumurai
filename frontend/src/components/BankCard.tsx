@@ -9,7 +9,7 @@ import {
 import { StatusPill } from "./StatusPill";
 import { AccountRow } from "./AccountRow";
 import { DisconnectModal } from "./DisconnectModal";
-import { Button, MenuDropdown, MenuItem, cn } from "../ui/primitives";
+import { Button, GlassCard, MenuDropdown, MenuItem, cn } from "../ui/primitives";
 
 interface Account {
   id: string;
@@ -35,11 +35,6 @@ interface BankCardProps {
   onDisconnect: (id: string) => Promise<void>;
 }
 
-const BANK_CARD_ACCENT = {
-  gradFrom: "#38bdf8",
-  gradVia: "#0ea5e9",
-} as const;
-
 const relativeTime = (iso?: string) => {
   if (!iso) return "Never";
   const d = new Date(iso);
@@ -64,12 +59,12 @@ const CardMenu: React.FC<{
           size="icon"
           aria-label="more"
         >
-          <MoreVertical className="h-5 w-5" />
+          <MoreVertical className={cn('h-5', 'w-5')} />
         </Button>
       }
     >
       <MenuItem
-        icon={<Unlink className="h-4 w-4" />}
+        icon={<Unlink className={cn('h-4', 'w-4')} />}
         onClick={onDisconnect}
       >
         Disconnect
@@ -83,8 +78,7 @@ export const BankCard: React.FC<BankCardProps> = ({
   onSync,
   onDisconnect,
 }) => {
-  const sectionTitleClass =
-    "mb-3 text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-600 transition-colors duration-300 ease-out dark:text-slate-200";
+  const sectionBadgeClass = "text-xs font-semibold text-slate-600 dark:text-slate-200";
 
   const [expanded, setExpanded] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -93,13 +87,15 @@ export const BankCard: React.FC<BankCardProps> = ({
 
   const Avatar = useMemo(
     () => (
-      <div className="relative inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-white/85 text-[#0ea5e9] shadow-[0_20px_55px_-32px_rgba(14,165,233,0.55)] ring-1 ring-white/55 transition-colors duration-300 ease-out dark:bg-[#1e293b]/85 dark:text-[#38bdf8] dark:shadow-[0_22px_60px_-34px_rgba(56,189,248,0.45)] dark:ring-white/12">
-        <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#0ea5e9]/24 via-transparent to-[#a78bfa]/28 opacity-80" />
-        <span className="pointer-events-none absolute inset-[22%] rounded-2xl bg-white/40 blur-[18px] opacity-60 dark:bg-white/10" />
-        <span className="relative text-sm font-semibold tracking-wide">
-          {bank.short}
-        </span>
-      </div>
+      <GlassCard
+        variant="accent"
+        rounded="lg"
+        padding="sm"
+        withInnerEffects={false}
+        className={cn('grid', 'h-12', 'w-12', 'place-items-center', 'text-sky-500', 'dark:text-sky-300')}
+      >
+        <span className={cn('text-sm', 'font-semibold')}>{bank.short}</span>
+      </GlassCard>
     ),
     [bank.short]
   );
@@ -125,53 +121,50 @@ export const BankCard: React.FC<BankCardProps> = ({
     setShowDisconnectModal(false);
   };
 
+  const renderGroup = (title: string, accounts: Account[]) => (
+    <div key={title} className={cn('space-y-3')}>
+      <span className={sectionBadgeClass}>{title}</span>
+      <div className={cn('grid', 'grid-cols-1', 'gap-3', 'md:grid-cols-2')}>
+        {accounts.map((account) => (
+          <AccountRow account={account} key={account.id} />
+        ))}
+      </div>
+    </div>
+  );
+
   return (
-    <div
-      className="relative overflow-hidden rounded-2xl border border-white/40 bg-white/85 p-6 backdrop-blur-sm transition-colors duration-300 dark:border-white/10 dark:bg-[#111a2f]/75"
+    <GlassCard
+      variant="accent"
+      rounded="xl"
+      padding="lg"
+      withInnerEffects={false}
+      className={cn('space-y-6')}
     >
-      <div
-        className="pointer-events-none absolute inset-0 rounded-2xl"
-        style={{
-          backgroundImage: `linear-gradient(180deg, ${BANK_CARD_ACCENT.gradFrom}20 0%, ${BANK_CARD_ACCENT.gradVia}14 34%, rgba(14,165,233,0.06) 55%, transparent 85%)`,
-        }}
-      />
-      <div className="relative z-10 flex w-full flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-4 min-w-0 flex-1">
-          {Avatar}
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="break-words text-lg font-semibold leading-tight text-[#0f172a] transition-colors duration-300 ease-out dark:text-white md:text-xl">
+      <div className={cn('flex', 'flex-col', 'gap-4', 'md:flex-row', 'md:gap-6')}>
+        <div className={cn('flex-1', 'space-y-3')}>
+          <div className={cn('flex', 'items-center', 'gap-3')}>
+            {Avatar}
+            <div className={cn('min-w-0', 'flex-1', 'space-y-1')}>
+              <h3 className={cn('truncate', 'text-lg', 'font-semibold', 'text-slate-900', 'dark:text-white')}>
                 {bank.name}
               </h3>
-            </div>
-            <div className="mt-1 flex items-center gap-2 text-xs text-[#64748b] transition-colors duration-300 ease-out dark:text-[#94a3b8]">
-              <StatusPill status={bank.status} className="scale-90" />
-              <span>Last sync {relativeTime(bank.lastSync)}</span>
+              <div className={cn('flex', 'items-center', 'gap-2', 'text-xs')}>
+                <StatusPill status={bank.status} />
+                <span className={cn('text-slate-600', 'dark:text-slate-300')}>
+                  Last sync {relativeTime(bank.lastSync)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
-        <div className="flex flex-shrink-0 items-center justify-start gap-2 md:justify-end">
-          <Button
-            onClick={handleSync}
-            disabled={loading}
-            variant="secondary"
-          >
-            <RefreshCw
-              className={cn('h-4 w-4', loading && 'animate-spin')}
-            />
+        <div className={cn('flex', 'items-center', 'gap-2')}>
+          <Button onClick={handleSync} disabled={loading} variant="secondary">
+            <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
             Sync now
           </Button>
-          <Button
-            onClick={() => setExpanded((v) => !v)}
-            variant="secondary"
-          >
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 transition-transform",
-                expanded && "rotate-180"
-              )}
-            />
-            {expanded ? "Hide" : "Show"}
+          <Button onClick={() => setExpanded((v) => !v)} variant="secondary">
+            <ChevronDown className={cn('h-4 w-4', expanded && 'rotate-180')} />
+            {expanded ? 'Hide' : 'Show'}
           </Button>
           <CardMenu onDisconnect={handleDisconnectClick} />
         </div>
@@ -181,9 +174,9 @@ export const BankCard: React.FC<BankCardProps> = ({
         {expanded && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
+            animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="mt-4 space-y-6 border-t border-white/60 pt-4 transition-colors duration-300 ease-out dark:border-white/10"
+            className={cn('space-y-6', 'border-t', 'border-white/40', 'pt-4', 'dark:border-white/10')}
           >
             {(() => {
               const sortedAccounts = bank.accounts
@@ -208,45 +201,16 @@ export const BankCard: React.FC<BankCardProps> = ({
 
               return (
                 <>
-                  {cashAccounts.length > 0 && (
-                    <div>
-                      <h4 className={sectionTitleClass}>Cash</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {cashAccounts.map((account) => (
-                          <AccountRow account={account} key={account.id} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {debtAccounts.length > 0 && (
-                    <div>
-                      <h4 className={sectionTitleClass}>Debt</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {debtAccounts.map((account) => (
-                          <AccountRow account={account} key={account.id} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {investmentAccounts.length > 0 && (
-                    <div>
-                      <h4 className={sectionTitleClass}>Investments</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {investmentAccounts.map((account) => (
-                          <AccountRow account={account} key={account.id} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  {cashAccounts.length > 0 && renderGroup('Cash', cashAccounts)}
+                  {debtAccounts.length > 0 && renderGroup('Debt', debtAccounts)}
+                  {investmentAccounts.length > 0 && renderGroup('Investments', investmentAccounts)}
                 </>
               );
             })()}
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       <DisconnectModal
         isOpen={showDisconnectModal}
         bank={bank}
@@ -254,6 +218,6 @@ export const BankCard: React.FC<BankCardProps> = ({
         onCancel={handleDisconnectCancel}
         loading={disconnectLoading}
       />
-    </div>
+    </GlassCard>
   );
 };

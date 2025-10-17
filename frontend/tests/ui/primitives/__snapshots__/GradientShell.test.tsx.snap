@@ -2,4 +2,4 @@
 
 exports[`GradientShell > variants > renders app variant correctly 1`] = `"relative min-h-screen"`;
 
-exports[`GradientShell > variants > renders auth variant correctly 1`] = `"relative min-h-[calc(100vh-4rem)] overflow-hidden"`;
+exports[`GradientShell > variants > renders auth variant correctly 1`] = `"relative min-h-screen overflow-hidden"`;

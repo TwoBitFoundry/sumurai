@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PlaidService } from '../services/PlaidService'
-import { AccountNormalizer } from '../domain/AccountNormalizer'
+import { AccountNormalizer, type BackendAccount } from '../domain/AccountNormalizer'
+import type { ProviderConnectionStatus } from '../types/api'
 
 type NormalizedAccount = {
   id: string
@@ -56,7 +57,7 @@ export const usePlaidConnections = (options: { enabled?: boolean } = {}): UsePla
     error: null
   })
 
-  const normalizeAccounts = (backendAccounts: any[]): NormalizedAccount[] => {
+  const normalizeAccounts = (backendAccounts: BackendAccount[]): NormalizedAccount[] => {
     return AccountNormalizer.normalize(backendAccounts)
   }
 
@@ -70,7 +71,7 @@ export const usePlaidConnections = (options: { enabled?: boolean } = {}): UsePla
 
       // Fetch all connections for this user (backend now returns array)
       const status = await PlaidService.getStatus()
-      const statusArray = Array.isArray(status.connections) ? status.connections : []
+      const statusArray: ProviderConnectionStatus[] = Array.isArray(status.connections) ? status.connections : []
 
       // Fetch accounts once for all connections
       let allAccounts: NormalizedAccount[] = []
@@ -78,7 +79,7 @@ export const usePlaidConnections = (options: { enabled?: boolean } = {}): UsePla
       if (Array.isArray(statusArray) && statusArray.length > 0) {
         try {
           const backendAccounts = await PlaidService.getAccounts()
-          allAccounts = normalizeAccounts(backendAccounts)
+          allAccounts = normalizeAccounts(backendAccounts as BackendAccount[])
         } catch (accountError) {
           console.warn('Failed to fetch accounts:', accountError)
         }
@@ -88,8 +89,8 @@ export const usePlaidConnections = (options: { enabled?: boolean } = {}): UsePla
       const connections: PlaidConnection[] =
         statusArray.length > 0
           ? statusArray
-              .filter((connStatus: any) => connStatus.is_connected)
-              .map((connStatus: any) => {
+              .filter(connStatus => connStatus.is_connected)
+              .map(connStatus => {
                 const connectionId = connStatus.connection_id ? String(connStatus.connection_id) : null
                 let matchingAccounts: NormalizedAccount[]
 
@@ -124,11 +125,12 @@ export const usePlaidConnections = (options: { enabled?: boolean } = {}): UsePla
         error: null
       }))
       return connections
-    } catch (error) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load connections'
       setState(prev => ({
         ...prev,
         loading: false,
-        error: 'Failed to load connections'
+        error: message
       }))
       return []
     }
@@ -146,7 +148,7 @@ export const usePlaidConnections = (options: { enabled?: boolean } = {}): UsePla
     // Try to fetch accounts for the new connection
     try {
       const backendAccounts = await PlaidService.getAccounts()
-      const normalized = normalizeAccounts(backendAccounts)
+      const normalized = normalizeAccounts(backendAccounts as BackendAccount[])
       const connectionKey = connectionId ? String(connectionId) : null
 
       let matching = connectionKey

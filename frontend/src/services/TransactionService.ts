@@ -1,7 +1,7 @@
 import { ApiClient } from './ApiClient'
 import type { Transaction } from '../types/api'
 import { appendAccountQueryParams } from '../utils/queryParams'
-import { TransactionTransformer } from '../domain/TransactionTransformer'
+import { TransactionTransformer, type BackendTransaction } from '../domain/TransactionTransformer'
 
 export interface TransactionFilters {
   startDate?: string
@@ -34,7 +34,7 @@ export class TransactionService {
       }
     }
 
-    const backendTransactions = await ApiClient.get<any[]>(endpoint)
+    const backendTransactions = await ApiClient.get<BackendTransaction[]>(endpoint)
 
     if (!Array.isArray(backendTransactions)) {
       return []

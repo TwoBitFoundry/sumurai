@@ -74,9 +74,10 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
         : []
       setSeries(normalized)
       hasLoadedRef.current = true
-    } catch (err: any) {
-      if (ac.signal.aborted || err?.name === 'AbortError') return
-      setError(err?.message || 'Failed to load net worth')
+    } catch (error: unknown) {
+      if (ac.signal.aborted || (error instanceof Error && error.name === 'AbortError')) return
+      const message = error instanceof Error ? error.message : 'Failed to load net worth'
+      setError(message)
       setSeries([])
     } finally {
       if (!ac.signal.aborted) {

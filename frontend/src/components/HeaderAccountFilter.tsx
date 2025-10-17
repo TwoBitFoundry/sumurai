@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronDown, ChevronRight, Building2 } from 'lucide-react'
 import { useAccountFilter } from '@/hooks/useAccountFilter'
+import { cn } from '@/ui/primitives'
 
 interface HeaderAccountFilterProps {
   scrolled: boolean
@@ -83,22 +84,42 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
   }, [isOpen])
 
   return (
-    <div className="relative">
+    <div className={cn('relative')}>
       <button
         ref={triggerRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
-        className={`${
+        className={cn(
+          'rounded-xl',
+          'border',
+          'border-slate-200',
+          'dark:border-slate-600',
+          'bg-slate-100/80',
+          'dark:bg-slate-700/80',
+          'backdrop-blur-sm',
+          'hover:bg-slate-200',
+          'dark:hover:bg-slate-600',
+          'transition-all',
+          'duration-200',
+          'flex',
+          'items-center',
+          'gap-2',
           scrolled ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm'
-        } rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-100/80 dark:bg-slate-700/80 backdrop-blur-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-all duration-200 flex items-center gap-2`}
+        )}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
       >
-        <Building2 className="h-4 w-4" />
+        <Building2 className={cn('h-4', 'w-4')} />
         <span>{displayText}</span>
         <ChevronDown
-          className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          className={cn(
+            'h-4',
+            'w-4',
+            'transition-transform',
+            'duration-200',
+            isOpen && 'rotate-180'
+          )}
         />
       </button>
 
@@ -112,21 +133,40 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.96 }}
             transition={{ duration: 0.18, ease: [0.22, 0.61, 0.36, 1] }}
-            className="absolute top-full right-0 mt-2 w-80 max-h-96 flex flex-col rounded-xl border border-slate-200 dark:border-slate-600 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-lg z-50 origin-top"
+            className={cn(
+              'absolute',
+              'top-full',
+              'right-0',
+              'mt-2',
+              'w-80',
+              'max-h-96',
+              'flex',
+              'flex-col',
+              'rounded-xl',
+              'border',
+              'border-slate-200',
+              'dark:border-slate-600',
+              'bg-white/95',
+              'dark:bg-slate-800/95',
+              'backdrop-blur-sm',
+              'shadow-lg',
+              'z-50',
+              'origin-top'
+            )}
           >
-            <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-              <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
+            <div className={cn('p-4', 'border-b', 'border-slate-200', 'dark:border-slate-700')}>
+              <div className={cn('text-sm', 'font-medium', 'text-slate-900', 'dark:text-slate-100')}>
                 Filter by account
               </div>
             </div>
 
-            <div className="overflow-y-auto flex-1 p-4">
+            <div className={cn('overflow-y-auto', 'flex-1', 'p-4')}>
               {loading ? (
-                <div className="text-sm text-slate-600 dark:text-slate-400">
+                <div className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400')}>
                   Loading accounts...
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className={cn('space-y-2')}>
                   {Object.entries(accountsByBank).map(([bankName, accounts]) => {
                     const bankAccountIds = accounts.map(account => account.id)
                     const allBankAccountsSelected = bankAccountIds.every(id => selectedAccountIds.includes(id))
@@ -134,16 +174,39 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                     const isCollapsed = collapsedBanks.has(bankName)
 
                     return (
-                      <div key={bankName} className="border-t border-slate-200 dark:border-slate-700 pt-2 first:border-t-0 first:pt-0">
-                        <div className="flex items-center gap-2">
+                      <div
+                        key={bankName}
+                        className={cn(
+                          'border-t',
+                          'border-slate-200',
+                          'dark:border-slate-700',
+                          'pt-2',
+                          'first:border-t-0',
+                          'first:pt-0'
+                        )}
+                      >
+                        <div className={cn('flex', 'items-center', 'gap-2')}>
                           <button
                             type="button"
                             onClick={() => toggleBankCollapse(bankName)}
-                            className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                            className={cn(
+                              'p-1',
+                              'hover:bg-slate-100',
+                              'dark:hover:bg-slate-700',
+                              'rounded',
+                              'transition-colors'
+                            )}
                             aria-label={isCollapsed ? `Expand ${bankName}` : `Collapse ${bankName}`}
                           >
                             <ChevronRight
-                              className={`h-4 w-4 text-slate-600 dark:text-slate-400 transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+                              className={cn(
+                                'h-4',
+                                'w-4',
+                                'text-slate-600',
+                                'dark:text-slate-400',
+                                'transition-transform',
+                                !isCollapsed && 'rotate-90'
+                              )}
                             />
                           </button>
                           <input
@@ -154,9 +217,25 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                               if (input) input.indeterminate = someBankAccountsSelected && !allBankAccountsSelected
                             }}
                             onChange={() => toggleBank(bankName)}
-                            className="rounded border-slate-300 dark:border-slate-600 text-primary-600 focus:ring-primary-500"
+                            className={cn(
+                              'rounded',
+                              'border-slate-300',
+                              'dark:border-slate-600',
+                              'text-primary-600',
+                              'focus:ring-primary-500'
+                            )}
                           />
-                          <label htmlFor={`bank-${bankName}`} className="text-sm font-medium text-slate-900 dark:text-slate-100 flex-1 cursor-pointer">
+                          <label
+                            htmlFor={`bank-${bankName}`}
+                            className={cn(
+                              'text-sm',
+                              'font-medium',
+                              'text-slate-900',
+                              'dark:text-slate-100',
+                              'flex-1',
+                              'cursor-pointer'
+                            )}
+                          >
                             {bankName}
                           </label>
                         </div>
@@ -169,18 +248,32 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                               animate={{ opacity: 1, height: 'auto' }}
                               exit={{ opacity: 0, height: 0 }}
                               transition={{ duration: 0.18, ease: 'easeOut' }}
-                              className="ml-11 mt-2 space-y-2 overflow-hidden"
+                              className={cn('ml-11', 'mt-2', 'space-y-2', 'overflow-hidden')}
                             >
                               {accounts.map((account) => (
-                                <div key={account.id} className="flex items-center gap-2">
+                                <div key={account.id} className={cn('flex', 'items-center', 'gap-2')}>
                                   <input
                                     type="checkbox"
                                     id={`account-${account.id}`}
                                     checked={selectedAccountIds.includes(account.id)}
                                     onChange={() => toggleAccount(account.id)}
-                                    className="rounded border-slate-300 dark:border-slate-600 text-primary-600 focus:ring-primary-500"
+                                    className={cn(
+                                      'rounded',
+                                      'border-slate-300',
+                                      'dark:border-slate-600',
+                                      'text-primary-600',
+                                      'focus:ring-primary-500'
+                                    )}
                                   />
-                                  <label htmlFor={`account-${account.id}`} className="text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
+                                  <label
+                                    htmlFor={`account-${account.id}`}
+                                    className={cn(
+                                      'text-sm',
+                                      'text-slate-600',
+                                      'dark:text-slate-400',
+                                      'cursor-pointer'
+                                    )}
+                                  >
                                     {account.name}
                                   </label>
                                 </div>
@@ -192,7 +285,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                     )
                   })}
                   {Object.keys(accountsByBank).length === 0 && !loading && (
-                    <div className="text-sm text-slate-600 dark:text-slate-400">
+                    <div className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400')}>
                       No accounts available.
                     </div>
                   )}

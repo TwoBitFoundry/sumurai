@@ -126,24 +126,21 @@ export interface ButtonProps
  *
  * @see {@link ../README.md} for detailed variant documentation
  */
-export function Button({
-  variant,
-  size,
-  loading,
-  disabled,
-  className,
-  children,
-  ...props
-}: ButtonProps) {
-  return (
-    <button
-      disabled={disabled || loading}
-      className={cn(buttonVariants({ variant, size }), className)}
-      {...props}
-    >
-      {children}
-    </button>
-  )
-}
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ variant, size, loading, disabled, className, children, ...props }, ref) => {
+    return (
+      <button
+        ref={ref}
+        disabled={disabled || loading}
+        className={cn(buttonVariants({ variant, size }), className)}
+        {...props}
+      >
+        {children}
+      </button>
+    )
+  }
+)
+
+Button.displayName = 'Button'
 
 export default Button
