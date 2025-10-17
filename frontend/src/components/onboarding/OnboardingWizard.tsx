@@ -226,123 +226,141 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
 
   return (
     <GradientShell variant="auth">
-      <div className={cn('flex w-full max-w-6xl flex-col gap-8')}>
-        {onLogout && <AppHeader onLogout={onLogout} variant="onboarding" />}
-        <GlassCard
-          variant="auth"
-          rounded="default"
-          padding="lg"
-          withInnerEffects={false}
-          containerClassName={cn(
-            'relative w-full overflow-hidden',
-            'animate-[fadeSlideUp_400ms_ease-out]'
-          )}
-          className={cn('flex flex-col gap-8 lg:gap-10')}
-          beforeContent={(
-            <div
-              className={cn(
-                'pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] z-0'
-              )}
-            >
-              <div
-                className={cn(
-                  'absolute inset-0 rounded-[inherit]',
-                  'ring-1 ring-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-1px_0_rgba(15,23,42,0.12)]',
-                  'transition-colors duration-500 ease-out',
-                  'dark:ring-white/10',
-                  'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(2,6,23,0.45)]'
-                )}
-              />
-              <div
-                className={cn(
-                  'absolute inset-0 rounded-[inherit]',
-                  'bg-[radial-gradient(120%_120%_at_14%_-8%,rgba(255,255,255,0.38)_0%,rgba(255,255,255,0.12)_42%,transparent_68%)]',
-                  'opacity-80',
-                  'transition-opacity duration-500 ease-out',
-                  'dark:bg-[radial-gradient(120%_120%_at_16%_-10%,rgba(148,163,184,0.16)_0%,rgba(15,23,42,0.2)_38%,transparent_66%)]'
-                )}
-              />
-              <div
-                className={cn(
-                  'absolute inset-0 rounded-[inherit]',
-                  'bg-[radial-gradient(132%_160%_at_82%_118%,rgba(14,165,233,0.22)_0%,rgba(56,189,248,0.18)_28%,rgba(167,139,250,0.22)_56%,rgba(251,191,36,0.2)_76%,transparent_88%)]',
-                  'opacity-75',
-                  'transition-opacity duration-500 ease-out',
-                  'dark:bg-[radial-gradient(136%_160%_at_86%_122%,rgba(56,189,248,0.35)_0%,rgba(167,139,250,0.32)_48%,rgba(248,113,113,0.28)_68%,transparent_88%)]'
-                )}
-              />
-              <div className={cn('absolute -left-24 top-16 h-60 w-60 rounded-full bg-sky-200/25 blur-3xl', 'dark:bg-sky-500/25')} />
-              <div className={cn('absolute -right-28 bottom-12 h-56 w-56 rounded-full bg-violet-200/25 blur-3xl', 'dark:bg-violet-500/30')} />
-            </div>
+      <div className={cn('relative flex w-full justify-center')}>
+        {onLogout && (
+          <div
+            className={cn('pointer-events-auto absolute inset-x-0 top-0 z-20')}
+          >
+            <AppHeader onLogout={onLogout} variant="onboarding" />
+          </div>
+        )}
+
+        <div
+          className={cn(
+            'flex w-full justify-center',
+            'px-4 pb-12',
+            'sm:px-6 sm:pb-16',
+            onLogout ? 'pt-24 sm:pt-32' : 'pt-12 sm:pt-16'
           )}
         >
-          <div className={cn('relative z-10 flex flex-col gap-8 lg:gap-10')}>
-            <ol
-              className={cn('absolute right-8 top-6', 'flex items-center gap-3')}
-              aria-label="Onboarding steps"
-            >
-              {stepIndicator}
-            </ol>
-
-            <div
-              ref={stepContainerRef}
-              style={baselineHeight ? { minHeight: baselineHeight } : undefined}
-              className={cn(
-                'flex-1',
-                'pt-4',
-                'transition-[min-height] duration-500 ease-out'
+          <div className={cn('w-full max-w-6xl')}>
+            <GlassCard
+              variant="auth"
+              rounded="default"
+              padding="lg"
+              withInnerEffects={false}
+              containerClassName={cn(
+                'relative w-full overflow-hidden',
+                'animate-[fadeSlideUp_400ms_ease-out]'
               )}
-            >
-              {renderCurrentStep()}
-            </div>
-
-            <div
-              className={cn(
-                'flex flex-col items-start justify-between gap-3',
-                'sm:flex-row sm:items-center',
-                'animate-[fadeSlideUp_400ms_ease-out_200ms_backwards]'
-              )}
-            >
-              <p className={cn('text-xs text-slate-500 transition-colors duration-300 ease-out', 'dark:text-slate-300')}>
-                {providerContent.securityNote}
-              </p>
-
-              <div className={cn('flex flex-wrap items-center gap-3')}>
-                {canGoBack && (
-                  <Button
-                    variant="ghost"
-                    size="md"
-                    onClick={goToPrevious}
-                    className={cn('px-5')}
-                  >
-                    Back
-                  </Button>
-                )}
-
-                {currentStep === 'connectAccount' && (
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    onClick={handleSkip}
-                    className={cn('px-5')}
-                  >
-                    Skip for now
-                  </Button>
-                )}
-
-                <Button
-                  variant={connectionFlow.isConnected && isLastStep ? 'success' : 'connect'}
-                  size="lg"
-                  onClick={handleNext}
-                  disabled={!canProceed()}
-                  className={cn('px-6')}
+              className={cn('flex flex-col gap-8 lg:gap-10')}
+              beforeContent={(
+                <div
+                  className={cn(
+                    'pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] z-0'
+                  )}
                 >
-                  {isLastStep && connectionFlow.isConnected ? 'Get started' : 'Continue'}
-                </Button>
+                  <div
+                    className={cn(
+                      'absolute inset-0 rounded-[inherit]',
+                      'ring-1 ring-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-1px_0_rgba(15,23,42,0.12)]',
+                      'transition-colors duration-500 ease-out',
+                      'dark:ring-white/10',
+                      'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(2,6,23,0.45)]'
+                    )}
+                  />
+                  <div
+                    className={cn(
+                      'absolute inset-0 rounded-[inherit]',
+                      'bg-[radial-gradient(120%_120%_at_14%_-8%,rgba(255,255,255,0.38)_0%,rgba(255,255,255,0.12)_42%,transparent_68%)]',
+                      'opacity-80',
+                      'transition-opacity duration-500 ease-out',
+                      'dark:bg-[radial-gradient(120%_120%_at_16%_-10%,rgba(148,163,184,0.16)_0%,rgba(15,23,42,0.2)_38%,transparent_66%)]'
+                    )}
+                  />
+                  <div
+                    className={cn(
+                      'absolute inset-0 rounded-[inherit]',
+                      'bg-[radial-gradient(132%_160%_at_82%_118%,rgba(14,165,233,0.22)_0%,rgba(56,189,248,0.18)_28%,rgba(167,139,250,0.22)_56%,rgba(251,191,36,0.2)_76%,transparent_88%)]',
+                      'opacity-75',
+                      'transition-opacity duration-500 ease-out',
+                      'dark:bg-[radial-gradient(136%_160%_at_86%_122%,rgba(56,189,248,0.35)_0%,rgba(167,139,250,0.32)_48%,rgba(248,113,113,0.28)_68%,transparent_88%)]'
+                    )}
+                  />
+                  <div className={cn('absolute -left-24 top-16 h-60 w-60 rounded-full bg-sky-200/25 blur-3xl', 'dark:bg-sky-500/25')} />
+                  <div className={cn('absolute -right-28 bottom-12 h-56 w-56 rounded-full bg-violet-200/25 blur-3xl', 'dark:bg-violet-500/30')} />
+                </div>
+              )}
+            >
+              <div className={cn('relative z-10 flex flex-col gap-8 lg:gap-10')}>
+                <ol
+                  className={cn('absolute right-8 top-6', 'flex items-center gap-3')}
+                  aria-label="Onboarding steps"
+                >
+                  {stepIndicator}
+                </ol>
+
+                <div
+                  ref={stepContainerRef}
+                  style={baselineHeight ? { minHeight: baselineHeight } : undefined}
+                  className={cn(
+                    'flex-1',
+                    'pt-4',
+                    'transition-[min-height] duration-500 ease-out'
+                  )}
+                >
+                  {renderCurrentStep()}
+                </div>
+
+                <div
+                  className={cn(
+                    'flex flex-col items-start justify-between gap-3',
+                    'sm:flex-row sm:items-center',
+                    'animate-[fadeSlideUp_400ms_ease-out_200ms_backwards]'
+                  )}
+                >
+                  <p className={cn('text-xs text-slate-500 transition-colors duration-300 ease-out', 'dark:text-slate-300')}>
+                    {providerContent.securityNote}
+                  </p>
+
+                  <div className={cn('flex flex-wrap items-center gap-3')}>
+                    {canGoBack && (
+                      <Button
+                        variant="ghost"
+                        size="md"
+                        onClick={goToPrevious}
+                        className={cn('px-5')}
+                      >
+                        Back
+                      </Button>
+                    )}
+
+                    {currentStep === 'connectAccount' && (
+                      <Button
+                        variant="secondary"
+                        size="md"
+                        onClick={handleSkip}
+                        className={cn('px-5')}
+                      >
+                        Skip for now
+                      </Button>
+                    )}
+
+                    <Button
+                      variant={connectionFlow.isConnected && isLastStep ? 'success' : 'connect'}
+                      size="lg"
+                      onClick={handleNext}
+                      disabled={!canProceed()}
+                      className={cn('px-6')}
+                    >
+                      {isLastStep && connectionFlow.isConnected ? 'Get started' : 'Continue'}
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
+            </GlassCard>
           </div>
-        </GlassCard>
+        </div>
       </div>
     </GradientShell>
   )
