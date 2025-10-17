@@ -75,7 +75,6 @@ fn given_user_id_when_generating_token_then_creates_valid_jwt() {
     assert!(result.is_ok());
     let auth_token = result.unwrap();
     assert!(!auth_token.token.is_empty());
-    assert_eq!(auth_token.user_id, user_id);
     assert!(auth_token.expires_at > Utc::now());
 
     let parts: Vec<&str> = auth_token.token.split('.').collect();

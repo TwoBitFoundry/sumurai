@@ -18,7 +18,6 @@ pub mod providers;
 mod services;
 #[cfg(test)]
 mod tests;
-mod traits;
 mod utils;
 #[cfg(test)]
 pub use tests::test_fixtures;

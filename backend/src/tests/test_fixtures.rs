@@ -167,7 +167,6 @@ impl TestFixtures {
         )]));
         let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
         let analytics_service = Arc::new(AnalyticsService::new());
-        let config = Config::default();
 
         let mut mock_db = MockDatabaseRepository::new();
 
@@ -222,6 +221,9 @@ impl TestFixtures {
             AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap(),
         );
         let budget_service = Arc::new(BudgetService::new());
+        let config = Config::from_env().ok().unwrap_or_else(|| {
+            Config::from_env_provider(&crate::config::SystemEnvironment).unwrap()
+        });
 
         let state = AppState {
             plaid_service: plaid_service_arc,
@@ -259,7 +261,6 @@ impl TestFixtures {
         )]));
         let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
         let analytics_service = Arc::new(AnalyticsService::new());
-        let config = Config::default();
 
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
 
@@ -298,6 +299,9 @@ impl TestFixtures {
         );
 
         let budget_service = Arc::new(BudgetService::new());
+        let config = Config::from_env().ok().unwrap_or_else(|| {
+            Config::from_env_provider(&crate::config::SystemEnvironment).unwrap()
+        });
 
         let state = AppState {
             plaid_service: plaid_service_arc,
@@ -336,7 +340,6 @@ impl TestFixtures {
         )]));
         let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
         let analytics_service = Arc::new(AnalyticsService::new());
-        let config = Config::default();
 
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
@@ -352,6 +355,9 @@ impl TestFixtures {
         );
 
         let budget_service = Arc::new(BudgetService::new());
+        let config = Config::from_env().ok().unwrap_or_else(|| {
+            Config::from_env_provider(&crate::config::SystemEnvironment).unwrap()
+        });
 
         let state = AppState {
             plaid_service: plaid_service_arc,

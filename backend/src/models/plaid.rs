@@ -72,7 +72,6 @@ impl ProviderConnection {
         }
     }
 
-    #[allow(dead_code)]
     pub fn mark_connected(&mut self, institution_name: &str) {
         self.is_connected = true;
         self.connected_at = Some(Utc::now());
@@ -81,7 +80,6 @@ impl ProviderConnection {
         self.updated_at = Some(Utc::now());
     }
 
-    #[allow(dead_code)]
     pub fn mark_disconnected(&mut self) {
         self.is_connected = false;
         self.disconnected_at = Some(Utc::now());
@@ -91,7 +89,6 @@ impl ProviderConnection {
         self.updated_at = Some(Utc::now());
     }
 
-    #[allow(dead_code)]
     pub fn update_sync_info(&mut self, transaction_count: i32, account_count: i32) {
         self.last_sync_at = Some(Utc::now());
         self.transaction_count = transaction_count;
@@ -99,7 +96,6 @@ impl ProviderConnection {
         self.updated_at = Some(Utc::now());
     }
 
-    #[allow(dead_code)]
     pub fn update_sync_cursor(
         &mut self,
         sync_cursor: String,
