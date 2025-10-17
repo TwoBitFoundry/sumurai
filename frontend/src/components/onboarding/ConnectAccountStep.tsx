@@ -80,7 +80,14 @@ function FeatureCard({
       variant="accent"
       rounded="lg"
       padding="md"
-      className={cn('flex h-full flex-col', 'items-center gap-3', 'text-center')}
+      withInnerEffects={false}
+      containerClassName={cn(
+        'group flex h-full flex-col items-center justify-start rounded-2xl border border-slate-200/70 bg-white/85 px-4 py-4 text-center',
+        'shadow-[0_20px_45px_-30px_rgba(15,23,42,0.38)] transition-all duration-200 ease-out',
+        'hover:-translate-y-0.5 hover:shadow-[0_32px_70px_-38px_rgba(14,165,233,0.45)]',
+        'dark:border-slate-700/60 dark:bg-[#0f172a]/85 dark:shadow-[0_28px_60px_-32px_rgba(2,6,23,0.65)]'
+      )}
+      className={cn('flex h-full flex-col items-center gap-3 text-center')}
     >
       <IconBurst
         gradient={palette.gradient}
@@ -107,7 +114,14 @@ function HighlightCard({
       variant="default"
       rounded="lg"
       padding="md"
-      className={cn('flex', 'h-full', 'items-start', 'gap-4')}
+      withInnerEffects={false}
+      containerClassName={cn(
+        'group relative flex h-full items-start gap-4 overflow-hidden rounded-[1.6rem] border border-slate-200/70 bg-white/85 p-4',
+        'shadow-[0_24px_60px_-36px_rgba(15,23,42,0.45)] transition-all duration-200 ease-out',
+        'hover:-translate-y-0.5 hover:shadow-[0_34px_80px_-42px_rgba(14,165,233,0.45)]',
+        'dark:border-slate-700/60 dark:bg-[#0f172a]/85 dark:shadow-[0_30px_72px_-38px_rgba(2,6,23,0.7)]'
+      )}
+      className={cn('flex h-full items-start gap-4')}
     >
       <IconBurst
         gradient={palette.gradient}
@@ -170,34 +184,34 @@ export function ConnectAccountStep({
   const disablePrimaryAction = providerLoading || missingApplicationId
 
   return (
-    <div className={cn('grid', 'items-start', 'gap-8', 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]', 'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]')}>
-      <div className={cn('flex', 'flex-col', 'gap-8')}>
-        <div className={cn('flex', 'flex-col', 'gap-5')}>
+    <div className={cn('grid items-stretch gap-8', 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]', 'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]')}>
+      <div className={cn('flex flex-col gap-8')}>
+        <div className={cn('flex flex-col gap-5')}>
           <Badge
             variant="feature"
             size="sm"
-            className={cn('tracking-[0.3em]', content.eyebrow.backgroundClassName, content.eyebrow.textClassName)}
+            className={cn('w-fit tracking-[0.3em]', content.eyebrow.backgroundClassName, content.eyebrow.textClassName)}
           >
             {content.eyebrow.text}
           </Badge>
-          <div className={cn('flex', 'flex-col', 'gap-3')}>
-            <h1 className={cn('text-3xl', 'font-bold', 'text-slate-900', 'dark:text-white', 'md:text-[2.6rem]')}>
+          <div className={cn('space-y-3')}>
+            <h1 className={cn('text-3xl font-bold tracking-tight text-slate-900 transition-colors duration-300 ease-out dark:text-white md:text-[2.6rem]')}>
               {content.heroTitle}
             </h1>
-            <p className={cn('text-base', 'leading-relaxed', 'text-slate-600', 'dark:text-slate-300')}>
+            <p className={cn('text-base leading-relaxed text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300')}>
               {content.heroDescription}
             </p>
           </div>
         </div>
 
         {statusMessages.length > 0 && (
-          <div className={cn('flex', 'flex-col', 'gap-3')}>
+          <div className={cn('flex flex-col gap-3')}>
             {statusMessages.map((status, index) => (
               <Alert
                 key={`${status.tone}-${index}`}
                 variant={statusVariantMap[status.tone]}
                 tone="subtle"
-                className={cn('flex', 'flex-col', 'gap-2')}
+                className={cn('flex flex-col gap-2 rounded-[1.6rem] border-2 border-white/40 bg-white/65 backdrop-blur-sm', 'dark:border-white/10 dark:bg-white/10')}
               >
                 <p className="font-semibold">{status.text}</p>
                 {status.action && status.actionLabel && (
@@ -205,7 +219,7 @@ export function ConnectAccountStep({
                     variant="ghost"
                     size="sm"
                     onClick={() => status.action?.()}
-                    className={cn('self-start', 'px-3', 'py-1', 'text-xs')}
+                    className={cn('self-start px-3 py-1 text-xs')}
                   >
                     {status.actionLabel}
                   </Button>
@@ -216,34 +230,40 @@ export function ConnectAccountStep({
         )}
 
         {error && (
-          <Alert variant="error" className={cn('flex', 'flex-col', 'gap-1')}>
+          <Alert
+            variant="error"
+            className={cn(
+              'flex flex-col gap-1 rounded-[1.6rem] border-2 border-red-200/70 bg-red-50/85 text-red-700 shadow-[0_24px_60px_-36px_rgba(248,113,113,0.45)]',
+              'dark:border-red-500/45 dark:bg-red-900/25 dark:text-red-200'
+            )}
+          >
             <p className="font-semibold">Connection failed</p>
             <p className="text-xs">{error}</p>
           </Alert>
         )}
 
-        <div className={cn('grid', 'gap-3', 'sm:grid-cols-3')}>
+        <div className={cn('grid gap-3 sm:grid-cols-3')}>
           {content.features.map(feature => (
             <FeatureCard key={feature.title} {...feature} />
           ))}
         </div>
       </div>
 
-      <div className={cn('flex', 'flex-col', 'gap-4')}>
-        <div className={cn('flex', 'items-center', 'justify-between')}>
+      <div className={cn('flex flex-col gap-5 self-end')}> 
+        <div className={cn('flex items-center justify-between')}> 
           <Badge
             variant="feature"
             size="sm"
-            className={cn('tracking-[0.3em]', 'text-slate-600', 'dark:text-slate-300')}
+            className={cn('tracking-[0.3em] text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300')}
           >
             {content.highlightLabel}
           </Badge>
-          <span className={cn('text-xs', 'uppercase', 'tracking-[0.3em]', 'text-slate-500', 'dark:text-slate-300')}>
+          <span className={cn('text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 transition-colors duration-300 ease-out dark:text-slate-300')}>
             {content.highlightMeta}
           </span>
         </div>
-        <div className={cn('flex', 'flex-col', 'gap-4')}>
-          <div className={cn('grid', 'auto-rows-fr', 'gap-3', 'sm:grid-cols-2')}>
+        <div className={cn('flex flex-col gap-4')}>
+          <div className={cn('grid auto-rows-fr gap-3 sm:grid-cols-2')}>
             {content.highlights.map(highlight => (
               <HighlightCard key={highlight.title} {...highlight} />
             ))}
@@ -251,17 +271,17 @@ export function ConnectAccountStep({
           <Button
             variant={isConnected ? 'success' : 'connect'}
             size="lg"
-            className="w-full"
+            className={cn('w-full px-6 py-3 text-base')}
             onClick={error ? onRetry : onConnect}
             disabled={connectionInProgress || isConnected || disablePrimaryAction}
           >
             {isConnected ? (
-              <span className={cn('flex', 'items-center', 'gap-2')}>
+              <span className={cn('flex items-center gap-2 text-sm sm:text-base')}>
                 <span aria-hidden="true">✓</span>
                 {institutionName ? `Connected to ${institutionName}` : 'Connected'}
               </span>
             ) : connectionInProgress ? (
-              <span className={cn('flex', 'items-center', 'gap-2', 'text-sm')}>
+              <span className={cn('flex items-center gap-2 text-sm')}>
                 <span
                   className={cn(
                     'inline-flex h-4 w-4',
@@ -275,7 +295,7 @@ export function ConnectAccountStep({
             ) : error ? (
               'Try again'
             ) : (
-              <span className={cn('flex', 'items-center', 'gap-2')}>
+              <span className={cn('flex items-center gap-2 text-sm sm:text-base')}>
                 <span>{content.cta.defaultLabel}</span>
                 {content.cta.badge && (
                   <Badge variant="default" size="xs" className="tracking-[0.2em]">

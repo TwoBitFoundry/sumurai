@@ -64,7 +64,14 @@ function FeatureCard({ icon: Icon, title, copy, palette }: WelcomeFeature) {
       variant="accent"
       rounded="lg"
       padding="md"
-      className={cn('flex h-full flex-col', 'items-center gap-3', 'text-center')}
+      withInnerEffects={false}
+      containerClassName={cn(
+        'group flex h-full flex-col items-center justify-start rounded-2xl border border-slate-200/70 bg-white/80 px-4 py-4 text-center',
+        'shadow-[0_20px_45px_-30px_rgba(15,23,42,0.38)] transition-all duration-200 ease-out',
+        'hover:-translate-y-0.5 hover:shadow-[0_32px_70px_-38px_rgba(14,165,233,0.45)]',
+        'dark:border-slate-700/60 dark:bg-[#0f172a]/80 dark:shadow-[0_28px_60px_-32px_rgba(2,6,23,0.65)]'
+      )}
+      className={cn('flex h-full flex-col items-center gap-3 text-center')}
     >
       <span
         className={cn(
@@ -76,7 +83,8 @@ function FeatureCard({ icon: Icon, title, copy, palette }: WelcomeFeature) {
           'bg-slate-50',
           'dark:bg-slate-900',
           palette.ring,
-          palette.glow
+          palette.glow,
+          'transition-all duration-200 ease-out group-hover:scale-105'
         )}
         aria-hidden="true"
       >
@@ -92,32 +100,46 @@ function FeatureCard({ icon: Icon, title, copy, palette }: WelcomeFeature) {
 
 export function WelcomeStep() {
   return (
-    <div className={cn('grid', 'items-start', 'gap-8', 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]', 'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]')}>
-      <div className={cn('flex', 'flex-col', 'gap-8')}>
-        <div className={cn('flex', 'flex-col', 'gap-5')}>
-          <Badge variant="primary" size="sm">
+    <div className={cn('grid items-start gap-8', 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]', 'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]')}>
+      <div className={cn('flex flex-col gap-8')}>
+        <div className={cn('flex flex-col gap-5')}> 
+          <Badge
+            variant="primary"
+            size="sm"
+            className={cn('w-fit tracking-[0.3em] text-slate-600 transition-colors duration-300 ease-out dark:text-slate-200')}
+          >
             Welcome
           </Badge>
 
-          <div className={cn('flex', 'flex-col', 'gap-3')}>
-            <h1 className={cn('text-3xl', 'font-bold', 'text-slate-900', 'dark:text-white', 'md:text-[2.6rem]')}>
+          <div className={cn('space-y-3')}> 
+            <h1
+              className={cn(
+                'text-3xl font-bold tracking-tight text-slate-900 transition-colors duration-300 ease-out',
+                'md:text-[2.6rem]',
+                'dark:text-white'
+              )}
+            >
               Your new financial hub
             </h1>
-            <p className={cn('text-base', 'leading-relaxed', 'text-slate-600', 'dark:text-slate-300')}>
+            <p className={cn('text-base leading-relaxed text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300')}>
               Bring every account into one secure place, watch budgets stay on track, and turn raw transactions into insights you can actually act on.
             </p>
           </div>
         </div>
 
-        <div className={cn('grid', 'gap-3', 'sm:grid-cols-3')}>
+        <div className={cn('grid gap-3 sm:grid-cols-3')}>
           {welcomeFeatures.map(feature => (
             <FeatureCard key={feature.title} {...feature} />
           ))}
         </div>
       </div>
 
-      <div className={cn('flex', 'flex-col', 'gap-3', 'lg:mt-[2.45rem]')}>
-        <Badge variant="feature" size="sm" className={cn('self-start', 'tracking-[0.3em]', 'text-slate-600', 'dark:text-slate-300')}>
+      <div className={cn('flex flex-col gap-3 lg:mt-[2.45rem]')}>
+        <Badge
+          variant="feature"
+          size="sm"
+          className={cn('self-start tracking-[0.3em] text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300')}
+        >
           Live Dashboard Preview
         </Badge>
         <GlassCard
@@ -125,13 +147,17 @@ export function WelcomeStep() {
           rounded="lg"
           padding="none"
           withInnerEffects={false}
-          containerClassName="aspect-[16/10] sm:aspect-[18/10]"
-          className={cn('h-full', 'overflow-hidden')}
+          containerClassName={cn(
+            'relative aspect-[16/10] overflow-hidden rounded-[1.75rem] border border-slate-200/70 shadow-[0_28px_70px_-36px_rgba(15,23,42,0.55)] sm:aspect-[18/10]',
+            'transition-all duration-300 ease-out',
+            'dark:border-slate-700/60 dark:shadow-[0_34px_80px_-40px_rgba(2,6,23,0.75)]'
+          )}
+          className={cn('h-full w-full overflow-hidden')}
         >
           <img
             src={dashboardHero}
             alt="Sumaura dashboard preview"
-            className={cn('h-full', 'w-full', 'object-cover', 'object-top')}
+            className={cn('h-full w-full object-cover object-top')}
           />
         </GlassCard>
       </div>
