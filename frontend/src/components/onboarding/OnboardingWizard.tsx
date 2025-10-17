@@ -128,18 +128,30 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
     const element = stepContainerRef.current
     if (!element) return
 
-    const updateHeight = (height: number) => {
-      if (height <= 0) return
-      const nextHeight = Math.ceil(height) + 2
+    const measureNaturalHeight = () => {
+      const currentMinHeight = element.style.minHeight
+      element.style.minHeight = ''
+      const naturalHeight = element.getBoundingClientRect().height
+      element.style.minHeight = currentMinHeight
+      return naturalHeight
+    }
+
+    const naturalHeight = measureNaturalHeight()
+    if (naturalHeight > 0) {
+      const nextHeight = Math.ceil(naturalHeight)
       setBaselineHeight(prev => (prev === null ? nextHeight : Math.max(prev, nextHeight)))
     }
 
-    updateHeight(element.getBoundingClientRect().height)
-
     if (typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver(entries => {
-        for (const entry of entries) {
-          updateHeight(entry.contentRect.height)
+      const observer = new ResizeObserver(() => {
+        const naturalHeight = measureNaturalHeight()
+        if (naturalHeight > 0) {
+          const nextHeight = Math.ceil(naturalHeight)
+          setBaselineHeight(prev => {
+            if (prev === null) return nextHeight
+            if (nextHeight > prev) return nextHeight
+            return prev
+          })
         }
       })
 
@@ -288,7 +300,7 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
             >
               <div className={cn('relative z-10 flex flex-col gap-8 lg:gap-10')}>
                 <ol
-                  className={cn('absolute right-8 top-6', 'flex items-center gap-3')}
+                  className={cn('flex items-center gap-3')}
                   aria-label="Onboarding steps"
                 >
                   {stepIndicator}
@@ -299,7 +311,6 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
                   style={baselineHeight ? { minHeight: baselineHeight } : undefined}
                   className={cn(
                     'flex-1',
-                    'pt-4',
                     'transition-[min-height] duration-500 ease-out'
                   )}
                 >

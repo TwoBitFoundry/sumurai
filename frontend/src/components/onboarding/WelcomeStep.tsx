@@ -93,9 +93,9 @@ export function WelcomeStep() {
       <div className={cn('flex flex-col gap-8')}>
         <div className={cn('flex flex-col gap-5')}> 
           <Badge
-            variant="primary"
+            variant="feature"
             size="sm"
-            className={cn('w-fit tracking-[0.3em] text-slate-600 transition-colors duration-300 ease-out dark:text-slate-200')}
+            className={cn('w-fit tracking-[0.3em] bg-sky-100/65 text-sky-600 dark:bg-sky-500/15 dark:text-sky-200')}
           >
             Welcome
           </Badge>
