@@ -237,9 +237,13 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
             'relative w-full overflow-hidden',
             'animate-[fadeSlideUp_400ms_ease-out]'
           )}
-          className={cn('flex flex-col gap-8 lg:gap-10')}
+          className={cn('relative')}
         >
-          <div className={cn('pointer-events-none', 'absolute inset-0', 'rounded-[inherit] overflow-hidden')}>
+          <div
+            className={cn(
+              'pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] z-0'
+            )}
+          >
             <div
               className={cn(
                 'absolute inset-0 rounded-[inherit]',
@@ -270,68 +274,70 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
             <div className={cn('absolute -left-24 top-16 h-60 w-60 rounded-full bg-sky-200/25 blur-3xl', 'dark:bg-sky-500/25')} />
             <div className={cn('absolute -right-28 bottom-12 h-56 w-56 rounded-full bg-violet-200/25 blur-3xl', 'dark:bg-violet-500/30')} />
           </div>
-          <ol
-            className={cn('absolute right-8 top-6', 'flex items-center gap-3')}
-            aria-label="Onboarding steps"
-          >
-            {stepIndicator}
-          </ol>
+          <div className={cn('relative z-10 flex flex-col gap-8 lg:gap-10')}>
+            <ol
+              className={cn('absolute right-8 top-6', 'flex items-center gap-3')}
+              aria-label="Onboarding steps"
+            >
+              {stepIndicator}
+            </ol>
 
-          <div
-            ref={stepContainerRef}
-            style={baselineHeight ? { minHeight: baselineHeight } : undefined}
-            className={cn(
-              'relative z-10 flex-1',
-              'pt-4',
-              'transition-[min-height] duration-500 ease-out'
-            )}
-          >
-            {renderCurrentStep()}
-          </div>
-
-          <div
-            className={cn(
-              'relative z-10 flex flex-col items-start justify-between gap-3',
-              'sm:flex-row sm:items-center',
-              'animate-[fadeSlideUp_400ms_ease-out_200ms_backwards]'
-            )}
-          >
-            <p className={cn('text-xs text-slate-500 transition-colors duration-300 ease-out', 'dark:text-slate-300')}>
-              {providerContent.securityNote}
-            </p>
-
-            <div className={cn('flex flex-wrap items-center gap-3')}>
-              {canGoBack && (
-                <Button
-                  variant="ghost"
-                  size="md"
-                  onClick={goToPrevious}
-                  className={cn('px-5')}
-                >
-                  Back
-                </Button>
+            <div
+              ref={stepContainerRef}
+              style={baselineHeight ? { minHeight: baselineHeight } : undefined}
+              className={cn(
+                'flex-1',
+                'pt-4',
+                'transition-[min-height] duration-500 ease-out'
               )}
+            >
+              {renderCurrentStep()}
+            </div>
 
-              {currentStep === 'connectAccount' && (
-                <Button
-                  variant="secondary"
-                  size="md"
-                  onClick={handleSkip}
-                  className={cn('px-5')}
-                >
-                  Skip for now
-                </Button>
+            <div
+              className={cn(
+                'flex flex-col items-start justify-between gap-3',
+                'sm:flex-row sm:items-center',
+                'animate-[fadeSlideUp_400ms_ease-out_200ms_backwards]'
               )}
+            >
+              <p className={cn('text-xs text-slate-500 transition-colors duration-300 ease-out', 'dark:text-slate-300')}>
+                {providerContent.securityNote}
+              </p>
 
-              <Button
-                variant={connectionFlow.isConnected && isLastStep ? 'success' : 'connect'}
-                size="lg"
-                onClick={handleNext}
-                disabled={!canProceed()}
-                className={cn('px-6')}
-              >
-                {isLastStep && connectionFlow.isConnected ? 'Get started' : 'Continue'}
-              </Button>
+              <div className={cn('flex flex-wrap items-center gap-3')}>
+                {canGoBack && (
+                  <Button
+                    variant="ghost"
+                    size="md"
+                    onClick={goToPrevious}
+                    className={cn('px-5')}
+                  >
+                    Back
+                  </Button>
+                )}
+
+                {currentStep === 'connectAccount' && (
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    onClick={handleSkip}
+                    className={cn('px-5')}
+                  >
+                    Skip for now
+                  </Button>
+                )}
+
+                <Button
+                  variant={connectionFlow.isConnected && isLastStep ? 'success' : 'connect'}
+                  size="lg"
+                  onClick={handleNext}
+                  disabled={!canProceed()}
+                  className={cn('px-6')}
+                >
+                  {isLastStep && connectionFlow.isConnected ? 'Get started' : 'Continue'}
+                </Button>
+              </div>
             </div>
           </div>
         </GlassCard>
