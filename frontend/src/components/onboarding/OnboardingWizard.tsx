@@ -226,21 +226,24 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
 
   return (
     <GradientShell variant="auth">
-      <div className={cn('relative flex w-full justify-center')}>
-        {onLogout && (
-          <div
-            className={cn('pointer-events-auto absolute inset-x-0 top-0 z-20')}
-          >
-            <AppHeader onLogout={onLogout} variant="onboarding" />
-          </div>
-        )}
+      {onLogout && (
+        <div
+          className={cn(
+            'pointer-events-auto fixed inset-x-0 top-0 z-30',
+            'w-full'
+          )}
+        >
+          <AppHeader onLogout={onLogout} variant="onboarding" />
+        </div>
+      )}
 
+      <div className={cn('relative flex w-full justify-center')}>
         <div
           className={cn(
             'flex w-full justify-center',
             'px-4 pb-12',
             'sm:px-6 sm:pb-16',
-            onLogout ? 'pt-24 sm:pt-32' : 'pt-12 sm:pt-16'
+            onLogout ? 'pt-28 sm:pt-36' : 'pt-12 sm:pt-16'
           )}
         >
           <div className={cn('w-full max-w-6xl')}>
