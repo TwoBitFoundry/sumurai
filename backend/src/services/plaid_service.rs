@@ -171,7 +171,7 @@ impl RealPlaidClient {
                         .get("balances")
                         .and_then(|b| b.get("current"))
                         .and_then(|v| v.as_f64())
-                        .and_then(|f| Decimal::from_f64(f));
+                        .and_then(Decimal::from_f64);
 
                     // Extract account mask from Plaid API response
                     let mask = acc
@@ -376,6 +376,7 @@ impl RealPlaidClient {
 }
 
 pub struct PlaidService {
+    #[allow(dead_code)]
     client: Arc<RealPlaidClient>,
 }
 
@@ -385,6 +386,7 @@ impl PlaidService {
     }
 }
 
+#[allow(dead_code)]
 impl PlaidService {
     pub async fn create_link_token(&self, user_id: &str) -> Result<String> {
         self.client.create_link_token(user_id).await

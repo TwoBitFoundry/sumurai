@@ -201,7 +201,7 @@ impl Transaction {
     pub fn from_plaid(plaid_txn: &serde_json::Value, account_id: &Uuid) -> Self {
         let amount = plaid_txn["amount"]
             .as_f64()
-            .and_then(|f| Decimal::from_f64_retain(f))
+            .and_then(Decimal::from_f64_retain)
             .unwrap_or(Decimal::ZERO)
             .abs();
 

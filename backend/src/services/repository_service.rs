@@ -17,6 +17,7 @@ use uuid::Uuid;
 
 #[async_trait]
 #[cfg_attr(test, mockall::automock)]
+#[allow(dead_code)]
 pub trait DatabaseRepository: Send + Sync {
     async fn create_user(&self, user: &User) -> Result<()>;
     async fn get_user_by_email(&self, email: &str) -> Result<Option<User>>;

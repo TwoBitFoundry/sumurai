@@ -8,6 +8,7 @@ use rust_decimal::Decimal;
 
 pub struct AnalyticsService;
 
+#[allow(dead_code)]
 impl AnalyticsService {
     pub fn map_account_to_balance_category(
         account_type: &str,

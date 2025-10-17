@@ -44,7 +44,7 @@ fn test_category_parsing_logic_extracts_correct_values() {
     assert_eq!(category_detailed, "FOOD_AND_DRINK_RESTAURANTS");
     assert_eq!(category_confidence, "VERY_HIGH");
     assert_eq!(payment_channel, Some("in_store".to_string()));
-    assert_eq!(pending, false);
+    assert!(!pending);
 }
 
 #[test]
@@ -89,5 +89,5 @@ fn test_category_parsing_handles_missing_fields() {
     assert_eq!(category_detailed, "OTHER"); // Falls back to primary when detailed missing
     assert_eq!(category_confidence, "MEDIUM");
     assert_eq!(payment_channel, None);
-    assert_eq!(pending, false);
+    assert!(!pending);
 }

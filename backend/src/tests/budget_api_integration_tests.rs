@@ -80,7 +80,7 @@ async fn given_valid_payload_when_update_budget_then_returns_budget() {
     let payload = r#"{"amount":"250.00"}"#;
     let req = Request::builder()
         .method("PUT")
-        .uri(&format!("/api/budgets/{}", budget_id))
+        .uri(format!("/api/budgets/{}", budget_id))
         .header("authorization", format!("Bearer {}", token))
         .header("content-type", "application/json")
         .body(Body::from(payload))
@@ -145,7 +145,7 @@ async fn given_invalid_amount_when_update_budget_then_bad_request() {
 
     let req = Request::builder()
         .method("PUT")
-        .uri(&format!("/api/budgets/{}", budget_id))
+        .uri(format!("/api/budgets/{}", budget_id))
         .header("authorization", format!("Bearer {}", token))
         .header("content-type", "application/json")
         .body(Body::from(payload))

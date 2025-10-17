@@ -2,6 +2,7 @@ use crate::models::transaction::Transaction;
 use std::collections::HashSet;
 use uuid::Uuid;
 
+#[allow(dead_code)]
 pub fn filter_transactions_by_account_ids(
     transactions: Vec<Transaction>,
     account_id_strings: &[String],

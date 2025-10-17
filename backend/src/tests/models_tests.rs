@@ -10,7 +10,7 @@ fn given_new_plaid_connection_when_created_then_has_correct_defaults() {
 
     assert_eq!(connection.user_id, user_id);
     assert_eq!(connection.item_id, "test_item");
-    assert_eq!(connection.is_connected, false);
+    assert!(!connection.is_connected);
     assert!(connection.last_sync_at.is_none());
     assert!(connection.connected_at.is_none());
     assert!(connection.disconnected_at.is_none());

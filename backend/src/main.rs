@@ -565,10 +565,7 @@ async fn get_authenticated_transactions(
 
                 let account_id_set: std::collections::HashSet<Uuid> =
                     account_ids.into_iter().collect();
-                transactions = transactions
-                    .into_iter()
-                    .filter(|t| account_id_set.contains(&t.account_id))
-                    .collect();
+                transactions.retain(|t| account_id_set.contains(&t.account_id));
             }
 
             if let Some(search) = search.as_ref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
@@ -1030,10 +1027,7 @@ async fn get_authenticated_spending_by_date_range(
 
                 let account_id_set: std::collections::HashSet<Uuid> =
                     account_ids.into_iter().collect();
-                transactions = transactions
-                    .into_iter()
-                    .filter(|t| account_id_set.contains(&t.account_id))
-                    .collect();
+                transactions.retain(|t| account_id_set.contains(&t.account_id));
             }
 
             let filtered = state
@@ -1109,10 +1103,7 @@ async fn get_authenticated_category_spending(
 
                 let account_id_set: std::collections::HashSet<Uuid> =
                     account_ids.into_iter().collect();
-                transactions = transactions
-                    .into_iter()
-                    .filter(|t| account_id_set.contains(&t.account_id))
-                    .collect();
+                transactions.retain(|t| account_id_set.contains(&t.account_id));
             }
 
             let categories = state.analytics_service.group_by_category_with_date_range(
@@ -1660,10 +1651,9 @@ async fn get_authenticated_balances_overview(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    let mut latest_map: std::collections::HashMap<
-        String,
-        Vec<(String, Option<String>, String, rust_decimal::Decimal)>,
-    > = std::collections::HashMap::new();
+    type LatestMapValue = (String, Option<String>, String, rust_decimal::Decimal);
+    let mut latest_map: std::collections::HashMap<String, Vec<LatestMapValue>> =
+        std::collections::HashMap::new();
     let mut name_map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
     let mut mixed_currency = false;
     for row in latest_rows.into_iter() {

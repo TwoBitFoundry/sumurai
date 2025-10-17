@@ -123,7 +123,6 @@ fn given_expired_jwt_when_validating_then_returns_expired_error() {
     )
     .unwrap();
 
-    assert!(true);
 }
 
 #[test]
@@ -324,6 +323,7 @@ fn given_user_data_operations_when_performed_then_logs_actions_for_audit_trail_w
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct AuditLogEntry {
     user_id: uuid::Uuid,
     jwt_id: String,
