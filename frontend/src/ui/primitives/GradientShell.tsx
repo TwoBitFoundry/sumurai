@@ -30,7 +30,7 @@ export function GradientShell({
     <div
       className={cn(
         'relative',
-        variant === 'auth' ? 'min-h-[calc(100vh-4rem)] overflow-hidden' : 'min-h-screen',
+        variant === 'auth' ? 'min-h-screen overflow-hidden' : 'min-h-screen',
         className
       )}
     >
@@ -116,7 +116,7 @@ export function GradientShell({
       <div
         className={cn(
           'relative',
-          variant === 'auth' ? 'flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12 sm:px-6' : ''
+          variant === 'auth' ? 'flex min-h-screen items-center justify-center px-4 py-12 sm:px-6' : ''
         )}
       >
         {children}
