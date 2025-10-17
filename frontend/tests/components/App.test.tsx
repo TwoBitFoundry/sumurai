@@ -608,7 +608,7 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByText('Provider Configuration Mismatch')).toBeInTheDocument()
+        expect(screen.getByText(/provider configuration mismatch/i)).toBeInTheDocument()
       }, { timeout: 3000 })
 
       expect(screen.getByText(/Your account is configured to use/i)).toBeInTheDocument()

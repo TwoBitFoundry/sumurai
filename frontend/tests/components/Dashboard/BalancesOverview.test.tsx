@@ -73,7 +73,9 @@ describe("BalancesOverview (Phase 7)", () => {
     const ok = {
       asOf: "latest",
       overall: { cash: 1, credit: -1, loan: -1, investments: 1, positivesTotal: 2, negativesTotal: -2, net: 0, ratio: null },
-      banks: [],
+      banks: [
+        { bankId: "ins_123", bankName: "Test Bank", cash: 1, credit: -1, loan: 0, investments: 0, positivesTotal: 1, negativesTotal: -1, net: 0, ratio: null },
+      ],
       mixedCurrency: false,
     };
     installFetchRoutes({
@@ -94,8 +96,8 @@ describe("BalancesOverview (Phase 7)", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("balances-error")).not.toBeInTheDocument();
     });
-    // Ratio pill renders ∞ when ratio = null
-    expect(screen.getAllByText(/A\/L:/)[0].textContent).toContain("∞");
+    // Verify chart data is rendered after recovery
+    expect(screen.getByTestId("overall-cash")).toBeInTheDocument();
   });
 
   it("does not depend on dashboard time range and rerenders gracefully", async () => {

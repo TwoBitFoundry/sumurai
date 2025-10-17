@@ -71,16 +71,16 @@ describe('Session Management & Expiry Modal', () => {
           const onStayLoggedIn = vi.fn()
           const onLogout = vi.fn()
           const timeRemaining = 120
-          
+
           render(
-            <SessionExpiryModal 
+            <SessionExpiryModal
               isOpen={true}
               timeRemaining={timeRemaining}
               onStayLoggedIn={onStayLoggedIn}
               onLogout={onLogout}
             />
           )
-          
+
           expect(screen.getByText('2:00')).toBeInTheDocument()
 
           expect(screen.getByText(/session expiring/i)).toBeInTheDocument()
@@ -88,7 +88,7 @@ describe('Session Management & Expiry Modal', () => {
           expect(screen.getByRole('button', { name: /stay logged in/i })).toBeInTheDocument()
           expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument()
           expect(screen.getByText(/do nothing/i)).toBeInTheDocument()
-          expect(screen.getByText(/automatically log out/i)).toBeInTheDocument()
+          expect(screen.getByText(/auto-logout/i)).toBeInTheDocument()
         })
       })
     })

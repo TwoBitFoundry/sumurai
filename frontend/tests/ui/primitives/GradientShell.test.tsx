@@ -25,7 +25,7 @@ describe('GradientShell', () => {
     it('uses auth variant by default', () => {
       const { container } = render(<GradientShell>Content</GradientShell>)
       const shell = container.firstChild as HTMLElement
-      expect(shell?.className).toContain('min-h-[calc(100vh-4rem)]')
+      expect(shell?.className).toContain('min-h-screen')
     })
   })
 
