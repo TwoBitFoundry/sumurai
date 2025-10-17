@@ -48,8 +48,8 @@ use services::repository_service::{DatabaseRepository, PostgresRepository};
 use services::{AnalyticsService, RealPlaidClient};
 use services::{
     AuthService, BudgetService, CacheService, ConnectionService, ExchangeTokenError,
-    LinkTokenError, PlaidService, ProviderSyncError, RedisCache, SyncService, TellerConnectError,
-    TellerSyncError,
+    LinkTokenError, PlaidService, ProviderSyncError, RedisCache, SyncConnectionParams, SyncService,
+    TellerConnectError, TellerSyncError,
 };
 use sqlx::PgPool;
 
@@ -807,13 +807,17 @@ async fn sync_authenticated_provider_transactions(
         }
     }
 
+    let sync_params = SyncConnectionParams {
+        provider: state.config.get_default_provider(),
+        user_id: &user_id,
+        jwt_id: &auth_context.jwt_id,
+    };
+
     match state
         .connection_service
         .sync_provider_connection(
-            state.config.get_default_provider(),
+            sync_params,
             state.sync_service.as_ref(),
-            &user_id,
-            &auth_context.jwt_id,
             &mut connection,
         )
         .await

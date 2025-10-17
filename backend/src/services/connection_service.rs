@@ -67,6 +67,12 @@ pub enum ProviderSyncError {
     SyncFailure(Error),
 }
 
+pub struct SyncConnectionParams<'a> {
+    pub provider: &'a str,
+    pub user_id: &'a Uuid,
+    pub jwt_id: &'a str,
+}
+
 impl ConnectionService {
     pub fn new(
         db_repository: Arc<dyn DatabaseRepository>,
@@ -375,10 +381,8 @@ impl ConnectionService {
 
     pub async fn sync_provider_connection(
         &self,
-        provider: &str,
+        params: SyncConnectionParams<'_>,
         sync_service: &SyncService,
-        user_id: &Uuid,
-        jwt_id: &str,
         connection: &mut ProviderConnection,
     ) -> Result<SyncTransactionsResponse, ProviderSyncError> {
         let sync_timestamp = Utc::now();
@@ -387,13 +391,13 @@ impl ConnectionService {
 
         let credentials_record = self
             .db_repository
-            .get_provider_credentials_for_user(user_id, &connection.item_id)
+            .get_provider_credentials_for_user(params.user_id, &connection.item_id)
             .await
             .map_err(ProviderSyncError::CredentialAccess)?
             .ok_or(ProviderSyncError::CredentialsMissing)?;
 
         let provider_credentials = ProviderCredentials {
-            provider: provider.to_string(),
+            provider: params.provider.to_string(),
             access_token: credentials_record.access_token.clone(),
             item_id: connection.item_id.clone(),
             certificate: None,
@@ -401,8 +405,8 @@ impl ConnectionService {
         };
 
         let provider_impl = self
-            .resolve_provider(provider)
-            .ok_or_else(|| ProviderSyncError::ProviderUnavailable(provider.to_string()))?;
+            .resolve_provider(params.provider)
+            .ok_or_else(|| ProviderSyncError::ProviderUnavailable(params.provider.to_string()))?;
 
         let fetched_accounts = provider_impl
             .as_ref()
@@ -411,14 +415,14 @@ impl ConnectionService {
             .map_err(ProviderSyncError::ProviderRequest)?;
 
         for mut account in fetched_accounts {
-            account.user_id = Some(*user_id);
+            account.user_id = Some(*params.user_id);
             account.provider_connection_id = Some(connection.id);
 
             if let Err(e) = self.db_repository.upsert_account(&account).await {
                 tracing::warn!(
                     "Failed to persist account {} for user {}: {}",
                     account.provider_account_id.as_deref().unwrap_or("unknown"),
-                    user_id,
+                    params.user_id,
                     e
                 );
             }
@@ -426,7 +430,7 @@ impl ConnectionService {
 
         let db_accounts = self
             .db_repository
-            .get_accounts_for_user(user_id)
+            .get_accounts_for_user(params.user_id)
             .await
             .map_err(ProviderSyncError::AccountLookup)?;
 
@@ -437,7 +441,7 @@ impl ConnectionService {
 
         let existing_transactions = self
             .db_repository
-            .get_transactions_for_user(user_id)
+            .get_transactions_for_user(params.user_id)
             .await
             .map_err(ProviderSyncError::TransactionLookup)?;
 
@@ -445,7 +449,7 @@ impl ConnectionService {
             sync_service.filter_duplicate_transactions(&existing_transactions, &transactions);
 
         for txn in &mut transactions {
-            txn.user_id = Some(*user_id);
+            txn.user_id = Some(*params.user_id);
         }
 
         let mut persisted_transactions = Vec::new();
@@ -455,7 +459,7 @@ impl ConnectionService {
                 tracing::warn!(
                     "Skipping transaction {:?} for user {} because account mapping is missing",
                     transaction.provider_transaction_id,
-                    user_id
+                    params.user_id
                 );
                 continue;
             }
@@ -464,7 +468,7 @@ impl ConnectionService {
                 tracing::warn!(
                     "Failed to persist transaction {:?} for user {}: {}",
                     transaction.provider_transaction_id,
-                    user_id,
+                    params.user_id,
                     e
                 );
             }
@@ -472,7 +476,7 @@ impl ConnectionService {
                 tracing::warn!(
                     "Failed to cache transaction {:?} for user {}: {}",
                     transaction.provider_transaction_id,
-                    user_id,
+                    params.user_id,
                     e
                 );
             }
@@ -484,7 +488,7 @@ impl ConnectionService {
 
         let total_transactions = self
             .db_repository
-            .get_transactions_for_user(user_id)
+            .get_transactions_for_user(params.user_id)
             .await
             .map(|txns| txns.len() as i32)
             .unwrap_or(0);
@@ -502,18 +506,18 @@ impl ConnectionService {
             tracing::warn!(
                 "Failed to update provider connection {} for user {}: {}",
                 connection.id,
-                user_id,
+                params.user_id,
                 e
             );
         }
 
         if let Err(e) = self
-            .complete_sync_with_jwt_cache_update(user_id, jwt_id, connection, &db_accounts)
+            .complete_sync_with_jwt_cache_update(params.user_id, params.jwt_id, connection, &db_accounts)
             .await
         {
             tracing::warn!(
                 "Failed to update JWT-scoped caches after sync for user {}: {}",
-                user_id,
+                params.user_id,
                 e
             );
         }
