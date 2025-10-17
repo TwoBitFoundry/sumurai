@@ -1,5 +1,5 @@
 import React from 'react'
-import { Alert, Badge, Button, GlassCard } from '@/ui/primitives'
+import { Alert, Badge, Button } from '@/ui/primitives'
 import { cn } from '@/ui/primitives/utils'
 import type { ConnectAccountProviderContent } from '@/utils/providerCards'
 
@@ -32,43 +32,6 @@ const statusVariantMap: Record<StatusTone, 'info' | 'warning' | 'error'> = {
   error: 'error',
 }
 
-function IconBurst({
-  gradient,
-  ring,
-  glow,
-  size = 'md',
-  children,
-}: {
-  gradient: string
-  ring: string
-  glow: string
-  size?: 'sm' | 'md'
-  children: React.ReactNode
-}) {
-  const sizeClass = size === 'sm' ? 'h-11 w-11' : 'h-12 w-12'
-
-  return (
-    <span
-      className={cn(
-        'relative inline-flex',
-        'items-center justify-center',
-        'overflow-hidden rounded-full',
-        sizeClass,
-        'ring-1 ring-inset',
-        'bg-slate-50',
-        'dark:bg-slate-900',
-        ring,
-        glow
-      )}
-      aria-hidden="true"
-    >
-      <span className={cn('absolute inset-0', 'bg-gradient-to-br', gradient)} />
-      <span className={cn('absolute inset-[18%]', 'rounded-full bg-slate-300/30', 'opacity-50', 'blur-[6px]', 'dark:bg-black/20')} />
-      <span className={cn('relative flex', 'items-center justify-center')}>{children}</span>
-    </span>
-  )
-}
-
 function FeatureCard({
   icon: Icon,
   title,
@@ -76,30 +39,30 @@ function FeatureCard({
   palette,
 }: ConnectAccountProviderContent['features'][number]) {
   return (
-    <GlassCard
-      variant="accent"
-      rounded="lg"
-      padding="md"
-      withInnerEffects={false}
-      containerClassName={cn(
-        'group flex h-full flex-col items-center justify-start rounded-2xl border border-slate-200/70 bg-white/85 px-4 py-4 text-center',
-        'shadow-[0_20px_45px_-30px_rgba(15,23,42,0.38)] transition-all duration-200 ease-out',
-        'hover:-translate-y-0.5 hover:shadow-[0_32px_70px_-38px_rgba(14,165,233,0.45)]',
-        'dark:border-slate-700/60 dark:bg-[#0f172a]/85 dark:shadow-[0_28px_60px_-32px_rgba(2,6,23,0.65)]'
+    <div
+      className={cn(
+        'group flex h-full flex-col items-center justify-start rounded-xl border border-[#e2e8f0] bg-white px-4 py-4 text-center shadow-sm',
+        'transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:border-[#93c5fd]',
+        'dark:border-[#334155] dark:bg-[#0f172a] dark:hover:border-[#38bdf8]'
       )}
-      className={cn('flex h-full flex-col items-center gap-3 text-center')}
     >
-      <IconBurst
-        gradient={palette.gradient}
-        ring={palette.ring}
-        glow={palette.glow}
-        size="sm"
+      <span
+        className={cn(
+          'relative inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#f8fafc] ring-1 ring-inset',
+          palette.ring,
+          palette.glow,
+          'transition-all duration-200 ease-out group-hover:scale-105',
+          'dark:bg-[#1e293b]'
+        )}
+        aria-hidden="true"
       >
-        <Icon className={cn('h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)} strokeWidth={1.7} />
-      </IconBurst>
-      <h4 className={cn('text-sm', 'font-semibold', 'text-slate-900', 'dark:text-white')}>{title}</h4>
-      <p className={cn('text-xs', 'text-slate-600', 'dark:text-slate-300')}>{body}</p>
-    </GlassCard>
+        <span className={cn('absolute inset-0 bg-gradient-to-br', palette.gradient)} />
+        <span className={cn('absolute inset-[20%] rounded-full bg-slate-300/30 opacity-40 blur-[6px]', 'dark:bg-black/20')} />
+        <Icon className={cn('relative h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)} strokeWidth={1.7} />
+      </span>
+      <h4 className={cn('mt-3 text-sm font-semibold text-[#0f172a]', 'dark:text-white')}>{title}</h4>
+      <p className={cn('mt-1 text-xs text-[#475569]', 'dark:text-[#cbd5e1]')}>{body}</p>
+    </div>
   )
 }
 
@@ -110,31 +73,32 @@ function HighlightCard({
   palette,
 }: ConnectAccountProviderContent['highlights'][number]) {
   return (
-    <GlassCard
-      variant="default"
-      rounded="lg"
-      padding="md"
-      withInnerEffects={false}
-      containerClassName={cn(
-        'group relative flex h-full items-start gap-4 overflow-hidden rounded-[1.6rem] border border-slate-200/70 bg-white/85 p-4',
-        'shadow-[0_24px_60px_-36px_rgba(15,23,42,0.45)] transition-all duration-200 ease-out',
-        'hover:-translate-y-0.5 hover:shadow-[0_34px_80px_-42px_rgba(14,165,233,0.45)]',
-        'dark:border-slate-700/60 dark:bg-[#0f172a]/85 dark:shadow-[0_30px_72px_-38px_rgba(2,6,23,0.7)]'
+    <div
+      className={cn(
+        'group relative flex h-full items-start gap-4 overflow-hidden rounded-2xl border border-[#e2e8f0] bg-white p-4 text-[13px] shadow-sm',
+        'transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:border-[#93c5fd]',
+        'dark:border-[#334155] dark:bg-[#0f172a] dark:hover:border-[#38bdf8]'
       )}
-      className={cn('flex h-full items-start gap-4')}
     >
-      <IconBurst
-        gradient={palette.gradient}
-        ring={palette.ring}
-        glow={palette.glow}
+      <span
+        className={cn(
+          'relative inline-flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#f8fafc] ring-1 ring-inset',
+          palette.ring,
+          palette.glow,
+          'transition-all duration-200 ease-out group-hover:scale-105',
+          'dark:bg-[#1e293b]'
+        )}
+        aria-hidden="true"
       >
-        <Icon className={cn('h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)} strokeWidth={1.7} />
-      </IconBurst>
+        <span className={cn('absolute inset-0 bg-gradient-to-br', palette.gradient)} />
+        <span className={cn('absolute inset-[18%] rounded-full bg-slate-300/30 opacity-50 blur-[6px]', 'dark:bg-black/20')} />
+        <Icon className={cn('relative h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)} strokeWidth={1.7} />
+      </span>
       <div className="space-y-1">
-        <p className={cn('text-sm', 'font-semibold', 'text-slate-900', 'dark:text-white')}>{title}</p>
-        <p className={cn('text-xs', 'text-slate-600', 'dark:text-slate-300')}>{body}</p>
+        <p className={cn('text-sm font-semibold text-[#0f172a]', 'dark:text-white')}>{title}</p>
+        <p className={cn('text-xs text-[#475569]', 'dark:text-[#cbd5e1]')}>{body}</p>
       </div>
-    </GlassCard>
+    </div>
   )
 }
 
@@ -205,13 +169,12 @@ export function ConnectAccountStep({
         </div>
 
         {statusMessages.length > 0 && (
-          <div className={cn('flex flex-col gap-3')}>
+          <div className={cn('space-y-3')}>
             {statusMessages.map((status, index) => (
               <Alert
                 key={`${status.tone}-${index}`}
                 variant={statusVariantMap[status.tone]}
-                tone="subtle"
-                className={cn('flex flex-col gap-2 rounded-[1.6rem] border-2 border-white/40 bg-white/65 backdrop-blur-sm', 'dark:border-white/10 dark:bg-white/10')}
+                className={cn('flex flex-col gap-2 rounded-2xl')}
               >
                 <p className="font-semibold">{status.text}</p>
                 {status.action && status.actionLabel && (
@@ -219,7 +182,7 @@ export function ConnectAccountStep({
                     variant="ghost"
                     size="sm"
                     onClick={() => status.action?.()}
-                    className={cn('self-start px-3 py-1 text-xs')}
+                    className={cn('self-start rounded-full border px-3 py-1 text-xs font-semibold')}
                   >
                     {status.actionLabel}
                   </Button>
@@ -249,18 +212,10 @@ export function ConnectAccountStep({
         </div>
       </div>
 
-      <div className={cn('flex flex-col gap-5 self-end')}> 
-        <div className={cn('flex items-center justify-between')}> 
-          <Badge
-            variant="feature"
-            size="sm"
-            className={cn('tracking-[0.3em] text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300')}
-          >
-            {content.highlightLabel}
-          </Badge>
-          <span className={cn('text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 transition-colors duration-300 ease-out dark:text-slate-300')}>
-            {content.highlightMeta}
-          </span>
+      <div className={cn('flex flex-col gap-5 self-end')}>
+        <div className={cn('mb-1 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.3em] text-[#475569] transition-colors duration-300 ease-out dark:text-[#cbd5e1] sm:mb-2')}>
+          <span>{content.highlightLabel}</span>
+          <span>{content.highlightMeta}</span>
         </div>
         <div className={cn('flex flex-col gap-4')}>
           <div className={cn('grid auto-rows-fr gap-3 sm:grid-cols-2')}>

@@ -10,7 +10,7 @@ import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo'
 import type { FinancialProvider } from '@/types/api'
 import { useOnboardingTellerFlow } from '@/hooks/useOnboardingTellerFlow'
 import { CONNECT_ACCOUNT_PROVIDER_CONTENT } from '@/utils/providerCards'
-import { Badge, Button, GlassCard, GradientShell } from '@/ui/primitives'
+import { Button, GlassCard, GradientShell } from '@/ui/primitives'
 import { cn } from '@/ui/primitives/utils'
 
 const stepIndicatorVariants = cva(
@@ -224,8 +224,6 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
     })
   }, [stepIndex, steps])
 
-  const currentStepDetail = steps[stepIndex]
-
   return (
     <GradientShell variant="auth">
       <div className={cn('flex w-full max-w-6xl flex-col gap-8')}>
@@ -272,51 +270,19 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
             <div className={cn('absolute -left-24 top-16 h-60 w-60 rounded-full bg-sky-200/25 blur-3xl', 'dark:bg-sky-500/25')} />
             <div className={cn('absolute -right-28 bottom-12 h-56 w-56 rounded-full bg-violet-200/25 blur-3xl', 'dark:bg-violet-500/30')} />
           </div>
-
-          <div className={cn('relative z-10 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between')}>
-            <div className={cn('flex flex-col gap-4', 'max-w-[26rem]')}>
-              <Badge
-                variant="feature"
-                size="sm"
-                className={cn(
-                  'self-start tracking-[0.3em]',
-                  'text-slate-600 dark:text-slate-200'
-                )}
-              >
-                {currentStepDetail?.label}
-              </Badge>
-              <div className={cn('space-y-2')}> 
-                <h1
-                  className={cn(
-                    'text-[2rem] font-semibold text-slate-900 transition-colors duration-300 ease-out',
-                    'sm:text-[2.25rem]',
-                    'dark:text-white'
-                  )}
-                >
-                  {currentStepDetail?.description}
-                </h1>
-                <p
-                  className={cn(
-                    'text-sm font-medium uppercase tracking-[0.32em]',
-                    'text-slate-500 transition-colors duration-300 ease-out',
-                    'dark:text-slate-300'
-                  )}
-                >
-                  Step {stepIndex + 1} of {steps.length}
-                </p>
-              </div>
-            </div>
-
-            <ol className={cn('flex flex-wrap items-center gap-3')} aria-label="Onboarding steps">
-              {stepIndicator}
-            </ol>
-          </div>
+          <ol
+            className={cn('absolute right-8 top-6', 'flex items-center gap-3')}
+            aria-label="Onboarding steps"
+          >
+            {stepIndicator}
+          </ol>
 
           <div
             ref={stepContainerRef}
             style={baselineHeight ? { minHeight: baselineHeight } : undefined}
             className={cn(
               'relative z-10 flex-1',
+              'pt-4',
               'transition-[min-height] duration-500 ease-out'
             )}
           >
