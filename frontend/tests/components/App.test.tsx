@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, cleanup, act, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -247,7 +249,6 @@ describe('App Phase 2 - Business Logic Removal', () => {
 
   describe('RED: Business logic helper functions should not exist', () => {
     it('should not contain business logic helper functions in App.tsx source code', () => {
-      const fs = require('fs') as typeof import('fs')
       const appSource = fs.readFileSync('./src/App.tsx', 'utf-8')
       
       const forbiddenFunctions = [
@@ -277,7 +278,6 @@ describe('App Phase 2 - Business Logic Removal', () => {
 
   describe('RED: Mock data and seed data should not exist', () => {
     it('should not contain mock data in App.tsx source code', () => {
-      const fs = require('fs') as typeof import('fs')
       const appSource = fs.readFileSync('./src/App.tsx', 'utf-8')
       
       expect(appSource).not.toMatch(/seedTxns/)
@@ -312,7 +312,6 @@ describe('App Phase 2 - Business Logic Removal', () => {
     })
 
     it('should not contain any useMemo hooks for business logic calculations', () => {
-      const fs = require('fs') as typeof import('fs')
       const appSource = fs.readFileSync('./src/App.tsx', 'utf-8')
       
       expect(appSource).not.toMatch(/useMemo\(\(\) => \{[\s\S]*?groupByCat/)
@@ -325,7 +324,6 @@ describe('App Phase 2 - Business Logic Removal', () => {
 
   describe('RED: Server-side filtering should be implemented', () => {
     it('should not perform local transaction filtering with search terms', () => {
-      const fs = require('fs') as typeof import('fs')
       const appSource = fs.readFileSync('./src/App.tsx', 'utf-8')
       
       expect(appSource).not.toMatch(/filterTxns\(/)
@@ -333,7 +331,6 @@ describe('App Phase 2 - Business Logic Removal', () => {
     })
 
     it('should not perform local date range filtering', () => {
-      const fs = require('fs') as typeof import('fs')
       const appSource = fs.readFileSync('./src/App.tsx', 'utf-8')
       
       expect(appSource).not.toMatch(/filterByDateRange\(/)
@@ -436,7 +433,6 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
 
   describe('RED: No mock/seed data should exist anywhere', () => {
     it('should not contain any mock data variables or constants', () => {
-      const fs = require('fs') as typeof import('fs')
       const appSource = fs.readFileSync('./src/App.tsx', 'utf-8')
       
       expect(appSource).not.toMatch(/seedTxns/)
@@ -449,7 +445,6 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
     })
 
     it('should not contain mock toggle functionality', () => {
-      const fs = require('fs') as typeof import('fs')
       const appSource = fs.readFileSync('./src/App.tsx', 'utf-8')
       
       expect(appSource).not.toMatch(/useState.*mock/i)
@@ -613,7 +608,7 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByText('Provider Configuration Mismatch')).toBeInTheDocument()
+        expect(screen.getByText(/provider configuration mismatch/i)).toBeInTheDocument()
       }, { timeout: 3000 })
 
       expect(screen.getByText(/Your account is configured to use/i)).toBeInTheDocument()

@@ -46,8 +46,6 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
 
   const { selectedAccountIds, isAllAccountsSelected, allAccountIds, loading: accountsLoading } = useAccountFilter()
 
-  const debounceTimer = useRef<number | null>(null)
-
   const load = useCallback(async () => {
     if (accountsLoading) {
       return
@@ -66,8 +64,8 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
       }
       const txns = await TransactionService.getTransactions(filters)
       setAll(txns)
-    } catch (e: any) {
-      const status = typeof e?.status === 'number' ? e.status : undefined
+    } catch (error: unknown) {
+      const status = getStatus(error)
       const msg = status === 401 ? 'You are not authenticated. Please log in again.' : 'Failed to load transactions.'
       setError(msg)
       setAll([])
@@ -155,4 +153,12 @@ function useDebounce<T>(value: T, delay = 300): T {
     return () => { if (timer.current) window.clearTimeout(timer.current) }
   }, [value, delay])
   return v
+}
+
+function getStatus(error: unknown): number | undefined {
+  if (typeof error === 'object' && error !== null && 'status' in error) {
+    const status = (error as { status?: unknown }).status
+    return typeof status === 'number' ? status : undefined
+  }
+  return undefined
 }

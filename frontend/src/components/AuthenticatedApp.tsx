@@ -8,6 +8,7 @@ import Card from './ui/Card'
 import { ErrorBoundary } from './ErrorBoundary'
 import { GradientShell } from '../ui/primitives'
 import { AppLayout } from '../layouts/AppLayout'
+import { cn } from '@/ui/primitives'
 
 type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts'
 
@@ -21,12 +22,12 @@ export function AuthenticatedApp({ onLogout }: AuthenticatedAppProps) {
 
   return (
     <ErrorBoundary>
-      <GradientShell variant="app" className="text-slate-900 dark:text-slate-100 transition-colors duration-300">
+      <GradientShell variant="app" className={cn('text-slate-900', 'dark:text-slate-100', 'transition-colors', 'duration-300')}>
         <AppLayout currentTab={tab} onTabChange={setTab} onLogout={onLogout}>
           {error && (
-            <Card className="mb-6 border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20">
-              <div className="text-sm text-red-600 dark:text-red-400 font-medium">Error</div>
-              <div className="text-xs text-red-500 dark:text-red-300 mt-1">{error}</div>
+            <Card className={cn('mb-6', 'border-red-200', 'dark:border-red-700', 'bg-red-50', 'dark:bg-red-900/20')}>
+              <div className={cn('text-sm', 'text-red-600', 'dark:text-red-400', 'font-medium')}>Error</div>
+              <div className={cn('text-xs', 'text-red-500', 'dark:text-red-300', 'mt-1')}>{error}</div>
             </Card>
           )}
 

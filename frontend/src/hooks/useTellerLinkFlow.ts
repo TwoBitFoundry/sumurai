@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ProviderCatalog } from '../services/ProviderCatalog'
 import { TellerService } from '../services/TellerService'
+import type { BackendAccount } from '../domain/AccountNormalizer'
 import type { PlaidConnection } from './usePlaidConnections'
 import { useTellerConnect, type TellerEnvironment } from './useTellerConnect'
 import { dispatchAccountsChanged } from '../utils/events'
@@ -61,7 +62,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       return { hasPopulatedBalances: false, connectionIds: [] }
     }
 
-    const resolveConnectionId = (account: any): string | null => {
+    const resolveConnectionId = (account: BackendAccount): string | null => {
       const raw =
         account.provider_connection_id ??
         account.connection_id ??
@@ -81,7 +82,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       if (typeof value === 'string') {
         const trimmed = value.trim()
         const isNegativeParenthetical = trimmed.startsWith('(') && trimmed.endsWith(')')
-        const stripped = trimmed.replace(/[^0-9.\-]/g, '')
+        const stripped = trimmed.replace(/[^0-9.-]/g, '')
         if (stripped.length === 0) {
           return undefined
         }
@@ -112,36 +113,58 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
         return 'other'
       }
 
+      const typedAccounts: BackendAccount[] = accounts as BackendAccount[]
+
       const mapped: PlaidConnection[] = statusList
         .filter(status => status.is_connected)
         .map(status => {
-          const connectionAccounts = accounts
-            .filter(account => resolveConnectionId(account) === status.connection_id)
+          const statusConnectionId = status.connection_id != null ? String(status.connection_id) : null
+
+          const connectionAccounts = typedAccounts
+            .filter(account => resolveConnectionId(account) === statusConnectionId)
             .map(account => {
               const ledger =
                 parseNumeric(account.balance_ledger) ??
                 parseNumeric(account.balance_current) ??
-                parseNumeric((account as any).current_balance)
+                parseNumeric(account.current_balance ?? null)
 
               const txnCount = parseNumeric(account.transaction_count)
 
+              const name =
+                account.name ??
+                account.account_name ??
+                account.official_name ??
+                account.institution_name ??
+                'Account'
+
+              const maskSource =
+                account.mask ??
+                account.account_mask ??
+                account.last_four ??
+                account.lastFour ??
+                '0000'
+
               return {
-                id: account.id,
-                name: account.name,
-                mask: account.mask ?? (account as any).last_four ?? '0000',
-                type: mapAccountType(account.account_type),
-                balance: ledger,
-                transactions: txnCount,
+                id: String(account.id),
+                name,
+                mask: maskSource != null ? String(maskSource) : '0000',
+                type: mapAccountType(
+                  account.account_type ?? account.type ?? account.accountType ?? account.subtype ?? null
+                ),
+                balance: ledger ?? undefined,
+                transactions: txnCount ?? undefined,
               }
             })
 
+          const connectionId = statusConnectionId ?? 'unknown'
+
           return {
-            id: status.connection_id,
-            connectionId: status.connection_id,
+            id: connectionId,
+            connectionId,
             institutionName: status.institution_name || 'Unknown Bank',
-            lastSyncAt: status.last_sync_at,
-            transactionCount: status.transaction_count,
-            accountCount: status.account_count,
+            lastSyncAt: status.last_sync_at ?? null,
+            transactionCount: status.transaction_count ?? 0,
+            accountCount: status.account_count ?? connectionAccounts.length,
             syncInProgress: status.sync_in_progress ?? false,
             isConnected: status.is_connected,
             accounts: connectionAccounts
@@ -155,8 +178,8 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
         conn.accounts.some(acc => typeof acc.balance === 'number' && !Number.isNaN(acc.balance))
       )
       return { hasPopulatedBalances: hasBalances, connectionIds }
-    } catch (err) {
-      console.warn('Failed to load Teller connections', err)
+    } catch (error: unknown) {
+      console.warn('Failed to load Teller connections', error)
       handleError('Failed to load Teller connections')
       setConnections([])
       return { hasPopulatedBalances: false, connectionIds: [] }

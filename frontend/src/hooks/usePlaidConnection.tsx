@@ -59,11 +59,12 @@ export const usePlaidConnection = (): UsePlaidConnectionReturn => {
         loading: false,
         error: null
       }))
-    } catch (error) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load connection status'
       setState(prev => ({
         ...prev,
         loading: false,
-        error: 'Failed to load connection status'
+        error: message
       }))
     }
   }, [])
@@ -104,10 +105,11 @@ export const usePlaidConnection = (): UsePlaidConnectionReturn => {
         syncInProgress: false,
         error: null
       }))
-    } catch (error) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to disconnect Plaid integration'
       setState(prev => ({
         ...prev,
-        error: 'Failed to disconnect Plaid integration'
+        error: message
       }))
     }
   }, [state.connectionId])

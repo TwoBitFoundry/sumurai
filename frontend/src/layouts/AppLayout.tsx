@@ -3,6 +3,7 @@ import { Sun, Moon } from 'lucide-react'
 import { Button } from '../ui/primitives'
 import { useTheme } from '../context/ThemeContext'
 import { HeaderAccountFilter } from '../components/HeaderAccountFilter'
+import { cn } from '@/ui/primitives'
 
 type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts'
 
@@ -34,14 +35,14 @@ export function AppLayout({ children, currentTab, onTabChange, onLogout, classNa
 
   return (
     <div className={className}>
-      <div className="relative z-10 flex min-h-screen flex-col">
-        <header className="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+      <div className={cn('relative', 'z-10', 'flex', 'min-h-screen', 'flex-col')}>
+        <header className={cn('sticky', 'top-0', 'z-50', 'border-b', 'border-slate-200', 'dark:border-slate-700', 'bg-white/80', 'dark:bg-slate-800/80', 'backdrop-blur-sm')}>
           <div className={`px-4 ${scrolled ? 'h-14' : 'h-16'} transition-all duration-200 ease-out`}>
-            <div className="flex items-center justify-between h-full">
-              <div className="flex items-center gap-6">
+            <div className={cn('flex', 'items-center', 'justify-between', 'h-full')}>
+              <div className={cn('flex', 'items-center', 'gap-6')}>
                 <div className={`flex items-center gap-2 font-semibold ${scrolled ? 'text-base' : 'text-lg'}`}>Sumaura</div>
 
-                <nav className="flex gap-2" aria-label="Primary">
+                <nav className={cn('flex', 'gap-2')} aria-label="Primary">
                   {TABS.map(({ key, label }) => (
                     <Button
                       key={key}
@@ -58,20 +59,20 @@ export function AppLayout({ children, currentTab, onTabChange, onLogout, classNa
                 </nav>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className={cn('flex', 'items-center', 'gap-2')}>
                 <HeaderAccountFilter scrolled={scrolled} />
 
-                <div className="w-px h-6 bg-slate-200 dark:bg-slate-600"></div>
+                <div className={cn('w-px', 'h-6', 'bg-slate-200', 'dark:bg-slate-600')}></div>
 
                 <Button
                   type="button"
                   onClick={toggle}
                   size={scrolled ? 'xs' : 'sm'}
-                  className="rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600"
+                  className={cn('rounded-xl', 'border', 'border-slate-200', 'dark:border-slate-600', 'bg-slate-100', 'dark:bg-slate-700', 'hover:bg-slate-200', 'dark:hover:bg-slate-600')}
                   aria-label="Toggle theme"
                   title="Toggle theme"
                 >
-                  {mode === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                  {mode === 'dark' ? <Moon className={cn('h-4', 'w-4')} /> : <Sun className={cn('h-4', 'w-4')} />}
                 </Button>
                 <Button
                   type="button"
@@ -91,9 +92,9 @@ export function AppLayout({ children, currentTab, onTabChange, onLogout, classNa
           {children}
         </main>
 
-        <footer className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-          <div className="px-4 py-4 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
-            <span className="inline-flex items-center gap-1">💼 Sumaura</span>
+        <footer className={cn('border-t', 'border-slate-200', 'dark:border-slate-700', 'bg-slate-50', 'dark:bg-slate-800')}>
+          <div className={cn('px-4', 'py-4', 'text-xs', 'text-slate-500', 'dark:text-slate-400', 'flex', 'items-center', 'gap-2')}>
+            <span className={cn('inline-flex', 'items-center', 'gap-1')}>💼 Sumaura</span>
           </div>
         </footer>
       </div>

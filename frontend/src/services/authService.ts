@@ -26,10 +26,6 @@ interface RefreshResponse {
   onboarding_completed: boolean
 }
 
-interface RegisterResponse {
-  message: string
-}
-
 interface LogoutResponse {
   message: string
   cleared_session: string
@@ -133,12 +129,11 @@ export class AuthService {
       return this.refreshPromise
     }
 
-    const currentToken = this.getToken()
-    if (!currentToken) {
+    if (!this.getToken()) {
       throw new Error('No token')
     }
 
-    this.refreshPromise = this.performRefresh(currentToken)
+    this.refreshPromise = this.performRefresh()
 
     try {
       const result = await this.refreshPromise
@@ -148,7 +143,7 @@ export class AuthService {
     }
   }
 
-  private static async performRefresh(currentToken: string): Promise<RefreshResponse> {
+  private static async performRefresh(): Promise<RefreshResponse> {
     return ApiClient.post<RefreshResponse>('/auth/refresh')
   }
 

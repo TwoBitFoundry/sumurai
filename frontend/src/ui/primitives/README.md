@@ -130,6 +130,64 @@ function ProfileCard() {
 
 ---
 
+### Modal
+
+Accessible overlay container with backdrop handling and framer-motion transitions.
+
+**Use Cases:**
+- Confirmation dialogs
+- Session timeout prompts
+- Connection status messaging
+
+**Variants:**
+
+| Prop | Options | Description |
+|------|---------|-------------|
+| `size` | `sm` \| `md` \| `lg` | Sets max width for the dialog content |
+
+**Props:**
+```typescript
+interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
+  isOpen: boolean
+  onClose?: () => void
+  labelledBy?: string
+  description?: string
+  preventCloseOnBackdrop?: boolean
+  backdropClassName?: string
+  containerClassName?: string
+  size?: 'sm' | 'md' | 'lg'
+}
+```
+
+**Example:**
+```tsx
+import { Modal, GlassCard, Button } from '@/ui/primitives'
+
+function ConfirmDisconnect({ open, onClose, onConfirm }: Props) {
+  return (
+    <Modal isOpen={open} onClose={onClose} size="md">
+      <GlassCard variant="accent" rounded="xl" padding="lg">
+        <h2 className="text-lg font-semibold">Disconnect bank?</h2>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          This will remove all related accounts.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="danger" onClick={onConfirm}>Disconnect</Button>
+        </div>
+      </GlassCard>
+    </Modal>
+  )
+}
+```
+
+**Visual Characteristics:**
+- Backdrop blur with semi-transparent slate overlay
+- Scale and fade transitions for dialog content
+- Focusable backdrop button for accessibility
+
+---
+
 ### Button
 
 Interactive button with multiple visual styles.
@@ -520,6 +578,113 @@ function ComplexCard() {
    // ❌ Bad - Runtime error
    <Button variant="invalid" size="huge" />
    ```
+
+---
+
+### Alert
+
+Inline feedback banner for success, warning, info, or error states.
+
+**Use Cases:**
+- Authentication error messaging
+- Form level feedback
+- Inline status updates
+
+**Variants:**
+
+| Variant | Description |
+|---------|-------------|
+| `info` | Neutral informational banner |
+| `success` | Positive feedback |
+| `warning` | Cautionary notice |
+| `error` | Blocking error state |
+
+**Props:**
+```typescript
+interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: 'info' | 'success' | 'warning' | 'error'
+  tone?: 'solid' | 'subtle'
+  title?: string
+  icon?: React.ReactNode
+  children: React.ReactNode
+}
+```
+
+**Example:**
+```tsx
+import { Alert } from '@/ui/primitives'
+
+function ErrorBanner({ message }: { message: string }) {
+  return (
+    <Alert variant="error" title="Authentication error">
+      {message}
+    </Alert>
+  )
+}
+```
+
+---
+
+### FormLabel
+
+Consistent typography and spacing for form labels.
+
+**Use Cases:**
+- Login and registration forms
+- Settings panels
+- Input group headings
+
+**Variants:**
+
+| Variant | Description |
+|---------|-------------|
+| `default` | High contrast label |
+| `subtle` | Lower contrast secondary label |
+
+**Example:**
+```tsx
+import { FormLabel, Input } from '@/ui/primitives'
+
+function EmailField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <div className="space-y-1.5">
+      <FormLabel htmlFor="email">Email</FormLabel>
+      <Input id="email" type="email" value={value} onChange={(event) => onChange(event.target.value)} />
+    </div>
+  )
+}
+```
+
+---
+
+### RequirementPill
+
+Status pill to indicate whether a checklist item has been satisfied.
+
+**Use Cases:**
+- Password strength checklists
+- Onboarding requirement trackers
+- Multi-step validation summaries
+
+**Variants:**
+
+| Variant | Description |
+|---------|-------------|
+| `pending` | Neutral background for unmet requirement |
+| `met` | Highlighted background for satisfied requirement |
+
+**Example:**
+```tsx
+import { RequirementPill } from '@/ui/primitives'
+
+function PasswordRequirement({ met, label }: { met: boolean; label: string }) {
+  return (
+    <RequirementPill status={met ? 'met' : 'pending'}>
+      {label}
+    </RequirementPill>
+  )
+}
+```
 
 ---
 

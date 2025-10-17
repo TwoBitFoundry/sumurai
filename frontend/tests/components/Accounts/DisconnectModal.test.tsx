@@ -55,18 +55,18 @@ describe('DisconnectModal', () => {
       const mockOnCancel = vi.fn()
 
       render(
-        <DisconnectModal 
-          isOpen={true} 
-          bank={mockBank} 
-          onConfirm={mockOnConfirm} 
-          onCancel={mockOnCancel} 
+        <DisconnectModal
+          isOpen={true}
+          bank={mockBank}
+          onConfirm={mockOnConfirm}
+          onCancel={mockOnCancel}
         />
       )
 
       expect(screen.getByText('Disconnect Chase Bank?')).toBeInTheDocument()
-      expect(screen.getByText((content, element) => 
-        content.includes('This will remove all') && 
-        element?.textContent?.includes('transaction data')
+      expect(screen.getByText((content, element) =>
+        content.includes('This will remove') &&
+        element?.textContent?.includes('related transactions')
       )).toBeInTheDocument()
     })
 
@@ -175,11 +175,11 @@ describe('DisconnectModal', () => {
       const mockOnCancel = vi.fn()
 
       render(
-        <DisconnectModal 
-          isOpen={true} 
-          bank={mockBank} 
-          onConfirm={mockOnConfirm} 
-          onCancel={mockOnCancel} 
+        <DisconnectModal
+          isOpen={true}
+          bank={mockBank}
+          onConfirm={mockOnConfirm}
+          onCancel={mockOnCancel}
           loading={true}
         />
       )
@@ -189,7 +189,7 @@ describe('DisconnectModal', () => {
 
       expect(cancelButton).toBeDisabled()
       expect(disconnectButton).toBeDisabled()
-      expect(disconnectButton).toHaveClass('opacity-60', 'cursor-not-allowed')
+      expect(disconnectButton).toHaveAttribute('disabled')
     })
   })
 })

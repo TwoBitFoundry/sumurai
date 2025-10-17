@@ -50,7 +50,7 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
 
     try {
       clearError()
-      const exchangeResult = await PlaidService.exchangeToken(publicToken)
+      await PlaidService.exchangeToken(publicToken)
 
       const updatedConnections = await plaidConnections.refresh()
 
@@ -63,7 +63,7 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
           setToast(`Bank connected! Synced ${count} transactions`)
           await plaidConnections.refresh()
           dispatchAccountsChanged()
-        } catch (syncError) {
+        } catch (syncError: unknown) {
           console.warn('Failed to sync transactions after connection', syncError)
           setToast(`Bank connected to ${latestConnection.institutionName}`)
           dispatchAccountsChanged()
@@ -72,16 +72,19 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
         setToast('Bank connected successfully!')
         dispatchAccountsChanged()
       }
-    } catch (e: any) {
-      const message = `Failed to exchange token: ${e instanceof Error ? e.message : 'Unknown error'}`
+    } catch (error: unknown) {
+      const message = `Failed to exchange token: ${error instanceof Error ? error.message : 'Unknown error'}`
       handleError(message)
     }
   }, [clearError, handleError, plaidConnections])
 
-  const handleExit = useCallback((err: any) => {
+  const handleExit = useCallback((err: unknown) => {
     if (!enabled) return
-    if (err) {
-      handleError(`Plaid Link exited with error: ${err.error_message || 'Unknown error'}`)
+    if (err && typeof err === 'object' && 'error_message' in err) {
+      const message = (err as { error_message?: string }).error_message || 'Unknown error'
+      handleError(`Plaid Link exited with error: ${message}`)
+    } else if (err) {
+      handleError('Plaid Link exited with an unknown error')
     }
   }, [enabled, handleError])
 
@@ -108,10 +111,10 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
       if (ready) {
         open()
       }
-    } catch (e: any) {
-      const message = `Failed to start bank connection: ${e instanceof Error ? e.message : 'Unknown error'}`
+    } catch (error: unknown) {
+      const message = `Failed to start bank connection: ${error instanceof Error ? error.message : 'Unknown error'}`
       handleError(message)
-      throw e
+      throw error
     }
   }, [clearError, handleError, open, ready])
 
@@ -124,13 +127,13 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
     plaidConnections.setConnectionSyncInProgress(connectionId, true)
     try {
       const result = await PlaidService.syncTransactions(connectionId)
-      const { transactions = [], metadata } = result || {}
+      const { transactions = [] } = result || {}
       const count = Array.isArray(transactions) ? transactions.length : 0
       setToast(`Synced ${count} new transactions from ${connection.institutionName}`)
 
       await plaidConnections.refresh()
-    } catch (e: any) {
-      const message = `Sync failed for ${connection.institutionName}: ${e instanceof Error ? e.message : 'Unknown error'}`
+    } catch (error: unknown) {
+      const message = `Sync failed for ${connection.institutionName}: ${error instanceof Error ? error.message : 'Unknown error'}`
       handleError(message)
       plaidConnections.setConnectionSyncInProgress(connectionId, false)
     }
@@ -160,8 +163,8 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
       setToast(`${connection.institutionName} disconnected successfully`)
       await plaidConnections.refresh()
       dispatchAccountsChanged()
-    } catch (e: any) {
-      const message = `Failed to disconnect ${connection.institutionName}: ${e instanceof Error ? e.message : 'Unknown error'}`
+    } catch (error: unknown) {
+      const message = `Failed to disconnect ${connection.institutionName}: ${error instanceof Error ? error.message : 'Unknown error'}`
       handleError(message)
     }
   }, [clearError, handleError, plaidConnections])

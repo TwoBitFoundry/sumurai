@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { getTagThemeForCategory } from '../../utils/categories'
+import { cn } from '@/ui/primitives'
 
 type Accent = 'emerald' | 'sky' | 'violet' | 'amber' | 'slate' | 'rose'
 
@@ -173,21 +174,23 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
   const [showLeftFade, setShowLeftFade] = useState(false)
   const [showRightFade, setShowRightFade] = useState(false)
 
-  const checkScroll = () => {
+  const checkScroll = useCallback(() => {
     const el = pillsRef.current
     if (!el) return
     setShowLeftFade(el.scrollLeft > 0)
     setShowRightFade(el.scrollLeft < el.scrollWidth - el.clientWidth - 1)
-  }
+  }, [])
 
   useEffect(() => {
     checkScroll()
     window.addEventListener('resize', checkScroll)
     return () => window.removeEventListener('resize', checkScroll)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pills?.length])
+  }, [checkScroll, pills?.length])
 
   const hasFooter = Boolean(subtext) || Boolean(pills && pills.length > 0)
+  const ringColorStyle = {
+    '--tw-ring-color': `${styles.ringHex}66`,
+  } as CSSProperties
 
   return (
     <div
@@ -198,25 +201,25 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
     >
       <div className={classNames('relative h-full w-full overflow-hidden rounded-2xl border-2 bg-white/80 p-4 transform-gpu origin-center will-change-transform transition-transform duration-200 dark:bg-[#111a2f]/70', styles.border, styles.borderDark, styles.hoverBorder, styles.hoverBorderDark, 'group-hover:-translate-y-[2px] group-hover:scale-[1.01]', minHeightClassName)}>
         <div
-          className="hero-stat-card__gradient pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          className={cn('hero-stat-card__gradient', 'pointer-events-none', 'absolute', 'inset-0', 'rounded-2xl', 'opacity-0', 'transition-opacity', 'duration-300', 'group-hover:opacity-100')}
           style={{ backgroundImage: `linear-gradient(135deg, ${styles.gradFrom}33, ${styles.gradVia}1f, transparent 70%)` }}
         />
-        <div className="pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] opacity-70">
+        <div className={cn('pointer-events-none', 'absolute', 'inset-[2px]', 'rounded-[calc(1rem-2px)]', 'opacity-70')}>
           <div
-            className="absolute inset-0 rounded-[calc(1rem-2px)] ring-2"
-            style={{ ['--tw-ring-color' as any]: `${styles.ringHex}66` }}
+            className={cn('absolute', 'inset-0', 'rounded-[calc(1rem-2px)]', 'ring-2')}
+            style={ringColorStyle}
           />
         </div>
 
         <div className={classNames('relative z-10 flex h-full flex-col gap-2', hasFooter ? 'justify-between' : 'justify-start')}>
-          <div className="flex items-center gap-2">
+          <div className={cn('flex', 'items-center', 'gap-2')}>
             {icon ? <span className={classNames('h-4 w-4', styles.icon)}>{icon}</span> : null}
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400">{title}</div>
+            <div className={cn('text-[0.65rem]', 'font-semibold', 'uppercase', 'tracking-[0.24em]', 'text-slate-500', 'transition-colors', 'duration-500', 'dark:text-slate-400')}>{title}</div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <div className="text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{value}</div>
+          <div className={cn('flex', 'items-baseline', 'gap-2')}>
+            <div className={cn('text-2xl', 'font-semibold', 'text-slate-900', 'transition-colors', 'duration-500', 'dark:text-white')}>{value}</div>
             {suffix ? (
-              <div className="text-sm font-medium text-slate-600 transition-colors duration-500 dark:text-slate-300">{suffix}</div>
+              <div className={cn('text-sm', 'font-medium', 'text-slate-600', 'transition-colors', 'duration-500', 'dark:text-slate-300')}>{suffix}</div>
             ) : null}
           </div>
           {(subtext || (pills && pills.length > 0)) ? (
@@ -224,7 +227,7 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
               <div
                 ref={pillsRef}
                 onScroll={checkScroll}
-                className="scrollbar-hide flex items-center gap-1.5 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                className={cn('scrollbar-hide', 'flex', 'items-center', 'gap-1.5', 'overflow-x-auto', 'whitespace-nowrap', '[-ms-overflow-style:none]', '[scrollbar-width:none]', '[&::-webkit-scrollbar]:hidden')}
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {subtext ? (
@@ -292,10 +295,10 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
                 })}
               </div>
               {showLeftFade && (
-                <div className="pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80" />
+                <div className={cn('pointer-events-none', 'absolute', 'bottom-0', 'left-0', 'top-0', 'w-6', 'bg-gradient-to-r', 'from-white/80', 'to-transparent', 'transition-opacity', 'duration-200', 'dark:from-[#111a2f]/80')} />
               )}
               {showRightFade && (
-                <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80" />
+                <div className={cn('pointer-events-none', 'absolute', 'bottom-0', 'right-0', 'top-0', 'w-6', 'bg-gradient-to-l', 'from-white/80', 'to-transparent', 'transition-opacity', 'duration-200', 'dark:from-[#111a2f]/80')} />
               )}
             </div>
           ) : null}

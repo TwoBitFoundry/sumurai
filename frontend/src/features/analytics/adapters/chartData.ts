@@ -3,10 +3,17 @@ import { formatCategoryName } from '../../../utils/categories'
 
 export type DonutDatum = { name: string; value: number }
 
-export function categoriesToDonut(categories: any[]): DonutDatum[] {
-  const mapped = (categories || []).map((c: any) => {
-    const rawName: string = (c.category ?? c.name ?? 'Unknown') as string
-    const rawAmount: unknown = (c.amount ?? c.value ?? 0)
+type CategoryDatum = {
+  category?: string | null
+  name?: string | null
+  amount?: number | string | null
+  value?: number | string | null
+}
+
+export function categoriesToDonut(categories: CategoryDatum[] = []): DonutDatum[] {
+  const mapped = categories.map((c) => {
+    const rawName: string = (c.category ?? c.name ?? 'Unknown') || 'Unknown'
+    const rawAmount: number | string | null | undefined = c.amount ?? c.value ?? 0
     const value = typeof rawAmount === 'string' ? Number(rawAmount) : Number(rawAmount || 0)
     return { name: formatCategoryName(rawName), value: Number.isFinite(value) ? value : 0 }
   })
