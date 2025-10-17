@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useMemo, useRef, useState } from 'react'
+import { useEffect, useCallback, useMemo, useRef, useState } from 'react'
 import { cva } from 'class-variance-authority'
 import { Check } from 'lucide-react'
 import { AppHeader } from '@/components/ui/AppHeader'
@@ -237,17 +237,8 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
         </div>
       )}
 
-      <div className={cn('relative flex w-full justify-center')}>
-        <div
-          className={cn(
-            'flex w-full justify-center',
-            'px-4 pb-12',
-            'sm:px-6 sm:pb-16',
-            onLogout ? 'pt-28 sm:pt-36' : 'pt-12 sm:pt-16'
-          )}
-        >
-          <div className={cn('w-full max-w-6xl')}>
-            <GlassCard
+      <div className={cn('w-full max-w-6xl', onLogout && 'mt-7')}>
+        <GlassCard
               variant="auth"
               rounded="default"
               padding="lg"
@@ -362,8 +353,6 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
                 </div>
               </div>
             </GlassCard>
-          </div>
-        </div>
       </div>
     </GradientShell>
   )

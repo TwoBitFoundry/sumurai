@@ -10,12 +10,12 @@ interface AppHeaderProps {
 }
 
 const headerVariants = cva(
-  'sticky top-0 z-50 border-b transition-colors duration-300',
+  'border-b transition-colors duration-300',
   {
     variants: {
       variant: {
-        default: 'bg-white/80 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-800/80 border-slate-200',
-        onboarding: 'bg-white/40 backdrop-blur-xl border-white/30 dark:border-slate-700/30 dark:bg-slate-900/40',
+        default: 'sticky top-0 z-50 bg-white/80 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-800/80 border-slate-200',
+        onboarding: 'fixed inset-x-0 top-0 z-20 bg-white/40 backdrop-blur-xl border-white/30 dark:border-slate-700/30 dark:bg-slate-900/40',
       },
     },
     defaultVariants: {
