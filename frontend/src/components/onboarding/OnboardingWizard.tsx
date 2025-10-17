@@ -239,10 +239,10 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
           )}
           className={cn('flex flex-col gap-8 lg:gap-10')}
         >
-          <div className={cn('pointer-events-none', 'absolute inset-0')}>
+          <div className={cn('pointer-events-none', 'absolute inset-0', 'rounded-[inherit] overflow-hidden')}>
             <div
               className={cn(
-                'absolute inset-[1px] rounded-[2.15rem]',
+                'absolute inset-[1px] rounded-[inherit]',
                 'ring-1 ring-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-1px_0_rgba(15,23,42,0.12)]',
                 'transition-colors duration-500 ease-out',
                 'dark:ring-white/10',
@@ -251,7 +251,7 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
             />
             <div
               className={cn(
-                'absolute inset-0 rounded-[2.2rem]',
+                'absolute inset-[1px] rounded-[inherit]',
                 'bg-[radial-gradient(120%_120%_at_14%_-8%,rgba(255,255,255,0.38)_0%,rgba(255,255,255,0.12)_42%,transparent_68%)]',
                 'opacity-80',
                 'transition-opacity duration-500 ease-out',
@@ -260,7 +260,7 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
             />
             <div
               className={cn(
-                'absolute inset-0 rounded-[2.2rem]',
+                'absolute inset-[1px] rounded-[inherit]',
                 'bg-[radial-gradient(132%_160%_at_82%_118%,rgba(14,165,233,0.22)_0%,rgba(56,189,248,0.18)_28%,rgba(167,139,250,0.22)_56%,rgba(251,191,36,0.2)_76%,transparent_88%)]',
                 'opacity-75',
                 'transition-opacity duration-500 ease-out',
