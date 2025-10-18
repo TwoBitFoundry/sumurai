@@ -1,7 +1,9 @@
 import { useEffect, useCallback, useMemo, useRef, useState } from 'react'
 import { cva } from 'class-variance-authority'
 import { Check } from 'lucide-react'
-import { AppHeader } from '@/components/ui/AppHeader'
+import { AppTitleBar, AppFooter } from '@/ui/primitives'
+import { useTheme } from '@/context/ThemeContext'
+import { useScrollDetection } from '@/hooks/useScrollDetection'
 import { useOnboardingWizard, type OnboardingStep } from '@/hooks/useOnboardingWizard'
 import { useOnboardingPlaidFlow } from '@/hooks/useOnboardingPlaidFlow'
 import { WelcomeStep } from './WelcomeStep'
@@ -51,6 +53,8 @@ interface OnboardingWizardProps {
 }
 
 export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps) {
+  const scrolled = useScrollDetection()
+  const { mode, toggle } = useTheme()
   const {
     currentStep,
     stepIndex,
@@ -237,26 +241,23 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
   }, [stepIndex, steps])
 
   return (
-    <GradientShell variant="auth">
-      {onLogout && (
-        <div
-          className={cn(
-            'pointer-events-auto fixed inset-x-0 top-0 z-30',
-            'w-full'
-          )}
-        >
-          <AppHeader onLogout={onLogout} variant="onboarding" />
-        </div>
-      )}
+    <div className={cn('flex', 'flex-col', 'min-h-screen')}>
+      <AppTitleBar
+        state="onboarding"
+        scrolled={scrolled}
+        themeMode={mode}
+        onThemeToggle={toggle}
+        onLogout={onLogout}
+      />
 
-      <div className={cn('w-full max-w-6xl', onLogout && 'mt-7')}>
+      <GradientShell variant="auth" className={cn('flex-1', 'flex', 'items-center', 'justify-center', 'px-4', 'py-8')}>
         <GlassCard
               variant="auth"
               rounded="default"
               padding="lg"
               withInnerEffects={false}
               containerClassName={cn(
-                'relative w-full overflow-hidden',
+                'relative w-full max-w-6xl overflow-hidden',
                 'animate-[fadeSlideUp_400ms_ease-out]'
               )}
               className={cn('flex flex-col gap-8 lg:gap-10')}
@@ -364,7 +365,9 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
                 </div>
               </div>
             </GlassCard>
-      </div>
-    </GradientShell>
+      </GradientShell>
+
+      <AppFooter />
+    </div>
   )
 }

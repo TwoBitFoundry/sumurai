@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react'
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
+import { ThemeProvider } from '@/context/ThemeContext'
 import { vi, beforeEach, afterEach } from 'vitest'
 
 // Mock the hooks
@@ -7,6 +8,9 @@ vi.mock('@/hooks/useOnboardingWizard')
 vi.mock('@/hooks/useOnboardingPlaidFlow')
 vi.mock('@/hooks/useOnboardingTellerFlow')
 vi.mock('@/hooks/useTellerProviderInfo')
+vi.mock('@/hooks/useScrollDetection', () => ({
+  useScrollDetection: () => false,
+}))
 
 // Mock boundary components so copy tweaks do not break contract tests
 const { mockWelcomeStep, mockConnectAccountStep, mockProviderContent } = vi.hoisted(() => ({
@@ -75,6 +79,10 @@ const mockUseOnboardingWizard = vi.mocked(await import('@/hooks/useOnboardingWiz
 const mockUseOnboardingPlaidFlow = vi.mocked(await import('@/hooks/useOnboardingPlaidFlow')).useOnboardingPlaidFlow
 const mockUseOnboardingTellerFlow = vi.mocked(await import('@/hooks/useOnboardingTellerFlow')).useOnboardingTellerFlow
 const mockUseTellerProviderInfo = vi.mocked(await import('@/hooks/useTellerProviderInfo')).useTellerProviderInfo
+
+const renderWithTheme = (component: React.ReactElement) => {
+  return render(<ThemeProvider>{component}</ThemeProvider>)
+}
 
 describe('OnboardingWizard', () => {
   const mockWizardHook = {
@@ -147,7 +155,7 @@ describe('OnboardingWizard', () => {
   it('given wizard component when rendered then shows current step content', () => {
     const onComplete = vi.fn()
 
-    render(<OnboardingWizard onComplete={onComplete} />)
+    renderWithTheme(<OnboardingWizard onComplete={onComplete} />)
 
     expect(screen.getByTestId('welcome-step')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument()
@@ -162,7 +170,7 @@ describe('OnboardingWizard', () => {
       progress: 100,
     })
 
-    render(<OnboardingWizard onComplete={vi.fn()} />)
+    renderWithTheme(<OnboardingWizard onComplete={vi.fn()} />)
 
     expect(screen.getByTestId('connect-step')).toBeInTheDocument()
   })
@@ -180,7 +188,7 @@ describe('OnboardingWizard', () => {
     })
 
 
-    render(<OnboardingWizard onComplete={vi.fn()} />)
+    renderWithTheme(<OnboardingWizard onComplete={vi.fn()} />)
 
     const nextButton = screen.getByRole('button', { name: 'Continue' })
     expect(nextButton).toBeEnabled()
@@ -197,7 +205,7 @@ describe('OnboardingWizard', () => {
       isLastStep: true,
     })
 
-    render(<OnboardingWizard onComplete={vi.fn()} />)
+    renderWithTheme(<OnboardingWizard onComplete={vi.fn()} />)
 
     const skipButton = screen.getByRole('button', { name: /skip for now/i })
     fireEvent.click(skipButton)
@@ -222,7 +230,7 @@ describe('OnboardingWizard', () => {
       isConnected: true,
     })
 
-    render(<OnboardingWizard onComplete={onComplete} />)
+    renderWithTheme(<OnboardingWizard onComplete={onComplete} />)
 
     const getStartedButton = screen.getByRole('button', { name: /get started/i })
     expect(getStartedButton).toBeEnabled()
@@ -243,7 +251,7 @@ describe('OnboardingWizard', () => {
       canGoNext: false,
     })
 
-    render(<OnboardingWizard onComplete={vi.fn()} />)
+    renderWithTheme(<OnboardingWizard onComplete={vi.fn()} />)
 
     expect(screen.queryByRole('button', { name: /complete/i })).not.toBeInTheDocument()
   })
@@ -256,13 +264,13 @@ describe('OnboardingWizard', () => {
       isComplete: true,
     })
 
-    render(<OnboardingWizard onComplete={onComplete} />)
+    renderWithTheme(<OnboardingWizard onComplete={onComplete} />)
 
     expect(onComplete).toHaveBeenCalled()
   })
 
   it('given wizard when rendered then theme is managed by ThemeProvider (no local dark class)', () => {
-    const { container } = render(<OnboardingWizard onComplete={vi.fn()} />)
+    const { container } = renderWithTheme(<OnboardingWizard onComplete={vi.fn()} />)
 
     const topLevelDiv = container.firstChild as HTMLElement
     expect(topLevelDiv).not.toHaveClass('dark')
