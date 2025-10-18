@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react'
 import { GradientShell } from '../ui/primitives'
+import { Footer } from '../components/Footer'
 import { cn } from '../ui/primitives/utils'
 
 interface AuthLayoutProps {
@@ -9,9 +10,12 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children, className }: AuthLayoutProps) {
   return (
-    <GradientShell variant="auth" className={cn('', className)}>
-      {children}
-    </GradientShell>
+    <div className={cn('flex', 'min-h-screen', 'flex-col')}>
+      <GradientShell variant="auth" className={cn('flex-1', className)}>
+        {children}
+      </GradientShell>
+      <Footer />
+    </div>
   )
 }
 

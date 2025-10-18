@@ -3,6 +3,7 @@ import { Sun, Moon } from 'lucide-react'
 import { Button } from '../ui/primitives'
 import { useTheme } from '../context/ThemeContext'
 import { HeaderAccountFilter } from '../components/HeaderAccountFilter'
+import { Footer } from '../components/Footer'
 import { cn } from '@/ui/primitives'
 
 type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts'
@@ -32,6 +33,7 @@ export function AppLayout({ children, currentTab, onTabChange, onLogout, classNa
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
 
   return (
     <div className={className}>
@@ -92,11 +94,7 @@ export function AppLayout({ children, currentTab, onTabChange, onLogout, classNa
           {children}
         </main>
 
-        <footer className={cn('border-t', 'border-slate-200', 'dark:border-slate-700', 'bg-slate-50', 'dark:bg-slate-800')}>
-          <div className={cn('px-4', 'py-4', 'text-xs', 'text-slate-500', 'dark:text-slate-400', 'flex', 'items-center', 'gap-2')}>
-            <span className={cn('inline-flex', 'items-center', 'gap-1')}>💼 Sumaura</span>
-          </div>
-        </footer>
+        <Footer />
       </div>
     </div>
   )
