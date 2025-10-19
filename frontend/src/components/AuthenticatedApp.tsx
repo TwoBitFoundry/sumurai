@@ -4,13 +4,14 @@ import DashboardPage from '../pages/DashboardPage'
 import TransactionsPage from '../pages/TransactionsPage'
 import BudgetsPage from '../pages/BudgetsPage'
 import AccountsPage from '../pages/AccountsPage'
+import SettingsPage from '../pages/SettingsPage'
 import Card from './ui/Card'
 import { ErrorBoundary } from './ErrorBoundary'
 import { GradientShell } from '../ui/primitives'
 import { AppLayout } from '../layouts/AppLayout'
 import { cn } from '@/ui/primitives'
 
-type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts'
+type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings'
 
 interface AuthenticatedAppProps {
   onLogout: () => void
@@ -43,6 +44,7 @@ export function AuthenticatedApp({ onLogout }: AuthenticatedAppProps) {
               {tab === 'transactions' && <TransactionsPage />}
               {tab === 'budgets' && <BudgetsPage />}
               {tab === 'accounts' && <AccountsPage onError={setError} />}
+              {tab === 'settings' && <SettingsPage onLogout={onLogout} />}
             </motion.section>
           </AnimatePresence>
         </AppLayout>
