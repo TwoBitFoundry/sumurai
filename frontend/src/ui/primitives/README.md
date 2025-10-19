@@ -14,47 +14,54 @@ All primitives use:
 
 ### GradientShell
 
-Full-page background container with animated aura effects.
+Full-page background container with animated aura effects. Uses a unified, rich visual design with blue-toned gradients and an animated rotating aura.
 
 **Use Cases:**
 - App shell backgrounds
 - Authentication page backgrounds
+- Onboarding wizard backgrounds
 - Landing page hero sections
-
-**Variants:**
-
-| Variant | Description | Example Use |
-|---------|-------------|-------------|
-| `auth` | Centered layout for auth pages | Login, register pages |
-| `app` | Full-screen app layout | Main application shell |
 
 **Props:**
 ```typescript
 interface GradientShellProps {
   children: React.ReactNode
   className?: string
-  variant?: 'auth' | 'app'
+  centered?: boolean  // If true, centers content vertically and horizontally (default: false)
 }
 ```
 
-**Example:**
+**Examples:**
+
+Centered layout (auth pages, onboarding):
 ```tsx
 import { GradientShell } from '@/ui/primitives'
 
-function AuthPage() {
+function LoginPage() {
   return (
-    <GradientShell variant="auth">
+    <GradientShell centered>
       <LoginForm />
     </GradientShell>
   )
 }
 ```
 
+Full-screen layout (main application):
+```tsx
+function AppShell() {
+  return (
+    <GradientShell>
+      <AppLayout />
+    </GradientShell>
+  )
+}
+```
+
 **Visual Characteristics:**
-- Radial gradient base layer
-- Animated rotating aura (60-120s cycles)
-- Multiple overlay gradients for depth
-- Different opacity levels for light/dark modes
+- Radial gradient base layer with blue-toned colors
+- Animated rotating aura (95s cycles, 0.28 opacity)
+- Multiple layered overlay gradients for visual depth
+- Consistent light and dark mode support via Tailwind `dark:` variants
 
 ---
 

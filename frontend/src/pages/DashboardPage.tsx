@@ -33,7 +33,6 @@ const DashboardPage: React.FC = () => {
   const spendingOverviewRef = useRef<HTMLDivElement | null>(null)
   const balancesOverviewRef = useRef<HTMLDivElement | null>(null)
   const [showTimeBar, setShowTimeBar] = useState(false)
-  const [timeBarBottom, setTimeBarBottom] = useState(24)
 
   const analytics = useAnalytics(dateRange)
   const analyticsLoading = analytics.loading
@@ -54,42 +53,6 @@ const DashboardPage: React.FC = () => {
     }, { threshold: [0, 0.5, 1] })
     observer.observe(target)
     return () => observer.disconnect()
-  }, [])
-
-  useEffect(() => {
-    const footer = typeof document !== 'undefined' ? document.querySelector('footer') : null
-    if (!footer) {
-      setTimeBarBottom(24)
-      return
-    }
-
-    const footerVisibleRef = { current: false }
-    const computeBottom = (visible: boolean) => {
-      const height = footer.getBoundingClientRect().height || 0
-      return visible ? Math.max(24, height + 16) : 24
-    }
-
-    const handleResize = () => {
-      setTimeBarBottom(computeBottom(footerVisibleRef.current))
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0]
-        footerVisibleRef.current = entry.isIntersecting && entry.intersectionRatio > 0
-        setTimeBarBottom(computeBottom(footerVisibleRef.current))
-      },
-      { threshold: [0, 0.25, 0.5, 1] }
-    )
-
-    observer.observe(footer)
-    setTimeBarBottom(computeBottom(footerVisibleRef.current))
-    window.addEventListener('resize', handleResize)
-
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', handleResize)
-    }
   }, [])
 
   const monthSpend = analytics.spendingTotal
@@ -300,11 +263,14 @@ const DashboardPage: React.FC = () => {
             )}
           </Card>
         </div>
-        {showTimeBar && (
-          <div
-            className={cn('fixed', 'left-0', 'right-0', 'z-50', 'flex', 'justify-center', 'transition-[bottom]', 'duration-300', 'ease-out')}
-            style={{ bottom: timeBarBottom }}
-          >
+        <div
+          className={cn(
+            'fixed', 'left-0', 'right-0', 'z-50', 'flex', 'justify-center',
+            'transition-opacity', 'duration-300', 'ease-out',
+            showTimeBar ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          )}
+          style={{ bottom: 24 }}
+        >
             <div className={cn('flex', 'gap-2', 'px-3', 'py-2', 'rounded-2xl', 'bg-white/80', 'dark:bg-slate-800/80', 'border', 'border-slate-200/70', 'dark:border-slate-700/70', 'shadow-xl', 'backdrop-blur-md', 'ring-1', 'ring-slate-200/60', 'dark:ring-slate-700/60')}>
               {[
                 { key: 'current-month', label: 'Current Month' },
@@ -327,8 +293,7 @@ const DashboardPage: React.FC = () => {
                 </button>
               ))}
             </div>
-          </div>
-        )}
+        </div>
       </div>
     </PageLayout>
   )
