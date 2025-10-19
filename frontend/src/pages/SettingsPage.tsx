@@ -1,8 +1,10 @@
 import { useState, FormEvent } from 'react'
-import { GlassCard, Button, Input, FormLabel, Modal } from '@/ui/primitives'
+import { GlassCard, Button, Input, FormLabel, Modal, Badge, Alert } from '@/ui/primitives'
 import { cn } from '@/ui/primitives/utils'
 import { SettingsService } from '@/services/SettingsService'
 import { AuthService } from '@/services/authService'
+import { usePasswordValidation } from '@/hooks/usePasswordValidation'
+import { PasswordChecker } from '@/components/PasswordChecker'
 
 interface SettingsPageProps {
   onLogout?: () => void
@@ -16,6 +18,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
 
+  const newPasswordValidation = usePasswordValidation(newPassword)
+  const isPasswordMatch = newPassword === confirmPassword
+
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [confirmText, setConfirmText] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
@@ -26,12 +31,17 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     setPasswordError(null)
     setPasswordSuccess(null)
 
-    if (newPassword.length < 8) {
-      setPasswordError('Password must be at least 8 characters')
+    if (!currentPassword) {
+      setPasswordError('Current password is required')
       return
     }
 
-    if (newPassword !== confirmPassword) {
+    if (!newPasswordValidation.isValid) {
+      setPasswordError('Password does not meet requirements')
+      return
+    }
+
+    if (!isPasswordMatch) {
       setPasswordError('Passwords do not match')
       return
     }
@@ -92,98 +102,101 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
   return (
     <div className={cn('max-w-2xl', 'mx-auto')}>
-      <div className={cn('mb-6')}>
-        <h1 className={cn('text-2xl', 'font-semibold', 'text-slate-900', 'dark:text-slate-100')}>
-          Settings
-        </h1>
-        <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400', 'mt-1')}>
-          Manage your account preferences
-        </p>
-      </div>
-
       <div className={cn('flex', 'flex-col', 'gap-6')}>
         <GlassCard variant="default" padding="lg">
-          <h2 className={cn('text-lg', 'font-semibold', 'mb-4', 'text-slate-900', 'dark:text-slate-100')}>
-            Change Password
-          </h2>
-
-          {passwordSuccess && (
-            <div className={cn('mb-4', 'p-3', 'rounded-lg', 'bg-green-50', 'dark:bg-green-900/20')}>
-              <p className={cn('text-sm', 'text-green-600', 'dark:text-green-400')}>
-                {passwordSuccess}
-              </p>
-            </div>
-          )}
-
-          {passwordError && (
-            <div className={cn('mb-4', 'p-3', 'rounded-lg', 'bg-red-50', 'dark:bg-red-900/20')}>
-              <p className={cn('text-sm', 'text-red-600', 'dark:text-red-400')}>
-                {passwordError}
-              </p>
-            </div>
-          )}
-
-          <form onSubmit={handleChangePassword} className={cn('space-y-4')}>
-            <div>
-              <FormLabel htmlFor="current-password">Current Password</FormLabel>
-              <Input
-                id="current-password"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => {
-                  setCurrentPassword(e.target.value)
-                  if (passwordError) setPasswordError(null)
-                }}
-                required
-                disabled={isChangingPassword}
-                variant="default"
-              />
-            </div>
-
-            <div>
-              <FormLabel htmlFor="new-password">New Password</FormLabel>
-              <Input
-                id="new-password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => {
-                  setNewPassword(e.target.value)
-                  if (passwordError) setPasswordError(null)
-                }}
-                required
-                disabled={isChangingPassword}
-                variant="default"
-              />
-              <p className={cn('mt-1', 'text-xs', 'text-slate-500', 'dark:text-slate-400')}>
-                Must be at least 8 characters
+          <div className={cn('space-y-5')}>
+            <div className={cn('space-y-3')}>
+              <Badge size="md">ACCOUNT SETTINGS</Badge>
+              <h2 className={cn('text-2xl', 'font-semibold', 'text-slate-900', 'dark:text-slate-100')}>
+                Change Password
+              </h2>
+              <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400')}>
+                Update your password to keep your account secure
               </p>
             </div>
 
-            <div>
-              <FormLabel htmlFor="confirm-password">Confirm New Password</FormLabel>
-              <Input
-                id="confirm-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value)
-                  if (passwordError) setPasswordError(null)
-                }}
-                required
-                disabled={isChangingPassword}
-                variant="default"
-              />
-            </div>
+            <form onSubmit={handleChangePassword} className={cn('space-y-4')}>
+              {passwordSuccess && (
+                <Alert variant="success" title="Success">
+                  {passwordSuccess}
+                </Alert>
+              )}
 
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
-              className={cn('w-full')}
-            >
-              {isChangingPassword ? 'Changing Password...' : 'Change Password'}
-            </Button>
-          </form>
+              {passwordError && (
+                <Alert variant="error" title="Error">
+                  {passwordError}
+                </Alert>
+              )}
+
+              <div className={cn('space-y-1.5')}>
+                <FormLabel htmlFor="current-password">Current Password</FormLabel>
+                <Input
+                  id="current-password"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => {
+                    setCurrentPassword(e.target.value)
+                    if (passwordError) setPasswordError(null)
+                  }}
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  disabled={isChangingPassword}
+                  variant="default"
+                />
+              </div>
+
+              <div className={cn('grid', 'gap-4', 'md:grid-cols-2')}>
+                <div className={cn('space-y-1.5')}>
+                  <FormLabel htmlFor="new-password">New Password</FormLabel>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value)
+                      if (passwordError) setPasswordError(null)
+                    }}
+                    autoComplete="new-password"
+                    variant={newPassword && !newPasswordValidation.isValid ? 'invalid' : 'default'}
+                    placeholder="Create a new password"
+                    disabled={isChangingPassword}
+                  />
+                </div>
+
+                <div className={cn('space-y-1.5')}>
+                  <FormLabel htmlFor="confirm-password">Confirm New Password</FormLabel>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value)
+                      if (passwordError) setPasswordError(null)
+                    }}
+                    autoComplete="new-password"
+                    variant={confirmPassword && !isPasswordMatch ? 'invalid' : 'default'}
+                    placeholder="Re-enter new password"
+                    disabled={isChangingPassword}
+                  />
+                  {confirmPassword && !isPasswordMatch && (
+                    <p className={cn('text-xs', 'text-red-600', 'dark:text-red-300')}>Passwords do not match.</p>
+                  )}
+                </div>
+              </div>
+
+              <PasswordChecker validation={newPasswordValidation} />
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                disabled={isChangingPassword || !currentPassword || !newPasswordValidation.isValid || !isPasswordMatch}
+                className={cn('w-full')}
+              >
+                {isChangingPassword ? 'Changing Password...' : 'Change Password'}
+              </Button>
+            </form>
+          </div>
         </GlassCard>
 
         <GlassCard

@@ -1,12 +1,5 @@
 import { useState, useMemo } from 'react'
-
-interface PasswordValidation {
-  minLength: boolean
-  hasCapital: boolean
-  hasNumber: boolean
-  hasSpecial: boolean
-  isValid: boolean
-}
+import { usePasswordValidation, type PasswordValidation } from './usePasswordValidation'
 
 interface RegistrationValidation {
   email: string
@@ -32,23 +25,8 @@ export function useRegistrationValidation(): RegistrationValidation {
     return emailRegex.test(email)
   }
 
-  const validatePassword = (password: string): PasswordValidation => {
-    const minLength = password.length >= 8
-    const hasCapital = /[A-Z]/.test(password)
-    const hasNumber = /\d/.test(password)
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password)
-
-    return {
-      minLength,
-      hasCapital,
-      hasNumber,
-      hasSpecial,
-      isValid: minLength && hasCapital && hasNumber && hasSpecial
-    }
-  }
-
   const isEmailValid = useMemo(() => validateEmail(email), [email])
-  const passwordValidation = useMemo(() => validatePassword(password), [password])
+  const passwordValidation = usePasswordValidation(password)
   const isPasswordMatch = useMemo(() => password === confirmPassword, [password, confirmPassword])
   const isFormValid = useMemo(() =>
     isEmailValid && passwordValidation.isValid && isPasswordMatch,
