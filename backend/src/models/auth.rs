@@ -103,3 +103,29 @@ pub struct User {
     pub updated_at: DateTime<Utc>,
     pub onboarding_completed: bool,
 }
+
+#[derive(Deserialize)]
+pub struct ChangePasswordRequest {
+    pub current_password: String,
+    pub new_password: String,
+}
+
+#[derive(Serialize)]
+pub struct ChangePasswordResponse {
+    pub message: String,
+    pub requires_reauth: bool,
+}
+
+#[derive(Serialize)]
+pub struct DeletedItemsSummary {
+    pub connections: i32,
+    pub transactions: i32,
+    pub accounts: i32,
+    pub budgets: i32,
+}
+
+#[derive(Serialize)]
+pub struct DeleteAccountResponse {
+    pub message: String,
+    pub deleted_items: DeletedItemsSummary,
+}

@@ -235,6 +235,8 @@ pub fn create_app(state: AppState) -> Router {
         .route("/api/budgets", post(create_authenticated_budget))
         .route("/api/budgets/{id}", put(update_authenticated_budget))
         .route("/api/budgets/{id}", delete(delete_authenticated_budget))
+        .route("/api/auth/change-password", put(change_user_password))
+        .route("/api/auth/account", delete(delete_user_account))
         .layer(axum::middleware::from_fn_with_state(
             AuthMiddlewareState {
                 auth_service: state.auth_service.clone(),
@@ -1857,6 +1859,7 @@ async fn get_authenticated_net_worth_over_time(
 
     // Load depository accounts (checking/savings fall under 'depository')
     let accounts = state
+
         .db_repository
         .get_accounts_for_user(&user_id)
         .await
@@ -1998,4 +2001,175 @@ async fn get_authenticated_net_worth_over_time(
     }
 
     Ok(Json(response))
+}
+
+async fn change_user_password(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<auth_models::ChangePasswordRequest>,
+) -> Result<Json<auth_models::ChangePasswordResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user_id = auth_context.user_id;
+
+    let user = state
+        .db_repository
+        .get_user_by_id(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user {}: {}", user_id, e);
+            ApiErrorResponse::internal_server_error(
+                "Authentication service temporarily unavailable",
+            )
+        })?
+        .ok_or_else(|| {
+            tracing::warn!("User {} not found during password change", user_id);
+            ApiErrorResponse::internal_server_error("User account not found")
+        })?;
+
+    let is_valid = state
+        .auth_service
+        .verify_password(&req.current_password, &user.password_hash)
+        .map_err(|e| {
+            tracing::error!("Password verification failed for user {}: {}", user_id, e);
+            ApiErrorResponse::internal_server_error("Authentication service error")
+        })?;
+
+    if !is_valid {
+        tracing::info!("Invalid current password for user {}", user_id);
+        return Err(ApiErrorResponse::unauthorized("Current password is incorrect"));
+    }
+
+    let new_hash = state
+        .auth_service
+        .hash_password(&req.new_password)
+        .map_err(|e| {
+            tracing::error!("Password hashing failed for user {}: {}", user_id, e);
+            ApiErrorResponse::internal_server_error("Failed to process new password")
+        })?;
+
+    state
+        .db_repository
+        .update_user_password(&user_id, &new_hash)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to update password for user {}: {}", user_id, e);
+            ApiErrorResponse::internal_server_error("Failed to update password")
+        })?;
+
+    if let Err(e) = state
+        .cache_service
+        .invalidate_pattern(&format!("{}_*", auth_context.jwt_id))
+        .await
+    {
+        tracing::warn!(
+            "Failed to invalidate JWT cache for user {} after password change: {}",
+            user_id,
+            e
+        );
+    }
+
+    tracing::info!("User {} password changed successfully", user_id);
+
+    Ok(Json(auth_models::ChangePasswordResponse {
+        message: "Password changed successfully. Please log in again.".to_string(),
+        requires_reauth: true,
+    }))
+}
+
+async fn delete_user_account(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<auth_models::DeleteAccountResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user_id = auth_context.user_id;
+
+    let connections = state
+        .db_repository
+        .get_all_provider_connections_by_user(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to get connections for user {}: {}", user_id, e);
+            ApiErrorResponse::internal_server_error(
+                "Failed to retrieve user connections",
+            )
+        })?;
+
+    let mut deleted_connections = 0;
+    let mut deleted_transactions = 0;
+    let mut deleted_accounts = 0;
+
+    for connection in connections {
+        match state
+            .connection_service
+            .disconnect_connection_by_id(&connection.id, &user_id, &auth_context.jwt_id)
+            .await
+        {
+            Ok(result) => {
+                if result.success {
+                    deleted_connections += 1;
+                    deleted_transactions += result.data_cleared.transactions;
+                    deleted_accounts += result.data_cleared.accounts;
+                }
+            }
+            Err(e) => {
+                tracing::warn!(
+                    "Failed to disconnect connection {} for user {}: {}",
+                    connection.id,
+                    user_id,
+                    e
+                );
+            }
+        }
+    }
+
+    let budgets = state
+        .db_repository
+        .get_budgets_for_user(user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to get budgets for user {}: {}", user_id, e);
+            ApiErrorResponse::internal_server_error(
+                "Failed to retrieve user budgets",
+            )
+        })?;
+
+    let deleted_budgets = budgets.len() as i32;
+
+    state
+        .db_repository
+        .delete_user(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to delete user {}: {}", user_id, e);
+            ApiErrorResponse::internal_server_error("Failed to delete user account")
+        })?;
+
+    if let Err(e) = state
+        .cache_service
+        .invalidate_pattern(&format!("{}_*", auth_context.jwt_id))
+        .await
+    {
+        tracing::warn!(
+            "Failed to invalidate cache for deleted user {}: {}",
+            user_id,
+            e
+        );
+    }
+
+    tracing::info!(
+        "User {} account deleted. Connections: {}, Transactions: {}, Accounts: {}, Budgets: {}",
+        user_id,
+        deleted_connections,
+        deleted_transactions,
+        deleted_accounts,
+        deleted_budgets
+    );
+
+    Ok(Json(auth_models::DeleteAccountResponse {
+        message: "Account deleted successfully".to_string(),
+        deleted_items: auth_models::DeletedItemsSummary {
+            connections: deleted_connections,
+            transactions: deleted_transactions,
+            accounts: deleted_accounts,
+            budgets: deleted_budgets,
+        },
+    }))
 }

@@ -1,5 +1,6 @@
 mod account_validation_tests;
 mod analytics_service_tests;
+mod auth_handlers_integration_tests;
 mod auth_middleware_tests;
 mod auth_service_tests;
 mod bank_level_sync_tests;
@@ -15,6 +16,7 @@ mod migration_tests;
 mod models_tests;
 mod plaid_provider_tests;
 mod plaid_service_tests;
+mod repository_service_tests;
 mod security_resilience_edge_cases_tests;
 mod sync_service_tests;
 mod sync_service_with_provider_tests;

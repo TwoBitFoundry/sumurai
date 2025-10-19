@@ -1,6 +1,6 @@
 import React from 'react'
 import { cva } from 'class-variance-authority'
-import { Sun, Moon } from 'lucide-react'
+import { Sun, Moon, Settings } from 'lucide-react'
 import { Button } from './Button'
 import { cn } from './utils'
 
@@ -25,7 +25,7 @@ const titleBarVariants = cva(
   }
 )
 
-type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts'
+type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings'
 
 const TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'dashboard', label: 'Dashboard' },
@@ -123,22 +123,47 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
               <Button
                 type="button"
                 onClick={onThemeToggle}
+                variant="secondary"
                 size={scrolled ? 'xs' : 'sm'}
                 className={cn(
-                  'rounded-xl',
-                  'border',
-                  'border-slate-200',
-                  'dark:border-slate-600',
-                  'bg-slate-100',
-                  'dark:bg-slate-700',
-                  'hover:bg-slate-200',
-                  'dark:hover:bg-slate-600'
+                  'rounded-lg',
+                  '!bg-amber-500/80',
+                  'dark:!bg-purple-600/80',
+                  'hover:!bg-amber-600/80',
+                  'dark:hover:!bg-purple-700/80',
+                  '!border',
+                  '!border-amber-400/30',
+                  'dark:!border-purple-500/30',
+                  '!text-white',
+                  'backdrop-blur-sm',
+                  'transition-colors'
                 )}
                 aria-label="Toggle theme"
                 title="Toggle theme"
               >
-                {themeMode === 'dark' ? <Moon className={cn('h-4', 'w-4')} /> : <Sun className={cn('h-4', 'w-4')} />}
+                {themeMode === 'dark' ? (
+                  <Moon className={cn('h-4', 'w-4')} />
+                ) : (
+                  <Sun className={cn('h-4', 'w-4')} />
+                )}
               </Button>
+
+              {state === 'authenticated' && onTabChange && (
+                <Button
+                  type="button"
+                  onClick={() => onTabChange('settings')}
+                  variant={currentTab === 'settings' ? 'tabActive' : 'ghost'}
+                  size={scrolled ? 'xs' : 'sm'}
+                  className={cn(
+                    'rounded-xl',
+                    currentTab !== 'settings' ? 'border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600' : ''
+                  )}
+                  aria-label="Settings"
+                  title="Settings"
+                >
+                  <Settings className={cn('h-4', 'w-4')} />
+                </Button>
+              )}
 
               {(state === 'onboarding' || state === 'authenticated') && onLogout && (
                 <Button

@@ -5,7 +5,7 @@ import { HeaderAccountFilter } from '../components/HeaderAccountFilter'
 import { useScrollDetection } from '../hooks/useScrollDetection'
 import { cn } from '@/ui/primitives'
 
-type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts'
+type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings'
 
 interface AppLayoutProps {
   children: ReactNode
