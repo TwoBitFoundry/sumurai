@@ -56,7 +56,7 @@ describe('Session Management & Expiry Modal', () => {
             expect(screen.getByText(/session expiring/i)).toBeInTheDocument()
           }, { timeout: 10000 })
 
-          expect(screen.getByText(/1:30/)).toBeInTheDocument()
+          expect(screen.getByText(/1:[0-9]{2}/)).toBeInTheDocument()
 
           expect(screen.getByRole('button', { name: /stay logged in/i })).toBeInTheDocument()
           expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument()

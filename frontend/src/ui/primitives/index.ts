@@ -28,4 +28,9 @@ export type { MenuDropdownProps, MenuItemProps } from './MenuDropdown'
 export { RequirementPill } from './RequirementPill'
 export type { RequirementPillProps } from './RequirementPill'
 
+export { AppTitleBar } from './AppTitleBar'
+export type { AppTitleBarProps } from './AppTitleBar'
+
+export { AppFooter } from './AppFooter'
+
 export { cn } from './utils'

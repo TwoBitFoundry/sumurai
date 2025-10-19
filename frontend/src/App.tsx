@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Sun, Moon } from 'lucide-react';
 import { LoginScreen, RegisterScreen } from "./Auth";
 import { SessionManager } from "./SessionManager";
 import { AuthenticatedApp } from "./components/AuthenticatedApp";
@@ -9,7 +8,7 @@ import { AuthService } from "./services/authService";
 import { BrowserStorageAdapter } from "./services/boundaries";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { ProviderMismatchCheck } from "./components/ProviderMismatchCheck";
-import { GlassCard, GradientShell, Button } from './ui/primitives';
+import { GlassCard, GradientShell, AppTitleBar, AppFooter } from './ui/primitives';
 import { cn } from '@/ui/primitives'
 
 AuthService.configure({
@@ -109,7 +108,7 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <GradientShell variant="app">
+      <GradientShell>
         <div className={cn('flex', 'min-h-screen', 'items-center', 'justify-center', 'px-4')}>
           <GlassCard
             variant="accent"
@@ -127,45 +126,30 @@ function AppContent() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen">
-        <div className={cn('bg-white', 'dark:bg-slate-900')}>
-          <div className={cn('text-slate-900', 'transition-colors', 'duration-300', 'dark:text-slate-100')}>
-            <header className={cn('sticky', 'top-0', 'z-50')}>
-              <div className={cn('bg-white/80', 'dark:bg-slate-800/80')}>
-                <div className={cn('border-b', 'border-slate-200', 'dark:border-slate-700', 'backdrop-blur-sm')}>
-                  <div className="px-4">
-                    <div className={cn('flex', 'h-16', 'items-center', 'justify-between')}>
-                      <div className={cn('flex', 'items-center', 'gap-2', 'text-lg', 'font-semibold')}>Sumaura</div>
-                      <Button
-                        variant="icon"
-                        size="icon"
-                        onClick={toggle}
-                        aria-label="Toggle theme"
-                        title="Toggle theme"
-                      >
-                        {mode === 'dark' ? <Moon className={cn('h-4', 'w-4')} /> : <Sun className={cn('h-4', 'w-4')} />}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </header>
-            <main>
-              {authScreen === 'login' ? (
-                <LoginScreen
-                  onNavigateToRegister={() => setAuthScreen('register')}
-                  onLoginSuccess={handleAuthSuccess}
-                />
-              ) : (
-                <RegisterScreen
-                  onNavigateToLogin={() => setAuthScreen('login')}
-                  onRegisterSuccess={handleAuthSuccess}
-                />
-              )}
-            </main>
-          </div>
+      <GradientShell className={cn('text-slate-900', 'dark:text-slate-100')}>
+        <div className={cn('flex', 'flex-col', 'min-h-screen')}>
+          <AppTitleBar
+            state="unauthenticated"
+            scrolled={false}
+            themeMode={mode}
+            onThemeToggle={toggle}
+          />
+          <main className={cn('flex-1', 'flex', 'items-center', 'justify-center')}>
+            {authScreen === 'login' ? (
+              <LoginScreen
+                onNavigateToRegister={() => setAuthScreen('register')}
+                onLoginSuccess={handleAuthSuccess}
+              />
+            ) : (
+              <RegisterScreen
+                onNavigateToLogin={() => setAuthScreen('login')}
+                onRegisterSuccess={handleAuthSuccess}
+              />
+            )}
+          </main>
+          <AppFooter />
         </div>
-      </div>
+      </GradientShell>
     )
   }
 
