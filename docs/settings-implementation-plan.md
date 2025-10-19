@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides a comprehensive implementation guide for adding a Settings page to Sumaura, featuring account deletion and password change functionality. The implementation follows existing architecture patterns: static services with dependency injection via ApiClient (frontend) and trait-based DI (backend).
+This document provides a phased implementation guide for adding a Settings page to Sumaura, featuring account deletion and password change functionality. The implementation follows existing architecture patterns: static services with dependency injection via ApiClient (frontend) and trait-based DI (backend).
 
 ## Architecture Principles
 
@@ -18,9 +18,566 @@ This document provides a comprehensive implementation guide for adding a Setting
 - **Database**: RLS policies for multi-tenant isolation
 - **Cache**: Redis-based with pattern invalidation
 
-## Backend Implementation
+---
 
-### 1. Database Migration
+## Phased Implementation
+
+### Phase 1: Database Foundation
+
+**Goal**: Ensure database supports complete user deletion with CASCADE constraints.
+
+**Files to Create**:
+- `backend/migrations/022_add_budgets_cascade.sql`
+
+**Tasks**:
+1. Create migration file with budgets CASCADE constraint
+2. Run migration on local database
+3. Verify CASCADE constraint exists on budgets table
+4. Test CASCADE behavior manually (create test user → add budget → delete user → verify budget deleted)
+
+**Acceptance Criteria**:
+- [ ] Migration runs successfully without errors
+- [ ] `budgets` table has `ON DELETE CASCADE` constraint on `user_id`
+- [ ] Deleting a user automatically deletes their budgets
+- [ ] All user-related tables now have CASCADE (accounts, transactions, connections, credentials, budgets)
+
+**Testing**:
+```sql
+-- Verify constraint exists
+SELECT conname, contype, pg_get_constraintdef(oid)
+FROM pg_constraint
+WHERE conrelid = 'budgets'::regclass AND contype = 'f';
+
+-- Test CASCADE behavior
+BEGIN;
+INSERT INTO users (id, email, password_hash, provider) VALUES (gen_random_uuid(), 'test@cascade.com', 'hash', 'plaid');
+INSERT INTO budgets (user_id, category, month, amount)
+  VALUES ((SELECT id FROM users WHERE email = 'test@cascade.com'), 'Food', '2024-01', 1000);
+DELETE FROM users WHERE email = 'test@cascade.com';
+SELECT * FROM budgets WHERE category = 'Food' AND month = '2024-01'; -- Should return 0 rows
+ROLLBACK;
+```
+
+**Dependencies**: None
+
+---
+
+### Phase 2: Backend Data Layer
+
+**Goal**: Add repository methods for password updates and user deletion.
+
+**Files to Modify**:
+- `backend/src/services/repository_service.rs`
+
+**Tasks**:
+1. Add `update_user_password` method to `DatabaseRepository` trait
+2. Add `delete_user` method to `DatabaseRepository` trait
+3. Implement both methods in `PostgresRepository`
+4. Ensure RLS context is set in both implementations
+5. Write unit tests for both methods
+6. Run tests and verify they pass
+
+**Acceptance Criteria**:
+- [ ] Trait methods added with correct signatures
+- [ ] Implementations use transactions and set RLS context
+- [ ] Unit tests pass for password update
+- [ ] Unit tests pass for user deletion
+- [ ] RLS context properly scoped within transactions
+
+**Testing**:
+```rust
+// backend/src/tests/repository_service_tests.rs
+
+#[tokio::test]
+async fn given_valid_user_when_updating_password_then_hash_changes() {
+    // Test that password hash updates correctly
+}
+
+#[tokio::test]
+async fn given_user_with_budgets_when_deleting_then_budgets_cascade() {
+    // Test that CASCADE works via repository
+}
+```
+
+**Dependencies**: Phase 1 (CASCADE constraints)
+
+---
+
+### Phase 3: Backend Models & Handlers
+
+**Goal**: Create API endpoints for password change and account deletion.
+
+**Files to Modify**:
+- `backend/src/models/auth.rs` (add request/response models)
+- `backend/src/main.rs` (add handlers and routes)
+
+**Tasks**:
+1. Add `ChangePasswordRequest`, `ChangePasswordResponse` structs to auth.rs
+2. Add `DeleteAccountResponse`, `DeletedItemsSummary` structs to auth.rs
+3. Implement `change_user_password` handler in main.rs
+4. Implement `delete_user_account` handler in main.rs
+5. Add routes to `protected_routes` in main.rs
+6. Test endpoints with curl or Postman
+7. Write integration tests for both endpoints
+
+**Acceptance Criteria**:
+- [ ] Models compile without errors
+- [ ] Password change endpoint validates current password
+- [ ] Password change endpoint invalidates JWT cache
+- [ ] Account deletion endpoint disconnects all connections
+- [ ] Account deletion endpoint returns summary of deleted items
+- [ ] Both endpoints return appropriate error codes (401, 404, 500)
+- [ ] Cache invalidation occurs on both operations
+
+**Testing**:
+```bash
+# Test password change
+curl -X PUT http://localhost:3000/api/auth/change-password \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"current_password":"old","new_password":"newpass123"}'
+
+# Test account deletion
+curl -X DELETE http://localhost:3000/api/auth/account \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Integration Tests**:
+```rust
+// backend/src/tests/auth_handlers_tests.rs
+
+#[tokio::test]
+async fn given_invalid_password_when_changing_password_then_returns_401() {}
+
+#[tokio::test]
+async fn given_valid_password_when_changing_password_then_returns_200() {}
+
+#[tokio::test]
+async fn given_user_with_connections_when_deleting_account_then_cleans_all_data() {}
+```
+
+**Dependencies**: Phase 2 (repository methods)
+
+---
+
+### Phase 4: Frontend Service Layer
+
+**Goal**: Create service to communicate with backend settings endpoints.
+
+**Files to Create**:
+- `frontend/src/services/SettingsService.ts`
+
+**Tasks**:
+1. Create SettingsService.ts with TypeScript interfaces
+2. Implement `changePassword` static method using ApiClient
+3. Implement `deleteAccount` static method using ApiClient
+4. Export interfaces for use in components
+5. Write service tests
+6. Run tests and verify they pass
+
+**Acceptance Criteria**:
+- [ ] Service follows existing pattern (static methods, uses ApiClient)
+- [ ] TypeScript interfaces match backend models
+- [ ] Methods handle errors properly
+- [ ] Service tests pass
+- [ ] No ESLint or TypeScript errors
+
+**Testing**:
+```typescript
+// frontend/src/services/__tests__/SettingsService.test.ts
+
+describe('SettingsService', () => {
+  it('sends PUT request with correct payload for password change', async () => {
+    // Mock ApiClient.put
+    // Call changePassword
+    // Verify request payload
+  })
+
+  it('sends DELETE request for account deletion', async () => {
+    // Mock ApiClient.delete
+    // Call deleteAccount
+    // Verify endpoint called
+  })
+
+  it('handles network errors gracefully', async () => {
+    // Mock ApiClient to throw error
+    // Expect error to propagate
+  })
+})
+```
+
+**Dependencies**: Phase 3 (backend endpoints)
+
+---
+
+### Phase 5: Frontend UI - Password Change
+
+**Goal**: Create SettingsPage with password change functionality only.
+
+**Files to Create**:
+- `frontend/src/pages/SettingsPage.tsx` (partial implementation)
+
+**Tasks**:
+1. Create SettingsPage component with page header
+2. Implement password change section only (in GlassCard)
+3. Add form state management (current, new, confirm passwords)
+4. Implement client-side validation (length, match)
+5. Add success/error message display
+6. Call SettingsService.changePassword on submit
+7. Trigger logout after successful password change
+8. Write component tests for password change flow
+9. Test manually in browser
+
+**Acceptance Criteria**:
+- [ ] Page renders with proper layout (max-w-2xl, centered)
+- [ ] Uses primitives (GlassCard, Input, FormLabel, Button)
+- [ ] Validates password length (min 8 characters)
+- [ ] Validates password confirmation match
+- [ ] Shows error messages on validation failure
+- [ ] Shows success message after password change
+- [ ] Redirects to login after 2 seconds on success
+- [ ] Component tests pass
+- [ ] No ESLint violations (max 5 utilities per className)
+
+**Testing**:
+```typescript
+// frontend/src/pages/__tests__/SettingsPage.test.tsx
+
+describe('SettingsPage - Password Change', () => {
+  it('validates password length', () => {
+    // Render component
+    // Enter password < 8 characters
+    // Submit form
+    // Expect error message
+  })
+
+  it('validates password confirmation match', () => {
+    // Enter mismatched passwords
+    // Submit form
+    // Expect error message
+  })
+
+  it('calls SettingsService.changePassword on valid submit', async () => {
+    // Mock SettingsService.changePassword
+    // Fill form with valid data
+    // Submit
+    // Verify service called with correct args
+  })
+
+  it('triggers logout after successful password change', async () => {
+    // Mock successful response
+    // Submit form
+    // Wait for timeout
+    // Verify onLogout called
+  })
+})
+```
+
+**Manual Testing**:
+- Test with invalid current password
+- Test with password < 8 characters
+- Test with mismatched confirmation
+- Test successful password change (verify logout happens)
+
+**Dependencies**: Phase 4 (SettingsService)
+
+---
+
+### Phase 6: Frontend UI - Account Deletion
+
+**Goal**: Add account deletion section and confirmation modal to SettingsPage.
+
+**Files to Modify**:
+- `frontend/src/pages/SettingsPage.tsx` (complete implementation)
+
+**Tasks**:
+1. Add "Danger Zone" section to SettingsPage
+2. Add delete account button
+3. Implement confirmation modal with Modal primitive
+4. Add "DELETE" text confirmation input
+5. Implement modal state management
+6. Call SettingsService.deleteAccount on confirmation
+7. Trigger logout after successful deletion
+8. Write component tests for deletion flow
+9. Test manually in browser
+
+**Acceptance Criteria**:
+- [ ] Danger Zone section has red border and warning text
+- [ ] Delete button opens confirmation modal
+- [ ] Modal shows warning about permanent deletion
+- [ ] Modal requires typing "DELETE" to enable confirm button
+- [ ] Invalid confirmation text shows invalid input variant
+- [ ] Successful deletion triggers logout immediately
+- [ ] Error messages display properly in modal
+- [ ] Component tests pass for deletion flow
+- [ ] Modal cannot be closed during deletion (loading state)
+
+**Testing**:
+```typescript
+// frontend/src/pages/__tests__/SettingsPage.test.tsx
+
+describe('SettingsPage - Account Deletion', () => {
+  it('opens modal when delete button clicked', () => {
+    // Render component
+    // Click delete button
+    // Expect modal to be visible
+  })
+
+  it('requires "DELETE" confirmation text', () => {
+    // Open modal
+    // Enter incorrect text
+    // Expect confirm button disabled
+  })
+
+  it('calls SettingsService.deleteAccount on confirmation', async () => {
+    // Mock deleteAccount
+    // Open modal, enter "DELETE", confirm
+    // Verify service called
+  })
+
+  it('triggers logout after successful deletion', async () => {
+    // Mock successful deletion
+    // Complete deletion flow
+    // Verify onLogout called
+  })
+
+  it('shows error message on deletion failure', async () => {
+    // Mock service to throw error
+    // Attempt deletion
+    // Expect error displayed in modal
+  })
+})
+```
+
+**Manual Testing**:
+- Test modal open/close
+- Test with incorrect confirmation text
+- Test canceling deletion
+- Test successful deletion (verify logout and redirect)
+- Test deletion with active connections
+
+**Dependencies**: Phase 5 (SettingsPage foundation)
+
+---
+
+### Phase 7: Integration & Polish
+
+**Goal**: Wire up Settings tab in navigation and complete end-to-end testing.
+
+**Files to Modify**:
+- `frontend/src/ui/primitives/AppTitleBar.tsx`
+- `frontend/src/layouts/AppLayout.tsx`
+- `frontend/src/components/AuthenticatedApp.tsx`
+
+**Tasks**:
+1. Update `TabKey` type in all three files to include 'settings'
+2. Add Settings to TABS array in AppTitleBar.tsx
+3. Add SettingsPage route in AuthenticatedApp.tsx
+4. Import SettingsPage component
+5. Test navigation to Settings tab
+6. Run full E2E test suite
+7. Test in both light and dark modes
+8. Polish UI spacing and alignment
+9. Test on mobile viewport
+
+**Acceptance Criteria**:
+- [ ] Settings tab appears in navigation bar
+- [ ] Clicking Settings tab navigates to SettingsPage
+- [ ] Settings tab shows active state when selected
+- [ ] Page transitions smoothly (AnimatePresence)
+- [ ] All TypeScript errors resolved
+- [ ] All ESLint warnings resolved
+- [ ] Works in light and dark modes
+- [ ] Responsive on mobile/tablet/desktop
+- [ ] Full E2E test passes
+
+**E2E Testing Checklist**:
+```bash
+# 1. Start full stack
+docker compose up -d --build
+
+# 2. Navigate to http://localhost:8080
+
+# 3. Login with E2E credentials
+#    Email: me@test.com
+#    Password: Test1234!
+
+# 4. Navigate to Settings tab
+
+# 5. Test Password Change
+- [ ] Enter current password incorrectly → see error
+- [ ] Enter new password < 8 chars → see validation error
+- [ ] Enter mismatched confirmation → see validation error
+- [ ] Successfully change password → see success message → logged out
+- [ ] Login with new password → works
+- [ ] Change password back to original
+
+# 6. Test Account Deletion (use test account, not E2E account!)
+- [ ] Create new test account via registration
+- [ ] Add bank connection (Plaid sandbox)
+- [ ] Create a budget
+- [ ] Navigate to Settings → Danger Zone
+- [ ] Click Delete Account → modal opens
+- [ ] Type "DELET" → confirm button disabled
+- [ ] Type "DELETE" → confirm button enabled
+- [ ] Cancel → modal closes
+- [ ] Re-open modal and confirm deletion
+- [ ] Verify logged out and redirected to login
+- [ ] Attempt to login with deleted account → fails
+- [ ] Verify data deleted in database (transactions, accounts, budgets, connections)
+```
+
+**Dependencies**: Phase 6 (complete SettingsPage)
+
+---
+
+## Reference Materials
+
+### Security Considerations
+
+#### RLS Impact on Password Changes
+
+**Key Point**: Password changes do NOT affect RLS directly.
+
+- RLS policies use `user_id` (UUID), not password
+- Changing password does not change `user_id`
+- RLS enforcement continues to work identically
+
+**However, JWT tokens MUST be invalidated:**
+- Prevents session hijacking with old password
+- Forces re-authentication with new password
+- Clears all cached JWT tokens in Redis
+
+#### Cache Invalidation Strategy
+
+**On Password Change:**
+```rust
+state.cache_service.invalidate_pattern(&format!("{}_*", auth_context.jwt_id)).await
+```
+- Invalidates all cache entries for current JWT session
+- User must re-login to get new JWT
+- New JWT will have different `jti` (JWT ID)
+
+**On Account Deletion:**
+```rust
+state.cache_service.invalidate_pattern(&format!("{}_*", auth_context.jwt_id)).await
+```
+- Clears all JWT-scoped cache entries
+- Clears access tokens, bank connections, balances
+- No orphaned cache data remains
+
+#### Data Deletion Flow
+
+1. **Get all provider connections** for user
+2. **Disconnect each connection** using `disconnect_connection_by_id`:
+   - Deletes provider transactions
+   - Deletes provider accounts
+   - Deletes provider credentials
+   - Deletes provider connection record
+   - Clears connection-specific cache
+3. **Count budgets** (for summary response)
+4. **Delete user record** - triggers CASCADE:
+   - `accounts` table: CASCADE delete
+   - `transactions` table: CASCADE delete
+   - `plaid_connections` table: CASCADE delete
+   - `plaid_credentials` table: CASCADE delete
+   - `budgets` table: CASCADE delete (after migration 022)
+5. **Clear all JWT cache** for user session
+6. **Return summary** of deleted items
+
+#### CASCADE Constraints Verification
+
+Ensure all tables have CASCADE on `user_id`:
+- ✅ `accounts` (migration 007)
+- ✅ `transactions` (migration 007)
+- ✅ `plaid_connections` (migration 007)
+- ✅ `plaid_credentials` (migration 007)
+- ⚠️ `budgets` (needs migration 022)
+
+---
+
+### UI Design Specifications
+
+#### Layout Structure
+
+```
+GradientShell (background)
+└── AppLayout (header + footer + content area)
+    └── SettingsPage
+        ├── Page Header (title + description)
+        └── Settings Sections (flex column, gap-6)
+            ├── GlassCard: Password Change
+            │   ├── Section title
+            │   ├── Success/error messages
+            │   └── Form (3 inputs + submit button)
+            └── GlassCard: Account Deletion (danger border)
+                ├── Danger Zone title (red text)
+                ├── Warning description
+                └── Delete Account button (danger variant)
+
+Modal (when deleting)
+└── GlassCard variant="auth"
+    ├── Modal title
+    ├── Warning box (red background)
+    ├── Confirmation input (type "DELETE")
+    └── Action buttons (Cancel + Delete Forever)
+```
+
+#### Primitive Usage
+
+| Element | Primitive | Variant/Props |
+|---------|-----------|---------------|
+| Page container | div | max-w-2xl mx-auto |
+| Section cards | GlassCard | variant="default", padding="lg" |
+| Danger card | GlassCard | variant="default", padding="lg", custom border classes |
+| Form inputs | Input | variant="default" or "invalid" |
+| Labels | FormLabel | Default |
+| Primary button | Button | variant="primary" |
+| Delete button | Button | variant="danger" |
+| Cancel button | Button | variant="ghost" |
+| Confirmation modal | Modal | size="md" |
+| Modal content | GlassCard | variant="auth", padding="lg" |
+
+#### Color Scheme
+
+**Normal State:**
+- Text: `text-slate-900 dark:text-slate-100`
+- Muted: `text-slate-600 dark:text-slate-400`
+- Hint: `text-slate-500 dark:text-slate-400`
+
+**Success State:**
+- Background: `bg-green-50 dark:bg-green-900/20`
+- Text: `text-green-600 dark:text-green-400`
+
+**Error State:**
+- Background: `bg-red-50 dark:bg-red-900/20`
+- Text: `text-red-600 dark:text-red-400`
+
+**Danger Zone:**
+- Border: `border-red-200 dark:border-red-800`
+- Title: `text-red-600 dark:text-red-400`
+
+---
+
+### API Endpoints
+
+**PUT /api/auth/change-password**
+- Request: `{ current_password: string, new_password: string }`
+- Response: `{ message: string, requires_reauth: boolean }`
+- Auth: Required (JWT)
+- Side effects: Invalidates JWT cache, updates password hash
+
+**DELETE /api/auth/account**
+- Request: None (user inferred from JWT)
+- Response: `{ message: string, deleted_items: { connections, transactions, accounts, budgets } }`
+- Auth: Required (JWT)
+- Side effects: Deletes user + all related data, clears cache
+
+---
+
+## Appendix A: Complete Code Snippets
+
+### Migration 022
 
 **File**: `backend/migrations/022_add_budgets_cascade.sql`
 
@@ -38,9 +595,7 @@ ALTER TABLE budgets
 -- will now be automatically cleaned up when a user is deleted.
 ```
 
-**Why Needed**: The budgets table currently lacks CASCADE constraint (see migration 008). This ensures complete data cleanup on user deletion.
-
-### 2. Auth Models
+### Backend Models
 
 **File**: `backend/src/models/auth.rs`
 
@@ -74,7 +629,7 @@ pub struct DeletedItemsSummary {
 }
 ```
 
-### 3. Repository Service
+### Repository Methods
 
 **File**: `backend/src/services/repository_service.rs`
 
@@ -126,9 +681,11 @@ async fn delete_user(&self, user_id: &Uuid) -> Result<()> {
 }
 ```
 
-### 4. Auth Handlers
+### Backend Handlers
 
-**File**: `backend/src/main.rs` (add to existing handlers section)
+**File**: `backend/src/main.rs`
+
+Add these handlers:
 
 ```rust
 async fn change_user_password(
@@ -269,10 +826,6 @@ async fn delete_user_account(
 }
 ```
 
-### 5. Routes
-
-**File**: `backend/src/main.rs`
-
 Add to `protected_routes`:
 
 ```rust
@@ -280,9 +833,7 @@ Add to `protected_routes`:
 .route("/api/auth/account", delete(delete_user_account))
 ```
 
-## Frontend Implementation
-
-### 1. Settings Service
+### Frontend Service
 
 **File**: `frontend/src/services/SettingsService.ts`
 
@@ -328,7 +879,7 @@ export class SettingsService {
 }
 ```
 
-### 2. Settings Page Component
+### Frontend Component
 
 **File**: `frontend/src/pages/SettingsPage.tsx`
 
@@ -605,34 +1156,23 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 }
 ```
 
-### 3. Routing Updates
+### Routing Updates
 
 **File**: `frontend/src/components/AuthenticatedApp.tsx`
 
-Update TabKey type:
 ```typescript
 type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings'
-```
 
-Import SettingsPage:
-```typescript
 import SettingsPage from '../pages/SettingsPage'
-```
 
-Add route in AnimatePresence:
-```typescript
 {tab === 'settings' && <SettingsPage onLogout={onLogout} />}
 ```
 
 **File**: `frontend/src/ui/primitives/AppTitleBar.tsx`
 
-Update TabKey type:
 ```typescript
 type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings'
-```
 
-Update TABS array:
-```typescript
 const TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'transactions', label: 'Transactions' },
@@ -644,311 +1184,11 @@ const TABS: Array<{ key: TabKey; label: string }> = [
 
 **File**: `frontend/src/layouts/AppLayout.tsx`
 
-Update TabKey type:
 ```typescript
 type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings'
 ```
 
-## Security Considerations
-
-### RLS Impact on Password Changes
-
-**Key Point**: Password changes do NOT affect RLS directly.
-
-- RLS policies use `user_id` (UUID), not password
-- Changing password does not change `user_id`
-- RLS enforcement continues to work identically
-
-**However, JWT tokens MUST be invalidated:**
-- Prevents session hijacking with old password
-- Forces re-authentication with new password
-- Clears all cached JWT tokens in Redis
-
-### Cache Invalidation Strategy
-
-**On Password Change:**
-```rust
-state.cache_service.invalidate_pattern(&format!("{}_*", auth_context.jwt_id)).await
-```
-- Invalidates all cache entries for current JWT session
-- User must re-login to get new JWT
-- New JWT will have different `jti` (JWT ID)
-
-**On Account Deletion:**
-```rust
-state.cache_service.invalidate_pattern(&format!("{}_*", auth_context.jwt_id)).await
-```
-- Clears all JWT-scoped cache entries
-- Clears access tokens, bank connections, balances
-- No orphaned cache data remains
-
-### Data Deletion Flow
-
-1. **Get all provider connections** for user
-2. **Disconnect each connection** using `disconnect_connection_by_id`:
-   - Deletes provider transactions
-   - Deletes provider accounts
-   - Deletes provider credentials
-   - Deletes provider connection record
-   - Clears connection-specific cache
-3. **Count budgets** (for summary response)
-4. **Delete user record** - triggers CASCADE:
-   - `accounts` table: CASCADE delete
-   - `transactions` table: CASCADE delete
-   - `plaid_connections` table: CASCADE delete
-   - `plaid_credentials` table: CASCADE delete
-   - `budgets` table: CASCADE delete (after migration 022)
-5. **Clear all JWT cache** for user session
-6. **Return summary** of deleted items
-
-### CASCADE Constraints Verification
-
-Ensure all tables have CASCADE on `user_id`:
-- ✅ `accounts` (migration 007)
-- ✅ `transactions` (migration 007)
-- ✅ `plaid_connections` (migration 007)
-- ✅ `plaid_credentials` (migration 007)
-- ⚠️ `budgets` (needs migration 022)
-
-## UI Design Specifications
-
-### Layout Structure
-
-```
-GradientShell (background)
-└── AppLayout (header + footer + content area)
-    └── SettingsPage
-        ├── Page Header (title + description)
-        └── Settings Sections (flex column, gap-6)
-            ├── GlassCard: Password Change
-            │   ├── Section title
-            │   ├── Success/error messages
-            │   └── Form (3 inputs + submit button)
-            └── GlassCard: Account Deletion (danger border)
-                ├── Danger Zone title (red text)
-                ├── Warning description
-                └── Delete Account button (danger variant)
-
-Modal (when deleting)
-└── GlassCard variant="auth"
-    ├── Modal title
-    ├── Warning box (red background)
-    ├── Confirmation input (type "DELETE")
-    └── Action buttons (Cancel + Delete Forever)
-```
-
-### Primitive Usage
-
-| Element | Primitive | Variant/Props |
-|---------|-----------|---------------|
-| Page container | div | max-w-2xl mx-auto |
-| Section cards | GlassCard | variant="default", padding="lg" |
-| Danger card | GlassCard | variant="default", padding="lg", custom border classes |
-| Form inputs | Input | variant="default" or "invalid" |
-| Labels | FormLabel | Default |
-| Primary button | Button | variant="primary" |
-| Delete button | Button | variant="danger" |
-| Cancel button | Button | variant="ghost" |
-| Confirmation modal | Modal | size="md" |
-| Modal content | GlassCard | variant="auth", padding="lg" |
-
-### Color Scheme
-
-**Normal State:**
-- Text: `text-slate-900 dark:text-slate-100`
-- Muted: `text-slate-600 dark:text-slate-400`
-- Hint: `text-slate-500 dark:text-slate-400`
-
-**Success State:**
-- Background: `bg-green-50 dark:bg-green-900/20`
-- Text: `text-green-600 dark:text-green-400`
-
-**Error State:**
-- Background: `bg-red-50 dark:bg-red-900/20`
-- Text: `text-red-600 dark:text-red-400`
-
-**Danger Zone:**
-- Border: `border-red-200 dark:border-red-800`
-- Title: `text-red-600 dark:text-red-400`
-
-### Responsive Design
-
-- Max width: `max-w-2xl` for comfortable reading
-- Padding: Inherited from AppLayout
-- Full-width buttons on mobile
-- Modal adapts to screen size via Modal primitive
-
-### Accessibility
-
-- All inputs have proper `FormLabel` associations
-- Buttons have descriptive text
-- Modal has proper ARIA attributes (handled by Modal primitive)
-- Disabled states for loading scenarios
-- Keyboard navigation supported
-
-## File Checklist
-
-### Files to Create (3)
-
-- [ ] `backend/migrations/022_add_budgets_cascade.sql`
-- [ ] `frontend/src/services/SettingsService.ts`
-- [ ] `frontend/src/pages/SettingsPage.tsx`
-
-### Files to Modify (6)
-
-- [ ] `backend/src/models/auth.rs` - Add request/response types
-- [ ] `backend/src/services/repository_service.rs` - Add trait methods + impl
-- [ ] `backend/src/main.rs` - Add handlers + routes
-- [ ] `frontend/src/ui/primitives/AppTitleBar.tsx` - Update TabKey + TABS
-- [ ] `frontend/src/layouts/AppLayout.tsx` - Update TabKey
-- [ ] `frontend/src/components/AuthenticatedApp.tsx` - Update TabKey + add route
-
-### Backend Detailed Changes
-
-**models/auth.rs:**
-- Add `ChangePasswordRequest` struct
-- Add `ChangePasswordResponse` struct
-- Add `DeleteAccountResponse` struct
-- Add `DeletedItemsSummary` struct
-
-**services/repository_service.rs:**
-- Add `update_user_password` to `DatabaseRepository` trait
-- Add `delete_user` to `DatabaseRepository` trait
-- Implement both methods in `PostgresRepository`
-- Both methods must set RLS context before executing
-
-**main.rs:**
-- Add `change_user_password` handler function
-- Add `delete_user_account` handler function
-- Add `/api/auth/change-password` PUT route to protected_routes
-- Add `/api/auth/account` DELETE route to protected_routes
-
-### Frontend Detailed Changes
-
-**services/SettingsService.ts:**
-- Static class with two methods
-- `changePassword(currentPassword, newPassword)` - PUT request
-- `deleteAccount()` - DELETE request
-- Use ApiClient for all HTTP requests
-- Export TypeScript interfaces
-
-**pages/SettingsPage.tsx:**
-- Accept `onLogout` prop (for triggering logout after deletion)
-- State management for form inputs and UI states
-- Password change form with validation
-- Account deletion section with modal
-- Success/error message display
-- Delegate all API calls to SettingsService
-
-**Routing files:**
-- Add 'settings' to TabKey union type
-- Add Settings to navigation tabs
-- Add SettingsPage route handler
-
-## Testing Strategy
-
-### Backend Tests
-
-**Unit Tests** (`backend/src/tests/`):
-
-```rust
-// Test password change
-#[tokio::test]
-async fn given_valid_current_password_when_changing_password_then_updates_hash() {}
-
-#[tokio::test]
-async fn given_invalid_current_password_when_changing_password_then_returns_unauthorized() {}
-
-// Test account deletion
-#[tokio::test]
-async fn given_user_with_connections_when_deleting_account_then_cleans_up_all_data() {}
-
-#[tokio::test]
-async fn given_deleted_user_when_querying_data_then_returns_no_results() {}
-```
-
-**Integration Tests**:
-- Test CASCADE constraints work correctly
-- Verify RLS still functions after password change
-- Confirm cache invalidation occurs
-
-### Frontend Tests
-
-**Component Tests** (`frontend/src/pages/__tests__/`):
-
-```typescript
-// SettingsPage.test.tsx
-describe('SettingsPage', () => {
-  it('validates password length', () => {})
-  it('validates password confirmation match', () => {})
-  it('calls SettingsService.changePassword on submit', () => {})
-  it('shows success message after password change', () => {})
-  it('requires "DELETE" confirmation for account deletion', () => {})
-  it('calls SettingsService.deleteAccount on confirmation', () => {})
-  it('triggers onLogout after successful deletion', () => {})
-})
-```
-
-**Service Tests** (`frontend/src/services/__tests__/`):
-
-```typescript
-// SettingsService.test.ts
-describe('SettingsService', () => {
-  it('sends correct payload for password change', () => {})
-  it('handles password change errors', () => {})
-  it('sends DELETE request for account deletion', () => {})
-})
-```
-
-## Implementation Order
-
-1. **Backend Foundation**:
-   - Run migration 022 (budgets CASCADE)
-   - Add models to auth.rs
-   - Add repository methods
-   - Add handlers to main.rs
-   - Add routes
-
-2. **Backend Testing**:
-   - Write and run unit tests
-   - Verify CASCADE behavior
-   - Test cache invalidation
-
-3. **Frontend Service**:
-   - Create SettingsService.ts
-   - Write service tests
-
-4. **Frontend UI**:
-   - Create SettingsPage.tsx
-   - Write component tests
-   - Test UI interactions
-
-5. **Frontend Integration**:
-   - Update routing files
-   - Add Settings tab
-   - Test navigation
-
-6. **End-to-End Testing**:
-   - Test password change flow
-   - Test account deletion flow
-   - Verify logout behavior
-   - Test with E2E credentials
-
-## API Endpoints Summary
-
-### New Protected Endpoints
-
-**PUT /api/auth/change-password**
-- Request: `{ current_password: string, new_password: string }`
-- Response: `{ message: string, requires_reauth: boolean }`
-- Auth: Required (JWT)
-- Side effects: Invalidates JWT cache, updates password hash
-
-**DELETE /api/auth/account**
-- Request: None (user inferred from JWT)
-- Response: `{ message: string, deleted_items: { connections, transactions, accounts, budgets } }`
-- Auth: Required (JWT)
-- Side effects: Deletes user + all related data, clears cache
+---
 
 ## Notes
 
