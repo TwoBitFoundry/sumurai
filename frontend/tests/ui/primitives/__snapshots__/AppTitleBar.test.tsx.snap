@@ -14,7 +14,7 @@ exports[`AppTitleBar > snapshots > matches snapshot for authenticated state 1`] 
         class="flex items-center gap-6"
       >
         <div
-          class="flex items-center gap-2 font-semibold text-lg"
+          class="flex items-center gap-2 font-semibold text-slate-900 dark:text-white text-lg"
         >
           Sumaura
         </div>
@@ -128,7 +128,7 @@ exports[`AppTitleBar > snapshots > matches snapshot for onboarding state 1`] = `
         class="flex items-center gap-6"
       >
         <div
-          class="flex items-center gap-2 font-semibold text-lg"
+          class="flex items-center gap-2 font-semibold text-slate-900 dark:text-white text-lg"
         >
           Sumaura
         </div>
@@ -213,7 +213,7 @@ exports[`AppTitleBar > snapshots > matches snapshot for unauthenticated state 1`
         class="flex items-center gap-6"
       >
         <div
-          class="flex items-center gap-2 font-semibold text-lg"
+          class="flex items-center gap-2 font-semibold text-slate-900 dark:text-white text-lg"
         >
           Sumaura
         </div>

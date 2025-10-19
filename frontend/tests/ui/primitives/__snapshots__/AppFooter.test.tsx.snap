@@ -16,11 +16,20 @@ exports[`AppFooter > matches snapshot 1`] = `
         <div
           class="flex flex-col gap-2"
         >
-          <span
-            class="text-lg font-semibold bg-gradient-to-r from-slate-700 to-sky-600 dark:from-slate-200 dark:to-sky-400 bg-clip-text text-transparent"
+          <div
+            class="flex items-center gap-3"
           >
-            Two Bit Foundry
-          </span>
+            <div
+              class="h-10 w-10 rounded-lg bg-gradient-to-br from-sky-500/80 to-violet-600/80 flex items-center justify-center font-bold text-white text-xs"
+            >
+              TBF
+            </div>
+            <span
+              class="text-lg font-semibold bg-gradient-to-r from-slate-700 to-sky-600 dark:from-slate-200 dark:to-sky-400 bg-clip-text text-transparent"
+            >
+              Two Bit Foundry
+            </span>
+          </div>
           <p
             class="text-sm text-slate-600 dark:text-slate-400"
           >
