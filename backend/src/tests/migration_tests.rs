@@ -489,6 +489,10 @@ fn adapt_bank_migration_sql_for_table(
         "ALTER TABLE provider_connections",
         &format!("ALTER TABLE {}", connections_table),
     );
+    out = out.replace(
+        "ALTER TABLE plaid_connections",
+        &format!("ALTER TABLE {}", connections_table),
+    );
 
     out = out.replace(
         "idx_accounts_mask",
@@ -499,6 +503,10 @@ fn adapt_bank_migration_sql_for_table(
         &format!("idx_{}_subtype", accounts_table.replace("test_", "")),
     );
     out = out.replace(
+        "idx_plaid_connections_sync_cursor",
+        &format!("idx_{}_sync_cursor", connections_table.replace("test_", "")),
+    );
+    out = out.replace(
         "idx_provider_connections_sync_cursor",
         &format!("idx_{}_sync_cursor", connections_table.replace("test_", "")),
     );
@@ -506,6 +514,10 @@ fn adapt_bank_migration_sql_for_table(
     out = out.replace(" ON accounts(", &format!(" ON {}(", accounts_table));
     out = out.replace(
         " ON provider_connections(",
+        &format!(" ON {}(", connections_table),
+    );
+    out = out.replace(
+        " ON plaid_connections(",
         &format!(" ON {}(", connections_table),
     );
 

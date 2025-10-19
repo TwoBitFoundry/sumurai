@@ -87,6 +87,10 @@ pub trait DatabaseRepository: Send + Sync {
         &self,
         user_id: &Uuid,
     ) -> Result<Vec<LatestAccountBalance>>;
+
+    async fn update_user_password(&self, user_id: &Uuid, new_password_hash: &str) -> Result<()>;
+
+    async fn delete_user(&self, user_id: &Uuid) -> Result<()>;
 }
 
 pub struct PostgresRepository {
@@ -1189,7 +1193,7 @@ impl DatabaseRepository for PostgresRepository {
 
         let rows = sqlx::query_as::<_, LatestAccountBalance>(
             r#"
-            SELECT 
+            SELECT
                 a.id AS account_id,
                 COALESCE(pc.institution_name, 'unknown_institution') AS institution_id,
                 a.account_type,
@@ -1209,5 +1213,42 @@ impl DatabaseRepository for PostgresRepository {
         .await?;
 
         Ok(rows)
+    }
+
+    async fn update_user_password(&self, user_id: &Uuid, new_password_hash: &str) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        sqlx::query(
+            "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2"
+        )
+        .bind(new_password_hash)
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn delete_user(&self, user_id: &Uuid) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        sqlx::query("DELETE FROM users WHERE id = $1")
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+        Ok(())
     }
 }
