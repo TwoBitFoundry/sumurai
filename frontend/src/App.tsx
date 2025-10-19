@@ -108,7 +108,7 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <GradientShell variant="app">
+      <GradientShell>
         <div className={cn('flex', 'min-h-screen', 'items-center', 'justify-center', 'px-4')}>
           <GlassCard
             variant="accent"
@@ -126,28 +126,30 @@ function AppContent() {
 
   if (!isAuthenticated) {
     return (
-      <div className={cn('min-h-screen', 'flex', 'flex-col', 'bg-white', 'dark:bg-slate-900', 'text-slate-900', 'dark:text-slate-100')}>
-        <AppTitleBar
-          state="unauthenticated"
-          scrolled={false}
-          themeMode={mode}
-          onThemeToggle={toggle}
-        />
-        <main className={cn('flex-1')}>
-          {authScreen === 'login' ? (
-            <LoginScreen
-              onNavigateToRegister={() => setAuthScreen('register')}
-              onLoginSuccess={handleAuthSuccess}
-            />
-          ) : (
-            <RegisterScreen
-              onNavigateToLogin={() => setAuthScreen('login')}
-              onRegisterSuccess={handleAuthSuccess}
-            />
-          )}
-        </main>
-        <AppFooter />
-      </div>
+      <GradientShell className={cn('text-slate-900', 'dark:text-slate-100')}>
+        <div className={cn('flex', 'flex-col', 'min-h-screen')}>
+          <AppTitleBar
+            state="unauthenticated"
+            scrolled={false}
+            themeMode={mode}
+            onThemeToggle={toggle}
+          />
+          <main className={cn('flex-1', 'flex', 'items-center', 'justify-center')}>
+            {authScreen === 'login' ? (
+              <LoginScreen
+                onNavigateToRegister={() => setAuthScreen('register')}
+                onLoginSuccess={handleAuthSuccess}
+              />
+            ) : (
+              <RegisterScreen
+                onNavigateToLogin={() => setAuthScreen('login')}
+                onRegisterSuccess={handleAuthSuccess}
+              />
+            )}
+          </main>
+          <AppFooter />
+        </div>
+      </GradientShell>
     )
   }
 

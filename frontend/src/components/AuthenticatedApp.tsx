@@ -22,7 +22,7 @@ export function AuthenticatedApp({ onLogout }: AuthenticatedAppProps) {
 
   return (
     <ErrorBoundary>
-      <GradientShell variant="app" className={cn('text-slate-900', 'dark:text-slate-100', 'transition-colors', 'duration-300')}>
+      <GradientShell className={cn('text-slate-900', 'dark:text-slate-100', 'transition-colors', 'duration-300')}>
         <AppLayout currentTab={tab} onTabChange={setTab} onLogout={onLogout}>
           {error && (
             <Card className={cn('mb-6', 'border-red-200', 'dark:border-red-700', 'bg-red-50', 'dark:bg-red-900/20')}>

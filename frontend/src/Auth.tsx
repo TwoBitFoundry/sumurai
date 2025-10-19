@@ -3,7 +3,6 @@ import { AuthService } from './services/authService'
 import { useRegistrationValidation } from './hooks/useRegistrationValidation'
 import {
   GlassCard,
-  GradientShell,
   Button,
   Input,
   Badge,
@@ -43,7 +42,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
   }
 
   return (
-    <GradientShell variant="auth">
+    <div className={cn('flex', 'min-h-screen', 'items-center', 'justify-center', 'px-4', 'py-12', 'sm:px-6')}>
       <GlassCard variant="auth" padding="lg" className={cn('w-full', 'max-w-md')}>
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
@@ -111,7 +110,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
           </div>
         </div>
       </GlassCard>
-    </GradientShell>
+    </div>
   )
 }
 
@@ -163,7 +162,7 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
   }
 
   return (
-    <GradientShell variant="auth">
+    <div className={cn('flex', 'min-h-screen', 'items-center', 'justify-center', 'px-4', 'py-12', 'sm:px-6')}>
       <GlassCard variant="auth" padding="lg" className={cn('w-full', 'max-w-md')}>
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
@@ -281,6 +280,6 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
           </div>
         </div>
       </GlassCard>
-    </GradientShell>
+    </div>
   )
 }

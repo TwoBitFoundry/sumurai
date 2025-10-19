@@ -241,17 +241,18 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
   }, [stepIndex, steps])
 
   return (
-    <div className={cn('flex', 'flex-col', 'min-h-screen')}>
-      <AppTitleBar
-        state="onboarding"
-        scrolled={scrolled}
-        themeMode={mode}
-        onThemeToggle={toggle}
-        onLogout={onLogout}
-      />
+    <GradientShell>
+      <div className={cn('flex', 'flex-col', 'min-h-screen')}>
+        <AppTitleBar
+          state="onboarding"
+          scrolled={scrolled}
+          themeMode={mode}
+          onThemeToggle={toggle}
+          onLogout={onLogout}
+        />
 
-      <GradientShell variant="auth" className={cn('flex-1', 'flex', 'items-center', 'justify-center', 'px-4', 'py-8')}>
-        <GlassCard
+        <div className={cn('flex-1', 'flex', 'items-center', 'justify-center', 'px-4', 'py-8')}>
+          <GlassCard
               variant="auth"
               rounded="default"
               padding="lg"
@@ -365,9 +366,10 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
                 </div>
               </div>
             </GlassCard>
-      </GradientShell>
+        </div>
 
-      <AppFooter />
-    </div>
+        <AppFooter />
+      </div>
+    </GradientShell>
   )
 }

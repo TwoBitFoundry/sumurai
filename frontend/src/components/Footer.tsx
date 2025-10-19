@@ -7,9 +7,14 @@ export function Footer() {
       <div className={cn('max-w-6xl', 'mx-auto', 'px-4', 'sm:px-8', 'py-8')}>
         <div className={cn('flex', 'flex-col', 'md:flex-row', 'md:items-start', 'md:justify-between', 'gap-6', 'mb-6')}>
           <div className={cn('flex', 'flex-col', 'gap-2')}>
-            <span className={cn('text-lg', 'font-semibold', 'bg-gradient-to-r', 'from-slate-700', 'to-sky-600', 'dark:from-slate-200', 'dark:to-sky-400', 'bg-clip-text', 'text-transparent')}>
-              Two Bit Foundry
-            </span>
+            <div className={cn('flex', 'items-center', 'gap-3')}>
+              <div className={cn('h-10', 'w-10', 'rounded-lg', 'bg-gradient-to-br', 'from-sky-500/80', 'to-violet-600/80', 'flex', 'items-center', 'justify-center', 'font-bold', 'text-white', 'text-xs')}>
+                TBF
+              </div>
+              <span className={cn('text-lg', 'font-semibold', 'bg-gradient-to-r', 'from-slate-700', 'to-sky-600', 'dark:from-slate-200', 'dark:to-sky-400', 'bg-clip-text', 'text-transparent')}>
+                Two Bit Foundry
+              </span>
+            </div>
             <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400')}>
               Built in the open with the community
             </p>
