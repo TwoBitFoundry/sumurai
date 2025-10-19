@@ -1,430 +1,332 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, cleanup, waitFor, act } from '@testing-library/react'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SettingsPage from '@/pages/SettingsPage'
 import { SettingsService } from '@/services/SettingsService'
+import { AuthService } from '@/services/authService'
 
 vi.mock('@/services/SettingsService', () => ({
   SettingsService: {
     changePassword: vi.fn(),
     deleteAccount: vi.fn(),
-  }
+  },
 }))
 
-describe('SettingsPage - Password Change (Phase 5)', () => {
+vi.mock('@/services/authService', () => ({
+  AuthService: {
+    clearToken: vi.fn(),
+  },
+}))
+
+describe('SettingsPage - Account Deletion', () => {
+  const mockOnLogout = vi.fn()
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  afterEach(() => {
-    cleanup()
-  })
+  describe('Modal behavior', () => {
+    it('opens modal when delete account button clicked', async () => {
+      render(<SettingsPage onLogout={mockOnLogout} />)
 
-  describe('Given/When/Then - Layout and initial render', () => {
-    it('Given SettingsPage renders; When page loads; Then shows title and description', () => {
-      render(<SettingsPage />)
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      await userEvent.click(deleteButton)
 
-      expect(screen.getByText('Settings')).toBeInTheDocument()
-      expect(screen.getByText('Manage your account preferences')).toBeInTheDocument()
+      const modalTitle = screen.getByRole('heading', { name: /delete account\?/i })
+      expect(modalTitle).toBeInTheDocument()
     })
 
-    it('Given SettingsPage renders; When page loads; Then shows password change section', () => {
-      const { container } = render(<SettingsPage />)
+    it('closes modal when cancel button clicked', async () => {
+      render(<SettingsPage onLogout={mockOnLogout} />)
 
-      expect(screen.getByRole('heading', { name: 'Change Password' })).toBeInTheDocument()
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      await userEvent.click(deleteButton)
 
-      const form = container.querySelector('form')
-      expect(form).toBeInTheDocument()
+      const cancelButton = screen.getByRole('button', { name: /cancel/i })
+      await userEvent.click(cancelButton)
 
-      const inputs = form!.querySelectorAll('input[type="password"]')
-      expect(inputs.length).toBe(3)
-    })
-
-    it('Given SettingsPage renders; When page loads; Then displays form inputs with correct attributes', () => {
-      render(<SettingsPage />)
-
-      const passwordInputs = screen.getAllByDisplayValue('')
-      const passwordFields = passwordInputs.filter(el => (el as HTMLInputElement).type === 'password')
-
-      expect(passwordFields.length).toBeGreaterThanOrEqual(3)
-      passwordFields.slice(0, 3).forEach(field => {
-        expect((field as HTMLInputElement).type).toBe('password')
+      await waitFor(() => {
+        const modalTitle = screen.queryByRole('heading', { name: /delete account\?/i })
+        expect(modalTitle).toBeNull()
       })
     })
 
-    it('Given SettingsPage renders; When page loads; Then shows password requirements hint', () => {
-      render(<SettingsPage />)
+    it('closes modal when backdrop clicked', async () => {
+      render(<SettingsPage onLogout={mockOnLogout} />)
 
-      expect(screen.getByText(/Must be at least 8 characters/i)).toBeInTheDocument()
-    })
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      await userEvent.click(deleteButton)
 
-    it('Given SettingsPage renders; When page loads; Then submit button is initially disabled', () => {
-      render(<SettingsPage />)
+      const backdrop = screen.getByTestId('modal-backdrop')
+      await userEvent.click(backdrop)
 
-      const submitButton = screen.getByRole('button', { name: /Change Password/i })
-      expect(submitButton).toBeDisabled()
+      await waitFor(() => {
+        const modalTitle = screen.queryByRole('heading', { name: /delete account\?/i })
+        expect(modalTitle).toBeNull()
+      })
     })
   })
 
-  describe('Given/When/Then - Form validation', () => {
-    it('Given empty form; When user tries to submit; Then submit button remains disabled', () => {
-      render(<SettingsPage />)
+  describe('Confirmation text validation', () => {
+    it('disables confirm button when confirmation text is empty', async () => {
+      render(<SettingsPage onLogout={mockOnLogout} />)
 
-      const submitButton = screen.getByRole('button', { name: /Change Password/i })
-      expect(submitButton).toBeDisabled()
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      await userEvent.click(deleteButton)
+
+      const confirmButton = screen.getByRole('button', { name: /delete forever/i })
+      expect(confirmButton).toBeDisabled()
     })
 
-    it('Given new password < 8 characters; When user submits form; Then shows validation error', async () => {
-      const user = userEvent.setup()
-      const { container } = render(<SettingsPage />)
+    it('disables confirm button when confirmation text does not match "DELETE"', async () => {
+      render(<SettingsPage onLogout={mockOnLogout} />)
 
-      const form = container.querySelector('form')
-      if (!form) throw new Error('Form not found')
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      await userEvent.click(deleteButton)
 
-      const inputs = form.querySelectorAll('input[type="password"]')
-      const currentPasswordInput = inputs[0]
-      const newPasswordInput = inputs[1]
-      const confirmPasswordInput = inputs[2]
-      const submitButton = screen.getByRole('button', { name: /Change Password/i })
+      const confirmInput = screen.getByPlaceholderText(/DELETE/i)
+      await userEvent.type(confirmInput, 'DELET')
 
-      await user.type(currentPasswordInput as HTMLInputElement, 'oldpass123')
-      await user.type(newPasswordInput as HTMLInputElement, 'short')
-      await user.type(confirmPasswordInput as HTMLInputElement, 'short')
-      await user.click(submitButton)
-
-      expect(screen.getByText(/Password must be at least 8 characters/)).toBeInTheDocument()
-      expect(vi.mocked(SettingsService.changePassword)).not.toHaveBeenCalled()
+      const confirmButton = screen.getByRole('button', { name: /delete forever/i })
+      expect(confirmButton).toBeDisabled()
     })
 
-    it('Given mismatched passwords; When user submits form; Then shows mismatch error', async () => {
-      const user = userEvent.setup()
-      const { container } = render(<SettingsPage />)
+    it('enables confirm button when confirmation text matches "DELETE"', async () => {
+      render(<SettingsPage onLogout={mockOnLogout} />)
 
-      const form = container.querySelector('form')
-      if (!form) throw new Error('Form not found')
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      await userEvent.click(deleteButton)
 
-      const inputs = form.querySelectorAll('input[type="password"]')
-      const currentPasswordInput = inputs[0]
-      const newPasswordInput = inputs[1]
-      const confirmPasswordInput = inputs[2]
-      const submitButton = screen.getByRole('button', { name: /Change Password/i })
+      const confirmInput = screen.getByPlaceholderText(/DELETE/i)
+      await userEvent.type(confirmInput, 'DELETE')
 
-      await user.type(currentPasswordInput as HTMLInputElement, 'oldpass123')
-      await user.type(newPasswordInput as HTMLInputElement, 'newpass12345')
-      await user.type(confirmPasswordInput as HTMLInputElement, 'newpass99999')
-      await user.click(submitButton)
-
-      expect(screen.getByText(/Passwords do not match/)).toBeInTheDocument()
-      expect(vi.mocked(SettingsService.changePassword)).not.toHaveBeenCalled()
+      const confirmButton = screen.getByRole('button', { name: /delete forever/i })
+      expect(confirmButton).not.toBeDisabled()
     })
 
-    it('Given valid form inputs; When all fields filled; Then submit button is enabled', async () => {
-      const user = userEvent.setup()
-      const { container } = render(<SettingsPage />)
+    it('shows invalid input variant when text does not match "DELETE"', async () => {
+      render(<SettingsPage onLogout={mockOnLogout} />)
 
-      const form = container.querySelector('form')
-      if (!form) throw new Error('Form not found')
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      await userEvent.click(deleteButton)
 
-      const inputs = form.querySelectorAll('input[type="password"]')
-      const currentPasswordInput = inputs[0]
-      const newPasswordInput = inputs[1]
-      const confirmPasswordInput = inputs[2]
-      const submitButton = screen.getByRole('button', { name: /Change Password/i })
+      const confirmInput = screen.getByPlaceholderText(/DELETE/i) as HTMLInputElement
+      await userEvent.type(confirmInput, 'DELET')
 
-      await user.type(currentPasswordInput as HTMLInputElement, 'oldpass123')
-      await user.type(newPasswordInput as HTMLInputElement, 'newpass12345')
-      await user.type(confirmPasswordInput as HTMLInputElement, 'newpass12345')
+      expect(confirmInput.getAttribute('data-variant')).toBe('invalid')
+    })
 
-      expect(submitButton).not.toBeDisabled()
+    it('shows default input variant when text matches "DELETE"', async () => {
+      render(<SettingsPage onLogout={mockOnLogout} />)
+
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      await userEvent.click(deleteButton)
+
+      const confirmInput = screen.getByPlaceholderText(/DELETE/i) as HTMLInputElement
+      await userEvent.type(confirmInput, 'DELETE')
+
+      expect(confirmInput.getAttribute('data-variant')).toBe('default')
     })
   })
 
-  describe('Given/When/Then - Form submission', () => {
-    it('Given valid form; When user submits; Then calls SettingsService.changePassword with correct payload', async () => {
-      const user = userEvent.setup()
-      vi.mocked(SettingsService.changePassword).mockResolvedValueOnce({
-        message: 'Password changed successfully. Please log in again.',
-        requires_reauth: true,
-      } as any)
+  describe('Account deletion flow', () => {
+    it('calls SettingsService.deleteAccount when confirmed', async () => {
+      vi.mocked(SettingsService.deleteAccount).mockResolvedValue({
+        message: 'Account deleted',
+        deleted_items: {
+          connections: 1,
+          transactions: 10,
+          accounts: 2,
+          budgets: 3,
+        },
+      })
 
-      const { container } = render(<SettingsPage />)
+      render(<SettingsPage onLogout={mockOnLogout} />)
 
-      const form = container.querySelector('form')
-      if (!form) throw new Error('Form not found')
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      await userEvent.click(deleteButton)
 
-      const inputs = form.querySelectorAll('input[type="password"]')
-      const currentPasswordInput = inputs[0]
-      const newPasswordInput = inputs[1]
-      const confirmPasswordInput = inputs[2]
-      const submitButton = screen.getByRole('button', { name: /Change Password/i })
+      const confirmInput = screen.getByPlaceholderText(/DELETE/i)
+      await userEvent.type(confirmInput, 'DELETE')
 
-      await user.type(currentPasswordInput as HTMLInputElement, 'oldpass123')
-      await user.type(newPasswordInput as HTMLInputElement, 'newpass12345')
-      await user.type(confirmPasswordInput as HTMLInputElement, 'newpass12345')
-      await user.click(submitButton)
+      const confirmButton = screen.getByRole('button', { name: /delete forever/i })
+      await userEvent.click(confirmButton)
 
       await waitFor(() => {
-        expect(vi.mocked(SettingsService.changePassword)).toHaveBeenCalledWith('oldpass123', 'newpass12345')
+        expect(SettingsService.deleteAccount).toHaveBeenCalled()
       })
     })
 
-    it('Given successful response; When password change completes; Then shows success message', async () => {
-      const user = userEvent.setup()
-      vi.mocked(SettingsService.changePassword).mockResolvedValueOnce({
-        message: 'Password changed successfully. Please log in again.',
-        requires_reauth: true,
-      } as any)
+    it('clears auth token after successful deletion', async () => {
+      vi.mocked(SettingsService.deleteAccount).mockResolvedValue({
+        message: 'Account deleted',
+        deleted_items: {
+          connections: 1,
+          transactions: 10,
+          accounts: 2,
+          budgets: 3,
+        },
+      })
 
-      const { container } = render(<SettingsPage />)
+      render(<SettingsPage onLogout={mockOnLogout} />)
 
-      const form = container.querySelector('form')
-      if (!form) throw new Error('Form not found')
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      await userEvent.click(deleteButton)
 
-      const inputs = form.querySelectorAll('input[type="password"]')
-      const currentPasswordInput = inputs[0]
-      const newPasswordInput = inputs[1]
-      const confirmPasswordInput = inputs[2]
-      const submitButton = screen.getByRole('button', { name: /Change Password/i })
+      const confirmInput = screen.getByPlaceholderText(/DELETE/i)
+      await userEvent.type(confirmInput, 'DELETE')
 
-      await user.type(currentPasswordInput as HTMLInputElement, 'oldpass123')
-      await user.type(newPasswordInput as HTMLInputElement, 'newpass12345')
-      await user.type(confirmPasswordInput as HTMLInputElement, 'newpass12345')
-      await user.click(submitButton)
+      const confirmButton = screen.getByRole('button', { name: /delete forever/i })
+      await userEvent.click(confirmButton)
 
       await waitFor(() => {
-        expect(screen.getByText(/Password changed successfully/)).toBeInTheDocument()
+        expect(AuthService.clearToken).toHaveBeenCalled()
       })
     })
 
-    it('Given service error; When password change fails; Then shows error message', async () => {
-      const user = userEvent.setup()
-      const errorMessage = 'Current password is incorrect'
-      vi.mocked(SettingsService.changePassword).mockRejectedValueOnce(new Error(errorMessage))
-
-      const { container } = render(<SettingsPage />)
-
-      const form = container.querySelector('form')
-      if (!form) throw new Error('Form not found')
-
-      const inputs = form.querySelectorAll('input[type="password"]')
-      const currentPasswordInput = inputs[0]
-      const newPasswordInput = inputs[1]
-      const confirmPasswordInput = inputs[2]
-      const submitButton = screen.getByRole('button', { name: /Change Password/i })
-
-      await user.type(currentPasswordInput as HTMLInputElement, 'wrongpass')
-      await user.type(newPasswordInput as HTMLInputElement, 'newpass12345')
-      await user.type(confirmPasswordInput as HTMLInputElement, 'newpass12345')
-      await user.click(submitButton)
-
-      await waitFor(() => {
-        expect(screen.getByText(errorMessage)).toBeInTheDocument()
-      })
-    })
-
-    it('Given loading state; When form is submitting; Then submit button shows loading text and is disabled', async () => {
-      const user = userEvent.setup()
-      vi.mocked(SettingsService.changePassword).mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve({ message: 'ok', requires_reauth: true } as any), 500))
-      )
-
-      const { container } = render(<SettingsPage />)
-
-      const form = container.querySelector('form')
-      if (!form) throw new Error('Form not found')
-
-      const inputs = form.querySelectorAll('input[type="password"]')
-      const currentPasswordInput = inputs[0]
-      const newPasswordInput = inputs[1]
-      const confirmPasswordInput = inputs[2]
-      const submitButton = screen.getByRole('button', { name: /Change Password/i })
-
-      await user.type(currentPasswordInput as HTMLInputElement, 'oldpass123')
-      await user.type(newPasswordInput as HTMLInputElement, 'newpass12345')
-      await user.type(confirmPasswordInput as HTMLInputElement, 'newpass12345')
-
-      await act(async () => {
-        await user.click(submitButton)
-        await new Promise(resolve => setTimeout(resolve, 50))
+    it('calls onLogout after successful deletion', async () => {
+      vi.mocked(SettingsService.deleteAccount).mockResolvedValue({
+        message: 'Account deleted',
+        deleted_items: {
+          connections: 1,
+          transactions: 10,
+          accounts: 2,
+          budgets: 3,
+        },
       })
 
-      expect(screen.getByRole('button', { name: /Changing Password/i })).toBeDisabled()
-    })
+      render(<SettingsPage onLogout={mockOnLogout} />)
 
-    it('Given form submission; When user modifies form during submission; Then input fields are disabled', async () => {
-      const user = userEvent.setup()
-      vi.mocked(SettingsService.changePassword).mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve({ message: 'ok', requires_reauth: true } as any), 300))
-      )
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      await userEvent.click(deleteButton)
 
-      const { container } = render(<SettingsPage />)
+      const confirmInput = screen.getByPlaceholderText(/DELETE/i)
+      await userEvent.type(confirmInput, 'DELETE')
 
-      const form = container.querySelector('form')
-      if (!form) throw new Error('Form not found')
-
-      const inputs = form.querySelectorAll('input[type="password"]')
-      const currentPasswordInput = inputs[0]
-      const newPasswordInput = inputs[1]
-      const confirmPasswordInput = inputs[2]
-      const submitButton = screen.getByRole('button', { name: /Change Password/i })
-
-      await user.type(currentPasswordInput as HTMLInputElement, 'oldpass123')
-      await user.type(newPasswordInput as HTMLInputElement, 'newpass12345')
-      await user.type(confirmPasswordInput as HTMLInputElement, 'newpass12345')
-
-      await act(async () => {
-        await user.click(submitButton)
-        await new Promise(resolve => setTimeout(resolve, 50))
-      })
-
-      expect(currentPasswordInput).toBeDisabled()
-      expect(newPasswordInput).toBeDisabled()
-      expect(confirmPasswordInput).toBeDisabled()
-    })
-  })
-
-  describe('Given/When/Then - Form reset', () => {
-    it('Given successful password change; When success message displays; Then form fields are cleared', async () => {
-      const user = userEvent.setup()
-      vi.mocked(SettingsService.changePassword).mockResolvedValueOnce({
-        message: 'Password changed successfully. Please log in again.',
-        requires_reauth: true,
-      } as any)
-
-      const { container } = render(<SettingsPage />)
-
-      const form = container.querySelector('form')
-      if (!form) throw new Error('Form not found')
-
-      const inputs = form.querySelectorAll('input[type="password"]')
-      const currentPasswordInput = inputs[0] as HTMLInputElement
-      const newPasswordInput = inputs[1] as HTMLInputElement
-      const confirmPasswordInput = inputs[2] as HTMLInputElement
-      const submitButton = screen.getByRole('button', { name: /Change Password/i })
-
-      await user.type(currentPasswordInput, 'oldpass123')
-      await user.type(newPasswordInput, 'newpass12345')
-      await user.type(confirmPasswordInput, 'newpass12345')
-      await user.click(submitButton)
-
-      await waitFor(() => {
-        expect(currentPasswordInput.value).toBe('')
-        expect(newPasswordInput.value).toBe('')
-        expect(confirmPasswordInput.value).toBe('')
-      })
-    })
-
-    it('Given error message shown; When user retypes form; Then error message clears', async () => {
-      const user = userEvent.setup()
-      vi.mocked(SettingsService.changePassword).mockRejectedValueOnce(new Error('Invalid password'))
-
-      const { container } = render(<SettingsPage />)
-
-      const form = container.querySelector('form')
-      if (!form) throw new Error('Form not found')
-
-      const inputs = form.querySelectorAll('input[type="password"]')
-      const currentPasswordInput = inputs[0]
-      const newPasswordInput = inputs[1]
-      const confirmPasswordInput = inputs[2]
-      const submitButton = screen.getByRole('button', { name: /Change Password/i })
-
-      await user.type(currentPasswordInput as HTMLInputElement, 'wrong')
-      await user.type(newPasswordInput as HTMLInputElement, 'newpass12345')
-      await user.type(confirmPasswordInput as HTMLInputElement, 'newpass12345')
-      await user.click(submitButton)
-
-      await waitFor(() => {
-        expect(screen.getByText(/Invalid password/)).toBeInTheDocument()
-      })
-
-      await user.clear(currentPasswordInput as HTMLInputElement)
-      await user.type(currentPasswordInput as HTMLInputElement, 'correct')
-
-      expect(screen.queryByText(/Invalid password/)).not.toBeInTheDocument()
-    })
-  })
-
-  describe('Given/When/Then - Logout trigger', () => {
-    it('Given successful password change; When onLogout callback provided; Then onLogout is called', async () => {
-      const user = userEvent.setup({ delay: null })
-      const mockOnLogout = vi.fn()
-
-      vi.mocked(SettingsService.changePassword).mockResolvedValueOnce({
-        message: 'Password changed successfully. Please log in again.',
-        requires_reauth: true,
-      } as any)
-
-      const { container } = render(<SettingsPage onLogout={mockOnLogout} />)
-
-      const form = container.querySelector('form')
-      if (!form) throw new Error('Form not found')
-
-      const inputs = form.querySelectorAll('input[type="password"]')
-      const currentPasswordInput = inputs[0]
-      const newPasswordInput = inputs[1]
-      const confirmPasswordInput = inputs[2]
-      const submitButton = screen.getByRole('button', { name: /Change Password/i })
-
-      await user.type(currentPasswordInput as HTMLInputElement, 'oldpass123')
-      await user.type(newPasswordInput as HTMLInputElement, 'newpass12345')
-      await user.type(confirmPasswordInput as HTMLInputElement, 'newpass12345')
-      await user.click(submitButton)
-
-      await waitFor(() => {
-        expect(vi.mocked(SettingsService.changePassword)).toHaveBeenCalled()
-      }, { timeout: 3000 })
+      const confirmButton = screen.getByRole('button', { name: /delete forever/i })
+      await userEvent.click(confirmButton)
 
       await waitFor(() => {
         expect(mockOnLogout).toHaveBeenCalled()
-      }, { timeout: 3000 })
-    }, 10000)
-
-    it('Given no onLogout callback; When password change succeeds; Then no error occurs', async () => {
-      const user = userEvent.setup({ delay: null })
-
-      vi.mocked(SettingsService.changePassword).mockResolvedValueOnce({
-        message: 'Password changed successfully. Please log in again.',
-        requires_reauth: true,
-      } as any)
-
-      const { container } = render(<SettingsPage />)
-
-      const form = container.querySelector('form')
-      if (!form) throw new Error('Form not found')
-
-      const inputs = form.querySelectorAll('input[type="password"]')
-      const currentPasswordInput = inputs[0]
-      const newPasswordInput = inputs[1]
-      const confirmPasswordInput = inputs[2]
-      const submitButton = screen.getByRole('button', { name: /Change Password/i })
-
-      await user.type(currentPasswordInput as HTMLInputElement, 'oldpass123')
-      await user.type(newPasswordInput as HTMLInputElement, 'newpass12345')
-      await user.type(confirmPasswordInput as HTMLInputElement, 'newpass12345')
-      await user.click(submitButton)
-
-      await waitFor(() => {
-        expect(screen.getByText(/Password changed successfully/)).toBeInTheDocument()
-      }, { timeout: 3000 })
-
-      expect(true).toBe(true)
-    }, 10000)
-  })
-
-  describe('Accessibility and styling', () => {
-    it('Given SettingsPage renders; When page loads; Then form is properly labeled', () => {
-      render(<SettingsPage />)
-
-      const form = screen.getByLabelText(/Current Password/i).closest('form')
-      expect(form).toBeInTheDocument()
+      })
     })
 
-    it('Given SettingsPage renders; When page loads; Then page layout uses max-w-2xl constraint', () => {
-      const { container } = render(<SettingsPage />)
+    it('shows error message on deletion failure', async () => {
+      vi.mocked(SettingsService.deleteAccount).mockRejectedValue(new Error('Network error'))
 
-      const pageContainer = container.firstChild
-      expect(pageContainer).toHaveClass('max-w-2xl')
+      render(<SettingsPage onLogout={mockOnLogout} />)
+
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      await userEvent.click(deleteButton)
+
+      const confirmInput = screen.getByPlaceholderText(/DELETE/i)
+      await userEvent.type(confirmInput, 'DELETE')
+
+      const confirmButton = screen.getByRole('button', { name: /delete forever/i })
+      await userEvent.click(confirmButton)
+
+      await waitFor(() => {
+        expect(screen.getByText('Network error')).toBeInTheDocument()
+      })
+    })
+
+    it('keeps modal open on deletion error', async () => {
+      vi.mocked(SettingsService.deleteAccount).mockRejectedValue(new Error('Network error'))
+
+      render(<SettingsPage onLogout={mockOnLogout} />)
+
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      await userEvent.click(deleteButton)
+
+      const confirmInput = screen.getByPlaceholderText(/DELETE/i)
+      await userEvent.type(confirmInput, 'DELETE')
+
+      const confirmButton = screen.getByRole('button', { name: /delete forever/i })
+      await userEvent.click(confirmButton)
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /delete account\?/i })).toBeInTheDocument()
+      })
+    })
+
+    it('disables buttons and shows loading state during deletion', async () => {
+      let resolveDeletion: () => void
+      vi.mocked(SettingsService.deleteAccount).mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveDeletion = () =>
+              resolve({
+                message: 'Account deleted',
+                deleted_items: {
+                  connections: 1,
+                  transactions: 10,
+                  accounts: 2,
+                  budgets: 3,
+                },
+              })
+          })
+      )
+
+      render(<SettingsPage onLogout={mockOnLogout} />)
+
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      await userEvent.click(deleteButton)
+
+      const confirmInput = screen.getByPlaceholderText(/DELETE/i)
+      await userEvent.type(confirmInput, 'DELETE')
+
+      const confirmButton = screen.getByRole('button', { name: /delete forever/i })
+      await userEvent.click(confirmButton)
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /deleting\.\.\./i })).toBeInTheDocument()
+      })
+
+      expect(confirmInput).toBeDisabled()
+    })
+  })
+
+  describe('Modal content', () => {
+    it('displays warning about permanent deletion', async () => {
+      render(<SettingsPage onLogout={mockOnLogout} />)
+
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      await userEvent.click(deleteButton)
+
+      expect(screen.getByText(/this will permanently delete:/i)).toBeInTheDocument()
+    })
+
+    it('lists what will be deleted', async () => {
+      render(<SettingsPage onLogout={mockOnLogout} />)
+
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      await userEvent.click(deleteButton)
+
+      expect(screen.getByText(/all bank connections/i)).toBeInTheDocument()
+      expect(screen.getByText(/all transactions and accounts/i)).toBeInTheDocument()
+      expect(screen.getByText(/all budgets and settings/i)).toBeInTheDocument()
+      expect(screen.getByText(/your user account and login credentials/i)).toBeInTheDocument()
+    })
+  })
+
+  describe('Danger Zone section', () => {
+    it('displays danger zone section', () => {
+      render(<SettingsPage onLogout={mockOnLogout} />)
+
+      expect(screen.getByRole('heading', { name: /danger zone/i })).toBeInTheDocument()
+    })
+
+    it('displays warning text in danger zone', () => {
+      render(<SettingsPage onLogout={mockOnLogout} />)
+
+      expect(screen.getByText(/once you delete your account, there is no going back/i)).toBeInTheDocument()
+    })
+
+    it('displays delete account button in danger zone', () => {
+      render(<SettingsPage onLogout={mockOnLogout} />)
+
+      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      expect(deleteButton).toBeInTheDocument()
     })
   })
 })

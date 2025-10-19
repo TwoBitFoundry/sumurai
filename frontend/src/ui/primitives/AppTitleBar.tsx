@@ -1,6 +1,6 @@
 import React from 'react'
 import { cva } from 'class-variance-authority'
-import { Sun, Moon } from 'lucide-react'
+import { Sun, Moon, Settings } from 'lucide-react'
 import { Button } from './Button'
 import { cn } from './utils'
 
@@ -25,7 +25,7 @@ const titleBarVariants = cva(
   }
 )
 
-type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts'
+type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings'
 
 const TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'dashboard', label: 'Dashboard' },
@@ -139,6 +139,23 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
               >
                 {themeMode === 'dark' ? <Moon className={cn('h-4', 'w-4')} /> : <Sun className={cn('h-4', 'w-4')} />}
               </Button>
+
+              {state === 'authenticated' && onTabChange && (
+                <Button
+                  type="button"
+                  onClick={() => onTabChange('settings')}
+                  variant={currentTab === 'settings' ? 'tabActive' : 'ghost'}
+                  size={scrolled ? 'xs' : 'sm'}
+                  className={cn(
+                    'rounded-xl',
+                    currentTab !== 'settings' ? 'border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600' : ''
+                  )}
+                  aria-label="Settings"
+                  title="Settings"
+                >
+                  <Settings className={cn('h-4', 'w-4')} />
+                </Button>
+              )}
 
               {(state === 'onboarding' || state === 'authenticated') && onLogout && (
                 <Button
