@@ -1547,10 +1547,16 @@ async fn get_authenticated_provider_info(
     let default_provider = state.config.get_default_provider();
     let available_providers = vec!["plaid", "teller"];
 
+    let user_provider = if user.onboarding_completed {
+        user.provider
+    } else {
+        default_provider.to_string()
+    };
+
     Ok(Json(serde_json::json!({
         "available_providers": available_providers,
         "default_provider": default_provider,
-        "user_provider": user.provider,
+        "user_provider": user_provider,
         "teller_application_id": state.config.get_teller_application_id(),
         "teller_environment": state.config.get_teller_environment(),
     })))
