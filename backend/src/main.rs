@@ -11,6 +11,9 @@ use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
+#[allow(unused_imports)]
+use serde_json::json;
+
 mod auth_middleware;
 mod config;
 mod models;
@@ -286,6 +289,7 @@ pub fn create_app(state: AppState) -> Router {
 #[utoipa::path(
     post,
     path = "/api/auth/register",
+    description = "Registers a new user and seeds default provider metadata.",
     request_body = auth_models::RegisterRequest,
     responses(
         (status = 200, description = "User registered successfully", body = auth_models::AuthResponse),
@@ -363,6 +367,7 @@ async fn register_user(
 #[utoipa::path(
     post,
     path = "/api/auth/login",
+    description = "Authenticates a user and returns a signed JWT for subsequent requests.",
     request_body = auth_models::LoginRequest,
     responses(
         (status = 200, description = "Login successful", body = auth_models::AuthResponse),
@@ -444,6 +449,7 @@ async fn login_user(
 #[utoipa::path(
     post,
     path = "/api/auth/logout",
+    description = "Invalidates the active JWT and clears cached session state.",
     responses(
         (status = 200, description = "Logout successful", body = LogoutResponse),
         (status = 401, description = "Unauthorized")
@@ -487,6 +493,7 @@ async fn logout_user(
 #[utoipa::path(
     post,
     path = "/api/auth/refresh",
+    description = "Exchanges an existing token for a refreshed bearer token.",
     responses(
         (status = 200, description = "Token refreshed successfully", body = auth_models::AuthResponse),
         (status = 401, description = "Unauthorized or session expired"),
@@ -570,6 +577,7 @@ async fn refresh_user_session(
 #[utoipa::path(
     put,
     path = "/api/auth/onboarding/complete",
+    description = "Marks onboarding complete and refreshes user metadata.",
     responses(
         (status = 200, description = "Onboarding completed", body = OnboardingCompleteResponse),
         (status = 401, description = "Unauthorized"),
@@ -608,6 +616,7 @@ async fn complete_user_onboarding(
 #[utoipa::path(
     get,
     path = "/api/transactions",
+    description = "Returns transactions with optional text search and account filtering.",
     params(("search" = Option<String>, Query, description = "Search transactions by merchant or category"),
            ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
     responses(
@@ -692,6 +701,7 @@ async fn get_authenticated_transactions(
 #[utoipa::path(
     post,
     path = "/api/plaid/link-token",
+    description = "Generates a provider-specific link token for Plaid/Teller flows.",
     request_body = LinkTokenRequest,
     responses(
         (status = 200, description = "Link token created successfully", body = LinkTokenResponse),
@@ -738,6 +748,7 @@ async fn create_authenticated_link_token(
 #[utoipa::path(
     post,
     path = "/api/plaid/exchange-token",
+    description = "Exchanges a Plaid public token for a persisted access token.",
     request_body = ExchangeTokenRequest,
     responses(
         (status = 200, description = "Token exchanged successfully", body = ExchangeTokenResponse),
@@ -787,6 +798,7 @@ async fn exchange_authenticated_public_token(
 #[utoipa::path(
     get,
     path = "/api/plaid/accounts",
+    description = "Lists linked accounts with transaction counts for the user.",
     responses(
         (status = 200, description = "List of user accounts with transaction counts", body = Vec<AccountResponse>),
         (status = 401, description = "Unauthorized"),
@@ -847,6 +859,7 @@ async fn get_authenticated_plaid_accounts(
 #[utoipa::path(
     post,
     path = "/api/providers/sync-transactions",
+    description = "Kicks off a provider sync to pull the latest transactions.",
     request_body = SyncTransactionsRequest,
     responses(
         (status = 200, description = "Transactions synced successfully", body = SyncTransactionsResponse),
@@ -1037,8 +1050,9 @@ async fn sync_authenticated_provider_transactions(
 #[utoipa::path(
     get,
     path = "/api/analytics/spending/current-month",
+    description = "Calculates the user's total spending for the current calendar month.",
     responses(
-        (status = 200, description = "Current month spending total", body = String),
+        (status = 200, description = "Current month spending total", body = String, example = json!("845.30")),
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
@@ -1073,6 +1087,7 @@ async fn get_authenticated_current_month_spending(
 #[utoipa::path(
     get,
     path = "/api/analytics/daily-spending",
+    description = "Provides daily spending totals for a given month (defaults to current month).",
     params(("month" = Option<String>, Query, description = "Month in YYYY-MM format (defaults to current month)")),
     responses(
         (status = 200, description = "Daily spending data", body = Vec<DailySpending>),
@@ -1131,6 +1146,7 @@ async fn get_authenticated_daily_spending(
 #[utoipa::path(
     post,
     path = "/api/plaid/clear-synced-data",
+    description = "Clears cached transactions for the calling user's session.",
     responses(
         (status = 200, description = "Synced data cleared successfully", body = ClearSyncedDataResponse),
         (status = 401, description = "Unauthorized"),
@@ -1160,11 +1176,12 @@ async fn clear_authenticated_synced_data(
 #[utoipa::path(
     get,
     path = "/api/analytics/spending",
+    description = "Aggregates spending across a user-defined date range.",
     params(("start_date" = Option<String>, Query, description = "Start date in YYYY-MM-DD format"),
            ("end_date" = Option<String>, Query, description = "End date in YYYY-MM-DD format"),
            ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
     responses(
-        (status = 200, description = "Total spending for date range", body = String),
+        (status = 200, description = "Total spending for date range", body = String, example = json!("1540.22")),
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
@@ -1250,6 +1267,7 @@ async fn get_authenticated_spending_by_date_range(
 #[utoipa::path(
     get,
     path = "/api/analytics/categories",
+    description = "Returns category-level spend for the supplied filters.",
     params(("start_date" = Option<String>, Query, description = "Start date in YYYY-MM-DD format"),
            ("end_date" = Option<String>, Query, description = "End date in YYYY-MM-DD format"),
            ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
@@ -1337,6 +1355,7 @@ async fn get_authenticated_category_spending(
 #[utoipa::path(
     get,
     path = "/api/analytics/monthly-totals",
+    description = "Produces a timeline of monthly totals for dashboard charts.",
     params(("months" = Option<i32>, Query, description = "Number of months to retrieve (default: 6)"),
            ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
     responses(
@@ -1401,6 +1420,7 @@ async fn get_authenticated_monthly_totals(
 #[utoipa::path(
     get,
     path = "/api/analytics/top-merchants",
+    description = "Surfaces the top merchants by spend within the filter window.",
     params(("start_date" = Option<String>, Query, description = "Start date in YYYY-MM-DD format"),
            ("end_date" = Option<String>, Query, description = "End date in YYYY-MM-DD format"),
            ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
@@ -1506,6 +1526,7 @@ async fn load_connection_statuses(
 #[utoipa::path(
     post,
     path = "/api/providers/connect",
+    description = "Completes Teller Connect enrollment and stores provider credentials for the user.",
     request_body = ProviderConnectRequest,
     responses(
         (status = 200, description = "Provider connected successfully", body = ProviderConnectResponse),
@@ -1562,6 +1583,7 @@ async fn connect_authenticated_provider(
 #[utoipa::path(
     get,
     path = "/api/providers/status",
+    description = "Summarizes connection status, sync metrics, and active institutions for the selected provider.",
     responses(
         (status = 200, description = "Provider connection status and statistics", body = ProviderStatusResponse),
         (status = 401, description = "Unauthorized"),
@@ -1596,6 +1618,7 @@ async fn get_authenticated_provider_status(
 #[utoipa::path(
     get,
     path = "/api/budgets",
+    description = "Retrieves all budgets for the authenticated user, leveraging Redis caching when available.",
     responses(
         (status = 200, description = "List of user budgets", body = Vec<Budget>),
         (status = 401, description = "Unauthorized"),
@@ -1644,6 +1667,7 @@ async fn get_authenticated_budgets(
 #[utoipa::path(
     post,
     path = "/api/budgets",
+    description = "Creates a new budget entry for the user with category and amount.",
     request_body = CreateBudgetRequest,
     responses(
         (status = 200, description = "Budget created", body = crate::models::budget::Budget),
@@ -1697,6 +1721,7 @@ async fn create_authenticated_budget(
 #[utoipa::path(
     put,
     path = "/api/budgets/{id}",
+    description = "Updates the amount of an existing budget owned by the authenticated user.",
     params(("id" = String, Path, description = "Budget ID")),
     request_body = UpdateBudgetRequest,
     responses(
@@ -1760,6 +1785,7 @@ async fn update_authenticated_budget(
 #[utoipa::path(
     delete,
     path = "/api/budgets/{id}",
+    description = "Deletes a budget and invalidates cached budget data.",
     params(("id" = String, Path, description = "Budget ID")),
     responses(
         (status = 200, description = "Budget deleted successfully", body = DeleteBudgetResponse),
@@ -1818,6 +1844,7 @@ async fn delete_authenticated_budget(
 #[utoipa::path(
     post,
     path = "/api/providers/disconnect",
+    description = "Disconnects a provider connection and clears related cached artifacts.",
     request_body = DisconnectRequest,
     responses(
         (status = 200, description = "Provider connection disconnected", body = DisconnectResult),
@@ -1852,8 +1879,9 @@ async fn disconnect_authenticated_connection(
 #[utoipa::path(
     get,
     path = "/health",
+    description = "Simple readiness probe for service health verification.",
     responses(
-        (status = 200, description = "Service is healthy"),
+        (status = 200, description = "Service is healthy", body = crate::openapi::schemas::HealthCheckResponse),
     ),
     tag = "Health"
 )]
@@ -1864,6 +1892,7 @@ async fn health_check() -> &'static str {
 #[utoipa::path(
     get,
     path = "/api/providers/info",
+    description = "Describes available providers and the caller's current selection.",
     responses(
         (status = 200, description = "Available providers and current user provider configuration", body = ProviderInfoResponse),
         (status = 401, description = "Unauthorized"),
@@ -1916,6 +1945,7 @@ async fn get_authenticated_provider_info(
 #[utoipa::path(
     post,
     path = "/api/providers/select",
+    description = "Persists a provider switch for the authenticated user.",
     request_body = ProviderSelectRequest,
     responses(
         (status = 200, description = "Provider selected successfully", body = ProviderSelectResponse),
@@ -1966,6 +1996,7 @@ async fn select_authenticated_provider(
 #[utoipa::path(
     get,
     path = "/api/analytics/balances/overview",
+    description = "Aggregates balances by institution and overall totals, with optional account filtering.",
     params(("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
     responses(
         (status = 200, description = "Balance overview across all institutions", body = BalancesOverviewResponse),
@@ -2174,6 +2205,7 @@ async fn get_authenticated_balances_overview(
 #[utoipa::path(
     get,
     path = "/api/analytics/net-worth-over-time",
+    description = "Generates a historical net worth series between the supplied start and end dates.",
     params(("start_date" = String, Query, description = "Start date in YYYY-MM-DD format"),
            ("end_date" = String, Query, description = "End date in YYYY-MM-DD format"),
            ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
@@ -2388,6 +2420,7 @@ async fn get_authenticated_net_worth_over_time(
 #[utoipa::path(
     put,
     path = "/api/auth/change-password",
+    description = "Allows an authenticated user to rotate their password and invalidate cached credentials.",
     request_body = ChangePasswordRequest,
     responses(
         (status = 200, description = "Password changed successfully", body = ChangePasswordResponse),
@@ -2474,6 +2507,7 @@ async fn change_user_password(
 #[utoipa::path(
     delete,
     path = "/api/auth/account",
+    description = "Deletes the authenticated user's account and associated provider data.",
     responses(
         (status = 200, description = "Account deleted successfully", body = DeleteAccountResponse),
         (status = 401, description = "Unauthorized"),

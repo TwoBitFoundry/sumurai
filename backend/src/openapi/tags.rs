@@ -1,4 +1,4 @@
-use utoipa::openapi::OpenApi;
+use utoipa::openapi::{self, OpenApi};
 
 pub const AUTH_TAG: &str = "Authentication";
 pub const TRANSACTIONS_TAG: &str = "Transactions";
@@ -11,13 +11,37 @@ pub const HEALTH_TAG: &str = "Health";
 
 pub fn add_tags(openapi: &mut OpenApi) {
     openapi.tags = Some(vec![
-        utoipa::openapi::Tag::new(AUTH_TAG),
-        utoipa::openapi::Tag::new(TRANSACTIONS_TAG),
-        utoipa::openapi::Tag::new(PROVIDERS_TAG),
-        utoipa::openapi::Tag::new(PLAID_TAG),
-        utoipa::openapi::Tag::new(TELLER_TAG),
-        utoipa::openapi::Tag::new(ANALYTICS_TAG),
-        utoipa::openapi::Tag::new(BUDGETS_TAG),
-        utoipa::openapi::Tag::new(HEALTH_TAG),
+        openapi::tag::TagBuilder::new()
+            .name(AUTH_TAG)
+            .description(Some("Session lifecycle endpoints covering registration, login, refresh, and logout flows."))
+            .build(),
+        openapi::tag::TagBuilder::new()
+            .name(TRANSACTIONS_TAG)
+            .description(Some("Transaction APIs that power search, filtering, and sync of user financial activity."))
+            .build(),
+        openapi::tag::TagBuilder::new()
+            .name(PROVIDERS_TAG)
+            .description(Some("Provider-agnostic endpoints for selecting, connecting, and managing financial data sources."))
+            .build(),
+        openapi::tag::TagBuilder::new()
+            .name(PLAID_TAG)
+            .description(Some("Plaid-specific endpoints for link token creation, token exchange, and account retrieval."))
+            .build(),
+        openapi::tag::TagBuilder::new()
+            .name(TELLER_TAG)
+            .description(Some("Reserved for Teller Connect operations when expanded beyond provider selection flows."))
+            .build(),
+        openapi::tag::TagBuilder::new()
+            .name(ANALYTICS_TAG)
+            .description(Some("Analytics endpoints delivering spend breakdowns, trends, balances, and net worth insights."))
+            .build(),
+        openapi::tag::TagBuilder::new()
+            .name(BUDGETS_TAG)
+            .description(Some("Budget management APIs for CRUD operations tied to user-defined spending targets."))
+            .build(),
+        openapi::tag::TagBuilder::new()
+            .name(HEALTH_TAG)
+            .description(Some("Service health diagnostics for readiness and uptime monitoring."))
+            .build(),
     ]);
 }

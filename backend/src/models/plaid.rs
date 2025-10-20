@@ -8,6 +8,23 @@ use uuid::Uuid;
 use serde_json::json;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+#[schema(example = json!({
+    "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    "user_id": "ffffffff-1111-2222-3333-444444444444",
+    "item_id": "item-123",
+    "is_connected": true,
+    "last_sync_at": "2024-01-15T12:00:00Z",
+    "connected_at": "2024-01-10T09:00:00Z",
+    "disconnected_at": null,
+    "institution_id": "ins_123",
+    "institution_name": "Demo Bank",
+    "institution_logo_url": "https://cdn.demo.bank/logo.png",
+    "sync_cursor": "cursor-456",
+    "transaction_count": 125,
+    "account_count": 3,
+    "created_at": "2024-01-10T08:55:00Z",
+    "updated_at": "2024-01-15T12:00:00Z"
+}))]
 pub struct ProviderConnection {
     pub id: Uuid,
     pub user_id: Uuid,

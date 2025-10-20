@@ -19,6 +19,7 @@ pub struct SuccessResponse {
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({"status": "ok"}))]
 pub struct HealthCheckResponse {
     pub status: String,
 }

@@ -3,7 +3,21 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+#[allow(unused_imports)]
+use serde_json::json;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+#[schema(example = json!({
+    "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    "user_id": "ffffffff-1111-2222-3333-444444444444",
+    "provider_account_id": "acct-123",
+    "provider_connection_id": "99999999-8888-7777-6666-555555555555",
+    "name": "Demo Checking",
+    "account_type": "depository",
+    "balance_current": "1234.56",
+    "mask": "1234",
+    "institution_name": "Demo Bank"
+}))]
 pub struct Account {
     pub id: Uuid,
     pub user_id: Option<Uuid>,
@@ -18,6 +32,18 @@ pub struct Account {
 }
 
 #[derive(Serialize, ToSchema)]
+#[schema(example = json!({
+    "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    "user_id": "ffffffff-1111-2222-3333-444444444444",
+    "provider_account_id": "acct-123",
+    "provider_connection_id": "99999999-8888-7777-6666-555555555555",
+    "name": "Demo Checking",
+    "account_type": "depository",
+    "balance_current": "1234.56",
+    "mask": "1234",
+    "transaction_count": 42,
+    "institution_name": "Demo Bank"
+}))]
 pub struct AccountResponse {
     pub id: Uuid,
     pub user_id: Option<Uuid>,

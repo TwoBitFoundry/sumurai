@@ -24,6 +24,7 @@ pub struct LoginRequest {
 }
 
 #[derive(Serialize, ToSchema)]
+#[schema(example = json!({"token": "jwt-token-value", "user_id": "11111111-2222-3333-4444-555555555555", "expires_at": "2024-01-01T12:00:00Z", "onboarding_completed": false}))]
 pub struct AuthResponse {
     pub token: String,
     pub user_id: String,
@@ -139,6 +140,7 @@ pub struct OnboardingCompleteResponse {
 }
 
 #[derive(Serialize, ToSchema)]
+#[schema(example = json!({"connections": 2, "transactions": 150, "accounts": 5, "budgets": 3}))]
 pub struct DeletedItemsSummary {
     pub connections: i32,
     pub transactions: i32,
@@ -147,6 +149,15 @@ pub struct DeletedItemsSummary {
 }
 
 #[derive(Serialize, ToSchema)]
+#[schema(example = json!({
+    "message": "Account deleted successfully",
+    "deleted_items": {
+        "connections": 2,
+        "transactions": 150,
+        "accounts": 5,
+        "budgets": 3
+    }
+}))]
 pub struct DeleteAccountResponse {
     pub message: String,
     pub deleted_items: DeletedItemsSummary,

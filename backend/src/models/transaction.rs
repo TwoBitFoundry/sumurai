@@ -9,6 +9,22 @@ use uuid::Uuid;
 use serde_json::json;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+#[schema(example = json!({
+    "id": "33333333-4444-5555-6666-777777777777",
+    "account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    "user_id": "ffffffff-1111-2222-3333-444444444444",
+    "provider_account_id": "acct-123",
+    "provider_transaction_id": "txn-890",
+    "amount": "24.99",
+    "date": "2024-01-20",
+    "merchant_name": "Sample Store",
+    "category_primary": "SHOPPING",
+    "category_detailed": "General merchandise",
+    "category_confidence": "medium",
+    "payment_channel": "online",
+    "pending": false,
+    "created_at": "2024-01-20T14:32:00Z"
+}))]
 pub struct Transaction {
     pub id: Uuid,
     pub account_id: Uuid,
