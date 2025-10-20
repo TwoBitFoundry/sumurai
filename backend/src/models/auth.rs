@@ -4,20 +4,23 @@ use axum::http::StatusCode;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use utoipa::ToSchema;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
+#[schema(example = json!({"email": "user@example.com", "password": "SecurePass123!"}))]
 pub struct RegisterRequest {
     pub email: String,
     pub password: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
+#[schema(example = json!({"email": "user@example.com", "password": "SecurePass123!"}))]
 pub struct LoginRequest {
     pub email: String,
     pub password: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct AuthResponse {
     pub token: String,
     pub user_id: String,
@@ -104,19 +107,19 @@ pub struct User {
     pub onboarding_completed: bool,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct ChangePasswordRequest {
     pub current_password: String,
     pub new_password: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct ChangePasswordResponse {
     pub message: String,
     pub requires_reauth: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct DeletedItemsSummary {
     pub connections: i32,
     pub transactions: i32,
@@ -124,7 +127,7 @@ pub struct DeletedItemsSummary {
     pub budgets: i32,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct DeleteAccountResponse {
     pub message: String,
     pub deleted_items: DeletedItemsSummary,

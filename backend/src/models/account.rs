@@ -1,8 +1,9 @@
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 pub struct Account {
     pub id: Uuid,
     pub user_id: Option<Uuid>,
@@ -10,12 +11,13 @@ pub struct Account {
     pub provider_connection_id: Option<Uuid>,
     pub name: String,
     pub account_type: String,
+    #[schema(value_type = Option<String>)]
     pub balance_current: Option<Decimal>,
     pub mask: Option<String>,
     pub institution_name: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct AccountResponse {
     pub id: Uuid,
     pub user_id: Option<Uuid>,
@@ -23,6 +25,7 @@ pub struct AccountResponse {
     pub provider_connection_id: Option<Uuid>,
     pub name: String,
     pub account_type: String,
+    #[schema(value_type = Option<String>)]
     pub balance_current: Option<rust_decimal::Decimal>,
     pub mask: Option<String>,
     pub transaction_count: i64,

@@ -3,14 +3,16 @@ use rust_decimal::Decimal;
 use serde::{de::IgnoredAny, Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
 use uuid::Uuid;
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 pub struct Transaction {
     pub id: Uuid,
     pub account_id: Uuid,
     pub user_id: Option<Uuid>,
     pub provider_account_id: Option<String>,
     pub provider_transaction_id: Option<String>,
+    #[schema(value_type = String)]
     pub amount: Decimal,
     pub date: NaiveDate,
     pub merchant_name: Option<String>,
@@ -22,13 +24,14 @@ pub struct Transaction {
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 pub struct TransactionWithAccount {
     pub id: Uuid,
     pub account_id: Uuid,
     pub user_id: Option<Uuid>,
     pub provider_account_id: Option<String>,
     pub provider_transaction_id: Option<String>,
+    #[schema(value_type = String)]
     pub amount: Decimal,
     pub date: NaiveDate,
     pub merchant_name: Option<String>,
@@ -114,13 +117,13 @@ impl<T> VecOrOne<T> {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct SyncTransactionsResponse {
     pub transactions: Vec<Transaction>,
     pub metadata: SyncMetadata,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct SyncMetadata {
     pub transaction_count: i32,
     pub account_count: i32,

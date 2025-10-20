@@ -14,6 +14,8 @@ use uuid::Uuid;
 mod auth_middleware;
 mod config;
 mod models;
+mod openapi;
+
 pub mod providers;
 mod services;
 #[cfg(test)]
@@ -23,7 +25,8 @@ mod utils;
 pub use tests::test_fixtures;
 
 use crate::models::analytics::{
-    BalanceCategory, CategorySpending, DailySpending, MonthlySpending, TopMerchant,
+    BalanceCategory, BalancesOverviewResponse, CategorySpending, DailySpending, MonthlySpending,
+    NetWorthOverTimeResponse, TopMerchant,
 };
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, AuthMiddlewareState};
@@ -35,13 +38,17 @@ use crate::models::{
     account::AccountResponse,
     analytics::{DateRangeQuery, MonthlyTotalsQuery},
     auth as auth_models,
-    budget::{CreateBudgetRequest, UpdateBudgetRequest},
+    budget::{Budget, CreateBudgetRequest, UpdateBudgetRequest},
     plaid::{
         ExchangeTokenRequest, ExchangeTokenResponse, LinkTokenRequest, SyncTransactionsRequest,
     },
     transaction::{SyncTransactionsResponse, TransactionsQuery},
 };
-use crate::models::{api_error::ApiErrorResponse, auth::User, transaction::TransactionWithAccount};
+use crate::models::{
+    api_error::ApiErrorResponse,
+    auth::{ChangePasswordRequest, ChangePasswordResponse, DeleteAccountResponse, User},
+    transaction::TransactionWithAccount,
+};
 use auth_middleware::auth_middleware;
 use config::Config;
 use services::repository_service::{DatabaseRepository, PostgresRepository};
@@ -245,13 +252,45 @@ pub fn create_app(state: AppState) -> Router {
             auth_middleware,
         ));
 
+    let docs_routes = Router::new()
+        .route("/api-docs/openapi.json", get(openapi_json_handler))
+        .route("/scalar", get(scalar_handler));
+
+    async fn openapi_json_handler() -> axum::Json<utoipa::openapi::OpenApi> {
+        axum::Json(openapi::init_openapi())
+    }
+
+    async fn scalar_handler() -> axum::response::Html<String> {
+        let openapi_spec = openapi::init_openapi();
+        let mut html = utoipa_scalar::Scalar::new(openapi_spec).to_html();
+
+        html = html.replace(
+            r#"id="api-reference""#,
+            r#"id="api-reference" data-configuration='{"theme":"elysiajs","darkMode":true,"layout":"modern","showSidebar":true,"hideClientButton":true,"hideModels":true}'"#
+        );
+
+        axum::response::Html(html)
+    }
+
     Router::new()
         .merge(public_routes)
         .merge(protected_routes)
+        .merge(docs_routes)
         .layer(CorsLayer::permissive())
         .with_state(state)
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/auth/register",
+    request_body = auth_models::RegisterRequest,
+    responses(
+        (status = 200, description = "User registered successfully", body = auth_models::AuthResponse),
+        (status = 409, description = "Email already registered", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    tag = "Authentication"
+)]
 async fn register_user(
     State(state): State<AppState>,
     Json(req): Json<auth_models::RegisterRequest>,
@@ -318,6 +357,17 @@ async fn register_user(
     }))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/auth/login",
+    request_body = auth_models::LoginRequest,
+    responses(
+        (status = 200, description = "Login successful", body = auth_models::AuthResponse),
+        (status = 401, description = "Invalid credentials", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    tag = "Authentication"
+)]
 async fn login_user(
     State(state): State<AppState>,
     Json(req): Json<auth_models::LoginRequest>,
@@ -388,6 +438,16 @@ async fn login_user(
     }))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/auth/logout",
+    responses(
+        (status = 200, description = "Logout successful"),
+        (status = 401, description = "Unauthorized"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Authentication"
+)]
 async fn logout_user(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -421,6 +481,17 @@ async fn logout_user(
     })))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/auth/refresh",
+    responses(
+        (status = 200, description = "Token refreshed successfully", body = auth_models::AuthResponse),
+        (status = 401, description = "Unauthorized or session expired"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Authentication"
+)]
 async fn refresh_user_session(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -497,6 +568,17 @@ async fn refresh_user_session(
     }))
 }
 
+#[utoipa::path(
+    put,
+    path = "/api/auth/onboarding/complete",
+    responses(
+        (status = 200, description = "Onboarding completed"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Authentication"
+)]
 async fn complete_user_onboarding(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -524,6 +606,18 @@ async fn complete_user_onboarding(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/transactions",
+    params(("search" = Option<String>, Query, description = "Search transactions by merchant or category"),
+           ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
+    responses(
+        (status = 200, description = "List of transactions"),
+        (status = 401, description = "Unauthorized"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Transactions"
+)]
 async fn get_authenticated_transactions(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -593,6 +687,19 @@ async fn get_authenticated_transactions(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/plaid/link-token",
+    request_body = LinkTokenRequest,
+    responses(
+        (status = 200, description = "Link token created successfully"),
+        (status = 400, description = "Unsupported provider"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Failed to create link token"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Plaid"
+)]
 async fn create_authenticated_link_token(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -626,6 +733,20 @@ async fn create_authenticated_link_token(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/plaid/exchange-token",
+    request_body = ExchangeTokenRequest,
+    responses(
+        (status = 200, description = "Token exchanged successfully", body = ExchangeTokenResponse),
+        (status = 400, description = "Unsupported provider"),
+        (status = 401, description = "Unauthorized"),
+        (status = 502, description = "Token exchange failed with provider"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Plaid"
+)]
 async fn exchange_authenticated_public_token(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -661,6 +782,17 @@ async fn exchange_authenticated_public_token(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/plaid/accounts",
+    responses(
+        (status = 200, description = "List of user accounts with transaction counts", body = Vec<AccountResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Plaid"
+)]
 async fn get_authenticated_plaid_accounts(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -710,6 +842,21 @@ async fn get_authenticated_plaid_accounts(
     Ok(Json(account_responses))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/providers/sync-transactions",
+    request_body = SyncTransactionsRequest,
+    responses(
+        (status = 200, description = "Transactions synced successfully", body = SyncTransactionsResponse),
+        (status = 400, description = "Missing connection_id"),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Connection not found or credentials missing"),
+        (status = 502, description = "Provider request failed"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Financial Providers"
+)]
 async fn sync_authenticated_provider_transactions(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -889,6 +1036,17 @@ async fn sync_authenticated_provider_transactions(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/analytics/spending/current-month",
+    responses(
+        (status = 200, description = "Current month spending total", body = String),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Analytics"
+)]
 async fn get_authenticated_current_month_spending(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -914,6 +1072,19 @@ async fn get_authenticated_current_month_spending(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/analytics/daily-spending",
+    params(("month" = Option<String>, Query, description = "Month in YYYY-MM format (defaults to current month)")),
+    responses(
+        (status = 200, description = "Daily spending data", body = Vec<DailySpending>),
+        (status = 400, description = "Invalid month format"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Analytics"
+)]
 async fn get_authenticated_daily_spending(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -959,6 +1130,17 @@ async fn get_authenticated_daily_spending(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/plaid/clear-synced-data",
+    responses(
+        (status = 200, description = "Synced data cleared successfully"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Plaid"
+)]
 async fn clear_authenticated_synced_data(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -976,6 +1158,20 @@ async fn clear_authenticated_synced_data(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/analytics/spending",
+    params(("start_date" = Option<String>, Query, description = "Start date in YYYY-MM-DD format"),
+           ("end_date" = Option<String>, Query, description = "End date in YYYY-MM-DD format"),
+           ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
+    responses(
+        (status = 200, description = "Total spending for date range", body = String),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Analytics"
+)]
 async fn get_authenticated_spending_by_date_range(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -1052,6 +1248,20 @@ async fn get_authenticated_spending_by_date_range(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/analytics/categories",
+    params(("start_date" = Option<String>, Query, description = "Start date in YYYY-MM-DD format"),
+           ("end_date" = Option<String>, Query, description = "End date in YYYY-MM-DD format"),
+           ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
+    responses(
+        (status = 200, description = "Spending breakdown by category", body = Vec<CategorySpending>),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Analytics"
+)]
 async fn get_authenticated_category_spending(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -1125,6 +1335,19 @@ async fn get_authenticated_category_spending(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/analytics/monthly-totals",
+    params(("months" = Option<i32>, Query, description = "Number of months to retrieve (default: 6)"),
+           ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
+    responses(
+        (status = 200, description = "Monthly spending totals", body = Vec<MonthlySpending>),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Analytics"
+)]
 async fn get_authenticated_monthly_totals(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -1176,6 +1399,20 @@ async fn get_authenticated_monthly_totals(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/analytics/top-merchants",
+    params(("start_date" = Option<String>, Query, description = "Start date in YYYY-MM-DD format"),
+           ("end_date" = Option<String>, Query, description = "End date in YYYY-MM-DD format"),
+           ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
+    responses(
+        (status = 200, description = "Top merchants by spending", body = Vec<TopMerchant>),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Analytics"
+)]
 async fn get_authenticated_top_merchants(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -1267,6 +1504,19 @@ async fn load_connection_statuses(
         .collect())
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/providers/connect",
+    request_body = ProviderConnectRequest,
+    responses(
+        (status = 200, description = "Provider connected successfully", body = ProviderConnectResponse),
+        (status = 400, description = "Unsupported provider"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Failed to connect provider", body = ApiErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Financial Providers"
+)]
 async fn connect_authenticated_provider(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -1310,6 +1560,17 @@ async fn connect_authenticated_provider(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/providers/status",
+    responses(
+        (status = 200, description = "Provider connection status and statistics", body = ProviderStatusResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Financial Providers"
+)]
 async fn get_authenticated_provider_status(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -1333,6 +1594,17 @@ async fn get_authenticated_provider_status(
     }))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/budgets",
+    responses(
+        (status = 200, description = "List of user budgets"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Budgets"
+)]
 async fn get_authenticated_budgets(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -1370,6 +1642,19 @@ async fn get_authenticated_budgets(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/budgets",
+    request_body = CreateBudgetRequest,
+    responses(
+        (status = 200, description = "Budget created", body = crate::models::budget::Budget),
+        (status = 400, description = "Invalid budget data", body = ApiErrorResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 409, description = "Budget category already exists", body = ApiErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Budgets"
+)]
 async fn create_authenticated_budget(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -1410,6 +1695,21 @@ async fn create_authenticated_budget(
     }
 }
 
+#[utoipa::path(
+    put,
+    path = "/api/budgets/{id}",
+    params(("id" = String, Path, description = "Budget ID")),
+    request_body = UpdateBudgetRequest,
+    responses(
+        (status = 200, description = "Budget updated successfully", body = Budget),
+        (status = 400, description = "Invalid budget amount"),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Budget not found", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Budgets"
+)]
 async fn update_authenticated_budget(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -1458,6 +1758,19 @@ async fn update_authenticated_budget(
     }
 }
 
+#[utoipa::path(
+    delete,
+    path = "/api/budgets/{id}",
+    params(("id" = String, Path, description = "Budget ID")),
+    responses(
+        (status = 200, description = "Budget deleted successfully"),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Budget not found", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Budgets"
+)]
 async fn delete_authenticated_budget(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -1502,6 +1815,19 @@ async fn delete_authenticated_budget(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/providers/disconnect",
+    request_body = DisconnectRequest,
+    responses(
+        (status = 200, description = "Provider connection disconnected", body = DisconnectResult),
+        (status = 400, description = "Invalid connection_id format"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Financial Providers"
+)]
 async fn disconnect_authenticated_connection(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -1523,10 +1849,29 @@ async fn disconnect_authenticated_connection(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/health",
+    responses(
+        (status = 200, description = "Service is healthy"),
+    ),
+    tag = "Health"
+)]
 async fn health_check() -> &'static str {
     "OK"
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/providers/info",
+    responses(
+        (status = 200, description = "Available providers and current user provider configuration"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Financial Providers"
+)]
 async fn get_authenticated_provider_info(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -1564,6 +1909,19 @@ async fn get_authenticated_provider_info(
     })))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/providers/select",
+    request_body = serde_json::Value,
+    responses(
+        (status = 200, description = "Provider selected successfully"),
+        (status = 400, description = "Invalid provider specified"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Financial Providers"
+)]
 async fn select_authenticated_provider(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -1607,6 +1965,18 @@ async fn select_authenticated_provider(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/analytics/balances/overview",
+    params(("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
+    responses(
+        (status = 200, description = "Balance overview across all institutions", body = BalancesOverviewResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Analytics"
+)]
 async fn get_authenticated_balances_overview(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -1803,6 +2173,21 @@ async fn get_authenticated_balances_overview(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/analytics/net-worth-over-time",
+    params(("start_date" = String, Query, description = "Start date in YYYY-MM-DD format"),
+           ("end_date" = String, Query, description = "End date in YYYY-MM-DD format"),
+           ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
+    responses(
+        (status = 200, description = "Net worth trend over time", body = NetWorthOverTimeResponse),
+        (status = 400, description = "Invalid date format or end_date before start_date"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Analytics"
+)]
 async fn get_authenticated_net_worth_over_time(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -2003,6 +2388,18 @@ async fn get_authenticated_net_worth_over_time(
     Ok(Json(response))
 }
 
+#[utoipa::path(
+    put,
+    path = "/api/auth/change-password",
+    request_body = ChangePasswordRequest,
+    responses(
+        (status = 200, description = "Password changed successfully", body = ChangePasswordResponse),
+        (status = 401, description = "Current password is incorrect"),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Authentication"
+)]
 async fn change_user_password(
     State(state): State<AppState>,
     auth_context: AuthContext,
@@ -2075,6 +2472,17 @@ async fn change_user_password(
     }))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/api/auth/account",
+    responses(
+        (status = 200, description = "Account deleted successfully", body = DeleteAccountResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Authentication"
+)]
 async fn delete_user_account(
     State(state): State<AppState>,
     auth_context: AuthContext,

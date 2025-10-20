@@ -2,41 +2,49 @@ use rust_decimal::Decimal;
 use serde::de::{self, Deserializer, IgnoredAny, MapAccess, Visitor};
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use utoipa::ToSchema;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct MonthlySpending {
     pub month: String,
+    #[schema(value_type = String)]
     pub total: Decimal,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct CategorySpending {
     pub name: String,
+    #[schema(value_type = String)]
     pub value: Decimal,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct DailySpending {
     pub day: u32,
+    #[schema(value_type = String)]
     pub spend: Decimal,
+    #[schema(value_type = String)]
     pub cumulative: Decimal,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct TopMerchant {
     pub name: String,
+    #[schema(value_type = String)]
     pub amount: Decimal,
     pub count: u32,
+    #[schema(value_type = String)]
     pub percentage: Decimal,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct NetWorthSeriesPoint {
     pub date: String,
+    #[schema(value_type = String)]
     pub value: Decimal,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct NetWorthOverTimeResponse {
     pub series: Vec<NetWorthSeriesPoint>,
     pub currency: String,
@@ -61,20 +69,28 @@ pub struct MonthlyTotalsQuery {
     pub account_ids: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Totals {
+    #[schema(value_type = String)]
     pub cash: Decimal,
+    #[schema(value_type = String)]
     pub credit: Decimal,
+    #[schema(value_type = String)]
     pub loan: Decimal,
+    #[schema(value_type = String)]
     pub investments: Decimal,
+    #[schema(value_type = String)]
     pub positives_total: Decimal,
+    #[schema(value_type = String)]
     pub negatives_total: Decimal,
+    #[schema(value_type = String)]
     pub net: Decimal,
+    #[schema(value_type = Option<String>)]
     pub ratio: Option<Decimal>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct BankTotals {
     pub bank_id: String,
@@ -83,7 +99,7 @@ pub struct BankTotals {
     pub totals: Totals,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct BalancesOverviewResponse {
     pub as_of: String,

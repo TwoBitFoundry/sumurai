@@ -2,8 +2,9 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 pub struct ProviderConnection {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -23,15 +24,15 @@ pub struct ProviderConnection {
 }
 
 // DTOs for Plaid-related API flows
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct LinkTokenRequest {}
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct ExchangeTokenRequest {
     pub public_token: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct ProviderConnectRequest {
     pub provider: String,
     pub access_token: String,
@@ -39,12 +40,12 @@ pub struct ProviderConnectRequest {
     pub institution_name: Option<String>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct SyncTransactionsRequest {
     pub connection_id: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct DisconnectRequest {
     pub connection_id: String,
 }
@@ -88,7 +89,7 @@ impl ProviderConnection {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ProviderConnectionStatus {
     pub is_connected: bool,
     pub last_sync_at: Option<String>,
@@ -99,19 +100,19 @@ pub struct ProviderConnectionStatus {
     pub sync_in_progress: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ProviderStatusResponse {
     pub provider: String,
     pub connections: Vec<ProviderConnectionStatus>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ProviderConnectResponse {
     pub connection_id: String,
     pub institution_name: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ExchangeTokenResponse {
     pub access_token: String,
     pub item_id: String,
@@ -119,14 +120,14 @@ pub struct ExchangeTokenResponse {
     pub institution_name: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct DisconnectResult {
     pub success: bool,
     pub message: String,
     pub data_cleared: DataCleared,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct DataCleared {
     pub transactions: i32,
     pub accounts: i32,
