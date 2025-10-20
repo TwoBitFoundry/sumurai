@@ -1,14 +1,22 @@
 use anyhow::Context;
 use axum::{
-    extract::{Path, Query, State},
-    http::{HeaderMap, StatusCode, Uri},
-    response::Json,
+    body::Body,
+    extract::{Path, Query, Request, State},
+    http::{header::CONTENT_TYPE, HeaderMap, StatusCode, Uri},
+    middleware::{from_fn, Next},
+    response::{IntoResponse, Json, Response},
     routing::{delete, get, post, put},
     Router,
 };
+use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
+use axum_tracing_opentelemetry::tracing_opentelemetry_instrumentation_sdk as otel_sdk;
 use chrono::Utc;
+use opentelemetry::{global, trace::TracerProvider};
+use opentelemetry_otlp::WithExportConfig;
+use opentelemetry_sdk::{propagation::TraceContextPropagator, trace::SdkTracerProvider, Resource};
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use uuid::Uuid;
 
 #[allow(unused_imports)]
@@ -68,7 +76,7 @@ use sqlx::PgPool;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
+    let tracer_provider = init_tracing()?;
 
     let config = Config::from_env()?;
 
@@ -159,6 +167,10 @@ async fn main() -> anyhow::Result<()> {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     tracing::info!("Server running on http://0.0.0.0:3000");
     axum::serve(listener, app).await?;
+
+    tracer_provider
+        .shutdown()
+        .map_err(|err| anyhow::anyhow!("failed to shutdown tracer provider: {err}"))?;
 
     Ok(())
 }
@@ -282,8 +294,85 @@ pub fn create_app(state: AppState) -> Router {
         .merge(public_routes)
         .merge(protected_routes)
         .merge(docs_routes)
+        .layer(from_fn(error_handling_middleware))
+        .layer(OtelInResponseLayer::default())
+        .layer(OtelAxumLayer::default().try_extract_client_ip(true))
         .layer(CorsLayer::permissive())
         .with_state(state)
+}
+
+fn init_tracing() -> anyhow::Result<SdkTracerProvider> {
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into());
+    let fmt_layer = tracing_subscriber::fmt::layer().with_target(false);
+
+    global::set_text_map_propagator(TraceContextPropagator::new());
+
+    let otlp_endpoint = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
+        .unwrap_or_else(|_| "http://localhost:4317".to_string());
+
+    let exporter = opentelemetry_otlp::SpanExporter::builder()
+        .with_tonic()
+        .with_endpoint(otlp_endpoint)
+        .build()?;
+
+    let resource = Resource::builder()
+        .with_service_name("accounting-backend")
+        .build();
+
+    let tracer_provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()
+        .with_resource(resource)
+        .with_batch_exporter(exporter)
+        .build();
+
+    let tracer = tracer_provider.tracer("accounting-backend");
+
+    tracing_subscriber::registry()
+        .with(env_filter)
+        .with(fmt_layer)
+        .with(tracing_opentelemetry::layer().with_tracer(tracer))
+        .try_init()
+        .map_err(|err| anyhow::anyhow!("failed to initialize tracing subscriber: {err}"))?;
+
+    global::set_tracer_provider(tracer_provider.clone());
+
+    Ok(tracer_provider)
+}
+
+async fn error_handling_middleware(request: Request<Body>, next: Next) -> Response {
+    let response = next.run(request).await;
+    let status = response.status();
+    let has_json_content_type = response
+        .headers()
+        .get(CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .map(|content_type| content_type.starts_with("application/json"))
+        .unwrap_or(false);
+
+    if status.is_server_error() {
+        let trace_id = otel_sdk::find_current_trace_id();
+        match trace_id.as_deref() {
+            Some(trace_id) => {
+                tracing::error!(status = %status, %trace_id, "request resulted in server error")
+            }
+            None => tracing::error!(status = %status, "request resulted in server error"),
+        };
+        if !has_json_content_type {
+            let mut error = ApiErrorResponse::new(
+                "INTERNAL_SERVER_ERROR",
+                "An unexpected server error occurred",
+            );
+            error.details = trace_id.map(|id| json!({ "trace_id": id }));
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(error)).into_response();
+        }
+    } else if status.is_client_error() {
+        if let Some(trace_id) = otel_sdk::find_current_trace_id() {
+            tracing::warn!(status = %status, %trace_id, "request resulted in client error");
+        } else {
+            tracing::warn!(status = %status, "request resulted in client error");
+        }
+    }
+
+    response
 }
 
 #[utoipa::path(
