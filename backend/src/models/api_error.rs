@@ -1,7 +1,12 @@
 use axum::{http::StatusCode, response::Json};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[allow(unused_imports)]
+use serde_json::json;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+#[schema(example = json!({"error": "UNAUTHORIZED", "message": "Authentication required.", "code": "AUTH_REQUIRED", "details": null}))]
 pub struct ApiErrorResponse {
     pub error: String,
     pub message: String,

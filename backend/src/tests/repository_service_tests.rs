@@ -6,7 +6,9 @@ use uuid::Uuid;
 
 async fn connect_pool() -> Option<PgPool> {
     if std::env::var("DATABASE_URL").is_err() {
-        eprintln!("[repository_service_tests] Skipping: DATABASE_URL not set for integration tests");
+        eprintln!(
+            "[repository_service_tests] Skipping: DATABASE_URL not set for integration tests"
+        );
         return None;
     }
 
@@ -14,7 +16,10 @@ async fn connect_pool() -> Option<PgPool> {
     match PgPool::connect(&database_url).await {
         Ok(pool) => Some(pool),
         Err(err) => {
-            eprintln!("[repository_service_tests] Skipping: cannot connect to DB: {}", err);
+            eprintln!(
+                "[repository_service_tests] Skipping: cannot connect to DB: {}",
+                err
+            );
             None
         }
     }
@@ -73,30 +78,26 @@ async fn given_user_with_budgets_when_deleting_then_budgets_cascade() {
         updated_at: Utc::now(),
     };
 
-    repo.create_budget_for_user(budget.clone())
-        .await
-        .unwrap();
+    repo.create_budget_for_user(budget.clone()).await.unwrap();
 
-    let budget_count_before: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM budgets WHERE user_id = $1",
-    )
-    .bind(user.id)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
+    let budget_count_before: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM budgets WHERE user_id = $1")
+            .bind(user.id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
 
     assert_eq!(budget_count_before, 1);
 
     let delete_result = repo.delete_user(&user.id).await;
     assert!(delete_result.is_ok());
 
-    let budget_count_after: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM budgets WHERE user_id = $1",
-    )
-    .bind(user.id)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
+    let budget_count_after: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM budgets WHERE user_id = $1")
+            .bind(user.id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
 
     assert_eq!(budget_count_after, 0);
 

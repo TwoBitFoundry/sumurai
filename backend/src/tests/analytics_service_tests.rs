@@ -480,4 +480,3 @@ fn given_transactions_when_getting_top_merchants_with_date_range_then_filters_an
     assert_eq!(merchant.amount, dec!(325.00));
     assert_eq!(merchant.count, 3);
 }
-

@@ -58,7 +58,6 @@ async fn given_malicious_jwt_with_injection_attempts_when_validating_then_preven
             i
         );
     }
-
 }
 
 #[tokio::test]
@@ -146,7 +145,6 @@ async fn given_database_connection_exhaustion_when_concurrent_queries_then_handl
         });
         query_handles.push(handle);
     }
-
 }
 
 #[tokio::test]
@@ -219,7 +217,6 @@ async fn given_clock_skew_between_servers_when_validating_jwt_then_handles_time_
         chrono::Utc::now() - chrono::Duration::hours(25),
         chrono::Utc::now() + chrono::Duration::days(1),
     ];
-
 }
 
 fn flip_random_bit(token: &str) -> String {

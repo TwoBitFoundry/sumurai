@@ -3,21 +3,28 @@ use axum::http::request::Parts;
 use axum::http::StatusCode;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Deserialize)]
+#[allow(unused_imports)]
+use serde_json::json;
+
+#[derive(Deserialize, ToSchema)]
+#[schema(example = json!({"email": "user@example.com", "password": "SecurePass123!"}))]
 pub struct RegisterRequest {
     pub email: String,
     pub password: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
+#[schema(example = json!({"email": "user@example.com", "password": "SecurePass123!"}))]
 pub struct LoginRequest {
     pub email: String,
     pub password: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
+#[schema(example = json!({"token": "jwt-token-value", "user_id": "11111111-2222-3333-4444-555555555555", "expires_at": "2024-01-01T12:00:00Z", "onboarding_completed": false}))]
 pub struct AuthResponse {
     pub token: String,
     pub user_id: String,
@@ -104,19 +111,36 @@ pub struct User {
     pub onboarding_completed: bool,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
+#[schema(example = json!({"current_password": "OldPass123!", "new_password": "NewPass456!"}))]
 pub struct ChangePasswordRequest {
     pub current_password: String,
     pub new_password: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
+#[schema(example = json!({"message": "Password updated successfully", "requires_reauth": true}))]
 pub struct ChangePasswordResponse {
     pub message: String,
     pub requires_reauth: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
+#[schema(example = json!({"message": "Logged out successfully", "cleared_session": "jwt-123"}))]
+pub struct LogoutResponse {
+    pub message: String,
+    pub cleared_session: String,
+}
+
+#[derive(Serialize, ToSchema)]
+#[schema(example = json!({"message": "Onboarding completed successfully", "onboarding_completed": true}))]
+pub struct OnboardingCompleteResponse {
+    pub message: String,
+    pub onboarding_completed: bool,
+}
+
+#[derive(Serialize, ToSchema)]
+#[schema(example = json!({"connections": 2, "transactions": 150, "accounts": 5, "budgets": 3}))]
 pub struct DeletedItemsSummary {
     pub connections: i32,
     pub transactions: i32,
@@ -124,7 +148,16 @@ pub struct DeletedItemsSummary {
     pub budgets: i32,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
+#[schema(example = json!({
+    "message": "Account deleted successfully",
+    "deleted_items": {
+        "connections": 2,
+        "transactions": 150,
+        "accounts": 5,
+        "budgets": 3
+    }
+}))]
 pub struct DeleteAccountResponse {
     pub message: String,
     pub deleted_items: DeletedItemsSummary,
