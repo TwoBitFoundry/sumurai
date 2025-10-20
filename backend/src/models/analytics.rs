@@ -2,41 +2,64 @@ use rust_decimal::Decimal;
 use serde::de::{self, Deserializer, IgnoredAny, MapAccess, Visitor};
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use utoipa::ToSchema;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[allow(unused_imports)]
+use serde_json::json;
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({"month": "2024-01", "total": "1250.40"}))]
 pub struct MonthlySpending {
     pub month: String,
+    #[schema(value_type = String)]
     pub total: Decimal,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example = json!({"name": "groceries", "value": "450.00"}))]
 pub struct CategorySpending {
     pub name: String,
+    #[schema(value_type = String)]
     pub value: Decimal,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({"day": 15, "spend": "75.60", "cumulative": "890.25"}))]
 pub struct DailySpending {
     pub day: u32,
+    #[schema(value_type = String)]
     pub spend: Decimal,
+    #[schema(value_type = String)]
     pub cumulative: Decimal,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({"name": "Coffee Collective", "amount": "125.75", "count": 8, "percentage": "12.50"}))]
 pub struct TopMerchant {
     pub name: String,
+    #[schema(value_type = String)]
     pub amount: Decimal,
     pub count: u32,
+    #[schema(value_type = String)]
     pub percentage: Decimal,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({"date": "2024-01-31", "value": "12500.90"}))]
 pub struct NetWorthSeriesPoint {
     pub date: String,
+    #[schema(value_type = String)]
     pub value: Decimal,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({
+    "series": [
+        {"date": "2024-01-31", "value": "12500.90"},
+        {"date": "2024-02-29", "value": "13150.25"}
+    ],
+    "currency": "USD"
+}))]
 pub struct NetWorthOverTimeResponse {
     pub series: Vec<NetWorthSeriesPoint>,
     pub currency: String,
@@ -61,21 +84,51 @@ pub struct MonthlyTotalsQuery {
     pub account_ids: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, ToSchema)]
 #[serde(rename_all = "camelCase")]
+#[schema(example = json!({
+    "cash": "9500.00",
+    "credit": "-2500.00",
+    "loan": "-15000.00",
+    "investments": "12000.00",
+    "positives_total": "21500.00",
+    "negatives_total": "-17500.00",
+    "net": "4000.00",
+    "ratio": "1.23"
+}))]
 pub struct Totals {
+    #[schema(value_type = String)]
     pub cash: Decimal,
+    #[schema(value_type = String)]
     pub credit: Decimal,
+    #[schema(value_type = String)]
     pub loan: Decimal,
+    #[schema(value_type = String)]
     pub investments: Decimal,
+    #[schema(value_type = String)]
     pub positives_total: Decimal,
+    #[schema(value_type = String)]
     pub negatives_total: Decimal,
+    #[schema(value_type = String)]
     pub net: Decimal,
+    #[schema(value_type = Option<String>)]
     pub ratio: Option<Decimal>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, ToSchema)]
 #[serde(rename_all = "camelCase")]
+#[schema(example = json!({
+    "bank_id": "bank-1",
+    "bank_name": "Demo Bank",
+    "cash": "5000.00",
+    "credit": "-1200.00",
+    "loan": "0.00",
+    "investments": "2500.00",
+    "positives_total": "7500.00",
+    "negatives_total": "-1200.00",
+    "net": "6300.00",
+    "ratio": "1.40"
+}))]
 pub struct BankTotals {
     pub bank_id: String,
     pub bank_name: String,
@@ -83,8 +136,34 @@ pub struct BankTotals {
     pub totals: Totals,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, ToSchema)]
 #[serde(rename_all = "camelCase")]
+#[schema(example = json!({
+    "as_of": "2024-02-15T12:00:00Z",
+    "overall": {
+        "cash": "9500.00",
+        "credit": "-2500.00",
+        "loan": "-15000.00",
+        "investments": "12000.00",
+        "positives_total": "21500.00",
+        "negatives_total": "-17500.00",
+        "net": "4000.00",
+        "ratio": "1.23"
+    },
+    "banks": [{
+        "bank_id": "bank-1",
+        "bank_name": "Demo Bank",
+        "cash": "5000.00",
+        "credit": "-1200.00",
+        "loan": "0.00",
+        "investments": "2500.00",
+        "positives_total": "7500.00",
+        "negatives_total": "-1200.00",
+        "net": "6300.00",
+        "ratio": "1.40"
+    }],
+    "mixed_currency": false
+}))]
 pub struct BalancesOverviewResponse {
     pub as_of: String,
     pub overall: Totals,

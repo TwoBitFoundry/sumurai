@@ -121,7 +121,6 @@ fn given_expired_jwt_when_validating_then_returns_expired_error() {
         "this_is_a_very_long_secret_key_for_jwt_auth_service_testing_12345".to_string(),
     )
     .unwrap();
-
 }
 
 #[test]

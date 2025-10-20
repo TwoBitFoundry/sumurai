@@ -1,9 +1,30 @@
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[allow(unused_imports)]
+use serde_json::json;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+#[schema(example = json!({
+    "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    "user_id": "ffffffff-1111-2222-3333-444444444444",
+    "item_id": "item-123",
+    "is_connected": true,
+    "last_sync_at": "2024-01-15T12:00:00Z",
+    "connected_at": "2024-01-10T09:00:00Z",
+    "disconnected_at": null,
+    "institution_id": "ins_123",
+    "institution_name": "Demo Bank",
+    "institution_logo_url": "https://cdn.demo.bank/logo.png",
+    "sync_cursor": "cursor-456",
+    "transaction_count": 125,
+    "account_count": 3,
+    "created_at": "2024-01-10T08:55:00Z",
+    "updated_at": "2024-01-15T12:00:00Z"
+}))]
 pub struct ProviderConnection {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -23,15 +44,23 @@ pub struct ProviderConnection {
 }
 
 // DTOs for Plaid-related API flows
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
+#[schema(example = json!({}))]
 pub struct LinkTokenRequest {}
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
+#[schema(example = json!({"public_token": "public-sandbox-abc123"}))]
 pub struct ExchangeTokenRequest {
     pub public_token: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
+#[schema(example = json!({
+    "provider": "teller",
+    "access_token": "access-sandbox-xyz",
+    "enrollment_id": "enroll-123",
+    "institution_name": "Teller Demo Bank"
+}))]
 pub struct ProviderConnectRequest {
     pub provider: String,
     pub access_token: String,
@@ -39,14 +68,59 @@ pub struct ProviderConnectRequest {
     pub institution_name: Option<String>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
+#[schema(example = json!({"connection_id": "connection-uuid"}))]
 pub struct SyncTransactionsRequest {
     pub connection_id: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
+#[schema(example = json!({"connection_id": "connection-uuid"}))]
 pub struct DisconnectRequest {
     pub connection_id: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(example = json!({"link_token": "link-sandbox-abc123"}))]
+pub struct LinkTokenResponse {
+    pub link_token: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+#[schema(example = json!({"provider": "teller"}))]
+pub struct ProviderSelectRequest {
+    #[schema(value_type = String, example = "teller")]
+    pub provider: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(example = json!({"user_provider": "teller"}))]
+pub struct ProviderSelectResponse {
+    pub user_provider: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(example = json!({
+    "available_providers": ["plaid", "teller"],
+    "default_provider": "teller",
+    "user_provider": "teller",
+    "teller_application_id": "app-123",
+    "teller_environment": "sandbox"
+}))]
+pub struct ProviderInfoResponse {
+    pub available_providers: Vec<String>,
+    pub default_provider: String,
+    pub user_provider: String,
+    #[schema(value_type = Option<String>)]
+    pub teller_application_id: Option<String>,
+    pub teller_environment: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(example = json!({"cleared": true, "user_id": "99999999-8888-7777-6666-555555555555"}))]
+pub struct ClearSyncedDataResponse {
+    pub cleared: bool,
+    pub user_id: String,
 }
 
 impl ProviderConnection {
@@ -88,7 +162,16 @@ impl ProviderConnection {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({
+    "is_connected": true,
+    "last_sync_at": "2024-01-10T12:00:00Z",
+    "institution_name": "Demo Bank",
+    "connection_id": "connection-uuid",
+    "transaction_count": 120,
+    "account_count": 3,
+    "sync_in_progress": false
+}))]
 pub struct ProviderConnectionStatus {
     pub is_connected: bool,
     pub last_sync_at: Option<String>,
@@ -99,19 +182,38 @@ pub struct ProviderConnectionStatus {
     pub sync_in_progress: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({
+    "provider": "teller",
+    "connections": [{
+        "is_connected": true,
+        "last_sync_at": "2024-01-10T12:00:00Z",
+        "institution_name": "Demo Bank",
+        "connection_id": "connection-uuid",
+        "transaction_count": 120,
+        "account_count": 3,
+        "sync_in_progress": false
+    }]
+}))]
 pub struct ProviderStatusResponse {
     pub provider: String,
     pub connections: Vec<ProviderConnectionStatus>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(example = json!({"connection_id": "connection-uuid", "institution_name": "Demo Bank"}))]
 pub struct ProviderConnectResponse {
     pub connection_id: String,
     pub institution_name: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(example = json!({
+    "access_token": "access-sandbox-xyz",
+    "item_id": "item-123",
+    "institution_id": "ins_123",
+    "institution_name": "Demo Bank"
+}))]
 pub struct ExchangeTokenResponse {
     pub access_token: String,
     pub item_id: String,
@@ -119,14 +221,28 @@ pub struct ExchangeTokenResponse {
     pub institution_name: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({
+    "success": true,
+    "message": "Connection disconnected and data cleared",
+    "data_cleared": {
+        "transactions": 25,
+        "accounts": 2,
+        "cache_keys": ["user123_bank_connection"]
+    }
+}))]
 pub struct DisconnectResult {
     pub success: bool,
     pub message: String,
     pub data_cleared: DataCleared,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({
+    "transactions": 25,
+    "accounts": 2,
+    "cache_keys": ["user123_bank_connection"]
+}))]
 pub struct DataCleared {
     pub transactions: i32,
     pub accounts: i32,

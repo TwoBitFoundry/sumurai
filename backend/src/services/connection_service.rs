@@ -512,7 +512,12 @@ impl ConnectionService {
         }
 
         if let Err(e) = self
-            .complete_sync_with_jwt_cache_update(params.user_id, params.jwt_id, connection, &db_accounts)
+            .complete_sync_with_jwt_cache_update(
+                params.user_id,
+                params.jwt_id,
+                connection,
+                &db_accounts,
+            )
             .await
         {
             tracing::warn!(

@@ -18,8 +18,8 @@ use crate::services::{
     sync_service::SyncService,
 };
 
-use crate::{create_app, AppState, Config, Router};
 use crate::config::MockEnvironment;
+use crate::{create_app, AppState, Config, Router};
 
 use axum::{
     body::Body,

@@ -1223,13 +1223,11 @@ impl DatabaseRepository for PostgresRepository {
             .execute(&mut *tx)
             .await?;
 
-        sqlx::query(
-            "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2"
-        )
-        .bind(new_password_hash)
-        .bind(user_id)
-        .execute(&mut *tx)
-        .await?;
+        sqlx::query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2")
+            .bind(new_password_hash)
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await?;
 
         tx.commit().await?;
         Ok(())
