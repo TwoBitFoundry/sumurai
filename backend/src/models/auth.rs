@@ -3,8 +3,11 @@ use axum::http::request::Parts;
 use axum::http::StatusCode;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use utoipa::ToSchema;
+use uuid::Uuid;
+
+#[allow(unused_imports)]
+use serde_json::json;
 
 #[derive(Deserialize, ToSchema)]
 #[schema(example = json!({"email": "user@example.com", "password": "SecurePass123!"}))]
@@ -108,15 +111,31 @@ pub struct User {
 }
 
 #[derive(Deserialize, ToSchema)]
+#[schema(example = json!({"current_password": "OldPass123!", "new_password": "NewPass456!"}))]
 pub struct ChangePasswordRequest {
     pub current_password: String,
     pub new_password: String,
 }
 
 #[derive(Serialize, ToSchema)]
+#[schema(example = json!({"message": "Password updated successfully", "requires_reauth": true}))]
 pub struct ChangePasswordResponse {
     pub message: String,
     pub requires_reauth: bool,
+}
+
+#[derive(Serialize, ToSchema)]
+#[schema(example = json!({"message": "Logged out successfully", "cleared_session": "jwt-123"}))]
+pub struct LogoutResponse {
+    pub message: String,
+    pub cleared_session: String,
+}
+
+#[derive(Serialize, ToSchema)]
+#[schema(example = json!({"message": "Onboarding completed successfully", "onboarding_completed": true}))]
+pub struct OnboardingCompleteResponse {
+    pub message: String,
+    pub onboarding_completed: bool,
 }
 
 #[derive(Serialize, ToSchema)]

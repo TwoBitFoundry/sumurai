@@ -2,8 +2,11 @@ use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use serde::{de::IgnoredAny, Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
-use uuid::Uuid;
 use utoipa::ToSchema;
+use uuid::Uuid;
+
+#[allow(unused_imports)]
+use serde_json::json;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 pub struct Transaction {
@@ -25,6 +28,25 @@ pub struct Transaction {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+#[schema(example = json!({
+    "id": "44444444-5555-6666-7777-888888888888",
+    "account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    "user_id": "99999999-8888-7777-6666-555555555555",
+    "provider_account_id": "acct-123",
+    "provider_transaction_id": "txn-456",
+    "amount": "42.75",
+    "date": "2024-01-15",
+    "merchant_name": "Coffee Collective",
+    "category_primary": "FOOD_AND_DRINK",
+    "category_detailed": "Coffee shop",
+    "category_confidence": "high",
+    "payment_channel": "in_store",
+    "pending": false,
+    "created_at": "2024-01-15T13:45:00Z",
+    "account_name": "Demo Checking",
+    "account_type": "depository",
+    "account_mask": "1234"
+}))]
 pub struct TransactionWithAccount {
     pub id: Uuid,
     pub account_id: Uuid,
@@ -118,12 +140,46 @@ impl<T> VecOrOne<T> {
 }
 
 #[derive(Serialize, ToSchema)]
+#[schema(example = json!({
+    "transactions": [{
+        "id": "44444444-5555-6666-7777-888888888888",
+        "account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+        "user_id": "99999999-8888-7777-6666-555555555555",
+        "provider_account_id": "acct-123",
+        "provider_transaction_id": "txn-456",
+        "amount": "42.75",
+        "date": "2024-01-15",
+        "merchant_name": "Coffee Collective",
+        "category_primary": "FOOD_AND_DRINK",
+        "category_detailed": "Coffee shop",
+        "category_confidence": "high",
+        "payment_channel": "in_store",
+        "pending": false,
+        "created_at": "2024-01-15T13:45:00Z"
+    }],
+    "metadata": {
+        "transaction_count": 1,
+        "account_count": 1,
+        "sync_timestamp": "2024-01-15T14:00:00Z",
+        "start_date": "2024-01-01",
+        "end_date": "2024-01-15",
+        "connection_updated": true
+    }
+}))]
 pub struct SyncTransactionsResponse {
     pub transactions: Vec<Transaction>,
     pub metadata: SyncMetadata,
 }
 
 #[derive(Serialize, ToSchema)]
+#[schema(example = json!({
+    "transaction_count": 25,
+    "account_count": 2,
+    "sync_timestamp": "2024-01-15T14:00:00Z",
+    "start_date": "2024-01-01",
+    "end_date": "2024-01-15",
+    "connection_updated": true
+}))]
 pub struct SyncMetadata {
     pub transaction_count: i32,
     pub account_count: i32,

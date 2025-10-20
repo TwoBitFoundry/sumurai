@@ -2,13 +2,6 @@ pub mod schemas;
 pub mod tags;
 
 use utoipa::OpenApi;
-use crate::models::auth::{RegisterRequest, LoginRequest, AuthResponse, ChangePasswordRequest, ChangePasswordResponse, DeleteAccountResponse};
-use crate::models::transaction::TransactionWithAccount;
-use crate::models::analytics::{MonthlySpending, CategorySpending, DailySpending, TopMerchant, BalancesOverviewResponse, NetWorthOverTimeResponse};
-use crate::models::budget::Budget;
-use crate::models::plaid::{ProviderConnectionStatus, ProviderStatusResponse, ProviderConnectResponse, ExchangeTokenResponse, DisconnectResult};
-use crate::models::account::AccountResponse;
-use crate::models::api_error::ApiErrorResponse;
 
 #[derive(OpenApi)]
 #[openapi(
@@ -41,27 +34,42 @@ use crate::models::api_error::ApiErrorResponse;
     ),
     components(
         schemas(
-            RegisterRequest,
-            LoginRequest,
-            AuthResponse,
-            ChangePasswordRequest,
-            ChangePasswordResponse,
-            DeleteAccountResponse,
-            TransactionWithAccount,
-            MonthlySpending,
-            CategorySpending,
-            DailySpending,
-            TopMerchant,
-            BalancesOverviewResponse,
-            NetWorthOverTimeResponse,
-            Budget,
-            ProviderConnectionStatus,
-            ProviderStatusResponse,
-            ProviderConnectResponse,
-            ExchangeTokenResponse,
-            DisconnectResult,
-            AccountResponse,
-            ApiErrorResponse,
+            crate::models::auth::RegisterRequest,
+            crate::models::auth::LoginRequest,
+            crate::models::auth::AuthResponse,
+            crate::models::auth::ChangePasswordRequest,
+            crate::models::auth::ChangePasswordResponse,
+            crate::models::auth::DeleteAccountResponse,
+            crate::models::auth::LogoutResponse,
+            crate::models::auth::OnboardingCompleteResponse,
+            crate::models::transaction::TransactionWithAccount,
+            crate::models::analytics::MonthlySpending,
+            crate::models::analytics::CategorySpending,
+            crate::models::analytics::DailySpending,
+            crate::models::analytics::TopMerchant,
+            crate::models::analytics::BalancesOverviewResponse,
+            crate::models::analytics::NetWorthOverTimeResponse,
+            crate::models::budget::Budget,
+            crate::models::budget::DeleteBudgetResponse,
+            crate::models::plaid::LinkTokenRequest,
+            crate::models::plaid::LinkTokenResponse,
+            crate::models::plaid::ExchangeTokenRequest,
+            crate::models::plaid::ProviderConnectRequest,
+            crate::models::plaid::SyncTransactionsRequest,
+            crate::models::transaction::SyncTransactionsResponse,
+            crate::models::transaction::SyncMetadata,
+            crate::models::plaid::DisconnectRequest,
+            crate::models::plaid::ProviderConnectionStatus,
+            crate::models::plaid::ProviderStatusResponse,
+            crate::models::plaid::ProviderConnectResponse,
+            crate::models::plaid::ExchangeTokenResponse,
+            crate::models::plaid::DisconnectResult,
+            crate::models::plaid::ProviderSelectRequest,
+            crate::models::plaid::ProviderSelectResponse,
+            crate::models::plaid::ProviderInfoResponse,
+            crate::models::plaid::ClearSyncedDataResponse,
+            crate::models::account::AccountResponse,
+            crate::models::api_error::ApiErrorResponse,
             schemas::SuccessResponse,
             schemas::ErrorResponse,
             schemas::HealthCheckResponse,
@@ -113,5 +121,27 @@ pub struct ApiDoc;
 pub fn init_openapi() -> utoipa::openapi::OpenApi {
     let mut openapi = ApiDoc::openapi();
     tags::add_tags(&mut openapi);
+    add_security_scheme(&mut openapi);
     openapi
+}
+
+fn add_security_scheme(openapi: &mut utoipa::openapi::OpenApi) {
+    use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
+
+    let components = openapi
+        .components
+        .get_or_insert_with(utoipa::openapi::Components::new);
+
+    if !components.security_schemes.contains_key("bearer_auth") {
+        let bearer = SecurityScheme::Http(
+            HttpBuilder::new()
+                .scheme(HttpAuthScheme::Bearer)
+                .bearer_format("JWT")
+                .description(Some(
+                    "Paste a valid JWT issued by the authentication endpoints.".to_string(),
+                ))
+                .build(),
+        );
+        components.add_security_scheme("bearer_auth", bearer);
+    }
 }

@@ -365,5 +365,4 @@ impl AnalyticsService {
     fn get_month_range(&self, year: i32, month: u32) -> (chrono::NaiveDate, chrono::NaiveDate) {
         Self::get_month_range_static(year, month)
     }
-
 }

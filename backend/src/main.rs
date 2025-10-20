@@ -30,23 +30,26 @@ use crate::models::analytics::{
 };
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, AuthMiddlewareState};
-use crate::models::plaid::{
-    DisconnectRequest, DisconnectResult, ProviderConnectRequest, ProviderConnectResponse,
-    ProviderConnectionStatus, ProviderStatusResponse,
-};
 use crate::models::{
     account::AccountResponse,
     analytics::{DateRangeQuery, MonthlyTotalsQuery},
     auth as auth_models,
-    budget::{Budget, CreateBudgetRequest, UpdateBudgetRequest},
+    budget::{Budget, CreateBudgetRequest, DeleteBudgetResponse, UpdateBudgetRequest},
     plaid::{
-        ExchangeTokenRequest, ExchangeTokenResponse, LinkTokenRequest, SyncTransactionsRequest,
+        ClearSyncedDataResponse, DisconnectRequest, DisconnectResult, ExchangeTokenRequest,
+        ExchangeTokenResponse, LinkTokenRequest, LinkTokenResponse, ProviderConnectRequest,
+        ProviderConnectResponse, ProviderConnectionStatus, ProviderInfoResponse,
+        ProviderSelectRequest, ProviderSelectResponse, ProviderStatusResponse,
+        SyncTransactionsRequest,
     },
     transaction::{SyncTransactionsResponse, TransactionsQuery},
 };
 use crate::models::{
     api_error::ApiErrorResponse,
-    auth::{ChangePasswordRequest, ChangePasswordResponse, DeleteAccountResponse, User},
+    auth::{
+        ChangePasswordRequest, ChangePasswordResponse, DeleteAccountResponse, LogoutResponse,
+        OnboardingCompleteResponse, User,
+    },
     transaction::TransactionWithAccount,
 };
 use auth_middleware::auth_middleware;
@@ -442,8 +445,8 @@ async fn login_user(
     post,
     path = "/api/auth/logout",
     responses(
-        (status = 200, description = "Logout successful"),
-        (status = 401, description = "Unauthorized"),
+        (status = 200, description = "Logout successful", body = LogoutResponse),
+        (status = 401, description = "Unauthorized")
     ),
     security(("bearer_auth" = [])),
     tag = "Authentication"
@@ -451,7 +454,7 @@ async fn login_user(
 async fn logout_user(
     State(state): State<AppState>,
     headers: HeaderMap,
-) -> Result<Json<serde_json::Value>, StatusCode> {
+) -> Result<Json<LogoutResponse>, StatusCode> {
     let auth_header = headers
         .get("authorization")
         .and_then(|h| h.to_str().ok())
@@ -475,10 +478,10 @@ async fn logout_user(
         tracing::warn!("Failed to clear transaction cache during logout: {}", e);
     }
 
-    Ok(Json(serde_json::json!({
-        "message": "Logged out successfully",
-        "cleared_session": claims.jti
-    })))
+    Ok(Json(LogoutResponse {
+        message: "Logged out successfully".to_string(),
+        cleared_session: claims.jti,
+    }))
 }
 
 #[utoipa::path(
@@ -507,11 +510,7 @@ async fn refresh_user_session(
         .validate_token_for_refresh(auth_header)
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
-    match state
-        .cache_service
-        .is_session_valid(&claims.jti)
-        .await
-    {
+    match state.cache_service.is_session_valid(&claims.jti).await {
         Ok(true) => {}
         Ok(false) => {
             tracing::warn!("Refresh rejected: Session not found in cache (app may have restarted)");
@@ -572,7 +571,7 @@ async fn refresh_user_session(
     put,
     path = "/api/auth/onboarding/complete",
     responses(
-        (status = 200, description = "Onboarding completed"),
+        (status = 200, description = "Onboarding completed", body = OnboardingCompleteResponse),
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
@@ -582,16 +581,16 @@ async fn refresh_user_session(
 async fn complete_user_onboarding(
     State(state): State<AppState>,
     auth_context: AuthContext,
-) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiErrorResponse>)> {
+) -> Result<Json<OnboardingCompleteResponse>, (StatusCode, Json<ApiErrorResponse>)> {
     let user_id = auth_context.user_id;
 
     match state.db_repository.mark_onboarding_complete(&user_id).await {
         Ok(_) => {
             tracing::info!("User {} completed onboarding", user_id);
-            Ok(Json(serde_json::json!({
-                "message": "Onboarding completed successfully",
-                "onboarding_completed": true
-            })))
+            Ok(Json(OnboardingCompleteResponse {
+                message: "Onboarding completed successfully".to_string(),
+                onboarding_completed: true,
+            }))
         }
         Err(e) => {
             tracing::error!(
@@ -612,8 +611,11 @@ async fn complete_user_onboarding(
     params(("search" = Option<String>, Query, description = "Search transactions by merchant or category"),
            ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
     responses(
-        (status = 200, description = "List of transactions"),
+        (status = 200, description = "List of transactions", body = Vec<TransactionWithAccount>),
+        (status = 400, description = "Invalid account filter"),
         (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Account filter references another user"),
+        (status = 500, description = "Internal server error"),
     ),
     security(("bearer_auth" = [])),
     tag = "Transactions"
@@ -692,7 +694,7 @@ async fn get_authenticated_transactions(
     path = "/api/plaid/link-token",
     request_body = LinkTokenRequest,
     responses(
-        (status = 200, description = "Link token created successfully"),
+        (status = 200, description = "Link token created successfully", body = LinkTokenResponse),
         (status = 400, description = "Unsupported provider"),
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Failed to create link token"),
@@ -704,7 +706,7 @@ async fn create_authenticated_link_token(
     State(state): State<AppState>,
     auth_context: AuthContext,
     Json(_req): Json<LinkTokenRequest>,
-) -> Result<Json<serde_json::Value>, StatusCode> {
+) -> Result<Json<LinkTokenResponse>, StatusCode> {
     let provider = state.config.get_default_provider();
 
     match state
@@ -712,7 +714,7 @@ async fn create_authenticated_link_token(
         .create_link_token(provider, &auth_context.user_id)
         .await
     {
-        Ok(link_token) => Ok(Json(serde_json::json!({ "link_token": link_token }))),
+        Ok(link_token) => Ok(Json(LinkTokenResponse { link_token })),
         Err(LinkTokenError::ProviderUnavailable(p)) => {
             tracing::error!(
                 "Link token requested for unsupported provider '{}' by user {}",
@@ -964,11 +966,7 @@ async fn sync_authenticated_provider_transactions(
 
     match state
         .connection_service
-        .sync_provider_connection(
-            sync_params,
-            state.sync_service.as_ref(),
-            &mut connection,
-        )
+        .sync_provider_connection(sync_params, state.sync_service.as_ref(), &mut connection)
         .await
     {
         Ok(response) => Ok(Json(response)),
@@ -1134,7 +1132,7 @@ async fn get_authenticated_daily_spending(
     post,
     path = "/api/plaid/clear-synced-data",
     responses(
-        (status = 200, description = "Synced data cleared successfully"),
+        (status = 200, description = "Synced data cleared successfully", body = ClearSyncedDataResponse),
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
@@ -1144,13 +1142,14 @@ async fn get_authenticated_daily_spending(
 async fn clear_authenticated_synced_data(
     State(state): State<AppState>,
     auth_context: AuthContext,
-) -> Result<Json<serde_json::Value>, StatusCode> {
+) -> Result<Json<ClearSyncedDataResponse>, StatusCode> {
     let user_id = auth_context.user_id;
 
     match state.cache_service.clear_transactions().await {
-        Ok(_) => Ok(Json(
-            serde_json::json!({"cleared": true, "user_id": user_id}),
-        )),
+        Ok(_) => Ok(Json(ClearSyncedDataResponse {
+            cleared: true,
+            user_id: user_id.to_string(),
+        })),
         Err(e) => {
             tracing::error!("Failed to clear synced data for user {}: {}", user_id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
@@ -1598,7 +1597,7 @@ async fn get_authenticated_provider_status(
     get,
     path = "/api/budgets",
     responses(
-        (status = 200, description = "List of user budgets"),
+        (status = 200, description = "List of user budgets", body = Vec<Budget>),
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
@@ -1763,7 +1762,7 @@ async fn update_authenticated_budget(
     path = "/api/budgets/{id}",
     params(("id" = String, Path, description = "Budget ID")),
     responses(
-        (status = 200, description = "Budget deleted successfully"),
+        (status = 200, description = "Budget deleted successfully", body = DeleteBudgetResponse),
         (status = 401, description = "Unauthorized"),
         (status = 404, description = "Budget not found", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
@@ -1775,7 +1774,7 @@ async fn delete_authenticated_budget(
     State(state): State<AppState>,
     auth_context: AuthContext,
     Path(budget_id): Path<String>,
-) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiErrorResponse>)> {
+) -> Result<Json<DeleteBudgetResponse>, (StatusCode, Json<ApiErrorResponse>)> {
     let user_id = auth_context.user_id;
     let budget_uuid = Uuid::parse_str(&budget_id).map_err(|_| {
         ApiErrorResponse::new("BAD_REQUEST", "Invalid budget id")
@@ -1792,9 +1791,10 @@ async fn delete_authenticated_budget(
                 .cache_service
                 .invalidate_pattern(&format!("budgets:user:{}", user_id))
                 .await;
-            Ok(Json(
-                serde_json::json!({"deleted": true, "budget_id": budget_id}),
-            ))
+            Ok(Json(DeleteBudgetResponse {
+                deleted: true,
+                budget_id,
+            }))
         }
         Err(e) => {
             tracing::error!(
@@ -1865,8 +1865,9 @@ async fn health_check() -> &'static str {
     get,
     path = "/api/providers/info",
     responses(
-        (status = 200, description = "Available providers and current user provider configuration"),
+        (status = 200, description = "Available providers and current user provider configuration", body = ProviderInfoResponse),
         (status = 401, description = "Unauthorized"),
+        (status = 404, description = "User not found"),
         (status = 500, description = "Internal server error"),
     ),
     security(("bearer_auth" = [])),
@@ -1875,7 +1876,7 @@ async fn health_check() -> &'static str {
 async fn get_authenticated_provider_info(
     State(state): State<AppState>,
     auth_context: AuthContext,
-) -> Result<Json<serde_json::Value>, StatusCode> {
+) -> Result<Json<ProviderInfoResponse>, StatusCode> {
     let user_id = auth_context.user_id;
 
     let user = state
@@ -1892,7 +1893,7 @@ async fn get_authenticated_provider_info(
         })?;
 
     let default_provider = state.config.get_default_provider();
-    let available_providers = vec!["plaid", "teller"];
+    let available_providers = vec!["plaid".to_string(), "teller".to_string()];
 
     let user_provider = if user.onboarding_completed {
         user.provider
@@ -1900,22 +1901,25 @@ async fn get_authenticated_provider_info(
         default_provider.to_string()
     };
 
-    Ok(Json(serde_json::json!({
-        "available_providers": available_providers,
-        "default_provider": default_provider,
-        "user_provider": user_provider,
-        "teller_application_id": state.config.get_teller_application_id(),
-        "teller_environment": state.config.get_teller_environment(),
-    })))
+    Ok(Json(ProviderInfoResponse {
+        available_providers,
+        default_provider: default_provider.to_string(),
+        user_provider,
+        teller_application_id: state
+            .config
+            .get_teller_application_id()
+            .map(|value| value.to_string()),
+        teller_environment: state.config.get_teller_environment().to_string(),
+    }))
 }
 
 #[utoipa::path(
     post,
     path = "/api/providers/select",
-    request_body = serde_json::Value,
+    request_body = ProviderSelectRequest,
     responses(
-        (status = 200, description = "Provider selected successfully"),
-        (status = 400, description = "Invalid provider specified"),
+        (status = 200, description = "Provider selected successfully", body = ProviderSelectResponse),
+        (status = 400, description = "Invalid provider specified", body = ApiErrorResponse),
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
@@ -1925,17 +1929,11 @@ async fn get_authenticated_provider_info(
 async fn select_authenticated_provider(
     State(state): State<AppState>,
     auth_context: AuthContext,
-    Json(req): Json<serde_json::Value>,
-) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiErrorResponse>)> {
+    Json(req): Json<ProviderSelectRequest>,
+) -> Result<Json<ProviderSelectResponse>, (StatusCode, Json<ApiErrorResponse>)> {
     let user_id = auth_context.user_id;
 
-    let provider = req
-        .get("provider")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| {
-            ApiErrorResponse::new("BAD_REQUEST", "Missing provider field")
-                .into_response(StatusCode::BAD_REQUEST)
-        })?;
+    let provider = req.provider;
 
     if provider != "plaid" && provider != "teller" {
         return Err(ApiErrorResponse::new(
@@ -1947,14 +1945,14 @@ async fn select_authenticated_provider(
 
     match state
         .db_repository
-        .update_user_provider(&user_id, provider)
+        .update_user_provider(&user_id, &provider)
         .await
     {
         Ok(_) => {
             tracing::info!("User {} selected provider: {}", user_id, provider);
-            Ok(Json(serde_json::json!({
-                "user_provider": provider,
-            })))
+            Ok(Json(ProviderSelectResponse {
+                user_provider: provider,
+            }))
         }
         Err(e) => {
             tracing::error!("Failed to update provider for user {}: {}", user_id, e);
@@ -2244,7 +2242,6 @@ async fn get_authenticated_net_worth_over_time(
 
     // Load depository accounts (checking/savings fall under 'depository')
     let accounts = state
-
         .db_repository
         .get_accounts_for_user(&user_id)
         .await
@@ -2394,7 +2391,7 @@ async fn get_authenticated_net_worth_over_time(
     request_body = ChangePasswordRequest,
     responses(
         (status = 200, description = "Password changed successfully", body = ChangePasswordResponse),
-        (status = 401, description = "Current password is incorrect"),
+        (status = 401, description = "Current password is incorrect", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
     security(("bearer_auth" = [])),
@@ -2432,7 +2429,9 @@ async fn change_user_password(
 
     if !is_valid {
         tracing::info!("Invalid current password for user {}", user_id);
-        return Err(ApiErrorResponse::unauthorized("Current password is incorrect"));
+        return Err(ApiErrorResponse::unauthorized(
+            "Current password is incorrect",
+        ));
     }
 
     let new_hash = state
@@ -2495,9 +2494,7 @@ async fn delete_user_account(
         .await
         .map_err(|e| {
             tracing::error!("Failed to get connections for user {}: {}", user_id, e);
-            ApiErrorResponse::internal_server_error(
-                "Failed to retrieve user connections",
-            )
+            ApiErrorResponse::internal_server_error("Failed to retrieve user connections")
         })?;
 
     let mut deleted_connections = 0;
@@ -2534,9 +2531,7 @@ async fn delete_user_account(
         .await
         .map_err(|e| {
             tracing::error!("Failed to get budgets for user {}: {}", user_id, e);
-            ApiErrorResponse::internal_server_error(
-                "Failed to retrieve user budgets",
-            )
+            ApiErrorResponse::internal_server_error("Failed to retrieve user budgets")
         })?;
 
     let deleted_budgets = budgets.len() as i32;
