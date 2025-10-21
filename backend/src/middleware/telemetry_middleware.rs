@@ -22,6 +22,7 @@ use tracing_subscriber::{
     util::SubscriberInitExt,
     EnvFilter,
 };
+use tracing_subscriber::Layer;
 
 pub struct TelemetryConfig {
     pub env_filter: Option<String>,
