@@ -11,7 +11,6 @@ use axum::{
 use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
 use axum_tracing_opentelemetry::tracing_opentelemetry_instrumentation_sdk as otel_sdk;
 use chrono::Utc;
-use opentelemetry::trace::Tracer;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
@@ -77,22 +76,6 @@ use telemetry::{with_bearer_token_attribute, TelemetryConfig};
 async fn main() -> anyhow::Result<()> {
     let telemetry_config = TelemetryConfig::from_env();
     let telemetry = telemetry::init(&telemetry_config)?;
-    tracing::info!(
-        event = "startup_trace_probe",
-        "Tracing formatter initialized test log"
-    );
-
-    if std::env::var("OTEL_STARTUP_TEST_SPAN")
-        .map(|v| v == "1")
-        .unwrap_or(false)
-    {
-        println!("Startup test span enabled; emitting probe span");
-        let tracer = opentelemetry::global::tracer("startup-test");
-        tracer.in_span("startup-test-span", |_cx| {
-            println!("Emitting startup test span for OTLP connectivity check");
-        });
-        telemetry.force_flush()?;
-    }
 
     let config = Config::from_env()?;
 
@@ -310,7 +293,7 @@ pub fn create_app(state: AppState) -> Router {
         .merge(docs_routes)
         .layer(from_fn(error_handling_middleware))
         .layer(from_fn(with_bearer_token_attribute))
-        .layer(OtelInResponseLayer::default())
+        .layer(OtelInResponseLayer)
         .layer(OtelAxumLayer::default().try_extract_client_ip(true))
         .layer(CorsLayer::permissive())
         .with_state(state)

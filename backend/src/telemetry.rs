@@ -56,12 +56,6 @@ pub struct TelemetryHandle {
 }
 
 impl TelemetryHandle {
-    pub fn force_flush(&self) -> Result<()> {
-        self.tracer_provider
-            .force_flush()
-            .map_err(|err| anyhow::anyhow!("failed to flush tracer provider: {err}"))
-    }
-
     pub fn shutdown(self) -> Result<()> {
         self.tracer_provider
             .shutdown()
