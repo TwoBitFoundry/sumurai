@@ -317,6 +317,10 @@ pub fn create_app(state: AppState) -> Router {
 }
 
 async fn error_handling_middleware(request: Request<Body>, next: Next) -> Response {
+    let method = request.method().clone();
+    let uri = request.uri().clone();
+    let path = uri.path().to_string();
+
     let response = next.run(request).await;
     let status = response.status();
     let has_json_content_type = response
@@ -330,9 +334,24 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
         let trace_id = otel_sdk::find_current_trace_id();
         match trace_id.as_deref() {
             Some(trace_id) => {
-                tracing::error!(status = %status, %trace_id, "request resulted in server error")
+                tracing::error!(
+                    status = %status,
+                    %trace_id,
+                    method = %method,
+                    %path,
+                    error_type = "server_error",
+                    "request resulted in server error"
+                )
             }
-            None => tracing::error!(status = %status, "request resulted in server error"),
+            None => {
+                tracing::error!(
+                    status = %status,
+                    method = %method,
+                    %path,
+                    error_type = "server_error",
+                    "request resulted in server error"
+                )
+            }
         };
         if !has_json_content_type {
             let mut error = ApiErrorResponse::new(
@@ -343,10 +362,70 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
             return (StatusCode::INTERNAL_SERVER_ERROR, Json(error)).into_response();
         }
     } else if status.is_client_error() {
-        if let Some(trace_id) = otel_sdk::find_current_trace_id() {
-            tracing::warn!(status = %status, %trace_id, "request resulted in client error");
-        } else {
-            tracing::warn!(status = %status, "request resulted in client error");
+        let error_category = match status.as_u16() {
+            400 => "validation_error",
+            401 => "authentication_error",
+            403 => "authorization_error",
+            404 => "not_found",
+            409 => "conflict",
+            422 => "unprocessable_entity",
+            429 => "rate_limited",
+            _ => "client_error",
+        };
+
+        let trace_id = otel_sdk::find_current_trace_id();
+        let log_level = match status.as_u16() {
+            401 | 403 => tracing::Level::WARN,
+            _ => tracing::Level::DEBUG,
+        };
+
+        match trace_id.as_deref() {
+            Some(trace_id) => {
+                match log_level {
+                    tracing::Level::WARN => {
+                        tracing::warn!(
+                            status = %status,
+                            %trace_id,
+                            method = %method,
+                            %path,
+                            error_category = %error_category,
+                            "request resulted in client error"
+                        )
+                    }
+                    _ => {
+                        tracing::debug!(
+                            status = %status,
+                            %trace_id,
+                            method = %method,
+                            %path,
+                            error_category = %error_category,
+                            "request resulted in client error"
+                        )
+                    }
+                }
+            }
+            None => {
+                match log_level {
+                    tracing::Level::WARN => {
+                        tracing::warn!(
+                            status = %status,
+                            method = %method,
+                            %path,
+                            error_category = %error_category,
+                            "request resulted in client error"
+                        )
+                    }
+                    _ => {
+                        tracing::debug!(
+                            status = %status,
+                            method = %method,
+                            %path,
+                            error_category = %error_category,
+                            "request resulted in client error"
+                        )
+                    }
+                }
+            }
         }
     }
 
