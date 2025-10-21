@@ -505,6 +505,8 @@ async fn login_user(
 
     let expires_at = auth_token.expires_at.to_rfc3339();
 
+    tracing::info!("User authenticated successfully");
+
     Ok(Json(auth_models::AuthResponse {
         token: auth_token.token,
         user_id: user.id.to_string(),
@@ -756,12 +758,17 @@ async fn get_authenticated_transactions(
                             || account_name.contains(&needle)
                     })
                     .collect();
+                tracing::info!(record_count = filtered.len(), "Data access: transactions");
                 Ok(Json(filtered))
             } else {
+                tracing::info!(record_count = transactions.len(), "Data access: transactions");
                 Ok(Json(transactions))
             }
         }
-        Err(_) => Ok(Json(vec![])),
+        Err(_) => {
+            tracing::info!(record_count = 0, "Data access: transactions");
+            Ok(Json(vec![]))
+        }
     }
 }
 
@@ -919,6 +926,8 @@ async fn get_authenticated_plaid_accounts(
             }
         })
         .collect();
+
+    tracing::info!(record_count = account_responses.len(), provider = "plaid", "Data access: accounts");
 
     Ok(Json(account_responses))
 }
@@ -2271,6 +2280,8 @@ async fn get_authenticated_balances_overview(
             .set_with_ttl(&cache_key, &serialized, ttl_seconds)
             .await;
     }
+
+    tracing::info!(account_count = response.banks.len(), "Data access: balances");
 
     Ok(Json(response))
 }

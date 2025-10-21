@@ -21,6 +21,7 @@ impl AuthService {
         Ok(Self { secret_key })
     }
 
+    #[tracing::instrument(skip(self, password))]
     pub fn hash_password(&self, password: &str) -> Result<String, AuthError> {
         let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
@@ -31,6 +32,7 @@ impl AuthService {
         }
     }
 
+    #[tracing::instrument(skip(self, password, hash))]
     pub fn verify_password(&self, password: &str, hash: &str) -> Result<bool, AuthError> {
         let parsed_hash = PasswordHash::new(hash).map_err(|_| AuthError::HashingError)?;
 
@@ -41,6 +43,7 @@ impl AuthService {
         }
     }
 
+    #[tracing::instrument(skip(self))]
     pub fn generate_token(&self, user_id: Uuid) -> Result<AuthToken, AuthError> {
         let now = Utc::now();
         let expiration = now + Duration::hours(TOKEN_EXPIRATION_HOURS);
@@ -99,6 +102,7 @@ impl AuthService {
         })
     }
 
+    #[tracing::instrument(skip(self, token))]
     pub fn validate_token(&self, token: &str) -> Result<Claims, AuthError> {
         if self.is_malicious_token(token) {
             return Err(AuthError::InvalidToken);
