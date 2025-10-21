@@ -8,12 +8,15 @@ import { AuthService } from "./services/authService";
 import { BrowserStorageAdapter } from "./services/boundaries";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { ProviderMismatchCheck } from "./components/ProviderMismatchCheck";
+import { TelemetryProvider, TelemetryService } from "./observability";
 import { GlassCard, GradientShell, AppTitleBar, AppFooter } from './ui/primitives';
 import { cn } from '@/ui/primitives'
 
 AuthService.configure({
   storage: new BrowserStorageAdapter()
 });
+
+const telemetryService = new TelemetryService();
 
 const parseJWT = (token: string) => {
   try {
@@ -183,7 +186,9 @@ function AppContent() {
 export function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <TelemetryProvider service={telemetryService}>
+        <AppContent />
+      </TelemetryProvider>
     </ThemeProvider>
   )
 }
