@@ -2,7 +2,10 @@ use anyhow::Context;
 use axum::{
     body::Body,
     extract::{Path, Query, Request, State},
-    http::{header::CONTENT_TYPE, HeaderMap, StatusCode, Uri},
+    http::{
+        header::{AUTHORIZATION, CONTENT_TYPE},
+        HeaderMap, StatusCode, Uri,
+    },
     middleware::{from_fn, Next},
     response::{IntoResponse, Json, Response},
     routing::{delete, get, post, put},
@@ -17,9 +20,20 @@ use opentelemetry::{
 };
 use opentelemetry_otlp::{WithExportConfig, WithHttpConfig};
 use opentelemetry_sdk::{propagation::TraceContextPropagator, trace::SdkTracerProvider, Resource};
+use sha2::{Digest, Sha256};
 use std::{collections::HashMap, sync::Arc};
 use tower_http::cors::CorsLayer;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
+use tracing_subscriber::{
+    fmt::{
+        format::{FormatEvent, FormatFields, Writer},
+        FmtContext,
+    },
+    layer::SubscriberExt,
+    registry::{LookupSpan, Registry},
+    util::SubscriberInitExt,
+    EnvFilter,
+};
 use uuid::Uuid;
 
 #[allow(unused_imports)]
@@ -80,6 +94,10 @@ use sqlx::PgPool;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let tracer_provider = init_tracing()?;
+    tracing::info!(
+        event = "startup_trace_probe",
+        "Tracing formatter initialized test log"
+    );
 
     if std::env::var("OTEL_STARTUP_TEST_SPAN")
         .map(|v| v == "1")
@@ -310,6 +328,7 @@ pub fn create_app(state: AppState) -> Router {
         .merge(protected_routes)
         .merge(docs_routes)
         .layer(from_fn(error_handling_middleware))
+        .layer(from_fn(with_bearer_token_attribute))
         .layer(OtelInResponseLayer::default())
         .layer(OtelAxumLayer::default().try_extract_client_ip(true))
         .layer(CorsLayer::permissive())
@@ -318,7 +337,9 @@ pub fn create_app(state: AppState) -> Router {
 
 fn init_tracing() -> anyhow::Result<SdkTracerProvider> {
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into());
-    let fmt_layer = tracing_subscriber::fmt::layer().with_target(false);
+    let fmt_layer = tracing_subscriber::fmt::layer()
+        .with_target(false)
+        .event_format(SeqJsonFormatter);
 
     global::set_text_map_propagator(TraceContextPropagator::new());
 
@@ -365,6 +386,105 @@ fn init_tracing() -> anyhow::Result<SdkTracerProvider> {
 
     Ok(tracer_provider)
 }
+
+struct SeqJsonFormatter;
+
+impl<S, N> FormatEvent<S, N> for SeqJsonFormatter
+where
+    S: tracing::Subscriber + for<'span> LookupSpan<'span>,
+    N: for<'writer> FormatFields<'writer> + 'static,
+{
+    fn format_event(
+        &self,
+        ctx: &FmtContext<'_, S, N>,
+        mut writer: Writer<'_>,
+        event: &tracing::Event<'_>,
+    ) -> std::fmt::Result {
+        use serde_json::{json, Map};
+        use std::fmt::Write;
+
+        let mut record = Map::new();
+        record.insert("timestamp".to_string(), json!(Utc::now().to_rfc3339()));
+        record.insert(
+            "level".to_string(),
+            json!(event.metadata().level().as_str()),
+        );
+        record.insert("target".to_string(), json!(event.metadata().target()));
+
+        if let Some(trace_id) = otel_sdk::find_current_trace_id() {
+            record.insert("traceId".to_string(), json!(trace_id));
+        }
+
+        if let Some(span) = ctx.lookup_current() {
+            record.insert("span".to_string(), json!(span.name()));
+            if let Some(token) = span.extensions().get::<EncryptedToken>() {
+                record.insert("encrypted_token".to_string(), json!(token.0.clone()));
+            }
+        }
+
+        let mut fields = Map::new();
+        {
+            let mut visitor = JsonFieldVisitor::new(&mut fields);
+            event.record(&mut visitor);
+        }
+
+        for (key, value) in fields {
+            record.insert(key, value);
+        }
+
+        let json = serde_json::Value::Object(record);
+        let serialized = serde_json::to_string(&json).map_err(|_| std::fmt::Error)?;
+        Write::write_str(&mut writer, &serialized)?;
+        Write::write_char(&mut writer, '\n')
+    }
+}
+
+struct JsonFieldVisitor<'a> {
+    fields: &'a mut serde_json::Map<String, serde_json::Value>,
+}
+
+impl<'a> JsonFieldVisitor<'a> {
+    fn new(fields: &'a mut serde_json::Map<String, serde_json::Value>) -> Self {
+        Self { fields }
+    }
+}
+
+impl<'a> tracing::field::Visit for JsonFieldVisitor<'a> {
+    fn record_bool(&mut self, field: &tracing::field::Field, value: bool) {
+        self.fields
+            .insert(field.name().to_string(), serde_json::json!(value));
+    }
+
+    fn record_i64(&mut self, field: &tracing::field::Field, value: i64) {
+        self.fields
+            .insert(field.name().to_string(), serde_json::json!(value));
+    }
+
+    fn record_u64(&mut self, field: &tracing::field::Field, value: u64) {
+        self.fields
+            .insert(field.name().to_string(), serde_json::json!(value));
+    }
+
+    fn record_f64(&mut self, field: &tracing::field::Field, value: f64) {
+        self.fields
+            .insert(field.name().to_string(), serde_json::json!(value));
+    }
+
+    fn record_str(&mut self, field: &tracing::field::Field, value: &str) {
+        self.fields
+            .insert(field.name().to_string(), serde_json::json!(value));
+    }
+
+    fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
+        self.fields.insert(
+            field.name().to_string(),
+            serde_json::json!(format!("{value:?}")),
+        );
+    }
+}
+
+#[derive(Clone)]
+struct EncryptedToken(pub String);
 
 fn parse_otlp_headers(raw: String) -> Option<HashMap<String, String>> {
     let mut headers = HashMap::new();
@@ -2028,7 +2148,44 @@ async fn disconnect_authenticated_connection(
     tag = "Health"
 )]
 async fn health_check() -> &'static str {
+    tracing::info!(
+        event = "health_check",
+        route = "/health",
+        status = "ok",
+        "Health check invoked"
+    );
     "OK"
+}
+
+async fn with_bearer_token_attribute(request: Request<Body>, next: Next) -> Response {
+    if let Some(header_value) = request.headers().get(AUTHORIZATION) {
+        if let Ok(raw) = header_value.to_str() {
+            let trimmed = raw.trim();
+            let token = trimmed
+                .strip_prefix("Bearer ")
+                .or_else(|| trimmed.strip_prefix("bearer "))
+                .unwrap_or(trimmed)
+                .trim();
+
+            if !token.is_empty() {
+                let span = tracing::Span::current();
+                let encrypted = hex::encode(Sha256::digest(token.as_bytes()));
+                span.set_attribute("encrypted_token", encrypted.clone());
+                let encrypted_for_extension = encrypted.clone();
+                let _ = span.with_subscriber(move |(id, dispatch)| {
+                    if let Some(registry) = dispatch.downcast_ref::<Registry>() {
+                        if let Some(span_ref) = registry.span(id) {
+                            span_ref
+                                .extensions_mut()
+                                .insert(EncryptedToken(encrypted_for_extension.clone()));
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    next.run(request).await
 }
 
 #[utoipa::path(

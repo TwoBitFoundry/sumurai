@@ -31,6 +31,7 @@ rand = "0.9"
 redis = { version = "0.32.5", features = ["tokio-comp", "connection-manager"] }
 jsonwebtoken = "9.3"
 argon2 = "0.5"
+sha2 = "0.10"
 futures = "0.3"
 opentelemetry = { version = "0.31", features = ["trace"] }
 opentelemetry_sdk = { version = "0.31", features = ["rt-tokio", "trace"] }
