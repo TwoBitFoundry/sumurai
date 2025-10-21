@@ -8,10 +8,17 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Json, Response},
 };
+use sha2::{Sha256, Digest};
 use uuid::Uuid;
 
 const BEARER_PREFIX: &str = "Bearer ";
 const BEARER_PREFIX_LEN: usize = 7;
+
+fn hash_jwt_id(jwt_id: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(jwt_id.as_bytes());
+    format!("{:x}", hasher.finalize())
+}
 
 pub async fn auth_middleware(
     State(middleware_state): State<AuthMiddlewareState>,
@@ -77,6 +84,8 @@ pub async fn auth_middleware(
         }
     };
 
+    let encrypted_token = hash_jwt_id(&auth_context.jwt_id);
+
     match middleware_state
         .cache_service
         .is_session_valid(&auth_context.jwt_id)
@@ -84,7 +93,7 @@ pub async fn auth_middleware(
     {
         Ok(true) => {
             tracing::debug!(
-                encrypted_token = %auth_context.jwt_id,
+                encrypted_token = %encrypted_token,
                 path = %request.uri().path(),
                 method = %request.method(),
                 "Session validated successfully"
@@ -93,7 +102,7 @@ pub async fn auth_middleware(
         Ok(false) => {
             tracing::warn!(
                 auth_error_type = "session_invalid",
-                encrypted_token = %auth_context.jwt_id,
+                encrypted_token = %encrypted_token,
                 path = %request.uri().path(),
                 method = %request.method(),
                 "Authentication failure: Session not found in cache"
@@ -108,7 +117,7 @@ pub async fn auth_middleware(
         Err(e) => {
             tracing::error!(
                 auth_error_type = "session_error",
-                encrypted_token = %auth_context.jwt_id,
+                encrypted_token = %encrypted_token,
                 path = %request.uri().path(),
                 method = %request.method(),
                 error = %e,
