@@ -2,10 +2,7 @@ use anyhow::Context;
 use axum::{
     body::Body,
     extract::{Path, Query, Request, State},
-    http::{
-        header::{AUTHORIZATION, CONTENT_TYPE},
-        HeaderMap, StatusCode, Uri,
-    },
+    http::{header::CONTENT_TYPE, HeaderMap, StatusCode, Uri},
     middleware::{from_fn, Next},
     response::{IntoResponse, Json, Response},
     routing::{delete, get, post, put},
@@ -14,26 +11,9 @@ use axum::{
 use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
 use axum_tracing_opentelemetry::tracing_opentelemetry_instrumentation_sdk as otel_sdk;
 use chrono::Utc;
-use opentelemetry::{
-    global,
-    trace::{Tracer, TracerProvider},
-};
-use opentelemetry_otlp::{WithExportConfig, WithHttpConfig};
-use opentelemetry_sdk::{propagation::TraceContextPropagator, trace::SdkTracerProvider, Resource};
-use sha2::{Digest, Sha256};
-use std::{collections::HashMap, sync::Arc};
+use opentelemetry::trace::Tracer;
+use std::sync::Arc;
 use tower_http::cors::CorsLayer;
-use tracing_opentelemetry::OpenTelemetrySpanExt;
-use tracing_subscriber::{
-    fmt::{
-        format::{FormatEvent, FormatFields, Writer},
-        FmtContext,
-    },
-    layer::SubscriberExt,
-    registry::{LookupSpan, Registry},
-    util::SubscriberInitExt,
-    EnvFilter,
-};
 use uuid::Uuid;
 
 #[allow(unused_imports)]
@@ -43,6 +23,7 @@ mod auth_middleware;
 mod config;
 mod models;
 mod openapi;
+mod telemetry;
 
 pub mod providers;
 mod services;
@@ -90,10 +71,12 @@ use services::{
     TellerConnectError, TellerSyncError,
 };
 use sqlx::PgPool;
+use telemetry::{with_bearer_token_attribute, TelemetryConfig};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let tracer_provider = init_tracing()?;
+    let telemetry_config = TelemetryConfig::from_env();
+    let telemetry = telemetry::init(&telemetry_config)?;
     tracing::info!(
         event = "startup_trace_probe",
         "Tracing formatter initialized test log"
@@ -108,7 +91,7 @@ async fn main() -> anyhow::Result<()> {
         tracer.in_span("startup-test-span", |_cx| {
             println!("Emitting startup test span for OTLP connectivity check");
         });
-        tracer_provider.force_flush()?;
+        telemetry.force_flush()?;
     }
 
     let config = Config::from_env()?;
@@ -201,9 +184,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Server running on http://0.0.0.0:3000");
     axum::serve(listener, app).await?;
 
-    tracer_provider
-        .shutdown()
-        .map_err(|err| anyhow::anyhow!("failed to shutdown tracer provider: {err}"))?;
+    telemetry.shutdown()?;
 
     Ok(())
 }
@@ -333,182 +314,6 @@ pub fn create_app(state: AppState) -> Router {
         .layer(OtelAxumLayer::default().try_extract_client_ip(true))
         .layer(CorsLayer::permissive())
         .with_state(state)
-}
-
-fn init_tracing() -> anyhow::Result<SdkTracerProvider> {
-    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into());
-    let fmt_layer = tracing_subscriber::fmt::layer()
-        .with_target(false)
-        .event_format(SeqJsonFormatter);
-
-    global::set_text_map_propagator(TraceContextPropagator::new());
-
-    let otlp_endpoint = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
-        .unwrap_or_else(|_| "http://localhost:5341/ingest/otlp/v1/traces".to_string());
-
-    let otlp_headers = std::env::var("OTEL_EXPORTER_OTLP_HEADERS")
-        .ok()
-        .and_then(parse_otlp_headers);
-
-    println!("OTLP exporter endpoint: {}", otlp_endpoint);
-
-    let mut exporter_builder = opentelemetry_otlp::SpanExporter::builder()
-        .with_http()
-        .with_endpoint(otlp_endpoint);
-
-    if let Some(headers) = otlp_headers {
-        let header_names = headers.keys().cloned().collect::<Vec<_>>();
-        println!("OTLP exporter headers configured: {:?}", header_names);
-        exporter_builder = exporter_builder.with_headers(headers);
-    }
-
-    let exporter = exporter_builder.build()?;
-
-    let resource = Resource::builder()
-        .with_service_name("sumaura-backend")
-        .build();
-
-    let tracer_provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()
-        .with_resource(resource)
-        .with_batch_exporter(exporter)
-        .build();
-
-    let tracer = tracer_provider.tracer("accounting-backend");
-
-    tracing_subscriber::registry()
-        .with(env_filter)
-        .with(fmt_layer)
-        .with(tracing_opentelemetry::layer().with_tracer(tracer))
-        .try_init()
-        .map_err(|err| anyhow::anyhow!("failed to initialize tracing subscriber: {err}"))?;
-
-    global::set_tracer_provider(tracer_provider.clone());
-
-    Ok(tracer_provider)
-}
-
-struct SeqJsonFormatter;
-
-impl<S, N> FormatEvent<S, N> for SeqJsonFormatter
-where
-    S: tracing::Subscriber + for<'span> LookupSpan<'span>,
-    N: for<'writer> FormatFields<'writer> + 'static,
-{
-    fn format_event(
-        &self,
-        ctx: &FmtContext<'_, S, N>,
-        mut writer: Writer<'_>,
-        event: &tracing::Event<'_>,
-    ) -> std::fmt::Result {
-        use serde_json::{json, Map};
-        use std::fmt::Write;
-
-        let mut record = Map::new();
-        record.insert("timestamp".to_string(), json!(Utc::now().to_rfc3339()));
-        record.insert(
-            "level".to_string(),
-            json!(event.metadata().level().as_str()),
-        );
-        record.insert("target".to_string(), json!(event.metadata().target()));
-
-        if let Some(trace_id) = otel_sdk::find_current_trace_id() {
-            record.insert("traceId".to_string(), json!(trace_id));
-        }
-
-        if let Some(span) = ctx.lookup_current() {
-            record.insert("span".to_string(), json!(span.name()));
-            if let Some(token) = span.extensions().get::<EncryptedToken>() {
-                record.insert("encrypted_token".to_string(), json!(token.0.clone()));
-            }
-        }
-
-        let mut fields = Map::new();
-        {
-            let mut visitor = JsonFieldVisitor::new(&mut fields);
-            event.record(&mut visitor);
-        }
-
-        for (key, value) in fields {
-            record.insert(key, value);
-        }
-
-        let json = serde_json::Value::Object(record);
-        let serialized = serde_json::to_string(&json).map_err(|_| std::fmt::Error)?;
-        Write::write_str(&mut writer, &serialized)?;
-        Write::write_char(&mut writer, '\n')
-    }
-}
-
-struct JsonFieldVisitor<'a> {
-    fields: &'a mut serde_json::Map<String, serde_json::Value>,
-}
-
-impl<'a> JsonFieldVisitor<'a> {
-    fn new(fields: &'a mut serde_json::Map<String, serde_json::Value>) -> Self {
-        Self { fields }
-    }
-}
-
-impl<'a> tracing::field::Visit for JsonFieldVisitor<'a> {
-    fn record_bool(&mut self, field: &tracing::field::Field, value: bool) {
-        self.fields
-            .insert(field.name().to_string(), serde_json::json!(value));
-    }
-
-    fn record_i64(&mut self, field: &tracing::field::Field, value: i64) {
-        self.fields
-            .insert(field.name().to_string(), serde_json::json!(value));
-    }
-
-    fn record_u64(&mut self, field: &tracing::field::Field, value: u64) {
-        self.fields
-            .insert(field.name().to_string(), serde_json::json!(value));
-    }
-
-    fn record_f64(&mut self, field: &tracing::field::Field, value: f64) {
-        self.fields
-            .insert(field.name().to_string(), serde_json::json!(value));
-    }
-
-    fn record_str(&mut self, field: &tracing::field::Field, value: &str) {
-        self.fields
-            .insert(field.name().to_string(), serde_json::json!(value));
-    }
-
-    fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
-        self.fields.insert(
-            field.name().to_string(),
-            serde_json::json!(format!("{value:?}")),
-        );
-    }
-}
-
-#[derive(Clone)]
-struct EncryptedToken(pub String);
-
-fn parse_otlp_headers(raw: String) -> Option<HashMap<String, String>> {
-    let mut headers = HashMap::new();
-
-    for entry in raw.split(',') {
-        let entry = entry.trim();
-        if entry.is_empty() {
-            continue;
-        }
-
-        let mut parts = entry.splitn(2, '=');
-        match (parts.next(), parts.next()) {
-            (Some(key), Some(value)) if !key.trim().is_empty() => {
-                headers.insert(key.trim().to_string(), value.trim().to_string());
-            }
-            _ => eprintln!("Ignoring malformed OTLP header entry: {}", entry),
-        }
-    }
-
-    if headers.is_empty() {
-        None
-    } else {
-        Some(headers)
-    }
 }
 
 async fn error_handling_middleware(request: Request<Body>, next: Next) -> Response {
@@ -2155,37 +1960,6 @@ async fn health_check() -> &'static str {
         "Health check invoked"
     );
     "OK"
-}
-
-async fn with_bearer_token_attribute(request: Request<Body>, next: Next) -> Response {
-    if let Some(header_value) = request.headers().get(AUTHORIZATION) {
-        if let Ok(raw) = header_value.to_str() {
-            let trimmed = raw.trim();
-            let token = trimmed
-                .strip_prefix("Bearer ")
-                .or_else(|| trimmed.strip_prefix("bearer "))
-                .unwrap_or(trimmed)
-                .trim();
-
-            if !token.is_empty() {
-                let span = tracing::Span::current();
-                let encrypted = hex::encode(Sha256::digest(token.as_bytes()));
-                span.set_attribute("encrypted_token", encrypted.clone());
-                let encrypted_for_extension = encrypted.clone();
-                let _ = span.with_subscriber(move |(id, dispatch)| {
-                    if let Some(registry) = dispatch.downcast_ref::<Registry>() {
-                        if let Some(span_ref) = registry.span(id) {
-                            span_ref
-                                .extensions_mut()
-                                .insert(EncryptedToken(encrypted_for_extension.clone()));
-                        }
-                    }
-                });
-            }
-        }
-    }
-
-    next.run(request).await
 }
 
 #[utoipa::path(
