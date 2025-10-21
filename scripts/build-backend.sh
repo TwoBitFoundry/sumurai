@@ -17,6 +17,19 @@ if ! command -v cross &> /dev/null; then
     exit 1
 fi
 
+# Pre-pull Seq image so docker compose builds have it cached locally
+SEQ_IMAGE="datalust/seq:2025.2"
+if command -v docker &> /dev/null; then
+    if docker image inspect "$SEQ_IMAGE" > /dev/null 2>&1; then
+        echo "♻️  Seq image already cached ($SEQ_IMAGE)"
+    else
+        echo "⬇️  Pulling Seq image ($SEQ_IMAGE)..."
+        docker pull "$SEQ_IMAGE"
+    fi
+else
+    echo "⚠️  Docker CLI not available; skipping Seq image pre-pull"
+fi
+
 # Cross-compile only the backend crate for x86_64 Linux
 cross build --manifest-path backend/Cargo.toml \
   --target x86_64-unknown-linux-gnu --release

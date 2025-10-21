@@ -34,7 +34,7 @@ argon2 = "0.5"
 futures = "0.3"
 opentelemetry = { version = "0.31", features = ["trace"] }
 opentelemetry_sdk = { version = "0.31", features = ["rt-tokio", "trace"] }
-opentelemetry-otlp = { version = "0.31", features = ["grpc-tonic", "trace"] }
+opentelemetry-otlp = { version = "0.31", features = ["grpc-tonic", "http-proto", "reqwest-blocking-client", "trace"] }
 utoipa = { version = "5.4", features = ["axum_extras", "chrono", "uuid"] }
 utoipa-scalar = "0.3"
 axum-tracing-opentelemetry = "0.32"

@@ -11,10 +11,13 @@ use axum::{
 use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
 use axum_tracing_opentelemetry::tracing_opentelemetry_instrumentation_sdk as otel_sdk;
 use chrono::Utc;
-use opentelemetry::{global, trace::TracerProvider};
-use opentelemetry_otlp::WithExportConfig;
+use opentelemetry::{
+    global,
+    trace::{Tracer, TracerProvider},
+};
+use opentelemetry_otlp::{WithExportConfig, WithHttpConfig};
 use opentelemetry_sdk::{propagation::TraceContextPropagator, trace::SdkTracerProvider, Resource};
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 use tower_http::cors::CorsLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use uuid::Uuid;
@@ -77,6 +80,18 @@ use sqlx::PgPool;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let tracer_provider = init_tracing()?;
+
+    if std::env::var("OTEL_STARTUP_TEST_SPAN")
+        .map(|v| v == "1")
+        .unwrap_or(false)
+    {
+        println!("Startup test span enabled; emitting probe span");
+        let tracer = opentelemetry::global::tracer("startup-test");
+        tracer.in_span("startup-test-span", |_cx| {
+            println!("Emitting startup test span for OTLP connectivity check");
+        });
+        tracer_provider.force_flush()?;
+    }
 
     let config = Config::from_env()?;
 
@@ -308,15 +323,28 @@ fn init_tracing() -> anyhow::Result<SdkTracerProvider> {
     global::set_text_map_propagator(TraceContextPropagator::new());
 
     let otlp_endpoint = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
-        .unwrap_or_else(|_| "http://localhost:4317".to_string());
+        .unwrap_or_else(|_| "http://localhost:5341/ingest/otlp/v1/traces".to_string());
 
-    let exporter = opentelemetry_otlp::SpanExporter::builder()
-        .with_tonic()
-        .with_endpoint(otlp_endpoint)
-        .build()?;
+    let otlp_headers = std::env::var("OTEL_EXPORTER_OTLP_HEADERS")
+        .ok()
+        .and_then(parse_otlp_headers);
+
+    println!("OTLP exporter endpoint: {}", otlp_endpoint);
+
+    let mut exporter_builder = opentelemetry_otlp::SpanExporter::builder()
+        .with_http()
+        .with_endpoint(otlp_endpoint);
+
+    if let Some(headers) = otlp_headers {
+        let header_names = headers.keys().cloned().collect::<Vec<_>>();
+        println!("OTLP exporter headers configured: {:?}", header_names);
+        exporter_builder = exporter_builder.with_headers(headers);
+    }
+
+    let exporter = exporter_builder.build()?;
 
     let resource = Resource::builder()
-        .with_service_name("accounting-backend")
+        .with_service_name("sumaura-backend")
         .build();
 
     let tracer_provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()
@@ -336,6 +364,31 @@ fn init_tracing() -> anyhow::Result<SdkTracerProvider> {
     global::set_tracer_provider(tracer_provider.clone());
 
     Ok(tracer_provider)
+}
+
+fn parse_otlp_headers(raw: String) -> Option<HashMap<String, String>> {
+    let mut headers = HashMap::new();
+
+    for entry in raw.split(',') {
+        let entry = entry.trim();
+        if entry.is_empty() {
+            continue;
+        }
+
+        let mut parts = entry.splitn(2, '=');
+        match (parts.next(), parts.next()) {
+            (Some(key), Some(value)) if !key.trim().is_empty() => {
+                headers.insert(key.trim().to_string(), value.trim().to_string());
+            }
+            _ => eprintln!("Ignoring malformed OTLP header entry: {}", entry),
+        }
+    }
+
+    if headers.is_empty() {
+        None
+    } else {
+        Some(headers)
+    }
 }
 
 async fn error_handling_middleware(request: Request<Body>, next: Next) -> Response {
