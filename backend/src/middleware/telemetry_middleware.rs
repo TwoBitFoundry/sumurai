@@ -12,6 +12,7 @@ use std::{collections::HashMap, fmt::Write};
 use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 use tracing_subscriber::{
+    filter::LevelFilter,
     fmt::{
         format::{FormatEvent, FormatFields, Writer},
         FmtContext,
@@ -105,7 +106,11 @@ pub fn init(config: &TelemetryConfig) -> Result<TelemetryHandle> {
     tracing_subscriber::registry()
         .with(env_filter)
         .with(fmt_layer)
-        .with(tracing_opentelemetry::layer().with_tracer(tracer))
+        .with(
+            tracing_opentelemetry::layer()
+                .with_tracer(tracer)
+                .with_filter(LevelFilter::INFO),
+        )
         .try_init()
         .map_err(|err| anyhow::anyhow!("failed to initialize tracing subscriber: {err}"))?;
 
