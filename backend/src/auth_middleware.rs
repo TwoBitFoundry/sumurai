@@ -8,7 +8,7 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Json, Response},
 };
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 const BEARER_PREFIX: &str = "Bearer ";

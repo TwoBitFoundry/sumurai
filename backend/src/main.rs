@@ -12,6 +12,7 @@ use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer}
 use axum_tracing_opentelemetry::tracing_opentelemetry_instrumentation_sdk as otel_sdk;
 use chrono::Utc;
 use std::sync::Arc;
+use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
@@ -20,9 +21,9 @@ use serde_json::json;
 
 mod auth_middleware;
 mod config;
+mod middleware;
 mod models;
 mod openapi;
-mod telemetry;
 
 pub mod providers;
 mod services;
@@ -62,6 +63,7 @@ use crate::models::{
 };
 use auth_middleware::auth_middleware;
 use config::Config;
+use middleware::telemetry_middleware::{self, with_bearer_token_attribute, TelemetryConfig};
 use services::repository_service::{DatabaseRepository, PostgresRepository};
 use services::{AnalyticsService, RealPlaidClient};
 use services::{
@@ -70,12 +72,11 @@ use services::{
     TellerConnectError, TellerSyncError,
 };
 use sqlx::PgPool;
-use telemetry::{with_bearer_token_attribute, TelemetryConfig};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let telemetry_config = TelemetryConfig::from_env();
-    let telemetry = telemetry::init(&telemetry_config)?;
+    let telemetry = telemetry_middleware::init(&telemetry_config)?;
 
     let config = Config::from_env()?;
 
@@ -287,15 +288,19 @@ pub fn create_app(state: AppState) -> Router {
         axum::response::Html(html)
     }
 
+    let middleware_stack = ServiceBuilder::new()
+        .layer(CorsLayer::permissive())
+        .layer(OtelAxumLayer::default().try_extract_client_ip(true))
+        .layer(OtelInResponseLayer)
+        .layer(from_fn(with_bearer_token_attribute))
+        .layer(from_fn(error_handling_middleware))
+        .into_inner();
+
     Router::new()
         .merge(public_routes)
         .merge(protected_routes)
         .merge(docs_routes)
-        .layer(from_fn(error_handling_middleware))
-        .layer(from_fn(with_bearer_token_attribute))
-        .layer(OtelInResponseLayer)
-        .layer(OtelAxumLayer::default().try_extract_client_ip(true))
-        .layer(CorsLayer::permissive())
+        .layer(middleware_stack)
         .with_state(state)
 }
 
@@ -304,6 +309,7 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
     let uri = request.uri().clone();
     let path = uri.path().to_string();
 
+    let span_trace_id = otel_sdk::find_current_trace_id();
     let response = next.run(request).await;
     let status = response.status();
     let has_json_content_type = response
@@ -314,7 +320,9 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
         .unwrap_or(false);
 
     if status.is_server_error() {
-        let trace_id = otel_sdk::find_current_trace_id();
+        let trace_id = span_trace_id
+            .clone()
+            .or_else(|| otel_sdk::find_current_trace_id());
         match trace_id.as_deref() {
             Some(trace_id) => {
                 tracing::error!(
@@ -345,6 +353,7 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
             return (StatusCode::INTERNAL_SERVER_ERROR, Json(error)).into_response();
         }
     } else if status.is_client_error() {
+        let trace_id = span_trace_id.or_else(|| otel_sdk::find_current_trace_id());
         let error_category = match status.as_u16() {
             400 => "validation_error",
             401 => "authentication_error",
@@ -363,52 +372,48 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
         };
 
         match trace_id.as_deref() {
-            Some(trace_id) => {
-                match log_level {
-                    tracing::Level::WARN => {
-                        tracing::warn!(
-                            status = %status,
-                            %trace_id,
-                            method = %method,
-                            %path,
-                            error_category = %error_category,
-                            "request resulted in client error"
-                        )
-                    }
-                    _ => {
-                        tracing::debug!(
-                            status = %status,
-                            %trace_id,
-                            method = %method,
-                            %path,
-                            error_category = %error_category,
-                            "request resulted in client error"
-                        )
-                    }
+            Some(trace_id) => match log_level {
+                tracing::Level::WARN => {
+                    tracing::warn!(
+                        status = %status,
+                        %trace_id,
+                        method = %method,
+                        %path,
+                        error_category = %error_category,
+                        "request resulted in client error"
+                    )
                 }
-            }
-            None => {
-                match log_level {
-                    tracing::Level::WARN => {
-                        tracing::warn!(
-                            status = %status,
-                            method = %method,
-                            %path,
-                            error_category = %error_category,
-                            "request resulted in client error"
-                        )
-                    }
-                    _ => {
-                        tracing::debug!(
-                            status = %status,
-                            method = %method,
-                            %path,
-                            error_category = %error_category,
-                            "request resulted in client error"
-                        )
-                    }
+                _ => {
+                    tracing::debug!(
+                        status = %status,
+                        %trace_id,
+                        method = %method,
+                        %path,
+                        error_category = %error_category,
+                        "request resulted in client error"
+                    )
                 }
-            }
+            },
+            None => match log_level {
+                tracing::Level::WARN => {
+                    tracing::warn!(
+                        status = %status,
+                        method = %method,
+                        %path,
+                        error_category = %error_category,
+                        "request resulted in client error"
+                    )
+                }
+                _ => {
+                    tracing::debug!(
+                        status = %status,
+                        method = %method,
+                        %path,
+                        error_category = %error_category,
+                        "request resulted in client error"
+                    )
+                }
+            },
         }
     }
 
@@ -509,6 +514,8 @@ async fn login_user(
     State(state): State<AppState>,
     Json(req): Json<auth_models::LoginRequest>,
 ) -> Result<Json<auth_models::AuthResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    tracing::error!("Something went wrong!");
+
     let user = match state.db_repository.get_user_by_email(&req.email).await {
         Ok(Some(user)) => user,
         Ok(None) => {
@@ -823,7 +830,10 @@ async fn get_authenticated_transactions(
                 tracing::info!(record_count = filtered.len(), "Data access: transactions");
                 Ok(Json(filtered))
             } else {
-                tracing::info!(record_count = transactions.len(), "Data access: transactions");
+                tracing::info!(
+                    record_count = transactions.len(),
+                    "Data access: transactions"
+                );
                 Ok(Json(transactions))
             }
         }
@@ -989,7 +999,11 @@ async fn get_authenticated_plaid_accounts(
         })
         .collect();
 
-    tracing::info!(record_count = account_responses.len(), provider = "plaid", "Data access: accounts");
+    tracing::info!(
+        record_count = account_responses.len(),
+        provider = "plaid",
+        "Data access: accounts"
+    );
 
     Ok(Json(account_responses))
 }
@@ -2343,7 +2357,10 @@ async fn get_authenticated_balances_overview(
             .await;
     }
 
-    tracing::info!(account_count = response.banks.len(), "Data access: balances");
+    tracing::info!(
+        account_count = response.banks.len(),
+        "Data access: balances"
+    );
 
     Ok(Json(response))
 }
