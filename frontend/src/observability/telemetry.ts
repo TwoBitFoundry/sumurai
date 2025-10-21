@@ -1,10 +1,13 @@
-import { trace, Tracer } from '@opentelemetry/api';
+import { trace, Tracer, Span } from '@opentelemetry/api';
 import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { registerInstrumentations } from '@opentelemetry/auto-instrumentations-web';
+import { registerInstrumentations } from '@opentelemetry/instrumentation';
+import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
+import { sanitizeSpanAttributes, preventSensitiveSpans } from './sanitization';
+import { SensitiveDataSpanProcessor } from './processors';
 
 let tracerProvider: WebTracerProvider | null = null;
 let tracer: Tracer | null = null;
@@ -44,34 +47,55 @@ export async function initTelemetry(): Promise<Tracer | null> {
   });
 
   const spanProcessor = new BatchSpanProcessor(exporter);
+  const sensitiveDataProcessor = new SensitiveDataSpanProcessor({
+    blockSensitiveEndpoints: config.blockSensitiveEndpoints,
+    redactAuthEndpoints: true,
+  });
 
   tracerProvider = new WebTracerProvider({
     resource,
-    spanProcessors: [spanProcessor],
+    spanProcessors: [sensitiveDataProcessor, spanProcessor],
   });
 
   trace.setGlobalTracerProvider(tracerProvider);
 
   try {
     registerInstrumentations({
-      '@opentelemetry/instrumentation-fetch': {
-        enabled: true,
-        propagateTraceHeaderCorsUrls: [/.+/],
-        clearTimingResources: true,
-        ignoreNetworkEvents: true,
-      },
-      '@opentelemetry/instrumentation-xml-http-request': {
-        enabled: true,
-        propagateTraceHeaderCorsUrls: [/.+/],
-        ignoreNetworkEvents: true,
-      },
-      '@opentelemetry/instrumentation-user-interaction': {
-        enabled: true,
-        eventNames: ['click', 'submit'],
-      },
-      '@opentelemetry/instrumentation-document-load': {
-        enabled: true,
-      },
+      instrumentations: [
+        getWebAutoInstrumentations({
+          '@opentelemetry/instrumentation-fetch': {
+            enabled: true,
+            propagateTraceHeaderCorsUrls: [/.+/],
+            clearTimingResources: true,
+            ignoreNetworkEvents: true,
+            applyCustomAttributesOnSpan: (span: Span, request: Request, response: Response) => {
+              if (config.sanitizeHeaders || config.sanitizeUrls) {
+                sanitizeSpanAttributes(span, request, response);
+              }
+            },
+          },
+          '@opentelemetry/instrumentation-xml-http-request': {
+            enabled: true,
+            propagateTraceHeaderCorsUrls: [/.+/],
+            ignoreNetworkEvents: true,
+            applyCustomAttributesOnSpan: (span: Span) => {
+              if (config.sanitizeHeaders || config.sanitizeUrls) {
+                sanitizeSpanAttributes(span);
+              }
+            },
+          },
+          '@opentelemetry/instrumentation-user-interaction': {
+            enabled: true,
+            eventNames: ['click', 'submit'],
+            shouldPreventSpanCreation: (eventName: string, element: Element) => {
+              return preventSensitiveSpans(element, eventName);
+            },
+          },
+          '@opentelemetry/instrumentation-document-load': {
+            enabled: true,
+          },
+        }),
+      ],
     });
   } catch {
     // Auto-instrumentations may not be available in test environments
