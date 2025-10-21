@@ -90,6 +90,10 @@ impl ConnectionService {
         self.provider_registry.get(provider)
     }
 
+    #[tracing::instrument(
+        skip(self),
+        fields(connection_id = %connection_id)
+    )]
     pub async fn disconnect_connection_by_id(
         &self,
         connection_id: &Uuid,
@@ -141,6 +145,13 @@ impl ConnectionService {
         self.db_repository
             .delete_provider_connection(user_id, &conn.item_id)
             .await?;
+
+        tracing::info!(
+            connection_id = %connection_id,
+            transactions_deleted = deleted_transactions,
+            accounts_deleted = deleted_accounts,
+            "Provider connection disconnected"
+        );
 
         Ok(DisconnectResult {
             success: true,
@@ -285,6 +296,10 @@ impl ConnectionService {
             .map_err(LinkTokenError::ProviderRequest)
     }
 
+    #[tracing::instrument(
+        skip(self, public_token),
+        fields(provider = provider)
+    )]
     pub async fn exchange_public_token(
         &self,
         provider: &str,
@@ -368,6 +383,13 @@ impl ConnectionService {
             );
         }
 
+        tracing::info!(
+            provider = provider.provider_name(),
+            institution_id = %connection.institution_id.as_deref().unwrap_or("unknown"),
+            institution_name = %connection.institution_name.as_deref().unwrap_or("Unknown Bank"),
+            "Provider connection established"
+        );
+
         Ok(ExchangeTokenResponse {
             access_token: credentials.access_token,
             item_id: connection.item_id,
@@ -379,6 +401,10 @@ impl ConnectionService {
         })
     }
 
+    #[tracing::instrument(
+        skip(self, sync_service, connection, params),
+        fields(provider = %params.provider, connection_id = %connection.id)
+    )]
     pub async fn sync_provider_connection(
         &self,
         params: SyncConnectionParams<'_>,
@@ -527,6 +553,14 @@ impl ConnectionService {
             );
         }
 
+        tracing::info!(
+            provider = params.provider,
+            connection_id = %connection.id,
+            transaction_count = total_transactions,
+            account_count = total_accounts,
+            "Transaction sync completed"
+        );
+
         Ok(SyncTransactionsResponse {
             transactions,
             metadata: SyncMetadata {
@@ -540,6 +574,10 @@ impl ConnectionService {
         })
     }
 
+    #[tracing::instrument(
+        skip(self, connection),
+        fields(provider = "teller", connection_id = %connection.id)
+    )]
     pub async fn sync_teller_connection(
         &self,
         user_id: &Uuid,
@@ -739,6 +777,14 @@ impl ConnectionService {
             end_date: sync_end_date.to_string(),
             connection_updated: true,
         };
+
+        tracing::info!(
+            provider = "teller",
+            connection_id = %connection.id,
+            transaction_count = total_transactions,
+            account_count = total_accounts,
+            "Transaction sync completed"
+        );
 
         Ok(SyncTransactionsResponse {
             transactions: synced_transactions,

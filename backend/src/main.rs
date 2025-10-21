@@ -1,13 +1,18 @@
 use anyhow::Context;
 use axum::{
-    extract::{Path, Query, State},
-    http::{HeaderMap, StatusCode, Uri},
-    response::Json,
+    body::Body,
+    extract::{Path, Query, Request, State},
+    http::{header::CONTENT_TYPE, HeaderMap, StatusCode, Uri},
+    middleware::{from_fn, Next},
+    response::{IntoResponse, Json, Response},
     routing::{delete, get, post, put},
     Router,
 };
+use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
+use axum_tracing_opentelemetry::tracing_opentelemetry_instrumentation_sdk as otel_sdk;
 use chrono::Utc;
 use std::sync::Arc;
+use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
@@ -16,6 +21,7 @@ use serde_json::json;
 
 mod auth_middleware;
 mod config;
+mod middleware;
 mod models;
 mod openapi;
 
@@ -57,6 +63,7 @@ use crate::models::{
 };
 use auth_middleware::auth_middleware;
 use config::Config;
+use middleware::telemetry_middleware::{self, with_bearer_token_attribute, TelemetryConfig};
 use services::repository_service::{DatabaseRepository, PostgresRepository};
 use services::{AnalyticsService, RealPlaidClient};
 use services::{
@@ -68,7 +75,8 @@ use sqlx::PgPool;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
+    let telemetry_config = TelemetryConfig::from_env();
+    let telemetry = telemetry_middleware::init(&telemetry_config)?;
 
     let config = Config::from_env()?;
 
@@ -159,6 +167,8 @@ async fn main() -> anyhow::Result<()> {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     tracing::info!("Server running on http://0.0.0.0:3000");
     axum::serve(listener, app).await?;
+
+    telemetry.shutdown()?;
 
     Ok(())
 }
@@ -278,12 +288,136 @@ pub fn create_app(state: AppState) -> Router {
         axum::response::Html(html)
     }
 
+    let middleware_stack = ServiceBuilder::new()
+        .layer(CorsLayer::permissive())
+        .layer(OtelAxumLayer::default().try_extract_client_ip(true))
+        .layer(OtelInResponseLayer)
+        .layer(from_fn(with_bearer_token_attribute))
+        .layer(from_fn(error_handling_middleware))
+        .into_inner();
+
     Router::new()
         .merge(public_routes)
         .merge(protected_routes)
         .merge(docs_routes)
-        .layer(CorsLayer::permissive())
+        .layer(middleware_stack)
         .with_state(state)
+}
+
+async fn error_handling_middleware(request: Request<Body>, next: Next) -> Response {
+    let method = request.method().clone();
+    let uri = request.uri().clone();
+    let path = uri.path().to_string();
+
+    let span_trace_id = otel_sdk::find_current_trace_id();
+    let response = next.run(request).await;
+    let status = response.status();
+    let has_json_content_type = response
+        .headers()
+        .get(CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .map(|content_type| content_type.starts_with("application/json"))
+        .unwrap_or(false);
+
+    if status.is_server_error() {
+        let trace_id = span_trace_id
+            .clone()
+            .or_else(|| otel_sdk::find_current_trace_id());
+        match trace_id.as_deref() {
+            Some(trace_id) => {
+                tracing::error!(
+                    status = %status,
+                    %trace_id,
+                    method = %method,
+                    %path,
+                    error_type = "server_error",
+                    "request resulted in server error"
+                )
+            }
+            None => {
+                tracing::error!(
+                    status = %status,
+                    method = %method,
+                    %path,
+                    error_type = "server_error",
+                    "request resulted in server error"
+                )
+            }
+        };
+        if !has_json_content_type {
+            let mut error = ApiErrorResponse::new(
+                "INTERNAL_SERVER_ERROR",
+                "An unexpected server error occurred",
+            );
+            error.details = trace_id.map(|id| json!({ "trace_id": id }));
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(error)).into_response();
+        }
+    } else if status.is_client_error() {
+        let trace_id = span_trace_id.or_else(|| otel_sdk::find_current_trace_id());
+        let error_category = match status.as_u16() {
+            400 => "validation_error",
+            401 => "authentication_error",
+            403 => "authorization_error",
+            404 => "not_found",
+            409 => "conflict",
+            422 => "unprocessable_entity",
+            429 => "rate_limited",
+            _ => "client_error",
+        };
+
+        let trace_id = otel_sdk::find_current_trace_id();
+        let log_level = match status.as_u16() {
+            401 | 403 => tracing::Level::WARN,
+            _ => tracing::Level::DEBUG,
+        };
+
+        match trace_id.as_deref() {
+            Some(trace_id) => match log_level {
+                tracing::Level::WARN => {
+                    tracing::warn!(
+                        status = %status,
+                        %trace_id,
+                        method = %method,
+                        %path,
+                        error_category = %error_category,
+                        "request resulted in client error"
+                    )
+                }
+                _ => {
+                    tracing::debug!(
+                        status = %status,
+                        %trace_id,
+                        method = %method,
+                        %path,
+                        error_category = %error_category,
+                        "request resulted in client error"
+                    )
+                }
+            },
+            None => match log_level {
+                tracing::Level::WARN => {
+                    tracing::warn!(
+                        status = %status,
+                        method = %method,
+                        %path,
+                        error_category = %error_category,
+                        "request resulted in client error"
+                    )
+                }
+                _ => {
+                    tracing::debug!(
+                        status = %status,
+                        method = %method,
+                        %path,
+                        error_category = %error_category,
+                        "request resulted in client error"
+                    )
+                }
+            },
+        }
+    }
+
+    response
 }
 
 #[utoipa::path(
@@ -437,6 +571,8 @@ async fn login_user(
     }
 
     let expires_at = auth_token.expires_at.to_rfc3339();
+
+    tracing::info!("User authenticated successfully");
 
     Ok(Json(auth_models::AuthResponse {
         token: auth_token.token,
@@ -689,12 +825,20 @@ async fn get_authenticated_transactions(
                             || account_name.contains(&needle)
                     })
                     .collect();
+                tracing::info!(record_count = filtered.len(), "Data access: transactions");
                 Ok(Json(filtered))
             } else {
+                tracing::info!(
+                    record_count = transactions.len(),
+                    "Data access: transactions"
+                );
                 Ok(Json(transactions))
             }
         }
-        Err(_) => Ok(Json(vec![])),
+        Err(_) => {
+            tracing::info!(record_count = 0, "Data access: transactions");
+            Ok(Json(vec![]))
+        }
     }
 }
 
@@ -852,6 +996,12 @@ async fn get_authenticated_plaid_accounts(
             }
         })
         .collect();
+
+    tracing::info!(
+        record_count = account_responses.len(),
+        provider = "plaid",
+        "Data access: accounts"
+    );
 
     Ok(Json(account_responses))
 }
@@ -1886,6 +2036,12 @@ async fn disconnect_authenticated_connection(
     tag = "Health"
 )]
 async fn health_check() -> &'static str {
+    tracing::info!(
+        event = "health_check",
+        route = "/health",
+        status = "ok",
+        "Health check invoked"
+    );
     "OK"
 }
 
@@ -2198,6 +2354,11 @@ async fn get_authenticated_balances_overview(
             .set_with_ttl(&cache_key, &serialized, ttl_seconds)
             .await;
     }
+
+    tracing::info!(
+        account_count = response.banks.len(),
+        "Data access: balances"
+    );
 
     Ok(Json(response))
 }

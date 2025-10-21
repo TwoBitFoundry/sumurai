@@ -244,8 +244,22 @@ impl RedisCache {
     pub async fn is_session_valid(&self, jwt_id: &str) -> Result<bool> {
         let mut conn = self.connection_manager.clone();
         let key = self.jwt_valid_key(jwt_id);
-        let result: Option<String> = conn.get(&key).await?;
-        Ok(result.is_some())
+        let result: Result<Option<String>> = conn.get(&key).await.map_err(anyhow::Error::from);
+
+        match result {
+            Ok(Some(_)) => {
+                tracing::debug!(cache_hit = true, "Session validation cache hit");
+                Ok(true)
+            }
+            Ok(None) => {
+                tracing::debug!(cache_hit = false, "Session validation cache miss");
+                Ok(false)
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "Session validation cache error");
+                Err(anyhow::anyhow!("Cache error: {}", e))
+            }
+        }
     }
 
     pub async fn invalidate_session(&self, jwt_id: &str) -> Result<()> {

@@ -215,6 +215,11 @@ Everything reads from `.env`. The defaults below match `.env.example` and the Do
 | `POSTGRES_DB` | Yes | `accounting` | Database created by the container; referenced in `DATABASE_URL`. |
 | `JWT_SECRET` | Yes (non-local) | _none_ | 32+ character secret for signing access/refresh tokens. Generate with `openssl rand -hex 32`. |
 | `ENCRYPTION_KEY` | Yes | _none_ | 64 hex characters (32 bytes) for encrypting provider access tokens. Generate with `openssl rand -hex 32`. |
+| `SEQ_PASSWORD` | Yes (first run) | _none_ | Initial password for the Seq `admin` user. Required so the Seq container can complete first-run setup. Use `docker run --rm -i datalust/seq config hash` if you prefer to set the hashed variant via `SEQ_FIRSTRUN_ADMINPASSWORDHASH`. |
+| `SEQ_API_KEY` | Yes (OTLP) | _none_ | API key token created under Seq **Settings → API Keys**. Required so the backend can send OTLP traces/logs to Seq using the `X-Seq-ApiKey` header. |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | Optional | `http/protobuf` | Forces the backend exporter to use OTLP/HTTP, matching Seq’s ingestion endpoint. |
+| `OTEL_STARTUP_TEST_SPAN` | Optional | `0` | Set to `1` temporarily to emit a startup test span that verifies connectivity between the backend and Seq. |
+| `BACKEND_RUST_LOG` | Optional | `info` | Standard Rust log level filter passed to the backend container (e.g. use `info,opentelemetry_otlp=debug` temporarily to inspect exporter activity). |
 | `DEFAULT_PROVIDER` | Optional | `teller` | Choose which provider new users receive (`plaid` or `teller`). Defaults to `teller` for self-hosted scenarios. |
 | `TELLER_APPLICATION_ID` | Yes (Teller) | _none_ | Your Teller application ID from the dashboard (used by Connect.js and backend). |
 | `TELLER_CERT_PATH` | Yes (Teller) | `.certs/teller/certificate.pem` | Absolute or repo‑relative path to your Teller client certificate (PEM). Store in `.certs/` (gitignored). |
