@@ -514,8 +514,6 @@ async fn login_user(
     State(state): State<AppState>,
     Json(req): Json<auth_models::LoginRequest>,
 ) -> Result<Json<auth_models::AuthResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    tracing::error!("Something went wrong!");
-
     let user = match state.db_repository.get_user_by_email(&req.email).await {
         Ok(Some(user)) => user,
         Ok(None) => {
