@@ -5,13 +5,21 @@
 This document outlines the complete instrumentation strategy for achieving SOC2 readiness in the Sumaura backend. The implementation focuses on three core areas:
 
 1. **Incident Response**: Full request tracing and error correlation
-2. **Security Monitoring**: Authentication events, session tracking, and access control
+2. **Security Monitoring**: Authentication events and security events
 3. **System Health**: Provider availability, performance metrics, and dependency monitoring
+
+### Key Design: Privacy-First Session Tracking
+
+Sumaura uses **encrypted JWT tokens** (SHA256 hash) as the session identifier across all traces, rather than storing raw `user_id` or `jwt_id`. This provides:
+- ✅ **Privacy by default** - No user identifiers in logs
+- ✅ **Session traceability** - `encrypted_token` uniquely identifies a session
+- ✅ **Audit capability** - Can correlate all operations in a session
+- ✅ **Compliance-ready** - No PII/sensitive user data
 
 ### Quick Stats
 
-- **Total Files Modified**: 6
-- **Estimated Implementation Time**: 45-60 minutes
+- **Total Files Modified**: 5 (reduced from 6 - no auth_middleware changes needed)
+- **Estimated Implementation Time**: 30-40 minutes
 - **SOC2 Controls Covered**: CC6.1, CC7.2, CC7.3, CC7.4, PI1.4, A1.2
 - **Log Retention Target**: 1 year minimum
 - **Compliance Requirements**: SOC2 Type II readiness (no PCI-DSS, no user roles)
@@ -27,8 +35,18 @@ Sumaura already has OpenTelemetry configured with:
 - **Exporter**: OpenTelemetry OTLP → Seq (`http://localhost:5341/ingest/otlp/v1/traces`)
 - **Propagation**: W3C Trace Context
 - **HTTP Layer**: `axum-tracing-opentelemetry` with `OtelAxumLayer` and `OtelInResponseLayer`
-- **Bearer Token Tracking**: Custom middleware that hashes JWT tokens for correlation
-- **Custom Formatter**: `SeqJsonFormatter` for structured JSON logging
+- **Bearer Token Tracking**: Custom middleware (`with_bearer_token_attribute`) that hashes JWT tokens for correlation
+- **Custom Formatter**: `SeqJsonFormatter` for structured JSON logging to Seq
+
+### How Session Tracking Works
+
+Every request automatically includes `encrypted_token` (SHA256 hash of JWT) in all spans:
+1. Bearer token extracted from HTTP Authorization header
+2. Token hashed using SHA256
+3. Hash added to current span as `encrypted_token` attribute
+4. **All child spans inherit this attribute** (database queries, provider calls, cache ops, etc.)
+
+Result: Every event in a session is correlated without storing raw JWT or user IDs.
 
 ### Auto-Instrumentation Capabilities
 
@@ -44,8 +62,8 @@ By enabling framework features, we get automatic tracing for:
 We'll add minimal manual instrumentation for:
 
 - **Business Events**: Provider connections, sync completions, disconnections
-- **Security Events**: Authentication success/failure, data access audit
-- **User Context**: Propagate `user_id` and `jwt_id` through request lifecycle
+- **Security Events**: Authentication success/failure, security event detection
+- **Session Tracking**: Already handled via `encrypted_token` on every span (automatic, no manual work needed)
 
 ---
 
@@ -69,11 +87,15 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 - ✅ Automatic database query tracing (duration, row counts, sanitized SQL)
 - ✅ Automatic HTTP client tracing to Plaid/Teller (duration, status codes, URLs)
 - ✅ Zero manual instrumentation for database and external API layers
+- ✅ All queries automatically tagged with `encrypted_token`
 
 **SOC2 Controls**: CC7.2 (System Monitoring), CC7.4 (Incident Response)
 
 **Seq Queries Enabled**:
 ```sql
+-- Trace session activity
+encrypted_token = "abc123def..." ORDER BY @Timestamp
+
 -- Detect slow database queries
 db.query.duration_ms > 1000 ORDER BY db.query.duration_ms DESC
 
@@ -88,49 +110,7 @@ http.client.url LIKE "%plaid.com%" AND http.response.status_code >= 500
 
 ---
 
-### Change 2: Add User Context to All Requests
-
-**File**: `backend/src/auth_middleware.rs`
-
-**After line 85**, add user context to current span:
-
-```rust
-request.extensions_mut().insert(auth_context);
-
-// ADD THIS BLOCK:
-let span = tracing::Span::current();
-span.record("user_id", &tracing::field::display(&auth_context.user_id));
-span.record("jwt_id", &tracing::field::display(&auth_context.jwt_id));
-```
-
-**Important**: Ensure the HTTP layer declares these fields. The `OtelAxumLayer` middleware should already create spans, but the fields need to be declared as `Empty` initially for the auth middleware to populate them.
-
-**What This Enables**:
-- ✅ Every authenticated request automatically tagged with `user_id`
-- ✅ Session tracking across entire request lifecycle (via `jwt_id`)
-- ✅ User context propagates to all child spans (database, cache, provider calls)
-- ✅ Audit trail for "who did what"
-
-**SOC2 Controls**: CC6.1 (Logical Access Controls), PI1.4 (Data Access Audit)
-
-**Seq Queries Enabled**:
-```sql
--- Trace all actions by specific user
-user_id = "abc-123" ORDER BY @Timestamp
-
--- Session lifecycle investigation
-jwt_id = "xyz-789" ORDER BY @Timestamp
-
--- Which users are experiencing errors?
-@Level = "Error" GROUP BY user_id OVER last 1h
-
--- User activity audit trail for compliance
-user_id = "abc-123" AND @Timestamp > StartOfDay()
-```
-
----
-
-### Change 3: Instrument Authentication Operations
+### Change 2: Instrument Authentication Operations
 
 **File**: `backend/src/services/auth_service.rs`
 
@@ -165,26 +145,29 @@ pub fn validate_token(&self, token: &str) -> Result<Claims, AuthError> {
 - ✅ Token lifecycle monitoring (creation, validation, expiration)
 - ✅ Security event detection (brute force, session hijacking)
 - ✅ Automatic error capture with context
+- ✅ All ops automatically tagged with `encrypted_token` via span inheritance
 
 **SOC2 Controls**: CC6.1 (Logical Access), CC7.3 (Security Event Monitoring)
 
 **Seq Queries Enabled**:
 ```sql
--- Detect brute force attacks
+-- Detect brute force attacks (failed password attempts)
 operation = "verify_password" AND @Level = "Error"
-GROUP BY user_id HAVING count(*) > 5 OVER last 15m
+HAVING count(*) > 5 OVER last 15m
 
 -- Track token generation failures
 operation = "generate_token" AND @Level = "Error"
 
--- Monitor token validation failures (expired/invalid)
+-- Monitor token validation failures
 operation = "validate_token" AND @Level = "Error"
-GROUP BY error_type
+
+-- Reconstruct session after security incident
+encrypted_token = "abc123def..." ORDER BY @Timestamp
 ```
 
 ---
 
-### Change 4: Add Authentication Success Event
+### Change 3: Add Authentication Success Event
 
 **File**: `backend/src/main.rs`
 
@@ -195,10 +178,7 @@ let expires_at = auth_token.expires_at.to_rfc3339();
 
 // ADD THIS BLOCK:
 tracing::info!(
-    user_id = %user.id,
-    jwt_id = %auth_token.jwt_id,
-    email = %req.email,
-    "User authenticated successfully"
+    "User authentication successful"
 );
 
 Ok(Json(auth_models::AuthResponse {
@@ -212,36 +192,48 @@ Ok(Json(auth_models::AuthResponse {
 **What This Enables**:
 - ✅ Successful login audit trail
 - ✅ Session initiation tracking
-- ✅ Compliance reporting for user access
-- ✅ Correlation with failed login attempts
+- ✅ Compliance reporting for authentication events
+- ✅ Event automatically tagged with `encrypted_token` (new session just created)
 
-**Note**: Failed login warnings already exist at lines 453 and 475.
+**Note**: Failed login warnings already exist at lines 453 and 475 and are already captured via `verify_password` instrumentation.
 
 **SOC2 Controls**: CC6.1 (Logical Access Controls)
 
 **Seq Queries Enabled**:
 ```sql
 -- Successful logins today
-event = "User authenticated successfully" AND @Timestamp > StartOfDay()
+event = "User authentication successful" AND @Timestamp > StartOfDay()
 
--- User login history
-email = "user@example.com" AND event = "User authenticated successfully"
-ORDER BY @Timestamp DESC
-
--- Login success vs failure ratio
+-- Authentication success vs failure ratio
 SELECT
-  countif(event = "User authenticated successfully") AS success,
-  countif(reason = "invalid_password") AS failures
-GROUP BY email
+  countif(event = "User authentication successful") AS success,
+  countif(operation = "verify_password" AND @Level = "Error") AS failures
+OVER last 24h
+
+-- Session lifecycle for investigation
+encrypted_token = "abc123def..." ORDER BY @Timestamp
 ```
 
 ---
 
-### Change 5: Add Data Access Audit Logging
+### Change 4: Add Data Access Audit Logging
 
 **File**: `backend/src/main.rs`
 
 Add audit logging to data access handlers (does NOT log sensitive field values, only metadata):
+
+**Important**: We are NOT logging:
+- ❌ Account balances
+- ❌ Transaction amounts
+- ❌ Account numbers or masks
+- ❌ Merchant names
+- ❌ Any PII/sensitive data
+
+We only log:
+- ✅ Record count (how many records accessed)
+- ✅ Timestamp (when)
+- ✅ Operation type (what)
+- ✅ `encrypted_token` automatically included (who - via session)
 
 #### Get Transactions Handler
 
@@ -252,7 +244,6 @@ let transactions: Vec<TransactionWithAccount> = // ... existing code ...
 
 // ADD THIS BLOCK:
 tracing::info!(
-    user_id = %auth_context.user_id,
     record_count = transactions.len(),
     "Data access: transactions"
 );
@@ -271,9 +262,8 @@ let response = BalancesOverviewResponse {
 
 // ADD THIS BLOCK:
 tracing::info!(
-    user_id = %auth_context.user_id,
     account_count = response.accounts.len(),
-    "Data access: balances overview"
+    "Data access: balances"
 );
 
 Ok(Json(response))
@@ -286,51 +276,38 @@ Find the `get_plaid_accounts` handler and add:
 ```rust
 // After accounts are fetched
 tracing::info!(
-    user_id = %auth_context.user_id,
     record_count = accounts.len(),
     provider = "plaid",
     "Data access: accounts"
 );
 ```
 
-**Important**: We are NOT logging:
-- ❌ Account balances
-- ❌ Transaction amounts
-- ❌ Account numbers or masks
-- ❌ Merchant names
-- ❌ Any PII/sensitive data
-
-We only log:
-- ✅ User ID (who accessed)
-- ✅ Record counts (how much data)
-- ✅ Timestamp (when)
-- ✅ Operation type (what)
-
 **What This Enables**:
-- ✅ Audit trail for sensitive data access
-- ✅ Unusual access pattern detection
+- ✅ Audit trail for data access events
+- ✅ Unusual access pattern detection (high record counts)
 - ✅ Compliance reporting for GDPR data access requests
-- ✅ Insider threat monitoring
+- ✅ Insider threat monitoring (suspicious access patterns)
+- ✅ All events automatically tagged with `encrypted_token`
 
 **SOC2 Controls**: PI1.4 (Data Access Audit)
 
 **Seq Queries Enabled**:
 ```sql
--- Who accessed transactions in last 90 days?
-operation = "Data access: transactions"
-GROUP BY user_id, date_trunc('day', @Timestamp)
+-- Trace all data access in a session
+encrypted_token = "abc123def..." AND operation LIKE "Data access%"
+ORDER BY @Timestamp
+
+-- Detect unusual data access patterns (high volumes)
+SELECT encrypted_token, count(*), sum(record_count)
+WHERE operation LIKE "Data access%"
+GROUP BY encrypted_token
+HAVING sum(record_count) > 10000
+OVER last 1h
+
+-- Data access audit trail for compliance report
+operation LIKE "Data access%"
+GROUP BY operation, date_trunc('day', @Timestamp)
 OVER last 90d
-
--- Detect unusual data access patterns
-SELECT user_id, count(*), sum(record_count)
-WHERE operation LIKE "Data access:%"
-GROUP BY user_id
-HAVING count(*) > 1000 OVER last 1h
-
--- GDPR data access report for user
-user_id = "requested-by-user" AND
-operation LIKE "Data access:%"
-ORDER BY @Timestamp DESC
 ```
 
 ---
@@ -339,11 +316,11 @@ ORDER BY @Timestamp DESC
 
 These changes enable **CC7.2, CC7.4, and A1.2** compliance for system monitoring and incident response.
 
-### Change 6: Instrument Provider Operations
+### Change 5: Instrument Provider Operations
 
 **File**: `backend/src/services/connection_service.rs`
 
-#### 6.1: Exchange Public Token
+#### 5.1: Exchange Public Token
 
 **Line 288** - Add instrumentation:
 
@@ -365,7 +342,6 @@ pub async fn exchange_public_token(
 
 ```rust
 tracing::info!(
-    user_id = %user_id,
     provider = provider,
     institution_id = %connection.institution_id.as_deref().unwrap_or("unknown"),
     institution_name = %connection.institution_name.as_deref().unwrap_or("Unknown Bank"),
@@ -377,18 +353,14 @@ Ok(ExchangeTokenResponse {
 })
 ```
 
-#### 6.2: Sync Provider Connection
+#### 5.2: Sync Provider Connection
 
 **Line 382** - Add instrumentation:
 
 ```rust
 #[tracing::instrument(
     skip(self, sync_service, connection),
-    fields(
-        provider = params.provider,
-        user_id = %params.user_id,
-        connection_id = %connection.id
-    )
+    fields(provider = params.provider, connection_id = %connection.id)
 )]
 pub async fn sync_provider_connection(
     &self,
@@ -402,7 +374,6 @@ pub async fn sync_provider_connection(
 
 ```rust
 tracing::info!(
-    user_id = %params.user_id,
     provider = params.provider,
     connection_id = %connection.id,
     transaction_count = total_transactions,
@@ -415,18 +386,14 @@ Ok(SyncTransactionsResponse {
 })
 ```
 
-#### 6.3: Sync Teller Connection
+#### 5.3: Sync Teller Connection
 
 **Line 543** - Add instrumentation:
 
 ```rust
 #[tracing::instrument(
     skip(self, connection),
-    fields(
-        provider = "teller",
-        user_id = %user_id,
-        connection_id = %connection.id
-    )
+    fields(provider = "teller", connection_id = %connection.id)
 )]
 pub async fn sync_teller_connection(
     &self,
@@ -440,7 +407,6 @@ pub async fn sync_teller_connection(
 
 ```rust
 tracing::info!(
-    user_id = %user_id,
     provider = "teller",
     connection_id = %connection.id,
     transaction_count = total_transactions,
@@ -454,17 +420,14 @@ Ok(SyncTransactionsResponse {
 })
 ```
 
-#### 6.4: Disconnect Connection
+#### 5.4: Disconnect Connection
 
 **Line 93** - Add instrumentation:
 
 ```rust
 #[tracing::instrument(
     skip(self),
-    fields(
-        connection_id = %connection_id,
-        user_id = %user_id
-    )
+    fields(connection_id = %connection_id)
 )]
 pub async fn disconnect_connection_by_id(
     &self,
@@ -478,7 +441,6 @@ pub async fn disconnect_connection_by_id(
 
 ```rust
 tracing::info!(
-    user_id = %user_id,
     connection_id = %connection_id,
     transactions_deleted = deleted_transactions,
     accounts_deleted = deleted_accounts,
@@ -496,13 +458,19 @@ Ok(DisconnectResult {
 - ✅ Incident detection (provider outages, sync failures)
 - ✅ Root cause analysis for sync issues
 - ✅ Connection lifecycle tracking (connect → sync → disconnect)
+- ✅ All ops automatically tagged with `encrypted_token`
 
 **SOC2 Controls**: CC7.2 (System Monitoring), CC7.4 (Incident Response), A1.2 (Availability)
 
 **Seq Queries Enabled**:
 ```sql
+-- Trace all provider operations in a session
+encrypted_token = "abc123def..." AND provider IS NOT NULL
+ORDER BY @Timestamp
+
 -- Provider availability SLA (99.9% uptime)
 SELECT
+  provider,
   countif(@Level != "Error") / count(*) AS success_rate
 WHERE operation LIKE "%sync%"
 GROUP BY provider
@@ -517,15 +485,15 @@ SELECT Percentile(duration_ms, 95)
 WHERE operation LIKE "%sync%"
 GROUP BY provider
 
--- Which users were affected by provider outage?
-provider = "plaid" AND @Level = "Error" AND
-@Timestamp BETWEEN "2024-01-01T10:00:00Z" AND "2024-01-01T11:00:00Z"
-GROUP BY user_id
-
 -- Transaction volume by provider
 SELECT sum(transaction_count)
 WHERE event = "Transaction sync completed"
 GROUP BY provider, date_trunc('day', @Timestamp)
+
+-- Incident investigation: sessions affected by provider outage
+provider = "plaid" AND @Level = "Error" AND
+@Timestamp BETWEEN incident_start AND incident_end
+GROUP BY encrypted_token
 ```
 
 ---
@@ -534,7 +502,7 @@ GROUP BY provider, date_trunc('day', @Timestamp)
 
 These changes provide additional operational visibility for CC7.2 compliance.
 
-### Change 7: Add Cache Performance Tracking
+### Change 6: Add Cache Performance Tracking
 
 **File**: `backend/src/services/cache_service.rs`
 
@@ -549,34 +517,20 @@ async fn is_session_valid(&self, jwt_id: &str) -> Result<bool> {
     // ADD THIS BLOCK (replace existing return logic):
     match result {
         Ok(Some(_)) => {
-            tracing::debug!(
-                jwt_id = jwt_id,
-                cache_hit = true,
-                "Session validation cache hit"
-            );
+            tracing::debug!(cache_hit = true, "Session validation cache hit");
             Ok(true)
         }
         Ok(None) => {
-            tracing::debug!(
-                jwt_id = jwt_id,
-                cache_hit = false,
-                "Session validation cache miss"
-            );
+            tracing::debug!(cache_hit = false, "Session validation cache miss");
             Ok(false)
         }
         Err(e) => {
-            tracing::warn!(
-                jwt_id = jwt_id,
-                error = %e,
-                "Session validation cache error"
-            );
+            tracing::warn!(error = %e, "Session validation cache error");
             Err(anyhow::anyhow!("Cache error: {}", e))
         }
     }
 }
 ```
-
-**Optional**: Add similar tracking to `get_jwt_token` if needed.
 
 **What This Enables**:
 - ✅ Redis availability monitoring
@@ -588,6 +542,10 @@ async fn is_session_valid(&self, jwt_id: &str) -> Result<bool> {
 
 **Seq Queries Enabled**:
 ```sql
+-- Trace session with cache hit/miss pattern
+encrypted_token = "abc123def..." AND cache_hit IS NOT NULL
+ORDER BY @Timestamp
+
 -- Cache hit rate for session validation
 SELECT countif(cache_hit = true) / count(*)
 WHERE operation = "Session validation cache"
@@ -617,12 +575,11 @@ git commit -m "Checkpoint before SOC2 instrumentation"
 ### Step 2: Apply Changes in Order
 
 1. **Phase 1, Change 1**: Edit `Cargo.toml` (add tracing features)
-2. **Phase 1, Change 2**: Edit `auth_middleware.rs` (user context propagation)
-3. **Phase 1, Change 3**: Edit `auth_service.rs` (instrument auth methods)
-4. **Phase 1, Change 4**: Edit `main.rs` (add login success event)
-5. **Phase 1, Change 5**: Edit `main.rs` (add data access audit logs)
-6. **Phase 2, Change 6**: Edit `connection_service.rs` (instrument provider operations)
-7. **Phase 3, Change 7**: Edit `cache_service.rs` (add cache tracking)
+2. **Phase 1, Change 2**: Edit `auth_service.rs` (instrument auth methods)
+3. **Phase 1, Change 3**: Edit `main.rs` (add login success event)
+4. **Phase 1, Change 4**: Edit `main.rs` (add data access audit logs)
+5. **Phase 2, Change 5**: Edit `connection_service.rs` (instrument provider operations)
+6. **Phase 3, Change 6**: Edit `cache_service.rs` (add cache tracking)
 
 ### Step 3: Rebuild
 
@@ -653,8 +610,8 @@ docker compose up -d --build
      -H "Content-Type: application/json" \
      -d '{"email":"me@test.com","password":"Test1234!"}'
    ```
-   - Check Seq for: "User authenticated successfully" event
-   - Verify `user_id` and `jwt_id` are present
+   - Check Seq for: "User authentication successful" event
+   - Verify `encrypted_token` is present on all child operations
 
 3. **Test failed login**:
    ```bash
@@ -664,6 +621,7 @@ docker compose up -d --build
      -d '{"email":"me@test.com","password":"wrong"}'
    ```
    - Check Seq for: "Login attempt with invalid password" warning
+   - Verify `operation = "verify_password"` and `@Level = "Error"`
 
 4. **Test transaction sync**:
    - Connect a Plaid/Teller account via UI
@@ -678,15 +636,15 @@ docker compose up -d --build
      -H "Authorization: Bearer YOUR_JWT_TOKEN"
    ```
    - Check Seq for: "Data access: transactions" event
-   - Verify `user_id` and `record_count` are present
+   - Verify `record_count` is present
 
 ### Step 6: Validate Spans
 
 In Seq, run these validation queries:
 
 ```sql
--- Verify user_id propagation
-user_id IS NOT NULL AND @Timestamp > Now() - 5m
+-- Verify encrypted_token on all operations
+encrypted_token IS NOT NULL AND @Timestamp > Now() - 5m
 
 -- Verify database query tracing
 db.query.text IS NOT NULL AND @Timestamp > Now() - 5m
@@ -696,6 +654,9 @@ http.client.url IS NOT NULL AND @Timestamp > Now() - 5m
 
 -- Verify provider field on sync operations
 provider IN ["plaid", "teller"] AND @Timestamp > Now() - 5m
+
+-- Verify session correlation
+encrypted_token = "abc123def..." AND @Timestamp > Now() - 5m
 ```
 
 ---
@@ -707,20 +668,24 @@ provider IN ["plaid", "teller"] AND @Timestamp > Now() - 5m
 **Requirement**: The entity restricts logical access to information assets based on the user's access authorization.
 
 **How We Address It**:
-- ✅ Authentication events tracked (`generate_token`, `verify_password`)
-- ✅ Session lifecycle monitoring (`jwt_id` tracking)
-- ✅ User context propagated to all operations (`user_id` on every request)
-- ✅ Failed access attempts logged (existing warnings for invalid credentials)
+- ✅ Authentication events tracked (generation, validation, verification)
+- ✅ Session lifecycle monitoring via `encrypted_token` (session identification without storing PII)
+- ✅ Failed access attempts logged (invalid credentials, expired tokens)
+- ✅ All operations within a session can be reconstructed via `encrypted_token`
 
 **Audit Queries**:
 ```sql
--- Show all authentication attempts for user
-user_id = "abc-123" OR email = "user@example.com"
-WHERE operation IN ["verify_password", "generate_token"]
+-- Show all operations in a session
+encrypted_token = "abc123def..." ORDER BY @Timestamp
 
--- Failed login attempt report
-reason = "invalid_password"
-GROUP BY email, date_trunc('day', @Timestamp)
+-- Failed authentication attempts
+operation IN ["verify_password", "validate_token"] AND @Level = "Error"
+GROUP BY date_trunc('hour', @Timestamp)
+
+-- Session lifecycle investigation
+encrypted_token = "abc123def..." AND
+operation IN ["generate_token", "verify_password", "validate_token"]
+ORDER BY @Timestamp
 ```
 
 ---
@@ -732,8 +697,9 @@ GROUP BY email, date_trunc('day', @Timestamp)
 **How We Address It**:
 - ✅ Database query performance monitoring (SQLx tracing)
 - ✅ External API monitoring (reqwest tracing to Plaid/Teller)
-- ✅ Cache performance tracking (`cache_hit` metrics)
+- ✅ Cache performance tracking (cache hit/miss metrics)
 - ✅ Provider sync performance (duration, success rates)
+- ✅ Each can be correlated to sessions via `encrypted_token`
 
 **Audit Queries**:
 ```sql
@@ -760,26 +726,28 @@ GROUP BY provider
 **Requirement**: The entity evaluates security events to determine whether they could or have resulted in a failure of the entity to meet its objectives.
 
 **How We Address It**:
-- ✅ Failed authentication tracking (existing warnings)
-- ✅ Session validation failures (existing warnings in auth_middleware)
-- ✅ Token expiration monitoring (`validate_token` instrumentation)
-- ✅ Unusual data access patterns (record count logging)
+- ✅ Failed authentication tracking (password verification failures)
+- ✅ Token validation failures (expired/invalid tokens)
+- ✅ Session operation reconstruction (trace all events in a session)
+- ✅ All events tagged with `encrypted_token` for correlation
 
 **Audit Queries**:
 ```sql
 -- Security event dashboard
 SELECT
-  countif(reason = "invalid_password") AS failed_logins,
-  countif(error_code = "EXPIRED_TOKEN") AS expired_tokens,
-  countif(error_code = "SESSION_INVALID") AS invalid_sessions
+  countif(operation = "verify_password" AND @Level = "Error") AS failed_logins,
+  countif(operation = "validate_token" AND @Level = "Error") AS invalid_tokens
 OVER last 24h
 
 -- Potential brute force attacks
-SELECT email, count(*) AS attempts
-WHERE reason = "invalid_password"
-GROUP BY email
+SELECT encrypted_token, count(*) AS attempts
+WHERE operation = "verify_password" AND @Level = "Error"
+GROUP BY encrypted_token
 HAVING count(*) > 5
 OVER last 1h
+
+-- Reconstruct suspicious session
+encrypted_token = "suspicious-token" ORDER BY @Timestamp
 ```
 
 ---
@@ -790,24 +758,24 @@ OVER last 1h
 
 **How We Address It**:
 - ✅ Full request tracing via `traceId` (W3C Trace Context)
-- ✅ Error correlation across layers (user_id propagation)
+- ✅ Error correlation via `encrypted_token` (session identification)
 - ✅ Provider outage detection (sync failure events)
 - ✅ Root cause analysis capability (database queries, API calls visible)
 
 **Audit Queries**:
 ```sql
--- Incident investigation: trace user-reported error
-traceId = "reported-by-user"
+-- Incident investigation: trace session
+encrypted_token = "reported-by-user" ORDER BY @Timestamp
 
 -- Incident investigation: provider outage timeline
 provider = "plaid" AND @Level = "Error" AND
 @Timestamp BETWEEN incident_start AND incident_end
 ORDER BY @Timestamp
 
--- Incident investigation: affected users
+-- Incident investigation: affected sessions
 provider = "plaid" AND @Level = "Error" AND
 @Timestamp BETWEEN incident_start AND incident_end
-GROUP BY user_id
+GROUP BY encrypted_token
 ```
 
 ---
@@ -817,29 +785,29 @@ GROUP BY user_id
 **Requirement**: The entity obtains or generates, uses, and communicates relevant, quality information regarding the processing activities of personal information.
 
 **How We Address It**:
-- ✅ Transaction access logged (who, when, how many)
-- ✅ Account access logged (who, when, provider)
-- ✅ Balance access logged (who, when, account count)
+- ✅ Transaction access logged (operation, count, timestamp)
+- ✅ Account access logged (operation, provider, count, timestamp)
+- ✅ Balance access logged (operation, count, timestamp)
 - ✅ No sensitive data values logged (only metadata)
+- ✅ Session correlation via `encrypted_token`
 
 **Audit Queries**:
 ```sql
--- GDPR data access report for user
-user_id = "requested-by-user" AND
-operation LIKE "Data access:%"
-ORDER BY @Timestamp DESC
+-- GDPR data access report (anonymized by encrypted_token)
+operation LIKE "Data access%"
+GROUP BY operation, date_trunc('day', @Timestamp)
+OVER last 90d
 
--- Insider threat detection
-SELECT user_id, count(*), sum(record_count)
+-- Insider threat detection (unusual access volume)
+SELECT encrypted_token, count(*), sum(record_count)
 WHERE operation = "Data access: transactions"
-GROUP BY user_id
+GROUP BY encrypted_token
 HAVING sum(record_count) > 10000
 OVER last 1d
 
--- Data access summary by operation
-SELECT operation, count(*), sum(record_count)
-WHERE operation LIKE "Data access:%"
-GROUP BY operation, date_trunc('day', @Timestamp)
+-- Data access timeline for session
+encrypted_token = "abc123def..." AND operation LIKE "Data access%"
+ORDER BY @Timestamp
 ```
 
 ---
@@ -871,7 +839,7 @@ GROUP BY provider HAVING count(*) > 10 OVER last 15m
 
 -- Infrastructure dependency health
 SELECT
-  countif(db.query.duration_ms IS NOT NULL) AS db_available,
+  countif(db.query.text IS NOT NULL) AS db_available,
   countif(cache_hit IS NOT NULL) AS redis_available,
   countif(http.client.url IS NOT NULL) AS external_api_available
 OVER last 1h
@@ -888,7 +856,7 @@ Configure Seq to retain logs for **1 year minimum** (365 days):
 1. Navigate to Seq UI: `http://localhost:5341`
 2. Go to **Settings** → **Retention**
 3. Set retention period to **365 days**
-4. Consider archiving to cold storage (S3, Azure Blob) for 7-year compliance if needed
+4. Consider archiving to cold storage (S3, Azure Blob) for extended compliance if needed
 
 ### Dashboards
 
@@ -897,23 +865,21 @@ Create these dashboards in Seq for SOC2 auditors:
 #### Dashboard 1: Security Events
 
 ```sql
--- Failed Login Attempts (Last 24h)
+-- Failed Authentication Attempts (Last 24h)
 SELECT count(*)
-WHERE reason = "invalid_password"
-GROUP BY email
+WHERE operation IN ["verify_password", "validate_token"] AND @Level = "Error"
 OVER last 24h
 
--- Session Validation Failures (Last 24h)
+-- Successful Authentications (Last 24h)
 SELECT count(*)
-WHERE error_code IN ["EXPIRED_TOKEN", "SESSION_INVALID"]
+WHERE event = "User authentication successful"
 OVER last 24h
 
--- Unusual Data Access (Last 1h)
-SELECT user_id, count(*), sum(record_count)
-WHERE operation LIKE "Data access:%"
-GROUP BY user_id
-HAVING count(*) > 100
-OVER last 1h
+-- Data Access Events (Last 24h)
+SELECT operation, count(*)
+WHERE operation LIKE "Data access%"
+GROUP BY operation
+OVER last 24h
 ```
 
 #### Dashboard 2: System Health
@@ -965,8 +931,8 @@ Configure alerts for real-time incident response:
 
 ```sql
 -- CRITICAL: Brute Force Attack Detected
-reason = "invalid_password"
-GROUP BY email
+operation = "verify_password" AND @Level = "Error"
+GROUP BY encrypted_token
 HAVING count(*) >= 10
 OVER last 5m
 
@@ -980,9 +946,9 @@ OVER last 15m
 db.query.duration_ms > 5000
 
 -- WARNING: Unusual Data Access
-SELECT user_id, count(*)
-WHERE operation LIKE "Data access:%"
-GROUP BY user_id
+SELECT encrypted_token, count(*)
+WHERE operation LIKE "Data access%"
+GROUP BY encrypted_token
 HAVING count(*) > 500
 OVER last 1h
 ```
@@ -998,27 +964,26 @@ Provide auditors with:
 1. **This Document** - Complete instrumentation plan and control mapping
 2. **Seq Configuration Screenshot** - Showing 365-day retention policy
 3. **Sample Queries** - Demonstrating capability to answer audit questions
-4. **Sample Trace** - Full request trace showing user_id propagation
+4. **Sample Trace** - Full request trace showing `encrypted_token` propagation
 5. **Alert Rules** - Security event alerting configuration
 
 ### Common Auditor Questions
 
-**Q: How do you track who accessed sensitive data?**
+**Q: How do you track sessions without storing user IDs?**
 
-A: We log all data access operations with user_id, timestamp, operation type, and record counts. Example query:
+A: We use encrypted JWT tokens (SHA256 hash) as the session identifier. Every operation in a request automatically includes `encrypted_token`, creating a complete audit trail without storing raw user data. Example query:
 
 ```sql
-user_id = "abc-123" AND operation LIKE "Data access:%"
-ORDER BY @Timestamp DESC
+encrypted_token = "reported-session-hash" ORDER BY @Timestamp
 ```
 
 **Q: How do you detect unauthorized access attempts?**
 
-A: We track all failed login attempts with email, timestamp, and failure reason. Alerts trigger on 10+ failed attempts within 5 minutes. Example query:
+A: We track all failed login attempts and invalid token validations. Alerts trigger on 10+ failed attempts within 5 minutes per session. Example query:
 
 ```sql
-reason = "invalid_password"
-GROUP BY email, date_trunc('hour', @Timestamp)
+operation IN ["verify_password", "validate_token"] AND @Level = "Error"
+GROUP BY encrypted_token, date_trunc('hour', @Timestamp)
 ```
 
 **Q: How do you monitor third-party service availability?**
@@ -1036,15 +1001,23 @@ OVER last 30d
 
 **Q: Can you reconstruct a user's session for investigation?**
 
-A: Yes, via `jwt_id` tracking. All operations within a session are correlated:
+A: Yes, via `encrypted_token` tracking. All operations within a session are correlated:
 
 ```sql
-jwt_id = "xyz-789" ORDER BY @Timestamp
+encrypted_token = "abc123def456..." ORDER BY @Timestamp
 ```
 
 **Q: How long do you retain audit logs?**
 
-A: Logs are retained in Seq for 365 days (configurable in Seq Settings → Retention).
+A: Logs are retained in Seq for 365 days (configurable in Seq Settings → Retention). This meets SOC2 requirements and can be extended for additional compliance needs.
+
+**Q: How do you protect sensitive data in logs?**
+
+A: We follow privacy-first principles:
+- No user IDs or email addresses in logs
+- No account numbers, balances, or transaction amounts
+- Only timestamps, counts, operation types, and session identifiers (encrypted_token)
+- SQL queries are auto-sanitized by SQLx before logging
 
 ---
 
@@ -1052,13 +1025,13 @@ A: Logs are retained in Seq for 365 days (configurable in Seq Settings → Reten
 
 ### Immediate (Day 1)
 
-- [ ] All 7 changes implemented and tested
+- [ ] All 6 changes implemented and tested
 - [ ] Rebuild successful with no compilation errors
 - [ ] Seq receiving traces (verify in UI)
 - [ ] Test authentication flow (success + failure)
 - [ ] Test sync flow (Plaid or Teller)
 - [ ] Test data access flow (transactions, accounts)
-- [ ] Validate `user_id` propagation in Seq
+- [ ] Validate `encrypted_token` propagation in Seq
 
 ### Week 1
 
@@ -1088,11 +1061,11 @@ A: Logs are retained in Seq for 365 days (configurable in Seq Settings → Reten
 
 ## Troubleshooting
 
-### Issue: `user_id` not appearing in spans
+### Issue: `encrypted_token` not appearing in spans
 
-**Cause**: Span fields not declared before auth_middleware tries to record them.
+**Cause**: Bearer token extraction failing in middleware.
 
-**Solution**: Ensure `OtelAxumLayer` creates spans with `user_id` and `jwt_id` fields declared as `Empty`. Check that `tracing::Span::current()` is the HTTP request span.
+**Solution**: Verify `with_bearer_token_attribute` middleware is registered in router. Check Authorization header format is `Bearer <token>`.
 
 ### Issue: Database queries not appearing
 
@@ -1110,7 +1083,7 @@ A: Logs are retained in Seq for 365 days (configurable in Seq Settings → Reten
 
 **Cause**: W3C Trace Context propagation not working.
 
-**Solution**: Verify `TraceContextPropagator` is set in `telemetry.rs` (should already be configured at line 84).
+**Solution**: Verify `TraceContextPropagator` is set in `telemetry.rs` (should already be configured).
 
 ### Issue: High cardinality fields causing Seq performance issues
 
@@ -1124,7 +1097,7 @@ A: Logs are retained in Seq for 365 days (configurable in Seq Settings → Reten
 
 ### Phase 4: Advanced Analytics
 
-- Add business metrics (DAU, MAU, churn)
+- Add business metrics (DAU, MAU, sync success rates)
 - Track feature usage (which endpoints most used)
 - Performance budgets (alert if p95 exceeds threshold)
 
@@ -1147,13 +1120,15 @@ A: Logs are retained in Seq for 365 days (configurable in Seq Settings → Reten
 This instrumentation plan provides **SOC2-ready observability** with:
 
 ✅ **Minimal boilerplate** - Leveraging auto-instrumentation from SQLx, reqwest, and Axum
+✅ **Privacy-first design** - Using encrypted_token instead of storing user IDs
 ✅ **Comprehensive coverage** - All 6 SOC2 controls addressed
 ✅ **Production-ready** - Security, performance, and incident response
 ✅ **Audit-friendly** - Clear evidence trail with example queries
-✅ **Maintainable** - Only ~20 attributes added across 6 files
+✅ **Maintainable** - Only ~20 attributes added across 5 files
 
-**Total Implementation Time**: 45-60 minutes
-**Lines of Code Added**: ~50 lines
+**Total Implementation Time**: 30-40 minutes
+**Lines of Code Added**: ~40 lines
+**Files Modified**: 5 (Cargo.toml, auth_service.rs, main.rs, connection_service.rs, cache_service.rs)
 **SOC2 Controls Covered**: CC6.1, CC7.2, CC7.3, CC7.4, PI1.4, A1.2
 **Compliance Readiness**: SOC2 Type II ready (1-year retention)
 
