@@ -8,10 +8,17 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Json, Response},
 };
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 const BEARER_PREFIX: &str = "Bearer ";
 const BEARER_PREFIX_LEN: usize = 7;
+
+fn hash_jwt_id(jwt_id: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(jwt_id.as_bytes());
+    format!("{:x}", hasher.finalize())
+}
 
 pub async fn auth_middleware(
     State(middleware_state): State<AuthMiddlewareState>,
@@ -22,7 +29,12 @@ pub async fn auth_middleware(
     let token = match extract_bearer_token(&headers) {
         Some(token) => token,
         None => {
-            tracing::warn!("Request rejected: Missing Authorization header");
+            tracing::warn!(
+                auth_error_type = "missing_header",
+                path = %request.uri().path(),
+                method = %request.method(),
+                "Authentication failure: Missing Authorization header"
+            );
             let error_response = ApiErrorResponse::with_code(
                 "UNAUTHORIZED",
                 "Authorization header is required",
@@ -37,15 +49,31 @@ pub async fn auth_middleware(
         Err(auth_error) => {
             let (error_message, error_code) = match auth_error {
                 AuthError::InvalidToken => {
-                    tracing::warn!("Request rejected: Invalid JWT token");
+                    tracing::warn!(
+                        auth_error_type = "invalid_token",
+                        path = %request.uri().path(),
+                        method = %request.method(),
+                        "Authentication failure: Invalid JWT token"
+                    );
                     ("Invalid or malformed authentication token", "INVALID_TOKEN")
                 }
                 AuthError::TokenExpired => {
-                    tracing::info!("Request rejected: Expired JWT token");
+                    tracing::info!(
+                        auth_error_type = "expired_token",
+                        path = %request.uri().path(),
+                        method = %request.method(),
+                        "Authentication failure: Expired JWT token"
+                    );
                     ("Authentication token has expired", "EXPIRED_TOKEN")
                 }
                 _ => {
-                    tracing::error!("Request rejected: Authentication error: {:?}", auth_error);
+                    tracing::error!(
+                        auth_error_type = "auth_error",
+                        auth_error = ?auth_error,
+                        path = %request.uri().path(),
+                        method = %request.method(),
+                        "Authentication failure: Unexpected error"
+                    );
                     ("Authentication failed", "AUTH_ERROR")
                 }
             };
@@ -56,14 +84,29 @@ pub async fn auth_middleware(
         }
     };
 
+    let encrypted_token = hash_jwt_id(&auth_context.jwt_id);
+
     match middleware_state
         .cache_service
         .is_session_valid(&auth_context.jwt_id)
         .await
     {
-        Ok(true) => {}
+        Ok(true) => {
+            tracing::debug!(
+                encrypted_token = %encrypted_token,
+                path = %request.uri().path(),
+                method = %request.method(),
+                "Session validated successfully"
+            );
+        }
         Ok(false) => {
-            tracing::warn!("Request rejected: Session not found in cache (app may have restarted)");
+            tracing::warn!(
+                auth_error_type = "session_invalid",
+                encrypted_token = %encrypted_token,
+                path = %request.uri().path(),
+                method = %request.method(),
+                "Authentication failure: Session not found in cache"
+            );
             let error_response = ApiErrorResponse::with_code(
                 "UNAUTHORIZED",
                 "Session expired or invalid",
@@ -72,7 +115,14 @@ pub async fn auth_middleware(
             return Err((StatusCode::UNAUTHORIZED, Json(error_response)).into_response());
         }
         Err(e) => {
-            tracing::error!("Cache error during session validation: {}", e);
+            tracing::error!(
+                auth_error_type = "session_error",
+                encrypted_token = %encrypted_token,
+                path = %request.uri().path(),
+                method = %request.method(),
+                error = %e,
+                "Authentication failure: Cache error during session validation"
+            );
             let error_response = ApiErrorResponse::with_code(
                 "UNAUTHORIZED",
                 "Session validation failed",
