@@ -1,6 +1,5 @@
 import { useContext, useEffect, useRef, useCallback, DependencyList } from 'react';
-import { Tracer, Span, SpanStatusCode } from '@opentelemetry/api';
-import { SpanOptions } from '@opentelemetry/api/build/src/trace/span_options';
+import { Tracer, Span, SpanStatusCode, SpanOptions } from '@opentelemetry/api';
 import { TelemetryContext } from './TelemetryProvider';
 
 export function useTracer(): Tracer | null {
@@ -12,7 +11,7 @@ export function useTracer(): Tracer | null {
 export function useSpan(name: string, options?: SpanOptions): Span | undefined {
   const tracer = useTracer();
   const context = useContext(TelemetryContext);
-  const spanRef = useRef<Span>();
+  const spanRef = useRef<Span | undefined>(undefined);
 
   useEffect(() => {
     if (!tracer) return;

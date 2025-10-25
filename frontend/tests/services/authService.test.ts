@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { AuthService } from '@/services/authService'
 import { ApiClient } from '@/services/ApiClient'
+import { trace, SpanStatusCode } from '@opentelemetry/api'
 import type { IHttpClient } from '@/services/boundaries/IHttpClient'
 import type { IStorageAdapter } from '@/services/boundaries/IStorageAdapter'
 
@@ -85,5 +86,147 @@ describe('AuthService logout functionality', () => {
 
     await expect(AuthService.logout()).rejects.toThrow('Server error')
     expect(AuthService.getToken()).toBeNull()
+  })
+})
+
+describe('AuthService with OpenTelemetry Instrumentation (Phase 4)', () => {
+  let mockSpan: any
+  let mockTracer: any
+  let mockHttpClient: MockHttpClient
+  let mockStorageAdapter: MockStorageAdapter
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    mockSpan = {
+      recordException: vi.fn(),
+      setStatus: vi.fn(),
+      end: vi.fn(),
+      setAttributes: vi.fn(),
+      addEvent: vi.fn(),
+    }
+
+    mockTracer = {  
+      startSpan: vi.fn().mockReturnValue(mockSpan),
+    }
+
+    mockHttpClient = new MockHttpClient()
+    mockStorageAdapter = new MockStorageAdapter()
+    ApiClient.configure(mockHttpClient)
+    AuthService.configure({
+      storage: mockStorageAdapter
+    })
+    vi.spyOn(trace, 'getTracer').mockReturnValue(mockTracer as any)  
+  })
+
+  it('should create a span for login operation', async () => {
+    const credentials = { email: 'test@example.com', password: 'Test1234!' }
+    const mockResponse = {
+      token: 'test-token',
+      user_id: 'user-123',
+      expires_at: '2025-12-31',
+      onboarding_completed: false,
+    }
+
+    mockHttpClient.post.mockResolvedValueOnce(mockResponse)
+
+    await AuthService.login(credentials)
+
+    expect(mockTracer.startSpan).toHaveBeenCalledWith('AuthService.login', {
+      attributes: {
+        'auth.method': 'password',
+        'auth.username': credentials.email,
+      },
+    })
+  })
+
+  it('should set OK status on successful login', async () => {
+    const credentials = { email: 'test@example.com', password: 'Test1234!' }
+    const mockResponse = {
+      token: 'test-token',
+      user_id: 'user-123',
+      expires_at: '2025-12-31',
+      onboarding_completed: false,
+    }
+
+    mockHttpClient.post.mockResolvedValueOnce(mockResponse)
+
+    await AuthService.login(credentials)
+
+    expect(mockSpan.setStatus).toHaveBeenCalledWith({ code: SpanStatusCode.OK })
+  })
+
+  it('should record exception on login failure', async () => {
+    const credentials = { email: 'test@example.com', password: 'wrong' }
+    const error = new Error('Invalid email or password')
+
+    mockHttpClient.post.mockRejectedValueOnce(error)
+
+    try {
+      await AuthService.login(credentials)
+    } catch {
+      // Expected to throw
+    }
+
+    expect(mockSpan.recordException).toHaveBeenCalledWith(error)
+    expect(mockSpan.setStatus).toHaveBeenCalledWith({
+      code: SpanStatusCode.ERROR,
+    })
+  })
+
+  it('should end span after login completes', async () => {
+    const credentials = { email: 'test@example.com', password: 'Test1234!' }
+    const mockResponse = {
+      token: 'test-token',
+      user_id: 'user-123',
+      expires_at: '2025-12-31',
+      onboarding_completed: false,
+    }
+
+    mockHttpClient.post.mockResolvedValueOnce(mockResponse)
+
+    await AuthService.login(credentials)
+
+    expect(mockSpan.end).toHaveBeenCalled()
+  })
+
+  it('should create a span for register operation', async () => {
+    const credentials = { email: 'newuser@example.com', password: 'Test1234!' }
+    const mockResponse = {
+      token: 'test-token',
+      user_id: 'user-123',
+      expires_at: '2025-12-31',
+      onboarding_completed: false,
+    }
+
+    mockHttpClient.post.mockResolvedValueOnce(mockResponse)
+
+    await AuthService.register(credentials)
+
+    expect(mockTracer.startSpan).toHaveBeenCalledWith('AuthService.register', {
+      attributes: {
+        'auth.method': 'password',
+        'auth.username': credentials.email,
+      },
+    })
+  })
+
+  it('should NOT include password in span attributes', async () => {
+    const credentials = { email: 'test@example.com', password: 'Test1234!' }
+    const mockResponse = {
+      token: 'test-token',
+      user_id: 'user-123',
+      expires_at: '2025-12-31',
+      onboarding_completed: false,
+    }
+
+    mockHttpClient.post.mockResolvedValueOnce(mockResponse)
+
+    await AuthService.login(credentials)
+
+    const spanCall = mockTracer.startSpan.mock.calls[0]
+    const attributes = spanCall[1]?.attributes || {}
+    expect(attributes).not.toHaveProperty('password')
+    expect(attributes).not.toHaveProperty('auth.password')
   })
 })

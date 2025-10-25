@@ -4,6 +4,14 @@ import React from 'react'
 import { AuthService } from '@/services/authService'
 import { FetchHttpClient, BrowserStorageAdapter } from '@/services/boundaries'
 
+vi.mock('@/observability/TelemetryService', () => ({
+  TelemetryService: vi.fn().mockImplementation(() => ({
+    initialize: vi.fn().mockResolvedValue(undefined),
+    shutdown: vi.fn().mockResolvedValue(undefined),
+    getTracer: vi.fn().mockReturnValue(null),
+  })),
+}))
+
 AuthService.configure({
   http: new FetchHttpClient(),
   storage: new BrowserStorageAdapter()

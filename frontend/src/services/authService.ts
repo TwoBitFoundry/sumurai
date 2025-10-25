@@ -1,3 +1,4 @@
+import { trace, SpanStatusCode } from '@opentelemetry/api'
 import type { IStorageAdapter } from './boundaries'
 import { BrowserStorageAdapter } from './boundaries'
 import { ApiClient, AuthenticationError } from './ApiClient'
@@ -46,9 +47,22 @@ export class AuthService {
   }
 
   static async login(credentials: LoginCredentials): Promise<AuthResponse> {
+    const tracer = trace.getTracer('auth-service')
+    const span = tracer.startSpan('AuthService.login', {
+      attributes: {
+        'auth.method': 'password',
+        'auth.username': credentials.email,
+      },
+    })
+
     try {
-      return await ApiClient.post<AuthResponse>('/auth/login', credentials)
+      const response = await ApiClient.post<AuthResponse>('/auth/login', credentials)
+      span.setStatus({ code: SpanStatusCode.OK })
+      return response
     } catch (error) {
+      span.recordException(error as Error)
+      span.setStatus({ code: SpanStatusCode.ERROR })
+
       if (error instanceof AuthenticationError) {
         throw new Error('Invalid email or password')
       }
@@ -58,6 +72,8 @@ export class AuthService {
         }
       }
       throw error
+    } finally {
+      span.end()
     }
   }
 
@@ -99,18 +115,40 @@ export class AuthService {
   }
 
   static async logout(): Promise<LogoutResponse> {
+    const tracer = trace.getTracer('auth-service')
+    const span = tracer.startSpan('AuthService.logout')
+
     try {
       const response = await ApiClient.post<LogoutResponse>('/auth/logout')
+      span.setStatus({ code: SpanStatusCode.OK })
       return response
+    } catch (error) {
+      span.recordException(error as Error)
+      span.setStatus({ code: SpanStatusCode.ERROR })
+      throw error
     } finally {
+      span.end()
       this.clearToken()
     }
   }
 
   static async register(credentials: RegisterCredentials): Promise<AuthResponse> {
+    const tracer = trace.getTracer('auth-service')
+    const span = tracer.startSpan('AuthService.register', {
+      attributes: {
+        'auth.method': 'password',
+        'auth.username': credentials.email,
+      },
+    })
+
     try {
-      return await ApiClient.post<AuthResponse>('/auth/register', credentials)
+      const response = await ApiClient.post<AuthResponse>('/auth/register', credentials)
+      span.setStatus({ code: SpanStatusCode.OK })
+      return response
     } catch (error) {
+      span.recordException(error as Error)
+      span.setStatus({ code: SpanStatusCode.ERROR })
+
       if (error instanceof Error) {
         if (error.message.includes('409')) {
           throw new Error('Email already exists')
@@ -120,6 +158,8 @@ export class AuthService {
         }
       }
       throw error
+    } finally {
+      span.end()
     }
   }
 
@@ -144,7 +184,20 @@ export class AuthService {
   }
 
   private static async performRefresh(): Promise<RefreshResponse> {
-    return ApiClient.post<RefreshResponse>('/auth/refresh')
+    const tracer = trace.getTracer('auth-service')
+    const span = tracer.startSpan('AuthService.refreshToken')
+
+    try {
+      const response = await ApiClient.post<RefreshResponse>('/auth/refresh')
+      span.setStatus({ code: SpanStatusCode.OK })
+      return response
+    } catch (error) {
+      span.recordException(error as Error)
+      span.setStatus({ code: SpanStatusCode.ERROR })
+      throw error
+    } finally {
+      span.end()
+    }
   }
 
   static async completeOnboarding(): Promise<{ message: string; onboarding_completed: boolean }> {
