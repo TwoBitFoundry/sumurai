@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initTelemetry, shutdownTelemetry, getTracer } from '@/observability/telemetry';
 
-describe('Telemetry Validation - Phase 1 Acceptance Criteria', () => {
+describe('Telemetry Validation - Acceptance Criteria', () => {
   beforeEach(() => {
     import.meta.env.VITE_OTEL_ENABLED = 'true';
   });
@@ -84,7 +84,7 @@ describe('Telemetry Validation - Phase 1 Acceptance Criteria', () => {
     });
   });
 
-  describe('Phase 1 Feature Coverage', () => {
+  describe('Feature Coverage', () => {
     it('should initialize WebTracerProvider with resource detection', async () => {
       const tracer = await initTelemetry();
 

@@ -10,9 +10,12 @@
     "test": "vitest --run --no-watch",
     "test:force": "vitest --run --no-watch --reporter=verbose && exit 0",
     "test:ui": "vitest --ui",
+    "test:otel": "vitest run observability",
+    "test:otel:performance": "vitest run observability/performance.test.ts",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "audit:tailwind": "node scripts/audit-tailwind-usage.js",
+    "build:analyze": "npm run build && node scripts/analyze-bundle.js",
     "prepare": "husky"
   },
   "dependencies": {
