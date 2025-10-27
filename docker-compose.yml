@@ -21,6 +21,8 @@ services:
     environment:
       REDIS_URL: redis://redis:6379
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://seq/ingest/otlp/v1/traces
+      OTEL_EXPORTER_OTLP_HEADERS: X-Seq-ApiKey=${SEQ_API_KEY}
 
       DEFAULT_PROVIDER: ${DEFAULT_PROVIDER:-teller}
 
@@ -35,10 +37,15 @@ services:
 
       JWT_SECRET: ${JWT_SECRET}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      RUST_LOG: ${BACKEND_RUST_LOG:-info}
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_STARTUP_TEST_SPAN: ${OTEL_STARTUP_TEST_SPAN:-0}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_started
+      seq:
         condition: service_started
     command: >
       sh -c "
@@ -72,6 +79,21 @@ services:
       timeout: 5s
       retries: 5
 
+  seq:
+    image: datalust/seq:2025.2
+    pull_policy: if_not_present
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_INGESTION__OTLP__ENABLED: "true"
+      SEQ_PASSWORD: ${SEQ_PASSWORD}
+    ports:
+      - "5341:80"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - seq_data:/data
+
 volumes:
   redis_data:
   postgres_data:
+  seq_data:
