@@ -63,7 +63,10 @@ use crate::models::{
 };
 use auth_middleware::auth_middleware;
 use config::Config;
-use middleware::telemetry_middleware::{self, with_bearer_token_attribute, TelemetryConfig};
+use middleware::telemetry_middleware::{
+    self, attach_encrypted_token_to_current_span, hash_token, with_bearer_token_attribute,
+    TelemetryConfig,
+};
 use services::repository_service::{DatabaseRepository, PostgresRepository};
 use services::{AnalyticsService, RealPlaidClient};
 use services::{
@@ -467,6 +470,9 @@ async fn register_user(
         ApiErrorResponse::internal_server_error("Failed to generate authentication token")
     })?;
 
+    let encrypted_token = hash_token(&auth_token.token);
+    attach_encrypted_token_to_current_span(&encrypted_token);
+
     let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
     if ttl > 0 {
         // Set session validity flag in cache with JWT TTL
@@ -489,6 +495,11 @@ async fn register_user(
     }
 
     let expires_at = auth_token.expires_at.to_rfc3339();
+
+    tracing::info!(
+        encrypted_token = %encrypted_token,
+        "User registered successfully"
+    );
 
     Ok(Json(auth_models::AuthResponse {
         token: auth_token.token,
@@ -549,6 +560,9 @@ async fn login_user(
         ApiErrorResponse::internal_server_error("Failed to generate authentication token")
     })?;
 
+    let encrypted_token = hash_token(&auth_token.token);
+    attach_encrypted_token_to_current_span(&encrypted_token);
+
     let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
     if ttl > 0 {
         // Set session validity flag in cache with JWT TTL
@@ -572,7 +586,10 @@ async fn login_user(
 
     let expires_at = auth_token.expires_at.to_rfc3339();
 
-    tracing::info!("User authenticated successfully");
+    tracing::info!(
+        encrypted_token = %encrypted_token,
+        "User authenticated successfully"
+    );
 
     Ok(Json(auth_models::AuthResponse {
         token: auth_token.token,
@@ -680,6 +697,9 @@ async fn refresh_user_session(
         .generate_token(user_id)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    let encrypted_token = hash_token(&auth_token.token);
+    attach_encrypted_token_to_current_span(&encrypted_token);
+
     let expires_at = chrono::Utc::now() + chrono::Duration::hours(1);
 
     // Cache refreshed JWT in Redis with TTL
@@ -701,6 +721,11 @@ async fn refresh_user_session(
             tracing::warn!("Failed to cache refreshed JWT token: {}", e);
         }
     }
+
+    tracing::info!(
+        encrypted_token = %encrypted_token,
+        "User session refreshed"
+    );
 
     Ok(Json(auth_models::AuthResponse {
         token: auth_token.token,

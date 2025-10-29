@@ -1,3 +1,6 @@
+use crate::middleware::telemetry_middleware::{
+    attach_encrypted_token_to_current_span, hash_token,
+};
 use crate::models::api_error::ApiErrorResponse;
 use crate::models::auth::AuthError;
 pub use crate::models::auth::{AuthContext, AuthMiddlewareState};
@@ -8,17 +11,10 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Json, Response},
 };
-use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 const BEARER_PREFIX: &str = "Bearer ";
 const BEARER_PREFIX_LEN: usize = 7;
-
-fn hash_jwt_id(jwt_id: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(jwt_id.as_bytes());
-    format!("{:x}", hasher.finalize())
-}
 
 pub async fn auth_middleware(
     State(middleware_state): State<AuthMiddlewareState>,
@@ -44,6 +40,9 @@ pub async fn auth_middleware(
         }
     };
 
+    let encrypted_token = hash_token(token);
+    attach_encrypted_token_to_current_span(&encrypted_token);
+
     let auth_context = match extract_user_context(&middleware_state.auth_service, token) {
         Ok(context) => context,
         Err(auth_error) => {
@@ -51,6 +50,7 @@ pub async fn auth_middleware(
                 AuthError::InvalidToken => {
                     tracing::warn!(
                         auth_error_type = "invalid_token",
+                        encrypted_token = %encrypted_token,
                         path = %request.uri().path(),
                         method = %request.method(),
                         "Authentication failure: Invalid JWT token"
@@ -60,6 +60,7 @@ pub async fn auth_middleware(
                 AuthError::TokenExpired => {
                     tracing::info!(
                         auth_error_type = "expired_token",
+                        encrypted_token = %encrypted_token,
                         path = %request.uri().path(),
                         method = %request.method(),
                         "Authentication failure: Expired JWT token"
@@ -70,6 +71,7 @@ pub async fn auth_middleware(
                     tracing::error!(
                         auth_error_type = "auth_error",
                         auth_error = ?auth_error,
+                        encrypted_token = %encrypted_token,
                         path = %request.uri().path(),
                         method = %request.method(),
                         "Authentication failure: Unexpected error"
@@ -83,8 +85,6 @@ pub async fn auth_middleware(
             return Err((StatusCode::UNAUTHORIZED, Json(error_response)).into_response());
         }
     };
-
-    let encrypted_token = hash_jwt_id(&auth_context.jwt_id);
 
     match middleware_state
         .cache_service
