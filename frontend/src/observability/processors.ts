@@ -3,7 +3,7 @@ import {
   ReadableSpan,
   Span,
 } from '@opentelemetry/sdk-trace-base';
-import { Context, trace } from '@opentelemetry/api';
+import { Context, trace, Attributes } from '@opentelemetry/api';
 import { redactTokenPatterns } from './sanitization';
 import { AuthService } from '../services/authService';
 
@@ -130,7 +130,7 @@ export class SensitiveDataSpanProcessor implements SpanProcessor {
       (span.attributes['http.request.method'] as string | undefined) ??
       'POST';
 
-    const attributes: Record<string, unknown> = {
+    const attributes: Attributes = {
       'http.method': method,
       'http.status_code': status,
       provider,
