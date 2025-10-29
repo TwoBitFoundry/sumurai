@@ -8,6 +8,7 @@ import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
 import { sanitizeSpanAttributes, preventSensitiveSpans } from './sanitization';
 import { SensitiveDataSpanProcessor, HttpRouteSpanProcessor } from './processors';
+import { AuthService } from '../services/authService';
 
 let tracerProvider: WebTracerProvider | null = null;
 let tracer: Tracer | null = null;
@@ -66,6 +67,24 @@ function getSpanUrl(span: Span): string | undefined {
   return undefined;
 }
 
+function setEncryptedTokenAttribute(span: Span): void {
+  const hash = AuthService.getEncryptedTokenHashSync();
+  if (hash) {
+    span.setAttribute('encrypted_token', hash);
+    return;
+  }
+
+  void AuthService.ensureEncryptedTokenHash()
+    .then(result => {
+      if (result) {
+        span.setAttribute('encrypted_token', result);
+      }
+    })
+    .catch(() => {
+      // Swallow errors to avoid interfering with telemetry pipeline
+    });
+}
+
 export async function initTelemetry(): Promise<Tracer | null> {
   const config = getConfig();
 
@@ -115,6 +134,7 @@ export async function initTelemetry(): Promise<Tracer | null> {
             ignoreNetworkEvents: true,
             applyCustomAttributesOnSpan: (span: Span, request: Request, response: Response) => {
               setHttpSpanName(span, request.method, request.url);
+              setEncryptedTokenAttribute(span);
               if (config.sanitizeHeaders || config.sanitizeUrls) {
                 sanitizeSpanAttributes(span, request, response);
               }
@@ -131,6 +151,7 @@ export async function initTelemetry(): Promise<Tracer | null> {
                 typeof attributes['http.method'] === 'string' ? attributes['http.method'] as string : undefined,
                 getSpanUrl(span),
               );
+              setEncryptedTokenAttribute(span);
               if (config.sanitizeHeaders || config.sanitizeUrls) {
                 sanitizeSpanAttributes(span);
               }
@@ -154,6 +175,8 @@ export async function initTelemetry(): Promise<Tracer | null> {
   }
 
   tracer = trace.getTracer(config.serviceName, config.serviceVersion);
+
+  void AuthService.ensureEncryptedTokenHash();
 
   return tracer;
 }
