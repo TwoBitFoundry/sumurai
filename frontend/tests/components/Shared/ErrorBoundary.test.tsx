@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
+import { trace, SpanStatusCode } from '@opentelemetry/api'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 // Mock console.error to avoid noise in test output
@@ -167,6 +168,82 @@ describe('ErrorBoundary', () => {
 
       expect(screen.queryByText(/password=secret123/i)).not.toBeInTheDocument()
       expect(screen.getByText(/something went wrong/i)).toBeInTheDocument()
+    })
+  })
+
+  describe('OpenTelemetry Instrumentation', () => {
+    const mockSpan = {
+      recordException: vi.fn(),
+      setStatus: vi.fn(),
+      end: vi.fn(),
+      setAttributes: vi.fn(),
+      addEvent: vi.fn(),
+    }
+
+    beforeEach(() => {
+       
+      vi.spyOn(trace, 'getActiveSpan').mockReturnValue(mockSpan as any) // any needed for mock
+    })
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('should record error exception to active span', () => {
+      render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      )
+
+      expect(mockSpan.recordException).toHaveBeenCalled()
+      const error = (mockSpan.recordException as any).mock.calls[0][0]
+      expect(error.message).toBe('Test error')
+    })
+
+    it('should set error status on span', () => {
+      render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      )
+
+      expect(mockSpan.setStatus).toHaveBeenCalledWith({
+        code: SpanStatusCode.ERROR,
+        message: expect.any(String),
+      })
+    })
+
+    it('should sanitize error message before recording to span', () => {
+      const SensitiveErrorComponent = () => {
+        throw new Error('Invalid token=abc123&key=xyz789')
+      }
+
+      render(
+        <ErrorBoundary>
+          <SensitiveErrorComponent />
+        </ErrorBoundary>
+      )
+
+      expect(mockSpan.setStatus).toHaveBeenCalled()
+      const status = (mockSpan.setStatus as any).mock.calls[0][0]
+      expect(status.message).not.toContain('token=abc123')
+      expect(status.message).toContain('[REDACTED]')
+    })
+
+    it('should only record to span if span exists', () => {
+       
+      vi.spyOn(trace, 'getActiveSpan').mockReturnValueOnce(undefined as any) // any needed for mock
+
+      render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      )
+
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument()
+      // span methods should not have been called since no active span
+      expect(mockSpan.recordException).not.toHaveBeenCalled()
     })
   })
 })

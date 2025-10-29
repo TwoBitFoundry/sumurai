@@ -78,15 +78,26 @@ fn adapt_migration_sql_for_table(sql: &str, table: &str) -> String {
     out
 }
 
+struct BudgetSeed<'a> {
+    user_id: Uuid,
+    category: &'a str,
+    month: &'a str,
+    amount: f64,
+    updated_at_iso: &'a str,
+}
+
 async fn insert_budget(
     pool: &PgPool,
     table: &str,
-    user_id: Uuid,
-    category: &str,
-    month: &str,
-    amount: f64,
-    updated_at_iso: &str,
+    seed: BudgetSeed<'_>,
 ) -> Result<Uuid, sqlx::Error> {
+    let BudgetSeed {
+        user_id,
+        category,
+        month,
+        amount,
+        updated_at_iso,
+    } = seed;
     let id = Uuid::new_v4();
     let updated_at = chrono::NaiveDateTime::parse_from_str(updated_at_iso, "%Y-%m-%dT%H:%M:%SZ")
         .unwrap()
@@ -135,22 +146,26 @@ async fn given_month_based_duplicates_when_migration_runs_then_deduplicates_and_
     insert_budget(
         &pool,
         &tname,
-        user_id,
-        "FOOD_AND_DRINK",
-        "2024-01",
-        100.0,
-        "2024-01-01T00:00:00Z",
+        BudgetSeed {
+            user_id,
+            category: "FOOD_AND_DRINK",
+            month: "2024-01",
+            amount: 100.0,
+            updated_at_iso: "2024-01-01T00:00:00Z",
+        },
     )
     .await
     .unwrap();
     insert_budget(
         &pool,
         &tname,
-        user_id,
-        "FOOD_AND_DRINK",
-        "2024-05",
-        300.0,
-        "2024-05-01T00:00:00Z",
+        BudgetSeed {
+            user_id,
+            category: "FOOD_AND_DRINK",
+            month: "2024-05",
+            amount: 300.0,
+            updated_at_iso: "2024-05-01T00:00:00Z",
+        },
     )
     .await
     .unwrap();
@@ -158,11 +173,13 @@ async fn given_month_based_duplicates_when_migration_runs_then_deduplicates_and_
     insert_budget(
         &pool,
         &tname,
-        user_id,
-        "RENT",
-        "2024-05",
-        1200.0,
-        "2024-05-02T00:00:00Z",
+        BudgetSeed {
+            user_id,
+            category: "RENT",
+            month: "2024-05",
+            amount: 1200.0,
+            updated_at_iso: "2024-05-02T00:00:00Z",
+        },
     )
     .await
     .unwrap();
@@ -271,22 +288,26 @@ async fn given_migration_applied_when_run_again_then_idempotent() {
     insert_budget(
         &pool,
         &tname,
-        user_id,
-        "GROCERIES",
-        "2024-06",
-        200.0,
-        "2024-06-01T00:00:00Z",
+        BudgetSeed {
+            user_id,
+            category: "GROCERIES",
+            month: "2024-06",
+            amount: 200.0,
+            updated_at_iso: "2024-06-01T00:00:00Z",
+        },
     )
     .await
     .unwrap();
     insert_budget(
         &pool,
         &tname,
-        user_id,
-        "GROCERIES",
-        "2024-07",
-        220.0,
-        "2024-07-01T00:00:00Z",
+        BudgetSeed {
+            user_id,
+            category: "GROCERIES",
+            month: "2024-07",
+            amount: 220.0,
+            updated_at_iso: "2024-07-01T00:00:00Z",
+        },
     )
     .await
     .unwrap();
@@ -381,11 +402,13 @@ async fn given_post_migration_schema_when_inserting_duplicate_category_then_uniq
     insert_budget(
         &pool,
         &tname,
-        user_id,
-        "UTILITIES",
-        "2024-05",
-        150.0,
-        "2024-05-01T00:00:00Z",
+        BudgetSeed {
+            user_id,
+            category: "UTILITIES",
+            month: "2024-05",
+            amount: 150.0,
+            updated_at_iso: "2024-05-01T00:00:00Z",
+        },
     )
     .await
     .unwrap();

@@ -4,13 +4,17 @@ use axum::{
 };
 use axum_tracing_opentelemetry::tracing_opentelemetry_instrumentation_sdk as otel_sdk;
 use chrono::Utc;
-use opentelemetry::{global, trace::TracerProvider};
+use opentelemetry::{
+    global,
+    trace::{TraceContextExt, TracerProvider},
+};
 use opentelemetry_otlp::{WithExportConfig, WithHttpConfig};
 use opentelemetry_sdk::{propagation::TraceContextPropagator, trace::SdkTracerProvider, Resource};
 use sha2::{Digest, Sha256};
-use std::{collections::HashMap, fmt::Write};
-use tracing::Span;
+use std::{collections::HashMap, fmt::Write, time::Instant};
+use tracing::{info_span, Span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
+use tracing_subscriber::Layer;
 use tracing_subscriber::{
     filter::LevelFilter,
     fmt::{
@@ -22,7 +26,8 @@ use tracing_subscriber::{
     util::SubscriberInitExt,
     EnvFilter,
 };
-use tracing_subscriber::Layer;
+
+const SENSITIVE_REQUEST_PATHS: &[&str] = &["/api/plaid/exchange-token", "/api/providers/connect"];
 
 pub struct TelemetryConfig {
     pub env_filter: Option<String>,
@@ -120,6 +125,69 @@ pub fn init(config: &TelemetryConfig) -> Result<TelemetryHandle> {
     Ok(TelemetryHandle { tracer_provider })
 }
 
+#[derive(Clone)]
+pub struct EncryptedToken(pub String);
+
+pub fn hash_token(token: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(token.as_bytes());
+    format!("{:x}", hasher.finalize())
+}
+
+pub fn attach_encrypted_token_to_span(span: &Span, encrypted_token: &str) {
+    let attribute_value = encrypted_token.to_owned();
+    span.set_attribute("encrypted_token", attribute_value.clone());
+
+    let _ = span.with_subscriber(|(id, dispatch)| {
+        if let Some(registry) = dispatch.downcast_ref::<Registry>() {
+            if let Some(span_ref) = registry.span(id) {
+                span_ref
+                    .extensions_mut()
+                    .replace(EncryptedToken(attribute_value.clone()));
+            }
+        }
+    });
+}
+
+pub fn attach_encrypted_token_to_current_span(encrypted_token: &str) {
+    let span = Span::current();
+    attach_encrypted_token_to_span(&span, encrypted_token);
+}
+
+pub async fn request_tracing_middleware(request: Request<Body>, next: Next) -> Response {
+    let method = request.method().clone();
+    let path = request.uri().path().to_string();
+    if SENSITIVE_REQUEST_PATHS
+        .iter()
+        .any(|&sensitive| sensitive == path)
+    {
+        return next.run(request).await;
+    }
+    let start_time = Instant::now();
+
+    let span = info_span!(
+        "api_request",
+        http.method = %method,
+        http.route = %path,
+        http.status_code = tracing::field::Empty,
+        duration_ms = tracing::field::Empty
+    );
+
+    let span_name = format!("{method} {path}");
+    span.context().span().update_name(span_name.clone());
+
+    let _entered = span.enter();
+
+    let response = next.run(request).await;
+    let status = response.status();
+    let duration_ms = start_time.elapsed().as_secs_f64() * 1000.0;
+
+    span.record("http.status_code", status.as_u16() as i64);
+    span.record("duration_ms", duration_ms);
+
+    response
+}
+
 pub async fn with_bearer_token_attribute(request: Request<Body>, next: Next) -> Response {
     if let Some(header_value) = request.headers().get(AUTHORIZATION) {
         if let Ok(raw) = header_value.to_str() {
@@ -131,19 +199,8 @@ pub async fn with_bearer_token_attribute(request: Request<Body>, next: Next) -> 
                 .trim();
 
             if !token.is_empty() {
-                let span = Span::current();
-                let encrypted = hex::encode(Sha256::digest(token.as_bytes()));
-                span.set_attribute("encrypted_token", encrypted.clone());
-                let encrypted_for_extension = encrypted.clone();
-                let _ = span.with_subscriber(move |(id, dispatch)| {
-                    if let Some(registry) = dispatch.downcast_ref::<Registry>() {
-                        if let Some(span_ref) = registry.span(id) {
-                            span_ref
-                                .extensions_mut()
-                                .insert(EncryptedToken(encrypted_for_extension.clone()));
-                        }
-                    }
-                });
+                let encrypted = hash_token(token);
+                attach_encrypted_token_to_current_span(&encrypted);
             }
         }
     }
@@ -245,9 +302,6 @@ impl<'a> tracing::field::Visit for JsonFieldVisitor<'a> {
         );
     }
 }
-
-#[derive(Clone)]
-struct EncryptedToken(pub String);
 
 fn parse_otlp_headers(raw: String) -> Option<HashMap<String, String>> {
     let mut headers = HashMap::new();
