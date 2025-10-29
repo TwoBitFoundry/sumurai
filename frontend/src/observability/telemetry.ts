@@ -2,7 +2,7 @@ import { trace, Tracer, Span } from '@opentelemetry/api';
 import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
@@ -18,6 +18,7 @@ function getConfig() {
     serviceName: import.meta.env.VITE_OTEL_SERVICE_NAME || 'sumaura-frontend',
     serviceVersion: import.meta.env.VITE_OTEL_SERVICE_VERSION || '1.0.0',
     endpoint: import.meta.env.VITE_OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:5341/ingest/otlp',
+    seqApiKey: import.meta.env.VITE_OTEL_SEQ_API_KEY || '',
     captureBodies: import.meta.env.VITE_OTEL_CAPTURE_BODIES === 'true',
     sanitizeHeaders: import.meta.env.VITE_OTEL_SANITIZE_HEADERS !== 'false',
     sanitizeUrls: import.meta.env.VITE_OTEL_SANITIZE_URLS !== 'false',
@@ -43,7 +44,10 @@ export async function initTelemetry(): Promise<Tracer | null> {
   });
 
   const exporter = new OTLPTraceExporter({
-    url: config.endpoint,
+    url: `${config.endpoint}/v1/traces`,
+    headers: config.seqApiKey ? {
+      'X-Seq-ApiKey': config.seqApiKey,
+    } : {},
   });
 
   const spanProcessor = new BatchSpanProcessor(exporter);
