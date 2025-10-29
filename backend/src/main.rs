@@ -308,6 +308,16 @@ pub fn create_app(state: AppState) -> Router {
         .with_state(state)
 }
 
+fn log_provider_credential_outcome(provider: &str, status: StatusCode, endpoint: &str) {
+    tracing::info!(
+        target: "provider_credentials",
+        provider,
+        status = %status,
+        endpoint,
+        "Provider credential endpoint completed"
+    );
+}
+
 async fn error_handling_middleware(request: Request<Body>, next: Next) -> Response {
     let method = request.method().clone();
     let uri = request.uri().clone();
@@ -948,7 +958,6 @@ async fn exchange_authenticated_public_token(
     Json(req): Json<ExchangeTokenRequest>,
 ) -> Result<Json<ExchangeTokenResponse>, StatusCode> {
     let user_id = auth_context.user_id;
-
     let provider = state.config.get_default_provider();
 
     match state
@@ -956,8 +965,12 @@ async fn exchange_authenticated_public_token(
         .exchange_public_token(provider, &user_id, &auth_context.jwt_id, &req.public_token)
         .await
     {
-        Ok(response) => Ok(Json(response)),
+        Ok(response) => {
+            log_provider_credential_outcome(provider, StatusCode::OK, "plaid.exchange-token");
+            Ok(Json(response))
+        }
         Err(ExchangeTokenError::ProviderUnavailable(p)) => {
+            log_provider_credential_outcome(&p, StatusCode::BAD_REQUEST, "plaid.exchange-token");
             tracing::error!(
                 "Exchange token requested for unsupported provider '{}' by user {}",
                 p,
@@ -966,6 +979,11 @@ async fn exchange_authenticated_public_token(
             Err(StatusCode::BAD_REQUEST)
         }
         Err(ExchangeTokenError::ExchangeFailed(e)) => {
+            log_provider_credential_outcome(
+                provider,
+                StatusCode::BAD_GATEWAY,
+                "plaid.exchange-token",
+            );
             tracing::error!(
                 "Failed to exchange public token for provider {} and user {}: {}",
                 provider,
@@ -1731,6 +1749,7 @@ async fn connect_authenticated_provider(
     Json(req): Json<ProviderConnectRequest>,
 ) -> Result<Json<ProviderConnectResponse>, (StatusCode, Json<ApiErrorResponse>)> {
     if req.provider != "teller" {
+        log_provider_credential_outcome(&req.provider, StatusCode::BAD_REQUEST, "provider.connect");
         return Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
             .into_response(StatusCode::BAD_REQUEST));
     }
@@ -1740,12 +1759,25 @@ async fn connect_authenticated_provider(
         .connect_teller_provider(&auth_context.user_id, &auth_context.jwt_id, &req)
         .await
     {
-        Ok(response) => Ok(Json(response)),
+        Ok(response) => {
+            log_provider_credential_outcome("teller", StatusCode::OK, "provider.connect");
+            Ok(Json(response))
+        }
         Err(TellerConnectError::InvalidProvider(_)) => {
+            log_provider_credential_outcome(
+                &req.provider,
+                StatusCode::BAD_REQUEST,
+                "provider.connect",
+            );
             Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
                 .into_response(StatusCode::BAD_REQUEST))
         }
         Err(TellerConnectError::CredentialStorage(e)) => {
+            log_provider_credential_outcome(
+                "teller",
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "provider.connect",
+            );
             tracing::error!(
                 "Failed to store Teller credentials for user {}: {}",
                 auth_context.user_id,
@@ -1756,6 +1788,11 @@ async fn connect_authenticated_provider(
             ))
         }
         Err(TellerConnectError::ConnectionPersistence(e)) => {
+            log_provider_credential_outcome(
+                "teller",
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "provider.connect",
+            );
             tracing::error!(
                 "Failed to persist Teller connection for user {}: {}",
                 auth_context.user_id,

@@ -15,7 +15,6 @@
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "audit:tailwind": "node scripts/audit-tailwind-usage.js",
-    "build:analyze": "npm run build && node scripts/analyze-bundle.js",
     "prepare": "husky"
   },
   "dependencies": {

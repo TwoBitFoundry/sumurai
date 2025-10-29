@@ -1,6 +1,4 @@
-use crate::middleware::telemetry_middleware::{
-    attach_encrypted_token_to_current_span, hash_token,
-};
+use crate::middleware::telemetry_middleware::{attach_encrypted_token_to_current_span, hash_token};
 use crate::models::api_error::ApiErrorResponse;
 use crate::models::auth::AuthError;
 pub use crate::models::auth::{AuthContext, AuthMiddlewareState};

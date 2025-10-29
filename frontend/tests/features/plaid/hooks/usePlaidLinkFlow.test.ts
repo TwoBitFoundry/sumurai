@@ -177,7 +177,7 @@ describe('usePlaidLinkFlow', () => {
   })
 })
 
-describe('usePlaidLinkFlow with OpenTelemetry Instrumentation (Phase 4)', () => {
+describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
   beforeEach(() => {
     plaidConnectionsMock.connections = []
     plaidConnectionsMock.loading = false

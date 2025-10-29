@@ -171,7 +171,7 @@ describe('ErrorBoundary', () => {
     })
   })
 
-  describe('OpenTelemetry Instrumentation (Phase 4)', () => {
+  describe('OpenTelemetry Instrumentation', () => {
     const mockSpan = {
       recordException: vi.fn(),
       setStatus: vi.fn(),

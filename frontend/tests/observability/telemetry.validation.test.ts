@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initTelemetry, shutdownTelemetry, getTracer } from '@/observability/telemetry';
 
-describe('Telemetry Validation - Acceptance Criteria', () => {
+describe('Telemetry Validation', () => {
   beforeEach(() => {
     import.meta.env.VITE_OTEL_ENABLED = 'true';
   });
@@ -10,7 +10,7 @@ describe('Telemetry Validation - Acceptance Criteria', () => {
     await shutdownTelemetry();
   });
 
-  describe('AC1: Telemetry initializes without errors', () => {
+  describe('Telemetry initializes without errors', () => {
     it('should initialize tracer provider without throwing', async () => {
       expect(async () => {
         await initTelemetry();
@@ -25,7 +25,7 @@ describe('Telemetry Validation - Acceptance Criteria', () => {
     });
   });
 
-  describe('AC2: Console shows tracer provider registration', () => {
+  describe('Console shows tracer provider registration', () => {
     it('should have registered tracer provider globally', async () => {
       const tracer = await initTelemetry();
 
@@ -40,7 +40,7 @@ describe('Telemetry Validation - Acceptance Criteria', () => {
     });
   });
 
-  describe('AC3: Test fetch call generates span visible in browser DevTools', () => {
+  describe('Test fetch call generates span visible in browser DevTools', () => {
     it('should create tracer capable of starting spans', async () => {
       const tracer = await initTelemetry();
 

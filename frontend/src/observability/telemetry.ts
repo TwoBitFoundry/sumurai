@@ -7,7 +7,7 @@ import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
 import { sanitizeSpanAttributes, preventSensitiveSpans } from './sanitization';
-import { SensitiveDataSpanProcessor, HttpRouteSpanProcessor } from './processors';
+import { SensitiveDataSpanProcessor, HttpRouteSpanProcessor, FilteringSpanProcessor } from './processors';
 import { AuthService } from '../services/authService';
 
 let tracerProvider: WebTracerProvider | null = null;
@@ -109,16 +109,20 @@ export async function initTelemetry(): Promise<Tracer | null> {
     } : {},
   });
 
-  const spanProcessor = new BatchSpanProcessor(exporter);
+  const batchSpanProcessor = new BatchSpanProcessor(exporter);
   const sensitiveDataProcessor = new SensitiveDataSpanProcessor({
     blockSensitiveEndpoints: config.blockSensitiveEndpoints,
     redactAuthEndpoints: true,
   });
   const routeSpanProcessor = new HttpRouteSpanProcessor();
+  const filteredBatchSpanProcessor = new FilteringSpanProcessor(
+    batchSpanProcessor,
+    span => sensitiveDataProcessor.shouldBlockSpan(span),
+  );
 
   tracerProvider = new WebTracerProvider({
     resource,
-    spanProcessors: [sensitiveDataProcessor, routeSpanProcessor, spanProcessor],
+    spanProcessors: [sensitiveDataProcessor, routeSpanProcessor, filteredBatchSpanProcessor],
   });
 
   trace.setGlobalTracerProvider(tracerProvider);

@@ -14,6 +14,7 @@ use sha2::{Digest, Sha256};
 use std::{collections::HashMap, fmt::Write, time::Instant};
 use tracing::{info_span, Span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
+use tracing_subscriber::Layer;
 use tracing_subscriber::{
     filter::LevelFilter,
     fmt::{
@@ -25,7 +26,8 @@ use tracing_subscriber::{
     util::SubscriberInitExt,
     EnvFilter,
 };
-use tracing_subscriber::Layer;
+
+const SENSITIVE_REQUEST_PATHS: &[&str] = &["/api/plaid/exchange-token", "/api/providers/connect"];
 
 pub struct TelemetryConfig {
     pub env_filter: Option<String>,
@@ -155,6 +157,12 @@ pub fn attach_encrypted_token_to_current_span(encrypted_token: &str) {
 pub async fn request_tracing_middleware(request: Request<Body>, next: Next) -> Response {
     let method = request.method().clone();
     let path = request.uri().path().to_string();
+    if SENSITIVE_REQUEST_PATHS
+        .iter()
+        .any(|&sensitive| sensitive == path)
+    {
+        return next.run(request).await;
+    }
     let start_time = Instant::now();
 
     let span = info_span!(

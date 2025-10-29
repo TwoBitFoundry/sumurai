@@ -89,7 +89,7 @@ describe('AuthService logout functionality', () => {
   })
 })
 
-describe('AuthService with OpenTelemetry Instrumentation (Phase 4)', () => {
+describe('AuthService with OpenTelemetry Instrumentation', () => {
   let mockSpan: any
   let mockTracer: any
   let mockHttpClient: MockHttpClient

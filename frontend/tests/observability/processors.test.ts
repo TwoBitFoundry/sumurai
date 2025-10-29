@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { SensitiveDataSpanProcessor } from '@/observability/processors';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { SensitiveDataSpanProcessor, FilteringSpanProcessor } from '@/observability/processors';
 import { ReadableSpan } from '@opentelemetry/sdk-trace-base';
 
 const createMockSpan = (url: string, additionalAttributes?: Record<string, any>): ReadableSpan => {
@@ -35,7 +35,7 @@ const createMockSpan = (url: string, additionalAttributes?: Record<string, any>)
 };
 
 describe('SensitiveDataSpanProcessor', () => {
-  describe('Sensitive Endpoint Blocking', () => {
+  describe('Provider Credential Endpoint Blocking', () => {
     let processor: SensitiveDataSpanProcessor;
 
     beforeEach(() => {
@@ -45,58 +45,46 @@ describe('SensitiveDataSpanProcessor', () => {
       });
     });
 
-    it('should block spans for /api/auth/login endpoint', () => {
+    it('should not block spans for /api/auth/login endpoint', () => {
       const span = createMockSpan('http://localhost:8080/api/auth/login');
 
-      processor.onEnd(span);
-
-      const mutableSpan = span as unknown as { _ended: boolean };
-      expect(mutableSpan._ended).toBe(false);
+      expect(processor.shouldBlockSpan(span)).toBe(false);
+      expect(() => processor.onEnd(span)).not.toThrow();
     });
 
-    it('should block spans for /api/auth/register endpoint', () => {
+    it('should not block spans for /api/auth/register endpoint', () => {
       const span = createMockSpan('http://localhost:8080/api/auth/register');
 
-      processor.onEnd(span);
-
-      const mutableSpan = span as unknown as { _ended: boolean };
-      expect(mutableSpan._ended).toBe(false);
+      expect(processor.shouldBlockSpan(span)).toBe(false);
+      expect(() => processor.onEnd(span)).not.toThrow();
     });
 
     it('should block spans for /api/plaid/exchange-token endpoint', () => {
       const span = createMockSpan('http://localhost:8080/api/plaid/exchange-token');
 
-      processor.onEnd(span);
-
-      const mutableSpan = span as unknown as { _ended: boolean };
-      expect(mutableSpan._ended).toBe(false);
+      expect(processor.shouldBlockSpan(span)).toBe(true);
+      expect(() => processor.onEnd(span)).not.toThrow();
     });
 
     it('should block spans for /api/teller/exchange-token endpoint', () => {
       const span = createMockSpan('http://localhost:8080/api/teller/exchange-token');
 
-      processor.onEnd(span);
-
-      const mutableSpan = span as unknown as { _ended: boolean };
-      expect(mutableSpan._ended).toBe(false);
+      expect(processor.shouldBlockSpan(span)).toBe(true);
+      expect(() => processor.onEnd(span)).not.toThrow();
     });
 
     it('should allow spans for non-sensitive endpoints', () => {
       const span = createMockSpan('http://localhost:8080/api/transactions');
 
-      processor.onEnd(span);
-
-      const mutableSpan = span as unknown as { _ended: boolean };
-      expect(mutableSpan._ended).not.toBe(false);
+      expect(processor.shouldBlockSpan(span)).toBe(false);
+      expect(() => processor.onEnd(span)).not.toThrow();
     });
 
     it('should allow spans for /api/auth endpoints that are not login/register', () => {
       const span = createMockSpan('http://localhost:8080/api/auth/refresh');
 
-      processor.onEnd(span);
-
-      const mutableSpan = span as unknown as { _ended: boolean };
-      expect(mutableSpan._ended).not.toBe(false);
+      expect(processor.shouldBlockSpan(span)).toBe(false);
+      expect(() => processor.onEnd(span)).not.toThrow();
     });
 
     it('should handle spans without url attribute', () => {
@@ -191,12 +179,10 @@ describe('SensitiveDataSpanProcessor', () => {
         blockSensitiveEndpoints: false,
       });
 
-      const span = createMockSpan('http://localhost:8080/api/auth/login');
+      const span = createMockSpan('http://localhost:8080/api/plaid/exchange-token');
 
-      processor.onEnd(span);
-
-      const mutableSpan = span as unknown as { _ended: boolean };
-      expect(mutableSpan._ended).not.toBe(false);
+      expect(processor.shouldBlockSpan(span)).toBe(false);
+      expect(() => processor.onEnd(span)).not.toThrow();
     });
 
     it('should respect redactAuthEndpoints=false', () => {
@@ -216,12 +202,10 @@ describe('SensitiveDataSpanProcessor', () => {
     it('should use default options when not specified', () => {
       const processor = new SensitiveDataSpanProcessor();
 
-      const span = createMockSpan('http://localhost:8080/api/auth/login');
+      const span = createMockSpan('http://localhost:8080/api/plaid/exchange-token');
 
-      processor.onEnd(span);
-
-      const mutableSpan = span as unknown as { _ended: boolean };
-      expect(mutableSpan._ended).toBe(false);
+      expect(processor.shouldBlockSpan(span)).toBe(true);
+      expect(() => processor.onEnd(span)).not.toThrow();
     });
   });
 
@@ -233,34 +217,25 @@ describe('SensitiveDataSpanProcessor', () => {
     });
 
     it('should extract URL from http.url attribute', () => {
-      const span = createMockSpan('http://localhost:8080/api/auth/login');
+      const span = createMockSpan('http://localhost:8080/api/plaid/exchange-token');
 
-      processor.onEnd(span);
-
-      const mutableSpan = span as unknown as { _ended: boolean };
-      expect(mutableSpan._ended).toBe(false);
+      expect(processor.shouldBlockSpan(span)).toBe(true);
     });
 
     it('should extract URL from url.full attribute', () => {
       const span = createMockSpan('');
       delete span.attributes['http.url'];
-      span.attributes['url.full'] = 'http://localhost:8080/api/auth/login';
+      span.attributes['url.full'] = 'http://localhost:8080/api/plaid/exchange-token';
 
-      processor.onEnd(span);
-
-      const mutableSpan = span as unknown as { _ended: boolean };
-      expect(mutableSpan._ended).toBe(false);
+      expect(processor.shouldBlockSpan(span)).toBe(true);
     });
 
     it('should extract URL from http.target attribute', () => {
       const span = createMockSpan('');
       delete span.attributes['http.url'];
-      span.attributes['http.target'] = '/api/auth/login';
+      span.attributes['http.target'] = '/api/plaid/exchange-token';
 
-      processor.onEnd(span);
-
-      const mutableSpan = span as unknown as { _ended: boolean };
-      expect(mutableSpan._ended).toBe(false);
+      expect(processor.shouldBlockSpan(span)).toBe(true);
     });
 
     it('should handle spans with no URL attributes gracefully', () => {
@@ -302,39 +277,74 @@ describe('SensitiveDataSpanProcessor', () => {
     });
 
     it('should handle URLs with query parameters', () => {
-      const span = createMockSpan('http://localhost:8080/api/auth/login?redirect=/dashboard');
+      const span = createMockSpan('http://localhost:8080/api/plaid/exchange-token?redirect=/dashboard');
 
-      processor.onEnd(span);
-
-      const mutableSpan = span as unknown as { _ended?: boolean };
-      expect(mutableSpan._ended).not.toBe(false);
+      expect(processor.shouldBlockSpan(span)).toBe(true);
+      expect(() => processor.onEnd(span)).not.toThrow();
     });
 
     it('should handle URLs with fragments', () => {
-      const span = createMockSpan('http://localhost:8080/api/auth/login#section');
+      const span = createMockSpan('http://localhost:8080/api/teller/exchange-token#section');
 
-      processor.onEnd(span);
-
-      const mutableSpan = span as unknown as { _ended?: boolean };
-      expect(mutableSpan._ended).not.toBe(false);
+      expect(processor.shouldBlockSpan(span)).toBe(true);
+      expect(() => processor.onEnd(span)).not.toThrow();
     });
 
     it('should handle relative URLs', () => {
-      const span = createMockSpan('/api/auth/login');
+      const span = createMockSpan('/api/plaid/exchange-token');
 
-      processor.onEnd(span);
-
-      const mutableSpan = span as unknown as { _ended: boolean };
-      expect(mutableSpan._ended).toBe(false);
+      expect(processor.shouldBlockSpan(span)).toBe(true);
     });
 
     it('should be case-sensitive for endpoint matching', () => {
-      const span = createMockSpan('http://localhost:8080/api/AUTH/LOGIN');
+      const span = createMockSpan('http://localhost:8080/api/PLAID/EXCHANGE-TOKEN');
 
-      processor.onEnd(span);
-
-      const mutableSpan = span as unknown as { _ended: boolean };
-      expect(mutableSpan._ended).not.toBe(false);
+      expect(processor.shouldBlockSpan(span)).toBe(false);
+      expect(() => processor.onEnd(span)).not.toThrow();
     });
+  });
+});
+
+describe('FilteringSpanProcessor', () => {
+  const createDelegate = () => ({
+    onStart: vi.fn(),
+    onEnd: vi.fn(),
+    shutdown: vi.fn().mockResolvedValue(undefined),
+    forceFlush: vi.fn().mockResolvedValue(undefined),
+  });
+
+  it('should skip delegate onEnd when predicate returns true', () => {
+    const delegate = createDelegate();
+    const filter = new FilteringSpanProcessor(delegate, () => true);
+    const span = createMockSpan('http://localhost:8080/api/auth/login');
+
+    filter.onStart(span as unknown as any, {} as any);
+    filter.onEnd(span);
+
+    expect(delegate.onStart).toHaveBeenCalledTimes(1);
+    expect(delegate.onEnd).not.toHaveBeenCalled();
+  });
+
+  it('should forward to delegate when predicate returns false', () => {
+    const delegate = createDelegate();
+    const filter = new FilteringSpanProcessor(delegate, () => false);
+    const span = createMockSpan('http://localhost:8080/api/transactions');
+
+    filter.onStart(span as unknown as any, {} as any);
+    filter.onEnd(span);
+
+    expect(delegate.onStart).toHaveBeenCalledTimes(1);
+    expect(delegate.onEnd).toHaveBeenCalledWith(span);
+  });
+
+  it('should forward forceFlush and shutdown', async () => {
+    const delegate = createDelegate();
+    const filter = new FilteringSpanProcessor(delegate, () => false);
+
+    await filter.forceFlush();
+    await filter.shutdown();
+
+    expect(delegate.forceFlush).toHaveBeenCalledTimes(1);
+    expect(delegate.shutdown).toHaveBeenCalledTimes(1);
   });
 });

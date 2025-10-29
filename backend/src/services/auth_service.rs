@@ -1,7 +1,5 @@
 use crate::{
-    middleware::telemetry_middleware::{
-        attach_encrypted_token_to_current_span, hash_token,
-    },
+    middleware::telemetry_middleware::{attach_encrypted_token_to_current_span, hash_token},
     models::auth::{AuthError, AuthToken, Claims},
 };
 use argon2::password_hash::{rand_core::OsRng, SaltString};
