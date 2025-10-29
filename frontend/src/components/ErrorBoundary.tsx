@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react'
+import { trace, SpanStatusCode } from '@opentelemetry/api'
 import { ApiError, AuthenticationError } from '../services/ApiClient'
 import { Button, GlassCard } from '@/ui/primitives'
 import { cn } from '@/ui/primitives/utils'
@@ -39,6 +40,15 @@ export class ErrorBoundary extends Component<Props, State> {
       error,
       errorInfo,
     })
+
+    const span = trace.getActiveSpan()
+    if (span) {
+      span.recordException(error)
+      span.setStatus({
+        code: SpanStatusCode.ERROR,
+        message: this.sanitizeErrorMessage(error.message),
+      })
+    }
 
     console.error('ErrorBoundary caught an error:', error, errorInfo)
   }

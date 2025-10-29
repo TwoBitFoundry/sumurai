@@ -1,8 +1,18 @@
 services:
   frontend:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VITE_OTEL_ENABLED: ${VITE_OTEL_ENABLED:-true}
+        VITE_OTEL_EXPORTER_OTLP_ENDPOINT: ${VITE_OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:8080/ingest/otlp}
+        SEQ_API_KEY: ${SEQ_API_KEY:-}
+        VITE_OTEL_SERVICE_NAME: ${VITE_OTEL_SERVICE_NAME:-sumaura-frontend}
+        VITE_OTEL_SERVICE_VERSION: ${VITE_OTEL_SERVICE_VERSION:-1.0.0}
+        VITE_OTEL_SANITIZE_HEADERS: ${VITE_OTEL_SANITIZE_HEADERS:-true}
+        VITE_OTEL_SANITIZE_URLS: ${VITE_OTEL_SANITIZE_URLS:-true}
+        VITE_OTEL_CAPTURE_BODIES: ${VITE_OTEL_CAPTURE_BODIES:-false}
+        VITE_OTEL_BLOCK_SENSITIVE_ENDPOINTS: ${VITE_OTEL_BLOCK_SENSITIVE_ENDPOINTS:-true}
     ports:
       - "8080:8080"
     environment:
@@ -10,6 +20,7 @@ services:
       DEFAULT_PROVIDER: ${DEFAULT_PROVIDER:-teller}
     depends_on:
       - backend
+      - seq
 
   backend:
     build:

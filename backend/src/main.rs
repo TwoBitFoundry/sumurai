@@ -63,7 +63,10 @@ use crate::models::{
 };
 use auth_middleware::auth_middleware;
 use config::Config;
-use middleware::telemetry_middleware::{self, with_bearer_token_attribute, TelemetryConfig};
+use middleware::telemetry_middleware::{
+    self, attach_encrypted_token_to_current_span, hash_token, request_tracing_middleware,
+    with_bearer_token_attribute, TelemetryConfig,
+};
 use services::repository_service::{DatabaseRepository, PostgresRepository};
 use services::{AnalyticsService, RealPlaidClient};
 use services::{
@@ -293,6 +296,7 @@ pub fn create_app(state: AppState) -> Router {
         .layer(OtelAxumLayer::default().try_extract_client_ip(true))
         .layer(OtelInResponseLayer)
         .layer(from_fn(with_bearer_token_attribute))
+        .layer(from_fn(request_tracing_middleware))
         .layer(from_fn(error_handling_middleware))
         .into_inner();
 
@@ -302,6 +306,16 @@ pub fn create_app(state: AppState) -> Router {
         .merge(docs_routes)
         .layer(middleware_stack)
         .with_state(state)
+}
+
+fn log_provider_credential_outcome(provider: &str, status: StatusCode, endpoint: &str) {
+    tracing::info!(
+        target: "provider_credentials",
+        provider,
+        status = %status,
+        endpoint,
+        "Provider credential endpoint completed"
+    );
 }
 
 async fn error_handling_middleware(request: Request<Body>, next: Next) -> Response {
@@ -322,7 +336,7 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
     if status.is_server_error() {
         let trace_id = span_trace_id
             .clone()
-            .or_else(|| otel_sdk::find_current_trace_id());
+            .or_else(otel_sdk::find_current_trace_id);
         match trace_id.as_deref() {
             Some(trace_id) => {
                 tracing::error!(
@@ -353,7 +367,9 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
             return (StatusCode::INTERNAL_SERVER_ERROR, Json(error)).into_response();
         }
     } else if status.is_client_error() {
-        let trace_id = span_trace_id.or_else(|| otel_sdk::find_current_trace_id());
+        let trace_id = span_trace_id
+            .clone()
+            .or_else(otel_sdk::find_current_trace_id);
         let error_category = match status.as_u16() {
             400 => "validation_error",
             401 => "authentication_error",
@@ -365,7 +381,6 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
             _ => "client_error",
         };
 
-        let trace_id = otel_sdk::find_current_trace_id();
         let log_level = match status.as_u16() {
             401 | 403 => tracing::Level::WARN,
             _ => tracing::Level::DEBUG,
@@ -467,6 +482,9 @@ async fn register_user(
         ApiErrorResponse::internal_server_error("Failed to generate authentication token")
     })?;
 
+    let encrypted_token = hash_token(&auth_token.token);
+    attach_encrypted_token_to_current_span(&encrypted_token);
+
     let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
     if ttl > 0 {
         // Set session validity flag in cache with JWT TTL
@@ -489,6 +507,11 @@ async fn register_user(
     }
 
     let expires_at = auth_token.expires_at.to_rfc3339();
+
+    tracing::info!(
+        encrypted_token = %encrypted_token,
+        "User registered successfully"
+    );
 
     Ok(Json(auth_models::AuthResponse {
         token: auth_token.token,
@@ -549,6 +572,9 @@ async fn login_user(
         ApiErrorResponse::internal_server_error("Failed to generate authentication token")
     })?;
 
+    let encrypted_token = hash_token(&auth_token.token);
+    attach_encrypted_token_to_current_span(&encrypted_token);
+
     let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
     if ttl > 0 {
         // Set session validity flag in cache with JWT TTL
@@ -572,7 +598,10 @@ async fn login_user(
 
     let expires_at = auth_token.expires_at.to_rfc3339();
 
-    tracing::info!("User authenticated successfully");
+    tracing::info!(
+        encrypted_token = %encrypted_token,
+        "User authenticated successfully"
+    );
 
     Ok(Json(auth_models::AuthResponse {
         token: auth_token.token,
@@ -603,6 +632,9 @@ async fn logout_user(
         .and_then(|s| s.strip_prefix("Bearer "))
         .ok_or(StatusCode::UNAUTHORIZED)?;
 
+    let encrypted_token = hash_token(auth_header);
+    attach_encrypted_token_to_current_span(&encrypted_token);
+
     let claims = state
         .auth_service
         .validate_token(auth_header)
@@ -619,6 +651,11 @@ async fn logout_user(
     if let Err(e) = state.cache_service.clear_transactions().await {
         tracing::warn!("Failed to clear transaction cache during logout: {}", e);
     }
+
+    tracing::info!(
+        encrypted_token = %encrypted_token,
+        "User logged out successfully"
+    );
 
     Ok(Json(LogoutResponse {
         message: "Logged out successfully".to_string(),
@@ -647,6 +684,9 @@ async fn refresh_user_session(
         .and_then(|h| h.to_str().ok())
         .and_then(|s| s.strip_prefix("Bearer "))
         .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    let encrypted_token = hash_token(auth_header);
+    attach_encrypted_token_to_current_span(&encrypted_token);
 
     let claims = state
         .auth_service
@@ -680,6 +720,9 @@ async fn refresh_user_session(
         .generate_token(user_id)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    let encrypted_token = hash_token(&auth_token.token);
+    attach_encrypted_token_to_current_span(&encrypted_token);
+
     let expires_at = chrono::Utc::now() + chrono::Duration::hours(1);
 
     // Cache refreshed JWT in Redis with TTL
@@ -701,6 +744,11 @@ async fn refresh_user_session(
             tracing::warn!("Failed to cache refreshed JWT token: {}", e);
         }
     }
+
+    tracing::info!(
+        encrypted_token = %encrypted_token,
+        "User session refreshed"
+    );
 
     Ok(Json(auth_models::AuthResponse {
         token: auth_token.token,
@@ -910,7 +958,6 @@ async fn exchange_authenticated_public_token(
     Json(req): Json<ExchangeTokenRequest>,
 ) -> Result<Json<ExchangeTokenResponse>, StatusCode> {
     let user_id = auth_context.user_id;
-
     let provider = state.config.get_default_provider();
 
     match state
@@ -918,8 +965,12 @@ async fn exchange_authenticated_public_token(
         .exchange_public_token(provider, &user_id, &auth_context.jwt_id, &req.public_token)
         .await
     {
-        Ok(response) => Ok(Json(response)),
+        Ok(response) => {
+            log_provider_credential_outcome(provider, StatusCode::OK, "plaid.exchange-token");
+            Ok(Json(response))
+        }
         Err(ExchangeTokenError::ProviderUnavailable(p)) => {
+            log_provider_credential_outcome(&p, StatusCode::BAD_REQUEST, "plaid.exchange-token");
             tracing::error!(
                 "Exchange token requested for unsupported provider '{}' by user {}",
                 p,
@@ -928,6 +979,11 @@ async fn exchange_authenticated_public_token(
             Err(StatusCode::BAD_REQUEST)
         }
         Err(ExchangeTokenError::ExchangeFailed(e)) => {
+            log_provider_credential_outcome(
+                provider,
+                StatusCode::BAD_GATEWAY,
+                "plaid.exchange-token",
+            );
             tracing::error!(
                 "Failed to exchange public token for provider {} and user {}: {}",
                 provider,
@@ -1693,6 +1749,7 @@ async fn connect_authenticated_provider(
     Json(req): Json<ProviderConnectRequest>,
 ) -> Result<Json<ProviderConnectResponse>, (StatusCode, Json<ApiErrorResponse>)> {
     if req.provider != "teller" {
+        log_provider_credential_outcome(&req.provider, StatusCode::BAD_REQUEST, "provider.connect");
         return Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
             .into_response(StatusCode::BAD_REQUEST));
     }
@@ -1702,12 +1759,25 @@ async fn connect_authenticated_provider(
         .connect_teller_provider(&auth_context.user_id, &auth_context.jwt_id, &req)
         .await
     {
-        Ok(response) => Ok(Json(response)),
+        Ok(response) => {
+            log_provider_credential_outcome("teller", StatusCode::OK, "provider.connect");
+            Ok(Json(response))
+        }
         Err(TellerConnectError::InvalidProvider(_)) => {
+            log_provider_credential_outcome(
+                &req.provider,
+                StatusCode::BAD_REQUEST,
+                "provider.connect",
+            );
             Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
                 .into_response(StatusCode::BAD_REQUEST))
         }
         Err(TellerConnectError::CredentialStorage(e)) => {
+            log_provider_credential_outcome(
+                "teller",
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "provider.connect",
+            );
             tracing::error!(
                 "Failed to store Teller credentials for user {}: {}",
                 auth_context.user_id,
@@ -1718,6 +1788,11 @@ async fn connect_authenticated_provider(
             ))
         }
         Err(TellerConnectError::ConnectionPersistence(e)) => {
+            log_provider_credential_outcome(
+                "teller",
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "provider.connect",
+            );
             tracing::error!(
                 "Failed to persist Teller connection for user {}: {}",
                 auth_context.user_id,
