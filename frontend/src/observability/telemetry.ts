@@ -7,7 +7,7 @@ import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
 import { sanitizeSpanAttributes, preventSensitiveSpans } from './sanitization';
-import { SensitiveDataSpanProcessor } from './processors';
+import { SensitiveDataSpanProcessor, HttpRouteSpanProcessor } from './processors';
 
 let tracerProvider: WebTracerProvider | null = null;
 let tracer: Tracer | null = null;
@@ -24,6 +24,46 @@ function getConfig() {
     sanitizeUrls: import.meta.env.VITE_OTEL_SANITIZE_URLS !== 'false',
     blockSensitiveEndpoints: import.meta.env.VITE_OTEL_BLOCK_SENSITIVE_ENDPOINTS !== 'false',
   };
+}
+
+function getSpanAttributes(span: Span): Record<string, unknown> {
+  return ((span as unknown as { attributes?: Record<string, unknown> }).attributes) ?? {};
+}
+
+function resolvePath(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    const resolved = new URL(url, window.location.origin);
+    return resolved.pathname || '/';
+  } catch {
+    if (url.startsWith('/')) {
+      return url;
+    }
+    return null;
+  }
+}
+
+function setHttpSpanName(span: Span, method?: string, url?: string): void {
+  const path = resolvePath(url);
+  if (!path) return;
+  const httpMethod = method?.toUpperCase() || 'GET';
+  const spanName = `${httpMethod} ${path}`;
+  span.setAttribute('http.route', path);
+  queueMicrotask(() => {
+    span.updateName(spanName);
+  });
+}
+
+function getSpanUrl(span: Span): string | undefined {
+  const attributes = getSpanAttributes(span);
+  const urlCandidates = ['http.url', 'url.full', 'http.target'];
+  for (const key of urlCandidates) {
+    const value = attributes[key];
+    if (typeof value === 'string' && value.length > 0) {
+      return value;
+    }
+  }
+  return undefined;
 }
 
 export async function initTelemetry(): Promise<Tracer | null> {
@@ -55,10 +95,11 @@ export async function initTelemetry(): Promise<Tracer | null> {
     blockSensitiveEndpoints: config.blockSensitiveEndpoints,
     redactAuthEndpoints: true,
   });
+  const routeSpanProcessor = new HttpRouteSpanProcessor();
 
   tracerProvider = new WebTracerProvider({
     resource,
-    spanProcessors: [sensitiveDataProcessor, spanProcessor],
+    spanProcessors: [sensitiveDataProcessor, routeSpanProcessor, spanProcessor],
   });
 
   trace.setGlobalTracerProvider(tracerProvider);
@@ -73,6 +114,7 @@ export async function initTelemetry(): Promise<Tracer | null> {
             clearTimingResources: true,
             ignoreNetworkEvents: true,
             applyCustomAttributesOnSpan: (span: Span, request: Request, response: Response) => {
+              setHttpSpanName(span, request.method, request.url);
               if (config.sanitizeHeaders || config.sanitizeUrls) {
                 sanitizeSpanAttributes(span, request, response);
               }
@@ -83,6 +125,12 @@ export async function initTelemetry(): Promise<Tracer | null> {
             propagateTraceHeaderCorsUrls: [/.+/],
             ignoreNetworkEvents: true,
             applyCustomAttributesOnSpan: (span: Span) => {
+              const attributes = getSpanAttributes(span);
+              setHttpSpanName(
+                span,
+                typeof attributes['http.method'] === 'string' ? attributes['http.method'] as string : undefined,
+                getSpanUrl(span),
+              );
               if (config.sanitizeHeaders || config.sanitizeUrls) {
                 sanitizeSpanAttributes(span);
               }

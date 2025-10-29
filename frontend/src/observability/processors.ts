@@ -95,3 +95,76 @@ export class SensitiveDataSpanProcessor implements SpanProcessor {
     }
   }
 }
+
+export class HttpRouteSpanProcessor implements SpanProcessor {
+  onStart(_span: Span, _parentContext: Context): void {
+  }
+
+  onEnd(span: ReadableSpan): void {
+    const attributes = span.attributes ?? {};
+    const method = this.getMethod(attributes);
+    const route = this.getRoute(attributes);
+
+    if (!method || !route) {
+      return;
+    }
+
+    const normalizedRoute = route.startsWith('/') ? route : `/${route.replace(/^\/*/, '')}`;
+    const spanName = `${method.toUpperCase()} ${normalizedRoute}`;
+
+    if (span.name !== spanName) {
+      (span as unknown as { name: string }).name = spanName;
+    }
+  }
+
+  forceFlush(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  shutdown(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  private getMethod(attributes: Record<string, unknown>): string | undefined {
+    const methodCandidates = ['http.method', 'http.request.method'];
+    for (const key of methodCandidates) {
+      const value = attributes[key];
+      if (typeof value === 'string' && value.length > 0) {
+        return value;
+      }
+    }
+    return undefined;
+  }
+
+  private getRoute(attributes: Record<string, unknown>): string | undefined {
+    if (typeof attributes['http.route'] === 'string' && attributes['http.route']) {
+      return attributes['http.route'] as string;
+    }
+
+    const urlCandidates = ['http.target', 'http.url', 'url.full'];
+    for (const key of urlCandidates) {
+      const value = attributes[key];
+      if (typeof value !== 'string' || value.length === 0) {
+        continue;
+      }
+
+      const path = this.extractPath(value);
+      if (path) {
+        return path;
+      }
+    }
+    return undefined;
+  }
+
+  private extractPath(url: string): string | undefined {
+    try {
+      const parsed = new URL(url, window.location.origin);
+      return parsed.pathname || '/';
+    } catch {
+      if (url.startsWith('/')) {
+        return url;
+      }
+      return undefined;
+    }
+  }
+}

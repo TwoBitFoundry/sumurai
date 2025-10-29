@@ -64,8 +64,8 @@ use crate::models::{
 use auth_middleware::auth_middleware;
 use config::Config;
 use middleware::telemetry_middleware::{
-    self, attach_encrypted_token_to_current_span, hash_token, with_bearer_token_attribute,
-    TelemetryConfig,
+    self, attach_encrypted_token_to_current_span, hash_token, request_tracing_middleware,
+    with_bearer_token_attribute, TelemetryConfig,
 };
 use services::repository_service::{DatabaseRepository, PostgresRepository};
 use services::{AnalyticsService, RealPlaidClient};
@@ -296,6 +296,7 @@ pub fn create_app(state: AppState) -> Router {
         .layer(OtelAxumLayer::default().try_extract_client_ip(true))
         .layer(OtelInResponseLayer)
         .layer(from_fn(with_bearer_token_attribute))
+        .layer(from_fn(request_tracing_middleware))
         .layer(from_fn(error_handling_middleware))
         .into_inner();
 
@@ -620,6 +621,9 @@ async fn logout_user(
         .and_then(|s| s.strip_prefix("Bearer "))
         .ok_or(StatusCode::UNAUTHORIZED)?;
 
+    let encrypted_token = hash_token(auth_header);
+    attach_encrypted_token_to_current_span(&encrypted_token);
+
     let claims = state
         .auth_service
         .validate_token(auth_header)
@@ -636,6 +640,11 @@ async fn logout_user(
     if let Err(e) = state.cache_service.clear_transactions().await {
         tracing::warn!("Failed to clear transaction cache during logout: {}", e);
     }
+
+    tracing::info!(
+        encrypted_token = %encrypted_token,
+        "User logged out successfully"
+    );
 
     Ok(Json(LogoutResponse {
         message: "Logged out successfully".to_string(),
@@ -664,6 +673,9 @@ async fn refresh_user_session(
         .and_then(|h| h.to_str().ok())
         .and_then(|s| s.strip_prefix("Bearer "))
         .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    let encrypted_token = hash_token(auth_header);
+    attach_encrypted_token_to_current_span(&encrypted_token);
 
     let claims = state
         .auth_service

@@ -4,12 +4,15 @@ use axum::{
 };
 use axum_tracing_opentelemetry::tracing_opentelemetry_instrumentation_sdk as otel_sdk;
 use chrono::Utc;
-use opentelemetry::{global, trace::TracerProvider};
+use opentelemetry::{
+    global,
+    trace::{TraceContextExt, TracerProvider},
+};
 use opentelemetry_otlp::{WithExportConfig, WithHttpConfig};
 use opentelemetry_sdk::{propagation::TraceContextPropagator, trace::SdkTracerProvider, Resource};
 use sha2::{Digest, Sha256};
-use std::{collections::HashMap, fmt::Write};
-use tracing::Span;
+use std::{collections::HashMap, fmt::Write, time::Instant};
+use tracing::{info_span, Span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 use tracing_subscriber::{
     filter::LevelFilter,
@@ -147,6 +150,34 @@ pub fn attach_encrypted_token_to_span(span: &Span, encrypted_token: &str) {
 pub fn attach_encrypted_token_to_current_span(encrypted_token: &str) {
     let span = Span::current();
     attach_encrypted_token_to_span(&span, encrypted_token);
+}
+
+pub async fn request_tracing_middleware(request: Request<Body>, next: Next) -> Response {
+    let method = request.method().clone();
+    let path = request.uri().path().to_string();
+    let start_time = Instant::now();
+
+    let span = info_span!(
+        "api_request",
+        http.method = %method,
+        http.route = %path,
+        http.status_code = tracing::field::Empty,
+        duration_ms = tracing::field::Empty
+    );
+
+    let span_name = format!("{method} {path}");
+    span.context().span().update_name(span_name.clone());
+
+    let _entered = span.enter();
+
+    let response = next.run(request).await;
+    let status = response.status();
+    let duration_ms = start_time.elapsed().as_secs_f64() * 1000.0;
+
+    span.record("http.status_code", status.as_u16() as i64);
+    span.record("duration_ms", duration_ms);
+
+    response
 }
 
 pub async fn with_bearer_token_attribute(request: Request<Body>, next: Next) -> Response {
