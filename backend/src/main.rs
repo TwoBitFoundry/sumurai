@@ -326,7 +326,7 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
     if status.is_server_error() {
         let trace_id = span_trace_id
             .clone()
-            .or_else(|| otel_sdk::find_current_trace_id());
+            .or_else(otel_sdk::find_current_trace_id);
         match trace_id.as_deref() {
             Some(trace_id) => {
                 tracing::error!(
@@ -357,7 +357,9 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
             return (StatusCode::INTERNAL_SERVER_ERROR, Json(error)).into_response();
         }
     } else if status.is_client_error() {
-        let trace_id = span_trace_id.or_else(|| otel_sdk::find_current_trace_id());
+        let trace_id = span_trace_id
+            .clone()
+            .or_else(otel_sdk::find_current_trace_id);
         let error_category = match status.as_u16() {
             400 => "validation_error",
             401 => "authentication_error",
@@ -369,7 +371,6 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
             _ => "client_error",
         };
 
-        let trace_id = otel_sdk::find_current_trace_id();
         let log_level = match status.as_u16() {
             401 | 403 => tracing::Level::WARN,
             _ => tracing::Level::DEBUG,

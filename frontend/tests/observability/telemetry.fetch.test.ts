@@ -101,7 +101,8 @@ describe('Telemetry Integration - Fetch Instrumentation', () => {
 
       try {
         await fetch('http://localhost:8080/api/transactions');
-      } catch {
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
       }
 
       expect(global.fetch).toHaveBeenCalled();
@@ -176,7 +177,8 @@ describe('Telemetry Integration - Fetch Instrumentation', () => {
 
       try {
         await fetch('http://localhost:8080/api/transactions');
-      } catch {
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
       }
 
       expect(global.fetch).toHaveBeenCalled();
