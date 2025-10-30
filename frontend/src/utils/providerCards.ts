@@ -103,27 +103,27 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
     backgroundClassName: 'bg-[#34d399]/20 dark:bg-[#34d399]/20',
     textClassName: 'text-[#10b981] dark:text-[#34d399]',
   },
-  heroTitle: 'Connect your Accounts',
+  heroTitle: 'Connect your accounts',
   heroDescription:
     'Securely link accounts to unlock live dashboards and automated budgets. Plaid uses industry-standard encryption so your credentials remain private.',
-  highlightLabel: 'Why Plaid?',
-  highlightMeta: 'Trusted by 12k+ apps',
+  highlightLabel: 'What you\'ll connect',
+  highlightMeta: 'Read-only by design',
   features: [
     {
-      icon: ShieldCheck,
-      title: 'Secure',
-      body: 'Bank-grade encryption and limited access.',
+      icon: Landmark,
+      title: 'Global accounts & balances',
+      body: 'See your checking, savings, cards, and up-to-date balances in one place.',
       palette: {
-        gradient: 'from-sky-400/55 via-sky-500/25 to-sky-500/5',
-        ring: 'ring-sky-300/35',
-        icon: 'text-sky-700 dark:text-sky-100',
-        glow: 'shadow-[0_16px_40px_-24px_rgba(14,165,233,0.55)]',
+        gradient: 'from-emerald-400/55 via-emerald-500/25 to-emerald-500/5',
+        ring: 'ring-emerald-300/35',
+        icon: 'text-emerald-700 dark:text-emerald-100',
+        glow: 'shadow-[0_16px_40px_-24px_rgba(16,185,129,0.55)]',
       },
     },
     {
       icon: Zap,
-      title: 'Fast',
-      body: 'All accounts synced in a snap.',
+      title: 'Detailed transactions',
+      body: 'New purchases and payments appear automatically for accurate budgets.',
       palette: {
         gradient: 'from-amber-400/55 via-amber-500/25 to-amber-500/5',
         ring: 'ring-amber-300/35',
@@ -132,14 +132,14 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
       },
     },
     {
-      icon: Landmark,
-      title: '11k+ banks',
-      body: 'Covering major institutions and credit unions.',
+      icon: Sparkles,
+      title: 'Rich categorizations',
+      body: 'Merchants and categories are tidied so reports are easy to understand.',
       palette: {
-        gradient: 'from-emerald-400/55 via-emerald-500/25 to-emerald-500/5',
-        ring: 'ring-emerald-300/35',
-        icon: 'text-emerald-700 dark:text-emerald-100',
-        glow: 'shadow-[0_16px_40px_-24px_rgba(16,185,129,0.55)]',
+        gradient: 'from-purple-400/55 via-purple-500/25 to-purple-500/5',
+        ring: 'ring-purple-300/35',
+        icon: 'text-purple-700 dark:text-purple-100',
+        glow: 'shadow-[0_16px_40px_-24px_rgba(168,85,247,0.55)]',
       },
     },
   ],
@@ -158,8 +158,8 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
     },
     {
       icon: ShieldCheck,
-      title: 'Protected access',
-      body: 'MFA, device fingerprinting, and tokenization guard each sync.',
+      title: 'Bank-grade protection',
+      body: 'The connection is encrypted and identity-verified before any data is shared.',
       palette: {
         gradient: 'from-sky-400/55 via-sky-500/25 to-sky-500/5',
         ring: 'ring-sky-300/35',
@@ -208,7 +208,7 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
     backgroundClassName: 'bg-[#38bdf8]/20 dark:bg-[#38bdf8]/15',
     textClassName: 'text-[#0284c7] dark:text-[#38bdf8]',
   },
-  heroTitle: 'Connect with Teller',
+  heroTitle: 'Connect your accounts',
   heroDescription:
     'Launch Teller Connect using your own API keys to sync accounts without handing off long-lived credentials. Keep full control while budgets stay real-time.',
   highlightLabel: 'What you\'ll connect',
@@ -216,7 +216,7 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
   features: [
     {
       icon: Landmark,
-      title: 'Accounts & balances',
+      title: 'US Accounts & balances',
       body: 'See your checking, savings, cards, and up-to-date balances in one place.',
       palette: {
         gradient: 'from-emerald-400/55 via-emerald-500/25 to-emerald-500/5',
