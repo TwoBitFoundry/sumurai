@@ -815,6 +815,16 @@ impl ConnectionService {
             cleared_keys.push(balances_key);
         }
 
+        let net_worth_pattern = format!("{}_net_worth_over_time_*", jwt_id);
+        if self
+            .cache_service
+            .invalidate_pattern(&net_worth_pattern)
+            .await
+            .is_ok()
+        {
+            cleared_keys.push(net_worth_pattern);
+        }
+
         Ok(cleared_keys)
     }
 
