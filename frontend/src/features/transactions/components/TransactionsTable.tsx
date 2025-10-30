@@ -4,7 +4,8 @@ import { fmtUSD } from '../../../utils/format'
 import { getTagThemeForCategory, formatCategoryName } from '../../../utils/categories'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import { AnimatePresence, motion } from 'framer-motion'
-import { cn } from '@/ui/primitives'
+import { Receipt } from 'lucide-react'
+import { cn, EmptyState } from '@/ui/primitives'
 
 interface Props {
   items: Transaction[]
@@ -29,13 +30,11 @@ export const TransactionsTable: React.FC<Props> = ({ items, total, currentPage, 
   return (
     <div className="overflow-hidden">
       {total === 0 ? (
-        <div className={cn('flex', 'items-center', 'justify-center', 'py-20')}>
-          <div className="text-center">
-            <div className={cn('text-6xl', 'mb-4', 'opacity-30')}>📋</div>
-            <div className={cn('text-lg', 'font-semibold', 'text-slate-700', 'transition-colors', 'duration-500', 'dark:text-slate-200')}>No transactions found</div>
-            <div className={cn('text-sm', 'text-slate-500', 'transition-colors', 'duration-500', 'dark:text-slate-400')}>No transaction data available for the selected filters</div>
-          </div>
-        </div>
+        <EmptyState
+          icon={Receipt}
+          title="No transactions found"
+          description="No transaction data available for the selected filters"
+        />
       ) : (
         <>
           <div className="overflow-x-auto">

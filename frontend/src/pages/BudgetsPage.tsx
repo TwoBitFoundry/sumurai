@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Card from '../components/ui/Card'
-import { Calendar as CalendarIcon, Loader2, Plus, CheckCircle2, Activity, Clock, AlertTriangle } from 'lucide-react'
+import { Calendar as CalendarIcon, Loader2, Plus, CheckCircle2, Activity, Clock, AlertTriangle, Target } from 'lucide-react'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import { BudgetForm, type BudgetFormValue } from '../features/budgets/components/BudgetForm'
 import { BudgetList, type BudgetWithProgress } from '../features/budgets/components/BudgetList'
@@ -10,7 +10,7 @@ import { formatCategoryName } from '../utils/categories'
 import HeroStatCard, { type HeroPill } from '../components/widgets/HeroStatCard'
 import { PageLayout } from '../layouts/PageLayout'
 import { BudgetCalculator } from '../domain/BudgetCalculator'
-import { cn } from '@/ui/primitives'
+import { cn, EmptyState } from '@/ui/primitives'
 
 export default function BudgetsPage() {
   const {
@@ -271,15 +271,17 @@ export default function BudgetsPage() {
                 </div>
               </div>
               {isAdding && (
-                <div className={cn('px-6', 'pb-6')}>
-                  <BudgetForm
-                    categories={categoryOptions}
-                    usedCategories={usedCategories}
-                    value={form}
-                    onChange={setForm}
-                    onSave={onSaveAdd}
-                    onCancel={cancel}
-                  />
+                <div className={cn('px-6', 'pb-6', 'flex', 'justify-center')}>
+                  <div className="w-full max-w-md">
+                    <BudgetForm
+                      categories={categoryOptions}
+                      usedCategories={usedCategories}
+                      value={form}
+                      onChange={setForm}
+                      onSave={onSaveAdd}
+                      onCancel={cancel}
+                    />
+                  </div>
                 </div>
               )}
               <BudgetList
@@ -293,34 +295,35 @@ export default function BudgetsPage() {
             </>
           ) : (
             <>
-              <div className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'gap-4', 'px-6', 'py-20', 'text-center', 'sm:px-12')} data-testid="budgets-empty-state">
-                <div className={cn('flex', 'h-16', 'w-16', 'items-center', 'justify-center', 'rounded-full', 'bg-gradient-to-br', 'from-sky-400/20', 'via-sky-300/25', 'to-violet-500/20', 'text-4xl')}>
-                  💰
-                </div>
-                <div className={cn('text-lg', 'font-semibold', 'text-slate-700', 'transition-colors', 'duration-500', 'dark:text-slate-200')}>No budgets found</div>
-                <div className={cn('text-sm', 'text-slate-500', 'transition-colors', 'duration-500', 'dark:text-slate-400')}>
-                  Create your first category plan to watch spending settle into rhythm.
-                </div>
-                {!isAdding && (
-                  <button
-                    onClick={startAdd}
-                    className={cn('inline-flex', 'items-center', 'gap-2', 'rounded-full', 'bg-gradient-to-r', 'from-sky-500', 'via-sky-400', 'to-violet-500', 'px-5', 'py-2.5', 'text-sm', 'font-semibold', 'text-white', 'shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)]', 'transition-transform', 'duration-300', 'hover:-translate-y-[3px]', 'focus-visible:outline-none', 'focus-visible:ring-2', 'focus-visible:ring-sky-400', 'focus-visible:ring-offset-2', 'focus-visible:ring-offset-white', 'dark:focus-visible:ring-offset-[#0f172a]')}
-                  >
-                    <Plus className={cn('h-4', 'w-4')} />
-                    Add budget
-                  </button>
-                )}
-              </div>
+              <EmptyState
+                icon={Target}
+                title="No budgets found"
+                description="Create your first category plan to watch spending settle into rhythm."
+                action={
+                  !isAdding ? (
+                    <button
+                      onClick={startAdd}
+                      className={cn('inline-flex', 'items-center', 'gap-2', 'rounded-full', 'bg-gradient-to-r', 'from-sky-500', 'via-sky-400', 'to-violet-500', 'px-5', 'py-2.5', 'text-sm', 'font-semibold', 'text-white', 'shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)]', 'transition-transform', 'duration-300', 'hover:-translate-y-[3px]', 'focus-visible:outline-none', 'focus-visible:ring-2', 'focus-visible:ring-sky-400', 'focus-visible:ring-offset-2', 'focus-visible:ring-offset-white', 'dark:focus-visible:ring-offset-[#0f172a]')}
+                    >
+                      <Plus className={cn('h-4', 'w-4')} />
+                      Add budget
+                    </button>
+                  ) : null
+                }
+                data-testid="budgets-empty-state"
+              />
               {isAdding && (
-                <div className={cn('px-6', 'pb-6')}>
-                  <BudgetForm
-                    categories={categoryOptions}
-                    usedCategories={usedCategories}
-                    value={form}
-                    onChange={setForm}
-                    onSave={onSaveAdd}
-                    onCancel={cancel}
-                  />
+                <div className={cn('px-6', 'pb-6', 'flex', 'justify-center')}>
+                  <div className="w-full max-w-md">
+                    <BudgetForm
+                      categories={categoryOptions}
+                      usedCategories={usedCategories}
+                      value={form}
+                      onChange={setForm}
+                      onSave={onSaveAdd}
+                      onCancel={cancel}
+                    />
+                  </div>
                 </div>
               )}
             </>

@@ -3,9 +3,10 @@ import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categ
 import { fmtUSD } from '../../../utils/format'
 import { PencilSquareIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { TrashIcon as TrashSolidIcon } from '@heroicons/react/24/solid'
+import { Target } from 'lucide-react'
 import BudgetProgress from './BudgetProgress'
 import type { BudgetProgressEntry } from '../hooks/useBudgets'
-import { cn } from '@/ui/primitives'
+import { cn, EmptyState } from '@/ui/primitives'
 
 export type BudgetWithProgress = BudgetProgressEntry
 
@@ -28,11 +29,12 @@ export function BudgetList({
 
   if (items.length === 0) {
     return (
-      <div className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'gap-3', 'rounded-[1.75rem]', 'border', 'border-slate-200/70', 'bg-white/90', 'p-10', 'text-center', 'text-sm', 'text-slate-500', 'shadow-[0_32px_80px_-58px_rgba(15,23,42,0.45)]', 'transition-colors', 'duration-300', 'dark:border-white/10', 'dark:bg-[#111a2f]/85', 'dark:text-slate-400', 'dark:shadow-[0_32px_90px_-60px_rgba(2,6,23,0.65)]')}>
-        <div className={cn('text-lg', 'font-semibold', 'text-slate-700', 'dark:text-slate-200')}>No budgets found</div>
-        <p className={cn('max-w-sm', 'text-xs', 'text-slate-500', 'dark:text-slate-400')}>
-          Create your first budget to start tracking spending targets for each category.
-        </p>
+      <div className={cn('px-6', 'py-12')}>
+        <EmptyState
+          icon={Target}
+          title="No budgets found"
+          description="Create your first budget to start tracking spending targets for each category."
+        />
       </div>
     )
   }

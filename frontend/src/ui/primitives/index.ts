@@ -33,4 +33,7 @@ export type { AppTitleBarProps } from './AppTitleBar'
 
 export { AppFooter } from './AppFooter'
 
+export { EmptyState } from './EmptyState'
+export type { EmptyStateProps } from './EmptyState'
+
 export { cn } from './utils'
