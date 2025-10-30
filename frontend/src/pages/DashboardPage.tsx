@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { RefreshCcw } from 'lucide-react'
+import { RefreshCcw, TrendingUp } from 'lucide-react'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { ActiveDotProps, ActiveDotType } from 'recharts/types/util/types'
 import type { TooltipProps } from 'recharts'
 
 import BalancesOverview from '../components/BalancesOverview'
 import Card from '../components/ui/Card'
-import { cn } from '@/ui/primitives/utils'
+import { cn, EmptyState } from '@/ui/primitives'
 import { DashboardCalculator } from '../domain/DashboardCalculator'
 import { useTheme } from '../context/ThemeContext'
 import { categoriesToDonut } from '../features/analytics/adapters/chartData'
@@ -192,7 +192,13 @@ const DashboardPage: React.FC = () => {
             ) : netError ? (
               <div className={cn('flex-1', 'min-h-[220px]', 'text-sm', 'text-rose-600', 'dark:text-rose-400')}>{netError}</div>
             ) : netSeries.length === 0 ? (
-              <div className={cn('flex-1', 'min-h-[220px]', 'text-sm', 'text-slate-500', 'dark:text-slate-400')}>No data for this range.</div>
+              <div className={cn('flex-1', 'min-h-[220px]', 'flex', 'items-center', 'justify-center')}>
+                <EmptyState
+                  icon={TrendingUp}
+                  title="No net worth data"
+                  description="No data available for this date range"
+                />
+              </div>
             ) : (
               <div className={cn('flex-1', 'min-h-[240px]', 'overflow-hidden')}>
                 <ResponsiveContainer width="100%" height="100%">

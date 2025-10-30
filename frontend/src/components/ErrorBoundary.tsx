@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { trace, SpanStatusCode } from '@opentelemetry/api'
+import { Lock, WifiOff, Wrench, AlertCircle } from 'lucide-react'
 import { ApiError, AuthenticationError } from '../services/ApiClient'
 import { Button, GlassCard } from '@/ui/primitives'
 import { cn } from '@/ui/primitives/utils'
@@ -111,12 +112,12 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private renderCard({
-    icon,
+    icon: Icon,
     title,
     message,
     actions,
   }: {
-    icon: string
+    icon: React.ComponentType<{ className?: string }>
     title: string
     message: string
     actions?: React.ReactNode
@@ -129,8 +130,8 @@ export class ErrorBoundary extends Component<Props, State> {
         withInnerEffects={false}
         className={cn('space-y-5', 'text-center')}
       >
-        <div className="text-4xl" aria-hidden>
-          {icon}
+        <div className={cn('flex', 'justify-center')}>
+          <Icon className={cn('h-10', 'w-10', 'text-slate-600', 'dark:text-slate-400')} />
         </div>
         <div className="space-y-2">
           <h2 className={cn('text-xl', 'font-semibold', 'text-slate-900', 'dark:text-white')}>{title}</h2>
@@ -151,7 +152,7 @@ export class ErrorBoundary extends Component<Props, State> {
     switch (errorType) {
       case 'auth':
         return this.renderCard({
-          icon: '🔐',
+          icon: Lock,
           title: 'Authentication Required',
           message: 'Please log in to continue using the application.',
           actions: (
@@ -162,7 +163,7 @@ export class ErrorBoundary extends Component<Props, State> {
         })
       case 'network':
         return this.renderCard({
-          icon: '📶',
+          icon: WifiOff,
           title: 'Connection Problem',
           message: 'Please check your internet connection and try again.',
           actions: (
@@ -178,7 +179,7 @@ export class ErrorBoundary extends Component<Props, State> {
         })
       case 'server':
         return this.renderCard({
-          icon: '🔧',
+          icon: Wrench,
           title: 'Server Temporarily Unavailable',
           message: 'Our server is temporarily unavailable. Please try again in a few minutes.',
           actions: (
@@ -189,7 +190,7 @@ export class ErrorBoundary extends Component<Props, State> {
         })
       default:
         return this.renderCard({
-          icon: '⚠️',
+          icon: AlertCircle,
           title: 'Something Went Wrong',
           message: sanitizedMessage || 'An unexpected error occurred. Please try refreshing the page.',
           actions: (
