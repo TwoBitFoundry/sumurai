@@ -5,7 +5,6 @@ import {
   Eye,
   Fingerprint,
   Landmark,
-  Network,
   ShieldCheck,
   Sparkles,
   Zap,
@@ -64,8 +63,7 @@ type ProviderHighlight = {
 type FeaturePalette = {
   gradient: string
   ring: string
-  iconLight: string
-  iconDark: string
+  icon: string
   glow: string
 }
 
@@ -118,8 +116,7 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
       palette: {
         gradient: 'from-sky-400/55 via-sky-500/25 to-sky-500/5',
         ring: 'ring-sky-300/35',
-        iconLight: 'text-sky-700',
-        iconDark: 'text-sky-100',
+        icon: 'text-sky-700 dark:text-sky-100',
         glow: 'shadow-[0_16px_40px_-24px_rgba(14,165,233,0.55)]',
       },
     },
@@ -130,8 +127,7 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
       palette: {
         gradient: 'from-amber-400/55 via-amber-500/25 to-amber-500/5',
         ring: 'ring-amber-300/35',
-        iconLight: 'text-amber-700',
-        iconDark: 'text-amber-100',
+        icon: 'text-amber-700 dark:text-amber-100',
         glow: 'shadow-[0_16px_40px_-24px_rgba(245,158,11,0.55)]',
       },
     },
@@ -142,8 +138,7 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
       palette: {
         gradient: 'from-emerald-400/55 via-emerald-500/25 to-emerald-500/5',
         ring: 'ring-emerald-300/35',
-        iconLight: 'text-emerald-700',
-        iconDark: 'text-emerald-100',
+        icon: 'text-emerald-700 dark:text-emerald-100',
         glow: 'shadow-[0_16px_40px_-24px_rgba(16,185,129,0.55)]',
       },
     },
@@ -216,75 +211,48 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
   heroTitle: 'Connect with Teller',
   heroDescription:
     'Launch Teller Connect using your own API keys to sync accounts without handing off long-lived credentials. Keep full control while budgets stay real-time.',
-  highlightLabel: 'Why Teller?',
-  highlightMeta: 'Bring your own credentials',
+  highlightLabel: 'What you\'ll connect',
+  highlightMeta: 'Read-only access',
   features: [
     {
-      icon: ShieldCheck,
-      title: 'Mutual TLS',
-      body: 'Every session authenticates with mutual TLS so your API keys stay in your infrastructure.',
+      icon: Landmark,
+      title: 'Accounts & balances',
+      body: 'See your checking, savings, cards, and up-to-date balances in one place.',
       palette: {
         gradient: 'from-emerald-400/55 via-emerald-500/25 to-emerald-500/5',
         ring: 'ring-emerald-300/35',
-        iconLight: 'text-emerald-700',
-        iconDark: 'text-emerald-100',
+        icon: 'text-emerald-700 dark:text-emerald-100',
         glow: 'shadow-[0_16px_40px_-24px_rgba(16,185,129,0.55)]',
       },
     },
     {
-      icon: Network,
-      title: 'Direct connections',
-      body: 'Connect straight to Teller-supported institutions with zero credential sharing.',
+      icon: Zap,
+      title: 'Recent transactions',
+      body: 'New purchases and payments appear automatically for accurate budgets.',
       palette: {
-        gradient: 'from-sky-400/55 via-sky-500/25 to-sky-500/5',
-        ring: 'ring-sky-300/35',
-        iconLight: 'text-sky-700',
-        iconDark: 'text-sky-100',
-        glow: 'shadow-[0_16px_40px_-24px_rgba(14,165,233,0.55)]',
+        gradient: 'from-amber-400/55 via-amber-500/25 to-amber-500/5',
+        ring: 'ring-amber-300/35',
+        icon: 'text-amber-700 dark:text-amber-100',
+        glow: 'shadow-[0_16px_40px_-24px_rgba(245,158,11,0.55)]',
       },
     },
     {
       icon: Sparkles,
-      title: 'Developer-first',
-      body: 'Predictable REST responses and real-time ledger balances keep automation simple.',
+      title: 'Clean categories',
+      body: 'Merchants and categories are tidied so reports are easy to understand.',
       palette: {
         gradient: 'from-purple-400/55 via-purple-500/25 to-purple-500/5',
         ring: 'ring-purple-300/35',
-        iconLight: 'text-purple-700',
-        iconDark: 'text-purple-100',
+        icon: 'text-purple-700 dark:text-purple-100',
         glow: 'shadow-[0_16px_40px_-24px_rgba(168,85,247,0.55)]',
       },
     },
   ],
   highlights: [
     {
-      icon: Building2,
-      title: 'Bring your own keys',
-      body: 'Operate with Teller application keys so you stay the owner of access and revocation.',
-      palette: {
-        gradient: 'from-emerald-400/55 via-emerald-500/25 to-emerald-500/5',
-        ring: 'ring-emerald-300/35',
-        iconLight: 'text-emerald-700',
-        iconDark: 'text-emerald-100',
-        glow: 'shadow-[0_18px_45px_-25px_rgba(16,185,129,0.55)]',
-      },
-    },
-    {
-      icon: Fingerprint,
-      title: 'mTLS handshake',
-      body: 'Mutual TLS validates every request—credentials never touch third-party systems.',
-      palette: {
-        gradient: 'from-teal-400/55 via-teal-500/25 to-teal-500/5',
-        ring: 'ring-teal-300/35',
-        iconLight: 'text-teal-700',
-        iconDark: 'text-teal-100',
-        glow: 'shadow-[0_18px_45px_-25px_rgba(13,148,136,0.55)]',
-      },
-    },
-    {
-      icon: Landmark,
-      title: 'Real-time balances',
-      body: 'Ledger and available balances are fetched on every sync so dashboards stay accurate.',
+      icon: Eye,
+      title: 'Read-only by design',
+      body: 'We can\'t move money or make changes—only view balances and transactions.',
       palette: {
         gradient: 'from-sky-400/55 via-sky-500/25 to-sky-500/5',
         ring: 'ring-sky-300/35',
@@ -294,9 +262,9 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
       },
     },
     {
-      icon: Eye,
-      title: 'Operational visibility',
-      body: 'Detailed webhook events and logs keep every sync auditable.',
+      icon: Fingerprint,
+      title: 'You\'re in control',
+      body: 'Disconnect anytime from settings; access stops immediately.',
       palette: {
         gradient: 'from-violet-400/55 via-violet-500/25 to-violet-500/5',
         ring: 'ring-violet-300/35',
@@ -305,13 +273,37 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
         glow: 'shadow-[0_18px_45px_-25px_rgba(139,92,246,0.6)]',
       },
     },
+    {
+      icon: ShieldCheck,
+      title: 'Bank-grade protection',
+      body: 'The connection is encrypted and identity-verified before any data is shared.',
+      palette: {
+        gradient: 'from-emerald-400/55 via-emerald-500/25 to-emerald-500/5',
+        ring: 'ring-emerald-300/35',
+        iconLight: 'text-emerald-700',
+        iconDark: 'text-emerald-100',
+        glow: 'shadow-[0_18px_45px_-25px_rgba(16,185,129,0.55)]',
+      },
+    },
+    {
+      icon: Building2,
+      title: 'Fully transparent',
+      body: 'Every sync is logged so you can see what was accessed and when.',
+      palette: {
+        gradient: 'from-amber-400/55 via-amber-500/25 to-amber-500/5',
+        ring: 'ring-amber-300/35',
+        iconLight: 'text-amber-700',
+        iconDark: 'text-amber-200',
+        glow: 'shadow-[0_18px_45px_-25px_rgba(245,158,11,0.65)]',
+      },
+    },
   ],
   cta: {
     defaultLabel: 'Launch Teller Connect',
     badge: 'mTLS',
   },
   securityNote:
-    '🔒 Teller Connect uses mutual TLS so your API keys remain in your control. Connections stay read-only and can be revoked instantly.',
+    '🔒 Industry-grade security standards and connections. Disconnect anytime.',
   requiresApplicationId: true,
   applicationIdMissingCopy:
     'Teller onboarding requires a Teller application ID. Add it in provider settings before connecting.',
