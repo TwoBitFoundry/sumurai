@@ -1,0 +1,143 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`EmptyState > snapshots > matches snapshot with action 1`] = `
+<div
+  class="flex flex-col items-center justify-center gap-4 px-6 py-20 text-center sm:px-12"
+>
+  <div
+    class="flex h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20 items-center justify-center rounded-full bg-gradient-to-br from-slate-400/10 via-slate-300/15 to-slate-500/10 text-slate-600 transition-all duration-300 ease-out hover:scale-110 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.4),0_0_60px_rgba(59,130,246,0.2)] dark:text-slate-300 dark:from-slate-500/10 dark:via-slate-600/15 dark:to-slate-700/10 dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)] cursor-pointer"
+  >
+    <svg
+      aria-hidden="true"
+      class="lucide lucide-receipt h-6 w-6 md:h-8 md:w-8 lg:h-10 lg:w-10"
+      fill="none"
+      height="24"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+      width="24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"
+      />
+      <path
+        d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"
+      />
+      <path
+        d="M12 17.5v-11"
+      />
+    </svg>
+  </div>
+  <div
+    class="text-lg font-semibold text-slate-700 transition-colors duration-500 dark:text-slate-200"
+  >
+    No transactions
+  </div>
+  <div
+    class="text-sm text-slate-500 transition-colors duration-500 dark:text-slate-400 max-w-sm"
+  >
+    No transaction data available
+  </div>
+  <div
+    class="mt-2"
+  >
+    <button>
+      Import
+    </button>
+  </div>
+</div>
+`;
+
+exports[`EmptyState > snapshots > matches snapshot with basic props 1`] = `
+<div
+  class="flex flex-col items-center justify-center gap-4 px-6 py-20 text-center sm:px-12"
+>
+  <div
+    class="flex h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20 items-center justify-center rounded-full bg-gradient-to-br from-slate-400/10 via-slate-300/15 to-slate-500/10 text-slate-600 transition-all duration-300 ease-out hover:scale-110 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.4),0_0_60px_rgba(59,130,246,0.2)] dark:text-slate-300 dark:from-slate-500/10 dark:via-slate-600/15 dark:to-slate-700/10 dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)] cursor-pointer"
+  >
+    <svg
+      aria-hidden="true"
+      class="lucide lucide-target h-6 w-6 md:h-8 md:w-8 lg:h-10 lg:w-10"
+      fill="none"
+      height="24"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+      width="24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+      />
+      <circle
+        cx="12"
+        cy="12"
+        r="6"
+      />
+      <circle
+        cx="12"
+        cy="12"
+        r="2"
+      />
+    </svg>
+  </div>
+  <div
+    class="text-lg font-semibold text-slate-700 transition-colors duration-500 dark:text-slate-200"
+  >
+    No items
+  </div>
+  <div
+    class="text-sm text-slate-500 transition-colors duration-500 dark:text-slate-400 max-w-sm"
+  >
+    Create your first item
+  </div>
+</div>
+`;
+
+exports[`EmptyState > snapshots > matches snapshot with custom className 1`] = `
+<div
+  class="flex flex-col items-center justify-center gap-4 px-6 py-20 text-center sm:px-12 mt-8"
+>
+  <div
+    class="flex h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20 items-center justify-center rounded-full bg-gradient-to-br from-slate-400/10 via-slate-300/15 to-slate-500/10 text-slate-600 transition-all duration-300 ease-out hover:scale-110 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.4),0_0_60px_rgba(59,130,246,0.2)] dark:text-slate-300 dark:from-slate-500/10 dark:via-slate-600/15 dark:to-slate-700/10 dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)] cursor-pointer"
+  >
+    <svg
+      aria-hidden="true"
+      class="lucide lucide-trending-up h-6 w-6 md:h-8 md:w-8 lg:h-10 lg:w-10"
+      fill="none"
+      height="24"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+      width="24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M16 7h6v6"
+      />
+      <path
+        d="m22 7-8.5 8.5-5-5L2 17"
+      />
+    </svg>
+  </div>
+  <div
+    class="text-lg font-semibold text-slate-700 transition-colors duration-500 dark:text-slate-200"
+  >
+    No data
+  </div>
+  <div
+    class="text-sm text-slate-500 transition-colors duration-500 dark:text-slate-400 max-w-sm"
+  >
+    No data available
+  </div>
+</div>
+`;
