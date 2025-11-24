@@ -84,6 +84,7 @@ const TransactionsPage: React.FC = () => {
   // No local scroll fade management needed
 
   return (
+    <div data-testid="transactions-page">
     <PageLayout
       badge="Transaction History"
       title="Review every dollar across accounts"
@@ -182,6 +183,7 @@ const TransactionsPage: React.FC = () => {
         </div>
       </div>
     </PageLayout>
+    </div>
   )
 }
 

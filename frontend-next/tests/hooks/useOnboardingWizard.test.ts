@@ -1,4 +1,5 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
+import { vi } from 'vitest'
 import { useOnboardingWizard } from '@/hooks/useOnboardingWizard'
 
 describe('useOnboardingWizard', () => {

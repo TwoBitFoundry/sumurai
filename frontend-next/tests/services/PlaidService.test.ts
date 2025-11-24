@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { jest } from '@jest/globals'
 import { PlaidService } from '@/services/PlaidService'
 import { ApiClient, AuthenticationError } from '@/services/ApiClient'
 import type {
@@ -10,11 +11,19 @@ import type {
   Account
 } from '@/types/api'
 
-jest.mock('@/services/ApiClient')
-
 describe('PlaidService', () => {
+  let postSpy: jest.SpiedFunction<typeof ApiClient.post>
+  let getSpy: jest.SpiedFunction<typeof ApiClient.get>
+
   beforeEach(() => {
     vi.clearAllMocks()
+    postSpy = jest.spyOn(ApiClient, 'post')
+    getSpy = jest.spyOn(ApiClient, 'get')
+  })
+
+  afterEach(() => {
+    postSpy.mockRestore()
+    getSpy.mockRestore()
   })
 
   describe('getLinkToken', () => {
@@ -22,7 +31,7 @@ describe('PlaidService', () => {
       const mockResponse: PlaidLinkTokenResponse = {
         link_token: 'link-sandbox-abc123'
       }
-      vi.mocked(ApiClient.post).mockResolvedValue(mockResponse)
+      postSpy.mockResolvedValue(mockResponse as any)
 
       const result = await PlaidService.getLinkToken()
 
@@ -31,7 +40,7 @@ describe('PlaidService', () => {
     })
 
     it('should handle authentication errors', async () => {
-      vi.mocked(ApiClient.post).mockRejectedValue(new AuthenticationError())
+      postSpy.mockRejectedValue(new AuthenticationError())
 
       await expect(PlaidService.getLinkToken())
         .rejects.toThrow(AuthenticationError)
@@ -44,7 +53,7 @@ describe('PlaidService', () => {
       const mockResponse: PlaidExchangeTokenResponse = {
         access_token: 'access-sandbox-abc123-encrypted'
       }
-      vi.mocked(ApiClient.post).mockResolvedValue(mockResponse)
+      postSpy.mockResolvedValue(mockResponse as any)
 
       const result = await PlaidService.exchangeToken(publicToken)
 
@@ -130,7 +139,7 @@ describe('PlaidService', () => {
           connection_updated: true
         }
       }
-      vi.mocked(ApiClient.post).mockResolvedValue(mockResponse)
+      postSpy.mockResolvedValue(mockResponse as any)
 
       const result = await PlaidService.syncTransactions()
 
@@ -162,7 +171,7 @@ describe('PlaidService', () => {
           connection_updated: true
         }
       }
-      vi.mocked(ApiClient.post).mockResolvedValue(mockResponse)
+      postSpy.mockResolvedValue(mockResponse as any)
 
       const result = await PlaidService.syncTransactions(connectionId)
 
@@ -230,7 +239,7 @@ describe('PlaidService', () => {
           cache_keys: ['cache_key_1', 'cache_key_2']
         }
       }
-      vi.mocked(ApiClient.post).mockResolvedValue(mockResponse)
+      postSpy.mockResolvedValue(mockResponse as any)
 
       const result = await PlaidService.disconnect('conn-123')
 

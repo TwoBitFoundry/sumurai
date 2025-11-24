@@ -75,6 +75,7 @@ const DashboardPage: React.FC = () => {
   const netYAxisDomain = useMemo(() => DashboardCalculator.calculateNetYAxisDomain(netSeries), [netSeries])
 
   return (
+    <div data-testid="dashboard-page">
     <PageLayout
       badge="Dashboard"
       title="Overview of Balances"
@@ -302,6 +303,7 @@ const DashboardPage: React.FC = () => {
         </div>
       </div>
     </PageLayout>
+    </div>
   )
 }
 

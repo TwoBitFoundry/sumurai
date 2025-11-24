@@ -151,7 +151,10 @@ export const BankCard: React.FC<BankCardProps> = ({
               <div className={cn('flex', 'items-center', 'gap-2', 'text-xs')}>
                 <StatusPill status={bank.status} />
                 <span className={cn('text-slate-600', 'dark:text-slate-300')}>
-                  Last sync {relativeTime(bank.lastSync)}
+                  {(() => {
+                    const label = relativeTime(bank.lastSync);
+                    return `Last sync ${label.includes('ago') ? label : `${label} ago`}`;
+                  })()}
                 </span>
               </div>
             </div>

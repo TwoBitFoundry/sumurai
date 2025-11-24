@@ -303,6 +303,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   )
 
   return (
+    <div data-testid="accounts-page">
     <PageLayout
       badge={`${providerLabel} Accounts`}
       title="Link banks and keep balances current"
@@ -316,6 +317,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         {toast && <Toast message={toast} onClose={() => setToast(null)} />}
       </AnimatePresence>
     </PageLayout>
+    </div>
   )
 }
 

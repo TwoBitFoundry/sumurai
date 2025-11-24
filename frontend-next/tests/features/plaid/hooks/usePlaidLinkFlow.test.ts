@@ -1,8 +1,9 @@
 import { renderHook, act } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { usePlaidLinkFlow } from '@/features/plaid/hooks/usePlaidLinkFlow'
+import { ApiClient } from '@/services/ApiClient'
 
-const plaidLinkMock = vi.hoisted(() => {
+const plaidLinkMock = (() => {
   const open = vi.fn()
   let config: any = null
   return {
@@ -16,9 +17,9 @@ const plaidLinkMock = vi.hoisted(() => {
       config = opts
     },
   }
-})
+})()
 
-const plaidConnectionsMock = vi.hoisted(() => ({
+const plaidConnectionsMock = {
   connections: [] as any[],
   loading: false,
   error: null as string | null,
@@ -28,18 +29,7 @@ const plaidConnectionsMock = vi.hoisted(() => ({
   setConnectionSyncInProgress: vi.fn(),
   refresh: vi.fn(),
   getConnection: vi.fn(),
-}))
-
-const plaidServiceMock = vi.hoisted(() => ({
-  getStatus: vi.fn(),
-  exchangeToken: vi.fn(),
-  syncTransactions: vi.fn(),
-  disconnect: vi.fn(),
-}))
-
-const apiClientMock = vi.hoisted(() => ({
-  post: vi.fn(),
-}))
+}
 
 jest.mock('react-plaid-link', () => ({
   usePlaidLink: (opts: any) => {
@@ -53,12 +43,22 @@ jest.mock('@/hooks/usePlaidConnections', () => ({
 }))
 
 jest.mock('@/services/PlaidService', () => ({
-  PlaidService: plaidServiceMock,
+  PlaidService: {
+    getStatus: vi.fn(),
+    exchangeToken: vi.fn(),
+    syncTransactions: vi.fn(),
+    disconnect: vi.fn(),
+  },
 }))
 
 jest.mock('@/services/ApiClient', () => ({
-  ApiClient: apiClientMock,
+  ApiClient: {
+    post: vi.fn(),
+  },
 }))
+
+const plaidServiceMock = jest.requireMock('@/services/PlaidService').PlaidService as Record<string, jest.Mock>
+const apiClientMock = jest.requireMock('@/services/ApiClient').ApiClient as { post: jest.Mock }
 
 describe('usePlaidLinkFlow', () => {
   beforeEach(() => {

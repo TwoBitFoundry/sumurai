@@ -1,13 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { jest } from '@jest/globals'
 import { TransactionService } from '@/services/TransactionService'
 import { ApiClient, AuthenticationError } from '@/services/ApiClient'
 import type { Transaction } from '@/types/api'
 
-jest.mock('@/services/ApiClient')
-
 describe('TransactionService', () => {
+  let getSpy: jest.SpiedFunction<typeof ApiClient.get>
+
   beforeEach(() => {
     vi.clearAllMocks()
+    getSpy = jest.spyOn(ApiClient, 'get')
+  })
+
+  afterEach(() => {
+    getSpy.mockRestore()
   })
 
   describe('getTransactions', () => {
@@ -44,7 +50,7 @@ describe('TransactionService', () => {
           account_mask: '1234'
         }
       ]
-      vi.mocked(ApiClient.get).mockResolvedValue(mockBackendTransactions)
+      getSpy.mockResolvedValue(mockBackendTransactions as any)
 
       const result = await TransactionService.getTransactions()
 
@@ -60,7 +66,7 @@ describe('TransactionService', () => {
         searchTerm: 'grocery'
       }
       const mockBackendTransactions: any[] = []
-      vi.mocked(ApiClient.get).mockResolvedValue(mockBackendTransactions)
+      getSpy.mockResolvedValue(mockBackendTransactions as any)
 
       const result = await TransactionService.getTransactions(filters)
 
@@ -71,7 +77,7 @@ describe('TransactionService', () => {
     })
 
     it('should handle authentication errors', async () => {
-      vi.mocked(ApiClient.get).mockRejectedValue(new AuthenticationError())
+      getSpy.mockRejectedValue(new AuthenticationError())
 
       await expect(TransactionService.getTransactions())
         .rejects.toThrow(AuthenticationError)
@@ -82,7 +88,7 @@ describe('TransactionService', () => {
         accountIds: ['acc_1', 'acc_2', 'acc_3']
       }
       const mockBackendTransactions: any[] = []
-      vi.mocked(ApiClient.get).mockResolvedValue(mockBackendTransactions)
+      getSpy.mockResolvedValue(mockBackendTransactions as any)
 
       const result = await TransactionService.getTransactions(filters)
 
@@ -99,7 +105,7 @@ describe('TransactionService', () => {
         accountIds: ['acc_1', 'acc_2']
       }
       const mockBackendTransactions: any[] = []
-      vi.mocked(ApiClient.get).mockResolvedValue(mockBackendTransactions)
+      getSpy.mockResolvedValue(mockBackendTransactions as any)
 
       const result = await TransactionService.getTransactions(filters)
 

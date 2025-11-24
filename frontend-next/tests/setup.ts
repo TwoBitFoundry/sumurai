@@ -1,12 +1,19 @@
 import '@testing-library/jest-dom'
 import React from 'react'
-import { expect, vi } from 'vitest'
+import { expect, vi, afterEach, beforeEach } from 'vitest'
+import { jest } from '@jest/globals'
+import 'cross-fetch/polyfill'
 import { AuthService } from '@/services/authService'
 import { FetchHttpClient, BrowserStorageAdapter } from '@/services/boundaries'
 import { webcrypto } from 'crypto'
 import { TextEncoder, TextDecoder } from 'util'
 
 ;(globalThis as any).crypto = webcrypto as unknown as Crypto
+const originalFetch = (globalThis as any).fetch
+let randomSpy: jest.SpyInstance<number, []> | null = null
+let dateNowSpy: jest.SpyInstance<number, []> | null = null
+
+jest.setTimeout(10_000)
 
 if (!(globalThis as any).TextEncoder) {
   ;(globalThis as any).TextEncoder = TextEncoder
@@ -37,6 +44,13 @@ jest.mock('@/observability/TelemetryService', () => ({
 AuthService.configure({
   http: new FetchHttpClient(),
   storage: new BrowserStorageAdapter()
+})
+
+beforeEach(() => {
+  jest.useRealTimers()
+  randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.5)
+  dateNowSpy = jest.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000)
+  ;(globalThis as any).fetch = jest.fn(() => Promise.resolve(new Response(null, { status: 200 })))
 })
 
 ;(globalThis as any).ResizeObserver = class ResizeObserver {
@@ -93,6 +107,24 @@ if (typeof window !== 'undefined') {
     writable: true
   })
 }
+
+afterEach(async () => {
+  randomSpy?.mockRestore()
+  randomSpy = null
+  dateNowSpy?.mockRestore()
+  dateNowSpy = null
+  jest.useRealTimers()
+  vi.useRealTimers?.()
+  jest.clearAllTimers()
+  vi.clearAllTimers?.()
+  jest.clearAllMocks()
+  vi.clearAllMocks?.()
+  if (originalFetch) {
+    ;(globalThis as any).fetch = originalFetch
+  } else {
+    delete (globalThis as any).fetch
+  }
+})
 
 jest.mock('react-plaid-link', () => ({
   usePlaidLink: () => ({

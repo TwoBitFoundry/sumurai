@@ -1,62 +1,57 @@
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react'
-import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
+import { jest } from '@jest/globals'
 import { ThemeProvider } from '@/context/ThemeContext'
-import { vi, beforeEach, afterEach } from 'vitest'
-
-// Mock the hooks
-jest.mock('@/hooks/useOnboardingWizard')
-jest.mock('@/hooks/useOnboardingPlaidFlow')
-jest.mock('@/hooks/useOnboardingTellerFlow')
-jest.mock('@/hooks/useTellerProviderInfo')
 jest.mock('@/hooks/useScrollDetection', () => ({
   useScrollDetection: () => false,
 }))
 
 // Mock boundary components so copy tweaks do not break contract tests
-const { mockWelcomeStep, mockConnectAccountStep, mockProviderContent } = vi.hoisted(() => ({
-  mockWelcomeStep: vi.fn(() => <div data-testid="welcome-step">Welcome Step</div>),
-  mockConnectAccountStep: vi.fn(() => <div data-testid="connect-step">Connect Step</div>),
-  mockProviderContent: {
-    plaid: {
-      displayName: 'Plaid',
-      eyebrow: {
-        text: '',
-        backgroundClassName: '',
-        textClassName: '',
-      },
-      heroTitle: '',
-      heroDescription: '',
-      highlightLabel: '',
-      highlightMeta: '',
-      features: [],
-      highlights: [],
-      cta: {
-        defaultLabel: '',
-      },
-      securityNote: 'Plaid security note',
+const mockWelcomeStep = jest.fn(() => <div data-testid="welcome-step">Welcome Step</div>)
+const mockConnectAccountStep = jest.fn(() => <div data-testid="connect-step">Connect Step</div>)
+const mockUseOnboardingWizard = jest.fn()
+const mockUseOnboardingPlaidFlow = jest.fn()
+const mockUseOnboardingTellerFlow = jest.fn()
+const mockUseTellerProviderInfo = jest.fn()
+const mockProviderContent = {
+  plaid: {
+    displayName: 'Plaid',
+    eyebrow: {
+      text: '',
+      backgroundClassName: '',
+      textClassName: '',
     },
-    teller: {
-      displayName: 'Teller',
-      eyebrow: {
-        text: '',
-        backgroundClassName: '',
-        textClassName: '',
-      },
-      heroTitle: '',
-      heroDescription: '',
-      highlightLabel: '',
-      highlightMeta: '',
-      features: [],
-      highlights: [],
-      cta: {
-        defaultLabel: '',
-      },
-      securityNote: 'Teller security note',
-      requiresApplicationId: true,
-      applicationIdMissingCopy: 'Missing application ID',
+    heroTitle: '',
+    heroDescription: '',
+    highlightLabel: '',
+    highlightMeta: '',
+    features: [],
+    highlights: [],
+    cta: {
+      defaultLabel: '',
     },
+    securityNote: 'Plaid security note',
   },
-}))
+  teller: {
+    displayName: 'Teller',
+    eyebrow: {
+      text: '',
+      backgroundClassName: '',
+      textClassName: '',
+    },
+    heroTitle: '',
+    heroDescription: '',
+    highlightLabel: '',
+    highlightMeta: '',
+    features: [],
+    highlights: [],
+    cta: {
+      defaultLabel: '',
+    },
+    securityNote: 'Teller security note',
+    requiresApplicationId: true,
+    applicationIdMissingCopy: 'Missing application ID',
+  },
+}
 
 jest.mock('@/components/onboarding/WelcomeStep', () => ({
   WelcomeStep: mockWelcomeStep,
@@ -70,19 +65,38 @@ jest.mock('@/components/onboarding/ConnectAccountStep', () => {
 
 jest.mock('@/utils/providerCards', () => ({
   CONNECT_ACCOUNT_PROVIDER_CONTENT: mockProviderContent,
-  getProviderCardConfig: vi.fn(),
+  getProviderCardConfig: jest.fn(),
   getConnectAccountProviderContent: (provider: keyof typeof mockProviderContent) =>
     mockProviderContent[provider],
 }))
 
-const mockUseOnboardingWizard = vi.mocked(await import('@/hooks/useOnboardingWizard')).useOnboardingWizard
-const mockUseOnboardingPlaidFlow = vi.mocked(await import('@/hooks/useOnboardingPlaidFlow')).useOnboardingPlaidFlow
-const mockUseOnboardingTellerFlow = vi.mocked(await import('@/hooks/useOnboardingTellerFlow')).useOnboardingTellerFlow
-const mockUseTellerProviderInfo = vi.mocked(await import('@/hooks/useTellerProviderInfo')).useTellerProviderInfo
-
 const renderWithTheme = (component: React.ReactElement) => {
   return render(<ThemeProvider>{component}</ThemeProvider>)
 }
+
+jest.mock('@/hooks/useOnboardingWizard', () => ({
+  useOnboardingWizard: mockUseOnboardingWizard,
+}))
+jest.mock('@/hooks/useOnboardingPlaidFlow', () => ({
+  useOnboardingPlaidFlow: mockUseOnboardingPlaidFlow,
+}))
+jest.mock('@/hooks/useOnboardingTellerFlow', () => ({
+  useOnboardingTellerFlow: mockUseOnboardingTellerFlow,
+}))
+jest.mock('@/hooks/useTellerProviderInfo', () => ({
+  useTellerProviderInfo: mockUseTellerProviderInfo,
+}))
+
+// Import after mocks so hooks are stubbed
+const { OnboardingWizard } = require('@/components/onboarding/OnboardingWizard')
+const wizardHookModule = jest.requireMock('@/hooks/useOnboardingWizard')
+wizardHookModule.useOnboardingWizard = mockUseOnboardingWizard
+const plaidHookModule = jest.requireMock('@/hooks/useOnboardingPlaidFlow')
+plaidHookModule.useOnboardingPlaidFlow = mockUseOnboardingPlaidFlow
+const tellerHookModule = jest.requireMock('@/hooks/useOnboardingTellerFlow')
+tellerHookModule.useOnboardingTellerFlow = mockUseOnboardingTellerFlow
+const providerInfoModule = jest.requireMock('@/hooks/useTellerProviderInfo')
+providerInfoModule.useTellerProviderInfo = mockUseTellerProviderInfo
 
 describe('OnboardingWizard', () => {
   const mockWizardHook = {
@@ -93,10 +107,10 @@ describe('OnboardingWizard', () => {
     canGoNext: true,
     isLastStep: false,
     progress: 50,
-    goToNext: vi.fn(),
-    goToPrevious: vi.fn(),
-    skipWizard: vi.fn(),
-    completeWizard: vi.fn(),
+    goToNext: jest.fn(),
+    goToPrevious: jest.fn(),
+    skipWizard: jest.fn(),
+    completeWizard: jest.fn(),
   }
 
 
@@ -105,11 +119,11 @@ describe('OnboardingWizard', () => {
     connectionInProgress: false,
     institutionName: null,
     error: null,
-    initiateConnection: vi.fn(),
-    handlePlaidSuccess: vi.fn(),
-    retryConnection: vi.fn(),
-    reset: vi.fn(),
-    setError: vi.fn(),
+    initiateConnection: jest.fn(),
+    handlePlaidSuccess: jest.fn(),
+    retryConnection: jest.fn(),
+    reset: jest.fn(),
+    setError: jest.fn(),
   }
 
   const mockTellerFlowHook = {
@@ -118,18 +132,18 @@ describe('OnboardingWizard', () => {
     isSyncing: false,
     institutionName: null,
     error: null,
-    initiateConnection: vi.fn(),
-    retryConnection: vi.fn(),
-    reset: vi.fn(),
-    setError: vi.fn(),
+    initiateConnection: jest.fn(),
+    retryConnection: jest.fn(),
+    reset: jest.fn(),
+    setError: jest.fn(),
   }
 
   beforeEach(() => {
     cleanup()
-    vi.clearAllMocks()
-    mockUseOnboardingWizard.mockReturnValue(mockWizardHook)
-    mockUseOnboardingPlaidFlow.mockReturnValue(mockPlaidFlowHook)
-    mockUseOnboardingTellerFlow.mockReturnValue(mockTellerFlowHook)
+    jest.clearAllMocks()
+    mockUseOnboardingWizard.mockReturnValue(mockWizardHook as any)
+    mockUseOnboardingPlaidFlow.mockReturnValue(mockPlaidFlowHook as any)
+    mockUseOnboardingTellerFlow.mockReturnValue(mockTellerFlowHook as any)
     mockUseTellerProviderInfo.mockReturnValue({
       loading: false,
       error: null,
@@ -139,8 +153,8 @@ describe('OnboardingWizard', () => {
       userProvider: 'plaid',
       tellerApplicationId: null,
       tellerEnvironment: 'development',
-      refresh: vi.fn(),
-      chooseProvider: vi.fn(),
+      refresh: jest.fn(),
+      chooseProvider: jest.fn(),
     })
     mockWelcomeStep.mockClear()
     mockConnectAccountStep.mockClear()
@@ -148,12 +162,12 @@ describe('OnboardingWizard', () => {
 
   afterEach(() => {
     cleanup()
-    vi.resetAllMocks()
+    jest.clearAllMocks()
     document.body.innerHTML = ''
   })
 
   it('given wizard component when rendered then shows current step content', () => {
-    const onComplete = vi.fn()
+    const onComplete = jest.fn()
 
     renderWithTheme(<OnboardingWizard onComplete={onComplete} />)
 
@@ -163,20 +177,20 @@ describe('OnboardingWizard', () => {
   })
 
   it('given wizard at step 2 when rendered then shows simple step info', () => {
-    mockUseOnboardingWizard.mockReturnValue({
+    mockUseOnboardingWizard.mockImplementation(() => ({
       ...mockWizardHook,
       currentStep: 'connectAccount',
       stepIndex: 1,
       progress: 100,
-    })
+    }))
 
-    renderWithTheme(<OnboardingWizard onComplete={vi.fn()} />)
+    renderWithTheme(<OnboardingWizard onComplete={jest.fn()} />)
 
     expect(screen.getByTestId('connect-step')).toBeInTheDocument()
   })
 
   it('given navigation buttons on welcome when next clicked then advances', () => {
-    const mockGoToNext = vi.fn()
+    const mockGoToNext = jest.fn()
 
     mockUseOnboardingWizard.mockReturnValue({
       ...mockWizardHook,
@@ -188,7 +202,7 @@ describe('OnboardingWizard', () => {
     })
 
 
-    renderWithTheme(<OnboardingWizard onComplete={vi.fn()} />)
+    renderWithTheme(<OnboardingWizard onComplete={jest.fn()} />)
 
     const nextButton = screen.getByRole('button', { name: 'Continue' })
     expect(nextButton).toBeEnabled()
@@ -205,7 +219,7 @@ describe('OnboardingWizard', () => {
       isLastStep: true,
     })
 
-    renderWithTheme(<OnboardingWizard onComplete={vi.fn()} />)
+    renderWithTheme(<OnboardingWizard onComplete={jest.fn()} />)
 
     const skipButton = screen.getByRole('button', { name: /skip for now/i })
     fireEvent.click(skipButton)
@@ -213,8 +227,8 @@ describe('OnboardingWizard', () => {
   })
 
   it('given final step when plaid connection succeeds then shows get started button', async () => {
-    const onComplete = vi.fn()
-    const mockCompleteWizard = vi.fn().mockResolvedValue(undefined)
+    const onComplete = jest.fn()
+    const mockCompleteWizard = jest.fn().mockResolvedValue(undefined)
 
     mockUseOnboardingWizard.mockReturnValue({
       ...mockWizardHook,
@@ -251,13 +265,13 @@ describe('OnboardingWizard', () => {
       canGoNext: false,
     })
 
-    renderWithTheme(<OnboardingWizard onComplete={vi.fn()} />)
+    renderWithTheme(<OnboardingWizard onComplete={jest.fn()} />)
 
     expect(screen.queryByRole('button', { name: /complete/i })).not.toBeInTheDocument()
   })
 
   it('given wizard when wizard is completed then calls onComplete callback', () => {
-    const onComplete = vi.fn()
+    const onComplete = jest.fn()
 
     mockUseOnboardingWizard.mockReturnValue({
       ...mockWizardHook,
@@ -270,7 +284,7 @@ describe('OnboardingWizard', () => {
   })
 
   it('given wizard when rendered then theme is managed by ThemeProvider (no local dark class)', () => {
-    const { container } = renderWithTheme(<OnboardingWizard onComplete={vi.fn()} />)
+    const { container } = renderWithTheme(<OnboardingWizard onComplete={jest.fn()} />)
 
     const topLevelDiv = container.firstChild as HTMLElement
     expect(topLevelDiv).not.toHaveClass('dark')

@@ -3,6 +3,7 @@ import { vi } from 'vitest'
 import ConnectionsList from '@/features/plaid/components/ConnectionsList'
 
 jest.mock('@/components/BankCard', () => ({
+  __esModule: true,
   BankCard: ({ bank, onSync, onDisconnect }: any) => (
     <div data-testid="bank-card">
       <span>{bank.name}</span>
@@ -13,6 +14,7 @@ jest.mock('@/components/BankCard', () => ({
 }))
 
 jest.mock('@/features/plaid/components/ConnectButton', () => ({
+  __esModule: true,
   default: ({ onClick }: any) => <button onClick={onClick}>Add account</button>,
 }))
 

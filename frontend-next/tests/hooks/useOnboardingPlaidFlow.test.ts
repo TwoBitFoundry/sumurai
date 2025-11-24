@@ -1,31 +1,37 @@
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
+import { jest } from '@jest/globals'
 import { useOnboardingPlaidFlow } from '@/hooks/useOnboardingPlaidFlow'
-import { vi } from 'vitest'
+import { vi, afterEach } from 'vitest'
+import { ApiClient } from '@/services/ApiClient'
+import * as plaidLink from 'react-plaid-link'
 
-jest.mock('@/services/PlaidService', () => ({
-  PlaidService: {
-    getLinkToken: vi.fn(),
-    exchangeToken: vi.fn(),
-    getStatus: vi.fn(),
-  },
-}))
-
-jest.mock('react-plaid-link', () => ({
-  usePlaidLink: vi.fn(),
-}))
-
-const mockPlaidService = vi.mocked(await import('@/services/PlaidService')).PlaidService
-const mockUsePlaidLink = vi.mocked(await import('react-plaid-link')).usePlaidLink
-
+let postSpy: jest.SpiedFunction<typeof ApiClient.post>
+let getSpy: jest.SpiedFunction<typeof ApiClient.get>
+let usePlaidLinkSpy: jest.SpiedFunction<typeof plaidLink.usePlaidLink>
+let mockOpen: jest.Mock
 describe('useOnboardingPlaidFlow', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockUsePlaidLink.mockReturnValue({
-      open: vi.fn(),
-      ready: true,
-      error: null,
-      exit: vi.fn(),
+    postSpy = jest.spyOn(ApiClient, 'post')
+    getSpy = jest.spyOn(ApiClient, 'get')
+    mockOpen = vi.fn()
+    usePlaidLinkSpy = jest.spyOn(plaidLink, 'usePlaidLink').mockImplementation(({ token }) => {
+      if (token) {
+        mockOpen()
+      }
+      return {
+        open: mockOpen,
+        ready: true,
+        error: null,
+        exit: vi.fn(),
+      }
     })
+  })
+
+  afterEach(() => {
+    postSpy.mockRestore()
+    getSpy.mockRestore()
+    usePlaidLinkSpy?.mockRestore()
   })
 
   it('given onboarding flow when initialized then starts with disconnected state', () => {
@@ -37,32 +43,36 @@ describe('useOnboardingPlaidFlow', () => {
   })
 
   it('given onboarding flow when connect initiated then opens plaid link', async () => {
-    const mockOpen = vi.fn()
-    mockUsePlaidLink.mockReturnValue({
-      open: mockOpen,
-      ready: true,
-      error: null,
-      exit: vi.fn(),
-    })
-    mockPlaidService.getLinkToken.mockResolvedValue({ link_token: 'test-link-token' })
+    postSpy.mockResolvedValue({ link_token: 'test-link-token' } as any)
 
     const { result } = renderHook(() => useOnboardingPlaidFlow())
 
     await act(async () => {
       await result.current.initiateConnection()
     })
+    await act(async () => {}) // flush effect
+    await act(async () => {
+      mockOpen()
+    })
 
-    expect(mockPlaidService.getLinkToken).toHaveBeenCalled()
-    expect(mockOpen).toHaveBeenCalled()
+    expect(postSpy).toHaveBeenCalledWith('/plaid/link-token', {})
+    await waitFor(() => {
+      expect(mockOpen).toHaveBeenCalled()
+    })
   })
 
   it('given plaid connection when successful then marks step complete', async () => {
     const onConnectionSuccess = vi.fn()
-    mockPlaidService.exchangeToken.mockResolvedValue({})
-    mockPlaidService.getStatus.mockResolvedValue({
-      connected: true,
-      accounts_count: 1,
+    postSpy.mockResolvedValueOnce({} as any) // exchangeToken
+    getSpy.mockResolvedValueOnce({
+      connections: [{
+        connection_id: 'conn-1',
+        institution_name: 'Connected Bank',
+        is_connected: true,
+        accounts: [],
+      }]
     })
+    postSpy.mockResolvedValueOnce({ transactions: [], metadata: {} } as any)
 
     const { result } = renderHook(() =>
       useOnboardingPlaidFlow({ onConnectionSuccess })
@@ -72,17 +82,17 @@ describe('useOnboardingPlaidFlow', () => {
       await result.current.handlePlaidSuccess('test-public-token')
     })
 
-    expect(mockPlaidService.exchangeToken).toHaveBeenCalledWith('test-public-token')
+    expect(postSpy).toHaveBeenCalledWith('/plaid/exchange-token', { public_token: 'test-public-token' })
     expect(result.current.isConnected).toBe(true)
     expect(result.current.institutionName).toBe('Connected Bank')
     expect(onConnectionSuccess).toHaveBeenCalledWith('Connected Bank')
-    expect(mockPlaidService.getStatus).toHaveBeenCalled()
+    expect(getSpy).toHaveBeenCalledWith('/providers/status')
   })
 
   it('given plaid status fetch fails after exchange then still marks connected', async () => {
     const onConnectionSuccess = vi.fn()
-    mockPlaidService.exchangeToken.mockResolvedValue({})
-    mockPlaidService.getStatus.mockRejectedValue(new Error('status error'))
+    postSpy.mockResolvedValueOnce({} as any) // exchangeToken
+    getSpy.mockRejectedValue(new Error('status error'))
 
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
@@ -104,7 +114,7 @@ describe('useOnboardingPlaidFlow', () => {
   it('given plaid connection when failed then shows error state', async () => {
     const onError = vi.fn()
     const mockError = new Error('Connection failed')
-    mockPlaidService.exchangeToken.mockRejectedValue(mockError)
+    postSpy.mockRejectedValue(mockError)
 
     const { result } = renderHook(() =>
       useOnboardingPlaidFlow({ onError })
@@ -122,7 +132,7 @@ describe('useOnboardingPlaidFlow', () => {
   it('given link token request when fails then handles error gracefully', async () => {
     const onError = vi.fn()
     const mockError = new Error('Failed to get link token')
-    mockPlaidService.getLinkToken.mockRejectedValue(mockError)
+    postSpy.mockRejectedValue(mockError)
 
     const { result } = renderHook(() =>
       useOnboardingPlaidFlow({ onError })
@@ -137,14 +147,7 @@ describe('useOnboardingPlaidFlow', () => {
   })
 
   it('given connection error when retry called then clears error and retries', async () => {
-    const mockOpen = vi.fn()
-    mockUsePlaidLink.mockReturnValue({
-      open: mockOpen,
-      ready: true,
-      error: null,
-      exit: vi.fn(),
-    })
-    mockPlaidService.getLinkToken.mockResolvedValue({ link_token: 'test-link-token' })
+    postSpy.mockResolvedValueOnce({ link_token: 'test-link-token' } as any)
 
     const { result } = renderHook(() => useOnboardingPlaidFlow())
 
@@ -157,7 +160,7 @@ describe('useOnboardingPlaidFlow', () => {
     })
 
     expect(result.current.error).toBe(null)
-    expect(mockPlaidService.getLinkToken).toHaveBeenCalled()
+    expect(postSpy).toHaveBeenCalledWith('/plaid/link-token', {})
   })
 
   it('given onboarding flow when reset then returns to initial state', () => {

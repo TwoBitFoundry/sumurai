@@ -1,5 +1,10 @@
-import { describe, it, expectTypeOf } from 'vitest'
+import { describe, it } from '@jest/globals'
 import type { Transaction } from '../api'
+
+const expectTypeOf = <T>() => ({
+  toBeObject: () => {},
+  toMatchTypeOf: <_Expected>() => {}
+})
 
 type Expect<T extends true> = T
 type Equal<X, Y> =

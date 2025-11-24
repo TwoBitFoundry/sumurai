@@ -1,35 +1,53 @@
 import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { jest, beforeAll, afterAll } from '@jest/globals'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { AuthenticatedApp } from '@/components/AuthenticatedApp'
-import { AccountFilterProvider } from '@/hooks/useAccountFilter'
-import { ThemeTestProvider } from '@tests/utils/ThemeTestProvider'
-import { installFetchRoutes } from '@tests/utils/fetchRoutes'
-import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures'
+beforeAll(() => {
+  jest.useRealTimers()
+})
 
-let DashboardPageMock: ReturnType<typeof vi.fn>
-let TransactionsPageMock: ReturnType<typeof vi.fn>
-let BudgetsPageMock: ReturnType<typeof vi.fn>
-let AccountsPageMock: ReturnType<typeof vi.fn>
+afterAll(() => {
+  jest.useRealTimers()
+})
 
-jest.mock('@/pages/DashboardPage', () => ({
-  __esModule: true,
-  default: () => DashboardPageMock(),
-}))
+jest.mock('@/views/DashboardPage', () => {
+  const DashboardPageMock = jest.fn(() => <div data-testid="dashboard-page">dashboard</div>)
+  return { __esModule: true, default: DashboardPageMock }
+})
 
-jest.mock('@/pages/TransactionsPage', () => ({
-  __esModule: true,
-  default: () => TransactionsPageMock(),
-}))
-jest.mock('@/pages/BudgetsPage', () => ({
-  __esModule: true,
-  default: () => BudgetsPageMock(),
-}))
+jest.mock('@/views/TransactionsPage', () => {
+  const TransactionsPageMock = jest.fn(() => <div data-testid="transactions-page">transactions</div>)
+  return { __esModule: true, default: TransactionsPageMock }
+})
+jest.mock('@/views/BudgetsPage', () => {
+  const BudgetsPageMock = jest.fn(() => <div data-testid="budgets-page">budgets</div>)
+  return { __esModule: true, default: BudgetsPageMock }
+})
 
-jest.mock('@/pages/AccountsPage', () => ({
-  __esModule: true,
-  default: (props: { onError?: (value: string | null) => void }) => AccountsPageMock(props),
-}))
+jest.mock('@/views/AccountsPage', () => {
+  const AccountsPageMock = jest.fn(({ onError }: { onError?: (value: string | null) => void }) => (
+    <div data-testid="accounts-page">
+      <button onClick={() => onError?.('accounts-error')} data-testid="trigger-accounts-error">
+        trigger error
+      </button>
+      <button onClick={() => onError?.(null)} data-testid="clear-accounts-error">
+        clear error
+      </button>
+    </div>
+  ))
+  return { __esModule: true, default: AccountsPageMock }
+})
+
+const DashboardPageMock = jest.requireMock('@/views/DashboardPage').default as jest.Mock
+const TransactionsPageMock = jest.requireMock('@/views/TransactionsPage').default as jest.Mock
+const BudgetsPageMock = jest.requireMock('@/views/BudgetsPage').default as jest.Mock
+const AccountsPageMock = jest.requireMock('@/views/AccountsPage').default as jest.Mock
+
+const { AuthenticatedApp } = require('@/components/AuthenticatedApp')
+const { AccountFilterProvider } = require('@/hooks/useAccountFilter')
+const { ThemeTestProvider } = require('@tests/utils/ThemeTestProvider')
+const { installFetchRoutes } = require('@tests/utils/fetchRoutes')
+const { createProviderConnection, createProviderStatus } = require('@tests/utils/fixtures')
 
 describe('AuthenticatedApp shell', () => {
   const onLogout = vi.fn()
@@ -66,6 +84,39 @@ describe('AuthenticatedApp shell', () => {
           provider: 'plaid'
         }
       ],
+      'GET /api/providers/accounts': [
+        {
+          id: 'account1',
+          name: 'Test Checking',
+          account_type: 'depository',
+          balance_ledger: 1200,
+          balance_available: 1180,
+          balance_current: 1200,
+          mask: '1111',
+          connection_id: 'conn_1',
+          institution_name: 'Test Bank',
+          provider: 'plaid'
+        },
+        {
+          id: 'account2',
+          name: 'Test Savings',
+          account_type: 'depository',
+          balance_ledger: 5400,
+          balance_available: 5400,
+          balance_current: 5400,
+          mask: '2222',
+          connection_id: 'conn_1',
+          institution_name: 'Test Bank',
+          provider: 'plaid'
+        }
+      ],
+      'GET /api/providers/info': {
+        available_providers: ['plaid', 'teller'],
+        default_provider: 'plaid',
+        user_provider: 'plaid',
+        teller_application_id: 'test-app-id',
+        teller_env: 'sandbox'
+      },
       'GET /api/providers/status': createProviderStatus({
         connections: [
           createProviderConnection({
@@ -77,21 +128,10 @@ describe('AuthenticatedApp shell', () => {
       }),
     })
 
-    DashboardPageMock = vi.fn(() => (
-      <div data-testid="dashboard-page">dashboard</div>
-    ))
-    TransactionsPageMock = vi.fn(() => <div data-testid="transactions-page">transactions</div>)
-    BudgetsPageMock = vi.fn(() => <div data-testid="budgets-page">budgets</div>)
-    AccountsPageMock = vi.fn(({ onError }: { onError?: (value: string | null) => void }) => (
-      <div data-testid="accounts-page">
-        <button onClick={() => onError?.('accounts-error')} data-testid="trigger-accounts-error">
-          trigger error
-        </button>
-        <button onClick={() => onError?.(null)} data-testid="clear-accounts-error">
-          clear error
-        </button>
-      </div>
-    ))
+    DashboardPageMock.mockClear()
+    TransactionsPageMock.mockClear()
+    BudgetsPageMock.mockClear()
+    AccountsPageMock.mockClear()
   })
 
   afterEach(() => {
@@ -109,10 +149,14 @@ describe('AuthenticatedApp shell', () => {
       </ThemeTestProvider>
     )
 
-  it('renders dashboard by default', () => {
+  it('renders dashboard by default', async () => {
     renderApp()
-
-    expect(screen.getByTestId('dashboard-page')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(DashboardPageMock).toHaveBeenCalled()
+    })
+    await waitFor(() => {
+      expect(screen.getByTestId('dashboard-page')).toBeInTheDocument()
+    })
     expect(screen.queryByTestId('transactions-page')).not.toBeInTheDocument()
     expect(screen.queryByTestId('accounts-page')).not.toBeInTheDocument()
   })
@@ -120,6 +164,9 @@ describe('AuthenticatedApp shell', () => {
   it('navigates between tabs and toggles budgets visibility without extra props', async () => {
     const user = userEvent.setup()
     renderApp()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /all accounts/i })).toBeInTheDocument()
+    })
 
     expect(BudgetsPageMock).not.toHaveBeenCalled()
     expect(screen.queryByTestId('budgets-page')).not.toBeInTheDocument()
@@ -143,6 +190,9 @@ describe('AuthenticatedApp shell', () => {
   it('surfaces errors from the accounts page and clears them', async () => {
     const user = userEvent.setup()
     renderApp()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /all accounts/i })).toBeInTheDocument()
+    })
 
     await user.click(screen.getByRole('button', { name: /^accounts$/i }))
     expect(await screen.findByTestId('accounts-page')).toBeInTheDocument()
@@ -157,6 +207,9 @@ describe('AuthenticatedApp shell', () => {
   it('supports theme toggle and logout', async () => {
     const user = userEvent.setup()
     renderApp()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /all accounts/i })).toBeInTheDocument()
+    })
 
     const themeButton = screen.getByLabelText(/toggle theme/i)
     expect(themeButton).toBeInTheDocument()

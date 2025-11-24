@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { BudgetCalculator } from '../../src/domain/BudgetCalculator'
 
 interface ComputedBudget {
@@ -12,11 +11,12 @@ const mockToday = new Date('2025-10-15')
 
 describe('BudgetCalculator.computeStats', () => {
   beforeEach(() => {
-    vi.setSystemTime(mockToday)
+    jest.useFakeTimers()
+    jest.setSystemTime(mockToday)
   })
 
   afterEach(() => {
-    vi.useRealTimers()
+    jest.useRealTimers()
   })
 
   describe('with empty budgets', () => {

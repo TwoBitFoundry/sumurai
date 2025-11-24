@@ -207,6 +207,7 @@ export default function BudgetsPage() {
   const errorMessage = error || (validationError && !error ? validationError : null)
 
   return (
+    <div data-testid="budgets-page">
     <PageLayout
       badge="Monthly Budgets"
       title="Budgets at a glance"
@@ -330,5 +331,6 @@ export default function BudgetsPage() {
           )}
       </Card>
     </PageLayout>
+    </div>
   )
 }
