@@ -1,9 +1,5 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`GradientShell > variants > renders app variant correctly 1`] = `"relative min-h-screen"`;
-
-exports[`GradientShell > variants > renders auth variant correctly 1`] = `"relative min-h-screen"`;
-
 exports[`GradientShell variants renders app variant correctly 1`] = `"relative min-h-screen"`;
 
 exports[`GradientShell variants renders auth variant correctly 1`] = `"relative min-h-screen"`;

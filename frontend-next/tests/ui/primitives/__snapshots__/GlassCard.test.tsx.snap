@@ -1,25 +1,5 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`GlassCard > padding > renders lg padding correctly 1`] = `"relative overflow-hidden border shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)] backdrop-blur-2xl backdrop-saturate-[150%] transition-colors duration-500 dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)] border-white/35 bg-white/18 dark:border-white/12 dark:bg-[#0f172a]/55 rounded-[2.25rem] p-8"`;
-
-exports[`GlassCard > padding > renders md padding correctly 1`] = `"relative overflow-hidden border shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)] backdrop-blur-2xl backdrop-saturate-[150%] transition-colors duration-500 dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)] border-white/35 bg-white/18 dark:border-white/12 dark:bg-[#0f172a]/55 rounded-[2.25rem] p-6"`;
-
-exports[`GlassCard > padding > renders no padding correctly 1`] = `"relative overflow-hidden border shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)] backdrop-blur-2xl backdrop-saturate-[150%] transition-colors duration-500 dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)] border-white/35 bg-white/18 dark:border-white/12 dark:bg-[#0f172a]/55 rounded-[2.25rem] p-0"`;
-
-exports[`GlassCard > padding > renders sm padding correctly 1`] = `"relative overflow-hidden border shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)] backdrop-blur-2xl backdrop-saturate-[150%] transition-colors duration-500 dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)] border-white/35 bg-white/18 dark:border-white/12 dark:bg-[#0f172a]/55 rounded-[2.25rem] p-4"`;
-
-exports[`GlassCard > rounded > renders default rounded correctly 1`] = `"relative overflow-hidden border shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)] backdrop-blur-2xl backdrop-saturate-[150%] transition-colors duration-500 dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)] border-white/35 bg-white/18 dark:border-white/12 dark:bg-[#0f172a]/55 rounded-[2.25rem] p-6"`;
-
-exports[`GlassCard > rounded > renders lg rounded correctly 1`] = `"relative overflow-hidden border shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)] backdrop-blur-2xl backdrop-saturate-[150%] transition-colors duration-500 dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)] border-white/35 bg-white/18 dark:border-white/12 dark:bg-[#0f172a]/55 rounded-2xl p-6"`;
-
-exports[`GlassCard > rounded > renders xl rounded correctly 1`] = `"relative overflow-hidden border shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)] backdrop-blur-2xl backdrop-saturate-[150%] transition-colors duration-500 dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)] border-white/35 bg-white/18 dark:border-white/12 dark:bg-[#0f172a]/55 rounded-3xl p-6"`;
-
-exports[`GlassCard > variants > renders accent variant correctly 1`] = `"relative overflow-hidden border shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)] backdrop-blur-2xl backdrop-saturate-[150%] transition-colors duration-500 dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)] border-white/40 bg-white/85 backdrop-blur-sm dark:border-white/10 dark:bg-[#111a2f]/75 rounded-[2.25rem] p-6"`;
-
-exports[`GlassCard > variants > renders auth variant correctly 1`] = `"relative overflow-hidden border shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)] backdrop-blur-2xl backdrop-saturate-[150%] transition-colors duration-500 dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)] border-white/35 bg-white/20 shadow-[0_38px_120px_-60px_rgba(15,23,42,0.78)] backdrop-blur-[26px] backdrop-saturate-[140%] dark:border-white/12 dark:bg-[#0f172a]/55 dark:shadow-[0_40px_120px_-58px_rgba(2,6,23,0.85)] rounded-[2.25rem] p-6"`;
-
-exports[`GlassCard > variants > renders default variant correctly 1`] = `"relative overflow-hidden border shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)] backdrop-blur-2xl backdrop-saturate-[150%] transition-colors duration-500 dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)] border-white/35 bg-white/18 dark:border-white/12 dark:bg-[#0f172a]/55 rounded-[2.25rem] p-6"`;
-
 exports[`GlassCard padding renders lg padding correctly 1`] = `"relative overflow-hidden border shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)] backdrop-blur-2xl backdrop-saturate-[150%] transition-colors duration-500 dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)] border-white/35 bg-white/18 dark:border-white/12 dark:bg-[#0f172a]/55 rounded-[2.25rem] p-8"`;
 
 exports[`GlassCard padding renders md padding correctly 1`] = `"relative overflow-hidden border shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)] backdrop-blur-2xl backdrop-saturate-[150%] transition-colors duration-500 dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)] border-white/35 bg-white/18 dark:border-white/12 dark:bg-[#0f172a]/55 rounded-[2.25rem] p-6"`;

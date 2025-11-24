@@ -26,9 +26,7 @@
 - [x] Verified `NEXT_PUBLIC_*` env wiring via `src/observability/telemetry.ts` default fallbacks and covering tests; added `NEXT_DISABLE_REACT_COMPILER` toggle in `next.config.js`.
 
 ## Next actions
-- [ ] Refresh the 46 obsolete snapshots once UI stabilizes.
 - [ ] Quiet noisy account-fetch warnings in tests by tightening the mock response shape. (partially mitigated via defaults)
-- [ ] Verify `NEXT_PUBLIC_*` env wiring and keep React Compiler opt-out ready if regressions appear.
 
 ## Testing strategy & conversion notes (Jest-first)
 - Use Jest APIs only (`jest.fn`, `jest.spyOn`, `jest.useFakeTimers`, `jest.setSystemTime`); avoid `vi.hoisted`/`vi.mocked` to prevent “before initialization” and redefinition errors.
