@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { LoginScreen, RegisterScreen } from "./Auth";
 import { SessionManager } from "./SessionManager";
-import { AuthenticatedApp } from "./components/AuthenticatedApp";
+import { AuthenticatedApp, type TabKey } from "./components/AuthenticatedApp";
 import { AccountFilterProvider } from "./hooks/useAccountFilter";
 import { OnboardingWizard } from "./components/onboarding/OnboardingWizard";
 import { AuthService } from "./services/authService";
@@ -37,10 +37,15 @@ const isTokenExpired = (token: string): boolean => {
   return Math.floor(Date.now() / 1000) >= payload.exp
 }
 
-function AppContent() {
+interface AppContentProps {
+  initialTab?: TabKey
+  initialAuthScreen?: 'login' | 'register'
+}
+
+function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login')
+  const [authScreen, setAuthScreen] = useState<'login' | 'register'>(initialAuthScreen ?? 'login')
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [mainAppKey, setMainAppKey] = useState(0)
   const [showProviderMismatch, setShowProviderMismatch] = useState(false)
@@ -173,6 +178,7 @@ function AppContent() {
         <AuthenticatedApp
           key={`app-${mainAppKey}`}
           onLogout={handleLogout}
+          initialTab={initialTab}
         />
       </AccountFilterProvider>
 
@@ -185,11 +191,16 @@ function AppContent() {
   )
 }
 
-export function App() {
+export interface AppProps {
+  initialTab?: TabKey
+  initialAuthScreen?: 'login' | 'register'
+}
+
+export function App({ initialTab, initialAuthScreen }: AppProps) {
   return (
     <ThemeProvider>
       <TelemetryProvider service={telemetryService}>
-        <AppContent />
+        <AppContent initialTab={initialTab} initialAuthScreen={initialAuthScreen} />
       </TelemetryProvider>
     </ThemeProvider>
   )

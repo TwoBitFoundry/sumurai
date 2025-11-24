@@ -11,14 +11,15 @@ import { GradientShell } from '../ui/primitives'
 import { AppLayout } from '../layouts/AppLayout'
 import { cn } from '@/ui/primitives'
 
-type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings'
+export type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings'
 
 interface AuthenticatedAppProps {
   onLogout: () => void
+  initialTab?: TabKey
 }
 
-export function AuthenticatedApp({ onLogout }: AuthenticatedAppProps) {
-  const [tab, setTab] = useState<TabKey>('dashboard')
+export function AuthenticatedApp({ onLogout, initialTab }: AuthenticatedAppProps) {
+  const [tab, setTab] = useState<TabKey>(initialTab ?? 'dashboard')
   const [error, setError] = useState<string | null>(null)
 
   return (

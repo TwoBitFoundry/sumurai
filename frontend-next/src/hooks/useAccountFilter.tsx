@@ -21,6 +21,7 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const previousAllAccountIdsRef = useRef<string[]>([])
+  const warnedInvalidAccountsRef = useRef(false)
 
   const groupAccountsByBank = useCallback((items: ProviderAccount[]): AccountsByBank => {
     return items.reduce<AccountsByBank>((acc, account) => {
@@ -41,6 +42,15 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
     try {
       setLoading(true)
       const accountsResponse = await ProviderCatalog.getAccounts()
+      const safeAccounts = Array.isArray(accountsResponse) ? accountsResponse : []
+
+      if (!Array.isArray(accountsResponse) && !warnedInvalidAccountsRef.current) {
+        warnedInvalidAccountsRef.current = true
+        const shouldWarn = process.env.NODE_ENV !== 'test'
+        if (shouldWarn) {
+          console.warn('Expected accounts array for filter; received:', accountsResponse)
+        }
+      }
 
       const parseBalance = (value: unknown): number | null => {
         if (typeof value === 'number' && Number.isFinite(value)) {
@@ -68,7 +78,7 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
         institutionName?: string | null
       }
 
-      const mappedAccounts: ProviderAccount[] = (accountsResponse || []).map(account => {
+      const mappedAccounts: ProviderAccount[] = safeAccounts.map(account => {
         const legacy = account as AccountWithLegacyFields
         const ledger =
           parseBalance(account.balance_ledger) ??

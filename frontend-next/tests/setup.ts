@@ -12,6 +12,28 @@ import { TextEncoder, TextDecoder } from 'util'
 const originalFetch = (globalThis as any).fetch
 let randomSpy: jest.SpyInstance<number, []> | null = null
 let dateNowSpy: jest.SpyInstance<number, []> | null = null
+const defaultAccounts = [
+  {
+    id: 'account1',
+    name: 'Mock Checking',
+    account_type: 'depository',
+    balance_current: 1200,
+    balance_available: 1200,
+    mask: '1111',
+    provider: 'plaid',
+    institution_name: 'Mock Bank'
+  },
+  {
+    id: 'account2',
+    name: 'Mock Savings',
+    account_type: 'depository',
+    balance_current: 5400,
+    balance_available: 5400,
+    mask: '2222',
+    provider: 'plaid',
+    institution_name: 'Mock Bank'
+  }
+]
 
 jest.setTimeout(10_000)
 
@@ -50,7 +72,32 @@ beforeEach(() => {
   jest.useRealTimers()
   randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.5)
   dateNowSpy = jest.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000)
-  ;(globalThis as any).fetch = jest.fn(() => Promise.resolve(new Response(null, { status: 200 })))
+  const jsonResponse = (body: unknown, init?: ResponseInit) =>
+    new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+      ...init
+    })
+
+  ;(globalThis as any).fetch = jest.fn(async (input: RequestInfo | URL) => {
+    const url = typeof input === 'string' ? input : input.toString()
+
+    if (url.includes('/providers/accounts') || url.includes('/plaid/accounts')) {
+      return jsonResponse(defaultAccounts)
+    }
+
+    if (url.includes('/providers/info')) {
+      return jsonResponse({
+        available_providers: ['plaid', 'teller'],
+        default_provider: 'plaid',
+        user_provider: 'plaid',
+        teller_application_id: null,
+        teller_environment: 'development'
+      })
+    }
+
+    return jsonResponse({})
+  })
 })
 
 ;(globalThis as any).ResizeObserver = class ResizeObserver {
