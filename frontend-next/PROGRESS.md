@@ -10,11 +10,11 @@
 - [ ] Refactor/verify: green test run, lint clean, trim console noise, and keep React Compiler toggleable if issues surface.
 
 ## Status (at a glance)
-- Runtime: Next 16 (Node) with App Router as the sole routing mechanism; React Compiler enabled behind config; Tailwind v4 wired.
+- Runtime: Next 16 (Node) with App Router as the sole routing mechanism; React Compiler enabled behind config unless `NEXT_DISABLE_REACT_COMPILER=true`; Tailwind v4 wired.
 - Tests: Jest+RTL single-run; Vitest globals shimed; full suite green (`npm test`) with 46 obsolete snapshots left untouched for now.
 - Lint: `npm run lint` clean; custom Tailwind utility-count rule ported; `no-img-element` temporarily disabled to mirror legacy usage.
 - Stability: per-test fetch/timer cleanup in `tests/setup.ts`; BudgetCalculator now uses Jest fake timers; onboarding wizard tests use Jest mocks only.
-- Codebase: services/utils/contexts/hooks/components/pages migrated from legacy `frontend`; legacy `pages` moved to `src/views` to avoid Pages Router pickup; entry at `src/app/page.tsx`; App Router routes added for login/register and dashboard tabs (/dashboard, /transactions, /budgets, /accounts, /settings).
+- Codebase: services/utils/contexts/hooks/components/pages migrated from legacy `frontend`; legacy `pages` moved to `src/views` to avoid Pages Router pickup; entry at `src/app/page.tsx`; App Router routes added for login/register and dashboard tabs (/dashboard, /transactions, /budgets, /accounts, /settings); removed unused `src/main.tsx` entry and duplicate `src/index.css`; `NEXT_PUBLIC_*` hooks verified via `src/observability/telemetry.ts` fallbacks/tests.
 
 ## Recently completed
 - [x] Fixed open-handle warnings (Jest timers, fetch cleanup) and removed `vi` usage from onboarding wizard/BudgetCalculator suites.
@@ -22,6 +22,8 @@
 - [x] Confirmed App Router-only direction and kept legacy structure mirrored under `src/views`.
 - [x] Stabilized account-fetch defaults in tests and guarded non-array responses to avoid noisy warnings/timeouts.
 - [x] Added route-aware App Router entry points (login/register and tab-specific dashboards) with initial tab/auth screen props.
+- [x] Removed the unused `src/main.tsx` entrypoint and duplicate `src/index.css` so Next’s `src/app` handles the whole experience.
+- [x] Verified `NEXT_PUBLIC_*` env wiring via `src/observability/telemetry.ts` default fallbacks and covering tests; added `NEXT_DISABLE_REACT_COMPILER` toggle in `next.config.js`.
 
 ## Next actions
 - [ ] Refresh the 46 obsolete snapshots once UI stabilizes.
