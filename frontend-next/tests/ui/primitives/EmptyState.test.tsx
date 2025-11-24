@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { EmptyState } from '@/ui/primitives/EmptyState'
 import { Target, Receipt, TrendingUp, AlertCircle } from 'lucide-react'

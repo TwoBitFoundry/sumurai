@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 import type { PlaidSyncResponse } from '@/types/api'
 import { PlaidService } from '@/services/PlaidService'
@@ -7,12 +6,12 @@ let fetchMock: ReturnType<typeof installFetchRoutes>
 
 describe('Plaid Sync Integration Tests (Boundary-Only Mocking)', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
-    vi.clearAllMocks()
+    jest.restoreAllMocks()
+    jest.clearAllMocks()
   })
 
   it('given_incremental_sync_when_calling_api_then_returns_correct_date_range', async () => {

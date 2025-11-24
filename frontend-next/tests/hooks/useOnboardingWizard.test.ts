@@ -1,5 +1,4 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { vi } from 'vitest'
 import { useOnboardingWizard } from '@/hooks/useOnboardingWizard'
 
 describe('useOnboardingWizard', () => {
@@ -13,14 +12,14 @@ describe('useOnboardingWizard', () => {
 
     Object.defineProperty(window, 'sessionStorage', {
       value: {
-        getItem: vi.fn((key: string) => sessionStorageData[key] || null),
-        setItem: vi.fn((key: string, value: string) => {
+        getItem: jest.fn((key: string) => sessionStorageData[key] || null),
+        setItem: jest.fn((key: string, value: string) => {
           sessionStorageData[key] = value
         }),
-        removeItem: vi.fn((key: string) => {
+        removeItem: jest.fn((key: string) => {
           delete sessionStorageData[key]
         }),
-        clear: vi.fn(() => {
+        clear: jest.fn(() => {
           sessionStorageData = {}
         }),
       },
@@ -30,9 +29,9 @@ describe('useOnboardingWizard', () => {
     sessionStorageData['auth_token'] = 'mock-token'
 
     originalFetch = global.fetch
-    global.fetch = vi.fn().mockResolvedValue({
+    global.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      json: vi.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({
         message: 'Onboarding completed',
         onboarding_completed: true
       })
@@ -45,7 +44,7 @@ describe('useOnboardingWizard', () => {
       writable: true
     })
     global.fetch = originalFetch
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   it('given new wizard when initialized then starts at welcome step', () => {

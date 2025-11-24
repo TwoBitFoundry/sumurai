@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AuthenticatedApp } from '@/components/AuthenticatedApp'
@@ -10,13 +9,13 @@ import { createProviderStatus } from '@tests/utils/fixtures'
 describe('User-Friendly Error Messages and Empty States (Boundary Mocks)', () => {
   const user = userEvent.setup()
   const originalConsoleError = console.error
-  const mockOnLogout = vi.fn()
+  const mockOnLogout = jest.fn()
   let fetchMock: ReturnType<typeof installFetchRoutes>
   const disconnectedStatus = createProviderStatus()
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    console.error = vi.fn()
+    jest.clearAllMocks()
+    console.error = jest.fn()
     // Default boundary routes
     fetchMock = installFetchRoutes({
       'GET /api/providers/status': disconnectedStatus,

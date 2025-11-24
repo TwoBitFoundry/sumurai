@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor, cleanup } from '@testing-library/react'
 import { usePlaidConnection } from '@/hooks/usePlaidConnection'
 import { ApiClient } from '@/services/ApiClient'
@@ -9,7 +8,7 @@ describe('usePlaidConnection Hook', () => {
   let fetchMock: ReturnType<typeof installFetchRoutes>
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     localStorage.clear()
     // Disable retries to avoid timing flakiness and undefined fetch behaviors on subsequent attempts
     ApiClient.setTestMaxRetries(0)
@@ -31,8 +30,8 @@ describe('usePlaidConnection Hook', () => {
 
   afterEach(() => {
     cleanup()
-    vi.restoreAllMocks()
-    vi.clearAllMocks()
+    jest.restoreAllMocks()
+    jest.clearAllMocks()
     localStorage.clear()
   })
 

@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SensitiveDataSpanProcessor, FilteringSpanProcessor } from '@/observability/processors';
 import { ReadableSpan } from '@opentelemetry/sdk-trace-base';
 
@@ -307,10 +306,10 @@ describe('SensitiveDataSpanProcessor', () => {
 
 describe('FilteringSpanProcessor', () => {
   const createDelegate = () => ({
-    onStart: vi.fn(),
-    onEnd: vi.fn(),
-    shutdown: vi.fn().mockResolvedValue(undefined),
-    forceFlush: vi.fn().mockResolvedValue(undefined),
+    onStart: jest.fn(),
+    onEnd: jest.fn(),
+    shutdown: jest.fn().mockResolvedValue(undefined),
+    forceFlush: jest.fn().mockResolvedValue(undefined),
   });
 
   it('should skip delegate onEnd when predicate returns true', () => {

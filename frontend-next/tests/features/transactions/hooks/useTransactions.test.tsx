@@ -1,5 +1,4 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { vi } from 'vitest'
 import { ReactNode } from 'react'
 import { useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { TransactionService } from '@/services/TransactionService'
@@ -8,14 +7,14 @@ import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilte
 
 jest.mock('@/services/TransactionService', () => ({
   TransactionService: {
-    getTransactions: vi.fn(),
+    getTransactions: jest.fn(),
   }
 }))
 
 jest.mock('@/services/PlaidService', () => ({
   PlaidService: {
-    getAccounts: vi.fn(),
-    getStatus: vi.fn(),
+    getAccounts: jest.fn(),
+    getStatus: jest.fn(),
   }
 }))
 
@@ -66,10 +65,10 @@ const TestWrapper = ({ children }: { children: ReactNode }) => (
 
 describe('useTransactions', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
-    vi.mocked(TransactionService.getTransactions).mockResolvedValue([])
-    vi.mocked(PlaidService.getAccounts).mockResolvedValue(mockPlaidAccounts as any)
-    vi.mocked(PlaidService.getStatus).mockResolvedValue({
+    jest.resetAllMocks()
+    jest.mocked(TransactionService.getTransactions).mockResolvedValue([])
+    jest.mocked(PlaidService.getAccounts).mockResolvedValue(mockPlaidAccounts as any)
+    jest.mocked(PlaidService.getStatus).mockResolvedValue({
       is_connected: true,
       institution_name: 'First Platypus Bank',
       connection_id: 'conn_1'
@@ -80,7 +79,7 @@ describe('useTransactions', () => {
     let accountFilterHook: ReturnType<typeof useAccountFilter>
 
     // Mock transactions response
-    vi.mocked(TransactionService.getTransactions).mockResolvedValue([
+    jest.mocked(TransactionService.getTransactions).mockResolvedValue([
       asTransaction('t1'),
       asTransaction('t2'),
     ] as any)
@@ -99,7 +98,7 @@ describe('useTransactions', () => {
     expect(TransactionService.getTransactions).toHaveBeenLastCalledWith({})
 
     // Clear the mock to track new calls
-    vi.mocked(TransactionService.getTransactions).mockClear()
+    jest.mocked(TransactionService.getTransactions).mockClear()
 
     // Change account filter to specific accounts
     await waitFor(() => {
@@ -123,7 +122,7 @@ describe('useTransactions', () => {
 
     // Mock a large set of transactions
     const transactions = Array.from({ length: 25 }, (_, i) => asTransaction(`t${i + 1}`))
-    vi.mocked(TransactionService.getTransactions).mockResolvedValue(transactions as any)
+    jest.mocked(TransactionService.getTransactions).mockResolvedValue(transactions as any)
 
     const { result } = renderHook(() => {
       accountFilterHook = useAccountFilter()
@@ -160,7 +159,7 @@ describe('useTransactions', () => {
   it('should pass account filter to service when not all accounts selected', async () => {
     let accountFilterHook: ReturnType<typeof useAccountFilter>
 
-    vi.mocked(TransactionService.getTransactions).mockResolvedValue([asTransaction('t1')] as any)
+    jest.mocked(TransactionService.getTransactions).mockResolvedValue([asTransaction('t1')] as any)
 
     const { result } = renderHook(() => {
       accountFilterHook = useAccountFilter()
@@ -172,7 +171,7 @@ describe('useTransactions', () => {
     })
 
     // Clear mock and set specific accounts
-    vi.mocked(TransactionService.getTransactions).mockClear()
+    jest.mocked(TransactionService.getTransactions).mockClear()
 
     await waitFor(() => {
       expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2'])
@@ -192,7 +191,7 @@ describe('useTransactions', () => {
   it('should not pass account filter when all accounts selected', async () => {
     let accountFilterHook: ReturnType<typeof useAccountFilter>
 
-    vi.mocked(TransactionService.getTransactions).mockResolvedValue([asTransaction('t1')] as any)
+    jest.mocked(TransactionService.getTransactions).mockResolvedValue([asTransaction('t1')] as any)
 
     const { result } = renderHook(() => {
       accountFilterHook = useAccountFilter()
@@ -208,7 +207,7 @@ describe('useTransactions', () => {
     })
 
     // Clear mock and select a subset first
-    vi.mocked(TransactionService.getTransactions).mockClear()
+    jest.mocked(TransactionService.getTransactions).mockClear()
 
     await act(async () => {
       accountFilterHook!.setSelectedAccountIds(['account1'])
@@ -220,7 +219,7 @@ describe('useTransactions', () => {
       })
     })
 
-    vi.mocked(TransactionService.getTransactions).mockClear()
+    jest.mocked(TransactionService.getTransactions).mockClear()
 
     await act(async () => {
       accountFilterHook!.setSelectedAccountIds([...accountFilterHook!.allAccountIds])

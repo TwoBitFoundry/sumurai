@@ -1,15 +1,14 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { TransactionService } from '@/services/TransactionService'
 
 describe('TransactionService via ApiClient', () => {
-  let fetchSpy: ReturnType<typeof vi.spyOn>
+  let fetchSpy: ReturnType<typeof jest.spyOn>
 
   beforeEach(() => {
-    fetchSpy = vi.spyOn(global, 'fetch')
+    fetchSpy = jest.spyOn(global, 'fetch')
   })
 
   afterEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   describe('getTransactions', () => {

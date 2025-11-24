@@ -1,6 +1,5 @@
 import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest'
 import { DisconnectModal } from '@/components/DisconnectModal'
 
 const mockBank = {
@@ -22,19 +21,19 @@ const mockBank = {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks()
+  jest.clearAllMocks()
 })
 
 afterEach(() => {
   cleanup()
-  vi.restoreAllMocks()
+  jest.restoreAllMocks()
 })
 
 describe('DisconnectModal', () => {
   describe('when modal is closed', () => {
     it('does not render modal content', () => {
-      const mockOnConfirm = vi.fn()
-      const mockOnCancel = vi.fn()
+      const mockOnConfirm = jest.fn()
+      const mockOnCancel = jest.fn()
 
       render(
         <DisconnectModal 
@@ -51,8 +50,8 @@ describe('DisconnectModal', () => {
 
   describe('when modal is open', () => {
     it('displays bank name and warning message', () => {
-      const mockOnConfirm = vi.fn()
-      const mockOnCancel = vi.fn()
+      const mockOnConfirm = jest.fn()
+      const mockOnCancel = jest.fn()
 
       render(
         <DisconnectModal
@@ -71,8 +70,8 @@ describe('DisconnectModal', () => {
     })
 
     it('shows account count in warning message', () => {
-      const mockOnConfirm = vi.fn()
-      const mockOnCancel = vi.fn()
+      const mockOnConfirm = jest.fn()
+      const mockOnCancel = jest.fn()
 
       render(
         <DisconnectModal 
@@ -87,8 +86,8 @@ describe('DisconnectModal', () => {
     })
 
     it('renders cancel and disconnect buttons', () => {
-      const mockOnConfirm = vi.fn()
-      const mockOnCancel = vi.fn()
+      const mockOnConfirm = jest.fn()
+      const mockOnCancel = jest.fn()
 
       render(
         <DisconnectModal 
@@ -107,8 +106,8 @@ describe('DisconnectModal', () => {
   describe('when user interactions occur', () => {
     it('calls onCancel when cancel button is clicked', async () => {
       const user = userEvent.setup()
-      const mockOnConfirm = vi.fn()
-      const mockOnCancel = vi.fn()
+      const mockOnConfirm = jest.fn()
+      const mockOnCancel = jest.fn()
 
       render(
         <DisconnectModal 
@@ -128,8 +127,8 @@ describe('DisconnectModal', () => {
 
     it('calls onConfirm when disconnect button is clicked', async () => {
       const user = userEvent.setup()
-      const mockOnConfirm = vi.fn()
-      const mockOnCancel = vi.fn()
+      const mockOnConfirm = jest.fn()
+      const mockOnCancel = jest.fn()
 
       render(
         <DisconnectModal 
@@ -149,8 +148,8 @@ describe('DisconnectModal', () => {
 
     it('calls onCancel when backdrop is clicked', async () => {
       const user = userEvent.setup()
-      const mockOnConfirm = vi.fn()
-      const mockOnCancel = vi.fn()
+      const mockOnConfirm = jest.fn()
+      const mockOnCancel = jest.fn()
 
       render(
         <DisconnectModal 
@@ -171,8 +170,8 @@ describe('DisconnectModal', () => {
 
   describe('when loading state is active', () => {
     it('disables buttons and shows loading spinner during confirmation', () => {
-      const mockOnConfirm = vi.fn()
-      const mockOnCancel = vi.fn()
+      const mockOnConfirm = jest.fn()
+      const mockOnCancel = jest.fn()
 
       render(
         <DisconnectModal

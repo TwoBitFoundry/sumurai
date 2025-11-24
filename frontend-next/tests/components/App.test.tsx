@@ -1,6 +1,5 @@
 import fs from 'node:fs'
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, cleanup, act, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App } from '@/App'
@@ -8,11 +7,34 @@ import { AccountFilterProvider } from '@/hooks/useAccountFilter'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 import { createProviderStatus } from '@tests/utils/fixtures'
 
-global.fetch = vi.fn()
+const mockProviderAccounts = [
+  {
+    id: 'account1',
+    name: 'Mock Checking',
+    account_type: 'depository',
+    balance_current: 1200,
+    balance_available: 1200,
+    mask: '1111',
+    provider: 'plaid',
+    institution_name: 'Mock Bank'
+  },
+  {
+    id: 'account2',
+    name: 'Mock Savings',
+    account_type: 'depository',
+    balance_current: 5400,
+    balance_available: 5400,
+    mask: '2222',
+    provider: 'plaid',
+    institution_name: 'Mock Bank'
+  }
+]
+
+global.fetch = jest.fn()
 
 const mockFetchAuthOk = () => {
   const original = global.fetch as any
-  const stub = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+  const stub = jest.fn().mockImplementation((input: RequestInfo | URL) => {
     const url = String(input)
     if (url.includes('/api/providers/status')) {
       return Promise.resolve({ ok: true, status: 200, json: async () => createProviderStatus() } as any)
@@ -42,9 +64,12 @@ const mockFetchAuthOk = () => {
 
 jest.mock('@/services/ApiClient', () => ({
   ApiClient: {
-    get: vi.fn().mockImplementation((endpoint: string) => {
+    get: jest.fn().mockImplementation((endpoint: string) => {
       if (endpoint.includes('/plaid/accounts')) {
         return Promise.resolve([])
+      }
+      if (endpoint.includes('/providers/accounts')) {
+        return Promise.resolve(mockProviderAccounts)
       }
       if (endpoint.includes('/providers/info')) {
         return Promise.resolve({
@@ -108,9 +133,9 @@ jest.mock('@/services/ApiClient', () => ({
       }
       return Promise.resolve({})
     }),
-    post: vi.fn().mockResolvedValue({}),
-    put: vi.fn().mockResolvedValue({}),
-    delete: vi.fn().mockResolvedValue({}),
+    post: jest.fn().mockResolvedValue({}),
+    put: jest.fn().mockResolvedValue({}),
+    delete: jest.fn().mockResolvedValue({}),
   },
   ApiError: class ApiError extends Error {
     constructor(message = 'API Error') {
@@ -171,11 +196,11 @@ jest.mock('@/hooks/usePlaidConnection', () => ({
     transactionCount: 0,
     accountCount: 0,
     syncInProgress: false,
-    markConnected: vi.fn(),
-    disconnect: vi.fn(),
-    setSyncInProgress: vi.fn(),
-    updateSyncInfo: vi.fn(),
-    refresh: vi.fn(),
+    markConnected: jest.fn(),
+    disconnect: jest.fn(),
+    setSyncInProgress: jest.fn(),
+    updateSyncInfo: jest.fn(),
+    refresh: jest.fn(),
   }),
 }))
 
@@ -186,7 +211,7 @@ describe('App Phase 2 - Business Logic Removal', () => {
 
   const mockFetchAuthOk = () => {
     const original = global.fetch as any
-    const stub = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+    const stub = jest.fn().mockImplementation((input: RequestInfo | URL) => {
       const url = String(input)
       if (url.includes('/api/providers/status')) {
         return Promise.resolve({ ok: true, status: 200, json: async () => createProviderStatus() } as any)
@@ -215,22 +240,23 @@ describe('App Phase 2 - Business Logic Removal', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    console.error = vi.fn()
+    jest.clearAllMocks()
+    console.error = jest.fn()
 
     document.body.innerHTML = ''
 
     Object.defineProperty(window, 'sessionStorage', {
       value: {
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-        clear: vi.fn()
+        getItem: jest.fn(),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+        clear: jest.fn()
       },
       writable: true
     })
 
     fetchMock = installFetchRoutes({
+      'GET /api/providers/accounts': mockProviderAccounts,
       'GET /api/plaid/accounts': [],
       'GET /api/providers/status': createProviderStatus(),
       'GET /api/transactions': [],
@@ -343,14 +369,14 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
   let fetchMock: ReturnType<typeof installFetchRoutes>
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
 
     Object.defineProperty(window, 'sessionStorage', {
       value: {
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-        clear: vi.fn()
+        getItem: jest.fn(),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+        clear: jest.fn()
       },
       writable: true
     })
@@ -571,7 +597,7 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
   describe('Provider mismatch detection', () => {
     it('should show ProviderMismatchModal when user provider does not match default provider', async () => {
       const { ApiClient } = await import('@/services/ApiClient')
-      const mockApiGet = vi.spyOn(ApiClient, 'get').mockImplementation((endpoint: string) => {
+      const mockApiGet = jest.spyOn(ApiClient, 'get').mockImplementation((endpoint: string) => {
         if (endpoint.includes('/providers/info')) {
           return Promise.resolve({
             available_providers: ['plaid', 'teller'],

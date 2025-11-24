@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useScrollDetection } from '@/hooks/useScrollDetection'
 
@@ -11,7 +10,7 @@ describe('useScrollDetection', () => {
   })
 
   afterEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   describe('initial state', () => {
@@ -68,7 +67,7 @@ describe('useScrollDetection', () => {
 
   describe('event listener cleanup', () => {
     it('removes event listener on unmount', () => {
-      const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener')
+      const removeEventListenerSpy = jest.spyOn(window, 'removeEventListener')
       const { unmount } = renderHook(() => useScrollDetection())
 
       unmount()
@@ -78,7 +77,7 @@ describe('useScrollDetection', () => {
     })
 
     it('uses passive event listener for performance', () => {
-      const addEventListenerSpy = vi.spyOn(window, 'addEventListener')
+      const addEventListenerSpy = jest.spyOn(window, 'addEventListener')
       renderHook(() => useScrollDetection())
 
       expect(addEventListenerSpy).toHaveBeenCalledWith('scroll', expect.any(Function), {

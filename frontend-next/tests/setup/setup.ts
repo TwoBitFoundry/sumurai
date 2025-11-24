@@ -1,14 +1,13 @@
 import '@testing-library/jest-dom'
-import { vi } from 'vitest'
 import React from 'react'
 import { AuthService } from '@/services/authService'
 import { FetchHttpClient, BrowserStorageAdapter } from '@/services/boundaries'
 
 jest.mock('@/observability/TelemetryService', () => ({
-  TelemetryService: vi.fn().mockImplementation(() => ({
-    initialize: vi.fn().mockResolvedValue(undefined),
-    shutdown: vi.fn().mockResolvedValue(undefined),
-    getTracer: vi.fn().mockReturnValue(null),
+  TelemetryService: jest.fn().mockImplementation(() => ({
+    initialize: jest.fn().mockResolvedValue(undefined),
+    shutdown: jest.fn().mockResolvedValue(undefined),
+    getTracer: jest.fn().mockReturnValue(null),
   })),
 }))
 
@@ -54,17 +53,17 @@ if (typeof window !== 'undefined') {
 
 Object.defineProperty(window, 'localStorage', {
   value: {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
-    clear: vi.fn(),
+    getItem: jest.fn(),
+    setItem: jest.fn(),
+    removeItem: jest.fn(),
+    clear: jest.fn(),
   },
   writable: true
 })
 
 jest.mock('react-plaid-link', () => ({
   usePlaidLink: () => ({
-    open: vi.fn(),
+    open: jest.fn(),
     ready: true,
     error: null,
   })

@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { jest } from '@jest/globals'
 import { TransactionService } from '@/services/TransactionService'
 import { ApiClient, AuthenticationError } from '@/services/ApiClient'
@@ -8,7 +7,7 @@ describe('TransactionService', () => {
   let getSpy: jest.SpiedFunction<typeof ApiClient.get>
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     getSpy = jest.spyOn(ApiClient, 'get')
   })
 
@@ -170,7 +169,7 @@ describe('TransactionService', () => {
           account_mask: undefined
         }
       ]
-      vi.mocked(ApiClient.get).mockResolvedValue(backendTransactions)
+      jest.mocked(ApiClient.get).mockResolvedValue(backendTransactions)
 
       const result = await TransactionService.getTransactions()
 

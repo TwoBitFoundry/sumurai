@@ -1,4 +1,3 @@
-import { describe, it, expect, vi } from 'vitest'
 import { computeDateRange } from '@/utils/dateRanges'
 
 describe('computeDateRange', () => {

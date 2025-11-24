@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SettingsPage from '@/views/SettingsPage'
@@ -7,22 +6,22 @@ import { AuthService } from '@/services/authService'
 
 jest.mock('@/services/SettingsService', () => ({
   SettingsService: {
-    changePassword: vi.fn(),
-    deleteAccount: vi.fn(),
+    changePassword: jest.fn(),
+    deleteAccount: jest.fn(),
   },
 }))
 
 jest.mock('@/services/authService', () => ({
   AuthService: {
-    clearToken: vi.fn(),
+    clearToken: jest.fn(),
   },
 }))
 
 describe('SettingsPage - Account Deletion', () => {
-  const mockOnLogout = vi.fn()
+  const mockOnLogout = jest.fn()
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   describe('Modal behavior', () => {
@@ -131,7 +130,7 @@ describe('SettingsPage - Account Deletion', () => {
 
   describe('Account deletion flow', () => {
     it('calls SettingsService.deleteAccount when confirmed', async () => {
-      vi.mocked(SettingsService.deleteAccount).mockResolvedValue({
+      jest.mocked(SettingsService.deleteAccount).mockResolvedValue({
         message: 'Account deleted',
         deleted_items: {
           connections: 1,
@@ -158,7 +157,7 @@ describe('SettingsPage - Account Deletion', () => {
     })
 
     it('clears auth token after successful deletion', async () => {
-      vi.mocked(SettingsService.deleteAccount).mockResolvedValue({
+      jest.mocked(SettingsService.deleteAccount).mockResolvedValue({
         message: 'Account deleted',
         deleted_items: {
           connections: 1,
@@ -185,7 +184,7 @@ describe('SettingsPage - Account Deletion', () => {
     })
 
     it('calls onLogout after successful deletion', async () => {
-      vi.mocked(SettingsService.deleteAccount).mockResolvedValue({
+      jest.mocked(SettingsService.deleteAccount).mockResolvedValue({
         message: 'Account deleted',
         deleted_items: {
           connections: 1,
@@ -212,7 +211,7 @@ describe('SettingsPage - Account Deletion', () => {
     })
 
     it('shows error message on deletion failure', async () => {
-      vi.mocked(SettingsService.deleteAccount).mockRejectedValue(new Error('Network error'))
+      jest.mocked(SettingsService.deleteAccount).mockRejectedValue(new Error('Network error'))
 
       render(<SettingsPage onLogout={mockOnLogout} />)
 
@@ -231,7 +230,7 @@ describe('SettingsPage - Account Deletion', () => {
     })
 
     it('keeps modal open on deletion error', async () => {
-      vi.mocked(SettingsService.deleteAccount).mockRejectedValue(new Error('Network error'))
+      jest.mocked(SettingsService.deleteAccount).mockRejectedValue(new Error('Network error'))
 
       render(<SettingsPage onLogout={mockOnLogout} />)
 
@@ -251,7 +250,7 @@ describe('SettingsPage - Account Deletion', () => {
 
     it('disables buttons and shows loading state during deletion', async () => {
       let resolveDeletion: () => void
-      vi.mocked(SettingsService.deleteAccount).mockImplementation(
+      jest.mocked(SettingsService.deleteAccount).mockImplementation(
         () =>
           new Promise((resolve) => {
             resolveDeletion = () =>

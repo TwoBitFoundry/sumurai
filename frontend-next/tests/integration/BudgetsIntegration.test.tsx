@@ -1,6 +1,5 @@
 import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AuthenticatedApp } from '@/components/AuthenticatedApp'
 import { AccountFilterProvider } from '@/hooks/useAccountFilter'
 import { ThemeTestProvider } from '@tests/utils/ThemeTestProvider'
@@ -12,7 +11,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
   const disconnectedStatus = createProviderStatus()
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
 
     // Default: healthy dashboard minimal data via boundary routes
     fetchMock = installFetchRoutes({
@@ -34,7 +33,7 @@ describe('AuthenticatedApp Budgets — Given/When/Then', () => {
 
   afterEach(() => {
     cleanup()
-    vi.restoreAllMocks()
+    jest.restoreAllMocks()
   })
 
   it('Given authenticated session; When app mounts; Then fetches budgets once and renders them', async () => {

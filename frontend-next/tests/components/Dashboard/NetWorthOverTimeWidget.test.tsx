@@ -1,5 +1,4 @@
 import { render, screen, within, cleanup } from '@testing-library/react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
 import { NetWorthOverTimeWidget } from '@/components/NetWorthOverTimeWidget'
 import { ThemeTestProvider } from '@tests/utils/ThemeTestProvider'
 
@@ -18,7 +17,7 @@ describe('NetWorthOverTimeWidget', () => {
   // Localized cleanup to avoid cross-test DOM leakage
   afterEach(() => {
     cleanup()
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   it('renders without crashing', () => {

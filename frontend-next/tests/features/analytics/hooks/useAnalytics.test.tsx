@@ -1,5 +1,4 @@
 import { renderHook, waitFor, act } from '@testing-library/react'
-import { vi, beforeEach, afterEach } from 'vitest'
 import { ReactNode } from 'react'
 import { useAnalytics } from '@/features/analytics/hooks/useAnalytics'
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter'
@@ -8,17 +7,17 @@ import { PlaidService } from '@/services/PlaidService'
 
 jest.mock('@/services/AnalyticsService', () => ({
   AnalyticsService: {
-    getSpendingTotal: vi.fn(),
-    getCategorySpendingByDateRange: vi.fn(),
-    getTopMerchantsByDateRange: vi.fn(),
-    getMonthlyTotals: vi.fn(),
+    getSpendingTotal: jest.fn(),
+    getCategorySpendingByDateRange: jest.fn(),
+    getTopMerchantsByDateRange: jest.fn(),
+    getMonthlyTotals: jest.fn(),
   }
 }))
 
 jest.mock('@/services/PlaidService', () => ({
   PlaidService: {
-    getAccounts: vi.fn(),
-    getStatus: vi.fn(),
+    getAccounts: jest.fn(),
+    getStatus: jest.fn(),
   }
 }))
 
@@ -61,21 +60,21 @@ const createDeferred = <T,>() => {
 
 describe('useAnalytics', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    vi.mocked(AnalyticsService.getSpendingTotal).mockResolvedValue(1000)
-    vi.mocked(AnalyticsService.getCategorySpendingByDateRange).mockResolvedValue([])
-    vi.mocked(AnalyticsService.getTopMerchantsByDateRange).mockResolvedValue([])
-    vi.mocked(AnalyticsService.getMonthlyTotals).mockResolvedValue([])
-    vi.mocked(PlaidService.getStatus).mockResolvedValue({
+    jest.clearAllMocks()
+    jest.mocked(AnalyticsService.getSpendingTotal).mockResolvedValue(1000)
+    jest.mocked(AnalyticsService.getCategorySpendingByDateRange).mockResolvedValue([])
+    jest.mocked(AnalyticsService.getTopMerchantsByDateRange).mockResolvedValue([])
+    jest.mocked(AnalyticsService.getMonthlyTotals).mockResolvedValue([])
+    jest.mocked(PlaidService.getStatus).mockResolvedValue({
       is_connected: true,
       institution_name: 'First Platypus Bank',
       connection_id: 'conn_1',
     } as any)
-    vi.mocked(PlaidService.getAccounts).mockResolvedValue(mockPlaidAccounts as any)
+    jest.mocked(PlaidService.getAccounts).mockResolvedValue(mockPlaidAccounts as any)
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    jest.restoreAllMocks()
   })
 
   it('should pass account filter to analytics services when not all accounts selected', async () => {
@@ -100,10 +99,10 @@ describe('useAnalytics', () => {
     expect(AnalyticsService.getSpendingTotal).toHaveBeenCalledWith(expect.any(String), expect.any(String), undefined)
 
     // Clear the mocks to track new calls
-    vi.mocked(AnalyticsService.getSpendingTotal).mockClear()
-    vi.mocked(AnalyticsService.getCategorySpendingByDateRange).mockClear()
-    vi.mocked(AnalyticsService.getTopMerchantsByDateRange).mockClear()
-    vi.mocked(AnalyticsService.getMonthlyTotals).mockClear()
+    jest.mocked(AnalyticsService.getSpendingTotal).mockClear()
+    jest.mocked(AnalyticsService.getCategorySpendingByDateRange).mockClear()
+    jest.mocked(AnalyticsService.getTopMerchantsByDateRange).mockClear()
+    jest.mocked(AnalyticsService.getMonthlyTotals).mockClear()
 
     await act(async () => {
       accountFilterHook!.setSelectedAccountIds(['account1'])
@@ -137,7 +136,7 @@ describe('useAnalytics', () => {
     expect(result.current.refreshing).toBe(false)
 
     // Clear mocks, select subset, then reselect all
-    vi.mocked(AnalyticsService.getSpendingTotal).mockClear()
+    jest.mocked(AnalyticsService.getSpendingTotal).mockClear()
 
     await act(async () => {
       accountFilterHook!.setSelectedAccountIds(['account1'])
@@ -147,7 +146,7 @@ describe('useAnalytics', () => {
       expect(AnalyticsService.getSpendingTotal).toHaveBeenCalledWith(expect.any(String), expect.any(String), ['account1'])
     })
 
-    vi.mocked(AnalyticsService.getSpendingTotal).mockClear()
+    jest.mocked(AnalyticsService.getSpendingTotal).mockClear()
 
     await act(async () => {
       accountFilterHook!.setSelectedAccountIds([...accountFilterHook!.allAccountIds])
@@ -174,7 +173,7 @@ describe('useAnalytics', () => {
       expect(result.current.loading).toBe(false)
     })
 
-    const initialRequestCount = vi.mocked(AnalyticsService.getSpendingTotal).mock.calls.length
+    const initialRequestCount = jest.mocked(AnalyticsService.getSpendingTotal).mock.calls.length
 
     expect(result.current.refreshing).toBe(false)
 
@@ -198,16 +197,16 @@ describe('useAnalytics', () => {
     const merchantsDeferred = createDeferred<any[]>()
     const monthlyDeferred = createDeferred<any[]>()
 
-    vi.mocked(AnalyticsService.getSpendingTotal)
+    jest.mocked(AnalyticsService.getSpendingTotal)
       .mockResolvedValueOnce(500)
       .mockReturnValueOnce(totalsDeferred.promise as any)
-    vi.mocked(AnalyticsService.getCategorySpendingByDateRange)
+    jest.mocked(AnalyticsService.getCategorySpendingByDateRange)
       .mockResolvedValueOnce([])
       .mockReturnValueOnce(categoriesDeferred.promise as any)
-    vi.mocked(AnalyticsService.getTopMerchantsByDateRange)
+    jest.mocked(AnalyticsService.getTopMerchantsByDateRange)
       .mockResolvedValueOnce([])
       .mockReturnValueOnce(merchantsDeferred.promise as any)
-    vi.mocked(AnalyticsService.getMonthlyTotals)
+    jest.mocked(AnalyticsService.getMonthlyTotals)
       .mockResolvedValueOnce([])
       .mockReturnValueOnce(monthlyDeferred.promise as any)
 

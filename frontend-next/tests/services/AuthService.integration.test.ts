@@ -1,15 +1,14 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AuthService } from '@/services/authService'
 import { ApiClient } from '@/services/ApiClient'
 import type { IHttpClient } from '@/services/boundaries/IHttpClient'
 import type { IStorageAdapter } from '@/services/boundaries/IStorageAdapter'
 
 class MockHttpClient implements IHttpClient {
-  get = vi.fn()
-  post = vi.fn()
-  put = vi.fn()
-  delete = vi.fn()
-  healthCheck = vi.fn()
+  get = jest.fn()
+  post = jest.fn()
+  put = jest.fn()
+  delete = jest.fn()
+  healthCheck = jest.fn()
 }
 
 class MockStorageAdapter implements IStorageAdapter {
@@ -47,7 +46,7 @@ describe('AuthService with Injected Boundaries', () => {
   })
 
   afterEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   describe('login', () => {

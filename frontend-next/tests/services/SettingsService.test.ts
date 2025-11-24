@@ -1,23 +1,22 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SettingsService } from '@/services/SettingsService'
 import { ApiClient } from '@/services/ApiClient'
 
 jest.mock('@/services/ApiClient', () => ({
   ApiClient: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn(),
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
   }
 }))
 
 describe('SettingsService.changePassword — Given/When/Then', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   it('Given valid credentials; When changePassword; Then sends PUT request with correct payload', async () => {
-    vi.mocked(ApiClient.put).mockResolvedValueOnce({
+    jest.mocked(ApiClient.put).mockResolvedValueOnce({
       message: 'Password changed successfully. Please log in again.',
       requires_reauth: true,
     } as any)
@@ -25,7 +24,7 @@ describe('SettingsService.changePassword — Given/When/Then', () => {
     const response = await SettingsService.changePassword('oldpass123', 'newpass123')
 
     expect(ApiClient.put).toHaveBeenCalledTimes(1)
-    const [endpoint, payload] = vi.mocked(ApiClient.put).mock.calls[0]
+    const [endpoint, payload] = jest.mocked(ApiClient.put).mock.calls[0]
     expect(endpoint).toBe('/auth/change-password')
     expect(payload).toEqual({
       current_password: 'oldpass123',
@@ -40,14 +39,14 @@ describe('SettingsService.changePassword — Given/When/Then', () => {
 
   it('Given network error; When changePassword; Then propagates error', async () => {
     const err = new Error('Network error')
-    vi.mocked(ApiClient.put).mockRejectedValueOnce(err)
+    jest.mocked(ApiClient.put).mockRejectedValueOnce(err)
 
     await expect(SettingsService.changePassword('oldpass123', 'newpass123')).rejects.toBe(err)
   })
 
   it('Given authentication error (401); When changePassword; Then propagates error', async () => {
     const err = new Error('401 Unauthorized')
-    vi.mocked(ApiClient.put).mockRejectedValueOnce(err)
+    jest.mocked(ApiClient.put).mockRejectedValueOnce(err)
 
     await expect(SettingsService.changePassword('wrongpass', 'newpass123')).rejects.toBe(err)
   })
@@ -55,11 +54,11 @@ describe('SettingsService.changePassword — Given/When/Then', () => {
 
 describe('SettingsService.deleteAccount — Given/When/Then', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   it('Given authenticated user; When deleteAccount; Then sends DELETE request to /auth/account', async () => {
-    vi.mocked(ApiClient.delete).mockResolvedValueOnce({
+    jest.mocked(ApiClient.delete).mockResolvedValueOnce({
       message: 'Account deleted successfully',
       deleted_items: {
         connections: 1,
@@ -72,7 +71,7 @@ describe('SettingsService.deleteAccount — Given/When/Then', () => {
     const response = await SettingsService.deleteAccount()
 
     expect(ApiClient.delete).toHaveBeenCalledTimes(1)
-    expect(vi.mocked(ApiClient.delete).mock.calls[0][0]).toBe('/auth/account')
+    expect(jest.mocked(ApiClient.delete).mock.calls[0][0]).toBe('/auth/account')
 
     expect(response).toEqual({
       message: 'Account deleted successfully',
@@ -87,14 +86,14 @@ describe('SettingsService.deleteAccount — Given/When/Then', () => {
 
   it('Given network error; When deleteAccount; Then propagates error', async () => {
     const err = new Error('Network error')
-    vi.mocked(ApiClient.delete).mockRejectedValueOnce(err)
+    jest.mocked(ApiClient.delete).mockRejectedValueOnce(err)
 
     await expect(SettingsService.deleteAccount()).rejects.toBe(err)
   })
 
   it('Given server error; When deleteAccount; Then propagates error', async () => {
     const err = new Error('500 Internal Server Error')
-    vi.mocked(ApiClient.delete).mockRejectedValueOnce(err)
+    jest.mocked(ApiClient.delete).mockRejectedValueOnce(err)
 
     await expect(SettingsService.deleteAccount()).rejects.toBe(err)
   })

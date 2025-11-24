@@ -1,5 +1,4 @@
 import { renderHook, waitFor, act, cleanup } from '@testing-library/react'
-import { vi, beforeEach, afterEach } from 'vitest'
 import { ReactNode } from 'react'
 import { useNetWorthSeries } from '@/features/analytics/hooks/useNetWorthSeries'
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter'
@@ -9,14 +8,14 @@ import { computeDateRange, type DateRangeKey } from '@/utils/dateRanges'
 
 jest.mock('@/services/AnalyticsService', () => ({
   AnalyticsService: {
-    getNetWorthOverTime: vi.fn(),
+    getNetWorthOverTime: jest.fn(),
   }
 }))
 
 jest.mock('@/services/PlaidService', () => ({
   PlaidService: {
-    getAccounts: vi.fn(),
-    getStatus: vi.fn(),
+    getAccounts: jest.fn(),
+    getStatus: jest.fn(),
   }
 }))
 
@@ -59,22 +58,22 @@ const createDeferred = <T,>() => {
 
 describe('useNetWorthSeries', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    vi.mocked(AnalyticsService.getNetWorthOverTime).mockResolvedValue([
+    jest.clearAllMocks()
+    jest.mocked(AnalyticsService.getNetWorthOverTime).mockResolvedValue([
       { date: '2024-04-01', value: 3400 },
       { date: '2024-04-02', value: 3500 },
     ])
-    vi.mocked(PlaidService.getStatus).mockResolvedValue({
+    jest.mocked(PlaidService.getStatus).mockResolvedValue({
       is_connected: true,
       institution_name: 'First Platypus Bank',
       connection_id: 'conn_1',
     } as any)
-    vi.mocked(PlaidService.getAccounts).mockResolvedValue(mockPlaidAccounts as any)
+    jest.mocked(PlaidService.getAccounts).mockResolvedValue(mockPlaidAccounts as any)
   })
 
   afterEach(() => {
     cleanup()
-    vi.restoreAllMocks()
+    jest.restoreAllMocks()
   })
 
   it('loads net worth series for the computed range', async () => {
@@ -83,7 +82,7 @@ describe('useNetWorthSeries', () => {
       { date: '2024-04-02', value: 3500 },
     ]
 
-    vi.mocked(AnalyticsService.getNetWorthOverTime).mockResolvedValueOnce(series)
+    jest.mocked(AnalyticsService.getNetWorthOverTime).mockResolvedValueOnce(series)
 
     const { result } = renderHook(({ range }) => useNetWorthSeries(range), {
       initialProps: { range: 'current-month' as DateRangeKey },
@@ -102,7 +101,7 @@ describe('useNetWorthSeries', () => {
     const second = createDeferred<{ date: string; value: number }[]>()
     const finalSeries = [{ date: '2024-02-01', value: 1200 }]
 
-    vi.mocked(AnalyticsService.getNetWorthOverTime)
+    jest.mocked(AnalyticsService.getNetWorthOverTime)
       .mockReturnValueOnce(first.promise as any)
       .mockReturnValueOnce(second.promise as any)
       .mockResolvedValue(finalSeries as any)
@@ -144,7 +143,7 @@ describe('useNetWorthSeries', () => {
 
   it('handles service errors and exposes message', async () => {
     const error = Object.assign(new Error('boom'), { status: 500 })
-    vi.mocked(AnalyticsService.getNetWorthOverTime).mockRejectedValue(error)
+    jest.mocked(AnalyticsService.getNetWorthOverTime).mockRejectedValue(error)
 
     const { result } = renderHook(({ range }) => useNetWorthSeries(range), {
       initialProps: { range: 'past-year' as DateRangeKey },
@@ -178,7 +177,7 @@ describe('useNetWorthSeries', () => {
     expect(AnalyticsService.getNetWorthOverTime).toHaveBeenCalledWith(expect.any(String), expect.any(String), undefined)
 
     // Clear the mock to track new calls
-    vi.mocked(AnalyticsService.getNetWorthOverTime).mockClear()
+    jest.mocked(AnalyticsService.getNetWorthOverTime).mockClear()
 
     // Set specific accounts
     await act(async () => {
@@ -210,7 +209,7 @@ describe('useNetWorthSeries', () => {
       expect(result.current.loading).toBe(false)
     })
 
-    const initialRequestCount = vi.mocked(AnalyticsService.getNetWorthOverTime).mock.calls.length
+    const initialRequestCount = jest.mocked(AnalyticsService.getNetWorthOverTime).mock.calls.length
 
     expect(result.current.refreshing).toBe(false)
 
@@ -231,7 +230,7 @@ describe('useNetWorthSeries', () => {
   it('exposes refreshing during pending refetches', async () => {
     const deferred = createDeferred<{ date: string; value: number }[]>()
 
-    vi.mocked(AnalyticsService.getNetWorthOverTime)
+    jest.mocked(AnalyticsService.getNetWorthOverTime)
       .mockResolvedValueOnce([
         { date: '2024-04-01', value: 1000 },
         { date: '2024-04-02', value: 1100 },

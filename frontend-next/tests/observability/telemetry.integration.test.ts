@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initTelemetry, shutdownTelemetry } from '@/observability/telemetry';
 
 describe('Telemetry Integration - Auto-Instrumentation', () => {

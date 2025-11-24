@@ -1,7 +1,6 @@
 import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { jest, beforeAll, afterAll } from '@jest/globals'
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 beforeAll(() => {
   jest.useRealTimers()
 })
@@ -50,11 +49,11 @@ const { installFetchRoutes } = require('@tests/utils/fetchRoutes')
 const { createProviderConnection, createProviderStatus } = require('@tests/utils/fixtures')
 
 describe('AuthenticatedApp shell', () => {
-  const onLogout = vi.fn()
+  const onLogout = jest.fn()
   let fetchMock: ReturnType<typeof installFetchRoutes>
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     localStorage.clear()
 
     fetchMock = installFetchRoutes({
@@ -136,7 +135,7 @@ describe('AuthenticatedApp shell', () => {
 
   afterEach(() => {
     cleanup()
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     localStorage.clear()
   })
 

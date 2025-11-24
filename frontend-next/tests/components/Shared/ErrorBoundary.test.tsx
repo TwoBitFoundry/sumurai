@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
 import { trace, SpanStatusCode } from '@opentelemetry/api'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -6,7 +5,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 // Mock console.error to avoid noise in test output
 const originalConsoleError = console.error
 beforeEach(() => {
-  console.error = vi.fn()
+  console.error = jest.fn()
 })
 
 afterEach(() => {
@@ -102,7 +101,7 @@ describe('ErrorBoundary', () => {
   describe('Recovery Actions', () => {
     it('should provide refresh button that reloads the page', () => {
       const originalLocation = window.location
-      const mockReload = vi.fn()
+      const mockReload = jest.fn()
       // Replace location to avoid read-only reload
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
@@ -127,7 +126,7 @@ describe('ErrorBoundary', () => {
     })
 
     it('should provide retry mechanism for recoverable errors', () => {
-      const mockRetry = vi.fn()
+      const mockRetry = jest.fn()
 
       render(
         <ErrorBoundary onRetry={mockRetry}>
@@ -144,7 +143,7 @@ describe('ErrorBoundary', () => {
 
   describe('Error Reporting', () => {
     it('should log error details for debugging', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
 
       render(
         <ErrorBoundary>
@@ -179,20 +178,20 @@ describe('ErrorBoundary', () => {
 
   describe('OpenTelemetry Instrumentation', () => {
     const mockSpan = {
-      recordException: vi.fn(),
-      setStatus: vi.fn(),
-      end: vi.fn(),
-      setAttributes: vi.fn(),
-      addEvent: vi.fn(),
+      recordException: jest.fn(),
+      setStatus: jest.fn(),
+      end: jest.fn(),
+      setAttributes: jest.fn(),
+      addEvent: jest.fn(),
     }
 
     beforeEach(() => {
        
-      vi.spyOn(trace, 'getActiveSpan').mockReturnValue(mockSpan as any) // any needed for mock
+      jest.spyOn(trace, 'getActiveSpan').mockReturnValue(mockSpan as any) // any needed for mock
     })
 
     afterEach(() => {
-      vi.restoreAllMocks()
+      jest.restoreAllMocks()
     })
 
     it('should record error exception to active span', () => {
@@ -239,7 +238,7 @@ describe('ErrorBoundary', () => {
 
     it('should only record to span if span exists', () => {
        
-      vi.spyOn(trace, 'getActiveSpan').mockReturnValueOnce(undefined as any) // any needed for mock
+      jest.spyOn(trace, 'getActiveSpan').mockReturnValueOnce(undefined as any) // any needed for mock
 
       render(
         <ErrorBoundary>

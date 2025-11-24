@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { jest } from '@jest/globals'
 import { PlaidService } from '@/services/PlaidService'
 import { ApiClient, AuthenticationError } from '@/services/ApiClient'
@@ -16,7 +15,7 @@ describe('PlaidService', () => {
   let getSpy: jest.SpiedFunction<typeof ApiClient.get>
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     postSpy = jest.spyOn(ApiClient, 'post')
     getSpy = jest.spyOn(ApiClient, 'get')
   })
@@ -81,7 +80,7 @@ describe('PlaidService', () => {
           connection_id: 'conn_1'
         }
       ]
-      vi.mocked(ApiClient.get).mockResolvedValue(mockAccounts)
+      jest.mocked(ApiClient.get).mockResolvedValue(mockAccounts)
 
       const result = await PlaidService.getAccounts()
 
@@ -105,7 +104,7 @@ describe('PlaidService', () => {
           connection_id: 'conn_x'
         }
       ]
-      vi.mocked(ApiClient.get).mockResolvedValue(rawAccounts)
+      jest.mocked(ApiClient.get).mockResolvedValue(rawAccounts)
 
       const result = await PlaidService.getAccounts()
 
@@ -193,7 +192,7 @@ describe('PlaidService', () => {
           connection_updated: true
         }
       }
-      vi.mocked(ApiClient.post).mockResolvedValue(mockIncrementalResponse)
+      jest.mocked(ApiClient.post).mockResolvedValue(mockIncrementalResponse)
 
       const result = await PlaidService.syncTransactions()
 
@@ -219,7 +218,7 @@ describe('PlaidService', () => {
           }
         ]
       }
-      vi.mocked(ApiClient.get).mockResolvedValue(mockStatus)
+      jest.mocked(ApiClient.get).mockResolvedValue(mockStatus)
 
       const result = await PlaidService.getStatus()
 
@@ -251,7 +250,7 @@ describe('PlaidService', () => {
   describe('clearSyncedData', () => {
     it('should call authenticated endpoint to clear synced data', async () => {
       const mockResponse = { cleared: true }
-      vi.mocked(ApiClient.post).mockResolvedValue(mockResponse)
+      jest.mocked(ApiClient.post).mockResolvedValue(mockResponse)
 
       const result = await PlaidService.clearSyncedData()
 

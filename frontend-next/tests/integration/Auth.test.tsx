@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { LoginScreen, RegisterScreen } from '@/Auth'
@@ -7,10 +6,10 @@ import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 // Keep sessionStorage spies as test-local state
 Object.defineProperty(globalThis, 'sessionStorage', {
   value: {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
-    clear: vi.fn(),
+    getItem: jest.fn(),
+    setItem: jest.fn(),
+    removeItem: jest.fn(),
+    clear: jest.fn(),
   },
 })
 
@@ -19,9 +18,9 @@ describe('Authentication Components', () => {
   let fetchMock: ReturnType<typeof installFetchRoutes>
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     // Mock console.error to suppress expected error logs during tests
-    console.error = vi.fn()
+    console.error = jest.fn()
     
     // Ensure clean DOM state between tests
     document.body.innerHTML = ''
@@ -45,7 +44,7 @@ describe('Authentication Components', () => {
     describe('Given a login screen component', () => {
       describe('When it is rendered', () => {
         it('Then it should show email and password fields with register link', () => {
-          render(<LoginScreen onNavigateToRegister={vi.fn()} />)
+          render(<LoginScreen onNavigateToRegister={jest.fn()} />)
 
           expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
 
@@ -61,13 +60,13 @@ describe('Authentication Components', () => {
       describe('When valid credentials are submitted', () => {
         it('Then it should call auth API and store JWT in session storage', async () => {
         const mockJwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test'
-        const mockSessionStorage = vi.mocked(globalThis.sessionStorage)
+        const mockSessionStorage = jest.mocked(globalThis.sessionStorage)
         // Override login route to return specific token
         fetchMock = installFetchRoutes({
           'POST /api/auth/login': new Response(JSON.stringify({ token: mockJwt }), { status: 200, headers: { 'Content-Type': 'application/json' } })
         })
 
-          const onNavigateToRegister = vi.fn()
+          const onNavigateToRegister = jest.fn()
           render(<LoginScreen onNavigateToRegister={onNavigateToRegister} />)
 
           const user = userEvent.setup()
@@ -97,7 +96,7 @@ describe('Authentication Components', () => {
             'POST /api/auth/login': new Response('Unauthorized', { status: 401 })
           })
 
-          const onNavigateToRegister = vi.fn()
+          const onNavigateToRegister = jest.fn()
           render(<LoginScreen onNavigateToRegister={onNavigateToRegister} />)
 
           const user = userEvent.setup()
@@ -127,7 +126,7 @@ describe('Authentication Components', () => {
     describe('Given a register screen component', () => {
       describe('When it is rendered', () => {
         it('Then it should show form with password requirements', () => {
-          render(<RegisterScreen onNavigateToLogin={vi.fn()} />)
+          render(<RegisterScreen onNavigateToLogin={jest.fn()} />)
 
           expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
 
@@ -146,7 +145,7 @@ describe('Authentication Components', () => {
       
       describe('When weak password is typed in register form', () => {
         it('Then it should show validation errors in real time', async () => {
-          render(<RegisterScreen onNavigateToLogin={vi.fn()} />)
+          render(<RegisterScreen onNavigateToLogin={jest.fn()} />)
 
           const user = userEvent.setup()
           const passwordInput = screen.getByLabelText(/^password$/i)
@@ -163,7 +162,7 @@ describe('Authentication Components', () => {
             'POST /api/auth/register': { message: 'Registration successful' }
           })
 
-          const onNavigateToLogin = vi.fn()
+          const onNavigateToLogin = jest.fn()
           render(<RegisterScreen onNavigateToLogin={onNavigateToLogin} />)
 
           const user = userEvent.setup()
@@ -192,7 +191,7 @@ describe('Authentication Components', () => {
             'POST /api/auth/register': new Response(JSON.stringify({ error: 'Email already exists' }), { status: 409, headers: { 'Content-Type': 'application/json' } })
           })
 
-          const onNavigateToLogin = vi.fn()
+          const onNavigateToLogin = jest.fn()
           render(<RegisterScreen onNavigateToLogin={onNavigateToLogin} />)
 
           const user = userEvent.setup()
@@ -211,12 +210,12 @@ describe('Authentication Components', () => {
       describe('When successful login JWT is received', () => {
         it('Then it should store in session storage and redirect', async () => {
           const mockJwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test'
-          const mockSessionStorage = vi.mocked(globalThis.sessionStorage)
+          const mockSessionStorage = jest.mocked(globalThis.sessionStorage)
           fetchMock = installFetchRoutes({
             'POST /api/auth/login': new Response(JSON.stringify({ token: mockJwt }), { status: 200, headers: { 'Content-Type': 'application/json' } })
           })
 
-          render(<LoginScreen onNavigateToRegister={vi.fn()} />)
+          render(<LoginScreen onNavigateToRegister={jest.fn()} />)
 
           const user = userEvent.setup()
           await user.type(screen.getByLabelText(/email/i), 'test@example.com')
@@ -231,7 +230,7 @@ describe('Authentication Components', () => {
       
       describe('When register link is clicked from login', () => {
         it('Then it should navigate to register screen', async () => {
-          const onNavigateToRegister = vi.fn()
+          const onNavigateToRegister = jest.fn()
           render(<LoginScreen onNavigateToRegister={onNavigateToRegister} />)
 
           const user = userEvent.setup()
@@ -243,7 +242,7 @@ describe('Authentication Components', () => {
       
       describe('When login link is clicked from register', () => {
         it('Then it should navigate back to login screen', async () => {
-          const onNavigateToLogin = vi.fn()
+          const onNavigateToLogin = jest.fn()
           render(<RegisterScreen onNavigateToLogin={onNavigateToLogin} />)
 
           const user = userEvent.setup()

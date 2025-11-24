@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AnalyticsService } from '@/services/AnalyticsService'
 import { ApiClient } from '@/services/ApiClient'
 import type { 
@@ -11,7 +10,7 @@ jest.mock('@/services/ApiClient')
 
 describe('AnalyticsService (date-range endpoints)', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   describe('getSpendingTotal', () => {
@@ -21,7 +20,7 @@ describe('AnalyticsService (date-range endpoints)', () => {
       const m = now.getMonth();
       const start = new Date(y, m, 1).toISOString().slice(0,10);
       const end = new Date(y, m + 1, 0).toISOString().slice(0,10);
-      vi.mocked(ApiClient.get).mockResolvedValue(1250.75)
+      jest.mocked(ApiClient.get).mockResolvedValue(1250.75)
 
       const result = await AnalyticsService.getSpendingTotal(start, end)
 
@@ -30,7 +29,7 @@ describe('AnalyticsService (date-range endpoints)', () => {
     })
 
     it('omits query params for all-time (no dates)', async () => {
-      vi.mocked(ApiClient.get).mockResolvedValue(0)
+      jest.mocked(ApiClient.get).mockResolvedValue(0)
 
       const result = await AnalyticsService.getSpendingTotal()
 
@@ -42,7 +41,7 @@ describe('AnalyticsService (date-range endpoints)', () => {
       const start = '2024-01-01';
       const end = '2024-01-31';
       const accountIds = ['acc_1', 'acc_2'];
-      vi.mocked(ApiClient.get).mockResolvedValue(500.25)
+      jest.mocked(ApiClient.get).mockResolvedValue(500.25)
 
       const result = await AnalyticsService.getSpendingTotal(start, end, accountIds)
 
@@ -59,7 +58,7 @@ describe('AnalyticsService (date-range endpoints)', () => {
         { category: 'Food & Dining', amount: 450.25, percentage: 36.02 },
         { category: 'Transportation', amount: 280.50, percentage: 22.44 },
       ]
-      vi.mocked(ApiClient.get).mockResolvedValue(mockCategories)
+      jest.mocked(ApiClient.get).mockResolvedValue(mockCategories)
 
       const result = await AnalyticsService.getCategorySpendingByDateRange(start, end)
 
@@ -69,7 +68,7 @@ describe('AnalyticsService (date-range endpoints)', () => {
 
     it('omits query params when no dates are provided (all-time)', async () => {
       const mockCategories: AnalyticsCategoryResponse[] = []
-      vi.mocked(ApiClient.get).mockResolvedValue(mockCategories)
+      jest.mocked(ApiClient.get).mockResolvedValue(mockCategories)
 
       const result = await AnalyticsService.getCategorySpendingByDateRange()
 
@@ -84,7 +83,7 @@ describe('AnalyticsService (date-range endpoints)', () => {
       const mockCategories: AnalyticsCategoryResponse[] = [
         { category: 'Food & Dining', amount: 250.25, percentage: 50.05 }
       ]
-      vi.mocked(ApiClient.get).mockResolvedValue(mockCategories)
+      jest.mocked(ApiClient.get).mockResolvedValue(mockCategories)
 
       const result = await AnalyticsService.getCategorySpendingByDateRange(start, end, accountIds)
 
@@ -102,7 +101,7 @@ describe('AnalyticsService (date-range endpoints)', () => {
         { month: '2023-12', amount: 980.25 },
         { month: '2023-11', amount: 1100.00 }
       ]
-      vi.mocked(ApiClient.get).mockResolvedValue(mockMonthlyTotals)
+      jest.mocked(ApiClient.get).mockResolvedValue(mockMonthlyTotals)
 
       const result = await AnalyticsService.getMonthlyTotals(3)
 
@@ -116,7 +115,7 @@ describe('AnalyticsService (date-range endpoints)', () => {
         { month: '2024-01', amount: 1000 },
         { month: 'invalid-date', amount: 250 }
       ]
-      vi.mocked(ApiClient.get).mockResolvedValue(backendTotals)
+      jest.mocked(ApiClient.get).mockResolvedValue(backendTotals)
 
       const result = await AnalyticsService.getMonthlyTotals(6)
 
@@ -134,7 +133,7 @@ describe('AnalyticsService (date-range endpoints)', () => {
         { name: 'Starbucks', amount: 125.5, count: 8, percentage: 25.2 },
         { name: 'Shell', amount: 89.25, count: 4, percentage: 18.0 },
       ]
-      vi.mocked(ApiClient.get).mockResolvedValue(mockMerchants)
+      jest.mocked(ApiClient.get).mockResolvedValue(mockMerchants)
 
       const result = await AnalyticsService.getTopMerchantsByDateRange(start, end)
 
@@ -154,7 +153,7 @@ describe('AnalyticsService (date-range endpoints)', () => {
       const mockCategories: AnalyticsCategoryResponse[] = [
         { category: 'Food', amount: 100, percentage: 100 }
       ]
-      vi.mocked(ApiClient.get).mockResolvedValue(mockCategories)
+      jest.mocked(ApiClient.get).mockResolvedValue(mockCategories)
 
       const result = await AnalyticsService.getCategorySpendingByDateRange('2024-01-01', '2024-01-31')
 
@@ -166,7 +165,7 @@ describe('AnalyticsService (date-range endpoints)', () => {
       const mockMerchants: AnalyticsTopMerchantsResponse[] = [
         { name: 'Store', amount: 100, count: 1, percentage: 100 }
       ]
-      vi.mocked(ApiClient.get).mockResolvedValue(mockMerchants)
+      jest.mocked(ApiClient.get).mockResolvedValue(mockMerchants)
 
       const result = await AnalyticsService.getTopMerchantsByDateRange('2024-01-01', '2024-01-31')
 

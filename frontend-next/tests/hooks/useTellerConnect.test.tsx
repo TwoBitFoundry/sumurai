@@ -1,15 +1,14 @@
 import { renderHook, act, waitFor, cleanup } from '@testing-library/react'
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import type { TellerConnectGateway } from '@/hooks/useTellerConnect'
 import { useTellerConnect } from '@/hooks/useTellerConnect'
 
 describe('useTellerConnect', () => {
-  const setup = vi.fn()
-  const open = vi.fn()
-  const destroy = vi.fn()
+  const setup = jest.fn()
+  const open = jest.fn()
+  const destroy = jest.fn()
 
   beforeEach(() => {
-    vi.resetAllMocks()
+    jest.resetAllMocks()
     setup.mockReturnValue({ open, destroy })
     Object.assign(globalThis, {
       TellerConnect: {
@@ -25,11 +24,11 @@ describe('useTellerConnect', () => {
   })
 
   const createGateway = (): TellerConnectGateway => ({
-    storeEnrollment: vi.fn().mockResolvedValue({
+    storeEnrollment: jest.fn().mockResolvedValue({
       connection_id: 'conn-1',
       institution_name: 'Sample Bank'
     }),
-    syncTransactions: vi.fn().mockResolvedValue(undefined)
+    syncTransactions: jest.fn().mockResolvedValue(undefined)
   })
 
   it('initializes Teller Connect and exposes open callback', async () => {

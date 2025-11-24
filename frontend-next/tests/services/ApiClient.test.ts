@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ApiClient, ApiError, AuthenticationError, ValidationError, NetworkError, ServerError, ConflictError, NotFoundError, ForbiddenError } from '@/services/ApiClient'
 import { AuthService } from '@/services/authService'
 import { setupTestBoundaries } from '../setup/setupTestBoundaries'
@@ -7,12 +6,12 @@ describe('ApiClient with Injected IHttpClient', () => {
   let mockHttp: any
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     const boundaries = setupTestBoundaries()
     mockHttp = boundaries.http
-    vi.spyOn(AuthService, 'getToken').mockReturnValue('mock-token')
-    vi.spyOn(AuthService, 'storeToken')
-    vi.spyOn(AuthService, 'clearToken')
+    jest.spyOn(AuthService, 'getToken').mockReturnValue('mock-token')
+    jest.spyOn(AuthService, 'storeToken')
+    jest.spyOn(AuthService, 'clearToken')
     ApiClient.setTestMaxRetries(0)
   })
 
@@ -56,7 +55,7 @@ describe('ApiClient with Injected IHttpClient', () => {
 
   describe('Authentication Integration', () => {
     it('should handle 401 responses with token refresh', async () => {
-      vi.spyOn(AuthService, 'refreshToken').mockResolvedValueOnce({
+      jest.spyOn(AuthService, 'refreshToken').mockResolvedValueOnce({
         token: 'new-token'
       })
 
@@ -72,7 +71,7 @@ describe('ApiClient with Injected IHttpClient', () => {
     })
 
     it('should clear token when refresh fails', async () => {
-      vi.spyOn(AuthService, 'refreshToken').mockRejectedValueOnce(
+      jest.spyOn(AuthService, 'refreshToken').mockRejectedValueOnce(
         new Error('Refresh failed')
       )
 
@@ -204,7 +203,7 @@ describe('ApiClient with Injected IHttpClient', () => {
   describe('Request Authorization', () => {
     it('should include auth token in requests', async () => {
       mockHttp.get.mockResolvedValueOnce({ data: 'success' })
-      vi.spyOn(AuthService, 'getToken').mockReturnValue('my-token')
+      jest.spyOn(AuthService, 'getToken').mockReturnValue('my-token')
 
       await ApiClient.get('/protected')
 
@@ -213,7 +212,7 @@ describe('ApiClient with Injected IHttpClient', () => {
 
     it('should handle requests without auth token', async () => {
       mockHttp.get.mockResolvedValueOnce({ data: 'success' })
-      vi.spyOn(AuthService, 'getToken').mockReturnValue(null)
+      jest.spyOn(AuthService, 'getToken').mockReturnValue(null)
 
       await ApiClient.get('/public')
 

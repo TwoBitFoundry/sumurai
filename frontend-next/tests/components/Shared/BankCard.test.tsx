@@ -1,6 +1,5 @@
 import { render, screen, cleanup, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest'
 import { BankCard } from '@/components/BankCard'
 
 const mockBank = {
@@ -30,19 +29,19 @@ const mockBank = {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks()
+  jest.clearAllMocks()
 })
 
 afterEach(() => {
   cleanup()
-  vi.restoreAllMocks()
+  jest.restoreAllMocks()
 })
 
 describe('BankCard', () => {
   describe('when rendering bank connection', () => {
     it('displays bank name and connection status', () => {
-      const mockOnSync = vi.fn()
-      const mockOnDisconnect = vi.fn()
+      const mockOnSync = jest.fn()
+      const mockOnDisconnect = jest.fn()
 
       render(<BankCard bank={mockBank} onSync={mockOnSync} onDisconnect={mockOnDisconnect} />)
 
@@ -52,8 +51,8 @@ describe('BankCard', () => {
     })
 
     it('shows accounts when expanded by default', () => {
-      const mockOnSync = vi.fn()
-      const mockOnDisconnect = vi.fn()
+      const mockOnSync = jest.fn()
+      const mockOnDisconnect = jest.fn()
 
       render(<BankCard bank={mockBank} onSync={mockOnSync} onDisconnect={mockOnDisconnect} />)
 
@@ -65,8 +64,8 @@ describe('BankCard', () => {
 
     it('can toggle account visibility', async () => {
       const user = userEvent.setup()
-      const mockOnSync = vi.fn()
-      const mockOnDisconnect = vi.fn()
+      const mockOnSync = jest.fn()
+      const mockOnDisconnect = jest.fn()
 
       render(<BankCard bank={mockBank} onSync={mockOnSync} onDisconnect={mockOnDisconnect} />)
 
@@ -89,8 +88,8 @@ describe('BankCard', () => {
   describe('when syncing bank connection', () => {
     it('calls onSync with bank id when sync button clicked', async () => {
       const user = userEvent.setup()
-      const mockOnSync = vi.fn().mockResolvedValue(undefined)
-      const mockOnDisconnect = vi.fn()
+      const mockOnSync = jest.fn().mockResolvedValue(undefined)
+      const mockOnDisconnect = jest.fn()
 
       render(<BankCard bank={mockBank} onSync={mockOnSync} onDisconnect={mockOnDisconnect} />)
 
@@ -103,8 +102,8 @@ describe('BankCard', () => {
     it('shows loading state during sync operation', async () => {
       const user = userEvent.setup()
       let resolvePrims: () => void = () => {}
-      const mockOnSync = vi.fn(() => new Promise<void>(resolve => { resolvePrims = resolve }))
-      const mockOnDisconnect = vi.fn()
+      const mockOnSync = jest.fn(() => new Promise<void>(resolve => { resolvePrims = resolve }))
+      const mockOnDisconnect = jest.fn()
 
       render(<BankCard bank={mockBank} onSync={mockOnSync} onDisconnect={mockOnDisconnect} />)
 
@@ -124,8 +123,8 @@ describe('BankCard', () => {
   describe('when disconnecting bank connection', () => {
     it('shows disconnect confirmation modal when disconnect menu item clicked', async () => {
       const user = userEvent.setup()
-      const mockOnSync = vi.fn()
-      const mockOnDisconnect = vi.fn()
+      const mockOnSync = jest.fn()
+      const mockOnDisconnect = jest.fn()
 
       render(<BankCard bank={mockBank} onSync={mockOnSync} onDisconnect={mockOnDisconnect} />)
 
@@ -143,8 +142,8 @@ describe('BankCard', () => {
 
     it('closes disconnect modal when cancel is clicked', async () => {
       const user = userEvent.setup()
-      const mockOnSync = vi.fn()
-      const mockOnDisconnect = vi.fn()
+      const mockOnSync = jest.fn()
+      const mockOnDisconnect = jest.fn()
 
       render(<BankCard bank={mockBank} onSync={mockOnSync} onDisconnect={mockOnDisconnect} />)
 
@@ -167,8 +166,8 @@ describe('BankCard', () => {
 
     it('calls onDisconnect when confirmed in modal', async () => {
       const user = userEvent.setup()
-      const mockOnSync = vi.fn()
-      const mockOnDisconnect = vi.fn().mockResolvedValue(undefined)
+      const mockOnSync = jest.fn()
+      const mockOnDisconnect = jest.fn().mockResolvedValue(undefined)
 
       render(<BankCard bank={mockBank} onSync={mockOnSync} onDisconnect={mockOnDisconnect} />)
 
@@ -193,8 +192,8 @@ describe('BankCard', () => {
     it('shows loading state during disconnect operation', async () => {
       const user = userEvent.setup()
       let resolveDisconnect: () => void = () => {}
-      const mockOnSync = vi.fn()
-      const mockOnDisconnect = vi.fn(() => new Promise<void>(resolve => { resolveDisconnect = resolve }))
+      const mockOnSync = jest.fn()
+      const mockOnDisconnect = jest.fn(() => new Promise<void>(resolve => { resolveDisconnect = resolve }))
 
       render(<BankCard bank={mockBank} onSync={mockOnSync} onDisconnect={mockOnDisconnect} />)
 
@@ -223,8 +222,8 @@ describe('BankCard', () => {
 
     it('closes menu and shows modal when disconnect item clicked', async () => {
       const user = userEvent.setup()
-      const mockOnSync = vi.fn()
-      const mockOnDisconnect = vi.fn()
+      const mockOnSync = jest.fn()
+      const mockOnDisconnect = jest.fn()
 
       render(<BankCard bank={mockBank} onSync={mockOnSync} onDisconnect={mockOnDisconnect} />)
 
@@ -247,8 +246,8 @@ describe('BankCard', () => {
         ...mockBank,
         status: 'needs_reauth' as const
       }
-      const mockOnSync = vi.fn()
-      const mockOnDisconnect = vi.fn()
+      const mockOnSync = jest.fn()
+      const mockOnDisconnect = jest.fn()
 
       render(<BankCard bank={bankWithReauth} onSync={mockOnSync} onDisconnect={mockOnDisconnect} />)
 
@@ -260,8 +259,8 @@ describe('BankCard', () => {
         ...mockBank,
         lastSync: undefined
       }
-      const mockOnSync = vi.fn()
-      const mockOnDisconnect = vi.fn()
+      const mockOnSync = jest.fn()
+      const mockOnDisconnect = jest.fn()
 
       render(<BankCard bank={bankWithoutSync} onSync={mockOnSync} onDisconnect={mockOnDisconnect} />)
 

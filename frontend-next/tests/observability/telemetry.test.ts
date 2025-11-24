@@ -1,4 +1,3 @@
-import { describe, it, expect, afterEach } from 'vitest';
 import { initTelemetry, shutdownTelemetry, getTracer } from '@/observability/telemetry';
 
 describe('Telemetry - Business Logic', () => {

@@ -1,5 +1,4 @@
 import { render, fireEvent } from '@testing-library/react'
-import { vi } from 'vitest'
 import ConnectionsList from '@/features/plaid/components/ConnectionsList'
 
 jest.mock('@/components/BankCard', () => ({
@@ -29,12 +28,12 @@ describe('ConnectionsList', () => {
   }
 
   it('renders bank cards when banks exist', () => {
-    const onSync = vi.fn()
-    const onDisconnect = vi.fn()
+    const onSync = jest.fn()
+    const onDisconnect = jest.fn()
     const { getAllByTestId, getByText } = render(
       <ConnectionsList
         banks={[bank]}
-        onConnect={vi.fn()}
+        onConnect={jest.fn()}
         onSync={onSync}
         onDisconnect={onDisconnect}
       />
@@ -46,13 +45,13 @@ describe('ConnectionsList', () => {
   })
 
   it('shows empty state when no banks', () => {
-    const onConnect = vi.fn()
+    const onConnect = jest.fn()
     const { getAllByText } = render(
       <ConnectionsList
         banks={[]}
         onConnect={onConnect}
-        onSync={vi.fn()}
-        onDisconnect={vi.fn()}
+        onSync={jest.fn()}
+        onDisconnect={jest.fn()}
       />
     )
 

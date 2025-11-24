@@ -1,5 +1,4 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { vi } from 'vitest'
 import { ReactNode } from 'react'
 import { useBudgets } from '@/features/budgets/hooks/useBudgets'
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter'
@@ -72,7 +71,7 @@ describe('useBudgets', () => {
     })
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     fetchMock = installFetchRoutes({
       'GET /api/budgets': [],
       'GET /api/transactions': [],

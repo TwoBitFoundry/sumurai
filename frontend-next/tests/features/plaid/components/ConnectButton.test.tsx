@@ -1,10 +1,9 @@
 import { render, fireEvent } from '@testing-library/react'
-import { vi } from 'vitest'
 import ConnectButton from '@/features/plaid/components/ConnectButton'
 
 describe('ConnectButton', () => {
   it('renders label and triggers onClick', () => {
-    const onClick = vi.fn()
+    const onClick = jest.fn()
     const { getByRole } = render(<ConnectButton onClick={onClick} />)
 
     const button = getByRole('button', { name: /add account/i })

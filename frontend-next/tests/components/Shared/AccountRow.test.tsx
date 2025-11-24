@@ -1,5 +1,4 @@
 import { render, screen, cleanup } from '@testing-library/react'
-import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest'
 import { AccountRow } from '@/components/AccountRow'
 
 const mockCheckingAccount = {
@@ -30,12 +29,12 @@ const mockCreditAccount = {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks()
+  jest.clearAllMocks()
 })
 
 afterEach(() => {
   cleanup()
-  vi.restoreAllMocks()
+  jest.restoreAllMocks()
 })
 
 describe('AccountRow', () => {

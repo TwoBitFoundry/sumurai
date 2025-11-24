@@ -1,16 +1,15 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
 import type { TellerProviderGateway } from '@/hooks/useTellerProviderInfo'
 import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo'
 
 describe('useTellerProviderInfo', () => {
   const createGateway = (): TellerProviderGateway => ({
-    fetchInfo: vi.fn().mockResolvedValue({
+    fetchInfo: jest.fn().mockResolvedValue({
       available_providers: ['plaid', 'teller'],
       default_provider: 'plaid',
       user_provider: undefined
     }),
-    selectProvider: vi.fn().mockResolvedValue({
+    selectProvider: jest.fn().mockResolvedValue({
       user_provider: 'teller'
     })
   })

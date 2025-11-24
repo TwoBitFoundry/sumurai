@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach } from 'vitest'
 import { createMockHttpClient } from './mockHttpClient'
 
 describe('createMockHttpClient', () => {
@@ -12,7 +11,7 @@ describe('createMockHttpClient', () => {
     expect(typeof mockHttp.healthCheck).toBe('function')
   })
 
-  it('all methods are vi.fn() spies that can be mocked', () => {
+  it('all methods are jest.fn() spies that can be mocked', () => {
     const mockHttp = createMockHttpClient()
     expect(mockHttp.get.mock).toBeDefined()
     expect(mockHttp.post.mock).toBeDefined()

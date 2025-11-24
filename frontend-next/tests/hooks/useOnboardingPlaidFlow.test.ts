@@ -1,7 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { jest } from '@jest/globals'
 import { useOnboardingPlaidFlow } from '@/hooks/useOnboardingPlaidFlow'
-import { vi, afterEach } from 'vitest'
 import { ApiClient } from '@/services/ApiClient'
 import * as plaidLink from 'react-plaid-link'
 
@@ -11,10 +10,10 @@ let usePlaidLinkSpy: jest.SpiedFunction<typeof plaidLink.usePlaidLink>
 let mockOpen: jest.Mock
 describe('useOnboardingPlaidFlow', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     postSpy = jest.spyOn(ApiClient, 'post')
     getSpy = jest.spyOn(ApiClient, 'get')
-    mockOpen = vi.fn()
+    mockOpen = jest.fn()
     usePlaidLinkSpy = jest.spyOn(plaidLink, 'usePlaidLink').mockImplementation(({ token }) => {
       if (token) {
         mockOpen()
@@ -23,7 +22,7 @@ describe('useOnboardingPlaidFlow', () => {
         open: mockOpen,
         ready: true,
         error: null,
-        exit: vi.fn(),
+        exit: jest.fn(),
       }
     })
   })
@@ -62,7 +61,7 @@ describe('useOnboardingPlaidFlow', () => {
   })
 
   it('given plaid connection when successful then marks step complete', async () => {
-    const onConnectionSuccess = vi.fn()
+    const onConnectionSuccess = jest.fn()
     postSpy.mockResolvedValueOnce({} as any) // exchangeToken
     getSpy.mockResolvedValueOnce({
       connections: [{
@@ -90,11 +89,11 @@ describe('useOnboardingPlaidFlow', () => {
   })
 
   it('given plaid status fetch fails after exchange then still marks connected', async () => {
-    const onConnectionSuccess = vi.fn()
+    const onConnectionSuccess = jest.fn()
     postSpy.mockResolvedValueOnce({} as any) // exchangeToken
     getSpy.mockRejectedValue(new Error('status error'))
 
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
 
     const { result } = renderHook(() =>
       useOnboardingPlaidFlow({ onConnectionSuccess })
@@ -112,7 +111,7 @@ describe('useOnboardingPlaidFlow', () => {
   })
 
   it('given plaid connection when failed then shows error state', async () => {
-    const onError = vi.fn()
+    const onError = jest.fn()
     const mockError = new Error('Connection failed')
     postSpy.mockRejectedValue(mockError)
 
@@ -130,7 +129,7 @@ describe('useOnboardingPlaidFlow', () => {
   })
 
   it('given link token request when fails then handles error gracefully', async () => {
-    const onError = vi.fn()
+    const onError = jest.fn()
     const mockError = new Error('Failed to get link token')
     postSpy.mockRejectedValue(mockError)
 

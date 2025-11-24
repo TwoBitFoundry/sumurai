@@ -1,6 +1,5 @@
 import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 import { cn } from '@/ui/primitives'
 
@@ -101,7 +100,7 @@ const AccountsTabMock = ({
 let fetchMock: ReturnType<typeof installFetchRoutes>
 
 beforeEach(() => {
-  vi.clearAllMocks()
+  jest.clearAllMocks()
   
   fetchMock = installFetchRoutes({
     'POST /api/providers/sync-transactions': { 
@@ -120,15 +119,15 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
-  vi.restoreAllMocks()
+  jest.restoreAllMocks()
 })
 
 describe('AccountsTab Integration', () => {
   describe('when displaying bank connections', () => {
     it('shows connected banks with bank-level operations', () => {
-      const mockOnSyncBank = vi.fn().mockResolvedValue(undefined)
-      const mockOnDisconnectBank = vi.fn()
-      const mockOnAddBank = vi.fn()
+      const mockOnSyncBank = jest.fn().mockResolvedValue(undefined)
+      const mockOnDisconnectBank = jest.fn()
+      const mockOnAddBank = jest.fn()
 
       render(
         <AccountsTabMock
@@ -149,9 +148,9 @@ describe('AccountsTab Integration', () => {
     })
 
     it('shows accounts without individual sync/disconnect controls', () => {
-      const mockOnSyncBank = vi.fn()
-      const mockOnDisconnectBank = vi.fn()
-      const mockOnAddBank = vi.fn()
+      const mockOnSyncBank = jest.fn()
+      const mockOnDisconnectBank = jest.fn()
+      const mockOnAddBank = jest.fn()
 
       render(
         <AccountsTabMock
@@ -175,9 +174,9 @@ describe('AccountsTab Integration', () => {
     })
 
     it('shows empty state when no banks are connected', () => {
-      const mockOnSyncBank = vi.fn()
-      const mockOnDisconnectBank = vi.fn()
-      const mockOnAddBank = vi.fn()
+      const mockOnSyncBank = jest.fn()
+      const mockOnDisconnectBank = jest.fn()
+      const mockOnAddBank = jest.fn()
 
       render(
         <AccountsTabMock
@@ -196,9 +195,9 @@ describe('AccountsTab Integration', () => {
   describe('when performing bank-level operations', () => {
     it('calls sync handler with correct bank id', async () => {
       const user = userEvent.setup()
-      const mockOnSyncBank = vi.fn().mockResolvedValue(undefined)
-      const mockOnDisconnectBank = vi.fn()
-      const mockOnAddBank = vi.fn()
+      const mockOnSyncBank = jest.fn().mockResolvedValue(undefined)
+      const mockOnDisconnectBank = jest.fn()
+      const mockOnAddBank = jest.fn()
 
       render(
         <AccountsTabMock
@@ -217,9 +216,9 @@ describe('AccountsTab Integration', () => {
 
     it('calls disconnect handler with correct bank id', async () => {
       const user = userEvent.setup()
-      const mockOnSyncBank = vi.fn()
-      const mockOnDisconnectBank = vi.fn()
-      const mockOnAddBank = vi.fn()
+      const mockOnSyncBank = jest.fn()
+      const mockOnDisconnectBank = jest.fn()
+      const mockOnAddBank = jest.fn()
 
       render(
         <AccountsTabMock
@@ -238,9 +237,9 @@ describe('AccountsTab Integration', () => {
 
     it('calls add bank handler when add button clicked', async () => {
       const user = userEvent.setup()
-      const mockOnSyncBank = vi.fn()
-      const mockOnDisconnectBank = vi.fn()
-      const mockOnAddBank = vi.fn()
+      const mockOnSyncBank = jest.fn()
+      const mockOnDisconnectBank = jest.fn()
+      const mockOnAddBank = jest.fn()
 
       render(
         <AccountsTabMock
@@ -260,9 +259,9 @@ describe('AccountsTab Integration', () => {
 
   describe('when integrating with bank-level operations philosophy', () => {
     it('ensures operations affect entire bank connection, not individual accounts', () => {
-      const mockOnSyncBank = vi.fn()
-      const mockOnDisconnectBank = vi.fn()
-      const mockOnAddBank = vi.fn()
+      const mockOnSyncBank = jest.fn()
+      const mockOnDisconnectBank = jest.fn()
+      const mockOnAddBank = jest.fn()
 
       render(
         <AccountsTabMock

@@ -1,9 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { initTelemetry, shutdownTelemetry } from '@/observability/telemetry';
 import { InMemorySpanExporter } from '@opentelemetry/sdk-trace-base';
 import { ReadableSpan } from '@opentelemetry/sdk-trace-base';
 
-global.fetch = vi.fn();
+global.fetch = jest.fn();
 
 const createMockResponse = (status: number, body?: any): Response => {
   return {
@@ -31,7 +30,7 @@ describe('Telemetry Integration - Fetch Instrumentation', () => {
   beforeEach(() => {
     process.env.NEXT_PUBLIC_OTEL_ENABLED = 'true';
     exporter = new InMemorySpanExporter();
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   afterEach(async () => {

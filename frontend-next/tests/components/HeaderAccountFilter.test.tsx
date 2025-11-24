@@ -1,6 +1,5 @@
 import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { HeaderAccountFilter } from '@/components/HeaderAccountFilter'
 import { AccountFilterProvider } from '@/hooks/useAccountFilter'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
@@ -10,7 +9,7 @@ describe('HeaderAccountFilter', () => {
   let fetchMock: ReturnType<typeof installFetchRoutes>
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     localStorage.clear()
 
     const providerStatus = createProviderStatus({
@@ -69,8 +68,8 @@ describe('HeaderAccountFilter', () => {
 
   afterEach(() => {
     cleanup()
-    vi.restoreAllMocks()
-    vi.clearAllMocks()
+    jest.restoreAllMocks()
+    jest.clearAllMocks()
     localStorage.clear()
   })
 

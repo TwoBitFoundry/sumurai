@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest'
 import { fmtUSD } from '@/utils/format'
 
 describe('fmtUSD', () => {

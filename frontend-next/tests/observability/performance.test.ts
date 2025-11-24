@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { initTelemetry, shutdownTelemetry } from '@/observability/telemetry';
 
-global.fetch = vi.fn();
+global.fetch = jest.fn();
 
 const createMockResponse = (): Response => ({
   ok: true,
@@ -24,7 +23,7 @@ const createMockResponse = (): Response => ({
 describe('Telemetry Performance Tests', () => {
   beforeEach(() => {
     process.env.NEXT_PUBLIC_OTEL_ENABLED = 'true';
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   afterEach(async () => {

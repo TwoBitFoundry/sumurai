@@ -1,10 +1,9 @@
 import { renderHook, act } from '@testing-library/react'
-import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { usePlaidLinkFlow } from '@/features/plaid/hooks/usePlaidLinkFlow'
 import { ApiClient } from '@/services/ApiClient'
 
 const plaidLinkMock = (() => {
-  const open = vi.fn()
+  const open = jest.fn()
   let config: any = null
   return {
     open,
@@ -23,12 +22,12 @@ const plaidConnectionsMock = {
   connections: [] as any[],
   loading: false,
   error: null as string | null,
-  addConnection: vi.fn(),
-  removeConnection: vi.fn(),
-  updateConnectionSyncInfo: vi.fn(),
-  setConnectionSyncInProgress: vi.fn(),
-  refresh: vi.fn(),
-  getConnection: vi.fn(),
+  addConnection: jest.fn(),
+  removeConnection: jest.fn(),
+  updateConnectionSyncInfo: jest.fn(),
+  setConnectionSyncInProgress: jest.fn(),
+  refresh: jest.fn(),
+  getConnection: jest.fn(),
 }
 
 jest.mock('react-plaid-link', () => ({
@@ -44,16 +43,16 @@ jest.mock('@/hooks/usePlaidConnections', () => ({
 
 jest.mock('@/services/PlaidService', () => ({
   PlaidService: {
-    getStatus: vi.fn(),
-    exchangeToken: vi.fn(),
-    syncTransactions: vi.fn(),
-    disconnect: vi.fn(),
+    getStatus: jest.fn(),
+    exchangeToken: jest.fn(),
+    syncTransactions: jest.fn(),
+    disconnect: jest.fn(),
   },
 }))
 
 jest.mock('@/services/ApiClient', () => ({
   ApiClient: {
-    post: vi.fn(),
+    post: jest.fn(),
   },
 }))
 
@@ -77,7 +76,7 @@ describe('usePlaidLinkFlow', () => {
   })
 
   it('exchanges token and refreshes status on success', async () => {
-    const onError = vi.fn()
+    const onError = jest.fn()
     plaidConnectionsMock.refresh.mockResolvedValue([])
     apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' })
     plaidServiceMock.exchangeToken.mockResolvedValueOnce({ access_token: 'access' } as any)
@@ -109,7 +108,7 @@ describe('usePlaidLinkFlow', () => {
   })
 
   it('provides syncOne, syncAll, and disconnect helpers', async () => {
-    const onError = vi.fn()
+    const onError = jest.fn()
     plaidConnectionsMock.connections = [
       {
         connectionId: 'bank-1',
@@ -163,7 +162,7 @@ describe('usePlaidLinkFlow', () => {
   })
 
   it('reports errors via onError', async () => {
-    const onError = vi.fn()
+    const onError = jest.fn()
     apiClientMock.post.mockRejectedValueOnce(new Error('bad request'))
 
     const { result } = renderHook(() => usePlaidLinkFlow({ onError }))
@@ -194,7 +193,7 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
   })
 
   it('should wrap connect callback with instrumentation', async () => {
-    const onError = vi.fn()
+    const onError = jest.fn()
     apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' })
 
     const { result } = renderHook(() => usePlaidLinkFlow({ onError }))
@@ -208,7 +207,7 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
   })
 
   it('should wrap onSuccess callback with instrumentation', async () => {
-    const onError = vi.fn()
+    const onError = jest.fn()
     plaidConnectionsMock.refresh.mockResolvedValue([])
     apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' })
     plaidServiceMock.exchangeToken.mockResolvedValueOnce({ access_token: 'access' } as any)
@@ -229,7 +228,7 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
   })
 
   it('should wrap syncOne callback with instrumentation', async () => {
-    const onError = vi.fn()
+    const onError = jest.fn()
     plaidConnectionsMock.connections = [
       {
         connectionId: 'bank-1',
@@ -259,7 +258,7 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
   })
 
   it('should wrap syncAll callback with instrumentation', async () => {
-    const onError = vi.fn()
+    const onError = jest.fn()
     plaidConnectionsMock.connections = [
       {
         connectionId: 'bank-1',
@@ -289,7 +288,7 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
   })
 
   it('should wrap disconnect callback with instrumentation', async () => {
-    const onError = vi.fn()
+    const onError = jest.fn()
     plaidConnectionsMock.connections = [
       {
         connectionId: 'bank-1',

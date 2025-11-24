@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest'
 import { render } from '@testing-library/react'
 import { Input } from '@/ui/primitives/Input'
 

@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor, cleanup } from '@testing-library/react'
 import { ReactNode } from 'react'
 import { useBalancesOverview } from '@/hooks/useBalancesOverview'
@@ -57,7 +56,7 @@ describe('useBalancesOverview (Phase 6)', () => {
   })
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     fetchMock = installFetchRoutes({
       'GET /api/analytics/balances/overview': {
         asOf: 'latest',
@@ -72,7 +71,7 @@ describe('useBalancesOverview (Phase 6)', () => {
 
   afterEach(() => {
     cleanup()
-    vi.restoreAllMocks()
+    jest.restoreAllMocks()
   })
 
   it('fetches on mount and exposes loading/data', async () => {

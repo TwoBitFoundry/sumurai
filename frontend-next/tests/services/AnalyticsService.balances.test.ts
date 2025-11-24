@@ -1,4 +1,3 @@
-import { describe, it, expect, test, vi, beforeEach } from 'vitest'
 import { AnalyticsService, computeRatio, formatRatio } from '@/services/AnalyticsService'
 import { ApiClient, ApiError } from '@/services/ApiClient'
 import type { BalancesOverview } from '@/types/analytics'
@@ -23,7 +22,7 @@ describe('computeRatio (balances helper)', () => {
 
 describe('AnalyticsService.getBalancesOverview (Phase 5)', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   it('calls backend (latest-only) and returns typed result', async () => {
@@ -55,7 +54,7 @@ describe('AnalyticsService.getBalancesOverview (Phase 5)', () => {
       ],
       mixedCurrency: false,
     }
-    vi.mocked(ApiClient.get).mockResolvedValue(mock)
+    jest.mocked(ApiClient.get).mockResolvedValue(mock)
 
     const result = await AnalyticsService.getBalancesOverview()
 
@@ -70,7 +69,7 @@ describe('AnalyticsService.getBalancesOverview (Phase 5)', () => {
 
   it('bubbles a meaningful error message on failure', async () => {
     const err = new ApiError(500, 'Server exploded')
-    vi.mocked(ApiClient.get).mockRejectedValue(err)
+    jest.mocked(ApiClient.get).mockRejectedValue(err)
     await expect(AnalyticsService.getBalancesOverview())
       .rejects.toBeTruthy()
   })

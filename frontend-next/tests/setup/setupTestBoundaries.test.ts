@@ -1,11 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setupTestBoundaries, resetBoundaries } from './setupTestBoundaries'
 import { ApiClient } from '@/services/ApiClient'
 import { AuthService } from '@/services/authService'
 
 describe('setupTestBoundaries', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   it('returns an object with http and storage boundaries', () => {
@@ -17,11 +16,11 @@ describe('setupTestBoundaries', () => {
 
   it('sets up boundaries successfully', () => {
     const mockHttp = {
-      get: vi.fn(),
-      post: vi.fn(),
-      put: vi.fn(),
-      delete: vi.fn(),
-      healthCheck: vi.fn()
+      get: jest.fn(),
+      post: jest.fn(),
+      put: jest.fn(),
+      delete: jest.fn(),
+      healthCheck: jest.fn()
     }
     const boundaries = setupTestBoundaries({ http: mockHttp })
     expect(boundaries.http).toBe(mockHttp)
@@ -34,11 +33,11 @@ describe('setupTestBoundaries', () => {
 
   it('allows overriding specific boundaries', () => {
     const mockHttpClient = {
-      get: vi.fn(),
-      post: vi.fn(),
-      put: vi.fn(),
-      delete: vi.fn(),
-      healthCheck: vi.fn()
+      get: jest.fn(),
+      post: jest.fn(),
+      put: jest.fn(),
+      delete: jest.fn(),
+      healthCheck: jest.fn()
     }
 
     const boundaries = setupTestBoundaries({ http: mockHttpClient })
@@ -56,11 +55,11 @@ describe('setupTestBoundaries', () => {
 
   it('allows partial overrides of boundaries', () => {
     const customHttp = {
-      get: vi.fn(),
-      post: vi.fn(),
-      put: vi.fn(),
-      delete: vi.fn(),
-      healthCheck: vi.fn()
+      get: jest.fn(),
+      post: jest.fn(),
+      put: jest.fn(),
+      delete: jest.fn(),
+      healthCheck: jest.fn()
     }
 
     const boundaries = setupTestBoundaries({ http: customHttp })

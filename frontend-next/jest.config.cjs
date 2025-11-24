@@ -11,7 +11,6 @@ const customJestConfig = {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@tests/(.*)$': '<rootDir>/tests/$1',
     '^@docs/(.*)$': '<rootDir>/../docs/$1',
-    '^vitest$': '<rootDir>/tests/vitest-shim.ts',
     '^.+\\.(css|less|sass|scss)$': 'identity-obj-proxy'
   },
   testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/']

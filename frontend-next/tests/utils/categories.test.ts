@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest'
 import { formatCategoryName, getTagThemeForCategory } from '@/utils/categories'
 
 describe('categories utils', () => {

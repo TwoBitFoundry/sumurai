@@ -1,5 +1,3 @@
-import { vi } from 'vitest'
-
 type RouteValue = Response | any | ((req: Request, init?: RequestInit) => Response | Promise<Response> | any | Promise<any>)
 
 export type RouteMap = Record<string, RouteValue>
@@ -31,7 +29,7 @@ function normalizeKey(method: string, url: string): string {
  */
 export function installFetchRoutes(routes: RouteMap) {
   const entries = Object.entries(routes)
-  const mock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+  const mock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const method = (init?.method || 'GET').toUpperCase()
     const url = typeof input === 'string' || input instanceof URL ? String(input) : (input as Request).url
 

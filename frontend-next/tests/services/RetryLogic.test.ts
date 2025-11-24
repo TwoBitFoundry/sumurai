@@ -1,28 +1,27 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ApiClient, ApiError, ServerError, NetworkError } from '@/services/ApiClient'
 import { AuthService } from '@/services/authService'
 import { setupTestBoundaries } from '../setup/setupTestBoundaries'
 
-vi.spyOn(AuthService, 'getToken')
-vi.spyOn(AuthService, 'clearToken')
-vi.spyOn(AuthService, 'logout')
+jest.spyOn(AuthService, 'getToken')
+jest.spyOn(AuthService, 'clearToken')
+jest.spyOn(AuthService, 'logout')
 
-let setTimeoutSpy: ReturnType<typeof vi.spyOn>
+let setTimeoutSpy: ReturnType<typeof jest.spyOn>
 
 describe('Retry Logic and Exponential Backoff', () => {
   const originalConsoleError = console.error
   let mockHttp: any
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     const boundaries = setupTestBoundaries()
     mockHttp = boundaries.http
-    console.error = vi.fn()
+    console.error = jest.fn()
 
-    vi.spyOn(AuthService, 'getToken').mockReturnValue('mock-token')
-    vi.spyOn(AuthService, 'logout').mockResolvedValue({ message: 'Logged out', cleared_session: 'test' })
+    jest.spyOn(AuthService, 'getToken').mockReturnValue('mock-token')
+    jest.spyOn(AuthService, 'logout').mockResolvedValue({ message: 'Logged out', cleared_session: 'test' })
     ApiClient.setTestMaxRetries(3)
-    setTimeoutSpy = vi
+    setTimeoutSpy = jest
       .spyOn(globalThis, 'setTimeout')
       .mockImplementation(((cb: TimerHandler) => {
         if (typeof cb === 'function') {
@@ -34,7 +33,7 @@ describe('Retry Logic and Exponential Backoff', () => {
 
   afterEach(() => {
     console.error = originalConsoleError
-    vi.restoreAllMocks()
+    jest.restoreAllMocks()
   })
 
   describe('Transient Network Errors', () => {
@@ -185,7 +184,7 @@ describe('Retry Logic and Exponential Backoff', () => {
     })
 
     it('should add jitter to prevent thundering herd', async () => {
-      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5)
+      const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.5)
 
       mockHttp.get
         .mockRejectedValueOnce(new Error('Network error'))

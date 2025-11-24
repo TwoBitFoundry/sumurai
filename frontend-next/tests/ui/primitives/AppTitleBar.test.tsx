@@ -1,4 +1,3 @@
-import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppTitleBar } from '@/ui/primitives/AppTitleBar'
@@ -54,7 +53,7 @@ describe('AppTitleBar', () => {
     })
 
     it('calls onThemeToggle when theme button clicked', async () => {
-      const onThemeToggle = vi.fn()
+      const onThemeToggle = jest.fn()
       const user = userEvent.setup()
       render(
         <AppTitleBar
@@ -123,7 +122,7 @@ describe('AppTitleBar', () => {
     })
 
     it('calls onLogout when logout button clicked', async () => {
-      const onLogout = vi.fn()
+      const onLogout = jest.fn()
       const user = userEvent.setup()
       render(
         <AppTitleBar
@@ -220,7 +219,7 @@ describe('AppTitleBar', () => {
     })
 
     it('calls onTabChange when tab clicked', async () => {
-      const onTabChange = vi.fn()
+      const onTabChange = jest.fn()
       const user = userEvent.setup()
       render(
         <AppTitleBar

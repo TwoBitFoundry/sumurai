@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { AuthService } from '@/services/authService'
 import { ApiClient } from '@/services/ApiClient'
 import { trace, SpanStatusCode } from '@opentelemetry/api'
@@ -6,11 +5,11 @@ import type { IHttpClient } from '@/services/boundaries/IHttpClient'
 import type { IStorageAdapter } from '@/services/boundaries/IStorageAdapter'
 
 class MockHttpClient implements IHttpClient {
-  get = vi.fn()
-  post = vi.fn()
-  put = vi.fn()
-  delete = vi.fn()
-  healthCheck = vi.fn()
+  get = jest.fn()
+  post = jest.fn()
+  put = jest.fn()
+  delete = jest.fn()
+  healthCheck = jest.fn()
 }
 
 class MockStorageAdapter implements IStorageAdapter {
@@ -45,7 +44,7 @@ describe('AuthService logout functionality', () => {
       storage: mockStorageAdapter
     })
     mockStorageAdapter.clear()
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   it('given valid token when logging out then calls logout endpoint and clears tokens', async () => {
@@ -96,18 +95,18 @@ describe('AuthService with OpenTelemetry Instrumentation', () => {
   let mockStorageAdapter: MockStorageAdapter
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
 
     mockSpan = {
-      recordException: vi.fn(),
-      setStatus: vi.fn(),
-      end: vi.fn(),
-      setAttributes: vi.fn(),
-      addEvent: vi.fn(),
+      recordException: jest.fn(),
+      setStatus: jest.fn(),
+      end: jest.fn(),
+      setAttributes: jest.fn(),
+      addEvent: jest.fn(),
     }
 
     mockTracer = {  
-      startSpan: vi.fn().mockReturnValue(mockSpan),
+      startSpan: jest.fn().mockReturnValue(mockSpan),
     }
 
     mockHttpClient = new MockHttpClient()
@@ -116,7 +115,7 @@ describe('AuthService with OpenTelemetry Instrumentation', () => {
     AuthService.configure({
       storage: mockStorageAdapter
     })
-    vi.spyOn(trace, 'getTracer').mockReturnValue(mockTracer as any)  
+    jest.spyOn(trace, 'getTracer').mockReturnValue(mockTracer as any)  
   })
 
   it('should create a span for login operation', async () => {

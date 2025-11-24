@@ -1,6 +1,5 @@
 import '@testing-library/jest-dom'
 import React from 'react'
-import { expect, vi, afterEach, beforeEach } from 'vitest'
 import { jest } from '@jest/globals'
 import 'cross-fetch/polyfill'
 import { AuthService } from '@/services/authService'
@@ -56,10 +55,10 @@ expect.extend({
 })
 
 jest.mock('@/observability/TelemetryService', () => ({
-  TelemetryService: vi.fn().mockImplementation(() => ({
-    initialize: vi.fn().mockResolvedValue(undefined),
-    shutdown: vi.fn().mockResolvedValue(undefined),
-    getTracer: vi.fn().mockReturnValue(null)
+  TelemetryService: jest.fn().mockImplementation(() => ({
+    initialize: jest.fn().mockResolvedValue(undefined),
+    shutdown: jest.fn().mockResolvedValue(undefined),
+    getTracer: jest.fn().mockReturnValue(null)
   }))
 }))
 
@@ -136,20 +135,20 @@ if (typeof window !== 'undefined') {
 
   Object.defineProperty(window, 'localStorage', {
     value: {
-      getItem: vi.fn(),
-      setItem: vi.fn(),
-      removeItem: vi.fn(),
-      clear: vi.fn()
+      getItem: jest.fn(),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+      clear: jest.fn()
     },
     writable: true
   })
 
   Object.defineProperty(window, 'sessionStorage', {
     value: {
-      getItem: vi.fn(),
-      setItem: vi.fn(),
-      removeItem: vi.fn(),
-      clear: vi.fn()
+      getItem: jest.fn(),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+      clear: jest.fn()
     },
     writable: true
   })
@@ -161,11 +160,11 @@ afterEach(async () => {
   dateNowSpy?.mockRestore()
   dateNowSpy = null
   jest.useRealTimers()
-  vi.useRealTimers?.()
+  jest.useRealTimers?.()
   jest.clearAllTimers()
-  vi.clearAllTimers?.()
+  jest.clearAllTimers?.()
   jest.clearAllMocks()
-  vi.clearAllMocks?.()
+  jest.clearAllMocks?.()
   if (originalFetch) {
     ;(globalThis as any).fetch = originalFetch
   } else {
@@ -175,7 +174,7 @@ afterEach(async () => {
 
 jest.mock('react-plaid-link', () => ({
   usePlaidLink: () => ({
-    open: vi.fn(),
+    open: jest.fn(),
     ready: true,
     error: null
   })

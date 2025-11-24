@@ -1,6 +1,5 @@
 import { render, screen, waitFor, fireEvent, cleanup } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import BalancesOverview from '@/components/BalancesOverview'
 import { installFetchRoutes } from '@tests/utils/fetchRoutes'
 import { createProviderStatus } from '@tests/utils/fixtures'
@@ -18,12 +17,12 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => (
 
 describe("BalancesOverview (Phase 7)", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     ApiClient.setTestMaxRetries(0);
   });
   afterEach(() => {
-    vi.restoreAllMocks();
-    vi.clearAllMocks();
+    jest.restoreAllMocks();
+    jest.clearAllMocks();
     cleanup();
   });
 

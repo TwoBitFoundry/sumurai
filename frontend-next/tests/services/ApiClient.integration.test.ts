@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ApiClient } from '@/services/ApiClient'
 import { AuthService } from '@/services/authService'
 import type { IHttpClient } from '@/services/boundaries/IHttpClient'
@@ -13,18 +12,18 @@ class MockStorage implements IStorageAdapter {
 }
 
 class MockHttpClient implements IHttpClient {
-  get = vi.fn()
-  post = vi.fn()
-  put = vi.fn()
-  delete = vi.fn()
-  healthCheck = vi.fn()
+  get = jest.fn()
+  post = jest.fn()
+  put = jest.fn()
+  delete = jest.fn()
+  healthCheck = jest.fn()
 }
 
 describe('ApiClient with Direct Fetch', () => {
-  let fetchSpy: ReturnType<typeof vi.spyOn>
+  let fetchSpy: ReturnType<typeof jest.spyOn>
 
   beforeEach(() => {
-    fetchSpy = vi.spyOn(global, 'fetch')
+    fetchSpy = jest.spyOn(global, 'fetch')
     AuthService.configure({
       storage: new MockStorage()
     })
@@ -32,7 +31,7 @@ describe('ApiClient with Direct Fetch', () => {
   })
 
   afterEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   describe('GET request', () => {
@@ -113,7 +112,7 @@ describe('ApiClient with Direct Fetch', () => {
         .mockResolvedValueOnce(errorResponse)
         .mockResolvedValueOnce(successResponse)
 
-      vi.spyOn(AuthService, 'refreshToken').mockResolvedValueOnce({
+      jest.spyOn(AuthService, 'refreshToken').mockResolvedValueOnce({
         token: 'new-token',
         user_id: 'user-123',
         expires_at: '2025-12-31T00:00:00Z',
