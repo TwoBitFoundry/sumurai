@@ -84,7 +84,12 @@ coverage/
 # Framework Build Outputs
 # ================================
 # Next.js
-.next
+# Next.js
+.next/
+out/
+
+# Vercel
+.vercel
 
 # Nuxt.js
 .nuxt
