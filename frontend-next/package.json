@@ -2,10 +2,9 @@
   "name": "frontend-next",
   "version": "1.0.0",
   "private": true,
-  "type": "commonjs",
   "scripts": {
-    "dev": "next dev --turbo",
-    "dev:webpack": "next dev --webpack",
+    "dev": "next dev -p 3001 --turbo",
+    "dev:webpack": "next dev -p 3001 --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",

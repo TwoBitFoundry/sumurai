@@ -6,7 +6,7 @@ describe('Telemetry - Business Logic', () => {
   });
 
   describe('Graceful Degradation', () => {
-    it('should disable telemetry when VITE_OTEL_ENABLED is false', async () => {
+    it('should disable telemetry when NEXT_PUBLIC_OTEL_ENABLED is false', async () => {
       process.env.NEXT_PUBLIC_OTEL_ENABLED = 'false';
 
       const tracer = await initTelemetry();
@@ -30,7 +30,7 @@ describe('Telemetry - Business Logic', () => {
   });
 
   describe('Environment Configuration', () => {
-    it('should read service name from VITE_OTEL_SERVICE_NAME', async () => {
+    it('should read service name from NEXT_PUBLIC_OTEL_SERVICE_NAME', async () => {
       process.env.NEXT_PUBLIC_OTEL_ENABLED = 'true';
       process.env.NEXT_PUBLIC_OTEL_SERVICE_NAME = 'sumaura-frontend-test';
 
@@ -39,7 +39,7 @@ describe('Telemetry - Business Logic', () => {
       expect(tracer).not.toBeNull();
     });
 
-    it('should read service version from VITE_OTEL_SERVICE_VERSION', async () => {
+    it('should read service version from NEXT_PUBLIC_OTEL_SERVICE_VERSION', async () => {
       process.env.NEXT_PUBLIC_OTEL_ENABLED = 'true';
       process.env.NEXT_PUBLIC_OTEL_SERVICE_VERSION = '1.0.0-test';
 
@@ -48,7 +48,7 @@ describe('Telemetry - Business Logic', () => {
       expect(tracer).not.toBeNull();
     });
 
-    it('should read OTLP endpoint from VITE_OTEL_EXPORTER_OTLP_ENDPOINT', async () => {
+    it('should read OTLP endpoint from NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT', async () => {
       process.env.NEXT_PUBLIC_OTEL_ENABLED = 'true';
       process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT = 'http://localhost:5341/ingest/otlp';
 
@@ -112,7 +112,7 @@ describe('Telemetry - Business Logic', () => {
   });
 
   describe('Configuration Flags', () => {
-    it('should respect VITE_OTEL_CAPTURE_BODIES flag', async () => {
+    it('should respect NEXT_PUBLIC_OTEL_CAPTURE_BODIES flag', async () => {
       process.env.NEXT_PUBLIC_OTEL_ENABLED = 'true';
       process.env.NEXT_PUBLIC_OTEL_CAPTURE_BODIES = 'false';
 

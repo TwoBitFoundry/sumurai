@@ -261,7 +261,7 @@ const DashboardPage: React.FC = () => {
                       strokeWidth={2}
                       fillOpacity={1}
                       fill="url(#netGradient)"
-                      dot={netDotRenderer}
+                      dot={netDotRenderer as any}
                       activeDot={{ r: 6 }}
                     />
                   </AreaChart>

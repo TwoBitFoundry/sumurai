@@ -265,7 +265,7 @@ describe('Telemetry Integration - Fetch Instrumentation', () => {
   });
 
   describe('Configuration Overrides', () => {
-    it('should respect VITE_OTEL_ENABLED=false', async () => {
+    it('should respect NEXT_PUBLIC_OTEL_ENABLED=false', async () => {
       process.env.NEXT_PUBLIC_OTEL_ENABLED = 'false';
       (global.fetch as any).mockResolvedValue(createMockResponse(200));
 

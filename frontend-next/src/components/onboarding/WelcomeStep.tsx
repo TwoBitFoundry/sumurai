@@ -1,8 +1,9 @@
 import React from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { LayoutDashboard, ReceiptText, Target } from 'lucide-react'
-import dashboardHero from '@docs/images/dashboard-hero.png'
 import { Badge, cn } from '@/ui/primitives'
+
+const dashboardHero = '/dashboard-hero.png'
 
 type FeaturePalette = {
   gradient: string
