@@ -42,6 +42,7 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.22",
+    "babel-plugin-react-compiler": "^19.0.0-beta-df7b47d-20241124",
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.0.4",
     "globals": "^16.5.0",

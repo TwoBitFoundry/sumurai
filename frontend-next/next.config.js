@@ -5,21 +5,7 @@ const nextConfig = {
   reactStrictMode: true,
   output: 'export',
   trailingSlash: true,
-  experimental: {
-    reactCompiler: !disableReactCompiler
-  },
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:3000/api/:path*'
-      },
-      {
-        source: '/health',
-        destination: 'http://localhost:3000/health'
-      }
-    ]
-  }
+  reactCompiler: !disableReactCompiler
 }
 
 module.exports = nextConfig
