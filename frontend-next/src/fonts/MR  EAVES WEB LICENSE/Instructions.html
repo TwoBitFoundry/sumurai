@@ -1,0 +1,250 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+
+	<style type="text/css" media="screen">
+		/*-- RESET ------*/
+		html, body, div, span, applet, object, iframe,
+		h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+		a, abbr, acronym, address, big, cite, code,
+		del, dfn, em, font, img, ins, kbd, q, s, samp,
+		small, strike, strong, sub, sup, tt, var,
+		b, u, i, center, dl, dt, dd, ol, ul, li,
+		fieldset, form, label, legend, table, 
+		caption, tbody, tfoot, thead, tr, th, td 
+		                  {margin: 0;padding: 0;border: 0;outline: 0;
+		                  font-size: 100%;vertical-align: baseline;
+		                  background: transparent;}
+		body              {line-height: 1;}
+		ol, ul            {list-style: none;}
+		blockquote, q     {quotes: none;}
+		blockquote:before, blockquote:after,
+		q:before, q:after {content: '';	content: none;}
+		:focus            {outline: 0;}
+		ins               {text-decoration: none;}
+		del               {text-decoration: line-through;}
+		table             {border-collapse: collapse;border-spacing: 0;}
+		
+		/*-- GRID -----*/
+		.section {margin-bottom: 18px;
+		}
+		.section:after	{content: ".";display: block;height: 0;clear: both;visibility: hidden;}
+		.section 		{*zoom: 1;}
+
+		.section .firstcolumn,
+		.section .firstcol {margin-left: 0;}
+		
+		.grid1, .grid1_2cols, .grid1_3cols, .grid1_4cols, .grid2, .grid2_3cols, .grid2_4cols, .grid3, .grid3_2cols, .grid3_4cols, .grid4, .grid4_3cols, .grid5, .grid5_2cols, .grid5_3cols, .grid5_4cols, .grid6, .grid6_4cols, .grid7, .grid7_2cols, .grid7_3cols, .grid7_4cols, .grid8, .grid8_3cols, .grid9, .grid9_2cols, .grid9_4cols, .grid10, .grid10_3cols, .grid10_4cols, .grid11, .grid11_2cols, .grid11_3cols, .grid11_4cols, .grid12
+		{margin-left: 15px;float: left;display: inline; overflow: hidden;}
+		.width5, .grid5, .span-5 {width: 335px;}
+		.width5_2cols,.grid5_2cols {width: 160px;}
+		.width5_3cols,.grid5_3cols  {width: 101px;}
+		.width5_4cols,.grid5_4cols  {width: 72px;}
+		.input_width5 {width: 329px;}
+
+		.width6, .grid6, .span-6 {width: 405px;}
+		.width6_4cols,.grid6_4cols  {width: 90px;}
+		.input_width6 {width: 399px;}
+
+		.width7, .grid7, .span-7 {width: 475px;}
+		.width7_2cols,.grid7_2cols {width: 230px;}
+		.width7_3cols,.grid7_3cols  {width: 148px;}
+		.width7_4cols,.grid7_4cols  {width: 107px;}
+		.input_width7 {width: 469px;}
+		
+		/*-- STYLES -----*/
+		body {
+			color: #000;
+			background-color: #dcdcdc;
+			font: 13px Helvetica, Arial, Verdana, sans-serif;
+		}
+
+		a {
+			text-decoration: none;
+			color: #1883ba;
+		}
+
+		h1{
+			font-size: 18px;
+			font-weight: bold;
+			font-style: normal;
+			margin-bottom: 18px;
+			color: #CC0000;
+		}
+
+		h2{
+			font-size: 18px;
+		}
+
+		#container {
+			width: 865px;
+			margin: 0px auto;
+		}
+		
+
+
+		
+		#main_content {
+			background-color: #fff;
+			padding: 20px 20px 20px;
+		}
+
+
+		#footer p {
+			margin: 0;
+			padding-top: 10px;
+			padding-bottom: 50px;
+			color: #333;
+			font: 10px Helvetica, Arial, Verdana, sans-serif;
+		}
+		code {
+			white-space: pre;
+			background-color: #eee;
+			display: block;
+			padding: 10px;
+			margin-bottom: 18px;
+			overflow: auto;
+		}
+
+		.box  { 
+		  padding: 18px; 
+		  margin-bottom: 18px; 
+		  background: #eee; 
+		}
+		.bottom,.last 	{margin-bottom:0 !important; padding-bottom:0 !important;}
+		
+
+		
+		p{
+			line-height: 1.2em;
+			margin-bottom: 18px;
+			font: 13px Helvetica, Arial, Verdana, sans-serif;
+		}
+
+
+
+		h3{
+			font-size: 15px;
+			margin-top: 18px;
+		}
+		
+		.sidebar p{
+			font-size: 12px;
+			line-height: 1.4em;
+		}
+		
+	</style>
+
+<title>How to Use Web Fonts</title>
+	
+</head>
+
+<body>
+<div id="container">
+	<div id="main_content">
+			<div class="section">
+				<div class="grid7 firstcol">
+					<h1>Installing Emigre Web Fonts</h1>
+					
+					
+					
+					<h2>1. Upload your web fonts</h2>
+					<p>You must upload your web font kit to your website. For each font, upload the three files ending with  .css .eot .woff .woff2 to the same directory.</p>
+					
+					<h2>2. Include the web font stylesheet</h2>
+					<p>A special CSS @font-face declaration helps the various browsers select the appropriate font it needs. The code for it is as follows:</p>
+
+
+<code>
+
+
+@font-face {
+    font-family: 'mreavesxlmodot-reg';
+    src: url('mreavesxlmodot-reg-webfont.woff2') format('woff2'),
+         url('mreavesxlmodot-reg-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+
+}
+
+</code>
+	<p>We've already gone ahead and generated the code for you. All you have to do is link to the stylesheet in your HTML, like this:</p>
+	<code>&lt;link rel=&quot;stylesheet&quot; href=&quot;sample_stylesheet.css&quot; type=&quot;text/css&quot; charset=&quot;utf-8&quot; /&gt;</code>
+
+
+					<h2>3. HTML requirements</h2>
+
+
+<p>Please include the HTML comment as shown below. The user license requires this comment to be included in the HTML code.</p>
+
+
+<code class="html">&lt;!--
+/*
+ * Emigre web font kit zzFSlPM003Czw2Z1LA==
+ * 
+ * These fonts are not shareware. 
+ * Use of these fonts requires the purchase 
+ * of a license from Emigre, www.emigre.com  
+ * Please contact sales@emigre.com
+ *
+ * To purchase a license to use this font go to:
+ * http://www.emigre.com/
+ *
+ * © 2025 Emigre, Inc
+ */
+-->
+
+
+</code>
+
+
+					<h2>4. Modify your own stylesheet</h2>
+					<p>To take advantage of your new fonts, you must tell your stylesheet to use them. Look at the original @font-face declaration above and find the property called "font-family." The name linked there will be what you use to reference the font. Prepend that web font name to the font stack in the "font-family" property, inside the selector you want to change. For example:</p>
+<code>p { font-family: 'MyWebFont', Helvetica, Arial, Verdana, sans-serif; }</code>
+
+
+<h2>5. Test</h2>
+<p>Getting web fonts to work cross-browser <em>can</em> be tricky. Use the information in the sidebar to help you if you find that fonts aren't loading in a particular browser.</p>
+				</div>
+				
+				<div class="grid5 sidebar">
+					<div class="box">
+						<h2>Troubleshooting<br />Font-Face Problems</h2>
+						<p>Having trouble getting your web fonts to load in your new website? Here are some tips to sort out what might be the problem.</p>
+
+						<h3>Fonts not showing in any browser</h3>
+
+						<p>This sounds like you need to work on the plumbing. You either did not upload the fonts to the correct directory, or you did not link the fonts properly in the CSS. If you've confirmed that all this is correct and you still have a problem, take a look at your .htaccess file and see if requests are getting intercepted.</p>
+
+
+						<h3>Fonts not loading in Firefox</h3>
+
+						<p>The primary reason for this failure is that you are serving fonts from a different domain. Firefox requires that all font assets be served from the same domain. If you are serving fonts via the Microsoft IIS web server, you will also need to add WOFF to your list of MIME types. The WOFF mime type is <em>application/x-font-woff</em>.</p>
+
+						<h3>Fonts not loading in Chrome</h3>
+
+						<p>Web fonts will fail in Chrome if the font has a CSS text-shadow property attached to it.</p>
+
+
+						<h3>Fonts not loading in IE</h3>
+
+						<p>If your fonts fail to load in any version of Internet Explorer, then the EOT file is likely corrupted and needs to be replaced with a working version.</p>
+
+						<h3>Fonts not loading in IE9</h3>
+
+						<p>IE9, like Firefox, requires that fonts be served from the same domain as the website. Make sure that is the case.</p>
+					</div>
+				</div>
+			</div>
+			
+		</div>
+	
+	</div>
+	
+</div>
+</body>
+</html>

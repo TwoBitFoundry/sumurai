@@ -169,7 +169,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
             <span className={cn('inline-flex', 'items-center', 'justify-center', 'rounded-full', 'bg-white/75', 'px-3', 'py-1', 'text-[11px]', 'font-semibold', 'uppercase', 'tracking-[0.32em]', 'text-[#475569]', 'shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)]', 'dark:bg-[#1e293b]/75', 'dark:text-[#cbd5e1]')}>
               Select Provider
             </span>
-            <h1 className={cn('text-3xl', 'font-bold', 'tracking-tight', 'text-slate-900', 'dark:text-white', 'sm:text-4xl')}>
+            <h1 className={cn('text-3xl', 'font-bold', 'text-slate-900', 'dark:text-white', 'sm:text-4xl')}>
               Choose how you connect accounts
             </h1>
             <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-300')}>

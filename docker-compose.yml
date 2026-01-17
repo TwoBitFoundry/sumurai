@@ -32,7 +32,7 @@ services:
       - "3000:3000"
     environment:
       REDIS_URL: redis://redis:6379
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-accounting}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://seq/ingest/otlp/v1/traces
       OTEL_EXPORTER_OTLP_HEADERS: X-Seq-ApiKey=${SEQ_API_KEY}
 
@@ -41,11 +41,11 @@ services:
       TELLER_APPLICATION_ID: ${TELLER_APPLICATION_ID}
       TELLER_CERT_PATH: ${TELLER_CERT_PATH}
       TELLER_KEY_PATH: ${TELLER_KEY_PATH}
-      TELLER_ENV: ${TELLER_ENV}
+      TELLER_ENV: ${TELLER_ENV:-sandbox}
 
-      PLAID_CLIENT_ID: ${PLAID_CLIENT_ID}
-      PLAID_SECRET: ${PLAID_SECRET}
-      PLAID_ENV: ${PLAID_ENV}
+      PLAID_CLIENT_ID: ${PLAID_CLIENT_ID:-mock_client_id}
+      PLAID_SECRET: ${PLAID_SECRET:-mock_secret}
+      PLAID_ENV: ${PLAID_ENV:-sandbox}
 
       JWT_SECRET: ${JWT_SECRET}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
@@ -81,7 +81,7 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_DB: accounting
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data

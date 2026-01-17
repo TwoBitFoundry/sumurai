@@ -105,7 +105,7 @@ export function WelcomeStep() {
           <div className={cn('space-y-3')}> 
             <h1
               className={cn(
-                'text-3xl font-bold tracking-tight text-slate-900 transition-colors duration-300 ease-out',
+                'text-3xl font-bold text-slate-900 transition-colors duration-300 ease-out',
                 'md:text-[2.6rem]',
                 'dark:text-white'
               )}

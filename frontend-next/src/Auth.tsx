@@ -42,8 +42,11 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
   }
 
   return (
-    <div className={cn('flex', 'min-h-screen', 'items-center', 'justify-center', 'px-4', 'py-12', 'sm:px-6')}>
-      <GlassCard variant="auth" padding="lg" className={cn('w-full', 'max-w-md')}>
+    <div className={cn('relative', 'flex', 'min-h-screen', 'items-center', 'justify-center', 'px-4', 'py-12', 'sm:px-6')}>
+      <div className={cn('hidden', 'lg:flex', 'fixed', 'right-0', 'top-0', 'bottom-0', 'w-1/2', 'items-end', 'justify-end', 'pointer-events-none', 'z-0')}>
+        <img src="/sumurai-logo-no-background.png" alt="Sumurai" className={cn('w-full', 'h-full', 'object-contain', 'object-right-bottom')} />
+      </div>
+      <GlassCard variant="auth" padding="lg" className={cn('w-full', 'max-w-md', 'relative', 'z-10')}>
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
             <Badge size="md">Welcome Back</Badge>
@@ -162,14 +165,17 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
   }
 
   return (
-    <div className={cn('flex', 'min-h-screen', 'items-center', 'justify-center', 'px-4', 'py-12', 'sm:px-6')}>
-      <GlassCard variant="auth" padding="lg" className={cn('w-full', 'max-w-md')}>
+    <div className={cn('relative', 'flex', 'min-h-screen', 'items-center', 'justify-center', 'px-4', 'py-12', 'sm:px-6')}>
+      <div className={cn('hidden', 'lg:flex', 'fixed', 'right-0', 'top-0', 'bottom-0', 'w-1/2', 'items-end', 'justify-end', 'pointer-events-none', 'z-0')}>
+        <img src="/sumurai-logo-no-background.png" alt="Sumurai" className={cn('w-full', 'h-full', 'object-contain', 'object-right-bottom')} />
+      </div>
+      <GlassCard variant="auth" padding="lg" className={cn('w-full', 'max-w-md', 'relative', 'z-10')}>
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
             <Badge size="md">JOIN TODAY</Badge>
             <h2 className={cn('text-3xl', 'font-semibold', 'text-slate-900', 'dark:text-white')}>Sign Up for Sumurai</h2>
             <p className={cn('text-[0.85rem]', 'text-slate-600', 'dark:text-slate-400')}>
-              Finish sign up to unlock onboarding and Plaid sync.
+              Finish sign up to unlock onboarding and account sync.
             </p>
           </div>
 

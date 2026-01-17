@@ -146,16 +146,25 @@ sudo apt-get install -y openssl
 </details>
 
 ### Setting Up the Environment Variables
-Configure JWT secrets and database connections. For private self‑hosting, use Teller.
+Most configuration has sensible defaults. Only a few secrets require setup:
 
-1. Copy the sample environment file and edit it with your secrets:
+1. Copy the sample environment file and generate required secrets:
 
    ```bash
    cp .env.example .env
    ```
 
-   - Generate fresh values for `JWT_SECRET` and `ENCRYPTION_KEY` with `openssl rand -hex 32`.
-   - Set `DEFAULT_PROVIDER=teller` for Teller integration.
+   Edit `.env` and fill in the required values (marked in the file):
+
+   - `JWT_SECRET`: Generate with `openssl rand -hex 32`
+   - `ENCRYPTION_KEY`: Generate with `openssl rand -hex 32`
+   - `POSTGRES_PASSWORD`: Use anything for local dev (e.g., `password`)
+   - `SEQ_PASSWORD`: Use anything for local dev (e.g., `ChangeMe123!`)
+   - `SEQ_API_KEY`: Use anything for local dev (e.g., `test-api-key`)
+   - `TELLER_APPLICATION_ID`: Get from your Teller dashboard
+   - `TELLER_CERT_PATH` & `TELLER_KEY_PATH`: Path to your Teller certificates
+
+   Other variables have defaults and only need to be set if you want to override them.
 
 2. Build and start the stack:
 
@@ -170,27 +179,33 @@ To stop everything: `docker compose down`. To remove data volumes: `docker compo
 
 ### Environment Variables
 
-Everything reads from `.env`. The defaults below match `.env.example` and the Docker Compose configuration. Override as needed for your environment.
+Everything reads from `.env`. Most variables have sensible defaults set in `docker-compose.yml`. Override as needed for your environment.
 
 | Variable | Required | Default | Notes |
 | --- | --- | --- | --- |
-| `DATABASE_URL` | Yes | `postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}` | Backend connection string used at startup and for migrations. |
-| `REDIS_URL` | Yes | `redis://redis:6379` | Backend cache store; the app fails fast if Redis is unreachable. |
-| `POSTGRES_USER` | Yes | `postgres` | Seeds the Postgres container and feeds `DATABASE_URL`. |
-| `POSTGRES_PASSWORD` | Yes | `password` | Same as above—change for any shared environment. |
-| `POSTGRES_DB` | Yes | `accounting` | Database created by the container; referenced in `DATABASE_URL`. |
-| `JWT_SECRET` | Yes (non-local) | _none_ | 32+ character secret for signing access/refresh tokens. Generate with `openssl rand -hex 32`. |
-| `ENCRYPTION_KEY` | Yes | _none_ | 64 hex characters (32 bytes) for encrypting provider access tokens. Generate with `openssl rand -hex 32`. |
-| `SEQ_PASSWORD` | Yes (first run) | _none_ | Initial password for the Seq `admin` user. Required so the Seq container can complete first-run setup. Use `docker run --rm -i datalust/seq config hash` if you prefer to set the hashed variant via `SEQ_FIRSTRUN_ADMINPASSWORDHASH`. |
-| `SEQ_API_KEY` | Yes (OTLP) | _none_ | API key token created under Seq **Settings → API Keys**. Required so the backend can send OTLP traces/logs to Seq using the `X-Seq-ApiKey` header. |
-| `OTEL_EXPORTER_OTLP_PROTOCOL` | Optional | `http/protobuf` | Forces the backend exporter to use OTLP/HTTP, matching Seq’s ingestion endpoint. |
-| `OTEL_STARTUP_TEST_SPAN` | Optional | `0` | Set to `1` temporarily to emit a startup test span that verifies connectivity between the backend and Seq. |
-| `BACKEND_RUST_LOG` | Optional | `info` | Standard Rust log level filter passed to the backend container (e.g. use `info,opentelemetry_otlp=debug` temporarily to inspect exporter activity). |
-| `DEFAULT_PROVIDER` | Optional | `teller` | Provider for bank data aggregation. Set to `teller` for Teller integration. |
-| `TELLER_APPLICATION_ID` | Yes (Teller) | _none_ | Your Teller application ID from the dashboard (used by Connect.js and backend). |
-| `TELLER_CERT_PATH` | Yes (Teller) | `.certs/teller/certificate.pem` | Absolute or repo‑relative path to your Teller client certificate (PEM). Store in `.certs/` (gitignored). |
-| `TELLER_KEY_PATH` | Yes (Teller) | `.certs/teller/private_key.pem` | Absolute or repo‑relative path to the Teller private key (PEM). Store in `.certs/` (gitignored). |
-| `TELLER_ENV` | Optional (Teller) | `development` | Matches your Teller application environment (`sandbox`, `development`, `production`). Use `sandbox` for testing; `development` for real data in private self‑hosting. |
+| **Core Secrets** | | | |
+| `JWT_SECRET` | Yes | _none_ | 32+ hex character secret for signing access/refresh tokens. Generate with `openssl rand -hex 32`. |
+| `ENCRYPTION_KEY` | Yes | _none_ | 64 hex characters for encrypting provider access tokens. Generate with `openssl rand -hex 32`. |
+| `POSTGRES_PASSWORD` | Yes | _none_ | Database password. Can be any value for local dev. |
+| `SEQ_PASSWORD` | Yes | _none_ | Seq service password for first-run setup. Can be any value for local dev. |
+| `SEQ_API_KEY` | Yes | _none_ | API key for OpenTelemetry telemetry. Can be any value for local dev. |
+| **Teller Integration** | | | |
+| `TELLER_APPLICATION_ID` | Yes | _none_ | Your Teller application ID from the dashboard. |
+| `TELLER_CERT_PATH` | Yes | _none_ | Path to Teller client certificate (PEM). Store in `.certs/` (gitignored). |
+| `TELLER_KEY_PATH` | Yes | _none_ | Path to Teller private key (PEM). Store in `.certs/` (gitignored). |
+| **Optional Configuration (override defaults if needed)** | | | |
+| `DATABASE_URL` | No | `postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}` | Computed from other env vars; override for non-Docker databases. |
+| `REDIS_URL` | No | `redis://redis:6379` | Backend cache store; override for external Redis. |
+| `POSTGRES_USER` | No | `postgres` | Database user for the Postgres container. |
+| `POSTGRES_DB` | No | `accounting` | Database name created by Postgres container. |
+| `DEFAULT_PROVIDER` | No | `teller` | Provider for bank data aggregation. |
+| `TELLER_ENV` | No | `sandbox` | Teller environment: `sandbox`, `development`, or `production`. |
+| `PLAID_CLIENT_ID` | No | `mock_client_id` | Plaid client ID (only if using Plaid). |
+| `PLAID_SECRET` | No | `mock_secret` | Plaid secret (only if using Plaid). |
+| `PLAID_ENV` | No | `sandbox` | Plaid environment: `sandbox` or `production`. |
+| `BACKEND_RUST_LOG` | No | `info` | Rust log level filter for backend (e.g., `info`, `debug`). |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | No | `http/protobuf` | OpenTelemetry protocol. |
+| `OTEL_STARTUP_TEST_SPAN` | No | `0` | Set to `1` to emit a test span verifying Seq connectivity. |
 
 ### Provider-Specific Setup
 

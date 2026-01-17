@@ -39,7 +39,7 @@ export function PageLayout({
                 </span>
               )}
               <div className="space-y-2">
-                <h1 className={cn('text-3xl', 'font-bold', 'tracking-tight', 'text-slate-900', 'transition-colors', 'duration-300', 'ease-out', 'dark:text-white', 'sm:text-4xl')}>
+                <h1 className={cn('text-3xl', 'font-bold', 'text-slate-900', 'transition-colors', 'duration-300', 'ease-out', 'dark:text-white', 'sm:text-4xl')}>
                   {title}
                 </h1>
                 {subtitle && (

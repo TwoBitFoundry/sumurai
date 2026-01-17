@@ -159,7 +159,7 @@ export function ConnectAccountStep({
             {content.eyebrow.text}
           </Badge>
           <div className={cn('space-y-3')}>
-            <h1 className={cn('text-3xl font-bold tracking-tight text-slate-900 transition-colors duration-300 ease-out dark:text-white md:text-[2.6rem]')}>
+            <h1 className={cn('text-3xl font-bold text-slate-900 transition-colors duration-300 ease-out dark:text-white md:text-[2.6rem]')}>
               {content.heroTitle}
             </h1>
             <p className={cn('text-base leading-relaxed text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300')}>

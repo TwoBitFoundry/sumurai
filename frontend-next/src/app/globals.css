@@ -2,6 +2,28 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@font-face {
+  font-family: 'Cal Sans';
+  src: url('../fonts/CalSans-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Mr Eaves XL Mod';
+  src: url('../fonts/mreavesxlmodot-reg-webfont.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cal Sans', system-ui, sans-serif;
+  }
+}
+
 @keyframes rotateAura {
   from {
     transform: rotate(0deg);

@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 import { cva } from 'class-variance-authority'
 import { Sun, Moon, Settings } from 'lucide-react'
 import { Button } from './Button'
@@ -87,8 +88,16 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
         <div className={cn('px-4', `${scrolled ? 'h-14' : 'h-16'}`, 'transition-all', 'duration-200', 'ease-out')}>
           <div className={cn('flex', 'items-center', 'justify-between', 'h-full')}>
             <div className={cn('flex', 'items-center', 'gap-6')}>
-              <div className={cn('flex', 'items-center', 'gap-2', 'font-semibold', 'text-slate-900', 'dark:text-white', scrolled ? 'text-base' : 'text-lg')}>
-                Sumurai
+              <div className={cn('flex', 'items-center', 'gap-2', 'text-slate-900', 'dark:text-white', scrolled ? 'text-xl' : 'text-3xl')}>
+                <Image
+                  src="/sumurai-logo.jpeg"
+                  alt="Sumurai Logo"
+                  width={scrolled ? 32 : 40}
+                  height={scrolled ? 32 : 40}
+                  className={cn('rounded-md')}
+                  unoptimized
+                />
+                <span style={{ fontFamily: "'Cal Sans', system-ui, sans-serif" }}>Sumurai</span>
               </div>
 
               {state === 'authenticated' && (

@@ -5,7 +5,7 @@ import { cn, focusRingClasses, disabledClasses, transitionClasses } from './util
 const buttonVariants = cva(
   [
     'inline-flex items-center justify-center gap-2',
-    'font-semibold',
+    'font-subheading uppercase',
     transitionClasses,
     focusRingClasses,
     disabledClasses,

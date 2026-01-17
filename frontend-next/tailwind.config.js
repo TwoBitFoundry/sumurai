@@ -7,6 +7,11 @@ module.exports = {
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Mr Eaves XL Mod', 'system-ui', 'sans-serif'],
+        heading: ['Cal Sans', 'system-ui', 'sans-serif'],
+        subheading: ['Mr Eaves XL Mod', 'system-ui', 'sans-serif']
+      },
       colors: {
         primary: {
           50: '#f0f9ff',
