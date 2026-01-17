@@ -2,7 +2,10 @@ use anyhow::Context;
 use axum::{
     body::Body,
     extract::{Path, Query, Request, State},
-    http::{header::CONTENT_TYPE, HeaderMap, StatusCode, Uri},
+    http::{
+        header::{AUTHORIZATION, CONTENT_TYPE},
+        HeaderMap, HeaderValue, Method, StatusCode, Uri,
+    },
     middleware::{from_fn, Next},
     response::{IntoResponse, Json, Response},
     routing::{delete, get, post, put},
@@ -291,8 +294,30 @@ pub fn create_app(state: AppState) -> Router {
         axum::response::Html(html)
     }
 
+    let mut allowed_origins: Vec<HeaderValue> = std::env::var("CORS_ALLOWED_ORIGINS")
+        .unwrap_or_else(|_| "http://localhost:8080".to_string())
+        .split(',')
+        .filter_map(|origin| HeaderValue::from_str(origin.trim()).ok())
+        .collect();
+
+    if allowed_origins.is_empty() {
+        allowed_origins.push(HeaderValue::from_static("http://localhost:8080"));
+    }
+
+    let cors_layer = CorsLayer::new()
+        .allow_origin(allowed_origins)
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
+        .allow_headers([AUTHORIZATION, CONTENT_TYPE])
+        .allow_credentials(true);
+
     let middleware_stack = ServiceBuilder::new()
-        .layer(CorsLayer::permissive())
+        .layer(cors_layer)
         .layer(OtelAxumLayer::default().try_extract_client_ip(true))
         .layer(OtelInResponseLayer)
         .layer(from_fn(with_bearer_token_attribute))

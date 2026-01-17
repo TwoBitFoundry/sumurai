@@ -173,7 +173,16 @@ Most configuration has sensible defaults. Only a few secrets require setup:
    docker compose up -d --build
    ```
 
-3. Browse to http://localhost:8080 and sign in with `me@test.com` / `Test1234!`.
+3. Browse to http://localhost:8080 (nginx entry point) and sign in with `me@test.com` / `Test1234!`.
+
+Ingress map (nginx):
+- UI: `http://localhost:8080/`
+- API docs (public): `http://localhost:8080/docs`
+- Seq UI (public): `http://localhost:8080/seq`
+- OTLP ingest (public endpoint routed to Seq): `http://localhost:8080/ingest/otlp`
+- API routes remain internal-only; they are reachable from the compose network (for docs "Try it out" use) but not exposed publicly.
+- Database (`postgres`) and cache (`redis`) are only reachable on the internal Docker network; connect via `docker compose exec` if you need CLI access.
+ - HTTPS: Configure `DOMAIN` and run Let's Encrypt issuance (see below); HTTPS is exposed on `https://<DOMAIN>:8443` by default.
 
 To stop everything: `docker compose down`. To remove data volumes: `docker compose down -v`.
 
@@ -194,10 +203,34 @@ Everything reads from `.env`. Most variables have sensible defaults set in `dock
 | `TELLER_CERT_PATH` | Yes | _none_ | Path to Teller client certificate (PEM). Store in `.certs/` (gitignored). |
 | `TELLER_KEY_PATH` | Yes | _none_ | Path to Teller private key (PEM). Store in `.certs/` (gitignored). |
 | **Optional Configuration (override defaults if needed)** | | | |
+| `CORS_ALLOWED_ORIGINS` | No | `http://localhost:8080` | Comma-separated list of allowed origins for backend CORS. Keep tight; add additional hosts only as needed. |
+| `DOMAIN` | No | `localhost` | Public hostname used by nginx and Let's Encrypt certificates. |
+| `SSL_PORT` | No | `8443` | External HTTPS port published by nginx (use 443 in production). |
+| `LE_EMAIL` | No | _none_ | Email for Let's Encrypt registration (needed when issuing certs). |
 | `DATABASE_URL` | No | `postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}` | Computed from other env vars; override for non-Docker databases. |
 | `REDIS_URL` | No | `redis://redis:6379` | Backend cache store; override for external Redis. |
 | `POSTGRES_USER` | No | `postgres` | Database user for the Postgres container. |
 | `POSTGRES_DB` | No | `accounting` | Database name created by Postgres container. |
+
+### Enabling HTTPS with Let's Encrypt
+
+1) Set `DOMAIN` and `LE_EMAIL` in your `.env` (e.g., `example.com`).
+2) Start the stack (HTTP will work with a self-signed cert initially):
+   ```bash
+   docker compose up -d --build
+   ```
+3) Request a real certificate (HTTP-01 challenge via nginx):
+   ```bash
+   docker compose run --rm -e DOMAIN=$DOMAIN -e LE_EMAIL=$LE_EMAIL certbot \
+     certonly --webroot -w /var/www/certbot \
+     -d $DOMAIN --email $LE_EMAIL --agree-tos --no-eff-email
+   ```
+   (Use `--staging` first if you want to avoid rate limits.)
+4) Restart nginx to load the issued cert:
+   ```bash
+   docker compose restart nginx
+   ```
+5) Access over HTTPS: `https://$DOMAIN:8443` (adjust port mapping if you bind 443 directly).
 | `DEFAULT_PROVIDER` | No | `teller` | Provider for bank data aggregation. |
 | `TELLER_ENV` | No | `sandbox` | Teller environment: `sandbox`, `development`, or `production`. |
 | `PLAID_CLIENT_ID` | No | `mock_client_id` | Plaid client ID (only if using Plaid). |

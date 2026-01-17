@@ -1,0 +1,104 @@
+events {}
+
+http {
+    upstream frontend_upstream {
+        server frontend:8080;
+    }
+
+    upstream backend_upstream {
+        server backend:3000;
+    }
+
+    upstream seq_upstream {
+        server seq:80;
+    }
+
+    map $http_x_forwarded_proto $real_scheme {
+        default $scheme;
+    }
+
+    # Redirect HTTP to HTTPS but keep ACME HTTP-01 reachable
+    server {
+        listen 80;
+        server_name ${DOMAIN};
+
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
+        }
+
+        location /healthz {
+            add_header Content-Type text/plain;
+            return 200 "ok";
+        }
+
+        location / {
+            return 301 https://${DOMAIN}:${SSL_PORT}$request_uri;
+        }
+    }
+
+    server {
+        listen 443 ssl http2;
+        server_name ${DOMAIN};
+
+        ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+        ssl_session_timeout 1d;
+        ssl_session_cache shared:MozSSL:10m;
+        ssl_session_tickets off;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+        ssl_prefer_server_ciphers off;
+
+        # Basic proxy headers for upstream services
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $real_scheme;
+
+        # Health probe for compose/k8s
+        location = /healthz {
+            add_header Content-Type text/plain;
+            return 200 "ok";
+        }
+
+        # Public: Backend API docs only (Scalar UI)
+        location = /docs {
+            return 302 /docs/;
+        }
+
+        location /docs/ {
+            proxy_pass http://backend_upstream/scalar;
+        }
+
+        # Public: Seq UI
+        location = /seq {
+            return 302 /seq/;
+        }
+
+        location /seq/ {
+            rewrite ^/seq/?(.*)$ /$1 break;
+            proxy_pass http://seq_upstream;
+        }
+
+        # Public: OTLP HTTP ingestion -> Seq
+        location /ingest/otlp {
+            proxy_pass http://seq_upstream/ingest/otlp;
+            proxy_http_version 1.1;
+            client_max_body_size 10m;
+        }
+
+        # Internal-only API: only reachable from private networks
+        location /api {
+            allow 10.0.0.0/8;
+            allow 172.16.0.0/12;
+            allow 192.168.0.0/16;
+            deny all;
+            proxy_pass http://backend_upstream;
+        }
+
+        # Default: frontend SPA
+        location / {
+            proxy_pass http://frontend_upstream;
+        }
+    }
+}

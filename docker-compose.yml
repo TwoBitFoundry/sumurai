@@ -15,21 +15,22 @@ services:
         NEXT_PUBLIC_OTEL_SANITIZE_URLS: ${NEXT_PUBLIC_OTEL_SANITIZE_URLS:-true}
         NEXT_PUBLIC_OTEL_CAPTURE_BODIES: ${NEXT_PUBLIC_OTEL_CAPTURE_BODIES:-false}
         NEXT_PUBLIC_OTEL_BLOCK_SENSITIVE_ENDPOINTS: ${NEXT_PUBLIC_OTEL_BLOCK_SENSITIVE_ENDPOINTS:-true}
-    ports:
-      - "8080:8080"
     environment:
       DEFAULT_PROVIDER: ${DEFAULT_PROVIDER:-teller}
     depends_on:
       - backend
       - seq
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile.prebuilt
     platform: linux/amd64
-    ports:
-      - "3000:3000"
     environment:
       REDIS_URL: redis://redis:6379
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-accounting}
@@ -52,13 +53,6 @@ services:
       RUST_LOG: ${BACKEND_RUST_LOG:-info}
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_STARTUP_TEST_SPAN: ${OTEL_STARTUP_TEST_SPAN:-0}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      seq:
-        condition: service_started
     command: >
       sh -c "
         echo 'Running database migrations...' &&
@@ -66,19 +60,27 @@ services:
         echo 'Starting backend server...' &&
         exec ./sumurai-backend
       "
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      seq:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
 
   postgres:
     image: postgres:15-alpine
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_DB: accounting
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -98,14 +100,47 @@ services:
       ACCEPT_EULA: "Y"
       SEQ_INGESTION__OTLP__ENABLED: "true"
       SEQ_PASSWORD: ${SEQ_PASSWORD}
-    ports:
-      - "5341:80"
-      - "4317:4317"
-      - "4318:4318"
     volumes:
       - seq_data:/data
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+      seq:
+        condition: service_started
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      SSL_PORT: ${SSL_PORT:-8443}
+    command: ["/bin/sh", "/etc/nginx/entrypoint.sh"]
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+      - ./nginx/entrypoint.sh:/etc/nginx/entrypoint.sh:ro
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/www/certbot
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  certbot:
+    image: certbot/certbot:latest
+    profiles: ["certbot"]
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/www/certbot
+    entrypoint: ["sh", "-c", "sleep infinity"]
 
 volumes:
   redis_data:
   postgres_data:
   seq_data:
+  certbot-etc:
+  certbot-var:
