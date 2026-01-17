@@ -1,3 +1,5 @@
+![D7570F39-00BC-4DBA-8722-DB8B09AE747C_1_201_a](https://github.com/user-attachments/assets/3b1a9fe4-4dbd-4f9a-9183-1f52dcfd70ca)
+
 # Sumurai, Your Personal Finance Dashboard
 
 Sumurai is a full‑stack personal finance dashboard that connects to your bank via modern aggregators, syncs transactions, and visualizes spending with a modern, responsive UI.
