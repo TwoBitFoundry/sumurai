@@ -8,10 +8,6 @@ jest.mock('@/hooks/useScrollDetection', () => ({
 // Mock boundary components so copy tweaks do not break contract tests
 const mockWelcomeStep = jest.fn(() => <div data-testid="welcome-step">Welcome Step</div>)
 const mockConnectAccountStep = jest.fn(() => <div data-testid="connect-step">Connect Step</div>)
-const mockUseOnboardingWizard = jest.fn()
-const mockUseOnboardingPlaidFlow = jest.fn()
-const mockUseOnboardingTellerFlow = jest.fn()
-const mockUseTellerProviderInfo = jest.fn()
 const mockProviderContent = {
   plaid: {
     displayName: 'Plaid',
@@ -70,35 +66,55 @@ jest.mock('@/utils/providerCards', () => ({
     mockProviderContent[provider],
 }))
 
+jest.mock('@/hooks/useOnboardingWizard', () => ({
+  __esModule: true,
+  useOnboardingWizard: jest.fn(),
+}))
+
+jest.mock('@/hooks/useOnboardingPlaidFlow', () => ({
+  __esModule: true,
+  useOnboardingPlaidFlow: jest.fn(),
+}))
+
+jest.mock('@/hooks/useOnboardingTellerFlow', () => ({
+  __esModule: true,
+  useOnboardingTellerFlow: jest.fn(),
+}))
+
+jest.mock('@/hooks/useTellerProviderInfo', () => ({
+  __esModule: true,
+  useTellerProviderInfo: jest.fn(),
+}))
+
 const renderWithTheme = (component: React.ReactElement) => {
   return render(<ThemeProvider>{component}</ThemeProvider>)
 }
 
-jest.mock('@/hooks/useOnboardingWizard', () => ({
-  useOnboardingWizard: mockUseOnboardingWizard,
-}))
-jest.mock('@/hooks/useOnboardingPlaidFlow', () => ({
-  useOnboardingPlaidFlow: mockUseOnboardingPlaidFlow,
-}))
-jest.mock('@/hooks/useOnboardingTellerFlow', () => ({
-  useOnboardingTellerFlow: mockUseOnboardingTellerFlow,
-}))
-jest.mock('@/hooks/useTellerProviderInfo', () => ({
-  useTellerProviderInfo: mockUseTellerProviderInfo,
-}))
-
-// Import after mocks so hooks are stubbed
-const { OnboardingWizard } = require('@/components/onboarding/OnboardingWizard')
-const wizardHookModule = jest.requireMock('@/hooks/useOnboardingWizard')
-wizardHookModule.useOnboardingWizard = mockUseOnboardingWizard
-const plaidHookModule = jest.requireMock('@/hooks/useOnboardingPlaidFlow')
-plaidHookModule.useOnboardingPlaidFlow = mockUseOnboardingPlaidFlow
-const tellerHookModule = jest.requireMock('@/hooks/useOnboardingTellerFlow')
-tellerHookModule.useOnboardingTellerFlow = mockUseOnboardingTellerFlow
-const providerInfoModule = jest.requireMock('@/hooks/useTellerProviderInfo')
-providerInfoModule.useTellerProviderInfo = mockUseTellerProviderInfo
-
+// SUT is imported after mocks are registered (ESM import order)
+let OnboardingWizard: typeof import('@/components/onboarding/OnboardingWizard')['OnboardingWizard']
+const mockedWizardModule = jest.requireMock('@/hooks/useOnboardingWizard') as {
+  useOnboardingWizard: jest.Mock
+}
+const mockedPlaidModule = jest.requireMock('@/hooks/useOnboardingPlaidFlow') as {
+  useOnboardingPlaidFlow: jest.Mock
+}
+const mockedTellerModule = jest.requireMock('@/hooks/useOnboardingTellerFlow') as {
+  useOnboardingTellerFlow: jest.Mock
+}
+const mockedProviderModule = jest.requireMock('@/hooks/useTellerProviderInfo') as {
+  useTellerProviderInfo: jest.Mock
+}
+// Reuse concrete mock handles to keep stubbing consistent across tests
+const useOnboardingWizardMock = mockedWizardModule.useOnboardingWizard as jest.Mock
+const useOnboardingPlaidFlowMock = mockedPlaidModule.useOnboardingPlaidFlow as jest.Mock
+const useOnboardingTellerFlowMock = mockedTellerModule.useOnboardingTellerFlow as jest.Mock
+const useTellerProviderInfoMock = mockedProviderModule.useTellerProviderInfo as jest.Mock
 describe('OnboardingWizard', () => {
+  beforeAll(async () => {
+    const module = await import('@/components/onboarding/OnboardingWizard')
+    OnboardingWizard = module.OnboardingWizard
+  })
+
   const mockWizardHook = {
     currentStep: 'welcome' as const,
     stepIndex: 0,
@@ -141,10 +157,11 @@ describe('OnboardingWizard', () => {
   beforeEach(() => {
     cleanup()
     jest.clearAllMocks()
-    mockUseOnboardingWizard.mockReturnValue(mockWizardHook as any)
-    mockUseOnboardingPlaidFlow.mockReturnValue(mockPlaidFlowHook as any)
-    mockUseOnboardingTellerFlow.mockReturnValue(mockTellerFlowHook as any)
-    mockUseTellerProviderInfo.mockReturnValue({
+
+    useOnboardingWizardMock.mockReturnValue(mockWizardHook as any)
+    useOnboardingPlaidFlowMock.mockReturnValue(mockPlaidFlowHook as any)
+    useOnboardingTellerFlowMock.mockReturnValue(mockTellerFlowHook as any)
+    useTellerProviderInfoMock.mockReturnValue({
       loading: false,
       error: null,
       availableProviders: ['plaid'],
@@ -177,12 +194,12 @@ describe('OnboardingWizard', () => {
   })
 
   it('given wizard at step 2 when rendered then shows simple step info', () => {
-    mockUseOnboardingWizard.mockImplementation(() => ({
+    useOnboardingWizardMock.mockReturnValue({
       ...mockWizardHook,
       currentStep: 'connectAccount',
       stepIndex: 1,
       progress: 100,
-    }))
+    })
 
     renderWithTheme(<OnboardingWizard onComplete={jest.fn()} />)
 
@@ -192,7 +209,7 @@ describe('OnboardingWizard', () => {
   it('given navigation buttons on welcome when next clicked then advances', () => {
     const mockGoToNext = jest.fn()
 
-    mockUseOnboardingWizard.mockReturnValue({
+    useOnboardingWizardMock.mockReturnValue({
       ...mockWizardHook,
       currentStep: 'welcome',
       stepIndex: 0,
@@ -212,7 +229,7 @@ describe('OnboardingWizard', () => {
   })
 
   it('given connect account step when rendered then shows skip option', () => {
-    mockUseOnboardingWizard.mockReturnValue({
+    useOnboardingWizardMock.mockReturnValue({
       ...mockWizardHook,
       currentStep: 'connectAccount',
       stepIndex: 1,
@@ -230,7 +247,7 @@ describe('OnboardingWizard', () => {
     const onComplete = jest.fn()
     const mockCompleteWizard = jest.fn().mockResolvedValue(undefined)
 
-    mockUseOnboardingWizard.mockReturnValue({
+    useOnboardingWizardMock.mockReturnValue({
       ...mockWizardHook,
       currentStep: 'connectAccount',
       stepIndex: 1,
@@ -239,7 +256,7 @@ describe('OnboardingWizard', () => {
       completeWizard: mockCompleteWizard,
     })
 
-    mockUseOnboardingPlaidFlow.mockReturnValue({
+    useOnboardingPlaidFlowMock.mockReturnValue({
       ...mockPlaidFlowHook,
       isConnected: true,
     })
@@ -257,7 +274,7 @@ describe('OnboardingWizard', () => {
   })
 
   it('does not render a complete button on the final step', () => {
-    mockUseOnboardingWizard.mockReturnValue({
+    useOnboardingWizardMock.mockReturnValue({
       ...mockWizardHook,
       currentStep: 'connectAccount',
       stepIndex: 1,
@@ -273,7 +290,7 @@ describe('OnboardingWizard', () => {
   it('given wizard when wizard is completed then calls onComplete callback', () => {
     const onComplete = jest.fn()
 
-    mockUseOnboardingWizard.mockReturnValue({
+    useOnboardingWizardMock.mockReturnValue({
       ...mockWizardHook,
       isComplete: true,
     })

@@ -1,7 +1,7 @@
 import { describe, it } from '@jest/globals'
 import type { Transaction } from '../api'
 
-const expectTypeOf = <T>() => ({
+const expectTypeOf = <_T>() => ({
   toBeObject: () => {},
   toMatchTypeOf: <_Expected>() => {}
 })

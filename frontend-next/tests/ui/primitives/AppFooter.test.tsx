@@ -15,7 +15,8 @@ describe('AppFooter', () => {
 
   it('renders footer branding', () => {
     render(<AppFooter />)
-    expect(screen.getByText('Two Bit Foundry')).toBeInTheDocument()
+    expect(screen.getByAltText('Two Bit Foundry')).toBeInTheDocument()
+    expect(screen.getByText('Built in the open with the community')).toBeInTheDocument()
   })
 
   it('renders action buttons', () => {
