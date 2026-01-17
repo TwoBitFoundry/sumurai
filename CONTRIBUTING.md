@@ -1,6 +1,6 @@
-# Contributing to Sumaura
+# Contributing to Sumurai
 
-Thanks for your interest in improving Sumaura! This guide helps you get set up quickly, follow the project workflow, and submit high‑quality PRs.
+Thanks for your interest in improving Sumurai! This guide helps you get set up quickly, follow the project workflow, and submit high‑quality PRs.
 
 > Heads‑up: End‑to‑end validation happens only at `http://localhost:8080` via Nginx → backend proxy. Vite dev (`:5173`) is fine for UI iteration, but not for full flows.
 
@@ -18,7 +18,7 @@ Clone your fork and create a feature branch:
 
 ```bash
 git clone <your-fork-url>
-cd sumaura
+cd sumurai
 git checkout -b feat/my-change
 ```
 

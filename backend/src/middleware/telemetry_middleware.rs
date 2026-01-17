@@ -99,7 +99,7 @@ pub fn init(config: &TelemetryConfig) -> Result<TelemetryHandle> {
     let exporter = exporter_builder.build()?;
 
     let resource = Resource::builder()
-        .with_service_name("sumaura-backend")
+        .with_service_name("sumurai-backend")
         .build();
 
     let tracer_provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()

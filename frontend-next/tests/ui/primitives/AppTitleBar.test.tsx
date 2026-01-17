@@ -13,7 +13,7 @@ describe('AppTitleBar', () => {
           onThemeToggle={() => {}}
         />
       )
-      expect(screen.getByText('Sumaura')).toBeInTheDocument()
+      expect(screen.getByText('Sumurai')).toBeInTheDocument()
     })
 
     it('renders theme toggle button', () => {
@@ -79,7 +79,7 @@ describe('AppTitleBar', () => {
           onLogout={() => {}}
         />
       )
-      expect(screen.getByText('Sumaura')).toBeInTheDocument()
+      expect(screen.getByText('Sumurai')).toBeInTheDocument()
     })
 
     it('renders theme toggle button', () => {
@@ -151,7 +151,7 @@ describe('AppTitleBar', () => {
           onTabChange={() => {}}
         />
       )
-      expect(screen.getByText('Sumaura')).toBeInTheDocument()
+      expect(screen.getByText('Sumurai')).toBeInTheDocument()
     })
 
     it('renders all tabs', () => {

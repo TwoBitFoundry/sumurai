@@ -6,16 +6,16 @@ use utoipa::OpenApi;
 #[derive(OpenApi)]
 #[openapi(
     info(
-        title = "Sumaura Financial API",
+        title = "Sumurai Financial API",
         description = "Multi-tenant financial aggregation platform with unified Plaid and Teller integration",
         version = "1.0.0",
         contact(
-            name = "Sumaura Support",
-            url = "https://github.com/two-bit-foundry/sumaura"
+            name = "Sumurai Support",
+            url = "https://github.com/two-bit-foundry/sumurai"
         ),
         license(
             name = "MIT",
-            url = "https://github.com/two-bit-foundry/sumaura/blob/main/LICENSE"
+            url = "https://github.com/two-bit-foundry/sumurai/blob/main/LICENSE"
         )
     ),
     servers(

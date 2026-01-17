@@ -32,7 +32,7 @@ describe('Telemetry - Business Logic', () => {
   describe('Environment Configuration', () => {
     it('should read service name from NEXT_PUBLIC_OTEL_SERVICE_NAME', async () => {
       process.env.NEXT_PUBLIC_OTEL_ENABLED = 'true';
-      process.env.NEXT_PUBLIC_OTEL_SERVICE_NAME = 'sumaura-frontend-test';
+      process.env.NEXT_PUBLIC_OTEL_SERVICE_NAME = 'sumurai-frontend-test';
 
       const tracer = await initTelemetry();
 

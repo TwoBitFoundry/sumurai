@@ -218,7 +218,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const providerCardConfig = getProviderCardConfig(selectedProvider)
   const providerLabel = providerCardConfig.title
   const providerDescription = selectedProvider === 'plaid'
-    ? 'Securely connect institutions with Plaid. Your credentials never touch Sumaura and you can revoke access at any time.'
+    ? 'Securely connect institutions with Plaid. Your credentials never touch Sumurai and you can revoke access at any time.'
     : 'Launch Teller Connect to link accounts using your own Teller credentials. Connections stay in your control and can be revoked instantly.'
 
   const syncFooter = selectedProvider === 'plaid'

@@ -407,7 +407,7 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
         </AccountFilterProvider>
       )
       
-      const brandMarks = await screen.findAllByText('Sumaura')
+      const brandMarks = await screen.findAllByText('Sumurai')
       expect(brandMarks.length).toBeGreaterThan(0)
       expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
       const welcomeMessages = await screen.findAllByText('Welcome Back')
@@ -427,7 +427,7 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
       
       const welcomeMessages = await screen.findAllByText('Welcome Back')
       expect(welcomeMessages.length).toBeGreaterThan(0)
-      const brandMarks = await screen.findAllByText('Sumaura')
+      const brandMarks = await screen.findAllByText('Sumurai')
       expect(brandMarks.length).toBeGreaterThan(0)
     })
 
@@ -446,7 +446,7 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
           </AccountFilterProvider>
         )
       })
-      const brandMarks = await screen.findAllByText('Sumaura')
+      const brandMarks = await screen.findAllByText('Sumurai')
       expect(brandMarks.length).toBeGreaterThan(0)
       const dashboardLabels = await screen.findAllByText('Dashboard')
       expect(dashboardLabels).toHaveLength(2) // Navigation and page heading
@@ -515,7 +515,7 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
         await new Promise(resolve => setTimeout(resolve, 100))
       })
       
-      expect(screen.getAllByText('Sumaura').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Sumurai').length).toBeGreaterThan(0)
       
       const expiredToken = 'header.' + btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) - 10 })) + '.signature'
       ;(window.sessionStorage.getItem as any).mockReturnValue(expiredToken)
@@ -547,7 +547,7 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
       
       const welcomeMessages = await screen.findAllByText('Welcome Back')
       expect(welcomeMessages.length).toBeGreaterThan(0)
-      const brandMarks = await screen.findAllByText('Sumaura')
+      const brandMarks = await screen.findAllByText('Sumurai')
       expect(brandMarks.length).toBeGreaterThan(0)
     })
 
@@ -568,7 +568,7 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
         await new Promise(resolve => setTimeout(resolve, 100))
       })
       
-      expect(screen.getAllByText('Sumaura').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Sumurai').length).toBeGreaterThan(0)
       expect(screen.getAllByText('Logout')[0]).toBeInTheDocument()
       expect(true).toBe(true)
       restore()
@@ -588,7 +588,7 @@ describe('App Phase 3 - Authentication-First Architecture', () => {
         await new Promise(resolve => setTimeout(resolve, 100))
       })
       
-      expect(screen.getAllByText('Sumaura').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Sumurai').length).toBeGreaterThan(0)
       expect(screen.queryAllByText('Welcome Back').length).toBe(0)
       restore()
     }, 15000)

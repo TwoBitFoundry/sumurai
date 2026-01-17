@@ -192,12 +192,12 @@ describe('sanitizeSpanAttributes', () => {
     const span = createMockSpan({
       'http.method': 'POST',
       'http.status_code': 200,
-      'service.name': 'sumaura-frontend',
+      'service.name': 'sumurai-frontend',
     });
     sanitizeSpanAttributes(span);
     expect(span.attributes['http.method']).toBe('POST');
     expect(span.attributes['http.status_code']).toBe(200);
-    expect(span.attributes['service.name']).toBe('sumaura-frontend');
+    expect(span.attributes['service.name']).toBe('sumurai-frontend');
   });
 
   it('should handle spans with no attributes', () => {

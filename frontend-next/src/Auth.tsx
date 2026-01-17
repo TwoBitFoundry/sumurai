@@ -167,7 +167,7 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
             <Badge size="md">JOIN TODAY</Badge>
-            <h2 className={cn('text-3xl', 'font-semibold', 'text-slate-900', 'dark:text-white')}>Sign Up for Sumaura</h2>
+            <h2 className={cn('text-3xl', 'font-semibold', 'text-slate-900', 'dark:text-white')}>Sign Up for Sumurai</h2>
             <p className={cn('text-[0.85rem]', 'text-slate-600', 'dark:text-slate-400')}>
               Finish sign up to unlock onboarding and Plaid sync.
             </p>

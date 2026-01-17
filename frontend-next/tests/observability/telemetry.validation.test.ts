@@ -150,7 +150,7 @@ describe('Telemetry Validation', () => {
   describe('Configuration Validation', () => {
     it('should read all required environment variables', async () => {
       process.env.NEXT_PUBLIC_OTEL_ENABLED = 'true';
-      process.env.NEXT_PUBLIC_OTEL_SERVICE_NAME = 'sumaura-frontend';
+      process.env.NEXT_PUBLIC_OTEL_SERVICE_NAME = 'sumurai-frontend';
       process.env.NEXT_PUBLIC_OTEL_SERVICE_VERSION = '1.0.0';
       process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT = 'http://localhost:5341/ingest/otlp';
 

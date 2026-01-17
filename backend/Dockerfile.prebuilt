@@ -34,7 +34,7 @@ RUN useradd --create-home --shell /bin/bash appuser
 # Create app directory and copy files
 WORKDIR /app
 COPY --chown=appuser:appuser backend/migrations ./migrations
-COPY --chown=appuser:appuser --chmod=755 backend/target/x86_64-unknown-linux-gnu/release/accounting-backend ./accounting-backend
+COPY --chown=appuser:appuser --chmod=755 backend/target/x86_64-unknown-linux-gnu/release/sumurai-backend ./sumurai-backend
 
 # Switch to app user
 USER appuser
@@ -43,4 +43,4 @@ USER appuser
 EXPOSE 3000
 
 # Run the application
-CMD ["./accounting-backend"]
+CMD ["./sumurai-backend"]

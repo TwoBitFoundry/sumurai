@@ -41,7 +41,7 @@ exports[`AppFooter matches snapshot 1`] = `
         >
           <a
             class="px-4 py-2 text-sm font-medium rounded-lg bg-sky-500/80 backdrop-blur-sm text-white hover:bg-sky-600/80 dark:bg-sky-600/80 dark:hover:bg-sky-700/80 flex items-center justify-center gap-2 transition-colors border border-sky-400/30 dark:border-sky-500/30 whitespace-nowrap"
-            href="https://github.com/TwoBitFoundry/sumaura/blob/main/CONTRIBUTING.md"
+            href="https://github.com/TwoBitFoundry/sumurai/blob/main/CONTRIBUTING.md"
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -93,7 +93,7 @@ exports[`AppFooter matches snapshot 1`] = `
           </a>
           <a
             class="px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center gap-2 whitespace-nowrap"
-            href="https://github.com/TwoBitFoundry/sumaura"
+            href="https://github.com/TwoBitFoundry/sumurai"
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -127,7 +127,7 @@ exports[`AppFooter matches snapshot 1`] = `
           class="text-xs text-slate-500 dark:text-slate-500"
         >
           © 
-          2025
+          2026
            Two Bit Foundry • Source available
         </p>
         <div

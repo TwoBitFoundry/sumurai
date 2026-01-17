@@ -1,9 +1,9 @@
-# Sumaura UI Guidelines
+# Sumurai UI Guidelines
 
 ## Objective
 
 Define reusable rules for creating consistent glassmorphism-inspired UI
-across light and dark modes for Sumaura. Includes color palettes,
+across light and dark modes for Sumurai. Includes color palettes,
 structural rules, and interactivity/animation guidelines.
 
 ------------------------------------------------------------------------

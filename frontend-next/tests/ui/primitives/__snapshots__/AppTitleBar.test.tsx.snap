@@ -16,7 +16,7 @@ exports[`AppTitleBar snapshots matches snapshot for authenticated state 1`] = `
         <div
           class="flex items-center gap-2 font-semibold text-slate-900 dark:text-white text-lg"
         >
-          Sumaura
+          Sumurai
         </div>
         <nav
           aria-label="Primary"
@@ -159,7 +159,7 @@ exports[`AppTitleBar snapshots matches snapshot for onboarding state 1`] = `
         <div
           class="flex items-center gap-2 font-semibold text-slate-900 dark:text-white text-lg"
         >
-          Sumaura
+          Sumurai
         </div>
       </div>
       <div
@@ -244,7 +244,7 @@ exports[`AppTitleBar snapshots matches snapshot for unauthenticated state 1`] = 
         <div
           class="flex items-center gap-2 font-semibold text-slate-900 dark:text-white text-lg"
         >
-          Sumaura
+          Sumurai
         </div>
       </div>
       <div

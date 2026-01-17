@@ -118,7 +118,7 @@ export class SensitiveDataSpanProcessor implements SpanProcessor {
   }
 
   private recordSanitizedOutcome(span: ReadableSpan, url: string): void {
-    const tracer = trace.getTracer('sumaura-frontend', '1.0.0');
+    const tracer = trace.getTracer('sumurai-frontend', '1.0.0');
     const provider = url.includes('/plaid/') ? 'plaid' : url.includes('/teller/') ? 'teller' : 'unknown';
     const endpoint = this.getEndpointKey(url, provider);
     const status =

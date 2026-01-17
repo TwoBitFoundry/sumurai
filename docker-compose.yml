@@ -1,3 +1,5 @@
+name: sumurai
+
 services:
   frontend:
     build:
@@ -7,7 +9,7 @@ services:
         NEXT_PUBLIC_OTEL_ENABLED: ${NEXT_PUBLIC_OTEL_ENABLED:-true}
         NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT: ${NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:8080/ingest/otlp}
         NEXT_PUBLIC_OTEL_SEQ_API_KEY: ${NEXT_PUBLIC_OTEL_SEQ_API_KEY:-}
-        NEXT_PUBLIC_OTEL_SERVICE_NAME: ${NEXT_PUBLIC_OTEL_SERVICE_NAME:-sumaura-frontend}
+        NEXT_PUBLIC_OTEL_SERVICE_NAME: ${NEXT_PUBLIC_OTEL_SERVICE_NAME:-sumurai-frontend}
         NEXT_PUBLIC_OTEL_SERVICE_VERSION: ${NEXT_PUBLIC_OTEL_SERVICE_VERSION:-1.0.0}
         NEXT_PUBLIC_OTEL_SANITIZE_HEADERS: ${NEXT_PUBLIC_OTEL_SANITIZE_HEADERS:-true}
         NEXT_PUBLIC_OTEL_SANITIZE_URLS: ${NEXT_PUBLIC_OTEL_SANITIZE_URLS:-true}
@@ -62,7 +64,7 @@ services:
         echo 'Running database migrations...' &&
         sqlx migrate run &&
         echo 'Starting backend server...' &&
-        exec ./accounting-backend
+        exec ./sumurai-backend
       "
 
   redis:

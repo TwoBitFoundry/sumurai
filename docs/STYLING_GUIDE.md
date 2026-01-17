@@ -1,6 +1,6 @@
-# Sumaura Frontend Styling Guide
+# Sumurai Frontend Styling Guide
 
-This guide establishes the styling architecture for Sumaura's frontend, ensuring consistent glassmorphism design across light and dark modes while maintaining code quality and maintainability.
+This guide establishes the styling architecture for Sumurai's frontend, ensuring consistent glassmorphism design across light and dark modes while maintaining code quality and maintainability.
 
 ## Table of Contents
 
@@ -18,7 +18,7 @@ This guide establishes the styling architecture for Sumaura's frontend, ensuring
 
 **Primitive-First Architecture**
 
-Sumaura follows a primitive-first styling approach:
+Sumurai follows a primitive-first styling approach:
 
 1. **Primitives are the foundation** - Pre-built components with CVA variants handle 90% of styling needs
 2. **Inline classes for layout** - Use Tailwind utilities for positioning, spacing, and layout-specific adjustments
@@ -27,7 +27,7 @@ Sumaura follows a primitive-first styling approach:
 
 **Design System Alignment**
 
-All primitives align with [docs/sumaura-ui-guidelines.md](../../docs/sumaura-ui-guidelines.md):
+All primitives align with [docs/sumurai-ui-guidelines.md](../../docs/sumurai-ui-guidelines.md):
 - Glassmorphism with backdrop blur
 - Consistent color palette (light/dark modes)
 - Purposeful animations and interactions
@@ -374,7 +374,7 @@ When creating new primitives or components:
 
 ## Related Documentation
 
-- [Sumaura UI Guidelines](../../docs/sumaura-ui-guidelines.md) - Design system fundamentals
+- [Sumurai UI Guidelines](../../docs/sumurai-ui-guidelines.md) - Design system fundamentals
 - [Primitives README](../src/ui/primitives/README.md) - Detailed primitive documentation
 - [Contributing Guide](CONTRIBUTING.md) - Code contribution workflow
 

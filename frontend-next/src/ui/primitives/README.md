@@ -1,6 +1,6 @@
-# Sumaura UI Primitives
+# Sumurai UI Primitives
 
-This directory contains reusable UI primitives that implement Sumaura's glassmorphism design system with support for light and dark modes.
+This directory contains reusable UI primitives that implement Sumurai's glassmorphism design system with support for light and dark modes.
 
 ## Overview
 
@@ -709,7 +709,7 @@ See `__tests__/` directory for examples.
 ## Related Documentation
 
 - [STYLING_GUIDE.md](../../docs/STYLING_GUIDE.md) - When to use primitives vs inline classes
-- [sumaura-ui-guidelines.md](../../../docs/sumaura-ui-guidelines.md) - Design system fundamentals
+- [sumurai-ui-guidelines.md](../../../docs/sumurai-ui-guidelines.md) - Design system fundamentals
 - [CONTRIBUTING.md](../../docs/CONTRIBUTING.md) - Contribution guidelines
 
 ---

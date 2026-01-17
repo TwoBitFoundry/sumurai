@@ -1,6 +1,6 @@
-# Sumaura Architecture
+# Sumurai Architecture
 
-This document provides a deeper look at Sumaura’s runtime architecture, data flow, and key components. For a quick overview and how to run the stack, see `README.md`.
+This document provides a deeper look at Sumurai’s runtime architecture, data flow, and key components. For a quick overview and how to run the stack, see `README.md`.
 
 ## Overview
 

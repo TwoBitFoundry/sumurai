@@ -79,7 +79,7 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
     const details: Record<OnboardingStep, { label: string; description: string }> = {
       welcome: {
         label: 'Welcome',
-        description: 'Get oriented with Sumaura',
+        description: 'Get oriented with Sumurai',
       },
       connectAccount: {
         label: 'Connect account',

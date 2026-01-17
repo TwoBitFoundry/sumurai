@@ -88,7 +88,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
           <div className={cn('flex', 'items-center', 'justify-between', 'h-full')}>
             <div className={cn('flex', 'items-center', 'gap-6')}>
               <div className={cn('flex', 'items-center', 'gap-2', 'font-semibold', 'text-slate-900', 'dark:text-white', scrolled ? 'text-base' : 'text-lg')}>
-                Sumaura
+                Sumurai
               </div>
 
               {state === 'authenticated' && (

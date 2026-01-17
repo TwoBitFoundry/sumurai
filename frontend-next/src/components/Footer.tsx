@@ -22,7 +22,7 @@ export function Footer() {
 
           <div className={cn('flex', 'flex-col', 'md:flex-row', 'w-full', 'md:w-auto', 'gap-2', 'md:gap-3')}>
             <a
-              href="https://github.com/TwoBitFoundry/sumaura/blob/main/CONTRIBUTING.md"
+              href="https://github.com/TwoBitFoundry/sumurai/blob/main/CONTRIBUTING.md"
               target="_blank"
               rel="noopener noreferrer"
               className={cn('px-4', 'py-2', 'text-sm', 'font-medium', 'rounded-lg', 'bg-sky-500/80', 'backdrop-blur-sm', 'text-white', 'hover:bg-sky-600/80', 'dark:bg-sky-600/80', 'dark:hover:bg-sky-700/80', 'flex', 'items-center', 'justify-center', 'gap-2', 'transition-colors', 'border', 'border-sky-400/30', 'dark:border-sky-500/30', 'whitespace-nowrap')}
@@ -44,7 +44,7 @@ export function Footer() {
               <span>Buy us a coffee</span>
             </a>
             <a
-              href="https://github.com/TwoBitFoundry/sumaura"
+              href="https://github.com/TwoBitFoundry/sumurai"
               target="_blank"
               rel="noopener noreferrer"
               className={cn('px-4', 'py-2', 'text-sm', 'font-medium', 'rounded-lg', 'border', 'border-slate-200', 'dark:border-slate-700', 'bg-white/50', 'dark:bg-slate-800/50', 'text-slate-700', 'dark:text-slate-300', 'hover:bg-white', 'dark:hover:bg-slate-800', 'flex', 'items-center', 'justify-center', 'gap-2', 'whitespace-nowrap')}

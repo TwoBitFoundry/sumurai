@@ -17,7 +17,7 @@ function getConfig() {
   const env = process.env
   return {
     enabled: env.NEXT_PUBLIC_OTEL_ENABLED === 'true',
-    serviceName: env.NEXT_PUBLIC_OTEL_SERVICE_NAME || 'sumaura-frontend',
+    serviceName: env.NEXT_PUBLIC_OTEL_SERVICE_NAME || 'sumurai-frontend',
     serviceVersion: env.NEXT_PUBLIC_OTEL_SERVICE_VERSION || '1.0.0',
     endpoint: env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:5341/ingest/otlp',
     seqApiKey: env.NEXT_PUBLIC_OTEL_SEQ_API_KEY || '',

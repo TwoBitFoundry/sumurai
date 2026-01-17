@@ -1,12 +1,12 @@
-# Sumaura, Your Personal Finance Dashboard
+# Sumurai, Your Personal Finance Dashboard
 
-Sumaura is a full‑stack personal finance dashboard that connects to your bank via modern aggregators, syncs transactions, and visualizes spending with a modern, responsive UI.
+Sumurai is a full‑stack personal finance dashboard that connects to your bank via modern aggregators, syncs transactions, and visualizes spending with a modern, responsive UI.
 
 **License**: Sustainable Use License – Community 1.0 (source-available, not OSI approved)
 
 ## Features
 
-Comprehensive personal finance management with bank connectivity, transaction tracking, budgeting, and visual analytics. Sumaura connects to your bank via Teller for real‑time transaction syncing and data aggregation.
+Comprehensive personal finance management with bank connectivity, transaction tracking, budgeting, and visual analytics. Sumurai connects to your bank via Teller for real‑time transaction syncing and data aggregation.
 
 
 ## Roadmap
@@ -57,7 +57,7 @@ Nginx-served SPA with Rust backend, PostgreSQL database, Redis cache, and multi-
 
 ### Security & Privacy
 
-Sumaura is designed to be self‑hosted with no vendor data path. With Teller, you keep full control of credentials via mTLS. Redis caches are session‑scoped with automatic TTL expiry. There is no telemetry or third‑party analytics baked in.
+Sumurai is designed to be self‑hosted with no vendor data path. With Teller, you keep full control of credentials via mTLS. Redis caches are session‑scoped with automatic TTL expiry. There is no telemetry or third‑party analytics baked in.
 
 - **Your Data Belongs to You:** user auth metadata, transactions, budgets, and derived analytics in your PostgreSQL instance.
 - **Bank Credentials are Never Stored:** user credentials are not persisted; Teller uses short‑lived tokens with mTLS.

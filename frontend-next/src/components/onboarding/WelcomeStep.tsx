@@ -143,7 +143,7 @@ export function WelcomeStep() {
         >
           <img
             src={dashboardHero}
-            alt="Sumaura dashboard preview"
+            alt="Sumurai dashboard preview"
             className={cn('absolute inset-0 h-full w-full object-cover object-top')}
           />
         </div>

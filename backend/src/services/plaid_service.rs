@@ -69,7 +69,7 @@ impl RealPlaidClient {
         let request_body = json!({
             "client_id": self.client_id,
             "secret": self.secret,
-            "client_name": "Sumaura",
+            "client_name": "Sumurai",
             "country_codes": ["US"],
             "language": "en",
             "user": {
