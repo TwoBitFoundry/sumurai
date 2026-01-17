@@ -1,8 +1,23 @@
 import { IHttpClient, RequestOptions } from './IHttpClient'
 import { AuthenticationError, ServerError, ValidationError, ForbiddenError, NotFoundError, ConflictError, ApiError } from './errors'
 
+const normalizeBaseUrl = (baseUrl?: string): string => {
+  if (!baseUrl) return '/api'
+  const trimmed = baseUrl.replace(/\/+$/, '')
+  return trimmed.length > 0 ? trimmed : '/api'
+}
+
+const buildUrl = (baseUrl: string, endpoint: string): string => {
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  return `${baseUrl}${normalizedEndpoint}`
+}
+
 export class FetchHttpClient implements IHttpClient {
-  private baseUrl = '/api'
+  private readonly baseUrl: string
+
+  constructor(baseUrl?: string) {
+    this.baseUrl = normalizeBaseUrl(baseUrl)
+  }
 
   private async handleResponse<T>(response: Response): Promise<T> {
     if (response.ok) {
@@ -48,7 +63,7 @@ export class FetchHttpClient implements IHttpClient {
   }
 
   async get<T>(endpoint: string, options?: RequestOptions): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`
+    const url = buildUrl(this.baseUrl, endpoint)
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...options?.headers,
@@ -58,7 +73,7 @@ export class FetchHttpClient implements IHttpClient {
   }
 
   async post<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`
+    const url = buildUrl(this.baseUrl, endpoint)
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...options?.headers,
@@ -72,7 +87,7 @@ export class FetchHttpClient implements IHttpClient {
   }
 
   async put<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`
+    const url = buildUrl(this.baseUrl, endpoint)
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...options?.headers,
@@ -86,7 +101,7 @@ export class FetchHttpClient implements IHttpClient {
   }
 
   async delete<T>(endpoint: string, options?: RequestOptions): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`
+    const url = buildUrl(this.baseUrl, endpoint)
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...options?.headers,
@@ -96,7 +111,7 @@ export class FetchHttpClient implements IHttpClient {
   }
 
   async healthCheck(): Promise<string> {
-    const response = await fetch('/health', {
+    const response = await fetch(buildUrl(this.baseUrl, '/health'), {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     })

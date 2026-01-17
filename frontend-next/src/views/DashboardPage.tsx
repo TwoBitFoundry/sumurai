@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { RefreshCcw, TrendingUp } from 'lucide-react'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import type { ActiveDotProps, ActiveDotType } from 'recharts/types/util/types'
+import type { DotItemDotProps } from 'recharts/types/util/types'
 import type { TooltipProps } from 'recharts'
 
 import BalancesOverview from '../components/BalancesOverview'
@@ -57,13 +57,13 @@ const DashboardPage: React.FC = () => {
 
   const monthSpend = analytics.spendingTotal
 
-  const netDotRenderer = useMemo<ActiveDotType | undefined>(() => {
+  const netDotRenderer = useMemo<((props: DotItemDotProps) => React.ReactNode) | undefined>(() => {
     const n = netSeries?.length || 0
     const fill = colors.chart.dotFill
     const stroke = '#10b981'
     if (!n) return undefined
     const selected = DashboardCalculator.calculateNetDotIndices(netSeries)
-    return ({ index, cx, cy }: ActiveDotProps) => {
+    return ({ index, cx, cy }: DotItemDotProps) => {
       if (index == null || cx == null || cy == null) return null
       if (!selected.has(index)) return null
       return (
@@ -261,7 +261,7 @@ const DashboardPage: React.FC = () => {
                       strokeWidth={2}
                       fillOpacity={1}
                       fill="url(#netGradient)"
-                      dot={netDotRenderer as any}
+                      dot={netDotRenderer}
                       activeDot={{ r: 6 }}
                     />
                   </AreaChart>

@@ -14,22 +14,13 @@ exports[`AppFooter matches snapshot 1`] = `
         class="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-6"
       >
         <div
-          class="flex flex-col gap-2"
+          class="flex flex-col gap-2 items-start"
         >
-          <div
-            class="flex items-center gap-3"
-          >
-            <div
-              class="h-10 w-10 rounded-lg bg-gradient-to-br from-sky-500/80 to-violet-600/80 flex items-center justify-center font-bold text-white text-xs"
-            >
-              TBF
-            </div>
-            <span
-              class="text-lg font-semibold bg-gradient-to-r from-slate-700 to-sky-600 dark:from-slate-200 dark:to-sky-400 bg-clip-text text-transparent"
-            >
-              Two Bit Foundry
-            </span>
-          </div>
+          <img
+            alt="Two Bit Foundry"
+            class="h-10 w-auto"
+            src="/tbf-logo.svg"
+          />
           <p
             class="text-sm text-slate-600 dark:text-slate-400"
           >
@@ -40,7 +31,7 @@ exports[`AppFooter matches snapshot 1`] = `
           class="flex flex-col md:flex-row w-full md:w-auto gap-2 md:gap-3"
         >
           <a
-            class="px-4 py-2 text-sm font-medium rounded-lg bg-sky-500/80 backdrop-blur-sm text-white hover:bg-sky-600/80 dark:bg-sky-600/80 dark:hover:bg-sky-700/80 flex items-center justify-center gap-2 transition-colors border border-sky-400/30 dark:border-sky-500/30 whitespace-nowrap"
+            class="px-4 py-2 text-sm font-subheading uppercase rounded-lg bg-sky-500/80 backdrop-blur-sm text-white hover:bg-sky-600/80 dark:bg-sky-600/80 dark:hover:bg-sky-700/80 flex items-center justify-center gap-2 transition-colors border border-sky-400/30 dark:border-sky-500/30 whitespace-nowrap"
             href="https://github.com/TwoBitFoundry/sumurai/blob/main/CONTRIBUTING.md"
             rel="noopener noreferrer"
             target="_blank"
@@ -77,7 +68,7 @@ exports[`AppFooter matches snapshot 1`] = `
             Forge with us
           </a>
           <a
-            class="px-4 py-2 text-sm font-medium rounded-lg bg-amber-500/80 backdrop-blur-sm text-white hover:bg-amber-600/80 dark:bg-amber-600/80 dark:hover:bg-amber-700/80 flex items-center justify-center gap-2 transition-colors border border-amber-400/30 dark:border-amber-500/30 whitespace-nowrap"
+            class="px-4 py-2 text-sm font-subheading uppercase rounded-lg bg-amber-500/80 backdrop-blur-sm text-white hover:bg-amber-600/80 dark:bg-amber-600/80 dark:hover:bg-amber-700/80 flex items-center justify-center gap-2 transition-colors border border-amber-400/30 dark:border-amber-500/30 whitespace-nowrap"
             href="https://www.buymeacoffee.com/twobitfoundry"
             rel="noopener noreferrer"
             target="_blank"
@@ -92,7 +83,7 @@ exports[`AppFooter matches snapshot 1`] = `
             </span>
           </a>
           <a
-            class="px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center gap-2 whitespace-nowrap"
+            class="px-4 py-2 text-sm font-subheading uppercase rounded-lg border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center gap-2 whitespace-nowrap"
             href="https://github.com/TwoBitFoundry/sumurai"
             rel="noopener noreferrer"
             target="_blank"

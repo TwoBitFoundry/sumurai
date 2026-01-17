@@ -48,9 +48,9 @@ Link bank accounts using Teller with on‑demand transaction syncing.
 Modern full-stack architecture with React frontend, Rust backend, PostgreSQL database, and Docker deployment.
 
 ### Architecture
-Nginx-served SPA with Rust backend, PostgreSQL database, Redis cache, and multi-tenant Row-Level Security. See `docs/ARCHITECTURE.md` for the full diagram, data flow, caching, and RLS details.
+Nginx-served static Next.js export with Rust backend, PostgreSQL database, Redis cache, and multi-tenant Row-Level Security. See `docs/ARCHITECTURE.md` for the full diagram, data flow, caching, and RLS details.
 
-- **Frontend**: React 19 + TypeScript + Next.js, Tailwind CSS, Recharts
+- **Frontend**: React 19 + TypeScript + Next.js (static export), Tailwind CSS, Recharts
 - **Backend**: Rust (Axum) + SQLx, PostgreSQL, Redis cache (required)
 - **Auth**: JWT with refresh tokens
 - **Deploy**: Nginx SPA + API proxy, Docker Compose

@@ -23,6 +23,8 @@ export {
   ForbiddenError,
 }
 
+const DEFAULT_API_BASE = process.env.NEXT_PUBLIC_API_BASE || '/api'
+
 interface RetryConfig {
   maxRetries: number
   baseDelay: number
@@ -32,8 +34,7 @@ interface RetryConfig {
 }
 
 export class ApiClient {
-  private static baseUrl = '/api'
-  private static httpClient: IHttpClient = new FetchHttpClient()
+  private static httpClient: IHttpClient = new FetchHttpClient(DEFAULT_API_BASE)
   private static retryConfig: RetryConfig = {
     maxRetries: 3,
     baseDelay: 1000,
