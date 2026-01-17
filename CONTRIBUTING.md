@@ -39,17 +39,16 @@ E2E demo credentials:
 ### Frontend Development
 
 ```bash
-cd frontend
+cd frontend-next
 npm install
-npm run dev               # Vite on :5173 for fast UI iteration
-npm run build             # production build
-npm test                  # unit tests (Vitest + RTL)
-npm run test:ui           # UI test runner
+npm run dev               # Next.js dev server on :3001
+npm run build             # production build (static export to ./out)
+npm test                  # unit tests (Jest + RTL)
 ```
 
 Notes:
-- Use the mock/real toggle in the header for rapid UI testing.
-- Validate integrated flows at `http://localhost:8080` (not Vite’s port).
+- Validate integrated flows at `http://localhost:8080` (Docker) or use `npm run dev` for local development.
+- For E2E testing, use `docker compose up -d --build` to run the full stack with Nginx proxy.
 
 ### Backend Development
 
@@ -81,7 +80,7 @@ DATABASE_URL=postgresql://postgres:password@localhost:5432/accounting \
 
 ### Repo Structure (quick tour)
 
-- `frontend/` — React 18 + TypeScript + Vite; Tailwind; Recharts
+- `frontend-next/` — React 19 + TypeScript + Next.js; Tailwind; Recharts
 - `backend/` — Rust + Axum + SQLx; Redis caching; RLS policies
 - `scripts/` — build helpers (e.g., `build-backend.sh`)
 - `docs/` — images/diagrams used in README
@@ -101,7 +100,7 @@ See `README.md` for architecture details and endpoint mapping.
 - Branch from `main` and keep PRs small and focused.
 - Commit style: Conventional Commits. Examples:
   - `feat: add budgets summary chart`
-  - `fix: handle empty Plaid accounts`
+  - `fix: handle empty transaction lists`
   - `refactor: extract transaction filter utils`
   - Use `feat!:` or include a `BREAKING CHANGE:` section in the PR description for breaking changes.
 - Open a PR when ready; CI should be green before requesting review.

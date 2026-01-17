@@ -6,49 +6,17 @@ Sumaura is a full‑stack personal finance dashboard that connects to your bank 
 
 ## Features
 
-Comprehensive personal finance management with bank connectivity, transaction tracking, budgeting, and visual analytics.
-
-### 📊 Teller API vs Plaid API
-Core data access and sync features provided by each service.
-
-| Capability | Teller | Plaid |
-|------------|--------|-------|
-| 🏦 Bank Coverage | ✅ ~7K U.S. institutions | ✅🌍 12K+ global institutions |
-| 🔄 Incremental Sync | ✅ Real‑time pull updates | ✅ Background sync via webhooks |
-| 📅 Historical Transactions | ⚠️ Recent data only | ✅ Up to 24 months |
-| 🧾 Transaction Enrichment | ⚠️ Basic details (merchant, date, amount) | ✅ Categories, logos, recurring detection |
-| 🔑 Bring Your Own API Key | ✅ Easily accessible | ⚠️ Difficult to get production keys |
-
-#### TL;DR
-- Teller (Self‑Host) → Private, real‑time, and user‑controlled.
-- Plaid (Hosted, roadmap) → Global, enriched, and analytics‑ready — with equal data privacy guarantees.
-
-### 💫 Experience Matrix
-How the app delivers data‑driven financial experiences.
-
-| Feature | 🧩 Self‑Host via Teller (BYOA) | 🏢 Hosted via Plaid |
-|---------|-------------------------------|---------------------|
-| 🔒 Data Privacy | ✅ You control your data — never sold or tracked | ✅ Data is never sold or tracked |
-| 🔐 Secure Login | ✅ Encrypted login with MFA | ✅ Bank‑branded OAuth login |
-| 📊 Rich Dashboard Insights | ✅ Included | ✅ Included |
-| 🧾 Review Transactions | ⚠️ Limited categories/merchant grouping | ✅ Full categorization and merchant context |
-| 💰 Budget Tracking | ⚠️ Limited categories/merchant grouping | ✅ Detailed categorization with merchant‑level insights |
-| 🧱 Best Fit | 🧠 Open‑source, indie, or self‑managed | 💼 Business, Premium|
-| 💵 Pricing | Pay‑for‑what‑you‑use (Teller API) | TBA |
+Comprehensive personal finance management with bank connectivity, transaction tracking, budgeting, and visual analytics. Sumaura connects to your bank via Teller for real‑time transaction syncing and data aggregation.
 
 
 ## Roadmap
 
-What’s coming next:
+What's coming next:
 
-- Hosted service via Plaid
-  - Richer transaction categories and merchant enrichment
-  - Agentic features: receipt matching, conversational insights about your data, and smart suggestions
-
-- For all
-  - Financial reports (monthly health score, export your data, and more)
-  - Notifications and alerts (balances, unusual activity, budget thresholds)
-  - Receipt uploads (attach and search receipts for transactions)
+- Financial reports (monthly health score, export your data, and more)
+- Notifications and alerts (balances, unusual activity, budget thresholds)
+- Receipt uploads (attach and search receipts for transactions)
+- Agentic features: receipt matching, conversational insights about your data, and smart suggestions
 
 ## What You'll See
 
@@ -71,7 +39,7 @@ Create and adjust category budgets, monitor progress, and quickly spot overspend
 ![Budgets](docs/images/budgets.png)
 
 ### Connect Accounts
-Link bank accounts using Teller (self‑hosted) or Plaid (hosted) with on‑demand transaction syncing.
+Link bank accounts using Teller with on‑demand transaction syncing.
 
 ![Accounts](docs/images/accounts.png)
 
@@ -82,26 +50,24 @@ Modern full-stack architecture with React frontend, Rust backend, PostgreSQL dat
 ### Architecture
 Nginx-served SPA with Rust backend, PostgreSQL database, Redis cache, and multi-tenant Row-Level Security. See `docs/ARCHITECTURE.md` for the full diagram, data flow, caching, and RLS details.
 
-- **Frontend**: React 18 + TypeScript + Vite, Tailwind CSS, Recharts
+- **Frontend**: React 19 + TypeScript + Next.js, Tailwind CSS, Recharts
 - **Backend**: Rust (Axum) + SQLx, PostgreSQL, Redis cache (required)
 - **Auth**: JWT with refresh tokens
 - **Deploy**: Nginx SPA + API proxy, Docker Compose
 
 ### Security & Privacy
 
-Sumaura is designed to be self‑hosted with no vendor data path. With Teller, you keep full control of credentials (mTLS); Plaid is offered as a hosted option for broader coverage and richer categories. Redis caches are session‑scoped with automatic TTL expiry. There is no telemetry or third‑party analytics baked in.
+Sumaura is designed to be self‑hosted with no vendor data path. With Teller, you keep full control of credentials via mTLS. Redis caches are session‑scoped with automatic TTL expiry. There is no telemetry or third‑party analytics baked in.
 
 - **Your Data Belongs to You:** user auth metadata, transactions, budgets, and derived analytics in your PostgreSQL instance.
-- **Bank Credentials are Never Stored:** user credentials are not persisted; Plaid Link handles them in the browser and Teller uses short‑lived tokens with mTLS.
+- **Bank Credentials are Never Stored:** user credentials are not persisted; Teller uses short‑lived tokens with mTLS.
 - **Secrets are Secure:** Provider access tokens are encrypted with AES‑256‑GCM using `ENCRYPTION_KEY`; Redis holds only short‑lived session data.
 - **Delete Your Data Anytime:** run `docker compose down -v` to wipe containers/volumes, or `sqlx database reset -y` against your `DATABASE_URL`.
 
 ### Hosting Policy
 
-- “Hosted” means operated by the Sumaura team for customers. The hosted option is on the roadmap and not yet available.
-- “Self‑hosted” means private, non‑public deployments by the licensee. Teller supports bring‑your‑own API keys and is the recommended path.
+- "Self‑hosted" means private, non‑public deployments by the licensee. Teller supports bring‑your‑own API keys and is the recommended path.
 - Public hosting or re‑hosting of this software is not permitted under the Sustainable Use License.
- - The hosted experience enables reliability, security posture, and data quality we can’t practically guarantee in self‑hosted setups (e.g., broader institution coverage, richer categorization via Plaid, proactive monitoring, and managed upgrades).
 
 
 ## Getting Started
@@ -189,7 +155,7 @@ Configure JWT secrets and database connections. For private self‑hosting, use 
    ```
 
    - Generate fresh values for `JWT_SECRET` and `ENCRYPTION_KEY` with `openssl rand -hex 32`.
-   - For self‑hosting, no Plaid credentials are required. Set `DEFAULT_PROVIDER=teller`.
+   - Set `DEFAULT_PROVIDER=teller` for Teller integration.
 
 2. Build and start the stack:
 
@@ -220,7 +186,7 @@ Everything reads from `.env`. The defaults below match `.env.example` and the Do
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | Optional | `http/protobuf` | Forces the backend exporter to use OTLP/HTTP, matching Seq’s ingestion endpoint. |
 | `OTEL_STARTUP_TEST_SPAN` | Optional | `0` | Set to `1` temporarily to emit a startup test span that verifies connectivity between the backend and Seq. |
 | `BACKEND_RUST_LOG` | Optional | `info` | Standard Rust log level filter passed to the backend container (e.g. use `info,opentelemetry_otlp=debug` temporarily to inspect exporter activity). |
-| `DEFAULT_PROVIDER` | Optional | `teller` | Choose which provider new users receive (`plaid` or `teller`). Defaults to `teller` for self-hosted scenarios. |
+| `DEFAULT_PROVIDER` | Optional | `teller` | Provider for bank data aggregation. Set to `teller` for Teller integration. |
 | `TELLER_APPLICATION_ID` | Yes (Teller) | _none_ | Your Teller application ID from the dashboard (used by Connect.js and backend). |
 | `TELLER_CERT_PATH` | Yes (Teller) | `.certs/teller/certificate.pem` | Absolute or repo‑relative path to your Teller client certificate (PEM). Store in `.certs/` (gitignored). |
 | `TELLER_KEY_PATH` | Yes (Teller) | `.certs/teller/private_key.pem` | Absolute or repo‑relative path to the Teller private key (PEM). Store in `.certs/` (gitignored). |
