@@ -64,4 +64,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-Source-available under Sustainable Use License – Community 1.0. See [LICENSE](LICENSE).
+Open Source under Apache 2.0 License. See [LICENSE](LICENSE).
