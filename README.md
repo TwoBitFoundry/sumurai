@@ -7,8 +7,8 @@ Personal finance dashboard. Self-hosted. Connects to your bank via Teller API, s
 ![Dashboard](docs/images/dashboard-hero.png)
 ![Dashboard extras](docs/images/dashboard-extras.png)
 
-## About 3rd Party Financial Aggregators (eg. Teller)
-While this app was built to securely handle your information once its received, we are not able to control how 3rd Party Aggregators use your data. To connect your account and transaction info securely, it requires consenting to the 3rd Party Aggregator's terms of service and data usage policy. 
+## Privacy Disclosure for 3rd Party Financial Aggregators
+While this app was built to securely handle your information once its received, we are not able to control how 3rd Party Aggregators use your data. This app requires the use of 3rd Party Financial Aggregators API to securely connect your accounts and transaction data while keeping them in sync. To do so requires consenting to the 3rd Party Aggregator's terms of service and data usage policy. Please be aware this is a privacy trade-off to allow the tool to be more useful.
 
 You can read Teller's policy here: https://teller.io/legal
 
