@@ -231,6 +231,6 @@ For sandbox testing, use Teller's documented test credentials. Ensure localhost 
 
 ## License and Contributions
 
-By contributing, you agree your contributions are licensed under the project’s license (SUL‑Community‑1.0). See `LICENSE` for details.
+By contributing, you agree your contributions are licensed under the project’s license (Apache 2.0). See `LICENSE` for details.
 
 If you’re unsure about scope or approach, open a draft PR early or start a discussion in the issue to align before implementation.
