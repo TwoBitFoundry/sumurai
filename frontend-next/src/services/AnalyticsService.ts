@@ -1,12 +1,12 @@
-import { ApiClient } from './ApiClient';
+import type { BalancesOverview } from '../types/analytics';
 import type {
-  AnalyticsSpendingResponse,
   AnalyticsCategoryResponse,
   AnalyticsMonthlyTotalsResponse,
+  AnalyticsSpendingResponse,
   AnalyticsTopMerchantsResponse,
 } from '../types/api';
-import type { BalancesOverview } from '../types/analytics';
 import { appendAccountQueryParams } from '../utils/queryParams';
+import { ApiClient } from './ApiClient';
 
 export class AnalyticsService {
   static async getCurrentMonthSpending(): Promise<AnalyticsSpendingResponse> {
@@ -114,6 +114,6 @@ export function computeRatio(positivesTotal: number, negativesTotal: number): nu
 export function formatRatio(ratio: number | string | null): string {
   if (ratio === null || ratio === undefined) return '∞';
   const n = typeof ratio === 'string' ? Number(ratio) : ratio;
-  if (!isFinite(n)) return '∞';
+  if (!Number.isFinite(n)) return '∞';
   return n.toFixed(2);
 }

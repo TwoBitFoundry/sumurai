@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
-import { TransactionService } from '@/services/TransactionService';
 import { ApiClient, AuthenticationError } from '@/services/ApiClient';
+import { TransactionService } from '@/services/TransactionService';
 import type { Transaction } from '@/types/api';
 
 describe('TransactionService', () => {

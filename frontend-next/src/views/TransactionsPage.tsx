@@ -1,13 +1,14 @@
-import React, { useMemo } from 'react';
-import { useTransactions } from '../features/transactions/hooks/useTransactions';
+import { AlertTriangle, ReceiptText, RefreshCcw, TrendingUp } from 'lucide-react';
+import type React from 'react';
+import { useMemo } from 'react';
+import { cn } from '@/ui/primitives';
+import HeroStatCard from '../components/widgets/HeroStatCard';
 import TransactionsFilters from '../features/transactions/components/TransactionsFilters';
 import TransactionsTable from '../features/transactions/components/TransactionsTable';
-import { fmtUSD } from '../utils/format';
-import { ReceiptText, TrendingUp, AlertTriangle, RefreshCcw } from 'lucide-react';
-import HeroStatCard from '../components/widgets/HeroStatCard';
-import { formatCategoryName } from '../utils/categories';
+import { useTransactions } from '../features/transactions/hooks/useTransactions';
 import { PageLayout } from '../layouts/PageLayout';
-import { cn } from '@/ui/primitives';
+import { formatCategoryName } from '../utils/categories';
+import { fmtUSD } from '../utils/format';
 
 const TransactionsPage: React.FC = () => {
   const {

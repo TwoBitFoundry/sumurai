@@ -1,5 +1,5 @@
-import React from 'react';
 import { fmtUSD } from '../utils/format';
+
 export { fmtUSD } from '../utils/format';
 
 export function Amount({ value, className = '' }: { value: number; className?: string }) {

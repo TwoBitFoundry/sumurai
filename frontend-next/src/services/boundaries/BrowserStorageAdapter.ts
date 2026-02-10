@@ -1,4 +1,4 @@
-import { IStorageAdapter } from './IStorageAdapter';
+import type { IStorageAdapter } from './IStorageAdapter';
 
 export class BrowserStorageAdapter implements IStorageAdapter {
   getItem(key: string): string | null {

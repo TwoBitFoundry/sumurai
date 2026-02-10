@@ -1,18 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { cn } from '@/ui/primitives';
 import { LoginScreen, RegisterScreen } from './Auth';
-import { SessionManager } from './SessionManager';
 import { AuthenticatedApp, type TabKey } from './components/AuthenticatedApp';
-import { AccountFilterProvider } from './hooks/useAccountFilter';
 import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
+import { ProviderMismatchCheck } from './components/ProviderMismatchCheck';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { AccountFilterProvider } from './hooks/useAccountFilter';
+import { TelemetryProvider, TelemetryService } from './observability';
+import { SessionManager } from './SessionManager';
 import { AuthService } from './services/authService';
 import { BrowserStorageAdapter } from './services/boundaries';
-import { ThemeProvider, useTheme } from './context/ThemeContext';
-import { ProviderMismatchCheck } from './components/ProviderMismatchCheck';
-import { TelemetryProvider, TelemetryService } from './observability';
-import { GlassCard, GradientShell, AppTitleBar, AppFooter } from './ui/primitives';
-import { cn } from '@/ui/primitives';
+import { AppFooter, AppTitleBar, GlassCard, GradientShell } from './ui/primitives';
 
 AuthService.configure({
   storage: new BrowserStorageAdapter(),

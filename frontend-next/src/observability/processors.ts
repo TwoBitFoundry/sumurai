@@ -1,7 +1,7 @@
-import { SpanProcessor, ReadableSpan, Span } from '@opentelemetry/sdk-trace-base';
-import { Context, trace, Attributes } from '@opentelemetry/api';
-import { redactTokenPatterns } from './sanitization';
+import { type Attributes, type Context, trace } from '@opentelemetry/api';
+import type { ReadableSpan, Span, SpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { AuthService } from '../services/authService';
+import { redactTokenPatterns } from './sanitization';
 
 const SENSITIVE_ENDPOINTS = [/\/api\/plaid\/exchange-token$/, /\/api\/teller\/exchange-token$/];
 

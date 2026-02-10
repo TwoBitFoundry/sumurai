@@ -1,13 +1,12 @@
 import { jest } from '@jest/globals';
-import { PlaidService } from '@/services/PlaidService';
 import { ApiClient, AuthenticationError } from '@/services/ApiClient';
+import { PlaidService } from '@/services/PlaidService';
 import type {
-  PlaidLinkTokenResponse,
-  PlaidExchangeTokenRequest,
+  Account,
   PlaidExchangeTokenResponse,
+  PlaidLinkTokenResponse,
   PlaidSyncResponse,
   ProviderStatusResponse,
-  Account,
 } from '@/types/api';
 
 describe('PlaidService', () => {

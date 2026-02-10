@@ -1,4 +1,4 @@
-import { Span, SpanAttributes } from '@opentelemetry/api';
+import type { Span, SpanAttributes } from '@opentelemetry/api';
 
 const SENSITIVE_HEADERS = [
   'authorization',

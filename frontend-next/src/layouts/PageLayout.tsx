@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { cn } from '@/ui/primitives/utils';
 
 interface PageLayoutProps {

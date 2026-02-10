@@ -1,17 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { RefreshCw, Building2, CreditCard, Clock } from 'lucide-react';
+import { Building2, Clock, CreditCard, RefreshCw } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { cn } from '@/ui/primitives';
+import { getProviderCardConfig } from '@/utils/providerCards';
 import { Toast } from '../components/Toast';
-import ConnectionsList from '../features/plaid/components/ConnectionsList';
+import HeroStatCard from '../components/widgets/HeroStatCard';
 import ConnectButton from '../features/plaid/components/ConnectButton';
+import ConnectionsList from '../features/plaid/components/ConnectionsList';
 import { usePlaidLinkFlow } from '../features/plaid/hooks/usePlaidLinkFlow';
 import { useTellerLinkFlow } from '../hooks/useTellerLinkFlow';
 import { useTellerProviderInfo } from '../hooks/useTellerProviderInfo';
-import HeroStatCard from '../components/widgets/HeroStatCard';
-import type { FinancialProvider } from '../types/api';
-import { getProviderCardConfig } from '@/utils/providerCards';
 import { PageLayout } from '../layouts/PageLayout';
-import { cn } from '@/ui/primitives';
+import type { FinancialProvider } from '../types/api';
 
 const formatRelativeTime = (iso: string): string => {
   const timestamp = Date.parse(iso);

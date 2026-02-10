@@ -1,11 +1,11 @@
-import React from 'react';
-import type { Transaction } from '../../../types/api';
-import { fmtUSD } from '../../../utils/format';
-import { getTagThemeForCategory, formatCategoryName } from '../../../utils/categories';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Receipt } from 'lucide-react';
+import type React from 'react';
 import { cn, EmptyState } from '@/ui/primitives';
+import type { Transaction } from '../../../types/api';
+import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
+import { fmtUSD } from '../../../utils/format';
 
 interface Props {
   items: Transaction[];

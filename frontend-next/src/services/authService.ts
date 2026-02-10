@@ -1,7 +1,7 @@
-import { trace, SpanStatusCode } from '@opentelemetry/api';
+import { SpanStatusCode, trace } from '@opentelemetry/api';
+import { ApiClient, AuthenticationError } from './ApiClient';
 import type { IStorageAdapter } from './boundaries';
 import { BrowserStorageAdapter } from './boundaries';
-import { ApiClient, AuthenticationError } from './ApiClient';
 
 interface LoginCredentials {
   email: string;
@@ -46,7 +46,7 @@ export class AuthService {
   private static hashedTokenSource: string | null = null;
 
   static configure(deps: AuthServiceDependencies): void {
-    this.deps = deps;
+    AuthService.deps = deps;
   }
 
   static async login(credentials: LoginCredentials): Promise<AuthResponse> {
@@ -81,64 +81,64 @@ export class AuthService {
   }
 
   static storeToken(token: string, refreshToken?: string): void {
-    this.deps.storage.setItem('auth_token', token);
+    AuthService.deps.storage.setItem('auth_token', token);
     if (refreshToken) {
-      this.deps.storage.setItem('refresh_token', refreshToken);
+      AuthService.deps.storage.setItem('refresh_token', refreshToken);
     }
-    this.scheduleEncryptedTokenHash(token);
+    AuthService.scheduleEncryptedTokenHash(token);
   }
 
   static getToken(): string | null {
-    return this.deps.storage.getItem('auth_token');
+    return AuthService.deps.storage.getItem('auth_token');
   }
 
   static clearToken(): void {
-    this.deps.storage.removeItem('auth_token');
-    this.deps.storage.removeItem('refresh_token');
+    AuthService.deps.storage.removeItem('auth_token');
+    AuthService.deps.storage.removeItem('refresh_token');
     localStorage.removeItem('plaid_user_id');
-    this.refreshPromise = null;
-    this.encryptedTokenHash = null;
-    this.encryptedTokenHashPromise = null;
-    this.hashedTokenSource = null;
+    AuthService.refreshPromise = null;
+    AuthService.encryptedTokenHash = null;
+    AuthService.encryptedTokenHashPromise = null;
+    AuthService.hashedTokenSource = null;
   }
 
   static getEncryptedTokenHashSync(): string | null {
-    if (this.encryptedTokenHash) {
-      return this.encryptedTokenHash;
+    if (AuthService.encryptedTokenHash) {
+      return AuthService.encryptedTokenHash;
     }
-    const token = this.getToken();
+    const token = AuthService.getToken();
     if (!token) {
       return null;
     }
-    if (!this.encryptedTokenHashPromise || this.hashedTokenSource !== token) {
-      this.scheduleEncryptedTokenHash(token);
+    if (!AuthService.encryptedTokenHashPromise || AuthService.hashedTokenSource !== token) {
+      AuthService.scheduleEncryptedTokenHash(token);
     }
-    return this.encryptedTokenHash;
+    return AuthService.encryptedTokenHash;
   }
 
   static async ensureEncryptedTokenHash(): Promise<string | null> {
-    const token = this.getToken();
+    const token = AuthService.getToken();
     if (!token) {
       return null;
     }
 
-    if (this.encryptedTokenHash && this.hashedTokenSource === token) {
-      return this.encryptedTokenHash;
+    if (AuthService.encryptedTokenHash && AuthService.hashedTokenSource === token) {
+      return AuthService.encryptedTokenHash;
     }
 
-    if (!this.encryptedTokenHashPromise || this.hashedTokenSource !== token) {
-      this.scheduleEncryptedTokenHash(token);
+    if (!AuthService.encryptedTokenHashPromise || AuthService.hashedTokenSource !== token) {
+      AuthService.scheduleEncryptedTokenHash(token);
     }
 
     try {
-      return await this.encryptedTokenHashPromise;
+      return await AuthService.encryptedTokenHashPromise;
     } catch {
       return null;
     }
   }
 
   static async validateSession(): Promise<boolean> {
-    const token = this.getToken();
+    const token = AuthService.getToken();
     if (!token) {
       return false;
     }
@@ -148,7 +148,7 @@ export class AuthService {
       return true;
     } catch (error) {
       if (error instanceof Error && error.message.includes('401')) {
-        this.clearToken();
+        AuthService.clearToken();
         return false;
       }
       console.warn('Session validation failed:', error);
@@ -170,7 +170,7 @@ export class AuthService {
       throw error;
     } finally {
       span.end();
-      this.clearToken();
+      AuthService.clearToken();
     }
   }
 
@@ -207,21 +207,21 @@ export class AuthService {
 
   static async refreshToken(): Promise<RefreshResponse> {
     // Prevent multiple simultaneous refresh attempts
-    if (this.refreshPromise) {
-      return this.refreshPromise;
+    if (AuthService.refreshPromise) {
+      return AuthService.refreshPromise;
     }
 
-    if (!this.getToken()) {
+    if (!AuthService.getToken()) {
       throw new Error('No token');
     }
 
-    this.refreshPromise = this.performRefresh();
+    AuthService.refreshPromise = AuthService.performRefresh();
 
     try {
-      const result = await this.refreshPromise;
+      const result = await AuthService.refreshPromise;
       return result;
     } finally {
-      this.refreshPromise = null;
+      AuthService.refreshPromise = null;
     }
   }
 
@@ -232,7 +232,7 @@ export class AuthService {
     try {
       const response = await ApiClient.post<RefreshResponse>('/auth/refresh');
       span.setStatus({ code: SpanStatusCode.OK });
-      this.scheduleEncryptedTokenHash(response.token);
+      AuthService.scheduleEncryptedTokenHash(response.token);
       return response;
     } catch (error) {
       span.recordException(error as Error);
@@ -254,19 +254,19 @@ export class AuthService {
       return;
     }
 
-    if (this.hashedTokenSource === token && this.encryptedTokenHash) {
+    if (AuthService.hashedTokenSource === token && AuthService.encryptedTokenHash) {
       return;
     }
 
-    this.hashedTokenSource = token;
-    this.encryptedTokenHashPromise = this.computeEncryptedTokenHash(token)
+    AuthService.hashedTokenSource = token;
+    AuthService.encryptedTokenHashPromise = AuthService.computeEncryptedTokenHash(token)
       .then((hash) => {
-        this.encryptedTokenHash = hash;
+        AuthService.encryptedTokenHash = hash;
         return hash;
       })
       .catch((error) => {
         console.warn('Failed to compute encrypted token hash:', error);
-        this.encryptedTokenHash = null;
+        AuthService.encryptedTokenHash = null;
         return null;
       });
   }

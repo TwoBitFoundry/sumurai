@@ -1,5 +1,5 @@
-import React from 'react';
-import { GlassCard, cn, RequirementPill } from '@/ui/primitives';
+import type React from 'react';
+import { cn, GlassCard, RequirementPill } from '@/ui/primitives';
 
 interface Account {
   id: string;

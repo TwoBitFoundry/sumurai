@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ApiClient } from '../services/ApiClient';
 import type { FinancialProvider } from '../types/api';
 import type { TellerEnvironment } from './useTellerConnect';
-import { ApiClient } from '../services/ApiClient';
 
 export interface TellerProviderCatalogue {
   available_providers: FinancialProvider[];

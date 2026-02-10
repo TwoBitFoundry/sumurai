@@ -1,5 +1,5 @@
-import { SettingsService } from '@/services/SettingsService';
 import { ApiClient } from '@/services/ApiClient';
+import { SettingsService } from '@/services/SettingsService';
 
 jest.mock('@/services/ApiClient', () => ({
   ApiClient: {

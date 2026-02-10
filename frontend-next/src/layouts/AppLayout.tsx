@@ -1,9 +1,9 @@
-import { type ReactNode } from 'react';
-import { AppTitleBar, AppFooter } from '../ui/primitives';
-import { useTheme } from '../context/ThemeContext';
-import { HeaderAccountFilter } from '../components/HeaderAccountFilter';
-import { useScrollDetection } from '../hooks/useScrollDetection';
+import type { ReactNode } from 'react';
 import { cn } from '@/ui/primitives';
+import { HeaderAccountFilter } from '../components/HeaderAccountFilter';
+import { useTheme } from '../context/ThemeContext';
+import { useScrollDetection } from '../hooks/useScrollDetection';
+import { AppFooter, AppTitleBar } from '../ui/primitives';
 
 type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 

@@ -1,7 +1,7 @@
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { LoginScreen, RegisterScreen } from '@/Auth';
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
+import { LoginScreen, RegisterScreen } from '@/Auth';
 
 // Keep sessionStorage spies as test-local state
 Object.defineProperty(globalThis, 'sessionStorage', {
@@ -26,7 +26,7 @@ describe('Authentication Components', () => {
     document.body.innerHTML = '';
     // Default routes: succeed with basic responses
     fetchMock = installFetchRoutes({
-      'POST /api/auth/login': (req: Request) => {
+      'POST /api/auth/login': (_req: Request) => {
         return new Response(JSON.stringify({ token: 'jwt-token' }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },

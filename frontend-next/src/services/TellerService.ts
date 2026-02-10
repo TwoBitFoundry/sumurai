@@ -1,5 +1,5 @@
-import { ApiClient } from './ApiClient';
 import type { ProviderStatusResponse } from '../types/api';
+import { ApiClient } from './ApiClient';
 
 export interface TellerConnectionStatus {
   connection_id: string;

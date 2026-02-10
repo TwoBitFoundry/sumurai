@@ -1,10 +1,10 @@
-import React from 'react';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
-import { fmtUSD } from '../../../utils/format';
-import { DonutDatum } from '../adapters/chartData';
-import { useTheme } from '../../../context/ThemeContext';
 import { BarChart3 } from 'lucide-react';
+import type React from 'react';
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { cn, EmptyState } from '@/ui/primitives';
+import { useTheme } from '../../../context/ThemeContext';
+import { fmtUSD } from '../../../utils/format';
+import type { DonutDatum } from '../adapters/chartData';
 
 type Props = {
   data: DonutDatum[];

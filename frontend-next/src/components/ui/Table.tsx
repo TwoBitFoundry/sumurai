@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 
 export type ThProps = React.ComponentProps<'th'>;
 export function Th({ children, className = '', ...rest }: ThProps) {

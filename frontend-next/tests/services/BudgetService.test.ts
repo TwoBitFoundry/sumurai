@@ -1,5 +1,5 @@
-import { BudgetService } from '@/services/BudgetService';
 import { ApiClient } from '@/services/ApiClient';
+import { BudgetService } from '@/services/BudgetService';
 
 jest.mock('@/services/ApiClient', () => ({
   ApiClient: {

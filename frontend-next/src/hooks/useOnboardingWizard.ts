@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { AuthService } from '../services/authService';
 
 export type OnboardingStep = 'welcome' | 'connectAccount';

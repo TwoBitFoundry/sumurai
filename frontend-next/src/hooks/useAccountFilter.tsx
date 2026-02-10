@@ -1,12 +1,20 @@
-import { useContext, useState, useMemo, useCallback, useEffect, useRef, ReactNode } from 'react';
+import {
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   AccountFilterContext,
-  AccountFilterContextType,
-  ProviderAccount,
-  AccountsByBank,
+  type AccountFilterContextType,
+  type AccountsByBank,
+  type ProviderAccount,
 } from '@/context/AccountFilterContext';
-import type { Account } from '@/types/api';
 import { ProviderCatalog } from '@/services/ProviderCatalog';
+import type { Account } from '@/types/api';
 import { ACCOUNTS_CHANGED_EVENT } from '@/utils/events';
 
 export function useAccountFilter(): AccountFilterContextType {

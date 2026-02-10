@@ -1,4 +1,4 @@
-import { Star, Handshake } from 'lucide-react';
+import { Handshake, Star } from 'lucide-react';
 import { cn } from '@/ui/primitives';
 
 export function Footer() {

@@ -1,19 +1,18 @@
-import { useEffect, useCallback, useMemo, useRef, useState } from 'react';
 import { cva } from 'class-variance-authority';
 import { Check } from 'lucide-react';
-import { AppTitleBar, AppFooter } from '@/ui/primitives';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTheme } from '@/context/ThemeContext';
-import { useScrollDetection } from '@/hooks/useScrollDetection';
-import { useOnboardingWizard, type OnboardingStep } from '@/hooks/useOnboardingWizard';
 import { useOnboardingPlaidFlow } from '@/hooks/useOnboardingPlaidFlow';
-import { WelcomeStep } from './WelcomeStep';
-import { ConnectAccountStep } from './ConnectAccountStep';
+import { useOnboardingTellerFlow } from '@/hooks/useOnboardingTellerFlow';
+import { type OnboardingStep, useOnboardingWizard } from '@/hooks/useOnboardingWizard';
+import { useScrollDetection } from '@/hooks/useScrollDetection';
 import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo';
 import type { FinancialProvider } from '@/types/api';
-import { useOnboardingTellerFlow } from '@/hooks/useOnboardingTellerFlow';
-import { CONNECT_ACCOUNT_PROVIDER_CONTENT } from '@/utils/providerCards';
-import { Button, GlassCard, GradientShell } from '@/ui/primitives';
+import { AppFooter, AppTitleBar, Button, GlassCard, GradientShell } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
+import { CONNECT_ACCOUNT_PROVIDER_CONTENT } from '@/utils/providerCards';
+import { ConnectAccountStep } from './ConnectAccountStep';
+import { WelcomeStep } from './WelcomeStep';
 
 const stepIndicatorVariants = cva(
   [
@@ -164,7 +163,7 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
       observer.observe(element);
       return () => observer.disconnect();
     }
-  }, [currentStep]);
+  }, []);
 
   const handleNext = async () => {
     if (isLastStep && currentStep === 'connectAccount' && connectionFlow.isConnected) {

@@ -1,5 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCcw, TrendingUp } from 'lucide-react';
+import type React from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { TooltipProps } from 'recharts';
 import {
   Area,
   AreaChart,
@@ -10,21 +12,19 @@ import {
   YAxis,
 } from 'recharts';
 import type { DotItemDotProps } from 'recharts/types/util/types';
-import type { TooltipProps } from 'recharts';
-
+import { cn, EmptyState } from '@/ui/primitives';
 import BalancesOverview from '../components/BalancesOverview';
 import Card from '../components/ui/Card';
-import { cn, EmptyState } from '@/ui/primitives';
-import { DashboardCalculator } from '../domain/DashboardCalculator';
 import { useTheme } from '../context/ThemeContext';
+import { DashboardCalculator } from '../domain/DashboardCalculator';
 import { categoriesToDonut } from '../features/analytics/adapters/chartData';
-import { useAnalytics } from '../features/analytics/hooks/useAnalytics';
-import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries';
 import { SpendingByCategoryChart } from '../features/analytics/components/SpendingByCategoryChart';
 import { TopMerchantsList } from '../features/analytics/components/TopMerchantsList';
+import { useAnalytics } from '../features/analytics/hooks/useAnalytics';
+import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries';
 import { PageLayout } from '../layouts/PageLayout';
+import type { DateRangeKey as DateRange } from '../utils/dateRanges';
 import { fmtUSD } from '../utils/format';
-import { type DateRangeKey as DateRange } from '../utils/dateRanges';
 
 const netTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) => {
   const numericValue = Array.isArray(value) ? Number(value[0]) : Number(value);
@@ -387,7 +387,7 @@ const DashboardPage: React.FC = () => {
                                     )
                                   )
                                 : 0;
-                            if (!isFinite(d.getTime())) return value;
+                            if (!Number.isFinite(d.getTime())) return value;
                             if (spanDays && spanDays <= 92) {
                               return d.toLocaleDateString('en-US', {
                                 month: 'short',

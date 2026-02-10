@@ -1,5 +1,5 @@
-import { setupTestBoundaries } from '../setup/setupTestBoundaries';
 import { AuthService } from '@/services/authService';
+import { setupTestBoundaries } from '../setup/setupTestBoundaries';
 
 describe('AuthService with injected boundaries', () => {
   beforeEach(() => {

@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import { AuthService } from './services/authService';
+import type React from 'react';
+import { useState } from 'react';
 import { useRegistrationValidation } from './hooks/useRegistrationValidation';
+import { AuthService } from './services/authService';
 import {
-  GlassCard,
-  Button,
-  Input,
-  Badge,
   Alert,
-  FormLabel,
-  RequirementPill,
+  Badge,
+  Button,
   cn,
+  FormLabel,
+  GlassCard,
+  Input,
+  RequirementPill,
 } from './ui/primitives';
 
 interface LoginScreenProps {

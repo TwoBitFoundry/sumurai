@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor, cleanup } from '@testing-library/react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { TellerConnectGateway } from '@/hooks/useTellerConnect';
 import { useTellerConnect } from '@/hooks/useTellerConnect';
 

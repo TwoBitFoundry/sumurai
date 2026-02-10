@@ -1,18 +1,18 @@
-import { trace, Tracer, Span } from '@opentelemetry/api';
-import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
-import { resourceFromAttributes } from '@opentelemetry/resources';
-import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
-import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { registerInstrumentations } from '@opentelemetry/instrumentation';
+import { type Span, type Tracer, trace } from '@opentelemetry/api';
 import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
-import { sanitizeSpanAttributes, preventSensitiveSpans } from './sanitization';
-import {
-  SensitiveDataSpanProcessor,
-  HttpRouteSpanProcessor,
-  FilteringSpanProcessor,
-} from './processors';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
+import { registerInstrumentations } from '@opentelemetry/instrumentation';
+import { resourceFromAttributes } from '@opentelemetry/resources';
+import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
+import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
+import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 import { AuthService } from '../services/authService';
+import {
+  FilteringSpanProcessor,
+  HttpRouteSpanProcessor,
+  SensitiveDataSpanProcessor,
+} from './processors';
+import { preventSensitiveSpans, sanitizeSpanAttributes } from './sanitization';
 
 let tracerProvider: WebTracerProvider | null = null;
 let tracer: Tracer | null = null;

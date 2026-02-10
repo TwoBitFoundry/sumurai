@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { GlassCard } from '@/ui/primitives/GlassCard';
 import { cn } from '@/ui/primitives/utils';
 

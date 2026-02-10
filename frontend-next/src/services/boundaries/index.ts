@@ -1,14 +1,14 @@
-export type { IHttpClient } from './IHttpClient';
-export type { IStorageAdapter } from './IStorageAdapter';
-export { FetchHttpClient } from './FetchHttpClient';
 export { BrowserStorageAdapter } from './BrowserStorageAdapter';
 export {
   ApiError,
   AuthenticationError,
-  ValidationError,
-  NetworkError,
-  ServerError,
   ConflictError,
-  NotFoundError,
   ForbiddenError,
+  NetworkError,
+  NotFoundError,
+  ServerError,
+  ValidationError,
 } from './errors';
+export { FetchHttpClient } from './FetchHttpClient';
+export type { IHttpClient } from './IHttpClient';
+export type { IStorageAdapter } from './IStorageAdapter';

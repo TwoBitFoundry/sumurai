@@ -1,6 +1,5 @@
-import { renderHook, act } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { usePlaidLinkFlow } from '@/features/plaid/hooks/usePlaidLinkFlow';
-import { ApiClient } from '@/services/ApiClient';
 
 const plaidLinkMock = (() => {
   const open = jest.fn();
@@ -74,7 +73,9 @@ describe('usePlaidLinkFlow', () => {
     plaidConnectionsMock.refresh.mockReset();
     plaidConnectionsMock.getConnection.mockReset();
     plaidLinkMock.reset();
-    Object.values(plaidServiceMock).forEach((fn) => fn.mockReset());
+    Object.values(plaidServiceMock).forEach((fn) => {
+      fn.mockReset();
+    });
     apiClientMock.post.mockReset();
   });
 
@@ -171,7 +172,7 @@ describe('usePlaidLinkFlow', () => {
     const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
 
     await act(async () => {
-      await result.current.connect().catch(() => {});
+      await result.current.connect().catch(() => { });
     });
 
     expect(onError).toHaveBeenCalledWith('Failed to start bank connection: bad request');
@@ -191,7 +192,9 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
     plaidConnectionsMock.refresh.mockReset();
     plaidConnectionsMock.getConnection.mockReset();
     plaidLinkMock.reset();
-    Object.values(plaidServiceMock).forEach((fn) => fn.mockReset());
+    Object.values(plaidServiceMock).forEach((fn) => {
+      fn.mockReset();
+    });
     apiClientMock.post.mockReset();
   });
 

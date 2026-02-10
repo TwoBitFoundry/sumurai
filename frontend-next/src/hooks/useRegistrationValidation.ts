@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { usePasswordValidation, type PasswordValidation } from './usePasswordValidation';
+import { useMemo, useState } from 'react';
+import { type PasswordValidation, usePasswordValidation } from './usePasswordValidation';
 
 interface RegistrationValidation {
   email: string;
@@ -15,15 +15,15 @@ interface RegistrationValidation {
   validateForm: () => string | null;
 }
 
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
 export function useRegistrationValidation(): RegistrationValidation {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
 
   const isEmailValid = useMemo(() => validateEmail(email), [email]);
   const passwordValidation = usePasswordValidation(password);

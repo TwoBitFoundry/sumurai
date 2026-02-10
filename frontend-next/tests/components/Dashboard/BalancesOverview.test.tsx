@@ -1,11 +1,11 @@
-import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
-import React from 'react';
-import BalancesOverview from '@/components/BalancesOverview';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { createProviderStatus } from '@tests/utils/fixtures';
-import { ApiClient } from '@/services/ApiClient';
-import { AccountFilterProvider } from '@/hooks/useAccountFilter';
 import { ThemeTestProvider } from '@tests/utils/ThemeTestProvider';
+import type React from 'react';
+import BalancesOverview from '@/components/BalancesOverview';
+import { AccountFilterProvider } from '@/hooks/useAccountFilter';
+import { ApiClient } from '@/services/ApiClient';
 
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
   <ThemeTestProvider>

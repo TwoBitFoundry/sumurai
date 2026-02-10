@@ -1,6 +1,7 @@
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { afterAll, beforeAll, jest } from '@jest/globals';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { jest, beforeAll, afterAll } from '@jest/globals';
+
 beforeAll(() => {
   jest.useRealTimers();
 });
@@ -42,11 +43,12 @@ jest.mock('@/views/AccountsPage', () => ({
   __esModule: true,
   default: AccountsPageMock,
 }));
-import { AuthenticatedApp } from '@/components/AuthenticatedApp';
-import { AccountFilterProvider } from '@/hooks/useAccountFilter';
-import { ThemeTestProvider } from '@tests/utils/ThemeTestProvider';
+
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures';
+import { ThemeTestProvider } from '@tests/utils/ThemeTestProvider';
+import { AuthenticatedApp } from '@/components/AuthenticatedApp';
+import { AccountFilterProvider } from '@/hooks/useAccountFilter';
 
 describe('AuthenticatedApp shell', () => {
   const onLogout = jest.fn();

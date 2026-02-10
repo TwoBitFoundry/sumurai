@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
-import { getTagThemeForCategory } from '../../utils/categories';
+import React, { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/ui/primitives';
+import { getTagThemeForCategory } from '../../utils/categories';
 
 type Accent = 'emerald' | 'sky' | 'violet' | 'amber' | 'slate' | 'rose';
 
@@ -204,7 +204,7 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
     checkScroll();
     window.addEventListener('resize', checkScroll);
     return () => window.removeEventListener('resize', checkScroll);
-  }, [checkScroll, pills?.length]);
+  }, [checkScroll]);
 
   const hasFooter = Boolean(subtext) || Boolean(pills && pills.length > 0);
   const ringColorStyle = {
@@ -351,6 +351,7 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
                   if (p.type === 'category') {
                     const theme = getTagThemeForCategory(p.categoryName || p.label);
                     return (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: pills are static for this view
                       <span
                         key={idx}
                         className={classNames(
@@ -379,6 +380,7 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
                   }
 
                   return (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: pills are static for this view
                     <span
                       key={idx}
                       className={classNames(

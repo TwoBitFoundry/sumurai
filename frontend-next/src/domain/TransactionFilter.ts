@@ -46,17 +46,21 @@ export class TransactionFilter {
     let result = transactions;
 
     if (criteria.search) {
-      result = this.filterBySearch(result, criteria.search);
+      result = TransactionFilter.filterBySearch(result, criteria.search);
     }
 
     if (criteria.category) {
-      result = this.filterByCategory(result, criteria.category);
+      result = TransactionFilter.filterByCategory(result, criteria.category);
     }
 
     if (criteria.dateRange) {
-      result = this.filterByDateRange(result, criteria.dateRange.start, criteria.dateRange.end);
+      result = TransactionFilter.filterByDateRange(
+        result,
+        criteria.dateRange.start,
+        criteria.dateRange.end
+      );
     }
 
-    return this.sortByDate(result);
+    return TransactionFilter.sortByDate(result);
   }
 }

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
+import { AlertCircle, Receipt, Target, TrendingUp } from 'lucide-react';
 import { EmptyState } from '@/ui/primitives/EmptyState';
-import { Target, Receipt, TrendingUp, AlertCircle } from 'lucide-react';
 
 describe('EmptyState', () => {
   describe('basic rendering', () => {

@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import type { TellerProviderGateway } from '@/hooks/useTellerProviderInfo';
 import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo';
 

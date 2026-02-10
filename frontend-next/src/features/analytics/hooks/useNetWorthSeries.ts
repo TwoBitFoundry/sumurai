@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AnalyticsService } from '../../../services/AnalyticsService';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
+import { AnalyticsService } from '../../../services/AnalyticsService';
 import { computeDateRange, type DateRangeKey } from '../../../utils/dateRanges';
 
 export type NetWorthPoint = { date: string; value: number };

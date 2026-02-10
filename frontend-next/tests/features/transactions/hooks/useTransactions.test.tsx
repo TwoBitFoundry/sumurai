@@ -1,9 +1,9 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { ReactNode } from 'react';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { useTransactions } from '@/features/transactions/hooks/useTransactions';
-import { TransactionService } from '@/services/TransactionService';
-import { PlaidService } from '@/services/PlaidService';
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
+import { PlaidService } from '@/services/PlaidService';
+import { TransactionService } from '@/services/TransactionService';
 
 jest.mock('@/services/TransactionService', () => ({
   TransactionService: {

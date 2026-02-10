@@ -1,5 +1,5 @@
-import { SensitiveDataSpanProcessor, FilteringSpanProcessor } from '@/observability/processors';
-import { ReadableSpan } from '@opentelemetry/sdk-trace-base';
+import type { ReadableSpan } from '@opentelemetry/sdk-trace-base';
+import { FilteringSpanProcessor, SensitiveDataSpanProcessor } from '@/observability/processors';
 
 const createMockSpan = (url: string, additionalAttributes?: Record<string, any>): ReadableSpan => {
   const attributes: Record<string, any> = {

@@ -1,8 +1,7 @@
-import React from 'react';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { formatCategoryName } from '../../../utils/categories';
-import { Button, Input } from '../../../ui/primitives';
 import { cn } from '@/ui/primitives';
+import { Button, Input } from '../../../ui/primitives';
+import { formatCategoryName } from '../../../utils/categories';
 
 export interface BudgetFormValue {
   category: string;

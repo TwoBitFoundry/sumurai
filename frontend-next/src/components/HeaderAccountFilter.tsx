@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, ChevronRight, Building2 } from 'lucide-react';
+import { Building2, ChevronDown, ChevronRight } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { cn } from '@/ui/primitives';
 

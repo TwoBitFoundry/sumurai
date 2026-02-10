@@ -1,5 +1,5 @@
-import React from 'react';
-import { CheckCircle2, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import type React from 'react';
 import { cn } from '@/ui/primitives';
 
 type ConnectionStatus = 'connected' | 'needs_reauth' | 'error';

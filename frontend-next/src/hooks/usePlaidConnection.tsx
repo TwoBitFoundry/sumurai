@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { PlaidService } from '../services/PlaidService';
 import type { ProviderConnectionStatus } from '../types/api';
 

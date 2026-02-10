@@ -1,5 +1,5 @@
-import { GlassCard, RequirementPill, cn } from '@/ui/primitives';
 import type { PasswordValidation } from '@/hooks/usePasswordValidation';
+import { cn, GlassCard, RequirementPill } from '@/ui/primitives';
 
 interface PasswordCheckerProps {
   validation: PasswordValidation;

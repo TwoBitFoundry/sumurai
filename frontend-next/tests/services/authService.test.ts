@@ -1,6 +1,6 @@
-import { AuthService } from '@/services/authService';
+import { SpanStatusCode, trace } from '@opentelemetry/api';
 import { ApiClient } from '@/services/ApiClient';
-import { trace, SpanStatusCode } from '@opentelemetry/api';
+import { AuthService } from '@/services/authService';
 import type { IHttpClient } from '@/services/boundaries/IHttpClient';
 import type { IStorageAdapter } from '@/services/boundaries/IStorageAdapter';
 

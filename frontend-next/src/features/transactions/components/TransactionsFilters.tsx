@@ -1,6 +1,7 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { getTagThemeForCategory } from '../../../utils/categories';
+import type React from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { cn } from '@/ui/primitives';
+import { getTagThemeForCategory } from '../../../utils/categories';
 
 interface Props {
   search: string;
@@ -25,19 +26,19 @@ export const TransactionsFilters: React.FC<Props> = ({
   const [showLeftFade, setShowLeftFade] = useState(false);
   const [showRightFade, setShowRightFade] = useState(false);
 
-  const checkScroll = () => {
+  const checkScroll = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
 
     setShowLeftFade(el.scrollLeft > 0);
     setShowRightFade(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
-  };
+  }, []);
 
   useEffect(() => {
     checkScroll();
     window.addEventListener('resize', checkScroll);
     return () => window.removeEventListener('resize', checkScroll);
-  }, [categories]);
+  }, [checkScroll]);
 
   return (
     <>
@@ -118,11 +119,10 @@ export const TransactionsFilters: React.FC<Props> = ({
                     key={name}
                     type="button"
                     onClick={() => onSelectCategory(isSelected ? null : name)}
-                    className={`inline-flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 transition-all duration-150 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10 ${theme.tag} ${
-                      isSelected
-                        ? `ring-2 ${theme.ring}`
-                        : 'hover:-translate-y-[2px] hover:shadow-lg'
-                    }`}
+                    className={`inline-flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 transition-all duration-150 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10 ${theme.tag} ${isSelected
+                      ? `ring-2 ${theme.ring}`
+                      : 'hover:-translate-y-[2px] hover:shadow-lg'
+                      }`}
                     aria-pressed={isSelected}
                     title={isSelected ? `Remove filter: ${name}` : `Filter by ${name}`}
                   >

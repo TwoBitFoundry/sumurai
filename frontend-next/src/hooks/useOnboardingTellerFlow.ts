@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { TellerService } from '@/services/TellerService';
-import { useTellerConnect, type TellerEnvironment } from './useTellerConnect';
+import { type TellerEnvironment, useTellerConnect } from './useTellerConnect';
 
 export interface UseOnboardingTellerFlowOptions {
   applicationId: string | null;
@@ -204,7 +204,6 @@ export function useOnboardingTellerFlow(
       institutionName,
       retryConnection,
       reset,
-      setError,
     ]
   );
 }

@@ -1,11 +1,11 @@
 import '@testing-library/jest-dom';
-import React from 'react';
 import { jest } from '@jest/globals';
+import React from 'react';
 import 'cross-fetch/polyfill';
+import { webcrypto } from 'node:crypto';
+import { TextDecoder, TextEncoder } from 'node:util';
 import { AuthService } from '@/services/authService';
-import { FetchHttpClient, BrowserStorageAdapter } from '@/services/boundaries';
-import { webcrypto } from 'crypto';
-import { TextEncoder, TextDecoder } from 'util';
+import { BrowserStorageAdapter } from '@/services/boundaries';
 
 (globalThis as any).crypto = webcrypto as unknown as Crypto;
 const originalFetch = (globalThis as any).fetch;

@@ -1,12 +1,12 @@
-import { ApiClient } from './ApiClient';
 import type {
-  PlaidLinkTokenResponse,
+  Account,
+  PlaidDisconnectResponse,
   PlaidExchangeTokenResponse,
+  PlaidLinkTokenResponse,
   PlaidSyncResponse,
   ProviderStatusResponse,
-  PlaidDisconnectResponse,
-  Account,
 } from '../types/api';
+import { ApiClient } from './ApiClient';
 
 export class PlaidService {
   static async getLinkToken(): Promise<PlaidLinkTokenResponse> {

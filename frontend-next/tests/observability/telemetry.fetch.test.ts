@@ -1,6 +1,5 @@
-import { initTelemetry, shutdownTelemetry } from '@/observability/telemetry';
 import { InMemorySpanExporter } from '@opentelemetry/sdk-trace-base';
-import { ReadableSpan } from '@opentelemetry/sdk-trace-base';
+import { initTelemetry, shutdownTelemetry } from '@/observability/telemetry';
 
 global.fetch = jest.fn();
 

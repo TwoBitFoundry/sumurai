@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AnalyticsService } from '../../../services/AnalyticsService';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
+import { AnalyticsService } from '../../../services/AnalyticsService';
 import type {
   AnalyticsCategoryResponse,
-  AnalyticsTopMerchantsResponse,
   AnalyticsMonthlyTotalsResponse,
+  AnalyticsTopMerchantsResponse,
 } from '../../../types/api';
 import { computeDateRange, type DateRangeKey } from '../../../utils/dateRanges';
 

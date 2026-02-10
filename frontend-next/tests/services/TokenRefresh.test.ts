@@ -1,4 +1,4 @@
-import { ApiClient, ApiError, AuthenticationError } from '@/services/ApiClient';
+import { ApiClient, AuthenticationError } from '@/services/ApiClient';
 import { AuthService } from '@/services/authService';
 import { setupTestBoundaries } from '../setup/setupTestBoundaries';
 

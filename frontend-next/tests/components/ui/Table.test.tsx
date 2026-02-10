@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { Th, Td } from '@/components/ui/Table';
+import { Td, Th } from '@/components/ui/Table';
 
 describe('Table atoms', () => {
   it('renders Th and Td with semantics', () => {

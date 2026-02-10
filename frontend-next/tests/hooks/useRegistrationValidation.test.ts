@@ -1,4 +1,4 @@
-import { renderHook, act, cleanup } from '@testing-library/react';
+import { act, cleanup, renderHook } from '@testing-library/react';
 import { useRegistrationValidation } from '@/hooks/useRegistrationValidation';
 
 describe('useRegistrationValidation Hook', () => {

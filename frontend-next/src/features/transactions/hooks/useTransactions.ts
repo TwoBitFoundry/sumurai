@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { TransactionService, type TransactionFilters } from '../../../services/TransactionService';
-import type { Transaction } from '../../../types/api';
+import { type FilterCriteria, TransactionFilter } from '../../../domain/TransactionFilter';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
+import { type TransactionFilters, TransactionService } from '../../../services/TransactionService';
+import type { Transaction } from '../../../types/api';
 import { formatCategoryName } from '../../../utils/categories';
-import { TransactionFilter, type FilterCriteria } from '../../../domain/TransactionFilter';
 
 export type DateRangeKey = string | undefined;
 
@@ -88,15 +88,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [
-    search,
-    selectedCategory,
-    dateRange,
-    isAllAccountsSelected,
-    selectedAccountIds,
-    allAccountIds,
-    accountsLoading,
-  ]);
+  }, []);
 
   const debouncedSearch = useDebounce(search, 300);
 

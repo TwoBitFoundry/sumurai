@@ -1,6 +1,6 @@
-import { render, screen, within, cleanup } from '@testing-library/react';
-import { NetWorthOverTimeWidget } from '@/components/NetWorthOverTimeWidget';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { ThemeTestProvider } from '@tests/utils/ThemeTestProvider';
+import { NetWorthOverTimeWidget } from '@/components/NetWorthOverTimeWidget';
 
 // Mock recharts
 jest.mock('recharts', () => ({

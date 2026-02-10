@@ -1,12 +1,12 @@
-import React, { useMemo, useState } from 'react';
 import {
   CircleDollarSign,
+  CreditCard,
   HandCoins,
   LineChart,
   PiggyBank,
   RefreshCcw,
-  CreditCard,
 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import {
   Bar,
   BarChart,
@@ -18,12 +18,12 @@ import {
   YAxis,
 } from 'recharts';
 import type { Props as DefaultLegendContentProps } from 'recharts/types/component/DefaultLegendContent';
-import { Amount, fmtUSD } from './Amount';
-import HeroStatCard from './widgets/HeroStatCard';
+import { useTheme } from '../context/ThemeContext';
 import { useBalancesOverview } from '../hooks/useBalancesOverview';
 import { formatRatio } from '../services/AnalyticsService';
-import { useTheme } from '../context/ThemeContext';
-import { Alert, Button, GlassCard, cn } from '../ui/primitives';
+import { Alert, Button, cn, GlassCard } from '../ui/primitives';
+import { Amount, fmtUSD } from './Amount';
+import HeroStatCard from './widgets/HeroStatCard';
 
 type BankBarDatum = {
   bank: string;
@@ -270,15 +270,17 @@ export function BalancesOverview() {
           data-testid="balances-loading"
           className={cn('grid', 'gap-3', 'sm:grid-cols-2', 'lg:grid-cols-5')}
         >
-          {Array.from({ length: 5 }).map((_, index) => (
-            <div
-              key={index}
-              className={cn(
-                'h-16 rounded-xl border bg-slate-100/60',
-                'border-slate-200/60 dark:border-slate-700/60 dark:bg-slate-900/40'
-              )}
-            />
-          ))}
+          {[1, 2, 3, 4, 5].map((id) => {
+            return (
+              <div
+                key={id}
+                className={cn(
+                  'h-16 rounded-xl border bg-slate-100/60',
+                  'border-slate-200/60 dark:border-slate-700/60 dark:bg-slate-900/40'
+                )}
+              />
+            );
+          })}
         </div>
       )}
 

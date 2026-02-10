@@ -1,25 +1,25 @@
-import { useEffect, useMemo, useState } from 'react';
-import Card from '../components/ui/Card';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import {
+  Activity,
+  AlertTriangle,
   Calendar as CalendarIcon,
+  CheckCircle2,
+  Clock,
   Loader2,
   Plus,
-  CheckCircle2,
-  Activity,
-  Clock,
-  AlertTriangle,
   Target,
 } from 'lucide-react';
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { useEffect, useMemo, useState } from 'react';
+import { cn, EmptyState } from '@/ui/primitives';
+import Card from '../components/ui/Card';
+import HeroStatCard, { type HeroPill } from '../components/widgets/HeroStatCard';
+import { BudgetCalculator } from '../domain/BudgetCalculator';
 import { BudgetForm, type BudgetFormValue } from '../features/budgets/components/BudgetForm';
 import { BudgetList, type BudgetWithProgress } from '../features/budgets/components/BudgetList';
 import { useBudgets } from '../features/budgets/hooks/useBudgets';
-import { fmtUSD } from '../utils/format';
-import { formatCategoryName } from '../utils/categories';
-import HeroStatCard, { type HeroPill } from '../components/widgets/HeroStatCard';
 import { PageLayout } from '../layouts/PageLayout';
-import { BudgetCalculator } from '../domain/BudgetCalculator';
-import { cn, EmptyState } from '@/ui/primitives';
+import { formatCategoryName } from '../utils/categories';
+import { fmtUSD } from '../utils/format';
 
 export default function BudgetsPage() {
   const {

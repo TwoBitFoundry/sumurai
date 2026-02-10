@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnalyticsService } from '../services/AnalyticsService';
-import { useAccountFilter } from './useAccountFilter';
 import type { BalancesOverview } from '../types/analytics';
+import { useAccountFilter } from './useAccountFilter';
 import { useDebouncedValue } from './useDebouncedValue';
 
 export type DateRange = { startDate?: string; endDate?: string };

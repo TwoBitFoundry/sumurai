@@ -1,8 +1,8 @@
 import {
-  redactTokenPatterns,
-  sanitizeUrl,
-  sanitizeSpanAttributes,
   preventSensitiveSpans,
+  redactTokenPatterns,
+  sanitizeSpanAttributes,
+  sanitizeUrl,
 } from '@/observability/sanitization';
 
 describe('redactTokenPatterns', () => {

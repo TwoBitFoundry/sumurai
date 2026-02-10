@@ -1,4 +1,3 @@
-import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { LayoutDashboard, ReceiptText, Target } from 'lucide-react';
 import { Badge, cn } from '@/ui/primitives';

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { BackendAccount } from '../domain/AccountNormalizer';
 import { ProviderCatalog } from '../services/ProviderCatalog';
 import { TellerService } from '../services/TellerService';
-import type { BackendAccount } from '../domain/AccountNormalizer';
-import type { PlaidConnection } from './usePlaidConnections';
-import { useTellerConnect, type TellerEnvironment } from './useTellerConnect';
 import { dispatchAccountsChanged } from '../utils/events';
+import type { PlaidConnection } from './usePlaidConnections';
+import { type TellerEnvironment, useTellerConnect } from './useTellerConnect';
 
 export interface UseTellerLinkFlowOptions {
   applicationId: string | null;
@@ -250,7 +250,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       return;
     }
     loadConnections();
-  }, [applicationId, enabled, loadConnections, handleError]);
+  }, [applicationId, enabled, loadConnections, handleError, clearError]);
 
   const connect = useCallback(async () => {
     clearError();
@@ -268,7 +268,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
     }
 
     open();
-  }, [applicationId, clearError, handleError, loadConnections, open, ready]);
+  }, [applicationId, clearError, handleError, open, ready, enabled]);
 
   const syncOne = useCallback(
     async (connectionId: string) => {
@@ -286,7 +286,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
         handleError('Failed to sync Teller connection');
       }
     },
-    [clearError, loadConnections, handleError]
+    [clearError, loadConnections, handleError, enabled]
   );
 
   const syncAll = useCallback(async () => {
@@ -315,7 +315,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
     } finally {
       setSyncingAll(false);
     }
-  }, [clearError, connections, loadConnections, handleError]);
+  }, [clearError, connections, loadConnections, handleError, enabled]);
 
   const disconnect = useCallback(
     async (connectionId: string) => {
@@ -333,7 +333,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
         handleError('Failed to disconnect Teller connection');
       }
     },
-    [clearError, loadConnections, handleError]
+    [clearError, loadConnections, handleError, enabled]
   );
 
   return useMemo(

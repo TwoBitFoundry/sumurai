@@ -1,7 +1,7 @@
-import { renderHook, cleanup, act, waitFor } from '@testing-library/react';
-import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures';
+import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
 
 describe('AccountFilterProvider', () => {
   let fetchMock: ReturnType<typeof installFetchRoutes>;

@@ -1,6 +1,6 @@
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
-import type { PlaidSyncResponse } from '@/types/api';
 import { PlaidService } from '@/services/PlaidService';
+import type { PlaidSyncResponse } from '@/types/api';
 
 let fetchMock: ReturnType<typeof installFetchRoutes>;
 

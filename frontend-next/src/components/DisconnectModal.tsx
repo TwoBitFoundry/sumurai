@@ -1,7 +1,7 @@
-import React from 'react';
-import { Loader2, AlertTriangle } from 'lucide-react';
-import { Alert, Button, GlassCard, Modal } from '../ui/primitives';
+import { AlertTriangle, Loader2 } from 'lucide-react';
+import type React from 'react';
 import { cn } from '@/ui/primitives';
+import { Alert, Button, GlassCard, Modal } from '../ui/primitives';
 
 interface Account {
   id: string;

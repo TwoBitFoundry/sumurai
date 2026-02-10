@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { RefreshCw, MoreVertical, ChevronDown, Unlink } from 'lucide-react';
-import { StatusPill } from './StatusPill';
+import { ChevronDown, MoreVertical, RefreshCw, Unlink } from 'lucide-react';
+import type React from 'react';
+import { useMemo, useState } from 'react';
+import { Button, cn, GlassCard, MenuDropdown, MenuItem } from '../ui/primitives';
 import { AccountRow } from './AccountRow';
 import { DisconnectModal } from './DisconnectModal';
-import { Button, GlassCard, MenuDropdown, MenuItem, cn } from '../ui/primitives';
+import { StatusPill } from './StatusPill';
 
 interface Account {
   id: string;

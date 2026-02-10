@@ -1,10 +1,10 @@
-import { useState, FormEvent } from 'react';
-import { GlassCard, Button, Input, FormLabel, Modal, Badge, Alert } from '@/ui/primitives';
-import { cn } from '@/ui/primitives/utils';
-import { SettingsService } from '@/services/SettingsService';
-import { AuthService } from '@/services/authService';
-import { usePasswordValidation } from '@/hooks/usePasswordValidation';
+import { type FormEvent, useState } from 'react';
 import { PasswordChecker } from '@/components/PasswordChecker';
+import { usePasswordValidation } from '@/hooks/usePasswordValidation';
+import { AuthService } from '@/services/authService';
+import { SettingsService } from '@/services/SettingsService';
+import { Alert, Badge, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
+import { cn } from '@/ui/primitives/utils';
 
 interface SettingsPageProps {
   onLogout?: () => void;

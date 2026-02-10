@@ -1,6 +1,6 @@
-import React from 'react';
-import { AnimatePresence, motion, type HTMLMotionProps } from 'framer-motion';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { AnimatePresence, type HTMLMotionProps, motion } from 'framer-motion';
+import type React from 'react';
 import { cn } from './utils';
 
 const contentVariants = cva('relative w-full', {

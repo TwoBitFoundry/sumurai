@@ -1,9 +1,9 @@
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { HeaderAccountFilter } from '@/components/HeaderAccountFilter';
-import { AccountFilterProvider } from '@/hooks/useAccountFilter';
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures';
+import { HeaderAccountFilter } from '@/components/HeaderAccountFilter';
+import { AccountFilterProvider } from '@/hooks/useAccountFilter';
 
 describe('HeaderAccountFilter', () => {
   let fetchMock: ReturnType<typeof installFetchRoutes>;

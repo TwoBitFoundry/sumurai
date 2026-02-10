@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Budget, Transaction } from '../../../types/api';
+import { BudgetCalculator } from '../../../domain/BudgetCalculator';
+import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { BudgetService } from '../../../services/BudgetService';
 import { TransactionService } from '../../../services/TransactionService';
-import { useAccountFilter } from '../../../hooks/useAccountFilter';
+import type { Budget, Transaction } from '../../../types/api';
 import { optimisticCreate } from '../../../utils/optimistic';
-import { BudgetCalculator } from '../../../domain/BudgetCalculator';
 
 export interface BudgetProgressEntry extends Budget {
   spent: number;

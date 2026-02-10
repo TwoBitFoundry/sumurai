@@ -1,4 +1,4 @@
-import { render, fireEvent } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import ConnectionsList from '@/features/plaid/components/ConnectionsList';
 
 jest.mock('@/components/BankCard', () => ({

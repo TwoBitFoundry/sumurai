@@ -1,6 +1,6 @@
-import type { FinancialProvider } from '@/types/api';
 import type { LucideIcon } from 'lucide-react';
 import { Building2, Eye, Fingerprint, Landmark, ShieldCheck, Sparkles, Zap } from 'lucide-react';
+import type { FinancialProvider } from '@/types/api';
 
 export type ProviderCardConfig = {
   title: string;

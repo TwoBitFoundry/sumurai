@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { useOnboardingWizard } from '@/hooks/useOnboardingWizard';
 
 describe('useOnboardingWizard', () => {
@@ -26,7 +26,7 @@ describe('useOnboardingWizard', () => {
       writable: true,
     });
 
-    sessionStorageData['auth_token'] = 'mock-token';
+    sessionStorageData.auth_token = 'mock-token';
 
     originalFetch = global.fetch;
     global.fetch = jest.fn().mockResolvedValue({

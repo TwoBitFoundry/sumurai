@@ -1,4 +1,4 @@
-import { ApiClient, ApiError, ServerError, NetworkError } from '@/services/ApiClient';
+import { ApiClient, ApiError, NetworkError, ServerError } from '@/services/ApiClient';
 import { AuthService } from '@/services/authService';
 import { setupTestBoundaries } from '../setup/setupTestBoundaries';
 

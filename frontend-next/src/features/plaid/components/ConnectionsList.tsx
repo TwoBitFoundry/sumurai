@@ -1,7 +1,7 @@
 import { Link2 } from 'lucide-react';
-import ConnectButton from './ConnectButton';
-import { BankCard } from '../../../components/BankCard';
 import { EmptyState } from '@/ui/primitives';
+import { BankCard } from '../../../components/BankCard';
+import ConnectButton from './ConnectButton';
 
 export interface BankAccount {
   id: string;

@@ -1,13 +1,13 @@
-import { IHttpClient, RequestOptions } from './IHttpClient';
 import {
+  ApiError,
   AuthenticationError,
-  ServerError,
-  ValidationError,
+  ConflictError,
   ForbiddenError,
   NotFoundError,
-  ConflictError,
-  ApiError,
+  ServerError,
+  ValidationError,
 } from './errors';
+import type { IHttpClient, RequestOptions } from './IHttpClient';
 
 const normalizeBaseUrl = (baseUrl?: string): string => {
   if (!baseUrl) return '/api';

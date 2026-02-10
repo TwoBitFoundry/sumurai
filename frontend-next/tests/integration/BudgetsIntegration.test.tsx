@@ -1,10 +1,10 @@
-import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { AuthenticatedApp } from '@/components/AuthenticatedApp';
-import { AccountFilterProvider } from '@/hooks/useAccountFilter';
-import { ThemeTestProvider } from '@tests/utils/ThemeTestProvider';
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { createProviderStatus } from '@tests/utils/fixtures';
+import { ThemeTestProvider } from '@tests/utils/ThemeTestProvider';
+import { AuthenticatedApp } from '@/components/AuthenticatedApp';
+import { AccountFilterProvider } from '@/hooks/useAccountFilter';
 
 describe('AuthenticatedApp Budgets — Given/When/Then', () => {
   let fetchMock: ReturnType<typeof installFetchRoutes>;

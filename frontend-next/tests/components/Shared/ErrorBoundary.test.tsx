@@ -1,5 +1,5 @@
-import { render, screen, cleanup } from '@testing-library/react';
-import { trace, SpanStatusCode } from '@opentelemetry/api';
+import { SpanStatusCode, trace } from '@opentelemetry/api';
+import { cleanup, render, screen } from '@testing-library/react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Mock console.error to avoid noise in test output
@@ -104,11 +104,11 @@ describe('ErrorBoundary', () => {
       const mockReload = jest.fn();
       // Replace location to avoid read-only reload
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
+      // @ts-expect-error
       delete window.location;
       // Provide minimal shape to satisfy consumers
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
+      // @ts-expect-error
       window.location = { href: originalLocation.href, reload: mockReload };
 
       render(

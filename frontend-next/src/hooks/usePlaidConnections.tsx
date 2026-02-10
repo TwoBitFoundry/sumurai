@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { PlaidService } from '../services/PlaidService';
+import { useCallback, useEffect, useState } from 'react';
 import { AccountNormalizer, type BackendAccount } from '../domain/AccountNormalizer';
+import { PlaidService } from '../services/PlaidService';
 import type { ProviderConnectionStatus } from '../types/api';
 
 type NormalizedAccount = {
@@ -54,6 +54,10 @@ export interface PlaidConnectionsActions {
 
 export type UsePlaidConnectionsReturn = PlaidConnectionsState & PlaidConnectionsActions;
 
+const normalizeAccounts = (backendAccounts: BackendAccount[]): NormalizedAccount[] => {
+  return AccountNormalizer.normalize(backendAccounts);
+};
+
 export const usePlaidConnections = (
   options: { enabled?: boolean } = {}
 ): UsePlaidConnectionsReturn => {
@@ -62,11 +66,9 @@ export const usePlaidConnections = (
     connections: [],
     loading: true,
     error: null,
-  });
 
-  const normalizeAccounts = (backendAccounts: BackendAccount[]): NormalizedAccount[] => {
-    return AccountNormalizer.normalize(backendAccounts);
-  };
+
+  });
 
   const fetchConnections = useCallback(async (): Promise<PlaidConnection[]> => {
     if (!enabled) {
@@ -98,39 +100,39 @@ export const usePlaidConnections = (
       const connections: PlaidConnection[] =
         statusArray.length > 0
           ? statusArray
-              .filter((connStatus) => connStatus.is_connected)
-              .map((connStatus) => {
-                const connectionId = connStatus.connection_id
-                  ? String(connStatus.connection_id)
-                  : null;
-                let matchingAccounts: NormalizedAccount[];
+            .filter((connStatus) => connStatus.is_connected)
+            .map((connStatus) => {
+              const connectionId = connStatus.connection_id
+                ? String(connStatus.connection_id)
+                : null;
+              let matchingAccounts: NormalizedAccount[];
 
-                if (connectionId) {
-                  matchingAccounts = allAccounts.filter(
-                    (acc) => acc.connectionKey === connectionId
-                  );
-                  if (matchingAccounts.length === 0) {
-                    matchingAccounts = allAccounts.filter((acc) => acc.connectionKey === null);
-                  }
-                } else {
-                  matchingAccounts = allAccounts.slice();
-                }
-
-                const connectionAccounts = matchingAccounts.map(
-                  ({ connectionKey: _ignore, ...rest }) => rest
+              if (connectionId) {
+                matchingAccounts = allAccounts.filter(
+                  (acc) => acc.connectionKey === connectionId
                 );
-                return {
-                  id: connStatus.connection_id || 'unknown',
-                  connectionId: connStatus.connection_id || 'unknown',
-                  institutionName: connStatus.institution_name || 'Unknown Bank',
-                  lastSyncAt: connStatus.last_sync_at,
-                  transactionCount: connStatus.transaction_count || 0,
-                  accountCount: connStatus.account_count || 0,
-                  syncInProgress: connStatus.sync_in_progress || false,
-                  isConnected: connStatus.is_connected,
-                  accounts: connectionAccounts,
-                };
-              })
+                if (matchingAccounts.length === 0) {
+                  matchingAccounts = allAccounts.filter((acc) => acc.connectionKey === null);
+                }
+              } else {
+                matchingAccounts = allAccounts.slice();
+              }
+
+              const connectionAccounts = matchingAccounts.map(
+                ({ connectionKey: _ignore, ...rest }) => rest
+              );
+              return {
+                id: connStatus.connection_id || 'unknown',
+                connectionId: connStatus.connection_id || 'unknown',
+                institutionName: connStatus.institution_name || 'Unknown Bank',
+                lastSyncAt: connStatus.last_sync_at,
+                transactionCount: connStatus.transaction_count || 0,
+                accountCount: connStatus.account_count || 0,
+                syncInProgress: connStatus.sync_in_progress || false,
+                isConnected: connStatus.is_connected,
+                accounts: connectionAccounts,
+              };
+            })
           : [];
 
       setState((prev) => ({
@@ -220,12 +222,12 @@ export const usePlaidConnections = (
         connections: prev.connections.map((conn) =>
           conn.connectionId === connectionId
             ? {
-                ...conn,
-                transactionCount,
-                accountCount,
-                lastSyncAt,
-                syncInProgress: false,
-              }
+              ...conn,
+              transactionCount,
+              accountCount,
+              lastSyncAt,
+              syncInProgress: false,
+            }
             : conn
         ),
       }));

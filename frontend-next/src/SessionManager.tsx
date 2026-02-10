@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { AuthService } from './services/authService';
-import { GlassCard, Button, Modal } from './ui/primitives';
+import type React from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { cn } from '@/ui/primitives';
+import { AuthService } from './services/authService';
+import { Button, GlassCard, Modal } from './ui/primitives';
 
 const SESSION_WARNING_THRESHOLD = 120; // 2 minutes in seconds
 const SESSION_CHECK_INTERVAL = 1000; // 1 second

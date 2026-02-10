@@ -1,5 +1,5 @@
-import React from 'react';
 import { motion } from 'framer-motion';
+import type React from 'react';
 
 import { Button, GlassCard } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';

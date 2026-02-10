@@ -1,5 +1,5 @@
+import type { Span } from '@opentelemetry/api';
 import React, { useEffect, useRef, useState } from 'react';
-import { Span } from '@opentelemetry/api';
 import type { ITelemetryService } from './TelemetryService';
 
 export interface TelemetryContextValue {

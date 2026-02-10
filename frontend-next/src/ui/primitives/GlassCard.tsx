@@ -1,5 +1,5 @@
-import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
+import type React from 'react';
 import { cn, glassBackdropClasses } from './utils';
 
 const glassCardVariants = cva(

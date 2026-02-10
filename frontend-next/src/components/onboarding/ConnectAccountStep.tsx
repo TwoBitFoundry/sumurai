@@ -1,4 +1,3 @@
-import React from 'react';
 import { Alert, Badge, Button } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
 import type { ConnectAccountProviderContent } from '@/utils/providerCards';

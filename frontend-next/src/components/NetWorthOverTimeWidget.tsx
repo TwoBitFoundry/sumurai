@@ -1,15 +1,15 @@
-import React from 'react';
+import type React from 'react';
 import {
-  ResponsiveContainer,
-  LineChart,
+  CartesianGrid,
   Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
 } from 'recharts';
-import { useTheme } from '../context/ThemeContext';
 import { cn } from '@/ui/primitives';
+import { useTheme } from '../context/ThemeContext';
 
 export const NetWorthOverTimeWidget: React.FC = () => {
   const { colors } = useTheme();

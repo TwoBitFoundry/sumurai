@@ -1,8 +1,8 @@
-import React from 'react';
+import { MapPin } from 'lucide-react';
+import type React from 'react';
+import { cn, EmptyState } from '@/ui/primitives';
 import type { AnalyticsTopMerchantsResponse } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
-import { MapPin } from 'lucide-react';
-import { cn, EmptyState } from '@/ui/primitives';
 
 type Props = {
   merchants: AnalyticsTopMerchantsResponse[];
@@ -18,7 +18,7 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
         <div className={cn('space-y-3')}>
           {merchantsToShow.map((merchant, index) => (
             <div
-              key={merchant.name + index}
+              key={merchant.name}
               className={cn(
                 'flex',
                 'items-center',

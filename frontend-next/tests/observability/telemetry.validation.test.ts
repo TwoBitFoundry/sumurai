@@ -1,4 +1,4 @@
-import { initTelemetry, shutdownTelemetry, getTracer } from '@/observability/telemetry';
+import { getTracer, initTelemetry, shutdownTelemetry } from '@/observability/telemetry';
 
 describe('Telemetry Validation', () => {
   beforeEach(() => {

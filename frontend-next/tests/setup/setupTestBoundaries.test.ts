@@ -1,6 +1,5 @@
-import { setupTestBoundaries, resetBoundaries } from './setupTestBoundaries';
-import { ApiClient } from '@/services/ApiClient';
 import { AuthService } from '@/services/authService';
+import { resetBoundaries, setupTestBoundaries } from './setupTestBoundaries';
 
 describe('setupTestBoundaries', () => {
   beforeEach(() => {

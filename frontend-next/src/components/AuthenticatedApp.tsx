@@ -1,15 +1,15 @@
-import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import DashboardPage from '@/views/DashboardPage';
-import TransactionsPage from '@/views/TransactionsPage';
-import BudgetsPage from '@/views/BudgetsPage';
-import AccountsPage from '@/views/AccountsPage';
-import SettingsPage from '@/views/SettingsPage';
-import Card from './ui/Card';
-import { ErrorBoundary } from './ErrorBoundary';
-import { GradientShell } from '../ui/primitives';
-import { AppLayout } from '../layouts/AppLayout';
+import { useState } from 'react';
 import { cn } from '@/ui/primitives';
+import AccountsPage from '@/views/AccountsPage';
+import BudgetsPage from '@/views/BudgetsPage';
+import DashboardPage from '@/views/DashboardPage';
+import SettingsPage from '@/views/SettingsPage';
+import TransactionsPage from '@/views/TransactionsPage';
+import { AppLayout } from '../layouts/AppLayout';
+import { GradientShell } from '../ui/primitives';
+import { ErrorBoundary } from './ErrorBoundary';
+import Card from './ui/Card';
 
 export type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 

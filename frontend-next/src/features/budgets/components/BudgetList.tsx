@@ -1,12 +1,12 @@
-import React from 'react';
-import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
-import { fmtUSD } from '../../../utils/format';
-import { PencilSquareIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { CheckIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { TrashIcon as TrashSolidIcon } from '@heroicons/react/24/solid';
 import { Target } from 'lucide-react';
-import BudgetProgress from './BudgetProgress';
-import type { BudgetProgressEntry } from '../hooks/useBudgets';
+import React from 'react';
 import { cn, EmptyState } from '@/ui/primitives';
+import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
+import { fmtUSD } from '../../../utils/format';
+import type { BudgetProgressEntry } from '../hooks/useBudgets';
+import BudgetProgress from './BudgetProgress';
 
 export type BudgetWithProgress = BudgetProgressEntry;
 
@@ -238,6 +238,7 @@ export function BudgetList({
                 >
                   <div className="space-y-2">
                     <label
+                      htmlFor={`budget-amount-${b.id}`}
                       className={cn(
                         'block',
                         'text-[0.65rem]',
@@ -253,6 +254,7 @@ export function BudgetList({
                       Planned amount
                     </label>
                     <input
+                      id={`budget-amount-${b.id}`}
                       data-testid="budget-amount-input"
                       type="number"
                       min={0}

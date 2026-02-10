@@ -1,9 +1,10 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { trace, SpanStatusCode } from '@opentelemetry/api';
-import { Lock, WifiOff, Wrench, AlertCircle } from 'lucide-react';
-import { ApiError, AuthenticationError } from '../services/ApiClient';
+import { SpanStatusCode, trace } from '@opentelemetry/api';
+import { AlertCircle, Lock, WifiOff, Wrench } from 'lucide-react';
+import type React from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Button, GlassCard } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
+import { ApiError, AuthenticationError } from '../services/ApiClient';
 
 interface Props {
   children: ReactNode;

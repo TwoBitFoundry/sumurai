@@ -1,7 +1,7 @@
-import { ApiClient } from './ApiClient';
+import { type BackendTransaction, TransactionTransformer } from '../domain/TransactionTransformer';
 import type { Transaction } from '../types/api';
 import { appendAccountQueryParams } from '../utils/queryParams';
-import { TransactionTransformer, type BackendTransaction } from '../domain/TransactionTransformer';
+import { ApiClient } from './ApiClient';
 
 export interface TransactionFilters {
   startDate?: string;

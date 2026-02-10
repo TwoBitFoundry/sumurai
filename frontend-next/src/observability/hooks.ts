@@ -1,5 +1,5 @@
-import { useContext, useEffect, useRef, useCallback, DependencyList } from 'react';
-import { Tracer, Span, SpanStatusCode, SpanOptions } from '@opentelemetry/api';
+import { type Span, type SpanOptions, SpanStatusCode, type Tracer } from '@opentelemetry/api';
+import { type DependencyList, useCallback, useContext, useEffect, useRef } from 'react';
 import { TelemetryContext } from './TelemetryProvider';
 
 export function useTracer(): Tracer | null {
@@ -22,7 +22,7 @@ export function useSpan(name: string, options?: SpanOptions): Span | undefined {
       spanRef.current?.end();
       spanRef.current = undefined;
     };
-  }, [tracer, name]);
+  }, [tracer, name, options]);
 
   useEffect(() => {
     if (spanRef.current && context) {
@@ -73,6 +73,6 @@ export function useInstrumentedCallback<T extends (...args: unknown[]) => unknow
         throw error;
       }
     },
-    [tracer, name, ...deps]
+    [tracer, name, ...deps, fn]
   ) as T;
 }

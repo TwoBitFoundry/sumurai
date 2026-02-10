@@ -1,6 +1,5 @@
-import React from 'react';
-import { fmtUSD } from '../../../utils/format';
 import { cn } from '@/ui/primitives';
+import { fmtUSD } from '../../../utils/format';
 
 export function BudgetProgress({ amount, spent }: { amount: number; spent: number }) {
   const percent = amount > 0 ? (spent / amount) * 100 : 0;

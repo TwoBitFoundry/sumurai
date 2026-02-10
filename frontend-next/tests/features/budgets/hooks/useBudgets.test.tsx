@@ -1,9 +1,9 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { ReactNode } from 'react';
-import { useBudgets } from '@/features/budgets/hooks/useBudgets';
-import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures';
+import type { ReactNode } from 'react';
+import { useBudgets } from '@/features/budgets/hooks/useBudgets';
+import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
 
 const TestWrapper = ({ children }: { children: ReactNode }) => (
   <AccountFilterProvider>{children}</AccountFilterProvider>

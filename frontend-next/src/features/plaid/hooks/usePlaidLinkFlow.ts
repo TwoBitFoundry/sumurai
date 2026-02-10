@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
+import { type PlaidConnection, usePlaidConnections } from '../../../hooks/usePlaidConnections';
+import { useInstrumentedCallback } from '../../../observability';
 import { ApiClient } from '../../../services/ApiClient';
 import { PlaidService } from '../../../services/PlaidService';
-import { usePlaidConnections, type PlaidConnection } from '../../../hooks/usePlaidConnections';
 import { dispatchAccountsChanged } from '../../../utils/events';
-import { useInstrumentedCallback } from '../../../observability';
 
 interface UsePlaidLinkFlowOptions {
   onError?: (message: string | null) => void;

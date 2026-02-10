@@ -1,7 +1,7 @@
-import React from 'react';
-import Image from 'next/image';
 import { cva } from 'class-variance-authority';
-import { Sun, Moon, Settings } from 'lucide-react';
+import { Moon, Settings, Sun } from 'lucide-react';
+import Image from 'next/image';
+import React from 'react';
 import { Button } from './Button';
 import { cn } from './utils';
 

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import type React from 'react';
+import { useState } from 'react';
 import { cn, transitionClasses } from './utils';
 
 export interface MenuDropdownProps {

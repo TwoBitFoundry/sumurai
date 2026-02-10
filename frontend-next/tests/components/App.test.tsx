@@ -1,11 +1,10 @@
 import fs from 'node:fs';
 
-import { render, screen, cleanup, act, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { App } from '@/App';
-import { AccountFilterProvider } from '@/hooks/useAccountFilter';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { createProviderStatus } from '@tests/utils/fixtures';
+import { App } from '@/App';
+import { AccountFilterProvider } from '@/hooks/useAccountFilter';
 
 const mockProviderAccounts = [
   {

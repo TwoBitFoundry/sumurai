@@ -1,5 +1,5 @@
-import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
+import React from 'react';
 import { cn, disabledClasses, transitionClasses } from './utils';
 
 const inputVariants = cva(

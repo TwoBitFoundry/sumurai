@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import React from 'react';
 import { AuthService } from '@/services/authService';
-import { FetchHttpClient, BrowserStorageAdapter } from '@/services/boundaries';
+import { BrowserStorageAdapter } from '@/services/boundaries';
 
 jest.mock('@/observability/TelemetryService', () => ({
   TelemetryService: jest.fn().mockImplementation(() => ({
@@ -22,7 +22,7 @@ AuthService.configure({
 };
 
 (globalThis as any).IntersectionObserver = class IntersectionObserver {
-  constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+  constructor(callback: IntersectionObserverCallback, _options?: IntersectionObserverInit) {
     this.callback = callback;
   }
   callback: IntersectionObserverCallback;

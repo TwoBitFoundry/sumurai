@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 import { Badge, Button, GlassCard, Modal } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';

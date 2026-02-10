@@ -1,8 +1,8 @@
-import { renderHook, act, waitFor, cleanup } from '@testing-library/react';
-import { usePlaidConnection } from '@/hooks/usePlaidConnection';
-import { ApiClient } from '@/services/ApiClient';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures';
+import { usePlaidConnection } from '@/hooks/usePlaidConnection';
+import { ApiClient } from '@/services/ApiClient';
 
 describe('usePlaidConnection Hook', () => {
   let fetchMock: ReturnType<typeof installFetchRoutes>;

@@ -1,8 +1,8 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
 import { jest } from '@jest/globals';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import * as plaidLink from 'react-plaid-link';
 import { useOnboardingPlaidFlow } from '@/hooks/useOnboardingPlaidFlow';
 import { ApiClient } from '@/services/ApiClient';
-import * as plaidLink from 'react-plaid-link';
 
 let postSpy: jest.SpiedFunction<typeof ApiClient.post>;
 let getSpy: jest.SpiedFunction<typeof ApiClient.get>;

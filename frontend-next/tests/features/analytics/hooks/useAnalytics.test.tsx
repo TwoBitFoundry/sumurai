@@ -1,5 +1,5 @@
-import { renderHook, waitFor, act } from '@testing-library/react';
-import { ReactNode } from 'react';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { useAnalytics } from '@/features/analytics/hooks/useAnalytics';
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
 import { AnalyticsService } from '@/services/AnalyticsService';

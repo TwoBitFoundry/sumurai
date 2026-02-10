@@ -1,6 +1,7 @@
-import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { jest } from '@jest/globals';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { ThemeProvider } from '@/context/ThemeContext';
+
 jest.mock('@/hooks/useScrollDetection', () => ({
   useScrollDetection: () => false,
 }));
