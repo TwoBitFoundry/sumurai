@@ -351,7 +351,6 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
                   if (p.type === 'category') {
                     const theme = getTagThemeForCategory(p.categoryName || p.label);
                     return (
-                      // biome-ignore lint/suspicious/noArrayIndexKey: pills are static for this view
                       <span
                         key={idx}
                         className={classNames(
@@ -380,7 +379,6 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
                   }
 
                   return (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: pills are static for this view
                     <span
                       key={idx}
                       className={classNames(

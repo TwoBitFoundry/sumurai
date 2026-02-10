@@ -36,7 +36,7 @@ export function MenuDropdown({
 
   return (
     <div className={cn('relative', className)}>
-      <div onClick={() => setOpen((v) => !v)}>{trigger}</div>
+      <button onClick={() => setOpen((v) => !v)}>{trigger}</button>
       <AnimatePresence>
         {open && (
           <motion.div

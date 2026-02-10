@@ -98,6 +98,16 @@
           }
         }
       }
+    },
+    {
+      "includes": ["src/components/widgets/HeroStatCard.tsx"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noArrayIndexKey": "off"
+          }
+        }
+      }
     }
   ]
 }

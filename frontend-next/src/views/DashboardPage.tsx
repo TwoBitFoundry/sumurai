@@ -183,6 +183,7 @@ const DashboardPage: React.FC = () => {
                           const color = colors.chart.primary[idx % colors.chart.primary.length];
                           const isHovered = hoveredCategory === cat.name;
                           return (
+                            // biome-ignore lint/a11y/noStaticElementInteractions: visual hover only
                             <div
                               key={`topcard-${cat.name}`}
                               className={`p-2 rounded-lg border transition-all duration-300 ${
