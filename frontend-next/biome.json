@@ -61,7 +61,11 @@
       "**/*.tsx",
       "**/*.js",
       "**/*.jsx",
-      "**/*.json"
+      "**/*.json",
+      "!.next",
+      "!node_modules",
+      "!coverage",
+      "!out"
     ]
   },
   "overrides": [
