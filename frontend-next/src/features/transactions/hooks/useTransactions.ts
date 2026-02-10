@@ -130,6 +130,10 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
   }, [filtered, start, pageSize]);
 
   useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, debouncedSearch, dateRange, selectedAccountIds]);
+
+  useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [currentPage, totalPages]);
 
