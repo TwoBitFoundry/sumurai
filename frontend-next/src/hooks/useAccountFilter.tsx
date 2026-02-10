@@ -1,94 +1,103 @@
-import { useContext, useState, useMemo, useCallback, useEffect, useRef, ReactNode } from 'react'
-import { AccountFilterContext, AccountFilterContextType, ProviderAccount, AccountsByBank } from '@/context/AccountFilterContext'
-import type { Account } from '@/types/api'
-import { ProviderCatalog } from '@/services/ProviderCatalog'
-import { ACCOUNTS_CHANGED_EVENT } from '@/utils/events'
+import { useContext, useState, useMemo, useCallback, useEffect, useRef, ReactNode } from 'react';
+import {
+  AccountFilterContext,
+  AccountFilterContextType,
+  ProviderAccount,
+  AccountsByBank,
+} from '@/context/AccountFilterContext';
+import type { Account } from '@/types/api';
+import { ProviderCatalog } from '@/services/ProviderCatalog';
+import { ACCOUNTS_CHANGED_EVENT } from '@/utils/events';
 
 export function useAccountFilter(): AccountFilterContextType {
-  const context = useContext(AccountFilterContext)
+  const context = useContext(AccountFilterContext);
   if (context === undefined) {
-    throw new Error('useAccountFilter must be used within an AccountFilterProvider')
+    throw new Error('useAccountFilter must be used within an AccountFilterProvider');
   }
-  return context
+  return context;
 }
 
 interface AccountFilterProviderProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
 export function AccountFilterProvider({ children }: AccountFilterProviderProps) {
-  const [accounts, setAccounts] = useState<ProviderAccount[]>([])
-  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
-  const previousAllAccountIdsRef = useRef<string[]>([])
-  const warnedInvalidAccountsRef = useRef(false)
+  const [accounts, setAccounts] = useState<ProviderAccount[]>([]);
+  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const previousAllAccountIdsRef = useRef<string[]>([]);
+  const warnedInvalidAccountsRef = useRef(false);
 
   const groupAccountsByBank = useCallback((items: ProviderAccount[]): AccountsByBank => {
     return items.reduce<AccountsByBank>((acc, account) => {
-      const bankName = account.institution_name || 'Unknown Bank'
+      const bankName = account.institution_name || 'Unknown Bank';
       if (!acc[bankName]) {
-        acc[bankName] = []
+        acc[bankName] = [];
       }
-      acc[bankName].push(account)
-      return acc
-    }, {})
-  }, [])
+      acc[bankName].push(account);
+      return acc;
+    }, {});
+  }, []);
 
-  const accountsByBank = useMemo(() => groupAccountsByBank(accounts), [accounts, groupAccountsByBank])
-  const allAccountIds = useMemo(() => accounts.map(account => account.id), [accounts])
-  const isAllAccountsSelected = allAccountIds.length > 0 && selectedAccountIds.length === allAccountIds.length
+  const accountsByBank = useMemo(
+    () => groupAccountsByBank(accounts),
+    [accounts, groupAccountsByBank]
+  );
+  const allAccountIds = useMemo(() => accounts.map((account) => account.id), [accounts]);
+  const isAllAccountsSelected =
+    allAccountIds.length > 0 && selectedAccountIds.length === allAccountIds.length;
 
   const fetchAccounts = useCallback(async () => {
     try {
-      setLoading(true)
-      const accountsResponse = await ProviderCatalog.getAccounts()
-      const safeAccounts = Array.isArray(accountsResponse) ? accountsResponse : []
+      setLoading(true);
+      const accountsResponse = await ProviderCatalog.getAccounts();
+      const safeAccounts = Array.isArray(accountsResponse) ? accountsResponse : [];
 
       if (!Array.isArray(accountsResponse) && !warnedInvalidAccountsRef.current) {
-        warnedInvalidAccountsRef.current = true
-        const shouldWarn = process.env.NODE_ENV !== 'test'
+        warnedInvalidAccountsRef.current = true;
+        const shouldWarn = process.env.NODE_ENV !== 'test';
         if (shouldWarn) {
-          console.warn('Expected accounts array for filter; received:', accountsResponse)
+          console.warn('Expected accounts array for filter; received:', accountsResponse);
         }
       }
 
       const parseBalance = (value: unknown): number | null => {
         if (typeof value === 'number' && Number.isFinite(value)) {
-          return value
+          return value;
         }
         if (typeof value === 'string') {
-          const trimmed = value.trim()
-          const isNegativeParenthetical = trimmed.startsWith('(') && trimmed.endsWith(')')
-          const normalized = trimmed.replace(/[^0-9.-]/g, '')
+          const trimmed = value.trim();
+          const isNegativeParenthetical = trimmed.startsWith('(') && trimmed.endsWith(')');
+          const normalized = trimmed.replace(/[^0-9.-]/g, '');
           if (!normalized) {
-            return null
+            return null;
           }
-          const parsed = Number(normalized)
+          const parsed = Number(normalized);
           if (!Number.isFinite(parsed)) {
-            return null
+            return null;
           }
-          return isNegativeParenthetical ? -parsed : parsed
+          return isNegativeParenthetical ? -parsed : parsed;
         }
-        return null
-      }
+        return null;
+      };
 
       type AccountWithLegacyFields = Account & {
-        ledger?: number | string | null
-        available?: number | string | null
-        institutionName?: string | null
-      }
+        ledger?: number | string | null;
+        available?: number | string | null;
+        institutionName?: string | null;
+      };
 
-      const mappedAccounts: ProviderAccount[] = safeAccounts.map(account => {
-        const legacy = account as AccountWithLegacyFields
+      const mappedAccounts: ProviderAccount[] = safeAccounts.map((account) => {
+        const legacy = account as AccountWithLegacyFields;
         const ledger =
           parseBalance(account.balance_ledger) ??
           parseBalance(account.balance_current) ??
-          parseBalance(legacy.ledger ?? null)
+          parseBalance(legacy.ledger ?? null);
 
         const available =
           parseBalance(account.balance_available) ??
           parseBalance(account.balance_current) ??
-          parseBalance(legacy.available ?? null)
+          parseBalance(legacy.available ?? null);
 
         return {
           id: account.id,
@@ -98,119 +107,126 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
           balance_available: available,
           mask: account.mask ?? null,
           provider: account.provider ?? 'plaid',
-          institution_name:
-            account.institution_name ??
-            legacy.institutionName ??
-            'Unknown Bank',
-        }
-      })
+          institution_name: account.institution_name ?? legacy.institutionName ?? 'Unknown Bank',
+        };
+      });
 
-      setAccounts(mappedAccounts)
+      setAccounts(mappedAccounts);
 
-      const newAccountIds = mappedAccounts.map(account => account.id)
+      const newAccountIds = mappedAccounts.map((account) => account.id);
 
-      setSelectedAccountIds(prev => {
+      setSelectedAccountIds((prev) => {
         if (prev.length === 0) {
-          return newAccountIds
+          return newAccountIds;
         }
 
-        const newIdSet = new Set(newAccountIds)
-        const filteredSelection = prev.filter(id => newIdSet.has(id))
+        const newIdSet = new Set(newAccountIds);
+        const filteredSelection = prev.filter((id) => newIdSet.has(id));
 
-        const prevAllIds = previousAllAccountIdsRef.current
+        const prevAllIds = previousAllAccountIdsRef.current;
         const previouslyHadAllSelected =
           prevAllIds.length > 0 &&
           prev.length === prevAllIds.length &&
-          prevAllIds.every(id => prev.includes(id))
+          prevAllIds.every((id) => prev.includes(id));
 
         if (previouslyHadAllSelected) {
-          return newAccountIds
+          return newAccountIds;
         }
 
         if (arraysEqual(prev, filteredSelection)) {
-          return prev
+          return prev;
         }
 
-        return filteredSelection
-      })
+        return filteredSelection;
+      });
 
-      previousAllAccountIdsRef.current = newAccountIds
+      previousAllAccountIdsRef.current = newAccountIds;
     } catch (error) {
-      console.warn('Failed to fetch accounts for filter:', error)
-      setAccounts([])
-      setSelectedAccountIds([])
-      previousAllAccountIdsRef.current = []
+      console.warn('Failed to fetch accounts for filter:', error);
+      setAccounts([]);
+      setSelectedAccountIds([]);
+      previousAllAccountIdsRef.current = [];
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    fetchAccounts()
-  }, [fetchAccounts])
+    fetchAccounts();
+  }, [fetchAccounts]);
 
   useEffect(() => {
     const handleAccountsChanged = () => {
-      fetchAccounts()
-    }
+      fetchAccounts();
+    };
 
-    window.addEventListener(ACCOUNTS_CHANGED_EVENT, handleAccountsChanged)
-    return () => window.removeEventListener(ACCOUNTS_CHANGED_EVENT, handleAccountsChanged)
-  }, [fetchAccounts])
+    window.addEventListener(ACCOUNTS_CHANGED_EVENT, handleAccountsChanged);
+    return () => window.removeEventListener(ACCOUNTS_CHANGED_EVENT, handleAccountsChanged);
+  }, [fetchAccounts]);
 
-  const toggleBank = useCallback((bankName: string) => {
-    const bankAccounts = accountsByBank[bankName] || []
-    const bankAccountIds = bankAccounts.map(account => account.id)
+  const toggleBank = useCallback(
+    (bankName: string) => {
+      const bankAccounts = accountsByBank[bankName] || [];
+      const bankAccountIds = bankAccounts.map((account) => account.id);
 
-    setSelectedAccountIds(prev => {
-      const allBankAccountsSelected = bankAccountIds.every(id => prev.includes(id))
+      setSelectedAccountIds((prev) => {
+        const allBankAccountsSelected = bankAccountIds.every((id) => prev.includes(id));
 
-      if (allBankAccountsSelected) {
-        return prev.filter(id => !bankAccountIds.includes(id))
-      } else {
-        const newIds = [...prev]
-        bankAccountIds.forEach(id => {
-          if (!newIds.includes(id)) {
-            newIds.push(id)
-          }
-        })
-        return newIds
-      }
-    })
-  }, [accountsByBank])
+        if (allBankAccountsSelected) {
+          return prev.filter((id) => !bankAccountIds.includes(id));
+        } else {
+          const newIds = [...prev];
+          bankAccountIds.forEach((id) => {
+            if (!newIds.includes(id)) {
+              newIds.push(id);
+            }
+          });
+          return newIds;
+        }
+      });
+    },
+    [accountsByBank]
+  );
 
   const toggleAccount = useCallback((accountId: string) => {
-    setSelectedAccountIds(prev => {
+    setSelectedAccountIds((prev) => {
       if (prev.includes(accountId)) {
-        return prev.filter(id => id !== accountId)
+        return prev.filter((id) => id !== accountId);
       } else {
-        return [...prev, accountId]
+        return [...prev, accountId];
       }
-    })
-  }, [])
+    });
+  }, []);
 
-  const value = useMemo((): AccountFilterContextType => ({
-    selectedAccountIds,
-    allAccountIds,
-    isAllAccountsSelected,
-    accountsByBank,
-    loading,
-    setSelectedAccountIds,
-    toggleBank,
-    toggleAccount,
-  }), [selectedAccountIds, allAccountIds, isAllAccountsSelected, accountsByBank, loading, toggleBank, toggleAccount])
+  const value = useMemo(
+    (): AccountFilterContextType => ({
+      selectedAccountIds,
+      allAccountIds,
+      isAllAccountsSelected,
+      accountsByBank,
+      loading,
+      setSelectedAccountIds,
+      toggleBank,
+      toggleAccount,
+    }),
+    [
+      selectedAccountIds,
+      allAccountIds,
+      isAllAccountsSelected,
+      accountsByBank,
+      loading,
+      toggleBank,
+      toggleAccount,
+    ]
+  );
 
-  return (
-    <AccountFilterContext.Provider value={value}>
-      {children}
-    </AccountFilterContext.Provider>
-  )
+  return <AccountFilterContext.Provider value={value}>{children}</AccountFilterContext.Provider>;
 }
 
 function arraysEqual(a: string[], b: string[]): boolean {
-  if (a.length !== b.length) return false
+  if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i += 1) {
-    if (a[i] !== b[i]) return false
+    if (a[i] !== b[i]) return false;
   }
-  return true
+  return true;
 }

@@ -1,146 +1,154 @@
-import { useState, useCallback, useEffect } from 'react'
-import { usePlaidLink } from 'react-plaid-link'
-import { PlaidService } from '@/services/PlaidService'
+import { useState, useCallback, useEffect } from 'react';
+import { usePlaidLink } from 'react-plaid-link';
+import { PlaidService } from '@/services/PlaidService';
 
 export interface UseOnboardingPlaidFlowOptions {
-  onConnectionSuccess?: (institutionName: string) => void
-  onError?: (error: string) => void
+  onConnectionSuccess?: (institutionName: string) => void;
+  onError?: (error: string) => void;
 }
 
 export interface UseOnboardingPlaidFlowReturn {
-  isConnected: boolean
-  connectionInProgress: boolean
-  isSyncing: boolean
-  institutionName: string | null
-  error: string | null
-  initiateConnection: () => Promise<void>
-  handlePlaidSuccess: (publicToken: string) => Promise<void>
-  retryConnection: () => Promise<void>
-  reset: () => void
-  setError: (error: string | null) => void
+  isConnected: boolean;
+  connectionInProgress: boolean;
+  isSyncing: boolean;
+  institutionName: string | null;
+  error: string | null;
+  initiateConnection: () => Promise<void>;
+  handlePlaidSuccess: (publicToken: string) => Promise<void>;
+  retryConnection: () => Promise<void>;
+  reset: () => void;
+  setError: (error: string | null) => void;
 }
 
 export function useOnboardingPlaidFlow(
   options: UseOnboardingPlaidFlowOptions = {}
 ): UseOnboardingPlaidFlowReturn {
-  const { onConnectionSuccess, onError } = options
+  const { onConnectionSuccess, onError } = options;
 
-  const [linkToken, setLinkToken] = useState<string | null>(null)
-  const [isConnected, setIsConnected] = useState(false)
-  const [connectionInProgress, setConnectionInProgress] = useState(false)
-  const [isSyncing, setIsSyncing] = useState(false)
-  const [institutionName, setInstitutionName] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [shouldOpenLink, setShouldOpenLink] = useState(false)
+  const [linkToken, setLinkToken] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionInProgress, setConnectionInProgress] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [institutionName, setInstitutionName] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [shouldOpenLink, setShouldOpenLink] = useState(false);
 
-  const handleError = useCallback((errorMessage: string) => {
-    setError(errorMessage)
-    setConnectionInProgress(false)
-    onError?.(errorMessage)
-  }, [onError])
+  const handleError = useCallback(
+    (errorMessage: string) => {
+      setError(errorMessage);
+      setConnectionInProgress(false);
+      onError?.(errorMessage);
+    },
+    [onError]
+  );
 
-  const handleSuccess = useCallback(async (publicToken: string) => {
-    setConnectionInProgress(true)
-    setError(null)
+  const handleSuccess = useCallback(
+    async (publicToken: string) => {
+      setConnectionInProgress(true);
+      setError(null);
 
-    try {
-      await PlaidService.exchangeToken(publicToken)
-
-      setIsConnected(true)
-      setInstitutionName('Connected Bank')
-      onConnectionSuccess?.('Connected Bank')
-
-      let connectionId: string | null = null
       try {
-        const status = await PlaidService.getStatus()
-        const connections = Array.isArray(status?.connections) ? status.connections : []
-        const latestConnection = connections.find(conn => conn.is_connected) ?? connections[0]
-        if (latestConnection) {
-          setInstitutionName(latestConnection.institution_name || 'Connected Bank')
-          connectionId = latestConnection.connection_id
-        }
-      } catch (statusError) {
-        console.warn('Failed to refresh Plaid status after connection', statusError)
-      }
+        await PlaidService.exchangeToken(publicToken);
 
-      if (connectionId) {
-        setIsSyncing(true)
+        setIsConnected(true);
+        setInstitutionName('Connected Bank');
+        onConnectionSuccess?.('Connected Bank');
+
+        let connectionId: string | null = null;
         try {
-          await PlaidService.syncTransactions(connectionId)
-        } catch (syncError) {
-          console.warn('Failed to sync transactions during onboarding', syncError)
-        } finally {
-          setIsSyncing(false)
+          const status = await PlaidService.getStatus();
+          const connections = Array.isArray(status?.connections) ? status.connections : [];
+          const latestConnection = connections.find((conn) => conn.is_connected) ?? connections[0];
+          if (latestConnection) {
+            setInstitutionName(latestConnection.institution_name || 'Connected Bank');
+            connectionId = latestConnection.connection_id;
+          }
+        } catch (statusError) {
+          console.warn('Failed to refresh Plaid status after connection', statusError);
         }
+
+        if (connectionId) {
+          setIsSyncing(true);
+          try {
+            await PlaidService.syncTransactions(connectionId);
+          } catch (syncError) {
+            console.warn('Failed to sync transactions during onboarding', syncError);
+          } finally {
+            setIsSyncing(false);
+          }
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Connection failed';
+        handleError(errorMessage);
+      } finally {
+        setConnectionInProgress(false);
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Connection failed'
-      handleError(errorMessage)
-    } finally {
-      setConnectionInProgress(false)
-    }
-  }, [handleError, onConnectionSuccess])
+    },
+    [handleError, onConnectionSuccess]
+  );
 
   const { open, ready } = usePlaidLink({
     token: linkToken,
     onSuccess: handleSuccess,
     onExit: () => {
-      setConnectionInProgress(false)
-      setShouldOpenLink(false)
+      setConnectionInProgress(false);
+      setShouldOpenLink(false);
     },
-    onEvent: () => {
-    },
-  })
+    onEvent: () => {},
+  });
 
   useEffect(() => {
     if (shouldOpenLink && ready) {
-      open()
-      setShouldOpenLink(false)
+      open();
+      setShouldOpenLink(false);
     }
-  }, [shouldOpenLink, ready, open])
+  }, [shouldOpenLink, ready, open]);
 
   const getLinkToken = useCallback(async () => {
     try {
-      setError(null)
-      const response = await PlaidService.getLinkToken()
-      setLinkToken(response.link_token)
-      return response.link_token
+      setError(null);
+      const response = await PlaidService.getLinkToken();
+      setLinkToken(response.link_token);
+      return response.link_token;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to get link token'
-      handleError(errorMessage)
-      throw error
+      const errorMessage = error instanceof Error ? error.message : 'Failed to get link token';
+      handleError(errorMessage);
+      throw error;
     }
-  }, [handleError])
+  }, [handleError]);
 
   const initiateConnection = useCallback(async () => {
     try {
-      setConnectionInProgress(true)
-      await getLinkToken()
-      setShouldOpenLink(true)
+      setConnectionInProgress(true);
+      await getLinkToken();
+      setShouldOpenLink(true);
     } catch {
-      setConnectionInProgress(false)
-      setShouldOpenLink(false)
+      setConnectionInProgress(false);
+      setShouldOpenLink(false);
     }
-  }, [getLinkToken])
+  }, [getLinkToken]);
 
   const retryConnection = useCallback(async () => {
-    setError(null)
-    await initiateConnection()
-  }, [initiateConnection])
+    setError(null);
+    await initiateConnection();
+  }, [initiateConnection]);
 
   const reset = useCallback(() => {
-    setIsConnected(false)
-    setConnectionInProgress(false)
-    setIsSyncing(false)
-    setInstitutionName(null)
-    setError(null)
-    setLinkToken(null)
-    setShouldOpenLink(false)
-  }, [])
+    setIsConnected(false);
+    setConnectionInProgress(false);
+    setIsSyncing(false);
+    setInstitutionName(null);
+    setError(null);
+    setLinkToken(null);
+    setShouldOpenLink(false);
+  }, []);
 
-  const handlePlaidSuccess = useCallback(async (publicToken: string) => {
-    await handleSuccess(publicToken)
-  }, [handleSuccess])
+  const handlePlaidSuccess = useCallback(
+    async (publicToken: string) => {
+      await handleSuccess(publicToken);
+    },
+    [handleSuccess]
+  );
 
   return {
     isConnected,
@@ -153,5 +161,5 @@ export function useOnboardingPlaidFlow(
     retryConnection,
     reset,
     setError,
-  }
+  };
 }

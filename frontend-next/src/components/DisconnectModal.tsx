@@ -1,13 +1,13 @@
-import React from "react";
-import { Loader2, AlertTriangle } from "lucide-react";
-import { Alert, Button, GlassCard, Modal } from "../ui/primitives";
-import { cn } from '@/ui/primitives'
+import React from 'react';
+import { Loader2, AlertTriangle } from 'lucide-react';
+import { Alert, Button, GlassCard, Modal } from '../ui/primitives';
+import { cn } from '@/ui/primitives';
 
 interface Account {
   id: string;
   name: string;
   mask: string;
-  type: "checking" | "savings" | "credit" | "loan" | "other";
+  type: 'checking' | 'savings' | 'credit' | 'loan' | 'other';
   balance?: number;
   transactions?: number;
 }
@@ -16,7 +16,7 @@ interface BankConnection {
   id: string;
   name: string;
   short: string;
-  status: "connected" | "needs_reauth" | "error";
+  status: 'connected' | 'needs_reauth' | 'error';
   lastSync?: string;
   accounts: Account[];
 }
@@ -37,15 +37,10 @@ export const DisconnectModal: React.FC<DisconnectModalProps> = ({
   loading = false,
 }) => {
   const accountCount = bank.accounts.length;
-  const accountText = accountCount === 1 ? "1 account" : `${accountCount} accounts`;
+  const accountText = accountCount === 1 ? '1 account' : `${accountCount} accounts`;
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onCancel}
-      labelledBy="disconnect-modal-title"
-      size="md"
-    >
+    <Modal isOpen={isOpen} onClose={onCancel} labelledBy="disconnect-modal-title" size="md">
       <GlassCard
         variant="accent"
         rounded="xl"
@@ -61,28 +56,18 @@ export const DisconnectModal: React.FC<DisconnectModalProps> = ({
           className="text-left"
         >
           <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-300')}>
-            This will remove {accountText} and related transactions from your dashboard.
-            This action cannot be undone.
+            This will remove {accountText} and related transactions from your dashboard. This action
+            cannot be undone.
           </p>
         </Alert>
 
         <div className={cn('flex', 'justify-end', 'gap-3')}>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onCancel}
-            disabled={loading}
-          >
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={loading}>
             Cancel
           </Button>
-          <Button
-            type="button"
-            variant="danger"
-            onClick={onConfirm}
-            disabled={loading}
-          >
+          <Button type="button" variant="danger" onClick={onConfirm} disabled={loading}>
             {loading && <Loader2 className={cn('h-4', 'w-4', 'animate-spin')} />}
-            {loading ? "Disconnecting" : "Disconnect"}
+            {loading ? 'Disconnecting' : 'Disconnect'}
           </Button>
         </div>
       </GlassCard>

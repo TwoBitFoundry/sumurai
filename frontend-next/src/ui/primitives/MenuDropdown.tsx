@@ -1,12 +1,12 @@
-import React, { useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { cn, transitionClasses } from './utils'
+import React, { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { cn, transitionClasses } from './utils';
 
 export interface MenuDropdownProps {
-  trigger: React.ReactNode
-  children: React.ReactNode
-  className?: string
-  contentClassName?: string
+  trigger: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+  contentClassName?: string;
 }
 
 /**
@@ -31,7 +31,7 @@ export function MenuDropdown({
   className,
   contentClassName,
 }: MenuDropdownProps) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
 
   return (
     <div className={cn('relative', className)}>
@@ -60,13 +60,12 @@ export function MenuDropdown({
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }
 
-export interface MenuItemProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  icon?: React.ReactNode
-  children: React.ReactNode
+export interface MenuItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  icon?: React.ReactNode;
+  children: React.ReactNode;
 }
 
 /**
@@ -79,12 +78,7 @@ export interface MenuItemProps
  * </MenuItem>
  * ```
  */
-export function MenuItem({
-  icon,
-  children,
-  className,
-  ...props
-}: MenuItemProps) {
+export function MenuItem({ icon, children, className, ...props }: MenuItemProps) {
   return (
     <button
       className={cn(
@@ -102,7 +96,7 @@ export function MenuItem({
       {icon}
       {children}
     </button>
-  )
+  );
 }
 
-export default MenuDropdown
+export default MenuDropdown;

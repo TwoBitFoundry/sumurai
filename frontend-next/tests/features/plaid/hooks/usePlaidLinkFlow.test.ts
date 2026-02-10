@@ -1,22 +1,22 @@
-import { renderHook, act } from '@testing-library/react'
-import { usePlaidLinkFlow } from '@/features/plaid/hooks/usePlaidLinkFlow'
-import { ApiClient } from '@/services/ApiClient'
+import { renderHook, act } from '@testing-library/react';
+import { usePlaidLinkFlow } from '@/features/plaid/hooks/usePlaidLinkFlow';
+import { ApiClient } from '@/services/ApiClient';
 
 const plaidLinkMock = (() => {
-  const open = jest.fn()
-  let config: any = null
+  const open = jest.fn();
+  let config: any = null;
   return {
     open,
     getConfig: () => config,
     reset: () => {
-      config = null
-      open.mockReset()
+      config = null;
+      open.mockReset();
     },
     setConfig: (opts: any) => {
-      config = opts
+      config = opts;
     },
-  }
-})()
+  };
+})();
 
 const plaidConnectionsMock = {
   connections: [] as any[],
@@ -28,18 +28,18 @@ const plaidConnectionsMock = {
   setConnectionSyncInProgress: jest.fn(),
   refresh: jest.fn(),
   getConnection: jest.fn(),
-}
+};
 
 jest.mock('react-plaid-link', () => ({
   usePlaidLink: (opts: any) => {
-    plaidLinkMock.setConfig(opts)
-    return { open: plaidLinkMock.open, ready: true }
+    plaidLinkMock.setConfig(opts);
+    return { open: plaidLinkMock.open, ready: true };
   },
-}))
+}));
 
 jest.mock('@/hooks/usePlaidConnections', () => ({
   usePlaidConnections: (_options?: any) => plaidConnectionsMock,
-}))
+}));
 
 jest.mock('@/services/PlaidService', () => ({
   PlaidService: {
@@ -48,67 +48,70 @@ jest.mock('@/services/PlaidService', () => ({
     syncTransactions: jest.fn(),
     disconnect: jest.fn(),
   },
-}))
+}));
 
 jest.mock('@/services/ApiClient', () => ({
   ApiClient: {
     post: jest.fn(),
   },
-}))
+}));
 
-const plaidServiceMock = jest.requireMock('@/services/PlaidService').PlaidService as Record<string, jest.Mock>
-const apiClientMock = jest.requireMock('@/services/ApiClient').ApiClient as { post: jest.Mock }
+const plaidServiceMock = jest.requireMock('@/services/PlaidService').PlaidService as Record<
+  string,
+  jest.Mock
+>;
+const apiClientMock = jest.requireMock('@/services/ApiClient').ApiClient as { post: jest.Mock };
 
 describe('usePlaidLinkFlow', () => {
   beforeEach(() => {
-    plaidConnectionsMock.connections = []
-    plaidConnectionsMock.loading = false
-    plaidConnectionsMock.error = null
-    plaidConnectionsMock.addConnection.mockReset()
-    plaidConnectionsMock.removeConnection.mockReset()
-    plaidConnectionsMock.updateConnectionSyncInfo.mockReset()
-    plaidConnectionsMock.setConnectionSyncInProgress.mockReset()
-    plaidConnectionsMock.refresh.mockReset()
-    plaidConnectionsMock.getConnection.mockReset()
-    plaidLinkMock.reset()
-    Object.values(plaidServiceMock).forEach(fn => fn.mockReset())
-    apiClientMock.post.mockReset()
-  })
+    plaidConnectionsMock.connections = [];
+    plaidConnectionsMock.loading = false;
+    plaidConnectionsMock.error = null;
+    plaidConnectionsMock.addConnection.mockReset();
+    plaidConnectionsMock.removeConnection.mockReset();
+    plaidConnectionsMock.updateConnectionSyncInfo.mockReset();
+    plaidConnectionsMock.setConnectionSyncInProgress.mockReset();
+    plaidConnectionsMock.refresh.mockReset();
+    plaidConnectionsMock.getConnection.mockReset();
+    plaidLinkMock.reset();
+    Object.values(plaidServiceMock).forEach((fn) => fn.mockReset());
+    apiClientMock.post.mockReset();
+  });
 
   it('exchanges token and refreshes status on success', async () => {
-    const onError = jest.fn()
-    plaidConnectionsMock.refresh.mockResolvedValue([])
-    apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' })
-    plaidServiceMock.exchangeToken.mockResolvedValueOnce({ access_token: 'access' } as any)
+    const onError = jest.fn();
+    plaidConnectionsMock.refresh.mockResolvedValue([]);
+    apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' });
+    plaidServiceMock.exchangeToken.mockResolvedValueOnce({ access_token: 'access' } as any);
     plaidServiceMock.getStatus.mockResolvedValueOnce({
       connected: true,
       institution_name: 'Test Bank',
       connection_id: 'conn-1',
-    } as any)
+    } as any);
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }))
+    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
 
     await act(async () => {
-      await result.current.connect()
-    })
+      await result.current.connect();
+    });
 
-    expect(apiClientMock.post).toHaveBeenCalledWith('/plaid/link-token', expect.any(Object))
-    expect(plaidLinkMock.open).toHaveBeenCalled()
+    expect(apiClientMock.post).toHaveBeenCalledWith('/plaid/link-token', expect.any(Object));
+    expect(plaidLinkMock.open).toHaveBeenCalled();
 
-    const config = plaidLinkMock.getConfig()
+    const config = plaidLinkMock.getConfig();
     await act(async () => {
-      await config.onSuccess('public-token')
-    })
+      await config.onSuccess('public-token');
+    });
 
-    expect(plaidServiceMock.exchangeToken).toHaveBeenCalledWith('public-token')
-    expect(plaidConnectionsMock.refresh).toHaveBeenCalled()
-    expect(result.current.toast).toBe('Bank connected successfully!')
-    expect(onError).toHaveBeenCalled()
-    expect(onError.mock.calls.every(call => call[0] === null)).toBe(true)
-  })
+    expect(plaidServiceMock.exchangeToken).toHaveBeenCalledWith('public-token');
+    expect(plaidConnectionsMock.refresh).toHaveBeenCalled();
+    expect(result.current.toast).toBe('Bank connected successfully!');
+    expect(onError).toHaveBeenCalled();
+    expect(onError.mock.calls.every((call) => call[0] === null)).toBe(true);
+  });
 
   it('provides syncOne, syncAll, and disconnect helpers', async () => {
-    const onError = jest.fn()
+    const onError = jest.fn();
     plaidConnectionsMock.connections = [
       {
         connectionId: 'bank-1',
@@ -121,8 +124,8 @@ describe('usePlaidLinkFlow', () => {
         isConnected: true,
         accounts: [],
       },
-    ]
-    plaidConnectionsMock.getConnection.mockReturnValue(plaidConnectionsMock.connections[0])
+    ];
+    plaidConnectionsMock.getConnection.mockReturnValue(plaidConnectionsMock.connections[0]);
     plaidServiceMock.syncTransactions.mockResolvedValue({
       transactions: [{ id: 't-1' }],
       metadata: {
@@ -130,105 +133,105 @@ describe('usePlaidLinkFlow', () => {
         account_count: 1,
         sync_timestamp: '2024-01-01T00:00:00Z',
       },
-    } as any)
-    plaidServiceMock.disconnect.mockResolvedValue({} as any)
+    } as any);
+    plaidServiceMock.disconnect.mockResolvedValue({} as any);
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }))
-
-    await act(async () => {
-      await result.current.syncOne('bank-1')
-    })
-
-    expect(plaidServiceMock.syncTransactions).toHaveBeenCalledWith('bank-1')
-    expect(plaidConnectionsMock.refresh).toHaveBeenCalled()
-    expect(result.current.toast).toContain('Synced 1 new transactions from Bank One')
+    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
 
     await act(async () => {
-      await result.current.syncAll()
-    })
+      await result.current.syncOne('bank-1');
+    });
 
-    expect(result.current.syncingAll).toBe(false)
-    expect(plaidServiceMock.syncTransactions).toHaveBeenCalledTimes(2)
+    expect(plaidServiceMock.syncTransactions).toHaveBeenCalledWith('bank-1');
+    expect(plaidConnectionsMock.refresh).toHaveBeenCalled();
+    expect(result.current.toast).toContain('Synced 1 new transactions from Bank One');
 
     await act(async () => {
-      await result.current.disconnect('bank-1')
-    })
+      await result.current.syncAll();
+    });
 
-    expect(plaidServiceMock.disconnect).toHaveBeenCalledWith('bank-1')
-    expect(plaidConnectionsMock.refresh).toHaveBeenCalled()
-    expect(result.current.toast).toBe('Bank One disconnected successfully')
-    expect(onError).toHaveBeenCalled()
-    expect(onError.mock.calls.every(call => call[0] === null)).toBe(true)
-  })
+    expect(result.current.syncingAll).toBe(false);
+    expect(plaidServiceMock.syncTransactions).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await result.current.disconnect('bank-1');
+    });
+
+    expect(plaidServiceMock.disconnect).toHaveBeenCalledWith('bank-1');
+    expect(plaidConnectionsMock.refresh).toHaveBeenCalled();
+    expect(result.current.toast).toBe('Bank One disconnected successfully');
+    expect(onError).toHaveBeenCalled();
+    expect(onError.mock.calls.every((call) => call[0] === null)).toBe(true);
+  });
 
   it('reports errors via onError', async () => {
-    const onError = jest.fn()
-    apiClientMock.post.mockRejectedValueOnce(new Error('bad request'))
+    const onError = jest.fn();
+    apiClientMock.post.mockRejectedValueOnce(new Error('bad request'));
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }))
+    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
 
     await act(async () => {
-      await result.current.connect().catch(() => {})
-    })
+      await result.current.connect().catch(() => {});
+    });
 
-    expect(onError).toHaveBeenCalledWith('Failed to start bank connection: bad request')
-    expect(result.current.error).toBe('Failed to start bank connection: bad request')
-  })
-})
+    expect(onError).toHaveBeenCalledWith('Failed to start bank connection: bad request');
+    expect(result.current.error).toBe('Failed to start bank connection: bad request');
+  });
+});
 
 describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
   beforeEach(() => {
-    plaidConnectionsMock.connections = []
-    plaidConnectionsMock.loading = false
-    plaidConnectionsMock.error = null
-    plaidConnectionsMock.addConnection.mockReset()
-    plaidConnectionsMock.removeConnection.mockReset()
-    plaidConnectionsMock.updateConnectionSyncInfo.mockReset()
-    plaidConnectionsMock.setConnectionSyncInProgress.mockReset()
-    plaidConnectionsMock.refresh.mockReset()
-    plaidConnectionsMock.getConnection.mockReset()
-    plaidLinkMock.reset()
-    Object.values(plaidServiceMock).forEach(fn => fn.mockReset())
-    apiClientMock.post.mockReset()
-  })
+    plaidConnectionsMock.connections = [];
+    plaidConnectionsMock.loading = false;
+    plaidConnectionsMock.error = null;
+    plaidConnectionsMock.addConnection.mockReset();
+    plaidConnectionsMock.removeConnection.mockReset();
+    plaidConnectionsMock.updateConnectionSyncInfo.mockReset();
+    plaidConnectionsMock.setConnectionSyncInProgress.mockReset();
+    plaidConnectionsMock.refresh.mockReset();
+    plaidConnectionsMock.getConnection.mockReset();
+    plaidLinkMock.reset();
+    Object.values(plaidServiceMock).forEach((fn) => fn.mockReset());
+    apiClientMock.post.mockReset();
+  });
 
   it('should wrap connect callback with instrumentation', async () => {
-    const onError = jest.fn()
-    apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' })
+    const onError = jest.fn();
+    apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' });
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }))
+    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
 
     await act(async () => {
-      await result.current.connect()
-    })
+      await result.current.connect();
+    });
 
-    expect(apiClientMock.post).toHaveBeenCalled()
-    expect(plaidLinkMock.open).toHaveBeenCalled()
-  })
+    expect(apiClientMock.post).toHaveBeenCalled();
+    expect(plaidLinkMock.open).toHaveBeenCalled();
+  });
 
   it('should wrap onSuccess callback with instrumentation', async () => {
-    const onError = jest.fn()
-    plaidConnectionsMock.refresh.mockResolvedValue([])
-    apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' })
-    plaidServiceMock.exchangeToken.mockResolvedValueOnce({ access_token: 'access' } as any)
+    const onError = jest.fn();
+    plaidConnectionsMock.refresh.mockResolvedValue([]);
+    apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' });
+    plaidServiceMock.exchangeToken.mockResolvedValueOnce({ access_token: 'access' } as any);
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }))
+    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
 
     await act(async () => {
-      await result.current.connect()
-    })
+      await result.current.connect();
+    });
 
-    const config = plaidLinkMock.getConfig()
+    const config = plaidLinkMock.getConfig();
     await act(async () => {
-      await config.onSuccess('public-token')
-    })
+      await config.onSuccess('public-token');
+    });
 
-    expect(plaidServiceMock.exchangeToken).toHaveBeenCalledWith('public-token')
-    expect(plaidConnectionsMock.refresh).toHaveBeenCalled()
-  })
+    expect(plaidServiceMock.exchangeToken).toHaveBeenCalledWith('public-token');
+    expect(plaidConnectionsMock.refresh).toHaveBeenCalled();
+  });
 
   it('should wrap syncOne callback with instrumentation', async () => {
-    const onError = jest.fn()
+    const onError = jest.fn();
     plaidConnectionsMock.connections = [
       {
         connectionId: 'bank-1',
@@ -241,24 +244,24 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
         isConnected: true,
         accounts: [],
       },
-    ]
-    plaidConnectionsMock.getConnection.mockReturnValue(plaidConnectionsMock.connections[0])
+    ];
+    plaidConnectionsMock.getConnection.mockReturnValue(plaidConnectionsMock.connections[0]);
     plaidServiceMock.syncTransactions.mockResolvedValue({
       transactions: [{ id: 't-1' }],
-    } as any)
+    } as any);
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }))
+    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
 
     await act(async () => {
-      await result.current.syncOne('bank-1')
-    })
+      await result.current.syncOne('bank-1');
+    });
 
-    expect(plaidServiceMock.syncTransactions).toHaveBeenCalledWith('bank-1')
-    expect(plaidConnectionsMock.refresh).toHaveBeenCalled()
-  })
+    expect(plaidServiceMock.syncTransactions).toHaveBeenCalledWith('bank-1');
+    expect(plaidConnectionsMock.refresh).toHaveBeenCalled();
+  });
 
   it('should wrap syncAll callback with instrumentation', async () => {
-    const onError = jest.fn()
+    const onError = jest.fn();
     plaidConnectionsMock.connections = [
       {
         connectionId: 'bank-1',
@@ -271,24 +274,24 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
         isConnected: true,
         accounts: [],
       },
-    ]
-    plaidConnectionsMock.getConnection.mockReturnValue(plaidConnectionsMock.connections[0])
+    ];
+    plaidConnectionsMock.getConnection.mockReturnValue(plaidConnectionsMock.connections[0]);
     plaidServiceMock.syncTransactions.mockResolvedValue({
       transactions: [],
-    } as any)
-    plaidConnectionsMock.refresh.mockResolvedValue([])
+    } as any);
+    plaidConnectionsMock.refresh.mockResolvedValue([]);
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }))
+    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
 
     await act(async () => {
-      await result.current.syncAll()
-    })
+      await result.current.syncAll();
+    });
 
-    expect(result.current.syncingAll).toBe(false)
-  })
+    expect(result.current.syncingAll).toBe(false);
+  });
 
   it('should wrap disconnect callback with instrumentation', async () => {
-    const onError = jest.fn()
+    const onError = jest.fn();
     plaidConnectionsMock.connections = [
       {
         connectionId: 'bank-1',
@@ -301,18 +304,18 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
         isConnected: true,
         accounts: [],
       },
-    ]
-    plaidConnectionsMock.getConnection.mockReturnValue(plaidConnectionsMock.connections[0])
-    plaidServiceMock.disconnect.mockResolvedValue({} as any)
-    plaidConnectionsMock.refresh.mockResolvedValue([])
+    ];
+    plaidConnectionsMock.getConnection.mockReturnValue(plaidConnectionsMock.connections[0]);
+    plaidServiceMock.disconnect.mockResolvedValue({} as any);
+    plaidConnectionsMock.refresh.mockResolvedValue([]);
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }))
+    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
 
     await act(async () => {
-      await result.current.disconnect('bank-1')
-    })
+      await result.current.disconnect('bank-1');
+    });
 
-    expect(plaidServiceMock.disconnect).toHaveBeenCalledWith('bank-1')
-    expect(plaidConnectionsMock.refresh).toHaveBeenCalled()
-  })
-})
+    expect(plaidServiceMock.disconnect).toHaveBeenCalledWith('bank-1');
+    expect(plaidConnectionsMock.refresh).toHaveBeenCalled();
+  });
+});

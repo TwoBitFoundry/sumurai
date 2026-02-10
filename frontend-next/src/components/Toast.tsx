@@ -1,12 +1,12 @@
-import React from 'react'
-import { motion } from 'framer-motion'
+import React from 'react';
+import { motion } from 'framer-motion';
 
-import { Button, GlassCard } from '@/ui/primitives'
-import { cn } from '@/ui/primitives/utils'
+import { Button, GlassCard } from '@/ui/primitives';
+import { cn } from '@/ui/primitives/utils';
 
 interface ToastProps {
-  message: string
-  onClose: () => void
+  message: string;
+  onClose: () => void;
 }
 
 export const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
@@ -17,8 +17,18 @@ export const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
       exit={{ opacity: 0, y: 20 }}
       className={cn('fixed', 'bottom-6', 'right-6', 'z-50', 'max-w-sm')}
     >
-      <GlassCard variant="accent" rounded="xl" padding="md" className={cn('flex', 'items-center', 'gap-4')} withInnerEffects={false}>
-        <div className={cn('flex-1', 'text-sm', 'font-medium', 'text-slate-900', 'dark:text-white')}>{message}</div>
+      <GlassCard
+        variant="accent"
+        rounded="xl"
+        padding="md"
+        className={cn('flex', 'items-center', 'gap-4')}
+        withInnerEffects={false}
+      >
+        <div
+          className={cn('flex-1', 'text-sm', 'font-medium', 'text-slate-900', 'dark:text-white')}
+        >
+          {message}
+        </div>
         <Button
           type="button"
           variant="secondary"
@@ -30,5 +40,5 @@ export const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
         </Button>
       </GlassCard>
     </motion.div>
-  )
-}
+  );
+};

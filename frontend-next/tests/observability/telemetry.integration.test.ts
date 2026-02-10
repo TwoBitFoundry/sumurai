@@ -43,7 +43,8 @@ describe('Telemetry Integration - Auto-Instrumentation', () => {
     });
 
     it('should use environment values for endpoint', async () => {
-      process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT = 'http://seq.example.com:5341/ingest/otlp';
+      process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT =
+        'http://seq.example.com:5341/ingest/otlp';
 
       const tracer = await initTelemetry();
 

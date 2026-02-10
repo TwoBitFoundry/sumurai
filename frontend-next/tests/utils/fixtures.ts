@@ -1,4 +1,4 @@
-import type { ProviderConnectionStatus, ProviderStatusResponse } from '@/types/api'
+import type { ProviderConnectionStatus, ProviderStatusResponse } from '@/types/api';
 
 export const createProviderConnection = (
   overrides: Partial<ProviderConnectionStatus> = {}
@@ -11,7 +11,7 @@ export const createProviderConnection = (
   account_count: 0,
   sync_in_progress: false,
   ...overrides,
-})
+});
 
 export const createProviderStatus = (
   overrides: Partial<ProviderStatusResponse> = {}
@@ -19,4 +19,4 @@ export const createProviderStatus = (
   provider: 'plaid',
   connections: [],
   ...overrides,
-})
+});

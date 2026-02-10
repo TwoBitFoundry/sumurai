@@ -1,6 +1,6 @@
-import React from 'react'
-import { cva, type VariantProps } from 'class-variance-authority'
-import { cn, disabledClasses, transitionClasses } from './utils'
+import React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn, disabledClasses, transitionClasses } from './utils';
 
 const inputVariants = cva(
   [
@@ -58,7 +58,7 @@ const inputVariants = cva(
       inputSize: 'md',
     },
   }
-)
+);
 
 export interface InputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
@@ -88,10 +88,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         className={cn(inputVariants({ variant, inputSize }), className)}
         {...props}
       />
-    )
+    );
   }
-)
+);
 
-Input.displayName = 'Input'
+Input.displayName = 'Input';
 
-export default Input
+export default Input;

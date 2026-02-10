@@ -1,5 +1,5 @@
-import { render, fireEvent } from '@testing-library/react'
-import ConnectionsList from '@/features/plaid/components/ConnectionsList'
+import { render, fireEvent } from '@testing-library/react';
+import ConnectionsList from '@/features/plaid/components/ConnectionsList';
 
 jest.mock('@/components/BankCard', () => ({
   __esModule: true,
@@ -10,12 +10,12 @@ jest.mock('@/components/BankCard', () => ({
       <button onClick={() => onDisconnect(bank.id)}>disconnect</button>
     </div>
   ),
-}))
+}));
 
 jest.mock('@/features/plaid/components/ConnectButton', () => ({
   __esModule: true,
   default: ({ onClick }: any) => <button onClick={onClick}>Add account</button>,
-}))
+}));
 
 describe('ConnectionsList', () => {
   const bank = {
@@ -25,11 +25,11 @@ describe('ConnectionsList', () => {
     status: 'connected' as const,
     accounts: [],
     lastSync: null,
-  }
+  };
 
   it('renders bank cards when banks exist', () => {
-    const onSync = jest.fn()
-    const onDisconnect = jest.fn()
+    const onSync = jest.fn();
+    const onDisconnect = jest.fn();
     const { getAllByTestId, getByText } = render(
       <ConnectionsList
         banks={[bank]}
@@ -37,15 +37,15 @@ describe('ConnectionsList', () => {
         onSync={onSync}
         onDisconnect={onDisconnect}
       />
-    )
+    );
 
-    expect(getAllByTestId('bank-card')).toHaveLength(1)
-    fireEvent.click(getByText('sync'))
-    expect(onSync).toHaveBeenCalledWith('bank-1')
-  })
+    expect(getAllByTestId('bank-card')).toHaveLength(1);
+    fireEvent.click(getByText('sync'));
+    expect(onSync).toHaveBeenCalledWith('bank-1');
+  });
 
   it('shows empty state when no banks', () => {
-    const onConnect = jest.fn()
+    const onConnect = jest.fn();
     const { getAllByText } = render(
       <ConnectionsList
         banks={[]}
@@ -53,10 +53,10 @@ describe('ConnectionsList', () => {
         onSync={jest.fn()}
         onDisconnect={jest.fn()}
       />
-    )
+    );
 
-    const buttons = getAllByText(/add account/i)
-    fireEvent.click(buttons[buttons.length - 1])
-    expect(onConnect).toHaveBeenCalled()
-  })
-})
+    const buttons = getAllByText(/add account/i);
+    fireEvent.click(buttons[buttons.length - 1]);
+    expect(onConnect).toHaveBeenCalled();
+  });
+});

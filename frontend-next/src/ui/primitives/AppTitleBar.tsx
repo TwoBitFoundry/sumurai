@@ -1,9 +1,9 @@
-import React from 'react'
-import Image from 'next/image'
-import { cva } from 'class-variance-authority'
-import { Sun, Moon, Settings } from 'lucide-react'
-import { Button } from './Button'
-import { cn } from './utils'
+import React from 'react';
+import Image from 'next/image';
+import { cva } from 'class-variance-authority';
+import { Sun, Moon, Settings } from 'lucide-react';
+import { Button } from './Button';
+import { cn } from './utils';
 
 const titleBarVariants = cva(
   'sticky top-0 z-50 border-b backdrop-blur-sm transition-all duration-200 ease-out',
@@ -24,26 +24,26 @@ const titleBarVariants = cva(
       scrolled: false,
     },
   }
-)
+);
 
-type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings'
+type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
 const TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'transactions', label: 'Transactions' },
   { key: 'budgets', label: 'Budgets' },
   { key: 'accounts', label: 'Accounts' },
-]
+];
 
 export interface AppTitleBarProps {
-  state: 'unauthenticated' | 'onboarding' | 'authenticated'
-  scrolled: boolean
-  themeMode: 'light' | 'dark'
-  onThemeToggle: () => void
-  onLogout?: () => void
-  currentTab?: TabKey
-  onTabChange?: (tab: TabKey) => void
-  accountFilterNode?: React.ReactNode
+  state: 'unauthenticated' | 'onboarding' | 'authenticated';
+  scrolled: boolean;
+  themeMode: 'light' | 'dark';
+  onThemeToggle: () => void;
+  onLogout?: () => void;
+  currentTab?: TabKey;
+  onTabChange?: (tab: TabKey) => void;
+  accountFilterNode?: React.ReactNode;
 }
 
 /**
@@ -85,10 +85,27 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
           scrolled,
         })}
       >
-        <div className={cn('px-4', `${scrolled ? 'h-14' : 'h-16'}`, 'transition-all', 'duration-200', 'ease-out')}>
+        <div
+          className={cn(
+            'px-4',
+            `${scrolled ? 'h-14' : 'h-16'}`,
+            'transition-all',
+            'duration-200',
+            'ease-out'
+          )}
+        >
           <div className={cn('flex', 'items-center', 'justify-between', 'h-full')}>
             <div className={cn('flex', 'items-center', 'gap-6')}>
-              <div className={cn('flex', 'items-center', 'gap-2', 'text-slate-900', 'dark:text-white', scrolled ? 'text-xl' : 'text-3xl')}>
+              <div
+                className={cn(
+                  'flex',
+                  'items-center',
+                  'gap-2',
+                  'text-slate-900',
+                  'dark:text-white',
+                  scrolled ? 'text-xl' : 'text-3xl'
+                )}
+              >
                 <Image
                   src="/sumurai-logo.jpeg"
                   alt="Sumurai Logo"
@@ -165,7 +182,9 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                   size={scrolled ? 'xs' : 'sm'}
                   className={cn(
                     'rounded-xl',
-                    currentTab !== 'settings' ? 'border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600' : ''
+                    currentTab !== 'settings'
+                      ? 'border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600'
+                      : ''
                   )}
                   aria-label="Settings"
                   title="Settings"
@@ -189,10 +208,10 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
           </div>
         </div>
       </header>
-    )
+    );
   }
-)
+);
 
-AppTitleBar.displayName = 'AppTitleBar'
+AppTitleBar.displayName = 'AppTitleBar';
 
-export default AppTitleBar
+export default AppTitleBar;

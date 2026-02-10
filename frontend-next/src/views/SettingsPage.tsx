@@ -1,104 +1,104 @@
-import { useState, FormEvent } from 'react'
-import { GlassCard, Button, Input, FormLabel, Modal, Badge, Alert } from '@/ui/primitives'
-import { cn } from '@/ui/primitives/utils'
-import { SettingsService } from '@/services/SettingsService'
-import { AuthService } from '@/services/authService'
-import { usePasswordValidation } from '@/hooks/usePasswordValidation'
-import { PasswordChecker } from '@/components/PasswordChecker'
+import { useState, FormEvent } from 'react';
+import { GlassCard, Button, Input, FormLabel, Modal, Badge, Alert } from '@/ui/primitives';
+import { cn } from '@/ui/primitives/utils';
+import { SettingsService } from '@/services/SettingsService';
+import { AuthService } from '@/services/authService';
+import { usePasswordValidation } from '@/hooks/usePasswordValidation';
+import { PasswordChecker } from '@/components/PasswordChecker';
 
 interface SettingsPageProps {
-  onLogout?: () => void
+  onLogout?: () => void;
 }
 
 export default function SettingsPage({ onLogout }: SettingsPageProps) {
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [passwordError, setPasswordError] = useState<string | null>(null)
-  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null)
-  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  const newPasswordValidation = usePasswordValidation(newPassword)
-  const isPasswordMatch = newPassword === confirmPassword
+  const newPasswordValidation = usePasswordValidation(newPassword);
+  const isPasswordMatch = newPassword === confirmPassword;
 
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [confirmText, setConfirmText] = useState('')
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleChangePassword = async (e: FormEvent) => {
-    e.preventDefault()
-    setPasswordError(null)
-    setPasswordSuccess(null)
+    e.preventDefault();
+    setPasswordError(null);
+    setPasswordSuccess(null);
 
     if (!currentPassword) {
-      setPasswordError('Current password is required')
-      return
+      setPasswordError('Current password is required');
+      return;
     }
 
     if (!newPasswordValidation.isValid) {
-      setPasswordError('Password does not meet requirements')
-      return
+      setPasswordError('Password does not meet requirements');
+      return;
     }
 
     if (!isPasswordMatch) {
-      setPasswordError('Passwords do not match')
-      return
+      setPasswordError('Passwords do not match');
+      return;
     }
 
-    setIsChangingPassword(true)
+    setIsChangingPassword(true);
 
     try {
-      const response = await SettingsService.changePassword(currentPassword, newPassword)
-      setPasswordSuccess(response.message)
-      setCurrentPassword('')
-      setNewPassword('')
-      setConfirmPassword('')
+      const response = await SettingsService.changePassword(currentPassword, newPassword);
+      setPasswordSuccess(response.message);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
 
       setTimeout(() => {
-        AuthService.clearToken()
-        if (onLogout) onLogout()
-      }, 2000)
+        AuthService.clearToken();
+        if (onLogout) onLogout();
+      }, 2000);
     } catch (error) {
       if (error instanceof Error) {
-        setPasswordError(error.message)
+        setPasswordError(error.message);
       } else {
-        setPasswordError('Failed to change password')
+        setPasswordError('Failed to change password');
       }
     } finally {
-      setIsChangingPassword(false)
+      setIsChangingPassword(false);
     }
-  }
+  };
 
   const closeDeleteModal = () => {
-    setShowDeleteModal(false)
-    setConfirmText('')
-    setDeleteError(null)
-  }
+    setShowDeleteModal(false);
+    setConfirmText('');
+    setDeleteError(null);
+  };
 
   const handleDeleteAccount = async () => {
-    if (confirmText !== 'DELETE') return
+    if (confirmText !== 'DELETE') return;
 
-    setIsDeleting(true)
-    setDeleteError(null)
+    setIsDeleting(true);
+    setDeleteError(null);
 
     try {
-      await SettingsService.deleteAccount()
-      AuthService.clearToken()
-      if (onLogout) onLogout()
+      await SettingsService.deleteAccount();
+      AuthService.clearToken();
+      if (onLogout) onLogout();
     } catch (error) {
       if (error instanceof Error) {
-        setDeleteError(error.message)
+        setDeleteError(error.message);
       } else {
-        setDeleteError('Failed to delete account')
+        setDeleteError('Failed to delete account');
       }
-      setIsDeleting(false)
+      setIsDeleting(false);
     }
-  }
+  };
 
   const getConfirmInputVariant = () => {
-    return confirmText && confirmText !== 'DELETE' ? 'invalid' : 'default'
-  }
+    return confirmText && confirmText !== 'DELETE' ? 'invalid' : 'default';
+  };
 
   return (
     <div className={cn('max-w-2xl', 'mx-auto')}>
@@ -107,7 +107,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           <div className={cn('space-y-5')}>
             <div className={cn('space-y-3')}>
               <Badge size="md">ACCOUNT SETTINGS</Badge>
-              <h2 className={cn('text-2xl', 'font-semibold', 'text-slate-900', 'dark:text-slate-100')}>
+              <h2
+                className={cn('text-2xl', 'font-semibold', 'text-slate-900', 'dark:text-slate-100')}
+              >
                 Change Password
               </h2>
               <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400')}>
@@ -135,8 +137,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                   type="password"
                   value={currentPassword}
                   onChange={(e) => {
-                    setCurrentPassword(e.target.value)
-                    if (passwordError) setPasswordError(null)
+                    setCurrentPassword(e.target.value);
+                    if (passwordError) setPasswordError(null);
                   }}
                   autoComplete="current-password"
                   placeholder="••••••••"
@@ -153,8 +155,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                     type="password"
                     value={newPassword}
                     onChange={(e) => {
-                      setNewPassword(e.target.value)
-                      if (passwordError) setPasswordError(null)
+                      setNewPassword(e.target.value);
+                      if (passwordError) setPasswordError(null);
                     }}
                     autoComplete="new-password"
                     variant={newPassword && !newPasswordValidation.isValid ? 'invalid' : 'default'}
@@ -170,8 +172,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => {
-                      setConfirmPassword(e.target.value)
-                      if (passwordError) setPasswordError(null)
+                      setConfirmPassword(e.target.value);
+                      if (passwordError) setPasswordError(null);
                     }}
                     autoComplete="new-password"
                     variant={confirmPassword && !isPasswordMatch ? 'invalid' : 'default'}
@@ -179,7 +181,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                     disabled={isChangingPassword}
                   />
                   {confirmPassword && !isPasswordMatch && (
-                    <p className={cn('text-xs', 'text-red-600', 'dark:text-red-300')}>Passwords do not match.</p>
+                    <p className={cn('text-xs', 'text-red-600', 'dark:text-red-300')}>
+                      Passwords do not match.
+                    </p>
                   )}
                 </div>
               </div>
@@ -190,7 +194,12 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                 type="submit"
                 variant="primary"
                 size="lg"
-                disabled={isChangingPassword || !currentPassword || !newPasswordValidation.isValid || !isPasswordMatch}
+                disabled={
+                  isChangingPassword ||
+                  !currentPassword ||
+                  !newPasswordValidation.isValid ||
+                  !isPasswordMatch
+                }
                 className={cn('w-full')}
               >
                 {isChangingPassword ? 'Changing Password...' : 'Change Password'}
@@ -204,7 +213,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           padding="lg"
           className={cn('border-red-200', 'dark:border-red-800')}
         >
-          <h2 className={cn('text-lg', 'font-semibold', 'mb-2', 'text-red-600', 'dark:text-red-400')}>
+          <h2
+            className={cn('text-lg', 'font-semibold', 'mb-2', 'text-red-600', 'dark:text-red-400')}
+          >
             Danger Zone
           </h2>
           <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400', 'mb-4')}>
@@ -229,12 +240,22 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         preventCloseOnBackdrop={isDeleting}
       >
         <GlassCard variant="auth" padding="lg">
-          <h2 className={cn('text-xl', 'font-semibold', 'mb-4', 'text-slate-900', 'dark:text-slate-100')}>
+          <h2
+            className={cn(
+              'text-xl',
+              'font-semibold',
+              'mb-4',
+              'text-slate-900',
+              'dark:text-slate-100'
+            )}
+          >
             Delete Account?
           </h2>
 
           <div className={cn('mb-6', 'p-4', 'rounded-lg', 'bg-red-50', 'dark:bg-red-900/20')}>
-            <p className={cn('text-sm', 'font-medium', 'text-red-600', 'dark:text-red-400', 'mb-2')}>
+            <p
+              className={cn('text-sm', 'font-medium', 'text-red-600', 'dark:text-red-400', 'mb-2')}
+            >
               This will permanently delete:
             </p>
             <ul className={cn('space-y-1', 'text-xs', 'text-red-600', 'dark:text-red-400')}>
@@ -289,5 +310,5 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         </GlassCard>
       </Modal>
     </div>
-  )
+  );
 }

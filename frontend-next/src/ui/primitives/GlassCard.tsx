@@ -1,6 +1,6 @@
-import React from 'react'
-import { cva, type VariantProps } from 'class-variance-authority'
-import { cn, glassBackdropClasses } from './utils'
+import React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn, glassBackdropClasses } from './utils';
 
 const glassCardVariants = cva(
   [
@@ -14,12 +14,7 @@ const glassCardVariants = cva(
   {
     variants: {
       variant: {
-        default: [
-          'border-white/35',
-          'bg-white/18',
-          'dark:border-white/12',
-          'dark:bg-[#0f172a]/55',
-        ],
+        default: ['border-white/35', 'bg-white/18', 'dark:border-white/12', 'dark:bg-[#0f172a]/55'],
         auth: [
           'border-white/35',
           'bg-white/20',
@@ -56,15 +51,15 @@ const glassCardVariants = cva(
       padding: 'md',
     },
   }
-)
+);
 
 export interface GlassCardProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof glassCardVariants> {
-  children: React.ReactNode
-  withInnerEffects?: boolean
-  containerClassName?: string
-  beforeContent?: React.ReactNode
+  children: React.ReactNode;
+  withInnerEffects?: boolean;
+  containerClassName?: string;
+  beforeContent?: React.ReactNode;
 }
 
 /**
@@ -95,7 +90,8 @@ export function GlassCard({
   beforeContent,
   ...props
 }: GlassCardProps) {
-  const roundedClass = rounded === 'default' ? 'rounded-[2.25rem]' : rounded === 'lg' ? 'rounded-2xl' : 'rounded-3xl'
+  const roundedClass =
+    rounded === 'default' ? 'rounded-[2.25rem]' : rounded === 'lg' ? 'rounded-2xl' : 'rounded-3xl';
 
   return (
     <div
@@ -128,11 +124,9 @@ export function GlassCard({
         </div>
       )}
       {beforeContent}
-      <div className={cn('relative z-10', padding === 'none' ? '' : '', className)}>
-        {children}
-      </div>
+      <div className={cn('relative z-10', padding === 'none' ? '' : '', className)}>{children}</div>
     </div>
-  )
+  );
 }
 
-export default GlassCard
+export default GlassCard;

@@ -1,11 +1,11 @@
-import 'jest'
+import 'jest';
 
 declare global {
   namespace jest {
     interface Matchers<R> {
-      toHaveBeenCalledOnce(): R
+      toHaveBeenCalledOnce(): R;
     }
   }
 }
 
-export {}
+export {};

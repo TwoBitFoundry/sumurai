@@ -55,13 +55,13 @@ describe('Telemetry Integration - Fetch Instrumentation', () => {
       await initTelemetry();
 
       await fetch('http://localhost:8080/api/transactions', {
-        headers: { 'Authorization': 'Bearer test-token' },
+        headers: { Authorization: 'Bearer test-token' },
       });
 
       expect(global.fetch).toHaveBeenCalledWith(
         'http://localhost:8080/api/transactions',
         expect.objectContaining({
-          headers: expect.objectContaining({ 'Authorization': 'Bearer test-token' }),
+          headers: expect.objectContaining({ Authorization: 'Bearer test-token' }),
         })
       );
     });
@@ -115,7 +115,7 @@ describe('Telemetry Integration - Fetch Instrumentation', () => {
       await initTelemetry();
 
       await fetch('http://localhost:8080/api/transactions', {
-        headers: { 'Authorization': 'Bearer eyJ...' },
+        headers: { Authorization: 'Bearer eyJ...' },
       });
 
       expect(global.fetch).toHaveBeenCalled();
@@ -127,7 +127,7 @@ describe('Telemetry Integration - Fetch Instrumentation', () => {
       await initTelemetry();
 
       await fetch('http://localhost:8080/api/transactions', {
-        headers: { 'Cookie': 'session=abc123' },
+        headers: { Cookie: 'session=abc123' },
       });
 
       expect(global.fetch).toHaveBeenCalled();
@@ -310,10 +310,7 @@ describe('Telemetry Integration - Fetch Instrumentation', () => {
 
       await initTelemetry();
 
-      const urls = [
-        'http://localhost:8080/api/transactions',
-        'http://localhost:8080/api/budgets',
-      ];
+      const urls = ['http://localhost:8080/api/transactions', 'http://localhost:8080/api/budgets'];
 
       for (const url of urls) {
         await fetch(url);

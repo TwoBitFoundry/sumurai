@@ -1,14 +1,10 @@
-import { ReactNode } from 'react'
-import { ThemeProvider } from '../../src/context/ThemeContext'
+import { ReactNode } from 'react';
+import { ThemeProvider } from '../../src/context/ThemeContext';
 
 interface ThemeTestProviderProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
 export function ThemeTestProvider({ children }: ThemeTestProviderProps) {
-  return (
-    <ThemeProvider>
-      {children}
-    </ThemeProvider>
-  )
+  return <ThemeProvider>{children}</ThemeProvider>;
 }

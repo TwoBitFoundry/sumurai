@@ -1,62 +1,62 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { trace, SpanStatusCode } from '@opentelemetry/api'
-import { Lock, WifiOff, Wrench, AlertCircle } from 'lucide-react'
-import { ApiError, AuthenticationError } from '../services/ApiClient'
-import { Button, GlassCard } from '@/ui/primitives'
-import { cn } from '@/ui/primitives/utils'
+import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { trace, SpanStatusCode } from '@opentelemetry/api';
+import { Lock, WifiOff, Wrench, AlertCircle } from 'lucide-react';
+import { ApiError, AuthenticationError } from '../services/ApiClient';
+import { Button, GlassCard } from '@/ui/primitives';
+import { cn } from '@/ui/primitives/utils';
 
 interface Props {
-  children: ReactNode
-  onRetry?: () => void
+  children: ReactNode;
+  onRetry?: () => void;
 }
 
 interface State {
-  hasError: boolean
-  error: Error | null
-  errorInfo: ErrorInfo | null
+  hasError: boolean;
+  error: Error | null;
+  errorInfo: ErrorInfo | null;
 }
 
-type ErrorTone = 'auth' | 'network' | 'server' | 'generic'
+type ErrorTone = 'auth' | 'network' | 'server' | 'generic';
 
 const hasStatusCode = (value: unknown): value is { status: number } => {
   if (typeof value !== 'object' || value === null) {
-    return false
+    return false;
   }
 
-  return 'status' in value && typeof (value as { status?: unknown }).status === 'number'
-}
+  return 'status' in value && typeof (value as { status?: unknown }).status === 'number';
+};
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
-    super(props)
-    this.state = { hasError: false, error: null, errorInfo: null }
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error, errorInfo: null }
+    return { hasError: true, error, errorInfo: null };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({
       error,
       errorInfo,
-    })
+    });
 
-    const span = trace.getActiveSpan()
+    const span = trace.getActiveSpan();
     if (span) {
-      span.recordException(error)
+      span.recordException(error);
       span.setStatus({
         code: SpanStatusCode.ERROR,
         message: this.sanitizeErrorMessage(error.message),
-      })
+      });
     }
 
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
   private getErrorType(error: Error): ErrorTone {
     if (error instanceof AuthenticationError || error.message.includes('Authentication required')) {
-      return 'auth'
+      return 'auth';
     }
 
     if (
@@ -64,18 +64,18 @@ export class ErrorBoundary extends Component<Props, State> {
       error.message.includes('Network error') ||
       error.message.includes('DNS resolution')
     ) {
-      return 'network'
+      return 'network';
     }
 
     if (error instanceof ApiError && error.status >= 500) {
-      return 'server'
+      return 'server';
     }
 
     if (hasStatusCode(error) && error.status >= 500) {
-      return 'server'
+      return 'server';
     }
 
-    return 'generic'
+    return 'generic';
   }
 
   private sanitizeErrorMessage(message: string): string {
@@ -85,31 +85,31 @@ export class ErrorBoundary extends Component<Props, State> {
       /key=[\w-]+/gi,
       /secret=\w+/gi,
       /api_key=[\w-]+/gi,
-    ]
+    ];
 
-    let sanitized = message
+    let sanitized = message;
     sensitivePatterns.forEach((pattern) => {
-      sanitized = sanitized.replace(pattern, '[REDACTED]')
-    })
+      sanitized = sanitized.replace(pattern, '[REDACTED]');
+    });
 
-    return sanitized
+    return sanitized;
   }
 
   private handleRefresh = () => {
-    window.location.reload()
-  }
+    window.location.reload();
+  };
 
   private handleRetry = () => {
     if (this.props.onRetry) {
-      this.props.onRetry()
+      this.props.onRetry();
     }
 
-    this.setState({ hasError: false, error: null, errorInfo: null })
-  }
+    this.setState({ hasError: false, error: null, errorInfo: null });
+  };
 
   private handleLogin = () => {
-    window.location.href = '/login'
-  }
+    window.location.href = '/login';
+  };
 
   private renderCard({
     icon: Icon,
@@ -117,10 +117,10 @@ export class ErrorBoundary extends Component<Props, State> {
     message,
     actions,
   }: {
-    icon: React.ComponentType<{ className?: string }>
-    title: string
-    message: string
-    actions?: React.ReactNode
+    icon: React.ComponentType<{ className?: string }>;
+    title: string;
+    message: string;
+    actions?: React.ReactNode;
   }) {
     return (
       <GlassCard
@@ -134,20 +134,24 @@ export class ErrorBoundary extends Component<Props, State> {
           <Icon className={cn('h-10', 'w-10', 'text-slate-600', 'dark:text-slate-400')} />
         </div>
         <div className="space-y-2">
-          <h2 className={cn('text-xl', 'font-semibold', 'text-slate-900', 'dark:text-white')}>{title}</h2>
+          <h2 className={cn('text-xl', 'font-semibold', 'text-slate-900', 'dark:text-white')}>
+            {title}
+          </h2>
           <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-300')}>{message}</p>
         </div>
-        {actions && <div className={cn('flex', 'flex-wrap', 'justify-center', 'gap-3')}>{actions}</div>}
+        {actions && (
+          <div className={cn('flex', 'flex-wrap', 'justify-center', 'gap-3')}>{actions}</div>
+        )}
       </GlassCard>
-    )
+    );
   }
 
   private renderErrorContent() {
-    const { error } = this.state
-    if (!error) return null
+    const { error } = this.state;
+    if (!error) return null;
 
-    const errorType = this.getErrorType(error)
-    const sanitizedMessage = this.sanitizeErrorMessage(error.message)
+    const errorType = this.getErrorType(error);
+    const sanitizedMessage = this.sanitizeErrorMessage(error.message);
 
     switch (errorType) {
       case 'auth':
@@ -160,7 +164,7 @@ export class ErrorBoundary extends Component<Props, State> {
               Go to Login
             </Button>
           ),
-        })
+        });
       case 'network':
         return this.renderCard({
           icon: WifiOff,
@@ -176,7 +180,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </Button>
             </>
           ),
-        })
+        });
       case 'server':
         return this.renderCard({
           icon: Wrench,
@@ -187,12 +191,13 @@ export class ErrorBoundary extends Component<Props, State> {
               Try Again
             </Button>
           ),
-        })
+        });
       default:
         return this.renderCard({
           icon: AlertCircle,
           title: 'Something Went Wrong',
-          message: sanitizedMessage || 'An unexpected error occurred. Please try refreshing the page.',
+          message:
+            sanitizedMessage || 'An unexpected error occurred. Please try refreshing the page.',
           actions: (
             <>
               {this.props.onRetry && (
@@ -205,7 +210,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </Button>
             </>
           ),
-        })
+        });
     }
   }
 
@@ -217,11 +222,11 @@ export class ErrorBoundary extends Component<Props, State> {
             {this.renderErrorContent()}
           </div>
         </div>
-      )
+      );
     }
 
-    return this.props.children
+    return this.props.children;
   }
 }
 
-export default ErrorBoundary
+export default ErrorBoundary;

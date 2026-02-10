@@ -40,36 +40,39 @@ export function useInstrumentedCallback<T extends (...args: unknown[]) => unknow
 ): T {
   const tracer = useTracer();
 
-  return useCallback((...args: Parameters<T>) => {
-    if (!tracer) return fn(...args);
+  return useCallback(
+    (...args: Parameters<T>) => {
+      if (!tracer) return fn(...args);
 
-    const span = tracer.startSpan(name);
-    try {
-      const result = fn(...args);
+      const span = tracer.startSpan(name);
+      try {
+        const result = fn(...args);
 
-      if (result instanceof Promise) {
-        return result
-          .then((value) => {
-            span.setStatus({ code: SpanStatusCode.OK });
-            span.end();
-            return value;
-          })
-          .catch((error) => {
-            span.recordException(error as Error);
-            span.setStatus({ code: SpanStatusCode.ERROR });
-            span.end();
-            throw error;
-          });
+        if (result instanceof Promise) {
+          return result
+            .then((value) => {
+              span.setStatus({ code: SpanStatusCode.OK });
+              span.end();
+              return value;
+            })
+            .catch((error) => {
+              span.recordException(error as Error);
+              span.setStatus({ code: SpanStatusCode.ERROR });
+              span.end();
+              throw error;
+            });
+        }
+
+        span.setStatus({ code: SpanStatusCode.OK });
+        span.end();
+        return result;
+      } catch (error) {
+        span.recordException(error as Error);
+        span.setStatus({ code: SpanStatusCode.ERROR });
+        span.end();
+        throw error;
       }
-
-      span.setStatus({ code: SpanStatusCode.OK });
-      span.end();
-      return result;
-    } catch (error) {
-      span.recordException(error as Error);
-      span.setStatus({ code: SpanStatusCode.ERROR });
-      span.end();
-      throw error;
-    }
-  }, [tracer, name, ...deps]) as T;
+    },
+    [tracer, name, ...deps]
+  ) as T;
 }

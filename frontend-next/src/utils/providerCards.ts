@@ -1,21 +1,13 @@
-import type { FinancialProvider } from '@/types/api'
-import type { LucideIcon } from 'lucide-react'
-import {
-  Building2,
-  Eye,
-  Fingerprint,
-  Landmark,
-  ShieldCheck,
-  Sparkles,
-  Zap,
-} from 'lucide-react'
+import type { FinancialProvider } from '@/types/api';
+import type { LucideIcon } from 'lucide-react';
+import { Building2, Eye, Fingerprint, Landmark, ShieldCheck, Sparkles, Zap } from 'lucide-react';
 
 export type ProviderCardConfig = {
-  title: string
-  badge: string
-  description: string
-  bullets: string[]
-}
+  title: string;
+  badge: string;
+  description: string;
+  bullets: string[];
+};
 
 export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig> = {
   plaid: {
@@ -40,60 +32,60 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       'Ideal for self-hosted deployments',
     ],
   },
-}
+};
 
 export const getProviderCardConfig = (provider: FinancialProvider): ProviderCardConfig =>
-  PROVIDER_CARD_CONFIG[provider]
+  PROVIDER_CARD_CONFIG[provider];
 
 type HighlightPalette = {
-  gradient: string
-  ring: string
-  iconLight: string
-  iconDark: string
-  glow: string
-}
+  gradient: string;
+  ring: string;
+  iconLight: string;
+  iconDark: string;
+  glow: string;
+};
 
 type ProviderHighlight = {
-  icon: LucideIcon
-  title: string
-  body: string
-  palette: HighlightPalette
-}
+  icon: LucideIcon;
+  title: string;
+  body: string;
+  palette: HighlightPalette;
+};
 
 type FeaturePalette = {
-  gradient: string
-  ring: string
-  icon: string
-  glow: string
-}
+  gradient: string;
+  ring: string;
+  icon: string;
+  glow: string;
+};
 
 type ProviderFeature = {
-  icon: LucideIcon
-  title: string
-  body: string
-  palette: FeaturePalette
-}
+  icon: LucideIcon;
+  title: string;
+  body: string;
+  palette: FeaturePalette;
+};
 
 export interface ConnectAccountProviderContent {
-  displayName: string
+  displayName: string;
   eyebrow: {
-    text: string
-    backgroundClassName: string
-    textClassName: string
-  }
-  heroTitle: string
-  heroDescription: string
-  highlightLabel: string
-  highlightMeta: string
-  features: ProviderFeature[]
-  highlights: ProviderHighlight[]
+    text: string;
+    backgroundClassName: string;
+    textClassName: string;
+  };
+  heroTitle: string;
+  heroDescription: string;
+  highlightLabel: string;
+  highlightMeta: string;
+  features: ProviderFeature[];
+  highlights: ProviderHighlight[];
   cta: {
-    defaultLabel: string
-    badge?: string
-  }
-  securityNote: string
-  requiresApplicationId?: boolean
-  applicationIdMissingCopy?: string
+    defaultLabel: string;
+    badge?: string;
+  };
+  securityNote: string;
+  requiresApplicationId?: boolean;
+  applicationIdMissingCopy?: string;
 }
 
 const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
@@ -106,7 +98,7 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
   heroTitle: 'Connect your accounts',
   heroDescription:
     'Securely link accounts to unlock live dashboards and automated budgets. Plaid uses industry-standard encryption so your credentials remain private.',
-  highlightLabel: 'What you\'ll connect',
+  highlightLabel: "What you'll connect",
   highlightMeta: 'Read-only by design',
   features: [
     {
@@ -199,7 +191,7 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
   },
   securityNote:
     '🔒 Bank-level encryption keeps every credential private. Plaid only shares read-only data, so funds stay untouchable.',
-}
+};
 
 const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
   displayName: 'Teller',
@@ -211,7 +203,7 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
   heroTitle: 'Connect your accounts',
   heroDescription:
     'Launch Teller Connect using your own API keys to sync accounts without handing off long-lived credentials. Keep full control while budgets stay real-time.',
-  highlightLabel: 'What you\'ll connect',
+  highlightLabel: "What you'll connect",
   highlightMeta: 'Read-only access',
   features: [
     {
@@ -252,7 +244,7 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
     {
       icon: Eye,
       title: 'Read-only by design',
-      body: 'We can\'t move money or make changes—only view balances and transactions.',
+      body: "We can't move money or make changes—only view balances and transactions.",
       palette: {
         gradient: 'from-sky-400/55 via-sky-500/25 to-sky-500/5',
         ring: 'ring-sky-300/35',
@@ -263,7 +255,7 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
     },
     {
       icon: Fingerprint,
-      title: 'You\'re in control',
+      title: "You're in control",
       body: 'Disconnect anytime from settings; access stops immediately.',
       palette: {
         gradient: 'from-violet-400/55 via-violet-500/25 to-violet-500/5',
@@ -302,12 +294,11 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
     defaultLabel: 'Launch Teller Connect',
     badge: 'mTLS',
   },
-  securityNote:
-    '🔒 Industry-grade security standards and connections. Disconnect anytime.',
+  securityNote: '🔒 Industry-grade security standards and connections. Disconnect anytime.',
   requiresApplicationId: true,
   applicationIdMissingCopy:
     'Teller onboarding requires a Teller application ID. Add it in provider settings before connecting.',
-}
+};
 
 export const CONNECT_ACCOUNT_PROVIDER_CONTENT: Record<
   FinancialProvider,
@@ -315,8 +306,8 @@ export const CONNECT_ACCOUNT_PROVIDER_CONTENT: Record<
 > = {
   plaid: PLAID_CONNECT_CONTENT,
   teller: TELLER_CONNECT_CONTENT,
-}
+};
 
 export const getConnectAccountProviderContent = (
-  provider: FinancialProvider,
-): ConnectAccountProviderContent => CONNECT_ACCOUNT_PROVIDER_CONTENT[provider]
+  provider: FinancialProvider
+): ConnectAccountProviderContent => CONNECT_ACCOUNT_PROVIDER_CONTENT[provider];

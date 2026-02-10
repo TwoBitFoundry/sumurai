@@ -1,6 +1,6 @@
-import React from 'react'
-import { cva, type VariantProps } from 'class-variance-authority'
-import { cn, focusRingClasses, disabledClasses, transitionClasses } from './utils'
+import React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn, focusRingClasses, disabledClasses, transitionClasses } from './utils';
 
 const buttonVariants = cva(
   [
@@ -48,11 +48,7 @@ const buttonVariants = cva(
           'dark:text-slate-400',
           'dark:hover:border-sky-400 dark:hover:text-white',
         ],
-        tab: [
-          'group relative',
-          'overflow-hidden',
-          'backdrop-blur-sm',
-        ],
+        tab: ['group relative', 'overflow-hidden', 'backdrop-blur-sm'],
         tabActive: [
           'group relative',
           'overflow-hidden',
@@ -105,13 +101,13 @@ const buttonVariants = cva(
       size: 'md',
     },
   }
-)
+);
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
-  loading?: boolean
-  children?: React.ReactNode
+  loading?: boolean;
+  children?: React.ReactNode;
 }
 
 /**
@@ -137,10 +133,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {children}
       </button>
-    )
+    );
   }
-)
+);
 
-Button.displayName = 'Button'
+Button.displayName = 'Button';
 
-export default Button
+export default Button;

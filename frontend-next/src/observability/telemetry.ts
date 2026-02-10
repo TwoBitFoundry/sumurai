@@ -7,14 +7,18 @@ import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
 import { sanitizeSpanAttributes, preventSensitiveSpans } from './sanitization';
-import { SensitiveDataSpanProcessor, HttpRouteSpanProcessor, FilteringSpanProcessor } from './processors';
+import {
+  SensitiveDataSpanProcessor,
+  HttpRouteSpanProcessor,
+  FilteringSpanProcessor,
+} from './processors';
 import { AuthService } from '../services/authService';
 
 let tracerProvider: WebTracerProvider | null = null;
 let tracer: Tracer | null = null;
 
 function getConfig() {
-  const env = process.env
+  const env = process.env;
   return {
     enabled: env.NEXT_PUBLIC_OTEL_ENABLED === 'true',
     serviceName: env.NEXT_PUBLIC_OTEL_SERVICE_NAME || 'sumurai-frontend',
@@ -24,12 +28,12 @@ function getConfig() {
     captureBodies: env.NEXT_PUBLIC_OTEL_CAPTURE_BODIES === 'true',
     sanitizeHeaders: env.NEXT_PUBLIC_OTEL_SANITIZE_HEADERS !== 'false',
     sanitizeUrls: env.NEXT_PUBLIC_OTEL_SANITIZE_URLS !== 'false',
-    blockSensitiveEndpoints: env.NEXT_PUBLIC_OTEL_BLOCK_SENSITIVE_ENDPOINTS !== 'false'
+    blockSensitiveEndpoints: env.NEXT_PUBLIC_OTEL_BLOCK_SENSITIVE_ENDPOINTS !== 'false',
   };
 }
 
 function getSpanAttributes(span: Span): Record<string, unknown> {
-  return ((span as unknown as { attributes?: Record<string, unknown> }).attributes) ?? {};
+  return (span as unknown as { attributes?: Record<string, unknown> }).attributes ?? {};
 }
 
 function resolvePath(url: string | undefined): string | null {
@@ -76,7 +80,7 @@ function setEncryptedTokenAttribute(span: Span): void {
   }
 
   void AuthService.ensureEncryptedTokenHash()
-    .then(result => {
+    .then((result) => {
       if (result) {
         span.setAttribute('encrypted_token', result);
       }
@@ -105,9 +109,11 @@ export async function initTelemetry(): Promise<Tracer | null> {
 
   const exporter = new OTLPTraceExporter({
     url: `${config.endpoint}/v1/traces`,
-    headers: config.seqApiKey ? {
-      'X-Seq-ApiKey': config.seqApiKey,
-    } : {},
+    headers: config.seqApiKey
+      ? {
+          'X-Seq-ApiKey': config.seqApiKey,
+        }
+      : {},
   });
 
   const batchSpanProcessor = new BatchSpanProcessor(exporter);
@@ -116,9 +122,8 @@ export async function initTelemetry(): Promise<Tracer | null> {
     redactAuthEndpoints: true,
   });
   const routeSpanProcessor = new HttpRouteSpanProcessor();
-  const filteredBatchSpanProcessor = new FilteringSpanProcessor(
-    batchSpanProcessor,
-    span => sensitiveDataProcessor.shouldBlockSpan(span),
+  const filteredBatchSpanProcessor = new FilteringSpanProcessor(batchSpanProcessor, (span) =>
+    sensitiveDataProcessor.shouldBlockSpan(span)
   );
 
   tracerProvider = new WebTracerProvider({
@@ -153,8 +158,10 @@ export async function initTelemetry(): Promise<Tracer | null> {
               const attributes = getSpanAttributes(span);
               setHttpSpanName(
                 span,
-                typeof attributes['http.method'] === 'string' ? attributes['http.method'] as string : undefined,
-                getSpanUrl(span),
+                typeof attributes['http.method'] === 'string'
+                  ? (attributes['http.method'] as string)
+                  : undefined,
+                getSpanUrl(span)
               );
               setEncryptedTokenAttribute(span);
               if (config.sanitizeHeaders || config.sanitizeUrls) {

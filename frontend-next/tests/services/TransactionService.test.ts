@@ -1,19 +1,19 @@
-import { jest } from '@jest/globals'
-import { TransactionService } from '@/services/TransactionService'
-import { ApiClient, AuthenticationError } from '@/services/ApiClient'
-import type { Transaction } from '@/types/api'
+import { jest } from '@jest/globals';
+import { TransactionService } from '@/services/TransactionService';
+import { ApiClient, AuthenticationError } from '@/services/ApiClient';
+import type { Transaction } from '@/types/api';
 
 describe('TransactionService', () => {
-  let getSpy: jest.SpiedFunction<typeof ApiClient.get>
+  let getSpy: jest.SpiedFunction<typeof ApiClient.get>;
 
   beforeEach(() => {
-    jest.clearAllMocks()
-    getSpy = jest.spyOn(ApiClient, 'get')
-  })
+    jest.clearAllMocks();
+    getSpy = jest.spyOn(ApiClient, 'get');
+  });
 
   afterEach(() => {
-    getSpy.mockRestore()
-  })
+    getSpy.mockRestore();
+  });
 
   describe('getTransactions', () => {
     it('should call authenticated API endpoint without parameters', async () => {
@@ -29,9 +29,9 @@ describe('TransactionService', () => {
           provider: 'plaid',
           account_name: 'Everyday Checking',
           account_type: 'depository',
-          account_mask: '1234'
-        }
-      ]
+          account_mask: '1234',
+        },
+      ];
       const expectedFrontendTransactions: Transaction[] = [
         {
           id: '1',
@@ -42,77 +42,76 @@ describe('TransactionService', () => {
           category: {
             primary: 'FOOD_AND_DRINK',
             detailed: 'FOOD_AND_DRINK_GROCERIES',
-            confidence_level: 'HIGH'
+            confidence_level: 'HIGH',
           },
           account_name: 'Everyday Checking',
           account_type: 'depository',
-          account_mask: '1234'
-        }
-      ]
-      getSpy.mockResolvedValue(mockBackendTransactions as any)
+          account_mask: '1234',
+        },
+      ];
+      getSpy.mockResolvedValue(mockBackendTransactions as any);
 
-      const result = await TransactionService.getTransactions()
+      const result = await TransactionService.getTransactions();
 
-      expect(ApiClient.get).toHaveBeenCalledWith('/transactions')
-      expect(result).toEqual(expectedFrontendTransactions)
-    })
+      expect(ApiClient.get).toHaveBeenCalledWith('/transactions');
+      expect(result).toEqual(expectedFrontendTransactions);
+    });
 
     it('should pass filter parameters to backend for server-side processing', async () => {
       const filters = {
         startDate: '2024-01-01',
         endDate: '2024-01-31',
         categoryId: 'food',
-        searchTerm: 'grocery'
-      }
-      const mockBackendTransactions: any[] = []
-      getSpy.mockResolvedValue(mockBackendTransactions as any)
+        searchTerm: 'grocery',
+      };
+      const mockBackendTransactions: any[] = [];
+      getSpy.mockResolvedValue(mockBackendTransactions as any);
 
-      const result = await TransactionService.getTransactions(filters)
+      const result = await TransactionService.getTransactions(filters);
 
       expect(ApiClient.get).toHaveBeenCalledWith(
         '/transactions?startDate=2024-01-01&endDate=2024-01-31&categoryId=food&searchTerm=grocery'
-      )
-      expect(result).toEqual([])
-    })
+      );
+      expect(result).toEqual([]);
+    });
 
     it('should handle authentication errors', async () => {
-      getSpy.mockRejectedValue(new AuthenticationError())
+      getSpy.mockRejectedValue(new AuthenticationError());
 
-      await expect(TransactionService.getTransactions())
-        .rejects.toThrow(AuthenticationError)
-    })
+      await expect(TransactionService.getTransactions()).rejects.toThrow(AuthenticationError);
+    });
 
     it('should serialize account_ids parameter when provided', async () => {
       const filters = {
-        accountIds: ['acc_1', 'acc_2', 'acc_3']
-      }
-      const mockBackendTransactions: any[] = []
-      getSpy.mockResolvedValue(mockBackendTransactions as any)
+        accountIds: ['acc_1', 'acc_2', 'acc_3'],
+      };
+      const mockBackendTransactions: any[] = [];
+      getSpy.mockResolvedValue(mockBackendTransactions as any);
 
-      const result = await TransactionService.getTransactions(filters)
+      const result = await TransactionService.getTransactions(filters);
 
       expect(ApiClient.get).toHaveBeenCalledWith(
         '/transactions?account_ids%5B%5D=acc_1&account_ids%5B%5D=acc_2&account_ids%5B%5D=acc_3'
-      )
-      expect(result).toEqual([])
-    })
+      );
+      expect(result).toEqual([]);
+    });
 
     it('should combine account_ids with other filters', async () => {
       const filters = {
         startDate: '2024-01-01',
         endDate: '2024-01-31',
-        accountIds: ['acc_1', 'acc_2']
-      }
-      const mockBackendTransactions: any[] = []
-      getSpy.mockResolvedValue(mockBackendTransactions as any)
+        accountIds: ['acc_1', 'acc_2'],
+      };
+      const mockBackendTransactions: any[] = [];
+      getSpy.mockResolvedValue(mockBackendTransactions as any);
 
-      const result = await TransactionService.getTransactions(filters)
+      const result = await TransactionService.getTransactions(filters);
 
       expect(ApiClient.get).toHaveBeenCalledWith(
         '/transactions?startDate=2024-01-01&endDate=2024-01-31&account_ids%5B%5D=acc_1&account_ids%5B%5D=acc_2'
-      )
-      expect(result).toEqual([])
-    })
+      );
+      expect(result).toEqual([]);
+    });
 
     it('normalizes teller specific metadata without client filtering', async () => {
       const backendTransactions = [
@@ -125,7 +124,7 @@ describe('TransactionService', () => {
           provider: 'teller',
           running_balance: 900.12,
           account_name: 'Main Checking',
-          account_type: 'depository'
+          account_type: 'depository',
         },
         {
           id: '2',
@@ -136,9 +135,9 @@ describe('TransactionService', () => {
           provider: 'teller',
           running_balance: 950.12,
           account_name: 'Main Checking',
-          account_type: 'depository'
-        }
-      ]
+          account_type: 'depository',
+        },
+      ];
       const expectedFrontendTransactions: Transaction[] = [
         {
           id: '1',
@@ -147,12 +146,12 @@ describe('TransactionService', () => {
           merchant: 'Ledger Update',
           amount: -100,
           category: {
-            primary: 'GENERAL'
+            primary: 'GENERAL',
           },
           running_balance: 900.12,
           account_name: 'Main Checking',
           account_type: 'depository',
-          account_mask: undefined
+          account_mask: undefined,
         },
         {
           id: '2',
@@ -161,21 +160,21 @@ describe('TransactionService', () => {
           merchant: 'Legacy Payment',
           amount: 50,
           category: {
-            primary: 'UTILITIES'
+            primary: 'UTILITIES',
           },
           running_balance: 950.12,
           account_name: 'Main Checking',
           account_type: 'depository',
-          account_mask: undefined
-        }
-      ]
-      jest.mocked(ApiClient.get).mockResolvedValue(backendTransactions)
+          account_mask: undefined,
+        },
+      ];
+      jest.mocked(ApiClient.get).mockResolvedValue(backendTransactions);
 
-      const result = await TransactionService.getTransactions()
+      const result = await TransactionService.getTransactions();
 
-      expect(result).toEqual(expectedFrontendTransactions)
-      expect(result).toHaveLength(2)
-      expect(result[0]).not.toHaveProperty('provider')
-    })
-  })
-})
+      expect(result).toEqual(expectedFrontendTransactions);
+      expect(result).toHaveLength(2);
+      expect(result[0]).not.toHaveProperty('provider');
+    });
+  });
+});

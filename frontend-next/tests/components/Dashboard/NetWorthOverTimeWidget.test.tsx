@@ -1,10 +1,12 @@
 import { render, screen, within, cleanup } from '@testing-library/react';
-import { NetWorthOverTimeWidget } from '@/components/NetWorthOverTimeWidget'
-import { ThemeTestProvider } from '@tests/utils/ThemeTestProvider'
+import { NetWorthOverTimeWidget } from '@/components/NetWorthOverTimeWidget';
+import { ThemeTestProvider } from '@tests/utils/ThemeTestProvider';
 
 // Mock recharts
 jest.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
+  ResponsiveContainer: ({ children }: any) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
   LineChart: ({ children }: any) => <div data-testid="line-chart">{children}</div>,
   Line: () => <div data-testid="line" />,
   XAxis: () => <div data-testid="x-axis" />,
@@ -16,9 +18,9 @@ jest.mock('recharts', () => ({
 describe('NetWorthOverTimeWidget', () => {
   // Localized cleanup to avoid cross-test DOM leakage
   afterEach(() => {
-    cleanup()
-    jest.clearAllMocks()
-  })
+    cleanup();
+    jest.clearAllMocks();
+  });
 
   it('renders without crashing', () => {
     render(

@@ -1,17 +1,17 @@
-import { useState, useEffect, useRef } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronDown, ChevronRight, Building2 } from 'lucide-react'
-import { useAccountFilter } from '@/hooks/useAccountFilter'
-import { cn } from '@/ui/primitives'
+import { useState, useEffect, useRef } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronDown, ChevronRight, Building2 } from 'lucide-react';
+import { useAccountFilter } from '@/hooks/useAccountFilter';
+import { cn } from '@/ui/primitives';
 
 interface HeaderAccountFilterProps {
-  scrolled: boolean
+  scrolled: boolean;
 }
 
 export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [collapsedBanks, setCollapsedBanks] = useState<Set<string>>(new Set())
-  const triggerRef = useRef<HTMLButtonElement>(null)
+  const [isOpen, setIsOpen] = useState(false);
+  const [collapsedBanks, setCollapsedBanks] = useState<Set<string>>(new Set());
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const {
     isAllAccountsSelected,
     selectedAccountIds,
@@ -19,69 +19,71 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
     accountsByBank,
     loading,
     toggleBank,
-    toggleAccount
-  } = useAccountFilter()
+    toggleAccount,
+  } = useAccountFilter();
 
-  const totalAccounts = allAccountIds.length
-  const selectedCount = selectedAccountIds.length
+  const totalAccounts = allAccountIds.length;
+  const selectedCount = selectedAccountIds.length;
 
   const displayText = (() => {
     if (totalAccounts === 0) {
-      return loading ? 'Loading accounts...' : 'No accounts'
+      return loading ? 'Loading accounts...' : 'No accounts';
     }
     if (selectedCount === 0) {
-      return 'No accounts selected'
+      return 'No accounts selected';
     }
     if (isAllAccountsSelected) {
-      return 'All accounts'
+      return 'All accounts';
     }
-    return `${selectedCount} ${selectedCount === 1 ? 'account' : 'accounts'}`
-  })()
+    return `${selectedCount} ${selectedCount === 1 ? 'account' : 'accounts'}`;
+  })();
 
   const closePopover = () => {
-    setIsOpen(false)
-    triggerRef.current?.focus()
-  }
+    setIsOpen(false);
+    triggerRef.current?.focus();
+  };
 
   const toggleBankCollapse = (bankName: string) => {
-    setCollapsedBanks(prev => {
-      const next = new Set(prev)
+    setCollapsedBanks((prev) => {
+      const next = new Set(prev);
       if (next.has(bankName)) {
-        next.delete(bankName)
+        next.delete(bankName);
       } else {
-        next.add(bankName)
+        next.add(bankName);
       }
-      return next
-    })
-  }
+      return next;
+    });
+  };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Escape') {
-      closePopover()
+      closePopover();
     } else if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      setIsOpen(!isOpen)
+      event.preventDefault();
+      setIsOpen(!isOpen);
     }
-  }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node
-      const dialog = document.querySelector('[role="dialog"]')
+      const target = event.target as Node;
+      const dialog = document.querySelector('[role="dialog"]');
 
-      if (triggerRef.current &&
-          !triggerRef.current.contains(target) &&
-          dialog &&
-          !dialog.contains(target)) {
-        setIsOpen(false)
+      if (
+        triggerRef.current &&
+        !triggerRef.current.contains(target) &&
+        dialog &&
+        !dialog.contains(target)
+      ) {
+        setIsOpen(false);
       }
-    }
+    };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [isOpen])
+  }, [isOpen]);
 
   return (
     <div className={cn('relative')}>
@@ -155,7 +157,9 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
             )}
           >
             <div className={cn('p-4', 'border-b', 'border-slate-200', 'dark:border-slate-700')}>
-              <div className={cn('text-sm', 'font-medium', 'text-slate-900', 'dark:text-slate-100')}>
+              <div
+                className={cn('text-sm', 'font-medium', 'text-slate-900', 'dark:text-slate-100')}
+              >
                 Filter by account
               </div>
             </div>
@@ -168,10 +172,14 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
               ) : (
                 <div className={cn('space-y-2')}>
                   {Object.entries(accountsByBank).map(([bankName, accounts]) => {
-                    const bankAccountIds = accounts.map(account => account.id)
-                    const allBankAccountsSelected = bankAccountIds.every(id => selectedAccountIds.includes(id))
-                    const someBankAccountsSelected = bankAccountIds.some(id => selectedAccountIds.includes(id))
-                    const isCollapsed = collapsedBanks.has(bankName)
+                    const bankAccountIds = accounts.map((account) => account.id);
+                    const allBankAccountsSelected = bankAccountIds.every((id) =>
+                      selectedAccountIds.includes(id)
+                    );
+                    const someBankAccountsSelected = bankAccountIds.some((id) =>
+                      selectedAccountIds.includes(id)
+                    );
+                    const isCollapsed = collapsedBanks.has(bankName);
 
                     return (
                       <div
@@ -213,8 +221,10 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                             type="checkbox"
                             id={`bank-${bankName}`}
                             checked={allBankAccountsSelected}
-                            ref={input => {
-                              if (input) input.indeterminate = someBankAccountsSelected && !allBankAccountsSelected
+                            ref={(input) => {
+                              if (input)
+                                input.indeterminate =
+                                  someBankAccountsSelected && !allBankAccountsSelected;
                             }}
                             onChange={() => toggleBank(bankName)}
                             className={cn(
@@ -251,7 +261,10 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                               className={cn('ml-11', 'mt-2', 'space-y-2', 'overflow-hidden')}
                             >
                               {accounts.map((account) => (
-                                <div key={account.id} className={cn('flex', 'items-center', 'gap-2')}>
+                                <div
+                                  key={account.id}
+                                  className={cn('flex', 'items-center', 'gap-2')}
+                                >
                                   <input
                                     type="checkbox"
                                     id={`account-${account.id}`}
@@ -282,7 +295,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                           )}
                         </AnimatePresence>
                       </div>
-                    )
+                    );
                   })}
                   {Object.keys(accountsByBank).length === 0 && !loading && (
                     <div className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400')}>
@@ -296,5 +309,5 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }

@@ -19,7 +19,10 @@ const SENSITIVE_QUERY_PARAMS = [
 ];
 
 const TOKEN_PATTERNS = [
-  { pattern: /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, replacement: '[JWT_REDACTED]' },
+  {
+    pattern: /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g,
+    replacement: '[JWT_REDACTED]',
+  },
   { pattern: /access-[a-z]+-[a-zA-Z0-9-]{10,}/g, replacement: '[PLAID_TOKEN_REDACTED]' },
   { pattern: /test_token_[a-zA-Z0-9]+/g, replacement: '[TELLER_TOKEN_REDACTED]' },
   { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, replacement: '[CC_REDACTED]' },
@@ -43,7 +46,7 @@ export function sanitizeUrl(url: string): string {
   try {
     const urlObj = new URL(url);
 
-    SENSITIVE_QUERY_PARAMS.forEach(param => {
+    SENSITIVE_QUERY_PARAMS.forEach((param) => {
       if (urlObj.searchParams.has(param)) {
         urlObj.searchParams.set(param, '[REDACTED]');
       }
@@ -55,11 +58,7 @@ export function sanitizeUrl(url: string): string {
   }
 }
 
-export function sanitizeSpanAttributes(
-  span: Span,
-  _request?: Request,
-  _response?: Response
-): void {
+export function sanitizeSpanAttributes(span: Span, _request?: Request, _response?: Response): void {
   const attributes = (span as unknown as { attributes: SpanAttributes }).attributes;
 
   if (!attributes) return;
@@ -70,7 +69,7 @@ export function sanitizeSpanAttributes(
   for (const [key, value] of Object.entries(attributes)) {
     const lowerKey = key.toLowerCase();
 
-    if (SENSITIVE_HEADERS.some(header => lowerKey.includes(header))) {
+    if (SENSITIVE_HEADERS.some((header) => lowerKey.includes(header))) {
       keysToDelete.push(key);
       continue;
     }
@@ -88,7 +87,7 @@ export function sanitizeSpanAttributes(
     }
   }
 
-  keysToDelete.forEach(key => {
+  keysToDelete.forEach((key) => {
     span.setAttribute(key, undefined as unknown as string);
   });
 
@@ -97,10 +96,7 @@ export function sanitizeSpanAttributes(
   });
 }
 
-export function preventSensitiveSpans(
-  element?: Element,
-  _eventName?: string
-): boolean {
+export function preventSensitiveSpans(element?: Element, _eventName?: string): boolean {
   if (!element) return false;
 
   const sensitiveSelectors = [
@@ -120,5 +116,5 @@ export function preventSensitiveSpans(
   const sensitiveClasses = ['password', 'token', 'secret', 'credential'];
   const elementClasses = element.className?.toLowerCase() || '';
 
-  return sensitiveClasses.some(cls => elementClasses.includes(cls));
+  return sensitiveClasses.some((cls) => elementClasses.includes(cls));
 }

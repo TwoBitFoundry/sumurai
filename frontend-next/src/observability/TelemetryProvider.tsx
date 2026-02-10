@@ -40,9 +40,5 @@ export function TelemetryProvider({ children, service }: TelemetryProviderProps)
     setActiveSpan,
   };
 
-  return (
-    <TelemetryContext.Provider value={value}>
-      {children}
-    </TelemetryContext.Provider>
-  );
+  return <TelemetryContext.Provider value={value}>{children}</TelemetryContext.Provider>;
 }

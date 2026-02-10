@@ -1,69 +1,69 @@
-import React, { useEffect, useState, useCallback } from 'react'
-import { AuthService } from './services/authService'
-import { GlassCard, Button, Modal } from './ui/primitives'
-import { cn } from '@/ui/primitives'
+import React, { useEffect, useState, useCallback } from 'react';
+import { AuthService } from './services/authService';
+import { GlassCard, Button, Modal } from './ui/primitives';
+import { cn } from '@/ui/primitives';
 
-const SESSION_WARNING_THRESHOLD = 120 // 2 minutes in seconds
-const SESSION_CHECK_INTERVAL = 1000 // 1 second
+const SESSION_WARNING_THRESHOLD = 120; // 2 minutes in seconds
+const SESSION_CHECK_INTERVAL = 1000; // 1 second
 
 interface SessionExpiryModalProps {
-  isOpen: boolean
-  timeRemaining: number
-  onStayLoggedIn: () => void
-  onLogout: () => void
+  isOpen: boolean;
+  timeRemaining: number;
+  onStayLoggedIn: () => void;
+  onLogout: () => void;
 }
 
-export function SessionExpiryModal({ 
-  isOpen, 
-  timeRemaining, 
-  onStayLoggedIn, 
-  onLogout 
+export function SessionExpiryModal({
+  isOpen,
+  timeRemaining,
+  onStayLoggedIn,
+  onLogout,
 }: SessionExpiryModalProps) {
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-  
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const handleStayLoggedIn = async () => {
     try {
-      const success = await refreshUserSession()
+      const success = await refreshUserSession();
       if (success) {
-        onStayLoggedIn()
+        onStayLoggedIn();
       } else {
-        handleSessionExpired()
+        handleSessionExpired();
       }
     } catch (error) {
-      console.error('Session refresh failed:', error)
-      handleSessionExpired()
+      console.error('Session refresh failed:', error);
+      handleSessionExpired();
     }
-  }
+  };
 
   const refreshUserSession = async (): Promise<boolean> => {
     try {
-      const result = await AuthService.refreshToken()
+      const result = await AuthService.refreshToken();
       if (result?.token) {
-        sessionStorage.setItem('auth_token', result.token)
-        return true
+        sessionStorage.setItem('auth_token', result.token);
+        return true;
       }
     } catch {
       // fall-through to false
     }
-    return false
-  }
-  
+    return false;
+  };
+
   const handleSessionExpired = () => {
-    sessionStorage.clear()
-    onLogout()
-  }
-  
+    sessionStorage.clear();
+    onLogout();
+  };
+
   const handleLogout = () => {
-    sessionStorage.clear()
-    onLogout()
-  }
-  
+    sessionStorage.clear();
+    onLogout();
+  };
+
   return (
     <Modal
       isOpen
@@ -113,111 +113,111 @@ export function SessionExpiryModal({
         </div>
       </GlassCard>
     </Modal>
-  )
+  );
 }
 
 interface SessionManagerProps {
-  children: React.ReactNode
-  onLogout: () => void
+  children: React.ReactNode;
+  onLogout: () => void;
 }
 
 const parseJWT = (token: string) => {
   try {
-    const base64Url = token.split('.')[1]
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-    const jsonPayload = atob(base64)
-    return JSON.parse(jsonPayload)
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = atob(base64);
+    return JSON.parse(jsonPayload);
   } catch {
-    return null
+    return null;
   }
-}
+};
 
 const getTokenExpiryTime = (token: string): number | null => {
-  const payload = parseJWT(token)
-  return payload?.exp || null
-}
+  const payload = parseJWT(token);
+  return payload?.exp || null;
+};
 
 const isTokenExpired = (token: string): boolean => {
-  const expiry = getTokenExpiryTime(token)
-  if (!expiry) return true
-  return Math.floor(Date.now() / 1000) >= expiry
-}
+  const expiry = getTokenExpiryTime(token);
+  if (!expiry) return true;
+  return Math.floor(Date.now() / 1000) >= expiry;
+};
 
 const getTimeUntilExpiry = (token: string): number => {
-  const expiry = getTokenExpiryTime(token)
-  if (!expiry) return 0
-  return Math.max(0, expiry - Math.floor(Date.now() / 1000))
-}
+  const expiry = getTokenExpiryTime(token);
+  if (!expiry) return 0;
+  return Math.max(0, expiry - Math.floor(Date.now() / 1000));
+};
 
 export function SessionManager({ children, onLogout }: SessionManagerProps) {
-  const [showExpiryModal, setShowExpiryModal] = useState(false)
-  const [timeRemaining, setTimeRemaining] = useState(0)
-  
+  const [showExpiryModal, setShowExpiryModal] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+
   const checkSessionExpiry = useCallback(() => {
-    const token = sessionStorage.getItem('auth_token')
+    const token = sessionStorage.getItem('auth_token');
     if (!token) {
-      onLogout()
-      return
+      onLogout();
+      return;
     }
-    
+
     if (isTokenExpired(token)) {
-      sessionStorage.clear()
-      onLogout()
-      return
+      sessionStorage.clear();
+      onLogout();
+      return;
     }
-    
-    const timeUntilExpiry = getTimeUntilExpiry(token)
-    
+
+    const timeUntilExpiry = getTimeUntilExpiry(token);
+
     if (timeUntilExpiry <= SESSION_WARNING_THRESHOLD && timeUntilExpiry > 0) {
-      setTimeRemaining(timeUntilExpiry)
-      setShowExpiryModal(true)
+      setTimeRemaining(timeUntilExpiry);
+      setShowExpiryModal(true);
     }
-  }, [onLogout])
-  
+  }, [onLogout]);
+
   useEffect(() => {
-    checkSessionExpiry()
-    const interval = setInterval(checkSessionExpiry, SESSION_CHECK_INTERVAL)
-    
-    return () => clearInterval(interval)
-  }, [checkSessionExpiry])
-  
+    checkSessionExpiry();
+    const interval = setInterval(checkSessionExpiry, SESSION_CHECK_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [checkSessionExpiry]);
+
   useEffect(() => {
-    if (!showExpiryModal || timeRemaining <= 0) return
-    
+    if (!showExpiryModal || timeRemaining <= 0) return;
+
     const timer = setTimeout(() => {
-      setTimeRemaining(prev => {
-        const newTime = prev - 1
+      setTimeRemaining((prev) => {
+        const newTime = prev - 1;
         if (newTime <= 0) {
-          sessionStorage.clear()
-          onLogout()
-          return 0
+          sessionStorage.clear();
+          onLogout();
+          return 0;
         }
-        return newTime
-      })
-    }, SESSION_CHECK_INTERVAL)
-    
-    return () => clearTimeout(timer)
-  }, [timeRemaining, showExpiryModal, onLogout])
-  
+        return newTime;
+      });
+    }, SESSION_CHECK_INTERVAL);
+
+    return () => clearTimeout(timer);
+  }, [timeRemaining, showExpiryModal, onLogout]);
+
   const handleStayLoggedIn = () => {
-    setShowExpiryModal(false)
-    setTimeRemaining(0)
-  }
-  
+    setShowExpiryModal(false);
+    setTimeRemaining(0);
+  };
+
   const handleLogout = () => {
-    setShowExpiryModal(false)
-    onLogout()
-  }
-  
+    setShowExpiryModal(false);
+    onLogout();
+  };
+
   return (
     <>
       {children}
-      <SessionExpiryModal 
+      <SessionExpiryModal
         isOpen={showExpiryModal}
         timeRemaining={timeRemaining}
         onStayLoggedIn={handleStayLoggedIn}
         onLogout={handleLogout}
       />
     </>
-  )
+  );
 }

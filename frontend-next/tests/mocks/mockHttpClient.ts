@@ -1,4 +1,4 @@
-import type { IHttpClient } from '@/services/boundaries/IHttpClient'
+import type { IHttpClient } from '@/services/boundaries/IHttpClient';
 
 export function createMockHttpClient(): IHttpClient {
   return {
@@ -6,6 +6,6 @@ export function createMockHttpClient(): IHttpClient {
     post: jest.fn(),
     put: jest.fn(),
     delete: jest.fn(),
-    healthCheck: jest.fn()
-  }
+    healthCheck: jest.fn(),
+  };
 }

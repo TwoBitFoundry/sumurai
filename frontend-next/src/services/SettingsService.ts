@@ -1,25 +1,25 @@
-import { ApiClient } from './ApiClient'
+import { ApiClient } from './ApiClient';
 
 interface ChangePasswordRequest {
-  current_password: string
-  new_password: string
+  current_password: string;
+  new_password: string;
 }
 
 interface ChangePasswordResponse {
-  message: string
-  requires_reauth: boolean
+  message: string;
+  requires_reauth: boolean;
 }
 
 interface DeletedItemsSummary {
-  connections: number
-  transactions: number
-  accounts: number
-  budgets: number
+  connections: number;
+  transactions: number;
+  accounts: number;
+  budgets: number;
 }
 
 interface DeleteAccountResponse {
-  message: string
-  deleted_items: DeletedItemsSummary
+  message: string;
+  deleted_items: DeletedItemsSummary;
 }
 
 export class SettingsService {
@@ -30,11 +30,11 @@ export class SettingsService {
     return ApiClient.put<ChangePasswordResponse>('/auth/change-password', {
       current_password: currentPassword,
       new_password: newPassword,
-    })
+    });
   }
 
   static async deleteAccount(): Promise<DeleteAccountResponse> {
-    return ApiClient.delete<DeleteAccountResponse>('/auth/account')
+    return ApiClient.delete<DeleteAccountResponse>('/auth/account');
   }
 }
 
@@ -43,4 +43,4 @@ export type {
   ChangePasswordResponse,
   DeletedItemsSummary,
   DeleteAccountResponse,
-}
+};

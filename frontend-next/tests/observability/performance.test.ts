@@ -2,23 +2,24 @@ import { initTelemetry, shutdownTelemetry } from '@/observability/telemetry';
 
 global.fetch = jest.fn();
 
-const createMockResponse = (): Response => ({
-  ok: true,
-  status: 200,
-  statusText: 'OK',
-  headers: new Headers(),
-  json: async () => ({}),
-  text: async () => '{}',
-  blob: async () => new Blob(),
-  arrayBuffer: async () => new ArrayBuffer(0),
-  formData: async () => new FormData(),
-  clone: () => createMockResponse(),
-  body: null,
-  bodyUsed: false,
-  redirected: false,
-  type: 'basic',
-  url: '',
-} as Response);
+const createMockResponse = (): Response =>
+  ({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    headers: new Headers(),
+    json: async () => ({}),
+    text: async () => '{}',
+    blob: async () => new Blob(),
+    arrayBuffer: async () => new ArrayBuffer(0),
+    formData: async () => new FormData(),
+    clone: () => createMockResponse(),
+    body: null,
+    bodyUsed: false,
+    redirected: false,
+    type: 'basic',
+    url: '',
+  }) as Response;
 
 describe('Telemetry Performance Tests', () => {
   beforeEach(() => {
@@ -159,7 +160,8 @@ describe('Telemetry Performance Tests', () => {
       }
 
       const iterations = 1000;
-      const jwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
+      const jwtToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
 
       const startTime = performance.now();
 
@@ -197,7 +199,7 @@ describe('Telemetry Performance Tests', () => {
         span.end();
       }
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const finalMemory = performance.memory?.usedJSHeapSize || 0;
       const memoryIncrease = finalMemory - initialMemory;

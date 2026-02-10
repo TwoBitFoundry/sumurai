@@ -1,7 +1,7 @@
-import { render, screen, cleanup, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { installFetchRoutes } from '@tests/utils/fetchRoutes'
-import { cn } from '@/ui/primitives'
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { installFetchRoutes } from '@tests/utils/fetchRoutes';
+import { cn } from '@/ui/primitives';
 
 // Mock the AuthenticatedApp component Accounts tab section
 const mockBanks = [
@@ -17,10 +17,10 @@ const mockBanks = [
         name: 'Checking Account',
         mask: '1234',
         type: 'checking' as const,
-        balance: 1500.50,
-        transactions: 25
-      }
-    ]
+        balance: 1500.5,
+        transactions: 25,
+      },
+    ],
   },
   {
     id: 'bank-2',
@@ -35,22 +35,22 @@ const mockBanks = [
         mask: '5678',
         type: 'savings' as const,
         balance: 5000,
-        transactions: 10
-      }
-    ]
-  }
-]
+        transactions: 10,
+      },
+    ],
+  },
+];
 
 const AccountsTabMock = ({
   banks,
   onSyncBank,
   onDisconnectBank,
-  onAddBank
+  onAddBank,
 }: {
-  banks: typeof mockBanks
-  onSyncBank: (bankId: string) => Promise<void>
-  onDisconnectBank: (bankId: string) => void
-  onAddBank: () => void
+  banks: typeof mockBanks;
+  onSyncBank: (bankId: string) => Promise<void>;
+  onDisconnectBank: (bankId: string) => void;
+  onAddBank: () => void;
 }) => {
   return (
     <div data-testid="accounts-tab">
@@ -70,13 +70,10 @@ const AccountsTabMock = ({
           {banks.map((bank) => (
             <div key={bank.id} data-testid={`bank-card-${bank.id}`}>
               <h3>{bank.name}</h3>
-              <button 
-                onClick={() => onSyncBank(bank.id)}
-                data-testid={`sync-button-${bank.id}`}
-              >
+              <button onClick={() => onSyncBank(bank.id)} data-testid={`sync-button-${bank.id}`}>
                 Sync {bank.name}
               </button>
-              <button 
+              <button
                 onClick={() => onDisconnectBank(bank.id)}
                 data-testid={`disconnect-button-${bank.id}`}
               >
@@ -94,40 +91,40 @@ const AccountsTabMock = ({
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-let fetchMock: ReturnType<typeof installFetchRoutes>
+let fetchMock: ReturnType<typeof installFetchRoutes>;
 
 beforeEach(() => {
-  jest.clearAllMocks()
-  
+  jest.clearAllMocks();
+
   fetchMock = installFetchRoutes({
-    'POST /api/providers/sync-transactions': { 
-      transactions: [], 
-      metadata: { 
+    'POST /api/providers/sync-transactions': {
+      transactions: [],
+      metadata: {
         transaction_count: 0,
         account_count: 1,
         sync_timestamp: new Date().toISOString(),
         start_date: '2025-08-01',
-        end_date: '2025-08-15'
-      }
+        end_date: '2025-08-15',
+      },
     },
     'POST /api/providers/disconnect': { success: true },
-  })
-})
+  });
+});
 
 afterEach(() => {
-  cleanup()
-  jest.restoreAllMocks()
-})
+  cleanup();
+  jest.restoreAllMocks();
+});
 
 describe('AccountsTab Integration', () => {
   describe('when displaying bank connections', () => {
     it('shows connected banks with bank-level operations', () => {
-      const mockOnSyncBank = jest.fn().mockResolvedValue(undefined)
-      const mockOnDisconnectBank = jest.fn()
-      const mockOnAddBank = jest.fn()
+      const mockOnSyncBank = jest.fn().mockResolvedValue(undefined);
+      const mockOnDisconnectBank = jest.fn();
+      const mockOnAddBank = jest.fn();
 
       render(
         <AccountsTabMock
@@ -136,21 +133,21 @@ describe('AccountsTab Integration', () => {
           onDisconnectBank={mockOnDisconnectBank}
           onAddBank={mockOnAddBank}
         />
-      )
+      );
 
-      expect(screen.getByText('Chase Bank')).toBeInTheDocument()
-      expect(screen.getByText('Wells Fargo')).toBeInTheDocument()
-      
-      expect(screen.getByTestId('sync-button-bank-1')).toBeInTheDocument()
-      expect(screen.getByTestId('disconnect-button-bank-1')).toBeInTheDocument()
-      expect(screen.getByTestId('sync-button-bank-2')).toBeInTheDocument()
-      expect(screen.getByTestId('disconnect-button-bank-2')).toBeInTheDocument()
-    })
+      expect(screen.getByText('Chase Bank')).toBeInTheDocument();
+      expect(screen.getByText('Wells Fargo')).toBeInTheDocument();
+
+      expect(screen.getByTestId('sync-button-bank-1')).toBeInTheDocument();
+      expect(screen.getByTestId('disconnect-button-bank-1')).toBeInTheDocument();
+      expect(screen.getByTestId('sync-button-bank-2')).toBeInTheDocument();
+      expect(screen.getByTestId('disconnect-button-bank-2')).toBeInTheDocument();
+    });
 
     it('shows accounts without individual sync/disconnect controls', () => {
-      const mockOnSyncBank = jest.fn()
-      const mockOnDisconnectBank = jest.fn()
-      const mockOnAddBank = jest.fn()
+      const mockOnSyncBank = jest.fn();
+      const mockOnDisconnectBank = jest.fn();
+      const mockOnAddBank = jest.fn();
 
       render(
         <AccountsTabMock
@@ -159,24 +156,24 @@ describe('AccountsTab Integration', () => {
           onDisconnectBank={mockOnDisconnectBank}
           onAddBank={mockOnAddBank}
         />
-      )
+      );
 
-      expect(screen.getByText('Checking Account')).toBeInTheDocument()
-      expect(screen.getByText('••1234')).toBeInTheDocument()
-      expect(screen.getByText('25 items')).toBeInTheDocument()
-      expect(screen.getByText('Savings Account')).toBeInTheDocument()
-      expect(screen.getByText('••5678')).toBeInTheDocument()
-      expect(screen.getByText('10 items')).toBeInTheDocument()
+      expect(screen.getByText('Checking Account')).toBeInTheDocument();
+      expect(screen.getByText('••1234')).toBeInTheDocument();
+      expect(screen.getByText('25 items')).toBeInTheDocument();
+      expect(screen.getByText('Savings Account')).toBeInTheDocument();
+      expect(screen.getByText('••5678')).toBeInTheDocument();
+      expect(screen.getByText('10 items')).toBeInTheDocument();
 
       // Ensure no individual account controls exist
-      expect(screen.queryByText(/sync.*account/i)).not.toBeInTheDocument()
-      expect(screen.queryByText(/disconnect.*account/i)).not.toBeInTheDocument()
-    })
+      expect(screen.queryByText(/sync.*account/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/disconnect.*account/i)).not.toBeInTheDocument();
+    });
 
     it('shows empty state when no banks are connected', () => {
-      const mockOnSyncBank = jest.fn()
-      const mockOnDisconnectBank = jest.fn()
-      const mockOnAddBank = jest.fn()
+      const mockOnSyncBank = jest.fn();
+      const mockOnDisconnectBank = jest.fn();
+      const mockOnAddBank = jest.fn();
 
       render(
         <AccountsTabMock
@@ -185,19 +182,19 @@ describe('AccountsTab Integration', () => {
           onDisconnectBank={mockOnDisconnectBank}
           onAddBank={mockOnAddBank}
         />
-      )
+      );
 
-      expect(screen.getByTestId('banks-empty-state')).toBeInTheDocument()
-      expect(screen.getByText('No accounts connected yet')).toBeInTheDocument()
-    })
-  })
+      expect(screen.getByTestId('banks-empty-state')).toBeInTheDocument();
+      expect(screen.getByText('No accounts connected yet')).toBeInTheDocument();
+    });
+  });
 
   describe('when performing bank-level operations', () => {
     it('calls sync handler with correct bank id', async () => {
-      const user = userEvent.setup()
-      const mockOnSyncBank = jest.fn().mockResolvedValue(undefined)
-      const mockOnDisconnectBank = jest.fn()
-      const mockOnAddBank = jest.fn()
+      const user = userEvent.setup();
+      const mockOnSyncBank = jest.fn().mockResolvedValue(undefined);
+      const mockOnDisconnectBank = jest.fn();
+      const mockOnAddBank = jest.fn();
 
       render(
         <AccountsTabMock
@@ -206,19 +203,19 @@ describe('AccountsTab Integration', () => {
           onDisconnectBank={mockOnDisconnectBank}
           onAddBank={mockOnAddBank}
         />
-      )
+      );
 
-      const syncButton = screen.getByTestId('sync-button-bank-1')
-      await user.click(syncButton)
+      const syncButton = screen.getByTestId('sync-button-bank-1');
+      await user.click(syncButton);
 
-      expect(mockOnSyncBank).toHaveBeenCalledWith('bank-1')
-    })
+      expect(mockOnSyncBank).toHaveBeenCalledWith('bank-1');
+    });
 
     it('calls disconnect handler with correct bank id', async () => {
-      const user = userEvent.setup()
-      const mockOnSyncBank = jest.fn()
-      const mockOnDisconnectBank = jest.fn()
-      const mockOnAddBank = jest.fn()
+      const user = userEvent.setup();
+      const mockOnSyncBank = jest.fn();
+      const mockOnDisconnectBank = jest.fn();
+      const mockOnAddBank = jest.fn();
 
       render(
         <AccountsTabMock
@@ -227,19 +224,19 @@ describe('AccountsTab Integration', () => {
           onDisconnectBank={mockOnDisconnectBank}
           onAddBank={mockOnAddBank}
         />
-      )
+      );
 
-      const disconnectButton = screen.getByTestId('disconnect-button-bank-2')
-      await user.click(disconnectButton)
+      const disconnectButton = screen.getByTestId('disconnect-button-bank-2');
+      await user.click(disconnectButton);
 
-      expect(mockOnDisconnectBank).toHaveBeenCalledWith('bank-2')
-    })
+      expect(mockOnDisconnectBank).toHaveBeenCalledWith('bank-2');
+    });
 
     it('calls add bank handler when add button clicked', async () => {
-      const user = userEvent.setup()
-      const mockOnSyncBank = jest.fn()
-      const mockOnDisconnectBank = jest.fn()
-      const mockOnAddBank = jest.fn()
+      const user = userEvent.setup();
+      const mockOnSyncBank = jest.fn();
+      const mockOnDisconnectBank = jest.fn();
+      const mockOnAddBank = jest.fn();
 
       render(
         <AccountsTabMock
@@ -248,20 +245,20 @@ describe('AccountsTab Integration', () => {
           onDisconnectBank={mockOnDisconnectBank}
           onAddBank={mockOnAddBank}
         />
-      )
+      );
 
-      const addButton = screen.getByTestId('add-bank-button')
-      await user.click(addButton)
+      const addButton = screen.getByTestId('add-bank-button');
+      await user.click(addButton);
 
-      expect(mockOnAddBank).toHaveBeenCalled()
-    })
-  })
+      expect(mockOnAddBank).toHaveBeenCalled();
+    });
+  });
 
   describe('when integrating with bank-level operations philosophy', () => {
     it('ensures operations affect entire bank connection, not individual accounts', () => {
-      const mockOnSyncBank = jest.fn()
-      const mockOnDisconnectBank = jest.fn()
-      const mockOnAddBank = jest.fn()
+      const mockOnSyncBank = jest.fn();
+      const mockOnDisconnectBank = jest.fn();
+      const mockOnAddBank = jest.fn();
 
       render(
         <AccountsTabMock
@@ -270,19 +267,19 @@ describe('AccountsTab Integration', () => {
           onDisconnectBank={mockOnDisconnectBank}
           onAddBank={mockOnAddBank}
         />
-      )
+      );
 
       // Verify sync operations are bank-level (sync entire bank/institution)
-      expect(screen.getByText('Sync Chase Bank')).toBeInTheDocument()
-      expect(screen.getByText('Sync Wells Fargo')).toBeInTheDocument()
-      
+      expect(screen.getByText('Sync Chase Bank')).toBeInTheDocument();
+      expect(screen.getByText('Sync Wells Fargo')).toBeInTheDocument();
+
       // Verify disconnect operations are bank-level (disconnect entire bank/institution)
-      expect(screen.getByText('Disconnect Chase Bank')).toBeInTheDocument()
-      expect(screen.getByText('Disconnect Wells Fargo')).toBeInTheDocument()
+      expect(screen.getByText('Disconnect Chase Bank')).toBeInTheDocument();
+      expect(screen.getByText('Disconnect Wells Fargo')).toBeInTheDocument();
 
       // Verify no individual account controls exist
-      expect(screen.queryByText(/sync.*account/i)).not.toBeInTheDocument()
-      expect(screen.queryByText(/disconnect.*account/i)).not.toBeInTheDocument()
-    })
-  })
-})
+      expect(screen.queryByText(/sync.*account/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/disconnect.*account/i)).not.toBeInTheDocument();
+    });
+  });
+});

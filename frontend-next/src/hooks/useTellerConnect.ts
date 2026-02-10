@@ -1,178 +1,178 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { ApiClient } from '../services/ApiClient'
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ApiClient } from '../services/ApiClient';
 
-export type TellerEnvironment = 'sandbox' | 'development' | 'production'
+export type TellerEnvironment = 'sandbox' | 'development' | 'production';
 
 declare global {
   interface Window {
     TellerConnect?: {
-      setup: (config: TellerConnectConfig) => TellerInstance
-    }
+      setup: (config: TellerConnectConfig) => TellerInstance;
+    };
   }
 }
 
 interface TellerConnectConfig {
-  applicationId: string
-  onSuccess: (enrollment: TellerEnrollment) => Promise<void> | void
-  onExit?: () => void
-  environment?: TellerEnvironment
-  selectAccount?: 'single' | 'multiple'
+  applicationId: string;
+  onSuccess: (enrollment: TellerEnrollment) => Promise<void> | void;
+  onExit?: () => void;
+  environment?: TellerEnvironment;
+  selectAccount?: 'single' | 'multiple';
 }
 
 interface TellerEnrollment {
-  accessToken: string
-  user: { id: string }
-  enrollment: { id: string; institution: { name: string } }
+  accessToken: string;
+  user: { id: string };
+  enrollment: { id: string; institution: { name: string } };
 }
 
 interface TellerInstance {
-  open: () => void
-  destroy: () => void
+  open: () => void;
+  destroy: () => void;
 }
 
 interface StoreEnrollmentRequest {
-  access_token: string
-  enrollment_id: string
-  institution_name: string
+  access_token: string;
+  enrollment_id: string;
+  institution_name: string;
 }
 
 interface StoreEnrollmentResponse {
-  connection_id: string
-  institution_name: string
+  connection_id: string;
+  institution_name: string;
 }
 
-const TELLER_SCRIPT_ATTR = 'data-teller-connect'
-const TELLER_SCRIPT_SRC = 'https://cdn.teller.io/connect/connect.js'
+const TELLER_SCRIPT_ATTR = 'data-teller-connect';
+const TELLER_SCRIPT_SRC = 'https://cdn.teller.io/connect/connect.js';
 
-let tellerScriptLoaded = false
-let tellerScriptPromise: Promise<void> | null = null
+let tellerScriptLoaded = false;
+let tellerScriptPromise: Promise<void> | null = null;
 
 const ensureTellerScript = (): Promise<void> => {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     return Promise.reject(
       new Error('Teller Connect can only be initialized in a browser environment')
-    )
+    );
   }
 
   if (window.TellerConnect) {
-    tellerScriptLoaded = true
-    return Promise.resolve()
+    tellerScriptLoaded = true;
+    return Promise.resolve();
   }
 
   if (tellerScriptLoaded) {
-    return Promise.resolve()
+    return Promise.resolve();
   }
 
   if (tellerScriptPromise) {
-    return tellerScriptPromise
+    return tellerScriptPromise;
   }
 
   tellerScriptPromise = new Promise<void>((resolve, reject) => {
     const resolveOnce = () => {
       if (tellerScriptLoaded) {
-        return
+        return;
       }
-      tellerScriptLoaded = true
-      tellerScriptPromise = null
-      resolve()
-    }
+      tellerScriptLoaded = true;
+      tellerScriptPromise = null;
+      resolve();
+    };
 
     const rejectOnce = (error: Error) => {
-      tellerScriptPromise = null
-      reject(error)
-    }
+      tellerScriptPromise = null;
+      reject(error);
+    };
 
     const existingScript = document.querySelector<HTMLScriptElement>(
       `script[${TELLER_SCRIPT_ATTR}]`
-    )
+    );
 
     const completeLoad = () => {
       if (window.TellerConnect) {
-        resolveOnce()
+        resolveOnce();
       } else {
-        rejectOnce(new Error('Teller Connect SDK loaded but did not expose a global instance'))
+        rejectOnce(new Error('Teller Connect SDK loaded but did not expose a global instance'));
       }
-    }
+    };
 
     if (existingScript) {
       if (existingScript.dataset.loaded === 'true') {
-        completeLoad()
-        return
+        completeLoad();
+        return;
       }
 
       const handleLoad = () => {
-        existingScript.removeEventListener('error', handleError)
-        existingScript.dataset.loaded = 'true'
-        completeLoad()
-      }
+        existingScript.removeEventListener('error', handleError);
+        existingScript.dataset.loaded = 'true';
+        completeLoad();
+      };
 
       const handleError = () => {
-        existingScript.removeEventListener('load', handleLoad)
-        rejectOnce(new Error('Failed to load Teller Connect script'))
-      }
+        existingScript.removeEventListener('load', handleLoad);
+        rejectOnce(new Error('Failed to load Teller Connect script'));
+      };
 
-      existingScript.addEventListener('load', handleLoad, { once: true })
-      existingScript.addEventListener('error', handleError, { once: true })
-      return
+      existingScript.addEventListener('load', handleLoad, { once: true });
+      existingScript.addEventListener('error', handleError, { once: true });
+      return;
     }
 
-    const script = document.createElement('script')
-    script.src = TELLER_SCRIPT_SRC
-    script.async = true
-    script.setAttribute(TELLER_SCRIPT_ATTR, 'true')
+    const script = document.createElement('script');
+    script.src = TELLER_SCRIPT_SRC;
+    script.async = true;
+    script.setAttribute(TELLER_SCRIPT_ATTR, 'true');
 
     const handleLoad = () => {
-      script.removeEventListener('error', handleError)
-      script.dataset.loaded = 'true'
-      completeLoad()
-    }
+      script.removeEventListener('error', handleError);
+      script.dataset.loaded = 'true';
+      completeLoad();
+    };
 
     const handleError = () => {
-      script.removeEventListener('load', handleLoad)
-      script.remove()
-      rejectOnce(new Error('Failed to load Teller Connect script'))
-    }
+      script.removeEventListener('load', handleLoad);
+      script.remove();
+      rejectOnce(new Error('Failed to load Teller Connect script'));
+    };
 
-    script.addEventListener('load', handleLoad, { once: true })
-    script.addEventListener('error', handleError, { once: true })
+    script.addEventListener('load', handleLoad, { once: true });
+    script.addEventListener('error', handleError, { once: true });
 
-    document.head.appendChild(script)
-  })
+    document.head.appendChild(script);
+  });
 
-  return tellerScriptPromise
-}
+  return tellerScriptPromise;
+};
 
 export interface TellerConnectGateway {
-  storeEnrollment: (payload: StoreEnrollmentRequest) => Promise<StoreEnrollmentResponse>
-  syncTransactions: (connectionId: string) => Promise<void>
+  storeEnrollment: (payload: StoreEnrollmentRequest) => Promise<StoreEnrollmentResponse>;
+  syncTransactions: (connectionId: string) => Promise<void>;
 }
 
 const apiGateway: TellerConnectGateway = {
   async storeEnrollment(payload) {
     return ApiClient.post<StoreEnrollmentResponse>('/providers/connect', {
       provider: 'teller',
-      ...payload
-    })
+      ...payload,
+    });
   },
   async syncTransactions(connectionId) {
     await ApiClient.post('/providers/sync-transactions', {
-      connection_id: connectionId
-    })
-  }
-}
+      connection_id: connectionId,
+    });
+  },
+};
 
 export interface UseTellerConnectOptions {
-  applicationId: string
-  environment?: TellerEnvironment
-  gateway?: TellerConnectGateway
-  onConnected?: () => Promise<void> | void
-  onExit?: () => Promise<void> | void
-  onError?: (error: unknown) => Promise<void> | void
+  applicationId: string;
+  environment?: TellerEnvironment;
+  gateway?: TellerConnectGateway;
+  onConnected?: () => Promise<void> | void;
+  onExit?: () => Promise<void> | void;
+  onError?: (error: unknown) => Promise<void> | void;
 }
 
 export interface UseTellerConnectResult {
-  ready: boolean
-  open: () => void
+  ready: boolean;
+  open: () => void;
 }
 
 export function useTellerConnect(options: UseTellerConnectOptions): UseTellerConnectResult {
@@ -183,42 +183,42 @@ export function useTellerConnect(options: UseTellerConnectOptions): UseTellerCon
     onConnected,
     onExit,
     onError,
-  } = options
-  const [instance, setInstance] = useState<TellerInstance | null>(null)
-  const onConnectedRef = useRef<UseTellerConnectOptions['onConnected']>(onConnected)
-  const onExitRef = useRef<UseTellerConnectOptions['onExit']>(onExit)
-  const onErrorRef = useRef<UseTellerConnectOptions['onError']>(onError)
+  } = options;
+  const [instance, setInstance] = useState<TellerInstance | null>(null);
+  const onConnectedRef = useRef<UseTellerConnectOptions['onConnected']>(onConnected);
+  const onExitRef = useRef<UseTellerConnectOptions['onExit']>(onExit);
+  const onErrorRef = useRef<UseTellerConnectOptions['onError']>(onError);
 
   useEffect(() => {
-    onConnectedRef.current = onConnected
-  }, [onConnected])
+    onConnectedRef.current = onConnected;
+  }, [onConnected]);
 
   useEffect(() => {
-    onExitRef.current = onExit
-  }, [onExit])
+    onExitRef.current = onExit;
+  }, [onExit]);
 
   useEffect(() => {
-    onErrorRef.current = onError
-  }, [onError])
+    onErrorRef.current = onError;
+  }, [onError]);
 
   useEffect(() => {
     if (!applicationId) {
-      setInstance(null)
-      return
+      setInstance(null);
+      return;
     }
 
-    let isActive = true
-    let createdInstance: TellerInstance | null = null
+    let isActive = true;
+    let createdInstance: TellerInstance | null = null;
 
     const initialize = async () => {
       try {
-        await ensureTellerScript()
+        await ensureTellerScript();
         if (!isActive) {
-          return
+          return;
         }
 
         if (!window.TellerConnect) {
-          throw new Error('TellerConnect script not available on window')
+          throw new Error('TellerConnect script not available on window');
         }
 
         const tellerInstance = window.TellerConnect.setup({
@@ -230,48 +230,48 @@ export function useTellerConnect(options: UseTellerConnectOptions): UseTellerCon
               const result = await gateway.storeEnrollment({
                 access_token: enrollment.accessToken,
                 enrollment_id: enrollment.enrollment.id,
-                institution_name: enrollment.enrollment.institution.name
-              })
-              await gateway.syncTransactions(result.connection_id)
-              await onConnectedRef.current?.()
+                institution_name: enrollment.enrollment.institution.name,
+              });
+              await gateway.syncTransactions(result.connection_id);
+              await onConnectedRef.current?.();
             } catch (err) {
-              console.warn('Failed to persist Teller enrollment', err)
-              await onErrorRef.current?.(err)
-              throw err
+              console.warn('Failed to persist Teller enrollment', err);
+              await onErrorRef.current?.(err);
+              throw err;
             }
           },
           onExit: () => {
-            void onExitRef.current?.()
-          }
-        })
+            void onExitRef.current?.();
+          },
+        });
 
-        createdInstance = tellerInstance
-        setInstance(tellerInstance)
+        createdInstance = tellerInstance;
+        setInstance(tellerInstance);
       } catch (err) {
-        console.warn('Failed to initialize Teller Connect', err)
+        console.warn('Failed to initialize Teller Connect', err);
         if (isActive) {
-          setInstance(null)
+          setInstance(null);
         }
-        await onErrorRef.current?.(err)
+        await onErrorRef.current?.(err);
       }
-    }
+    };
 
-    void initialize()
+    void initialize();
 
     return () => {
-      isActive = false
+      isActive = false;
       if (createdInstance) {
-        createdInstance.destroy()
+        createdInstance.destroy();
       }
-    }
-  }, [applicationId, environment, gateway])
+    };
+  }, [applicationId, environment, gateway]);
 
   const open = useCallback(() => {
-    instance?.open()
-  }, [instance])
+    instance?.open();
+  }, [instance]);
 
   return {
     ready: Boolean(instance),
-    open
-  }
+    open,
+  };
 }

@@ -150,7 +150,8 @@ describe('SensitiveDataSpanProcessor', () => {
     });
 
     it('should redact JWT tokens in essential attributes', () => {
-      const jwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
+      const jwtToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
       const span = createMockSpan(`http://localhost:8080/api/auth/verify?token=${jwtToken}`);
 
       processor.onEnd(span);
@@ -276,7 +277,9 @@ describe('SensitiveDataSpanProcessor', () => {
     });
 
     it('should handle URLs with query parameters', () => {
-      const span = createMockSpan('http://localhost:8080/api/plaid/exchange-token?redirect=/dashboard');
+      const span = createMockSpan(
+        'http://localhost:8080/api/plaid/exchange-token?redirect=/dashboard'
+      );
 
       expect(processor.shouldBlockSpan(span)).toBe(true);
       expect(() => processor.onEnd(span)).not.toThrow();

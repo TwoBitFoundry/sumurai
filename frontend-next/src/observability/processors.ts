@@ -1,21 +1,11 @@
-import {
-  SpanProcessor,
-  ReadableSpan,
-  Span,
-} from '@opentelemetry/sdk-trace-base';
+import { SpanProcessor, ReadableSpan, Span } from '@opentelemetry/sdk-trace-base';
 import { Context, trace, Attributes } from '@opentelemetry/api';
 import { redactTokenPatterns } from './sanitization';
 import { AuthService } from '../services/authService';
 
-const SENSITIVE_ENDPOINTS = [
-  /\/api\/plaid\/exchange-token$/,
-  /\/api\/teller\/exchange-token$/,
-];
+const SENSITIVE_ENDPOINTS = [/\/api\/plaid\/exchange-token$/, /\/api\/teller\/exchange-token$/];
 
-const AUTH_ENDPOINTS = [
-  /\/api\/auth\//,
-  /\/api\/plaid\/link-token$/,
-];
+const AUTH_ENDPOINTS = [/\/api\/auth\//, /\/api\/plaid\/link-token$/];
 
 export class SensitiveDataSpanProcessor implements SpanProcessor {
   private readonly blockSensitiveEndpoints: boolean;
@@ -29,8 +19,7 @@ export class SensitiveDataSpanProcessor implements SpanProcessor {
     this.redactAuthEndpoints = options?.redactAuthEndpoints ?? true;
   }
 
-  onStart(_span: Span, _parentContext: Context): void {
-  }
+  onStart(_span: Span, _parentContext: Context): void {}
 
   onEnd(span: ReadableSpan): void {
     const url = this.getSpanUrl(span);
@@ -71,11 +60,11 @@ export class SensitiveDataSpanProcessor implements SpanProcessor {
 
   private isSensitiveEndpoint(url: string): boolean {
     const normalizedUrl = this.stripQueryAndFragment(url);
-    return SENSITIVE_ENDPOINTS.some(pattern => pattern.test(normalizedUrl));
+    return SENSITIVE_ENDPOINTS.some((pattern) => pattern.test(normalizedUrl));
   }
 
   private isAuthEndpoint(url: string): boolean {
-    return AUTH_ENDPOINTS.some(pattern => pattern.test(url));
+    return AUTH_ENDPOINTS.some((pattern) => pattern.test(url));
   }
 
   private redactAllNonEssentialAttributes(span: ReadableSpan): void {
@@ -119,7 +108,11 @@ export class SensitiveDataSpanProcessor implements SpanProcessor {
 
   private recordSanitizedOutcome(span: ReadableSpan, url: string): void {
     const tracer = trace.getTracer('sumurai-frontend', '1.0.0');
-    const provider = url.includes('/plaid/') ? 'plaid' : url.includes('/teller/') ? 'teller' : 'unknown';
+    const provider = url.includes('/plaid/')
+      ? 'plaid'
+      : url.includes('/teller/')
+        ? 'teller'
+        : 'unknown';
     const endpoint = this.getEndpointKey(url, provider);
     const status =
       (span.attributes['http.status_code'] as number | undefined) ??
@@ -164,8 +157,7 @@ export class SensitiveDataSpanProcessor implements SpanProcessor {
 }
 
 export class HttpRouteSpanProcessor implements SpanProcessor {
-  onStart(_span: Span, _parentContext: Context): void {
-  }
+  onStart(_span: Span, _parentContext: Context): void {}
 
   onEnd(span: ReadableSpan): void {
     const attributes = span.attributes ?? {};
@@ -193,7 +185,7 @@ export class HttpRouteSpanProcessor implements SpanProcessor {
       };
     } else {
       void AuthService.ensureEncryptedTokenHash()
-        .then(hash => {
+        .then((hash) => {
           if (hash) {
             mutableSpan.attributes = {
               ...mutableSpan.attributes,
@@ -260,7 +252,7 @@ export class HttpRouteSpanProcessor implements SpanProcessor {
 export class FilteringSpanProcessor implements SpanProcessor {
   constructor(
     private readonly delegate: SpanProcessor,
-    private readonly shouldSkip: (span: ReadableSpan) => boolean,
+    private readonly shouldSkip: (span: ReadableSpan) => boolean
   ) {}
 
   onStart(span: Span, parentContext: Context): void {

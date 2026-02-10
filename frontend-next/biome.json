@@ -70,11 +70,7 @@
   },
   "overrides": [
     {
-      "includes": [
-        "tests/**",
-        "**/*.test.*",
-        "**/*.spec.*"
-      ],
+      "includes": ["tests/**", "**/*.test.*", "**/*.spec.*"],
       "linter": {
         "rules": {
           "suspicious": {
@@ -94,12 +90,7 @@
       }
     },
     {
-      "includes": [
-        "next.config.js",
-        "jest.config.cjs",
-        "postcss.config.js",
-        "tailwind.config.js"
-      ],
+      "includes": ["next.config.js", "jest.config.cjs", "postcss.config.js", "tailwind.config.js"],
       "linter": {
         "rules": {
           "style": {

@@ -1,36 +1,36 @@
-import React from 'react'
-import { Alert, Badge, Button } from '@/ui/primitives'
-import { cn } from '@/ui/primitives/utils'
-import type { ConnectAccountProviderContent } from '@/utils/providerCards'
+import React from 'react';
+import { Alert, Badge, Button } from '@/ui/primitives';
+import { cn } from '@/ui/primitives/utils';
+import type { ConnectAccountProviderContent } from '@/utils/providerCards';
 
-type StatusTone = 'info' | 'warning' | 'error'
+type StatusTone = 'info' | 'warning' | 'error';
 
 interface StatusMessage {
-  tone: StatusTone
-  text: string
-  actionLabel?: string
-  action?: () => void | Promise<void>
+  tone: StatusTone;
+  text: string;
+  actionLabel?: string;
+  action?: () => void | Promise<void>;
 }
 
 interface ConnectAccountStepProps {
-  content: ConnectAccountProviderContent
-  providerLoading: boolean
-  providerError: string | null
-  onRetryProvider?: () => Promise<void> | void
-  tellerApplicationId?: string | null
-  isConnected: boolean
-  connectionInProgress: boolean
-  institutionName: string | null
-  error: string | null
-  onConnect: () => void
-  onRetry: () => void
+  content: ConnectAccountProviderContent;
+  providerLoading: boolean;
+  providerError: string | null;
+  onRetryProvider?: () => Promise<void> | void;
+  tellerApplicationId?: string | null;
+  isConnected: boolean;
+  connectionInProgress: boolean;
+  institutionName: string | null;
+  error: string | null;
+  onConnect: () => void;
+  onRetry: () => void;
 }
 
 const statusVariantMap: Record<StatusTone, 'info' | 'warning' | 'error'> = {
   info: 'info',
   warning: 'warning',
   error: 'error',
-}
+};
 
 function FeatureCard({
   icon: Icon,
@@ -45,7 +45,11 @@ function FeatureCard({
         'dark:border-[#334155] dark:bg-[#0f172a] dark:hover:border-[#38bdf8] dark:hover:shadow-[0_20px_56px_-40px_rgba(2,6,23,0.65)]'
       )}
     >
-      <div className={cn('pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20')} />
+      <div
+        className={cn(
+          'pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20'
+        )}
+      />
       <span
         className={cn(
           'relative z-10 inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#f8fafc] ring-1 ring-inset',
@@ -57,12 +61,21 @@ function FeatureCard({
         aria-hidden="true"
       >
         <span className={cn('absolute inset-0 bg-gradient-to-br', palette.gradient)} />
-        <span className={cn('absolute inset-[20%] rounded-full bg-slate-300/30 opacity-40 blur-[6px]', 'dark:bg-black/20')} />
+        <span
+          className={cn(
+            'absolute inset-[20%] rounded-full bg-slate-300/30 opacity-40 blur-[6px]',
+            'dark:bg-black/20'
+          )}
+        />
         <Icon className={cn('relative h-5 w-5', palette.icon)} strokeWidth={1.7} />
       </span>
-      <h4 className={cn('relative z-10 mt-3 text-sm font-semibold text-[#0f172a]', 'dark:text-white')}>{title}</h4>
+      <h4
+        className={cn('relative z-10 mt-3 text-sm font-semibold text-[#0f172a]', 'dark:text-white')}
+      >
+        {title}
+      </h4>
     </div>
-  )
+  );
 }
 
 function HighlightCard({
@@ -79,7 +92,11 @@ function HighlightCard({
         'dark:border-[#334155] dark:bg-[#0f172a] dark:hover:border-[#38bdf8] dark:hover:shadow-[0_20px_56px_-40px_rgba(2,6,23,0.65)]'
       )}
     >
-      <div className={cn('pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20')} />
+      <div
+        className={cn(
+          'pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20'
+        )}
+      />
       <span
         className={cn(
           'relative z-10 inline-flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#f8fafc] ring-1 ring-inset',
@@ -91,15 +108,23 @@ function HighlightCard({
         aria-hidden="true"
       >
         <span className={cn('absolute inset-0 bg-gradient-to-br', palette.gradient)} />
-        <span className={cn('absolute inset-[18%] rounded-full bg-slate-300/30 opacity-50 blur-[6px]', 'dark:bg-black/20')} />
-        <Icon className={cn('relative h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)} strokeWidth={1.7} />
+        <span
+          className={cn(
+            'absolute inset-[18%] rounded-full bg-slate-300/30 opacity-50 blur-[6px]',
+            'dark:bg-black/20'
+          )}
+        />
+        <Icon
+          className={cn('relative h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)}
+          strokeWidth={1.7}
+        />
       </span>
       <div className="relative z-10 space-y-1">
         <p className={cn('text-sm font-semibold text-[#0f172a]', 'dark:text-white')}>{title}</p>
         <p className={cn('text-xs text-[#475569]', 'dark:text-[#cbd5e1]')}>{body}</p>
       </div>
     </div>
-  )
+  );
 }
 
 export function ConnectAccountStep({
@@ -115,13 +140,13 @@ export function ConnectAccountStep({
   onConnect,
   onRetry,
 }: ConnectAccountStepProps) {
-  const statusMessages: StatusMessage[] = []
+  const statusMessages: StatusMessage[] = [];
 
   if (providerLoading) {
     statusMessages.push({
       tone: 'info',
       text: 'Loading provider configuration…',
-    })
+    });
   }
 
   if (providerError) {
@@ -130,11 +155,11 @@ export function ConnectAccountStep({
       text: providerError,
       actionLabel: 'Retry',
       action: onRetryProvider,
-    })
+    });
   }
 
-  const requiresApplicationId = Boolean(content.requiresApplicationId)
-  const missingApplicationId = requiresApplicationId && !tellerApplicationId
+  const requiresApplicationId = Boolean(content.requiresApplicationId);
+  const missingApplicationId = requiresApplicationId && !tellerApplicationId;
 
   if (missingApplicationId) {
     statusMessages.push({
@@ -142,27 +167,45 @@ export function ConnectAccountStep({
       text:
         content.applicationIdMissingCopy ??
         'Add your Teller application ID in provider settings to continue.',
-    })
+    });
   }
 
-  const disablePrimaryAction = providerLoading || missingApplicationId
+  const disablePrimaryAction = providerLoading || missingApplicationId;
 
   return (
-    <div className={cn('grid items-stretch gap-8', 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]', 'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]')}>
+    <div
+      className={cn(
+        'grid items-stretch gap-8',
+        'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]',
+        'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]'
+      )}
+    >
       <div className={cn('flex flex-col gap-8')}>
         <div className={cn('flex flex-col gap-5')}>
           <Badge
             variant="feature"
             size="sm"
-            className={cn('w-fit tracking-[0.3em]', content.eyebrow.backgroundClassName, content.eyebrow.textClassName)}
+            className={cn(
+              'w-fit tracking-[0.3em]',
+              content.eyebrow.backgroundClassName,
+              content.eyebrow.textClassName
+            )}
           >
             {content.eyebrow.text}
           </Badge>
           <div className={cn('space-y-3')}>
-            <h1 className={cn('text-3xl font-bold text-slate-900 transition-colors duration-300 ease-out dark:text-white md:text-[2.6rem]')}>
+            <h1
+              className={cn(
+                'text-3xl font-bold text-slate-900 transition-colors duration-300 ease-out dark:text-white md:text-[2.6rem]'
+              )}
+            >
               {content.heroTitle}
             </h1>
-            <p className={cn('text-base leading-relaxed text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300')}>
+            <p
+              className={cn(
+                'text-base leading-relaxed text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300'
+              )}
+            >
               {content.heroDescription}
             </p>
           </div>
@@ -206,11 +249,15 @@ export function ConnectAccountStep({
         )}
 
         <div className={cn('flex flex-col gap-4')}>
-          <div className={cn('text-[11px] font-semibold uppercase tracking-[0.3em] text-[#475569] transition-colors duration-300 ease-out dark:text-[#cbd5e1]')}>
+          <div
+            className={cn(
+              'text-[11px] font-semibold uppercase tracking-[0.3em] text-[#475569] transition-colors duration-300 ease-out dark:text-[#cbd5e1]'
+            )}
+          >
             {content.highlightLabel}
           </div>
           <div className={cn('grid gap-3 sm:grid-cols-3')}>
-            {content.features.map(feature => (
+            {content.features.map((feature) => (
               <FeatureCard key={feature.title} {...feature} />
             ))}
           </div>
@@ -218,12 +265,16 @@ export function ConnectAccountStep({
       </div>
 
       <div className={cn('flex flex-col gap-5 self-start mt-[52px]')}>
-        <div className={cn('text-[11px] font-semibold uppercase tracking-[0.3em] text-[#475569] transition-colors duration-300 ease-out dark:text-[#cbd5e1]')}>
+        <div
+          className={cn(
+            'text-[11px] font-semibold uppercase tracking-[0.3em] text-[#475569] transition-colors duration-300 ease-out dark:text-[#cbd5e1]'
+          )}
+        >
           {content.highlightMeta}
         </div>
         <div className={cn('flex flex-col gap-4')}>
           <div className={cn('grid auto-rows-fr gap-3 sm:grid-cols-2')}>
-            {content.highlights.map(highlight => (
+            {content.highlights.map((highlight) => (
               <HighlightCard key={highlight.title} {...highlight} />
             ))}
           </div>
@@ -267,5 +318,5 @@ export function ConnectAccountStep({
         </div>
       </div>
     </div>
-  )
+  );
 }

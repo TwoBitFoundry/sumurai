@@ -1,11 +1,11 @@
-import React from 'react'
-import { cn } from './utils'
+import React from 'react';
+import { cn } from './utils';
 
 export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
-  icon: React.ComponentType<{ className?: string }>
-  title: string
-  description: string
-  action?: React.ReactNode
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  action?: React.ReactNode;
 }
 
 /**
@@ -29,10 +29,28 @@ export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
  *
  * @see {@link ../README.md} for detailed documentation
  */
-export function EmptyState({ icon: Icon, title, description, action, className, ...props }: EmptyStateProps) {
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+  className,
+  ...props
+}: EmptyStateProps) {
   return (
     <div
-      className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'gap-4', 'px-6', 'py-20', 'text-center', 'sm:px-12', className)}
+      className={cn(
+        'flex',
+        'flex-col',
+        'items-center',
+        'justify-center',
+        'gap-4',
+        'px-6',
+        'py-20',
+        'text-center',
+        'sm:px-12',
+        className
+      )}
       {...props}
     >
       <div
@@ -56,15 +74,33 @@ export function EmptyState({ icon: Icon, title, description, action, className, 
       >
         <Icon className={cn('h-6 w-6 md:h-8 md:w-8 lg:h-10 lg:w-10')} />
       </div>
-      <div className={cn('text-lg', 'font-semibold', 'text-slate-700', 'transition-colors', 'duration-500', 'dark:text-slate-200')}>
+      <div
+        className={cn(
+          'text-lg',
+          'font-semibold',
+          'text-slate-700',
+          'transition-colors',
+          'duration-500',
+          'dark:text-slate-200'
+        )}
+      >
         {title}
       </div>
-      <div className={cn('text-sm', 'text-slate-500', 'transition-colors', 'duration-500', 'dark:text-slate-400', 'max-w-sm')}>
+      <div
+        className={cn(
+          'text-sm',
+          'text-slate-500',
+          'transition-colors',
+          'duration-500',
+          'dark:text-slate-400',
+          'max-w-sm'
+        )}
+      >
         {description}
       </div>
       {action && <div className={cn('mt-2')}>{action}</div>}
     </div>
-  )
+  );
 }
 
-export default EmptyState
+export default EmptyState;

@@ -1,7 +1,7 @@
-import React from 'react'
-import { AnimatePresence, motion, type HTMLMotionProps } from 'framer-motion'
-import { cva, type VariantProps } from 'class-variance-authority'
-import { cn } from './utils'
+import React from 'react';
+import { AnimatePresence, motion, type HTMLMotionProps } from 'framer-motion';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from './utils';
 
 const contentVariants = cva('relative w-full', {
   variants: {
@@ -14,19 +14,19 @@ const contentVariants = cva('relative w-full', {
   defaultVariants: {
     size: 'md',
   },
-})
+});
 
 export interface ModalProps
   extends Omit<HTMLMotionProps<'div'>, 'children'>,
     VariantProps<typeof contentVariants> {
-  isOpen: boolean
-  onClose?: () => void
-  children: React.ReactNode
-  labelledBy?: string
-  description?: string
-  preventCloseOnBackdrop?: boolean
-  backdropClassName?: string
-  containerClassName?: string
+  isOpen: boolean;
+  onClose?: () => void;
+  children: React.ReactNode;
+  labelledBy?: string;
+  description?: string;
+  preventCloseOnBackdrop?: boolean;
+  backdropClassName?: string;
+  containerClassName?: string;
 }
 
 export function Modal({
@@ -44,9 +44,9 @@ export function Modal({
 }: ModalProps) {
   const handleBackdropClick = () => {
     if (!preventCloseOnBackdrop) {
-      onClose?.()
+      onClose?.();
     }
-  }
+  };
 
   return (
     <AnimatePresence>
@@ -83,7 +83,7 @@ export function Modal({
         </motion.div>
       ) : null}
     </AnimatePresence>
-  )
+  );
 }
 
-export default Modal
+export default Modal;

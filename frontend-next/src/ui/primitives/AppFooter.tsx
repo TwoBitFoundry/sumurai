@@ -1,5 +1,5 @@
-import React from 'react'
-import { Footer } from '@/components/Footer'
+import React from 'react';
+import { Footer } from '@/components/Footer';
 
 /**
  * Viewport-spanning footer wrapper.
@@ -17,9 +17,9 @@ export const AppFooter = React.forwardRef<HTMLDivElement, Record<string, never>>
     <div ref={ref} className="w-full">
       <Footer />
     </div>
-  )
-})
+  );
+});
 
-AppFooter.displayName = 'AppFooter'
+AppFooter.displayName = 'AppFooter';
 
-export default AppFooter
+export default AppFooter;

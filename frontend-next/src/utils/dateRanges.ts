@@ -1,10 +1,10 @@
 export type DateRangeKey =
-  | "current-month"
-  | "past-2-months"
-  | "past-3-months"
-  | "past-6-months"
-  | "past-year"
-  | "all-time";
+  | 'current-month'
+  | 'past-2-months'
+  | 'past-3-months'
+  | 'past-6-months'
+  | 'past-year'
+  | 'all-time';
 
 export function computeDateRange(key?: DateRangeKey): { start?: string; end?: string } {
   const now = new Date();
@@ -46,4 +46,3 @@ export function computeDateRange(key?: DateRangeKey): { start?: string; end?: st
       return {};
   }
 }
-

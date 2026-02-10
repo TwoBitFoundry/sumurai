@@ -7,12 +7,14 @@ import {
 
 describe('redactTokenPatterns', () => {
   it('should redact JWT tokens', () => {
-    const input = 'Error: Invalid token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
+    const input =
+      'Error: Invalid token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
     expect(redactTokenPatterns(input)).toBe('Error: Invalid token [JWT_REDACTED]');
   });
 
   it('should redact multiple JWT tokens in the same string', () => {
-    const input = 'Token1: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U and Token2: eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiYm9iIn0.anotherSignatureHere123';
+    const input =
+      'Token1: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U and Token2: eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiYm9iIn0.anotherSignatureHere123';
     const result = redactTokenPatterns(input);
     expect(result).toBe('Token1: [JWT_REDACTED] and Token2: [JWT_REDACTED]');
   });
@@ -182,7 +184,8 @@ describe('sanitizeSpanAttributes', () => {
 
   it('should redact JWT tokens in attribute values', () => {
     const span = createMockSpan({
-      'error.message': 'Invalid token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U',
+      'error.message':
+        'Invalid token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U',
     });
     sanitizeSpanAttributes(span);
     expect(span.attributes['error.message']).toBe('Invalid token: [JWT_REDACTED]');

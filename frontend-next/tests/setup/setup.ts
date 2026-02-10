@@ -1,59 +1,54 @@
-import '@testing-library/jest-dom'
-import React from 'react'
-import { AuthService } from '@/services/authService'
-import { FetchHttpClient, BrowserStorageAdapter } from '@/services/boundaries'
+import '@testing-library/jest-dom';
+import React from 'react';
+import { AuthService } from '@/services/authService';
+import { FetchHttpClient, BrowserStorageAdapter } from '@/services/boundaries';
 
 jest.mock('@/observability/TelemetryService', () => ({
   TelemetryService: jest.fn().mockImplementation(() => ({
-    initialize: jest.fn().mockImplementation(async () => { }),
-    shutdown: jest.fn().mockImplementation(async () => { }),
+    initialize: jest.fn().mockImplementation(async () => {}),
+    shutdown: jest.fn().mockImplementation(async () => {}),
     getTracer: jest.fn().mockReturnValue(null),
   })),
-}))
+}));
 
 AuthService.configure({
-  storage: new BrowserStorageAdapter()
-})
+  storage: new BrowserStorageAdapter(),
+});
 
-  ; (globalThis as any).ResizeObserver = class ResizeObserver
-  {
-    observe() { }
-    unobserve() { }
-    disconnect() { }
+(globalThis as any).ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
+(globalThis as any).IntersectionObserver = class IntersectionObserver {
+  constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+    this.callback = callback;
   }
+  callback: IntersectionObserverCallback;
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
-  ; (globalThis as any).IntersectionObserver = class IntersectionObserver
-  {
-    constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit)
-    {
-      this.callback = callback
-    }
-    callback: IntersectionObserverCallback
-    observe() { }
-    unobserve() { }
-    disconnect() { }
-  }
-
-if (!(globalThis as any).requestAnimationFrame)
-{
-  ; (globalThis as any).requestAnimationFrame = (cb: FrameRequestCallback) => setTimeout(cb, 0) as unknown as number
+if (!(globalThis as any).requestAnimationFrame) {
+  (globalThis as any).requestAnimationFrame = (cb: FrameRequestCallback) =>
+    setTimeout(cb, 0) as unknown as number;
 }
-if (!(globalThis as any).cancelAnimationFrame)
-{
-  ; (globalThis as any).cancelAnimationFrame = (id: number) => clearTimeout(id as unknown as any)
+if (!(globalThis as any).cancelAnimationFrame) {
+  (globalThis as any).cancelAnimationFrame = (id: number) => clearTimeout(id as unknown as any);
 }
 
 Object.defineProperty(globalThis, 'scrollTo', {
-  value: () => { },
-  writable: true
-})
+  value: () => {},
+  writable: true,
+});
 
-if (typeof window !== 'undefined')
-{
+if (typeof window !== 'undefined') {
   Object.defineProperty(window, 'scrollTo', {
-    value: () => { },
-    writable: true
-  })
+    value: () => {},
+    writable: true,
+  });
 }
 
 Object.defineProperty(window, 'localStorage', {
@@ -63,35 +58,30 @@ Object.defineProperty(window, 'localStorage', {
     removeItem: jest.fn(),
     clear: jest.fn(),
   },
-  writable: true
-})
+  writable: true,
+});
 
 jest.mock('react-plaid-link', () => ({
   usePlaidLink: () => ({
     open: jest.fn(),
     ready: true,
     error: null,
-  })
-}))
+  }),
+}));
 
-const filterProps = (props: Record<string, unknown>) =>
-{
-  const safe: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(props))
-  {
-    if (key.startsWith('data-') || key.startsWith('aria-'))
-    {
-      safe[key] = value
-    } else if (/^on[A-Z]/.test(key))
-    {
-      safe[key] = value
-    } else if (['className', 'style', 'id', 'role', 'tabIndex', 'title'].includes(key))
-    {
-      safe[key] = value
+const filterProps = (props: Record<string, unknown>) => {
+  const safe: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(props)) {
+    if (key.startsWith('data-') || key.startsWith('aria-')) {
+      safe[key] = value;
+    } else if (/^on[A-Z]/.test(key)) {
+      safe[key] = value;
+    } else if (['className', 'style', 'id', 'role', 'tabIndex', 'title'].includes(key)) {
+      safe[key] = value;
     }
   }
-  return safe
-}
+  return safe;
+};
 
 const createRechartsComponent = (name: string) =>
   React.forwardRef<any, Record<string, unknown>>(({ children, ...rest }, ref) =>
@@ -100,14 +90,13 @@ const createRechartsComponent = (name: string) =>
       {
         ref,
         'data-recharts-mock': name,
-        ...filterProps(rest as Record<string, unknown>)
+        ...filterProps(rest as Record<string, unknown>),
       },
       children as React.ReactNode
     )
-  )
+  );
 
-jest.mock('recharts', () =>
-{
+jest.mock('recharts', () => {
   const ResponsiveContainer = ({
     width,
     height,
@@ -115,20 +104,21 @@ jest.mock('recharts', () =>
     style,
     ...rest
   }: {
-    width?: number | string
-    height?: number | string
-    children: React.ReactNode | ((dimensions: { width: number; height: number }) => React.ReactNode)
-    style?: React.CSSProperties
-  }) =>
-  {
-    const fallbackWidth = 400
-    const fallbackHeight = 300
-    const resolvedWidth = typeof width === 'number' ? width : fallbackWidth
-    const resolvedHeight = typeof height === 'number' ? height : fallbackHeight
+    width?: number | string;
+    height?: number | string;
+    children:
+      | React.ReactNode
+      | ((dimensions: { width: number; height: number }) => React.ReactNode);
+    style?: React.CSSProperties;
+  }) => {
+    const fallbackWidth = 400;
+    const fallbackHeight = 300;
+    const resolvedWidth = typeof width === 'number' ? width : fallbackWidth;
+    const resolvedHeight = typeof height === 'number' ? height : fallbackHeight;
     const content =
       typeof children === 'function'
         ? children({ width: resolvedWidth, height: resolvedHeight })
-        : children
+        : children;
 
     return React.createElement(
       'div',
@@ -137,13 +127,13 @@ jest.mock('recharts', () =>
         style: {
           width: typeof width === 'string' ? fallbackWidth : resolvedWidth,
           height: typeof height === 'string' ? fallbackHeight : resolvedHeight,
-          ...style
+          ...style,
         },
-        ...filterProps(rest as Record<string, unknown>)
+        ...filterProps(rest as Record<string, unknown>),
       },
       content as React.ReactNode
-    )
-  }
+    );
+  };
 
   return {
     ResponsiveContainer,
@@ -173,5 +163,5 @@ jest.mock('recharts', () =>
     PolarRadiusAxis: createRechartsComponent('PolarRadiusAxis'),
     Radar: createRechartsComponent('Radar'),
     RadarChart: createRechartsComponent('RadarChart'),
-  }
-})
+  };
+});

@@ -1,9 +1,9 @@
-import { GlassCard, RequirementPill, cn } from '@/ui/primitives'
-import type { PasswordValidation } from '@/hooks/usePasswordValidation'
+import { GlassCard, RequirementPill, cn } from '@/ui/primitives';
+import type { PasswordValidation } from '@/hooks/usePasswordValidation';
 
 interface PasswordCheckerProps {
-  validation: PasswordValidation
-  className?: string
+  validation: PasswordValidation;
+  className?: string;
 }
 
 export function PasswordChecker({ validation, className }: PasswordCheckerProps) {
@@ -13,9 +13,23 @@ export function PasswordChecker({ validation, className }: PasswordCheckerProps)
       rounded="lg"
       padding="sm"
       withInnerEffects={false}
-      className={cn('space-y-1.5', 'text-[0.7rem]', 'text-slate-600', 'dark:text-slate-300', className)}
+      className={cn(
+        'space-y-1.5',
+        'text-[0.7rem]',
+        'text-slate-600',
+        'dark:text-slate-300',
+        className
+      )}
     >
-      <h3 className={cn('text-[0.65rem]', 'font-semibold', 'uppercase', 'text-slate-700', 'dark:text-slate-200')}>
+      <h3
+        className={cn(
+          'text-[0.65rem]',
+          'font-semibold',
+          'uppercase',
+          'text-slate-700',
+          'dark:text-slate-200'
+        )}
+      >
         Password checklist
       </h3>
       <div className={cn('flex', 'flex-wrap', 'gap-1.5')}>
@@ -33,5 +47,5 @@ export function PasswordChecker({ validation, className }: PasswordCheckerProps)
         </RequirementPill>
       </div>
     </GlassCard>
-  )
+  );
 }
