@@ -270,6 +270,7 @@ export const TransactionsTable: React.FC<Props> = ({
             </div>
             <div className={cn('flex', 'items-center', 'gap-3')}>
               <button
+                type="button"
                 onClick={onPrev}
                 disabled={currentPage <= 1}
                 aria-label="Previous page"
@@ -318,6 +319,7 @@ export const TransactionsTable: React.FC<Props> = ({
                 Page {currentPage} of {totalPages}
               </div>
               <button
+                type="button"
                 onClick={onNext}
                 disabled={currentPage >= totalPages}
                 aria-label="Next page"

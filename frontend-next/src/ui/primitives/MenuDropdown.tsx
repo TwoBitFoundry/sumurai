@@ -36,7 +36,9 @@ export function MenuDropdown({
 
   return (
     <div className={cn('relative', className)}>
-      <button onClick={() => setOpen((v) => !v)}>{trigger}</button>
+      <button type="button" onClick={() => setOpen((v) => !v)}>
+        {trigger}
+      </button>
       <AnimatePresence>
         {open && (
           <motion.div
@@ -82,6 +84,7 @@ export interface MenuItemProps extends React.ButtonHTMLAttributes<HTMLButtonElem
 export function MenuItem({ icon, children, className, ...props }: MenuItemProps) {
   return (
     <button
+      type="button"
       className={cn(
         'flex w-full items-center gap-2',
         'rounded-xl px-3 py-2',

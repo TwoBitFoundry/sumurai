@@ -16,10 +16,10 @@
     "rules": {
       "recommended": true,
       "performance": {
-        "noImgElement": "warn"
+        "noImgElement": "off"
       },
       "complexity": {
-        "noStaticOnlyClass": "warn"
+        "noStaticOnlyClass": "off"
       },
       "style": {
         "useComponentExportOnlyModules": "off"

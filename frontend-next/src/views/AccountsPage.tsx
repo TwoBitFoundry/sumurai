@@ -419,6 +419,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     <>
       {hasConnections && (
         <button
+          type="button"
           onClick={syncAll}
           disabled={syncingAll || flowLoading}
           className={syncButtonClasses}

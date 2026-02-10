@@ -397,6 +397,7 @@ export default function BudgetsPage() {
                 <div className={cn('flex', 'items-center', 'gap-3')}>
                   <div className={cn('flex', 'items-center', 'gap-2')}>
                     <button
+                      type="button"
                       onClick={goToPreviousMonth}
                       aria-label="Previous month"
                       className={cn(
@@ -430,6 +431,7 @@ export default function BudgetsPage() {
                       <ChevronLeftIcon className={cn('h-4', 'w-4')} />
                     </button>
                     <button
+                      type="button"
                       onClick={goToNextMonth}
                       aria-label="Next month"
                       className={cn(
@@ -503,6 +505,7 @@ export default function BudgetsPage() {
                     )}
                   </div>
                   <button
+                    type="button"
                     onClick={goToCurrentMonth}
                     className={cn(
                       'inline-flex',
@@ -540,6 +543,7 @@ export default function BudgetsPage() {
                   </button>
                   {!isAdding ? (
                     <button
+                      type="button"
                       onClick={startAdd}
                       className={cn(
                         'inline-flex',
@@ -606,6 +610,7 @@ export default function BudgetsPage() {
                 action={
                   !isAdding ? (
                     <button
+                      type="button"
                       onClick={startAdd}
                       className={cn(
                         'inline-flex',

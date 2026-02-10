@@ -94,6 +94,7 @@ export function BudgetList({
                 {isEditing ? (
                   <>
                     <button
+                      type="button"
                       onClick={() => onSaveEdit(b.id, Number(draft))}
                       title="Save"
                       aria-label="Save budget"
@@ -123,6 +124,7 @@ export function BudgetList({
                       <CheckIcon className={cn('h-4', 'w-4')} />
                     </button>
                     <button
+                      type="button"
                       onClick={onCancelEdit}
                       title="Cancel"
                       aria-label="Cancel edit"
@@ -159,6 +161,7 @@ export function BudgetList({
                 ) : (
                   <>
                     <button
+                      type="button"
                       onClick={() => onStartEdit(b)}
                       title="Edit budget"
                       aria-label="Edit budget"
@@ -192,6 +195,7 @@ export function BudgetList({
                       <PencilSquareIcon className={cn('h-4', 'w-4')} />
                     </button>
                     <button
+                      type="button"
                       onClick={() => onDelete(b.id)}
                       title="Delete budget"
                       aria-label="Delete budget"
