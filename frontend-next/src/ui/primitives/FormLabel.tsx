@@ -16,7 +16,7 @@ const labelVariants = cva(['block text-xs font-semibold uppercase tracking-[0.18
 
 export interface FormLabelProps
   extends React.LabelHTMLAttributes<HTMLLabelElement>,
-  VariantProps<typeof labelVariants> { }
+    VariantProps<typeof labelVariants> {}
 
 export function FormLabel({ tone, className, ...props }: FormLabelProps) {
   // biome-ignore lint/a11y/noLabelWithoutControl: htmlFor is passed via props

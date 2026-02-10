@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/ui/primitives';
 import { getTagThemeForCategory } from '../../../utils/categories';
 
@@ -119,10 +119,11 @@ export const TransactionsFilters: React.FC<Props> = ({
                     key={name}
                     type="button"
                     onClick={() => onSelectCategory(isSelected ? null : name)}
-                    className={`inline-flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 transition-all duration-150 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10 ${theme.tag} ${isSelected
-                      ? `ring-2 ${theme.ring}`
-                      : 'hover:-translate-y-[2px] hover:shadow-lg'
-                      }`}
+                    className={`inline-flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 transition-all duration-150 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10 ${theme.tag} ${
+                      isSelected
+                        ? `ring-2 ${theme.ring}`
+                        : 'hover:-translate-y-[2px] hover:shadow-lg'
+                    }`}
                     aria-pressed={isSelected}
                     title={isSelected ? `Remove filter: ${name}` : `Filter by ${name}`}
                   >

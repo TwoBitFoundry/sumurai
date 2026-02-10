@@ -172,7 +172,7 @@ describe('usePlaidLinkFlow', () => {
     const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
 
     await act(async () => {
-      await result.current.connect().catch(() => { });
+      await result.current.connect().catch(() => {});
     });
 
     expect(onError).toHaveBeenCalledWith('Failed to start bank connection: bad request');
