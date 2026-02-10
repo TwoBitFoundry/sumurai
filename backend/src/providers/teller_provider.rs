@@ -34,7 +34,15 @@ struct ReqwestTellerClient {
 }
 
 impl ReqwestTellerClient {
-    fn new() -> anyhow::Result<Self> {
+    fn new(cert_pem: &[u8], key_pem: &[u8]) -> anyhow::Result<Self> {
+        let identity = reqwest::Identity::from_pem(&[cert_pem, b"\n", key_pem].concat())?;
+        let client = Client::builder()
+            .identity(identity)
+            .build()?;
+        Ok(Self { client })
+    }
+
+    fn new_without_mtls() -> anyhow::Result<Self> {
         let client = Client::builder().build()?;
         Ok(Self { client })
     }
@@ -83,8 +91,24 @@ pub struct TellerProvider {
 
 impl TellerProvider {
     pub fn new() -> Result<Self> {
+        let cert_path = std::env::var("TELLER_CERT_PATH")
+            .map_err(|_| anyhow::anyhow!("TELLER_CERT_PATH environment variable is not set"))?;
+        let key_path = std::env::var("TELLER_KEY_PATH")
+            .map_err(|_| anyhow::anyhow!("TELLER_KEY_PATH environment variable is not set"))?;
+
+        let cert_pem = std::fs::read(&cert_path)
+            .map_err(|e| anyhow::anyhow!("Failed to read Teller certificate from {}: {}", cert_path, e))?;
+        let key_pem = std::fs::read(&key_path)
+            .map_err(|e| anyhow::anyhow!("Failed to read Teller private key from {}: {}", key_path, e))?;
+
+        tracing::info!(
+            cert_path = %cert_path,
+            key_path = %key_path,
+            "Teller provider initialized with mTLS credentials"
+        );
+
         Ok(Self {
-            http_client: Arc::new(ReqwestTellerClient::new()?),
+            http_client: Arc::new(ReqwestTellerClient::new(&cert_pem, &key_pem)?),
             base_url: "https://api.teller.io".to_string(),
         })
     }

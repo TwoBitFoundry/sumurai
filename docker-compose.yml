@@ -21,7 +21,7 @@ services:
       - backend
       - seq
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:8080/health"]
+      test: [ "CMD", "wget", "-q", "-O-", "http://127.0.0.1:8080/health" ]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -40,8 +40,8 @@ services:
       DEFAULT_PROVIDER: ${DEFAULT_PROVIDER:-teller}
 
       TELLER_APPLICATION_ID: ${TELLER_APPLICATION_ID}
-      TELLER_CERT_PATH: ${TELLER_CERT_PATH}
-      TELLER_KEY_PATH: ${TELLER_KEY_PATH}
+      TELLER_CERT_PATH: /etc/teller/teller_certificate.pem
+      TELLER_KEY_PATH: /etc/teller/teller_private_key.pem
       TELLER_ENV: ${TELLER_ENV:-sandbox}
 
       PLAID_CLIENT_ID: ${PLAID_CLIENT_ID:-mock_client_id}
@@ -53,6 +53,9 @@ services:
       RUST_LOG: ${BACKEND_RUST_LOG:-info}
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_STARTUP_TEST_SPAN: ${OTEL_STARTUP_TEST_SPAN:-0}
+    volumes:
+      - ${TELLER_CERT_PATH}:/etc/teller/teller_certificate.pem:ro
+      - ${TELLER_KEY_PATH}:/etc/teller/teller_private_key.pem:ro
     command: >
       sh -c "
         echo 'Running database migrations...' &&
@@ -68,7 +71,7 @@ services:
       seq:
         condition: service_started
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/health" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -88,7 +91,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d accounting"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d accounting" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -115,7 +118,7 @@ services:
     environment:
       DOMAIN: ${DOMAIN:-localhost}
       SSL_PORT: ${SSL_PORT:-8443}
-    command: ["/bin/sh", "/etc/nginx/entrypoint.sh"]
+    command: [ "/bin/sh", "/etc/nginx/entrypoint.sh" ]
     ports:
       - "8080:80"
       - "8443:443"
@@ -125,18 +128,18 @@ services:
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/www/certbot
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1/healthz"]
+      test: [ "CMD", "wget", "-q", "-O-", "http://127.0.0.1/healthz" ]
       interval: 10s
       timeout: 5s
       retries: 3
 
   certbot:
     image: certbot/certbot:latest
-    profiles: ["certbot"]
+    profiles: [ "certbot" ]
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/www/certbot
-    entrypoint: ["sh", "-c", "sleep infinity"]
+    entrypoint: [ "sh", "-c", "sleep infinity" ]
 
 volumes:
   redis_data:
