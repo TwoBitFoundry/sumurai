@@ -304,8 +304,7 @@ fn given_transactions_across_months_when_calculating_monthly_totals_then_groups_
 #[test]
 fn given_transactions_when_grouping_by_category_with_frontend_logic_then_handles_uncategorized() {
     let _analytics = AnalyticsService::new();
-    let txns = vec![
-        create_test_transaction(
+    let txns = [create_test_transaction(
             dec!(50.00),
             NaiveDate::from_ymd_opt(2024, 3, 10).unwrap(),
             "Food",
@@ -319,8 +318,7 @@ fn given_transactions_when_grouping_by_category_with_frontend_logic_then_handles
             dec!(30.00),
             NaiveDate::from_ymd_opt(2024, 3, 5).unwrap(),
             "",
-        ),
-    ];
+        )];
     let result = group_transactions_by_category(txns.iter().collect());
     assert_eq!(result.len(), 2);
     let food = result.iter().find(|c| c.name == "Food").unwrap();

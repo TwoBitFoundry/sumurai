@@ -1072,7 +1072,7 @@ async fn get_authenticated_plaid_accounts(
                 account_type: account.account_type,
                 balance_current: account.balance_current,
                 mask: account.mask,
-                transaction_count: *transaction_count as i64,
+                transaction_count: *transaction_count,
                 institution_name: account.institution_name,
             }
         })

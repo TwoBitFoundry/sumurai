@@ -13,7 +13,7 @@ unset GIT_INDEX_FILE
 cd frontend
 
 echo "🔍 Running Biome on staged files..."
-pnpm exec biome check --staged
+pnpm exec biome check --staged --no-errors-on-unmatched
 
 # Run backend checks
 cd ../backend
