@@ -4,8 +4,8 @@
 # Run frontend checks
 cd frontend
 
-echo "🔍 Running ESLint on staged files..."
-npx lint-staged
+echo "🔍 Running Biome on staged files..."
+npx biome check --staged
 
 # Run backend checks
 cd ../backend
