@@ -5,7 +5,7 @@
 cd frontend
 
 echo "🔍 Running Biome on staged files..."
-npx biome check --staged
+pnpm check --staged
 
 # Run backend checks
 cd ../backend
