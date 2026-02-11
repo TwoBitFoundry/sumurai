@@ -129,6 +129,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     return filtered.slice(start, start + pageSize);
   }, [filtered, start, pageSize]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: specific filters should reset pagination
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedCategory, debouncedSearch, dateRange, selectedAccountIds]);
