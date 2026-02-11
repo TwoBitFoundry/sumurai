@@ -102,7 +102,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
   const filtered = useMemo(() => {
     const criteria: FilterCriteria = {
       search: debouncedSearch.trim(),
-      category: selectedCategory || undefined
+      category: selectedCategory || undefined,
     };
     return TransactionFilter.filter(all, criteria);
   }, [all, debouncedSearch, selectedCategory]);
