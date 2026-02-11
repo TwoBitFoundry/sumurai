@@ -103,9 +103,8 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     const criteria: FilterCriteria = {
       search: debouncedSearch.trim(),
       category: selectedCategory || undefined,
-    };
-    return TransactionFilter.filter(all, criteria);
-  }, [all, debouncedSearch, selectedCategory]);
+      return TransactionFilter.filter(all, criteria);
+    }, [all, debouncedSearch, selectedCategory]);
 
   const categories = useMemo(() => {
     const names = new Set<string>();
