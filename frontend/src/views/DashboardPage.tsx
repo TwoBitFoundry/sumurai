@@ -64,7 +64,7 @@ const DashboardPage: React.FC = () => {
       { threshold: [0, 0.5, 1] }
     );
     observer.observe(target);
-    return () => observer.disconnect()
+    return () => observer.disconnect();
   }, []);
 
   const monthSpend = analytics.spendingTotal;
@@ -186,10 +186,11 @@ const DashboardPage: React.FC = () => {
                             // biome-ignore lint/a11y/noStaticElementInteractions: visual hover only
                             <div
                               key={`topcard-${cat.name}`}
-                              className={`p-2 rounded-lg border transition-all duration-300 ${isHovered
+                              className={`p-2 rounded-lg border transition-all duration-300 ${
+                                isHovered
                                   ? 'bg-slate-50 dark:bg-slate-700/40 border-[#93c5fd] dark:border-[#38bdf8] -translate-y-[2px]'
                                   : 'border-slate-200 dark:border-slate-700'
-                                }`}
+                              }`}
                               onMouseEnter={() => setHoveredCategory(cat.name)}
                               onMouseLeave={() => setHoveredCategory(null)}
                             >
@@ -380,12 +381,12 @@ const DashboardPage: React.FC = () => {
                             const spanDays =
                               first && last
                                 ? Math.max(
-                                  1,
-                                  Math.round(
-                                    (new Date(last).getTime() - new Date(first).getTime()) /
-                                    86400000
+                                    1,
+                                    Math.round(
+                                      (new Date(last).getTime() - new Date(first).getTime()) /
+                                        86400000
+                                    )
                                   )
-                                )
                                 : 0;
                             if (!Number.isFinite(d.getTime())) return value;
                             if (spanDays && spanDays <= 92) {
@@ -482,10 +483,11 @@ const DashboardPage: React.FC = () => {
                   type="button"
                   key={option.key}
                   onClick={() => setDateRange(option.key as DateRange)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${dateRange === option.key
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    dateRange === option.key
                       ? 'bg-primary-100 dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow'
                       : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/60 dark:hover:bg-slate-700/60 hover:-translate-y-[1px]'
-                    }`}
+                  }`}
                 >
                   {option.label}
                 </button>
