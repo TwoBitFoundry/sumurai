@@ -4,7 +4,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: frontend-next/Dockerfile
+      dockerfile: frontend/Dockerfile
       args:
         NEXT_PUBLIC_OTEL_ENABLED: ${NEXT_PUBLIC_OTEL_ENABLED:-true}
         NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT: ${NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:8080/ingest/otlp}

@@ -87,7 +87,7 @@ E2E demo credentials:
 ### Frontend Development
 
 ```bash
-cd frontend-next
+cd frontend
 npm install
 npm run dev               # Next.js dev server on :3001
 npm run build             # production build (static export to ./out)
@@ -128,7 +128,7 @@ DATABASE_URL=postgresql://postgres:password@localhost:5432/accounting \
 
 ### Repo Structure (quick tour)
 
-- `frontend-next/` — React 19 + TypeScript + Next.js; Tailwind; Recharts
+- `frontend/` — React 19 + TypeScript + Next.js; Tailwind; Recharts
 - `backend/` — Rust + Axum + SQLx; Redis caching; RLS policies
 - `scripts/` — build helpers (e.g., `build-backend.sh`)
 - `docs/` — images/diagrams used in README
