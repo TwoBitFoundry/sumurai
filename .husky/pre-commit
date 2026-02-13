@@ -1,11 +1,19 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+set -e
+
+# Husky sets GIT_DIR and GIT_INDEX_FILE as relative paths.
+# Biome does its own git discovery and these env vars interfere.
+# Unset them so biome can find .git by walking up from frontend/.
+unset GIT_DIR
+unset GIT_INDEX_FILE
+
 # Run frontend checks
 cd frontend
 
-echo "🔍 Running ESLint on staged files..."
-npx lint-staged
+echo "🔍 Running Biome on staged files..."
+pnpm exec biome check --staged --no-errors-on-unmatched
 
 # Run backend checks
 cd ../backend
