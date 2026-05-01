@@ -1,7 +1,10 @@
 events {}
 
 http {
-    limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=5r/m;
+    # Volumetric fuse for /api/auth only: far looser than the Axum governor (~5 req/min/IP) so
+    # normal abuse is 429'd by the backend (progressive Redis lockout). This sheds only very
+    # high RPS before proxy_pass; nginx-emitted 429s do not increment backend strike counters.
+    limit_req_zone $binary_remote_addr zone=auth_vol_fuse:10m rate=10r/s;
 
     upstream frontend_upstream {
         server frontend:8080;
@@ -89,21 +92,21 @@ http {
             client_max_body_size 10m;
         }
 
-        # Internal-only auth API: stricter rate limit than general /api
+        # Internal-only auth API: volumetric fuse (see zone auth_vol_fuse above)
         location /api/auth {
             allow 10.0.0.0/8;
             allow 172.16.0.0/12;
             allow 192.168.0.0/16;
             deny all;
-            limit_req zone=auth_limit burst=5 nodelay;
+            limit_req zone=auth_vol_fuse burst=80 nodelay;
             limit_req_status 429;
-            error_page 429 = @auth_rate_limited;
+            error_page 429 = @auth_vol_fuse_429;
             proxy_pass http://backend_upstream;
         }
 
-        location @auth_rate_limited {
+        location @auth_vol_fuse_429 {
             default_type application/json;
-            add_header Retry-After 60 always;
+            add_header Retry-After 1 always;
             return 429 '{"error":"TOO_MANY_REQUESTS","message":"Too many authentication attempts. Try again later.","code":"RATE_LIMITED","details":null}';
         }
 

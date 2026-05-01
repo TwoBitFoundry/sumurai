@@ -202,7 +202,7 @@ Everything reads from `.env`. Most variables have defaults in `docker-compose.ym
 
 ## Authentication rate limiting
 
-Login and register under `/api/auth/` are limited to about five requests per minute per client IP at both nginx (`limit_req`) and the Axum backend (`tower-governor`). This is fixed in code and nginx config, not via environment variables. When limited, the API responds with HTTP 429 and a `Retry-After` header. After changing nginx config, validate with `docker compose exec nginx nginx -t` (requires the stack running).
+Login and register under `/api/auth/` are limited in the Axum backend (`tower-governor`) to about five requests per minute per client IP, with progressive Redis lockouts after repeated backend-observed 429s. Nginx adds a much looser `limit_req` fuse on `/api/auth` (10 req/s with a large burst) so only very high request rates are rejected at the edge before `proxy_pass`; that edge 429 does not increment Redis strikes. Limits are fixed in code and nginx config, not via environment variables. When limited, responses use HTTP 429 with a `Retry-After` header. After changing nginx config, validate with `docker compose exec nginx nginx -t` (requires the stack running).
 
 ## Teller Setup
 
