@@ -280,6 +280,21 @@ async fn given_authenticated_user_when_get_transactions_with_foreign_account_ids
 }
 
 #[tokio::test]
+async fn given_authenticated_user_when_get_transactions_with_invalid_account_ids_then_returns_400()
+{
+    let app = TestFixtures::create_test_app().await.unwrap();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let request = TestFixtures::create_authenticated_get_request(
+        "/api/transactions?account_ids=not-a-uuid",
+        &token,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 400);
+}
+
+#[tokio::test]
 async fn given_authenticated_user_when_get_spending_with_account_ids_then_returns_filtered_spending(
 ) {
     use crate::models::transaction::Transaction;
@@ -969,7 +984,7 @@ async fn given_connection_id_when_sync_then_uses_get_provider_connection_by_id()
             mockall::predicate::eq(connection_id),
             mockall::predicate::eq(user_id),
         )
-        .times(1)
+        .times(2)
         .returning(move |_, _| {
             let conn = expected_conn.clone();
             Box::pin(async move { Ok(Some(conn)) })
@@ -1011,6 +1026,178 @@ async fn given_connection_id_when_sync_then_uses_get_provider_connection_by_id()
         "/api/providers/sync-transactions",
         &token,
         sync_request,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 404);
+}
+
+#[tokio::test]
+async fn given_foreign_connection_id_when_sync_then_returns_404() {
+    use crate::models::plaid::SyncTransactionsRequest;
+    use crate::services::repository_service::MockDatabaseRepository;
+    use uuid::Uuid;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let connection_id = Uuid::new_v4();
+
+    mock_db
+        .expect_get_provider_connection_by_id()
+        .with(
+            mockall::predicate::eq(connection_id),
+            mockall::predicate::eq(user.id),
+        )
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(None) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let sync_request = SyncTransactionsRequest {
+        connection_id: Some(connection_id.to_string()),
+    };
+
+    let request = TestFixtures::create_authenticated_post_request(
+        "/api/providers/sync-transactions",
+        &token,
+        sync_request,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 404);
+}
+
+#[tokio::test]
+async fn given_invalid_connection_id_when_sync_then_returns_400() {
+    let app = TestFixtures::create_test_app().await.unwrap();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::POST)
+        .uri("/api/providers/sync-transactions")
+        .header("authorization", format!("Bearer {}", token))
+        .header("content-type", "application/json")
+        .body(axum::body::Body::from(r#"{"connection_id":"not-a-uuid"}"#))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 400);
+}
+
+#[tokio::test]
+async fn given_owned_connection_id_when_disconnect_then_returns_200() {
+    use crate::models::plaid::{DisconnectRequest, ProviderConnection};
+    use crate::services::cache_service::MockCacheService;
+    use crate::services::repository_service::MockDatabaseRepository;
+    use uuid::Uuid;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let mut mock_cache = MockCacheService::new();
+
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let connection_id = Uuid::new_v4();
+    let mut expected_conn = ProviderConnection::new(user.id, "item_123");
+    expected_conn.id = connection_id;
+    expected_conn.mark_connected("Chase");
+
+    mock_db
+        .expect_get_provider_connection_by_id()
+        .with(
+            mockall::predicate::eq(connection_id),
+            mockall::predicate::eq(user.id),
+        )
+        .times(2)
+        .returning(move |_, _| {
+            let conn = expected_conn.clone();
+            Box::pin(async move { Ok(Some(conn)) })
+        });
+
+    mock_db
+        .expect_delete_provider_transactions()
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(10) }));
+
+    mock_db
+        .expect_delete_provider_accounts()
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(2) }));
+
+    mock_db
+        .expect_delete_provider_credentials()
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(()) }));
+
+    mock_db
+        .expect_delete_provider_connection()
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+
+    mock_cache
+        .expect_health_check()
+        .returning(|| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_is_session_valid()
+        .returning(|_| Box::pin(async { Ok(true) }));
+    mock_cache
+        .expect_delete_access_token()
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_invalidate_pattern()
+        .times(2)
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_clear_jwt_scoped_bank_connection_cache()
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+
+    let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
+        .await
+        .unwrap();
+
+    let request = TestFixtures::create_authenticated_post_request(
+        "/api/providers/disconnect",
+        &token,
+        DisconnectRequest {
+            connection_id: connection_id.to_string(),
+        },
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+}
+
+#[tokio::test]
+async fn given_foreign_connection_id_when_disconnect_then_returns_404() {
+    use crate::models::plaid::DisconnectRequest;
+    use crate::services::repository_service::MockDatabaseRepository;
+    use uuid::Uuid;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let connection_id = Uuid::new_v4();
+
+    mock_db
+        .expect_get_provider_connection_by_id()
+        .with(
+            mockall::predicate::eq(connection_id),
+            mockall::predicate::eq(user.id),
+        )
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(None) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request = TestFixtures::create_authenticated_post_request(
+        "/api/providers/disconnect",
+        &token,
+        DisconnectRequest {
+            connection_id: connection_id.to_string(),
+        },
     );
 
     let response = app.oneshot(request).await.unwrap();

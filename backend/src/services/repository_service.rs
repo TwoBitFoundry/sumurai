@@ -72,6 +72,11 @@ pub trait DatabaseRepository: Send + Sync {
     async fn delete_provider_connection(&self, user_id: &Uuid, item_id: &str) -> Result<()>;
     async fn delete_provider_credentials(&self, item_id: &str) -> Result<()>;
     async fn get_budgets_for_user(&self, user_id: Uuid) -> Result<Vec<Budget>>;
+    async fn get_budget_by_id_for_user(
+        &self,
+        budget_id: &Uuid,
+        user_id: &Uuid,
+    ) -> Result<Option<Budget>>;
     async fn create_budget_for_user(&self, budget: Budget) -> Result<Budget>;
 
     async fn update_budget_for_user(
@@ -1070,6 +1075,30 @@ impl DatabaseRepository for PostgresRepository {
 
         tx.commit().await?;
         Ok(budgets)
+    }
+
+    async fn get_budget_by_id_for_user(
+        &self,
+        budget_id: &Uuid,
+        user_id: &Uuid,
+    ) -> Result<Option<Budget>> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let budget = sqlx::query_as::<_, Budget>(
+            "SELECT id, user_id, category, amount, created_at, updated_at FROM budgets WHERE id = $1 AND user_id = $2",
+        )
+        .bind(budget_id)
+        .bind(user_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(budget)
     }
 
     async fn create_budget_for_user(&self, budget: Budget) -> Result<Budget> {

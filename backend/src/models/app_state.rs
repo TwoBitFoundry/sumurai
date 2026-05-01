@@ -5,7 +5,9 @@ use crate::providers::ProviderRegistry;
 use crate::services::plaid_service::{PlaidService, RealPlaidClient};
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::sync_service::SyncService;
-use crate::services::{AuthService, BudgetService, CacheService, ConnectionService};
+use crate::services::{
+    AuthService, AuthorizationService, BudgetService, CacheService, ConnectionService,
+};
 
 // Application state shared across handlers
 pub struct AppState {
@@ -14,6 +16,7 @@ pub struct AppState {
     pub(crate) sync_service: Arc<SyncService>,
     pub(crate) analytics_service: Arc<crate::services::AnalyticsService>,
     pub(crate) budget_service: Arc<BudgetService>,
+    pub(crate) authorization_service: Arc<AuthorizationService>,
     pub(crate) config: Config,
     pub(crate) db_repository: Arc<dyn DatabaseRepository>,
     pub(crate) cache_service: Arc<dyn CacheService>,
@@ -30,6 +33,7 @@ impl Clone for AppState {
             sync_service: self.sync_service.clone(),
             analytics_service: self.analytics_service.clone(),
             budget_service: self.budget_service.clone(),
+            authorization_service: self.authorization_service.clone(),
             config: self.config.clone(),
             db_repository: self.db_repository.clone(),
             cache_service: self.cache_service.clone(),

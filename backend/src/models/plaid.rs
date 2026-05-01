@@ -74,7 +74,7 @@ pub struct SyncTransactionsRequest {
     pub connection_id: Option<String>,
 }
 
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[schema(example = json!({"connection_id": "connection-uuid"}))]
 pub struct DisconnectRequest {
     pub connection_id: String,

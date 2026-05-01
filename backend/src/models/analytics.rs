@@ -84,6 +84,10 @@ pub struct MonthlyTotalsQuery {
     pub account_ids: Vec<String>,
 }
 
+pub struct BalancesOverviewQuery {
+    pub account_ids: Vec<String>,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, ToSchema)]
 #[serde(rename_all = "camelCase")]
 #[schema(example = json!({
@@ -276,6 +280,46 @@ impl<'de> Deserialize<'de> for MonthlyTotalsQuery {
         }
 
         deserializer.deserialize_map(MonthlyTotalsVisitor)
+    }
+}
+
+impl<'de> Deserialize<'de> for BalancesOverviewQuery {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct BalancesOverviewVisitor;
+
+        impl<'de> Visitor<'de> for BalancesOverviewVisitor {
+            type Value = BalancesOverviewQuery;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("balances overview query parameters")
+            }
+
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+            where
+                A: MapAccess<'de>,
+            {
+                let mut account_ids: Vec<String> = Vec::new();
+
+                while let Some(key) = map.next_key::<String>()? {
+                    match key.as_str() {
+                        "account_ids" | "account_ids[]" | "account_ids%5B%5D" => {
+                            let values: VecOrOne<String> = map.next_value()?;
+                            account_ids.extend(values.into_vec());
+                        }
+                        _ => {
+                            map.next_value::<IgnoredAny>()?;
+                        }
+                    }
+                }
+
+                Ok(BalancesOverviewQuery { account_ids })
+            }
+        }
+
+        deserializer.deserialize_map(BalancesOverviewVisitor)
     }
 }
 

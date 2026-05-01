@@ -6,9 +6,8 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 fn open_repository(pool: PgPool) -> PostgresRepository {
-    let raw = std::env::var("ENCRYPTION_KEY").expect(
-        "ENCRYPTION_KEY must be set when DATABASE_URL is set for repository_service_tests",
-    );
+    let raw = std::env::var("ENCRYPTION_KEY")
+        .expect("ENCRYPTION_KEY must be set when DATABASE_URL is set for repository_service_tests");
     let key = parse_encryption_key_hex(&raw).expect("ENCRYPTION_KEY must be 64 hex characters");
     PostgresRepository::new(pool, key)
 }

@@ -9,6 +9,7 @@ use crate::providers::ProviderRegistry;
 use crate::services::{
     analytics_service::AnalyticsService,
     auth_service::AuthService,
+    authorization_service::AuthorizationService,
     budget_service::BudgetService,
     cache_service::{CacheService, MockCacheService},
     connection_service::ConnectionService,
@@ -239,6 +240,7 @@ impl TestFixtures {
             AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap(),
         );
         let budget_service = Arc::new(BudgetService::new());
+        let authorization_service = Arc::new(AuthorizationService::new());
         let config = Self::create_test_config();
 
         let state = AppState {
@@ -247,6 +249,7 @@ impl TestFixtures {
             sync_service,
             analytics_service,
             budget_service,
+            authorization_service,
             config,
             db_repository,
             cache_service,
@@ -325,6 +328,7 @@ impl TestFixtures {
         );
 
         let budget_service = Arc::new(BudgetService::new());
+        let authorization_service = Arc::new(AuthorizationService::new());
         let config = Self::create_test_config();
 
         let state = AppState {
@@ -333,6 +337,7 @@ impl TestFixtures {
             sync_service,
             analytics_service,
             budget_service,
+            authorization_service,
             config,
             db_repository,
             cache_service,
@@ -379,6 +384,7 @@ impl TestFixtures {
         );
 
         let budget_service = Arc::new(BudgetService::new());
+        let authorization_service = Arc::new(AuthorizationService::new());
         let config = Self::create_test_config();
 
         let state = AppState {
@@ -387,6 +393,7 @@ impl TestFixtures {
             sync_service,
             analytics_service,
             budget_service,
+            authorization_service,
             config,
             db_repository,
             cache_service,
