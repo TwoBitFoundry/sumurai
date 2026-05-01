@@ -6,33 +6,32 @@ Complete the backend side of the cookie-auth design so the JWT is stored only as
 ## Phase 1: Cookie Contract And Configuration
 - Add the Rust `cookie` crate to `backend/Cargo.toml`, then run `cargo update` so `backend/Cargo.lock` uses current compatible versions.
 - Extend backend config in `backend/src/config.rs` with:
-  - `AUTH_COOKIE_NAME`, default `auth_token`
-  - `AUTH_COOKIE_SECURE`, parsed as a boolean and required through compose configuration
-  - `AUTH_COOKIE_SAME_SITE`, allowed values `Strict`, `Lax`, `None`
-- Add config getters for cookie name, secure flag, and same-site value. Reject invalid `AUTH_COOKIE_SECURE` or `AUTH_COOKIE_SAME_SITE` values during config loading.
+  - `AUTH_COOKIE_SAME_SITE`, allowed values `Strict` and `Lax`, default `Strict`
+- Add a config getter for the same-site value. Derive the cookie `Secure` attribute from the mode, with `Strict` in production and `Lax` in dev. Reject invalid `AUTH_COOKIE_SAME_SITE` values during config loading.
 - Implement a small auth-cookie helper near the auth boundary, preferably in `backend/src/models/auth.rs` or a new backend auth utility module:
   - Build `Set-Cookie` for a JWT token value.
   - Build a clearing cookie with the same name/path and an expired or max-age-zero value.
   - Parse the JWT from a raw `Cookie` header.
-  - Use `HttpOnly`, `Path=/`, `SameSite` from config, `Secure` from config, and `Max-Age` derived from the JWT expiry.
+  - Use `HttpOnly`, `Path=/`, `SameSite` from config, `Secure` derived from the same-site mode, and `Max-Age` derived from the JWT expiry.
   - Treat missing, empty, malformed, or duplicate unusable cookie values as no auth token.
 - Keep the helper independent from business logic. It should not validate JWT signatures or touch Redis; that remains in `AuthService` and middleware.
 - Update compose configuration:
-  - Main `docker-compose.yml`: `AUTH_COOKIE_SECURE=true`, `AUTH_COOKIE_SAME_SITE=Strict`.
-  - Add `docker-compose.dev.yml`: `AUTH_COOKIE_SECURE=false`, `AUTH_COOKIE_SAME_SITE=Lax`.
+  - Main `docker-compose.yml`: `AUTH_COOKIE_SAME_SITE=Strict`.
+  - Add `docker-compose.dev.yml`: `AUTH_COOKIE_SAME_SITE=Lax`.
 - Do not read or write `.env` files.
 
 Acceptance criteria:
-- `Config::from_env_provider` accepts default cookie name, valid secure booleans, and `Strict`/`Lax`/`None` same-site values.
-- Config tests cover default cookie name, valid cookie settings, and invalid `AUTH_COOKIE_SECURE` / `AUTH_COOKIE_SAME_SITE` failures.
-- Cookie helper tests prove generated auth cookies include `auth_token=<jwt>`, `HttpOnly`, `Path=/`, configured `SameSite`, configured `Secure`, and a positive max-age.
+- `Config::from_env_provider` accepts the default mode and valid `Strict`/`Lax` values.
+- Config tests cover the default mode, valid cookie settings, and invalid `AUTH_COOKIE_SAME_SITE` failures.
+- Cookie helper tests prove generated auth cookies include `auth_token=<jwt>`, `HttpOnly`, `Path=/`, configured `SameSite`, secure when strict, and a positive max-age.
 - Cookie helper tests prove the clearing cookie clears the same cookie name/path and is expired or max-age-zero.
 - Cookie helper tests prove parsing returns the JWT value from `Cookie: auth_token=<jwt>` and returns none for missing or empty values.
 - Main compose and dev compose expose different secure/same-site defaults exactly as specified.
 
 Completion notes:
 - Added the `cookie` dependency and refreshed `Cargo.lock`.
-- Extended backend config with auth cookie name, secure, and same-site settings.
+- Extended backend config with the auth cookie mode setting.
+- Simplified the auth cookie surface to one mode env with `Strict` for production and `Lax` for dev.
 - Added an auth-cookie helper for issuing, clearing, and parsing the cookie value.
 - Updated compose defaults and test fixtures to supply the new config values.
 
@@ -41,6 +40,7 @@ TDD log:
 - `cargo test config_tests`
 - `cargo check`
 - `cargo test`
+- `cargo fmt`
 
 ## Phase 2: Auth Endpoint Cookie Issuance
 - Update `AuthResponse` in `backend/src/models/auth.rs`:
@@ -116,6 +116,7 @@ Acceptance criteria:
 ## Assumptions
 - Cookie name is `auth_token`.
 - The JWT itself is the cookie value.
+- Strict mode uses `Secure=true`; Lax mode uses `Secure=false`.
 - Backend auth is cookie-only after this change; bearer auth is not retained.
 - Production uses `SameSite=Strict` and `Secure=true`.
 - Local development uses the dev compose override with `SameSite=Lax` and `Secure=false`.

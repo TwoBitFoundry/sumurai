@@ -5,20 +5,18 @@ use crate::config::{AuthCookieSameSite, Config};
 
 pub fn build_auth_cookie(token: &str, expires_at: DateTime<Utc>, config: &Config) -> String {
     build_cookie(
-        config.get_auth_cookie_name(),
+        "auth_token",
         token,
         Some(expires_at),
-        config.get_auth_cookie_secure(),
         config.get_auth_cookie_same_site(),
     )
 }
 
 pub fn build_clearing_auth_cookie(config: &Config) -> String {
     build_cookie(
-        config.get_auth_cookie_name(),
+        "auth_token",
         "",
         Some(Utc::now()),
-        config.get_auth_cookie_secure(),
         config.get_auth_cookie_same_site(),
     )
 }
@@ -53,9 +51,9 @@ fn build_cookie(
     name: &str,
     value: &str,
     expires_at: Option<DateTime<Utc>>,
-    secure: bool,
     same_site: AuthCookieSameSite,
 ) -> String {
+    let secure = matches!(same_site, AuthCookieSameSite::Strict);
     let mut builder = Cookie::build((name.to_string(), value.to_string()))
         .http_only(true)
         .path("/")
@@ -77,6 +75,5 @@ fn map_same_site(value: AuthCookieSameSite) -> CookieSameSite {
     match value {
         AuthCookieSameSite::Strict => CookieSameSite::Strict,
         AuthCookieSameSite::Lax => CookieSameSite::Lax,
-        AuthCookieSameSite::None => CookieSameSite::None,
     }
 }

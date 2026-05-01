@@ -7,7 +7,6 @@ use std::fmt;
 pub enum AuthCookieSameSite {
     Strict,
     Lax,
-    None,
 }
 
 impl AuthCookieSameSite {
@@ -15,9 +14,8 @@ impl AuthCookieSameSite {
         match value {
             "Strict" => Ok(Self::Strict),
             "Lax" => Ok(Self::Lax),
-            "None" => Ok(Self::None),
             _ => Err(anyhow!(
-                "AUTH_COOKIE_SAME_SITE must be one of Strict, Lax, or None"
+                "AUTH_COOKIE_SAME_SITE must be either Strict or Lax"
             )),
         }
     }
@@ -28,7 +26,6 @@ impl fmt::Display for AuthCookieSameSite {
         match self {
             AuthCookieSameSite::Strict => f.write_str("Strict"),
             AuthCookieSameSite::Lax => f.write_str("Lax"),
-            AuthCookieSameSite::None => f.write_str("None"),
         }
     }
 }
@@ -50,8 +47,6 @@ pub struct Config {
     default_provider: String,
     teller_application_id: Option<String>,
     teller_environment: String,
-    auth_cookie_name: String,
-    auth_cookie_secure: bool,
     auth_cookie_same_site: AuthCookieSameSite,
 }
 
@@ -70,18 +65,15 @@ impl Config {
             .get_var("TELLER_ENV")
             .or_else(|| env.get_var("TELLER_ENVIRONMENT"))
             .ok_or_else(|| anyhow!("TELLER_ENV (or TELLER_ENVIRONMENT) must be set"))?;
-        let auth_cookie_name = env
-            .get_var("AUTH_COOKIE_NAME")
-            .unwrap_or_else(|| "auth_token".to_string());
-        let auth_cookie_secure = parse_required_bool(env.get_var("AUTH_COOKIE_SECURE"))?;
-        let auth_cookie_same_site = parse_same_site(env.get_var("AUTH_COOKIE_SAME_SITE"))?;
+        let auth_cookie_same_site = parse_same_site(
+            env.get_var("AUTH_COOKIE_SAME_SITE")
+                .unwrap_or_else(|| "Strict".to_string()),
+        )?;
 
         Ok(Self {
             default_provider,
             teller_application_id,
             teller_environment,
-            auth_cookie_name,
-            auth_cookie_secure,
             auth_cookie_same_site,
         })
     }
@@ -98,30 +90,13 @@ impl Config {
         &self.teller_environment
     }
 
-    pub fn get_auth_cookie_name(&self) -> &str {
-        &self.auth_cookie_name
-    }
-
-    pub fn get_auth_cookie_secure(&self) -> bool {
-        self.auth_cookie_secure
-    }
-
     pub fn get_auth_cookie_same_site(&self) -> AuthCookieSameSite {
         self.auth_cookie_same_site
     }
 }
 
-fn parse_required_bool(value: Option<String>) -> Result<bool> {
-    let raw_value = value.ok_or_else(|| anyhow!("AUTH_COOKIE_SECURE must be set"))?;
-
-    raw_value
-        .parse::<bool>()
-        .map_err(|_| anyhow!("AUTH_COOKIE_SECURE must be either true or false"))
-}
-
-fn parse_same_site(value: Option<String>) -> Result<AuthCookieSameSite> {
-    let raw_value = value.ok_or_else(|| anyhow!("AUTH_COOKIE_SAME_SITE must be set"))?;
-    AuthCookieSameSite::parse(&raw_value)
+fn parse_same_site(value: String) -> Result<AuthCookieSameSite> {
+    AuthCookieSameSite::parse(&value)
 }
 
 #[cfg(test)]
