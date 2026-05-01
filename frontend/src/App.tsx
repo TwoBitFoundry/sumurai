@@ -20,23 +20,6 @@ AuthService.configure({
 
 const telemetryService = new TelemetryService();
 
-const parseJWT = (token: string) => {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = atob(base64);
-    return JSON.parse(jsonPayload);
-  } catch {
-    return null;
-  }
-};
-
-const isTokenExpired = (token: string): boolean => {
-  const payload = parseJWT(token);
-  if (!payload?.exp) return true;
-  return Math.floor(Date.now() / 1000) >= payload.exp;
-};
-
 interface AppContentProps {
   initialTab?: TabKey;
   initialAuthScreen?: 'login' | 'register';
@@ -49,49 +32,48 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [mainAppKey, setMainAppKey] = useState(0);
   const [showProviderMismatch, setShowProviderMismatch] = useState(false);
+  const [sessionExpiresAt, setSessionExpiresAt] = useState<string | null>(null);
 
   const { mode, toggle } = useTheme();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = sessionStorage.getItem('auth_token');
-
-      if (!token || isTokenExpired(token)) {
-        setIsAuthenticated(false);
-        sessionStorage.removeItem('auth_token');
-        setIsLoading(false);
-        return;
-      }
-
-      const isValid = await AuthService.validateSession();
-      if (!isValid) {
-        setIsAuthenticated(false);
-        setIsLoading(false);
-        return;
-      }
-
+    let active = true;
+    const establishSession = async () => {
       try {
         const refreshResponse = await AuthService.refreshToken();
-        AuthService.storeToken(refreshResponse.token);
+        if (!active) {
+          return;
+        }
         setIsAuthenticated(true);
         setShowOnboarding(!refreshResponse.onboarding_completed);
+        setSessionExpiresAt(refreshResponse.expires_at);
       } catch (error) {
         console.warn('Auth validation error:', error);
-        setIsAuthenticated(false);
+        if (active) {
+          setIsAuthenticated(false);
+          setShowOnboarding(false);
+          setSessionExpiresAt(null);
+        }
         AuthService.clearToken();
       } finally {
-        setIsLoading(false);
+        if (active) {
+          setIsLoading(false);
+        }
       }
     };
 
-    checkAuth();
+    establishSession();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleAuthSuccess = useCallback(
-    (authResponse: { token: string; onboarding_completed: boolean }) => {
-      sessionStorage.setItem('auth_token', authResponse.token);
+    (authResponse: { user_id: string; expires_at: string; onboarding_completed: boolean }) => {
       setIsAuthenticated(true);
       setShowOnboarding(!authResponse.onboarding_completed);
+      setSessionExpiresAt(authResponse.expires_at);
     },
     []
   );
@@ -105,6 +87,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
 
     setIsAuthenticated(false);
     setShowOnboarding(false);
+    setSessionExpiresAt(null);
     setAuthScreen('login');
   }, []);
 
@@ -170,7 +153,11 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   }
 
   return (
-    <SessionManager onLogout={handleLogout}>
+    <SessionManager
+      expiresAt={sessionExpiresAt}
+      onSessionRefreshed={setSessionExpiresAt}
+      onLogout={handleLogout}
+    >
       <AccountFilterProvider key={`filter-${mainAppKey}`}>
         <AuthenticatedApp
           key={`app-${mainAppKey}`}

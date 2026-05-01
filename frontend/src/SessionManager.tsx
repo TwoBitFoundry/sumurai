@@ -12,6 +12,7 @@ interface SessionExpiryModalProps {
   timeRemaining: number;
   onStayLoggedIn: () => void;
   onLogout: () => void;
+  onSessionRefreshed?: (expiresAt: string) => void;
 }
 
 export function SessionExpiryModal({
@@ -19,6 +20,7 @@ export function SessionExpiryModal({
   timeRemaining,
   onStayLoggedIn,
   onLogout,
+  onSessionRefreshed,
 }: SessionExpiryModalProps) {
   if (!isOpen) return null;
 
@@ -45,8 +47,8 @@ export function SessionExpiryModal({
   const refreshUserSession = async (): Promise<boolean> => {
     try {
       const result = await AuthService.refreshToken();
-      if (result?.token) {
-        sessionStorage.setItem('auth_token', result.token);
+      if (result?.expires_at) {
+        onSessionRefreshed?.(result.expires_at);
         return true;
       }
     } catch {
@@ -56,12 +58,12 @@ export function SessionExpiryModal({
   };
 
   const handleSessionExpired = () => {
-    sessionStorage.clear();
+    AuthService.clearToken();
     onLogout();
   };
 
   const handleLogout = () => {
-    sessionStorage.clear();
+    AuthService.clearToken();
     onLogout();
   };
 
@@ -119,68 +121,75 @@ export function SessionExpiryModal({
 
 interface SessionManagerProps {
   children: React.ReactNode;
+  expiresAt: string | null;
+  onSessionRefreshed: (expiresAt: string) => void;
   onLogout: () => void;
 }
 
-const parseJWT = (token: string) => {
+const parseExpiry = (expiresAt: string) => {
   try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = atob(base64);
-    return JSON.parse(jsonPayload);
+    return Math.floor(new Date(expiresAt).getTime() / 1000);
   } catch {
     return null;
   }
 };
 
-const getTokenExpiryTime = (token: string): number | null => {
-  const payload = parseJWT(token);
-  return payload?.exp || null;
+const getTokenExpiryTime = (expiresAt: string): number | null => {
+  return parseExpiry(expiresAt);
 };
 
-const isTokenExpired = (token: string): boolean => {
-  const expiry = getTokenExpiryTime(token);
+const isTokenExpired = (expiresAt: string): boolean => {
+  const expiry = getTokenExpiryTime(expiresAt);
   if (!expiry) return true;
   return Math.floor(Date.now() / 1000) >= expiry;
 };
 
-const getTimeUntilExpiry = (token: string): number => {
-  const expiry = getTokenExpiryTime(token);
+const getTimeUntilExpiry = (expiresAt: string): number => {
+  const expiry = getTokenExpiryTime(expiresAt);
   if (!expiry) return 0;
   return Math.max(0, expiry - Math.floor(Date.now() / 1000));
 };
 
-export function SessionManager({ children, onLogout }: SessionManagerProps) {
+export function SessionManager({
+  children,
+  expiresAt,
+  onSessionRefreshed,
+  onLogout,
+}: SessionManagerProps) {
   const [showExpiryModal, setShowExpiryModal] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
 
   const checkSessionExpiry = useCallback(() => {
-    const token = sessionStorage.getItem('auth_token');
-    if (!token) {
+    if (!expiresAt) {
+      return;
+    }
+
+    if (isTokenExpired(expiresAt)) {
+      AuthService.clearToken();
       onLogout();
       return;
     }
 
-    if (isTokenExpired(token)) {
-      sessionStorage.clear();
-      onLogout();
-      return;
-    }
-
-    const timeUntilExpiry = getTimeUntilExpiry(token);
+    const timeUntilExpiry = getTimeUntilExpiry(expiresAt);
 
     if (timeUntilExpiry <= SESSION_WARNING_THRESHOLD && timeUntilExpiry > 0) {
       setTimeRemaining(timeUntilExpiry);
       setShowExpiryModal(true);
     }
-  }, [onLogout]);
+  }, [expiresAt, onLogout]);
 
   useEffect(() => {
+    if (!expiresAt) {
+      setShowExpiryModal(false);
+      setTimeRemaining(0);
+      return;
+    }
+
     checkSessionExpiry();
     const interval = setInterval(checkSessionExpiry, SESSION_CHECK_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [checkSessionExpiry]);
+  }, [checkSessionExpiry, expiresAt]);
 
   useEffect(() => {
     if (!showExpiryModal || timeRemaining <= 0) return;
@@ -189,7 +198,7 @@ export function SessionManager({ children, onLogout }: SessionManagerProps) {
       setTimeRemaining((prev) => {
         const newTime = prev - 1;
         if (newTime <= 0) {
-          sessionStorage.clear();
+          AuthService.clearToken();
           onLogout();
           return 0;
         }
@@ -201,12 +210,23 @@ export function SessionManager({ children, onLogout }: SessionManagerProps) {
   }, [timeRemaining, showExpiryModal, onLogout]);
 
   const handleStayLoggedIn = () => {
-    setShowExpiryModal(false);
-    setTimeRemaining(0);
+    void (async () => {
+      try {
+        const result = await AuthService.refreshToken();
+        onSessionRefreshed(result.expires_at);
+        setShowExpiryModal(false);
+        setTimeRemaining(0);
+      } catch (error) {
+        console.error('Session refresh failed:', error);
+        AuthService.clearToken();
+        handleLogout();
+      }
+    })();
   };
 
   const handleLogout = () => {
     setShowExpiryModal(false);
+    AuthService.clearToken();
     onLogout();
   };
 
@@ -217,6 +237,7 @@ export function SessionManager({ children, onLogout }: SessionManagerProps) {
         isOpen={showExpiryModal}
         timeRemaining={timeRemaining}
         onStayLoggedIn={handleStayLoggedIn}
+        onSessionRefreshed={onSessionRefreshed}
         onLogout={handleLogout}
       />
     </>

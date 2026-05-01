@@ -19,8 +19,6 @@ describe('ApiClient with Injected IHttpClient', () => {
     jest.clearAllMocks();
     const boundaries = setupTestBoundaries();
     mockHttp = boundaries.http;
-    jest.spyOn(AuthService, 'getToken').mockReturnValue('mock-token');
-    jest.spyOn(AuthService, 'storeToken');
     jest.spyOn(AuthService, 'clearToken');
     ApiClient.setTestMaxRetries(0);
   });
@@ -66,7 +64,9 @@ describe('ApiClient with Injected IHttpClient', () => {
   describe('Authentication Integration', () => {
     it('should handle 401 responses with token refresh', async () => {
       jest.spyOn(AuthService, 'refreshToken').mockResolvedValueOnce({
-        token: 'new-token',
+        user_id: 'user-123',
+        expires_at: '2025-12-31T00:00:00Z',
+        onboarding_completed: true,
       });
 
       mockHttp.get
@@ -77,7 +77,6 @@ describe('ApiClient with Injected IHttpClient', () => {
 
       expect(result).toEqual({ data: 'success' });
       expect(AuthService.refreshToken).toHaveBeenCalledOnce();
-      expect(AuthService.storeToken).toHaveBeenCalledWith('new-token');
     });
 
     it('should clear token when refresh fails', async () => {
@@ -209,18 +208,21 @@ describe('ApiClient with Injected IHttpClient', () => {
   });
 
   describe('Request Authorization', () => {
-    it('should include auth token in requests', async () => {
+    it('should not inject auth tokens into requests', async () => {
       mockHttp.get.mockResolvedValueOnce({ data: 'success' });
-      jest.spyOn(AuthService, 'getToken').mockReturnValue('my-token');
 
       await ApiClient.get('/protected');
 
-      expect(mockHttp.get).toHaveBeenCalledWith('/protected', expect.any(Object));
+      expect(mockHttp.get).toHaveBeenCalledWith(
+        '/protected',
+        expect.objectContaining({
+          headers: expect.not.objectContaining({ Authorization: expect.any(String) }),
+        })
+      );
     });
 
     it('should handle requests without auth token', async () => {
       mockHttp.get.mockResolvedValueOnce({ data: 'success' });
-      jest.spyOn(AuthService, 'getToken').mockReturnValue(null);
 
       await ApiClient.get('/public');
 

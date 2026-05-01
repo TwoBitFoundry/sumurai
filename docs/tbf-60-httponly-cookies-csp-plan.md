@@ -22,11 +22,18 @@ Migrate Sumurai auth to one `sumurai_session` cookie per Sumurai user account wh
 
 ## Phase 2: Frontend Cookie Transport
 
+- Status: complete
 - Update `FetchHttpClient` to send `credentials: "same-origin"` on all app API calls.
 - Remove Authorization header injection from `ApiClient`.
 - Keep 401 recovery, but have it call `/auth/refresh`, retry once with cookies, and never store returned tokens.
 - Remove `auth_token` and `refresh_token` usage from `AuthService`, `BrowserStorageAdapter`, `Auth`, `App`, and `SessionManager`.
 - Drive authenticated UI state from login/register/refresh metadata and protected API validation.
+
+### TDD Log
+
+- `npm test -- --runInBand --runTestsByPath tests/services/TokenRefresh.test.ts`
+- `npm test -- --runInBand`
+- Result: all frontend tests passed after moving request transport to cookies.
 
 ## Phase 3: CSP, Teller, And Plaid
 
@@ -59,7 +66,5 @@ Migrate Sumurai auth to one `sumurai_session` cookie per Sumurai user account wh
 
 ## Next Actions
 
-- Implement backend cookie helpers and route changes first.
-- Update frontend fetch/auth behavior against the new response contract.
 - Add CSP and provider script controls.
-- Update tests around the new cookie contract and run verification.
+- Update tests around the CSP and provider script controls.

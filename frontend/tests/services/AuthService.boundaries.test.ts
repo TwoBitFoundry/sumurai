@@ -6,26 +6,26 @@ describe('AuthService with injected boundaries', () => {
     setupTestBoundaries();
   });
 
-  it('stores token in injected storage boundary', () => {
+  it('does not store auth token in injected storage boundary', () => {
     const { storage } = setupTestBoundaries();
 
     const token = 'test-jwt-token';
     AuthService.storeToken(token);
 
-    expect(storage.getItem('auth_token')).toBe(token);
+    expect(storage.getItem('auth_token')).toBeNull();
   });
 
-  it('retrieves token from injected storage boundary', () => {
+  it('ignores token values already present in injected storage boundary', () => {
     const { storage } = setupTestBoundaries();
 
     const token = 'test-jwt-token';
     storage.setItem('auth_token', token);
 
     const retrieved = AuthService.getToken();
-    expect(retrieved).toBe(token);
+    expect(retrieved).toBeNull();
   });
 
-  it('clears tokens from injected storage boundary', () => {
+  it('does not clear injected storage when clearing auth state', () => {
     const { storage } = setupTestBoundaries();
 
     storage.setItem('auth_token', 'token');
@@ -33,19 +33,19 @@ describe('AuthService with injected boundaries', () => {
 
     AuthService.clearToken();
 
-    expect(storage.getItem('auth_token')).toBeNull();
-    expect(storage.getItem('refresh_token')).toBeNull();
+    expect(storage.getItem('auth_token')).toBe('token');
+    expect(storage.getItem('refresh_token')).toBe('refresh');
   });
 
-  it('stores refresh token when provided', () => {
+  it('does not store refresh tokens in injected storage boundary', () => {
     const { storage } = setupTestBoundaries();
 
     const token = 'access-token';
     const refreshToken = 'refresh-token';
     AuthService.storeToken(token, refreshToken);
 
-    expect(storage.getItem('auth_token')).toBe(token);
-    expect(storage.getItem('refresh_token')).toBe(refreshToken);
+    expect(storage.getItem('auth_token')).toBeNull();
+    expect(storage.getItem('refresh_token')).toBeNull();
   });
 
   it('returns null when token does not exist in storage', () => {

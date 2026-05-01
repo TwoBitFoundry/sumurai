@@ -115,11 +115,6 @@ export class ApiClient {
         }
       }
 
-      const token = AuthService.getToken();
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
       const optionsWithAuth = {
         ...options,
         headers,
@@ -128,8 +123,12 @@ export class ApiClient {
       const response = await ApiClient.makeRawRequest<T>(endpoint, optionsWithAuth);
       return response;
     } catch (error) {
-      if (error instanceof AuthenticationError && attempt === 0) {
-        return ApiClient.handleAuthenticationError<T>(endpoint, options, attempt);
+      if (error instanceof AuthenticationError) {
+        if (attempt === 0) {
+          return ApiClient.handleAuthenticationError<T>(endpoint, options, attempt);
+        }
+        AuthService.clearToken();
+        throw error;
       }
 
       if (
@@ -206,19 +205,9 @@ export class ApiClient {
     }
 
     try {
-      // Attempt to refresh the token
-      const refreshResult = await AuthService.refreshToken();
-      AuthService.storeToken(refreshResult.token);
-
-      // Retry the original request with the new token
-      const newHeaders = {
-        ...options.headers,
-        Authorization: `Bearer ${refreshResult.token}`,
-      };
-
-      return ApiClient.makeRequestWithRetry<T>(endpoint, { ...options, headers: newHeaders }, 0);
+      await AuthService.refreshToken();
+      return await ApiClient.makeRawRequest<T>(endpoint, options);
     } catch {
-      // Token refresh failed, clear tokens and throw authentication error
       AuthService.clearToken();
       throw new AuthenticationError();
     }

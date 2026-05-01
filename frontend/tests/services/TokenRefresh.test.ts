@@ -9,10 +9,8 @@ describe('Token Refresh and Authentication Recovery', () => {
     jest.clearAllMocks();
     const boundaries = setupTestBoundaries();
     mockHttp = boundaries.http;
-    jest.spyOn(AuthService, 'getToken');
     jest.spyOn(AuthService, 'clearToken');
     jest.spyOn(AuthService, 'refreshToken');
-    jest.spyOn(AuthService, 'storeToken');
   });
 
   afterEach(() => {
@@ -20,14 +18,11 @@ describe('Token Refresh and Authentication Recovery', () => {
   });
 
   describe('Automatic Token Refresh on 401', () => {
-    it('should attempt token refresh when receiving 401 and have valid refresh token', async () => {
-      jest
-        .spyOn(AuthService, 'getToken')
-        .mockReturnValueOnce('expired-token')
-        .mockReturnValueOnce('new-token');
-
+    it('should attempt token refresh when receiving 401 and have valid session metadata', async () => {
       jest.spyOn(AuthService, 'refreshToken').mockResolvedValueOnce({
-        token: 'new-token',
+        user_id: 'user-123',
+        expires_at: '2025-12-31T00:00:00Z',
+        onboarding_completed: true,
       });
 
       mockHttp.get
@@ -37,18 +32,14 @@ describe('Token Refresh and Authentication Recovery', () => {
       const result = await ApiClient.get('/test');
 
       expect(AuthService.refreshToken).toHaveBeenCalledOnce();
-      expect(AuthService.storeToken).toHaveBeenCalledWith('new-token');
       expect(result).toEqual({ data: 'success' });
     });
 
     it('should retry original request after successful token refresh', async () => {
-      jest
-        .spyOn(AuthService, 'getToken')
-        .mockReturnValueOnce('expired-token')
-        .mockReturnValueOnce('new-token');
-
       jest.spyOn(AuthService, 'refreshToken').mockResolvedValueOnce({
-        token: 'new-token',
+        user_id: 'user-123',
+        expires_at: '2025-12-31T00:00:00Z',
+        onboarding_completed: true,
       });
 
       mockHttp.post
@@ -67,10 +58,7 @@ describe('Token Refresh and Authentication Recovery', () => {
     });
 
     it('should clear tokens and throw AuthenticationError if refresh fails', async () => {
-      jest.spyOn(AuthService, 'getToken').mockReturnValue('expired-token');
-      jest
-        .spyOn(AuthService, 'refreshToken')
-        .mockRejectedValueOnce(new Error('Refresh token expired'));
+      jest.spyOn(AuthService, 'refreshToken').mockRejectedValueOnce(new Error('Refresh token expired'));
 
       mockHttp.get.mockRejectedValueOnce(new AuthenticationError());
 
@@ -78,8 +66,7 @@ describe('Token Refresh and Authentication Recovery', () => {
       expect(AuthService.clearToken).toHaveBeenCalledOnce();
     });
 
-    it('should not attempt refresh if no refresh token exists', async () => {
-      jest.spyOn(AuthService, 'getToken').mockReturnValue('expired-token');
+    it('should not attempt refresh if refresh fails immediately', async () => {
       jest.spyOn(AuthService, 'refreshToken').mockRejectedValueOnce(new Error('No refresh token'));
 
       mockHttp.get.mockRejectedValueOnce(new AuthenticationError());
@@ -90,13 +77,10 @@ describe('Token Refresh and Authentication Recovery', () => {
     });
 
     it('should handle 401 on the retry request after refresh', async () => {
-      jest
-        .spyOn(AuthService, 'getToken')
-        .mockReturnValueOnce('expired-token')
-        .mockReturnValueOnce('new-token');
-
       jest.spyOn(AuthService, 'refreshToken').mockResolvedValueOnce({
-        token: 'new-token',
+        user_id: 'user-123',
+        expires_at: '2025-12-31T00:00:00Z',
+        onboarding_completed: true,
       });
 
       mockHttp.get
@@ -110,9 +94,11 @@ describe('Token Refresh and Authentication Recovery', () => {
 
   describe('Multiple Simultaneous Requests with Token Refresh', () => {
     it('should handle multiple simultaneous requests when token expires', async () => {
-      jest.spyOn(AuthService, 'getToken').mockReturnValue('expired-token');
-
-      jest.spyOn(AuthService, 'refreshToken').mockResolvedValue({ token: 'new-token' });
+      jest.spyOn(AuthService, 'refreshToken').mockResolvedValue({
+        user_id: 'user-123',
+        expires_at: '2025-12-31T00:00:00Z',
+        onboarding_completed: true,
+      });
 
       mockHttp.get
         .mockRejectedValueOnce(new AuthenticationError())
@@ -133,10 +119,7 @@ describe('Token Refresh and Authentication Recovery', () => {
 
   describe('Token Refresh Edge Cases', () => {
     it('should handle network errors during token refresh', async () => {
-      jest.spyOn(AuthService, 'getToken').mockReturnValue('expired-token');
-      jest
-        .spyOn(AuthService, 'refreshToken')
-        .mockRejectedValueOnce(new Error('Network error during refresh'));
+      jest.spyOn(AuthService, 'refreshToken').mockRejectedValueOnce(new Error('Network error during refresh'));
 
       mockHttp.get.mockRejectedValueOnce(new AuthenticationError());
 
@@ -145,10 +128,7 @@ describe('Token Refresh and Authentication Recovery', () => {
     });
 
     it('should handle malformed refresh response', async () => {
-      jest.spyOn(AuthService, 'getToken').mockReturnValue('expired-token');
-      jest
-        .spyOn(AuthService, 'refreshToken')
-        .mockRejectedValueOnce(new Error('Invalid refresh response'));
+      jest.spyOn(AuthService, 'refreshToken').mockRejectedValueOnce(new Error('Invalid refresh response'));
 
       mockHttp.get.mockRejectedValueOnce(new AuthenticationError());
 
