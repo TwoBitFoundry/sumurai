@@ -74,3 +74,17 @@ fn given_teller_environment_when_from_env_provider_then_uses_value() {
 
     assert_eq!(config.get_teller_environment(), "sandbox");
 }
+
+#[test]
+fn given_nginx_template_when_read_then_includes_provider_csp_allowlists() {
+    let template = include_str!("../../../nginx/nginx.conf.template");
+
+    assert!(template.contains("Content-Security-Policy"));
+    assert!(template.contains("https://cdn.teller.io"));
+    assert!(template.contains("https://cdn.plaid.com"));
+    assert!(template.contains("https://api.teller.io"));
+    assert!(template.contains("https://production.plaid.com"));
+    assert!(template.contains("https://sandbox.plaid.com"));
+    assert!(template.contains("frame-src"));
+    assert!(template.contains("connect-src"));
+}
