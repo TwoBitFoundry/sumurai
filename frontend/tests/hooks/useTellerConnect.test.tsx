@@ -1,12 +1,15 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { TellerConnectGateway } from '@/hooks/useTellerConnect';
-import { resetTellerScriptStateForTests, useTellerConnect } from '@/hooks/useTellerConnect';
+import {
+  TELLER_SCRIPT_INTEGRITY,
+  resetTellerScriptStateForTests,
+  useTellerConnect,
+} from '@/hooks/useTellerConnect';
 
 describe('useTellerConnect', () => {
   const setup = jest.fn();
   const open = jest.fn();
   const destroy = jest.fn();
-  const originalIntegrity = process.env.NEXT_PUBLIC_TELLER_SCRIPT_INTEGRITY;
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -20,11 +23,6 @@ describe('useTellerConnect', () => {
   });
 
   afterEach(() => {
-    if (originalIntegrity === undefined) {
-      delete process.env.NEXT_PUBLIC_TELLER_SCRIPT_INTEGRITY;
-    } else {
-      process.env.NEXT_PUBLIC_TELLER_SCRIPT_INTEGRITY = originalIntegrity;
-    }
     cleanup();
     // @ts-expect-error - test cleanup removing mocked global
     delete globalThis.TellerConnect;
@@ -97,7 +95,7 @@ describe('useTellerConnect', () => {
 
     const script = appendChildSpy.mock.calls[0][0] as HTMLScriptElement;
     expect(script.crossOrigin).toBe('anonymous');
-    expect(script.integrity).toBe('sha384-test-integrity');
+    expect(script.integrity).toBe(TELLER_SCRIPT_INTEGRITY);
 
     Object.assign(globalThis, {
       TellerConnect: {

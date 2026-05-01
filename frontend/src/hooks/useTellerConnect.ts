@@ -43,16 +43,12 @@ interface StoreEnrollmentResponse {
 
 const TELLER_SCRIPT_ATTR = 'data-teller-connect';
 const TELLER_SCRIPT_SRC = 'https://cdn.teller.io/connect/connect.js';
-
-const getTellerScriptIntegrity = (): string | undefined =>
-  process.env.NEXT_PUBLIC_TELLER_SCRIPT_INTEGRITY;
+export const TELLER_SCRIPT_INTEGRITY =
+  'sha384-3oEs6G7a8pzh5w2Q/uZXqk9rr6CdfxR/d2Ocm6B832OGJlMS4oK/nCAWN7KT6YM5';
 
 const applyTellerScriptAttributes = (script: HTMLScriptElement): void => {
   script.crossOrigin = 'anonymous';
-  const integrity = getTellerScriptIntegrity();
-  if (integrity) {
-    script.integrity = integrity;
-  }
+  script.integrity = TELLER_SCRIPT_INTEGRITY;
 };
 
 let tellerScriptLoaded = false;

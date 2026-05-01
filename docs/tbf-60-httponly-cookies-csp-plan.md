@@ -42,7 +42,7 @@ Migrate Sumurai auth to one `sumurai_session` cookie per Sumurai user account wh
 - Include Teller in `script-src`: `https://cdn.teller.io`.
 - Include Plaid Link in CSP: `script-src` for `https://cdn.plaid.com`, `frame-src` for Plaid Link frame origins, and `connect-src` for app API origins plus Plaid/Teller browser SDK endpoints.
 - Preserve required app allowances for self-hosted scripts, styles, API connections, images, and fonts.
-- Add `integrity` and `crossOrigin="anonymous"` behavior to the dynamically-created Teller script.
+- Pin `integrity` and `crossOrigin="anonymous"` on the dynamically-created Teller script.
 - Do not add SRI to Plaid through `react-plaid-link` unless the implementation replaces the library loader with a controlled script loader; CSP is the required Plaid control for this ticket.
 
 ### TDD Log
