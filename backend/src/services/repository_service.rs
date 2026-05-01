@@ -99,27 +99,11 @@ pub struct PostgresRepository {
 }
 
 impl PostgresRepository {
-    pub fn new(pool: PgPool) -> Result<Self> {
-        let key_str = std::env::var("ENCRYPTION_KEY").unwrap_or_else(|_| {
-            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".to_string()
-        });
-
-        let key_bytes =
-            hex::decode(&key_str).map_err(|_| anyhow::anyhow!("Invalid encryption key format"))?;
-
-        if key_bytes.len() != 32 {
-            return Err(anyhow::anyhow!(
-                "Encryption key must be 32 bytes (64 hex chars)"
-            ));
-        }
-
-        let mut encryption_key = [0u8; 32];
-        encryption_key.copy_from_slice(&key_bytes);
-
-        Ok(Self {
+    pub fn new(pool: PgPool, encryption_key: [u8; 32]) -> Self {
+        Self {
             pool,
             encryption_key,
-        })
+        }
     }
 
     fn encrypt_token(&self, token: &str) -> Result<Vec<u8>> {

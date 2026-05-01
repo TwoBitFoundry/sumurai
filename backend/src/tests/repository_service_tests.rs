@@ -1,8 +1,17 @@
 use crate::models::auth::User;
 use crate::services::repository_service::{DatabaseRepository, PostgresRepository};
+use crate::utils::encryption_key::parse_encryption_key_hex;
 use chrono::Utc;
 use sqlx::PgPool;
 use uuid::Uuid;
+
+fn open_repository(pool: PgPool) -> PostgresRepository {
+    let raw = std::env::var("ENCRYPTION_KEY").expect(
+        "ENCRYPTION_KEY must be set when DATABASE_URL is set for repository_service_tests",
+    );
+    let key = parse_encryption_key_hex(&raw).expect("ENCRYPTION_KEY must be 64 hex characters");
+    PostgresRepository::new(pool, key)
+}
 
 async fn connect_pool() -> Option<PgPool> {
     if std::env::var("DATABASE_URL").is_err() {
@@ -45,7 +54,7 @@ async fn given_valid_user_when_updating_password_then_hash_changes() {
         return;
     };
 
-    let repo = PostgresRepository::new(pool.clone()).unwrap();
+    let repo = open_repository(pool.clone());
     let user = create_test_user(&repo).await;
 
     let original_hash = user.password_hash.clone();
@@ -66,7 +75,7 @@ async fn given_user_with_budgets_when_deleting_then_budgets_cascade() {
         return;
     };
 
-    let repo = PostgresRepository::new(pool.clone()).unwrap();
+    let repo = open_repository(pool.clone());
     let user = create_test_user(&repo).await;
 
     let budget = crate::models::budget::Budget {
@@ -111,7 +120,7 @@ async fn given_delete_user_when_rls_context_set_then_deletion_succeeds() {
         return;
     };
 
-    let repo = PostgresRepository::new(pool.clone()).unwrap();
+    let repo = open_repository(pool.clone());
     let user = create_test_user(&repo).await;
 
     let result = repo.delete_user(&user.id).await;
@@ -128,7 +137,7 @@ async fn given_update_password_when_executed_then_updated_at_changes() {
         return;
     };
 
-    let repo = PostgresRepository::new(pool.clone()).unwrap();
+    let repo = open_repository(pool.clone());
     let user = create_test_user(&repo).await;
 
     let original_updated_at = user.updated_at;

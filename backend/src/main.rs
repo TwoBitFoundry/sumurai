@@ -65,9 +65,10 @@ use crate::models::{
     },
     transaction::TransactionWithAccount,
 };
+use crate::utils::encryption_key::parse_encryption_key_hex;
 use auth_middleware::auth_middleware;
-use middleware::auth_ip_ban::auth_ip_ban_middleware;
 use config::Config;
+use middleware::auth_ip_ban::auth_ip_ban_middleware;
 use middleware::telemetry_middleware::{
     self, attach_encrypted_token_to_current_span, hash_token, request_tracing_middleware,
     with_bearer_token_attribute, TelemetryConfig,
@@ -118,8 +119,15 @@ async fn main() -> anyhow::Result<()> {
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or_else(|_| "postgresql://postgres:password@localhost:5432/accounting".to_string());
 
+    let encryption_key_raw = std::env::var("ENCRYPTION_KEY").context(
+        "ENCRYPTION_KEY environment variable is required. Generate one with `openssl rand -hex 32`.",
+    )?;
+    let encryption_key = parse_encryption_key_hex(&encryption_key_raw)?;
+
     let pool = PgPool::connect(&database_url).await?;
-    let db_repository: Arc<dyn DatabaseRepository> = Arc::new(PostgresRepository::new(pool)?);
+    tracing::info!("ENCRYPTION_KEY loaded and validated for token encryption");
+    let db_repository: Arc<dyn DatabaseRepository> =
+        Arc::new(PostgresRepository::new(pool, encryption_key));
 
     let redis_url =
         std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
@@ -194,19 +202,13 @@ pub fn create_app(state: AppState) -> Router {
     let auth_login = Router::new()
         .route("/", post(login_user))
         .layer(auth_login_governor_layer())
-        .layer(from_fn_with_state(
-            state.clone(),
-            auth_ip_ban_middleware,
-        ))
+        .layer(from_fn_with_state(state.clone(), auth_ip_ban_middleware))
         .with_state(state.clone());
 
     let auth_register = Router::new()
         .route("/", post(register_user))
         .layer(auth_register_governor_layer())
-        .layer(from_fn_with_state(
-            state.clone(),
-            auth_ip_ban_middleware,
-        ))
+        .layer(from_fn_with_state(state.clone(), auth_ip_ban_middleware))
         .with_state(state.clone());
 
     let public_routes = Router::new()

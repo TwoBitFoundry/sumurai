@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Result};
 #[cfg(test)]
 use std::collections::HashMap;
+
 pub trait EnvironmentProvider {
     fn get_var(&self, key: &str) -> Option<String>;
 }
