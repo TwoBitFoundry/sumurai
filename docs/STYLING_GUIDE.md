@@ -28,6 +28,7 @@ Sumurai follows a primitive-first styling approach:
 **Design System Alignment**
 
 All primitives align with [docs/sumurai-ui-guidelines.md](../../docs/sumurai-ui-guidelines.md):
+
 - Glassmorphism with backdrop blur
 - Consistent color palette (light/dark modes)
 - Purposeful animations and interactions
@@ -73,14 +74,16 @@ Does a primitive already exist for this element?
 
 Located in `src/ui/primitives/`:
 
-| Primitive | Purpose | Key Variants |
-|-----------|---------|--------------|
-| `GradientShell` | Full-page backgrounds with aura effects | `app`, `auth`, `landing` |
-| `GlassCard` | Container with glassmorphism effect | `default`, `auth`, `accent` |
-| `Button` | Interactive buttons | `primary`, `secondary`, `ghost`, `icon`, `danger`, `success`, `connect` |
-| `Input` | Form inputs | `default`, `error`, `success` |
-| `Badge` | Status indicators | `default`, `success`, `warning`, `error`, `info` |
-| `MenuDropdown` | Dropdown menus | `default` |
+
+| Primitive       | Purpose                                 | Key Variants                                                            |
+| --------------- | --------------------------------------- | ----------------------------------------------------------------------- |
+| `GradientShell` | Full-page backgrounds with aura effects | `app`, `auth`, `landing`                                                |
+| `GlassCard`     | Container with glassmorphism effect     | `default`, `auth`, `accent`                                             |
+| `Button`        | Interactive buttons                     | `primary`, `secondary`, `ghost`, `icon`, `danger`, `success`, `connect` |
+| `Input`         | Form inputs                             | `default`, `error`, `success`                                           |
+| `Badge`         | Status indicators                       | `default`, `success`, `warning`, `error`, `info`                        |
+| `MenuDropdown`  | Dropdown menus                          | `default`                                                               |
+
 
 See [src/ui/primitives/README.md](../src/ui/primitives/README.md) for detailed variant documentation.
 
@@ -116,6 +119,7 @@ Primitives accept a `className` prop for layout-specific adjustments:
 ```
 
 **Guidelines for className prop:**
+
 - **DO:** Add spacing (`mt-4`, `mb-6`), sizing (`w-full`, `h-12`), positioning (`absolute`, `top-0`)
 - **DO:** Add layout utilities (`flex`, `grid`, `items-center`)
 - **DON'T:** Override colors, borders, shadows (use variants instead)
@@ -157,6 +161,7 @@ Create a new primitive when:
 5. **Accessibility Requirements** - Needs specific ARIA attributes or keyboard interactions
 
 **Don't create a primitive for:**
+
 - Page-specific layouts (use composition instead)
 - One-off visual elements
 - Simple utility wrappers (use Tailwind directly)
@@ -165,14 +170,14 @@ Create a new primitive when:
 
 When creating a new primitive:
 
-- [ ] Use `class-variance-authority` for variant management
-- [ ] Define clear variant names (descriptive, not presentational)
-- [ ] Support both light and dark modes
-- [ ] Export TypeScript types for props
-- [ ] Add JSDoc comments with usage examples
-- [ ] Create snapshot tests for all variants
-- [ ] Document in primitives README
-- [ ] Add to primitives index export
+- Use `class-variance-authority` for variant management
+- Define clear variant names (descriptive, not presentational)
+- Support both light and dark modes
+- Export TypeScript types for props
+- Add JSDoc comments with usage examples
+- Create snapshot tests for all variants
+- Document in primitives README
+- Add to primitives index export
 
 **Template:**
 
@@ -250,6 +255,7 @@ When primitives don't fit, use inline Tailwind with these rules:
 ### Utility Categories
 
 **Allowed inline (layout):**
+
 - Flexbox/Grid: `flex`, `grid`, `items-center`, `justify-between`
 - Spacing: `p-4`, `mx-auto`, `gap-2`, `space-y-4`
 - Sizing: `w-full`, `h-screen`, `max-w-4xl`
@@ -257,6 +263,7 @@ When primitives don't fit, use inline Tailwind with these rules:
 - Display: `hidden`, `block`, `md:flex`
 
 **Discouraged inline (visual):**
+
 - Colors: `bg-white`, `text-slate-900`, `border-sky-500`
 - Shadows: `shadow-lg`, `shadow-[custom]`
 - Borders: `border`, `rounded-xl`, `ring-2`
@@ -309,6 +316,7 @@ Primitives already include dark mode variants:
 ### Testing Both Modes
 
 When creating new primitives or components:
+
 1. Test in light mode
 2. Toggle theme to dark mode
 3. Verify colors, contrast, shadows remain readable
@@ -383,6 +391,8 @@ When creating new primitives or components:
 ## Questions?
 
 If this guide doesn't answer your question:
+
 1. Check existing primitive implementations for patterns
 2. Review merged PRs for similar components
 3. Ask in team chat or create a GitHub discussion
+

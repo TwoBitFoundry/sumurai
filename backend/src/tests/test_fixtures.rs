@@ -217,6 +217,16 @@ impl TestFixtures {
             .expect_invalidate_pattern()
             .returning(|_| Box::pin(async { Ok(()) }));
 
+        mock_cache
+            .expect_is_auth_ip_banned()
+            .times(0..)
+            .returning(|_| Box::pin(async { Ok(false) }));
+
+        mock_cache
+            .expect_record_auth_rate_limit_exceeded()
+            .times(0..)
+            .returning(|_| Box::pin(async { Ok(()) }));
+
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
 
         let connection_service = Arc::new(ConnectionService::new(
@@ -290,6 +300,16 @@ impl TestFixtures {
 
         mock_cache
             .expect_invalidate_pattern()
+            .returning(|_| Box::pin(async { Ok(()) }));
+
+        mock_cache
+            .expect_is_auth_ip_banned()
+            .times(0..)
+            .returning(|_| Box::pin(async { Ok(false) }));
+
+        mock_cache
+            .expect_record_auth_rate_limit_exceeded()
+            .times(0..)
             .returning(|_| Box::pin(async { Ok(()) }));
 
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);

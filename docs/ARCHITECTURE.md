@@ -11,17 +11,18 @@ This document provides a deeper look at Sumurai’s runtime architecture, data f
 - Deployed locally via Docker Compose; macOS → Linux cross‑compile for backend binary.
 
 ## Diagram
+
 ```mermaid
 flowchart LR
 
   A["Browser (React SPA)"] -->|SPA assets| B["Nginx (8080)"]
   A -->|/health| B
-  A -->|/api/&#42;| B
+  A -->|/api/*| B
 
   B -->|proxy /health| C["Backend (Axum, 3000)"]
-  B -->|proxy /api/&#42;| C
+  B -->|proxy /api/*| C
 
-  C -->|cache &#40;required&#41;| D[(Redis)]
+  C -->|cache (required)| D[(Redis)]
   D --> C
   C -->|SQLx| E[(PostgreSQL)]
   E --> C
@@ -36,6 +37,8 @@ flowchart LR
     E
   end
 ```
+
+
 
 ## End‑to‑End Data Flow
 
@@ -80,7 +83,7 @@ flowchart LR
 
 ### API Proxy (Nginx)
 
-- Serves static SPA assets and proxies `GET /health` and `/api/*` to `backend:3000` inside the Compose network.
+- Serves static SPA assets and proxies `GET /health` and `/api/`* to `backend:3000` inside the Compose network.
 
 ## Caching (Redis)
 
@@ -109,3 +112,4 @@ flowchart LR
 
 - Validate end‑to‑end only at `http://localhost:8080` (SPA via Nginx with API proxy).
 - Next.js dev server (`:3001`) is fine for UI iteration but not for E2E validation.
+

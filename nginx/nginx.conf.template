@@ -1,6 +1,8 @@
 events {}
 
 http {
+    limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=5r/m;
+
     upstream frontend_upstream {
         server frontend:8080;
     }
@@ -85,6 +87,24 @@ http {
             proxy_pass http://seq_upstream/ingest/otlp;
             proxy_http_version 1.1;
             client_max_body_size 10m;
+        }
+
+        # Internal-only auth API: stricter rate limit than general /api
+        location /api/auth {
+            allow 10.0.0.0/8;
+            allow 172.16.0.0/12;
+            allow 192.168.0.0/16;
+            deny all;
+            limit_req zone=auth_limit burst=5 nodelay;
+            limit_req_status 429;
+            error_page 429 = @auth_rate_limited;
+            proxy_pass http://backend_upstream;
+        }
+
+        location @auth_rate_limited {
+            default_type application/json;
+            add_header Retry-After 60 always;
+            return 429 '{"error":"TOO_MANY_REQUESTS","message":"Too many authentication attempts. Try again later.","code":"RATE_LIMITED","details":null}';
         }
 
         # Internal-only API: only reachable from private networks

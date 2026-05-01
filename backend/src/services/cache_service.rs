@@ -1,5 +1,6 @@
 use crate::models::{
     cache::{CachedBankAccounts, CachedBankConnection, CachedTransaction},
+    ip_ban::AuthIpBanPolicy,
     transaction::Transaction,
 };
 use anyhow::Result;
@@ -60,6 +61,10 @@ pub trait CacheService: Send + Sync {
     async fn invalidate_session(&self, jwt_id: &str) -> Result<()>;
 
     async fn clear_jwt_scoped_data(&self, jwt_id: &str) -> Result<()>;
+
+    async fn is_auth_ip_banned(&self, ip: &str) -> Result<bool>;
+
+    async fn record_auth_rate_limit_exceeded(&self, ip: &str) -> Result<()>;
 }
 
 pub struct RedisCache {
@@ -282,6 +287,41 @@ impl RedisCache {
 
         Ok(())
     }
+
+    pub async fn is_auth_ip_banned(&self, ip: &str) -> Result<bool> {
+        let mut conn = self.connection_manager.clone();
+        let key = AuthIpBanPolicy::ban_key(ip);
+        let exists: bool = conn.exists(&key).await?;
+        Ok(exists)
+    }
+
+    pub async fn record_auth_rate_limit_exceeded(&self, ip: &str) -> Result<()> {
+        let mut conn = self.connection_manager.clone();
+        let strike_key = AuthIpBanPolicy::strike_key(ip);
+        let ban_key = AuthIpBanPolicy::ban_key(ip);
+
+        let count: i64 = conn.incr(&strike_key, 1i64).await?;
+
+        if count == 1 {
+            conn.expire::<_, ()>(
+                &strike_key,
+                AuthIpBanPolicy::STRIKE_TRACKING_WINDOW_SECS as i64,
+            )
+            .await?;
+        }
+
+        let lockout_secs = AuthIpBanPolicy::lockout_secs_for_strike_count(count);
+        conn.set_ex::<_, _, ()>(&ban_key, "1", lockout_secs).await?;
+
+        tracing::warn!(
+            ip,
+            strike_count = count,
+            lockout_secs,
+            "Auth endpoint progressive lockout after rate limit"
+        );
+
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -373,5 +413,13 @@ impl CacheService for RedisCache {
 
     async fn clear_jwt_scoped_data(&self, jwt_id: &str) -> Result<()> {
         self.clear_jwt_scoped_data(jwt_id).await
+    }
+
+    async fn is_auth_ip_banned(&self, ip: &str) -> Result<bool> {
+        self.is_auth_ip_banned(ip).await
+    }
+
+    async fn record_auth_rate_limit_exceeded(&self, ip: &str) -> Result<()> {
+        self.record_auth_rate_limit_exceeded(ip).await
     }
 }

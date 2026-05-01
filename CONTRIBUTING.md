@@ -200,6 +200,10 @@ Everything reads from `.env`. Most variables have defaults in `docker-compose.ym
 | `TELLER_ENV` | No | `sandbox` | `sandbox`, `development`, or `production` |
 | `BACKEND_RUST_LOG` | No | `info` | Rust log level |
 
+## Authentication rate limiting
+
+Login and register under `/api/auth/` are limited to about five requests per minute per client IP at both nginx (`limit_req`) and the Axum backend (`tower-governor`). This is fixed in code and nginx config, not via environment variables. When limited, the API responds with HTTP 429 and a `Retry-After` header. After changing nginx config, validate with `docker compose exec nginx nginx -t` (requires the stack running).
+
 ## Teller Setup
 
 1. Create a Teller developer account at https://teller.io.

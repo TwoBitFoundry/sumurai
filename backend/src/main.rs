@@ -6,7 +6,7 @@ use axum::{
         header::{AUTHORIZATION, CONTENT_TYPE},
         HeaderMap, HeaderValue, Method, StatusCode, Uri,
     },
-    middleware::{from_fn, Next},
+    middleware::{from_fn, from_fn_with_state, Next},
     response::{IntoResponse, Json, Response},
     routing::{delete, get, post, put},
     Router,
@@ -14,6 +14,7 @@ use axum::{
 use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
 use axum_tracing_opentelemetry::tracing_opentelemetry_instrumentation_sdk as otel_sdk;
 use chrono::Utc;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
@@ -65,18 +66,22 @@ use crate::models::{
     transaction::TransactionWithAccount,
 };
 use auth_middleware::auth_middleware;
+use middleware::auth_ip_ban::auth_ip_ban_middleware;
 use config::Config;
 use middleware::telemetry_middleware::{
     self, attach_encrypted_token_to_current_span, hash_token, request_tracing_middleware,
     with_bearer_token_attribute, TelemetryConfig,
 };
 use services::repository_service::{DatabaseRepository, PostgresRepository};
-use services::{AnalyticsService, RealPlaidClient};
 use services::{
+    rate_limit_service::{
+        auth_login_governor_layer, auth_register_governor_layer, spawn_auth_rate_limit_cleanup,
+    },
     AuthService, BudgetService, CacheService, ConnectionService, ExchangeTokenError,
     LinkTokenError, PlaidService, ProviderSyncError, RedisCache, SyncConnectionParams, SyncService,
     TellerConnectError, TellerSyncError,
 };
+use services::{AnalyticsService, RealPlaidClient};
 use sqlx::PgPool;
 
 #[tokio::main]
@@ -170,9 +175,15 @@ async fn main() -> anyhow::Result<()> {
 
     let app = create_app(state);
 
+    spawn_auth_rate_limit_cleanup();
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     tracing::info!("Server running on http://0.0.0.0:3000");
-    axum::serve(listener, app).await?;
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await?;
 
     telemetry.shutdown()?;
 
@@ -180,10 +191,28 @@ async fn main() -> anyhow::Result<()> {
 }
 
 pub fn create_app(state: AppState) -> Router {
+    let auth_login = Router::new()
+        .route("/", post(login_user))
+        .layer(auth_login_governor_layer())
+        .layer(from_fn_with_state(
+            state.clone(),
+            auth_ip_ban_middleware,
+        ))
+        .with_state(state.clone());
+
+    let auth_register = Router::new()
+        .route("/", post(register_user))
+        .layer(auth_register_governor_layer())
+        .layer(from_fn_with_state(
+            state.clone(),
+            auth_ip_ban_middleware,
+        ))
+        .with_state(state.clone());
+
     let public_routes = Router::new()
         .route("/health", get(health_check))
-        .route("/api/auth/register", post(register_user))
-        .route("/api/auth/login", post(login_user))
+        .nest("/api/auth/login", auth_login)
+        .nest("/api/auth/register", auth_register)
         .route("/api/auth/refresh", post(refresh_user_session))
         .route("/api/auth/logout", post(logout_user));
 
@@ -468,6 +497,8 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
     responses(
         (status = 200, description = "User registered successfully", body = auth_models::AuthResponse),
         (status = 409, description = "Email already registered", body = ApiErrorResponse),
+        (status = 429, description = "Too many requests", body = ApiErrorResponse),
+        (status = 403, description = "IP temporarily banned after repeated abuse", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
     tag = "Authentication"
@@ -554,6 +585,8 @@ async fn register_user(
     responses(
         (status = 200, description = "Login successful", body = auth_models::AuthResponse),
         (status = 401, description = "Invalid credentials", body = ApiErrorResponse),
+        (status = 429, description = "Too many requests", body = ApiErrorResponse),
+        (status = 403, description = "IP temporarily banned after repeated abuse", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
     tag = "Authentication"

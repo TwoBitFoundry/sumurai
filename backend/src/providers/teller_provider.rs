@@ -36,9 +36,7 @@ struct ReqwestTellerClient {
 impl ReqwestTellerClient {
     fn new(cert_pem: &[u8], key_pem: &[u8]) -> anyhow::Result<Self> {
         let identity = reqwest::Identity::from_pem(&[cert_pem, b"\n", key_pem].concat())?;
-        let client = Client::builder()
-            .identity(identity)
-            .build()?;
+        let client = Client::builder().identity(identity).build()?;
         Ok(Self { client })
     }
 
@@ -96,10 +94,16 @@ impl TellerProvider {
         let key_path = std::env::var("TELLER_KEY_PATH")
             .map_err(|_| anyhow::anyhow!("TELLER_KEY_PATH environment variable is not set"))?;
 
-        let cert_pem = std::fs::read(&cert_path)
-            .map_err(|e| anyhow::anyhow!("Failed to read Teller certificate from {}: {}", cert_path, e))?;
-        let key_pem = std::fs::read(&key_path)
-            .map_err(|e| anyhow::anyhow!("Failed to read Teller private key from {}: {}", key_path, e))?;
+        let cert_pem = std::fs::read(&cert_path).map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to read Teller certificate from {}: {}",
+                cert_path,
+                e
+            )
+        })?;
+        let key_pem = std::fs::read(&key_path).map_err(|e| {
+            anyhow::anyhow!("Failed to read Teller private key from {}: {}", key_path, e)
+        })?;
 
         tracing::info!(
             cert_path = %cert_path,
