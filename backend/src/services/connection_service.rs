@@ -117,7 +117,8 @@ impl ConnectionService {
             });
         };
 
-        self.disconnect_owned_connection(&conn, user_id, jwt_id).await
+        self.disconnect_owned_connection(&conn, user_id, jwt_id)
+            .await
     }
 
     pub async fn disconnect_owned_connection(

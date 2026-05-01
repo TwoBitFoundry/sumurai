@@ -39,7 +39,6 @@ impl ReqwestTellerClient {
         let client = Client::builder().identity(identity).build()?;
         Ok(Self { client })
     }
-
 }
 
 #[async_trait]
