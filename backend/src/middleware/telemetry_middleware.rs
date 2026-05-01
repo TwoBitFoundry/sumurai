@@ -1,7 +1,5 @@
 use anyhow::Result;
-use axum::{
-    body::Body, extract::Request, http::header::AUTHORIZATION, middleware::Next, response::Response,
-};
+use axum::{body::Body, extract::Request, middleware::Next, response::Response};
 use axum_tracing_opentelemetry::tracing_opentelemetry_instrumentation_sdk as otel_sdk;
 use chrono::Utc;
 use opentelemetry::{
@@ -186,26 +184,6 @@ pub async fn request_tracing_middleware(request: Request<Body>, next: Next) -> R
     span.record("duration_ms", duration_ms);
 
     response
-}
-
-pub async fn with_bearer_token_attribute(request: Request<Body>, next: Next) -> Response {
-    if let Some(header_value) = request.headers().get(AUTHORIZATION) {
-        if let Ok(raw) = header_value.to_str() {
-            let trimmed = raw.trim();
-            let token = trimmed
-                .strip_prefix("Bearer ")
-                .or_else(|| trimmed.strip_prefix("bearer "))
-                .unwrap_or(trimmed)
-                .trim();
-
-            if !token.is_empty() {
-                let encrypted = hash_token(token);
-                attach_encrypted_token_to_current_span(&encrypted);
-            }
-        }
-    }
-
-    next.run(request).await
 }
 
 struct SeqJsonFormatter;

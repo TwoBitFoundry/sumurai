@@ -52,7 +52,6 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> Result<Self> {
-        dotenv::dotenv().ok();
         Self::from_env_provider(&SystemEnvironment)
     }
 
