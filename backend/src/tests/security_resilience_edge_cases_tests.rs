@@ -41,13 +41,13 @@ async fn given_malicious_jwt_with_injection_attempts_when_validating_then_preven
     )
     .unwrap();
 
-    let long_token = "Bearer ".to_owned() + &"A".repeat(1_000_000);
+    let long_token = "A".repeat(1_000_000);
     let malicious_tokens = [
-        "Bearer ../../../etc/passwd",
-        "Bearer <script>alert('xss')</script>",
-        "Bearer ' OR 1=1 --",
-        "Bearer \x00\x01\x02NULL_BYTES",
-        &long_token,
+        "../../../etc/passwd",
+        "<script>alert('xss')</script>",
+        "' OR 1=1 --",
+        "\x00\x01\x02NULL_BYTES",
+        long_token.as_str(),
     ];
 
     for (i, token) in malicious_tokens.iter().enumerate() {

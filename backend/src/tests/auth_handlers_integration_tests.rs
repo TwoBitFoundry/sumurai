@@ -345,7 +345,7 @@ async fn given_valid_current_password_when_change_password_then_returns_200() {
     let request = axum::http::Request::builder()
         .method(Method::PUT)
         .uri("/api/auth/change-password")
-        .header("Authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("Content-Type", "application/json")
         .body(axum::body::Body::from(body_json))
         .unwrap();
@@ -403,7 +403,7 @@ async fn given_invalid_current_password_when_change_password_then_returns_401() 
     let request = axum::http::Request::builder()
         .method(Method::PUT)
         .uri("/api/auth/change-password")
-        .header("Authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("Content-Type", "application/json")
         .body(axum::body::Body::from(body_json))
         .unwrap();
@@ -469,7 +469,7 @@ async fn given_authenticated_user_when_delete_account_then_returns_200() {
     let request = axum::http::Request::builder()
         .method(Method::DELETE)
         .uri("/api/auth/account")
-        .header("Authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("Content-Type", "application/json")
         .body(axum::body::Body::empty())
         .unwrap();
@@ -535,7 +535,7 @@ async fn given_user_deletion_when_cache_invalidation_fails_then_still_returns_20
     let request = axum::http::Request::builder()
         .method(Method::DELETE)
         .uri("/api/auth/account")
-        .header("Authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("Content-Type", "application/json")
         .body(axum::body::Body::empty())
         .unwrap();

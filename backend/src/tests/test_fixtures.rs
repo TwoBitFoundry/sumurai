@@ -25,7 +25,7 @@ use crate::{create_app, AppState, Config, Router};
 use axum::{
     body::Body,
     http::{
-        header::{AUTHORIZATION, CONTENT_TYPE},
+        header::{CONTENT_TYPE, COOKIE},
         Method, Request,
     },
 };
@@ -428,7 +428,7 @@ impl TestFixtures {
         Request::builder()
             .method(method)
             .uri(uri)
-            .header(AUTHORIZATION, format!("Bearer {}", token))
+            .header(COOKIE, format!("auth_token={}", token))
             .header(CONTENT_TYPE, "application/json")
             .body(Body::empty())
             .unwrap()
@@ -459,7 +459,7 @@ impl TestFixtures {
         Request::builder()
             .method(Method::POST)
             .uri(uri)
-            .header(AUTHORIZATION, format!("Bearer {}", token))
+            .header(COOKIE, format!("auth_token={}", token))
             .header(CONTENT_TYPE, "application/json")
             .body(Body::from(body_json))
             .unwrap()

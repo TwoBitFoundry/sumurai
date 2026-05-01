@@ -182,7 +182,7 @@ fn given_service_layer_calls_when_missing_user_context_then_returns_authenticati
     let injection_attempts = vec![
         "'; DROP TABLE users; --",
         "eyJ0eXAiOiJKV1QiLCJhbGciOiJub25lIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.",
-        "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.signature",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.signature",
         "null",
         "undefined",
     ];

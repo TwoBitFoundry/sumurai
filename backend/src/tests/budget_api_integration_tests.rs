@@ -45,7 +45,7 @@ async fn given_valid_payload_when_create_budget_then_returns_budget() {
     let req = Request::builder()
         .method("POST")
         .uri("/api/budgets")
-        .header("authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("content-type", "application/json")
         .body(Body::from(payload.to_string()))
         .unwrap();
@@ -89,7 +89,7 @@ async fn given_valid_payload_when_update_budget_then_returns_budget() {
     let req = Request::builder()
         .method("PUT")
         .uri(format!("/api/budgets/{}", budget_id))
-        .header("authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("content-type", "application/json")
         .body(Body::from(payload))
         .unwrap();
@@ -116,7 +116,7 @@ async fn given_foreign_budget_id_when_update_budget_then_returns_not_found() {
     let req = Request::builder()
         .method("PUT")
         .uri(format!("/api/budgets/{}", budget_id))
-        .header("authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("content-type", "application/json")
         .body(Body::from(payload))
         .unwrap();
@@ -154,7 +154,7 @@ async fn given_owned_budget_when_delete_budget_then_returns_deleted() {
     let req = Request::builder()
         .method("DELETE")
         .uri(format!("/api/budgets/{}", budget_id))
-        .header("authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("content-type", "application/json")
         .body(Body::empty())
         .unwrap();
@@ -180,7 +180,7 @@ async fn given_foreign_budget_id_when_delete_budget_then_returns_not_found() {
     let req = Request::builder()
         .method("DELETE")
         .uri(format!("/api/budgets/{}", budget_id))
-        .header("authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("content-type", "application/json")
         .body(Body::empty())
         .unwrap();
@@ -208,7 +208,7 @@ async fn given_duplicate_category_when_create_budget_then_conflict() {
     let req = Request::builder()
         .method("POST")
         .uri("/api/budgets")
-        .header("authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("content-type", "application/json")
         .body(Body::from(payload.to_string()))
         .unwrap();
@@ -226,7 +226,7 @@ async fn given_non_positive_amount_when_create_budget_then_bad_request() {
     let req = Request::builder()
         .method("POST")
         .uri("/api/budgets")
-        .header("authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("content-type", "application/json")
         .body(Body::from(payload.to_string()))
         .unwrap();
@@ -256,7 +256,7 @@ async fn given_invalid_amount_when_update_budget_then_bad_request() {
     let req = Request::builder()
         .method("PUT")
         .uri(format!("/api/budgets/{}", budget_id))
-        .header("authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("content-type", "application/json")
         .body(Body::from(payload))
         .unwrap();
@@ -274,7 +274,7 @@ async fn given_invalid_budget_id_when_update_then_bad_request() {
     let req = Request::builder()
         .method("PUT")
         .uri("/api/budgets/not-a-uuid")
-        .header("authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("content-type", "application/json")
         .body(Body::from(payload))
         .unwrap();
@@ -370,7 +370,7 @@ async fn given_create_budget_when_success_then_invalidate_cache() {
     let req = Request::builder()
         .method("POST")
         .uri("/api/budgets")
-        .header("authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("content-type", "application/json")
         .body(Body::from(payload.to_string()))
         .unwrap();

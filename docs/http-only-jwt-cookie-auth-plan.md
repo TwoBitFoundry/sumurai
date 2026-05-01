@@ -135,6 +135,18 @@ Acceptance criteria:
 - No `.env` file is read or written.
 - `git diff` shows the implementation scoped to backend auth/config/tests, compose configuration, and the saved plan if retained.
 
+Completion notes:
+- Updated shared backend request fixtures to send `Cookie: auth_token=<jwt>` for authenticated requests.
+- Migrated the remaining handwritten authenticated backend tests to cookies.
+- Kept one explicit middleware negative test proving `Authorization: Bearer ...` is rejected.
+- Normalized the raw token security tests so bearer-prefixed strings are no longer used outside that negative case.
+
+TDD log:
+- `cargo test auth_middleware_tests`
+- `cargo check`
+- `cargo test`
+- `cargo check`
+
 ## Assumptions
 - Cookie name is `auth_token`.
 - The JWT itself is the cookie value.

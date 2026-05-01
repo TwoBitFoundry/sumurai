@@ -1077,7 +1077,7 @@ async fn given_invalid_connection_id_when_sync_then_returns_400() {
     let request = axum::http::Request::builder()
         .method(axum::http::Method::POST)
         .uri("/api/providers/sync-transactions")
-        .header("authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("content-type", "application/json")
         .body(axum::body::Body::from(r#"{"connection_id":"not-a-uuid"}"#))
         .unwrap();
@@ -1094,7 +1094,7 @@ async fn given_invalid_content_type_when_sync_then_returns_415() {
     let request = axum::http::Request::builder()
         .method(axum::http::Method::POST)
         .uri("/api/providers/sync-transactions")
-        .header("authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("content-type", "text/plain")
         .body(axum::body::Body::from(
             r#"{"connection_id":"550e8400-e29b-41d4-a716-446655440000"}"#,
@@ -1231,7 +1231,7 @@ async fn given_invalid_content_type_when_disconnect_then_returns_415() {
     let request = axum::http::Request::builder()
         .method(axum::http::Method::POST)
         .uri("/api/providers/disconnect")
-        .header("authorization", format!("Bearer {}", token))
+        .header("Cookie", format!("auth_token={}", token))
         .header("content-type", "text/plain")
         .body(axum::body::Body::from(
             r#"{"connection_id":"550e8400-e29b-41d4-a716-446655440000"}"#,

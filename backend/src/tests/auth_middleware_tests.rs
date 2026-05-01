@@ -357,7 +357,7 @@ async fn given_api_endpoints_when_accessing_without_valid_auth_cookie_then_retur
         "not.a.jwt.at.all",
         "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.",
         "",
-        "Bearer",
+        "invalid",
     ];
 
     for malformed_token in malformed_jwt_tokens {
