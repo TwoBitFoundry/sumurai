@@ -2,7 +2,7 @@ use crate::middleware::telemetry_middleware::{attach_encrypted_token_to_current_
 use crate::models::api_error::ApiErrorResponse;
 use crate::models::auth::AuthError;
 pub use crate::models::auth::{AuthContext, AuthMiddlewareState};
-use crate::services::auth_service::AuthService;
+use crate::services::auth_service::{extract_cookie_value, AuthService, AUTH_SESSION_COOKIE_NAME};
 use axum::{
     extract::{Request, State},
     http::{HeaderMap, StatusCode},
@@ -11,28 +11,25 @@ use axum::{
 };
 use uuid::Uuid;
 
-const BEARER_PREFIX: &str = "Bearer ";
-const BEARER_PREFIX_LEN: usize = 7;
-
 pub async fn auth_middleware(
     State(middleware_state): State<AuthMiddlewareState>,
     headers: HeaderMap,
     mut request: Request,
     next: Next,
 ) -> Result<Response, Response> {
-    let token = match extract_bearer_token(&headers) {
+    let token = match extract_session_cookie(&headers) {
         Some(token) => token,
         None => {
             tracing::warn!(
-                auth_error_type = "missing_header",
+                auth_error_type = "missing_cookie",
                 path = %request.uri().path(),
                 method = %request.method(),
-                "Authentication failure: Missing Authorization header"
+                "Authentication failure: Missing authentication cookie"
             );
             let error_response = ApiErrorResponse::with_code(
                 "UNAUTHORIZED",
-                "Authorization header is required",
-                "MISSING_AUTH_HEADER",
+                "Authentication cookie is required",
+                "MISSING_AUTH_COOKIE",
             );
             return Err((StatusCode::UNAUTHORIZED, Json(error_response)).into_response());
         }
@@ -135,17 +132,8 @@ pub async fn auth_middleware(
     Ok(next.run(request).await)
 }
 
-pub fn extract_bearer_token(headers: &HeaderMap) -> Option<&str> {
-    headers
-        .get("authorization")
-        .and_then(|value| value.to_str().ok())
-        .and_then(|auth_header| {
-            if auth_header.starts_with(BEARER_PREFIX) {
-                Some(&auth_header[BEARER_PREFIX_LEN..])
-            } else {
-                None
-            }
-        })
+pub fn extract_session_cookie(headers: &HeaderMap) -> Option<&str> {
+    extract_cookie_value(headers, AUTH_SESSION_COOKIE_NAME)
 }
 
 pub fn extract_user_context(

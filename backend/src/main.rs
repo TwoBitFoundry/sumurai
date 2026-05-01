@@ -3,7 +3,7 @@ use axum::{
     body::Body,
     extract::{Query, Request, State},
     http::{
-        header::{AUTHORIZATION, CONTENT_TYPE},
+        header::{CONTENT_TYPE, SET_COOKIE},
         HeaderMap, HeaderValue, Method, StatusCode,
     },
     middleware::{from_fn, from_fn_with_state, Next},
@@ -66,7 +66,7 @@ use crate::models::{
     transaction::TransactionWithAccount,
 };
 use crate::utils::encryption_key::parse_encryption_key_hex;
-use auth_middleware::auth_middleware;
+use auth_middleware::{auth_middleware, extract_session_cookie};
 use config::Config;
 use middleware::auth_ip_ban::auth_ip_ban_middleware;
 use middleware::resource_authorization::{
@@ -78,6 +78,7 @@ use middleware::telemetry_middleware::{
 };
 use services::repository_service::{DatabaseRepository, PostgresRepository};
 use services::{
+    auth_service::{clear_auth_cookie, create_auth_cookie},
     rate_limit_service::{
         auth_login_governor_layer, auth_register_governor_layer, spawn_auth_rate_limit_cleanup,
     },
@@ -349,7 +350,7 @@ pub fn create_app(state: AppState) -> Router {
             Method::DELETE,
             Method::OPTIONS,
         ])
-        .allow_headers([AUTHORIZATION, CONTENT_TYPE])
+        .allow_headers([CONTENT_TYPE])
         .allow_credentials(true);
 
     let middleware_stack = ServiceBuilder::new()
@@ -496,10 +497,32 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
     response
 }
 
+fn response_with_auth_cookie(
+    body: Json<auth_models::AuthResponse>,
+    token: &str,
+    ttl_seconds: u64,
+) -> Response {
+    let mut response = body.into_response();
+    response.headers_mut().insert(
+        SET_COOKIE,
+        HeaderValue::from_str(&create_auth_cookie(token, ttl_seconds)).unwrap(),
+    );
+    response
+}
+
+fn response_with_cleared_auth_cookie(body: Response) -> Response {
+    let mut response = body;
+    response.headers_mut().insert(
+        SET_COOKIE,
+        HeaderValue::from_str(&clear_auth_cookie()).unwrap(),
+    );
+    response
+}
+
 #[utoipa::path(
     post,
     path = "/api/auth/register",
-    description = "Registers a new user and seeds default provider metadata.",
+    description = "Registers a new user, seeds default provider metadata, and issues a session cookie.",
     request_body = auth_models::RegisterRequest,
     responses(
         (status = 200, description = "User registered successfully", body = auth_models::AuthResponse),
@@ -508,12 +531,13 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
         (status = 403, description = "IP temporarily banned after repeated abuse", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
+    security(("cookie_auth" = [])),
     tag = "Authentication"
 )]
 async fn register_user(
     State(state): State<AppState>,
     Json(req): Json<auth_models::RegisterRequest>,
-) -> Result<Json<auth_models::AuthResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+) -> Result<Response, (StatusCode, Json<ApiErrorResponse>)> {
     let password_hash = state
         .auth_service
         .hash_password(&req.password)
@@ -576,18 +600,19 @@ async fn register_user(
         "User registered successfully"
     );
 
-    Ok(Json(auth_models::AuthResponse {
-        token: auth_token.token,
+    let body = Json(auth_models::AuthResponse {
         user_id: user_id.to_string(),
         expires_at,
         onboarding_completed: false,
-    }))
+    });
+
+    Ok(response_with_auth_cookie(body, &auth_token.token, ttl))
 }
 
 #[utoipa::path(
     post,
     path = "/api/auth/login",
-    description = "Authenticates a user and returns a signed JWT for subsequent requests.",
+    description = "Authenticates a user and issues a session cookie for subsequent requests.",
     request_body = auth_models::LoginRequest,
     responses(
         (status = 200, description = "Login successful", body = auth_models::AuthResponse),
@@ -596,12 +621,13 @@ async fn register_user(
         (status = 403, description = "IP temporarily banned after repeated abuse", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
+    security(("cookie_auth" = [])),
     tag = "Authentication"
 )]
 async fn login_user(
     State(state): State<AppState>,
     Json(req): Json<auth_models::LoginRequest>,
-) -> Result<Json<auth_models::AuthResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+) -> Result<Response, (StatusCode, Json<ApiErrorResponse>)> {
     let user = match state.db_repository.get_user_by_email(&req.email).await {
         Ok(Some(user)) => user,
         Ok(None) => {
@@ -668,34 +694,31 @@ async fn login_user(
         "User authenticated successfully"
     );
 
-    Ok(Json(auth_models::AuthResponse {
-        token: auth_token.token,
+    let body = Json(auth_models::AuthResponse {
         user_id: user.id.to_string(),
         expires_at,
         onboarding_completed: user.onboarding_completed,
-    }))
+    });
+
+    Ok(response_with_auth_cookie(body, &auth_token.token, ttl))
 }
 
 #[utoipa::path(
     post,
     path = "/api/auth/logout",
-    description = "Invalidates the active JWT and clears cached session state.",
+    description = "Invalidates the active session cookie and clears cached session state.",
     responses(
         (status = 200, description = "Logout successful", body = LogoutResponse),
         (status = 401, description = "Unauthorized")
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Authentication"
 )]
 async fn logout_user(
     State(state): State<AppState>,
     headers: HeaderMap,
-) -> Result<Json<LogoutResponse>, StatusCode> {
-    let auth_header = headers
-        .get("authorization")
-        .and_then(|h| h.to_str().ok())
-        .and_then(|s| s.strip_prefix("Bearer "))
-        .ok_or(StatusCode::UNAUTHORIZED)?;
+) -> Result<Response, StatusCode> {
+    let auth_header = extract_session_cookie(&headers).ok_or(StatusCode::UNAUTHORIZED)?;
 
     let encrypted_token = hash_token(auth_header);
     attach_encrypted_token_to_current_span(&encrypted_token);
@@ -722,33 +745,31 @@ async fn logout_user(
         "User logged out successfully"
     );
 
-    Ok(Json(LogoutResponse {
+    let body = Json(LogoutResponse {
         message: "Logged out successfully".to_string(),
         cleared_session: claims.jti,
-    }))
+    });
+
+    Ok(response_with_cleared_auth_cookie(body.into_response()))
 }
 
 #[utoipa::path(
     post,
     path = "/api/auth/refresh",
-    description = "Exchanges an existing token for a refreshed bearer token.",
+    description = "Refreshes the current session cookie and rotates the JWT.",
     responses(
         (status = 200, description = "Token refreshed successfully", body = auth_models::AuthResponse),
         (status = 401, description = "Unauthorized or session expired"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Authentication"
 )]
 async fn refresh_user_session(
     State(state): State<AppState>,
     headers: HeaderMap,
-) -> Result<Json<auth_models::AuthResponse>, StatusCode> {
-    let auth_header = headers
-        .get("authorization")
-        .and_then(|h| h.to_str().ok())
-        .and_then(|s| s.strip_prefix("Bearer "))
-        .ok_or(StatusCode::UNAUTHORIZED)?;
+) -> Result<Response, StatusCode> {
+    let auth_header = extract_session_cookie(&headers).ok_or(StatusCode::UNAUTHORIZED)?;
 
     let encrypted_token = hash_token(auth_header);
     attach_encrypted_token_to_current_span(&encrypted_token);
@@ -788,9 +809,6 @@ async fn refresh_user_session(
     let encrypted_token = hash_token(&auth_token.token);
     attach_encrypted_token_to_current_span(&encrypted_token);
 
-    let expires_at = chrono::Utc::now() + chrono::Duration::hours(1);
-
-    // Cache refreshed JWT in Redis with TTL
     let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
     if ttl > 0 {
         if let Err(e) = state
@@ -810,17 +828,32 @@ async fn refresh_user_session(
         }
     }
 
+    if let Err(e) = state.cache_service.invalidate_session(&claims.jti).await {
+        tracing::warn!(
+            "Failed to invalidate previous session during refresh: {}",
+            e
+        );
+    }
+
+    if let Err(e) = state.cache_service.clear_jwt_scoped_data(&claims.jti).await {
+        tracing::warn!(
+            "Failed to clear previous JWT-scoped data during refresh: {}",
+            e
+        );
+    }
+
     tracing::info!(
         encrypted_token = %encrypted_token,
         "User session refreshed"
     );
 
-    Ok(Json(auth_models::AuthResponse {
-        token: auth_token.token,
+    let body = Json(auth_models::AuthResponse {
         user_id: claims.user_id(),
-        expires_at: expires_at.to_rfc3339(),
+        expires_at: auth_token.expires_at.to_rfc3339(),
         onboarding_completed: user.onboarding_completed,
-    }))
+    });
+
+    Ok(response_with_auth_cookie(body, &auth_token.token, ttl))
 }
 
 #[utoipa::path(
@@ -832,7 +865,7 @@ async fn refresh_user_session(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Authentication"
 )]
 async fn complete_user_onboarding(
@@ -875,7 +908,7 @@ async fn complete_user_onboarding(
         (status = 403, description = "Account filter references another user"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Transactions"
 )]
 async fn get_authenticated_transactions(
@@ -952,7 +985,7 @@ async fn get_authenticated_transactions(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Failed to create link token"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Plaid"
 )]
 async fn create_authenticated_link_token(
@@ -1000,7 +1033,7 @@ async fn create_authenticated_link_token(
         (status = 502, description = "Token exchange failed with provider"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Plaid"
 )]
 async fn exchange_authenticated_public_token(
@@ -1055,7 +1088,7 @@ async fn exchange_authenticated_public_token(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Plaid"
 )]
 async fn get_authenticated_plaid_accounts(
@@ -1127,7 +1160,7 @@ async fn get_authenticated_plaid_accounts(
         (status = 502, description = "Provider request failed"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Financial Providers"
 )]
 async fn sync_authenticated_provider_transactions(
@@ -1286,7 +1319,7 @@ async fn sync_authenticated_provider_transactions(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Analytics"
 )]
 async fn get_authenticated_current_month_spending(
@@ -1325,7 +1358,7 @@ async fn get_authenticated_current_month_spending(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Analytics"
 )]
 async fn get_authenticated_daily_spending(
@@ -1382,7 +1415,7 @@ async fn get_authenticated_daily_spending(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Plaid"
 )]
 async fn clear_authenticated_synced_data(
@@ -1415,7 +1448,7 @@ async fn clear_authenticated_synced_data(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Analytics"
 )]
 async fn get_authenticated_spending_by_date_range(
@@ -1476,7 +1509,7 @@ async fn get_authenticated_spending_by_date_range(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Analytics"
 )]
 async fn get_authenticated_category_spending(
@@ -1533,7 +1566,7 @@ async fn get_authenticated_category_spending(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Analytics"
 )]
 async fn get_authenticated_monthly_totals(
@@ -1585,7 +1618,7 @@ async fn get_authenticated_monthly_totals(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Analytics"
 )]
 async fn get_authenticated_top_merchants(
@@ -1676,7 +1709,7 @@ async fn load_connection_statuses(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Failed to connect provider", body = ApiErrorResponse),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Financial Providers"
 )]
 async fn connect_authenticated_provider(
@@ -1750,7 +1783,7 @@ async fn connect_authenticated_provider(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Financial Providers"
 )]
 async fn get_authenticated_provider_status(
@@ -1785,7 +1818,7 @@ async fn get_authenticated_provider_status(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Budgets"
 )]
 async fn get_authenticated_budgets(
@@ -1836,7 +1869,7 @@ async fn get_authenticated_budgets(
         (status = 401, description = "Unauthorized"),
         (status = 409, description = "Budget category already exists", body = ApiErrorResponse),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Budgets"
 )]
 async fn create_authenticated_budget(
@@ -1892,7 +1925,7 @@ async fn create_authenticated_budget(
         (status = 404, description = "Budget not found", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Budgets"
 )]
 async fn update_authenticated_budget(
@@ -1958,7 +1991,7 @@ async fn update_authenticated_budget(
         (status = 404, description = "Budget not found", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Budgets"
 )]
 async fn delete_authenticated_budget(
@@ -2014,7 +2047,7 @@ async fn delete_authenticated_budget(
         (status = 415, description = "Unsupported media type"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Financial Providers"
 )]
 async fn disconnect_authenticated_connection(
@@ -2068,7 +2101,7 @@ async fn health_check() -> &'static str {
         (status = 404, description = "User not found"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Financial Providers"
 )]
 async fn get_authenticated_provider_info(
@@ -2122,7 +2155,7 @@ async fn get_authenticated_provider_info(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Financial Providers"
 )]
 async fn select_authenticated_provider(
@@ -2172,7 +2205,7 @@ async fn select_authenticated_provider(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Analytics"
 )]
 async fn get_authenticated_balances_overview(
@@ -2366,7 +2399,7 @@ async fn get_authenticated_balances_overview(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error"),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Analytics"
 )]
 async fn get_authenticated_net_worth_over_time(
@@ -2569,7 +2602,7 @@ async fn get_authenticated_net_worth_over_time(
         (status = 401, description = "Current password is incorrect", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Authentication"
 )]
 async fn change_user_password(
@@ -2655,7 +2688,7 @@ async fn change_user_password(
         (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
-    security(("bearer_auth" = [])),
+    security(("cookie_auth" = [])),
     tag = "Authentication"
 )]
 async fn delete_user_account(

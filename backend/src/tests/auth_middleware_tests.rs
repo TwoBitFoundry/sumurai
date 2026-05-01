@@ -1,11 +1,11 @@
 use crate::auth_middleware::{
-    auth_middleware, extract_bearer_token, extract_user_context, AuthContext, AuthMiddlewareState,
+    auth_middleware, extract_session_cookie, extract_user_context, AuthContext, AuthMiddlewareState,
 };
 use crate::models::auth::AuthError;
 use crate::services::{auth_service::AuthService, cache_service::MockCacheService};
 use axum::{
     body::Body,
-    http::{header::AUTHORIZATION, request::Request, HeaderMap, StatusCode},
+    http::{header::COOKIE, request::Request, HeaderMap, StatusCode},
     middleware,
     routing::get,
     Router,
@@ -20,11 +20,11 @@ fn create_test_auth_service() -> AuthService {
 }
 
 #[test]
-fn given_bearer_header_when_extracting_token_then_returns_token() {
+fn given_cookie_header_when_extracting_token_then_returns_token() {
     let mut headers = HeaderMap::new();
-    headers.insert(AUTHORIZATION, "Bearer jwt_token_here".parse().unwrap());
+    headers.insert(COOKIE, "sumurai_session=jwt_token_here".parse().unwrap());
 
-    let result = extract_bearer_token(&headers);
+    let result = extract_session_cookie(&headers);
 
     assert!(result.is_some());
     assert_eq!(result.unwrap(), "jwt_token_here");
@@ -33,9 +33,9 @@ fn given_bearer_header_when_extracting_token_then_returns_token() {
 #[test]
 fn given_invalid_auth_header_when_extracting_token_then_returns_none() {
     let mut headers = HeaderMap::new();
-    headers.insert(AUTHORIZATION, "Invalid token_here".parse().unwrap());
+    headers.insert(COOKIE, "invalid_cookie".parse().unwrap());
 
-    let result = extract_bearer_token(&headers);
+    let result = extract_session_cookie(&headers);
 
     assert!(result.is_none());
 }
@@ -44,7 +44,7 @@ fn given_invalid_auth_header_when_extracting_token_then_returns_none() {
 fn given_missing_auth_header_when_extracting_token_then_returns_none() {
     let headers = HeaderMap::new();
 
-    let result = extract_bearer_token(&headers);
+    let result = extract_session_cookie(&headers);
 
     assert!(result.is_none());
 }
@@ -78,7 +78,7 @@ fn given_invalid_jwt_when_extracting_context_then_returns_error() {
 }
 
 #[tokio::test]
-async fn given_valid_bearer_token_when_middleware_called_then_allows_request() {
+async fn given_valid_cookie_when_middleware_called_then_allows_request() {
     let auth_service = Arc::new(create_test_auth_service());
     let user_id = Uuid::new_v4();
     let auth_token = auth_service.generate_token(user_id).unwrap();
@@ -103,7 +103,7 @@ async fn given_valid_bearer_token_when_middleware_called_then_allows_request() {
 
     let request = Request::builder()
         .uri("/protected")
-        .header(AUTHORIZATION, format!("Bearer {}", auth_token.token))
+        .header(COOKIE, format!("sumurai_session={}", auth_token.token))
         .body(Body::empty())
         .unwrap();
 
@@ -144,7 +144,7 @@ async fn given_missing_auth_header_when_middleware_called_then_rejects_request()
 }
 
 #[tokio::test]
-async fn given_invalid_bearer_token_when_middleware_called_then_rejects_request() {
+async fn given_invalid_cookie_when_middleware_called_then_rejects_request() {
     let auth_service = Arc::new(create_test_auth_service());
 
     let mut cache = MockCacheService::new();
@@ -166,7 +166,7 @@ async fn given_invalid_bearer_token_when_middleware_called_then_rejects_request(
 
     let request = Request::builder()
         .uri("/protected")
-        .header(AUTHORIZATION, "Bearer invalid.jwt.token")
+        .header(COOKIE, "sumurai_session=invalid.jwt.token")
         .body(Body::empty())
         .unwrap();
 
@@ -278,20 +278,19 @@ async fn given_api_endpoints_when_accessing_without_valid_jwt_then_returns_401_f
 
     let invalid_auth_headers = vec![
         "invalid_token",
-        "Basic dXNlcjpwYXNzd29yZA==",
-        "Bearer",
-        "Bearer ",
-        "Bearer invalid.jwt.token.format",
-        "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.signature",
-        "Token jwt_token_here",
-        "JWT jwt_token_here",
+        "sumurai_session",
+        "sumurai_session=",
+        "sumurai_session=invalid.jwt.token.format",
+        "sumurai_session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.signature",
+        "other_cookie=jwt_token_here",
+        "another_cookie=jwt_token_here",
     ];
 
     for invalid_header in invalid_auth_headers {
         let request = Request::builder()
             .method("GET")
             .uri("/api/transactions")
-            .header(AUTHORIZATION, invalid_header)
+            .header(COOKIE, invalid_header)
             .body(Body::empty())
             .unwrap();
 
@@ -306,7 +305,7 @@ async fn given_api_endpoints_when_accessing_without_valid_jwt_then_returns_401_f
     }
 
     let malformed_jwt_tokens = vec![
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.invalid_signature",
+        "invalid.jwt.token.format",
         "not.a.jwt.at.all",
         "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.",
         "",
@@ -317,7 +316,7 @@ async fn given_api_endpoints_when_accessing_without_valid_jwt_then_returns_401_f
         let request = Request::builder()
             .method("GET")
             .uri("/api/analytics/categories")
-            .header(AUTHORIZATION, format!("Bearer {}", malformed_token))
+            .header(COOKIE, format!("sumurai_session={}", malformed_token))
             .body(Body::empty())
             .unwrap();
 
@@ -341,7 +340,7 @@ async fn given_api_endpoints_when_accessing_without_valid_jwt_then_returns_401_f
     let request = Request::builder()
         .method("POST")
         .uri("/api/plaid/link-token")
-        .header(AUTHORIZATION, format!("Bearer {}", foreign_token.token))
+        .header(COOKIE, format!("sumurai_session={}", foreign_token.token))
         .body(Body::empty())
         .unwrap();
 
@@ -357,7 +356,7 @@ async fn given_api_endpoints_when_accessing_without_valid_jwt_then_returns_401_f
     let request = Request::builder()
         .method("GET")
         .uri("/api/transactions")
-        .header(AUTHORIZATION, format!("Bearer {}", valid_token.token))
+        .header(COOKIE, format!("sumurai_session={}", valid_token.token))
         .body(Body::empty())
         .unwrap();
 

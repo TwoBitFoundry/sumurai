@@ -80,7 +80,7 @@ use utoipa::OpenApi;
         )
     ),
     security(
-        ("bearer_auth" = [])
+        ("cookie_auth" = [])
     ),
     paths(
         crate::register_user,
@@ -126,22 +126,16 @@ pub fn init_openapi() -> utoipa::openapi::OpenApi {
 }
 
 fn add_security_scheme(openapi: &mut utoipa::openapi::OpenApi) {
-    use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
+    use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
 
     let components = openapi
         .components
         .get_or_insert_with(utoipa::openapi::Components::new);
 
-    if !components.security_schemes.contains_key("bearer_auth") {
-        let bearer = SecurityScheme::Http(
-            HttpBuilder::new()
-                .scheme(HttpAuthScheme::Bearer)
-                .bearer_format("JWT")
-                .description(Some(
-                    "Paste a valid JWT issued by the authentication endpoints.".to_string(),
-                ))
-                .build(),
-        );
-        components.add_security_scheme("bearer_auth", bearer);
+    if !components.security_schemes.contains_key("cookie_auth") {
+        let cookie = SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::new(String::from(
+            "sumurai_session",
+        ))));
+        components.add_security_scheme("cookie_auth", cookie);
     }
 }

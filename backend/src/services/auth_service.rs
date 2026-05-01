@@ -10,6 +10,8 @@ use uuid::Uuid;
 
 const MIN_SECRET_LENGTH: usize = 32;
 const TOKEN_EXPIRATION_HOURS: i64 = 24;
+pub const AUTH_SESSION_COOKIE_NAME: &str = "sumurai_session";
+const AUTH_SESSION_COOKIE_PATH: &str = "/";
 
 #[derive(Debug)]
 pub struct AuthService {
@@ -188,4 +190,38 @@ impl AuthService {
     fn create_validation() -> Validation {
         Validation::new(Algorithm::HS256)
     }
+}
+
+pub fn create_auth_cookie(token: &str, ttl_seconds: u64) -> String {
+    format!(
+        "{}={}; HttpOnly; Secure; SameSite=Strict; Path={}; Max-Age={}",
+        AUTH_SESSION_COOKIE_NAME, token, AUTH_SESSION_COOKIE_PATH, ttl_seconds
+    )
+}
+
+pub fn clear_auth_cookie() -> String {
+    format!(
+        "{}=; HttpOnly; Secure; SameSite=Strict; Path={}; Max-Age=0",
+        AUTH_SESSION_COOKIE_NAME, AUTH_SESSION_COOKIE_PATH
+    )
+}
+
+pub fn extract_cookie_value<'a>(
+    headers: &'a axum::http::HeaderMap,
+    cookie_name: &str,
+) -> Option<&'a str> {
+    headers
+        .get_all(axum::http::header::COOKIE)
+        .iter()
+        .filter_map(|value| value.to_str().ok())
+        .flat_map(|cookies| cookies.split(';'))
+        .map(str::trim)
+        .find_map(|cookie| {
+            let (name, value) = cookie.split_once('=')?;
+            if name == cookie_name {
+                Some(value)
+            } else {
+                None
+            }
+        })
 }
