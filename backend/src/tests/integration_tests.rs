@@ -984,7 +984,7 @@ async fn given_connection_id_when_sync_then_uses_get_provider_connection_by_id()
             mockall::predicate::eq(connection_id),
             mockall::predicate::eq(user_id),
         )
-        .times(2)
+        .times(1)
         .returning(move |_, _| {
             let conn = expected_conn.clone();
             Box::pin(async move { Ok(Some(conn)) })
@@ -1108,7 +1108,7 @@ async fn given_owned_connection_id_when_disconnect_then_returns_200() {
             mockall::predicate::eq(connection_id),
             mockall::predicate::eq(user.id),
         )
-        .times(2)
+        .times(1)
         .returning(move |_, _| {
             let conn = expected_conn.clone();
             Box::pin(async move { Ok(Some(conn)) })

@@ -117,37 +117,46 @@ impl ConnectionService {
             });
         };
 
-        if conn.user_id != *user_id {
+        self.disconnect_owned_connection(&conn, user_id, jwt_id).await
+    }
+
+    pub async fn disconnect_owned_connection(
+        &self,
+        connection: &ProviderConnection,
+        user_id: &Uuid,
+        jwt_id: &str,
+    ) -> Result<DisconnectResult> {
+        if connection.user_id != *user_id {
             return Err(anyhow::anyhow!("Connection does not belong to user"));
         }
 
         let cleared_keys = self
-            .clear_all_plaid_cache_data(jwt_id, &conn.item_id)
+            .clear_all_plaid_cache_data(jwt_id, &connection.item_id)
             .await?;
 
         self.cache_service
-            .clear_jwt_scoped_bank_connection_cache(jwt_id, *connection_id)
+            .clear_jwt_scoped_bank_connection_cache(jwt_id, connection.id)
             .await?;
 
         let deleted_transactions = self
             .db_repository
-            .delete_provider_transactions(&conn.item_id)
+            .delete_provider_transactions(&connection.item_id)
             .await?;
         let deleted_accounts = self
             .db_repository
-            .delete_provider_accounts(&conn.item_id)
+            .delete_provider_accounts(&connection.item_id)
             .await?;
 
         self.db_repository
-            .delete_provider_credentials(&conn.item_id)
+            .delete_provider_credentials(&connection.item_id)
             .await?;
 
         self.db_repository
-            .delete_provider_connection(user_id, &conn.item_id)
+            .delete_provider_connection(user_id, &connection.item_id)
             .await?;
 
         tracing::info!(
-            connection_id = %connection_id,
+            connection_id = %connection.id,
             transactions_deleted = deleted_transactions,
             accounts_deleted = deleted_accounts,
             "Provider connection disconnected"

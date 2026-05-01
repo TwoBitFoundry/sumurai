@@ -3,7 +3,7 @@ use crate::models::{
     analytics::{BalancesOverviewQuery, DateRangeQuery, MonthlyTotalsQuery},
     api_error::ApiErrorResponse,
     auth::AuthContext,
-    plaid::{DisconnectRequest, SyncTransactionsRequest},
+    plaid::{DisconnectRequest, ProviderConnection, SyncTransactionsRequest},
     transaction::TransactionsQuery,
 };
 use axum::{
@@ -28,9 +28,9 @@ pub struct AuthorizedQuery<T> {
     pub authorized_account_ids: Option<HashSet<Uuid>>,
 }
 
-pub struct AuthorizedJson<T> {
+pub struct AuthorizedConnectionRequest<T> {
     pub _body: T,
-    pub connection_id: Uuid,
+    pub connection: ProviderConnection,
 }
 
 pub struct AuthorizedBudgetId {
@@ -183,7 +183,7 @@ where
     }
 }
 
-impl<T> FromRequest<AppState> for AuthorizedJson<T>
+impl<T> FromRequest<AppState> for AuthorizedConnectionRequest<T>
 where
     T: DeserializeOwned + ConnectionIdRequest + Send,
 {
@@ -205,7 +205,7 @@ where
         let connection_id =
             Uuid::parse_str(connection_id).map_err(|_| bad_request("Invalid connection_id"))?;
 
-        state
+        let connection = state
             .authorization_service
             .require_provider_connection_owned(
                 &connection_id,
@@ -218,9 +218,6 @@ where
                 _ => error_response(status, "INTERNAL_SERVER_ERROR", "Authorization failed"),
             })?;
 
-        Ok(Self {
-            _body: body,
-            connection_id,
-        })
+        Ok(Self { _body: body, connection })
     }
 }

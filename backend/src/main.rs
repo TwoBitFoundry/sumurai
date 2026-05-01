@@ -69,7 +69,9 @@ use crate::utils::encryption_key::parse_encryption_key_hex;
 use auth_middleware::auth_middleware;
 use config::Config;
 use middleware::auth_ip_ban::auth_ip_ban_middleware;
-use middleware::resource_authorization::{AuthorizedBudgetId, AuthorizedJson, AuthorizedQuery};
+use middleware::resource_authorization::{
+    AuthorizedBudgetId, AuthorizedConnectionRequest, AuthorizedQuery,
+};
 use middleware::telemetry_middleware::{
     self, attach_encrypted_token_to_current_span, hash_token, request_tracing_middleware,
     with_bearer_token_attribute, TelemetryConfig,
@@ -1130,19 +1132,13 @@ async fn get_authenticated_plaid_accounts(
 async fn sync_authenticated_provider_transactions(
     State(state): State<AppState>,
     auth_context: AuthContext,
-    req: AuthorizedJson<SyncTransactionsRequest>,
+    req: AuthorizedConnectionRequest<SyncTransactionsRequest>,
 ) -> Result<Json<SyncTransactionsResponse>, StatusCode> {
     let user_id = auth_context.user_id;
 
     tracing::info!("Sync transactions requested for user {}", user_id);
 
-    let connection_id = req.connection_id;
-    let mut connection = state
-        .db_repository
-        .get_provider_connection_by_id(&connection_id, &user_id)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::NOT_FOUND)?;
+    let mut connection = req.connection;
 
     if connection.item_id.starts_with("teller_") {
         match state
@@ -1195,7 +1191,7 @@ async fn sync_authenticated_provider_transactions(
             Err(TellerSyncError::ConnectionPersistence(e)) => {
                 tracing::error!(
                     "Failed to update Teller connection {} for user {}: {}",
-                    connection_id,
+                    connection.id,
                     user_id,
                     e
                 );
@@ -2022,14 +2018,14 @@ async fn delete_authenticated_budget(
 async fn disconnect_authenticated_connection(
     State(state): State<AppState>,
     auth_context: AuthContext,
-    req: AuthorizedJson<DisconnectRequest>,
+    req: AuthorizedConnectionRequest<DisconnectRequest>,
 ) -> Result<Json<DisconnectResult>, StatusCode> {
     let user_id = auth_context.user_id;
-    let connection_id = req.connection_id;
+    let connection = req.connection;
 
     match state
         .connection_service
-        .disconnect_connection_by_id(&connection_id, &user_id, &auth_context.jwt_id)
+        .disconnect_owned_connection(&connection, &user_id, &auth_context.jwt_id)
         .await
     {
         Ok(result) if result.success => Ok(Json(result)),
