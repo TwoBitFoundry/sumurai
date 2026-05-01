@@ -70,7 +70,7 @@ export class AuthService {
     }
   }
 
-  static storeToken(): void {
+  static storeToken(..._args: unknown[]): void {
   }
 
   static getToken(): string | null {

@@ -2,22 +2,22 @@ import { render } from '@testing-library/react';
 import { GradientShell } from '@/ui/primitives/GradientShell';
 
 describe('GradientShell', () => {
-  describe('variants', () => {
-    it('renders auth variant correctly', () => {
-      const { container } = render(<GradientShell variant="auth">Content</GradientShell>);
+  describe('centering', () => {
+    it('renders centered shell correctly', () => {
+      const { container } = render(<GradientShell centered>Content</GradientShell>);
       const shell = container.firstChild as HTMLElement;
       expect(shell?.className).toMatchSnapshot();
     });
 
-    it('renders app variant correctly', () => {
-      const { container } = render(<GradientShell variant="app">Content</GradientShell>);
+    it('renders default shell correctly', () => {
+      const { container } = render(<GradientShell>Content</GradientShell>);
       const shell = container.firstChild as HTMLElement;
       expect(shell?.className).toMatchSnapshot();
     });
   });
 
   describe('default props', () => {
-    it('uses auth variant by default', () => {
+    it('uses non-centered layout by default', () => {
       const { container } = render(<GradientShell>Content</GradientShell>);
       const shell = container.firstChild as HTMLElement;
       expect(shell?.className).toContain('min-h-screen');

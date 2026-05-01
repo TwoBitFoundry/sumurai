@@ -30,7 +30,7 @@ const createMockSpan = (url: string, additionalAttributes?: Record<string, any>)
     droppedEventsCount: 0,
     droppedLinksCount: 0,
     kind: 1,
-  } as ReadableSpan;
+  } as unknown as ReadableSpan;
 };
 
 describe('SensitiveDataSpanProcessor', () => {

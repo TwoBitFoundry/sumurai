@@ -23,6 +23,7 @@ describe('useOnboardingPlaidFlow', () => {
         ready: true,
         error: null,
         exit: jest.fn(),
+        submit: jest.fn(),
       };
     });
   });
