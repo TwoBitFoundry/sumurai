@@ -24,9 +24,8 @@ pub struct LoginRequest {
 }
 
 #[derive(Serialize, ToSchema)]
-#[schema(example = json!({"token": "jwt-token-value", "user_id": "11111111-2222-3333-4444-555555555555", "expires_at": "2024-01-01T12:00:00Z", "onboarding_completed": false}))]
+#[schema(example = json!({"user_id": "11111111-2222-3333-4444-555555555555", "expires_at": "2024-01-01T12:00:00Z", "onboarding_completed": false}))]
 pub struct AuthResponse {
-    pub token: String,
     pub user_id: String,
     pub expires_at: String,
     pub onboarding_completed: bool,

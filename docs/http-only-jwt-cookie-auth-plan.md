@@ -16,8 +16,9 @@ Complete the backend side of the cookie-auth design so the JWT is stored only as
   - Treat missing, empty, malformed, or duplicate unusable cookie values as no auth token.
 - Keep the helper independent from business logic. It should not validate JWT signatures or touch Redis; that remains in `AuthService` and middleware.
 - Update compose configuration:
-  - Main `docker-compose.yml`: `AUTH_COOKIE_SAME_SITE=Strict`.
-  - Add `docker-compose.dev.yml`: `AUTH_COOKIE_SAME_SITE=Lax`.
+  - Main `docker-compose.yml` injects `AUTH_COOKIE_SAME_SITE=Strict`.
+  - Add `docker-compose.dev.yml` injects `AUTH_COOKIE_SAME_SITE=Lax`.
+  - Backend config must fail if the value is missing; compose is the source of truth for this setting.
 - Do not read or write `.env` files.
 
 Acceptance criteria:
@@ -27,6 +28,7 @@ Acceptance criteria:
 - Cookie helper tests prove the clearing cookie clears the same cookie name/path and is expired or max-age-zero.
 - Cookie helper tests prove parsing returns the JWT value from `Cookie: auth_token=<jwt>` and returns none for missing or empty values.
 - Main compose and dev compose expose different secure/same-site defaults exactly as specified.
+- Compose is the only place that sets the same-site mode; backend code must not synthesize a fallback.
 
 Completion notes:
 - Added the `cookie` dependency and refreshed `Cargo.lock`.
@@ -73,6 +75,17 @@ Acceptance criteria:
 - Logout with a valid auth cookie invalidates the current `jti`, clears JWT-scoped cache data, returns status `200`, and includes a clearing `Set-Cookie`.
 - Logout with no auth cookie returns `401`.
 - Existing session-validity and JWT-token cache writes still use the generated JWT `jti` and current TTL.
+
+Completion notes:
+- Removed `token` from `AuthResponse` and its schema example.
+- Login and register now return `Set-Cookie: auth_token=<jwt>` alongside metadata-only JSON.
+- Refresh now reads the auth cookie, reissues the cookie with the generated expiry, and returns updated metadata.
+- Logout now reads the auth cookie, invalidates the session, clears JWT-scoped data, clears transactions, and returns a clearing cookie.
+
+TDD log:
+- `cargo test auth_handlers_integration_tests`
+- `cargo check`
+- `cargo test`
 
 ## Phase 3: Cookie-Only Middleware Enforcement
 - Replace bearer-only extraction in `backend/src/auth_middleware.rs` with cookie-only extraction.

@@ -3,7 +3,7 @@ use axum::{
     body::Body,
     extract::{Query, Request, State},
     http::{
-        header::{AUTHORIZATION, CONTENT_TYPE},
+        header::{AUTHORIZATION, CONTENT_TYPE, COOKIE, SET_COOKIE},
         HeaderMap, HeaderValue, Method, StatusCode,
     },
     middleware::{from_fn, from_fn_with_state, Next},
@@ -87,6 +87,7 @@ use services::{
 };
 use services::{AnalyticsService, RealPlaidClient};
 use sqlx::PgPool;
+use utils::auth_cookie::{build_auth_cookie, build_clearing_auth_cookie, extract_auth_cookie};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -369,6 +370,20 @@ pub fn create_app(state: AppState) -> Router {
         .with_state(state)
 }
 
+fn auth_cookie_headers(cookie: String) -> HeaderMap {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        SET_COOKIE,
+        HeaderValue::from_str(&cookie).expect("valid auth cookie header"),
+    );
+    headers
+}
+
+fn extract_auth_cookie_token(headers: &HeaderMap) -> Option<String> {
+    let cookie_header = headers.get(COOKIE)?.to_str().ok()?;
+    extract_auth_cookie(Some(cookie_header), "auth_token")
+}
+
 fn log_provider_credential_outcome(provider: &str, status: StatusCode, endpoint: &str) {
     tracing::info!(
         target: "provider_credentials",
@@ -513,7 +528,7 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
 async fn register_user(
     State(state): State<AppState>,
     Json(req): Json<auth_models::RegisterRequest>,
-) -> Result<Json<auth_models::AuthResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+) -> Result<(HeaderMap, Json<auth_models::AuthResponse>), (StatusCode, Json<ApiErrorResponse>)> {
     let password_hash = state
         .auth_service
         .hash_password(&req.password)
@@ -576,12 +591,18 @@ async fn register_user(
         "User registered successfully"
     );
 
-    Ok(Json(auth_models::AuthResponse {
-        token: auth_token.token,
-        user_id: user_id.to_string(),
-        expires_at,
-        onboarding_completed: false,
-    }))
+    Ok((
+        auth_cookie_headers(build_auth_cookie(
+            &auth_token.token,
+            auth_token.expires_at,
+            &state.config,
+        )),
+        Json(auth_models::AuthResponse {
+            user_id: user_id.to_string(),
+            expires_at,
+            onboarding_completed: false,
+        }),
+    ))
 }
 
 #[utoipa::path(
@@ -601,7 +622,7 @@ async fn register_user(
 async fn login_user(
     State(state): State<AppState>,
     Json(req): Json<auth_models::LoginRequest>,
-) -> Result<Json<auth_models::AuthResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+) -> Result<(HeaderMap, Json<auth_models::AuthResponse>), (StatusCode, Json<ApiErrorResponse>)> {
     let user = match state.db_repository.get_user_by_email(&req.email).await {
         Ok(Some(user)) => user,
         Ok(None) => {
@@ -668,12 +689,18 @@ async fn login_user(
         "User authenticated successfully"
     );
 
-    Ok(Json(auth_models::AuthResponse {
-        token: auth_token.token,
-        user_id: user.id.to_string(),
-        expires_at,
-        onboarding_completed: user.onboarding_completed,
-    }))
+    Ok((
+        auth_cookie_headers(build_auth_cookie(
+            &auth_token.token,
+            auth_token.expires_at,
+            &state.config,
+        )),
+        Json(auth_models::AuthResponse {
+            user_id: user.id.to_string(),
+            expires_at,
+            onboarding_completed: user.onboarding_completed,
+        }),
+    ))
 }
 
 #[utoipa::path(
@@ -690,19 +717,15 @@ async fn login_user(
 async fn logout_user(
     State(state): State<AppState>,
     headers: HeaderMap,
-) -> Result<Json<LogoutResponse>, StatusCode> {
-    let auth_header = headers
-        .get("authorization")
-        .and_then(|h| h.to_str().ok())
-        .and_then(|s| s.strip_prefix("Bearer "))
-        .ok_or(StatusCode::UNAUTHORIZED)?;
+) -> Result<(HeaderMap, Json<LogoutResponse>), StatusCode> {
+    let auth_header = extract_auth_cookie_token(&headers).ok_or(StatusCode::UNAUTHORIZED)?;
 
-    let encrypted_token = hash_token(auth_header);
+    let encrypted_token = hash_token(&auth_header);
     attach_encrypted_token_to_current_span(&encrypted_token);
 
     let claims = state
         .auth_service
-        .validate_token(auth_header)
+        .validate_token(&auth_header)
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
     if let Err(e) = state.cache_service.invalidate_session(&claims.jti).await {
@@ -722,10 +745,13 @@ async fn logout_user(
         "User logged out successfully"
     );
 
-    Ok(Json(LogoutResponse {
-        message: "Logged out successfully".to_string(),
-        cleared_session: claims.jti,
-    }))
+    Ok((
+        auth_cookie_headers(build_clearing_auth_cookie(&state.config)),
+        Json(LogoutResponse {
+            message: "Logged out successfully".to_string(),
+            cleared_session: claims.jti,
+        }),
+    ))
 }
 
 #[utoipa::path(
@@ -743,19 +769,15 @@ async fn logout_user(
 async fn refresh_user_session(
     State(state): State<AppState>,
     headers: HeaderMap,
-) -> Result<Json<auth_models::AuthResponse>, StatusCode> {
-    let auth_header = headers
-        .get("authorization")
-        .and_then(|h| h.to_str().ok())
-        .and_then(|s| s.strip_prefix("Bearer "))
-        .ok_or(StatusCode::UNAUTHORIZED)?;
+) -> Result<(HeaderMap, Json<auth_models::AuthResponse>), StatusCode> {
+    let auth_header = extract_auth_cookie_token(&headers).ok_or(StatusCode::UNAUTHORIZED)?;
 
-    let encrypted_token = hash_token(auth_header);
+    let encrypted_token = hash_token(&auth_header);
     attach_encrypted_token_to_current_span(&encrypted_token);
 
     let claims = state
         .auth_service
-        .validate_token_for_refresh(auth_header)
+        .validate_token_for_refresh(&auth_header)
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
     match state.cache_service.is_session_valid(&claims.jti).await {
@@ -788,8 +810,6 @@ async fn refresh_user_session(
     let encrypted_token = hash_token(&auth_token.token);
     attach_encrypted_token_to_current_span(&encrypted_token);
 
-    let expires_at = chrono::Utc::now() + chrono::Duration::hours(1);
-
     // Cache refreshed JWT in Redis with TTL
     let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
     if ttl > 0 {
@@ -815,12 +835,18 @@ async fn refresh_user_session(
         "User session refreshed"
     );
 
-    Ok(Json(auth_models::AuthResponse {
-        token: auth_token.token,
-        user_id: claims.user_id(),
-        expires_at: expires_at.to_rfc3339(),
-        onboarding_completed: user.onboarding_completed,
-    }))
+    Ok((
+        auth_cookie_headers(build_auth_cookie(
+            &auth_token.token,
+            auth_token.expires_at,
+            &state.config,
+        )),
+        Json(auth_models::AuthResponse {
+            user_id: claims.user_id(),
+            expires_at: auth_token.expires_at.to_rfc3339(),
+            onboarding_completed: user.onboarding_completed,
+        }),
+    ))
 }
 
 #[utoipa::path(
