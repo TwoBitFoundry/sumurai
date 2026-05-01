@@ -82,13 +82,13 @@ fn given_teller_environment_when_from_env_provider_then_uses_value() {
 }
 
 #[test]
-fn given_missing_cookie_mode_when_from_env_provider_then_defaults_to_strict() {
+fn given_missing_cookie_mode_when_from_env_provider_then_returns_error() {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "development");
 
-    let config = Config::from_env_provider(&env).unwrap();
+    let result = Config::from_env_provider(&env);
 
-    assert_eq!(config.get_auth_cookie_same_site().to_string(), "Strict");
+    assert!(result.is_err());
 }
 
 #[test]

@@ -6,8 +6,8 @@ Complete the backend side of the cookie-auth design so the JWT is stored only as
 ## Phase 1: Cookie Contract And Configuration
 - Add the Rust `cookie` crate to `backend/Cargo.toml`, then run `cargo update` so `backend/Cargo.lock` uses current compatible versions.
 - Extend backend config in `backend/src/config.rs` with:
-  - `AUTH_COOKIE_SAME_SITE`, allowed values `Strict` and `Lax`, default `Strict`
-- Add a config getter for the same-site value. Derive the cookie `Secure` attribute from the mode, with `Strict` in production and `Lax` in dev. Reject invalid `AUTH_COOKIE_SAME_SITE` values during config loading.
+  - `AUTH_COOKIE_SAME_SITE`, required, allowed values `Strict` and `Lax`
+- Add a config getter for the same-site value. Derive the cookie `Secure` attribute from the mode, with `Strict` in production and `Lax` in dev. Reject missing or invalid `AUTH_COOKIE_SAME_SITE` values during config loading.
 - Implement a small auth-cookie helper near the auth boundary, preferably in `backend/src/models/auth.rs` or a new backend auth utility module:
   - Build `Set-Cookie` for a JWT token value.
   - Build a clearing cookie with the same name/path and an expired or max-age-zero value.
@@ -21,8 +21,8 @@ Complete the backend side of the cookie-auth design so the JWT is stored only as
 - Do not read or write `.env` files.
 
 Acceptance criteria:
-- `Config::from_env_provider` accepts the default mode and valid `Strict`/`Lax` values.
-- Config tests cover the default mode, valid cookie settings, and invalid `AUTH_COOKIE_SAME_SITE` failures.
+- `Config::from_env_provider` accepts valid `Strict`/`Lax` values and fails when `AUTH_COOKIE_SAME_SITE` is missing.
+- Config tests cover valid cookie settings and missing or invalid `AUTH_COOKIE_SAME_SITE` failures.
 - Cookie helper tests prove generated auth cookies include `auth_token=<jwt>`, `HttpOnly`, `Path=/`, configured `SameSite`, secure when strict, and a positive max-age.
 - Cookie helper tests prove the clearing cookie clears the same cookie name/path and is expired or max-age-zero.
 - Cookie helper tests prove parsing returns the JWT value from `Cookie: auth_token=<jwt>` and returns none for missing or empty values.
@@ -31,7 +31,7 @@ Acceptance criteria:
 Completion notes:
 - Added the `cookie` dependency and refreshed `Cargo.lock`.
 - Extended backend config with the auth cookie mode setting.
-- Simplified the auth cookie surface to one mode env with `Strict` for production and `Lax` for dev.
+- Simplified the auth cookie surface to one required mode env with `Strict` for production and `Lax` for dev.
 - Added an auth-cookie helper for issuing, clearing, and parsing the cookie value.
 - Updated compose defaults and test fixtures to supply the new config values.
 

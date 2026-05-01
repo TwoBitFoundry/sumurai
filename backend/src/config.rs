@@ -67,7 +67,7 @@ impl Config {
             .ok_or_else(|| anyhow!("TELLER_ENV (or TELLER_ENVIRONMENT) must be set"))?;
         let auth_cookie_same_site = parse_same_site(
             env.get_var("AUTH_COOKIE_SAME_SITE")
-                .unwrap_or_else(|| "Strict".to_string()),
+                .ok_or_else(|| anyhow!("AUTH_COOKIE_SAME_SITE must be set"))?,
         )?;
 
         Ok(Self {
