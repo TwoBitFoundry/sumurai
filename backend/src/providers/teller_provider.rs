@@ -40,10 +40,6 @@ impl ReqwestTellerClient {
         Ok(Self { client })
     }
 
-    fn new_without_mtls() -> anyhow::Result<Self> {
-        let client = Client::builder().build()?;
-        Ok(Self { client })
-    }
 }
 
 #[async_trait]

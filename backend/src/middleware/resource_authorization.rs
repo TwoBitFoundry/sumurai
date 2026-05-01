@@ -85,12 +85,12 @@ async fn validate_account_ids(
     Ok(Some(validated_ids.into_iter().collect()))
 }
 
-fn auth_context_from_parts(parts: &Parts) -> Result<AuthContext, Response> {
+fn auth_context_from_parts(parts: &Parts) -> Result<AuthContext, StatusCode> {
     parts
         .extensions
         .get::<AuthContext>()
         .cloned()
-        .ok_or_else(|| unauthorized("Authentication required"))
+        .ok_or(StatusCode::UNAUTHORIZED)
 }
 
 impl AccountIdsQuery for TransactionsQuery {
@@ -136,7 +136,8 @@ impl FromRequestParts<AppState> for AuthorizedBudgetId {
         parts: &mut Parts,
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
-        let auth_context = auth_context_from_parts(parts)?;
+        let auth_context = auth_context_from_parts(parts)
+            .map_err(|_| unauthorized("Authentication required"))?;
         let Path(budget_id) = Path::<Uuid>::from_request_parts(parts, state)
             .await
             .map_err(|_| bad_request("Invalid budget id"))?;
@@ -168,7 +169,8 @@ where
         parts: &mut Parts,
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
-        let auth_context = auth_context_from_parts(parts)?;
+        let auth_context = auth_context_from_parts(parts)
+            .map_err(|_| unauthorized("Authentication required"))?;
         let Query(query) = Query::<T>::from_request_parts(parts, state)
             .await
             .map_err(|_| bad_request("Invalid query parameters"))?;
