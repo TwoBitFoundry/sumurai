@@ -191,7 +191,8 @@ describe('Telemetry Performance Tests', () => {
         throw new Error('Tracer not initialized');
       }
 
-      const initialMemory = performance.memory?.usedJSHeapSize || 0;
+      const perf = performance as Performance & { memory?: { usedJSHeapSize: number } };
+      const initialMemory = perf.memory?.usedJSHeapSize || 0;
       const iterations = 10000;
 
       for (let i = 0; i < iterations; i++) {
@@ -201,7 +202,7 @@ describe('Telemetry Performance Tests', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const finalMemory = performance.memory?.usedJSHeapSize || 0;
+      const finalMemory = perf.memory?.usedJSHeapSize || 0;
       const memoryIncrease = finalMemory - initialMemory;
       const memoryPerSpan = memoryIncrease / iterations;
 

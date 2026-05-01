@@ -1,6 +1,6 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { TellerConnectGateway } from '@/hooks/useTellerConnect';
-import { useTellerConnect } from '@/hooks/useTellerConnect';
+import { resetTellerScriptStateForTests, useTellerConnect } from '@/hooks/useTellerConnect';
 
 describe('useTellerConnect', () => {
   const setup = jest.fn();
@@ -9,6 +9,7 @@ describe('useTellerConnect', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    resetTellerScriptStateForTests();
     setup.mockReturnValue({ open, destroy });
     Object.assign(globalThis, {
       TellerConnect: {
@@ -19,7 +20,6 @@ describe('useTellerConnect', () => {
 
   afterEach(() => {
     cleanup();
-    // @ts-expect-error - test cleanup removing mocked global
     delete globalThis.TellerConnect;
   });
 
@@ -77,5 +77,26 @@ describe('useTellerConnect', () => {
       institution_name: 'Sample Bank',
     });
     expect(gateway.syncTransactions).toHaveBeenCalledWith('conn-1');
+  });
+
+  it('applies Teller script crossorigin attributes when loading the SDK', async () => {
+    delete globalThis.TellerConnect;
+
+    const appendChildSpy = jest.spyOn(document.head, 'appendChild');
+    renderHook(() => useTellerConnect({ applicationId: 'app-123', gateway: createGateway() }));
+
+    await waitFor(() => expect(appendChildSpy).toHaveBeenCalled());
+
+    const script = appendChildSpy.mock.calls[0][0] as HTMLScriptElement;
+    expect(script.crossOrigin).toBe('anonymous');
+
+    Object.assign(globalThis, {
+      TellerConnect: {
+        setup,
+      },
+    });
+    script.dispatchEvent(new Event('load'));
+
+    await waitFor(() => expect(setup).toHaveBeenCalled());
   });
 });

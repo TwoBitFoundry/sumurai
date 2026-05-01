@@ -102,14 +102,9 @@ describe('ErrorBoundary', () => {
     it('should provide refresh button that reloads the page', () => {
       const originalLocation = window.location;
       const mockReload = jest.fn();
-      // Replace location to avoid read-only reload
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      delete window.location;
-      // Provide minimal shape to satisfy consumers
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      window.location = { href: originalLocation.href, reload: mockReload };
+      const writableWindow = window as unknown as { location: Location };
+      delete writableWindow.location;
+      writableWindow.location = { href: originalLocation.href, reload: mockReload } as Location;
 
       render(
         <ErrorBoundary>
@@ -122,7 +117,7 @@ describe('ErrorBoundary', () => {
       mockReload();
 
       expect(mockReload).toHaveBeenCalledOnce();
-      window.location = originalLocation;
+      writableWindow.location = originalLocation;
     });
 
     it('should provide retry mechanism for recoverable errors', () => {

@@ -53,6 +53,7 @@ http {
         ssl_protocols TLSv1.2 TLSv1.3;
         ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
         ssl_prefer_server_ciphers off;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.teller.io https://cdn.plaid.com; frame-src 'self' https://cdn.teller.io https://cdn.plaid.com https://teller.io; connect-src 'self' https://api.teller.io https://cdn.teller.io https://production.plaid.com https://sandbox.plaid.com; img-src 'self' data:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; form-action 'self';" always;
 
         # Basic proxy headers for upstream services
         proxy_set_header Host $host;

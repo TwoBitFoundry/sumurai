@@ -76,7 +76,7 @@ describe('HeaderAccountFilter', () => {
   const renderComponent = () => {
     return render(
       <AccountFilterProvider>
-        <HeaderAccountFilter />
+        <HeaderAccountFilter scrolled={false} />
       </AccountFilterProvider>
     );
   };

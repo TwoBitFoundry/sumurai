@@ -65,16 +65,16 @@ describe('ApiClient with Direct Fetch', () => {
       expect(fetchSpy).toHaveBeenCalledWith('/api/transactions', expect.any(Object));
     });
 
-    it('should include auth token in headers', async () => {
+    it('should include same-origin credentials without auth headers', async () => {
       const mockResponse = new Response(JSON.stringify({}), { status: 200 });
       fetchSpy.mockResolvedValueOnce(mockResponse);
-      AuthService.storeToken('test-token');
 
       await ApiClient.get('/test');
 
       const callArgs = fetchSpy.mock.calls[0];
       const headers = callArgs[1].headers as Record<string, string>;
-      expect(headers.Authorization).toBe('Bearer test-token');
+      expect(callArgs[1].credentials).toBe('same-origin');
+      expect(headers.Authorization).toBeUndefined();
     });
   });
 
@@ -107,8 +107,6 @@ describe('ApiClient with Direct Fetch', () => {
 
   describe('Error handling with fetcher', () => {
     it('should handle 401 responses with retry after token refresh', async () => {
-      AuthService.storeToken('old-token');
-
       const errorResponse = new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
       });
@@ -119,7 +117,6 @@ describe('ApiClient with Direct Fetch', () => {
       fetchSpy.mockResolvedValueOnce(errorResponse).mockResolvedValueOnce(successResponse);
 
       jest.spyOn(AuthService, 'refreshToken').mockResolvedValueOnce({
-        token: 'new-token',
         user_id: 'user-123',
         expires_at: '2025-12-31T00:00:00Z',
         onboarding_completed: true,

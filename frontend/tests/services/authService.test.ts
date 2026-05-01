@@ -48,9 +48,6 @@ describe('AuthService logout functionality', () => {
   });
 
   it('given valid token when logging out then calls logout endpoint and clears tokens', async () => {
-    const mockToken = 'valid-jwt-token';
-    AuthService.storeToken(mockToken);
-
     const mockResponse = {
       message: 'Logged out successfully',
       cleared_session: 'session-id',
@@ -78,9 +75,6 @@ describe('AuthService logout functionality', () => {
   });
 
   it('given server error when logging out then clears tokens locally anyway', async () => {
-    const mockToken = 'valid-jwt-token';
-    AuthService.storeToken(mockToken);
-
     mockHttpClient.post.mockRejectedValueOnce(new Error('Server error'));
 
     await expect(AuthService.logout()).rejects.toThrow('Server error');
@@ -121,7 +115,6 @@ describe('AuthService with OpenTelemetry Instrumentation', () => {
   it('should create a span for login operation', async () => {
     const credentials = { email: 'test@example.com', password: 'Test1234!' };
     const mockResponse = {
-      token: 'test-token',
       user_id: 'user-123',
       expires_at: '2025-12-31',
       onboarding_completed: false,
@@ -142,7 +135,6 @@ describe('AuthService with OpenTelemetry Instrumentation', () => {
   it('should set OK status on successful login', async () => {
     const credentials = { email: 'test@example.com', password: 'Test1234!' };
     const mockResponse = {
-      token: 'test-token',
       user_id: 'user-123',
       expires_at: '2025-12-31',
       onboarding_completed: false,
@@ -176,7 +168,6 @@ describe('AuthService with OpenTelemetry Instrumentation', () => {
   it('should end span after login completes', async () => {
     const credentials = { email: 'test@example.com', password: 'Test1234!' };
     const mockResponse = {
-      token: 'test-token',
       user_id: 'user-123',
       expires_at: '2025-12-31',
       onboarding_completed: false,
@@ -192,7 +183,6 @@ describe('AuthService with OpenTelemetry Instrumentation', () => {
   it('should create a span for register operation', async () => {
     const credentials = { email: 'newuser@example.com', password: 'Test1234!' };
     const mockResponse = {
-      token: 'test-token',
       user_id: 'user-123',
       expires_at: '2025-12-31',
       onboarding_completed: false,
@@ -213,7 +203,6 @@ describe('AuthService with OpenTelemetry Instrumentation', () => {
   it('should NOT include password in span attributes', async () => {
     const credentials = { email: 'test@example.com', password: 'Test1234!' };
     const mockResponse = {
-      token: 'test-token',
       user_id: 'user-123',
       expires_at: '2025-12-31',
       onboarding_completed: false,

@@ -20,8 +20,9 @@ export interface Transaction {
   merchant?: string;
   amount: number;
   category: TransactionCategory;
-  account_name: string;
-  account_type: string;
+  provider?: FinancialProvider;
+  account_name?: string;
+  account_type?: string;
   account_mask?: string;
   running_balance?: number;
   location?: TransactionLocation;
@@ -118,7 +119,7 @@ export interface AnalyticsSpendingResponse {
 export interface AnalyticsCategoryResponse {
   category: string;
   amount: number;
-  count: number;
+  count?: number;
   percentage: number;
 }
 
@@ -130,7 +131,7 @@ export interface AnalyticsMonthlyTotalsResponse {
 export interface AnalyticsTopMerchantsResponse {
   name: string;
   amount: number;
-  count: number;
+  count?: number;
   percentage: number;
 }
 

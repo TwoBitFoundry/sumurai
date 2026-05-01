@@ -6,7 +6,7 @@ import { createMockHttpClient } from '../mocks/mockHttpClient';
 import { createMockStorage } from '../mocks/mockStorage';
 
 export interface TestBoundaries {
-  http: IHttpClient;
+  http: jest.Mocked<IHttpClient>;
   storage: IStorageAdapter;
 }
 

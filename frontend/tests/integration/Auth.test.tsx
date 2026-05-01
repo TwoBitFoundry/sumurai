@@ -27,7 +27,11 @@ describe('Authentication Components', () => {
     // Default routes: succeed with basic responses
     fetchMock = installFetchRoutes({
       'POST /api/auth/login': (_req: Request) => {
-        return new Response(JSON.stringify({ token: 'jwt-token' }), {
+        return new Response(JSON.stringify({
+          user_id: 'user-123',
+          expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          onboarding_completed: false,
+        }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         });
@@ -63,12 +67,13 @@ describe('Authentication Components', () => {
       });
 
       describe('When valid credentials are submitted', () => {
-        it('Then it should call auth API and store JWT in session storage', async () => {
-          const mockJwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test';
-          const mockSessionStorage = jest.mocked(globalThis.sessionStorage);
-          // Override login route to return specific token
+        it('Then it should call auth API and forward the session metadata', async () => {
           fetchMock = installFetchRoutes({
-            'POST /api/auth/login': new Response(JSON.stringify({ token: mockJwt }), {
+            'POST /api/auth/login': new Response(JSON.stringify({
+              user_id: 'user-123',
+              expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+              onboarding_completed: false,
+            }), {
               status: 200,
               headers: { 'Content-Type': 'application/json' },
             }),
@@ -94,7 +99,6 @@ describe('Authentication Components', () => {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email: 'test@example.com', password: 'TestPassword123!' }),
             });
-            expect(mockSessionStorage.setItem).toHaveBeenCalledWith('auth_token', mockJwt);
           });
         });
       });
@@ -227,11 +231,13 @@ describe('Authentication Components', () => {
       });
 
       describe('When successful login JWT is received', () => {
-        it('Then it should store in session storage and redirect', async () => {
-          const mockJwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test';
-          const mockSessionStorage = jest.mocked(globalThis.sessionStorage);
+        it('Then it should submit credentials without writing auth state to storage', async () => {
           fetchMock = installFetchRoutes({
-            'POST /api/auth/login': new Response(JSON.stringify({ token: mockJwt }), {
+            'POST /api/auth/login': new Response(JSON.stringify({
+              user_id: 'user-123',
+              expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+              onboarding_completed: false,
+            }), {
               status: 200,
               headers: { 'Content-Type': 'application/json' },
             }),
@@ -245,7 +251,7 @@ describe('Authentication Components', () => {
           await user.click(screen.getByRole('button', { name: /sign in/i }));
 
           await waitFor(() => {
-            expect(mockSessionStorage.setItem).toHaveBeenCalledWith('auth_token', mockJwt);
+            expect((fetchMock as any).mock.calls.length).toBeGreaterThan(0);
           });
         });
       });

@@ -243,7 +243,7 @@ describe('OnboardingWizard', () => {
 
   it('given final step when plaid connection succeeds then shows get started button', async () => {
     const onComplete = jest.fn();
-    const mockCompleteWizard = jest.fn().mockResolvedValue(undefined);
+    const mockCompleteWizard = jest.fn<() => Promise<void>>().mockResolvedValue(undefined);
 
     useOnboardingWizardMock.mockReturnValue({
       ...mockWizardHook,

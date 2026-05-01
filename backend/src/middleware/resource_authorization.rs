@@ -136,8 +136,8 @@ impl FromRequestParts<AppState> for AuthorizedBudgetId {
         parts: &mut Parts,
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
-        let auth_context = auth_context_from_parts(parts)
-            .map_err(|_| unauthorized("Authentication required"))?;
+        let auth_context =
+            auth_context_from_parts(parts).map_err(|_| unauthorized("Authentication required"))?;
         let Path(budget_id) = Path::<Uuid>::from_request_parts(parts, state)
             .await
             .map_err(|_| bad_request("Invalid budget id"))?;
@@ -169,8 +169,8 @@ where
         parts: &mut Parts,
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
-        let auth_context = auth_context_from_parts(parts)
-            .map_err(|_| unauthorized("Authentication required"))?;
+        let auth_context =
+            auth_context_from_parts(parts).map_err(|_| unauthorized("Authentication required"))?;
         let Query(query) = Query::<T>::from_request_parts(parts, state)
             .await
             .map_err(|_| bad_request("Invalid query parameters"))?;
@@ -220,6 +220,9 @@ where
                 _ => error_response(status, "INTERNAL_SERVER_ERROR", "Authorization failed"),
             })?;
 
-        Ok(Self { _body: body, connection })
+        Ok(Self {
+            _body: body,
+            connection,
+        })
     }
 }

@@ -1,7 +1,6 @@
 import { SpanStatusCode, trace } from '@opentelemetry/api';
 import { ApiClient, AuthenticationError } from './ApiClient';
 import type { IStorageAdapter } from './boundaries';
-import { BrowserStorageAdapter } from './boundaries';
 
 interface LoginCredentials {
   email: string;
@@ -13,21 +12,19 @@ interface RegisterCredentials {
   password: string;
 }
 
-interface AuthResponse {
-  token: string;
+export interface AuthResponse {
   user_id: string;
   expires_at: string;
   onboarding_completed: boolean;
 }
 
-interface RefreshResponse {
-  token: string;
+export interface RefreshResponse {
   user_id: string;
   expires_at: string;
   onboarding_completed: boolean;
 }
 
-interface LogoutResponse {
+export interface LogoutResponse {
   message: string;
   cleared_session: string;
 }
@@ -38,15 +35,8 @@ interface AuthServiceDependencies {
 
 export class AuthService {
   private static refreshPromise: Promise<RefreshResponse> | null = null;
-  private static deps: AuthServiceDependencies = {
-    storage: new BrowserStorageAdapter(),
-  };
-  private static encryptedTokenHash: string | null = null;
-  private static encryptedTokenHashPromise: Promise<string | null> | null = null;
-  private static hashedTokenSource: string | null = null;
 
-  static configure(deps: AuthServiceDependencies): void {
-    AuthService.deps = deps;
+  static configure(_deps: AuthServiceDependencies): void {
   }
 
   static async login(credentials: LoginCredentials): Promise<AuthResponse> {
@@ -80,69 +70,27 @@ export class AuthService {
     }
   }
 
-  static storeToken(token: string, refreshToken?: string): void {
-    AuthService.deps.storage.setItem('auth_token', token);
-    if (refreshToken) {
-      AuthService.deps.storage.setItem('refresh_token', refreshToken);
-    }
-    AuthService.scheduleEncryptedTokenHash(token);
+  static storeToken(..._args: unknown[]): void {
   }
 
   static getToken(): string | null {
-    return AuthService.deps.storage.getItem('auth_token');
+    return null;
   }
 
   static clearToken(): void {
-    AuthService.deps.storage.removeItem('auth_token');
-    AuthService.deps.storage.removeItem('refresh_token');
     localStorage.removeItem('plaid_user_id');
     AuthService.refreshPromise = null;
-    AuthService.encryptedTokenHash = null;
-    AuthService.encryptedTokenHashPromise = null;
-    AuthService.hashedTokenSource = null;
   }
 
   static getEncryptedTokenHashSync(): string | null {
-    if (AuthService.encryptedTokenHash) {
-      return AuthService.encryptedTokenHash;
-    }
-    const token = AuthService.getToken();
-    if (!token) {
-      return null;
-    }
-    if (!AuthService.encryptedTokenHashPromise || AuthService.hashedTokenSource !== token) {
-      AuthService.scheduleEncryptedTokenHash(token);
-    }
-    return AuthService.encryptedTokenHash;
+    return null;
   }
 
   static async ensureEncryptedTokenHash(): Promise<string | null> {
-    const token = AuthService.getToken();
-    if (!token) {
-      return null;
-    }
-
-    if (AuthService.encryptedTokenHash && AuthService.hashedTokenSource === token) {
-      return AuthService.encryptedTokenHash;
-    }
-
-    if (!AuthService.encryptedTokenHashPromise || AuthService.hashedTokenSource !== token) {
-      AuthService.scheduleEncryptedTokenHash(token);
-    }
-
-    try {
-      return await AuthService.encryptedTokenHashPromise;
-    } catch {
-      return null;
-    }
+    return null;
   }
 
   static async validateSession(): Promise<boolean> {
-    const token = AuthService.getToken();
-    if (!token) {
-      return false;
-    }
-
     try {
       await ApiClient.get('/providers/status');
       return true;
@@ -211,10 +159,6 @@ export class AuthService {
       return AuthService.refreshPromise;
     }
 
-    if (!AuthService.getToken()) {
-      throw new Error('No token');
-    }
-
     AuthService.refreshPromise = AuthService.performRefresh();
 
     try {
@@ -232,7 +176,6 @@ export class AuthService {
     try {
       const response = await ApiClient.post<RefreshResponse>('/auth/refresh');
       span.setStatus({ code: SpanStatusCode.OK });
-      AuthService.scheduleEncryptedTokenHash(response.token);
       return response;
     } catch (error) {
       span.recordException(error as Error);
@@ -249,46 +192,4 @@ export class AuthService {
     );
   }
 
-  private static scheduleEncryptedTokenHash(token: string): void {
-    if (!token) {
-      return;
-    }
-
-    if (AuthService.hashedTokenSource === token && AuthService.encryptedTokenHash) {
-      return;
-    }
-
-    AuthService.hashedTokenSource = token;
-    AuthService.encryptedTokenHashPromise = AuthService.computeEncryptedTokenHash(token)
-      .then((hash) => {
-        AuthService.encryptedTokenHash = hash;
-        return hash;
-      })
-      .catch((error) => {
-        console.warn('Failed to compute encrypted token hash:', error);
-        AuthService.encryptedTokenHash = null;
-        return null;
-      });
-  }
-
-  private static async computeEncryptedTokenHash(token: string): Promise<string | null> {
-    try {
-      if (process.env.NODE_ENV === 'test') {
-        return null;
-      }
-      if (typeof crypto === 'undefined' || !crypto.subtle) {
-        console.warn('Web Crypto API is not available; cannot compute encrypted token hash.');
-        return null;
-      }
-
-      const encoder = new TextEncoder();
-      const data = encoder.encode(token);
-      const digest = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(digest));
-      return hashArray.map((byte) => byte.toString(16).padStart(2, '0')).join('');
-    } catch (error) {
-      console.warn('Error computing encrypted token hash:', error);
-      return null;
-    }
-  }
 }

@@ -52,7 +52,6 @@ describe('AuthService with Injected Boundaries', () => {
   describe('login', () => {
     it('should use injected http client for login request', async () => {
       const loginResponse = {
-        token: 'test-token',
         user_id: 'user-123',
         expires_at: '2025-12-31T00:00:00Z',
         onboarding_completed: false,
@@ -75,9 +74,8 @@ describe('AuthService with Injected Boundaries', () => {
       expect(result).toEqual(loginResponse);
     });
 
-    it('should store token in injected storage', async () => {
+    it('should not write auth tokens to injected storage', async () => {
       const loginResponse = {
-        token: 'test-token',
         user_id: 'user-123',
         expires_at: '2025-12-31T00:00:00Z',
         onboarding_completed: false,
@@ -89,36 +87,34 @@ describe('AuthService with Injected Boundaries', () => {
         password: 'password123',
       });
 
-      AuthService.storeToken(loginResponse.token);
-      expect(AuthService.getToken()).toBe('test-token');
+      expect(mockStorageAdapter.getItem('auth_token')).toBeNull();
     });
   });
 
   describe('token storage', () => {
-    it('should store and retrieve token from injected storage', () => {
-      AuthService.storeToken('test-token-123');
-      expect(AuthService.getToken()).toBe('test-token-123');
+    it('should ignore stored auth tokens in injected storage', () => {
+      mockStorageAdapter.setItem('auth_token', 'test-token-123');
+      expect(AuthService.getToken()).toBeNull();
     });
 
-    it('should store refresh token', () => {
+    it('should not store refresh token data', () => {
       AuthService.storeToken('access-token', 'refresh-token');
-      expect(AuthService.getToken()).toBe('access-token');
-      expect(mockStorageAdapter.getItem('refresh_token')).toBe('refresh-token');
+      expect(AuthService.getToken()).toBeNull();
+      expect(mockStorageAdapter.getItem('refresh_token')).toBeNull();
     });
 
-    it('should clear token from injected storage', () => {
-      AuthService.storeToken('test-token');
-      expect(AuthService.getToken()).toBe('test-token');
+    it('should clear auth session state without touching injected storage', () => {
+      mockStorageAdapter.setItem('auth_token', 'test-token');
 
       AuthService.clearToken();
       expect(AuthService.getToken()).toBeNull();
+      expect(mockStorageAdapter.getItem('auth_token')).toBe('test-token');
     });
   });
 
   describe('register', () => {
     it('should use injected http client for register request', async () => {
       const registerResponse = {
-        token: 'new-token',
         user_id: 'user-456',
         expires_at: '2025-12-31T00:00:00Z',
         onboarding_completed: false,
@@ -142,9 +138,8 @@ describe('AuthService with Injected Boundaries', () => {
     });
   });
 
-  describe('validateSession', () => {
-    it('should use injected http client to validate session', async () => {
-      AuthService.storeToken('valid-token');
+    describe('validateSession', () => {
+      it('should use injected http client to validate session', async () => {
       mockHttpClient.get.mockResolvedValueOnce({
         connections: [],
       });
@@ -154,15 +149,17 @@ describe('AuthService with Injected Boundaries', () => {
       expect(result).toBe(true);
     });
 
-    it('should return false when no token stored', async () => {
+    it('should return false when validation endpoint rejects', async () => {
+      mockHttpClient.get.mockRejectedValueOnce(new Error('401 Unauthorized'));
+
       const result = await AuthService.validateSession();
+
       expect(result).toBe(false);
     });
   });
 
   describe('logout', () => {
     it('should use injected http client for logout request', async () => {
-      AuthService.storeToken('test-token');
       mockHttpClient.post.mockResolvedValueOnce({
         message: 'Logged out',
         cleared_session: 'session-123',
@@ -175,7 +172,6 @@ describe('AuthService with Injected Boundaries', () => {
     });
 
     it('should clear token after logout', async () => {
-      AuthService.storeToken('test-token');
       mockHttpClient.post.mockResolvedValueOnce({
         message: 'Logged out',
         cleared_session: 'session-123',
@@ -189,9 +185,7 @@ describe('AuthService with Injected Boundaries', () => {
 
   describe('refreshToken', () => {
     it('should use injected http client to refresh token', async () => {
-      AuthService.storeToken('old-token');
       const refreshResponse = {
-        token: 'new-token',
         user_id: 'user-123',
         expires_at: '2025-12-31T00:00:00Z',
         onboarding_completed: true,
@@ -205,9 +199,7 @@ describe('AuthService with Injected Boundaries', () => {
     });
 
     it('should prevent multiple simultaneous refresh attempts', async () => {
-      AuthService.storeToken('old-token');
       const refreshResponse = {
-        token: 'new-token',
         user_id: 'user-123',
         expires_at: '2025-12-31T00:00:00Z',
         onboarding_completed: true,
@@ -227,7 +219,6 @@ describe('AuthService with Injected Boundaries', () => {
 
   describe('completeOnboarding', () => {
     it('should use injected http client to complete onboarding', async () => {
-      AuthService.storeToken('test-token');
       mockHttpClient.put.mockResolvedValueOnce({
         message: 'Onboarding completed',
         onboarding_completed: true,
