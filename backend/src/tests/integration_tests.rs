@@ -1087,6 +1087,23 @@ async fn given_invalid_connection_id_when_sync_then_returns_400() {
 }
 
 #[tokio::test]
+async fn given_invalid_content_type_when_sync_then_returns_415() {
+    let app = TestFixtures::create_test_app().await.unwrap();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::POST)
+        .uri("/api/providers/sync-transactions")
+        .header("authorization", format!("Bearer {}", token))
+        .header("content-type", "text/plain")
+        .body(axum::body::Body::from(r#"{"connection_id":"550e8400-e29b-41d4-a716-446655440000"}"#))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 415);
+}
+
+#[tokio::test]
 async fn given_owned_connection_id_when_disconnect_then_returns_200() {
     use crate::models::plaid::{DisconnectRequest, ProviderConnection};
     use crate::services::cache_service::MockCacheService;
@@ -1202,4 +1219,21 @@ async fn given_foreign_connection_id_when_disconnect_then_returns_404() {
 
     let response = app.oneshot(request).await.unwrap();
     assert_eq!(response.status(), 404);
+}
+
+#[tokio::test]
+async fn given_invalid_content_type_when_disconnect_then_returns_415() {
+    let app = TestFixtures::create_test_app().await.unwrap();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::POST)
+        .uri("/api/providers/disconnect")
+        .header("authorization", format!("Bearer {}", token))
+        .header("content-type", "text/plain")
+        .body(axum::body::Body::from(r#"{"connection_id":"550e8400-e29b-41d4-a716-446655440000"}"#))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 415);
 }

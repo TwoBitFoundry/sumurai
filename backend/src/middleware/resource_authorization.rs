@@ -197,7 +197,7 @@ where
             .ok_or_else(|| unauthorized("Authentication required"))?;
         let Json(body) = Json::<T>::from_request(req, state)
             .await
-            .map_err(|_| bad_request("Invalid request body"))?;
+            .map_err(|rejection| rejection.into_response())?;
 
         let connection_id = body
             .connection_id()
