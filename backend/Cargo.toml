@@ -26,6 +26,7 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 async-trait = "0.1"
 aes-gcm = "0.10"
 base64 = "0.22"
+cookie = "0.18"
 hex = "0.4"
 rand = "0.9"
 redis = { version = "0.32.5", features = ["tokio-comp", "connection-manager"] }

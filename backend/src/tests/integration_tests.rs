@@ -1096,7 +1096,9 @@ async fn given_invalid_content_type_when_sync_then_returns_415() {
         .uri("/api/providers/sync-transactions")
         .header("authorization", format!("Bearer {}", token))
         .header("content-type", "text/plain")
-        .body(axum::body::Body::from(r#"{"connection_id":"550e8400-e29b-41d4-a716-446655440000"}"#))
+        .body(axum::body::Body::from(
+            r#"{"connection_id":"550e8400-e29b-41d4-a716-446655440000"}"#,
+        ))
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
@@ -1231,7 +1233,9 @@ async fn given_invalid_content_type_when_disconnect_then_returns_415() {
         .uri("/api/providers/disconnect")
         .header("authorization", format!("Bearer {}", token))
         .header("content-type", "text/plain")
-        .body(axum::body::Body::from(r#"{"connection_id":"550e8400-e29b-41d4-a716-446655440000"}"#))
+        .body(axum::body::Body::from(
+            r#"{"connection_id":"550e8400-e29b-41d4-a716-446655440000"}"#,
+        ))
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();

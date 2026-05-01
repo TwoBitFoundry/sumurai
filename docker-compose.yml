@@ -38,6 +38,8 @@ services:
       OTEL_EXPORTER_OTLP_HEADERS: X-Seq-ApiKey=${SEQ_API_KEY}
 
       DEFAULT_PROVIDER: ${DEFAULT_PROVIDER:-teller}
+      AUTH_COOKIE_SECURE: "true"
+      AUTH_COOKIE_SAME_SITE: Strict
 
       TELLER_APPLICATION_ID: ${TELLER_APPLICATION_ID}
       TELLER_CERT_PATH: /etc/teller/teller_certificate.pem
