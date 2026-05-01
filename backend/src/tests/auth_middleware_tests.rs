@@ -1,11 +1,16 @@
 use crate::auth_middleware::{
-    auth_middleware, extract_bearer_token, extract_user_context, AuthContext, AuthMiddlewareState,
+    auth_middleware, extract_auth_cookie_token, extract_user_context, AuthContext,
+    AuthMiddlewareState,
 };
 use crate::models::auth::AuthError;
 use crate::services::{auth_service::AuthService, cache_service::MockCacheService};
 use axum::{
-    body::Body,
-    http::{header::AUTHORIZATION, request::Request, HeaderMap, StatusCode},
+    body::{to_bytes, Body},
+    http::{
+        header::{AUTHORIZATION, COOKIE},
+        request::Request,
+        HeaderMap, StatusCode,
+    },
     middleware,
     routing::get,
     Router,
@@ -20,31 +25,31 @@ fn create_test_auth_service() -> AuthService {
 }
 
 #[test]
-fn given_bearer_header_when_extracting_token_then_returns_token() {
+fn given_auth_cookie_when_extracting_token_then_returns_token() {
     let mut headers = HeaderMap::new();
-    headers.insert(AUTHORIZATION, "Bearer jwt_token_here".parse().unwrap());
+    headers.insert(COOKIE, "auth_token=jwt_token_here".parse().unwrap());
 
-    let result = extract_bearer_token(&headers);
+    let result = extract_auth_cookie_token(&headers);
 
     assert!(result.is_some());
     assert_eq!(result.unwrap(), "jwt_token_here");
 }
 
 #[test]
-fn given_invalid_auth_header_when_extracting_token_then_returns_none() {
+fn given_invalid_auth_cookie_when_extracting_token_then_returns_none() {
     let mut headers = HeaderMap::new();
-    headers.insert(AUTHORIZATION, "Invalid token_here".parse().unwrap());
+    headers.insert(COOKIE, "Invalid token_here".parse().unwrap());
 
-    let result = extract_bearer_token(&headers);
+    let result = extract_auth_cookie_token(&headers);
 
     assert!(result.is_none());
 }
 
 #[test]
-fn given_missing_auth_header_when_extracting_token_then_returns_none() {
+fn given_missing_auth_cookie_when_extracting_token_then_returns_none() {
     let headers = HeaderMap::new();
 
-    let result = extract_bearer_token(&headers);
+    let result = extract_auth_cookie_token(&headers);
 
     assert!(result.is_none());
 }
@@ -78,7 +83,8 @@ fn given_invalid_jwt_when_extracting_context_then_returns_error() {
 }
 
 #[tokio::test]
-async fn given_valid_bearer_token_when_middleware_called_then_allows_request() {
+async fn given_valid_auth_cookie_when_middleware_called_then_inserts_auth_context_and_allows_request(
+) {
     let auth_service = Arc::new(create_test_auth_service());
     let user_id = Uuid::new_v4();
     let auth_token = auth_service.generate_token(user_id).unwrap();
@@ -94,7 +100,12 @@ async fn given_valid_bearer_token_when_middleware_called_then_allows_request() {
     };
 
     let app = Router::new()
-        .route("/protected", get(|| async { "success" }))
+        .route(
+            "/protected",
+            get(|auth_context: AuthContext| async move {
+                format!("{}:{}", auth_context.user_id, auth_context.jwt_id)
+            }),
+        )
         .layer(middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
@@ -103,17 +114,22 @@ async fn given_valid_bearer_token_when_middleware_called_then_allows_request() {
 
     let request = Request::builder()
         .uri("/protected")
-        .header(AUTHORIZATION, format!("Bearer {}", auth_token.token))
+        .header(COOKIE, format!("auth_token={}", auth_token.token))
         .body(Body::empty())
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let body_text = String::from_utf8(body.to_vec()).unwrap();
+    assert!(body_text.contains(&user_id.to_string()));
+    assert!(body_text.contains(&auth_token.jwt_id));
 }
 
 #[tokio::test]
-async fn given_missing_auth_header_when_middleware_called_then_rejects_request() {
+async fn given_missing_auth_cookie_when_middleware_called_then_rejects_request() {
     let auth_service = Arc::new(create_test_auth_service());
 
     let mut cache = MockCacheService::new();
@@ -144,7 +160,7 @@ async fn given_missing_auth_header_when_middleware_called_then_rejects_request()
 }
 
 #[tokio::test]
-async fn given_invalid_bearer_token_when_middleware_called_then_rejects_request() {
+async fn given_authorization_header_when_middleware_called_then_rejects_request() {
     let auth_service = Arc::new(create_test_auth_service());
 
     let mut cache = MockCacheService::new();
@@ -166,7 +182,39 @@ async fn given_invalid_bearer_token_when_middleware_called_then_rejects_request(
 
     let request = Request::builder()
         .uri("/protected")
-        .header(AUTHORIZATION, "Bearer invalid.jwt.token")
+        .header(AUTHORIZATION, "Bearer jwt_token_here")
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn given_invalid_auth_cookie_when_middleware_called_then_rejects_request() {
+    let auth_service = Arc::new(create_test_auth_service());
+
+    let mut cache = MockCacheService::new();
+    cache
+        .expect_is_session_valid()
+        .returning(|_| Box::pin(async { Ok(true) }));
+    let state = AuthMiddlewareState {
+        auth_service: auth_service.clone(),
+        cache_service: Arc::new(cache),
+    };
+
+    let app = Router::new()
+        .route("/protected", get(|| async { "success" }))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            auth_middleware,
+        ))
+        .with_state(state);
+
+    let request = Request::builder()
+        .uri("/protected")
+        .header(COOKIE, "auth_token=invalid.jwt.token")
         .body(Body::empty())
         .unwrap();
 
@@ -187,7 +235,7 @@ fn given_auth_context_when_accessing_user_id_then_provides_tenant_isolation() {
 }
 
 #[tokio::test]
-async fn given_api_endpoints_when_accessing_without_valid_jwt_then_returns_401_for_all_protected_routes(
+async fn given_api_endpoints_when_accessing_without_valid_auth_cookie_then_returns_401_for_all_protected_routes(
 ) {
     let auth_service = Arc::new(create_test_auth_service());
 
@@ -270,28 +318,27 @@ async fn given_api_endpoints_when_accessing_without_valid_jwt_then_returns_401_f
         assert_eq!(
             response.status(),
             StatusCode::UNAUTHORIZED,
-            "Route {} {} should return 401 when no auth header provided",
+            "Route {} {} should return 401 when no auth cookie provided",
             method,
             route
         );
     }
 
-    let invalid_auth_headers = vec![
+    let invalid_auth_cookies = vec![
         "invalid_token",
-        "Basic dXNlcjpwYXNzd29yZA==",
-        "Bearer",
-        "Bearer ",
-        "Bearer invalid.jwt.token.format",
-        "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.signature",
-        "Token jwt_token_here",
-        "JWT jwt_token_here",
+        "auth_token",
+        "auth_token=",
+        "foo=bar; auth_token",
+        "foo=bar; auth_token=",
+        "auth_token=duplicate; auth_token=duplicate",
+        "session=abc; user=me",
     ];
 
-    for invalid_header in invalid_auth_headers {
+    for invalid_cookie in invalid_auth_cookies {
         let request = Request::builder()
             .method("GET")
             .uri("/api/transactions")
-            .header(AUTHORIZATION, invalid_header)
+            .header(COOKIE, invalid_cookie)
             .body(Body::empty())
             .unwrap();
 
@@ -300,8 +347,8 @@ async fn given_api_endpoints_when_accessing_without_valid_jwt_then_returns_401_f
         assert_eq!(
             response.status(),
             StatusCode::UNAUTHORIZED,
-            "Invalid auth header '{}' should return 401",
-            invalid_header
+            "Invalid auth cookie '{}' should return 401",
+            invalid_cookie
         );
     }
 
@@ -317,7 +364,7 @@ async fn given_api_endpoints_when_accessing_without_valid_jwt_then_returns_401_f
         let request = Request::builder()
             .method("GET")
             .uri("/api/analytics/categories")
-            .header(AUTHORIZATION, format!("Bearer {}", malformed_token))
+            .header(COOKIE, format!("auth_token={}", malformed_token))
             .body(Body::empty())
             .unwrap();
 
@@ -341,7 +388,7 @@ async fn given_api_endpoints_when_accessing_without_valid_jwt_then_returns_401_f
     let request = Request::builder()
         .method("POST")
         .uri("/api/plaid/link-token")
-        .header(AUTHORIZATION, format!("Bearer {}", foreign_token.token))
+        .header(COOKIE, format!("auth_token={}", foreign_token.token))
         .body(Body::empty())
         .unwrap();
 
@@ -357,7 +404,7 @@ async fn given_api_endpoints_when_accessing_without_valid_jwt_then_returns_401_f
     let request = Request::builder()
         .method("GET")
         .uri("/api/transactions")
-        .header(AUTHORIZATION, format!("Bearer {}", valid_token.token))
+        .header(COOKIE, format!("auth_token={}", valid_token.token))
         .body(Body::empty())
         .unwrap();
 

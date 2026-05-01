@@ -104,6 +104,15 @@ Acceptance criteria:
 - Middleware still inserts `AuthContext` with the expected `user_id` and `jwt_id` for valid cookie requests.
 - Existing resource authorization tests continue to prove tenant boundaries after converting authenticated requests to cookies.
 
+Completion notes:
+- Replaced bearer-header extraction with `Cookie: auth_token=<jwt>` extraction in middleware.
+- Preserved the existing unauthorized response shape for missing auth while making the request path cookie-only.
+- Updated the middleware spec to cover valid cookie requests, invalid cookies, bearer-only rejection, and `AuthContext` insertion.
+
+TDD log:
+- `cargo test auth_middleware_tests`
+- `cargo check`
+
 ## Phase 4: API Types, Docs, And Tests
 - Update backend test fixtures in `backend/src/tests/test_fixtures.rs` to create authenticated requests with `Cookie: auth_token=<jwt>`.
 - Update all backend tests that build authenticated requests manually to use the cookie header.

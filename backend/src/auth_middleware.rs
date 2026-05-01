@@ -3,16 +3,16 @@ use crate::models::api_error::ApiErrorResponse;
 use crate::models::auth::AuthError;
 pub use crate::models::auth::{AuthContext, AuthMiddlewareState};
 use crate::services::auth_service::AuthService;
+use crate::utils::auth_cookie::extract_auth_cookie;
 use axum::{
     extract::{Request, State},
-    http::{HeaderMap, StatusCode},
+    http::{header::COOKIE, HeaderMap, StatusCode},
     middleware::Next,
     response::{IntoResponse, Json, Response},
 };
 use uuid::Uuid;
 
-const BEARER_PREFIX: &str = "Bearer ";
-const BEARER_PREFIX_LEN: usize = 7;
+const AUTH_COOKIE_NAME: &str = "auth_token";
 
 pub async fn auth_middleware(
     State(middleware_state): State<AuthMiddlewareState>,
@@ -20,14 +20,14 @@ pub async fn auth_middleware(
     mut request: Request,
     next: Next,
 ) -> Result<Response, Response> {
-    let token = match extract_bearer_token(&headers) {
+    let token = match extract_auth_cookie_token(&headers) {
         Some(token) => token,
         None => {
             tracing::warn!(
-                auth_error_type = "missing_header",
+                auth_error_type = "missing_cookie",
                 path = %request.uri().path(),
                 method = %request.method(),
-                "Authentication failure: Missing Authorization header"
+                "Authentication failure: Missing auth cookie"
             );
             let error_response = ApiErrorResponse::with_code(
                 "UNAUTHORIZED",
@@ -38,10 +38,10 @@ pub async fn auth_middleware(
         }
     };
 
-    let encrypted_token = hash_token(token);
+    let encrypted_token = hash_token(&token);
     attach_encrypted_token_to_current_span(&encrypted_token);
 
-    let auth_context = match extract_user_context(&middleware_state.auth_service, token) {
+    let auth_context = match extract_user_context(&middleware_state.auth_service, &token) {
         Ok(context) => context,
         Err(auth_error) => {
             let (error_message, error_code) = match auth_error {
@@ -135,17 +135,9 @@ pub async fn auth_middleware(
     Ok(next.run(request).await)
 }
 
-pub fn extract_bearer_token(headers: &HeaderMap) -> Option<&str> {
-    headers
-        .get("authorization")
-        .and_then(|value| value.to_str().ok())
-        .and_then(|auth_header| {
-            if auth_header.starts_with(BEARER_PREFIX) {
-                Some(&auth_header[BEARER_PREFIX_LEN..])
-            } else {
-                None
-            }
-        })
+pub fn extract_auth_cookie_token(headers: &HeaderMap) -> Option<String> {
+    let cookie_header = headers.get(COOKIE)?.to_str().ok()?;
+    extract_auth_cookie(Some(cookie_header), AUTH_COOKIE_NAME)
 }
 
 pub fn extract_user_context(
