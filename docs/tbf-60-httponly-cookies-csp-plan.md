@@ -37,6 +37,7 @@ Migrate Sumurai auth to one `sumurai_session` cookie per Sumurai user account wh
 
 ## Phase 3: CSP, Teller, And Plaid
 
+- Status: complete
 - Add nginx `Content-Security-Policy` with explicit provider allowlists.
 - Include Teller in `script-src`: `https://cdn.teller.io`.
 - Include Plaid Link in CSP: `script-src` for `https://cdn.plaid.com`, `frame-src` for Plaid Link frame origins, and `connect-src` for app API origins plus Plaid/Teller browser SDK endpoints.
@@ -44,12 +45,30 @@ Migrate Sumurai auth to one `sumurai_session` cookie per Sumurai user account wh
 - Add `integrity` and `crossOrigin="anonymous"` behavior to the dynamically-created Teller script.
 - Do not add SRI to Plaid through `react-plaid-link` unless the implementation replaces the library loader with a controlled script loader; CSP is the required Plaid control for this ticket.
 
+### TDD Log
+
+- `cargo test`
+- `npm test -- --runInBand --runTestsByPath tests/hooks/useTellerConnect.test.tsx`
+- `npm test -- --runInBand`
+- `npm run lint`
+- `npx tsc -b`
+- Result: backend and frontend tests passed; lint passed; TypeScript build still reports pre-existing errors outside this change set.
+
 ## Phase 4: Tests And Verification
 
+- Status: blocked by existing frontend TypeScript errors
 - Backend tests cover cookie attributes, logout clearing, protected-route authentication, and refresh rotation.
 - Frontend tests cover no token storage, credentialed API requests without `Authorization`, metadata-driven auth flows, and Teller script integrity attributes.
 - Config checks assert nginx CSP includes Teller and Plaid allowlists.
 - Run `cargo test`, `npm test`, and focused lint/type checks.
+
+### TDD Log
+
+- `cargo test`
+- `npm test -- --runInBand`
+- `npm run lint`
+- `npx tsc -b`
+- Result: tests and lint passed, but the TypeScript build fails on unrelated baseline errors in existing frontend tests and type fixtures.
 
 ## Assumptions
 
@@ -66,5 +85,4 @@ Migrate Sumurai auth to one `sumurai_session` cookie per Sumurai user account wh
 
 ## Next Actions
 
-- Add CSP and provider script controls.
-- Update tests around the CSP and provider script controls.
+- Resolve the existing frontend TypeScript baseline if a clean `tsc -b` is required.
