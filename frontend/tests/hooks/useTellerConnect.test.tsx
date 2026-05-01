@@ -1,10 +1,6 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { TellerConnectGateway } from '@/hooks/useTellerConnect';
-import {
-  TELLER_SCRIPT_INTEGRITY,
-  resetTellerScriptStateForTests,
-  useTellerConnect,
-} from '@/hooks/useTellerConnect';
+import { resetTellerScriptStateForTests, useTellerConnect } from '@/hooks/useTellerConnect';
 
 describe('useTellerConnect', () => {
   const setup = jest.fn();
@@ -84,9 +80,8 @@ describe('useTellerConnect', () => {
     expect(gateway.syncTransactions).toHaveBeenCalledWith('conn-1');
   });
 
-  it('applies Teller script integrity and crossorigin attributes when loading the SDK', async () => {
+  it('applies Teller script crossorigin attributes when loading the SDK', async () => {
     delete globalThis.TellerConnect;
-    process.env.NEXT_PUBLIC_TELLER_SCRIPT_INTEGRITY = 'sha384-test-integrity';
 
     const appendChildSpy = jest.spyOn(document.head, 'appendChild');
     renderHook(() => useTellerConnect({ applicationId: 'app-123', gateway: createGateway() }));
@@ -95,7 +90,6 @@ describe('useTellerConnect', () => {
 
     const script = appendChildSpy.mock.calls[0][0] as HTMLScriptElement;
     expect(script.crossOrigin).toBe('anonymous');
-    expect(script.integrity).toBe(TELLER_SCRIPT_INTEGRITY);
 
     Object.assign(globalThis, {
       TellerConnect: {

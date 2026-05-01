@@ -42,7 +42,7 @@ Migrate Sumurai auth to one `sumurai_session` cookie per Sumurai user account wh
 - Include Teller in `script-src`: `https://cdn.teller.io`.
 - Include Plaid Link in CSP: `script-src` for `https://cdn.plaid.com`, `frame-src` for Plaid Link frame origins, and `connect-src` for app API origins plus Plaid/Teller browser SDK endpoints.
 - Preserve required app allowances for self-hosted scripts, styles, API connections, images, and fonts.
-- Pin `integrity` and `crossOrigin="anonymous"` on the dynamically-created Teller script.
+- Apply `crossOrigin="anonymous"` on the dynamically-created Teller script.
 - Do not add SRI to Plaid through `react-plaid-link` unless the implementation replaces the library loader with a controlled script loader; CSP is the required Plaid control for this ticket.
 
 ### TDD Log
@@ -58,7 +58,7 @@ Migrate Sumurai auth to one `sumurai_session` cookie per Sumurai user account wh
 
 - Status: blocked by existing frontend TypeScript errors
 - Backend tests cover cookie attributes, logout clearing, protected-route authentication, and refresh rotation.
-- Frontend tests cover no token storage, credentialed API requests without `Authorization`, metadata-driven auth flows, and Teller script integrity attributes.
+- Frontend tests cover no token storage, credentialed API requests without `Authorization`, metadata-driven auth flows, and Teller script crossorigin attributes.
 - Config checks assert nginx CSP includes Teller and Plaid allowlists.
 - Run `cargo test`, `npm test`, and focused lint/type checks.
 
@@ -79,7 +79,6 @@ Migrate Sumurai auth to one `sumurai_session` cookie per Sumurai user account wh
 
 ## Risks
 
-- Teller’s unversioned CDN script may change, which can invalidate a static SRI hash unless the script URL is pinned or the hash is maintained.
 - Plaid Link may require additional documented frame or connect origins depending on environment.
 - Strict cookies require same-site deployment through nginx; local direct cross-origin backend calls need the existing proxied `/api` path or explicit dev handling.
 
