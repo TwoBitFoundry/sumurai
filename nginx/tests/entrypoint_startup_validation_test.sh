@@ -25,6 +25,15 @@ assert_failure() {
   fi
 }
 
+file_mtime() {
+  if stat -c %Y "$1" >/dev/null 2>&1; then
+    stat -c %Y "$1"
+    return 0
+  fi
+
+  stat -f %m "$1"
+}
+
 load_entrypoint() {
   domain="$1"
   environment="$2"
@@ -80,11 +89,11 @@ assert_failure certificate_expires_within_days 14
 
 development_expiring_dir="${TMP_DIR}/development-expiring"
 make_self_signed_certificate "${development_expiring_dir}" 1
-original_certificate_mtime="$(stat -f %m "${development_expiring_dir}/fullchain.pem")"
+original_certificate_mtime="$(file_mtime "${development_expiring_dir}/fullchain.pem")"
 sleep 1
 load_entrypoint localhost development "${development_expiring_dir}"
 assert_success validate_tls_certificate
-renewed_certificate_mtime="$(stat -f %m "${development_expiring_dir}/fullchain.pem")"
+renewed_certificate_mtime="$(file_mtime "${development_expiring_dir}/fullchain.pem")"
 if [ "${renewed_certificate_mtime}" -le "${original_certificate_mtime}" ]; then
   printf 'expected development self-signed certificate to be regenerated\n' >&2
   exit 1
