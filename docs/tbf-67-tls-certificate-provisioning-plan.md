@@ -58,6 +58,12 @@ Add shell functions in `nginx/entrypoint.sh` to inspect the active certificate:
 
 Use structured, prominent log lines for production warnings, for example prefixing with `TLS_PROVISIONING_WARNING` or `TLS_PROVISIONING_ERROR`.
 
+Completed on this branch:
+
+- Added certificate existence, self-signed, expiry-window, and status logging helpers in `nginx/entrypoint.sh`.
+- Added path overrides for testable certificate inspection without touching `/etc/letsencrypt`.
+- Added shell coverage using generated self-signed and CA-signed certificates.
+
 ### 3. Preserve Development Bootstrapping
 
 Keep the current self-signed fallback only for local development. Update the shell flow so:
@@ -161,5 +167,11 @@ Before closing the ticket:
 ### Production Detection
 
 - `sh nginx/tests/entrypoint_runtime_detection_test.sh`
-- `env POSTGRES_PASSWORD=test SEQ_PASSWORD=test JWT_SECRET=test ENCRYPTION_KEY=test TELLER_APPLICATION_ID=test TELLER_CERT_PATH=/tmp/cert.pem TELLER_KEY_PATH=/tmp/key.pem DOMAIN=localhost SSL_PORT=8443 ENVIRONMENT=development APP_ENV=development docker compose -f docker-compose.yml config >/dev/null`
+- `env POSTGRES_PASSWORD=test SEQ_PASSWORD=test JWT_SECRET=test ENCRYPTION_KEY=test TELLER_APPLICATION_ID=test TELLER_CERT_PATH=/tmp/cert.pem TELLER_KEY_PATH=/tmp/key.pem DOMAIN=localhost SSL_PORT=8443 ENVIRONMENT=development docker compose -f docker-compose.yml config >/dev/null`
+- Result: passed
+
+### Certificate Inspection Helpers
+
+- `sh nginx/tests/entrypoint_certificate_helpers_test.sh`
+- `sh nginx/tests/entrypoint_runtime_detection_test.sh`
 - Result: passed
