@@ -185,8 +185,8 @@ Everything reads from `.env`. Most variables have defaults in `docker-compose.ym
 | `SEQ_API_KEY` | Yes | — | Any value for local dev |
 | **Teller** | | | |
 | `TELLER_APPLICATION_ID` | Yes | — | From Teller dashboard |
-| `TELLER_CERT_PATH` | Yes | — | Path to client cert (PEM). Store in `.certs/` |
-| `TELLER_KEY_PATH` | Yes | — | Path to private key (PEM). Store in `.certs/` |
+| `TELLER_CERT_PATH` | Yes | — | **Host** path to client cert PEM for the compose volume mount (e.g. `./.certs/teller/certificate.pem`). Inside the backend container the same file is mounted at `/etc/teller/certificate.pem`. |
+| `TELLER_KEY_PATH` | Yes | — | **Host** path to private key PEM for the compose volume mount (e.g. `./.certs/teller/private_key.pem`). Inside the container: `/etc/teller/private_key.pem`. |
 | **Optional** | | | |
 | `CORS_ALLOWED_ORIGINS` | No | `http://localhost:8080` | Comma-separated origins |
 | `DOMAIN` | No | `localhost` | Hostname for nginx and Let's Encrypt |
@@ -207,9 +207,9 @@ Login and register under `/api/auth/` are limited in the Axum backend (`tower-go
 ## Teller Setup
 
 1. Create a Teller developer account at https://teller.io.
-2. Download the mTLS certificate and private key. Store in `.certs/teller/` (gitignored).
-3. Set `TELLER_APPLICATION_ID`, `TELLER_CERT_PATH`, and `TELLER_KEY_PATH` in `.env`.
-4. Set `TELLER_ENV` (`sandbox`, `development`, `production`).
+2. Download the mTLS certificate and private key. Store them as `certificate.pem` and `private_key.pem` under `.certs/teller/` on your machine (gitignored), or run `./scripts/ensure-teller-pem-files.sh` to create local dev PEMs at those paths.
+3. In `.env`, set `TELLER_CERT_PATH` and `TELLER_KEY_PATH` to those **host** paths. Compose mounts them into the backend at `/etc/teller/certificate.pem` and `/etc/teller/private_key.pem` (see README).
+4. Set `TELLER_APPLICATION_ID` and `TELLER_ENV` (`sandbox`, `development`, `production`).
 5. Launch Teller Connect from the Connect tab to link accounts.
 
 For sandbox testing, use Teller's documented test credentials. Ensure localhost origins are allowed in your Teller dashboard.

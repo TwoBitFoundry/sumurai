@@ -44,6 +44,10 @@ Open http://localhost:8080. Demo: `me@test.com` / `Test1234!`
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for prerequisites and full setup.
 
+### Teller certificate paths (Docker)
+
+In `.env`, `TELLER_CERT_PATH` and `TELLER_KEY_PATH` are **paths on your host** to the PEM files (for example `./.certs/teller/certificate.pem` and `./.certs/teller/private_key.pem`). Docker Compose mounts those files into the backend container at **`/etc/teller/certificate.pem`** and **`/etc/teller/private_key.pem`**, and the backend reads those in-container paths. To generate local dev placeholders, run `./scripts/ensure-teller-pem-files.sh` (creates `.certs/teller/` if needed).
+
 ## Architecture
 
 React 19 + Next.js frontend, Rust (Axum) backend, PostgreSQL, Redis. JWT auth. Docker Compose deployment.

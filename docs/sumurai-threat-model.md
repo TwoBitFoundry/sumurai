@@ -61,7 +61,7 @@ The most critical risk concentration is the complete absence of rate limiting on
   - Auth: no `requirepass` shown in compose; Redis open on Docker network
 - **Backend → Teller API (HTTPS, external)**
   - Data: financial account/transaction requests
-  - Auth: mTLS client certificate (`TELLER_CERT_PATH` / `TELLER_KEY_PATH`)
+  - Auth: mTLS client certificate (backend reads `/etc/teller/certificate.pem` and `/etc/teller/private_key.pem`; Docker bind-mounts from host `TELLER_CERT_PATH` / `TELLER_KEY_PATH`)
   - Validation: Teller enforces API-key scoping per application
 
 #### Diagram
