@@ -118,7 +118,7 @@ describe('AuthService with OpenTelemetry Instrumentation', () => {
     jest.spyOn(trace, 'getTracer').mockReturnValue(mockTracer as any);
   });
 
-  it('should create a span for login operation', async () => {
+  it('should create a span for login operation without exposing the email', async () => {
     const credentials = { email: 'test@example.com', password: 'Test1234!' };
     const mockResponse = {
       token: 'test-token',
@@ -134,9 +134,13 @@ describe('AuthService with OpenTelemetry Instrumentation', () => {
     expect(mockTracer.startSpan).toHaveBeenCalledWith('AuthService.login', {
       attributes: {
         'auth.method': 'password',
-        'auth.username': credentials.email,
       },
     });
+
+    const spanCall = mockTracer.startSpan.mock.calls[0];
+    const attributes = spanCall[1]?.attributes || {};
+    expect(attributes).not.toHaveProperty('auth.username');
+    expect(Object.values(attributes)).not.toContain(credentials.email);
   });
 
   it('should set OK status on successful login', async () => {
@@ -155,7 +159,7 @@ describe('AuthService with OpenTelemetry Instrumentation', () => {
     expect(mockSpan.setStatus).toHaveBeenCalledWith({ code: SpanStatusCode.OK });
   });
 
-  it('should record exception on login failure', async () => {
+  it('should record exception on login failure without exposing the email', async () => {
     const credentials = { email: 'test@example.com', password: 'wrong' };
     const error = new Error('Invalid email or password');
 
@@ -171,6 +175,11 @@ describe('AuthService with OpenTelemetry Instrumentation', () => {
     expect(mockSpan.setStatus).toHaveBeenCalledWith({
       code: SpanStatusCode.ERROR,
     });
+
+    const spanCall = mockTracer.startSpan.mock.calls[0];
+    const attributes = spanCall[1]?.attributes || {};
+    expect(attributes).not.toHaveProperty('auth.username');
+    expect(Object.values(attributes)).not.toContain(credentials.email);
   });
 
   it('should end span after login completes', async () => {
@@ -189,7 +198,7 @@ describe('AuthService with OpenTelemetry Instrumentation', () => {
     expect(mockSpan.end).toHaveBeenCalled();
   });
 
-  it('should create a span for register operation', async () => {
+  it('should create a span for register operation without exposing the email', async () => {
     const credentials = { email: 'newuser@example.com', password: 'Test1234!' };
     const mockResponse = {
       token: 'test-token',
@@ -205,9 +214,13 @@ describe('AuthService with OpenTelemetry Instrumentation', () => {
     expect(mockTracer.startSpan).toHaveBeenCalledWith('AuthService.register', {
       attributes: {
         'auth.method': 'password',
-        'auth.username': credentials.email,
       },
     });
+
+    const spanCall = mockTracer.startSpan.mock.calls[0];
+    const attributes = spanCall[1]?.attributes || {};
+    expect(attributes).not.toHaveProperty('auth.username');
+    expect(Object.values(attributes)).not.toContain(credentials.email);
   });
 
   it('should NOT include password in span attributes', async () => {
@@ -227,5 +240,6 @@ describe('AuthService with OpenTelemetry Instrumentation', () => {
     const attributes = spanCall[1]?.attributes || {};
     expect(attributes).not.toHaveProperty('password');
     expect(attributes).not.toHaveProperty('auth.password');
+    expect(Object.values(attributes)).not.toContain(credentials.email);
   });
 });

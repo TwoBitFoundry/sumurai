@@ -54,7 +54,6 @@ export class AuthService {
     const span = tracer.startSpan('AuthService.login', {
       attributes: {
         'auth.method': 'password',
-        'auth.username': credentials.email,
       },
     });
 
@@ -179,7 +178,6 @@ export class AuthService {
     const span = tracer.startSpan('AuthService.register', {
       attributes: {
         'auth.method': 'password',
-        'auth.username': credentials.email,
       },
     });
 
