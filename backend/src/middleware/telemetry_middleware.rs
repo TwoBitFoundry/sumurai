@@ -10,7 +10,7 @@ use opentelemetry_otlp::{WithExportConfig, WithHttpConfig};
 use opentelemetry_sdk::{propagation::TraceContextPropagator, trace::SdkTracerProvider, Resource};
 use sha2::{Digest, Sha256};
 use std::{collections::HashMap, fmt::Write, time::Instant};
-use tracing::{info_span, Span};
+use tracing::{info_span, Instrument, Span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 use tracing_subscriber::Layer;
 use tracing_subscriber::{
@@ -172,18 +172,24 @@ pub async fn request_tracing_middleware(request: Request<Body>, next: Next) -> R
     );
 
     let span_name = format!("{method} {path}");
-    span.context().span().update_name(span_name.clone());
 
-    let _entered = span.enter();
+    async move {
+        Span::current()
+            .context()
+            .span()
+            .update_name(span_name.clone());
 
-    let response = next.run(request).await;
-    let status = response.status();
-    let duration_ms = start_time.elapsed().as_secs_f64() * 1000.0;
+        let response = next.run(request).await;
+        let status = response.status();
+        let duration_ms = start_time.elapsed().as_secs_f64() * 1000.0;
 
-    span.record("http.status_code", status.as_u16() as i64);
-    span.record("duration_ms", duration_ms);
+        Span::current().record("http.status_code", status.as_u16() as i64);
+        Span::current().record("duration_ms", duration_ms);
 
-    response
+        response
+    }
+    .instrument(span)
+    .await
 }
 
 struct SeqJsonFormatter;

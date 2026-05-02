@@ -107,7 +107,7 @@ export function Footer() {
               )}
             >
               <img
-                src="https://cdn.buymeacoffee.com/buttons/bmc-new-btn-logo.svg"
+                src="/bmc-new-btn-logo.svg"
                 alt="Buy me a coffee"
                 className={cn('h-5', 'w-5')}
               />

@@ -44,10 +44,6 @@ interface StoreEnrollmentResponse {
 const TELLER_SCRIPT_ATTR = 'data-teller-connect';
 const TELLER_SCRIPT_SRC = 'https://cdn.teller.io/connect/connect.js';
 
-const applyTellerScriptAttributes = (script: HTMLScriptElement): void => {
-  script.crossOrigin = 'anonymous';
-};
-
 let tellerScriptLoaded = false;
 let tellerScriptPromise: Promise<void> | null = null;
 
@@ -104,7 +100,6 @@ const ensureTellerScript = (): Promise<void> => {
     };
 
     if (existingScript) {
-      applyTellerScriptAttributes(existingScript);
       if (existingScript.dataset.loaded === 'true') {
         completeLoad();
         return;
@@ -130,7 +125,6 @@ const ensureTellerScript = (): Promise<void> => {
     script.src = TELLER_SCRIPT_SRC;
     script.async = true;
     script.setAttribute(TELLER_SCRIPT_ATTR, 'true');
-    applyTellerScriptAttributes(script);
 
     const handleLoad = () => {
       script.removeEventListener('error', handleError);

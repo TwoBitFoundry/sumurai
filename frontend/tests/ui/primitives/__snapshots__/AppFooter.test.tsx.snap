@@ -76,7 +76,7 @@ exports[`AppFooter matches snapshot 1`] = `
             <img
               alt="Buy me a coffee"
               class="h-5 w-5"
-              src="https://cdn.buymeacoffee.com/buttons/bmc-new-btn-logo.svg"
+              src="/bmc-new-btn-logo.svg"
             />
             <span>
               Buy us a coffee

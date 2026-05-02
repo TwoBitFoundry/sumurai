@@ -41,8 +41,8 @@ services:
       AUTH_COOKIE_SAME_SITE: Strict
 
       TELLER_APPLICATION_ID: ${TELLER_APPLICATION_ID}
-      TELLER_CERT_PATH: /etc/teller/teller_certificate.pem
-      TELLER_KEY_PATH: /etc/teller/teller_private_key.pem
+      TELLER_CERT_PATH: /etc/teller/certificate.pem
+      TELLER_KEY_PATH: /etc/teller/private_key.pem
       TELLER_ENV: ${TELLER_ENV:-sandbox}
 
       PLAID_CLIENT_ID: ${PLAID_CLIENT_ID:-mock_client_id}
@@ -55,8 +55,8 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_STARTUP_TEST_SPAN: ${OTEL_STARTUP_TEST_SPAN:-0}
     volumes:
-      - ${TELLER_CERT_PATH}:/etc/teller/teller_certificate.pem:ro
-      - ${TELLER_KEY_PATH}:/etc/teller/teller_private_key.pem:ro
+      - ${TELLER_CERT_PATH}:/etc/teller/certificate.pem:ro
+      - ${TELLER_KEY_PATH}:/etc/teller/private_key.pem:ro
     command: >
       sh -c "
         echo 'Running database migrations...' &&

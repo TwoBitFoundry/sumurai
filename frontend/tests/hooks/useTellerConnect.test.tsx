@@ -79,7 +79,7 @@ describe('useTellerConnect', () => {
     expect(gateway.syncTransactions).toHaveBeenCalledWith('conn-1');
   });
 
-  it('applies Teller script crossorigin attributes when loading the SDK', async () => {
+  it('injects Teller SDK script without crossorigin so execution does not require ACAO', async () => {
     delete globalThis.TellerConnect;
 
     const appendChildSpy = jest.spyOn(document.head, 'appendChild');
@@ -88,7 +88,7 @@ describe('useTellerConnect', () => {
     await waitFor(() => expect(appendChildSpy).toHaveBeenCalled());
 
     const script = appendChildSpy.mock.calls[0][0] as HTMLScriptElement;
-    expect(script.crossOrigin).toBe('anonymous');
+    expect(script.crossOrigin).toBeNull();
 
     Object.assign(globalThis, {
       TellerConnect: {

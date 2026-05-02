@@ -1,9 +1,11 @@
 # HttpOnly JWT Cookie Auth Backend Completion Plan
 
 ## Summary
+
 Complete the backend side of the cookie-auth design so the JWT is stored only as the value of an httpOnly cookie named `auth_token`. The backend should set the cookie on login, register, and refresh; read it for protected routes, refresh, and logout; clear it on logout; and stop returning the JWT in JSON responses.
 
 ## Phase 1: Cookie Contract And Configuration
+
 - Add the Rust `cookie` crate to `backend/Cargo.toml`, then run `cargo update` so `backend/Cargo.lock` uses current compatible versions.
 - Extend backend config in `backend/src/config.rs` with:
   - `AUTH_COOKIE_SAME_SITE`, required, allowed values `Strict` and `Lax`
@@ -22,6 +24,7 @@ Complete the backend side of the cookie-auth design so the JWT is stored only as
 - Do not read or write `.env` files.
 
 Acceptance criteria:
+
 - `Config::from_env_provider` accepts valid `Strict`/`Lax` values and fails when `AUTH_COOKIE_SAME_SITE` is missing.
 - Config tests cover valid cookie settings and missing or invalid `AUTH_COOKIE_SAME_SITE` failures.
 - Cookie helper tests prove generated auth cookies include `auth_token=<jwt>`, `HttpOnly`, `Path=/`, configured `SameSite`, secure when strict, and a positive max-age.
@@ -31,6 +34,7 @@ Acceptance criteria:
 - Compose is the only place that sets the same-site mode; backend code must not synthesize a fallback.
 
 Completion notes:
+
 - Added the `cookie` dependency and refreshed `Cargo.lock`.
 - Extended backend config with the auth cookie mode setting.
 - Simplified the auth cookie surface to one required mode env with `Strict` for production and `Lax` for dev.
@@ -38,6 +42,7 @@ Completion notes:
 - Updated compose defaults and test fixtures to supply the new config values.
 
 TDD log:
+
 - `cargo test auth_cookie_tests`
 - `cargo test config_tests`
 - `cargo check`
@@ -45,6 +50,7 @@ TDD log:
 - `cargo fmt`
 
 ## Phase 2: Auth Endpoint Cookie Issuance
+
 - Update `AuthResponse` in `backend/src/models/auth.rs`:
   - Remove the `token` field from serialized JSON and OpenAPI schema examples.
   - Keep `user_id`, `expires_at`, and `onboarding_completed`.
@@ -68,6 +74,7 @@ TDD log:
 - Return `401` from refresh/logout when the auth cookie is missing or invalid.
 
 Acceptance criteria:
+
 - Login success response has status `200`, includes `Set-Cookie`, and the JSON body has no `token` property.
 - Register success response has status `200`, includes `Set-Cookie`, and the JSON body has no `token` property.
 - Refresh with a valid auth cookie returns status `200`, sets a replacement cookie, and returns updated metadata with no `token` property.
@@ -77,17 +84,20 @@ Acceptance criteria:
 - Existing session-validity and JWT-token cache writes still use the generated JWT `jti` and current TTL.
 
 Completion notes:
+
 - Removed `token` from `AuthResponse` and its schema example.
 - Login and register now return `Set-Cookie: auth_token=<jwt>` alongside metadata-only JSON.
 - Refresh now reads the auth cookie, reissues the cookie with the generated expiry, and returns updated metadata.
 - Logout now reads the auth cookie, invalidates the session, clears JWT-scoped data, clears transactions, and returns a clearing cookie.
 
 TDD log:
+
 - `cargo test auth_handlers_integration_tests`
 - `cargo check`
 - `cargo test`
 
 ## Phase 3: Cookie-Only Middleware Enforcement
+
 - Replace bearer-only extraction in `backend/src/auth_middleware.rs` with cookie-only extraction.
 - Protected routes should authenticate only from `Cookie: auth_token=<jwt>`.
 - Authorization headers alone should no longer authenticate.
@@ -97,6 +107,7 @@ TDD log:
 - Keep all tenancy and resource authorization behavior unchanged after `AuthContext` is attached.
 
 Acceptance criteria:
+
 - A protected route with a valid `Cookie: auth_token=<jwt>` and valid session cache returns success.
 - A protected route with only `Authorization: Bearer <jwt>` returns `401`.
 - A protected route with missing cookie returns `401` and the existing missing-auth error shape.
@@ -105,15 +116,18 @@ Acceptance criteria:
 - Existing resource authorization tests continue to prove tenant boundaries after converting authenticated requests to cookies.
 
 Completion notes:
+
 - Replaced bearer-header extraction with `Cookie: auth_token=<jwt>` extraction in middleware.
 - Preserved the existing unauthorized response shape for missing auth while making the request path cookie-only.
 - Updated the middleware spec to cover valid cookie requests, invalid cookies, bearer-only rejection, and `AuthContext` insertion.
 
 TDD log:
+
 - `cargo test auth_middleware_tests`
 - `cargo check`
 
 ## Phase 4: API Types, Docs, And Tests
+
 - Update backend test fixtures in `backend/src/tests/test_fixtures.rs` to create authenticated requests with `Cookie: auth_token=<jwt>`.
 - Update all backend tests that build authenticated requests manually to use the cookie header.
 - Update auth handler, auth middleware, integration, budget, balances overview, and security tests that currently assume bearer headers.
@@ -128,6 +142,7 @@ TDD log:
 - Run `cargo test` and `cargo check`.
 
 Acceptance criteria:
+
 - `cargo check` passes.
 - `cargo test` passes.
 - No test depends on `Authorization` for authenticated backend requests except explicit negative tests proving bearer auth is rejected.
@@ -136,18 +151,21 @@ Acceptance criteria:
 - `git diff` shows the implementation scoped to backend auth/config/tests, compose configuration, and the saved plan if retained.
 
 Completion notes:
+
 - Updated shared backend request fixtures to send `Cookie: auth_token=<jwt>` for authenticated requests.
 - Migrated the remaining handwritten authenticated backend tests to cookies.
 - Kept one explicit middleware negative test proving `Authorization: Bearer ...` is rejected.
 - Normalized the raw token security tests so bearer-prefixed strings are no longer used outside that negative case.
 
 TDD log:
+
 - `cargo test auth_middleware_tests`
 - `cargo check`
 - `cargo test`
 - `cargo check`
 
 ## Assumptions
+
 - Cookie name is `auth_token`.
 - The JWT itself is the cookie value.
 - Strict mode uses `Secure=true`; Lax mode uses `Secure=false`.
@@ -157,11 +175,13 @@ TDD log:
 - No `.env` files are read or written.
 
 ## Risks
+
 - Cookie attribute mismatches can make local dev appear unauthenticated even when login succeeds.
 - Removing bearer auth requires updating all backend tests and any API clients that still depend on Authorization headers.
 - `SameSite=Strict` is intentionally tight for production and may require revisiting only if production frontend/API deployment becomes cross-site.
 
 ## Next Actions
+
 - Implement the cookie helper and config first, with tests around cookie formatting/parsing.
 - Convert auth endpoints next so login/register/refresh/logout define the public contract.
 - Convert middleware and fixtures last so protected-route tests validate the end-to-end cookie flow.
