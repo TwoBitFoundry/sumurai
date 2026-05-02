@@ -534,7 +534,14 @@ async fn register_user(
     };
 
     if let Err(e) = state.db_repository.create_user(&user).await {
-        tracing::error!("User creation failed for email {}: {}", req.email, e);
+        tracing::warn!(
+            auth_operation = "register",
+            auth_result = "failure",
+            failure_reason = "user_creation_failed",
+            user_id = %user_id,
+            error = %e,
+            "User creation failed"
+        );
         return Err(ApiErrorResponse::conflict(
             "Email address is already registered",
         ));
@@ -605,11 +612,22 @@ async fn login_user(
     let user = match state.db_repository.get_user_by_email(&req.email).await {
         Ok(Some(user)) => user,
         Ok(None) => {
-            tracing::info!("Login attempt with non-existent email: {}", req.email);
+            tracing::info!(
+                auth_operation = "login",
+                auth_result = "failure",
+                failure_reason = "unknown_user",
+                "Login attempt with non-existent user"
+            );
             return Err(ApiErrorResponse::unauthorized("Invalid email or password"));
         }
         Err(e) => {
-            tracing::error!("Database error during login for email {}: {}", req.email, e);
+            tracing::error!(
+                auth_operation = "login",
+                auth_result = "failure",
+                failure_reason = "database_error",
+                error = %e,
+                "Database error during login"
+            );
             return Err(ApiErrorResponse::internal_server_error(
                 "Authentication service temporarily unavailable",
             ));
@@ -626,8 +644,11 @@ async fn login_user(
 
     if !is_valid {
         tracing::info!(
-            "Login attempt with invalid password for email: {}",
-            req.email
+            auth_operation = "login",
+            auth_result = "failure",
+            failure_reason = "invalid_password",
+            user_id = %user.id,
+            "Login attempt with invalid password"
         );
         return Err(ApiErrorResponse::unauthorized("Invalid email or password"));
     }
