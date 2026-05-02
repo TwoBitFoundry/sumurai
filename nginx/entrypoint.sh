@@ -52,7 +52,7 @@ certificate_not_after() {
 
 generate_development_self_signed_certificate() {
   echo "Generating development self-signed certificate for ${DOMAIN}"
-  openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+  openssl req -x509 -nodes -newkey rsa:2048 -days 30 \
     -keyout "${PRIVKEY}" \
     -out "${FULLCHAIN}" \
     -subj "/CN=${DOMAIN}" >/dev/null 2>&1

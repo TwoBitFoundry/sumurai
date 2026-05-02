@@ -10,7 +10,7 @@ Prevent a production deployment from silently serving a development self-signed 
 
 ## Current State
 
-- `nginx/entrypoint.sh` defaults `DOMAIN` to `localhost`, creates `/etc/letsencrypt/live/${DOMAIN}`, and generates a 1-day development self-signed RSA certificate only when local certificate material is missing.
+- `nginx/entrypoint.sh` defaults `DOMAIN` to `localhost`, creates `/etc/letsencrypt/live/${DOMAIN}`, and generates a 30-day development self-signed RSA certificate only when local certificate material is missing.
 - `nginx/entrypoint.sh` now includes runtime mode and certificate validation helpers, emits the detected runtime mode, and can be sourced safely under `SUMURAI_ENTRYPOINT_TEST=1`.
 - `docker-compose.yml` defines `certbot` behind the optional `certbot` profile.
 - `docker-compose.yml` now passes `ENVIRONMENT` into nginx.
@@ -70,7 +70,7 @@ Completed on this branch:
 
 Keep the current self-signed fallback only for local development. Update the shell flow so:
 
-- If certificate files are missing and runtime is development, generate the 1-day self-signed certificate.
+- If certificate files are missing and runtime is development, generate the 30-day self-signed certificate.
 - If certificate files are missing and runtime is production, exit non-zero with instructions to provision a real certificate before starting nginx.
 - If certificate files exist but are self-signed in production, log a prominent error and exit non-zero.
 - If certificate files exist but expire within 14 days in production, log a prominent error and exit non-zero.
@@ -80,7 +80,7 @@ Completed on this branch:
 
 - Added `validate_tls_certificate` to preserve local bootstrapping while failing closed in production.
 - Production startup now fails for missing, self-signed, and soon-expiring certificate material.
-- Development startup still generates a 1-day self-signed certificate when certificate material is missing.
+- Development startup still generates a 30-day self-signed certificate when certificate material is missing.
 
 ### 4. Mark Development-Only Self-Signed Generation
 

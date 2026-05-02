@@ -44,7 +44,7 @@ Open http://localhost:8080. Demo: `me@test.com` / `Test1234!`
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for prerequisites and full setup.
 
-For production deployments, provision nginx server TLS before exposing Sumurai to users. See [Production TLS](docs/PRODUCTION_TLS.md).
+For production deployments, provision nginx server TLS before exposing Sumurai to users and run with `docker-compose.production.yml`. See [Production TLS](docs/PRODUCTION_TLS.md).
 
 ### Teller certificate paths (Docker)
 
