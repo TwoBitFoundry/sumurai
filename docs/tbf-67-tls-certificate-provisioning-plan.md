@@ -167,6 +167,14 @@ Before closing the ticket:
 - Simulate production mode with generated self-signed material and confirm startup or healthcheck failure.
 - Confirm the deployment guide does not instruct operators to store secrets or private key contents in docs.
 
+Completed on this branch:
+
+- Ran the full nginx shell test suite.
+- Ran Docker Compose config validation with local defaults and configurable nginx host ports.
+- Simulated production self-signed, missing, and soon-expiring certificate failures in shell tests.
+- Confirmed the production TLS guide does not include private key contents.
+- Container runtime startup was not executed in this pass because the local Docker cache is missing `certbot/certbot:latest`; no image pull was performed.
+
 ## Files Expected To Change
 
 - `nginx/entrypoint.sh`
@@ -237,3 +245,11 @@ Before closing the ticket:
 - `sh nginx/tests/healthcheck_test.sh`
 - `env POSTGRES_PASSWORD=test SEQ_PASSWORD=test JWT_SECRET=test ENCRYPTION_KEY=test TELLER_APPLICATION_ID=test TELLER_CERT_PATH=/tmp/cert.pem TELLER_KEY_PATH=/tmp/key.pem DOMAIN=localhost SSL_PORT=8443 ENVIRONMENT=development HTTP_PORT=8080 HTTPS_PORT=8443 docker compose -f docker-compose.yml config >/dev/null`
 - Result: passed
+
+### Operational Verification
+
+- `sh -n nginx/entrypoint.sh`
+- `sh -n nginx/healthcheck.sh`
+- `rg -n "APP_ENV" docs/tbf-67-tls-certificate-provisioning-plan.md nginx docker-compose.yml README.md docs/PRODUCTION_TLS.md`
+- `docker image inspect nginx:1.27-alpine certbot/certbot:latest >/dev/null`
+- Result: shell syntax passed; `APP_ENV` was absent; Docker image inspection showed `certbot/certbot:latest` is not present locally, so runtime startup was not executed without pulling images.
