@@ -44,6 +44,8 @@ Open http://localhost:8080. Demo: `me@test.com` / `Test1234!`
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for prerequisites and full setup.
 
+For production deployments, provision nginx server TLS before exposing Sumurai to users. See [Production TLS](docs/PRODUCTION_TLS.md).
+
 ### Teller certificate paths (Docker)
 
 In `.env`, `TELLER_CERT_PATH` and `TELLER_KEY_PATH` are **paths on your host** to the PEM files (for example `./.certs/teller/certificate.pem` and `./.certs/teller/private_key.pem`). Docker Compose mounts those files into the backend container at **`/etc/teller/certificate.pem`** and **`/etc/teller/private_key.pem`**, and the backend reads those in-container paths. To generate local dev placeholders, run `./scripts/ensure-teller-pem-files.sh` (creates `.certs/teller/` if needed).
@@ -61,6 +63,7 @@ Self-hosted. No vendor data path.
 - Data stays in your PostgreSQL
 - Bank credentials never stored (Teller uses short-lived tokens)
 - Provider tokens encrypted (AES-256-GCM)
+- Production nginx TLS requires a publicly trusted certificate and renewal schedule
 - Wipe everything: `docker compose down -v`
 
 ## Roadmap

@@ -120,8 +120,8 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-}
     command: [ "/bin/sh", "/etc/nginx/entrypoint.sh" ]
     ports:
-      - "8080:80"
-      - "8443:443"
+      - "${HTTP_PORT:-8080}:80"
+      - "${HTTPS_PORT:-8443}:443"
     volumes:
       - ./nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
       - ./nginx/entrypoint.sh:/etc/nginx/entrypoint.sh:ro

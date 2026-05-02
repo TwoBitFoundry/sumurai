@@ -17,7 +17,8 @@ Prevent a production deployment from silently serving a development self-signed 
 - `nginx/nginx.conf.template` expects certificates at `/etc/letsencrypt/live/${DOMAIN}/fullchain.pem` and `/etc/letsencrypt/live/${DOMAIN}/privkey.pem`.
 - `nginx/nginx.conf.template` now includes CSP, HSTS, XFO, content-type, and referrer-policy headers, but these do not change the certificate provisioning gap.
 - `docs/sumurai-threat-model.md` tracks the production risk as TM-010.
-- `README.md` documents Teller mTLS host-to-container certificate paths, but there is still no production TLS guide that marks ACME provisioning and renewal as required for nginx.
+- `README.md` links to the production TLS guide and still documents Teller mTLS host-to-container certificate paths separately.
+- `docs/PRODUCTION_TLS.md` marks nginx server TLS provisioning and renewal as required for production.
 - `nginx/healthcheck.sh` validates certificate presence, production trust, production expiry, and nginx `/healthz`.
 - `docker-compose.yml` now mounts and runs `nginx/healthcheck.sh` for nginx health.
 
@@ -125,6 +126,12 @@ Add `docs/DEPLOYMENT.md` or a focused `docs/PRODUCTION_TLS.md` if a full deploym
 
 Update `README.md` Quick Start or Security sections to link to the production TLS guide and make local-only behavior distinct from production.
 
+Completed on this branch:
+
+- Added `docs/PRODUCTION_TLS.md` covering required inputs, first issuance, renewal, verification, and failure behavior.
+- Updated `README.md` to link the production TLS guide and call out the production certificate renewal requirement.
+- Made nginx host port mappings configurable through `HTTP_PORT` and `HTTPS_PORT` so production can bind public 80/443 while local defaults remain 8080/8443.
+
 ### 7. Add Tests and Static Validation
 
 Add shell-level tests for `nginx/entrypoint.sh` and the healthcheck behavior. Prefer a lightweight test harness in `nginx/tests/` or `scripts/` using temporary directories and generated certificates so tests do not require real ACME calls.
@@ -209,3 +216,9 @@ Before closing the ticket:
 - `sh nginx/tests/entrypoint_runtime_detection_test.sh`
 - `env POSTGRES_PASSWORD=test SEQ_PASSWORD=test JWT_SECRET=test ENCRYPTION_KEY=test TELLER_APPLICATION_ID=test TELLER_CERT_PATH=/tmp/cert.pem TELLER_KEY_PATH=/tmp/key.pem DOMAIN=localhost SSL_PORT=8443 ENVIRONMENT=development docker compose -f docker-compose.yml config >/dev/null`
 - Result: passed
+
+### Production TLS Documentation
+
+- `env POSTGRES_PASSWORD=test SEQ_PASSWORD=test JWT_SECRET=test ENCRYPTION_KEY=test TELLER_APPLICATION_ID=test TELLER_CERT_PATH=/tmp/cert.pem TELLER_KEY_PATH=/tmp/key.pem DOMAIN=localhost SSL_PORT=8443 ENVIRONMENT=development HTTP_PORT=8080 HTTPS_PORT=8443 docker compose -f docker-compose.yml config >/dev/null`
+- `rg -n "PRIVATE KEY|BEGIN .*PRIVATE|privkey\\.pem contents|paste.*key|store.*private key" docs/PRODUCTION_TLS.md README.md`
+- Result: compose validation passed; no private-key-content documentation matches found.
