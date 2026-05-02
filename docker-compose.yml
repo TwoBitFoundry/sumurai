@@ -125,10 +125,11 @@ services:
     volumes:
       - ./nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
       - ./nginx/entrypoint.sh:/etc/nginx/entrypoint.sh:ro
+      - ./nginx/healthcheck.sh:/etc/nginx/healthcheck.sh:ro
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/www/certbot
     healthcheck:
-      test: [ "CMD", "wget", "-q", "-O-", "http://127.0.0.1/healthz" ]
+      test: [ "CMD", "/bin/sh", "/etc/nginx/healthcheck.sh" ]
       interval: 10s
       timeout: 5s
       retries: 3

@@ -18,7 +18,8 @@ Prevent a production deployment from silently serving a development self-signed 
 - `nginx/nginx.conf.template` now includes CSP, HSTS, XFO, content-type, and referrer-policy headers, but these do not change the certificate provisioning gap.
 - `docs/sumurai-threat-model.md` tracks the production risk as TM-010.
 - `README.md` documents Teller mTLS host-to-container certificate paths, but there is still no production TLS guide that marks ACME provisioning and renewal as required for nginx.
-- There is no nginx certificate healthcheck script; the Compose healthcheck still only fetches `/healthz`.
+- `nginx/healthcheck.sh` validates certificate presence, production trust, production expiry, and nginx `/healthz`.
+- `docker-compose.yml` now mounts and runs `nginx/healthcheck.sh` for nginx health.
 
 ## Best-Practice Principles
 
@@ -102,6 +103,12 @@ The script should:
 - Continue checking `http://127.0.0.1/healthz` so nginx process health remains covered.
 
 Wire the nginx service healthcheck to call this script instead of only fetching `/healthz`.
+
+Completed on this branch:
+
+- Added `nginx/healthcheck.sh` using the same certificate helpers as startup validation.
+- Wired the nginx Compose healthcheck to call `/etc/nginx/healthcheck.sh`.
+- Added shell coverage for missing, self-signed, soon-expiring, and long-lived production certificate healthcheck outcomes.
 
 ### 6. Document Production Certificate Provisioning
 
@@ -192,4 +199,13 @@ Before closing the ticket:
 - `sh nginx/tests/entrypoint_startup_validation_test.sh`
 - `sh nginx/tests/entrypoint_certificate_helpers_test.sh`
 - `sh nginx/tests/entrypoint_runtime_detection_test.sh`
+- Result: passed
+
+### Runtime Healthcheck
+
+- `sh nginx/tests/healthcheck_test.sh`
+- `sh nginx/tests/entrypoint_startup_validation_test.sh`
+- `sh nginx/tests/entrypoint_certificate_helpers_test.sh`
+- `sh nginx/tests/entrypoint_runtime_detection_test.sh`
+- `env POSTGRES_PASSWORD=test SEQ_PASSWORD=test JWT_SECRET=test ENCRYPTION_KEY=test TELLER_APPLICATION_ID=test TELLER_CERT_PATH=/tmp/cert.pem TELLER_KEY_PATH=/tmp/key.pem DOMAIN=localhost SSL_PORT=8443 ENVIRONMENT=development docker compose -f docker-compose.yml config >/dev/null`
 - Result: passed
