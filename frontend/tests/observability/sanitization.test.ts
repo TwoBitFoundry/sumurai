@@ -59,6 +59,19 @@ describe('redactTokenPatterns', () => {
     expect(redactTokenPatterns(input)).toBe('Authorization: Bearer [REDACTED]');
   });
 
+  it('should redact email addresses', () => {
+    const input = 'Contact test@example.com for support';
+    expect(redactTokenPatterns(input)).toBe('Contact [EMAIL_REDACTED] for support');
+  });
+
+  it('should redact email addresses alongside tokens', () => {
+    const input =
+      'Contact test@example.com with token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
+    expect(redactTokenPatterns(input)).toBe(
+      'Contact [EMAIL_REDACTED] with token [JWT_REDACTED]'
+    );
+  });
+
   it('should handle non-string input gracefully', () => {
     expect(redactTokenPatterns(123 as any)).toBe(123);
     expect(redactTokenPatterns(null as any)).toBe(null);
@@ -103,6 +116,11 @@ describe('sanitizeUrl', () => {
     expect(sanitized).toContain('token=%5BREDACTED%5D');
     expect(sanitized).toContain('access_token=%5BREDACTED%5D');
     expect(sanitized).toContain('user=bob');
+  });
+
+  it('should redact email query values', () => {
+    const url = 'http://api.com/profile?user=test@example.com&limit=10';
+    expect(sanitizeUrl(url)).toBe('http://api.com/profile?user=%5BEMAIL_REDACTED%5D&limit=10');
   });
 
   it('should handle malformed URLs by applying token redaction', () => {
@@ -189,6 +207,25 @@ describe('sanitizeSpanAttributes', () => {
     });
     sanitizeSpanAttributes(span);
     expect(span.attributes['error.message']).toBe('Invalid token: [JWT_REDACTED]');
+  });
+
+  it('should redact email addresses in attribute values', () => {
+    const span = createMockSpan({
+      'error.message': 'Reset link sent to test@example.com',
+    });
+    sanitizeSpanAttributes(span);
+    expect(span.attributes['error.message']).toBe('Reset link sent to [EMAIL_REDACTED]');
+  });
+
+  it('should redact email addresses and tokens in attribute values', () => {
+    const span = createMockSpan({
+      'error.message':
+        'Reset link sent to test@example.com with token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U',
+    });
+    sanitizeSpanAttributes(span);
+    expect(span.attributes['error.message']).toBe(
+      'Reset link sent to [EMAIL_REDACTED] with token [JWT_REDACTED]'
+    );
   });
 
   it('should preserve non-sensitive attributes', () => {

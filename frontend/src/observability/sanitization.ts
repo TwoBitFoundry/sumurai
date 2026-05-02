@@ -28,6 +28,10 @@ const TOKEN_PATTERNS = [
   { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, replacement: '[CC_REDACTED]' },
   { pattern: /\b\d{3}-\d{2}-\d{4}\b/g, replacement: '[SSN_REDACTED]' },
   { pattern: /Bearer\s+[A-Za-z0-9_-]+/g, replacement: 'Bearer [REDACTED]' },
+  {
+    pattern: /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/gi,
+    replacement: '[EMAIL_REDACTED]',
+  },
 ];
 
 export function redactTokenPatterns(value: string): string {
@@ -52,7 +56,14 @@ export function sanitizeUrl(url: string): string {
       }
     });
 
-    return urlObj.toString();
+    for (const [param, value] of Array.from(urlObj.searchParams.entries())) {
+      const sanitizedValue = redactTokenPatterns(value);
+      if (sanitizedValue !== value) {
+        urlObj.searchParams.set(param, sanitizedValue);
+      }
+    }
+
+    return redactTokenPatterns(urlObj.toString());
   } catch {
     return redactTokenPatterns(url);
   }
