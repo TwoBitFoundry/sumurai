@@ -77,6 +77,18 @@ assert_success test -s "${development_missing_dir}/fullchain.pem"
 assert_success test -s "${development_missing_dir}/privkey.pem"
 assert_success certificate_is_self_signed
 
+development_expiring_dir="${TMP_DIR}/development-expiring"
+make_self_signed_certificate "${development_expiring_dir}" 1
+original_certificate_mtime="$(stat -f %m "${development_expiring_dir}/fullchain.pem")"
+sleep 1
+load_entrypoint localhost development "${development_expiring_dir}"
+assert_success validate_tls_certificate
+renewed_certificate_mtime="$(stat -f %m "${development_expiring_dir}/fullchain.pem")"
+if [ "${renewed_certificate_mtime}" -le "${original_certificate_mtime}" ]; then
+  printf 'expected development self-signed certificate to be regenerated\n' >&2
+  exit 1
+fi
+
 production_missing_dir="${TMP_DIR}/production-missing"
 load_entrypoint app.example.com production "${production_missing_dir}"
 assert_failure validate_tls_certificate

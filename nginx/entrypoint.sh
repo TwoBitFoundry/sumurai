@@ -95,6 +95,7 @@ validate_tls_certificate() {
 
     mkdir -p "${CERT_DIR}"
     generate_development_self_signed_certificate
+    return 0
   fi
 
   if certificate_is_self_signed; then
@@ -110,6 +111,12 @@ validate_tls_certificate() {
     if [ "${mode}" = "production" ]; then
       printf 'TLS_PROVISIONING_ERROR domain=%s certificate=%s reason=certificate_expires_within_%s_days not_after=%s action=renew_certificate_before_startup\n' "${DOMAIN}" "${FULLCHAIN}" "${EXPIRY_WARNING_DAYS}" "$(certificate_not_after)" >&2
       return 1
+    fi
+
+    if certificate_is_self_signed; then
+      printf 'TLS_PROVISIONING_WARNING domain=%s certificate=%s reason=regenerating_expiring_development_self_signed_certificate not_after=%s\n' "${DOMAIN}" "${FULLCHAIN}" "$(certificate_not_after)" >&2
+      generate_development_self_signed_certificate
+      return 0
     fi
 
     printf 'TLS_PROVISIONING_WARNING domain=%s certificate=%s reason=certificate_expires_within_%s_days not_after=%s\n' "${DOMAIN}" "${FULLCHAIN}" "${EXPIRY_WARNING_DAYS}" "$(certificate_not_after)" >&2
