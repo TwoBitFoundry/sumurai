@@ -151,6 +151,12 @@ Also validate Compose wiring with:
 docker compose -f docker-compose.yml config >/dev/null
 ```
 
+Completed on this branch:
+
+- Added shell tests for runtime detection, certificate helpers, startup validation, and healthcheck behavior under `nginx/tests/`.
+- Covered local development self-signed generation, production missing certificate failure, production self-signed failure, production soon-expiring failure, long-lived production certificate success, and production healthcheck failure cases.
+- Validated Docker Compose wiring with the nginx healthcheck mount and configurable host ports.
+
 ### 8. Operational Verification
 
 Before closing the ticket:
@@ -222,3 +228,12 @@ Before closing the ticket:
 - `env POSTGRES_PASSWORD=test SEQ_PASSWORD=test JWT_SECRET=test ENCRYPTION_KEY=test TELLER_APPLICATION_ID=test TELLER_CERT_PATH=/tmp/cert.pem TELLER_KEY_PATH=/tmp/key.pem DOMAIN=localhost SSL_PORT=8443 ENVIRONMENT=development HTTP_PORT=8080 HTTPS_PORT=8443 docker compose -f docker-compose.yml config >/dev/null`
 - `rg -n "PRIVATE KEY|BEGIN .*PRIVATE|privkey\\.pem contents|paste.*key|store.*private key" docs/PRODUCTION_TLS.md README.md`
 - Result: compose validation passed; no private-key-content documentation matches found.
+
+### Tests And Static Validation
+
+- `sh nginx/tests/entrypoint_runtime_detection_test.sh`
+- `sh nginx/tests/entrypoint_certificate_helpers_test.sh`
+- `sh nginx/tests/entrypoint_startup_validation_test.sh`
+- `sh nginx/tests/healthcheck_test.sh`
+- `env POSTGRES_PASSWORD=test SEQ_PASSWORD=test JWT_SECRET=test ENCRYPTION_KEY=test TELLER_APPLICATION_ID=test TELLER_CERT_PATH=/tmp/cert.pem TELLER_KEY_PATH=/tmp/key.pem DOMAIN=localhost SSL_PORT=8443 ENVIRONMENT=development HTTP_PORT=8080 HTTPS_PORT=8443 docker compose -f docker-compose.yml config >/dev/null`
+- Result: passed
