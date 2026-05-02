@@ -5,8 +5,7 @@ on:
     types: [opened, edited, synchronize, reopened, ready_for_review]
 
 permissions:
-  pull-requests: write
-  contents: read
+  pull-requests: read
 
 jobs:
   validate:
@@ -14,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
     steps:
-      - uses: amannn/action-semantic-pull-request@v5
+      - uses: amannn/action-semantic-pull-request@0723387faaf9b38adef4775cd42cfd5155ed6017
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -37,4 +36,3 @@ jobs:
             dependencies
           # Optional: If your repo enforces squash merges, the title becomes the commit message.
           validateSingleCommit: true
-
