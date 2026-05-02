@@ -8,7 +8,7 @@ FULLCHAIN="${CERT_DIR}/fullchain.pem"
 PRIVKEY="${CERT_DIR}/privkey.pem"
 
 runtime_mode() {
-  if [ "${ENVIRONMENT:-}" = "production" ] || [ "${APP_ENV:-}" = "production" ]; then
+  if [ "${ENVIRONMENT:-}" = "production" ]; then
     printf '%s\n' "production"
     return 0
   fi

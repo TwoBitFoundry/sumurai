@@ -23,4 +23,3 @@ assert_runtime_mode development DOMAIN=127.0.0.1
 assert_runtime_mode development DOMAIN=
 assert_runtime_mode production DOMAIN=app.example.com
 assert_runtime_mode production DOMAIN=localhost ENVIRONMENT=production
-assert_runtime_mode production DOMAIN=localhost APP_ENV=production

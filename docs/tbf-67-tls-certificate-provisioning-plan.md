@@ -13,7 +13,7 @@ Prevent a production deployment from silently serving a development self-signed 
 - `nginx/entrypoint.sh` defaults `DOMAIN` to `localhost`, creates `/etc/letsencrypt/live/${DOMAIN}`, and generates a 1-day self-signed RSA certificate when `fullchain.pem` or `privkey.pem` is missing.
 - `nginx/entrypoint.sh` now includes a `runtime_mode` helper, emits the detected runtime mode, and can be sourced safely under `SUMURAI_ENTRYPOINT_TEST=1`.
 - `docker-compose.yml` defines `certbot` behind the optional `certbot` profile.
-- `docker-compose.yml` now passes `ENVIRONMENT` and `APP_ENV` into nginx.
+- `docker-compose.yml` now passes `ENVIRONMENT` into nginx.
 - `nginx/nginx.conf.template` expects certificates at `/etc/letsencrypt/live/${DOMAIN}/fullchain.pem` and `/etc/letsencrypt/live/${DOMAIN}/privkey.pem`.
 - `nginx/nginx.conf.template` now includes CSP, HSTS, XFO, content-type, and referrer-policy headers, but these do not change the certificate provisioning gap.
 - `docs/sumurai-threat-model.md` tracks the production risk as TM-010.
@@ -35,16 +35,16 @@ Prevent a production deployment from silently serving a development self-signed 
 
 Add a small shell helper in `nginx/entrypoint.sh` that classifies the runtime as production when either:
 
-- `ENVIRONMENT=production` or `APP_ENV=production`, if already used by the deployer, or
+- `ENVIRONMENT=production`, if already used by the deployer, or
 - `DOMAIN` is neither `localhost`, `127.0.0.1`, nor empty.
 
-Use `DOMAIN != localhost` as the default ticket-compatible path, while allowing an explicit production variable to avoid ambiguity in future deployment targets. The nginx service now passes `ENVIRONMENT` and `APP_ENV`, so the helper can read either signal without more compose changes.
+Use `DOMAIN != localhost` as the default ticket-compatible path, while allowing an explicit production variable to avoid ambiguity in future deployment targets. The nginx service now passes `ENVIRONMENT`, so the helper can read the deployment mode without more compose changes.
 
 Completed on this branch:
 
-- Added `runtime_mode` in `nginx/entrypoint.sh` with explicit `ENVIRONMENT` and `APP_ENV` overrides plus domain-based fallback.
+- Added `runtime_mode` in `nginx/entrypoint.sh` with an `ENVIRONMENT` override plus domain-based fallback.
 - Gated the entrypoint main path behind `SUMURAI_ENTRYPOINT_TEST=1` so shell tests can source the script safely.
-- Passed `ENVIRONMENT` and `APP_ENV` through the nginx service in `docker-compose.yml`.
+- Passed `ENVIRONMENT` through the nginx service in `docker-compose.yml`.
 - Added shell coverage for localhost, loopback, empty domain, and explicit production env overrides.
 
 ### 2. Add Certificate Inspection Helpers

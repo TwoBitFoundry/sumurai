@@ -118,7 +118,6 @@ services:
       DOMAIN: ${DOMAIN:-localhost}
       SSL_PORT: ${SSL_PORT:-8443}
       ENVIRONMENT: ${ENVIRONMENT:-}
-      APP_ENV: ${APP_ENV:-}
     command: [ "/bin/sh", "/etc/nginx/entrypoint.sh" ]
     ports:
       - "8080:80"
