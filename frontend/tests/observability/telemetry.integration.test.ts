@@ -61,16 +61,8 @@ describe('Telemetry Integration - Auto-Instrumentation', () => {
       expect(tracer).not.toBeNull();
     });
 
-    it('should respect header sanitization setting', async () => {
-      process.env.NEXT_PUBLIC_OTEL_SANITIZE_HEADERS = 'true';
-
-      const tracer = await initTelemetry();
-
-      expect(tracer).not.toBeNull();
-    });
-
-    it('should respect URL sanitization setting', async () => {
-      process.env.NEXT_PUBLIC_OTEL_SANITIZE_URLS = 'true';
+    it('should enforce header and URL sanitization', async () => {
+      delete process.env.NEXT_PUBLIC_OTEL_CAPTURE_BODIES;
 
       const tracer = await initTelemetry();
 

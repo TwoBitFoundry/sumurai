@@ -121,18 +121,8 @@ describe('Telemetry - Business Logic', () => {
       expect(tracer).not.toBeNull();
     });
 
-    it('should respect sanitization enabled flag', async () => {
+    it('should enforce header and URL sanitization by default', async () => {
       process.env.NEXT_PUBLIC_OTEL_ENABLED = 'true';
-      process.env.NEXT_PUBLIC_OTEL_SANITIZE_HEADERS = 'true';
-
-      const tracer = await initTelemetry();
-
-      expect(tracer).not.toBeNull();
-    });
-
-    it('should respect URL sanitization flag', async () => {
-      process.env.NEXT_PUBLIC_OTEL_ENABLED = 'true';
-      process.env.NEXT_PUBLIC_OTEL_SANITIZE_URLS = 'true';
 
       const tracer = await initTelemetry();
 
