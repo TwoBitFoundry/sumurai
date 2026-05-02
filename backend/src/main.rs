@@ -350,7 +350,7 @@ pub fn create_app(state: AppState) -> Router {
             Method::DELETE,
             Method::OPTIONS,
         ])
-        .allow_headers([AUTHORIZATION, CONTENT_TYPE])
+        .allow_headers([AUTHORIZATION, CONTENT_TYPE, COOKIE])
         .allow_credentials(true);
 
     let middleware_stack = ServiceBuilder::new()

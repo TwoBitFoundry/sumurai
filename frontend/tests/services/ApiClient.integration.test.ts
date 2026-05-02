@@ -65,7 +65,7 @@ describe('ApiClient with Direct Fetch', () => {
       expect(fetchSpy).toHaveBeenCalledWith('/api/transactions', expect.any(Object));
     });
 
-    it('should include same-origin credentials without auth headers', async () => {
+    it('should send credentials for cookie auth on same or cross-origin API base without auth headers', async () => {
       const mockResponse = new Response(JSON.stringify({}), { status: 200 });
       fetchSpy.mockResolvedValueOnce(mockResponse);
 
@@ -73,7 +73,7 @@ describe('ApiClient with Direct Fetch', () => {
 
       const callArgs = fetchSpy.mock.calls[0];
       const headers = callArgs[1].headers as Record<string, string>;
-      expect(callArgs[1].credentials).toBe('same-origin');
+      expect(callArgs[1].credentials).toBe('include');
       expect(headers.Authorization).toBeUndefined();
     });
   });

@@ -210,18 +210,8 @@ export function SessionManager({
   }, [timeRemaining, showExpiryModal, onLogout]);
 
   const handleStayLoggedIn = () => {
-    void (async () => {
-      try {
-        const result = await AuthService.refreshToken();
-        onSessionRefreshed(result.expires_at);
-        setShowExpiryModal(false);
-        setTimeRemaining(0);
-      } catch (error) {
-        console.error('Session refresh failed:', error);
-        AuthService.clearToken();
-        handleLogout();
-      }
-    })();
+    setShowExpiryModal(false);
+    setTimeRemaining(0);
   };
 
   const handleLogout = () => {

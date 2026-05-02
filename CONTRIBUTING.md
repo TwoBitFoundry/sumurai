@@ -188,7 +188,7 @@ Everything reads from `.env`. Most variables have defaults in `docker-compose.ym
 | `TELLER_CERT_PATH` | Yes | — | **Host** path to client cert PEM for the compose volume mount (e.g. `./.certs/teller/certificate.pem`). Inside the backend container the same file is mounted at `/etc/teller/certificate.pem`. |
 | `TELLER_KEY_PATH` | Yes | — | **Host** path to private key PEM for the compose volume mount (e.g. `./.certs/teller/private_key.pem`). Inside the container: `/etc/teller/private_key.pem`. |
 | **Optional** | | | |
-| `CORS_ALLOWED_ORIGINS` | No | `http://localhost:8080` | Comma-separated origins |
+| `CORS_ALLOWED_ORIGINS` | No | `http://localhost:8080` | Comma-separated browser origins allowed to call the API with credentials. List every SPA origin; required when the UI and API are on different hosts (set `NEXT_PUBLIC_API_BASE` on the client to the API). |
 | `DOMAIN` | No | `localhost` | Hostname for nginx and Let's Encrypt |
 | `SSL_PORT` | No | `8443` | HTTPS port (use 443 in production) |
 | `LE_EMAIL` | No | — | Email for Let's Encrypt |

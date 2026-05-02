@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { SessionExpiryModal, SessionManager } from '@/SessionManager';
+import { AuthService } from '@/services/authService';
 
 Object.defineProperty(globalThis, 'sessionStorage', {
   value: {
@@ -227,6 +228,47 @@ describe('Session Management & Expiry Modal', () => {
   });
 
   describe('Session Refresh', () => {
+    describe('Given session refresh', () => {
+      describe('When Stay logged in succeeds', () => {
+        it('Then AuthService.refreshToken is invoked exactly once', async () => {
+          installFetchRoutes({
+            'POST /api/auth/refresh': {
+              user_id: 'user-123',
+              expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+              onboarding_completed: true,
+            },
+          });
+
+          const refreshSpy = jest.spyOn(AuthService, 'refreshToken');
+
+          const nowSec = Math.floor(Date.now() / 1000);
+          const expiresAt = new Date((nowSec + 90) * 1000).toISOString();
+
+          render(
+            <SessionManager
+              expiresAt={expiresAt}
+              onSessionRefreshed={jest.fn()}
+              onLogout={jest.fn()}
+            >
+              <div>App Content</div>
+            </SessionManager>
+          );
+
+          await waitFor(() => {
+            expect(screen.getByRole('button', { name: /stay logged in/i })).toBeInTheDocument();
+          });
+
+          await userEvent.click(screen.getByRole('button', { name: /stay logged in/i }));
+
+          await waitFor(() => {
+            expect(refreshSpy).toHaveBeenCalledTimes(1);
+          });
+
+          refreshSpy.mockRestore();
+        });
+      });
+    });
+
     describe('Given session refresh', () => {
       describe('When successful', () => {
         it('Then it should refresh the session and close the modal', async () => {
