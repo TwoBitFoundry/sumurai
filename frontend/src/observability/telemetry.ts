@@ -23,13 +23,17 @@ function getConfig() {
     enabled: env.NEXT_PUBLIC_OTEL_ENABLED === 'true',
     serviceName: env.NEXT_PUBLIC_OTEL_SERVICE_NAME || 'sumurai-frontend',
     serviceVersion: env.NEXT_PUBLIC_OTEL_SERVICE_VERSION || '1.0.0',
-    endpoint: env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:5341/ingest/otlp',
+    endpoint: env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT || '/ingest/otlp',
     seqApiKey: env.NEXT_PUBLIC_OTEL_SEQ_API_KEY || '',
     captureBodies: env.NEXT_PUBLIC_OTEL_CAPTURE_BODIES === 'true',
     sanitizeHeaders: env.NEXT_PUBLIC_OTEL_SANITIZE_HEADERS !== 'false',
     sanitizeUrls: env.NEXT_PUBLIC_OTEL_SANITIZE_URLS !== 'false',
     blockSensitiveEndpoints: env.NEXT_PUBLIC_OTEL_BLOCK_SENSITIVE_ENDPOINTS !== 'false',
   };
+}
+
+function resolveOtlpTracesUrl(endpoint: string): string {
+  return `${endpoint.replace(/\/+$/, '')}/v1/traces`;
 }
 
 function getSpanAttributes(span: Span): Record<string, unknown> {
@@ -108,7 +112,7 @@ export async function initTelemetry(): Promise<Tracer | null> {
   });
 
   const exporter = new OTLPTraceExporter({
-    url: `${config.endpoint}/v1/traces`,
+    url: resolveOtlpTracesUrl(config.endpoint),
     headers: config.seqApiKey
       ? {
           'X-Seq-ApiKey': config.seqApiKey,
