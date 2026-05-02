@@ -50,6 +50,14 @@ certificate_not_after() {
   openssl x509 -noout -enddate -in "${FULLCHAIN}" 2>/dev/null | sed 's/^notAfter=//'
 }
 
+generate_development_self_signed_certificate() {
+  echo "Generating development self-signed certificate for ${DOMAIN}"
+  openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+    -keyout "${PRIVKEY}" \
+    -out "${FULLCHAIN}" \
+    -subj "/CN=${DOMAIN}" >/dev/null 2>&1
+}
+
 log_certificate_status() {
   mode="$(runtime_mode)"
   self_signed="unknown"
@@ -76,6 +84,38 @@ log_certificate_status() {
     "${DOMAIN}" "${mode}" "${FULLCHAIN}" "${self_signed}" "${EXPIRY_WARNING_DAYS}" "${expires_within_warning}" "${not_after}"
 }
 
+validate_tls_certificate() {
+  mode="$(runtime_mode)"
+
+  if ! certificate_exists; then
+    if [ "${mode}" = "production" ]; then
+      printf 'TLS_PROVISIONING_ERROR domain=%s certificate=%s reason=missing_certificate action=provision_real_certificate_before_startup\n' "${DOMAIN}" "${FULLCHAIN}" >&2
+      return 1
+    fi
+
+    mkdir -p "${CERT_DIR}"
+    generate_development_self_signed_certificate
+  fi
+
+  if certificate_is_self_signed; then
+    if [ "${mode}" = "production" ]; then
+      printf 'TLS_PROVISIONING_ERROR domain=%s certificate=%s reason=self_signed_certificate action=provision_acme_certificate_before_startup\n' "${DOMAIN}" "${FULLCHAIN}" >&2
+      return 1
+    fi
+
+    printf 'TLS_PROVISIONING_WARNING domain=%s certificate=%s reason=development_self_signed_certificate\n' "${DOMAIN}" "${FULLCHAIN}" >&2
+  fi
+
+  if certificate_expires_within_days "${EXPIRY_WARNING_DAYS}"; then
+    if [ "${mode}" = "production" ]; then
+      printf 'TLS_PROVISIONING_ERROR domain=%s certificate=%s reason=certificate_expires_within_%s_days not_after=%s action=renew_certificate_before_startup\n' "${DOMAIN}" "${FULLCHAIN}" "${EXPIRY_WARNING_DAYS}" "$(certificate_not_after)" >&2
+      return 1
+    fi
+
+    printf 'TLS_PROVISIONING_WARNING domain=%s certificate=%s reason=certificate_expires_within_%s_days not_after=%s\n' "${DOMAIN}" "${FULLCHAIN}" "${EXPIRY_WARNING_DAYS}" "$(certificate_not_after)" >&2
+  fi
+}
+
 main() {
   if ! command -v openssl >/dev/null 2>&1 || ! command -v envsubst >/dev/null 2>&1; then
     apk add --no-cache openssl gettext >/dev/null
@@ -86,14 +126,7 @@ main() {
 
   echo "TLS runtime mode: $(runtime_mode)"
 
-  if [ ! -s "${FULLCHAIN}" ] || [ ! -s "${PRIVKEY}" ]; then
-    echo "Generating self-signed certificate for ${DOMAIN}"
-    openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
-      -keyout "${PRIVKEY}" \
-      -out "${FULLCHAIN}" \
-      -subj "/CN=${DOMAIN}" >/dev/null 2>&1
-  fi
-
+  validate_tls_certificate
   log_certificate_status
 
   export DOMAIN SSL_PORT

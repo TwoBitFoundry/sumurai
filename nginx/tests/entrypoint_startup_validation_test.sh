@@ -26,11 +26,16 @@ assert_failure() {
 }
 
 load_entrypoint() {
+  domain="$1"
+  environment="$2"
+  cert_dir="$3"
   unset FULLCHAIN
   unset PRIVKEY
-  CERT_DIR="$1"
+  DOMAIN="${domain}"
+  ENVIRONMENT="${environment}"
+  CERT_DIR="${cert_dir}"
   SUMURAI_ENTRYPOINT_TEST=1
-  export CERT_DIR SUMURAI_ENTRYPOINT_TEST
+  export DOMAIN ENVIRONMENT CERT_DIR SUMURAI_ENTRYPOINT_TEST
   . "${ENTRYPOINT}"
 }
 
@@ -41,7 +46,7 @@ make_self_signed_certificate() {
   openssl req -x509 -nodes -newkey rsa:2048 -days "${days}" \
     -keyout "${cert_dir}/privkey.pem" \
     -out "${cert_dir}/fullchain.pem" \
-    -subj "/CN=localhost" >/dev/null 2>&1
+    -subj "/CN=app.example.com" >/dev/null 2>&1
 }
 
 make_ca_signed_certificate() {
@@ -65,27 +70,28 @@ make_ca_signed_certificate() {
     -out "${cert_dir}/fullchain.pem" >/dev/null 2>&1
 }
 
-missing_dir="${TMP_DIR}/missing"
-load_entrypoint "${missing_dir}"
-assert_failure certificate_exists
-
-self_signed_dir="${TMP_DIR}/self-signed"
-make_self_signed_certificate "${self_signed_dir}" 30
-load_entrypoint "${self_signed_dir}"
-assert_success certificate_exists
+development_missing_dir="${TMP_DIR}/development-missing"
+load_entrypoint localhost development "${development_missing_dir}"
+assert_success validate_tls_certificate
+assert_success test -s "${development_missing_dir}/fullchain.pem"
+assert_success test -s "${development_missing_dir}/privkey.pem"
 assert_success certificate_is_self_signed
-assert_failure certificate_expires_within_days 14
 
-short_lived_dir="${TMP_DIR}/short-lived"
-make_ca_signed_certificate "${short_lived_dir}" 1
-load_entrypoint "${short_lived_dir}"
-assert_success certificate_exists
-assert_failure certificate_is_self_signed
-assert_success certificate_expires_within_days 14
+production_missing_dir="${TMP_DIR}/production-missing"
+load_entrypoint app.example.com production "${production_missing_dir}"
+assert_failure validate_tls_certificate
 
-long_lived_dir="${TMP_DIR}/long-lived"
-make_ca_signed_certificate "${long_lived_dir}" 30
-load_entrypoint "${long_lived_dir}"
-assert_success certificate_exists
-assert_failure certificate_is_self_signed
-assert_failure certificate_expires_within_days 14
+production_self_signed_dir="${TMP_DIR}/production-self-signed"
+make_self_signed_certificate "${production_self_signed_dir}" 30
+load_entrypoint app.example.com production "${production_self_signed_dir}"
+assert_failure validate_tls_certificate
+
+production_short_lived_dir="${TMP_DIR}/production-short-lived"
+make_ca_signed_certificate "${production_short_lived_dir}" 1
+load_entrypoint app.example.com production "${production_short_lived_dir}"
+assert_failure validate_tls_certificate
+
+production_long_lived_dir="${TMP_DIR}/production-long-lived"
+make_ca_signed_certificate "${production_long_lived_dir}" 30
+load_entrypoint app.example.com production "${production_long_lived_dir}"
+assert_success validate_tls_certificate

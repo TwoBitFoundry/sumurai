@@ -10,8 +10,8 @@ Prevent a production deployment from silently serving a development self-signed 
 
 ## Current State
 
-- `nginx/entrypoint.sh` defaults `DOMAIN` to `localhost`, creates `/etc/letsencrypt/live/${DOMAIN}`, and generates a 1-day self-signed RSA certificate when `fullchain.pem` or `privkey.pem` is missing.
-- `nginx/entrypoint.sh` now includes a `runtime_mode` helper, emits the detected runtime mode, and can be sourced safely under `SUMURAI_ENTRYPOINT_TEST=1`.
+- `nginx/entrypoint.sh` defaults `DOMAIN` to `localhost`, creates `/etc/letsencrypt/live/${DOMAIN}`, and generates a 1-day development self-signed RSA certificate only when local certificate material is missing.
+- `nginx/entrypoint.sh` now includes runtime mode and certificate validation helpers, emits the detected runtime mode, and can be sourced safely under `SUMURAI_ENTRYPOINT_TEST=1`.
 - `docker-compose.yml` defines `certbot` behind the optional `certbot` profile.
 - `docker-compose.yml` now passes `ENVIRONMENT` into nginx.
 - `nginx/nginx.conf.template` expects certificates at `/etc/letsencrypt/live/${DOMAIN}/fullchain.pem` and `/etc/letsencrypt/live/${DOMAIN}/privkey.pem`.
@@ -74,9 +74,20 @@ Keep the current self-signed fallback only for local development. Update the she
 - If certificate files exist but expire within 14 days in production, log a prominent error and exit non-zero.
 - If certificate files expire within 14 days in development, log a warning but continue.
 
+Completed on this branch:
+
+- Added `validate_tls_certificate` to preserve local bootstrapping while failing closed in production.
+- Production startup now fails for missing, self-signed, and soon-expiring certificate material.
+- Development startup still generates a 1-day self-signed certificate when certificate material is missing.
+
 ### 4. Mark Development-Only Self-Signed Generation
 
 Make the development-only intent visible at the point of risk while respecting the repository instruction to avoid adding source comments. Prefer explicit function names, guard variables, and log text such as `Generating development self-signed certificate for ${DOMAIN}` over adding new code comments. If strict ticket interpretation requires a source annotation, keep it to the smallest possible existing line edit.
+
+Completed on this branch:
+
+- Renamed the generation path to `generate_development_self_signed_certificate`.
+- Updated startup output to `Generating development self-signed certificate for ${DOMAIN}`.
 
 ### 5. Add a Runtime Healthcheck Script
 
@@ -172,6 +183,13 @@ Before closing the ticket:
 
 ### Certificate Inspection Helpers
 
+- `sh nginx/tests/entrypoint_certificate_helpers_test.sh`
+- `sh nginx/tests/entrypoint_runtime_detection_test.sh`
+- Result: passed
+
+### Startup Validation And Development Self-Signed Guard
+
+- `sh nginx/tests/entrypoint_startup_validation_test.sh`
 - `sh nginx/tests/entrypoint_certificate_helpers_test.sh`
 - `sh nginx/tests/entrypoint_runtime_detection_test.sh`
 - Result: passed
