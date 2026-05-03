@@ -5,6 +5,7 @@ http {
     # normal abuse is 429'd by the backend (progressive Redis lockout). This sheds only very
     # high RPS before proxy_pass; nginx-emitted 429s do not increment backend strike counters.
     limit_req_zone $binary_remote_addr zone=auth_vol_fuse:10m rate=10r/s;
+    limit_req_zone $binary_remote_addr zone=seq_otlp_ingest:10m rate=5r/s;
 
     upstream frontend_upstream {
         server frontend:8080;
@@ -87,16 +88,27 @@ http {
 
         # Public: Seq UI
         location = /seq {
+            allow 10.0.0.0/8;
+            allow 172.16.0.0/12;
+            allow 192.168.0.0/16;
+            deny all;
             return 302 /seq/;
         }
 
         location /seq/ {
+            allow 10.0.0.0/8;
+            allow 172.16.0.0/12;
+            allow 192.168.0.0/16;
+            deny all;
             rewrite ^/seq/?(.*)$ /$1 break;
             proxy_pass http://seq_upstream;
         }
 
         # Public: OTLP HTTP ingestion -> Seq
         location /ingest/otlp {
+            limit_req zone=seq_otlp_ingest burst=30 nodelay;
+            limit_req_status 429;
+            proxy_set_header X-Seq-ApiKey $http_x_seq_apikey;
             proxy_pass http://seq_upstream/ingest/otlp;
             proxy_http_version 1.1;
             client_max_body_size 10m;

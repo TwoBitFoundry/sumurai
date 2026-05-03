@@ -1,5 +1,14 @@
 use crate::config::{Config, MockEnvironment};
 
+fn nginx_block<'a>(template: &'a str, marker: &str) -> &'a str {
+    let start = template.find(marker).expect("missing nginx block");
+    let block = &template[start..];
+    match block.find("\n\n") {
+        Some(end) => &block[..end],
+        None => block,
+    }
+}
+
 #[test]
 fn given_no_teller_env_when_from_env_provider_then_returns_error() {
     let env = MockEnvironment::new();
@@ -125,4 +134,40 @@ fn given_nginx_template_when_read_then_includes_provider_csp_allowlists() {
     assert!(template.contains("https://sandbox.plaid.com"));
     assert!(template.contains("frame-src"));
     assert!(template.contains("connect-src"));
+}
+
+#[test]
+fn given_nginx_template_when_read_then_restricts_seq_locations_to_internal_networks() {
+    let template = include_str!("../../../nginx/nginx.conf.template");
+    let seq_redirect = nginx_block(template, "location = /seq");
+    let seq_proxy = nginx_block(template, "location /seq/");
+
+    for block in [seq_redirect, seq_proxy] {
+        assert!(block.contains("allow 10.0.0.0/8"));
+        assert!(block.contains("allow 172.16.0.0/12"));
+        assert!(block.contains("allow 192.168.0.0/16"));
+        assert!(block.contains("deny all"));
+    }
+}
+
+#[test]
+fn given_nginx_template_when_read_then_limits_otlp_ingestion_at_the_edge() {
+    let template = include_str!("../../../nginx/nginx.conf.template");
+    let ingest_block = nginx_block(template, "location /ingest/otlp");
+
+    assert!(template.contains(
+        "limit_req_zone $binary_remote_addr zone=seq_otlp_ingest:10m rate=5r/s;"
+    ));
+    assert!(ingest_block.contains("limit_req zone=seq_otlp_ingest burst=30 nodelay;"));
+    assert!(ingest_block.contains("limit_req_status 429;"));
+    assert!(ingest_block.contains("client_max_body_size 10m;"));
+    assert!(ingest_block.contains("proxy_http_version 1.1;"));
+}
+
+#[test]
+fn given_nginx_template_when_read_then_forwards_seq_api_key_to_otlp_ingestion() {
+    let template = include_str!("../../../nginx/nginx.conf.template");
+    let ingest_block = nginx_block(template, "location /ingest/otlp");
+
+    assert!(ingest_block.contains("proxy_set_header X-Seq-ApiKey $http_x_seq_apikey;"));
 }

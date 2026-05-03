@@ -1,8 +1,21 @@
-import { getTracer, initTelemetry, shutdownTelemetry } from '@/observability/telemetry';
+import {
+  getTelemetryExportSettings,
+  getTracer,
+  initTelemetry,
+  resolveOtlpTracesUrl,
+  shutdownTelemetry,
+} from '@/observability/telemetry';
 
 describe('Telemetry - Business Logic', () => {
   afterEach(async () => {
     await shutdownTelemetry();
+    delete process.env.NEXT_PUBLIC_OTEL_SERVICE_NAME;
+    delete process.env.NEXT_PUBLIC_OTEL_SERVICE_VERSION;
+    delete process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT;
+    delete process.env.NEXT_PUBLIC_OTEL_EXPORT_BATCH_SIZE;
+    delete process.env.NEXT_PUBLIC_OTEL_EXPORT_DELAY_MS;
+    delete process.env.NEXT_PUBLIC_OTEL_EXPORT_QUEUE_SIZE;
+    delete process.env.NEXT_PUBLIC_OTEL_EXPORT_TIMEOUT_MS;
   });
 
   describe('Graceful Degradation', () => {
@@ -65,6 +78,48 @@ describe('Telemetry - Business Logic', () => {
       const tracer = await initTelemetry();
 
       expect(tracer).not.toBeNull();
+    });
+  });
+
+  describe('OTLP Endpoint Resolution', () => {
+    it('should append the traces path to the configured endpoint', () => {
+      expect(resolveOtlpTracesUrl('/ingest/otlp')).toBe('/ingest/otlp/v1/traces');
+    });
+
+    it('should trim trailing slashes before appending the traces path', () => {
+      expect(resolveOtlpTracesUrl('http://localhost:5341/ingest/otlp/')).toBe(
+        'http://localhost:5341/ingest/otlp/v1/traces'
+      );
+    });
+  });
+
+  describe('OTLP Batch Cadence', () => {
+    it('should batch spans on a cadence instead of exporting continuously', () => {
+      delete process.env.NEXT_PUBLIC_OTEL_EXPORT_BATCH_SIZE;
+      delete process.env.NEXT_PUBLIC_OTEL_EXPORT_DELAY_MS;
+      delete process.env.NEXT_PUBLIC_OTEL_EXPORT_QUEUE_SIZE;
+      delete process.env.NEXT_PUBLIC_OTEL_EXPORT_TIMEOUT_MS;
+
+      expect(getTelemetryExportSettings()).toEqual({
+        maxExportBatchSize: 64,
+        scheduledDelayMillis: 15000,
+        maxQueueSize: 1024,
+        exportTimeoutMillis: 30000,
+      });
+    });
+
+    it('should allow overriding export cadence and batch size through env vars', () => {
+      process.env.NEXT_PUBLIC_OTEL_EXPORT_BATCH_SIZE = '20';
+      process.env.NEXT_PUBLIC_OTEL_EXPORT_DELAY_MS = '30000';
+      process.env.NEXT_PUBLIC_OTEL_EXPORT_QUEUE_SIZE = '500';
+      process.env.NEXT_PUBLIC_OTEL_EXPORT_TIMEOUT_MS = '60000';
+
+      expect(getTelemetryExportSettings()).toEqual({
+        maxExportBatchSize: 20,
+        scheduledDelayMillis: 30000,
+        maxQueueSize: 500,
+        exportTimeoutMillis: 60000,
+      });
     });
   });
 
