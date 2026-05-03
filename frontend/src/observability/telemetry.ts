@@ -24,6 +24,13 @@ export interface TelemetryExportSettings {
   exportTimeoutMillis: number;
 }
 
+export const TELEMETRY_EXPORT_SETTINGS: TelemetryExportSettings = {
+  maxExportBatchSize: 64,
+  scheduledDelayMillis: 15000,
+  maxQueueSize: 1024,
+  exportTimeoutMillis: 30000,
+};
+
 function getConfig() {
   const env = process.env;
   return {
@@ -37,29 +44,8 @@ function getConfig() {
   };
 }
 
-function parsePositiveInteger(value: string | undefined, fallback: number): number {
-  const parsed = Number.parseInt(value ?? '', 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
-
 export function resolveOtlpTracesUrl(endpoint: string): string {
   return `${endpoint.replace(/\/+$/, '')}/v1/traces`;
-}
-
-export function getTelemetryExportSettings(): TelemetryExportSettings {
-  const env = process.env;
-  const maxQueueSize = parsePositiveInteger(env.NEXT_PUBLIC_OTEL_EXPORT_QUEUE_SIZE, 1024);
-  const maxExportBatchSize = Math.min(
-    parsePositiveInteger(env.NEXT_PUBLIC_OTEL_EXPORT_BATCH_SIZE, 64),
-    maxQueueSize
-  );
-
-  return {
-    maxExportBatchSize,
-    scheduledDelayMillis: parsePositiveInteger(env.NEXT_PUBLIC_OTEL_EXPORT_DELAY_MS, 15000),
-    maxQueueSize,
-    exportTimeoutMillis: parsePositiveInteger(env.NEXT_PUBLIC_OTEL_EXPORT_TIMEOUT_MS, 30000),
-  };
 }
 
 function getSpanAttributes(span: Span): Record<string, unknown> {
@@ -146,7 +132,7 @@ export async function initTelemetry(): Promise<Tracer | null> {
       : {},
   });
 
-  const batchSpanProcessor = new BatchSpanProcessor(exporter, getTelemetryExportSettings());
+  const batchSpanProcessor = new BatchSpanProcessor(exporter, TELEMETRY_EXPORT_SETTINGS);
   const sensitiveDataProcessor = new SensitiveDataSpanProcessor({
     blockSensitiveEndpoints: config.blockSensitiveEndpoints,
     redactAuthEndpoints: true,
