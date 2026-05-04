@@ -29,16 +29,9 @@ jobs:
             backend:
               - 'backend/**'
               - 'backend/Dockerfile'
-              - 'backend/Dockerfile.prebuilt'
               - 'backend/Cargo.toml'
               - 'backend/Cargo.lock'
               - 'rust-toolchain.toml'
-              - '.dockerignore'
-              - 'docker-compose.yml'
-              - 'docker-compose.dev.yml'
-              - 'docker-compose.production.yml'
-              - 'scripts/build-backend.sh'
-              - 'Cross.toml'
               - '.github/workflows/**'
             frontend:
               - 'frontend/**'

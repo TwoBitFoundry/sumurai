@@ -36,8 +36,8 @@ Built for individuals and small businesses who want financial visibility without
 ```bash
 cp .env.example .env
 # Edit .env: set JWT_SECRET, ENCRYPTION_KEY, POSTGRES_PASSWORD, Teller creds
-./scripts/build-backend.sh
 docker compose up -d --build
+docker compose build backend
 ```
 
 Open http://localhost:8080. Demo: `me@test.com` / `Test1234!`

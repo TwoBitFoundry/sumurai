@@ -204,6 +204,19 @@ Because this repository is public, published GHCR images are public artifacts. T
 - Obsolete cross-only files are removed unless another active workflow still needs them.
 - Existing unrelated user changes are preserved.
 
+### Completed
+
+- Removed the obsolete cross-build artifacts: `scripts/build-backend.sh`, `backend/Dockerfile.prebuilt`, and `Cross.toml`.
+- Updated `AGENTS.md`, `README.md`, and `CONTRIBUTING.md` to describe the Docker-native backend flow and root Rust scripts.
+- Removed the obsolete build-script references from `.github/workflows/ci.yml`.
+
+### TDD Log
+
+- `rg -n "build-backend\\.sh|Dockerfile\\.prebuilt|Cross\\.toml|cross build|prebuilt binary|x86_64-unknown-linux-gnu|backend/target/" AGENTS.md README.md CONTRIBUTING.md docs .github backend scripts docker-compose*.yml`
+- `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/ci.yml"); puts "yaml ok"'`
+- `git diff --check`
+- Result: the old-flow references were removed from tracked docs and workflow files, the CI workflow still parsed successfully, and the cleanup diff was whitespace-clean.
+
 ## Final Verification
 
 Run these commands from the repository root:
