@@ -41,7 +41,7 @@ fn create_auth_cookie_cache() -> MockCacheService {
     mock_cache
 }
 
-fn set_cookie_value<'a>(response: &'a axum::response::Response) -> Option<&'a str> {
+fn set_cookie_value(response: &axum::response::Response) -> Option<&str> {
     response
         .headers()
         .get(SET_COOKIE)
@@ -58,7 +58,7 @@ async fn given_valid_login_when_authenticating_then_sets_auth_cookie_and_omits_t
 
     mock_db
         .expect_get_user_by_email()
-        .withf(move |candidate| candidate == &expected_email)
+        .withf(move |candidate| candidate == expected_email)
         .returning(move |_| {
             let user = user.clone();
             Box::pin(async move { Ok(Some(user)) })

@@ -1,0 +1,14 @@
+{
+  "name": "sumurai",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "rust:lint": "cargo fmt --manifest-path backend/Cargo.toml --all --check && cargo clippy --manifest-path backend/Cargo.toml --locked --all-targets --no-deps -- -D warnings",
+    "rust:typecheck": "cargo check --manifest-path backend/Cargo.toml --locked --all-targets",
+    "rust:test": "cargo test --manifest-path backend/Cargo.toml --locked",
+    "precommit": "npm run rust:lint && npm run rust:test"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

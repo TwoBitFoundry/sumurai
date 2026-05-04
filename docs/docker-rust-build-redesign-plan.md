@@ -117,6 +117,22 @@ Because this repository is public, published GHCR images are public artifacts. T
 - The hook no longer depends on `pnpm`.
 - No frontend dependency workflow is broken.
 
+### Completed
+
+- Added a root `package.json` with Rust check scripts and a `prepare` hook for Husky.
+- Added `husky` as a root dev dependency and updated the lockfile.
+- Replaced the pre-commit hook with a minimal root npm delegation.
+- Normalized the backend test files so the root lint script passes cleanly.
+
+### TDD Log
+
+- `npm run rust:lint`
+- `npm run rust:typecheck`
+- `npm run rust:test`
+- `npm run precommit`
+- `./.husky/pre-commit`
+- Result: all root Rust checks passed, the combined precommit script passed, and the hook delegated to the same root script successfully.
+
 ## Phase 3: GitHub Actions Alignment
 
 ### Implementation

@@ -155,9 +155,9 @@ fn given_nginx_template_when_read_then_limits_otlp_ingestion_at_the_edge() {
     let template = include_str!("../../../nginx/nginx.conf.template");
     let ingest_block = nginx_block(template, "location /ingest/otlp");
 
-    assert!(template.contains(
-        "limit_req_zone $binary_remote_addr zone=seq_otlp_ingest:10m rate=5r/s;"
-    ));
+    assert!(
+        template.contains("limit_req_zone $binary_remote_addr zone=seq_otlp_ingest:10m rate=5r/s;")
+    );
     assert!(ingest_block.contains("limit_req zone=seq_otlp_ingest burst=30 nodelay;"));
     assert!(ingest_block.contains("limit_req_status 429;"));
     assert!(ingest_block.contains("client_max_body_size 10m;"));
