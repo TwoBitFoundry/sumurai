@@ -1,0 +1,7 @@
+services:
+  frontend:
+    pull_policy: never
+  backend:
+    pull_policy: never
+    environment:
+      AUTH_COOKIE_SAME_SITE: Lax
