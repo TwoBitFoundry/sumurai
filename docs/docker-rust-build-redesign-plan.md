@@ -165,6 +165,17 @@ Because this repository is public, published GHCR images are public artifacts. T
 - Any image publishing workflow builds images from Dockerfiles, not host-built binaries.
 - Public image contents are safe to inspect.
 
+### Completed
+
+- Updated `.github/workflows/ci.yml` to use a path-filter job, Rust fmt/clippy/test steps, and job-level gating for backend and frontend changes.
+- Kept the frontend job intact while aligning the backend job to the current Rust toolchain and cache setup.
+- Left image publishing untouched because this repository does not currently have a publishing workflow to update.
+
+### TDD Log
+
+- `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/ci.yml"); puts "yaml ok"'`
+- Result: the workflow parsed successfully after the CI rewrite.
+
 ## Phase 4: Cleanup and Documentation
 
 ### Implementation

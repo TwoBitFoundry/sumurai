@@ -7,44 +7,90 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  changes:
+    name: Path filters
+    runs-on: ubuntu-24.04
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Filter paths
+        uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'backend/Dockerfile'
+              - 'backend/Dockerfile.prebuilt'
+              - 'backend/Cargo.toml'
+              - 'backend/Cargo.lock'
+              - 'rust-toolchain.toml'
+              - '.dockerignore'
+              - 'docker-compose.yml'
+              - 'docker-compose.dev.yml'
+              - 'docker-compose.production.yml'
+              - 'scripts/build-backend.sh'
+              - 'Cross.toml'
+              - '.github/workflows/**'
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/**'
+
   backend:
     name: Backend (Rust)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.backend == 'true'
     defaults:
       run:
         working-directory: backend
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt,clippy
 
-      - name: Cache cargo/target
+      - name: Cache cargo
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: |
-            backend
+          workspaces: backend
 
-      - name: Cargo tests
+      - name: Cargo fmt
+        run: cargo fmt --all --check
+
+      - name: Cargo clippy
+        run: cargo clippy --workspace --locked --all-targets --no-deps -- -D warnings
+
+      - name: Cargo test
         env:
           RUST_BACKTRACE: 1
-        run: cargo test --all
+        run: cargo test --workspace --locked
 
   frontend:
     name: Frontend (Next.js)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.frontend == 'true'
     defaults:
       run:
         working-directory: frontend
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: npm
