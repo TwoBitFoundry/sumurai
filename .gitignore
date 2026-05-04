@@ -4,7 +4,6 @@ target/
 .swc/
 out/
 coverage/
-backend/Cargo.lock
 *.tsbuildinfo
 *.log
 logs/
