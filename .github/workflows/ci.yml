@@ -66,6 +66,9 @@ jobs:
       - name: Cargo fmt
         run: cargo fmt --all --check
 
+      - name: Cargo check
+        run: cargo check --workspace --locked --all-targets
+
       - name: Cargo clippy
         run: cargo clippy --workspace --locked --all-targets --no-deps -- -D warnings
 
@@ -103,6 +106,9 @@ jobs:
 
       - name: Type check
         run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
 
       - name: Unit tests
         run: npm test

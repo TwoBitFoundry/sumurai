@@ -8,7 +8,10 @@
     "rust:lint": "cargo fmt --manifest-path backend/Cargo.toml --all --check && cargo clippy --manifest-path backend/Cargo.toml --locked --all-targets --no-deps -- -D warnings",
     "rust:typecheck": "cargo check --manifest-path backend/Cargo.toml --locked --all-targets",
     "rust:test": "cargo test --manifest-path backend/Cargo.toml --locked",
-    "precommit": "npm run rust:lint && npm run rust:test"
+    "frontend:typecheck": "npm --prefix frontend run typecheck",
+    "frontend:lint": "npm --prefix frontend run lint",
+    "frontend:test": "npm --prefix frontend test",
+    "precommit": "npm run rust:typecheck && npm run rust:lint && npm run rust:test && npm run frontend:typecheck && npm run frontend:lint && npm run frontend:test"
   },
   "devDependencies": {
     "@semantic-release/commit-analyzer": "^13.0.1",
