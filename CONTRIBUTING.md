@@ -72,7 +72,6 @@ The fastest way to boot everything:
 
 ```bash
 docker compose up -d --build         # frontend + backend + redis + postgres
-docker compose build backend         # rebuild just the backend image
 # Open http://localhost:8080
 ```
 
@@ -129,7 +128,6 @@ DATABASE_URL=postgresql://postgres:password@localhost:5432/accounting \
 
 - `frontend/` — React 19 + TypeScript + Next.js; Tailwind; Recharts
 - `backend/` — Rust + Axum + SQLx; Redis caching; RLS policies
-- `scripts/` — build helpers
 - `docs/` — images/diagrams used in README
 
 See `README.md` for architecture details and endpoint mapping.
@@ -206,7 +204,7 @@ Login and register under `/api/auth/` are limited in the Axum backend (`tower-go
 ## Teller Setup
 
 1. Create a Teller developer account at https://teller.io.
-2. Download the mTLS certificate and private key. Store them as `certificate.pem` and `private_key.pem` under `.certs/teller/` on your machine (gitignored), or run `./scripts/ensure-teller-pem-files.sh` to create local dev PEMs at those paths.
+2. Download the mTLS certificate and private key. Store them as `certificate.pem` and `private_key.pem` under `.certs/teller/` on your machine (gitignored), or create local dev PEMs at those paths.
 3. In `.env`, set `TELLER_CERT_PATH` and `TELLER_KEY_PATH` to those **host** paths. Compose mounts them into the backend at `/etc/teller/certificate.pem` and `/etc/teller/private_key.pem` (see README).
 4. Set `TELLER_APPLICATION_ID` and `TELLER_ENV` (`sandbox`, `development`, `production`).
 5. Launch Teller Connect from the Connect tab to link accounts.

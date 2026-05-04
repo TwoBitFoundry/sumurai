@@ -49,7 +49,6 @@ Because this repository is public, published GHCR images are public artifacts. T
 - Update `docker-compose.yml` so the backend service builds from `backend/Dockerfile`.
 - Remove backend service reliance on:
   - `backend/Dockerfile.prebuilt`
-  - `scripts/build-backend.sh`
   - `backend/target/x86_64-unknown-linux-gnu/...`
   - `cross`
 - Add a root `.dockerignore` that excludes generated and sensitive-prone paths:
@@ -68,12 +67,10 @@ Because this repository is public, published GHCR images are public artifacts. T
 ### Acceptance Criteria
 
 - `docker compose config` succeeds.
-- `docker compose build backend` builds the backend from Rust source inside Docker.
 - Docker build output shows a `cargo chef cook --release --locked --recipe-path recipe.json` layer before the final `cargo build --release --locked`.
 - Rebuilding after a normal backend source-only change reuses the cargo-chef dependency layer and reruns the final Rust build.
 - Changing `backend/Cargo.toml` or `backend/Cargo.lock` invalidates the cargo-chef dependency layer.
 - The backend image build does not require `cross`.
-- The backend image build does not require `scripts/build-backend.sh`.
 - The backend image build does not copy any host `backend/target` binary.
 - The backend service in compose no longer references `backend/Dockerfile.prebuilt`.
 - A change to backend Rust source causes the backend compile layer to rerun during Docker build.
@@ -158,7 +155,6 @@ Because this repository is public, published GHCR images are public artifacts. T
 
 - CI runs Rust format, clippy, and tests with locked dependencies.
 - CI does not use `cross`.
-- CI does not use `scripts/build-backend.sh`.
 - CI does not rely on `backend/Dockerfile.prebuilt`.
 - Backend CI runs when backend source, backend Dockerfile, Cargo files, Rust toolchain, or workflow files change.
 - Frontend CI still runs for frontend changes.
@@ -181,7 +177,6 @@ Because this repository is public, published GHCR images are public artifacts. T
 ### Implementation
 
 - Remove obsolete cross-build materials if no active workflow still needs them:
-  - `scripts/build-backend.sh`
   - `backend/Dockerfile.prebuilt`
   - `Cross.toml`
 - Update documentation that references the old build flow:
@@ -191,22 +186,19 @@ Because this repository is public, published GHCR images are public artifacts. T
   - Any Docker/deployment docs found during implementation.
 - Replace old instructions with:
   - `docker compose up --build`
-  - `docker compose build backend`
   - Root Rust check scripts where appropriate.
 - Keep backend business logic unchanged.
 
 ### Acceptance Criteria
 
-- No tracked documentation instructs developers to run `./scripts/build-backend.sh`.
 - No tracked documentation describes the backend image as requiring a prebuilt host binary.
 - No tracked compose or CI file references `backend/Dockerfile.prebuilt`.
-- No tracked compose or CI file references the cross build script.
 - Obsolete cross-only files are removed unless another active workflow still needs them.
 - Existing unrelated user changes are preserved.
 
 ### Completed
 
-- Removed the obsolete cross-build artifacts: `scripts/build-backend.sh`, `backend/Dockerfile.prebuilt`, and `Cross.toml`.
+- Removed the obsolete cross-build artifacts: `backend/Dockerfile.prebuilt` and `Cross.toml`.
 - Updated `AGENTS.md`, `README.md`, and `CONTRIBUTING.md` to describe the Docker-native backend flow and root Rust scripts.
 - Removed the obsolete build-script references from `.github/workflows/ci.yml`.
 
@@ -223,7 +215,6 @@ Run these commands from the repository root:
 
 ```bash
 docker compose config
-docker compose build backend
 cargo fmt --manifest-path backend/Cargo.toml --all --check
 cargo clippy --manifest-path backend/Cargo.toml --locked --all-targets --no-deps -- -D warnings
 cargo test --manifest-path backend/Cargo.toml --locked

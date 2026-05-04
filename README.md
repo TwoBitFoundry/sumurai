@@ -1,16 +1,17 @@
-![Sumurai](https://github.com/user-attachments/assets/3b1a9fe4-4dbd-4f9a-9183-1f52dcfd70ca)
+Sumurai
 
 # Sumurai
 
 Personal finance dashboard. Self-hosted. Connects to your bank via Teller API, syncs transactions, shows where your money goes.
 
-![Dashboard](docs/images/dashboard-hero.png)
-![Dashboard extras](docs/images/dashboard-extras.png)
+Dashboard
+Dashboard extras
 
 ## Privacy Disclosure for 3rd Party Financial Aggregators
+
 While this app was built to securely handle your information once its received, we are not able to control how 3rd Party Aggregators use your data. This app requires the use of 3rd Party Financial Aggregators API (eg. Teller) to securely connect your accounts and transaction data while keeping them in sync. To do so requires consenting to the 3rd Party Aggregator's terms of service and data usage policy. Please be aware this is a privacy trade-off to allow the tool to be more useful.
 
-You can read Teller's policy here: https://teller.io/legal
+You can read Teller's policy here: [https://teller.io/legal](https://teller.io/legal)
 
 Be sure you are ok with the privacy trade-offs before connecting your accounts!
 
@@ -27,9 +28,9 @@ Built for individuals and small businesses who want financial visibility without
 - Tracks budgets by category
 - Charts spending over time
 
-![Transactions](docs/images/transactions.png)
-![Budgets](docs/images/budgets.png)
-![Accounts](docs/images/accounts.png)
+Transactions
+Budgets
+Accounts
 
 ## Quick Start
 
@@ -37,10 +38,9 @@ Built for individuals and small businesses who want financial visibility without
 cp .env.example .env
 # Edit .env: set JWT_SECRET, ENCRYPTION_KEY, POSTGRES_PASSWORD, Teller creds
 docker compose up -d --build
-docker compose build backend
 ```
 
-Open http://localhost:8080. Demo: `me@test.com` / `Test1234!`
+Open [http://localhost:8080](http://localhost:8080). Demo: `me@test.com` / `Test1234!`
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for prerequisites and full setup.
 
@@ -48,7 +48,7 @@ For production deployments, provision nginx server TLS before exposing Sumurai t
 
 ### Teller certificate paths (Docker)
 
-In `.env`, `TELLER_CERT_PATH` and `TELLER_KEY_PATH` are **paths on your host** to the PEM files (for example `./.certs/teller/certificate.pem` and `./.certs/teller/private_key.pem`). Docker Compose mounts those files into the backend container at **`/etc/teller/certificate.pem`** and **`/etc/teller/private_key.pem`**, and the backend reads those in-container paths. To generate local dev placeholders, run `./scripts/ensure-teller-pem-files.sh` (creates `.certs/teller/` if needed).
+In `.env`, `TELLER_CERT_PATH` and `TELLER_KEY_PATH` are **paths on your host** to the PEM files (for example `./.certs/teller/certificate.pem` and `./.certs/teller/private_key.pem`). Docker Compose mounts those files into the backend container at `**/etc/teller/certificate.pem`** and `**/etc/teller/private_key.pem`**, and the backend reads those in-container paths. If you need local dev placeholders, create PEM files under `.certs/teller/`.
 
 ## Architecture
 
