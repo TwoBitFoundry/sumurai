@@ -165,9 +165,28 @@ fn given_nginx_template_when_read_then_limits_otlp_ingestion_at_the_edge() {
 }
 
 #[test]
-fn given_nginx_template_when_read_then_forwards_seq_api_key_to_otlp_ingestion() {
+fn given_nginx_template_when_read_then_restricts_otlp_ingestion_to_private_networks() {
     let template = include_str!("../../../nginx/nginx.conf.template");
     let ingest_block = nginx_block(template, "location /ingest/otlp");
 
-    assert!(ingest_block.contains("proxy_set_header X-Seq-ApiKey $http_x_seq_apikey;"));
+    assert!(ingest_block.contains("allow 10.0.0.0/8"));
+    assert!(ingest_block.contains("allow 172.16.0.0/12"));
+    assert!(ingest_block.contains("allow 192.168.0.0/16"));
+    assert!(ingest_block.contains("deny all"));
+}
+
+#[test]
+fn given_nginx_template_when_read_then_does_not_inject_seq_api_key_on_otlp_edge_ingestion() {
+    let template = include_str!("../../../nginx/nginx.conf.template");
+    let ingest_block = nginx_block(template, "location /ingest/otlp");
+
+    assert!(!ingest_block.contains("proxy_set_header X-Seq-ApiKey"));
+    assert!(!template.contains("${SEQ_API_KEY}"));
+}
+
+#[test]
+fn given_nginx_template_when_read_then_allows_large_browser_telemetry_batches_on_api_route() {
+    let template = include_str!("../../../nginx/nginx.conf.template");
+    let api_block = nginx_block(template, "location /api {\n            allow 10.0.0.0/8");
+    assert!(api_block.contains("client_max_body_size 10m;"));
 }

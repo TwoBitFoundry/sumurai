@@ -90,9 +90,7 @@ describe('Telemetry Validation', () => {
       expect(tracer).not.toBeNull();
     });
 
-    it('should configure OTLPTraceExporter pointing to Seq', async () => {
-      process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT = 'http://localhost:5341/ingest/otlp';
-
+    it('initializes OTLP trace exporter targeting the relay', async () => {
       const tracer = await initTelemetry();
 
       expect(tracer).not.toBeNull();
@@ -148,11 +146,10 @@ describe('Telemetry Validation', () => {
   });
 
   describe('Configuration Validation', () => {
-    it('should read all required environment variables', async () => {
+    it('should read required environment toggles when set', async () => {
       process.env.NEXT_PUBLIC_OTEL_ENABLED = 'true';
       process.env.NEXT_PUBLIC_OTEL_SERVICE_NAME = 'sumurai-frontend';
       process.env.NEXT_PUBLIC_OTEL_SERVICE_VERSION = '1.0.0';
-      process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT = 'http://localhost:5341/ingest/otlp';
 
       const tracer = await initTelemetry();
 
@@ -163,7 +160,6 @@ describe('Telemetry Validation', () => {
       process.env.NEXT_PUBLIC_OTEL_ENABLED = 'true';
       delete process.env.NEXT_PUBLIC_OTEL_SERVICE_NAME;
       delete process.env.NEXT_PUBLIC_OTEL_SERVICE_VERSION;
-      delete process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT;
 
       const tracer = await initTelemetry();
 

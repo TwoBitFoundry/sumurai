@@ -276,8 +276,7 @@ describe('Telemetry Integration - Fetch Instrumentation', () => {
       expect(global.fetch).toHaveBeenCalled();
     });
 
-    it('should respect custom OTLP endpoint', async () => {
-      process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT = 'http://custom-seq:5341/ingest/otlp';
+    it('should initialize OTLP instrumentation without custom endpoint overrides', async () => {
       (global.fetch as any).mockResolvedValue(createMockResponse(200));
 
       await initTelemetry();

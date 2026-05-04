@@ -1,8 +1,9 @@
 import {
-  TELEMETRY_EXPORT_SETTINGS,
   getTracer,
+  IGNORE_OTEL_SELF_EXPORT_URLS,
   initTelemetry,
-  resolveOtlpTracesUrl,
+  PUBLIC_BROWSER_OTLP_EXPORT_PATH,
+  resolveBrowserOtlpExportUrl,
   shutdownTelemetry,
 } from '@/observability/telemetry';
 
@@ -11,7 +12,6 @@ describe('Telemetry - Business Logic', () => {
     await shutdownTelemetry();
     delete process.env.NEXT_PUBLIC_OTEL_SERVICE_NAME;
     delete process.env.NEXT_PUBLIC_OTEL_SERVICE_VERSION;
-    delete process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT;
   });
 
   describe('Graceful Degradation', () => {
@@ -57,19 +57,9 @@ describe('Telemetry - Business Logic', () => {
       expect(tracer).not.toBeNull();
     });
 
-    it('should read OTLP endpoint from NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT', async () => {
-      process.env.NEXT_PUBLIC_OTEL_ENABLED = 'true';
-      process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT = 'http://localhost:5341/ingest/otlp';
-
-      const tracer = await initTelemetry();
-
-      expect(tracer).not.toBeNull();
-    });
-
     it('should apply defaults if environment variables not set', async () => {
       process.env.NEXT_PUBLIC_OTEL_ENABLED = 'true';
       delete process.env.NEXT_PUBLIC_OTEL_SERVICE_NAME;
-      delete process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT;
 
       const tracer = await initTelemetry();
 
@@ -77,26 +67,45 @@ describe('Telemetry - Business Logic', () => {
     });
   });
 
-  describe('OTLP Endpoint Resolution', () => {
-    it('should append the traces path to the configured endpoint', () => {
-      expect(resolveOtlpTracesUrl('/ingest/otlp')).toBe('/ingest/otlp/v1/traces');
+  describe('OTLP export URL resolution', () => {
+    it('uses same-origin HTTP(S) URLs unchanged', () => {
+      expect(resolveBrowserOtlpExportUrl('http://collector:4318/v1/traces')).toBe(
+        'http://collector:4318/v1/traces'
+      );
     });
 
-    it('should trim trailing slashes before appending the traces path', () => {
-      expect(resolveOtlpTracesUrl('http://localhost:5341/ingest/otlp/')).toBe(
-        'http://localhost:5341/ingest/otlp/v1/traces'
+    it('prefixes bare paths with the runtime origin when available', () => {
+      expect(resolveBrowserOtlpExportUrl(PUBLIC_BROWSER_OTLP_EXPORT_PATH)).toBe(
+        `${window.location.origin}${PUBLIC_BROWSER_OTLP_EXPORT_PATH}`
+      );
+    });
+
+    it('trims trailing slashes on absolute URLs', () => {
+      expect(resolveBrowserOtlpExportUrl('http://collector:4318/export/')).toBe(
+        'http://collector:4318/export'
+      );
+    });
+
+    it('uses the fixed relay path when the argument is whitespace', () => {
+      expect(resolveBrowserOtlpExportUrl('   \n')).toBe(
+        `${window.location.origin}${PUBLIC_BROWSER_OTLP_EXPORT_PATH}`
       );
     });
   });
 
-  describe('OTLP Batch Cadence', () => {
-    it('should batch spans on a cadence instead of exporting continuously', () => {
-      expect(TELEMETRY_EXPORT_SETTINGS).toEqual({
-        maxExportBatchSize: 64,
-        scheduledDelayMillis: 15000,
-        maxQueueSize: 1024,
-        exportTimeoutMillis: 30000,
-      });
+  describe('Self-export URL ignore patterns', () => {
+    it('matches OTLP relay paths passed to instrumentation', () => {
+      expect(IGNORE_OTEL_SELF_EXPORT_URLS.length).toBe(2);
+      expect(
+        IGNORE_OTEL_SELF_EXPORT_URLS.some((r) =>
+          r.test('https://example.com/api/v1/public/telemetry')
+        )
+      ).toBe(true);
+      expect(
+        IGNORE_OTEL_SELF_EXPORT_URLS.some((r) =>
+          r.test('https://example.com/api/v1/private/telemetry')
+        )
+      ).toBe(true);
     });
   });
 

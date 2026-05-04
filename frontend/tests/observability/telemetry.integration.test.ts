@@ -41,15 +41,6 @@ describe('Telemetry Integration - Auto-Instrumentation', () => {
 
       expect(tracer).not.toBeNull();
     });
-
-    it('should use environment values for endpoint', async () => {
-      process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT =
-        'http://seq.example.com:5341/ingest/otlp';
-
-      const tracer = await initTelemetry();
-
-      expect(tracer).not.toBeNull();
-    });
   });
 
   describe('Security Configuration', () => {
@@ -142,7 +133,6 @@ describe('Telemetry Integration - Auto-Instrumentation', () => {
     it('should use defaults when environment not set', async () => {
       delete process.env.NEXT_PUBLIC_OTEL_SERVICE_NAME;
       delete process.env.NEXT_PUBLIC_OTEL_SERVICE_VERSION;
-      delete process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT;
 
       const tracer = await initTelemetry();
 

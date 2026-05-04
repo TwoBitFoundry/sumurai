@@ -17,19 +17,12 @@ import { preventSensitiveSpans, sanitizeSpanAttributes } from './sanitization';
 let tracerProvider: WebTracerProvider | null = null;
 let tracer: Tracer | null = null;
 
-export interface TelemetryExportSettings {
-  maxExportBatchSize: number;
-  scheduledDelayMillis: number;
-  maxQueueSize: number;
-  exportTimeoutMillis: number;
-}
+export const IGNORE_OTEL_SELF_EXPORT_URLS = [
+  /\/api\/v1\/public\/telemetry/,
+  /\/api\/v1\/private\/telemetry/,
+] as const;
 
-export const TELEMETRY_EXPORT_SETTINGS: TelemetryExportSettings = {
-  maxExportBatchSize: 64,
-  scheduledDelayMillis: 15000,
-  maxQueueSize: 1024,
-  exportTimeoutMillis: 30000,
-};
+export const PUBLIC_BROWSER_OTLP_EXPORT_PATH = '/api/v1/public/telemetry';
 
 function getConfig() {
   const env = process.env;
@@ -37,15 +30,23 @@ function getConfig() {
     enabled: env.NEXT_PUBLIC_OTEL_ENABLED === 'true',
     serviceName: env.NEXT_PUBLIC_OTEL_SERVICE_NAME || 'sumurai-frontend',
     serviceVersion: env.NEXT_PUBLIC_OTEL_SERVICE_VERSION || '1.0.0',
-    endpoint: env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT || '/ingest/otlp',
-    seqApiKey: env.NEXT_PUBLIC_OTEL_SEQ_API_KEY || '',
     captureBodies: env.NEXT_PUBLIC_OTEL_CAPTURE_BODIES === 'true',
     blockSensitiveEndpoints: env.NEXT_PUBLIC_OTEL_BLOCK_SENSITIVE_ENDPOINTS !== 'false',
   };
 }
 
-export function resolveOtlpTracesUrl(endpoint: string): string {
-  return `${endpoint.replace(/\/+$/, '')}/v1/traces`;
+export function resolveBrowserOtlpExportUrl(endpoint: string): string {
+  const trimmed = endpoint.trim().replace(/\/+$/, '');
+  const base = trimmed || PUBLIC_BROWSER_OTLP_EXPORT_PATH;
+  if (/^https?:\/\//i.test(base)) {
+    return base;
+  }
+  const origin =
+    typeof globalThis.location?.origin === 'string'
+      ? globalThis.location.origin
+      : 'http://localhost';
+  const pathRef = base.startsWith('/') ? base : `/${base}`;
+  return new URL(pathRef, origin).href;
 }
 
 function getSpanAttributes(span: Span): Record<string, unknown> {
@@ -101,9 +102,7 @@ function setEncryptedTokenAttribute(span: Span): void {
         span.setAttribute('encrypted_token', result);
       }
     })
-    .catch(() => {
-      // Swallow errors to avoid interfering with telemetry pipeline
-    });
+    .catch(() => {});
 }
 
 export async function initTelemetry(): Promise<Tracer | null> {
@@ -124,15 +123,10 @@ export async function initTelemetry(): Promise<Tracer | null> {
   });
 
   const exporter = new OTLPTraceExporter({
-    url: resolveOtlpTracesUrl(config.endpoint),
-    headers: config.seqApiKey
-      ? {
-          'X-Seq-ApiKey': config.seqApiKey,
-        }
-      : {},
+    url: resolveBrowserOtlpExportUrl(PUBLIC_BROWSER_OTLP_EXPORT_PATH),
   });
 
-  const batchSpanProcessor = new BatchSpanProcessor(exporter, TELEMETRY_EXPORT_SETTINGS);
+  const batchSpanProcessor = new BatchSpanProcessor(exporter);
   const sensitiveDataProcessor = new SensitiveDataSpanProcessor({
     blockSensitiveEndpoints: config.blockSensitiveEndpoints,
     redactAuthEndpoints: true,
@@ -149,6 +143,8 @@ export async function initTelemetry(): Promise<Tracer | null> {
 
   trace.setGlobalTracerProvider(tracerProvider);
 
+  const ignoreInstrumentationUrls = [...IGNORE_OTEL_SELF_EXPORT_URLS];
+
   try {
     registerInstrumentations({
       instrumentations: [
@@ -158,6 +154,7 @@ export async function initTelemetry(): Promise<Tracer | null> {
             propagateTraceHeaderCorsUrls: [/.+/],
             clearTimingResources: true,
             ignoreNetworkEvents: true,
+            ignoreUrls: ignoreInstrumentationUrls,
             applyCustomAttributesOnSpan: (span: Span, request: Request, response: Response) => {
               setHttpSpanName(span, request.method, request.url);
               setEncryptedTokenAttribute(span);
@@ -168,6 +165,7 @@ export async function initTelemetry(): Promise<Tracer | null> {
             enabled: true,
             propagateTraceHeaderCorsUrls: [/.+/],
             ignoreNetworkEvents: true,
+            ignoreUrls: ignoreInstrumentationUrls,
             applyCustomAttributesOnSpan: (span: Span) => {
               const attributes = getSpanAttributes(span);
               setHttpSpanName(
@@ -194,9 +192,7 @@ export async function initTelemetry(): Promise<Tracer | null> {
         }),
       ],
     });
-  } catch {
-    // Auto-instrumentations may not be available in test environments
-  }
+  } catch {}
 
   tracer = trace.getTracer(config.serviceName, config.serviceVersion);
 
