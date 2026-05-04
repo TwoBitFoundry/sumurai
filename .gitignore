@@ -45,6 +45,7 @@ Thumbs.db
 docker-data/
 postgres-data/
 .docker/
+docker-compose.override.yml
 *.db
 *.sqlite
 *.sqlite3

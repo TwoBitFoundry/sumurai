@@ -12,7 +12,7 @@ COPY --from=planner /app/backend/recipe.json ./recipe.json
 RUN cargo chef cook --release --locked --recipe-path recipe.json
 COPY backend/ ./
 RUN cargo build --release --locked
-RUN cargo install sqlx-cli --locked --no-default-features --features native-tls,postgres
+RUN cargo install sqlx-cli --version 0.8.6 --locked --no-default-features --features native-tls,postgres
 
 FROM debian:bookworm-slim AS runtime
 WORKDIR /app
