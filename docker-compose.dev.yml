@@ -1,4 +1,0 @@
-services:
-  backend:
-    environment:
-      AUTH_COOKIE_SAME_SITE: Lax
