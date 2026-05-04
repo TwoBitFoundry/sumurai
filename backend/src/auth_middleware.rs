@@ -31,8 +31,8 @@ pub async fn auth_middleware(
             );
             let error_response = ApiErrorResponse::with_code(
                 "UNAUTHORIZED",
-                "Authorization header is required",
-                "MISSING_AUTH_HEADER",
+                "Authentication required: auth_token cookie is missing",
+                "MISSING_AUTH_COOKIE",
             );
             return Err((StatusCode::UNAUTHORIZED, Json(error_response)).into_response());
         }
