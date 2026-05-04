@@ -283,7 +283,7 @@ impl AnalyticsService {
             })
             .collect();
 
-        merchants.sort_by(|a, b| b.amount.cmp(&a.amount));
+        merchants.sort_by_key(|merchant| std::cmp::Reverse(merchant.amount));
 
         merchants.truncate(limit);
 

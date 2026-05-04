@@ -121,7 +121,7 @@ fn group_by_category(transactions: &[Transaction], period: &str) -> Vec<Category
 }
 
 fn limit_categories_to_ten(mut categories: Vec<CategorySpending>) -> Vec<CategorySpending> {
-    categories.sort_by(|a, b| b.value.cmp(&a.value));
+    categories.sort_by_key(|category| std::cmp::Reverse(category.value));
     if categories.len() <= 10 {
         return categories;
     }

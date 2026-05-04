@@ -1,14 +1,23 @@
 {
   "name": "sumurai",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "prepare": "husky",
+    "release": "semantic-release",
     "rust:lint": "cargo fmt --manifest-path backend/Cargo.toml --all --check && cargo clippy --manifest-path backend/Cargo.toml --locked --all-targets --no-deps -- -D warnings",
     "rust:typecheck": "cargo check --manifest-path backend/Cargo.toml --locked --all-targets",
     "rust:test": "cargo test --manifest-path backend/Cargo.toml --locked",
     "precommit": "npm run rust:lint && npm run rust:test"
   },
   "devDependencies": {
-    "husky": "^9.1.7"
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.2",
+    "@semantic-release/release-notes-generator": "^14.1.0",
+    "conventional-changelog-conventionalcommits": "^8.0.0",
+    "husky": "^9.1.7",
+    "semantic-release": "^24.2.9"
   }
 }
