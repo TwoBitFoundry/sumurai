@@ -1,70 +1,97 @@
-Sumurai
-
 # Sumurai
 
-Personal finance dashboard. Self-hosted. Connects to your bank via Teller API, syncs transactions, shows where your money goes.
-
-Dashboard
-Dashboard extras
+Personal finance dashboard. Self-hosted. Connects to your bank via Teller or Plaid, syncs transactions, and shows where your money goes.
 
 ## Privacy Disclosure for 3rd Party Financial Aggregators
 
-While this app was built to securely handle your information once its received, we are not able to control how 3rd Party Aggregators use your data. This app requires the use of 3rd Party Financial Aggregators API (eg. Teller) to securely connect your accounts and transaction data while keeping them in sync. To do so requires consenting to the 3rd Party Aggregator's terms of service and data usage policy. Please be aware this is a privacy trade-off to allow the tool to be more useful.
+While this app is designed to handle your information securely after it is received, 3rd party aggregators still control how their own services collect and process your data. Sumurai uses external financial aggregation APIs, including Teller and Plaid, to connect accounts and sync transactions. Using those services requires accepting their terms of service and privacy policies.
 
-You can read Teller's policy here: [https://teller.io/legal](https://teller.io/legal)
+Teller policy: [https://teller.io/legal](https://teller.io/legal)
 
-Be sure you are ok with the privacy trade-offs before connecting your accounts!
+Review the provider trade-offs before connecting real financial accounts.
 
 ## Why This Exists
 
-Most personal finance tools are either bloated with features you don't need, expensive for what they offer, or require extensive maintenance or upkeep to be useful. Sumurai is a focused alternative: track spending, set budgets, see where your money goes—without a subscription.
-
-Built for individuals and small businesses who want financial visibility without the overhead.
+Most personal finance tools are either bloated, expensive, or hard to maintain. Sumurai is a focused alternative for tracking spending, setting budgets, and understanding cash flow without a subscription.
 
 ## What It Does
 
-- Links bank accounts via Teller API
+- Connects accounts through Teller or Plaid
 - Syncs and categorizes transactions
 - Tracks budgets by category
-- Charts spending over time
-
-Transactions
-Budgets
-Accounts
+- Charts spending, balances, and net worth over time
 
 ## Quick Start
 
+Provide the required environment variables referenced by `docker-compose.yml` and start the stack:
+
 ```bash
-cp .env.example .env
-# Edit .env: set JWT_SECRET, ENCRYPTION_KEY, POSTGRES_PASSWORD, Teller creds
 docker compose up -d --build
 ```
 
-Open [http://localhost:8080](http://localhost:8080). Demo: `me@test.com` / `Test1234!`
+For source-built local development, use the development override:
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for prerequisites and full setup.
+```bash
+docker compose -f docker-compose.yml -f docker-compose.development.yml up -d --build
+```
 
-For production deployments, provision nginx server TLS before exposing Sumurai to users and run with `docker-compose.production.yml`. See [Production TLS](docs/PRODUCTION_TLS.md).
+Open [http://localhost:8080](http://localhost:8080). Demo credentials: `me@test.com` / `Test1234!`
 
-### Teller certificate paths (Docker)
+For UI-only iteration:
 
-In `.env`, `TELLER_CERT_PATH` and `TELLER_KEY_PATH` are **paths on your host** to the PEM files (for example `./.certs/teller/certificate.pem` and `./.certs/teller/private_key.pem`). Docker Compose mounts those files into the backend container at `**/etc/teller/certificate.pem`** and `**/etc/teller/private_key.pem`**, and the backend reads those in-container paths. If you need local dev placeholders, create PEM files under `.certs/teller/`.
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend dev server runs at [http://localhost:3001](http://localhost:3001).
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, validation, and workflow details.
+
+### Teller certificate paths
+
+`TELLER_CERT_PATH` and `TELLER_KEY_PATH` are host paths to the PEM files you mount for Teller mTLS. Docker Compose mounts those files into the backend container at `/etc/teller/certificate.pem` and `/etc/teller/private_key.pem`.
+
+If you need local placeholders, create PEM files under `.certs/teller/` on your machine.
+
+## Sandbox Credentials
+
+Use these provider test credentials for local sandbox flows:
+
+- Teller
+  - Username: `username`
+  - Password: `password`
+- Plaid
+  - Username: `user_good`
+  - Password: `pass_good`
+
+If a sandbox provider prompts for 2FA, click through with empty fields.
+
+## Supported Platforms
+
+Sumurai is intended to run on any host where Docker Compose is available, including macOS, Linux, and Windows. For browser access, use a modern desktop browser such as Chrome, Edge, Firefox, or Safari.
 
 ## Architecture
 
-React 19 + Next.js frontend, Rust (Axum) backend, PostgreSQL, Redis. JWT auth. Docker Compose deployment.
+The app is a static Next.js export served by Nginx on port 8080, with `/api/*` and `/health` proxied to the Rust backend.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details.
+- Frontend: Next.js 16, React 19, TypeScript, Tailwind, Recharts, Biome, Jest, and browser OpenTelemetry
+- Backend: Rust 1.95, Axum, SQLx, Redis, PostgreSQL, JWT auth, provider integrations, and OpenTelemetry export to Seq
+- Deployment: Docker Compose with nginx, frontend, backend, Postgres, Redis, Seq, and certbot
+- Providers: Teller and Plaid through a shared provider registry
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the deeper system breakdown.
 
 ## Security
 
-Self-hosted. No vendor data path.
+Self-hosted. Data stays in your PostgreSQL database.
 
-- Data stays in your PostgreSQL
-- Bank credentials never stored (Teller uses short-lived tokens)
-- Provider tokens encrypted (AES-256-GCM)
+- Bank credentials are not stored directly
+- Provider tokens are encrypted with AES-256-GCM
+- Redis is required for sessions, cache, and rate limiting
 - Production nginx TLS requires a publicly trusted certificate and renewal schedule
-- Wipe everything: `docker compose down -v`
+- Wipe local data with `docker compose down -v`
 
 ## Roadmap
 
@@ -78,4 +105,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-Open Source under Apache 2.0 License. See [LICENSE](LICENSE).
+Source available under the Sustainable Use License v1.0. See [LICENSE](LICENSE).

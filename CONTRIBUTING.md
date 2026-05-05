@@ -1,60 +1,16 @@
 # Contributing to Sumurai
 
-Thanks for your interest in improving Sumurai! This guide helps you get set up quickly, follow the project workflow, and submit high‑quality PRs.
+Thanks for helping improve Sumurai. This guide covers the current workflow, local validation commands, and the conventions used in this repository.
 
-> Heads‑up: End‑to‑end validation happens only at `http://localhost:8080` via Nginx → backend proxy. Vite dev (`:5173`) is fine for UI iteration, but not for full flows.
+> Heads-up: end-to-end validation happens at `http://localhost:8080` through Nginx. The frontend dev server at `http://localhost:3001` is for UI iteration only.
 
 ## Prerequisites
 
 - Node 24.10+ and npm 10+
-- Rust (stable) and Cargo
+- Rust stable and Cargo
 - Docker and Docker Compose
-- sqlx‑cli (for running migrations locally)
+- `sqlx-cli`
 - OpenSSL
-
-<details>
-<summary>macOS (Homebrew)</summary>
-
-```bash
-brew install rustup-init
-rustup-init
-
-brew install node@20
-brew install --cask docker
-brew install openssl
-```
-
-</details>
-
-<details>
-<summary>Windows (Chocolatey)</summary>
-
-```powershell
-choco install rustup.install -y
-rustup-init -y
-
-choco install nodejs-lts -y
-choco install docker-desktop -y
-choco install openssl-light -y
-```
-
-</details>
-
-<details>
-<summary>Linux (Debian/Ubuntu)</summary>
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-. "$HOME/.cargo/env"
-
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-sudo apt-get update
-sudo apt-get install -y docker.io docker-compose-plugin openssl
-```
-
-</details>
 
 ## Getting Started
 
@@ -66,172 +22,160 @@ cd sumurai
 git checkout -b feat/my-change
 ```
 
-### Full Stack (Docker)
+## Full Stack
 
-The fastest way to boot everything:
+Start the production-like stack:
 
 ```bash
-docker compose up -d --build         # frontend + backend + redis + postgres
-# Open http://localhost:8080
+docker compose up -d --build
 ```
 
-E2E demo credentials:
+For source-built local development, use the development compose override:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.development.yml up -d --build
+```
+
+Demo credentials:
+
 - Username: `me@test.com`
 - Password: `Test1234!`
 
-### Frontend Development
+## Frontend Development
 
 ```bash
 cd frontend
 npm install
-npm run dev               # Next.js dev server on :3001
-npm run build             # production build (static export to ./out)
-npm test                  # unit tests (Jest + RTL)
+npm run dev
+npm run build
+npm test
 ```
 
 Notes:
-- Validate integrated flows at `http://localhost:8080` (Docker) or use `npm run dev` for local development.
-- For E2E testing, use `docker compose up -d --build` to run the full stack with Nginx proxy.
 
-### Backend Development
+- `npm run dev` starts the Next.js dev server on `http://localhost:3001`.
+- Use the Docker stack at `http://localhost:8080` to validate integrated flows.
+- Supported local host platforms are macOS, Linux, and Windows through Docker Compose.
 
-Run with local Redis (Redis is required; no in‑memory fallback):
+## Backend Validation
+
+Use Cargo commands for backend changes:
 
 ```bash
-docker compose up -d redis
-REDIS_URL=redis://localhost:6379 cargo run
+cargo check --manifest-path backend/Cargo.toml
+cargo test --manifest-path backend/Cargo.toml
+cargo fmt --manifest-path backend/Cargo.toml --all --check
+cargo clippy --manifest-path backend/Cargo.toml --all-targets --no-deps -- -D warnings
 ```
 
-Common cargo commands:
+## Database Migrations
+
+If you need to run migrations manually against a Postgres instance:
 
 ```bash
-cargo check
-cargo test
-RUST_BACKTRACE=1 cargo test some_test -- --nocapture
-cargo build --release
-npm run rust:lint
-npm run rust:typecheck
-npm run rust:test
-```
-
-### Database Migrations
-
-Using a local Postgres instance:
-
-```bash
-# Example: adjust host/port/user/password as needed
 DATABASE_URL=postgresql://postgres:password@localhost:5432/accounting \
   sqlx migrate run
 ```
 
-### Repo Structure (quick tour)
+## Repository Layout
 
-- `frontend/` — React 19 + TypeScript + Next.js; Tailwind; Recharts
-- `backend/` — Rust + Axum + SQLx; Redis caching; RLS policies
-- `docs/` — images/diagrams used in README
-
-See `README.md` for architecture details and endpoint mapping.
+- `frontend/` - Next.js 16, React 19, TypeScript, Tailwind, Biome, Jest, Recharts
+- `backend/` - Rust 1.95, Axum, SQLx, Redis, PostgreSQL, provider integrations, OpenTelemetry
+- `docs/` - architecture, screenshots, compliance, and reference documents
 
 ## Coding Standards
 
-- TypeScript: keep types precise; prefer hooks and services per the existing patterns. Run `tsc -b` to type‑check.
-- Rust: prefer small, testable units; follow trait‑based DI for services. Use idiomatic error handling.
-- Formatting/Linting: use project defaults (e.g., `cargo fmt`, `cargo clippy`, TypeScript/ESLint if configured). Keep changes focused and minimal.
-- Tests: write or update unit tests when changing business logic (frontend or backend). Aim for Given/When/Then clarity.
-- Secrets: never commit real secrets or `.env` files. Redis is mandatory in all code paths.
+- TypeScript: keep types precise, follow the existing hooks and service patterns, and use `tsc -b` for type checks.
+- Rust: keep units small and testable, prefer idiomatic error handling, and use `cargo fmt` and `cargo clippy`.
+- Tests: keep them in the existing test folders and update them when business logic changes.
+- Secrets: never commit real secrets or `.env` files.
 
-## Branch, Commits, and PRs
+## Branches, Commits, and PRs
 
-- Branch from `main` and keep PRs small and focused.
-- Commit style: Conventional Commits. Examples:
-  - `feat: add budgets summary chart`
-  - `fix: handle empty transaction lists`
-  - `refactor: extract transaction filter utils`
-  - Use `feat!:` or include a `BREAKING CHANGE:` section in the PR description for breaking changes.
-- Open a PR when ready; CI should be green before requesting review.
-- Merge strategy: squash‑and‑merge on `main`.
-- Releases: created automatically on `main` via semantic‑release; do not push tags manually.
+- Branch from `main` and keep PRs focused.
+- Use Conventional Commits, for example `feat: add budgets summary chart` or `fix: handle empty transactions`.
+- Use `feat!:` or `BREAKING CHANGE:` for breaking changes.
+- Keep CI green before requesting review.
+- Merge strategy is squash-and-merge on `main`.
 
-### PR Checklist
+## PR Checklist
 
-- [ ] Feature/bug has a linked issue (or a brief rationale in the PR)
-- [ ] Follows existing patterns and style; minimal blast radius
-- [ ] Includes tests for changed business logic (if applicable)
-- [ ] Builds and runs locally (`docker compose up -d --build` works)
-- [ ] No secrets or credentials committed; docs updated if user‑facing behavior changed
+- Feature or bug has a linked issue or a short rationale
+- Code follows the existing patterns and keeps the blast radius small
+- Tests were added or updated where needed
+- The relevant validation commands pass locally
+- No secrets or credentials were committed
 
 ## Troubleshooting
 
-- Logs: `docker compose logs -f <service>`
-- Reset local data: `docker compose down -v` (removes volumes)
-- Common gotchas:
-  - Backend fails fast without Redis; start Redis first for local runs.
-  - Validate E2E only at `http://localhost:8080` (SPA + API proxy).
+- Use `docker compose logs -f <service>` for logs.
+- Use `docker compose down -v` to reset local data.
+- Redis is required for the backend to start in Docker.
+- Validate end-to-end behavior only through the Nginx-backed stack at `http://localhost:8080`.
 
 ## Environment Variables
 
-Everything reads from `.env`. Most variables have defaults in `docker-compose.yml`.
+The stack reads configuration from the environment. The most important variables are below.
 
 | Variable | Required | Default | Notes |
 | --- | --- | --- | --- |
-| **Core Secrets** | | | |
-| `JWT_SECRET` | Yes | — | 32+ hex chars. `openssl rand -hex 32` |
-| `ENCRYPTION_KEY` | Yes | — | 64 hex chars. `openssl rand -hex 32` |
-| `POSTGRES_PASSWORD` | Yes | — | Any value for local dev |
-| `SEQ_PASSWORD` | Yes | — | Any value for local dev |
-| `SEQ_API_KEY` | Yes | — | Any value for local dev |
-| **Teller** | | | |
-| `TELLER_APPLICATION_ID` | Yes | — | From Teller dashboard |
-| `TELLER_CERT_PATH` | Yes | — | **Host** path to client cert PEM for the compose volume mount (e.g. `./.certs/teller/certificate.pem`). Inside the backend container the same file is mounted at `/etc/teller/certificate.pem`. |
-| `TELLER_KEY_PATH` | Yes | — | **Host** path to private key PEM for the compose volume mount (e.g. `./.certs/teller/private_key.pem`). Inside the container: `/etc/teller/private_key.pem`. |
-| **Optional** | | | |
-| `CORS_ALLOWED_ORIGINS` | No | `http://localhost:8080` | Comma-separated browser origins allowed to call the API with credentials. List every SPA origin; required when the UI and API are on different hosts (set `NEXT_PUBLIC_API_BASE` on the client to the API). |
-| `DOMAIN` | No | `localhost` | Hostname for nginx and Let's Encrypt |
-| `SSL_PORT` | No | `8443` | HTTPS port (use 443 in production) |
-| `LE_EMAIL` | No | — | Email for Let's Encrypt |
-| `DATABASE_URL` | No | Computed | Override for non-Docker databases |
-| `REDIS_URL` | No | `redis://redis:6379` | Override for external Redis |
-| `POSTGRES_USER` | No | `postgres` | Database user |
-| `POSTGRES_DB` | No | `accounting` | Database name |
-| `DEFAULT_PROVIDER` | No | `teller` | Bank data provider |
-| `TELLER_ENV` | No | `sandbox` | `sandbox`, `development`, or `production` |
-| `BACKEND_RUST_LOG` | No | `info` | Rust log level |
+| `JWT_SECRET` | Yes | — | 32+ hex chars. Generate with `openssl rand -hex 32`. |
+| `ENCRYPTION_KEY` | Yes | — | 64 hex chars. Generate with `openssl rand -hex 32`. |
+| `POSTGRES_PASSWORD` | Yes | — | Database password for Docker Compose. |
+| `SEQ_PASSWORD` | Yes | — | Seq admin password. |
+| `SEQ_API_KEY` | Yes | — | Seq ingestion key. |
+| `TELLER_APPLICATION_ID` | Yes | — | Teller application ID. |
+| `TELLER_CERT_PATH` | Yes | — | Host path to the Teller client cert PEM. |
+| `TELLER_KEY_PATH` | Yes | — | Host path to the Teller private key PEM. |
+| `DEFAULT_PROVIDER` | No | `teller` | Bank data provider selected by default. |
+| `TELLER_ENV` | No | `sandbox` | `sandbox`, `development`, or `production`. |
+| `PLAID_CLIENT_ID` | No | `mock_client_id` | Plaid client ID used by the backend. |
+| `PLAID_SECRET` | No | `mock_secret` | Plaid secret used by the backend. |
+| `PLAID_ENV` | No | `sandbox` | Plaid environment. |
+| `CORS_ALLOWED_ORIGINS` | No | `http://localhost:8080` | Browser origins allowed to call the API with credentials. |
+| `DOMAIN` | No | `localhost` | Hostname used by nginx and Let's Encrypt. |
+| `SSL_PORT` | No | `8443` | HTTPS port for local TLS. |
+| `LE_EMAIL` | No | — | Email for Let's Encrypt. |
+| `NEXT_PUBLIC_API_BASE` | No | `/api` | Frontend API base path. |
+| `NEXT_PUBLIC_OTEL_ENABLED` | No | `true` | Frontend OpenTelemetry toggle. |
+| `NEXT_PUBLIC_OTEL_SERVICE_NAME` | No | `sumurai-frontend` | Frontend telemetry service name. |
+| `NEXT_PUBLIC_OTEL_SERVICE_VERSION` | No | `1.0.0` | Frontend telemetry service version. |
+| `NEXT_PUBLIC_OTEL_CAPTURE_BODIES` | No | `false` | Capture request/response bodies in frontend telemetry. |
+| `NEXT_PUBLIC_OTEL_BLOCK_SENSITIVE_ENDPOINTS` | No | `true` | Redact sensitive endpoints from frontend telemetry. |
 
-## Authentication rate limiting
+## Authentication Rate Limiting
 
-Login and register under `/api/auth/` are limited in the Axum backend (`tower-governor`) to about five requests per minute per client IP, with progressive Redis lockouts after repeated backend-observed 429s. Nginx adds a much looser `limit_req` fuse on `/api/auth` (10 req/s with a large burst) so only very high request rates are rejected at the edge before `proxy_pass`; that edge 429 does not increment Redis strikes. Limits are fixed in code and nginx config, not via environment variables. When limited, responses use HTTP 429 with a `Retry-After` header. After changing nginx config, validate with `docker compose exec nginx nginx -t` (requires the stack running).
+Login and register under `/api/auth/` are rate limited in the Axum backend with progressive lockouts after repeated 429s. Nginx also applies a looser edge limit on `/api/auth` so only unusually high request rates are rejected before proxying to the backend.
 
 ## Teller Setup
 
-1. Create a Teller developer account at https://teller.io.
-2. Download the mTLS certificate and private key. Store them as `certificate.pem` and `private_key.pem` under `.certs/teller/` on your machine (gitignored), or create local dev PEMs at those paths.
-3. In `.env`, set `TELLER_CERT_PATH` and `TELLER_KEY_PATH` to those **host** paths. Compose mounts them into the backend at `/etc/teller/certificate.pem` and `/etc/teller/private_key.pem` (see README).
-4. Set `TELLER_APPLICATION_ID` and `TELLER_ENV` (`sandbox`, `development`, `production`).
-5. Launch Teller Connect from the Connect tab to link accounts.
+1. Create a Teller developer account at [https://teller.io](https://teller.io).
+2. Download the mTLS certificate and private key.
+3. Set `TELLER_CERT_PATH` and `TELLER_KEY_PATH` to the host paths for those PEM files.
+4. Set `TELLER_APPLICATION_ID` and `TELLER_ENV`.
+5. Launch Teller Connect from the UI to link accounts.
 
-For sandbox testing, use Teller's documented test credentials. Ensure localhost origins are allowed in your Teller dashboard.
+## Sandbox Credentials
+
+Use these provider test credentials for local sandbox flows:
+
+- Teller
+  - Username: `username`
+  - Password: `password`
+- Plaid
+  - Username: `user_good`
+  - Password: `pass_good`
+
+If a sandbox provider prompts for 2FA, click through with empty fields.
+
+For sandbox testing, allow the local origin in your Teller dashboard.
 
 ## HTTPS with Let's Encrypt
 
-1. Set `DOMAIN` and `LE_EMAIL` in `.env`.
-2. Start the stack:
-   ```bash
-   docker compose up -d --build
-   ```
-3. Request a certificate:
-   ```bash
-   docker compose run --rm -e DOMAIN=$DOMAIN -e LE_EMAIL=$LE_EMAIL certbot \
-     certonly --webroot -w /var/www/certbot \
-     -d $DOMAIN --email $LE_EMAIL --agree-tos --no-eff-email
-   ```
-4. Restart nginx:
-   ```bash
-   docker compose restart nginx
-   ```
-5. Access via `https://$DOMAIN:8443`.
+See [docs/PRODUCTION_TLS.md](docs/PRODUCTION_TLS.md) for the current production TLS workflow.
 
 ## License and Contributions
 
-By contributing, you agree your contributions are licensed under the project’s license (Apache 2.0). See `LICENSE` for details.
+By contributing, you agree your contributions are licensed under the project’s license. See `LICENSE` for details.
 
-If you’re unsure about scope or approach, open a draft PR early or start a discussion in the issue to align before implementation.
+If you are unsure about scope or approach, open a draft PR early or start a discussion in the issue tracker.

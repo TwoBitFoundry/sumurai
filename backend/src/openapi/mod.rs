@@ -14,7 +14,7 @@ use utoipa::OpenApi;
             url = "https://github.com/two-bit-foundry/sumurai"
         ),
         license(
-            name = "MIT",
+            name = "Sustainable Use License v1.0",
             url = "https://github.com/two-bit-foundry/sumurai/blob/main/LICENSE"
         )
     ),

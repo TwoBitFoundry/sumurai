@@ -1,38 +1,41 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
-- `frontend-next/` — Next.js + React + TypeScript UI (Tailwind, Recharts).
-- `backend/` — Rust (Axum) API with SQLx, Redis cache, and Postgres.
-- `docs/` — architecture diagrams and screenshots used by the README.
-- `docker-compose.yml` — local stack: nginx + backend + frontend + postgres + redis (app images from GHCR by default).
+## Project Structure
+- `frontend/` - Next.js 16 + React 19 + TypeScript UI with Tailwind, Biome, Jest, Recharts, and OpenTelemetry browser instrumentation.
+- `backend/` - Rust 1.95 Axum API with SQLx, Redis, Postgres, JWT auth, provider integrations, and OpenTelemetry export to Seq.
+- `docs/` - architecture docs, screenshots, threat model, compliance docs, and reference diagrams.
+- `nginx/` - local reverse proxy and TLS entrypoint files used by Docker Compose.
+- `docker-compose.yml` - full local stack with nginx, frontend, backend, Postgres, Redis, Seq, and certbot.
+- `docker-compose.development.yml` - local build override for the app images.
 
-## Build, Test, and Development Commands
-- `docker compose up -d` — run the full stack at `http://localhost:8080` (pulls `frontend`/`backend` from GHCR; use `docker compose pull` to refresh). To build app images locally: `docker compose -f docker-compose.yml -f docker-compose.development.yml up -d --build`.
-- `docker compose up -d redis` — start Redis for local backend runs.
-- `REDIS_URL=redis://localhost:6379 cargo run` — run the backend locally.
-- `cargo check` / `cargo test` / `cargo build --release` — Rust build and test.
-- `cd frontend-next && npm install` — install frontend dependencies.
-- `npm run dev` — Next.js dev server on `http://localhost:3001` (UI iteration only).
-- `npm run build` / `npm test` / `npm run lint` — production build, Jest tests, ESLint.
+## Build And Run
+- `docker compose up -d --build` - start the production-like stack at `http://localhost:8080`.
+- `docker compose -f docker-compose.yml -f docker-compose.development.yml up -d --build` - start the local development compose stack with source builds.
+- `npm --prefix frontend install` - install frontend dependencies.
+- `npm --prefix frontend run dev` - Next.js dev server on `http://localhost:3001`.
+- `npm --prefix frontend run build` / `npm --prefix frontend test` - frontend build and tests.
+- `npm run precommit` - run the full validation set used by the repo.
 
-## Coding Style & Naming Conventions
-- Rust: small, testable units; idiomatic error handling; use `cargo fmt` and `cargo clippy`.
-- TypeScript: precise types; follow existing hooks/service patterns; `tsc -b` for type checks.
-- Naming: follow existing module naming; tests live under `backend/src/tests/` and `frontend-next` with Jest defaults.
+## Coding Style
+- Rust: keep units small and testable, prefer idiomatic error handling, and use `cargo fmt` and `cargo clippy`.
+- TypeScript: keep types precise, follow existing hooks/service patterns, and use `tsc -b` style checks through the frontend scripts.
+- Keep tests in the existing test folders; do not add tests inline with source files.
 
-## Testing Guidelines
-- Backend tests are in `backend/src/tests/` and run with `cargo test`.
-- Frontend tests use Jest + React Testing Library: `cd frontend-next && npm test`.
-- Add/adjust tests when changing business logic; keep assertions Given/When/Then clear.
+## Testing
+- Backend tests live in `backend/src/tests/` and run with `cargo test --manifest-path backend/Cargo.toml`.
+- Frontend tests use Jest + React Testing Library under `frontend/`.
+- Add or adjust tests when changing business logic, especially around auth, provider sync, budgets, and cache behavior.
 
-## Commit & Pull Request Guidelines
-- Commit style: Conventional Commits (e.g., `feat: add budgets summary chart`, `fix: handle empty transactions`).
-- Keep PRs small and focused; link an issue or explain the rationale.
-- CI should be green before requesting review; squash-and-merge on `main`.
-- If breaking changes: use `feat!:` or include `BREAKING CHANGE:` in the PR description.
+## Commit And PRs
+- Use Conventional Commits, for example `feat: add budgets summary chart` or `fix: handle empty transactions`.
+- Keep PRs focused and small.
+- Ensure CI is green before requesting review.
+- Use `feat!:` or `BREAKING CHANGE:` for breaking changes.
 
-## Security & Configuration Tips
-- Never commit real secrets or `.env` files.
-- Use `.env.example` as a base; set `JWT_SECRET` and `ENCRYPTION_KEY` via `openssl rand -hex 32`.
-- Redis is mandatory; backend exits without it.
-- Demo credentials for local E2E: `me@test.com` / `Test1234!`.
+## Security
+- Never read or write `.env` files from automation.
+- Use `.env.example` as the reference for local configuration.
+- Never commit real secrets.
+- Generate local secrets with `openssl rand -hex 32` for `JWT_SECRET` and `ENCRYPTION_KEY`.
+- Redis is mandatory; the backend exits without it.
+- Local E2E demo credentials are `me@test.com` / `Test1234!`.

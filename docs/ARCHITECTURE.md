@@ -1,115 +1,108 @@
 # Sumurai Architecture
 
-This document provides a deeper look at Sumurai’s runtime architecture, data flow, and key components. For a quick overview and how to run the stack, see `README.md`.
+This document describes the current runtime architecture, data flow, and major components in Sumurai. For setup and commands, see `README.md` and `CONTRIBUTING.md`.
 
 ## Overview
 
-- SPA served by Nginx on port 8080, proxying API requests to the backend.
-- Backend: Rust (Axum + SQLx) with Redis caching (required) and PostgreSQL persistence.
-- Multi‑tenant isolation enforced via PostgreSQL Row‑Level Security (RLS).
-- Teller integration for bank data aggregation (self‑hosted, private).
-- Deployed locally via Docker Compose; macOS → Linux cross‑compile for backend binary.
+- Frontend: a static Next.js export built from `frontend/` and served by Nginx on port 8080.
+- Backend: a Rust 1.95 Axum API in `backend/` with SQLx, JWT auth, Redis caching, and PostgreSQL persistence.
+- Providers: Teller and Plaid are both supported through a shared provider registry.
+- Observability: backend traces are exported to Seq; frontend includes browser telemetry hooks.
+- Deployment: local and development workflows run through Docker Compose.
 
 ## Diagram
 
 ```mermaid
 flowchart LR
+  Browser["Browser (Next.js export)"] -->|SPA assets| Nginx["Nginx (8080)"]
+  Browser -->|/api/*| Nginx
+  Browser -->|/health| Nginx
 
-  A["Browser (React SPA)"] -->|SPA assets| B["Nginx (8080)"]
-  A -->|/health| B
-  A -->|/api/*| B
+  Nginx -->|proxy /api/*| Backend["Backend (Axum, 3000)"]
+  Nginx -->|proxy /health| Backend
 
-  B -->|proxy /health| C["Backend (Axum, 3000)"]
-  B -->|proxy /api/*| C
-
-  C -->|cache (required)| D[(Redis)]
-  D --> C
-  C -->|SQLx| E[(PostgreSQL)]
-  E --> C
-
-  C -.->|Teller API| G["Teller"]
-  A -->|Teller Connect.js| G
+  Backend -->|cache| Redis[(Redis)]
+  Backend -->|SQLx| Postgres[(PostgreSQL)]
+  Backend -->|traces| Seq["Seq"]
+  Backend -.->|Teller / Plaid| Providers["External Aggregators"]
 
   subgraph "Docker Compose Network"
-    B
-    C
-    D
-    E
+    Nginx
+    Backend
+    Redis
+    Postgres
+    Seq
   end
 ```
 
+## End-to-End Data Flow
 
+1. The browser loads the exported frontend through Nginx.
+2. The frontend validates the session with the backend and keeps auth state synchronized.
+3. When a user connects a provider, the frontend opens the provider-specific flow for Teller or Plaid.
+4. The backend receives the provider token exchange, encrypts provider secrets, and stores them in PostgreSQL.
+5. Sync services fetch accounts and transactions from the selected provider through the shared provider registry.
+6. The backend normalizes transactions, updates the cache, and persists the latest state.
+7. The dashboard reads analytics, budgets, and account data through `/api/*` endpoints.
 
-## End‑to‑End Data Flow
+## Provider Flow
 
-**Teller (Self‑Hosted)**
+- `DEFAULT_PROVIDER` determines the default provider shown by the app.
+- The backend registers both Teller and Plaid implementations in a shared provider registry.
+- The frontend uses provider-specific services and connect flows for Teller and Plaid.
+- `/api/providers/info`, `/api/providers/status`, `/api/providers/accounts`, and `/api/providers/sync-transactions` support the provider management UX.
+- Provider credentials are encrypted before persistence and invalidated through cache cleanup when a connection is removed.
 
-1. Frontend loads Teller Connect.js and initiates the Teller Connect modal.
-2. User completes Teller authentication and Connect flow.
-3. Backend receives enrollment credentials, encrypts them (AES‑256‑GCM), and stores them securely.
-4. Backend uses the `TellerProvider` (mTLS) to fetch accounts and queue syncs.
-5. Transactions are normalized and inserted into PostgreSQL.
-6. Frontend polls `/api/providers/status` and fetches accounts via `/api/teller/accounts`.
-7. Analytics endpoints compute over PostgreSQL and return aggregates.
+## Frontend
 
-## Provider Connect Flow (Teller)
+- The frontend lives under `frontend/` and builds to a static `out/` directory.
+- `frontend/src/App.tsx` coordinates authentication, onboarding, provider mismatch handling, and the authenticated app shell.
+- `frontend/src/services/ApiClient.ts` centralizes API access with retry and auth refresh behavior.
+- Provider-specific flows live in the frontend service and hook layer rather than in page components.
+- OpenTelemetry instrumentation is configured in the browser and gated by `NEXT_PUBLIC_OTEL_*` flags.
 
-- Teller bootstrap data (application ID + environment) is hydrated from configuration.
-- Frontend loads Teller's Connect.js bundle via script tag in `ConnectPage.tsx`.
-- The Teller Connect iframe presents the bank selection and authentication UI.
-- Upon successful enrollment, the frontend receives enrollment credentials and posts them to `/api/teller/exchange-token`.
-- The backend holds mTLS certificates, stores Teller enrollment secrets securely with AES‑256‑GCM encryption, and initiates syncs directly against Teller's REST API.
-- Status updates surface through `/api/providers/status`; disconnections and reauth go through Teller-specific endpoints.
-- Transaction syncing is driven by user-triggered sync actions and cached in Redis with a 30-minute TTL.
+## Backend
 
-## Components
+- `backend/src/main.rs` wires routes, middleware, providers, and shared application state.
+- Business logic is separated into `backend/src/services/`.
+- Domain models live in `backend/src/models/`.
+- Tests live in `backend/src/tests/`.
+- Middleware covers auth, IP banning, resource authorization, and telemetry.
+- The backend uses Axum, SQLx, Redis, PostgreSQL, JWT access tokens, and OpenTelemetry export to Seq.
 
-### Frontend
+## API Proxy
 
-- React 19 + Next.js SPA with static export, served by Nginx on port 8080.
-- Centralized `ApiClient` with retry and automatic token refresh; domain services: `TransactionService`, `TellerService`, `AnalyticsService`, `BudgetService`.
-- Teller integration via Teller Connect.js: browser handles user auth; backend never sees raw bank credentials.
-- State via React hooks and custom hooks for provider management and account filtering.
-- Charts with Recharts; Tailwind CSS v4 for styling.
+- Nginx serves the static frontend assets.
+- Nginx proxies `/api/*` and `/health` to the backend container.
+- The runtime container listens on port 8080 for the user-facing app.
 
-### Backend
+## Caching
 
-- Axum + SQLx with trait‑based DI for testability.
-- Auth with JWT access/refresh; middleware validates tokens and sets the current user.
-- Redis‑backed session/cache; app fails fast if Redis is unavailable.
-- Teller endpoints: token exchange, accounts, sync, status, disconnect.
-- Analytics endpoints: spending summaries and time‑series over PostgreSQL.
-- Provider abstraction (`FinancialDataProvider`) with Teller implementation for unified interface.
+Redis is required for sessions, rate limiting, and request caches.
 
-### API Proxy (Nginx)
+Current cache lifetimes in code:
 
-- Serves static SPA assets and proxies `GET /health` and `/api/`* to `backend:3000` inside the Compose network.
+- JWT/session validity follows the remaining JWT TTL
+- Provider access tokens: 1 hour
+- Account and bank connection metadata: 2 hours
+- Recent transaction sync cache: 30 minutes
 
-## Caching (Redis)
+Cache keys are namespaced by session, connection, and account identifiers so provider data stays isolated per user and connection.
 
-- Session and data caches use namespaced keys; JSON for complex values. Examples:
-  - `jwt:{jti}` — JWT allowlist; TTL matches token expiry
-  - `access_token:{connection_id}` — encrypted Teller access token; TTL ~1h
-  - `account_mapping:{account_id}` — account mappings; TTL ~2h
-  - `synced_transactions:{connection_id}` — recent sync cache; TTL ~30m
-- Invalidation strategy:
-  - On JWT expiry/logout: session‑scoped keys expire by TTL.
-  - On disconnect: delete provider-scoped tokens, mappings, and transaction caches for the connection.
+## Database
 
-## Database (PostgreSQL)
+- PostgreSQL stores users, accounts, transactions, budgets, provider connections, provider credentials, onboarding state, and related metadata.
+- Migrations are applied with `sqlx migrate`.
+- Row-level security enforces tenant isolation at the database layer.
 
-- Core tables: users, accounts, transactions, budgets, financial connections, provider credentials.
-- Migrations managed by `sqlx migrate`; executed on container start in Docker.
+## Multi-Tenancy
 
-## Multi‑Tenancy (RLS)
-
-- Enforcement: RLS policies restrict every read/write to the authenticated user, e.g., `user_id = current_setting('app.current_user_id', true)::uuid`.
-- Request scoping: After JWT validation, the backend sets `SET LOCAL app.current_user_id = '<uuid>';` so all queries automatically obey RLS.
-- Least privilege: The application DB role cannot bypass RLS.
-- Cache isolation: Redis keys are namespaced by session and provider-specific identifiers (Teller enrollment IDs).
+- The backend sets the authenticated user context after JWT validation.
+- PostgreSQL RLS policies restrict reads and writes to the current user.
+- The application role is not intended to bypass RLS.
+- Redis cache keys are scoped to the session and provider context to prevent cross-user leakage.
 
 ## Development URLs
 
-- Validate end‑to‑end only at `http://localhost:8080` (SPA via Nginx with API proxy).
-- Next.js dev server (`:3001`) is fine for UI iteration but not for E2E validation.
-
+- Use `http://localhost:8080` for integrated validation through Nginx.
+- Use `http://localhost:3001` for frontend-only development.
