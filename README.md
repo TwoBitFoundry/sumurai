@@ -2,17 +2,21 @@
 
 Personal finance dashboard. Self-hosted. Connects to your bank via Teller or Plaid, syncs transactions, and shows where your money goes.
 
+
+
 ## Privacy Disclosure for 3rd Party Financial Aggregators
 
 While this app is designed to handle your information securely after it is received, 3rd party aggregators still control how their own services collect and process your data. Sumurai uses external financial aggregation APIs, including Teller and Plaid, to connect accounts and sync transactions. Using those services requires accepting their terms of service and privacy policies.
 
 Teller policy: [https://teller.io/legal](https://teller.io/legal)
 
+Plaid policy: [https://plaid.com/legal/#consumers](https://plaid.com/legal/#consumers)
+
 Review the provider trade-offs before connecting real financial accounts.
 
 ## Why This Exists
 
-Most personal finance tools are either bloated, expensive, or hard to maintain. Sumurai is a focused alternative for tracking spending, setting budgets, and understanding cash flow without a subscription.
+Sumurai exists because there are not a lot of free, simple, and modern budgeting apps out there. We wanted a Bring Your Own Key (BYOK) self-hosted option that people can build a community around and decide its direction.
 
 ## What It Does
 
@@ -20,6 +24,8 @@ Most personal finance tools are either bloated, expensive, or hard to maintain. 
 - Syncs and categorizes transactions
 - Tracks budgets by category
 - Charts spending, balances, and net worth over time
+
+
 
 ## Quick Start
 
