@@ -2,6 +2,9 @@
   "name": "frontend",
   "version": "1.0.0",
   "private": true,
+  "overrides": {
+    "postcss": "^8.5.10"
+  },
   "scripts": {
     "dev": "next dev -p 3001 --turbo",
     "dev:webpack": "next dev -p 3001 --webpack",
@@ -29,7 +32,7 @@
     "cross-fetch": "^4.1.0",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.554.0",
-    "next": "^16.2.3",
+    "next": "^16.2.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-plaid-link": "^4.1.1",
