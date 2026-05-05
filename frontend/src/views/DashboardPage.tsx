@@ -34,10 +34,8 @@ const netTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) =
 const DashboardPage: React.FC = () => {
   const { colors } = useTheme();
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
-  // Default to past-year for richer data out of the box
-  const [dateRange, setDateRange] = useState<DateRange>('past-year');
+  const [dateRange, setDateRange] = useState<DateRange>('current-month');
   const spendingOverviewRef = useRef<HTMLDivElement | null>(null);
-  const balancesOverviewRef = useRef<HTMLDivElement | null>(null);
   const [showTimeBar, setShowTimeBar] = useState(false);
 
   const analytics = useAnalytics(dateRange);
@@ -51,7 +49,7 @@ const DashboardPage: React.FC = () => {
   const netError = netWorth.error;
 
   useEffect(() => {
-    const target = balancesOverviewRef.current;
+    const target = spendingOverviewRef.current;
     if (!target) {
       setShowTimeBar(false);
       return;
@@ -59,9 +57,9 @@ const DashboardPage: React.FC = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        setShowTimeBar(entry.intersectionRatio < 0.5);
+        setShowTimeBar(entry.isIntersecting);
       },
-      { threshold: [0, 0.5, 1] }
+      { threshold: [0, 0.01, 0.5, 1] }
     );
     observer.observe(target);
     return () => observer.disconnect();
@@ -95,11 +93,7 @@ const DashboardPage: React.FC = () => {
         badge="Dashboard"
         title="Overview of Balances"
         subtitle="Track your assets and liabilities across all connected accounts with real-time balance updates."
-        stats={
-          <div ref={balancesOverviewRef}>
-            <BalancesOverview />
-          </div>
-        }
+        stats={<BalancesOverview />}
       >
         <div className={cn('space-y-8')}>
           <div
