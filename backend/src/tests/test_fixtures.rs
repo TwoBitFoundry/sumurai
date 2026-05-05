@@ -13,6 +13,7 @@ use crate::services::{
     budget_service::BudgetService,
     cache_service::{CacheService, MockCacheService},
     connection_service::ConnectionService,
+    otel_traces_relay::OtlpTracesRelay,
     plaid_service::{PlaidService, RealPlaidClient},
     repository_service::DatabaseRepository,
     repository_service::MockDatabaseRepository,
@@ -257,6 +258,7 @@ impl TestFixtures {
             connection_service,
             auth_service,
             provider_registry,
+            otlp_traces_relay: Arc::new(OtlpTracesRelay::bogus_for_tests()),
         };
 
         Ok(create_app(state))
@@ -345,6 +347,7 @@ impl TestFixtures {
             connection_service,
             auth_service,
             provider_registry,
+            otlp_traces_relay: Arc::new(OtlpTracesRelay::bogus_for_tests()),
         };
 
         Ok(create_app(state))
@@ -401,6 +404,7 @@ impl TestFixtures {
             connection_service,
             auth_service,
             provider_registry,
+            otlp_traces_relay: Arc::new(OtlpTracesRelay::bogus_for_tests()),
         };
 
         Ok(create_app(state))

@@ -4,6 +4,7 @@ pub mod authorization_service;
 pub mod budget_service;
 pub mod cache_service;
 pub mod connection_service;
+pub mod otel_traces_relay;
 pub mod plaid_service;
 pub mod rate_limit_service;
 pub mod repository_service;

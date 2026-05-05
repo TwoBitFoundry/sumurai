@@ -19,6 +19,7 @@ mod integration_tests;
 mod migration_tests;
 mod models_tests;
 mod openapi_tests;
+mod otel_traces_relay_tests;
 mod plaid_provider_tests;
 mod plaid_service_tests;
 mod repository_service_tests;

@@ -13,9 +13,12 @@ use crate::models::api_error::ApiErrorResponse;
 use crate::models::rate_limit::AuthEndpointRateLimitPolicy;
 
 type AuthGovernorConfig = GovernorConfig<SmartIpKeyExtractor, NoOpMiddleware>;
+type TelemetryPublicGovernorConfig = GovernorConfig<SmartIpKeyExtractor, NoOpMiddleware>;
 
 static LOGIN_GOVERNOR_CONFIG: OnceLock<Arc<AuthGovernorConfig>> = OnceLock::new();
 static REGISTER_GOVERNOR_CONFIG: OnceLock<Arc<AuthGovernorConfig>> = OnceLock::new();
+static TELEMETRY_PUBLIC_BROWSER_GOVERNOR: OnceLock<Arc<TelemetryPublicGovernorConfig>> =
+    OnceLock::new();
 static CLEANUP_STARTED: Once = Once::new();
 
 fn build_auth_endpoint_config() -> Arc<AuthGovernorConfig> {
@@ -38,6 +41,21 @@ fn register_config() -> Arc<AuthGovernorConfig> {
         .clone()
 }
 
+fn telemetry_public_browser_config() -> Arc<TelemetryPublicGovernorConfig> {
+    TELEMETRY_PUBLIC_BROWSER_GOVERNOR
+        .get_or_init(|| {
+            let mut cfg = GovernorConfigBuilder::default().key_extractor(SmartIpKeyExtractor);
+            cfg.period(Duration::from_millis(200)).burst_size(30);
+            Arc::new(cfg.finish().expect("telemetry public browser governor"))
+        })
+        .clone()
+}
+
+pub fn telemetry_public_browser_governor_layer(
+) -> GovernorLayer<SmartIpKeyExtractor, NoOpMiddleware, Body> {
+    GovernorLayer::new(telemetry_public_browser_config()).error_handler(governor_error_response)
+}
+
 pub fn auth_login_governor_layer() -> GovernorLayer<SmartIpKeyExtractor, NoOpMiddleware, Body> {
     GovernorLayer::new(login_config()).error_handler(governor_error_response)
 }
@@ -50,10 +68,12 @@ pub fn spawn_auth_rate_limit_cleanup() {
     CLEANUP_STARTED.call_once(|| {
         let login = login_config().limiter().clone();
         let register = register_config().limiter().clone();
+        let telemetry_public = telemetry_public_browser_config().limiter().clone();
         std::thread::spawn(move || loop {
             std::thread::sleep(Duration::from_secs(60));
             login.retain_recent();
             register.retain_recent();
+            telemetry_public.retain_recent();
         });
     });
 }

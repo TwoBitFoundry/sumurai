@@ -104,11 +104,13 @@ http {
             proxy_pass http://seq_upstream;
         }
 
-        # Public: OTLP HTTP ingestion -> Seq
         location /ingest/otlp {
+            allow 10.0.0.0/8;
+            allow 172.16.0.0/12;
+            allow 192.168.0.0/16;
+            deny all;
             limit_req zone=seq_otlp_ingest burst=30 nodelay;
             limit_req_status 429;
-            proxy_set_header X-Seq-ApiKey $http_x_seq_apikey;
             proxy_pass http://seq_upstream/ingest/otlp;
             proxy_http_version 1.1;
             client_max_body_size 10m;
@@ -142,6 +144,7 @@ http {
             allow 172.16.0.0/12;
             allow 192.168.0.0/16;
             deny all;
+            client_max_body_size 10m;
             proxy_pass http://backend_upstream;
         }
 

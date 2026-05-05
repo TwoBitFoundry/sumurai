@@ -1,7 +1,7 @@
 use anyhow::Context;
 use axum::{
     body::Body,
-    extract::{Query, Request, State},
+    extract::{DefaultBodyLimit, Query, Request, State},
     http::{
         header::{AUTHORIZATION, CONTENT_TYPE, COOKIE, SET_COOKIE},
         HeaderMap, HeaderValue, Method, StatusCode,
@@ -29,6 +29,7 @@ mod middleware;
 mod models;
 mod openapi;
 
+mod handlers;
 pub mod providers;
 mod services;
 #[cfg(test)]
@@ -78,8 +79,10 @@ use middleware::telemetry_middleware::{
 };
 use services::repository_service::{DatabaseRepository, PostgresRepository};
 use services::{
+    otel_traces_relay::OtlpTracesRelay,
     rate_limit_service::{
         auth_login_governor_layer, auth_register_governor_layer, spawn_auth_rate_limit_cleanup,
+        telemetry_public_browser_governor_layer,
     },
     AuthService, AuthorizationService, BudgetService, CacheService, ConnectionService,
     ExchangeTokenError, LinkTokenError, PlaidService, ProviderSyncError, RedisCache,
@@ -172,6 +175,8 @@ async fn main() -> anyhow::Result<()> {
 
     let auth_service = Arc::new(AuthService::new(jwt_secret)?);
 
+    let otlp_traces_relay = Arc::new(OtlpTracesRelay::from_config(&telemetry_config)?);
+
     let state = AppState {
         plaid_service,
         plaid_client,
@@ -185,6 +190,7 @@ async fn main() -> anyhow::Result<()> {
         connection_service,
         auth_service,
         provider_registry,
+        otlp_traces_relay,
     };
 
     let app = create_app(state);
@@ -217,8 +223,24 @@ pub fn create_app(state: AppState) -> Router {
         .layer(from_fn_with_state(state.clone(), auth_ip_ban_middleware))
         .with_state(state.clone());
 
+    let public_browser_traces = Router::new()
+        .route(
+            "/telemetry",
+            post(handlers::otel_browser::post_browser_traces),
+        )
+        .layer(DefaultBodyLimit::max(10 * 1024 * 1024))
+        .layer(telemetry_public_browser_governor_layer());
+
+    let protected_browser_traces = Router::new()
+        .route(
+            "/telemetry",
+            post(handlers::otel_browser::post_browser_traces),
+        )
+        .layer(DefaultBodyLimit::max(10 * 1024 * 1024));
+
     let public_routes = Router::new()
         .route("/health", get(health_check))
+        .nest("/api/v1/public", public_browser_traces)
         .nest("/api/auth/login", auth_login)
         .nest("/api/auth/register", auth_register)
         .route("/api/auth/refresh", post(refresh_user_session))
@@ -303,6 +325,7 @@ pub fn create_app(state: AppState) -> Router {
         .route("/api/budgets/{id}", delete(delete_authenticated_budget))
         .route("/api/auth/change-password", put(change_user_password))
         .route("/api/auth/account", delete(delete_user_account))
+        .nest("/api/v1/private", protected_browser_traces)
         .layer(axum::middleware::from_fn_with_state(
             AuthMiddlewareState {
                 auth_service: state.auth_service.clone(),
