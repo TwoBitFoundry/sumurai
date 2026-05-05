@@ -60,6 +60,14 @@ Completed: documented the standard, required file structure, canonical section o
 - Use Markdown prose to explain Sumurai's dark-first glass financial UI, cyan-violet brand gradient, semantic finance colors, compact uppercase labels, panel depth, and SwiftUI mapping guidance.
 - Do not encode messy historical implementation details. `DESIGN.md` should describe the cleaned token system.
 
+Completed: added a root `DESIGN.md` with spec-shaped front matter and Markdown guidance that mirrors the cleaned frontend token system.
+
+### TDD Log
+
+- Red: no implementation tests were needed for the documentation-only root file.
+- Green: rewrote the root design document to use the spec token schema and aligned prose with Sumurai's visual system.
+- Verify: `node /opt/homebrew/lib/node_modules/@google/design.md/dist/index.js lint DESIGN.md` passed with warnings only.
+
 ## Phase 4: Add Validation Scripts
 
 - Do not add `@google/design.md` to `package.json`.
