@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use axum::{
     body::{Body, Bytes},
@@ -18,9 +19,13 @@ use serde_json::json;
 use crate::middleware::telemetry_middleware::TelemetryConfig;
 use crate::models::api_error::ApiErrorResponse;
 
+const RELAY_HTTP_CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
+const RELAY_HTTP_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum BrowserTraceIngestReject {
     MissingContentType,
+    UnsupportedOtlpMediaType,
     EmptyPayload,
 }
 
@@ -38,6 +43,12 @@ pub(crate) fn classify_browser_trace_request<'a>(
         .get(CONTENT_TYPE)
         .and_then(|v| v.to_str().ok())
         .ok_or(BrowserTraceIngestReject::MissingContentType)?;
+    let essence = ct.split(';').next().map(str::trim).unwrap_or("");
+    let allowed = essence.eq_ignore_ascii_case("application/x-protobuf")
+        || essence.eq_ignore_ascii_case("application/json");
+    if !allowed {
+        return Err(BrowserTraceIngestReject::UnsupportedOtlpMediaType);
+    }
     if body.is_empty() {
         return Err(BrowserTraceIngestReject::EmptyPayload);
     }
@@ -90,7 +101,11 @@ impl OtlpTracesRelay {
         otlp_headers: Option<HashMap<String, String>>,
     ) -> anyhow::Result<Self> {
         let default_headers = upstream_default_headers(otlp_headers)?;
-        let client = Client::builder().default_headers(default_headers).build()?;
+        let client = Client::builder()
+            .default_headers(default_headers)
+            .connect_timeout(RELAY_HTTP_CONNECT_TIMEOUT)
+            .timeout(RELAY_HTTP_REQUEST_TIMEOUT)
+            .build()?;
 
         Ok(Self {
             traces_endpoint,
@@ -115,6 +130,15 @@ impl OtlpTracesRelay {
                 return ApiErrorResponse::with_code(
                     "UNSUPPORTED_MEDIA_TYPE",
                     "Missing Content-Type",
+                    "",
+                )
+                .into_response(StatusCode::UNSUPPORTED_MEDIA_TYPE)
+                .into_response();
+            }
+            Err(BrowserTraceIngestReject::UnsupportedOtlpMediaType) => {
+                return ApiErrorResponse::with_code(
+                    "UNSUPPORTED_MEDIA_TYPE",
+                    "Content-Type must be application/x-protobuf or application/json for OTLP",
                     "",
                 )
                 .into_response(StatusCode::UNSUPPORTED_MEDIA_TYPE)

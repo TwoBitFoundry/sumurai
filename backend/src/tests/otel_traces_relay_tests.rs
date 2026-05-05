@@ -41,6 +41,25 @@ fn given_empty_body_when_classifying_request_then_returns_empty_payload() {
 }
 
 #[test]
+fn given_text_plain_content_type_when_classifying_request_then_returns_unsupported_media_type() {
+    let mut headers = HeaderMap::new();
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static("text/plain"));
+    let err = classify_browser_trace_request(&headers, b"not-otlp").expect_err("classification");
+    assert_eq!(err, BrowserTraceIngestReject::UnsupportedOtlpMediaType);
+}
+
+#[test]
+fn given_application_json_with_charset_when_classifying_then_returns_full_content_type() {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        CONTENT_TYPE,
+        HeaderValue::from_static("application/json; charset=utf-8"),
+    );
+    let ct = classify_browser_trace_request(&headers, b"{}").unwrap();
+    assert_eq!(ct, "application/json; charset=utf-8");
+}
+
+#[test]
 fn given_valid_headers_when_classifying_then_returns_content_type_slice() {
     let mut headers = HeaderMap::new();
     headers.insert(
