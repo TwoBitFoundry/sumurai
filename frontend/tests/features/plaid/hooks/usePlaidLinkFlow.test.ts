@@ -96,7 +96,7 @@ describe('usePlaidLinkFlow', () => {
       await result.current.connect();
     });
 
-    expect(apiClientMock.post).toHaveBeenCalledWith('/plaid/link-token', expect.any(Object));
+    expect(apiClientMock.post).toHaveBeenCalledWith('/plaid/link-token', {});
     expect(plaidLinkMock.open).toHaveBeenCalled();
 
     const config = plaidLinkMock.getConfig();
