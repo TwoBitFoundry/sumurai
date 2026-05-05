@@ -1,19 +1,16 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
-import { cn, transitionClasses } from './utils';
+import { designTokens } from '@/ui/tokens';
+import { cn } from './utils';
 
 const badgeVariants = cva(
-  ['inline-flex items-center justify-center', 'font-semibold uppercase', transitionClasses],
+  [...designTokens.components.badge.base],
   {
     variants: {
       variant: {
-        default: [
-          'bg-white/70 text-slate-600',
-          'shadow-[0_12px_32px_-22px_rgba(15,23,42,0.45)]',
-          'dark:bg-[#1e293b]/70 dark:text-slate-200',
-        ],
-        primary: ['bg-[#93c5fd]/20 text-[#0ea5e9]', 'dark:bg-[#38bdf8]/20 dark:text-[#38bdf8]'],
-        feature: ['bg-[#f8fafc] ring-1 ring-inset', 'dark:bg-[#1e293b]'],
+        default: [...designTokens.components.badge.default],
+        primary: [...designTokens.components.badge.primary],
+        feature: [...designTokens.components.badge.feature],
       },
       size: {
         xs: 'px-2 py-0.5 text-[10px] tracking-[0.2em] rounded-md',

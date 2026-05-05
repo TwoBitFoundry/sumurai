@@ -1,6 +1,7 @@
 import { MapPin } from 'lucide-react';
 import type React from 'react';
 import { cn, EmptyState } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import type { AnalyticsTopMerchantsResponse } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
 
@@ -32,8 +33,8 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
                 'dark:bg-slate-800/50',
                 'transition-all',
                 'duration-300',
-                'hover:border-[#93c5fd]',
-                'dark:hover:border-[#38bdf8]',
+                'hover:border-sky-300',
+                'dark:hover:border-sky-400',
                 'hover:-translate-y-[2px]'
               )}
             >
@@ -54,6 +55,9 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
                     'font-bold',
                     'flex-shrink-0'
                   )}
+                  style={{
+                    backgroundImage: `linear-gradient(90deg, ${designTokens.colors.brand.cyan}, ${designTokens.colors.brand.emerald})`,
+                  }}
                 >
                   {index + 1}
                 </div>

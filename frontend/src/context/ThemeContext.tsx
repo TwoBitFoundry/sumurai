@@ -1,25 +1,5 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
-
-export type ThemeMode = 'light' | 'dark';
-
-export interface ThemeColors {
-  chart: {
-    primary: string[];
-    grid: string;
-    axis: string;
-    tooltipBg: string;
-    tooltipBorder: string;
-    tooltipText: string;
-    dotFill: string;
-  };
-  semantic: {
-    cash: string;
-    investments: string;
-    credit: string;
-    loan: string;
-    netWorth: string;
-  };
-}
+import { getThemeColors, type ThemeColors, type ThemeMode } from '@/ui/tokens';
 
 interface ThemeContextType {
   mode: ThemeMode;
@@ -27,44 +7,6 @@ interface ThemeContextType {
   setMode: (mode: ThemeMode) => void;
   colors: ThemeColors;
 }
-
-const lightColors: ThemeColors = {
-  chart: {
-    primary: ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#059669'],
-    grid: '#e2e8f0',
-    axis: '#64748b',
-    tooltipBg: '#ffffff',
-    tooltipBorder: '#e2e8f0',
-    tooltipText: '#0f172a',
-    dotFill: '#ffffff',
-  },
-  semantic: {
-    cash: '#10b981',
-    investments: '#06b6d4',
-    credit: '#fb7185',
-    loan: '#f59e0b',
-    netWorth: '#8b5cf6',
-  },
-};
-
-const darkColors: ThemeColors = {
-  chart: {
-    primary: ['#38bdf8', '#34d399', '#fbbf24', '#f87171', '#a78bfa', '#10b981'],
-    grid: '#334155',
-    axis: '#94a3b8',
-    tooltipBg: '#1e293b',
-    tooltipBorder: '#475569',
-    tooltipText: '#f8fafc',
-    dotFill: '#0b1220',
-  },
-  semantic: {
-    cash: '#34d399',
-    investments: '#22d3ee',
-    credit: '#fb7185',
-    loan: '#fbbf24',
-    netWorth: '#a78bfa',
-  },
-};
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
@@ -131,7 +73,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     setModeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
   }, []);
 
-  const colors = mode === 'dark' ? darkColors : lightColors;
+  const colors = getThemeColors(mode);
 
   return (
     <ThemeContext.Provider value={{ mode, toggle, setMode, colors }}>

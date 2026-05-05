@@ -1,51 +1,16 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
-import { cn, disabledClasses, transitionClasses } from './utils';
+import { designTokens } from '@/ui/tokens';
+import { cn } from './utils';
 
 const inputVariants = cva(
-  [
-    'w-full',
-    'px-4',
-    'border',
-    'font-medium',
-    'shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)]',
-    transitionClasses,
-    'focus:outline-none',
-    disabledClasses,
-  ],
+  [...designTokens.components.input.base],
   {
     variants: {
       variant: {
-        default: [
-          'bg-white text-slate-900',
-          'border-black/10',
-          'focus:ring-2 focus:ring-sky-400',
-          'focus:ring-offset-2 focus:ring-offset-white',
-          'dark:bg-[#111a2f] dark:text-white',
-          'dark:border-white/12',
-          'dark:focus:ring-sky-400/80',
-          'dark:focus:ring-offset-[#0f172a]',
-        ],
-        invalid: [
-          'bg-white text-slate-900',
-          'border-red-300',
-          'focus:ring-2 focus:ring-red-400',
-          'focus:ring-offset-2 focus:ring-offset-white',
-          'dark:bg-[#111a2f] dark:text-white',
-          'dark:border-red-600/80',
-          'dark:focus:ring-red-400/75',
-          'dark:focus:ring-offset-[#0f172a]',
-        ],
-        glass: [
-          'bg-white/80 text-slate-700',
-          'border-white/60',
-          'shadow-[0_18px_45px_-32px_rgba(15,23,42,0.5)]',
-          'focus:ring-2 focus:ring-sky-400/80',
-          'focus:ring-offset-2 focus:ring-offset-white',
-          'dark:bg-[#111a2f]/80 dark:text-slate-100',
-          'dark:border-white/12',
-          'dark:focus:ring-offset-[#0f172a]',
-        ],
+        default: [...designTokens.components.input.default],
+        invalid: [...designTokens.components.input.invalid],
+        glass: [...designTokens.components.input.glass],
       },
       inputSize: {
         sm: 'py-1.5 text-xs rounded-lg',

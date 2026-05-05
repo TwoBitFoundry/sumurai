@@ -70,7 +70,7 @@ const DashboardPage: React.FC = () => {
   const netDotRenderer = useMemo<((props: DotItemDotProps) => React.ReactNode) | undefined>(() => {
     const n = netSeries?.length || 0;
     const fill = colors.chart.dotFill;
-    const stroke = '#10b981';
+    const stroke = colors.semantic.cash;
     if (!n) return undefined;
     const selected = DashboardCalculator.calculateNetDotIndices(netSeries);
     return ({ index, cx, cy }: DotItemDotProps) => {
@@ -80,7 +80,7 @@ const DashboardPage: React.FC = () => {
         <circle cx={cx} cy={cy} r={3} stroke={stroke} strokeWidth={1} fill={fill} />
       ) as React.ReactElement<SVGCircleElement>;
     };
-  }, [netSeries, colors.chart.dotFill]);
+  }, [netSeries, colors.chart.dotFill, colors.semantic.cash]);
 
   const netYAxisDomain = useMemo(
     () => DashboardCalculator.calculateNetYAxisDomain(netSeries),
@@ -182,9 +182,10 @@ const DashboardPage: React.FC = () => {
                               key={`topcard-${cat.name}`}
                               className={`p-2 rounded-lg border transition-all duration-300 ${
                                 isHovered
-                                  ? 'bg-slate-50 dark:bg-slate-700/40 border-[#93c5fd] dark:border-[#38bdf8] -translate-y-[2px]'
+                                  ? 'bg-slate-50 dark:bg-slate-700/40 -translate-y-[2px]'
                                   : 'border-slate-200 dark:border-slate-700'
                               }`}
+                              style={isHovered ? { borderColor: colors.chart.primary[0] } : undefined}
                               onMouseEnter={() => setHoveredCategory(cat.name)}
                               onMouseLeave={() => setHoveredCategory(null)}
                             >
@@ -351,13 +352,13 @@ const DashboardPage: React.FC = () => {
               ) : (
                 <div className={cn('flex-1', 'min-h-[240px]', 'overflow-hidden')}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={netSeries} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="netGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
+                      <AreaChart data={netSeries} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="netGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={colors.semantic.cash} stopOpacity={0.4} />
+                            <stop offset="95%" stopColor={colors.semantic.cash} stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
                       <XAxis
                         dataKey="date"
@@ -418,7 +419,7 @@ const DashboardPage: React.FC = () => {
                       <Area
                         type="monotone"
                         dataKey="value"
-                        stroke="#10b981"
+                        stroke={colors.semantic.cash}
                         strokeWidth={2}
                         fillOpacity={1}
                         fill="url(#netGradient)"

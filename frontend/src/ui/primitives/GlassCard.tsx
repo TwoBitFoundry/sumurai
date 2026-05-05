@@ -1,48 +1,27 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
-import { cn, glassBackdropClasses } from './utils';
+import { designTokens } from '@/ui/tokens';
+import { cn } from './utils';
 
 const glassCardVariants = cva(
-  [
-    'relative overflow-hidden',
-    'border',
-    'shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)]',
-    glassBackdropClasses,
-    'transition-colors duration-500',
-    'dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)]',
-  ],
+  [...designTokens.components.glassCard.base],
   {
     variants: {
       variant: {
-        default: ['border-white/35', 'bg-white/18', 'dark:border-white/12', 'dark:bg-[#0f172a]/55'],
-        auth: [
-          'border-white/35',
-          'bg-white/20',
-          'shadow-[0_38px_120px_-60px_rgba(15,23,42,0.78)]',
-          'backdrop-blur-[26px]',
-          'backdrop-saturate-[140%]',
-          'dark:border-white/12',
-          'dark:bg-[#0f172a]/55',
-          'dark:shadow-[0_40px_120px_-58px_rgba(2,6,23,0.85)]',
-        ],
-        accent: [
-          'border-white/40',
-          'bg-white/85',
-          'backdrop-blur-sm',
-          'dark:border-white/10',
-          'dark:bg-[#111a2f]/75',
-        ],
+        default: [...designTokens.components.glassCard.default],
+        auth: [...designTokens.components.glassCard.auth],
+        accent: [...designTokens.components.glassCard.accent],
       },
       rounded: {
-        default: 'rounded-[2.25rem]',
-        lg: 'rounded-2xl',
-        xl: 'rounded-3xl',
+        default: designTokens.components.glassCard.rounded.default,
+        lg: designTokens.components.glassCard.rounded.lg,
+        xl: designTokens.components.glassCard.rounded.xl,
       },
       padding: {
-        none: 'p-0',
-        sm: 'p-4',
-        md: 'p-6',
-        lg: 'p-8',
+        none: designTokens.components.glassCard.padding.none,
+        sm: designTokens.components.glassCard.padding.sm,
+        md: designTokens.components.glassCard.padding.md,
+        lg: designTokens.components.glassCard.padding.lg,
       },
     },
     defaultVariants: {
@@ -106,9 +85,9 @@ export function GlassCard({
               roundedClass,
               'ring-inset ring-1',
               'ring-white/40',
-              'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]',
+              designTokens.shadows.glassInset.light,
               'dark:ring-white/10',
-              'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.5)]'
+              designTokens.shadows.glassInset.dark
             )}
           />
           <div
