@@ -17,7 +17,11 @@
     "lint": "biome lint .",
     "format": "biome format --write .",
     "check": "biome check --write .",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "design:lint": "PATH=./scripts:$PATH designmd lint ../DESIGN.md",
+    "design:export:dtcg": "PATH=./scripts:$PATH designmd export --format dtcg ../DESIGN.md",
+    "design:export:tailwind": "PATH=./scripts:$PATH designmd export --format css-tailwind ../DESIGN.md",
+    "design:spec": "PATH=./scripts:$PATH designmd spec --rules"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

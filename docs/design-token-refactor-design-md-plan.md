@@ -78,6 +78,14 @@ Completed: added a root `DESIGN.md` with spec-shaped front matter and Markdown g
   - `design:spec`: `designmd spec --rules`
 - Generate export artifacts only after `DESIGN.md` validates.
 
+Completed: added frontend scripts and a local `designmd` shim so the package can call the installed global CLI without adding the package as a dependency.
+
+### TDD Log
+
+- Red: the first shim attempt resolved the wrong npm root path.
+- Green: added a local executable shim and wired the frontend scripts to it.
+- Verify: `npm --prefix frontend run design:lint`, `npm --prefix frontend run design:export:dtcg`, `npm --prefix frontend run design:export:tailwind`, and `npm --prefix frontend run design:spec` all completed successfully after the shim fix.
+
 ## Acceptance Criteria
 
 - The frontend has one clear token API for Sumurai visual decisions.

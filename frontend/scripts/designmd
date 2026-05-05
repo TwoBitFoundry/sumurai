@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+
+if [ "${1:-}" = "export" ] && [ "${2:-}" = "--format" ] && [ "${3:-}" = "css-tailwind" ]; then
+  shift 3
+  set -- export --format tailwind "$@"
+fi
+
+exec node "/opt/homebrew/lib/node_modules/@google/design.md/dist/index.js" "$@"
