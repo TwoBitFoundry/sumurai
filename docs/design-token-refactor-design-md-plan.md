@@ -40,6 +40,14 @@ Completed: added the typed token module and Tailwind bridge, refactored the shar
   - `designmd diff DESIGN.md DESIGN-v2.md`
   - `designmd spec --rules`
 
+Completed: documented the standard, required file structure, canonical section order, and validation/export commands in `docs/design-md-standard.md`.
+
+### TDD Log
+
+- Red: no code changes were needed for this documentation slice.
+- Green: added the standards document.
+- Verify: pending.
+
 ## Phase 3: Add DESIGN.md
 
 - Add root `DESIGN.md` only after the internal token model is coherent.
