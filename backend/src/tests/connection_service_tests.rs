@@ -54,10 +54,6 @@ async fn given_connection_id_when_disconnect_then_disconnects_specific_connectio
         .returning(|_| Box::pin(async { Ok(()) }));
 
     mock_cache
-        .expect_clear_transactions()
-        .returning(|| Box::pin(async { Ok(()) }));
-
-    mock_cache
         .expect_clear_jwt_scoped_bank_connection_cache()
         .returning(|_, _| Box::pin(async { Ok(()) }));
 

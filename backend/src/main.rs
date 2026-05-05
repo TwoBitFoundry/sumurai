@@ -756,7 +756,7 @@ async fn logout_user(
         tracing::warn!("Failed to clear JWT-scoped data during logout: {}", e);
     }
 
-    if let Err(e) = state.cache_service.clear_transactions().await {
+    if let Err(e) = state.cache_service.clear_transactions(&claims.jti).await {
         tracing::warn!("Failed to clear transaction cache during logout: {}", e);
     }
 
@@ -1437,7 +1437,11 @@ async fn clear_authenticated_synced_data(
 ) -> Result<Json<ClearSyncedDataResponse>, StatusCode> {
     let user_id = auth_context.user_id;
 
-    match state.cache_service.clear_transactions().await {
+    match state
+        .cache_service
+        .clear_transactions(&auth_context.jwt_id)
+        .await
+    {
         Ok(_) => Ok(Json(ClearSyncedDataResponse {
             cleared: true,
             user_id: user_id.to_string(),

@@ -229,6 +229,7 @@ async fn given_valid_auth_cookie_when_logging_out_then_clears_cookie_and_returns
     let jwt_id = token.jwt_id.clone();
     let expected_invalidate_jwt_id = jwt_id.clone();
     let expected_clear_jwt_id = jwt_id.clone();
+    let expected_clear_transactions_jwt_id = jwt_id.clone();
 
     let mut mock_cache = create_auth_cookie_cache();
     mock_cache
@@ -241,7 +242,8 @@ async fn given_valid_auth_cookie_when_logging_out_then_clears_cookie_and_returns
         .returning(|_| Box::pin(async { Ok(()) }));
     mock_cache
         .expect_clear_transactions()
-        .returning(|| Box::pin(async { Ok(()) }));
+        .withf(move |candidate| candidate == expected_clear_transactions_jwt_id)
+        .returning(|_| Box::pin(async { Ok(()) }));
 
     let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
         .await

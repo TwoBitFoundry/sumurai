@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use redis::{aio::ConnectionManager, AsyncCommands, Client};
 use uuid::Uuid;
 
-const TRANSACTIONS_KEY: &str = "synced_transactions";
+const SYNCED_TRANSACTIONS_SUFFIX: &str = "_synced_transactions";
 const ACCESS_TOKEN_SUFFIX: &str = "_access_token";
 const SESSION_TOKEN_SUFFIX: &str = "_session_token";
 const BANK_CONNECTION_SUFFIX: &str = "_bank_connection_";
@@ -20,6 +20,10 @@ const TRANSACTIONS_TTL: u64 = 1800;
 const BANK_CONNECTION_TTL: u64 = 7200;
 const BANK_ACCOUNTS_TTL: u64 = 7200;
 
+pub fn synced_transactions_key(jwt_id: &str) -> String {
+    format!("{}{}", jwt_id, SYNCED_TRANSACTIONS_SUFFIX)
+}
+
 #[async_trait]
 #[cfg_attr(test, mockall::automock)]
 pub trait CacheService: Send + Sync {
@@ -27,8 +31,8 @@ pub trait CacheService: Send + Sync {
     async fn set_access_token(&self, jwt_id: &str, item_id: &str, access_token: &str)
         -> Result<()>;
     async fn delete_access_token(&self, jwt_id: &str, item_id: &str) -> Result<()>;
-    async fn add_transaction(&self, transaction: &Transaction) -> Result<()>;
-    async fn clear_transactions(&self) -> Result<()>;
+    async fn add_transaction(&self, jwt_id: &str, transaction: &Transaction) -> Result<()>;
+    async fn clear_transactions(&self, jwt_id: &str) -> Result<()>;
 
     async fn invalidate_pattern(&self, pattern: &str) -> Result<()>;
     async fn set_with_ttl(&self, key: &str, value: &str, ttl_seconds: u64) -> Result<()>;
@@ -96,10 +100,6 @@ impl RedisCache {
 
     fn jwt_valid_key(&self, jwt_id: &str) -> String {
         format!("{}{}", jwt_id, SESSION_VALID_SUFFIX)
-    }
-
-    fn transactions_key(&self) -> String {
-        TRANSACTIONS_KEY.to_string()
     }
 
     fn jwt_scoped_bank_connection_key(&self, jwt_id: &str, connection_id: Uuid) -> String {
@@ -172,9 +172,9 @@ impl RedisCache {
         Ok(())
     }
 
-    pub async fn add_transaction(&self, transaction: &Transaction) -> Result<()> {
+    pub async fn add_transaction(&self, jwt_id: &str, transaction: &Transaction) -> Result<()> {
         let mut conn = self.connection_manager.clone();
-        let key = self.transactions_key();
+        let key = synced_transactions_key(jwt_id);
         let result: Option<String> = conn.get(&key).await?;
 
         let mut transactions = match result {
@@ -197,9 +197,9 @@ impl RedisCache {
         Ok(())
     }
 
-    pub async fn clear_transactions(&self) -> Result<()> {
+    pub async fn clear_transactions(&self, jwt_id: &str) -> Result<()> {
         let mut conn = self.connection_manager.clone();
-        let key = self.transactions_key();
+        let key = synced_transactions_key(jwt_id);
         conn.del::<_, ()>(key).await?;
         Ok(())
     }
@@ -343,12 +343,12 @@ impl CacheService for RedisCache {
         self.delete_access_token(jwt_id, item_id).await
     }
 
-    async fn add_transaction(&self, transaction: &Transaction) -> Result<()> {
-        self.add_transaction(transaction).await
+    async fn add_transaction(&self, jwt_id: &str, transaction: &Transaction) -> Result<()> {
+        self.add_transaction(jwt_id, transaction).await
     }
 
-    async fn clear_transactions(&self) -> Result<()> {
-        self.clear_transactions().await
+    async fn clear_transactions(&self, jwt_id: &str) -> Result<()> {
+        self.clear_transactions(jwt_id).await
     }
 
     async fn invalidate_pattern(&self, pattern: &str) -> Result<()> {

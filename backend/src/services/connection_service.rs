@@ -508,7 +508,11 @@ impl ConnectionService {
                     e
                 );
             }
-            if let Err(e) = self.cache_service.add_transaction(transaction).await {
+            if let Err(e) = self
+                .cache_service
+                .add_transaction(params.jwt_id, transaction)
+                .await
+            {
                 tracing::warn!(
                     "Failed to cache transaction {:?} for user {}: {}",
                     transaction.provider_transaction_id,
@@ -719,7 +723,11 @@ impl ConnectionService {
                 continue;
             }
 
-            if let Err(e) = self.cache_service.add_transaction(&transaction).await {
+            if let Err(e) = self
+                .cache_service
+                .add_transaction(jwt_id, &transaction)
+                .await
+            {
                 tracing::warn!(
                     "Failed to cache Teller transaction {:?}: {}",
                     transaction.provider_transaction_id,
