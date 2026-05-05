@@ -4,45 +4,43 @@ version = "5.2.7"
 edition = "2021"
 
 [dependencies]
-axum = "0.8.4"
-tokio = { version = "1.47", features = ["full"] }
+axum = "0.8.9"
+tokio = { version = "1.52", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-uuid = { version = "1.18", features = ["v4", "serde"] }
+uuid = { version = "1.23", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
-rust_decimal = { version = "1.37", features = ["serde"] }
-tower = { version = "0.5.2", features = ["util"] }
-tower-http = { version = "0.6.6", features = ["cors", "trace"] }
+rust_decimal = { version = "1.41", features = ["serde"] }
+tower = { version = "0.5.3", features = ["util"] }
+tower-http = { version = "0.6.9", features = ["cors", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-opentelemetry = "0.32"
 anyhow = "1.0"
 sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "rust_decimal"] }
 # Package-specific dependencies not in workspace
-rust_decimal_macros = "1.37"
-hyper = "1.7"
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+rust_decimal_macros = "1.40"
+hyper = "1.9"
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
 async-trait = "0.1"
 aes-gcm = "0.10"
 base64 = "0.22"
 cookie = "0.18"
 hex = "0.4"
-rand = "0.9"
-redis = { version = "0.32.5", features = ["tokio-comp", "connection-manager"] }
-jsonwebtoken = "9.3"
+rand = "0.10"
+redis = { version = "1.2.1", features = ["tokio-comp", "connection-manager"] }
+jsonwebtoken = { version = "10.3", features = ["rust_crypto"] }
 argon2 = "0.5"
-sha2 = "0.10"
+sha2 = "0.11"
 futures = "0.3"
 governor = "0.10.4"
 opentelemetry = { version = "0.31", features = ["trace"] }
 opentelemetry_sdk = { version = "0.31", features = ["rt-tokio", "trace"] }
 opentelemetry-otlp = { version = "0.31", features = ["grpc-tonic", "http-proto", "reqwest-blocking-client", "trace"] }
-utoipa = { version = "5.4", features = ["axum_extras", "chrono", "uuid"] }
+utoipa = { version = "5.5", features = ["axum_extras", "chrono", "uuid"] }
 utoipa-scalar = "0.3"
-axum-tracing-opentelemetry = "0.32"
+axum-tracing-opentelemetry = "0.33"
 tower_governor = { version = "0.8.0", default-features = false, features = ["axum"] }
 
 [dev-dependencies]
-mockall = "0.13"
-
-
+mockall = "0.14"

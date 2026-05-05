@@ -7,7 +7,7 @@ use crate::models::{
 };
 use aes_gcm::{
     aead::{Aead, KeyInit},
-    Aes256Gcm, Key, Nonce,
+    Aes256Gcm, Nonce,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -112,14 +112,14 @@ impl PostgresRepository {
     }
 
     fn encrypt_token(&self, token: &str) -> Result<Vec<u8>> {
-        let key = Key::<Aes256Gcm>::from_slice(&self.encryption_key);
-        let cipher = Aes256Gcm::new(key);
+        let cipher = Aes256Gcm::new_from_slice(&self.encryption_key)
+            .map_err(|e| anyhow::anyhow!("Invalid encryption key: {:?}", e))?;
 
         let nonce_bytes: [u8; 12] = rand::random();
-        let nonce = Nonce::from_slice(&nonce_bytes);
+        let nonce = Nonce::from(nonce_bytes);
 
         let ciphertext = cipher
-            .encrypt(nonce, token.as_bytes())
+            .encrypt(&nonce, token.as_bytes())
             .map_err(|e| anyhow::anyhow!("Encryption failed: {}", e))?;
 
         let mut result = nonce_bytes.to_vec();
@@ -134,13 +134,16 @@ impl PostgresRepository {
         }
 
         let (nonce_bytes, ciphertext) = encrypted_data.split_at(12);
-        let nonce = Nonce::from_slice(nonce_bytes);
+        let nonce_bytes: [u8; 12] = nonce_bytes
+            .try_into()
+            .map_err(|e| anyhow::anyhow!("Invalid nonce length: {:?}", e))?;
+        let nonce = Nonce::from(nonce_bytes);
 
-        let key = Key::<Aes256Gcm>::from_slice(&self.encryption_key);
-        let cipher = Aes256Gcm::new(key);
+        let cipher = Aes256Gcm::new_from_slice(&self.encryption_key)
+            .map_err(|e| anyhow::anyhow!("Invalid encryption key: {:?}", e))?;
 
         let plaintext = cipher
-            .decrypt(nonce, ciphertext)
+            .decrypt(&nonce, ciphertext)
             .map_err(|e| anyhow::anyhow!("Decryption failed: {}", e))?;
 
         String::from_utf8(plaintext)
