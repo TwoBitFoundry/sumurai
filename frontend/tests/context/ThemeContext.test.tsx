@@ -81,4 +81,25 @@ describe('ThemeContext', () => {
       expect(screen.getByTestId('theme-mode')).toHaveTextContent('light');
     });
   });
+
+  it('honors initialMode when provided', async () => {
+    (window.localStorage.getItem as jest.Mock).mockReturnValue(null);
+    window.matchMedia = jest.fn().mockReturnValue({
+      matches: true,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+    }) as any;
+
+    render(
+      <ThemeProvider initialMode="light">
+        <ThemeProbe />
+      </ThemeProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('theme-mode')).toHaveTextContent('light');
+    });
+    expect(screen.getByTestId('theme-primary')).toHaveTextContent('#0ea5e9');
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+  });
 });

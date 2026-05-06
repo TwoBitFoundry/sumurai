@@ -37,10 +37,13 @@ const applyTheme = (mode: ThemeMode) => {
 
 interface ThemeProviderProps {
   children: ReactNode;
+  initialMode?: ThemeMode;
 }
 
-export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [mode, setModeState] = useState<ThemeMode>(() => getInitialTheme());
+export function ThemeProvider({ children, initialMode }: ThemeProviderProps) {
+  const [mode, setModeState] = useState<ThemeMode>(() =>
+    initialMode !== undefined ? initialMode : getInitialTheme()
+  );
 
   useEffect(() => {
     applyTheme(mode);
@@ -48,6 +51,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   }, [mode]);
 
   useEffect(() => {
+    if (initialMode !== undefined) {
+      return;
+    }
     if (typeof window === 'undefined' || !window.matchMedia) return;
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -63,7 +69,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       mediaQuery.addEventListener('change', handleChange);
       return () => mediaQuery.removeEventListener('change', handleChange);
     }
-  }, []);
+  }, [initialMode]);
 
   const setMode = useCallback((newMode: ThemeMode) => {
     setModeState(newMode);

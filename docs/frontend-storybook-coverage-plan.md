@@ -143,16 +143,33 @@ Acceptance criteria:
 
 ## Phase 2: Story Fixtures And App Decorators
 
+**Status:** complete.
+
 Goal: make realistic stories easy to write without coupling Storybook to live services.
 
 Implementation tasks:
 
-- Add story-only fixtures under [`frontend/src/storybook`](../frontend/src/storybook), grouped by domain: accounts, analytics, budgets, transactions, auth, providers, and settings.
-- Add a shared story decorator/provider module under [`frontend/src/storybook`](../frontend/src/storybook) that wraps stories with the same global visual context used by the app, especially `ThemeProvider` and full-screen canvas handling.
-- Add a theme-aware story wrapper that can force light or dark mode for deterministic Storybook and Playwright screenshots.
-- Prefer plain typed fixture objects using types from [`frontend/src/types/api.ts`](../frontend/src/types/api.ts).
-- Add helper wrappers for layout-level stories, such as unauthenticated shell, authenticated shell, and page-layout canvas.
-- Keep fixtures deterministic: fixed dates, fixed account names, fixed amounts, no random data, no current-time formatting unless injected.
+- [x] Add story-only fixtures under [`frontend/src/storybook`](../frontend/src/storybook), grouped by domain. Initial files cover time, transactions, accounts, and budgets; add analytics, auth, providers, and settings payloads when those stories are authored.
+- [x] Add a shared story decorator/provider module under [`frontend/src/storybook`](../frontend/src/storybook) that wraps stories with the same global visual context used by the app, especially `ThemeProvider` and full-screen canvas handling.
+- [x] Add a theme-aware story wrapper that can force light or dark mode for deterministic Storybook and Playwright screenshots.
+- [x] Prefer plain typed fixture objects using types from [`frontend/src/types/api.ts`](../frontend/src/types/api.ts).
+- [x] Add helper wrappers for layout-level stories, such as unauthenticated shell, authenticated shell, and page-layout canvas.
+- [x] Keep fixtures deterministic: fixed dates, fixed account names, fixed amounts, no random data, no current-time formatting unless injected.
+
+### Phase 2 implementation notes
+
+- [`ThemeProvider`](../frontend/src/context/ThemeContext.tsx) accepts optional `initialMode` so Storybook can pin light or dark without fighting system preference listeners.
+- Storybook preview moved to [`.storybook/preview.tsx`](../frontend/.storybook/preview.tsx) with a toolbar global `theme` and a decorator that wraps stories in `ThemeProvider`.
+- Typed fixtures: [`fixtures/time.ts`](../frontend/src/storybook/fixtures/time.ts), [`fixtures/transactions.ts`](../frontend/src/storybook/fixtures/transactions.ts), [`fixtures/accounts.ts`](../frontend/src/storybook/fixtures/accounts.ts), [`fixtures/budgets.ts`](../frontend/src/storybook/fixtures/budgets.ts). Layout helper: [`layout.tsx`](../frontend/src/storybook/layout.tsx) (`StoryFullscreen`). Dedicated authenticated versus unauthenticated shells stay for Phase 3 onward.
+- Boundary tests: extended [`ThemeContext.test.tsx`](../frontend/tests/context/ThemeContext.test.tsx) for `initialMode`; added [`fixturesShape.test.ts`](../frontend/tests/storybook/fixturesShape.test.ts) for fixture shapes.
+
+### Phase 2 TDD log
+
+1. Red: `ThemeContext` test expects forced light mode via `initialMode` while matchMedia prefers dark.
+2. Green: optional `initialMode` on `ThemeProvider`; skip system `prefers-color-scheme` subscription when `initialMode` is set.
+3. Red: fixture smoke tests for typed exports.
+4. Green: story fixtures and shape assertions under [`frontend/tests/storybook`](../frontend/tests/storybook).
+5. Verify: `npm --prefix frontend run typecheck`, full `npm --prefix frontend test`, `npm --prefix frontend run storybook:build`.
 
 Acceptance criteria:
 
