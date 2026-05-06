@@ -72,6 +72,8 @@ describe('design tokens', () => {
     expect(designTokens.components.budgetCard.shell.join(' ')).toContain('rounded-[1.75rem]');
     expect(designTokens.components.actions.budgetDeleteIcon.join(' ')).toContain('red-500/15');
     expect(designTokens.components.actions.accountsToolbar.join(' ')).toContain('rounded-full');
+    expect(designTokens.components.transactions.row.shell.join(' ')).toContain('hover:ring-sky-400/60');
+    expect(designTokens.components.onboarding.shell.join(' ')).toContain('hover:border-[#93c5fd]');
     expect(designTokens.components.onboarding.providerConnect.plaidEyebrowBg.join(' ')).toContain('#34d399');
     expect(designTokens.components.onboarding.stepCard.join(' ')).toContain('#0f172a');
     expect(designTokens.components.onboarding.hoverOverlay).toContain('group-hover:opacity-100');

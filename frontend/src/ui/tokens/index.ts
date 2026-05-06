@@ -118,6 +118,15 @@ const fieldControlSizes = {
   lg: 'py-3 text-base rounded-xl',
 } as const;
 
+const transactionRow = {
+  shell: [
+    'group relative border-b border-slate-200/70 transition-all duration-150 ease-out hover:-translate-y-[2px] hover:ring-2 hover:ring-sky-400/60',
+    'dark:border-slate-700/50 dark:hover:ring-sky-400/50',
+  ],
+  odd: ['bg-slate-100', 'dark:bg-slate-700/20'],
+  even: ['bg-white', 'dark:bg-transparent'],
+} as const;
+
 const gradientPrimitives = {
   appShellLight:
     'bg-[radial-gradient(128%_96%_at_18%_-20%,#c4e2ff_0%,#dbeafe_30%,#e5f2ff_56%,#ffffff_96%)]',
@@ -467,6 +476,12 @@ const layeredSurfaces = {
     'dark:text-[#cbd5e1]',
   ],
 } as const;
+
+const onboardingShell = [
+  'group relative overflow-hidden border border-[#e2e8f0] bg-white shadow-sm',
+  'transition-all duration-300 ease-out hover:-translate-y-[2px] hover:shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] hover:border-[#93c5fd]',
+  'dark:border-[#334155] dark:bg-[#0f172a] dark:hover:border-[#38bdf8] dark:hover:shadow-[0_20px_56px_-40px_rgba(2,6,23,0.65)]',
+] as const;
 
 const focusSurfaces = {
   visibleDarkOffset: ['dark:focus-visible:ring-offset-[#0f172a]'],
@@ -873,11 +888,8 @@ export const designTokens = {
       ],
     },
     onboarding: {
-      stepCard: [
-        'group relative overflow-hidden flex h-full flex-col items-center justify-start rounded-xl border border-[#e2e8f0] bg-white px-4 py-4 text-center shadow-sm',
-        'transition-all duration-300 ease-out hover:-translate-y-[2px] hover:shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] hover:border-[#93c5fd]',
-        'dark:border-[#334155] dark:bg-[#0f172a] dark:hover:border-[#38bdf8] dark:hover:shadow-[0_20px_56px_-40px_rgba(2,6,23,0.65)]',
-      ],
+      shell: onboardingShell,
+      stepCard: [...onboardingShell, 'flex h-full flex-col items-center justify-start rounded-xl px-4 py-4 text-center'],
       iconWell: [
         'relative z-10 inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#f8fafc] ring-1 ring-inset',
         'dark:bg-[#1e293b]',
@@ -886,11 +898,7 @@ export const designTokens = {
         'relative z-10 inline-flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#f8fafc] ring-1 ring-inset',
         'dark:bg-[#1e293b]',
       ],
-      providerRow: [
-        'group relative flex h-full items-start gap-4 overflow-hidden rounded-2xl border border-[#e2e8f0] bg-white p-4 text-[13px] shadow-sm',
-        'transition-all duration-300 ease-out hover:-translate-y-[2px] hover:shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] hover:border-[#93c5fd]',
-        'dark:border-[#334155] dark:bg-[#0f172a] dark:hover:border-[#38bdf8] dark:hover:shadow-[0_20px_56px_-40px_rgba(2,6,23,0.65)]',
-      ],
+      providerRow: [...onboardingShell, 'flex h-full items-start gap-4 rounded-2xl p-4 text-[13px]'],
       titleStrong: ['relative z-10 mt-3 text-sm font-semibold text-[#0f172a]', 'dark:text-white'],
       titleStrongInline: ['text-sm font-semibold text-[#0f172a]', 'dark:text-white'],
       bodyMuted: ['relative z-10 mt-1 text-xs text-[#475569]', 'dark:text-[#cbd5e1]'],
@@ -962,6 +970,9 @@ export const designTokens = {
         summaryWithin: ['font-semibold', 'text-slate-600', 'dark:text-slate-300'],
         summaryOver: ['font-semibold', 'text-red-600', 'dark:text-red-300'],
       },
+    },
+    transactions: {
+      row: transactionRow,
     },
     input: {
       base: fieldControlBase,

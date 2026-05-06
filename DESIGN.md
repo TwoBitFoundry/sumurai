@@ -271,14 +271,6 @@ components:
     textColor: "#ffffff"
     rounded: "{rounded.medium}"
     padding: 16px
-  onboarding-provider-row:
-    backgroundColor: "#ffffff"
-    rounded: "{rounded.large}"
-    padding: 16px
-  onboarding-provider-row-dark:
-    backgroundColor: "#0f172a"
-    rounded: "{rounded.large}"
-    padding: 16px
   onboarding-preview-frame:
     backgroundColor: "#0f172a"
     rounded: "{rounded.large}"

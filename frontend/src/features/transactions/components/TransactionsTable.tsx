@@ -148,11 +148,12 @@ export const TransactionsTable: React.FC<Props> = ({
                     return (
                       <tr
                         key={r.id}
-                        className={`group relative border-b border-slate-200/70 transition-all duration-150 ease-out hover:-translate-y-[2px] hover:ring-2 hover:ring-sky-400/60 dark:border-slate-700/50 dark:hover:ring-sky-400/50 ${
+                        className={cn(
+                          designTokens.components.transactions.row.shell,
                           i % 2
-                            ? 'bg-slate-100 dark:bg-slate-700/20'
-                            : 'bg-white dark:bg-transparent'
-                        }`}
+                            ? designTokens.components.transactions.row.odd
+                            : designTokens.components.transactions.row.even
+                        )}
                       >
                         <td
                           className={cn(
