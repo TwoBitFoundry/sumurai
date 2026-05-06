@@ -1,6 +1,7 @@
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { cn } from '@/ui/primitives';
 import { Button, Input } from '../../../ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import { formatCategoryName } from '../../../utils/categories';
 
 export interface BudgetFormValue {
@@ -50,9 +51,9 @@ export function BudgetForm({
           'focus:ring-offset-2',
           'focus:ring-offset-white',
           'dark:border-white/12',
-          'dark:bg-[#111a2f]/80',
+          designTokens.surfaces.layeredPanel80,
           'dark:text-slate-100',
-          'dark:focus:ring-offset-[#0f172a]'
+          designTokens.surfaces.focusRingOffsetDark
         )}
       >
         <option value="" disabled>

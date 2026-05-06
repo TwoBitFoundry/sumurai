@@ -1,5 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { Building2, Eye, Fingerprint, Landmark, ShieldCheck, Sparkles, Zap } from 'lucide-react';
+import { cn } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import type { FinancialProvider } from '@/types/api';
 
 export type ProviderCardConfig = {
@@ -92,8 +94,8 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
   displayName: 'Plaid',
   eyebrow: {
     text: 'Plaid Secure Link',
-    backgroundClassName: 'bg-[#34d399]/20 dark:bg-[#34d399]/20',
-    textClassName: 'text-[#10b981] dark:text-[#34d399]',
+    backgroundClassName: cn(designTokens.components.providerConnect.plaidEyebrowBg),
+    textClassName: cn(designTokens.components.providerConnect.plaidEyebrowText),
   },
   heroTitle: 'Connect your accounts',
   heroDescription:
@@ -197,8 +199,8 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
   displayName: 'Teller',
   eyebrow: {
     text: 'Teller Connect',
-    backgroundClassName: 'bg-[#38bdf8]/20 dark:bg-[#38bdf8]/15',
-    textClassName: 'text-[#0284c7] dark:text-[#38bdf8]',
+    backgroundClassName: cn(designTokens.components.providerConnect.tellerEyebrowBg),
+    textClassName: cn(designTokens.components.providerConnect.tellerEyebrowText),
   },
   heroTitle: 'Connect your accounts',
   heroDescription:

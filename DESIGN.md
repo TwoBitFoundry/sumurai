@@ -96,6 +96,18 @@ typography:
     fontWeight: 600
     lineHeight: 1
     letterSpacing: 0.32em
+  budget-progress-caption:
+    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
+    fontSize: 0.75rem
+    fontWeight: 400
+    lineHeight: 1.5
+    letterSpacing: 0
+  budget-progress-caption-strong:
+    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
+    fontSize: 0.75rem
+    fontWeight: 600
+    lineHeight: 1.5
+    letterSpacing: 0
 rounded:
   panel: 2.25rem
   card: 1rem
@@ -143,6 +155,107 @@ components:
     backgroundColor: "#ffffff"
     rounded: "{rounded.card}"
     padding: 16px
+  budget-progress-track:
+    backgroundColor: "{colors.chart-light-grid}"
+    rounded: "{rounded.pill}"
+    height: "10px"
+  budget-progress-track-dark:
+    backgroundColor: "{colors.chart-dark-grid}"
+    rounded: "{rounded.pill}"
+    height: "10px"
+  budget-progress-fill-within:
+    backgroundColor: "linear-gradient(90deg, {colors.brand-sky-dark}, {colors.brand-cyan-dark}, {colors.brand-violet})"
+    rounded: "{rounded.pill}"
+    height: "10px"
+  budget-progress-fill-over:
+    backgroundColor: "linear-gradient(90deg, {colors.category-rose}, #f43f5e, #e11d48)"
+    rounded: "{rounded.pill}"
+    height: "10px"
+  budget-progress-caption-row:
+    typography: "{typography.budget-progress-caption}"
+    textColor: "{colors.chart-light-axis}"
+  budget-progress-caption-summary:
+    typography: "{typography.budget-progress-caption-strong}"
+    textColor: "{colors.chart-light-axis}"
+  budget-progress-caption-danger:
+    typography: "{typography.budget-progress-caption-strong}"
+    textColor: "#dc2626"
+  surface-panel-glass-dark:
+    backgroundColor: "#0f172a"
+    rounded: "{rounded.large}"
+  surface-layered-panel-dark:
+    backgroundColor: "#111a2f"
+    rounded: "{rounded.large}"
+  surface-data-row-dark:
+    backgroundColor: "#1e293b"
+    rounded: "{rounded.medium}"
+  surface-secondary-text:
+    typography: "{typography.budget-progress-caption}"
+    textColor: "{colors.chart-light-axis}"
+  surface-secondary-text-dark:
+    typography: "{typography.budget-progress-caption}"
+    textColor: "#cbd5e1"
+  budget-card-shell:
+    backgroundColor: "#ffffff"
+    rounded: "{rounded.large}"
+    padding: 24px
+  budget-card-shell-dark:
+    backgroundColor: "#111a2f"
+    rounded: "{rounded.large}"
+    padding: 24px
+  pagination-round-button:
+    backgroundColor: "#ffffff"
+    textColor: "{colors.chart-light-axis}"
+    rounded: "{rounded.pill}"
+    size: 36px
+  pagination-round-button-dark:
+    backgroundColor: "#1e293b"
+    textColor: "#cbd5e1"
+    rounded: "{rounded.pill}"
+    size: 36px
+  accounts-toolbar-button:
+    backgroundColor: "#ffffff"
+    textColor: "#0f172a"
+    rounded: "{rounded.pill}"
+    padding: 10px
+  accounts-toolbar-button-dark:
+    backgroundColor: "#1e293b"
+    textColor: "#cbd5e1"
+    rounded: "{rounded.pill}"
+    padding: 10px
+  provider-connect-plaid-eyebrow:
+    backgroundColor: "rgba(52, 211, 153, 0.2)"
+    textColor: "{colors.semantic-light-cash}"
+  provider-connect-teller-eyebrow:
+    backgroundColor: "rgba(56, 189, 248, 0.2)"
+    textColor: "{colors.brand-sky}"
+  onboarding-step-card:
+    backgroundColor: "#ffffff"
+    textColor: "#0f172a"
+    rounded: "{rounded.medium}"
+    padding: 16px
+  onboarding-step-card-dark:
+    backgroundColor: "#0f172a"
+    textColor: "#ffffff"
+    rounded: "{rounded.medium}"
+    padding: 16px
+  onboarding-provider-row:
+    backgroundColor: "#ffffff"
+    rounded: "{rounded.large}"
+    padding: 16px
+  onboarding-provider-row-dark:
+    backgroundColor: "#0f172a"
+    rounded: "{rounded.large}"
+    padding: 16px
+  onboarding-preview-frame:
+    backgroundColor: "#0f172a"
+    rounded: "{rounded.large}"
+  onboarding-body-muted:
+    typography: "{typography.budget-progress-caption}"
+    textColor: "{colors.chart-light-axis}"
+  onboarding-body-muted-dark:
+    typography: "{typography.budget-progress-caption}"
+    textColor: "#cbd5e1"
 ---
 
 ## Overview
@@ -185,7 +298,11 @@ The shape language should stay smooth and modern, with compact controls retainin
 
 Buttons should carry the brand gradient in primary and connect actions, with restrained variants for secondary and icon-only actions. Cards should favor translucent glass surfaces. Charts should use the light and dark theme color sets without drifting from the semantic finance palette.
 
-SwiftUI should map component tokens to reusable view modifiers or style helpers, especially for buttons, cards, chips, and title-bar tabs. Keep the same visual roles across platforms instead of duplicating implementation details.
+Budget progress bars use `designTokens.components.budgetProgress`: a neutral inset track, a sky-to-cyan-to-violet fill while within budget, and a rose gradient fill when over budget, with caption rows using compact slate axis colors and danger tones for overspend summaries. In `DESIGN.md`, `budget-progress-track` / `budget-progress-track-dark`, `budget-progress-fill-within`, `budget-progress-fill-over`, and the `budget-progress-caption-*` entries mirror those roles with design.md component property tokens; implementation keeps full Tailwind class lists in the token module.
+
+Dense feature screens share `designTokens.surfaces` for dark glass panels (`#0f172a`, `#111a2f`), control rows (`#1e293b`), focus ring offsets, and muted caption typography. Budget workflow cards use `designTokens.components.budgetCard.shell`; accounts month/toolbar pills use `accountsToolbarButton`; transaction pagination uses `paginationRoundButton`; provider picker eyebrows use `providerConnect`; onboarding steps use `components.onboarding` (`stepCard`, `providerRow`, `previewFrame`, typography bundles). YAML entries `surface-*`, `budget-card-shell*`, `pagination-round-button*`, `accounts-toolbar-button*`, `provider-connect-*-eyebrow`, and `onboarding-*` summarize those roles for export while Tailwind class arrays remain authoritative in the token module.
+
+SwiftUI should map component tokens to reusable view modifiers or style helpers, especially for buttons, cards, chips, title-bar tabs, linear budget-fill overlays, dark dashboard shells, and onboarding marketing cards. Keep the same visual roles across platforms instead of duplicating implementation details.
 
 ## Do's and Don'ts
 

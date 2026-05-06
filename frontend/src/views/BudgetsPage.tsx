@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { cn, EmptyState } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import Card from '../components/ui/Card';
 import HeroStatCard, { type HeroPill } from '../components/widgets/HeroStatCard';
 import { BudgetCalculator } from '../domain/BudgetCalculator';
@@ -238,7 +239,7 @@ export default function BudgetsPage() {
           'hover:-translate-y-[2px]',
           'hover:border-slate-300',
           'dark:border-slate-700',
-          'dark:bg-[#111a2f]/70',
+          ...designTokens.surfaces.layeredPanel70,
           'dark:text-slate-200',
           'dark:hover:border-slate-600'
         )}
@@ -400,32 +401,7 @@ export default function BudgetsPage() {
                       type="button"
                       onClick={goToPreviousMonth}
                       aria-label="Previous month"
-                      className={cn(
-                        'inline-flex',
-                        'h-9',
-                        'w-9',
-                        'items-center',
-                        'justify-center',
-                        'rounded-full',
-                        'border',
-                        'border-white/50',
-                        'bg-white/70',
-                        'text-slate-600',
-                        'transition-all',
-                        'duration-200',
-                        'hover:-translate-y-[2px]',
-                        'hover:bg-white/90',
-                        'focus-visible:outline-none',
-                        'focus-visible:ring-2',
-                        'focus-visible:ring-sky-400/70',
-                        'focus-visible:ring-offset-2',
-                        'focus-visible:ring-offset-white',
-                        'dark:border-white/10',
-                        'dark:bg-[#1e293b]/70',
-                        'dark:text-slate-200',
-                        'dark:hover:bg-[#1e293b]/85',
-                        'dark:focus-visible:ring-offset-[#0f172a]'
-                      )}
+                      className={cn(designTokens.components.paginationRoundButton)}
                       title="Previous month"
                     >
                       <ChevronLeftIcon className={cn('h-4', 'w-4')} />
@@ -434,32 +410,7 @@ export default function BudgetsPage() {
                       type="button"
                       onClick={goToNextMonth}
                       aria-label="Next month"
-                      className={cn(
-                        'inline-flex',
-                        'h-9',
-                        'w-9',
-                        'items-center',
-                        'justify-center',
-                        'rounded-full',
-                        'border',
-                        'border-white/50',
-                        'bg-white/70',
-                        'text-slate-600',
-                        'transition-all',
-                        'duration-200',
-                        'hover:-translate-y-[2px]',
-                        'hover:bg-white/90',
-                        'focus-visible:outline-none',
-                        'focus-visible:ring-2',
-                        'focus-visible:ring-sky-400/70',
-                        'focus-visible:ring-offset-2',
-                        'focus-visible:ring-offset-white',
-                        'dark:border-white/10',
-                        'dark:bg-[#1e293b]/70',
-                        'dark:text-slate-200',
-                        'dark:hover:bg-[#1e293b]/85',
-                        'dark:focus-visible:ring-offset-[#0f172a]'
-                      )}
+                      className={cn(designTokens.components.paginationRoundButton)}
                       title="Next month"
                     >
                       <ChevronRightIcon className={cn('h-4', 'w-4')} />
@@ -531,10 +482,10 @@ export default function BudgetsPage() {
                       'focus-visible:ring-offset-2',
                       'focus-visible:ring-offset-white',
                       'dark:border-white/12',
-                      'dark:bg-[#111a2f]',
+                      ...designTokens.surfaces.layeredSolid,
                       'dark:text-slate-100',
-                      'dark:hover:bg-[#0f172a]',
-                      'dark:focus-visible:ring-offset-[#0f172a]'
+                      ...designTokens.surfaces.shellHoverDark,
+                      ...designTokens.surfaces.focusRingOffsetDarkVisible
                     )}
                     title="Jump to current month"
                   >
@@ -569,7 +520,7 @@ export default function BudgetsPage() {
                         'focus-visible:ring-sky-400',
                         'focus-visible:ring-offset-2',
                         'focus-visible:ring-offset-white',
-                        'dark:focus-visible:ring-offset-[#0f172a]'
+                        ...designTokens.surfaces.focusRingOffsetDarkVisible
                       )}
                     >
                       <Plus className={cn('h-4', 'w-4')} />
@@ -635,7 +586,7 @@ export default function BudgetsPage() {
                         'focus-visible:ring-sky-400',
                         'focus-visible:ring-offset-2',
                         'focus-visible:ring-offset-white',
-                        'dark:focus-visible:ring-offset-[#0f172a]'
+                        ...designTokens.surfaces.focusRingOffsetDarkVisible
                       )}
                     >
                       <Plus className={cn('h-4', 'w-4')} />

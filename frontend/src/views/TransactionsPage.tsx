@@ -2,6 +2,7 @@ import { AlertTriangle, ReceiptText, RefreshCcw, TrendingUp } from 'lucide-react
 import type React from 'react';
 import { useMemo } from 'react';
 import { cn } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import HeroStatCard from '../components/widgets/HeroStatCard';
 import TransactionsFilters from '../features/transactions/components/TransactionsFilters';
 import TransactionsTable from '../features/transactions/components/TransactionsTable';
@@ -161,8 +162,8 @@ const TransactionsPage: React.FC = () => {
             'transition-colors',
             'duration-500',
             'dark:border-white/12',
-            'dark:bg-[#0f172a]/55',
-            'dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)]'
+            ...designTokens.surfaces.panelGlassDark55,
+            ...designTokens.surfaces.panelGlassShadowDeep
           )}
         >
           <div className={cn('pointer-events-none', 'absolute', 'inset-0')}>

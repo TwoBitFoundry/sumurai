@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import { getTagThemeForCategory } from '../../../utils/categories';
 
 interface Props {
@@ -69,11 +70,11 @@ export const TransactionsFilters: React.FC<Props> = ({
               'focus:ring-offset-2',
               'focus:ring-offset-white',
               'dark:border-white/12',
-              'dark:bg-[#111a2f]',
+              ...designTokens.surfaces.layeredSolid,
               'dark:text-white',
               'dark:placeholder:text-slate-500',
               'dark:focus:ring-sky-400/80',
-              'dark:focus:ring-offset-[#0f172a]'
+              ...designTokens.surfaces.focusRingOffsetDark
             )}
           />
         </div>
@@ -150,7 +151,7 @@ export const TransactionsFilters: React.FC<Props> = ({
                   'to-transparent',
                   'transition-opacity',
                   'duration-200',
-                  'dark:from-[#0f172a]'
+                  ...designTokens.surfaces.fadeFromDark
                 )}
               />
             )}
@@ -168,7 +169,7 @@ export const TransactionsFilters: React.FC<Props> = ({
                   'to-transparent',
                   'transition-opacity',
                   'duration-200',
-                  'dark:from-[#0f172a]'
+                  ...designTokens.surfaces.fadeFromDark
                 )}
               />
             )}

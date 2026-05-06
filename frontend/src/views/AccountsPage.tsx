@@ -2,6 +2,7 @@ import { AnimatePresence } from 'framer-motion';
 import { Building2, Clock, CreditCard, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { cn } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import { getProviderCardConfig } from '@/utils/providerCards';
 import { Toast } from '../components/Toast';
 import HeroStatCard from '../components/widgets/HeroStatCard';
@@ -167,8 +168,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           'shadow-[0_32px_110px_-60px_rgba(15,23,42,0.75)]',
           'backdrop-blur-[28px]',
           'dark:border-white/12',
-          'dark:bg-[#0f172a]/55',
-          'dark:shadow-[0_36px_120px_-62px_rgba(2,6,23,0.85)]'
+          ...designTokens.surfaces.panelGlassDark55,
+          ...designTokens.surfaces.panelGlassShadow
         )}
       >
         <div className={cn('text-sm', 'font-medium', 'text-slate-600', 'dark:text-slate-300')}>
@@ -220,30 +221,14 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           'shadow-[0_32px_110px_-60px_rgba(15,23,42,0.75)]',
           'backdrop-blur-[28px]',
           'dark:border-white/12',
-          'dark:bg-[#0f172a]/55',
-          'dark:shadow-[0_36px_120px_-62px_rgba(2,6,23,0.85)]'
+          ...designTokens.surfaces.panelGlassDark55,
+          ...designTokens.surfaces.panelGlassShadow
         )}
       >
         <div className={cn('relative', 'z-10', 'flex', 'flex-col', 'gap-8')}>
           <div className={cn('space-y-3', 'text-center')}>
             <span
-              className={cn(
-                'inline-flex',
-                'items-center',
-                'justify-center',
-                'rounded-full',
-                'bg-white/75',
-                'px-3',
-                'py-1',
-                'text-[11px]',
-                'font-semibold',
-                'uppercase',
-                'tracking-[0.32em]',
-                'text-[#475569]',
-                'shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)]',
-                'dark:bg-[#1e293b]/75',
-                'dark:text-[#cbd5e1]'
-              )}
+              className={cn(designTokens.surfaces.eyebrowChip)}
             >
               Select Provider
             </span>
@@ -297,10 +282,10 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
                     'disabled:cursor-not-allowed',
                     'disabled:opacity-75',
                     'dark:border-white/10',
-                    'dark:bg-[#111a2f]/85',
+                    ...designTokens.surfaces.layeredCard85,
                     'dark:hover:border-sky-400/40',
                     'dark:hover:shadow-[0_28px_90px_-60px_rgba(2,6,23,0.7)]',
-                    'dark:focus-visible:ring-offset-[#0f172a]'
+                    ...designTokens.surfaces.focusRingOffsetDarkVisible
                   )}
                 >
                   <div className={cn('flex', 'items-center', 'justify-between')}>
@@ -410,8 +395,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     ? `Refreshed ${formatAbsoluteTime(summary.latestSync)}`
     : syncFooter;
 
-  const syncButtonClasses =
-    'inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/85 px-5 py-2 text-sm font-semibold text-[#0f172a] shadow-[0_18px_48px_-32px_rgba(15,23,42,0.45)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[#93c5fd] hover:text-[#0f172a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9] focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none dark:border-[#334155] dark:bg-[#1e293b]/90 dark:text-[#cbd5e1] dark:hover:border-[#38bdf8] dark:hover:text-white dark:focus-visible:ring-offset-slate-900';
+  const syncButtonClasses = cn(designTokens.components.accountsToolbarButton);
 
   const pendingInstitutions = Math.max(0, summary.institutions - summary.connectedInstitutions);
 

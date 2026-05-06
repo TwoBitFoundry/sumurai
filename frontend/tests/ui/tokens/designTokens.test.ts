@@ -29,4 +29,35 @@ describe('design tokens', () => {
     expect(first.tag).toBe(second.tag);
     expect(first.ringHex).toBe(second.ringHex);
   });
+
+  it('exposes budget progress surface classes', () => {
+    expect(designTokens.components.budgetProgress.fill.within).toContain('from-sky-400');
+    expect(designTokens.components.budgetProgress.fill.over).toContain('from-rose-400');
+    expect(designTokens.components.budgetProgress.track.join(' ')).toContain('rounded-full');
+  });
+
+  it('exposes account type dot colors and connect chrome tokens', () => {
+    expect(designTokens.colors.accountTypeDot.checking).toBe('#38bdf8');
+    expect(designTokens.components.connectButton.secondary.join(' ')).toContain('#e2e8f0');
+    expect(designTokens.components.menuDropdown.content.join(' ')).toContain('rounded-2xl');
+  });
+
+  it('exposes deferred-screen surface and onboarding component bundles', () => {
+    expect(designTokens.surfaces.panelGlassDark55.join(' ')).toContain('#0f172a');
+    expect(designTokens.surfaces.dataRowDark70.join(' ')).toContain('#1e293b');
+    expect(designTokens.components.budgetCard.shell.join(' ')).toContain('rounded-[1.75rem]');
+    expect(designTokens.components.accountsToolbarButton.join(' ')).toContain('rounded-full');
+    expect(designTokens.components.providerConnect.plaidEyebrowBg.join(' ')).toContain('#34d399');
+    expect(designTokens.components.onboarding.stepCard.join(' ')).toContain('#0f172a');
+    expect(designTokens.components.onboarding.previewFrame.join(' ')).toContain('aspect-[16/10]');
+  });
+
+  it('exposes singleton layout effects and deduped gradient primitives', () => {
+    expect(designTokens.effects.shell.centerGlow).toContain('conic-gradient');
+    expect(designTokens.effects.titleBar.themeToggle).toContain('amber-500');
+    expect(designTokens.effects.pillOverflow.fadeLeft).toContain('#111a2f');
+    expect(designTokens.effects.emptyState.iconHoverGlowLight).toContain('hover:shadow');
+    expect(designTokens.gradients.appShellLight).toContain('#dbeafe');
+    expect(designTokens.components.gradientShell.aura[0]).toBe(designTokens.gradients.appShellLight);
+  });
 });

@@ -121,6 +121,14 @@ Completed: added frontend scripts and a local `designmd` shim so the package can
 - Remaining hard-coded colors are acceptable only for non-brand implementation details or explicit third-party glue, and must be called out in the final implementation summary.
 - The global `designmd` CLI is available in the developer environment.
 
+## Remaining inline color usage
+
+Shared primitives, layout shells, hero cards, charts, budget progress, account-row dots, menu dropdowns, onboarding, accounts overview chrome, budgets workflow, transactions lists, and provider picker eyebrows now pull recurring hex from `designTokens.surfaces`, `designTokens.components.budgetCard`, `paginationRoundButton`, `accountsToolbarButton`, `providerConnect`, and `onboarding` bundles in `frontend/src/ui/tokens/index.ts`.
+
+Arbitrary palette strings may still appear inside token definitions, gradient utilities, chart semantics, third-party glue, or one-off marketing accents; new chrome should extend tokens rather than scattering hex in views.
+
+**Policy**: Prefer `designTokens` / theme hooks for shared chrome; singleton ambient visuals live under `designTokens.effects`, shell gradients under `designTokens.gradients` (backed by shared `gradientPrimitives`); keep `DESIGN.md` component YAML aligned when adding named bundles.
+
 ## Next Actions
 
 - Start with the internal token module and refactor `ThemeContext` plus shared UI primitives before writing `DESIGN.md`.

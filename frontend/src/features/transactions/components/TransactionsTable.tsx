@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Receipt } from 'lucide-react';
 import type React from 'react';
 import { cn, EmptyState } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import type { Transaction } from '../../../types/api';
 import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
@@ -274,36 +275,7 @@ export const TransactionsTable: React.FC<Props> = ({
                 onClick={onPrev}
                 disabled={currentPage <= 1}
                 aria-label="Previous page"
-                className={cn(
-                  'inline-flex',
-                  'h-9',
-                  'w-9',
-                  'items-center',
-                  'justify-center',
-                  'rounded-full',
-                  'border',
-                  'border-white/50',
-                  'bg-white/70',
-                  'text-slate-600',
-                  'shadow-[0_14px_38px_-28px_rgba(15,23,42,0.55)]',
-                  'transition-all',
-                  'duration-200',
-                  'hover:-translate-y-[2px]',
-                  'hover:bg-white/90',
-                  'focus-visible:outline-none',
-                  'focus-visible:ring-2',
-                  'focus-visible:ring-sky-400/70',
-                  'focus-visible:ring-offset-2',
-                  'focus-visible:ring-offset-white',
-                  'disabled:cursor-not-allowed',
-                  'disabled:opacity-50',
-                  'disabled:hover:translate-y-0',
-                  'dark:border-white/10',
-                  'dark:bg-[#1e293b]/70',
-                  'dark:text-slate-200',
-                  'dark:hover:bg-[#1e293b]/85',
-                  'dark:focus-visible:ring-offset-[#0f172a]'
-                )}
+                className={cn(designTokens.components.paginationRoundButton)}
               >
                 <ChevronLeftIcon className={cn('h-4', 'w-4')} />
               </button>
@@ -323,36 +295,7 @@ export const TransactionsTable: React.FC<Props> = ({
                 onClick={onNext}
                 disabled={currentPage >= totalPages}
                 aria-label="Next page"
-                className={cn(
-                  'inline-flex',
-                  'h-9',
-                  'w-9',
-                  'items-center',
-                  'justify-center',
-                  'rounded-full',
-                  'border',
-                  'border-white/50',
-                  'bg-white/70',
-                  'text-slate-600',
-                  'shadow-[0_14px_38px_-28px_rgba(15,23,42,0.55)]',
-                  'transition-all',
-                  'duration-200',
-                  'hover:-translate-y-[2px]',
-                  'hover:bg-white/90',
-                  'focus-visible:outline-none',
-                  'focus-visible:ring-2',
-                  'focus-visible:ring-sky-400/70',
-                  'focus-visible:ring-offset-2',
-                  'focus-visible:ring-offset-white',
-                  'disabled:cursor-not-allowed',
-                  'disabled:opacity-50',
-                  'disabled:hover:translate-y-0',
-                  'dark:border-white/10',
-                  'dark:bg-[#1e293b]/70',
-                  'dark:text-slate-200',
-                  'dark:hover:bg-[#1e293b]/85',
-                  'dark:focus-visible:ring-offset-[#0f172a]'
-                )}
+                className={cn(designTokens.components.paginationRoundButton)}
               >
                 <ChevronRightIcon className={cn('h-4', 'w-4')} />
               </button>

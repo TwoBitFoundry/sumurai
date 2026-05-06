@@ -55,21 +55,54 @@ const glassInsetDark =
   'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.5)]';
 const panelShadow = 'shadow-[0_32px_110px_-60px_rgba(15,23,42,0.75)]';
 const panelShadowDark = 'dark:shadow-[0_36px_120px_-62px_rgba(2,6,23,0.85)]';
-const appShellLight =
-  'bg-[radial-gradient(128%_96%_at_18%_-20%,#c4e2ff_0%,#dbeafe_30%,#e5f2ff_56%,#ffffff_96%)]';
-const appShellDark =
-  'dark:bg-[radial-gradient(100%_85%_at_20%_-10%,#0f172a_0%,#0b162c_55%,#05070d_100%)]';
-const auraBlue =
-  'bg-[radial-gradient(136%_108%_at_20%_-18%,rgba(14,165,233,0.42)_0%,#e1f2ff_36%,#ffffff_100%)]';
-const auraBlueDark =
-  'dark:bg-[radial-gradient(92%_80%_at_20%_-6%,#0f172a_0%,#0a1224_50%,#05070d_100%)]';
-const auraViolet =
-  'bg-[radial-gradient(86%_64%_at_86%_18%,rgba(167,139,250,0.28)_0%,rgba(59,130,246,0.14)_55%,transparent_78%)]';
-const auraCyan =
-  'bg-[radial-gradient(92%_68%_at_12%_24%,rgba(56,189,248,0.28)_0%,rgba(129,140,248,0.12)_52%,transparent_80%)]';
-const pageTitleBarSurface = 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700';
-const emptyStateIconGradient =
-  'bg-gradient-to-br from-slate-400/10 via-slate-300/15 to-slate-500/10 dark:from-slate-500/10 dark:via-slate-600/15 dark:to-slate-700/10';
+
+const gradientPrimitives = {
+  appShellLight:
+    'bg-[radial-gradient(128%_96%_at_18%_-20%,#c4e2ff_0%,#dbeafe_30%,#e5f2ff_56%,#ffffff_96%)]',
+  appShellDark:
+    'dark:bg-[radial-gradient(100%_85%_at_20%_-10%,#0f172a_0%,#0b162c_55%,#05070d_100%)]',
+  auraBlue:
+    'bg-[radial-gradient(136%_108%_at_20%_-18%,rgba(14,165,233,0.42)_0%,#e1f2ff_36%,#ffffff_100%)]',
+  auraBlueDark:
+    'dark:bg-[radial-gradient(92%_80%_at_20%_-6%,#0f172a_0%,#0a1224_50%,#05070d_100%)]',
+  auraViolet:
+    'bg-[radial-gradient(86%_64%_at_86%_18%,rgba(167,139,250,0.28)_0%,rgba(59,130,246,0.14)_55%,transparent_78%)]',
+  auraCyan:
+    'bg-[radial-gradient(92%_68%_at_12%_24%,rgba(56,189,248,0.28)_0%,rgba(129,140,248,0.12)_52%,transparent_80%)]',
+  activeTab:
+    'bg-[linear-gradient(115deg,#38bdf8_0%,#22d3ee_46%,#a855f7_100%)] before:bg-[linear-gradient(140deg,rgba(255,255,255,0.38)_0%,rgba(255,255,255,0)_60%)] dark:before:bg-[linear-gradient(140deg,rgba(255,255,255,0.32)_0%,rgba(255,255,255,0)_60%)]',
+  emptyStateIcon:
+    'bg-gradient-to-br from-slate-400/10 via-slate-300/15 to-slate-500/10 dark:from-slate-500/10 dark:via-slate-600/15 dark:to-slate-700/10',
+  pageTitleBar: 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700',
+} as const;
+
+const layoutEffects = {
+  shell: {
+    vignette:
+      'bg-gradient-to-b from-white/70 via-white/38 to-transparent transition-colors duration-700 ease-out dark:from-slate-900/68 dark:via-slate-900/42 dark:to-transparent',
+    vignetteOverlay:
+      'bg-[radial-gradient(120%_120%_at_50%_55%,transparent_60%,rgba(15,23,42,0.1)_100%)] transition-opacity duration-700 ease-out dark:bg-[radial-gradient(120%_120%_at_50%_54%,transparent_58%,rgba(2,6,23,0.38)_100%)]',
+    centerGlow:
+      'rounded-full blur-3xl h-[72rem] w-[72rem] opacity-[0.28] animate-[rotateAura_95s_linear_infinite] bg-[conic-gradient(from_90deg,#93c5fd,#34d399,#fbbf24,#a78bfa,#fb7185,#93c5fd)] transition-opacity duration-500 dark:opacity-[0.4] dark:bg-[conic-gradient(from_110deg,#38bdf8,#34d399,#a78bfa,#fbbf24,#f87171,#38bdf8)]',
+  },
+  titleBar: {
+    tabHalo:
+      'after:absolute after:inset-[-28%] after:rounded-[999px] after:bg-[radial-gradient(circle_at_35%_30%,rgba(14,165,233,0.16),transparent_62%)] after:opacity-0 after:transition-opacity after:duration-300 hover:after:opacity-90 dark:after:bg-[radial-gradient(circle_at_35%_30%,rgba(56,189,248,0.22),transparent_62%)]',
+    themeToggle:
+      'rounded-lg !bg-amber-500/80 dark:!bg-purple-600/80 hover:!bg-amber-600/80 dark:hover:!bg-purple-700/80 !border !border-amber-400/30 dark:!border-purple-500/30 !text-white backdrop-blur-sm transition-colors',
+  },
+  pillOverflow: {
+    fadeLeft:
+      'pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80',
+    fadeRight:
+      'pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80',
+  },
+  emptyState: {
+    iconHoverGlowLight: 'hover:shadow-[0_0_30px_rgba(59,130,246,0.4),0_0_60px_rgba(59,130,246,0.2)]',
+    iconHoverGlowDark:
+      'dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)]',
+  },
+} as const;
 
 const semanticLight = {
   cash: '#10b981',
@@ -287,31 +320,52 @@ export const designTokens = {
     panelDark: 'dark:shadow-[0_36px_120px_-62px_rgba(2,6,23,0.85)]',
     buttonPrimary: 'shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)]',
   },
-  gradients: {
-    appShellLight:
-      'bg-[radial-gradient(128%_96%_at_18%_-20%,#c4e2ff_0%,#dbeafe_30%,#e5f2ff_56%,#ffffff_96%)]',
-    appShellDark:
-      'dark:bg-[radial-gradient(100%_85%_at_20%_-10%,#0f172a_0%,#0b162c_55%,#05070d_100%)]',
-    auraBlue:
-      'bg-[radial-gradient(136%_108%_at_20%_-18%,rgba(14,165,233,0.42)_0%,#e1f2ff_36%,#ffffff_100%)]',
-    auraBlueDark:
-      'dark:bg-[radial-gradient(92%_80%_at_20%_-6%,#0f172a_0%,#0a1224_50%,#05070d_100%)]',
-    auraViolet:
-      'bg-[radial-gradient(86%_64%_at_86%_18%,rgba(167,139,250,0.28)_0%,rgba(59,130,246,0.14)_55%,transparent_78%)]',
-    auraCyan:
-      'bg-[radial-gradient(92%_68%_at_12%_24%,rgba(56,189,248,0.28)_0%,rgba(129,140,248,0.12)_52%,transparent_80%)]',
-    activeTab:
-      'bg-[linear-gradient(115deg,#38bdf8_0%,#22d3ee_46%,#a855f7_100%)] before:bg-[linear-gradient(140deg,rgba(255,255,255,0.38)_0%,rgba(255,255,255,0)_60%)] dark:before:bg-[linear-gradient(140deg,rgba(255,255,255,0.32)_0%,rgba(255,255,255,0)_60%)]',
-    emptyStateIcon:
-      'bg-gradient-to-br from-slate-400/10 via-slate-300/15 to-slate-500/10 dark:from-slate-500/10 dark:via-slate-600/15 dark:to-slate-700/10',
-    pageTitleBar:
-      'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700',
-  },
+  gradients: gradientPrimitives,
+  effects: layoutEffects,
   motion: {
     fast: 'duration-200',
     medium: 'duration-300',
     slow: 'duration-500',
     aura: 'animate-[rotateAura_95s_linear_infinite]',
+  },
+  surfaces: {
+    panelGlassDark55: ['dark:bg-[#0f172a]/55'],
+    panelGlassShadow: ['dark:shadow-[0_36px_120px_-62px_rgba(2,6,23,0.85)]'],
+    panelGlassShadowDeep: ['dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)]'],
+    layeredCard85: ['dark:bg-[#111a2f]/85'],
+    layeredCard90: ['dark:bg-[#111a2f]/90'],
+    layeredSolid: ['dark:bg-[#111a2f]'],
+    layeredPanel70: ['dark:bg-[#111a2f]/70'],
+    layeredPanel80: ['dark:bg-[#111a2f]/80'],
+    inputDark85: ['dark:bg-[#0f172a]/85'],
+    shellHoverDark: ['dark:hover:bg-[#0f172a]'],
+    dataRowDark70: ['dark:bg-[#1e293b]/70'],
+    dataRowHover80: ['dark:hover:bg-[#1e293b]/80'],
+    dataRowHover85: ['dark:hover:bg-[#1e293b]/85'],
+    insetWell75: ['dark:bg-[#1e293b]/75'],
+    controlSurface90: ['dark:bg-[#1e293b]/90'],
+    focusRingOffsetDarkVisible: ['dark:focus-visible:ring-offset-[#0f172a]'],
+    focusRingOffsetDark: ['dark:focus:ring-offset-[#0f172a]'],
+    fadeFromDark: ['dark:from-[#0f172a]'],
+    secondaryTextMuted: ['text-[#475569]', 'dark:text-[#cbd5e1]'],
+    eyebrowChip: [
+      'inline-flex',
+      'items-center',
+      'justify-center',
+      'rounded-full',
+      'bg-white/75',
+      'px-3',
+      'py-1',
+      'text-[11px]',
+      'font-semibold',
+      'uppercase',
+      'tracking-[0.32em]',
+      'text-[#475569]',
+      'shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)]',
+      'dark:bg-[#1e293b]/75',
+      'dark:text-[#cbd5e1]',
+    ],
+    ringOffsetLightOnDark: ['ring-offset-white', 'dark:ring-offset-[#0f172a]'],
   },
   colors: {
     brand: {
@@ -355,6 +409,13 @@ export const designTokens = {
       },
     },
     categoryAccents: categoryThemes,
+    accountTypeDot: {
+      checking: '#38bdf8',
+      savings: '#22c55e',
+      credit: '#f59e0b',
+      loan: '#a78bfa',
+      other: '#94a3b8',
+    },
   },
   components: {
     button: {
@@ -440,6 +501,22 @@ export const designTokens = {
         'dark:shadow-[0_22px_60px_-32px_rgba(56,189,248,0.65)]',
       ],
     },
+    connectButton: {
+      base: [
+        'inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold whitespace-nowrap',
+        'transition-all duration-200',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+        'dark:focus-visible:ring-offset-slate-900',
+        'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none',
+      ],
+      secondary: [
+        'border border-[#e2e8f0] bg-white/90 text-[#475569]',
+        'shadow-[0_14px_38px_-30px_rgba(15,23,42,0.45)]',
+        'hover:border-[#93c5fd] hover:text-[#0f172a]',
+        'dark:border-[#334155] dark:bg-[#1e293b]/90 dark:text-[#cbd5e1]',
+        'dark:hover:border-[#38bdf8] dark:hover:text-white',
+      ],
+    },
     badge: {
       base: ['inline-flex items-center justify-center', 'font-semibold uppercase', 'transition-all duration-200 ease-out'],
       default: [
@@ -449,6 +526,144 @@ export const designTokens = {
       ],
       primary: ['bg-[#93c5fd]/20 text-[#0ea5e9]', 'dark:bg-[#38bdf8]/20 dark:text-[#38bdf8]'],
       feature: ['bg-[#f8fafc] ring-1 ring-inset', 'dark:bg-[#1e293b]'],
+    },
+    menuDropdown: {
+      content: [
+        'absolute right-0 z-20 mt-3 w-48',
+        'overflow-hidden rounded-2xl',
+        'border border-white/45 bg-white/95',
+        'p-2',
+        'shadow-[0_22px_60px_-32px_rgba(15,23,42,0.45)]',
+        'backdrop-blur-md',
+        'dark:border-white/12 dark:bg-[#0f172a]/92',
+        'dark:shadow-[0_28px_70px_-36px_rgba(2,6,23,0.7)]',
+      ],
+      item: [
+        'flex w-full items-center gap-2',
+        'rounded-xl px-3 py-2',
+        'text-left text-slate-600',
+        'transition-all duration-200 ease-out',
+        'hover:bg-slate-50',
+        'dark:text-slate-300',
+        'dark:hover:bg-[#1e293b]',
+      ],
+    },
+    budgetCard: {
+      shell: [
+        'group relative overflow-hidden rounded-[1.75rem] border border-slate-200/70 bg-white/90 p-6',
+        'shadow-[0_32px_80px_-58px_rgba(15,23,42,0.58)] transition-all duration-300 hover:-translate-y-1',
+        'hover:shadow-[0_38px_110px_-62px_rgba(14,165,233,0.35)] dark:border-white/10 dark:bg-[#111a2f]/90',
+        'dark:shadow-[0_32px_90px_-60px_rgba(2,6,23,0.76)]',
+      ],
+    },
+    budgetIconButtonGhost: [
+      'inline-flex items-center justify-center rounded-full border border-white/60 bg-white/80 p-2 text-slate-600',
+      'shadow-[0_14px_38px_-28px_rgba(15,23,42,0.55)] transition-transform duration-200 hover:-translate-y-[2px] hover:bg-white',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+      'dark:border-white/12 dark:bg-[#1e293b]/70 dark:text-slate-200 dark:hover:bg-[#1e293b]/80 dark:focus-visible:ring-offset-[#0f172a]',
+    ],
+    budgetSaveIconButton: [
+      'inline-flex items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400 p-2 text-white',
+      'shadow-[0_18px_45px_-28px_rgba(16,185,129,0.6)] transition-transform duration-200 hover:-translate-y-[2px]',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+      'dark:focus-visible:ring-offset-[#0f172a]',
+    ],
+    paginationRoundButton: [
+      'inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/50 bg-white/70 text-slate-600',
+      'shadow-[0_14px_38px_-28px_rgba(15,23,42,0.55)] transition-all duration-200 hover:-translate-y-[2px] hover:bg-white/90',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+      'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 dark:border-white/10 dark:bg-[#1e293b]/70 dark:text-slate-200',
+      'dark:hover:bg-[#1e293b]/85 dark:focus-visible:ring-offset-[#0f172a]',
+    ],
+    accountsToolbarButton: [
+      'inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/85 px-5 py-2 text-sm font-semibold text-[#0f172a]',
+      'shadow-[0_18px_48px_-32px_rgba(15,23,42,0.45)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[#93c5fd] hover:text-[#0f172a]',
+      'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+      'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none',
+      'dark:border-[#334155] dark:bg-[#1e293b]/90 dark:text-[#cbd5e1] dark:hover:border-[#38bdf8] dark:hover:text-white dark:focus-visible:ring-offset-slate-900',
+    ],
+    providerConnect: {
+      plaidEyebrowBg: ['bg-[#34d399]/20', 'dark:bg-[#34d399]/20'],
+      plaidEyebrowText: ['text-[#10b981]', 'dark:text-[#34d399]'],
+      tellerEyebrowBg: ['bg-[#38bdf8]/20', 'dark:bg-[#38bdf8]/15'],
+      tellerEyebrowText: ['text-[#0284c7]', 'dark:text-[#38bdf8]'],
+    },
+    onboarding: {
+      stepCard: [
+        'group relative overflow-hidden flex h-full flex-col items-center justify-start rounded-xl border border-[#e2e8f0] bg-white px-4 py-4 text-center shadow-sm',
+        'transition-all duration-300 ease-out hover:-translate-y-[2px] hover:shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] hover:border-[#93c5fd]',
+        'dark:border-[#334155] dark:bg-[#0f172a] dark:hover:border-[#38bdf8] dark:hover:shadow-[0_20px_56px_-40px_rgba(2,6,23,0.65)]',
+      ],
+      iconWell: [
+        'relative z-10 inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#f8fafc] ring-1 ring-inset',
+        'dark:bg-[#1e293b]',
+      ],
+      iconWellLarge: [
+        'relative z-10 inline-flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#f8fafc] ring-1 ring-inset',
+        'dark:bg-[#1e293b]',
+      ],
+      providerRow: [
+        'group relative flex h-full items-start gap-4 overflow-hidden rounded-2xl border border-[#e2e8f0] bg-white p-4 text-[13px] shadow-sm',
+        'transition-all duration-300 ease-out hover:-translate-y-[2px] hover:shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] hover:border-[#93c5fd]',
+        'dark:border-[#334155] dark:bg-[#0f172a] dark:hover:border-[#38bdf8] dark:hover:shadow-[0_20px_56px_-40px_rgba(2,6,23,0.65)]',
+      ],
+      titleStrong: ['relative z-10 mt-3 text-sm font-semibold text-[#0f172a]', 'dark:text-white'],
+      titleStrongInline: ['text-sm font-semibold text-[#0f172a]', 'dark:text-white'],
+      bodyMuted: ['relative z-10 mt-1 text-xs text-[#475569]', 'dark:text-[#cbd5e1]'],
+      rowBodyMuted: ['text-xs text-[#475569]', 'dark:text-[#cbd5e1]'],
+      eyebrowCaps: [
+        'text-[11px] font-semibold uppercase tracking-[0.3em] text-[#475569] transition-colors duration-300 ease-out dark:text-[#cbd5e1]',
+      ],
+      previewFrame: [
+        'relative aspect-[16/10] overflow-hidden rounded-2xl border border-[#e2e8f0] bg-[#0f172a] shadow-lg sm:aspect-[18/10]',
+        'dark:border-[#334155]',
+      ],
+    },
+    budgetProgress: {
+      track: [
+        'relative',
+        'h-2.5',
+        'overflow-hidden',
+        'rounded-full',
+        'bg-slate-200/70',
+        'shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)]',
+        'transition-colors',
+        'duration-300',
+        'dark:bg-slate-700/60',
+        'dark:shadow-[inset_0_1px_2px_rgba(2,6,23,0.35)]',
+      ],
+      fill: {
+        base: ['absolute', 'inset-y-0', 'left-0', 'rounded-full', 'transition-all', 'duration-500'],
+        within: [
+          'bg-gradient-to-r',
+          'from-sky-400',
+          'via-cyan-400',
+          'to-violet-500',
+          'shadow-[0_0_12px_rgba(14,165,233,0.35)]',
+        ],
+        over: [
+          'bg-gradient-to-r',
+          'from-rose-400',
+          'via-rose-500',
+          'to-rose-600',
+          'shadow-[0_0_12px_rgba(244,63,94,0.35)]',
+        ],
+      },
+      caption: {
+        row: [
+          'flex',
+          'items-center',
+          'justify-between',
+          'text-[0.75rem]',
+          'text-slate-500',
+          'transition-colors',
+          'duration-300',
+          'dark:text-slate-400',
+        ],
+        percent: ['font-medium', 'tracking-wide'],
+        summaryWithin: ['font-semibold', 'text-slate-600', 'dark:text-slate-300'],
+        summaryOver: ['font-semibold', 'text-red-600', 'dark:text-red-300'],
+      },
     },
     input: {
       base: [
@@ -540,21 +755,22 @@ export const designTokens = {
       base: ['relative', 'min-h-screen'],
       centered: ['overflow-hidden'],
       backdrop: ['pointer-events-none'],
-      aura: [appShellLight, 'transition-colors duration-500 ease-out', appShellDark],
-      overlay: [auraBlue, 'transition-colors duration-700', auraBlueDark],
-      violetAura: [auraViolet, 'transition-opacity duration-700', 'dark:bg-transparent'],
-      cyanAura: [auraCyan, 'transition-opacity duration-700', 'dark:bg-transparent'],
-      vignette:
-        'bg-gradient-to-b from-white/70 via-white/38 to-transparent transition-colors duration-700 ease-out dark:from-slate-900/68 dark:via-slate-900/42 dark:to-transparent',
-      vignetteOverlay:
-        'bg-[radial-gradient(120%_120%_at_50%_55%,transparent_60%,rgba(15,23,42,0.1)_100%)] transition-opacity duration-700 ease-out dark:bg-[radial-gradient(120%_120%_at_50%_54%,transparent_58%,rgba(2,6,23,0.38)_100%)]',
-      centerGlow:
-        'rounded-full blur-3xl h-[72rem] w-[72rem] opacity-[0.28] animate-[rotateAura_95s_linear_infinite] bg-[conic-gradient(from_90deg,#93c5fd,#34d399,#fbbf24,#a78bfa,#fb7185,#93c5fd)] transition-opacity duration-500 dark:opacity-[0.4] dark:bg-[conic-gradient(from_110deg,#38bdf8,#34d399,#a78bfa,#fbbf24,#f87171,#38bdf8)]',
+      aura: [
+        gradientPrimitives.appShellLight,
+        'transition-colors duration-500 ease-out',
+        gradientPrimitives.appShellDark,
+      ],
+      overlay: [gradientPrimitives.auraBlue, 'transition-colors duration-700', gradientPrimitives.auraBlueDark],
+      violetAura: [gradientPrimitives.auraViolet, 'transition-opacity duration-700', 'dark:bg-transparent'],
+      cyanAura: [gradientPrimitives.auraCyan, 'transition-opacity duration-700', 'dark:bg-transparent'],
+      vignette: layoutEffects.shell.vignette,
+      vignetteOverlay: layoutEffects.shell.vignetteOverlay,
+      centerGlow: layoutEffects.shell.centerGlow,
       contentCentered: 'flex min-h-screen items-center justify-center px-4 py-12 sm:px-6',
     },
     appTitleBar: {
       base: ['sticky top-0 z-50 border-b backdrop-blur-sm transition-all duration-200 ease-out'],
-      shell: [pageTitleBarSurface],
+      shell: [gradientPrimitives.pageTitleBar],
       height: {
         scrolled: 'h-14',
         default: 'h-16',
@@ -567,11 +783,9 @@ export const designTokens = {
       },
       tabIdle:
         'border border-slate-200/70 dark:border-white/10 bg-white/70 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-sky-300/50 dark:hover:border-sky-500/60 hover:shadow-[0_14px_32px_-18px_rgba(56,189,248,0.35)]',
-      tabHalo:
-        'after:absolute after:inset-[-28%] after:rounded-[999px] after:bg-[radial-gradient(circle_at_35%_30%,rgba(14,165,233,0.16),transparent_62%)] after:opacity-0 after:transition-opacity after:duration-300 hover:after:opacity-90 dark:after:bg-[radial-gradient(circle_at_35%_30%,rgba(56,189,248,0.22),transparent_62%)]',
+      tabHalo: layoutEffects.titleBar.tabHalo,
       divider: 'w-px h-6 bg-slate-200 dark:bg-slate-600',
-      themeToggle:
-        'rounded-lg !bg-amber-500/80 dark:!bg-purple-600/80 hover:!bg-amber-600/80 dark:hover:!bg-purple-700/80 !border !border-amber-400/30 dark:!border-purple-500/30 !text-white backdrop-blur-sm transition-colors',
+      themeToggle: layoutEffects.titleBar.themeToggle,
       settingsIdle: 'border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600',
     },
     pageLayout: {
@@ -614,13 +828,13 @@ export const designTokens = {
         'items-center',
         'justify-center',
         'rounded-full',
-        emptyStateIconGradient,
+        gradientPrimitives.emptyStateIcon,
         'text-slate-600',
         'transition-all duration-300 ease-out',
         'hover:scale-110 hover:-translate-y-1',
-        'hover:shadow-[0_0_30px_rgba(59,130,246,0.4),0_0_60px_rgba(59,130,246,0.2)]',
+        layoutEffects.emptyState.iconHoverGlowLight,
         'dark:text-slate-300',
-        'dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)]',
+        layoutEffects.emptyState.iconHoverGlowDark,
         'cursor-pointer',
       ],
       title: 'text-lg font-semibold text-slate-700 transition-colors duration-500 dark:text-slate-200',
@@ -631,10 +845,8 @@ export const designTokens = {
       base:
         'inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-[0.18em]',
       dot: 'h-2 w-2 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.85)] dark:shadow-[0_0_0_1px_rgba(15,23,42,0.7)]',
-      fadeLeft:
-        'pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80',
-      fadeRight:
-        'pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80',
+      fadeLeft: layoutEffects.pillOverflow.fadeLeft,
+      fadeRight: layoutEffects.pillOverflow.fadeRight,
     },
     heroStatCard: {
       base: 'hero-stat-card group relative rounded-2xl transition-colors duration-300',
