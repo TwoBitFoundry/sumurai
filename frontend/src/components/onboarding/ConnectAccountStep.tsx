@@ -177,9 +177,9 @@ export function ConnectAccountStep({
 
         {statusMessages.length > 0 && (
           <div className={cn('space-y-3')}>
-            {statusMessages.map((status, index) => (
+            {statusMessages.map((status) => (
               <Alert
-                key={`${status.tone}-${index}`}
+                key={`${status.tone}-${status.text}`}
                 variant={statusVariantMap[status.tone]}
                 className={cn('flex flex-col gap-2 rounded-2xl')}
               >
