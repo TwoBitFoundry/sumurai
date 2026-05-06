@@ -1,0 +1,47 @@
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { fn } from 'storybook/test';
+import { AppLayout } from './AppLayout';
+
+const meta = {
+  title: 'Layouts/AppLayout',
+  component: AppLayout,
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'fullscreen',
+  },
+  args: {
+    onTabChange: fn(),
+    onLogout: fn(),
+    renderAccountFilter: () => (
+      <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-600 dark:text-slate-300">
+        All accounts
+      </span>
+    ),
+  },
+} satisfies Meta<typeof AppLayout>;
+
+export default meta;
+
+type Story = StoryObj<typeof meta>;
+
+export const Dashboard: Story = {
+  args: {
+    currentTab: 'dashboard',
+    children: (
+      <div className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white/60 p-8 dark:border-slate-700 dark:bg-slate-900/40">
+        Dashboard body placeholder
+      </div>
+    ),
+  },
+};
+
+export const TransactionsTab: Story = {
+  args: {
+    currentTab: 'transactions',
+    children: (
+      <div className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white/60 p-8 dark:border-slate-700 dark:bg-slate-900/40">
+        Transactions body placeholder
+      </div>
+    ),
+  },
+};

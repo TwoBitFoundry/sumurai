@@ -26,3 +26,31 @@ export const Filtered: Story = {
     search: 'coffee',
   },
 };
+
+const wideCategories = [
+  'Food',
+  'Transit',
+  'Income',
+  'Entertainment',
+  'Bills',
+  'Health',
+  'Shopping',
+  'Travel',
+  'Transfers',
+];
+
+export const ManyCategories: Story = {
+  args: {
+    categories: wideCategories,
+    selectedCategory: 'Entertainment',
+    search: '',
+  },
+};
+
+export const LongSearchQuery: Story = {
+  args: {
+    categories: ['Food', 'Transit', 'Income'],
+    selectedCategory: null,
+    search: 'international artisan wholesale collective quarterly adjustment',
+  },
+};

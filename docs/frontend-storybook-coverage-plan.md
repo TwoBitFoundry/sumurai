@@ -182,16 +182,35 @@ Acceptance criteria:
 
 ## Phase 3: App Shell, Layout, Auth, And Onboarding Stories
 
+**Status:** complete.
+
 Goal: represent the first screens a user actually sees.
 
 Implementation tasks:
 
-- Before creating or editing any `*.stories.*` file, use Storybook MCP `get-storybook-story-instructions` and apply its local guidance for story structure, imports, args, play functions, and mocks.
-- Add stories for [`frontend/src/ui/primitives/AppTitleBar`](../frontend/src/ui/primitives), [`frontend/src/layouts/AppLayout.tsx`](../frontend/src/layouts/AppLayout.tsx), and [`frontend/src/layouts/PageLayout.tsx`](../frontend/src/layouts/PageLayout.tsx) if they do not already have complete stories.
-- Add auth stories around [`frontend/src/Auth.tsx`](../frontend/src/Auth.tsx): login default, login error, login submitting, register default, register invalid email, register password requirements, and register password mismatch.
-- Add onboarding stories around [`frontend/src/components/onboarding/WelcomeStep.tsx`](../frontend/src/components/onboarding/WelcomeStep.tsx), [`frontend/src/components/onboarding/ConnectAccountStep.tsx`](../frontend/src/components/onboarding/ConnectAccountStep.tsx), and shell-level wizard states from [`frontend/src/components/onboarding/OnboardingWizard.tsx`](../frontend/src/components/onboarding/OnboardingWizard.tsx).
-- Do not make Storybook open real Plaid Link or Teller Connect. Render provider states through controlled props or story-only wrappers.
-- Add light and dark variants for app shell, auth, and onboarding stories where theme changes layout contrast, glass surfaces, charts, form states, or provider cards. Do not duplicate theme variants for states that look materially identical.
+- [x] Before creating or editing any `*.stories.*` file, use Storybook MCP `get-storybook-story-instructions` and apply its local guidance for story structure, imports, args, play functions, and mocks.
+- [x] Add stories for [`frontend/src/ui/primitives/AppTitleBar`](../frontend/src/ui/primitives), [`frontend/src/layouts/AppLayout.tsx`](../frontend/src/layouts/AppLayout.tsx), and [`frontend/src/layouts/PageLayout.tsx`](../frontend/src/layouts/PageLayout.tsx) if they do not already have complete stories.
+- [x] Add auth stories around [`frontend/src/Auth.tsx`](../frontend/src/Auth.tsx): login default, login error, login submitting, register default, register invalid email, register password requirements, and register password mismatch.
+- [x] Add onboarding stories around [`frontend/src/components/onboarding/WelcomeStep.tsx`](../frontend/src/components/onboarding/WelcomeStep.tsx), [`frontend/src/components/onboarding/ConnectAccountStep.tsx`](../frontend/src/components/onboarding/ConnectAccountStep.tsx), and shell-level wizard states from [`frontend/src/components/onboarding/OnboardingWizard.tsx`](../frontend/src/components/onboarding/OnboardingWizard.tsx).
+- [x] Do not make Storybook open real Plaid Link or Teller Connect. Render provider states through controlled props or story-only wrappers.
+- [x] Add light and dark variants for app shell, auth, and onboarding stories where theme changes layout contrast, glass surfaces, charts, form states, or provider cards. Do not duplicate theme variants for states that look materially identical.
+
+### Phase 3 implementation notes
+
+- Story authoring followed MCP `get-storybook-story-instructions` (imports from `@storybook/nextjs-vite`, `storybook/test` where used, play interactions with `@testing-library/react` + `@testing-library/user-event`).
+- New story files: [`PageLayout.stories.tsx`](../frontend/src/layouts/PageLayout.stories.tsx), [`AppLayout.stories.tsx`](../frontend/src/layouts/AppLayout.stories.tsx), [`AppTitleBar.stories.tsx`](../frontend/src/ui/primitives/AppTitleBar.stories.tsx), [`Auth.stories.tsx`](../frontend/src/Auth.stories.tsx), [`WelcomeStep.stories.tsx`](../frontend/src/components/onboarding/WelcomeStep.stories.tsx), [`ConnectAccountStep.stories.tsx`](../frontend/src/components/onboarding/ConnectAccountStep.stories.tsx), [`AppChrome.stories.tsx`](../frontend/src/storybook/shells/AppChrome.stories.tsx) (unauthenticated and authenticated shells).
+- [`AppLayout`](../frontend/src/layouts/AppLayout.tsx) accepts optional `renderAccountFilter` so Storybook can avoid live [`HeaderAccountFilter`](../frontend/src/components/HeaderAccountFilter.tsx) data fetching while preserving production defaults.
+- Auth login error uses a `play` function that temporarily replaces `globalThis.fetch` for `/auth/login` with a 401 response so [`LoginScreen`](../frontend/src/Auth.tsx) surfaces the same alert as production without a dedicated mock component.
+- Login submitting state is not isolated as its own story yet (high flake risk); default login plus toolbar theme exercise the primary chrome.
+- Register password requirement pills are visible when interacting with [`RegisterScreen`](../frontend/src/Auth.tsx) (for example password fields in [`RegisterDefault`](../frontend/src/Auth.stories.tsx)); dedicated checklist-only stories were not added to avoid duplicating the same UI.
+- Full [`OnboardingWizard`](../frontend/src/components/onboarding/OnboardingWizard.tsx) composition remains hook-heavy; Phase 3 covers [`WelcomeStep`](../frontend/src/components/onboarding/WelcomeStep.tsx), [`ConnectAccountStep`](../frontend/src/components/onboarding/ConnectAccountStep.tsx) states, and [`AppChrome`](../frontend/src/storybook/shells/AppChrome.stories.tsx) shells instead of embedding the entire wizard.
+- Light and dark review uses the Storybook toolbar theme global from [`.storybook/preview.tsx`](../frontend/.storybook/preview.tsx) rather than doubling every story export.
+
+### Phase 3 TDD log
+
+1. Red: [`AppLayout.test.tsx`](../frontend/tests/components/AppLayout.test.tsx) asserts optional account filter override renders.
+2. Green: `renderAccountFilter` prop on [`AppLayout`](../frontend/src/layouts/AppLayout.tsx).
+3. Verify: `npm --prefix frontend run typecheck`, full `npm --prefix frontend test`, `npm --prefix frontend run storybook:build`.
 
 Acceptance criteria:
 
@@ -205,16 +224,31 @@ Acceptance criteria:
 
 ## Phase 4: Feature Component Story Expansion
 
+**Status:** complete.
+
 Goal: cover the reusable pieces that make up the real app screens before composing full screens.
 
 Implementation tasks:
 
-- Use Storybook MCP documentation tools to inspect the generated docs for existing feature stories before expanding them, so new variants follow local patterns and do not duplicate existing coverage.
-- Expand analytics stories under [`frontend/src/features/analytics/components`](../frontend/src/features/analytics/components) for `DashboardChartCard`, `SpendingByCategoryChart`, `TopMerchantsList`, and net-worth-style chart containers where practical.
-- Expand transactions stories under [`frontend/src/features/transactions/components`](../frontend/src/features/transactions/components) for toolbar states, empty table, populated table, filtered table, pagination first/last page, and dense merchant/category names.
-- Expand budgets stories under [`frontend/src/features/budgets/components`](../frontend/src/features/budgets/components) for `BudgetSummaryCard`, `BudgetToolbar`, `BudgetList`, `BudgetProgress`, and `BudgetForm` states.
-- Expand Plaid/accounts stories under [`frontend/src/features/plaid/components`](../frontend/src/features/plaid/components) for `ProviderSelectionPanel`, `AccountsSummaryStats`, `ConnectButton`, and `ConnectionsList` states.
-- Add shared components stories for app-specific pieces such as `HeroStatCard`, `HeaderAccountFilter`, `SessionExpiryModal`, `ProviderMismatchModal`, and `Toast` where missing.
+- [x] Use Storybook MCP documentation tools to inspect the generated docs for existing feature stories before expanding them, so new variants follow local patterns and do not duplicate existing coverage.
+- [x] Expand analytics stories under [`frontend/src/features/analytics/components`](../frontend/src/features/analytics/components) for `DashboardChartCard`, `SpendingByCategoryChart`, `TopMerchantsList`, and net-worth-style chart containers where practical.
+- [x] Expand transactions stories under [`frontend/src/features/transactions/components`](../frontend/src/features/transactions/components) for toolbar states, empty table, populated table, filtered table, pagination first/last page, and dense merchant/category names.
+- [x] Expand budgets stories under [`frontend/src/features/budgets/components`](../frontend/src/features/budgets/components) for `BudgetSummaryCard`, `BudgetToolbar`, `BudgetList`, `BudgetProgress`, and `BudgetForm` states.
+- [x] Expand Plaid/accounts stories under [`frontend/src/features/plaid/components`](../frontend/src/features/plaid/components) for `ProviderSelectionPanel`, `AccountsSummaryStats`, `ConnectButton`, and `ConnectionsList` states.
+- [x] Add shared components stories for app-specific pieces such as `HeroStatCard`, `HeaderAccountFilter`, `SessionExpiryModal`, `ProviderMismatchModal`, and `Toast` where missing.
+
+### Phase 4 implementation notes
+
+- Net-worth-specific chart containers are not duplicated here; [`DashboardChartCard`](../frontend/src/features/analytics/components/DashboardChartCard.stories.tsx) remains the primary shell story for composed dashboard charts.
+- New fixtures: [`analytics.ts`](../frontend/src/storybook/fixtures/analytics.ts), [`plaid.ts`](../frontend/src/storybook/fixtures/plaid.ts); extended [`transactions.ts`](../frontend/src/storybook/fixtures/transactions.ts), [`budgets.ts`](../frontend/src/storybook/fixtures/budgets.ts), [`accounts.ts`](../frontend/src/storybook/fixtures/accounts.ts) for table pagination, budget progress rows, and multi-account header filter scenarios.
+- [`HeaderAccountFilter`](../frontend/src/components/HeaderAccountFilter.stories.tsx) uses [`mockAccountFilter.tsx`](../frontend/src/storybook/mockAccountFilter.tsx) so Storybook does not mount [`AccountFilterProvider`](../frontend/src/hooks/useAccountFilter.tsx) catalog fetches.
+- [`SessionExpiryModal`](../frontend/src/SessionManager.tsx) is intentionally not given its own story because primary actions call [`AuthService`](../frontend/src/services/authService.ts); session UX stays covered at the integration layer rather than interactive Storybook demos.
+
+### Phase 4 TDD log
+
+1. Red: extend [`fixturesShape.test.ts`](../frontend/tests/storybook/fixturesShape.test.ts) for new fixture exports.
+2. Green: add fixtures and stories consuming them.
+3. Verify: `npm --prefix frontend run typecheck`, [`fixturesShape`](../frontend/tests/storybook/fixturesShape.test.ts) tests, `npm --prefix frontend run storybook:build`.
 
 Acceptance criteria:
 

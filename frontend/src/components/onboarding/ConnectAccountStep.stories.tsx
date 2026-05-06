@@ -1,0 +1,73 @@
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { fn } from 'storybook/test';
+import { CONNECT_ACCOUNT_PROVIDER_CONTENT } from '@/utils/providerCards';
+import { ConnectAccountStep } from './ConnectAccountStep';
+
+const plaid = CONNECT_ACCOUNT_PROVIDER_CONTENT.plaid;
+const teller = CONNECT_ACCOUNT_PROVIDER_CONTENT.teller;
+
+const meta = {
+  title: 'App/Onboarding/ConnectAccountStep',
+  component: ConnectAccountStep,
+  tags: ['autodocs'],
+  args: {
+    content: plaid,
+    providerLoading: false,
+    providerError: null,
+    onRetryProvider: fn(),
+    tellerApplicationId: null,
+    isConnected: false,
+    connectionInProgress: false,
+    institutionName: null,
+    error: null,
+    onConnect: fn(),
+    onRetry: fn(),
+  },
+} satisfies Meta<typeof ConnectAccountStep>;
+
+export default meta;
+
+type Story = StoryObj<typeof meta>;
+
+export const PlaidDefault: Story = {};
+
+export const ProviderLoading: Story = {
+  args: {
+    providerLoading: true,
+  },
+};
+
+export const ProviderConfigurationError: Story = {
+  args: {
+    providerError: 'Unable to load provider configuration.',
+  },
+};
+
+export const ConnectionInProgress: Story = {
+  args: {
+    connectionInProgress: true,
+    content: plaid,
+  },
+};
+
+export const Connected: Story = {
+  args: {
+    isConnected: true,
+    institutionName: 'Story Credit Union',
+    content: plaid,
+  },
+};
+
+export const ConnectionFlowError: Story = {
+  args: {
+    error: 'Link token expired. Retry to generate a fresh session.',
+    content: plaid,
+  },
+};
+
+export const TellerMissingApplicationId: Story = {
+  args: {
+    content: teller,
+    tellerApplicationId: null,
+  },
+};
