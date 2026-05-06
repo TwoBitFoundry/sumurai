@@ -18,6 +18,8 @@
     "format": "biome format --write .",
     "check": "biome check --write .",
     "test": "jest --runInBand",
+    "design:generate": "node ./scripts/generate-design-tokens.mjs",
+    "design:drift": "node ./scripts/check-design-tokens-drift.mjs",
     "design:lint": "node ./scripts/run-designmd.mjs lint ../DESIGN.md",
     "design:export:dtcg": "node ./scripts/run-designmd.mjs export --format dtcg ../DESIGN.md",
     "design:export:tailwind": "node ./scripts/run-designmd.mjs export --format css-tailwind ../DESIGN.md",
@@ -60,6 +62,7 @@
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "postcss": "^8.5.10",
+    "style-dictionary": "^5.4.0",
     "tailwindcss": "^4.1.17",
     "typescript": "^5.9.3",
     "undici": "^7.24.0"

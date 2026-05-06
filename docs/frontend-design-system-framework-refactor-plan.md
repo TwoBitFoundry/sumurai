@@ -28,6 +28,22 @@ Acceptance criteria:
 - Drift check fails after changing `DESIGN.md` without regenerating artifacts.
 - `design:lint`, token generation, focused token tests, and typecheck pass.
 
+Completion notes:
+
+- Added `frontend/scripts/generate-design-tokens.mjs` and `frontend/scripts/check-design-tokens-drift.mjs` with shared pipeline helpers.
+- Generated `frontend/src/ui/tokens/generated/theme.css`, `frontend/src/ui/tokens/generated/tokens.ts`, and `frontend/src/ui/tokens/generated/tokens.dtcg.json` from `DESIGN.md`.
+- Imported the generated theme into `frontend/src/app/globals.css` and removed the Tailwind bridge from `frontend/tailwind.config.js`.
+- Removed `frontend/src/ui/tokens/tailwind-bridge.js` so the generated theme is the only active Tailwind design source.
+
+TDD log:
+
+- `npm --prefix frontend test -- --runInBand frontend/tests/scripts/designTokensGeneration.test.ts` failed until the generator and drift scripts were added, then passed.
+- `npm --prefix frontend run design:generate`
+- `npm --prefix frontend run design:lint`
+- `npm --prefix frontend run design:drift`
+- `npm --prefix frontend run typecheck`
+- `npm --prefix frontend test`
+
 ## Phase 2: DESIGN.md Contract Refactor
 
 - Rewrite `DESIGN.md` so YAML front matter contains normative token values and Markdown body contains human-readable rationale and agent guidance.
