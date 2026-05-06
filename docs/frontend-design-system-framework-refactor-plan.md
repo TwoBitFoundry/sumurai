@@ -64,6 +64,18 @@ Acceptance criteria:
 - The current Sumurai identity remains described clearly enough for another agent to recreate the look.
 - `designmd export --format dtcg` and `designmd export --format css-tailwind` both succeed.
 
+Completion notes:
+
+- Rewrote `DESIGN.md` into canonical prose sections with a normative YAML contract and removed implementation-recipe language from the body.
+- Kept the token values and component roles aligned with the exported design contract so the generator pipeline remains stable.
+
+TDD log:
+
+- Added `frontend/tests/scripts/designMdContract.test.ts` to verify canonical section order, prose-only guidance, and successful design CLI wrappers.
+- Ran `npm --prefix frontend test -- --runInBand frontend/tests/scripts/designMdContract.test.ts`.
+- Ran `npm --prefix frontend run design:lint`, `npm --prefix frontend run design:export:dtcg`, `npm --prefix frontend run design:export:tailwind`, and `npm --prefix frontend run design:drift`.
+- Ran `npm --prefix frontend run typecheck` and `npm --prefix frontend test`.
+
 ## Phase 3: Token Contract Cleanup
 
 - Refactor `frontend/src/ui/tokens/index.ts` into a compatibility facade over generated tokens plus curated recipe exports.

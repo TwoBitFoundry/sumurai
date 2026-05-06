@@ -409,58 +409,52 @@ components:
 
 ## Overview
 
-Sumurai should read as a restrained financial workspace: dark by default, bright enough for legibility, and layered with glass depth instead of heavy borders. The visual identity comes from a cyan-violet brand gradient, cool neutral surfaces, and semantic finance colors that separate cash, investments, credit, loan, and net worth without introducing extra hues.
+Sumurai should read as a restrained financial workspace: dark first, bright enough for legibility, and layered with glass depth instead of heavy borders. The visual identity comes from cyan and violet accents, cool neutral surfaces, compact labels, and semantic finance colors that separate cash, investments, credit, loans, and net worth without adding unnecessary hues.
 
-The internal token names are the source of truth. SwiftUI should map the same semantics into asset catalog colors, text styles, corner radii, spacing constants, and shared component styles instead of reinterpreting the system.
+Use this file as the visual contract. Keep the front matter normative, keep the prose human-readable, and move implementation recipes into primitives, feature components, or generated token artifacts.
 
 ## Colors
 
-Use `colors.brand` for accent and navigation chrome. Use `colors.theme.light` and `colors.theme.dark` for charts, tooltips, axis text, and semantic finance values. Use `colors.categoryAccents` only for stable category labeling, dots, and rings.
+Use the brand accents for emphasis, navigation chrome, and small highlights. Reserve semantic finance colors for meaning, not decoration. Charts, tooltips, axis text, and category labels should reuse the same palette in both light and dark contexts so values stay consistent at a glance.
 
-The app shell should keep its ambient blue aura and violet overlay, but surfaces must stay neutral. Semantic colors should stay reserved for meaning, not decoration.
+Surfaces should stay neutral. The shell can keep an ambient blue aura and violet overlay, but the supporting layers should not introduce extra brand colors.
 
 ## Typography
 
-Use `typography.brand` for the product mark and `typography.sans` or `typography.subheading` for the interface. Labels, pills, and badges should stay compact, uppercase, and tightly tracked so controls scan cleanly in dense dashboards.
-
-SwiftUI should treat these as a small font family set with distinct roles rather than many one-off text styles.
+Use the brand face for the product mark and the main sans family for interface copy. Use subheading, label, pill, and badge roles only when the hierarchy needs to stay compact and fast to scan. Labels, pills, and badges should stay uppercase and tightly tracked.
 
 ## Layout
 
-Use `spacing.pageX`, `spacing.pageY`, `spacing.shellX`, and `spacing.shellY` to keep page framing consistent. Prefer compact gaps for controls and moderate section gaps for dashboard blocks. Layout should stay wide, calm, and easy to scan.
+Use the spacing tokens to keep framing consistent. Prefer compact gaps for controls and moderate section gaps for dashboard blocks. Layout should stay wide, calm, and easy to scan.
 
 Main surfaces should float inside a glass shell, with enough inset to separate content from the app edge and enough breathing room to keep the interface from feeling crowded.
 
 ## Elevation & Depth
 
-Depth comes from blur, inset highlights, soft shadows, and faint gradients. Use the glass and panel shadows for cards and shells, and keep the strongest depth for auth and hero surfaces.
+Depth comes from blur, inset highlights, soft shadows, and faint gradients. Use those cues for cards and shells, and keep the strongest depth for auth and hero surfaces.
 
 Do not flatten the UI into pure borders. The depth system should imply hierarchy without creating noisy contrast.
 
 ## Shapes
 
-Use `rounded-[2.25rem]` only for large shells and page containers. Use `rounded-3xl`, `rounded-2xl`, and `rounded-xl` for cards and inputs. Use `rounded-full` for pills and chips.
+Use the largest radius only for shells and page containers. Use softer card and input radii for the surrounding surfaces. Use full pills for chips, buttons, and status markers.
 
 The shape language should stay smooth and modern, with compact controls retaining clarity in dense layouts.
 
 ## Components
 
-Buttons should carry the brand gradient in primary and connect actions, with restrained variants for secondary and icon-only actions. Cards should favor translucent glass surfaces. Charts should use the light and dark theme color sets without drifting from the semantic finance palette.
+Reusable roles should stay semantically named and simple: primary and secondary buttons, icon buttons, glass cards, page shells, inputs, selects, pills, progress bars, chart surfaces, finance values, category markers, onboarding cards, and provider connect badges.
 
-Budget progress bars use `designTokens.components.budgetProgress`: a neutral inset track, a sky-to-cyan-to-violet fill while within budget, and a rose gradient fill when over budget, with caption rows using compact slate axis colors and danger tones for overspend summaries. In `DESIGN.md`, `budget-progress-track` / `budget-progress-track-dark`, `budget-progress-fill-within`, `budget-progress-fill-over`, and the `budget-progress-caption-*` entries mirror those roles with design.md component property tokens; implementation keeps full Tailwind class lists in the token module.
-
-Dense feature screens share `designTokens.surfaces` for dark glass panels (`#0f172a`, `#111a2f`), control rows (`#1e293b`), focus ring offsets, and muted caption typography. Budget workflow cards use `designTokens.components.budgetCard.shell`; accounts month/toolbar pills use `accountsToolbarButton`; transaction pagination uses `paginationRoundButton`; provider picker eyebrows use `providerConnect`; onboarding steps use `components.onboarding` (`stepCard`, `providerRow`, `previewFrame`, typography bundles). YAML entries `surface-*`, `budget-card-shell*`, `pagination-round-button*`, `accounts-toolbar-button*`, `provider-connect-*-eyebrow`, and `onboarding-*` summarize those roles for export while Tailwind class arrays remain authoritative in the token module.
-
-SwiftUI should map component tokens to reusable view modifiers or style helpers, especially for buttons, cards, chips, title-bar tabs, linear budget-fill overlays, dark dashboard shells, and onboarding marketing cards. Keep the same visual roles across platforms instead of duplicating implementation details.
+Keep shared tokens here when the role is stable and reused across the interface. Move one-off recipes and implementation details into primitives or feature components instead of expanding this contract into a style dump.
 
 ## Do's and Don'ts
 
 Do keep the palette small and intentional.
 Do keep semantic finance colors consistent.
 Do preserve compact uppercase labels.
-Do map the token system directly into SwiftUI.
+Do map the token system directly into implementation layers.
 
 Don't introduce new brand colors outside the token set.
 Don't use semantic colors for decoration.
 Don't add noisy shadows or extra surface hues.
-Don't remix the cleaned token names into ad hoc component-specific values.
+Don't embed utility strings or implementation recipes in this file.
