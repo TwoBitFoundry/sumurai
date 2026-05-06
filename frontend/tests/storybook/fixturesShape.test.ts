@@ -1,6 +1,7 @@
 import { sampleAccounts } from '@/storybook/fixtures/accounts';
 import { sampleDonutByCategory, sampleTopMerchants } from '@/storybook/fixtures/analytics';
 import { sampleBudgetProgressEntries, sampleBudgets } from '@/storybook/fixtures/budgets';
+import { sampleNetWorthSeries } from '@/storybook/fixtures/netWorth';
 import { sampleBankConnections } from '@/storybook/fixtures/plaid';
 import { STORY_FIXED_ISO } from '@/storybook/fixtures/time';
 import { sampleTransactions, transactionsTablePage } from '@/storybook/fixtures/transactions';
@@ -75,6 +76,14 @@ describe('storybook fixtures', () => {
       id: expect.any(String),
       amount: expect.any(Number),
       category: { primary: expect.any(String) },
+    });
+  });
+
+  it('exposes deterministic net worth series points', () => {
+    expect(sampleNetWorthSeries.length).toBeGreaterThan(0);
+    expect(sampleNetWorthSeries[0]).toMatchObject({
+      date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      value: expect.any(Number),
     });
   });
 });

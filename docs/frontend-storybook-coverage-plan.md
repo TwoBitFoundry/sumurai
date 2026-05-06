@@ -262,17 +262,48 @@ Acceptance criteria:
 
 ## Phase 5: Realistic Screen Slice Stories
 
+**Status:** complete.
+
 Goal: make Storybook represent the actual app tabs, not only isolated widgets.
 
 Implementation tasks:
 
-- Replace or de-emphasize the synthetic [`frontend/src/storybook/FullPageSmoke.stories.tsx`](../frontend/src/storybook/FullPageSmoke.stories.tsx) with realistic screen slice stories that use [`frontend/src/layouts/AppLayout.tsx`](../frontend/src/layouts/AppLayout.tsx), [`frontend/src/layouts/PageLayout.tsx`](../frontend/src/layouts/PageLayout.tsx), and fixture-backed screen content.
-- Add screen-level stories for dashboard, transactions, budgets, accounts, and settings.
-- Each screen should include at least one happy path story and one meaningful degraded state: loading, empty, API error, validation error, disconnected provider, or destructive confirmation.
-- Each authenticated tab should include a canonical light story and a canonical dark story. The dark story can be the happy path or the most visually risky degraded state.
-- Use Storybook MCP `preview-stories` for representative screen stories after they build, including both light and dark variants where supported by story globals or story wrappers.
-- Prefer extracting presentational screen sections only if the current view components are too hook-bound to render safely in Storybook. Keep extracted components in the same ownership layer: reusable feature UI in [`frontend/src/features`](../frontend/src/features), shared app UI in [`frontend/src/components`](../frontend/src/components), and page composition in [`frontend/src/views`](../frontend/src/views).
-- Avoid large refactors. The goal is storyability and product fidelity, not redesigning the views.
+- [x] Replace or de-emphasize the synthetic [`frontend/src/storybook/FullPageSmoke.stories.tsx`](../frontend/src/storybook/FullPageSmoke.stories.tsx) with realistic screen slice stories that use [`frontend/src/layouts/AppLayout.tsx`](../frontend/src/layouts/AppLayout.tsx), [`frontend/src/layouts/PageLayout.tsx`](../frontend/src/layouts/PageLayout.tsx), and fixture-backed screen content.
+- [x] Add screen-level stories for dashboard, transactions, budgets, accounts, and settings.
+- [x] Each screen should include at least one happy path story and one meaningful degraded state: loading, empty, API error, validation error, disconnected provider, or destructive confirmation.
+- [x] Each authenticated tab should include a canonical light story and a canonical dark story. The dark story can be the happy path or the most visually risky degraded state.
+- [x] Use Storybook MCP `preview-stories` for representative screen stories after they build, including both light and dark variants where supported by story globals or story wrappers.
+- [x] Prefer extracting presentational screen sections only if the current view components are too hook-bound to render safely in Storybook. Keep extracted components in the same ownership layer: reusable feature UI in [`frontend/src/features`](../frontend/src/features), shared app UI in [`frontend/src/components`](../frontend/src/components), and page composition in [`frontend/src/views`](../frontend/src/views).
+- [x] Avoid large refactors. The goal is storyability and product fidelity, not redesigning the views.
+
+### Phase 5 implementation notes
+
+- Production [`views/`](../frontend/src/views) pages remain hook-bound to services; slice compositions live under [`frontend/src/storybook/screenSlices/`](../frontend/src/storybook/screenSlices/) and stories under [`frontend/src/storybook/screens/`](../frontend/src/storybook/screens/) so Storybook never opens live APIs during render.
+- [`AuthenticatedScreenShell`](../frontend/src/storybook/screenSlices/AuthenticatedScreenShell.tsx) wraps [`AppLayout`](../frontend/src/layouts/AppLayout.tsx) with a stub account filter and fullscreen layout.
+- Dashboard uses fixture-backed donut, merchants, net worth series ([`analytics.ts`](../frontend/src/storybook/fixtures/analytics.ts), [`netWorth.ts`](../frontend/src/storybook/fixtures/netWorth.ts)) and static hero stats for balance overview instead of [`BalancesOverview`](../frontend/src/components/BalancesOverview.tsx).
+- Settings uses [`SettingsScreenSlice`](../frontend/src/storybook/screenSlices/SettingsScreenSlice.tsx) with read-only snapshot fields per scenario so forms never call [`SettingsService`](../frontend/src/services/SettingsService.ts).
+- Dark canonical stories set `globals.theme` to `dark` on selected exports; other states rely on the toolbar theme global from [`.storybook/preview.tsx`](../frontend/.storybook/preview.tsx).
+- [`FullPageSmoke.stories.tsx`](../frontend/src/storybook/FullPageSmoke.stories.tsx) now points reviewers at **Screens/** instead of composing widgets inline.
+
+### Phase 5 Storybook IDs for MCP `preview-stories`
+
+With `npm --prefix frontend run storybook` on port 6006, representative IDs include:
+
+| Title group | Stories |
+|-------------|---------|
+| `Screens/Dashboard` | `happy-path`, `happy-path-dark`, `analytics-loading`, `net-worth-loading`, `net-worth-error` |
+| `Screens/Transactions` | `loaded`, `loaded-dark`, `loading`, `empty`, `api-error`, `dense-merchant-row` |
+| `Screens/Budgets` | `loaded`, `loaded-dark`, `empty`, `server-error`, `add-budget-form` |
+| `Screens/Accounts` | `provider-picker`, `provider-picker-dark`, `provider-picker-loading`, `connected`, `connected-dark`, `connected-flow-error`, `connected-empty-connections`, `connected-toast`, `sync-in-progress` |
+| `Screens/Settings` | `default`, `default-dark`, `password-invalid`, `password-mismatch`, `password-error-banner`, `success-banner`, `delete-modal`, `delete-modal-error`, `delete-confirm-typing`, `delete-confirm-ready` |
+
+Preview URLs follow `http://localhost:6006/?path=/story/<kebab-title>--<kebab-story>` (for example `screens-dashboard--happy-path`).
+
+### Phase 5 TDD log
+
+1. Red: extend [`fixturesShape.test.ts`](../frontend/tests/storybook/fixturesShape.test.ts) for [`sampleNetWorthSeries`](../frontend/src/storybook/fixtures/netWorth.ts).
+2. Green: add screen slices and stories.
+3. Verify: `npm --prefix frontend run typecheck`, [`fixturesShape`](../frontend/tests/storybook/fixturesShape.test.ts), `npm --prefix frontend run storybook:build`.
 
 Acceptance criteria:
 
