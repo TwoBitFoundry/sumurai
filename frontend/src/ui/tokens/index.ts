@@ -81,8 +81,6 @@ const chartDark = [
 ];
 const brandFont = generatedTokens.typography.brand.$value.fontFamily;
 const sansFont = generatedTokens.typography.sans.$value.fontFamily;
-const glassShadowLight = 'shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)]';
-const glassShadowDark = 'dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)]';
 const glassInsetLight =
   'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]';
 const glassInsetDark =
@@ -495,12 +493,6 @@ const layeredSurfaces = {
     'dark:text-[#cbd5e1]',
   ],
 } as const;
-
-const onboardingShell = [
-  'group relative overflow-hidden border border-[#e2e8f0] bg-white shadow-sm',
-  'transition-all duration-300 ease-out hover:-translate-y-[2px] hover:shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)] hover:border-[#93c5fd]',
-  'dark:border-[#334155] dark:bg-[#0f172a] dark:hover:border-[#38bdf8] dark:hover:shadow-[0_20px_56px_-40px_rgba(2,6,23,0.65)]',
-] as const;
 
 const focusSurfaces = {
   visibleDarkOffset: ['dark:focus-visible:ring-offset-[#0f172a]'],
