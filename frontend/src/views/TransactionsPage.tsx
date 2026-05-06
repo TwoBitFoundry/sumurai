@@ -3,8 +3,8 @@ import type React from 'react';
 import { useMemo } from 'react';
 import { cn, GlassCard } from '@/ui/primitives';
 import HeroStatCard from '../components/widgets/HeroStatCard';
-import TransactionsFilters from '../features/transactions/components/TransactionsFilters';
 import TransactionsTable from '../features/transactions/components/TransactionsTable';
+import TransactionsToolbar from '../features/transactions/components/TransactionsToolbar';
 import { useTransactions } from '../features/transactions/hooks/useTransactions';
 import { PageLayout } from '../layouts/PageLayout';
 import { formatCategoryName } from '../utils/categories';
@@ -148,41 +148,13 @@ const TransactionsPage: React.FC = () => {
           padding="none"
           className={cn('relative', 'z-10')}
         >
-          <div
-            className={cn(
-              'border-b',
-              'border-slate-200/70',
-              'px-6',
-              'pb-4',
-              'pt-6',
-              'dark:border-slate-700/50'
-            )}
-          >
-            <div className={cn('flex', 'items-center', 'gap-4')}>
-              <div className={cn('flex-1', 'min-w-0')}>
-                <TransactionsFilters
-                  search={search}
-                  onSearch={setSearch}
-                  categories={categories}
-                  selectedCategory={selectedCategory}
-                  onSelectCategory={setSelectedCategory}
-                  showSearch={false}
-                  showCategories
-                />
-              </div>
-              <div className="flex-shrink-0">
-                <TransactionsFilters
-                  search={search}
-                  onSearch={setSearch}
-                  categories={categories}
-                  selectedCategory={selectedCategory}
-                  onSelectCategory={setSelectedCategory}
-                  showSearch
-                  showCategories={false}
-                />
-              </div>
-            </div>
-          </div>
+          <TransactionsToolbar
+            search={search}
+            onSearch={setSearch}
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+          />
           {isLoading ? (
             <div className={cn('flex', 'items-center', 'justify-center', 'py-16')}>
               <div className="text-center">

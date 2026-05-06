@@ -1,4 +1,4 @@
-import { RefreshCcw, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TooltipProps } from 'recharts';
@@ -12,11 +12,12 @@ import {
   YAxis,
 } from 'recharts';
 import type { DotItemDotProps } from 'recharts/types/util/types';
-import { Button, GlassCard, cn, EmptyState } from '@/ui/primitives';
+import { Button, cn, EmptyState } from '@/ui/primitives';
 import BalancesOverview from '../components/BalancesOverview';
 import { useTheme } from '../context/ThemeContext';
 import { DashboardCalculator } from '../domain/DashboardCalculator';
 import { categoriesToDonut } from '../features/analytics/adapters/chartData';
+import DashboardChartCard from '../features/analytics/components/DashboardChartCard';
 import { SpendingByCategoryChart } from '../features/analytics/components/SpendingByCategoryChart';
 import { TopMerchantsList } from '../features/analytics/components/TopMerchantsList';
 import { useAnalytics } from '../features/analytics/hooks/useAnalytics';
@@ -106,36 +107,12 @@ const DashboardPage: React.FC = () => {
               'items-stretch'
             )}
           >
-            <GlassCard className={cn('p-6', 'h-full')}>
-              <div className={cn('mb-4', 'flex', 'items-center', 'justify-between')}>
-                <div>
-                  <h3
-                    className={cn(
-                      'text-base',
-                      'font-semibold',
-                      'text-slate-900',
-                      'dark:text-slate-100'
-                    )}
-                  >
-                    Spending Over Time
-                  </h3>
-                  <p className={cn('text-xs', 'text-slate-600', 'dark:text-slate-400')}>
-                    Breakdown by category
-                  </p>
-                </div>
-                {!analyticsLoading && analyticsRefreshing && (
-                  <RefreshCcw
-                    aria-label="Refreshing analytics"
-                    className={cn(
-                      'h-4',
-                      'w-4',
-                      'text-slate-500',
-                      'dark:text-slate-400',
-                      'animate-spin'
-                    )}
-                  />
-                )}
-              </div>
+            <DashboardChartCard
+              title="Spending Over Time"
+              description="Breakdown by category"
+              refreshingLabel="Refreshing analytics"
+              isRefreshing={!analyticsLoading && analyticsRefreshing}
+            >
               {analyticsLoading && (
                 <div className={cn('mb-2', 'text-xs', 'text-slate-500', 'dark:text-slate-400')}>
                   Loading analytics...
@@ -236,76 +213,29 @@ const DashboardPage: React.FC = () => {
                   );
                 })()}
               </div>
-            </GlassCard>
+            </DashboardChartCard>
 
-            <GlassCard className={cn('p-6', 'h-full', 'flex', 'flex-col')}>
-              <div className={cn('mb-3', 'flex', 'items-center', 'justify-between')}>
-                <div>
-                  <h3
-                    className={cn(
-                      'text-base',
-                      'font-semibold',
-                      'text-slate-900',
-                      'dark:text-slate-100'
-                    )}
-                  >
-                    Top Merchants Over Time
-                  </h3>
-                  <p className={cn('text-xs', 'text-slate-600', 'dark:text-slate-400')}>
-                    Highest spending locations
-                  </p>
-                </div>
-                {!analyticsLoading && analyticsRefreshing && (
-                  <RefreshCcw
-                    aria-label="Refreshing analytics"
-                    className={cn(
-                      'h-4',
-                      'w-4',
-                      'text-slate-500',
-                      'dark:text-slate-400',
-                      'animate-spin'
-                    )}
-                  />
-                )}
-              </div>
-              <div className={cn('flex-1', 'overflow-hidden')}>
+            <DashboardChartCard
+              title="Top Merchants Over Time"
+              description="Highest spending locations"
+              refreshingLabel="Refreshing analytics"
+              isRefreshing={!analyticsLoading && analyticsRefreshing}
+              bodyClassName={cn('overflow-hidden')}
+            >
+              <div className={cn('h-full', 'overflow-hidden')}>
                 <TopMerchantsList
                   merchants={analytics.topMerchants}
                   className={cn('h-full', 'overflow-y-auto', 'pr-1')}
                 />
               </div>
-            </GlassCard>
+            </DashboardChartCard>
 
-            <GlassCard className={cn('p-6', 'h-full', 'flex', 'flex-col')}>
-              <div className={cn('mb-4', 'flex', 'items-center', 'justify-between')}>
-                <div>
-                  <h3
-                    className={cn(
-                      'text-base',
-                      'font-semibold',
-                      'text-slate-900',
-                      'dark:text-slate-100'
-                    )}
-                  >
-                    Net Worth Over Time
-                  </h3>
-                  <p className={cn('text-xs', 'text-slate-600', 'dark:text-slate-400')}>
-                    Historical asset growth
-                  </p>
-                </div>
-                {!netLoading && netRefreshing && (
-                  <RefreshCcw
-                    aria-label="Refreshing net worth"
-                    className={cn(
-                      'h-4',
-                      'w-4',
-                      'text-slate-500',
-                      'dark:text-slate-400',
-                      'animate-spin'
-                    )}
-                  />
-                )}
-              </div>
+            <DashboardChartCard
+              title="Net Worth Over Time"
+              description="Historical asset growth"
+              refreshingLabel="Refreshing net worth"
+              isRefreshing={!netLoading && netRefreshing}
+            >
               {netLoading ? (
                 <div
                   className={cn(
@@ -429,7 +359,7 @@ const DashboardPage: React.FC = () => {
                   </ResponsiveContainer>
                 </div>
               )}
-            </GlassCard>
+            </DashboardChartCard>
           </div>
           <div
             className={cn(

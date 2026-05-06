@@ -149,6 +149,23 @@ TDD log:
 - Replace feature-specific buttons such as `ConnectButton` with the shared `Button` primitive using a `connect` variant or a small behavior-only wrapper.
 - Remove raw colors, arbitrary gradients, one-off shadows, and bespoke rounded values from views unless explicitly approved as local exceptions.
 
+Completion notes:
+
+- Extracted provider selection and connection summary chrome into [frontend/src/features/plaid/components/ProviderSelectionPanel.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/features/plaid/components/ProviderSelectionPanel.tsx) and [frontend/src/features/plaid/components/AccountsSummaryStats.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/features/plaid/components/AccountsSummaryStats.tsx).
+- Moved the budget utilization summary and month toolbar into [frontend/src/features/budgets/components/BudgetSummaryCard.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/features/budgets/components/BudgetSummaryCard.tsx) and [frontend/src/features/budgets/components/BudgetToolbar.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/features/budgets/components/BudgetToolbar.tsx).
+- Moved transaction filter chrome into [frontend/src/features/transactions/components/TransactionsToolbar.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/features/transactions/components/TransactionsToolbar.tsx).
+- Wrapped the dashboard widget shells in [frontend/src/features/analytics/components/DashboardChartCard.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/features/analytics/components/DashboardChartCard.tsx).
+- Refactored [frontend/src/features/plaid/components/ConnectButton.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/features/plaid/components/ConnectButton.tsx) onto the shared `Button` primitive with the `connect` variant.
+- Updated [frontend/src/views/AccountsPage.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/views/AccountsPage.tsx), [frontend/src/views/BudgetsPage.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/views/BudgetsPage.tsx), [frontend/src/views/TransactionsPage.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/views/TransactionsPage.tsx), and [frontend/src/views/DashboardPage.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/views/DashboardPage.tsx) to compose the new feature components instead of carrying the chrome inline.
+
+TDD log:
+
+- Added [frontend/tests/features/plaid/components/ProviderSelectionPanel.test.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/tests/features/plaid/components/ProviderSelectionPanel.test.tsx) and [frontend/tests/features/plaid/components/AccountsSummaryStats.test.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/tests/features/plaid/components/AccountsSummaryStats.test.tsx) for provider and connection chrome.
+- Added [frontend/tests/features/budgets/components/BudgetSummaryCard.test.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/tests/features/budgets/components/BudgetSummaryCard.test.tsx) and [frontend/tests/features/budgets/components/BudgetToolbar.test.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/tests/features/budgets/components/BudgetToolbar.test.tsx) for budget summary and month control behavior.
+- Added [frontend/tests/features/transactions/components/TransactionsToolbar.test.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/tests/features/transactions/components/TransactionsToolbar.test.tsx) and [frontend/tests/features/analytics/components/DashboardChartCard.test.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/tests/features/analytics/components/DashboardChartCard.test.tsx) for transaction chrome and dashboard widget shells.
+- Ran `npm --prefix frontend test -- --runInBand frontend/tests/features/plaid/components/ProviderSelectionPanel.test.tsx frontend/tests/features/plaid/components/AccountsSummaryStats.test.tsx frontend/tests/features/plaid/components/ConnectButton.test.tsx frontend/tests/features/plaid/components/ConnectionsList.test.tsx frontend/tests/features/budgets/components/BudgetSummaryCard.test.tsx frontend/tests/features/budgets/components/BudgetToolbar.test.tsx frontend/tests/features/budgets/components/BudgetProgress.test.tsx frontend/tests/features/transactions/components/TransactionsToolbar.test.tsx frontend/tests/features/analytics/components/DashboardChartCard.test.tsx`.
+- Ran `npm --prefix frontend run typecheck`, `npm --prefix frontend run lint`, and `npm --prefix frontend test`.
+
 Acceptance criteria:
 
 - `frontend/src/views/*` files mostly compose layouts, hooks, and feature components.
