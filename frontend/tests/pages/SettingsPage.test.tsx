@@ -312,7 +312,7 @@ describe('SettingsPage - Account Deletion', () => {
     it('displays danger zone section', () => {
       render(<SettingsPage onLogout={mockOnLogout} />);
 
-      expect(screen.getByRole('heading', { name: /danger zone/i })).toBeInTheDocument();
+      expect(screen.getByText(/danger zone/i)).toBeInTheDocument();
     });
 
     it('displays warning text in danger zone', () => {

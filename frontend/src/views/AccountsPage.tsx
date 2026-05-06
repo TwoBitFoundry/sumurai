@@ -1,7 +1,7 @@
 import { AnimatePresence } from 'framer-motion';
 import { Building2, Clock, CreditCard, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { cn } from '@/ui/primitives';
+import { GlassCard, cn } from '@/ui/primitives';
 import { designTokens } from '@/ui/tokens';
 import { getProviderCardConfig } from '@/utils/providerCards';
 import { Toast } from '../components/Toast';
@@ -261,19 +261,12 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
                   className={cn(
                     'relative',
                     'flex',
+                    'w-full',
                     'h-full',
-                    'flex-col',
-                    'gap-4',
-                    'rounded-[1.75rem]',
-                    'border',
-                    'border-white/45',
-                    'bg-white/80',
-                    'p-6',
                     'text-left',
-                    'transition-all',
+                    'transition-transform',
                     'duration-200',
                     'hover:-translate-y-[2px]',
-                    'hover:shadow-[0_24px_80px_-50px_rgba(15,23,42,0.55)]',
                     'focus:outline-none',
                     'focus-visible:ring-2',
                     'focus-visible:ring-sky-400/80',
@@ -281,82 +274,105 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
                     'focus-visible:ring-offset-white',
                     'disabled:cursor-not-allowed',
                     'disabled:opacity-75',
-                    'dark:border-white/10',
-                    ...designTokens.surfaces.layered.card85,
-                    'dark:hover:border-sky-400/40',
-                    'dark:hover:shadow-[0_28px_90px_-60px_rgba(2,6,23,0.7)]',
-                    ...designTokens.surfaces.focus.visibleDarkOffset
+                    'dark:focus-visible:ring-offset-slate-900'
                   )}
                 >
-                  <div className={cn('flex', 'items-center', 'justify-between')}>
-                    <div
-                      className={cn(
-                        'text-lg',
-                        'font-semibold',
-                        'text-slate-900',
-                        'dark:text-white'
-                      )}
-                    >
-                      {details.title}
-                    </div>
-                    <span
-                      className={cn(
-                        'rounded-full',
-                        'bg-sky-100',
-                        'px-3',
-                        'py-1',
-                        'text-[10px]',
-                        'font-semibold',
-                        'uppercase',
-                        'tracking-[0.28em]',
-                        'text-sky-700',
-                        'dark:bg-sky-500/15',
-                        'dark:text-sky-200'
-                      )}
-                    >
-                      {details.badge}
-                    </span>
-                  </div>
-                  <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-300')}>
-                    {details.description}
-                  </p>
-                  <ul
-                    className={cn('space-y-2', 'text-sm', 'text-slate-500', 'dark:text-slate-400')}
-                  >
-                    {details.bullets.map((bullet) => (
-                      <li key={bullet} className={cn('flex', 'items-start', 'gap-2')}>
-                        <span
-                          className={cn(
-                            'mt-[5px]',
-                            'h-1.5',
-                            'w-1.5',
-                            'rounded-full',
-                            'bg-sky-400',
-                            'dark:bg-sky-500'
-                          )}
-                        />
-                        <span>{bullet}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div
-                    className={cn(
-                      'mt-auto',
-                      'inline-flex',
-                      'items-center',
-                      'justify-center',
-                      'rounded-full',
-                      'bg-sky-500',
-                      'px-4',
-                      'py-2',
-                      'text-sm',
-                      'font-semibold',
-                      'text-white',
-                      'shadow-[0_18px_48px_-32px_rgba(14,165,233,0.65)]'
+                  <GlassCard
+                    variant="accent"
+                    rounded="lg"
+                    padding="md"
+                    withInnerEffects={false}
+                    containerClassName={cn(
+                      'h-full',
+                      'w-full',
+                      'transition-all',
+                      'duration-200',
+                      'border-white/45',
+                      'bg-white/80',
+                      'dark:border-white/10',
+                      'dark:bg-[#111a2f]/70',
+                      'hover:shadow-[0_24px_80px_-50px_rgba(15,23,42,0.55)]',
+                      'dark:hover:border-sky-400/40',
+                      'dark:hover:shadow-[0_28px_90px_-60px_rgba(2,6,23,0.7)]'
                     )}
                   >
-                    {selectingProvider === provider ? 'Selecting…' : `Use ${details.title}`}
-                  </div>
+                    <div className={cn('flex', 'h-full', 'flex-col', 'gap-4')}>
+                      <div className={cn('flex', 'items-center', 'justify-between')}>
+                        <div
+                          className={cn(
+                            'text-lg',
+                            'font-semibold',
+                            'text-slate-900',
+                            'dark:text-white'
+                          )}
+                        >
+                          {details.title}
+                        </div>
+                        <span
+                          className={cn(
+                            'rounded-full',
+                            'bg-sky-100',
+                            'px-3',
+                            'py-1',
+                            'text-[10px]',
+                            'font-semibold',
+                            'uppercase',
+                            'tracking-[0.28em]',
+                            'text-sky-700',
+                            'dark:bg-sky-500/15',
+                            'dark:text-sky-200'
+                          )}
+                        >
+                          {details.badge}
+                        </span>
+                      </div>
+                      <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-300')}>
+                        {details.description}
+                      </p>
+                      <ul
+                        className={cn(
+                          'space-y-2',
+                          'text-sm',
+                          'text-slate-500',
+                          'dark:text-slate-400'
+                        )}
+                      >
+                        {details.bullets.map((bullet) => (
+                          <li key={bullet} className={cn('flex', 'items-start', 'gap-2')}>
+                            <span
+                              className={cn(
+                                'mt-[5px]',
+                                'h-1.5',
+                                'w-1.5',
+                                'rounded-full',
+                                'bg-sky-400',
+                                'dark:bg-sky-500'
+                              )}
+                            />
+                            <span>{bullet}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div
+                        className={cn(
+                          'mt-auto',
+                          'inline-flex',
+                          'items-center',
+                          'justify-center',
+                          'rounded-full',
+                          'bg-sky-500',
+                          'px-4',
+                          'py-2',
+                          'text-sm',
+                          'font-semibold',
+                          'text-white',
+                          'shadow-[0_18px_48px_-32px_rgba(14,165,233,0.65)]'
+                        )}
+                      >
+                        {selectingProvider === provider ? 'Selecting…' : `Use ${details.title}`}
+                      </div>
+                    </div>
+                  </GlassCard>
                 </button>
               );
             })}

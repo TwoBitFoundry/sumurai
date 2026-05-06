@@ -12,7 +12,7 @@ import {
   YAxis,
 } from 'recharts';
 import type { DotItemDotProps } from 'recharts/types/util/types';
-import { cn, EmptyState } from '@/ui/primitives';
+import { Button, cn, EmptyState } from '@/ui/primitives';
 import BalancesOverview from '../components/BalancesOverview';
 import Card from '../components/ui/Card';
 import { useTheme } from '../context/ThemeContext';
@@ -474,18 +474,15 @@ const DashboardPage: React.FC = () => {
                 { key: 'past-year', label: '1 Year' },
                 { key: 'all-time', label: '5 Years' },
               ].map((option) => (
-                <button
+                <Button
                   type="button"
                   key={option.key}
                   onClick={() => setDateRange(option.key as DateRange)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    dateRange === option.key
-                      ? 'bg-primary-100 dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow'
-                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/60 dark:hover:bg-slate-700/60 hover:-translate-y-[1px]'
-                  }`}
+                  variant={dateRange === option.key ? 'tabActive' : 'tab'}
+                  className="rounded-lg px-3 py-1.5 text-sm font-medium normal-case transition-all duration-200"
                 >
                   {option.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
