@@ -761,9 +761,7 @@ See `__tests__/` directory for examples.
 
 ## Related Documentation
 
-- [STYLING_GUIDE.md](../../docs/STYLING_GUIDE.md) - When to use primitives vs inline classes
-- [sumurai-ui-guidelines.md](../../../docs/sumurai-ui-guidelines.md) - Design system fundamentals
-- [CONTRIBUTING.md](../../docs/CONTRIBUTING.md) - Contribution guidelines
+- [DESIGN.md](../../../DESIGN.md) - Design system fundamentals
 
 ---
 

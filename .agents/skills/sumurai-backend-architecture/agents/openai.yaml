@@ -1,0 +1,8 @@
+interface:
+  display_name: "Sumurai Backend Architecture"
+  short_description: "Guide Rust backend boundaries"
+  brand_color: "#6366F1"
+  default_prompt: "Use $sumurai-backend-architecture to implement this Sumurai backend change in the correct layer."
+
+policy:
+  allow_implicit_invocation: true
