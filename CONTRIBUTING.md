@@ -51,11 +51,20 @@ npm run build
 npm test
 ```
 
-Notes:
-
 - `npm run dev` starts the Next.js dev server on `http://localhost:3001`.
 - Use the Docker stack at `http://localhost:8080` to validate integrated flows.
 - Supported local host platforms are macOS, Linux, and Windows through Docker Compose.
+
+### Storybook
+
+Component stories live under `frontend/src` as `*.stories.tsx`. From the repo root:
+
+```bash
+npm run storybook
+npm run storybook:build
+```
+
+These delegate to `frontend/` (same as `cd frontend && npm run …`). `storybook` serves `http://localhost:6006`. `storybook:build` writes `frontend/storybook-static` (Playwright visuals in CI). Storybook MCP needs Storybook running first; see `AGENTS.md`.
 
 ## Backend Validation
 

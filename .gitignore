@@ -1,3 +1,5 @@
+frontend/test-results/
+frontend/.playwright-browsers/
 node_modules/
 target/
 .next/
@@ -73,3 +75,6 @@ plaid.env
 *.backup
 frontend/src/*.bak
 backend/src/*.bak
+
+*storybook.log
+storybook-static

@@ -110,5 +110,17 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Design guard
+        run: npm run design:guard
+
       - name: Unit tests
         run: npm test
+
+      - name: Production build
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Visual regression (Storybook)
+        run: npm run test:visual

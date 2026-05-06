@@ -16,6 +16,12 @@
 - `npm --prefix frontend run build` / `npm --prefix frontend test` - frontend build and tests.
 - `npm run precommit` - run the full validation set used by the repo.
 
+## Design system guardrails and Storybook AI
+
+- `npm --prefix frontend run design:guard` runs DESIGN.md lint, token drift checks, raw styling guard, and regenerates DTCG + Tailwind exports from `DESIGN.md` (same guard chain as `frontend:design` in root `package.json`).
+- `npm --prefix frontend run storybook` serves Storybook on port 6006. Global Cursor MCP may point at `http://localhost:6006/mcp`; that endpoint exists only while Storybook is running. Start Storybook first, wait until it prints ready, then reload the Cursor window or toggle the Storybook MCP server off and on so the client reconnects. If it still fails, use Output → MCP Logs. Use Storybook MCP tools for component docs and story workflows before inventing new UI patterns.
+- `npm run frontend:visual` from the repo root runs Playwright visual regression over the built static Storybook (Chromium; Linux baselines are committed for CI).
+
 ## Coding Style
 - Rust: keep units small and testable, prefer idiomatic error handling, and use `cargo fmt` and `cargo clippy`.
 - TypeScript: keep types precise, follow existing hooks/service patterns, and use `tsc -b` style checks through the frontend scripts.

@@ -178,20 +178,39 @@ Acceptance criteria:
 
 ## Phase 6: Guardrails And Visual Coverage
 
+Scope recap:
+
 - Add lint/check scripts that block new raw hex values, arbitrary gradients, arbitrary shadows, and token drift outside approved files.
 - Add tests under `frontend/tests` for token generation/drift, primitive variants, public primitive prop compatibility, and extracted feature component rendering.
 - Add Storybook for primitives and key feature components.
 - Add stories for light/dark, loading, empty, invalid, disabled, overflow, and dense-data states.
 - Add visual regression through Chromatic or Playwright screenshots.
 
+Completion notes:
+
+- Guardrails: `frontend/scripts/check-raw-styling.mjs`, drift via `design:drift`, DESIGN.md lint via `design:lint`, exports via `design:export:*`; orchestrated by `design:guard`. Boundary tests include `frontend/tests/scripts/rawStylingGuard.test.ts` and existing token/design tests under `frontend/tests/`.
+- Root `package.json` runs `frontend:design` as part of `precommit` so token drift and raw styling regressions fail before merge alongside typecheck, lint, Jest, and `next build`.
+- Storybook 10 with primitives and selected feature stories; `@storybook/addon-mcp` exposes MCP at `/mcp` when the dev server is running; see `AGENTS.md` for Cursor MCP usage.
+- Playwright visual regression: `frontend/playwright.visual.config.ts` (Chromium, static Storybook on port 6007, iframe URLs use `/iframe?id=` because `serve` strips query strings on `/iframe.html` redirects). Snapshots live under `frontend/tests/visual/storybook.visual.spec.ts-snapshots/` with separate `darwin` and `linux` baselines; refresh Linux with `mcr.microsoft.com/playwright:v1.59.1-jammy` and `npm run test:visual:update` if CI screenshots drift.
+- CI job `frontend` in `.github/workflows/ci.yml` runs typecheck, lint, `design:guard`, Jest, production build, Playwright Chromium install, and `test:visual`.
+
+Agent validation sequence (Phase 6 complete when all succeed):
+
+1. `npm --prefix frontend run design:guard`
+2. `npm --prefix frontend test`
+3. `npm --prefix frontend run typecheck`
+4. `npm --prefix frontend run build`
+5. `npm run frontend:visual` from repo root (or `npm --prefix frontend run test:visual`)
+6. Optionally start `npm --prefix frontend run storybook` and confirm Storybook MCP tools respond at `http://localhost:6006/mcp` per `AGENTS.md`
+7. `npm run precommit` at repo root for the full backend plus frontend gate used locally before push
+
 Acceptance criteria:
 
-- CI or precommit catches token drift before merge.
-- CI or precommit catches new disallowed raw styling outside approved files.
+- CI and precommit catch token drift and disallowed raw styling outside approved files (`design:guard` on precommit; same in CI).
 - Storybook runs locally and includes the main primitives plus selected account, budget, transaction, and dashboard feature components.
 - Visual regression covers primitive states and at least one full-page smoke path.
-- A student agent can run one documented validation sequence and know whether the refactor is complete.
-- Final validation passes: `npm --prefix frontend run design:lint`, `npm --prefix frontend run design:export:dtcg`, `npm --prefix frontend run design:export:tailwind`, `npm --prefix frontend test`, `npm --prefix frontend run typecheck`, and `npm --prefix frontend run build`.
+- A student agent can run the validation sequence above and consult `AGENTS.md` for Storybook MCP behavior.
+- Final validation passes: `npm --prefix frontend run design:lint`, `npm --prefix frontend run design:export:dtcg`, `npm --prefix frontend run design:export:tailwind`, `npm --prefix frontend test`, `npm --prefix frontend run typecheck`, and `npm --prefix frontend run build`, plus `npm run frontend:visual` when validating screenshots.
 
 ## Assumptions
 
@@ -212,6 +231,5 @@ Acceptance criteria:
 
 ## Next Actions
 
-- Start with the token pipeline foundation and generate artifacts from the current `DESIGN.md`.
-- Refactor `DESIGN.md` only after the generator path exists, so validation and exports can guide the document shape.
-- Keep each implementation step small enough to run focused tests and preserve the current visual identity.
+- Phase 6 guardrails, Storybook, MCP addon, and Playwright visuals are integrated; keep running the Phase 6 validation sequence in `docs/frontend-design-system-framework-refactor-plan.md` when changing `DESIGN.md`, tokens, primitives, or Storybook stories.
+- When optional native deps fail locally (`rolldown`, `lightningcss`), run `npm ci` in `frontend/` before Storybook or Next builds.
