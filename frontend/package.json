@@ -35,6 +35,7 @@
     "@opentelemetry/resources": "^2.2.0",
     "@opentelemetry/sdk-trace-web": "^2.2.0",
     "@opentelemetry/semantic-conventions": "^1.38.0",
+    "@radix-ui/react-dialog": "^1.1.15",
     "@tailwindcss/postcss": "^4.1.17",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

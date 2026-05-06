@@ -55,7 +55,7 @@ describe('ProviderMismatchModal', () => {
     });
 
     it('should display alert icon', () => {
-      const { container } = render(
+      render(
         <ProviderMismatchModal
           userProvider="teller"
           defaultProvider="plaid"
@@ -63,7 +63,7 @@ describe('ProviderMismatchModal', () => {
         />
       );
 
-      const alertIcon = container.querySelector('svg');
+      const alertIcon = document.body.querySelector('svg');
       expect(alertIcon).toBeInTheDocument();
     });
 
@@ -127,7 +127,7 @@ describe('ProviderMismatchModal', () => {
 
   describe('Modal behavior', () => {
     it('should render modal with backdrop overlay', () => {
-      const { container } = render(
+      render(
         <ProviderMismatchModal
           userProvider="teller"
           defaultProvider="plaid"
@@ -135,12 +135,12 @@ describe('ProviderMismatchModal', () => {
         />
       );
 
-      const backdrop = container.querySelector('.fixed.inset-0');
+      const backdrop = document.body.querySelector('.fixed.inset-0');
       expect(backdrop).toBeInTheDocument();
     });
 
     it('should have high z-index to appear above other content', () => {
-      const { container } = render(
+      render(
         <ProviderMismatchModal
           userProvider="teller"
           defaultProvider="plaid"
@@ -148,13 +148,13 @@ describe('ProviderMismatchModal', () => {
         />
       );
 
-      const modal = container.querySelector('.z-50');
+      const modal = document.body.querySelector('.z-50');
       expect(modal).toBeInTheDocument();
     });
 
     it('should not be dismissible by clicking outside', async () => {
       const user = userEvent.setup();
-      const { container } = render(
+      render(
         <ProviderMismatchModal
           userProvider="teller"
           defaultProvider="plaid"
@@ -162,10 +162,9 @@ describe('ProviderMismatchModal', () => {
         />
       );
 
-      const backdrop = container.querySelector('.absolute.inset-0');
-      if (backdrop) {
-        await user.click(backdrop);
-      }
+      const backdrop = document.body.querySelector('[data-testid="modal-backdrop"]');
+      expect(backdrop).toBeInTheDocument();
+      await user.click(backdrop as HTMLElement);
 
       expect(mockOnConfirm).not.toHaveBeenCalled();
     });
@@ -173,7 +172,7 @@ describe('ProviderMismatchModal', () => {
 
   describe('Dark mode support', () => {
     it('should include dark mode classes for styling', () => {
-      const { container } = render(
+      render(
         <div className="dark">
           <ProviderMismatchModal
             userProvider="teller"
@@ -183,7 +182,7 @@ describe('ProviderMismatchModal', () => {
         </div>
       );
 
-      const modalCard = container.querySelector('[class*="dark:"]');
+      const modalCard = document.body.querySelector('[class*="dark:"]');
       expect(modalCard).toBeInTheDocument();
     });
   });

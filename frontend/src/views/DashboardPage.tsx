@@ -12,9 +12,8 @@ import {
   YAxis,
 } from 'recharts';
 import type { DotItemDotProps } from 'recharts/types/util/types';
-import { Button, cn, EmptyState } from '@/ui/primitives';
+import { Button, GlassCard, cn, EmptyState } from '@/ui/primitives';
 import BalancesOverview from '../components/BalancesOverview';
-import Card from '../components/ui/Card';
 import { useTheme } from '../context/ThemeContext';
 import { DashboardCalculator } from '../domain/DashboardCalculator';
 import { categoriesToDonut } from '../features/analytics/adapters/chartData';
@@ -107,7 +106,7 @@ const DashboardPage: React.FC = () => {
               'items-stretch'
             )}
           >
-            <Card className="h-full">
+            <GlassCard className={cn('p-6', 'h-full')}>
               <div className={cn('mb-4', 'flex', 'items-center', 'justify-between')}>
                 <div>
                   <h3
@@ -237,9 +236,9 @@ const DashboardPage: React.FC = () => {
                   );
                 })()}
               </div>
-            </Card>
+            </GlassCard>
 
-            <Card className={cn('h-full', 'flex', 'flex-col')}>
+            <GlassCard className={cn('p-6', 'h-full', 'flex', 'flex-col')}>
               <div className={cn('mb-3', 'flex', 'items-center', 'justify-between')}>
                 <div>
                   <h3
@@ -275,9 +274,9 @@ const DashboardPage: React.FC = () => {
                   className={cn('h-full', 'overflow-y-auto', 'pr-1')}
                 />
               </div>
-            </Card>
+            </GlassCard>
 
-            <Card className={cn('h-full', 'flex', 'flex-col')}>
+            <GlassCard className={cn('p-6', 'h-full', 'flex', 'flex-col')}>
               <div className={cn('mb-4', 'flex', 'items-center', 'justify-between')}>
                 <div>
                   <h3
@@ -430,7 +429,7 @@ const DashboardPage: React.FC = () => {
                   </ResponsiveContainer>
                 </div>
               )}
-            </Card>
+            </GlassCard>
           </div>
           <div
             className={cn(

@@ -1,6 +1,6 @@
+import * as Dialog from '@radix-ui/react-dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { AnimatePresence, type HTMLMotionProps, motion } from 'framer-motion';
-import type React from 'react';
+import type * as React from 'react';
 import { cn } from './utils';
 
 const contentVariants = cva('relative w-full', {
@@ -17,7 +17,7 @@ const contentVariants = cva('relative w-full', {
 });
 
 export interface ModalProps
-  extends Omit<HTMLMotionProps<'div'>, 'children'>,
+  extends Omit<React.ComponentPropsWithoutRef<typeof Dialog.Content>, 'children'>,
     VariantProps<typeof contentVariants> {
   isOpen: boolean;
   onClose?: () => void;
@@ -42,47 +42,48 @@ export function Modal({
   containerClassName,
   ...props
 }: ModalProps) {
-  const handleBackdropClick = () => {
-    if (!preventCloseOnBackdrop) {
-      onClose?.();
-    }
-  };
-
   return (
-    <AnimatePresence>
-      {isOpen ? (
-        <motion.div
-          className={cn('fixed inset-0 z-50', containerClassName)}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
+    <Dialog.Root
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose?.();
+        }
+      }}
+    >
+      <Dialog.Portal>
+        <div className={cn('fixed inset-0 z-50', containerClassName)}>
+          <Dialog.Overlay
+            data-testid="modal-backdrop"
+            className={cn('absolute inset-0 bg-slate-900/70 backdrop-blur-sm', backdropClassName)}
+            onPointerDown={(event) => {
+              if (preventCloseOnBackdrop) {
+                event.preventDefault();
+              }
+            }}
+          />
           <div className={cn('grid', 'h-full', 'place-items-center', 'p-4')}>
-            <motion.button
-              type="button"
-              aria-hidden="true"
-              tabIndex={-1}
-              className={cn('absolute inset-0 bg-slate-900/70 backdrop-blur-sm', backdropClassName)}
-              onClick={handleBackdropClick}
-              data-testid="modal-backdrop"
-            />
-            <motion.div
-              role="dialog"
-              aria-modal="true"
+            <Dialog.Content
               aria-labelledby={labelledBy}
               aria-describedby={description}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
               className={cn(contentVariants({ size }), className)}
+              onPointerDownOutside={(event) => {
+                if (preventCloseOnBackdrop) {
+                  event.preventDefault();
+                }
+              }}
               {...props}
             >
+              {labelledBy ? <Dialog.Title className="sr-only" aria-hidden="true" /> : null}
+              {description ? (
+                <Dialog.Description className="sr-only" aria-hidden="true" />
+              ) : null}
               {children}
-            </motion.div>
+            </Dialog.Content>
           </div>
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
+        </div>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 

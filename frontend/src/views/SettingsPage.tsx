@@ -236,11 +236,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       <Modal
         isOpen={showDeleteModal}
         onClose={closeDeleteModal}
+        labelledBy="delete-account-modal-title"
         size="md"
         preventCloseOnBackdrop={isDeleting}
       >
         <GlassCard variant="auth" padding="lg">
           <h2
+            id="delete-account-modal-title"
             className={cn(
               'text-xl',
               'font-semibold',

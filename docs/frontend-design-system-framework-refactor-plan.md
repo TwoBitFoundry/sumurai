@@ -126,6 +126,22 @@ Acceptance criteria:
 - No touched source file gains comments.
 - Focused primitive tests and typecheck pass.
 
+Completion notes:
+
+- Replaced `Modal` with a Radix Dialog-backed primitive in [frontend/src/ui/primitives/Modal.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/ui/primitives/Modal.tsx) while keeping the existing `isOpen`, `onClose`, `labelledBy`, `description`, and backdrop control props.
+- Added the Radix dialog package to [frontend/package.json](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/package.json) and refreshed the lockfile.
+- Updated [frontend/src/views/SettingsPage.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/views/SettingsPage.tsx) to provide an explicit modal title binding for the delete-account dialog.
+- Replaced legacy card usage in [frontend/src/views/DashboardPage.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/views/DashboardPage.tsx) and [frontend/src/views/BudgetsPage.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/views/BudgetsPage.tsx) with `GlassCard`.
+- Removed [frontend/src/components/ui/Card.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/components/ui/Card.tsx), [frontend/src/components/ui/Table.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/components/ui/Table.tsx), [frontend/tests/components/ui/Card.test.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/tests/components/ui/Card.test.tsx), and [frontend/tests/components/ui/Table.test.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/tests/components/ui/Table.test.tsx).
+
+TDD log:
+
+- Added [frontend/tests/ui/primitives/Modal.test.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/tests/ui/primitives/Modal.test.tsx) to cover accessible semantics, focus handoff, escape dismissal, backdrop dismissal, and backdrop lockout.
+- Updated [frontend/tests/components/ProviderMismatchModal.test.tsx](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/tests/components/ProviderMismatchModal.test.tsx) to query the portaled dialog in `document.body`.
+- Ran `npm --prefix frontend test -- --runInBand frontend/tests/ui/primitives/Modal.test.tsx`.
+- Ran `npm --prefix frontend test -- --runInBand frontend/tests/ui/primitives/Modal.test.tsx frontend/tests/components/ProviderMismatchModal.test.tsx frontend/tests/components/Accounts/DisconnectModal.test.tsx frontend/tests/integration/SessionManager.test.tsx frontend/tests/pages/SettingsPage.test.tsx`.
+- Ran `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, and `npm --prefix frontend test`.
+
 ## Phase 5: Feature Component Extraction
 
 - Move repeated visual structures out of views and into feature components for accounts provider selection, provider loading/error surfaces, connection summary panels, budget utilization summary, month controls, budget list toolbar, budget card actions, transaction filters/table chrome, and dashboard widget shells.

@@ -10,9 +10,8 @@ import {
   Target,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Button, cn, EmptyState } from '@/ui/primitives';
+import { Button, GlassCard, cn, EmptyState } from '@/ui/primitives';
 import { designTokens } from '@/ui/tokens';
-import Card from '../components/ui/Card';
 import HeroStatCard, { type HeroPill } from '../components/widgets/HeroStatCard';
 import { BudgetCalculator } from '../domain/BudgetCalculator';
 import { BudgetForm, type BudgetFormValue } from '../features/budgets/components/BudgetForm';
@@ -333,7 +332,7 @@ export default function BudgetsPage() {
         error={errorMessage}
         stats={heroStats}
       >
-        <Card className="p-0">
+        <GlassCard className="p-0">
           {hasBudgets ? (
             <>
               <div
@@ -491,7 +490,7 @@ export default function BudgetsPage() {
               )}
             </>
           )}
-        </Card>
+        </GlassCard>
       </PageLayout>
     </div>
   );
