@@ -60,10 +60,7 @@ export const TransactionsFilters: React.FC<Props> = ({
           <span
             className={cn(
               'flex-shrink-0',
-              'text-[0.65rem]',
-              'font-semibold',
-              'uppercase',
-              'tracking-[0.24em]',
+              designTokens.typography.label,
               'text-slate-500',
               'transition-colors',
               'duration-500',
@@ -117,40 +114,10 @@ export const TransactionsFilters: React.FC<Props> = ({
               })}
             </div>
             {showLeftFade && (
-              <div
-                className={cn(
-                  'pointer-events-none',
-                  'absolute',
-                  'bottom-0',
-                  'left-0',
-                  'top-0',
-                  'w-8',
-                  'bg-gradient-to-r',
-                  'from-white',
-                  'to-transparent',
-                  'transition-opacity',
-                  'duration-200',
-                  ...designTokens.surfaces.layered.fadeFromDark
-                )}
-              />
+              <div className={cn(designTokens.components.pill.fadeLeft, 'w-8')} />
             )}
             {showRightFade && (
-              <div
-                className={cn(
-                  'pointer-events-none',
-                  'absolute',
-                  'bottom-0',
-                  'right-0',
-                  'top-0',
-                  'w-8',
-                  'bg-gradient-to-l',
-                  'from-white',
-                  'to-transparent',
-                  'transition-opacity',
-                  'duration-200',
-                  ...designTokens.surfaces.layered.fadeFromDark
-                )}
-              />
+              <div className={cn(designTokens.components.pill.fadeRight, 'w-8')} />
             )}
           </div>
         </div>

@@ -140,6 +140,36 @@ components:
     textColor: "#475569"
     rounded: "{rounded.medium}"
     padding: 10px
+  input-default:
+    backgroundColor: "#ffffff"
+    textColor: "#0f172a"
+    rounded: "{rounded.large}"
+    padding: 12px
+  input-invalid:
+    backgroundColor: "#ffffff"
+    textColor: "#0f172a"
+    rounded: "{rounded.large}"
+    padding: 12px
+  input-glass:
+    backgroundColor: "rgba(255, 255, 255, 0.8)"
+    textColor: "#475569"
+    rounded: "{rounded.large}"
+    padding: 12px
+  select-default:
+    backgroundColor: "#ffffff"
+    textColor: "#0f172a"
+    rounded: "{rounded.large}"
+    padding: 12px
+  select-invalid:
+    backgroundColor: "#ffffff"
+    textColor: "#0f172a"
+    rounded: "{rounded.large}"
+    padding: 12px
+  select-glass:
+    backgroundColor: "rgba(255, 255, 255, 0.8)"
+    textColor: "#475569"
+    rounded: "{rounded.large}"
+    padding: 12px
   glass-card:
     backgroundColor: "#ffffff"
     rounded: "{rounded.large}"

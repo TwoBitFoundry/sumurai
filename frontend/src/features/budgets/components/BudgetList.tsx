@@ -162,10 +162,7 @@ export function BudgetList({
                       htmlFor={`budget-amount-${b.id}`}
                       className={cn(
                         'block',
-                        'text-[0.65rem]',
-                        'font-semibold',
-                        'uppercase',
-                        'tracking-[0.24em]',
+                        designTokens.typography.label,
                         'text-slate-500',
                         'transition-colors',
                         'duration-300',
@@ -199,10 +196,7 @@ export function BudgetList({
                     <span
                       className={cn(
                         'block',
-                        'text-[0.65rem]',
-                        'font-semibold',
-                        'uppercase',
-                        'tracking-[0.24em]',
+                        designTokens.typography.label,
                         'text-slate-500',
                         'transition-colors',
                         'duration-300',
@@ -241,10 +235,7 @@ export function BudgetList({
                   <div>
                     <span
                       className={cn(
-                        'text-[0.65rem]',
-                        'font-semibold',
-                        'uppercase',
-                        'tracking-[0.24em]',
+                        designTokens.typography.label,
                         'text-slate-500',
                         'transition-colors',
                         'duration-300',
@@ -270,10 +261,7 @@ export function BudgetList({
                   <div className="text-right">
                     <span
                       className={cn(
-                        'text-[0.65rem]',
-                        'font-semibold',
-                        'uppercase',
-                        'tracking-[0.24em]',
+                        designTokens.typography.label,
                         'text-slate-500',
                         'transition-colors',
                         'duration-300',

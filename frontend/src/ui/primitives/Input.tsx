@@ -13,9 +13,9 @@ const inputVariants = cva(
         glass: [...designTokens.components.input.glass],
       },
       inputSize: {
-        sm: 'py-1.5 text-xs rounded-lg',
-        md: 'py-2.5 text-sm rounded-xl',
-        lg: 'py-3 text-base rounded-xl',
+        sm: designTokens.components.input.size.sm,
+        md: designTokens.components.input.size.md,
+        lg: designTokens.components.input.size.lg,
       },
     },
     defaultVariants: {

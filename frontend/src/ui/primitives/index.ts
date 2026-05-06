@@ -17,6 +17,8 @@ export type { GradientShellProps } from './GradientShell';
 export { GradientShell } from './GradientShell';
 export type { InputProps } from './Input';
 export { Input } from './Input';
+export type { SelectProps } from './Select';
+export { Select } from './Select';
 export type { MenuDropdownProps, MenuItemProps } from './MenuDropdown';
 export { MenuDropdown, MenuItem } from './MenuDropdown';
 export type { ModalProps } from './Modal';

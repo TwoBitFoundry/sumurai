@@ -333,6 +333,59 @@ function LoginForm() {
 
 ---
 
+### Select
+
+Form select field that shares the same visual control system as `Input` but keeps native select semantics explicit.
+
+**Use Cases:**
+- Category selection
+- Filter controls
+- Dropdowns that should match the shared form-control shell
+
+**Variants:**
+
+| Variant | Border Color | Focus Ring | Use Case |
+|---------|--------------|------------|----------|
+| `default` | Black/white subtle | Sky-400 | Standard dropdowns |
+| `invalid` | Red-300/600 | Red-400 | Validation errors |
+| `glass` | White/transparent | Sky-400 | Overlay forms |
+
+**Sizes:**
+
+| Size | Padding | Text Size | Border Radius |
+|------|---------|-----------|---------------|
+| `sm` | 1.5 | xs | lg |
+| `md` | 2.5 | sm | xl |
+| `lg` | 3 | base | xl |
+
+**Props:**
+```typescript
+interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'> {
+  variant?: 'default' | 'invalid' | 'glass'
+  selectSize?: 'sm' | 'md' | 'lg'
+}
+```
+
+**Example:**
+```tsx
+import { Select } from '@/ui/primitives'
+
+function CategorySelect() {
+  return (
+    <Select variant="glass" selectSize="md" value={category} onChange={handleChange}>
+      <option value="groceries">Groceries</option>
+    </Select>
+  )
+}
+```
+
+**Visual Characteristics:**
+- Shares the same control shell as `Input`
+- Preserves native select semantics
+- Stays aligned with the shared token system
+
+---
+
 ### Badge
 
 Small status indicator with semantic colors.

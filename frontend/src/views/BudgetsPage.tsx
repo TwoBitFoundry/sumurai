@@ -247,10 +247,7 @@ export default function BudgetsPage() {
           <div>
             <div
               className={cn(
-                'text-[0.65rem]',
-                'font-semibold',
-                'uppercase',
-                'tracking-[0.24em]',
+                designTokens.typography.label,
                 'text-slate-500',
                 'transition-colors',
                 'duration-500',
@@ -276,10 +273,7 @@ export default function BudgetsPage() {
           <div className="text-right">
             <div
               className={cn(
-                'text-[0.65rem]',
-                'font-semibold',
-                'uppercase',
-                'tracking-[0.24em]',
+                designTokens.typography.label,
                 'text-slate-500',
                 'transition-colors',
                 'duration-500',

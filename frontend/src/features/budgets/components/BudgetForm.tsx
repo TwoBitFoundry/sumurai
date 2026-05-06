@@ -1,6 +1,5 @@
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { Button, cn, Input } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import { Button, cn, Input, Select } from '@/ui/primitives';
 import { formatCategoryName } from '../../../utils/categories';
 
 export interface BudgetFormValue {
@@ -25,19 +24,13 @@ export function BudgetForm({
 }) {
   return (
     <div className={cn('flex', 'w-full', 'flex-wrap', 'items-center', 'gap-2')}>
-      <select
+      <Select
         data-testid="budget-category-select"
         value={value.category}
         onChange={(e) => onChange({ ...value, category: e.target.value })}
-        className={cn(
-          'min-w-[180px]',
-          'flex-1',
-          'rounded-full',
-          'py-2',
-          'text-sm',
-          designTokens.components.input.base,
-          designTokens.components.input.glass
-        )}
+        variant="glass"
+        selectSize="md"
+        className={cn('min-w-[180px]', 'flex-1')}
       >
         <option value="" disabled>
           Select category
@@ -48,7 +41,7 @@ export function BudgetForm({
             {usedCategories.has(cat) ? ' (used)' : ''}
           </option>
         ))}
-      </select>
+      </Select>
       <Input
         data-testid="budget-amount-input"
         type="number"

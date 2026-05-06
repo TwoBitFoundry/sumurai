@@ -54,6 +54,12 @@ describe('design tokens', () => {
     expect(designTokens.components.budgetProgress.track.join(' ')).toContain('rounded-full');
   });
 
+  it('exposes shared form control bundles for inputs and selects', () => {
+    expect(designTokens.components.input.default.join(' ')).toContain('#111a2f');
+    expect(designTokens.components.select.glass.join(' ')).toContain('bg-white/80');
+    expect(designTokens.components.select.base).toBe(designTokens.components.input.base);
+  });
+
   it('exposes account type dot colors and connect chrome tokens', () => {
     expect(designTokens.colors.accountTypeDot.checking).toBe('#38bdf8');
     expect(designTokens.components.connectButton.secondary.join(' ')).toContain('#e2e8f0');

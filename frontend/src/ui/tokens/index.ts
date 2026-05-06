@@ -70,6 +70,53 @@ const glassInsetDark =
   'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.5)]';
 const panelShadow = 'shadow-[0_32px_110px_-60px_rgba(15,23,42,0.75)]';
 const panelShadowDark = 'dark:shadow-[0_36px_120px_-62px_rgba(2,6,23,0.85)]';
+const fieldControlBase = [
+  'w-full',
+  'px-4',
+  'border',
+  'font-medium',
+  'shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)]',
+  'transition-all duration-200 ease-out',
+  'focus:outline-none',
+  'disabled:cursor-not-allowed disabled:opacity-60',
+];
+const fieldControlDefault = [
+  'bg-white text-slate-900',
+  'border-black/10',
+  'focus:ring-2 focus:ring-sky-400',
+  'focus:ring-offset-2 focus:ring-offset-white',
+  'dark:bg-[#111a2f]',
+  'dark:text-white',
+  'dark:border-white/12',
+  'dark:focus:ring-sky-400/80',
+  'dark:focus:ring-offset-[#0f172a]',
+];
+const fieldControlInvalid = [
+  'bg-white text-slate-900',
+  'border-red-300',
+  'focus:ring-2 focus:ring-red-400',
+  'focus:ring-offset-2 focus:ring-offset-white',
+  'dark:bg-[#111a2f]',
+  'dark:text-white',
+  'dark:border-red-600/80',
+  'dark:focus:ring-red-400/75',
+  'dark:focus:ring-offset-[#0f172a]',
+];
+const fieldControlGlass = [
+  'bg-white/80 text-slate-700',
+  'border-white/60',
+  'shadow-[0_18px_45px_-32px_rgba(15,23,42,0.5)]',
+  'focus:ring-2 focus:ring-sky-400/80',
+  'focus:ring-offset-2 focus:ring-offset-white',
+  'dark:bg-[#111a2f]/80 dark:text-slate-100',
+  'dark:border-white/12',
+  'dark:focus:ring-offset-[#0f172a]',
+];
+const fieldControlSizes = {
+  sm: 'py-1.5 text-xs rounded-lg',
+  md: 'py-2.5 text-sm rounded-xl',
+  lg: 'py-3 text-base rounded-xl',
+} as const;
 
 const gradientPrimitives = {
   appShellLight:
@@ -917,51 +964,18 @@ export const designTokens = {
       },
     },
     input: {
-      base: [
-        'w-full',
-        'px-4',
-        'border',
-        'font-medium',
-        'shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)]',
-        'transition-all duration-200 ease-out',
-        'focus:outline-none',
-        'disabled:cursor-not-allowed disabled:opacity-60',
-      ],
-      default: [
-        'bg-white text-slate-900',
-        'border-black/10',
-        'focus:ring-2 focus:ring-sky-400',
-        'focus:ring-offset-2 focus:ring-offset-white',
-        'dark:bg-[#111a2f] dark:text-white',
-        'dark:border-white/12',
-        'dark:focus:ring-sky-400/80',
-        'dark:focus:ring-offset-[#0f172a]',
-      ],
-      invalid: [
-        'bg-white text-slate-900',
-        'border-red-300',
-        'focus:ring-2 focus:ring-red-400',
-        'focus:ring-offset-2 focus:ring-offset-white',
-        'dark:bg-[#111a2f] dark:text-white',
-        'dark:border-red-600/80',
-        'dark:focus:ring-red-400/75',
-        'dark:focus:ring-offset-[#0f172a]',
-      ],
-      glass: [
-        'bg-white/80 text-slate-700',
-        'border-white/60',
-        'shadow-[0_18px_45px_-32px_rgba(15,23,42,0.5)]',
-        'focus:ring-2 focus:ring-sky-400/80',
-        'focus:ring-offset-2 focus:ring-offset-white',
-        'dark:bg-[#111a2f]/80 dark:text-slate-100',
-        'dark:border-white/12',
-        'dark:focus:ring-offset-[#0f172a]',
-      ],
-      size: {
-        sm: 'py-1.5 text-xs rounded-lg',
-        md: 'py-2.5 text-sm rounded-xl',
-        lg: 'py-3 text-base rounded-xl',
-      },
+      base: fieldControlBase,
+      default: fieldControlDefault,
+      invalid: fieldControlInvalid,
+      glass: fieldControlGlass,
+      size: fieldControlSizes,
+    },
+    select: {
+      base: fieldControlBase,
+      default: fieldControlDefault,
+      invalid: fieldControlInvalid,
+      glass: fieldControlGlass,
+      size: fieldControlSizes,
     },
     glassCard: {
       base: [
