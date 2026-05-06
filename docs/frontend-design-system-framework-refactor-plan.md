@@ -92,6 +92,19 @@ Acceptance criteria:
 - Raw hex, radius, spacing, typography, and chart values originate from generated tokens or approved primitive recipes.
 - `design:lint`, DTCG export, Tailwind export, token tests, and typecheck pass.
 
+Completion notes:
+
+- Split shared primitive recipes into [frontend/src/ui/primitives/tokenRecipes.ts](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/ui/primitives/tokenRecipes.ts) and moved onboarding and budget-local recipes into component or feature-local modules.
+- Wired [frontend/src/ui/tokens/index.ts](/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src/ui/tokens/index.ts) to the generated token contract for raw values while preserving the public `designTokens` facade.
+- Updated token tests to assert generated-token alignment and refreshed the EmptyState snapshot after the recipe split.
+
+TDD log:
+
+- Added and ran `frontend/tests/ui/tokens/designTokens.test.ts` against generated tokens and stable recipe roles.
+- Updated `frontend/tests/ui/primitives/__snapshots__/EmptyState.test.tsx.snap` after the shared empty-state recipe changed.
+- Ran `npm --prefix frontend test -- --runInBand frontend/tests/ui/tokens/designTokens.test.ts frontend/tests/scripts/designMdContract.test.ts`.
+- Ran `npm --prefix frontend run design:lint`, `npm --prefix frontend run design:export:dtcg`, `npm --prefix frontend run design:export:tailwind`, `npm --prefix frontend run design:drift`, `npm --prefix frontend run typecheck`, and `npm --prefix frontend test`.
+
 ## Phase 4: Primitive Layer Modernization
 
 - Keep CVA as the variant system.

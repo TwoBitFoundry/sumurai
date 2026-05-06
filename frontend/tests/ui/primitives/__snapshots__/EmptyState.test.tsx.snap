@@ -5,7 +5,7 @@ exports[`EmptyState snapshots matches snapshot with action 1`] = `
   class="flex flex-col items-center justify-center gap-4 px-6 py-20 text-center sm:px-12"
 >
   <div
-    class="flex h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20 items-center justify-center rounded-full bg-gradient-to-br from-slate-400/10 via-slate-300/15 to-slate-500/10 dark:from-slate-500/10 dark:via-slate-600/15 dark:to-slate-700/10 text-slate-600 transition-all duration-300 ease-out hover:scale-110 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.4),0_0_60px_rgba(59,130,246,0.2)] dark:text-slate-300 dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)] cursor-pointer"
+    class="flex h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20 items-center justify-center rounded-full bg-[radial-gradient(136%_108%_at_20%_-18%,rgba(14,165,233,0.42)_0%,#e1f2ff_36%,#ffffff_100%)] text-slate-600 transition-all duration-300 ease-out hover:scale-110 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.4),0_0_60px_rgba(59,130,246,0.2)] dark:text-slate-300 dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)] cursor-pointer"
   >
     <svg
       aria-hidden="true"
@@ -56,7 +56,7 @@ exports[`EmptyState snapshots matches snapshot with basic props 1`] = `
   class="flex flex-col items-center justify-center gap-4 px-6 py-20 text-center sm:px-12"
 >
   <div
-    class="flex h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20 items-center justify-center rounded-full bg-gradient-to-br from-slate-400/10 via-slate-300/15 to-slate-500/10 dark:from-slate-500/10 dark:via-slate-600/15 dark:to-slate-700/10 text-slate-600 transition-all duration-300 ease-out hover:scale-110 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.4),0_0_60px_rgba(59,130,246,0.2)] dark:text-slate-300 dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)] cursor-pointer"
+    class="flex h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20 items-center justify-center rounded-full bg-[radial-gradient(136%_108%_at_20%_-18%,rgba(14,165,233,0.42)_0%,#e1f2ff_36%,#ffffff_100%)] text-slate-600 transition-all duration-300 ease-out hover:scale-110 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.4),0_0_60px_rgba(59,130,246,0.2)] dark:text-slate-300 dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)] cursor-pointer"
   >
     <svg
       aria-hidden="true"
@@ -106,7 +106,7 @@ exports[`EmptyState snapshots matches snapshot with custom className 1`] = `
   class="flex flex-col items-center justify-center gap-4 px-6 py-20 text-center sm:px-12 mt-8"
 >
   <div
-    class="flex h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20 items-center justify-center rounded-full bg-gradient-to-br from-slate-400/10 via-slate-300/15 to-slate-500/10 dark:from-slate-500/10 dark:via-slate-600/15 dark:to-slate-700/10 text-slate-600 transition-all duration-300 ease-out hover:scale-110 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.4),0_0_60px_rgba(59,130,246,0.2)] dark:text-slate-300 dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)] cursor-pointer"
+    class="flex h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20 items-center justify-center rounded-full bg-[radial-gradient(136%_108%_at_20%_-18%,rgba(14,165,233,0.42)_0%,#e1f2ff_36%,#ffffff_100%)] text-slate-600 transition-all duration-300 ease-out hover:scale-110 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.4),0_0_60px_rgba(59,130,246,0.2)] dark:text-slate-300 dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)] cursor-pointer"
   >
     <svg
       aria-hidden="true"

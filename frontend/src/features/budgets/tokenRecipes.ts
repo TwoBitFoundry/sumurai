@@ -1,0 +1,90 @@
+export const budgetTokenRecipes = {
+  budgetCard: {
+    shell: [
+      'group relative overflow-hidden rounded-[1.75rem] border border-slate-200/70 bg-white/90 p-6',
+      'shadow-[0_32px_80px_-58px_rgba(15,23,42,0.58)] transition-all duration-300 hover:-translate-y-1',
+      'hover:shadow-[0_38px_110px_-62px_rgba(14,165,233,0.35)] dark:border-white/10 dark:bg-[#111a2f]/90',
+      'dark:shadow-[0_32px_90px_-60px_rgba(2,6,23,0.76)]',
+    ],
+  },
+  budgetProgress: {
+    track: [
+      'relative',
+      'h-2.5',
+      'overflow-hidden',
+      'rounded-full',
+      'bg-slate-200/70',
+      'shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)]',
+      'transition-colors',
+      'duration-300',
+      'dark:bg-slate-700/60',
+      'dark:shadow-[inset_0_1px_2px_rgba(2,6,23,0.35)]',
+    ],
+    fill: {
+      base: ['absolute', 'inset-y-0', 'left-0', 'rounded-full', 'transition-all', 'duration-500'],
+      within: [
+        'bg-gradient-to-r',
+        'from-sky-400',
+        'via-cyan-400',
+        'to-violet-500',
+        'shadow-[0_0_12px_rgba(14,165,233,0.35)]',
+      ],
+      over: [
+        'bg-gradient-to-r',
+        'from-rose-400',
+        'via-rose-500',
+        'to-rose-600',
+        'shadow-[0_0_12px_rgba(244,63,94,0.35)]',
+      ],
+    },
+    caption: {
+      row: [
+        'flex',
+        'items-center',
+        'justify-between',
+        'text-[0.75rem]',
+        'text-slate-500',
+        'transition-colors',
+        'duration-300',
+        'dark:text-slate-400',
+      ],
+      percent: ['font-medium', 'tracking-wide'],
+      summaryWithin: ['font-semibold', 'text-slate-600', 'dark:text-slate-300'],
+      summaryOver: ['font-semibold', 'text-red-600', 'dark:text-red-300'],
+    },
+  },
+  actions: {
+    budgetIconGhost: [
+      'inline-flex items-center justify-center rounded-full border border-white/60 bg-white/80 p-2 text-slate-600',
+      'shadow-[0_14px_38px_-28px_rgba(15,23,42,0.55)] transition-transform duration-200 hover:-translate-y-[2px] hover:bg-white',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+      'dark:border-white/12 dark:bg-[#1e293b]/70 dark:text-slate-200 dark:hover:bg-[#1e293b]/80 dark:focus-visible:ring-offset-[#0f172a]',
+    ],
+    budgetSaveIcon: [
+      'inline-flex items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400 p-2 text-white',
+      'shadow-[0_18px_45px_-28px_rgba(16,185,129,0.6)] transition-transform duration-200 hover:-translate-y-[2px]',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+      'dark:focus-visible:ring-offset-[#0f172a]',
+    ],
+    budgetDeleteIcon: [
+      'inline-flex items-center justify-center rounded-full bg-red-500/15 p-2 text-red-600',
+      'shadow-[0_16px_38px_-26px_rgba(248,113,113,0.55)] transition-transform duration-200 hover:-translate-y-[2px] hover:bg-red-500/25',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+      'dark:bg-red-500/20 dark:text-red-300 dark:hover:bg-red-500/25 dark:focus-visible:ring-offset-[#0f172a]',
+    ],
+    paginationRound: [
+      'inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/50 bg-white/70 text-slate-600',
+      'shadow-[0_14px_38px_-28px_rgba(15,23,42,0.55)] transition-all duration-200 hover:-translate-y-[2px] hover:bg-white/90',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+      'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 dark:border-white/10 dark:bg-[#1e293b]/70 dark:text-slate-200',
+      'dark:hover:bg-[#1e293b]/85 dark:focus-visible:ring-offset-[#0f172a]',
+    ],
+    accountsToolbar: [
+      'inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/85 px-5 py-2 text-sm font-semibold text-[#0f172a]',
+      'shadow-[0_18px_48px_-32px_rgba(15,23,42,0.45)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[#93c5fd] hover:text-[#0f172a]',
+      'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+      'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none',
+      'dark:border-[#334155] dark:bg-[#1e293b]/90 dark:text-[#cbd5e1] dark:hover:border-[#38bdf8] dark:hover:text-white dark:focus-visible:ring-offset-slate-900',
+    ],
+  },
+} as const;

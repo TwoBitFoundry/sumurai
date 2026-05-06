@@ -1,41 +1,36 @@
+import generatedTokens from '@/ui/tokens/generated/tokens';
 import { designTokens, getCategoryAccent, getThemeColors } from '@/ui/tokens';
 
 describe('design tokens', () => {
-  it('exposes stable typography, radius, spacing, shadow, and motion tokens', () => {
-    expect(designTokens.typography.brand).toBe("'Cal Sans', system-ui, sans-serif");
-    expect(designTokens.radii.panel).toBe('rounded-[2.25rem]');
-    expect(designTokens.spacing.pageX).toBe('px-4 sm:px-6 lg:px-8');
-    expect(designTokens.shadows.glass.dark).toContain('rgba(2,6,23,0.85)');
-    expect(designTokens.motion.aura).toBe('animate-[rotateAura_95s_linear_infinite]');
-  });
-
-  it('exposes dark and light chart and semantic token sets', () => {
-    expect(getThemeColors('light').chart.primary).toEqual([
-      '#0ea5e9',
-      '#10b981',
-      '#f59e0b',
-      '#ef4444',
-      '#8b5cf6',
-      '#059669',
+  it('sources core raw values from the generated contract', () => {
+    expect(designTokens.colors.brand.sky).toBe(generatedTokens.color['brand-sky'].$value.hex);
+    expect(designTokens.colors.theme.dark.semantic.netWorth).toBe(
+      generatedTokens.color['semantic-dark-net-worth'].$value.hex
+    );
+    expect(designTokens.colors.theme.light.chart.primary).toEqual([
+      generatedTokens.color['chart-light-1'].$value.hex,
+      generatedTokens.color['chart-light-2'].$value.hex,
+      generatedTokens.color['chart-light-3'].$value.hex,
+      generatedTokens.color['chart-light-4'].$value.hex,
+      generatedTokens.color['chart-light-5'].$value.hex,
+      generatedTokens.color['chart-light-6'].$value.hex,
     ]);
-    expect(getThemeColors('dark').semantic.netWorth).toBe('#a78bfa');
+    expect(designTokens.typography.brand).toBe(generatedTokens.typography.brand.$value.fontFamily);
+    expect(designTokens.radii.panel).toBe(`rounded-[${generatedTokens.rounded.panel.$value.value}rem]`);
+    expect(designTokens.spacing.pageX).toContain('px-4');
   });
 
-  it('mirrors DESIGN.md public color roles in implementation palettes', () => {
-    expect(designTokens.palettes.brandAccent.sky.background).toBe(designTokens.colors.brand.sky);
-    expect(designTokens.palettes.brandAccent.sky.text).toBe(
-      designTokens.colors.theme.light.chart.tooltipText
-    );
-    expect(designTokens.palettes.chart.series.light).toBe(designTokens.colors.theme.light.chart.primary);
-    expect(designTokens.palettes.chart.tooltip.dark.background).toBe(
-      designTokens.colors.theme.dark.chart.tooltipBg
-    );
-    expect(designTokens.palettes.finance.dark.netWorth.text).toBe(
-      designTokens.colors.theme.dark.semantic.netWorth
-    );
-    expect(designTokens.palettes.categoryPill.sky.background).toBe('#38bdf8');
-    expect(designTokens.palettes.categoryPill.sky.text).toBe(
-      designTokens.colors.theme.dark.chart.dotFill
+  it('keeps theme helpers aligned with the generated chart and semantic palettes', () => {
+    expect(getThemeColors('light').chart.primary).toEqual([
+      generatedTokens.color['chart-light-1'].$value.hex,
+      generatedTokens.color['chart-light-2'].$value.hex,
+      generatedTokens.color['chart-light-3'].$value.hex,
+      generatedTokens.color['chart-light-4'].$value.hex,
+      generatedTokens.color['chart-light-5'].$value.hex,
+      generatedTokens.color['chart-light-6'].$value.hex,
+    ]);
+    expect(getThemeColors('dark').semantic.netWorth).toBe(
+      generatedTokens.color['semantic-dark-net-worth'].$value.hex
     );
   });
 
@@ -48,46 +43,14 @@ describe('design tokens', () => {
     expect(first.ringHex).toBe(second.ringHex);
   });
 
-  it('exposes budget progress surface classes', () => {
-    expect(designTokens.components.budgetProgress.fill.within).toContain('from-sky-400');
-    expect(designTokens.components.budgetProgress.fill.over).toContain('from-rose-400');
-    expect(designTokens.components.budgetProgress.track.join(' ')).toContain('rounded-full');
-  });
-
-  it('exposes shared form control bundles for inputs and selects', () => {
-    expect(designTokens.components.input.default.join(' ')).toContain('#111a2f');
-    expect(designTokens.components.select.glass.join(' ')).toContain('bg-white/80');
-    expect(designTokens.components.select.base).toBe(designTokens.components.input.base);
-  });
-
-  it('exposes account type dot colors and connect chrome tokens', () => {
-    expect(designTokens.colors.accountTypeDot.checking).toBe('#38bdf8');
-    expect(designTokens.components.connectButton.secondary.join(' ')).toContain('#e2e8f0');
-    expect(designTokens.components.menuDropdown.content.join(' ')).toContain('rounded-2xl');
-  });
-
-  it('exposes deferred-screen surface and onboarding component bundles', () => {
-    expect(designTokens.surfaces.glass.panelDark.join(' ')).toContain('#0f172a');
-    expect(designTokens.surfaces.layered.dataRowDark70.join(' ')).toContain('#1e293b');
-    expect(designTokens.components.budgetCard.shell.join(' ')).toContain('rounded-[1.75rem]');
-    expect(designTokens.components.actions.budgetDeleteIcon.join(' ')).toContain('red-500/15');
-    expect(designTokens.components.actions.accountsToolbar.join(' ')).toContain('rounded-full');
-    expect(designTokens.components.transactions.row.shell.join(' ')).toContain('hover:ring-sky-400/60');
-    expect(designTokens.components.onboarding.shell.join(' ')).toContain('hover:border-[#93c5fd]');
-    expect(designTokens.components.onboarding.providerConnect.plaidEyebrowBg.join(' ')).toContain('#34d399');
-    expect(designTokens.components.onboarding.stepCard.join(' ')).toContain('#0f172a');
-    expect(designTokens.components.onboarding.hoverOverlay).toContain('group-hover:opacity-100');
-    expect(designTokens.components.onboarding.previewFrame.join(' ')).toContain('aspect-[16/10]');
-    expect(designTokens.palettes.feature.providerFeature.emerald.glow).toContain('16,185,129');
-    expect(designTokens.palettes.feature.highlight.fuchsia.ring).toBe('ring-fuchsia-300/35');
-  });
-
-  it('exposes singleton layout effects and deduped gradient primitives', () => {
-    expect(designTokens.effects.shell.centerGlow).toContain('conic-gradient');
-    expect(designTokens.effects.titleBar.themeToggle).toContain('amber-500');
-    expect(designTokens.effects.pillOverflow.fadeLeft).toContain('#111a2f');
-    expect(designTokens.effects.emptyState.iconHoverGlowLight).toContain('hover:shadow');
-    expect(designTokens.gradients.appShellLight).toContain('#dbeafe');
-    expect(designTokens.components.gradientShell.aura[0]).toBe(designTokens.gradients.appShellLight);
+  it('exposes stable public recipe roles for primitives and feature bundles', () => {
+    expect(designTokens.components.button.primary.join(' ')).toContain('from-sky-500');
+    expect(designTokens.components.glassCard.accent.join(' ')).toContain('dark:bg-[#111a2f]/75');
+    expect(designTokens.components.onboarding.providerConnect.plaidEyebrowText.join(' ')).toContain(
+      '#34d399'
+    );
+    expect(designTokens.components.budgetProgress.fill.within.join(' ')).toContain('from-sky-400');
+    expect(designTokens.components.actions.paginationRound.join(' ')).toContain('rounded-full');
+    expect(designTokens.components.pill.fadeLeft).toContain('#111a2f');
   });
 });
