@@ -56,7 +56,7 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
                     'flex-shrink-0'
                   )}
                   style={{
-                    backgroundImage: `linear-gradient(90deg, ${designTokens.colors.brand.cyan}, ${designTokens.colors.brand.emerald})`,
+                    backgroundImage: `linear-gradient(90deg, ${designTokens.palettes.brandAccent.cyan.background}, ${designTokens.palettes.brandAccent.emerald.background})`,
                   }}
                 >
                   {index + 1}

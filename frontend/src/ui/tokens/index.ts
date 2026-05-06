@@ -43,6 +43,21 @@ export type HeroAccentTheme = {
   glowRgb: string;
 };
 
+const brandColors = {
+  sky: '#0ea5e9',
+  skyDark: '#38bdf8',
+  emerald: '#10b981',
+  emeraldDark: '#34d399',
+  amber: '#f59e0b',
+  amberDark: '#fbbf24',
+  rose: '#ef4444',
+  roseDark: '#f87171',
+  violet: '#8b5cf6',
+  violetDark: '#a78bfa',
+  cyan: '#06b6d4',
+  cyanDark: '#22d3ee',
+} as const;
+
 const chartLight = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#059669'];
 const chartDark = ['#38bdf8', '#34d399', '#fbbf24', '#f87171', '#a78bfa', '#10b981'];
 const brandFont = "'Cal Sans', system-ui, sans-serif";
@@ -119,6 +134,26 @@ const semanticDark = {
   loan: '#fbbf24',
   netWorth: '#a78bfa',
 };
+
+const chartThemeLight = {
+  primary: chartLight,
+  grid: '#e2e8f0',
+  axis: '#64748b',
+  tooltipBg: '#ffffff',
+  tooltipBorder: '#e2e8f0',
+  tooltipText: '#0f172a',
+  dotFill: '#ffffff',
+} as const;
+
+const chartThemeDark = {
+  primary: chartDark,
+  grid: '#334155',
+  axis: '#94a3b8',
+  tooltipBg: '#1e293b',
+  tooltipBorder: '#475569',
+  tooltipText: '#f8fafc',
+  dotFill: '#0b1220',
+} as const;
 
 const pillTypography = 'text-[0.6rem] font-bold uppercase tracking-[0.18em]';
 
@@ -475,6 +510,69 @@ const featurePalettes = {
   },
 } as const;
 
+const brandAccentPalettes = {
+  sky: { background: brandColors.sky, text: chartThemeLight.tooltipText },
+  skyDark: { background: brandColors.skyDark, text: chartThemeDark.dotFill },
+  emerald: { background: brandColors.emerald, text: chartThemeLight.tooltipText },
+  emeraldDark: { background: brandColors.emeraldDark, text: chartThemeDark.dotFill },
+  amber: { background: brandColors.amber, text: chartThemeLight.tooltipText },
+  amberDark: { background: brandColors.amberDark, text: chartThemeDark.dotFill },
+  rose: { background: brandColors.rose, text: chartThemeLight.tooltipText },
+  roseDark: { background: brandColors.roseDark, text: chartThemeDark.dotFill },
+  violet: { background: brandColors.violet },
+  violetDark: { background: brandColors.violetDark, text: chartThemeDark.dotFill },
+  cyan: { background: brandColors.cyan, text: chartThemeLight.tooltipText },
+  cyanDark: { background: brandColors.cyanDark, text: chartThemeDark.dotFill },
+} as const;
+
+const chartPalettes = {
+  series: {
+    light: chartLight,
+    dark: chartDark,
+  },
+  tooltip: {
+    light: {
+      background: chartThemeLight.tooltipBg,
+      text: chartThemeLight.tooltipText,
+      border: chartThemeLight.tooltipBorder,
+    },
+    dark: {
+      background: chartThemeDark.tooltipBg,
+      text: chartThemeDark.tooltipText,
+      border: chartThemeDark.tooltipBorder,
+    },
+  },
+  axis: {
+    light: chartThemeLight.axis,
+    dark: chartThemeDark.axis,
+  },
+  dot: {
+    light: chartThemeLight.dotFill,
+    dark: chartThemeDark.dotFill,
+  },
+} as const;
+
+const financePalettes = {
+  light: {
+    cash: { text: semanticLight.cash },
+    investments: { text: semanticLight.investments },
+    credit: { text: semanticLight.credit },
+    loan: { text: semanticLight.loan },
+    netWorth: { text: semanticLight.netWorth },
+  },
+  dark: {
+    cash: { text: semanticDark.cash },
+    investments: { text: semanticDark.investments },
+    credit: { text: semanticDark.credit },
+    loan: { text: semanticDark.loan },
+    netWorth: { text: semanticDark.netWorth },
+  },
+} as const;
+
+const categoryPillPalettes = Object.fromEntries(
+  categoryThemes.map((theme) => [theme.key, { background: theme.ringHex, text: chartThemeDark.dotFill }])
+) as Record<string, { background: string; text: string }>;
+
 export const designTokens = {
   typography: {
     brand: brandFont,
@@ -527,43 +625,14 @@ export const designTokens = {
     focus: focusSurfaces,
   },
   colors: {
-    brand: {
-      sky: '#0ea5e9',
-      skyDark: '#38bdf8',
-      emerald: '#10b981',
-      emeraldDark: '#34d399',
-      amber: '#f59e0b',
-      amberDark: '#fbbf24',
-      rose: '#ef4444',
-      roseDark: '#f87171',
-      violet: '#8b5cf6',
-      violetDark: '#a78bfa',
-      cyan: '#06b6d4',
-      cyanDark: '#22d3ee',
-    },
+    brand: brandColors,
     theme: {
       light: {
-        chart: {
-          primary: chartLight,
-          grid: '#e2e8f0',
-          axis: '#64748b',
-          tooltipBg: '#ffffff',
-          tooltipBorder: '#e2e8f0',
-          tooltipText: '#0f172a',
-          dotFill: '#ffffff',
-        },
+        chart: chartThemeLight,
         semantic: semanticLight,
       },
       dark: {
-        chart: {
-          primary: chartDark,
-          grid: '#334155',
-          axis: '#94a3b8',
-          tooltipBg: '#1e293b',
-          tooltipBorder: '#475569',
-          tooltipText: '#f8fafc',
-          dotFill: '#0b1220',
-        },
+        chart: chartThemeDark,
         semantic: semanticDark,
       },
     },
@@ -577,6 +646,10 @@ export const designTokens = {
     },
   },
   palettes: {
+    brandAccent: brandAccentPalettes,
+    chart: chartPalettes,
+    finance: financePalettes,
+    categoryPill: categoryPillPalettes,
     feature: featurePalettes,
   },
   components: {

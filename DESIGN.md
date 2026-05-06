@@ -258,6 +258,131 @@ components:
   onboarding-body-muted-dark:
     typography: "{typography.budget-progress-caption}"
     textColor: "#cbd5e1"
+  brand-accent-sky:
+    backgroundColor: "{colors.brand-sky}"
+    textColor: "{colors.chart-light-tooltip-text}"
+  brand-accent-sky-dark:
+    backgroundColor: "{colors.brand-sky-dark}"
+    textColor: "{colors.chart-dark-dot-fill}"
+  brand-accent-emerald:
+    backgroundColor: "{colors.brand-emerald}"
+    textColor: "{colors.chart-light-tooltip-text}"
+  brand-accent-emerald-dark:
+    backgroundColor: "{colors.brand-emerald-dark}"
+    textColor: "{colors.chart-dark-dot-fill}"
+  brand-accent-amber:
+    backgroundColor: "{colors.brand-amber}"
+    textColor: "{colors.chart-light-tooltip-text}"
+  brand-accent-amber-dark:
+    backgroundColor: "{colors.brand-amber-dark}"
+    textColor: "{colors.chart-dark-dot-fill}"
+  brand-accent-rose:
+    backgroundColor: "{colors.brand-rose}"
+    textColor: "{colors.chart-light-tooltip-text}"
+  brand-accent-rose-dark:
+    backgroundColor: "{colors.brand-rose-dark}"
+    textColor: "{colors.chart-dark-dot-fill}"
+  brand-accent-violet:
+    backgroundColor: "{colors.brand-violet}"
+  brand-accent-violet-dark:
+    backgroundColor: "{colors.brand-violet-dark}"
+    textColor: "{colors.chart-dark-dot-fill}"
+  brand-accent-cyan:
+    backgroundColor: "{colors.brand-cyan}"
+    textColor: "{colors.chart-light-tooltip-text}"
+  brand-accent-cyan-dark:
+    backgroundColor: "{colors.brand-cyan-dark}"
+    textColor: "{colors.chart-dark-dot-fill}"
+  chart-series-light-1:
+    backgroundColor: "{colors.chart-light-1}"
+  chart-series-light-2:
+    backgroundColor: "{colors.chart-light-2}"
+  chart-series-light-3:
+    backgroundColor: "{colors.chart-light-3}"
+  chart-series-light-4:
+    backgroundColor: "{colors.chart-light-4}"
+  chart-series-light-5:
+    backgroundColor: "{colors.chart-light-5}"
+  chart-series-light-6:
+    backgroundColor: "{colors.chart-light-6}"
+  chart-series-dark-1:
+    backgroundColor: "{colors.chart-dark-1}"
+  chart-series-dark-2:
+    backgroundColor: "{colors.chart-dark-2}"
+  chart-series-dark-3:
+    backgroundColor: "{colors.chart-dark-3}"
+  chart-series-dark-4:
+    backgroundColor: "{colors.chart-dark-4}"
+  chart-series-dark-5:
+    backgroundColor: "{colors.chart-dark-5}"
+  chart-series-dark-6:
+    backgroundColor: "{colors.chart-dark-6}"
+  chart-tooltip-light:
+    backgroundColor: "{colors.chart-light-tooltip-bg}"
+    textColor: "{colors.chart-light-tooltip-text}"
+  chart-tooltip-dark:
+    backgroundColor: "{colors.chart-dark-tooltip-bg}"
+    textColor: "{colors.chart-dark-tooltip-text}"
+  chart-tooltip-border-light:
+    backgroundColor: "{colors.chart-light-tooltip-border}"
+  chart-tooltip-border-dark:
+    backgroundColor: "{colors.chart-dark-tooltip-border}"
+  chart-axis-dark:
+    textColor: "{colors.chart-dark-axis}"
+  chart-dot-light:
+    backgroundColor: "{colors.chart-light-dot-fill}"
+  chart-dot-dark:
+    backgroundColor: "{colors.chart-dark-dot-fill}"
+  finance-cash-light:
+    textColor: "{colors.semantic-light-cash}"
+  finance-investments-light:
+    textColor: "{colors.semantic-light-investments}"
+  finance-credit-light:
+    textColor: "{colors.semantic-light-credit}"
+  finance-loan-light:
+    textColor: "{colors.semantic-light-loan}"
+  finance-net-worth-light:
+    textColor: "{colors.semantic-light-net-worth}"
+  finance-cash-dark:
+    textColor: "{colors.semantic-dark-cash}"
+  finance-investments-dark:
+    textColor: "{colors.semantic-dark-investments}"
+  finance-credit-dark:
+    textColor: "{colors.semantic-dark-credit}"
+  finance-loan-dark:
+    textColor: "{colors.semantic-dark-loan}"
+  finance-net-worth-dark:
+    textColor: "{colors.semantic-dark-net-worth}"
+  category-pill-sky:
+    backgroundColor: "{colors.category-sky}"
+    textColor: "{colors.chart-dark-dot-fill}"
+  category-pill-emerald:
+    backgroundColor: "{colors.category-emerald}"
+    textColor: "{colors.chart-dark-dot-fill}"
+  category-pill-cyan:
+    backgroundColor: "{colors.category-cyan}"
+    textColor: "{colors.chart-dark-dot-fill}"
+  category-pill-violet:
+    backgroundColor: "{colors.category-violet}"
+    textColor: "{colors.chart-dark-dot-fill}"
+  category-pill-amber:
+    backgroundColor: "{colors.category-amber}"
+    textColor: "{colors.chart-dark-dot-fill}"
+  category-pill-rose:
+    backgroundColor: "{colors.category-rose}"
+    textColor: "{colors.chart-dark-dot-fill}"
+  category-pill-indigo:
+    backgroundColor: "{colors.category-indigo}"
+    textColor: "{colors.chart-dark-dot-fill}"
+  category-pill-fuchsia:
+    backgroundColor: "{colors.category-fuchsia}"
+    textColor: "{colors.chart-dark-dot-fill}"
+  category-pill-teal:
+    backgroundColor: "{colors.category-teal}"
+    textColor: "{colors.chart-dark-dot-fill}"
+  category-pill-lime:
+    backgroundColor: "{colors.category-lime}"
+    textColor: "{colors.chart-dark-dot-fill}"
 ---
 
 ## Overview

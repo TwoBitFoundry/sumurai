@@ -21,6 +21,24 @@ describe('design tokens', () => {
     expect(getThemeColors('dark').semantic.netWorth).toBe('#a78bfa');
   });
 
+  it('mirrors DESIGN.md public color roles in implementation palettes', () => {
+    expect(designTokens.palettes.brandAccent.sky.background).toBe(designTokens.colors.brand.sky);
+    expect(designTokens.palettes.brandAccent.sky.text).toBe(
+      designTokens.colors.theme.light.chart.tooltipText
+    );
+    expect(designTokens.palettes.chart.series.light).toBe(designTokens.colors.theme.light.chart.primary);
+    expect(designTokens.palettes.chart.tooltip.dark.background).toBe(
+      designTokens.colors.theme.dark.chart.tooltipBg
+    );
+    expect(designTokens.palettes.finance.dark.netWorth.text).toBe(
+      designTokens.colors.theme.dark.semantic.netWorth
+    );
+    expect(designTokens.palettes.categoryPill.sky.background).toBe('#38bdf8');
+    expect(designTokens.palettes.categoryPill.sky.text).toBe(
+      designTokens.colors.theme.dark.chart.dotFill
+    );
+  });
+
   it('keeps category accent assignment stable', () => {
     const first = getCategoryAccent('Groceries');
     const second = getCategoryAccent('groceries');
