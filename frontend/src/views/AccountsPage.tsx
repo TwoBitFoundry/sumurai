@@ -168,8 +168,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           'shadow-[0_32px_110px_-60px_rgba(15,23,42,0.75)]',
           'backdrop-blur-[28px]',
           'dark:border-white/12',
-          ...designTokens.surfaces.panelGlassDark55,
-          ...designTokens.surfaces.panelGlassShadow
+          ...designTokens.surfaces.glass.panelDark,
+          ...designTokens.surfaces.glass.panelShadow
         )}
       >
         <div className={cn('text-sm', 'font-medium', 'text-slate-600', 'dark:text-slate-300')}>
@@ -221,14 +221,14 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           'shadow-[0_32px_110px_-60px_rgba(15,23,42,0.75)]',
           'backdrop-blur-[28px]',
           'dark:border-white/12',
-          ...designTokens.surfaces.panelGlassDark55,
-          ...designTokens.surfaces.panelGlassShadow
+          ...designTokens.surfaces.glass.panelDark,
+          ...designTokens.surfaces.glass.panelShadow
         )}
       >
         <div className={cn('relative', 'z-10', 'flex', 'flex-col', 'gap-8')}>
           <div className={cn('space-y-3', 'text-center')}>
             <span
-              className={cn(designTokens.surfaces.eyebrowChip)}
+              className={cn(designTokens.surfaces.layered.eyebrowChip)}
             >
               Select Provider
             </span>
@@ -282,10 +282,10 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
                     'disabled:cursor-not-allowed',
                     'disabled:opacity-75',
                     'dark:border-white/10',
-                    ...designTokens.surfaces.layeredCard85,
+                    ...designTokens.surfaces.layered.card85,
                     'dark:hover:border-sky-400/40',
                     'dark:hover:shadow-[0_28px_90px_-60px_rgba(2,6,23,0.7)]',
-                    ...designTokens.surfaces.focusRingOffsetDarkVisible
+                    ...designTokens.surfaces.focus.visibleDarkOffset
                   )}
                 >
                   <div className={cn('flex', 'items-center', 'justify-between')}>
@@ -395,7 +395,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     ? `Refreshed ${formatAbsoluteTime(summary.latestSync)}`
     : syncFooter;
 
-  const syncButtonClasses = cn(designTokens.components.accountsToolbarButton);
+  const syncButtonClasses = cn(designTokens.components.actions.accountsToolbar);
 
   const pendingInstitutions = Math.max(0, summary.institutions - summary.connectedInstitutions);
 

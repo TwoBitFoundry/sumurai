@@ -25,48 +25,26 @@ const welcomeFeatures: WelcomeFeature[] = [
     icon: LayoutDashboard,
     title: 'Dashboard',
     copy: 'Gain real insights into your finances, all in one place.',
-    palette: {
-      gradient: 'from-sky-400/55 via-sky-500/25 to-sky-500/5',
-      ring: 'ring-sky-300/35',
-      iconLight: 'text-sky-700',
-      iconDark: 'text-sky-100',
-      glow: 'shadow-[0_16px_42px_-25px_rgba(14,165,233,0.55)]',
-    },
+    palette: designTokens.palettes.feature.welcome.sky,
   },
   {
     icon: ReceiptText,
     title: 'Transactions',
     copy: 'Track your spending line by line by account.',
-    palette: {
-      gradient: 'from-amber-400/55 via-amber-500/25 to-amber-500/5',
-      ring: 'ring-amber-300/35',
-      iconLight: 'text-amber-700',
-      iconDark: 'text-amber-100',
-      glow: 'shadow-[0_16px_42px_-25px_rgba(245,158,11,0.55)]',
-    },
+    palette: designTokens.palettes.feature.welcome.amber,
   },
   {
     icon: Target,
     title: 'Budgets',
     copy: 'Set goals for your spending habits, and stick to them.',
-    palette: {
-      gradient: 'from-purple-400/55 via-purple-500/25 to-purple-500/5',
-      ring: 'ring-purple-300/35',
-      iconLight: 'text-purple-700',
-      iconDark: 'text-purple-100',
-      glow: 'shadow-[0_16px_42px_-25px_rgba(168,85,247,0.55)]',
-    },
+    palette: designTokens.palettes.feature.welcome.purple,
   },
 ];
 
 function FeatureCard({ icon: Icon, title, copy, palette }: WelcomeFeature) {
   return (
     <div className={cn(designTokens.components.onboarding.stepCard)}>
-      <div
-        className={cn(
-          'pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20'
-        )}
-      />
+      <div className={cn(designTokens.components.onboarding.hoverOverlay)} />
       <span
         className={cn(
           designTokens.components.onboarding.iconWell,
@@ -77,12 +55,7 @@ function FeatureCard({ icon: Icon, title, copy, palette }: WelcomeFeature) {
         aria-hidden="true"
       >
         <span className={cn('absolute inset-0 bg-gradient-to-br', palette.gradient)} />
-        <span
-          className={cn(
-            'absolute inset-[20%] rounded-full bg-slate-300/30 opacity-40 blur-[6px]',
-            'dark:bg-black/20'
-          )}
-        />
+        <span className={cn(designTokens.components.onboarding.iconGlow)} />
         <Icon
           className={cn('relative h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)}
           strokeWidth={1.7}

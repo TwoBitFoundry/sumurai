@@ -39,11 +39,7 @@ function FeatureCard({
 }: ConnectAccountProviderContent['features'][number]) {
   return (
     <div className={cn(designTokens.components.onboarding.stepCard)}>
-      <div
-        className={cn(
-          'pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20'
-        )}
-      />
+      <div className={cn(designTokens.components.onboarding.hoverOverlay)} />
       <span
         className={cn(
           designTokens.components.onboarding.iconWell,
@@ -54,12 +50,7 @@ function FeatureCard({
         aria-hidden="true"
       >
         <span className={cn('absolute inset-0 bg-gradient-to-br', palette.gradient)} />
-        <span
-          className={cn(
-            'absolute inset-[20%] rounded-full bg-slate-300/30 opacity-40 blur-[6px]',
-            'dark:bg-black/20'
-          )}
-        />
+        <span className={cn(designTokens.components.onboarding.iconGlow)} />
         <Icon className={cn('relative h-5 w-5', palette.icon)} strokeWidth={1.7} />
       </span>
       <h4 className={cn(designTokens.components.onboarding.titleStrong)}>{title}</h4>
@@ -75,11 +66,7 @@ function HighlightCard({
 }: ConnectAccountProviderContent['highlights'][number]) {
   return (
     <div className={cn(designTokens.components.onboarding.providerRow)}>
-      <div
-        className={cn(
-          'pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20'
-        )}
-      />
+      <div className={cn(designTokens.components.onboarding.providerHoverOverlay)} />
       <span
         className={cn(
           designTokens.components.onboarding.iconWellLarge,
@@ -90,12 +77,7 @@ function HighlightCard({
         aria-hidden="true"
       >
         <span className={cn('absolute inset-0 bg-gradient-to-br', palette.gradient)} />
-        <span
-          className={cn(
-            'absolute inset-[18%] rounded-full bg-slate-300/30 opacity-50 blur-[6px]',
-            'dark:bg-black/20'
-          )}
-        />
+        <span className={cn(designTokens.components.onboarding.providerIconGlow)} />
         <Icon
           className={cn('relative h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)}
           strokeWidth={1.7}

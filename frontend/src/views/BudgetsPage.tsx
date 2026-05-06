@@ -10,7 +10,7 @@ import {
   Target,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { cn, EmptyState } from '@/ui/primitives';
+import { Button, cn, EmptyState } from '@/ui/primitives';
 import { designTokens } from '@/ui/tokens';
 import Card from '../components/ui/Card';
 import HeroStatCard, { type HeroPill } from '../components/widgets/HeroStatCard';
@@ -44,15 +44,10 @@ export default function BudgetsPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<BudgetFormValue>({ category: '', amount: '' });
-  // removed per standardized HeroStatCard; fades handled internally
 
   useEffect(() => {
     void load();
   }, [load]);
-
-  // no local scroll fade handling needed here
-
-  // HeroStatCard internally manages its own horizontal fade for pills
 
   const startAdd = () => {
     setIsAdding(true);
@@ -149,29 +144,15 @@ export default function BudgetsPage() {
       : `${utilizationPercent.toFixed(0)}%`;
   const utilizationSuffix = utilizationPercent > 100 ? 'over budget' : 'of budget';
   const getUtilizationZone = (percent: number) => {
-    if (percent <= 80)
-      return {
-        label: 'Healthy',
-        color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-      };
-    if (percent <= 100)
-      return {
-        label: 'On Track',
-        color: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
-      };
-    if (percent <= 150)
-      return {
-        label: 'Overextended',
-        color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-      };
-    return {
-      label: 'Critical',
-      color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-    };
+    if (percent <= 80) return 'Healthy';
+    if (percent <= 100) return 'On Track';
+    if (percent <= 150) return 'Overextended';
+    return 'Critical';
   };
   const zone = getUtilizationZone(utilizationPercent);
   const budgetsLoading = isLoading || transactionsLoading;
   const hasBudgets = computedBudgets.length > 0;
+  const budgetProgress = designTokens.components.budgetProgress;
 
   const heroStats = (
     <div className="space-y-3">
@@ -192,14 +173,14 @@ export default function BudgetsPage() {
           suffix={utilizationSuffix}
           pills={[
             {
-              label: zone.label,
+              label: zone,
               type: 'semantic',
               tone:
-                zone.label === 'Healthy'
+                zone === 'Healthy'
                   ? 'success'
-                  : zone.label === 'On Track'
+                  : zone === 'On Track'
                     ? 'info'
-                    : zone.label === 'Overextended'
+                    : zone === 'Overextended'
                       ? 'warning'
                       : 'danger',
             },
@@ -239,7 +220,7 @@ export default function BudgetsPage() {
           'hover:-translate-y-[2px]',
           'hover:border-slate-300',
           'dark:border-slate-700',
-          ...designTokens.surfaces.layeredPanel70,
+          ...designTokens.surfaces.layered.panel70,
           'dark:text-slate-200',
           'dark:hover:border-slate-600'
         )}
@@ -315,50 +296,27 @@ export default function BudgetsPage() {
           </div>
         </div>
         <div className={cn('relative', 'z-10', 'mt-4', 'space-y-2.5')}>
-          <div
-            className={cn(
-              'relative',
-              'h-2.5',
-              'overflow-hidden',
-              'rounded-full',
-              'bg-slate-200/70',
-              'shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)]',
-              'transition-colors',
-              'duration-300',
-              'dark:bg-slate-700/60',
-              'dark:shadow-[inset_0_1px_2px_rgba(2,6,23,0.35)]'
-            )}
-          >
+          <div className={cn(budgetProgress.track)}>
             <div
-              className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${
+              className={cn(
+                budgetProgress.fill.base,
                 stats.totalSpent > stats.totalBudgeted
-                  ? 'bg-gradient-to-r from-rose-400 via-rose-500 to-rose-600 shadow-[0_0_12px_rgba(244,63,94,0.35)]'
-                  : 'bg-gradient-to-r from-sky-400 via-cyan-400 to-violet-500 shadow-[0_0_12px_rgba(14,165,233,0.35)]'
-              }`}
+                  ? budgetProgress.fill.over
+                  : budgetProgress.fill.within
+              )}
               style={{ width: `${Math.min(100, utilization * 100)}%` }}
             />
           </div>
-          <div
-            className={cn(
-              'flex',
-              'items-center',
-              'justify-between',
-              'text-[0.75rem]',
-              'text-slate-500',
-              'transition-colors',
-              'duration-300',
-              'dark:text-slate-400'
-            )}
-          >
-            <span className={cn('font-medium', 'tracking-wide')}>
+          <div className={cn(budgetProgress.caption.row)}>
+            <span className={cn(budgetProgress.caption.percent)}>
               {(utilization * 100).toFixed(0)}% used
             </span>
             <span
-              className={
+              className={cn(
                 stats.totalSpent > stats.totalBudgeted
-                  ? 'font-semibold text-red-600 dark:text-red-300'
-                  : 'font-semibold text-slate-600 dark:text-slate-300'
-              }
+                  ? budgetProgress.caption.summaryOver
+                  : budgetProgress.caption.summaryWithin
+              )}
             >
               {stats.totalSpent > stats.totalBudgeted
                 ? `-${fmtUSD(stats.totalSpent - stats.totalBudgeted)} over`
@@ -401,7 +359,7 @@ export default function BudgetsPage() {
                       type="button"
                       onClick={goToPreviousMonth}
                       aria-label="Previous month"
-                      className={cn(designTokens.components.paginationRoundButton)}
+                      className={cn(designTokens.components.actions.paginationRound)}
                       title="Previous month"
                     >
                       <ChevronLeftIcon className={cn('h-4', 'w-4')} />
@@ -410,7 +368,7 @@ export default function BudgetsPage() {
                       type="button"
                       onClick={goToNextMonth}
                       aria-label="Next month"
-                      className={cn(designTokens.components.paginationRoundButton)}
+                      className={cn(designTokens.components.actions.paginationRound)}
                       title="Next month"
                     >
                       <ChevronRightIcon className={cn('h-4', 'w-4')} />
@@ -455,77 +413,27 @@ export default function BudgetsPage() {
                       </>
                     )}
                   </div>
-                  <button
+                  <Button
                     type="button"
                     onClick={goToCurrentMonth}
-                    className={cn(
-                      'inline-flex',
-                      'items-center',
-                      'justify-center',
-                      'gap-2',
-                      'rounded-full',
-                      'border',
-                      'border-white/60',
-                      'bg-white',
-                      'px-4',
-                      'py-2',
-                      'text-sm',
-                      'font-semibold',
-                      'text-slate-700',
-                      'transition-transform',
-                      'duration-200',
-                      'hover:-translate-y-[2px]',
-                      'hover:bg-white/90',
-                      'focus-visible:outline-none',
-                      'focus-visible:ring-2',
-                      'focus-visible:ring-sky-400/80',
-                      'focus-visible:ring-offset-2',
-                      'focus-visible:ring-offset-white',
-                      'dark:border-white/12',
-                      ...designTokens.surfaces.layeredSolid,
-                      'dark:text-slate-100',
-                      ...designTokens.surfaces.shellHoverDark,
-                      ...designTokens.surfaces.focusRingOffsetDarkVisible
-                    )}
+                    variant="ghost"
+                    size="md"
+                    className={cn('px-4')}
                     title="Jump to current month"
                   >
                     <CalendarIcon className={cn('h-4', 'w-4')} />
                     This Month
-                  </button>
+                  </Button>
                   {!isAdding ? (
-                    <button
+                    <Button
                       type="button"
                       onClick={startAdd}
-                      className={cn(
-                        'inline-flex',
-                        'items-center',
-                        'justify-center',
-                        'gap-2',
-                        'rounded-full',
-                        'bg-gradient-to-r',
-                        'from-sky-500',
-                        'via-sky-400',
-                        'to-violet-500',
-                        'px-5',
-                        'py-2.5',
-                        'text-[0.95rem]',
-                        'font-semibold',
-                        'text-white',
-                        'shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)]',
-                        'transition-transform',
-                        'duration-300',
-                        'hover:-translate-y-[3px]',
-                        'focus-visible:outline-none',
-                        'focus-visible:ring-2',
-                        'focus-visible:ring-sky-400',
-                        'focus-visible:ring-offset-2',
-                        'focus-visible:ring-offset-white',
-                        ...designTokens.surfaces.focusRingOffsetDarkVisible
-                      )}
+                      variant="primary"
+                      size="lg"
                     >
                       <Plus className={cn('h-4', 'w-4')} />
                       Add budget
-                    </button>
+                    </Button>
                   ) : null}
                 </div>
               </div>
@@ -560,38 +468,15 @@ export default function BudgetsPage() {
                 description="Create your first category plan to watch spending settle into rhythm."
                 action={
                   !isAdding ? (
-                    <button
+                    <Button
                       type="button"
                       onClick={startAdd}
-                      className={cn(
-                        'inline-flex',
-                        'items-center',
-                        'gap-2',
-                        'rounded-full',
-                        'bg-gradient-to-r',
-                        'from-sky-500',
-                        'via-sky-400',
-                        'to-violet-500',
-                        'px-5',
-                        'py-2.5',
-                        'text-sm',
-                        'font-semibold',
-                        'text-white',
-                        'shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)]',
-                        'transition-transform',
-                        'duration-300',
-                        'hover:-translate-y-[3px]',
-                        'focus-visible:outline-none',
-                        'focus-visible:ring-2',
-                        'focus-visible:ring-sky-400',
-                        'focus-visible:ring-offset-2',
-                        'focus-visible:ring-offset-white',
-                        ...designTokens.surfaces.focusRingOffsetDarkVisible
-                      )}
+                      variant="primary"
+                      size="md"
                     >
                       <Plus className={cn('h-4', 'w-4')} />
                       Add budget
-                    </button>
+                    </Button>
                   ) : null
                 }
                 data-testid="budgets-empty-state"

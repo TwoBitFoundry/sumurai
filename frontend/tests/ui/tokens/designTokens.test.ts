@@ -43,13 +43,17 @@ describe('design tokens', () => {
   });
 
   it('exposes deferred-screen surface and onboarding component bundles', () => {
-    expect(designTokens.surfaces.panelGlassDark55.join(' ')).toContain('#0f172a');
-    expect(designTokens.surfaces.dataRowDark70.join(' ')).toContain('#1e293b');
+    expect(designTokens.surfaces.glass.panelDark.join(' ')).toContain('#0f172a');
+    expect(designTokens.surfaces.layered.dataRowDark70.join(' ')).toContain('#1e293b');
     expect(designTokens.components.budgetCard.shell.join(' ')).toContain('rounded-[1.75rem]');
-    expect(designTokens.components.accountsToolbarButton.join(' ')).toContain('rounded-full');
-    expect(designTokens.components.providerConnect.plaidEyebrowBg.join(' ')).toContain('#34d399');
+    expect(designTokens.components.actions.budgetDeleteIcon.join(' ')).toContain('red-500/15');
+    expect(designTokens.components.actions.accountsToolbar.join(' ')).toContain('rounded-full');
+    expect(designTokens.components.onboarding.providerConnect.plaidEyebrowBg.join(' ')).toContain('#34d399');
     expect(designTokens.components.onboarding.stepCard.join(' ')).toContain('#0f172a');
+    expect(designTokens.components.onboarding.hoverOverlay).toContain('group-hover:opacity-100');
     expect(designTokens.components.onboarding.previewFrame.join(' ')).toContain('aspect-[16/10]');
+    expect(designTokens.palettes.feature.providerFeature.emerald.glow).toContain('16,185,129');
+    expect(designTokens.palettes.feature.highlight.fuchsia.ring).toBe('ring-fuchsia-300/35');
   });
 
   it('exposes singleton layout effects and deduped gradient primitives', () => {

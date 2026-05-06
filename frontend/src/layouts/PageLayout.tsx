@@ -32,10 +32,10 @@ export function PageLayout({
       >
         <div className={cn('pointer-events-none', 'absolute', 'inset-0')}>
           <div
-            className={cn(...designTokens.components.pageLayout.innerRing.split(' '))}
+            className={cn(designTokens.components.pageLayout.innerRing)}
           />
           <div
-            className={cn(...designTokens.components.pageLayout.innerGradient.split(' '))}
+            className={cn(designTokens.components.pageLayout.innerGradient)}
           />
         </div>
 

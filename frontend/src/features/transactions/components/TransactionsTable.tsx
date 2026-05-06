@@ -226,10 +226,14 @@ export const TransactionsTable: React.FC<Props> = ({
                         </td>
                         <td className={cn('whitespace-nowrap', 'px-4', 'py-3', 'align-middle')}>
                           <span
-                            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 transition-all duration-200 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10 ${theme.tag}`}
+                            className={cn(
+                              designTokens.components.pill.base,
+                              'transition-all duration-200 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
+                              theme.tag
+                            )}
                           >
                             <span
-                              className={`h-2 w-2 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.85)] dark:shadow-[0_0_0_1px_rgba(15,23,42,0.7)] ${theme.dot}`}
+                              className={cn(designTokens.components.pill.dot, theme.dot)}
                               aria-hidden="true"
                             />
                             {catName}
@@ -275,7 +279,7 @@ export const TransactionsTable: React.FC<Props> = ({
                 onClick={onPrev}
                 disabled={currentPage <= 1}
                 aria-label="Previous page"
-                className={cn(designTokens.components.paginationRoundButton)}
+                className={cn(designTokens.components.actions.paginationRound)}
               >
                 <ChevronLeftIcon className={cn('h-4', 'w-4')} />
               </button>
@@ -295,7 +299,7 @@ export const TransactionsTable: React.FC<Props> = ({
                 onClick={onNext}
                 disabled={currentPage >= totalPages}
                 aria-label="Next page"
-                className={cn(designTokens.components.paginationRoundButton)}
+                className={cn(designTokens.components.actions.paginationRound)}
               >
                 <ChevronRightIcon className={cn('h-4', 'w-4')} />
               </button>

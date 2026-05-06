@@ -3,6 +3,8 @@ version: alpha
 name: Sumurai
 description: Dark-first glass financial UI with cyan-violet brand accents and semantic finance colors.
 colors:
+  primary: "#0369a1"
+  on-primary: "#ffffff"
   brand-sky: "#0ea5e9"
   brand-sky-dark: "#38bdf8"
   brand-emerald: "#10b981"
@@ -124,8 +126,8 @@ spacing:
   section-gap: 20px
 components:
   button-primary:
-    backgroundColor: "{colors.brand-sky}"
-    textColor: "#ffffff"
+    backgroundColor: "{colors.primary}"
+    textColor: "{colors.on-primary}"
     rounded: "{rounded.pill}"
     padding: 12px
   button-secondary:

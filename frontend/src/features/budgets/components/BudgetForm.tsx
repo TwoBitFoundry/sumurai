@@ -1,6 +1,5 @@
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { cn } from '@/ui/primitives';
-import { Button, Input } from '../../../ui/primitives';
+import { Button, cn, Input } from '@/ui/primitives';
 import { designTokens } from '@/ui/tokens';
 import { formatCategoryName } from '../../../utils/categories';
 
@@ -34,26 +33,10 @@ export function BudgetForm({
           'min-w-[180px]',
           'flex-1',
           'rounded-full',
-          'border',
-          'border-white/60',
-          'bg-white/80',
-          'px-4',
           'py-2',
           'text-sm',
-          'font-medium',
-          'text-slate-700',
-          'shadow-[0_18px_45px_-32px_rgba(15,23,42,0.5)]',
-          'transition-colors',
-          'duration-200',
-          'focus:outline-none',
-          'focus:ring-2',
-          'focus:ring-sky-400/80',
-          'focus:ring-offset-2',
-          'focus:ring-offset-white',
-          'dark:border-white/12',
-          designTokens.surfaces.layeredPanel80,
-          'dark:text-slate-100',
-          designTokens.surfaces.focusRingOffsetDark
+          designTokens.components.input.base,
+          designTokens.components.input.glass
         )}
       >
         <option value="" disabled>
