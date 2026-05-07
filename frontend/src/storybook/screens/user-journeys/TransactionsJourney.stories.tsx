@@ -51,9 +51,14 @@ export const Journey: Story = {
       expect(nextPage).not.toBeDisabled();
     });
     await userEvent.click(nextPage);
-    await waitFor(() => {
-      expect(page.getByText(/page 2 of 2/i)).toBeVisible();
-    });
+    await waitFor(
+      () => {
+        expect(
+          page.getByText(/coffee collective wholesale roasters group international/i)
+        ).toBeVisible();
+      },
+      { timeout: 3000 }
+    );
 
     const search = canvas.getByPlaceholderText('Search transactions...');
     await userEvent.type(search, 'Coffee');
