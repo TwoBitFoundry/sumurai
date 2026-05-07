@@ -63,6 +63,8 @@
       "**/*.jsx",
       "**/*.json",
       "!.next",
+      "!next-env.d.ts",
+      "!src/ui/tokens/generated/**",
       "!node_modules",
       "!coverage",
       "!out",
