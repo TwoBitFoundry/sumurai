@@ -320,6 +320,8 @@ Acceptance criteria:
 
 ## Phase 6: Visual Regression Matrix
 
+**Status:** complete.
+
 Goal: make Playwright snapshots enforce the new representative coverage without exploding into noisy screenshots.
 
 Implementation tasks:
@@ -346,25 +348,52 @@ Acceptance criteria:
 
 ## Phase 7: Representative Interaction, Accessibility, And Contract Tests
 
+**Status:** complete.
+
 Goal: back up Storybook visuals with a small, high-signal set of behavior tests at the right boundaries.
 
 Implementation tasks:
 
-- Extend [`frontend/tests/ui/primitives/primitiveContract.test.tsx`](../frontend/tests/ui/primitives/primitiveContract.test.tsx) beyond `Button` only for primitives with meaningful public contracts, such as `Input`, `Select`, `Modal`, and `AppTitleBar`. Avoid contract tests for purely decorative wrappers unless they expose important variants.
-- Add or update React Testing Library tests under the correct folders in [`frontend/tests`](../frontend/tests): primitives in `frontend/tests/ui/primitives`, feature components in `frontend/tests/features`, shared components in `frontend/tests/components`, pages in `frontend/tests/pages`, and integration behavior in `frontend/tests/integration`.
-- Focus tests on the representative behaviors that matter most: form validation, disabled/submitting controls, modal confirmation gates, tab selection, pagination boundaries, provider selection, error presentation, and callback invocation.
-- Do not add a test for every Storybook story, fixture, or visual variant. Use Storybook and visual screenshots for visual coverage; use tests for behavior that users depend on.
-- Keep snapshot tests limited to stable primitive output already covered by existing patterns; prefer explicit behavior assertions for app screens.
-- Add accessibility checks where practical using the existing Storybook a11y addon and Testing Library queries. Prioritize labels, roles, keyboard-reachable controls, modal semantics, and obvious error announcements on the highest-traffic UI.
+- [x] Extend [`frontend/tests/ui/primitives/primitiveContract.test.tsx`](../frontend/tests/ui/primitives/primitiveContract.test.tsx) beyond `Button` only for primitives with meaningful public contracts, such as `Input`, `Select`, `Modal`, and `AppTitleBar`. Avoid contract tests for purely decorative wrappers unless they expose important variants.
+- [x] Add or update React Testing Library tests under the correct folders in [`frontend/tests`](../frontend/tests): primitives in `frontend/tests/ui/primitives`, feature components in `frontend/tests/features`, shared components in `frontend/tests/components`, pages in `frontend/tests/pages`, and integration behavior in `frontend/tests/integration`.
+- [x] Focus tests on the representative behaviors that matter most: form validation, disabled/submitting controls, modal confirmation gates, tab selection, pagination boundaries, provider selection, error presentation, and callback invocation.
+- [x] Do not add a test for every Storybook story, fixture, or visual variant. Use Storybook and visual screenshots for visual coverage; use tests for behavior that users depend on.
+- [x] Keep snapshot tests limited to stable primitive output already covered by existing patterns; prefer explicit behavior assertions for app screens.
+- [x] Add accessibility checks where practical using the existing Storybook a11y addon and Testing Library queries. Prioritize labels, roles, keyboard-reachable controls, modal semantics, and obvious error announcements on the highest-traffic UI.
 
 Acceptance criteria:
 
-- Primitive contract tests cover only the important primitive API contracts beyond `Button`, and avoid broad decorative snapshot churn.
-- The coverage document identifies the small set of representative UI tests and explains why lower-risk story variants are covered by Storybook or visual snapshots instead of dedicated behavior tests.
-- Auth validation, onboarding connect-state controls, accounts provider selection, budgets form validation, transactions toolbar/table pagination, settings delete modal, and app navigation have user-visible behavior tests.
-- Each tested area has a focused happy path plus one important failure, disabled, or edge path where applicable; exhaustive state permutations are out of scope.
-- Tests do not assert private helper steps or call real network/provider services.
-- `npm --prefix frontend test` passes.
+- [x] Primitive contract tests cover only the important primitive API contracts beyond `Button`, and avoid broad decorative snapshot churn.
+- [x] The coverage document identifies the small set of representative UI tests and explains why lower-risk story variants are covered by Storybook or visual snapshots instead of dedicated behavior tests.
+- [x] Auth validation, onboarding connect-state controls, accounts provider selection, budgets form validation, transactions toolbar/table pagination, settings delete modal, and app navigation have user-visible behavior tests.
+- [x] Each tested area has a focused happy path plus one important failure, disabled, or edge path where applicable; exhaustive state permutations are out of scope.
+- [x] Tests do not assert private helper steps or call real network/provider services.
+- [x] `npm --prefix frontend test` passes.
+
+### Phase 7 representative UI test ownership
+
+Lower-risk layout and dense Storybook variants stay in Storybook and the Playwright visual matrix; behavior tests cover user-visible contracts only.
+
+| Area | Boundary tests | Variants left to Storybook / visuals |
+|------|------------------|--------------------------------------|
+| Primitive token alignment | [`primitiveContract.test.tsx`](../frontend/tests/ui/primitives/primitiveContract.test.tsx) (`Button`, `Input`, `Select`, modal sizes, `AppTitleBar` states) | Per-variant screenshots already in [`visualMatrix.ts`](../frontend/tests/storybook/visualMatrix.ts) |
+| Modal semantics | [`Modal.test.tsx`](../frontend/tests/ui/primitives/Modal.test.tsx) | Dialog sizing snapshots |
+| App title bar tabs | [`AppTitleBar.test.tsx`](../frontend/tests/ui/primitives/AppTitleBar.test.tsx) | Theme and scroll snapshots |
+| Auth validation and login failure | [`integration/Auth.test.tsx`](../frontend/tests/integration/Auth.test.tsx) | Auth stories |
+| Onboarding connect step | [`components/onboarding/ConnectAccountStep.test.tsx`](../frontend/tests/components/onboarding/ConnectAccountStep.test.tsx) | Onboarding stories |
+| Wizard orchestration | [`components/onboarding/OnboardingWizard.test.tsx`](../frontend/tests/components/onboarding/OnboardingWizard.test.tsx) | Full wizard composition |
+| Accounts provider picker | [`features/plaid/components/ProviderSelectionPanel.test.tsx`](../frontend/tests/features/plaid/components/ProviderSelectionPanel.test.tsx) | Catalogue and error visuals |
+| Budgets flows and conflicts | [`integration/BudgetsIntegration.test.tsx`](../frontend/tests/integration/BudgetsIntegration.test.tsx), [`features/budgets/components/BudgetForm.test.tsx`](../frontend/tests/features/budgets/components/BudgetForm.test.tsx) | Dense budget UI variants |
+| Transactions toolbar | [`features/transactions/components/TransactionsToolbar.test.tsx`](../frontend/tests/features/transactions/components/TransactionsToolbar.test.tsx); pagination boundaries in [`features/transactions/hooks/useTransactions.test.tsx`](../frontend/tests/features/transactions/hooks/useTransactions.test.tsx) | Table and toolbar visuals |
+| Settings delete modal | [`pages/SettingsPage.test.tsx`](../frontend/tests/pages/SettingsPage.test.tsx) | Settings screen snapshots |
+| Tab navigation | [`components/AuthenticatedApp.test.tsx`](../frontend/tests/components/AuthenticatedApp.test.tsx) | Screen-level stories |
+
+### Phase 7 TDD log
+
+1. Green: extended [`primitiveContract.test.tsx`](../frontend/tests/ui/primitives/primitiveContract.test.tsx) with `Input`, `Select`, `Modal` content sizes, and `AppTitleBar` state smoke renders aligned to `designTokens.components` in [`frontend/src/ui/tokens/index.ts`](../frontend/src/ui/tokens/index.ts).
+2. Green: added [`ConnectAccountStep.test.tsx`](../frontend/tests/components/onboarding/ConnectAccountStep.test.tsx) for primary connect, loading-disable, and connection-error retry using real Plaid connect copy from [`providerCards`](../frontend/src/utils/providerCards.ts) (`getConnectAccountProviderContent('plaid')`).
+3. Green: expanded [`TransactionsToolbar.test.tsx`](../frontend/tests/features/transactions/components/TransactionsToolbar.test.tsx) with a stateful search harness and category chip selection.
+4. Verify: `npm --prefix frontend test`.
 
 ## Phase 8: Documentation, Validation, And Student Handoff
 
