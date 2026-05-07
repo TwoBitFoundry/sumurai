@@ -30,7 +30,7 @@ This project treats **GitHub Actions as the merge gate**. The default Git hook t
 
 For **full parity** with `.github/workflows/ci.yml` frontend steps before you push (for example Storybook/Vite/Playwright paths), run **`npm run backend:ci && npm run frontend:ci`** manually.
 
-**Draft pull requests:** the **`ci`** and **CodeQL** workflows **do not** run GitHub-hosted jobs while the PR is marked draft. Mark the PR ready for review to trigger them (aside from what you run locally with `npm run precommit`).
+**Draft pull requests:** the **`ci`** workflow **does not** run GitHub-hosted jobs while the PR is marked draft. Mark the PR ready for review to trigger it (aside from what you run locally with `npm run precommit`). **CodeQL** runs on a weekly schedule only, not on pull requests.
 
 On GitHub, backend or frontend jobs can be **skipped per path filters**; `precommit` still runs **both** stacks locally.
 

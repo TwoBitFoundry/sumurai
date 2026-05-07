@@ -38,7 +38,7 @@
 ## Commit And PRs
 - Use Conventional Commits, for example `feat: add budgets summary chart` or `fix: handle empty transactions`.
 - Keep PRs focused and small.
-- Ensure CI is green before requesting review once the PR is marked ready (**`ci`** and **CodeQL** workflows skip draft PRs on GitHub).
+- Ensure CI is green before requesting review once the PR is marked ready (**`ci`** skips draft PRs on GitHub). **CodeQL** runs on a weekly schedule only.
 - Use `feat!:` or `BREAKING CHANGE:` for breaking changes.
 
 ## Security
