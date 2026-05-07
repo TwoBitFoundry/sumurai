@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.3.0](https://github.com/TwoBitFoundry/sumurai/compare/v5.2.7...v5.3.0) (2026-05-07)
+
+
+### Features
+
+* token design system std ([#86](https://github.com/TwoBitFoundry/sumurai/issues/86)) ([b5d5ab1](https://github.com/TwoBitFoundry/sumurai/commit/b5d5ab1026158cdba5d5253b5997338562af532b))
+
 ## [5.2.7](https://github.com/TwoBitFoundry/sumurai/compare/v5.2.6...v5.2.7) (2026-05-05)
 
 ### Bug Fixes

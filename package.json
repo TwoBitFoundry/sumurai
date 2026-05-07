@@ -1,6 +1,6 @@
 {
   "name": "sumurai",
-  "version": "5.2.7",
+  "version": "5.3.0",
   "private": true,
   "engines": {
     "node": ">=24.10.0"
