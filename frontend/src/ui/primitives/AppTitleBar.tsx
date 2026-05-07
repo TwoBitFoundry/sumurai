@@ -2,29 +2,27 @@ import { cva } from 'class-variance-authority';
 import { Moon, Settings, Sun } from 'lucide-react';
 import Image from 'next/image';
 import React from 'react';
+import { designTokens } from '@/ui/tokens';
 import { Button } from './Button';
 import { cn } from './utils';
 
-const titleBarVariants = cva(
-  'sticky top-0 z-50 border-b backdrop-blur-sm transition-all duration-200 ease-out',
-  {
-    variants: {
-      state: {
-        unauthenticated: 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700',
-        onboarding: 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700',
-        authenticated: 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700',
-      },
-      scrolled: {
-        true: 'h-14',
-        false: 'h-16',
-      },
+const titleBarVariants = cva([...designTokens.components.appTitleBar.base], {
+  variants: {
+    state: {
+      unauthenticated: [...designTokens.components.appTitleBar.shell],
+      onboarding: [...designTokens.components.appTitleBar.shell],
+      authenticated: [...designTokens.components.appTitleBar.shell],
     },
-    defaultVariants: {
-      state: 'authenticated',
-      scrolled: false,
+    scrolled: {
+      true: designTokens.components.appTitleBar.height.scrolled,
+      false: designTokens.components.appTitleBar.height.default,
     },
-  }
-);
+  },
+  defaultVariants: {
+    state: 'authenticated',
+    scrolled: false,
+  },
+});
 
 type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
@@ -114,7 +112,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                   className={cn('rounded-md')}
                   unoptimized
                 />
-                <span style={{ fontFamily: "'Cal Sans', system-ui, sans-serif" }}>Sumurai</span>
+                <span style={{ fontFamily: designTokens.typography.brand }}>Sumurai</span>
               </div>
 
               {state === 'authenticated' && (
@@ -125,10 +123,8 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                       type="button"
                       onClick={() => onTabChange?.(key)}
                       variant={currentTab === key ? 'tabActive' : 'tab'}
-                      className={`${scrolled ? 'px-3 py-1 text-xs' : 'px-4 py-1.5 text-sm'} after:absolute after:inset-[-28%] after:rounded-[999px] after:bg-[radial-gradient(circle_at_35%_30%,rgba(14,165,233,0.16),transparent_62%)] after:opacity-0 after:transition-opacity after:duration-300 hover:after:opacity-90 dark:after:bg-[radial-gradient(circle_at_35%_30%,rgba(56,189,248,0.22),transparent_62%)] ${
-                        currentTab !== key
-                          ? 'border border-slate-200/70 dark:border-white/10 bg-white/70 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-sky-300/50 dark:hover:border-sky-500/60 hover:shadow-[0_14px_32px_-18px_rgba(56,189,248,0.35)]'
-                          : ''
+                      className={`${scrolled ? 'px-3 py-1 text-xs' : 'px-4 py-1.5 text-sm'} ${designTokens.components.appTitleBar.tabHalo} ${
+                        currentTab !== key ? designTokens.components.appTitleBar.tabIdle : ''
                       }`}
                     >
                       {label}
@@ -151,19 +147,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                 onClick={onThemeToggle}
                 variant="secondary"
                 size={scrolled ? 'xs' : 'sm'}
-                className={cn(
-                  'rounded-lg',
-                  '!bg-amber-500/80',
-                  'dark:!bg-purple-600/80',
-                  'hover:!bg-amber-600/80',
-                  'dark:hover:!bg-purple-700/80',
-                  '!border',
-                  '!border-amber-400/30',
-                  'dark:!border-purple-500/30',
-                  '!text-white',
-                  'backdrop-blur-sm',
-                  'transition-colors'
-                )}
+                className={cn(designTokens.components.appTitleBar.themeToggle)}
                 aria-label="Toggle theme"
                 title="Toggle theme"
               >
@@ -183,7 +167,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                   className={cn(
                     'rounded-xl',
                     currentTab !== 'settings'
-                      ? 'border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600'
+                      ? designTokens.components.appTitleBar.settingsIdle
                       : ''
                   )}
                   aria-label="Settings"

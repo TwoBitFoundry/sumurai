@@ -15,12 +15,12 @@ import {
 export {
   ApiError,
   AuthenticationError,
-  ValidationError,
-  NetworkError,
-  ServerError,
   ConflictError,
-  NotFoundError,
   ForbiddenError,
+  NetworkError,
+  NotFoundError,
+  ServerError,
+  ValidationError,
 };
 
 const DEFAULT_API_BASE = process.env.NEXT_PUBLIC_API_BASE || '/api';

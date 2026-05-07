@@ -1,3 +1,4 @@
+import { AlertTriangle } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { PasswordChecker } from '@/components/PasswordChecker';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
@@ -208,19 +209,14 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           </div>
         </GlassCard>
 
-        <GlassCard
-          variant="default"
-          padding="lg"
-          className={cn('border-red-200', 'dark:border-red-800')}
-        >
-          <h2
-            className={cn('text-lg', 'font-semibold', 'mb-2', 'text-red-600', 'dark:text-red-400')}
+        <GlassCard variant="default" padding="lg" className={cn('space-y-4')}>
+          <Alert
+            variant="error"
+            title="Danger Zone"
+            icon={<AlertTriangle className={cn('h-5', 'w-5')} />}
           >
-            Danger Zone
-          </h2>
-          <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400', 'mb-4')}>
             Once you delete your account, there is no going back. This action cannot be undone.
-          </p>
+          </Alert>
 
           <Button
             type="button"
@@ -236,11 +232,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       <Modal
         isOpen={showDeleteModal}
         onClose={closeDeleteModal}
+        labelledBy="delete-account-modal-title"
         size="md"
         preventCloseOnBackdrop={isDeleting}
       >
         <GlassCard variant="auth" padding="lg">
           <h2
+            id="delete-account-modal-title"
             className={cn(
               'text-xl',
               'font-semibold',
@@ -252,24 +250,24 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
             Delete Account?
           </h2>
 
-          <div className={cn('mb-6', 'p-4', 'rounded-lg', 'bg-red-50', 'dark:bg-red-900/20')}>
-            <p
-              className={cn('text-sm', 'font-medium', 'text-red-600', 'dark:text-red-400', 'mb-2')}
-            >
-              This will permanently delete:
-            </p>
-            <ul className={cn('space-y-1', 'text-xs', 'text-red-600', 'dark:text-red-400')}>
+          <Alert
+            variant="error"
+            title="This will permanently delete:"
+            icon={<AlertTriangle className={cn('h-5', 'w-5')} />}
+            className={cn('mb-6')}
+          >
+            <ul className={cn('space-y-1', 'text-xs')}>
               <li>• All bank connections (Plaid/Teller)</li>
               <li>• All transactions and accounts</li>
               <li>• All budgets and settings</li>
               <li>• Your user account and login credentials</li>
             </ul>
-          </div>
+          </Alert>
 
           {deleteError && (
-            <div className={cn('mb-4', 'p-3', 'rounded-lg', 'bg-red-50', 'dark:bg-red-900/20')}>
-              <p className={cn('text-sm', 'text-red-600', 'dark:text-red-400')}>{deleteError}</p>
-            </div>
+            <Alert variant="error" title="Delete failed" className={cn('mb-4')}>
+              {deleteError}
+            </Alert>
           )}
 
           <div className={cn('mb-6')}>

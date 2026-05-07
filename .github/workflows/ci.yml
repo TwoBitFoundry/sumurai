@@ -3,6 +3,9 @@ name: ci
 on:
   pull_request:
     branches: ["main"]
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -17,6 +20,7 @@ jobs:
   changes:
     name: Path filters
     runs-on: ubuntu-24.04
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
@@ -39,6 +43,7 @@ jobs:
               - '.github/workflows/**'
             frontend:
               - 'frontend/**'
+              - 'DESIGN.md'
               - '.github/workflows/**'
 
   backend:
@@ -82,6 +87,8 @@ jobs:
     runs-on: ubuntu-24.04
     needs: changes
     if: github.event_name != 'pull_request' || needs.changes.outputs.frontend == 'true'
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/frontend/.playwright-browsers
     defaults:
       run:
         working-directory: frontend
@@ -107,8 +114,37 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Lint
+      - name: Biome check (format + lint)
         run: npm run lint
 
+      - name: Storybook doctor
+        run: npm run storybook:doctor
+
+      - name: Design guard
+        run: npm run design:guard
+
       - name: Unit tests
-        run: npm test
+        run: npm run test:ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Cache Playwright Chromium
+        uses: actions/cache@v4
+        with:
+          path: frontend/.playwright-browsers
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            playwright-chromium-${{ runner.os }}-
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Storybook static build
+        run: npm run storybook:build
+
+      - name: Storybook Vitest
+        run: npm run test:storybook
+
+      - name: Storybook iframe smoke
+        run: npm run test:storybook-runtime:run

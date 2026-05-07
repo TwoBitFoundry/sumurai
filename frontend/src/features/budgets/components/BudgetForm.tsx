@@ -1,6 +1,5 @@
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { cn } from '@/ui/primitives';
-import { Button, Input } from '../../../ui/primitives';
+import { Button, cn, Input, Select } from '@/ui/primitives';
 import { formatCategoryName } from '../../../utils/categories';
 
 export interface BudgetFormValue {
@@ -25,35 +24,13 @@ export function BudgetForm({
 }) {
   return (
     <div className={cn('flex', 'w-full', 'flex-wrap', 'items-center', 'gap-2')}>
-      <select
+      <Select
         data-testid="budget-category-select"
         value={value.category}
         onChange={(e) => onChange({ ...value, category: e.target.value })}
-        className={cn(
-          'min-w-[180px]',
-          'flex-1',
-          'rounded-full',
-          'border',
-          'border-white/60',
-          'bg-white/80',
-          'px-4',
-          'py-2',
-          'text-sm',
-          'font-medium',
-          'text-slate-700',
-          'shadow-[0_18px_45px_-32px_rgba(15,23,42,0.5)]',
-          'transition-colors',
-          'duration-200',
-          'focus:outline-none',
-          'focus:ring-2',
-          'focus:ring-sky-400/80',
-          'focus:ring-offset-2',
-          'focus:ring-offset-white',
-          'dark:border-white/12',
-          'dark:bg-[#111a2f]/80',
-          'dark:text-slate-100',
-          'dark:focus:ring-offset-[#0f172a]'
-        )}
+        variant="glass"
+        selectSize="md"
+        className={cn('min-w-[180px]', 'flex-1')}
       >
         <option value="" disabled>
           Select category
@@ -64,7 +41,7 @@ export function BudgetForm({
             {usedCategories.has(cat) ? ' (used)' : ''}
           </option>
         ))}
-      </select>
+      </Select>
       <Input
         data-testid="budget-amount-input"
         type="number"

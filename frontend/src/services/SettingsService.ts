@@ -41,6 +41,6 @@ export class SettingsService {
 export type {
   ChangePasswordRequest,
   ChangePasswordResponse,
-  DeletedItemsSummary,
   DeleteAccountResponse,
+  DeletedItemsSummary,
 };

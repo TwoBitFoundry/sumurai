@@ -24,14 +24,7 @@ export const ProviderMismatchCheck = ({
       return;
     }
 
-    console.log('Provider check:', {
-      userProvider: providerInfo.userProvider,
-      defaultProvider: providerInfo.defaultProvider,
-      match: providerInfo.userProvider === providerInfo.defaultProvider,
-    });
-
     if (providerInfo.userProvider !== providerInfo.defaultProvider) {
-      console.log('Provider mismatch detected! Showing modal...');
       onShowMismatch(true);
     }
   }, [

@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { cn } from '@/ui/primitives';
+import { cn, Input } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import { getTagThemeForCategory } from '../../../utils/categories';
 
 interface Props {
@@ -44,37 +45,13 @@ export const TransactionsFilters: React.FC<Props> = ({
     <>
       {showSearch && (
         <div className={cn('relative', 'w-full', 'sm:w-64')}>
-          <input
+          <Input
             value={search}
             onChange={(e) => onSearch(e.target.value)}
             placeholder="Search transactions..."
-            className={cn(
-              'w-full',
-              'rounded-xl',
-              'border',
-              'border-black/10',
-              'bg-white',
-              'px-4',
-              'py-2.5',
-              'text-sm',
-              'font-medium',
-              'text-slate-900',
-              'shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)]',
-              'transition-all',
-              'duration-200',
-              'placeholder:text-slate-400',
-              'focus:outline-none',
-              'focus:ring-2',
-              'focus:ring-sky-400',
-              'focus:ring-offset-2',
-              'focus:ring-offset-white',
-              'dark:border-white/12',
-              'dark:bg-[#111a2f]',
-              'dark:text-white',
-              'dark:placeholder:text-slate-500',
-              'dark:focus:ring-sky-400/80',
-              'dark:focus:ring-offset-[#0f172a]'
-            )}
+            variant="default"
+            inputSize="md"
+            className={cn('placeholder:text-slate-400 dark:placeholder:text-slate-500')}
           />
         </div>
       )}
@@ -83,10 +60,7 @@ export const TransactionsFilters: React.FC<Props> = ({
           <span
             className={cn(
               'flex-shrink-0',
-              'text-[0.65rem]',
-              'font-semibold',
-              'uppercase',
-              'tracking-[0.24em]',
+              designTokens.typography.label,
               'text-slate-500',
               'transition-colors',
               'duration-500',
@@ -119,16 +93,19 @@ export const TransactionsFilters: React.FC<Props> = ({
                     key={name}
                     type="button"
                     onClick={() => onSelectCategory(isSelected ? null : name)}
-                    className={`inline-flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 transition-all duration-150 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10 ${theme.tag} ${
+                    className={cn(
+                      designTokens.components.pill.base,
+                      'whitespace-nowrap transition-all duration-150 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
+                      theme.tag,
                       isSelected
-                        ? `ring-2 ${theme.ring}`
+                        ? ['ring-2', theme.ring]
                         : 'hover:-translate-y-[2px] hover:shadow-lg'
-                    }`}
+                    )}
                     aria-pressed={isSelected}
                     title={isSelected ? `Remove filter: ${name}` : `Filter by ${name}`}
                   >
                     <span
-                      className={`h-2 w-2 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.85)] dark:shadow-[0_0_0_1px_rgba(15,23,42,0.7)] ${theme.dot}`}
+                      className={cn(designTokens.components.pill.dot, theme.dot)}
                       aria-hidden="true"
                     />
                     {name}
@@ -136,42 +113,8 @@ export const TransactionsFilters: React.FC<Props> = ({
                 );
               })}
             </div>
-            {showLeftFade && (
-              <div
-                className={cn(
-                  'pointer-events-none',
-                  'absolute',
-                  'bottom-0',
-                  'left-0',
-                  'top-0',
-                  'w-8',
-                  'bg-gradient-to-r',
-                  'from-white',
-                  'to-transparent',
-                  'transition-opacity',
-                  'duration-200',
-                  'dark:from-[#0f172a]'
-                )}
-              />
-            )}
-            {showRightFade && (
-              <div
-                className={cn(
-                  'pointer-events-none',
-                  'absolute',
-                  'bottom-0',
-                  'right-0',
-                  'top-0',
-                  'w-8',
-                  'bg-gradient-to-l',
-                  'from-white',
-                  'to-transparent',
-                  'transition-opacity',
-                  'duration-200',
-                  'dark:from-[#0f172a]'
-                )}
-              />
-            )}
+            {showLeftFade && <div className={cn(designTokens.components.pill.fadeLeft, 'w-8')} />}
+            {showRightFade && <div className={cn(designTokens.components.pill.fadeRight, 'w-8')} />}
           </div>
         </div>
       )}

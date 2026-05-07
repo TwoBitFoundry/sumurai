@@ -23,5 +23,7 @@ export type { ModalProps } from './Modal';
 export { Modal } from './Modal';
 export type { RequirementPillProps } from './RequirementPill';
 export { RequirementPill } from './RequirementPill';
+export type { SelectProps } from './Select';
+export { Select } from './Select';
 
 export { cn } from './utils';

@@ -1,0 +1,53 @@
+import type { ReactNode } from 'react';
+import {
+  AccountFilterContext,
+  type AccountFilterContextType,
+  type ProviderAccount,
+} from '@/context/AccountFilterContext';
+import type { Account } from '@/types/api';
+
+export function accountToProviderAccount(account: Account): ProviderAccount {
+  return {
+    id: account.id,
+    name: account.name,
+    account_type: account.account_type,
+    balance_ledger: account.balance_ledger,
+    balance_available: account.balance_available ?? null,
+    mask: account.mask,
+    provider: account.provider ?? 'plaid',
+    institution_name: account.institution_name ?? 'Unknown Bank',
+  };
+}
+
+export function buildMockAccountFilterContext(
+  partial: Partial<AccountFilterContextType> & Pick<AccountFilterContextType, 'accountsByBank'>
+): AccountFilterContextType {
+  const derivedIds =
+    partial.allAccountIds ??
+    Object.values(partial.accountsByBank)
+      .flat()
+      .map((a) => a.id);
+  const selected = partial.selectedAccountIds ?? derivedIds;
+  return {
+    accountsByBank: partial.accountsByBank,
+    allAccountIds: derivedIds,
+    selectedAccountIds: selected,
+    isAllAccountsSelected:
+      partial.isAllAccountsSelected ??
+      (derivedIds.length > 0 && selected.length === derivedIds.length),
+    loading: partial.loading ?? false,
+    setSelectedAccountIds: partial.setSelectedAccountIds ?? (() => {}),
+    toggleBank: partial.toggleBank ?? (() => {}),
+    toggleAccount: partial.toggleAccount ?? (() => {}),
+  };
+}
+
+export function MockAccountFilterProvider({
+  children,
+  value,
+}: {
+  children: ReactNode;
+  value: AccountFilterContextType;
+}) {
+  return <AccountFilterContext.Provider value={value}>{children}</AccountFilterContext.Provider>;
+}

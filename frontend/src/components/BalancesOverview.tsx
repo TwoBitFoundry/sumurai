@@ -401,11 +401,11 @@ export function BalancesOverview() {
             margin={{ top: 8, right: 16, left: 16, bottom: 24 }}
             onMouseLeave={() => setHoverInfo(null)}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#94a3b833" />
-            <XAxis dataKey="bank" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
+            <XAxis dataKey="bank" tick={{ fill: colors.chart.axis, fontSize: 12 }} />
             <YAxis
               tickFormatter={(value) => fmtAxis(value as number)}
-              tick={{ fill: '#94a3b8', fontSize: yTickFontSize }}
+              tick={{ fill: colors.chart.axis, fontSize: yTickFontSize }}
               width={yAxisWidth}
               tickMargin={6}
             />
@@ -413,7 +413,12 @@ export function BalancesOverview() {
               wrapperStyle={{ display: 'none' }}
               cursor={
                 hoverInfo
-                  ? { fill: 'transparent', stroke: '#38bdf8', strokeWidth: 2, radius: 4 }
+                  ? {
+                      fill: 'transparent',
+                      stroke: colors.chart.primary[0],
+                      strokeWidth: 2,
+                      radius: 4,
+                    }
                   : false
               }
             />

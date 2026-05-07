@@ -1,4 +1,4 @@
-import { RefreshCcw, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TooltipProps } from 'recharts';
@@ -12,12 +12,12 @@ import {
   YAxis,
 } from 'recharts';
 import type { DotItemDotProps } from 'recharts/types/util/types';
-import { cn, EmptyState } from '@/ui/primitives';
+import { Button, cn, EmptyState } from '@/ui/primitives';
 import BalancesOverview from '../components/BalancesOverview';
-import Card from '../components/ui/Card';
 import { useTheme } from '../context/ThemeContext';
 import { DashboardCalculator } from '../domain/DashboardCalculator';
 import { categoriesToDonut } from '../features/analytics/adapters/chartData';
+import DashboardChartCard from '../features/analytics/components/DashboardChartCard';
 import { SpendingByCategoryChart } from '../features/analytics/components/SpendingByCategoryChart';
 import { TopMerchantsList } from '../features/analytics/components/TopMerchantsList';
 import { useAnalytics } from '../features/analytics/hooks/useAnalytics';
@@ -70,7 +70,7 @@ const DashboardPage: React.FC = () => {
   const netDotRenderer = useMemo<((props: DotItemDotProps) => React.ReactNode) | undefined>(() => {
     const n = netSeries?.length || 0;
     const fill = colors.chart.dotFill;
-    const stroke = '#10b981';
+    const stroke = colors.semantic.cash;
     if (!n) return undefined;
     const selected = DashboardCalculator.calculateNetDotIndices(netSeries);
     return ({ index, cx, cy }: DotItemDotProps) => {
@@ -80,7 +80,7 @@ const DashboardPage: React.FC = () => {
         <circle cx={cx} cy={cy} r={3} stroke={stroke} strokeWidth={1} fill={fill} />
       ) as React.ReactElement<SVGCircleElement>;
     };
-  }, [netSeries, colors.chart.dotFill]);
+  }, [netSeries, colors.chart.dotFill, colors.semantic.cash]);
 
   const netYAxisDomain = useMemo(
     () => DashboardCalculator.calculateNetYAxisDomain(netSeries),
@@ -107,36 +107,12 @@ const DashboardPage: React.FC = () => {
               'items-stretch'
             )}
           >
-            <Card className="h-full">
-              <div className={cn('mb-4', 'flex', 'items-center', 'justify-between')}>
-                <div>
-                  <h3
-                    className={cn(
-                      'text-base',
-                      'font-semibold',
-                      'text-slate-900',
-                      'dark:text-slate-100'
-                    )}
-                  >
-                    Spending Over Time
-                  </h3>
-                  <p className={cn('text-xs', 'text-slate-600', 'dark:text-slate-400')}>
-                    Breakdown by category
-                  </p>
-                </div>
-                {!analyticsLoading && analyticsRefreshing && (
-                  <RefreshCcw
-                    aria-label="Refreshing analytics"
-                    className={cn(
-                      'h-4',
-                      'w-4',
-                      'text-slate-500',
-                      'dark:text-slate-400',
-                      'animate-spin'
-                    )}
-                  />
-                )}
-              </div>
+            <DashboardChartCard
+              title="Spending Over Time"
+              description="Breakdown by category"
+              refreshingLabel="Refreshing analytics"
+              isRefreshing={!analyticsLoading && analyticsRefreshing}
+            >
               {analyticsLoading && (
                 <div className={cn('mb-2', 'text-xs', 'text-slate-500', 'dark:text-slate-400')}>
                   Loading analytics...
@@ -182,9 +158,12 @@ const DashboardPage: React.FC = () => {
                               key={`topcard-${cat.name}`}
                               className={`p-2 rounded-lg border transition-all duration-300 ${
                                 isHovered
-                                  ? 'bg-slate-50 dark:bg-slate-700/40 border-[#93c5fd] dark:border-[#38bdf8] -translate-y-[2px]'
+                                  ? 'bg-slate-50 dark:bg-slate-700/40 -translate-y-[2px]'
                                   : 'border-slate-200 dark:border-slate-700'
                               }`}
+                              style={
+                                isHovered ? { borderColor: colors.chart.primary[0] } : undefined
+                              }
                               onMouseEnter={() => setHoveredCategory(cat.name)}
                               onMouseLeave={() => setHoveredCategory(null)}
                             >
@@ -236,76 +215,29 @@ const DashboardPage: React.FC = () => {
                   );
                 })()}
               </div>
-            </Card>
+            </DashboardChartCard>
 
-            <Card className={cn('h-full', 'flex', 'flex-col')}>
-              <div className={cn('mb-3', 'flex', 'items-center', 'justify-between')}>
-                <div>
-                  <h3
-                    className={cn(
-                      'text-base',
-                      'font-semibold',
-                      'text-slate-900',
-                      'dark:text-slate-100'
-                    )}
-                  >
-                    Top Merchants Over Time
-                  </h3>
-                  <p className={cn('text-xs', 'text-slate-600', 'dark:text-slate-400')}>
-                    Highest spending locations
-                  </p>
-                </div>
-                {!analyticsLoading && analyticsRefreshing && (
-                  <RefreshCcw
-                    aria-label="Refreshing analytics"
-                    className={cn(
-                      'h-4',
-                      'w-4',
-                      'text-slate-500',
-                      'dark:text-slate-400',
-                      'animate-spin'
-                    )}
-                  />
-                )}
-              </div>
-              <div className={cn('flex-1', 'overflow-hidden')}>
+            <DashboardChartCard
+              title="Top Merchants Over Time"
+              description="Highest spending locations"
+              refreshingLabel="Refreshing analytics"
+              isRefreshing={!analyticsLoading && analyticsRefreshing}
+              bodyClassName={cn('overflow-hidden')}
+            >
+              <div className={cn('h-full', 'overflow-hidden')}>
                 <TopMerchantsList
                   merchants={analytics.topMerchants}
                   className={cn('h-full', 'overflow-y-auto', 'pr-1')}
                 />
               </div>
-            </Card>
+            </DashboardChartCard>
 
-            <Card className={cn('h-full', 'flex', 'flex-col')}>
-              <div className={cn('mb-4', 'flex', 'items-center', 'justify-between')}>
-                <div>
-                  <h3
-                    className={cn(
-                      'text-base',
-                      'font-semibold',
-                      'text-slate-900',
-                      'dark:text-slate-100'
-                    )}
-                  >
-                    Net Worth Over Time
-                  </h3>
-                  <p className={cn('text-xs', 'text-slate-600', 'dark:text-slate-400')}>
-                    Historical asset growth
-                  </p>
-                </div>
-                {!netLoading && netRefreshing && (
-                  <RefreshCcw
-                    aria-label="Refreshing net worth"
-                    className={cn(
-                      'h-4',
-                      'w-4',
-                      'text-slate-500',
-                      'dark:text-slate-400',
-                      'animate-spin'
-                    )}
-                  />
-                )}
-              </div>
+            <DashboardChartCard
+              title="Net Worth Over Time"
+              description="Historical asset growth"
+              refreshingLabel="Refreshing net worth"
+              isRefreshing={!netLoading && netRefreshing}
+            >
               {netLoading ? (
                 <div
                   className={cn(
@@ -354,8 +286,8 @@ const DashboardPage: React.FC = () => {
                     <AreaChart data={netSeries} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
                       <defs>
                         <linearGradient id="netGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                          <stop offset="5%" stopColor={colors.semantic.cash} stopOpacity={0.4} />
+                          <stop offset="95%" stopColor={colors.semantic.cash} stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
@@ -418,7 +350,7 @@ const DashboardPage: React.FC = () => {
                       <Area
                         type="monotone"
                         dataKey="value"
-                        stroke="#10b981"
+                        stroke={colors.semantic.cash}
                         strokeWidth={2}
                         fillOpacity={1}
                         fill="url(#netGradient)"
@@ -429,7 +361,7 @@ const DashboardPage: React.FC = () => {
                   </ResponsiveContainer>
                 </div>
               )}
-            </Card>
+            </DashboardChartCard>
           </div>
           <div
             className={cn(
@@ -473,18 +405,15 @@ const DashboardPage: React.FC = () => {
                 { key: 'past-year', label: '1 Year' },
                 { key: 'all-time', label: '5 Years' },
               ].map((option) => (
-                <button
+                <Button
                   type="button"
                   key={option.key}
                   onClick={() => setDateRange(option.key as DateRange)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    dateRange === option.key
-                      ? 'bg-primary-100 dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow'
-                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/60 dark:hover:bg-slate-700/60 hover:-translate-y-[1px]'
-                  }`}
+                  variant={dateRange === option.key ? 'tabActive' : 'tab'}
+                  className="rounded-lg px-3 py-1.5 text-sm font-medium normal-case transition-all duration-200"
                 >
                   {option.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>

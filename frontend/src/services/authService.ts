@@ -36,8 +36,7 @@ interface AuthServiceDependencies {
 export class AuthService {
   private static refreshPromise: Promise<RefreshResponse> | null = null;
 
-  static configure(_deps: AuthServiceDependencies): void {
-  }
+  static configure(_deps: AuthServiceDependencies): void {}
 
   static async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const tracer = trace.getTracer('auth-service');
@@ -69,8 +68,7 @@ export class AuthService {
     }
   }
 
-  static storeToken(..._args: unknown[]): void {
-  }
+  static storeToken(..._args: unknown[]): void {}
 
   static getToken(): string | null {
     return null;
@@ -189,5 +187,4 @@ export class AuthService {
       '/auth/onboarding/complete'
     );
   }
-
 }

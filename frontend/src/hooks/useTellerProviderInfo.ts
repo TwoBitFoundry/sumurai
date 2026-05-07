@@ -68,7 +68,6 @@ export function useTellerProviderInfo(
     setError(null);
     try {
       const info = await gateway.fetchInfo();
-      console.log('useTellerProviderInfo - received from API:', info);
       setCatalogue(info);
     } catch (err) {
       console.warn('Failed to fetch provider information', err);

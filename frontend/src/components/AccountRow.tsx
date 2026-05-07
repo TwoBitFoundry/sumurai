@@ -1,5 +1,6 @@
 import type React from 'react';
 import { cn, GlassCard, RequirementPill } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 
 interface Account {
   id: string;
@@ -93,18 +94,10 @@ const formatMoney = (amount?: number) => {
 };
 
 const AccountTypeDot: React.FC<{ type: Account['type'] }> = ({ type }) => {
-  const colors: Record<Account['type'], string> = {
-    checking: '#38bdf8',
-    savings: '#22c55e',
-    credit: '#f59e0b',
-    loan: '#a78bfa',
-    other: '#94a3b8',
-  };
-
   return (
     <span
       className={cn('inline-block', 'h-2.5', 'w-2.5', 'rounded-full')}
-      style={{ backgroundColor: colors[type] }}
+      style={{ backgroundColor: designTokens.colors.accountTypeDot[type] }}
     />
   );
 };

@@ -52,7 +52,9 @@ export class ErrorBoundary extends Component<Props, State> {
       });
     }
 
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    if (!import.meta.env.VITEST) {
+      console.error('ErrorBoundary caught an error:', error, errorInfo);
+    }
   }
 
   private getErrorType(error: Error): ErrorTone {

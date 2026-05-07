@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useScrollDetection } from '../hooks/useScrollDetection';
 import { AppFooter, AppTitleBar } from '../ui/primitives';
 
-type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
+export type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -13,6 +13,7 @@ interface AppLayoutProps {
   onTabChange: (tab: TabKey) => void;
   onLogout: () => void;
   className?: string;
+  renderAccountFilter?: (scrolled: boolean) => ReactNode;
 }
 
 export function AppLayout({
@@ -21,6 +22,7 @@ export function AppLayout({
   onTabChange,
   onLogout,
   className,
+  renderAccountFilter,
 }: AppLayoutProps) {
   const scrolled = useScrollDetection();
   const { mode, toggle } = useTheme();
@@ -36,7 +38,13 @@ export function AppLayout({
           onLogout={onLogout}
           currentTab={currentTab}
           onTabChange={onTabChange}
-          accountFilterNode={<HeaderAccountFilter scrolled={scrolled} />}
+          accountFilterNode={
+            renderAccountFilter ? (
+              renderAccountFilter(scrolled)
+            ) : (
+              <HeaderAccountFilter scrolled={scrolled} />
+            )
+          }
         />
 
         <main

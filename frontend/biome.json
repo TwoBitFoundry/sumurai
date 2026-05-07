@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.14/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -63,9 +63,14 @@
       "**/*.jsx",
       "**/*.json",
       "!.next",
+      "!next-env.d.ts",
+      "!src/ui/tokens/generated/**",
       "!node_modules",
       "!coverage",
-      "!out"
+      "!test-results/**",
+      "!out",
+      "!.playwright-browsers",
+      "!storybook-static"
     ]
   },
   "overrides": [
@@ -101,6 +106,16 @@
     },
     {
       "includes": ["src/components/widgets/HeroStatCard.tsx"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noArrayIndexKey": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.stories.tsx"],
       "linter": {
         "rules": {
           "suspicious": {

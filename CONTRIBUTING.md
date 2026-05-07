@@ -22,6 +22,36 @@ cd sumurai
 git checkout -b feat/my-change
 ```
 
+## Open source and AI-assisted contributions
+
+This project treats **GitHub Actions as the merge gate**. The default Git hook trades some parity for contributor time.
+
+**`npm run precommit` (Husky):** `npm run backend:ci` then frontend `typecheck`, **Biome check**, **design guard**, **`storybook doctor`**, and **Jest**. It does **not** run `npm ci` in `frontend/`, **`next build`**, Storybook static build, Vitest browser tests, or Playwright iframe smoke. Typecheck already includes `*.stories.tsx` under `src/` with the app.
+
+For **full parity** with `.github/workflows/ci.yml` frontend steps before you push (for example Storybook/Vite/Playwright paths), run **`npm run backend:ci && npm run frontend:ci`** manually.
+
+**Draft pull requests:** the **`ci`** workflow **does not** run GitHub-hosted jobs while the PR is marked draft. Mark the PR ready for review to trigger it (aside from what you run locally with `npm run precommit`). **CodeQL** runs on a weekly schedule only, not on pull requests.
+
+On GitHub, backend or frontend jobs can be **skipped per path filters**; `precommit` still runs **both** stacks locally.
+
+**If you only changed one side**, you can narrow scope while developing:
+
+```bash
+npm run backend:ci
+```
+
+```bash
+npm run frontend:ci
+```
+
+For finer slices while iterating, use the commands in **Frontend Development** and **Backend Validation** below.
+
+**Design-only edits:** changing repo-root `DESIGN.md` triggers the **frontend** CI job (path filter), so token and design guard failures show up there even when no files under `frontend/` changed.
+
+**Skipping hooks:** `git commit --no-verify` is available, but **CI must pass** before maintainers can merge. If an automated or AI-generated patch skips the hook, treat the GitHub `ci` workflow as the review checklist.
+
+**If you use AI coding tools:** follow this file, `AGENTS.md`, and existing patterns; keep changes small; do not commit `.env` or secrets; and ensure new behavior has tests in the existing `frontend/tests/` or `backend/src/tests/` layout.
+
 ## Full Stack
 
 Start the production-like stack:
@@ -51,11 +81,20 @@ npm run build
 npm test
 ```
 
-Notes:
-
 - `npm run dev` starts the Next.js dev server on `http://localhost:3001`.
 - Use the Docker stack at `http://localhost:8080` to validate integrated flows.
 - Supported local host platforms are macOS, Linux, and Windows through Docker Compose.
+
+### Storybook
+
+Component stories live under `frontend/src` as `*.stories.tsx`. From the repo root:
+
+```bash
+npm run storybook
+npm run storybook:build
+```
+
+These delegate to `frontend/` (same as `cd frontend && npm run …`). `storybook` serves `http://localhost:6006`. `storybook:build` writes `frontend/storybook-static` (used by CI Storybook iframe smoke tests). Storybook MCP needs Storybook running first; see `AGENTS.md`.
 
 ## Backend Validation
 

@@ -106,11 +106,7 @@ export function Footer() {
                 'whitespace-nowrap'
               )}
             >
-              <img
-                src="/bmc-new-btn-logo.svg"
-                alt="Buy me a coffee"
-                className={cn('h-5', 'w-5')}
-              />
+              <img src="/bmc-new-btn-logo.svg" alt="Buy me a coffee" className={cn('h-5', 'w-5')} />
               <span>Buy us a coffee</span>
             </a>
             <a

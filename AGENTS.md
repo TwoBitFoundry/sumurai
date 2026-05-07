@@ -14,7 +14,14 @@
 - `npm --prefix frontend install` - install frontend dependencies.
 - `npm --prefix frontend run dev` - Next.js dev server on `http://localhost:3001`.
 - `npm --prefix frontend run build` / `npm --prefix frontend test` - frontend build and tests.
-- `npm run precommit` - run the full validation set used by the repo.
+- `npm run precommit` (Husky default): `backend:ci` plus frontend `typecheck`, Biome check, `design:guard`, `storybook doctor` (fast config sanity), and Jest. Does not reinstall `frontend` deps with `npm ci`, nor `next build`, Storybook static build, Vitest browser tests, Playwright iframe smoke, or Chromium install; `typescript`/`tsc` still covers `*.stories.tsx` under `src/` with the rest of the app sources. Assumes dependencies are installed. Run `npm run backend:ci && npm run frontend:ci` when you need full local parity with the GitHub frontend job (`frontend:ci`).
+
+## Design system guardrails and Storybook AI
+
+- `npm --prefix frontend run design:guard` runs DESIGN.md lint, token drift checks, raw styling guard, and regenerates DTCG + Tailwind exports from `DESIGN.md` (same guard chain as `frontend:design` in root `package.json`).
+- `npm --prefix frontend run storybook` serves Storybook on port 6006. Global Cursor MCP may point at `http://localhost:6006/mcp`; that endpoint exists only while Storybook is running. Start Storybook first, wait until it prints ready, then reload the Cursor window or toggle the Storybook MCP server off and on so the client reconnects. If it still fails, use Output → MCP Logs. Use Storybook MCP tools for component docs and story workflows before inventing new UI patterns.
+- `npm run frontend:playwright-install` (or `npm --prefix frontend run playwright:install`) downloads Playwright’s Chromium for light local use. `npm --prefix frontend run playwright:install-ci` matches CI (`--with-deps`; used by `frontend:ci`).
+- CI builds static Storybook and runs iframe smoke tests (`test:storybook-runtime`) on pull requests and pushes.
 
 ## Coding Style
 - Rust: keep units small and testable, prefer idiomatic error handling, and use `cargo fmt` and `cargo clippy`.
@@ -23,13 +30,15 @@
 
 ## Testing
 - Backend tests live in `backend/src/tests/` and run with `cargo test --manifest-path backend/Cargo.toml`.
-- Frontend tests use Jest + React Testing Library under `frontend/`.
+- Frontend Jest tests live under `frontend/tests/` and own services, domain logic, hooks, API contracts, observability, setup, mocks, token flows, and business rules.
+- Storybook Vitest owns rendered UI states, browser interactions, loading/error/disabled states, form validation display, callback outcomes, and other browser-only component behavior.
+- Playwright Storybook iframe smoke tests own static Storybook load checks without screenshot baselines.
 - Add or adjust tests when changing business logic, especially around auth, provider sync, budgets, and cache behavior.
 
 ## Commit And PRs
 - Use Conventional Commits, for example `feat: add budgets summary chart` or `fix: handle empty transactions`.
 - Keep PRs focused and small.
-- Ensure CI is green before requesting review.
+- Ensure CI is green before requesting review once the PR is marked ready (**`ci`** skips draft PRs on GitHub). **CodeQL** runs on a weekly schedule only.
 - Use `feat!:` or `BREAKING CHANGE:` for breaking changes.
 
 ## Security

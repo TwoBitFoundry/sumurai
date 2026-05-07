@@ -2,7 +2,8 @@ import { CheckIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/outl
 import { TrashIcon as TrashSolidIcon } from '@heroicons/react/24/solid';
 import { Target } from 'lucide-react';
 import React from 'react';
-import { cn, EmptyState } from '@/ui/primitives';
+import { cn, EmptyState, Input } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
 import type { BudgetProgressEntry } from '../hooks/useBudgets';
@@ -61,7 +62,12 @@ export function BudgetList({
         return (
           <li
             key={b.id}
-            className={`group relative overflow-hidden rounded-[1.75rem] border border-slate-200/70 bg-white/90 p-6 shadow-[0_32px_80px_-58px_rgba(15,23,42,0.58)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_38px_110px_-62px_rgba(14,165,233,0.35)] dark:border-white/10 dark:bg-[#111a2f]/90 dark:shadow-[0_32px_90px_-60px_rgba(2,6,23,0.76)] ${tagTheme.ring} ring-1 ring-offset-1 ring-offset-white dark:ring-offset-[#0f172a]`}
+            className={cn(
+              designTokens.components.budgetCard.shell,
+              tagTheme.ring,
+              'ring-1 ring-offset-1',
+              designTokens.surfaces.focus.ringOffsetLightOnDark
+            )}
           >
             <div
               className={cn(
@@ -82,10 +88,14 @@ export function BudgetList({
             />
             <div className={cn('flex', 'items-start', 'justify-between', 'gap-3')}>
               <div
-                className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10 ${tagTheme.tag}`}
+                className={cn(
+                  designTokens.components.pill.base,
+                  'transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
+                  tagTheme.tag
+                )}
               >
                 <span
-                  className={`h-2 w-2 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.85)] dark:shadow-[0_0_0_1px_rgba(15,23,42,0.7)] ${tagTheme.dot}`}
+                  className={cn(designTokens.components.pill.dot, tagTheme.dot)}
                   aria-hidden="true"
                 />
                 {displayName}
@@ -98,28 +108,7 @@ export function BudgetList({
                       onClick={() => onSaveEdit(b.id, Number(draft))}
                       title="Save"
                       aria-label="Save budget"
-                      className={cn(
-                        'inline-flex',
-                        'items-center',
-                        'justify-center',
-                        'rounded-full',
-                        'bg-gradient-to-r',
-                        'from-emerald-500',
-                        'via-emerald-400',
-                        'to-sky-400',
-                        'p-2',
-                        'text-white',
-                        'shadow-[0_18px_45px_-28px_rgba(16,185,129,0.6)]',
-                        'transition-transform',
-                        'duration-200',
-                        'hover:-translate-y-[2px]',
-                        'focus-visible:outline-none',
-                        'focus-visible:ring-2',
-                        'focus-visible:ring-emerald-400/80',
-                        'focus-visible:ring-offset-2',
-                        'focus-visible:ring-offset-white',
-                        'dark:focus-visible:ring-offset-[#0f172a]'
-                      )}
+                      className={cn(designTokens.components.actions.budgetSaveIcon)}
                     >
                       <CheckIcon className={cn('h-4', 'w-4')} />
                     </button>
@@ -128,32 +117,7 @@ export function BudgetList({
                       onClick={onCancelEdit}
                       title="Cancel"
                       aria-label="Cancel edit"
-                      className={cn(
-                        'inline-flex',
-                        'items-center',
-                        'justify-center',
-                        'rounded-full',
-                        'border',
-                        'border-white/60',
-                        'bg-white/80',
-                        'p-2',
-                        'text-slate-600',
-                        'shadow-[0_14px_38px_-28px_rgba(15,23,42,0.55)]',
-                        'transition-transform',
-                        'duration-200',
-                        'hover:-translate-y-[2px]',
-                        'hover:bg-white',
-                        'focus-visible:outline-none',
-                        'focus-visible:ring-2',
-                        'focus-visible:ring-sky-400/70',
-                        'focus-visible:ring-offset-2',
-                        'focus-visible:ring-offset-white',
-                        'dark:border-white/12',
-                        'dark:bg-[#1e293b]/70',
-                        'dark:text-slate-200',
-                        'dark:hover:bg-[#1e293b]/80',
-                        'dark:focus-visible:ring-offset-[#0f172a]'
-                      )}
+                      className={cn(designTokens.components.actions.budgetIconGhost)}
                     >
                       <XMarkIcon className={cn('h-4', 'w-4')} />
                     </button>
@@ -165,32 +129,7 @@ export function BudgetList({
                       onClick={() => onStartEdit(b)}
                       title="Edit budget"
                       aria-label="Edit budget"
-                      className={cn(
-                        'inline-flex',
-                        'items-center',
-                        'justify-center',
-                        'rounded-full',
-                        'border',
-                        'border-white/60',
-                        'bg-white/80',
-                        'p-2',
-                        'text-slate-600',
-                        'shadow-[0_14px_38px_-28px_rgba(15,23,42,0.55)]',
-                        'transition-transform',
-                        'duration-200',
-                        'hover:-translate-y-[2px]',
-                        'hover:bg-white',
-                        'focus-visible:outline-none',
-                        'focus-visible:ring-2',
-                        'focus-visible:ring-sky-400/70',
-                        'focus-visible:ring-offset-2',
-                        'focus-visible:ring-offset-white',
-                        'dark:border-white/12',
-                        'dark:bg-[#1e293b]/70',
-                        'dark:text-slate-200',
-                        'dark:hover:bg-[#1e293b]/80',
-                        'dark:focus-visible:ring-offset-[#0f172a]'
-                      )}
+                      className={cn(designTokens.components.actions.budgetIconGhost)}
                     >
                       <PencilSquareIcon className={cn('h-4', 'w-4')} />
                     </button>
@@ -199,29 +138,7 @@ export function BudgetList({
                       onClick={() => onDelete(b.id)}
                       title="Delete budget"
                       aria-label="Delete budget"
-                      className={cn(
-                        'inline-flex',
-                        'items-center',
-                        'justify-center',
-                        'rounded-full',
-                        'bg-red-500/15',
-                        'p-2',
-                        'text-red-600',
-                        'shadow-[0_16px_38px_-26px_rgba(248,113,113,0.55)]',
-                        'transition-transform',
-                        'duration-200',
-                        'hover:-translate-y-[2px]',
-                        'hover:bg-red-500/25',
-                        'focus-visible:outline-none',
-                        'focus-visible:ring-2',
-                        'focus-visible:ring-red-400/70',
-                        'focus-visible:ring-offset-2',
-                        'focus-visible:ring-offset-white',
-                        'dark:bg-red-500/20',
-                        'dark:text-red-300',
-                        'dark:hover:bg-red-500/25',
-                        'dark:focus-visible:ring-offset-[#0f172a]'
-                      )}
+                      className={cn(designTokens.components.actions.budgetDeleteIcon)}
                     >
                       <TrashSolidIcon className={cn('h-4', 'w-4')} />
                     </button>
@@ -245,10 +162,7 @@ export function BudgetList({
                       htmlFor={`budget-amount-${b.id}`}
                       className={cn(
                         'block',
-                        'text-[0.65rem]',
-                        'font-semibold',
-                        'uppercase',
-                        'tracking-[0.24em]',
+                        designTokens.typography.label,
                         'text-slate-500',
                         'transition-colors',
                         'duration-300',
@@ -257,7 +171,7 @@ export function BudgetList({
                     >
                       Planned amount
                     </label>
-                    <input
+                    <Input
                       id={`budget-amount-${b.id}`}
                       data-testid="budget-amount-input"
                       type="number"
@@ -265,30 +179,8 @@ export function BudgetList({
                       step="0.01"
                       value={draft}
                       onChange={(e) => setAmountDrafts((d) => ({ ...d, [b.id]: e.target.value }))}
-                      className={cn(
-                        'w-full',
-                        'rounded-2xl',
-                        'border',
-                        'border-white/60',
-                        'bg-white/90',
-                        'px-4',
-                        'py-2',
-                        'text-base',
-                        'font-semibold',
-                        'text-slate-800',
-                        'shadow-[0_20px_55px_-38px_rgba(15,23,42,0.55)]',
-                        'transition-colors',
-                        'duration-200',
-                        'focus:outline-none',
-                        'focus:ring-2',
-                        'focus:ring-sky-400/80',
-                        'focus:ring-offset-2',
-                        'focus:ring-offset-white',
-                        'dark:border-white/12',
-                        'dark:bg-[#0f172a]/85',
-                        'dark:text-white',
-                        'dark:focus:ring-offset-[#0f172a]'
-                      )}
+                      variant="glass"
+                      inputSize="lg"
                     />
                   </div>
                   <div
@@ -304,10 +196,7 @@ export function BudgetList({
                     <span
                       className={cn(
                         'block',
-                        'text-[0.65rem]',
-                        'font-semibold',
-                        'uppercase',
-                        'tracking-[0.24em]',
+                        designTokens.typography.label,
                         'text-slate-500',
                         'transition-colors',
                         'duration-300',
@@ -346,10 +235,7 @@ export function BudgetList({
                   <div>
                     <span
                       className={cn(
-                        'text-[0.65rem]',
-                        'font-semibold',
-                        'uppercase',
-                        'tracking-[0.24em]',
+                        designTokens.typography.label,
                         'text-slate-500',
                         'transition-colors',
                         'duration-300',
@@ -375,10 +261,7 @@ export function BudgetList({
                   <div className="text-right">
                     <span
                       className={cn(
-                        'text-[0.65rem]',
-                        'font-semibold',
-                        'uppercase',
-                        'tracking-[0.24em]',
+                        designTokens.typography.label,
                         'text-slate-500',
                         'transition-colors',
                         'duration-300',

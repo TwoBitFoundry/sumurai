@@ -14,13 +14,26 @@ import { setupTestBoundaries } from '../setup/setupTestBoundaries';
 
 describe('ApiClient with Injected IHttpClient', () => {
   let mockHttp: any;
+  let setTimeoutSpy: ReturnType<typeof jest.spyOn>;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    setTimeoutSpy = jest.spyOn(globalThis, 'setTimeout').mockImplementation(((
+      handler: TimerHandler
+    ) => {
+      if (typeof handler === 'function') {
+        handler();
+      }
+      return 0 as unknown as ReturnType<typeof setTimeout>;
+    }) as typeof setTimeout);
     const boundaries = setupTestBoundaries();
     mockHttp = boundaries.http;
     jest.spyOn(AuthService, 'clearToken');
     ApiClient.setTestMaxRetries(0);
+  });
+
+  afterEach(() => {
+    setTimeoutSpy.mockRestore();
   });
 
   describe('Basic HTTP Methods', () => {
@@ -83,6 +96,21 @@ describe('ApiClient with Injected IHttpClient', () => {
       jest.spyOn(AuthService, 'refreshToken').mockRejectedValueOnce(new Error('Refresh failed'));
 
       mockHttp.get.mockRejectedValueOnce(new AuthenticationError());
+
+      await expect(ApiClient.get('/test')).rejects.toThrow(AuthenticationError);
+      expect(AuthService.clearToken).toHaveBeenCalledOnce();
+    });
+
+    it('should clear token when retry after refresh receives another 401', async () => {
+      jest.spyOn(AuthService, 'refreshToken').mockResolvedValueOnce({
+        user_id: 'user-123',
+        expires_at: '2025-12-31T00:00:00Z',
+        onboarding_completed: true,
+      });
+
+      mockHttp.get
+        .mockRejectedValueOnce(new AuthenticationError())
+        .mockRejectedValueOnce(new AuthenticationError());
 
       await expect(ApiClient.get('/test')).rejects.toThrow(AuthenticationError);
       expect(AuthService.clearToken).toHaveBeenCalledOnce();
@@ -204,6 +232,34 @@ describe('ApiClient with Injected IHttpClient', () => {
 
       expect(result).toEqual({ data: 'success' });
       expect(mockHttp.get).toHaveBeenCalledTimes(2);
+    });
+
+    it('should not retry non-retryable client errors', async () => {
+      mockHttp.get.mockRejectedValueOnce(new ApiError(400, 'Invalid request'));
+
+      await expect(ApiClient.get('/test')).rejects.toThrow(ApiError);
+      expect(mockHttp.get).toHaveBeenCalledOnce();
+    });
+
+    it('should retry POST requests on transient errors', async () => {
+      mockHttp.post
+        .mockRejectedValueOnce(new Error('Request timeout'))
+        .mockResolvedValueOnce({ success: true });
+
+      const result = await ApiClient.post('/test', { data: 'test' });
+
+      expect(result).toEqual({ success: true });
+      expect(mockHttp.post).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw NetworkError after exhausting retries', async () => {
+      mockHttp.get
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockRejectedValueOnce(new Error('Network error'));
+
+      await expect(ApiClient.get('/test')).rejects.toThrow(NetworkError);
+      expect(mockHttp.get).toHaveBeenCalledTimes(3);
     });
   });
 

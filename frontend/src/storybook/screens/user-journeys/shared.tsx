@@ -1,0 +1,200 @@
+import type { BackendTransaction } from '@/domain/TransactionTransformer';
+import { sampleDonutByCategory, sampleTopMerchants } from '@/storybook/fixtures/analytics';
+import { sampleBudgetProgressEntries } from '@/storybook/fixtures/budgets';
+import { sampleTransactions, transactionsTablePage } from '@/storybook/fixtures/transactions';
+import type {
+  Account,
+  AnalyticsCategoryResponse,
+  AnalyticsMonthlyTotalsResponse,
+  AnalyticsTopMerchantsResponse,
+  FinancialProvider,
+  Transaction,
+} from '@/types/api';
+
+const storyNow = new Date();
+
+function storyDate(day: number): string {
+  return new Date(storyNow.getFullYear(), storyNow.getMonth(), day, 12, 0, 0).toISOString();
+}
+
+function currentMonthKey(offsetMonths = 0): string {
+  const date = new Date(storyNow.getFullYear(), storyNow.getMonth() + offsetMonths, 1);
+  return date.toISOString().slice(0, 7);
+}
+
+function toBackendTransaction(transaction: Transaction, day: number): BackendTransaction {
+  return {
+    id: transaction.id,
+    date: storyDate(day),
+    merchant_name: transaction.merchant || transaction.name,
+    amount: transaction.amount,
+    category_primary: transaction.category.primary,
+    category_detailed: transaction.category.detailed,
+    category_confidence: transaction.category.confidence_level,
+    account_name: transaction.account_name || 'Story Checking',
+    account_type: transaction.account_type || 'depository',
+    account_mask: transaction.account_mask,
+    running_balance: transaction.running_balance,
+    location: transaction.location,
+  };
+}
+
+export const storyProviderAccounts: Account[] = [
+  {
+    id: 'story-account-1',
+    name: 'Everyday Checking',
+    provider: 'plaid',
+    account_type: 'depository',
+    balance_ledger: 18420.18,
+    balance_available: 18120.18,
+    mask: '4821',
+    institution_name: 'Story Federal Credit Union',
+    connection_id: 'story-plaid-conn-1',
+    transaction_count: 42,
+  },
+  {
+    id: 'story-account-2',
+    name: 'High Yield Savings',
+    provider: 'plaid',
+    account_type: 'savings',
+    balance_ledger: 12840.55,
+    balance_available: 12840.55,
+    mask: '1199',
+    institution_name: 'Story Federal Credit Union',
+    connection_id: 'story-plaid-conn-1',
+    transaction_count: 6,
+  },
+  {
+    id: 'story-account-3',
+    name: 'Rewards Visa Signature',
+    provider: 'plaid',
+    account_type: 'credit',
+    balance_ledger: -842.4,
+    balance_available: -842.4,
+    mask: '7712',
+    institution_name: 'Metro Digital Bank',
+    connection_id: 'story-plaid-conn-2',
+    transaction_count: 128,
+  },
+];
+
+export const storyPlaidStatus = {
+  provider: 'plaid' as FinancialProvider,
+  connections: [
+    {
+      connection_id: 'story-plaid-conn-1',
+      institution_name: 'Story Federal Credit Union',
+      last_sync_at: storyDate(5),
+      transaction_count: 48,
+      account_count: 2,
+      is_connected: true,
+      sync_in_progress: false,
+    },
+    {
+      connection_id: 'story-plaid-conn-2',
+      institution_name: 'Metro Digital Bank',
+      last_sync_at: storyDate(3),
+      transaction_count: 128,
+      account_count: 1,
+      is_connected: true,
+      sync_in_progress: false,
+    },
+  ],
+};
+
+export const storyPlaidSyncTransactions = {
+  transactions: sampleTransactions,
+  metadata: {
+    transaction_count: sampleTransactions.length,
+    account_count: storyProviderAccounts.length,
+    sync_timestamp: storyDate(6),
+    start_date: storyDate(1),
+    end_date: storyDate(10),
+    connection_updated: true,
+  },
+};
+
+export const storyPlaidDisconnect = {
+  success: true,
+  message: 'Disconnected successfully',
+  data_cleared: {
+    transactions: 0,
+    accounts: 0,
+    cache_keys: [],
+  },
+};
+
+export const storyProviderInfo = {
+  available_providers: ['plaid', 'teller'] as FinancialProvider[],
+  default_provider: null,
+  user_provider: null,
+  teller_application_id: 'story-teller-app',
+  teller_environment: 'sandbox',
+};
+
+export const storyProviderSelect = {
+  user_provider: 'plaid' as FinancialProvider,
+};
+
+export const storyBudgetRecords = sampleBudgetProgressEntries.map(
+  ({ spent, percentage, ...budget }) => budget
+);
+
+export const storyTransactions = [...sampleTransactions, ...transactionsTablePage].map(
+  (transaction, index) => toBackendTransaction(transaction, index + 1)
+);
+
+export const storyAnalyticsCategories: AnalyticsCategoryResponse[] = sampleDonutByCategory.map(
+  (item, index) => {
+    const keys = ['food_and_drink', 'transportation', 'income', 'shopping'] as const;
+    const category = keys[index] ?? `category_${index + 1}`;
+    const amount = item.value;
+    const total = sampleDonutByCategory.reduce((sum, entry) => sum + entry.value, 0) || 1;
+    return {
+      category,
+      amount,
+      count: Math.max(1, Math.round(amount / 20)),
+      percentage: Math.round((amount / total) * 1000) / 10,
+    };
+  }
+);
+
+export const storyAnalyticsTopMerchants: AnalyticsTopMerchantsResponse[] = sampleTopMerchants;
+
+export const storyAnalyticsMonthlyTotals: AnalyticsMonthlyTotalsResponse[] = Array.from(
+  { length: 6 },
+  (_, index) => {
+    const month = currentMonthKey(index - 5);
+    return {
+      month,
+      amount: 900 + index * 120,
+    };
+  }
+);
+
+export const storyNetWorthSeries = Array.from({ length: 5 }, (_, index) => {
+  const month = new Date(storyNow.getFullYear(), storyNow.getMonth() - 4 + index, 1);
+  return {
+    date: month.toISOString().slice(0, 10),
+    value: 11800 + index * 850,
+  };
+});
+
+export const storyNetWorthResponse = {
+  currency: 'USD',
+  series: storyNetWorthSeries,
+};
+
+export const storyDashboardAnalyticsSpending = storyAnalyticsCategories.reduce(
+  (sum, category) => sum + category.amount,
+  0
+);
+
+export const storyDashboardFixtures = {
+  accounts: storyProviderAccounts,
+  spendingTotal: storyDashboardAnalyticsSpending,
+  categories: storyAnalyticsCategories,
+  topMerchants: storyAnalyticsTopMerchants,
+  monthlyTotals: storyAnalyticsMonthlyTotals,
+  netWorth: storyNetWorthResponse,
+};

@@ -28,10 +28,16 @@ export const NetWorthOverTimeWidget: React.FC = () => {
       </div>
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={mockData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" />
-          <YAxis />
-          <Tooltip />
+          <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
+          <XAxis dataKey="date" tick={{ fill: colors.chart.axis }} />
+          <YAxis tick={{ fill: colors.chart.axis }} />
+          <Tooltip
+            contentStyle={{
+              background: colors.chart.tooltipBg,
+              borderColor: colors.chart.tooltipBorder,
+              color: colors.chart.tooltipText,
+            }}
+          />
           <Line type="monotone" dataKey="netWorth" stroke={colors.semantic.netWorth} />
         </LineChart>
       </ResponsiveContainer>

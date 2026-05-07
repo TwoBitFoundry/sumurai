@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import type React from 'react';
-import { useState } from 'react';
-import { cn, transitionClasses } from './utils';
+import { cloneElement, isValidElement, useState } from 'react';
+import { designTokens } from '@/ui/tokens';
+import { cn } from './utils';
 
 export interface MenuDropdownProps {
   trigger: React.ReactNode;
@@ -33,29 +34,34 @@ export function MenuDropdown({
   contentClassName,
 }: MenuDropdownProps) {
   const [open, setOpen] = useState(false);
+  const handleTriggerClick = (event: React.MouseEvent) => {
+    if (
+      isValidElement<{ onClick?: React.MouseEventHandler }>(trigger) &&
+      typeof trigger.props.onClick === 'function'
+    ) {
+      trigger.props.onClick(event);
+    }
+    setOpen((v) => !v);
+  };
+
+  const triggerNode = isValidElement<{ onClick?: React.MouseEventHandler }>(trigger) ? (
+    cloneElement(trigger, { onClick: handleTriggerClick })
+  ) : (
+    <button type="button" onClick={handleTriggerClick}>
+      {trigger}
+    </button>
+  );
 
   return (
     <div className={cn('relative', className)}>
-      <button type="button" onClick={() => setOpen((v) => !v)}>
-        {trigger}
-      </button>
+      {triggerNode}
       <AnimatePresence>
         {open && (
           <motion.div
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
-            className={cn(
-              'absolute right-0 z-20 mt-3 w-48',
-              'overflow-hidden rounded-2xl',
-              'border border-white/45 bg-white/95',
-              'p-2',
-              'shadow-[0_22px_60px_-32px_rgba(15,23,42,0.45)]',
-              'backdrop-blur-md',
-              'dark:border-white/12 dark:bg-[#0f172a]/92',
-              'dark:shadow-[0_28px_70px_-36px_rgba(2,6,23,0.7)]',
-              contentClassName
-            )}
+            className={cn(designTokens.components.menuDropdown.content, contentClassName)}
             onClick={() => setOpen(false)}
           >
             {children}
@@ -85,16 +91,7 @@ export function MenuItem({ icon, children, className, ...props }: MenuItemProps)
   return (
     <button
       type="button"
-      className={cn(
-        'flex w-full items-center gap-2',
-        'rounded-xl px-3 py-2',
-        'text-left text-slate-600',
-        transitionClasses,
-        'hover:bg-slate-50',
-        'dark:text-slate-300',
-        'dark:hover:bg-[#1e293b]',
-        className
-      )}
+      className={cn(designTokens.components.menuDropdown.item, className)}
       {...props}
     >
       {icon}

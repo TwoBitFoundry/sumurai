@@ -118,7 +118,11 @@ export class FetchHttpClient implements IHttpClient {
       'Content-Type': 'application/json',
       ...options?.headers,
     };
-    const response = await fetch(url, { method: 'DELETE', headers, credentials: apiFetchCredentials });
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers,
+      credentials: apiFetchCredentials,
+    });
     return this.handleResponse<T>(response);
   }
 

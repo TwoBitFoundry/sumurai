@@ -138,8 +138,8 @@ describe('AuthService with Injected Boundaries', () => {
     });
   });
 
-    describe('validateSession', () => {
-      it('should use injected http client to validate session', async () => {
+  describe('validateSession', () => {
+    it('should use injected http client to validate session', async () => {
       mockHttpClient.get.mockResolvedValueOnce({
         connections: [],
       });
@@ -179,6 +179,13 @@ describe('AuthService with Injected Boundaries', () => {
 
       await AuthService.logout();
 
+      expect(AuthService.getToken()).toBeNull();
+    });
+
+    it('should clear token after logout failure', async () => {
+      mockHttpClient.post.mockRejectedValueOnce(new Error('Server error'));
+
+      await expect(AuthService.logout()).rejects.toThrow('Server error');
       expect(AuthService.getToken()).toBeNull();
     });
   });
