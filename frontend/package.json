@@ -35,6 +35,7 @@
     "test:storybook": "vitest --project=storybook run",
     "test:storybook:watch": "vitest --project=storybook",
     "playwright:install": "playwright install chromium",
+    "playwright:install-ci": "playwright install chromium --with-deps",
     "test:storybook-runtime:run": "playwright test --config playwright.storybook-runtime.config.ts",
     "test:storybook-runtime": "npm run storybook:build && npm run test:storybook-runtime:run"
   },

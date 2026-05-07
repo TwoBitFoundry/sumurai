@@ -24,25 +24,21 @@ git checkout -b feat/my-change
 
 ## Open source and AI-assisted contributions
 
-This project is set up so **GitHub Actions is the source of truth** for the full frontend gate. You are not expected to reproduce every CI step on your laptop before opening a PR, especially if you are blocked on Playwright downloads or a slow production build.
+This project is set up so **GitHub Actions is the source of truth** for merge. Husky runs the same steps as CI for both stacks in one go (ignoring GitHub path filters).
 
-**What runs on every commit (if Husky is installed):** `npm run precommit` from the repo root runs Rust `check`, `fmt`, `clippy`, and `test`, then frontend `typecheck`, **Biome check** (format + lint), **design guard**, and **Jest**. That path avoids `next build`, Storybook, and Playwright, so it stays reachable on modest machines and for drive-by contributors.
+**`npm run precommit`:** `npm run backend:ci` then `npm run frontend:ci`, matching `.github/workflows/ci.yml` job order: Rust `fmt`, `check`, `clippy`, `test` (with `RUST_BACKTRACE=1` on tests like CI), then `npm --prefix frontend ci`, `typecheck`, `lint`, `design:guard`, `test:ci`, `next build`, `playwright install chromium --with-deps`, `storybook:build`, Storybook Vitest, iframe smoke. On GitHub, backend or frontend jobs can be **skipped per path filters**; locally this always runs **both**. Use `git commit --no-verify` if you need to commit before a long run finishes; CI must still pass to merge.
 
-**What runs only in CI (and is still required to merge):** production **`next build`**, **Storybook static build**, **Storybook Vitest**, and **Playwright iframe smoke** tests (Chromium is installed in the workflow). There are **no screenshot baselines** to regenerate when you change UI.
-
-**If you only changed one side of the stack**, you can still run the matching slice locally before pushing, for example:
+**If you only changed one side**, you can narrow scope while developing:
 
 ```bash
-cargo check --manifest-path backend/Cargo.toml --locked --all-targets
-cargo test --manifest-path backend/Cargo.toml --locked
+npm run backend:ci
 ```
 
 ```bash
-npm --prefix frontend run typecheck
-npm --prefix frontend run lint
-npm --prefix frontend run design:guard
-npm --prefix frontend test
+npm run frontend:ci
 ```
+
+For finer slices while iterating, use the commands in **Frontend Development** and **Backend Validation** below.
 
 **Design-only edits:** changing repo-root `DESIGN.md` triggers the **frontend** CI job (path filter), so token and design guard failures show up there even when no files under `frontend/` changed.
 

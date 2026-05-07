@@ -14,13 +14,13 @@
 - `npm --prefix frontend install` - install frontend dependencies.
 - `npm --prefix frontend run dev` - Next.js dev server on `http://localhost:3001`.
 - `npm --prefix frontend run build` / `npm --prefix frontend test` - frontend build and tests.
-- `npm run precommit` - run the default local validation (Rust check, fmt, clippy, test; frontend typecheck, Biome check including format, design guard, Jest). It does not run `next build`, Storybook, or Playwright; GitHub CI adds those for merges to `main`.
+- `npm run precommit` matches the **backend** and **frontend** jobs in `.github/workflows/ci.yml` (ordering and flags, including `jest --ci`, `next build`, `playwright install chromium --with-deps`, Storybook static build, Storybook Vitest, and iframe smoke). Uses `npm --prefix frontend ci` like CI. GitHub may still **skip** a job on a PR via path filters; locally this always runs **both** halves.
 
 ## Design system guardrails and Storybook AI
 
 - `npm --prefix frontend run design:guard` runs DESIGN.md lint, token drift checks, raw styling guard, and regenerates DTCG + Tailwind exports from `DESIGN.md` (same guard chain as `frontend:design` in root `package.json`).
 - `npm --prefix frontend run storybook` serves Storybook on port 6006. Global Cursor MCP may point at `http://localhost:6006/mcp`; that endpoint exists only while Storybook is running. Start Storybook first, wait until it prints ready, then reload the Cursor window or toggle the Storybook MCP server off and on so the client reconnects. If it still fails, use Output → MCP Logs. Use Storybook MCP tools for component docs and story workflows before inventing new UI patterns.
-- `npm run frontend:playwright-install` (or `npm --prefix frontend run playwright:install`) downloads Playwright’s Chromium once; required before `test:storybook-runtime` if you see “Executable doesn't exist” under `~/Library/Caches/ms-playwright/`. Re-run after `@playwright/test` upgrades.
+- `npm run frontend:playwright-install` (or `npm --prefix frontend run playwright:install`) downloads Playwright’s Chromium for light local use. `npm --prefix frontend run playwright:install-ci` matches CI (`--with-deps`). Pre-commit uses the CI-style install.
 - CI builds static Storybook and runs iframe smoke tests (`test:storybook-runtime`) on pull requests and pushes.
 
 ## Coding Style
