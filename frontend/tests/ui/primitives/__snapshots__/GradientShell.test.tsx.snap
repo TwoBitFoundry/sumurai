@@ -1,5 +1,0 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
-
-exports[`GradientShell centering renders centered shell correctly 1`] = `"relative min-h-screen overflow-hidden"`;
-
-exports[`GradientShell centering renders default shell correctly 1`] = `"relative min-h-screen"`;

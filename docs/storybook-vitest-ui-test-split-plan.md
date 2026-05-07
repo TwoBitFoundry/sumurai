@@ -220,6 +220,7 @@ Status: complete
 ### Result
 
 - The plan now reflects the current split: Storybook Vitest owns the migrated UI presentation surface, and Jest keeps the remaining business-logic-focused checks.
+- Follow-up primitive coverage now also lives in Storybook for `AppFooter`, `Badge`, `GradientShell`, and `Select`.
 
 ## Assumptions
 
