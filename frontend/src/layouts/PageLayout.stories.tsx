@@ -5,7 +5,7 @@ import { PageLayout } from './PageLayout';
 const meta = {
   title: 'Layouts/PageLayout',
   component: PageLayout,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
 } satisfies Meta<typeof PageLayout>;
 
 export default meta;

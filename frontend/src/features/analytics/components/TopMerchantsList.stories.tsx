@@ -5,7 +5,7 @@ import { TopMerchantsList } from './TopMerchantsList';
 const meta = {
   title: 'Features/Analytics/TopMerchantsList',
   component: TopMerchantsList,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
   args: {
     merchants: sampleTopMerchants,
   },

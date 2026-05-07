@@ -8,6 +8,7 @@ import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 
 const meta = {
   title: 'App/Screens/Settings',
+  tags: ['autodocs', 'test'],
   parameters: {
     layout: 'fullscreen',
   },

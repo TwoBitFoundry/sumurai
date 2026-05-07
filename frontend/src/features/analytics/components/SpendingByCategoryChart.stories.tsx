@@ -19,7 +19,7 @@ function SpendingByCategoryChartStory(props: { data: DonutDatum[]; total: number
 const meta = {
   title: 'Features/Analytics/SpendingByCategoryChart',
   component: SpendingByCategoryChartStory,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
   args: {
     data: sampleDonutByCategory,
     total: sampleDonutTotal,

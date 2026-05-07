@@ -5,7 +5,7 @@ import { HeroStatCard } from './HeroStatCard';
 const meta = {
   title: 'Components/HeroStatCard',
   component: HeroStatCard,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
   args: {
     index: 1,
     title: 'Active institutions',

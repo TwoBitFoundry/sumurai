@@ -40,7 +40,9 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
       const errorMessage =
         error instanceof Error ? error.message : 'Login failed. Please check your credentials.';
       setError(errorMessage);
-      console.error('Login failed:', error);
+      if (!import.meta.env.VITEST) {
+        console.error('Login failed:', error);
+      }
     } finally {
       setIsLoading(false);
     }

@@ -5,7 +5,7 @@ import { WelcomeStep } from './WelcomeStep';
 const meta = {
   title: 'App/Onboarding/WelcomeStep',
   component: WelcomeStep,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
   parameters: {
     layout: 'padded',
   },

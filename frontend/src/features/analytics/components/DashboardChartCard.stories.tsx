@@ -4,7 +4,7 @@ import { DashboardChartCard } from './DashboardChartCard';
 const meta = {
   title: 'Features/Analytics/DashboardChartCard',
   component: DashboardChartCard,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
   args: {
     title: 'Cash flow',
     description: 'Last 30 days',

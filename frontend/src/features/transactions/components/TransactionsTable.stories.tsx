@@ -5,7 +5,7 @@ import { TransactionsTable } from './TransactionsTable';
 const meta = {
   title: 'Features/Transactions/TransactionsTable',
   component: TransactionsTable,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
   args: {
     onPrev: () => {},
     onNext: () => {},

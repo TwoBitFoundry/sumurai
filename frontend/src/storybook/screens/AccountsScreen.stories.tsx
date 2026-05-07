@@ -29,6 +29,7 @@ const connectedDecorator = [
 
 const meta = {
   title: 'App/Screens/Accounts',
+  tags: ['autodocs', 'test'],
   parameters: {
     layout: 'fullscreen',
   },

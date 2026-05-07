@@ -15,7 +15,7 @@ const storyBank: Record<string, typeof providerAccounts> = {
 const meta = {
   title: 'Components/HeaderAccountFilter',
   component: HeaderAccountFilter,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
   decorators: [
     (Story, context) => {
       const mock =

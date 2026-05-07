@@ -5,6 +5,7 @@ import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 
 const meta = {
   title: 'App/Screens/Transactions',
+  tags: ['autodocs', 'test'],
   parameters: {
     layout: 'fullscreen',
   },

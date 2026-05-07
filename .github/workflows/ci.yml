@@ -87,6 +87,8 @@ jobs:
     runs-on: ubuntu-24.04
     needs: changes
     if: github.event_name != 'pull_request' || needs.changes.outputs.frontend == 'true'
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/frontend/.playwright-browsers
     defaults:
       run:
         working-directory: frontend
@@ -126,6 +128,14 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+      - name: Cache Playwright Chromium
+        uses: actions/cache@v4
+        with:
+          path: frontend/.playwright-browsers
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            playwright-chromium-${{ runner.os }}-
 
       - name: Install Playwright Chromium
         run: npx playwright install chromium --with-deps
