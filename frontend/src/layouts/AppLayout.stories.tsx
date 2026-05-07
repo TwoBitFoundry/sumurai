@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { fn } from 'storybook/test';
+import { expect, fn, userEvent, within } from 'storybook/test';
 import { AppLayout } from './AppLayout';
 
 const meta = {
   title: 'Layouts/AppLayout',
   component: AppLayout,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
   parameters: {
     layout: 'fullscreen',
   },
@@ -32,6 +32,15 @@ export const Dashboard: Story = {
         Dashboard body placeholder
       </div>
     ),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(/all accounts/i)).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: 'Transactions' }));
+    await expect(args.onTabChange).toHaveBeenCalledWith('transactions');
+    await userEvent.click(canvas.getByLabelText('Toggle theme'));
+    await userEvent.click(canvas.getByRole('button', { name: /logout/i }));
+    await expect(args.onLogout).toHaveBeenCalledTimes(1);
   },
 };
 

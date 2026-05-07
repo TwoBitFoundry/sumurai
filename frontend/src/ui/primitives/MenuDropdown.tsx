@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import type React from 'react';
-import { useState } from 'react';
+import { cloneElement, isValidElement, useState } from 'react';
 import { designTokens } from '@/ui/tokens';
 import { cn } from './utils';
 
@@ -34,12 +34,27 @@ export function MenuDropdown({
   contentClassName,
 }: MenuDropdownProps) {
   const [open, setOpen] = useState(false);
+  const handleTriggerClick = (event: React.MouseEvent) => {
+    if (
+      isValidElement<{ onClick?: React.MouseEventHandler }>(trigger) &&
+      typeof trigger.props.onClick === 'function'
+    ) {
+      trigger.props.onClick(event);
+    }
+    setOpen((v) => !v);
+  };
+
+  const triggerNode = isValidElement<{ onClick?: React.MouseEventHandler }>(trigger)
+    ? cloneElement(trigger, { onClick: handleTriggerClick })
+    : (
+      <button type="button" onClick={handleTriggerClick}>
+        {trigger}
+      </button>
+    );
 
   return (
     <div className={cn('relative', className)}>
-      <button type="button" onClick={() => setOpen((v) => !v)}>
-        {trigger}
-      </button>
+      {triggerNode}
       <AnimatePresence>
         {open && (
           <motion.div

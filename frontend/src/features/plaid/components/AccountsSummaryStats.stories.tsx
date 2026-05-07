@@ -1,10 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { expect, within } from 'storybook/test';
 import { AccountsSummaryStats } from './AccountsSummaryStats';
 
 const meta = {
   title: 'Features/Plaid/AccountsSummaryStats',
   component: AccountsSummaryStats,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
   args: {
     flowError: null,
     summary: {
@@ -34,6 +35,11 @@ export const FlowError: Story = {
       accounts: 3,
       latestSync: null,
     },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByTestId('accounts-flow-error')).toBeVisible();
+    await expect(canvas.getByText(/needs your attention/i)).toBeVisible();
   },
 };
 
