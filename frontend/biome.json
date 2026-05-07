@@ -67,6 +67,7 @@
       "!src/ui/tokens/generated/**",
       "!node_modules",
       "!coverage",
+      "!test-results/**",
       "!out",
       "!.playwright-browsers",
       "!storybook-static"

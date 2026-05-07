@@ -24,9 +24,15 @@ git checkout -b feat/my-change
 
 ## Open source and AI-assisted contributions
 
-This project is set up so **GitHub Actions is the source of truth** for merge. Husky runs the same steps as CI for both stacks in one go (ignoring GitHub path filters).
+This project treats **GitHub Actions as the merge gate**. The default Git hook trades some parity for contributor time.
 
-**`npm run precommit`:** `npm run backend:ci` then `npm run frontend:ci`, matching `.github/workflows/ci.yml` job order: Rust `fmt`, `check`, `clippy`, `test` (with `RUST_BACKTRACE=1` on tests like CI), then `npm --prefix frontend ci`, `typecheck`, `lint`, `design:guard`, `test:ci`, `next build`, `playwright install chromium --with-deps`, `storybook:build`, Storybook Vitest, iframe smoke. On GitHub, backend or frontend jobs can be **skipped per path filters**; locally this always runs **both**. Use `git commit --no-verify` if you need to commit before a long run finishes; CI must still pass to merge.
+**`npm run precommit` (Husky):** `npm run backend:ci` then frontend `typecheck`, **Biome check**, **design guard**, **`storybook doctor`**, and **Jest**. It does **not** run `npm ci` in `frontend/`, **`next build`**, Storybook static build, Vitest browser tests, or Playwright iframe smoke. Typecheck already includes `*.stories.tsx` under `src/` with the app.
+
+For **full parity** with `.github/workflows/ci.yml` frontend steps before you push (for example Storybook/Vite/Playwright paths), run **`npm run backend:ci && npm run frontend:ci`** manually.
+
+**Draft pull requests:** the **`ci`** and **CodeQL** workflows **do not** run GitHub-hosted jobs while the PR is marked draft. Mark the PR ready for review to trigger them (aside from what you run locally with `npm run precommit`).
+
+On GitHub, backend or frontend jobs can be **skipped per path filters**; `precommit` still runs **both** stacks locally.
 
 **If you only changed one side**, you can narrow scope while developing:
 

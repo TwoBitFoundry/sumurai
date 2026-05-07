@@ -23,11 +23,12 @@
     "frontend:storybook-runtime:run": "npm --prefix frontend run test:storybook-runtime:run",
     "frontend:storybook-test": "npm --prefix frontend run test:storybook",
     "frontend:playwright-install": "npm --prefix frontend run playwright:install",
-    "frontend:ci": "npm --prefix frontend ci && npm --prefix frontend run typecheck && npm --prefix frontend run lint && npm --prefix frontend run design:guard && npm --prefix frontend run test:ci && npm --prefix frontend run build && npm --prefix frontend run playwright:install-ci && npm --prefix frontend run storybook:build && npm --prefix frontend run test:storybook && npm --prefix frontend run test:storybook-runtime:run",
+    "frontend:storybook-doctor": "npm --prefix frontend run storybook:doctor",
+    "frontend:ci": "npm --prefix frontend ci && npm --prefix frontend run typecheck && npm --prefix frontend run lint && npm --prefix frontend run storybook:doctor && npm --prefix frontend run design:guard && npm --prefix frontend run test:ci && npm --prefix frontend run build && npm --prefix frontend run playwright:install-ci && npm --prefix frontend run storybook:build && npm --prefix frontend run test:storybook && npm --prefix frontend run test:storybook-runtime:run",
     "test:storybook-runtime": "npm --prefix frontend run test:storybook-runtime",
     "storybook": "npm --prefix frontend run storybook",
     "storybook:build": "npm --prefix frontend run storybook:build",
-    "precommit": "npm run backend:ci && npm run frontend:ci"
+    "precommit": "npm run backend:ci && npm run frontend:typecheck && npm run frontend:lint && npm run frontend:design && npm run frontend:storybook-doctor && npm run frontend:test"
   },
   "devDependencies": {
     "@semantic-release/commit-analyzer": "^13.0.1",

@@ -42,4 +42,5 @@ Use the commands that match the touched area:
 - Frontend tests: `npm --prefix frontend test`
 - Frontend typecheck: `npm --prefix frontend run typecheck`
 - Frontend build: `npm --prefix frontend run build`
-- Full repo validation (matches CI jobs locally): `npm run precommit`
+- Full repo validation (default Husky hook): `npm run precommit`
+- Full CI parity for backend + frontend `npm`-install job: `npm run backend:ci && npm run frontend:ci`

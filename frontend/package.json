@@ -31,6 +31,7 @@
     "design:styling": "node ./scripts/check-raw-styling.mjs",
     "design:guard": "node ./scripts/run-designmd.mjs --quiet lint ../DESIGN.md && node ./scripts/check-design-tokens-drift.mjs && node ./scripts/check-raw-styling.mjs && node ./scripts/run-designmd.mjs --quiet export --format dtcg ../DESIGN.md && node ./scripts/run-designmd.mjs --quiet export --format css-tailwind ../DESIGN.md",
     "storybook": "storybook dev -p 6006",
+    "storybook:doctor": "storybook doctor",
     "storybook:build": "storybook build -o storybook-static",
     "test:storybook": "vitest --project=storybook run",
     "test:storybook:watch": "vitest --project=storybook",
