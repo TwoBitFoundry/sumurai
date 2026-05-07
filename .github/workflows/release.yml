@@ -23,6 +23,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
+          ssh-key: ${{ secrets.SUMURAI_DEPLOY_KEY }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
