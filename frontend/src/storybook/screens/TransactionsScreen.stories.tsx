@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { AuthenticatedScreenShell } from '@/storybook/screenSlices/AuthenticatedScreenShell';
 import { TransactionsScreenSlice } from '@/storybook/screenSlices/TransactionsScreenSlice';
 
 const meta = {
-  title: 'Screens/Transactions',
+  title: 'App/Screens/Transactions',
   parameters: {
     layout: 'fullscreen',
   },
@@ -25,7 +26,7 @@ export const Loaded: Story = {
 };
 
 export const LoadedDark: Story = {
-  globals: { theme: 'dark' },
+  ...storyDarkTheme,
   render: () => <TransactionsScreenSlice state="loaded" />,
 };
 

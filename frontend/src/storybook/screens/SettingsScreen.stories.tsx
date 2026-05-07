@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { AuthenticatedScreenShell } from '@/storybook/screenSlices/AuthenticatedScreenShell';
 import {
   type SettingsScreenScenario,
@@ -6,7 +7,7 @@ import {
 } from '@/storybook/screenSlices/SettingsScreenSlice';
 
 const meta = {
-  title: 'Screens/Settings',
+  title: 'App/Screens/Settings',
   parameters: {
     layout: 'fullscreen',
   },
@@ -34,7 +35,7 @@ function scenarioStory(scenario: SettingsScreenScenario): Story {
 export const Default: Story = scenarioStory('default');
 
 export const DefaultDark: Story = {
-  globals: { theme: 'dark' },
+  ...storyDarkTheme,
   render: () => <SettingsScreenSlice scenario="default" />,
 };
 

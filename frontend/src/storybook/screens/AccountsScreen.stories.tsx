@@ -5,6 +5,7 @@ import {
   AccountsProviderPickerSlice,
 } from '@/storybook/screenSlices/AccountsScreenSlice';
 import { AuthenticatedScreenShell } from '@/storybook/screenSlices/AuthenticatedScreenShell';
+import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 
 const pickerDecorator = [
   (Story) => (
@@ -27,7 +28,7 @@ const connectedDecorator = [
 ];
 
 const meta = {
-  title: 'Screens/Accounts',
+  title: 'App/Screens/Accounts',
   parameters: {
     layout: 'fullscreen',
   },
@@ -38,12 +39,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const ProviderPicker: Story = {
-  decorators: pickerDecorator,
-  render: () => <AccountsProviderPickerSlice />,
-};
-
-export const ProviderPickerDark: Story = {
-  globals: { theme: 'dark' },
   decorators: pickerDecorator,
   render: () => <AccountsProviderPickerSlice />,
 };
@@ -59,7 +54,7 @@ export const Connected: Story = {
 };
 
 export const ConnectedDark: Story = {
-  globals: { theme: 'dark' },
+  ...storyDarkTheme,
   decorators: connectedDecorator,
   render: () => <AccountsConnectedScreenSlice />,
 };

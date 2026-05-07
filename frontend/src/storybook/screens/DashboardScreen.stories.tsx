@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { AuthenticatedScreenShell } from '@/storybook/screenSlices/AuthenticatedScreenShell';
 import { DashboardScreenSlice } from '@/storybook/screenSlices/DashboardScreenSlice';
 
 const meta = {
-  title: 'Screens/Dashboard',
+  title: 'App/Screens/Dashboard',
   parameters: {
     layout: 'fullscreen',
   },
@@ -25,7 +26,7 @@ export const HappyPath: Story = {
 };
 
 export const HappyPathDark: Story = {
-  globals: { theme: 'dark' },
+  ...storyDarkTheme,
   render: () => <DashboardScreenSlice variant="happy" />,
 };
 

@@ -13,7 +13,7 @@ const storyIds = [
   'features-budgets-budgetsummarycard--default',
   'features-transactions-transactionstoolbar--default',
   'features-analytics-dashboardchartcard--default',
-  'storybook-fullpagesmoke--dashboard-slice',
+  'storybook-fullpagesmoke--deprecated-placeholder',
 ];
 ```
 
@@ -283,7 +283,7 @@ Implementation tasks:
 - Dashboard uses fixture-backed donut, merchants, net worth series ([`analytics.ts`](../frontend/src/storybook/fixtures/analytics.ts), [`netWorth.ts`](../frontend/src/storybook/fixtures/netWorth.ts)) and static hero stats for balance overview instead of [`BalancesOverview`](../frontend/src/components/BalancesOverview.tsx).
 - Settings uses [`SettingsScreenSlice`](../frontend/src/storybook/screenSlices/SettingsScreenSlice.tsx) with read-only snapshot fields per scenario so forms never call [`SettingsService`](../frontend/src/services/SettingsService.ts).
 - Dark canonical stories set `globals.theme` to `dark` on selected exports; other states rely on the toolbar theme global from [`.storybook/preview.tsx`](../frontend/.storybook/preview.tsx).
-- [`FullPageSmoke.stories.tsx`](../frontend/src/storybook/FullPageSmoke.stories.tsx) now points reviewers at **Screens/** instead of composing widgets inline.
+- [`FullPageSmoke.stories.tsx`](../frontend/src/storybook/FullPageSmoke.stories.tsx) now points reviewers at **App/Screens** instead of composing widgets inline.
 
 ### Phase 5 Storybook IDs for MCP `preview-stories`
 
@@ -291,13 +291,13 @@ With `npm --prefix frontend run storybook` on port 6006, representative IDs incl
 
 | Title group | Stories |
 |-------------|---------|
-| `Screens/Dashboard` | `happy-path`, `happy-path-dark`, `analytics-loading`, `net-worth-loading`, `net-worth-error` |
-| `Screens/Transactions` | `loaded`, `loaded-dark`, `loading`, `empty`, `api-error`, `dense-merchant-row` |
-| `Screens/Budgets` | `loaded`, `loaded-dark`, `empty`, `server-error`, `add-budget-form` |
-| `Screens/Accounts` | `provider-picker`, `provider-picker-dark`, `provider-picker-loading`, `connected`, `connected-dark`, `connected-flow-error`, `connected-empty-connections`, `connected-toast`, `sync-in-progress` |
-| `Screens/Settings` | `default`, `default-dark`, `password-invalid`, `password-mismatch`, `password-error-banner`, `success-banner`, `delete-modal`, `delete-modal-error`, `delete-confirm-typing`, `delete-confirm-ready` |
+| `App/Screens/Dashboard` | `happy-path`, `happy-path-dark`, `analytics-loading`, `net-worth-loading`, `net-worth-error` |
+| `App/Screens/Transactions` | `loaded`, `loaded-dark`, `loading`, `empty`, `api-error`, `dense-merchant-row` |
+| `App/Screens/Budgets` | `loaded`, `loaded-dark`, `empty`, `server-error`, `add-budget-form` |
+| `App/Screens/Accounts` | `provider-picker`, `provider-picker-loading`, `connected`, `connected-dark`, `connected-flow-error`, `connected-empty-connections`, `connected-toast`, `sync-in-progress` |
+| `App/Screens/Settings` | `default`, `default-dark`, `password-invalid`, `password-mismatch`, `password-error-banner`, `success-banner`, `delete-modal`, `delete-modal-error`, `delete-confirm-typing`, `delete-confirm-ready` |
 
-Preview URLs follow `http://localhost:6006/?path=/story/<kebab-title>--<kebab-story>` (for example `screens-dashboard--happy-path`).
+Preview URLs follow `http://localhost:6006/?path=/story/<kebab-title>--<kebab-story>` (for example `app-screens-dashboard--happy-path`).
 
 ### Phase 5 TDD log
 
