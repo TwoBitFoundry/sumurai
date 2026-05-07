@@ -43,9 +43,20 @@ export const Journey: Story = {
       expect(canvas.getByRole('button', { name: /next page/i })).toBeVisible();
     });
 
-    const nextPage = canvas.getByRole('button', { name: /next page/i });
+    const page = within(canvas.getByTestId('transactions-page'));
+
+    await waitFor(() => {
+      expect(page.getByText(/page 1 of 2/i)).toBeVisible();
+    });
+
+    const nextPage = page.getByRole('button', { name: /next page/i });
+    await waitFor(() => {
+      expect(nextPage).not.toBeDisabled();
+    });
     await userEvent.click(nextPage);
-    await expect(canvas.getByText(/page 2 of 2/i)).toBeVisible();
+    await waitFor(() => {
+      expect(page.getByText(/page 2 of 2/i)).toBeVisible();
+    });
 
     const search = canvas.getByPlaceholderText('Search transactions...');
     await userEvent.type(search, 'Coffee');
