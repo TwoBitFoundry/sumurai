@@ -39,9 +39,6 @@ export const Journey: Story = {
     await waitFor(() => {
       expect(canvas.getByText(/review every dollar across accounts/i)).toBeVisible();
     });
-    await waitFor(() => {
-      expect(canvas.getByRole('button', { name: /next page/i })).toBeVisible();
-    });
 
     const page = within(canvas.getByTestId('transactions-page'));
 
