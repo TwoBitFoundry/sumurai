@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
-import { AuthService } from './services/authService';
 import { SessionExpiryModal, SessionManager } from './SessionManager';
+import { AuthService } from './services/authService';
 import { GlassCard } from './ui/primitives';
 
 type SessionManagerStoryArgs = {

@@ -138,8 +138,8 @@ describe('AuthService with Injected Boundaries', () => {
     });
   });
 
-    describe('validateSession', () => {
-      it('should use injected http client to validate session', async () => {
+  describe('validateSession', () => {
+    it('should use injected http client to validate session', async () => {
       mockHttpClient.get.mockResolvedValueOnce({
         connections: [],
       });

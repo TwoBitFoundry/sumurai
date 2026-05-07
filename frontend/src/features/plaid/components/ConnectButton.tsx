@@ -14,12 +14,7 @@ const ConnectButton = ({
 }: ConnectButtonProps) => {
   const buttonVariant = variant === 'secondary' ? 'secondary' : 'connect';
   return (
-    <Button
-      type="button"
-      variant={buttonVariant}
-      className={cn(className)}
-      {...props}
-    >
+    <Button type="button" variant={buttonVariant} className={cn(className)} {...props}>
       <Plus className={cn('h-4', 'w-4')} />
       <span>{children ?? 'Add account'}</span>
     </Button>

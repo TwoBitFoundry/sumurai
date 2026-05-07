@@ -99,7 +99,11 @@ export const primitiveTokenRecipes = {
     ],
   },
   badge: {
-    base: ['inline-flex items-center justify-center', 'font-semibold uppercase', 'transition-all duration-200 ease-out'],
+    base: [
+      'inline-flex items-center justify-center',
+      'font-semibold uppercase',
+      'transition-all duration-200 ease-out',
+    ],
     default: [
       'bg-white/70 text-slate-600',
       'shadow-[0_12px_32px_-22px_rgba(15,23,42,0.45)]',
@@ -220,7 +224,8 @@ export const primitiveTokenRecipes = {
     divider: 'w-px h-6 bg-slate-200 dark:bg-slate-600',
     themeToggle:
       'rounded-lg !bg-amber-500/80 dark:!bg-purple-600/80 hover:!bg-amber-600/80 dark:hover:!bg-purple-700/80 !border !border-amber-400/30 dark:!border-purple-500/30 !text-white backdrop-blur-sm transition-colors',
-    settingsIdle: 'border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600',
+    settingsIdle:
+      'border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600',
   },
   pageLayout: {
     shell: [
@@ -268,7 +273,8 @@ export const primitiveTokenRecipes = {
     ],
     badge:
       'inline-flex items-center justify-center rounded-full bg-white/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-600 shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/75 dark:text-slate-200',
-    title: 'text-3xl font-bold text-slate-900 transition-colors duration-300 ease-out dark:text-white sm:text-4xl',
+    title:
+      'text-3xl font-bold text-slate-900 transition-colors duration-300 ease-out dark:text-white sm:text-4xl',
     subtitle:
       'text-base leading-relaxed text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300',
     error:
@@ -291,13 +297,13 @@ export const primitiveTokenRecipes = {
       'dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)]',
       'cursor-pointer',
     ],
-    title: 'text-lg font-semibold text-slate-700 transition-colors duration-500 dark:text-slate-200',
+    title:
+      'text-lg font-semibold text-slate-700 transition-colors duration-500 dark:text-slate-200',
     description:
       'text-sm text-slate-500 transition-colors duration-500 dark:text-slate-400 max-w-sm',
   },
   pill: {
-    base:
-      'inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-[0.18em]',
+    base: 'inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-[0.18em]',
     dot: 'h-2 w-2 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.85)] dark:shadow-[0_0_0_1px_rgba(15,23,42,0.7)]',
     fadeLeft:
       'pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80',

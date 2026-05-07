@@ -44,13 +44,13 @@ export function MenuDropdown({
     setOpen((v) => !v);
   };
 
-  const triggerNode = isValidElement<{ onClick?: React.MouseEventHandler }>(trigger)
-    ? cloneElement(trigger, { onClick: handleTriggerClick })
-    : (
-      <button type="button" onClick={handleTriggerClick}>
-        {trigger}
-      </button>
-    );
+  const triggerNode = isValidElement<{ onClick?: React.MouseEventHandler }>(trigger) ? (
+    cloneElement(trigger, { onClick: handleTriggerClick })
+  ) : (
+    <button type="button" onClick={handleTriggerClick}>
+      {trigger}
+    </button>
+  );
 
   return (
     <div className={cn('relative', className)}>

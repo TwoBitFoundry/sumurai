@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
-import { Alert } from '@/ui/primitives';
-import { cn } from '@/ui/primitives';
+import { Alert, cn } from '@/ui/primitives';
 import AccountsPage from '@/views/AccountsPage';
 import BudgetsPage from '@/views/BudgetsPage';
 import DashboardPage from '@/views/DashboardPage';

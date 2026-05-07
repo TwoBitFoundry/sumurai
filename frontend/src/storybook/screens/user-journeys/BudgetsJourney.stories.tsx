@@ -2,8 +2,8 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { AccountFilterProvider } from '@/hooks/useAccountFilter';
 import BudgetsPage from '@/views/BudgetsPage';
-import { jsonResponse, route, StoryApiScope } from './storyApi';
 import { storyBudgetRecords, storyProviderAccounts, storyTransactions } from './shared';
+import { jsonResponse, route, StoryApiScope } from './storyApi';
 
 const meta = {
   title: 'App/Screens/User Journeys/Budgets',
@@ -71,7 +71,10 @@ export const Journey: Story = {
 
     const addBudget = canvas.getByRole('button', { name: /add budget/i });
     await userEvent.click(addBudget);
-    await userEvent.selectOptions(canvas.getByTestId('budget-category-select'), 'bills_and_utilities');
+    await userEvent.selectOptions(
+      canvas.getByTestId('budget-category-select'),
+      'bills_and_utilities'
+    );
     await userEvent.type(canvas.getByTestId('budget-amount-input'), '275');
     await userEvent.click(canvas.getByTestId('budget-save'));
     await waitFor(() => {

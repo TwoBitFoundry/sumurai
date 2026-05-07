@@ -75,9 +75,7 @@ export function Modal({
               {...props}
             >
               {labelledBy ? <Dialog.Title className="sr-only" aria-hidden="true" /> : null}
-              {description ? (
-                <Dialog.Description className="sr-only" aria-hidden="true" />
-              ) : null}
+              {description ? <Dialog.Description className="sr-only" aria-hidden="true" /> : null}
               {children}
             </Dialog.Content>
           </div>

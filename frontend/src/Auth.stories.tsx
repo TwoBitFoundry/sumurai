@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { expect, fn, userEvent, within, waitFor } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { LoginScreen, RegisterScreen } from './Auth';
 

@@ -2,8 +2,8 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { AccountFilterProvider } from '@/hooks/useAccountFilter';
 import DashboardPage from '@/views/DashboardPage';
-import { jsonResponse, route, StoryApiScope } from './storyApi';
 import { storyDashboardFixtures, storyProviderAccounts } from './shared';
+import { jsonResponse, route, StoryApiScope } from './storyApi';
 
 const meta = {
   title: 'App/Screens/User Journeys/Dashboard',
@@ -22,8 +22,12 @@ const handlers = [
   route('GET', '/analytics/spending', () => jsonResponse(storyDashboardFixtures.spendingTotal)),
   route('GET', '/analytics/categories', () => jsonResponse(storyDashboardFixtures.categories)),
   route('GET', '/analytics/top-merchants', () => jsonResponse(storyDashboardFixtures.topMerchants)),
-  route('GET', '/analytics/monthly-totals', () => jsonResponse(storyDashboardFixtures.monthlyTotals)),
-  route('GET', '/analytics/net-worth-over-time', () => jsonResponse(storyDashboardFixtures.netWorth)),
+  route('GET', '/analytics/monthly-totals', () =>
+    jsonResponse(storyDashboardFixtures.monthlyTotals)
+  ),
+  route('GET', '/analytics/net-worth-over-time', () =>
+    jsonResponse(storyDashboardFixtures.netWorth)
+  ),
 ];
 
 function DashboardJourney() {

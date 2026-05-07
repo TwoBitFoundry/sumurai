@@ -3,34 +3,31 @@ import type React from 'react';
 import { designTokens } from '@/ui/tokens';
 import { cn } from './utils';
 
-const glassCardVariants = cva(
-  [...designTokens.components.glassCard.base],
-  {
-    variants: {
-      variant: {
-        default: [...designTokens.components.glassCard.default],
-        auth: [...designTokens.components.glassCard.auth],
-        accent: [...designTokens.components.glassCard.accent],
-      },
-      rounded: {
-        default: designTokens.components.glassCard.rounded.default,
-        lg: designTokens.components.glassCard.rounded.lg,
-        xl: designTokens.components.glassCard.rounded.xl,
-      },
-      padding: {
-        none: designTokens.components.glassCard.padding.none,
-        sm: designTokens.components.glassCard.padding.sm,
-        md: designTokens.components.glassCard.padding.md,
-        lg: designTokens.components.glassCard.padding.lg,
-      },
+const glassCardVariants = cva([...designTokens.components.glassCard.base], {
+  variants: {
+    variant: {
+      default: [...designTokens.components.glassCard.default],
+      auth: [...designTokens.components.glassCard.auth],
+      accent: [...designTokens.components.glassCard.accent],
     },
-    defaultVariants: {
-      variant: 'default',
-      rounded: 'default',
-      padding: 'md',
+    rounded: {
+      default: designTokens.components.glassCard.rounded.default,
+      lg: designTokens.components.glassCard.rounded.lg,
+      xl: designTokens.components.glassCard.rounded.xl,
     },
-  }
-);
+    padding: {
+      none: designTokens.components.glassCard.padding.none,
+      sm: designTokens.components.glassCard.padding.sm,
+      md: designTokens.components.glassCard.padding.md,
+      lg: designTokens.components.glassCard.padding.lg,
+    },
+  },
+  defaultVariants: {
+    variant: 'default',
+    rounded: 'default',
+    padding: 'md',
+  },
+});
 
 export interface GlassCardProps
   extends React.HTMLAttributes<HTMLDivElement>,

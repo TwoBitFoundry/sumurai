@@ -46,9 +46,7 @@ export function EmptyState({
       )}
       {...props}
     >
-      <div
-        className={cn(...designTokens.components.emptyState.iconWrapper)}
-      >
+      <div className={cn(...designTokens.components.emptyState.iconWrapper)}>
         <Icon className={cn('h-6 w-6 md:h-8 md:w-8 lg:h-10 lg:w-10')} />
       </div>
       <div className={cn(designTokens.components.emptyState.title)}>{title}</div>

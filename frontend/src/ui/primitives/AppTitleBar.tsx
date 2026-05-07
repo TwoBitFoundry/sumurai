@@ -6,26 +6,23 @@ import { designTokens } from '@/ui/tokens';
 import { Button } from './Button';
 import { cn } from './utils';
 
-const titleBarVariants = cva(
-  [...designTokens.components.appTitleBar.base],
-  {
-    variants: {
-      state: {
-        unauthenticated: [...designTokens.components.appTitleBar.shell],
-        onboarding: [...designTokens.components.appTitleBar.shell],
-        authenticated: [...designTokens.components.appTitleBar.shell],
-      },
-      scrolled: {
-        true: designTokens.components.appTitleBar.height.scrolled,
-        false: designTokens.components.appTitleBar.height.default,
-      },
+const titleBarVariants = cva([...designTokens.components.appTitleBar.base], {
+  variants: {
+    state: {
+      unauthenticated: [...designTokens.components.appTitleBar.shell],
+      onboarding: [...designTokens.components.appTitleBar.shell],
+      authenticated: [...designTokens.components.appTitleBar.shell],
     },
-    defaultVariants: {
-      state: 'authenticated',
-      scrolled: false,
+    scrolled: {
+      true: designTokens.components.appTitleBar.height.scrolled,
+      false: designTokens.components.appTitleBar.height.default,
     },
-  }
-);
+  },
+  defaultVariants: {
+    state: 'authenticated',
+    scrolled: false,
+  },
+});
 
 type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
@@ -169,7 +166,9 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                   size={scrolled ? 'xs' : 'sm'}
                   className={cn(
                     'rounded-xl',
-                    currentTab !== 'settings' ? designTokens.components.appTitleBar.settingsIdle : ''
+                    currentTab !== 'settings'
+                      ? designTokens.components.appTitleBar.settingsIdle
+                      : ''
                   )}
                   aria-label="Settings"
                   title="Settings"

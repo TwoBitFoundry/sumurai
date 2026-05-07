@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { designTokens } from '@/ui/tokens';
 import { cn } from '@/ui/primitives/utils';
+import { designTokens } from '@/ui/tokens';
 
 interface PageLayoutProps {
   badge?: string;
@@ -25,18 +25,10 @@ export function PageLayout({
 }: PageLayoutProps) {
   return (
     <div className={cn('space-y-8', className)}>
-      <section
-        className={cn(
-          ...designTokens.components.pageLayout.shell
-        )}
-      >
+      <section className={cn(...designTokens.components.pageLayout.shell)}>
         <div className={cn('pointer-events-none', 'absolute', 'inset-0')}>
-          <div
-            className={cn(designTokens.components.pageLayout.innerRing)}
-          />
-          <div
-            className={cn(designTokens.components.pageLayout.innerGradient)}
-          />
+          <div className={cn(designTokens.components.pageLayout.innerRing)} />
+          <div className={cn(designTokens.components.pageLayout.innerGradient)} />
         </div>
 
         <div className={cn('relative', 'z-10', 'flex', 'flex-col', 'gap-5')}>
@@ -52,24 +44,12 @@ export function PageLayout({
           >
             <div className={cn('max-w-2xl', 'space-y-3')}>
               {badge && (
-                <span
-                  className={cn(designTokens.components.pageLayout.badge)}
-                >
-                  {badge}
-                </span>
+                <span className={cn(designTokens.components.pageLayout.badge)}>{badge}</span>
               )}
               <div className="space-y-2">
-                <h1
-                  className={cn(designTokens.components.pageLayout.title)}
-                >
-                  {title}
-                </h1>
+                <h1 className={cn(designTokens.components.pageLayout.title)}>{title}</h1>
                 {subtitle && (
-                  <p
-                    className={cn(designTokens.components.pageLayout.subtitle)}
-                  >
-                    {subtitle}
-                  </p>
+                  <p className={cn(designTokens.components.pageLayout.subtitle)}>{subtitle}</p>
                 )}
               </div>
             </div>
@@ -82,12 +62,8 @@ export function PageLayout({
           </div>
 
           {error && (
-            <div
-              className={cn(designTokens.components.pageLayout.error)}
-            >
-              <div className={cn(designTokens.components.pageLayout.errorText)}>
-                Error: {error}
-              </div>
+            <div className={cn(designTokens.components.pageLayout.error)}>
+              <div className={cn(designTokens.components.pageLayout.errorText)}>Error: {error}</div>
             </div>
           )}
 

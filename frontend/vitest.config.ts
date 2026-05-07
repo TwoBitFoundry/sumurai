@@ -1,10 +1,8 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
 import { defineConfig } from 'vitest/config';
-
-import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -25,16 +23,16 @@ export default defineConfig({
             disableAddonDocs: true,
           }),
         ],
-          test: {
-            name: 'storybook',
-            browser: {
-              enabled: true,
-              api: {
-                host: '0.0.0.0',
-              },
-              provider: playwright({}),
-              headless: true,
-              instances: [{ browser: 'chromium' }],
+        test: {
+          name: 'storybook',
+          browser: {
+            enabled: true,
+            api: {
+              host: '0.0.0.0',
+            },
+            provider: playwright({}),
+            headless: true,
+            instances: [{ browser: 'chromium' }],
           },
           setupFiles: ['./.storybook/vitest.setup.ts'],
         },

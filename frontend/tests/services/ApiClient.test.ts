@@ -18,7 +18,9 @@ describe('ApiClient with Injected IHttpClient', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    setTimeoutSpy = jest.spyOn(globalThis, 'setTimeout').mockImplementation(((handler: TimerHandler) => {
+    setTimeoutSpy = jest.spyOn(globalThis, 'setTimeout').mockImplementation(((
+      handler: TimerHandler
+    ) => {
       if (typeof handler === 'function') {
         handler();
       }

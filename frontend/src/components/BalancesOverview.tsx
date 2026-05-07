@@ -465,9 +465,9 @@ export function BalancesOverview() {
               fill={colors.semantic.loan}
               legendType="circle"
               onMouseEnter={(entry) => handleBarHover(entry)}
-                onMouseLeave={() => setHoverInfo(null)}
-              />
-            </BarChart>
+              onMouseLeave={() => setHoverInfo(null)}
+            />
+          </BarChart>
         </ResponsiveContainer>
       </div>
     </div>

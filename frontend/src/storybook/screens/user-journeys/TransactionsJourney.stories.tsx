@@ -2,8 +2,8 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { AccountFilterProvider } from '@/hooks/useAccountFilter';
 import TransactionsPage from '@/views/TransactionsPage';
-import { jsonResponse, route, StoryApiScope } from './storyApi';
 import { storyProviderAccounts, storyTransactions } from './shared';
+import { jsonResponse, route, StoryApiScope } from './storyApi';
 
 const meta = {
   title: 'App/Screens/User Journeys/Transactions',

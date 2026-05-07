@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { AuthenticatedScreenShell } from '@/storybook/screenSlices/AuthenticatedScreenShell';
 import {
   type SettingsScreenScenario,
   SettingsScreenSlice,
 } from '@/storybook/screenSlices/SettingsScreenSlice';
+import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 
 const meta = {
   title: 'App/Screens/Settings',

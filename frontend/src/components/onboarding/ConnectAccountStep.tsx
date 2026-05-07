@@ -213,7 +213,9 @@ export function ConnectAccountStep({
         )}
 
         <div className={cn('flex flex-col gap-4')}>
-          <div className={cn(designTokens.components.onboarding.eyebrowCaps)}>{content.highlightLabel}</div>
+          <div className={cn(designTokens.components.onboarding.eyebrowCaps)}>
+            {content.highlightLabel}
+          </div>
           <div className={cn('grid gap-3 sm:grid-cols-3')}>
             {content.features.map((feature) => (
               <FeatureCard key={feature.title} {...feature} />
@@ -223,7 +225,9 @@ export function ConnectAccountStep({
       </div>
 
       <div className={cn('flex flex-col gap-5 self-start mt-[52px]')}>
-        <div className={cn(designTokens.components.onboarding.eyebrowCaps)}>{content.highlightMeta}</div>
+        <div className={cn(designTokens.components.onboarding.eyebrowCaps)}>
+          {content.highlightMeta}
+        </div>
         <div className={cn('flex flex-col gap-4')}>
           <div className={cn('grid auto-rows-fr gap-3 sm:grid-cols-2')}>
             {content.highlights.map((highlight) => (

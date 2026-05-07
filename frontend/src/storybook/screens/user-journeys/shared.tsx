@@ -1,8 +1,15 @@
-import { sampleBudgetProgressEntries } from '@/storybook/fixtures/budgets';
-import { sampleDonutByCategory, sampleTopMerchants } from '@/storybook/fixtures/analytics';
-import { sampleTransactions, transactionsTablePage } from '@/storybook/fixtures/transactions';
 import type { BackendTransaction } from '@/domain/TransactionTransformer';
-import type { Account, AnalyticsCategoryResponse, AnalyticsMonthlyTotalsResponse, AnalyticsTopMerchantsResponse, FinancialProvider, Transaction } from '@/types/api';
+import { sampleDonutByCategory, sampleTopMerchants } from '@/storybook/fixtures/analytics';
+import { sampleBudgetProgressEntries } from '@/storybook/fixtures/budgets';
+import { sampleTransactions, transactionsTablePage } from '@/storybook/fixtures/transactions';
+import type {
+  Account,
+  AnalyticsCategoryResponse,
+  AnalyticsMonthlyTotalsResponse,
+  AnalyticsTopMerchantsResponse,
+  FinancialProvider,
+  Transaction,
+} from '@/types/api';
 
 const storyNow = new Date();
 
@@ -129,12 +136,13 @@ export const storyProviderSelect = {
   user_provider: 'plaid' as FinancialProvider,
 };
 
-export const storyBudgetRecords = sampleBudgetProgressEntries.map(({ spent, percentage, ...budget }) => budget);
+export const storyBudgetRecords = sampleBudgetProgressEntries.map(
+  ({ spent, percentage, ...budget }) => budget
+);
 
-export const storyTransactions = [
-  ...sampleTransactions,
-  ...transactionsTablePage,
-].map((transaction, index) => toBackendTransaction(transaction, index + 1));
+export const storyTransactions = [...sampleTransactions, ...transactionsTablePage].map(
+  (transaction, index) => toBackendTransaction(transaction, index + 1)
+);
 
 export const storyAnalyticsCategories: AnalyticsCategoryResponse[] = sampleDonutByCategory.map(
   (item, index) => {

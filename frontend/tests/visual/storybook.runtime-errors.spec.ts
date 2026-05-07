@@ -3,7 +3,10 @@ import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
 
 function resolveStorybookStaticDir(): string {
-  const candidates = [join(process.cwd(), 'storybook-static'), join(process.cwd(), 'frontend', 'storybook-static')];
+  const candidates = [
+    join(process.cwd(), 'storybook-static'),
+    join(process.cwd(), 'frontend', 'storybook-static'),
+  ];
   for (const dir of candidates) {
     if (existsSync(join(dir, 'index.json'))) {
       return dir;

@@ -15,7 +15,11 @@ import {
 
 interface LoginScreenProps {
   onNavigateToRegister: () => void;
-  onLoginSuccess?: (authResponse: { user_id: string; expires_at: string; onboarding_completed: boolean }) => void;
+  onLoginSuccess?: (authResponse: {
+    user_id: string;
+    expires_at: string;
+    onboarding_completed: boolean;
+  }) => void;
 }
 
 export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScreenProps) {
@@ -150,7 +154,11 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
 
 interface RegisterScreenProps {
   onNavigateToLogin: () => void;
-  onRegisterSuccess?: (authResponse: { user_id: string; expires_at: string; onboarding_completed: boolean }) => void;
+  onRegisterSuccess?: (authResponse: {
+    user_id: string;
+    expires_at: string;
+    onboarding_completed: boolean;
+  }) => void;
 }
 
 export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: RegisterScreenProps) {

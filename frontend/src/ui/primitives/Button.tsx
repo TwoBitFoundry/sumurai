@@ -3,35 +3,32 @@ import React from 'react';
 import { designTokens } from '@/ui/tokens';
 import { cn } from './utils';
 
-const buttonVariants = cva(
-  [...designTokens.components.button.base],
-  {
-    variants: {
-      variant: {
-        primary: [...designTokens.components.button.primary],
-        secondary: [...designTokens.components.button.secondary],
-        ghost: [...designTokens.components.button.ghost],
-        icon: [...designTokens.components.button.icon],
-        tab: [...designTokens.components.button.tab],
-        tabActive: [...designTokens.components.button.tabActive],
-        danger: [...designTokens.components.button.danger],
-        success: [...designTokens.components.button.success],
-        connect: [...designTokens.components.button.connect],
-      },
-      size: {
-        xs: 'px-2.5 py-1 text-xs rounded-xl',
-        sm: 'px-3 py-1.5 text-sm rounded-xl',
-        md: 'px-4 py-2 text-sm rounded-full',
-        lg: 'px-5 py-2.5 text-base rounded-full',
-        icon: 'h-10 w-10 rounded-full',
-      },
+const buttonVariants = cva([...designTokens.components.button.base], {
+  variants: {
+    variant: {
+      primary: [...designTokens.components.button.primary],
+      secondary: [...designTokens.components.button.secondary],
+      ghost: [...designTokens.components.button.ghost],
+      icon: [...designTokens.components.button.icon],
+      tab: [...designTokens.components.button.tab],
+      tabActive: [...designTokens.components.button.tabActive],
+      danger: [...designTokens.components.button.danger],
+      success: [...designTokens.components.button.success],
+      connect: [...designTokens.components.button.connect],
     },
-    defaultVariants: {
-      variant: 'primary',
-      size: 'md',
+    size: {
+      xs: 'px-2.5 py-1 text-xs rounded-xl',
+      sm: 'px-3 py-1.5 text-sm rounded-xl',
+      md: 'px-4 py-2 text-sm rounded-full',
+      lg: 'px-5 py-2.5 text-base rounded-full',
+      icon: 'h-10 w-10 rounded-full',
     },
-  }
-);
+  },
+  defaultVariants: {
+    variant: 'primary',
+    size: 'md',
+  },
+});
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,

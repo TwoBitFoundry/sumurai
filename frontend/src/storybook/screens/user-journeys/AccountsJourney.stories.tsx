@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import AccountsPage from '@/views/AccountsPage';
-import { jsonResponse, route, StoryApiScope } from './storyApi';
 import {
   storyPlaidDisconnect,
   storyPlaidStatus,
@@ -10,6 +9,7 @@ import {
   storyProviderInfo,
   storyProviderSelect,
 } from './shared';
+import { jsonResponse, route, StoryApiScope } from './storyApi';
 
 const meta = {
   title: 'App/Screens/User Journeys/Accounts',
@@ -29,7 +29,9 @@ const handlers = [
   route('GET', '/providers/status', () => jsonResponse(storyPlaidStatus)),
   route('GET', '/plaid/accounts', () => jsonResponse(storyProviderAccounts)),
   route('POST', '/plaid/link-token', () => jsonResponse({ link_token: 'story-link-token' })),
-  route('POST', '/plaid/exchange-token', () => jsonResponse({ access_token: 'story-access-token' })),
+  route('POST', '/plaid/exchange-token', () =>
+    jsonResponse({ access_token: 'story-access-token' })
+  ),
   route('POST', '/providers/sync-transactions', () => jsonResponse(storyPlaidSyncTransactions)),
   route('POST', '/providers/disconnect', () => jsonResponse(storyPlaidDisconnect)),
 ];

@@ -32,13 +32,9 @@ export function GradientShell({ children, className, centered = false }: Gradien
       )}
     >
       <div className={cn('pointer-events-none', centered ? 'absolute inset-0' : 'fixed inset-0')}>
-        <div
-          className={cn('absolute inset-0', ...designTokens.components.gradientShell.aura)}
-        />
+        <div className={cn('absolute inset-0', ...designTokens.components.gradientShell.aura)} />
 
-        <div
-          className={cn('absolute inset-0', ...designTokens.components.gradientShell.overlay)}
-        />
+        <div className={cn('absolute inset-0', ...designTokens.components.gradientShell.overlay)} />
         <div
           className={cn('absolute inset-0', ...designTokens.components.gradientShell.violetAura)}
         />
@@ -56,7 +52,10 @@ export function GradientShell({ children, className, centered = false }: Gradien
         </div>
 
         <div
-          className={cn('absolute inset-0 bg-gradient-to-b', designTokens.components.gradientShell.vignette)}
+          className={cn(
+            'absolute inset-0 bg-gradient-to-b',
+            designTokens.components.gradientShell.vignette
+          )}
         />
 
         <div

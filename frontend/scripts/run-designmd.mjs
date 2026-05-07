@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const originalArgs = process.argv.slice(2);
 const quiet = originalArgs[0] === '--quiet';
@@ -14,12 +15,20 @@ const args =
 
 const stdio = quiet ? 'pipe' : 'inherit';
 
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+const localCliPath = join(scriptDir, '..', 'node_modules', '@google', 'design.md', 'dist', 'index.js');
+
 function exitFromResult(result) {
   if (quiet && result.status !== 0) {
     process.stdout.write(result.stdout?.toString() ?? '');
     process.stderr.write(result.stderr?.toString() ?? '');
   }
   process.exit(result.status ?? 1);
+}
+
+if (existsSync(localCliPath)) {
+  const nodeResult = spawnSync(process.execPath, [localCliPath, ...args], { stdio });
+  exitFromResult(nodeResult);
 }
 
 const pathResult = spawnSync('designmd', args, { stdio });

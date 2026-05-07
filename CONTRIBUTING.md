@@ -22,6 +22,34 @@ cd sumurai
 git checkout -b feat/my-change
 ```
 
+## Open source and AI-assisted contributions
+
+This project is set up so **GitHub Actions is the source of truth** for the full frontend gate. You are not expected to reproduce every CI step on your laptop before opening a PR, especially if you are blocked on Playwright downloads or a slow production build.
+
+**What runs on every commit (if Husky is installed):** `npm run precommit` from the repo root runs Rust `check`, `fmt`, `clippy`, and `test`, then frontend `typecheck`, **Biome check** (format + lint), **design guard**, and **Jest**. That path avoids `next build`, Storybook, and Playwright, so it stays reachable on modest machines and for drive-by contributors.
+
+**What runs only in CI (and is still required to merge):** production **`next build`**, **Storybook static build**, **Storybook Vitest**, and **Playwright iframe smoke** tests (Chromium is installed in the workflow). There are **no screenshot baselines** to regenerate when you change UI.
+
+**If you only changed one side of the stack**, you can still run the matching slice locally before pushing, for example:
+
+```bash
+cargo check --manifest-path backend/Cargo.toml --locked --all-targets
+cargo test --manifest-path backend/Cargo.toml --locked
+```
+
+```bash
+npm --prefix frontend run typecheck
+npm --prefix frontend run lint
+npm --prefix frontend run design:guard
+npm --prefix frontend test
+```
+
+**Design-only edits:** changing repo-root `DESIGN.md` triggers the **frontend** CI job (path filter), so token and design guard failures show up there even when no files under `frontend/` changed.
+
+**Skipping hooks:** `git commit --no-verify` is available, but **CI must pass** before maintainers can merge. If an automated or AI-generated patch skips the hook, treat the GitHub `ci` workflow as the review checklist.
+
+**If you use AI coding tools:** follow this file, `AGENTS.md`, and existing patterns; keep changes small; do not commit `.env` or secrets; and ensure new behavior has tests in the existing `frontend/tests/` or `backend/src/tests/` layout.
+
 ## Full Stack
 
 Start the production-like stack:
@@ -64,7 +92,7 @@ npm run storybook
 npm run storybook:build
 ```
 
-These delegate to `frontend/` (same as `cd frontend && npm run …`). `storybook` serves `http://localhost:6006`. `storybook:build` writes `frontend/storybook-static` (Playwright visuals in CI). Storybook MCP needs Storybook running first; see `AGENTS.md`.
+These delegate to `frontend/` (same as `cd frontend && npm run …`). `storybook` serves `http://localhost:6006`. `storybook:build` writes `frontend/storybook-static` (used by CI Storybook iframe smoke tests). Storybook MCP needs Storybook running first; see `AGENTS.md`.
 
 ## Backend Validation
 

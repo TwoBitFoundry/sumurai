@@ -161,7 +161,9 @@ const DashboardPage: React.FC = () => {
                                   ? 'bg-slate-50 dark:bg-slate-700/40 -translate-y-[2px]'
                                   : 'border-slate-200 dark:border-slate-700'
                               }`}
-                              style={isHovered ? { borderColor: colors.chart.primary[0] } : undefined}
+                              style={
+                                isHovered ? { borderColor: colors.chart.primary[0] } : undefined
+                              }
                               onMouseEnter={() => setHoveredCategory(cat.name)}
                               onMouseLeave={() => setHoveredCategory(null)}
                             >
@@ -281,13 +283,13 @@ const DashboardPage: React.FC = () => {
               ) : (
                 <div className={cn('flex-1', 'min-h-[240px]', 'overflow-hidden')}>
                   <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={netSeries} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                        <defs>
-                          <linearGradient id="netGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor={colors.semantic.cash} stopOpacity={0.4} />
-                            <stop offset="95%" stopColor={colors.semantic.cash} stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
+                    <AreaChart data={netSeries} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="netGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={colors.semantic.cash} stopOpacity={0.4} />
+                          <stop offset="95%" stopColor={colors.semantic.cash} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
                       <XAxis
                         dataKey="date"

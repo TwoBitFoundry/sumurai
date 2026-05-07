@@ -117,7 +117,9 @@ describe('useNetWorthSeries', () => {
     rerender({ range: 'past-3-months' as DateRangeKey });
 
     await waitFor(() => {
-      expect(jest.mocked(AnalyticsService.getNetWorthOverTime).mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(
+        jest.mocked(AnalyticsService.getNetWorthOverTime).mock.calls.length
+      ).toBeGreaterThanOrEqual(2);
     });
 
     await act(async () => {

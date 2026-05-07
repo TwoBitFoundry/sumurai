@@ -47,10 +47,7 @@ const deleteFailureHandlers = [
   ),
 ];
 
-function SettingsJourney(props: {
-  handlers: typeof successHandlers;
-  onLogout?: () => void;
-}) {
+function SettingsJourney(props: { handlers: typeof successHandlers; onLogout?: () => void }) {
   return (
     <StoryApiScope handlers={props.handlers}>
       <SettingsPage onLogout={props.onLogout} />

@@ -41,6 +41,7 @@ jobs:
               - '.github/workflows/**'
             frontend:
               - 'frontend/**'
+              - 'DESIGN.md'
               - '.github/workflows/**'
 
   backend:
@@ -109,7 +110,7 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Lint
+      - name: Biome check (format + lint)
         run: npm run lint
 
       - name: Design guard
@@ -127,9 +128,8 @@ jobs:
       - name: Storybook static build
         run: npm run storybook:build
 
+      - name: Storybook Vitest
+        run: npm run test:storybook
+
       - name: Storybook iframe smoke
         run: npm run test:storybook-runtime:run
-
-      - name: Storybook visual regression
-        if: github.event_name != 'pull_request'
-        run: npm run test:visual:run

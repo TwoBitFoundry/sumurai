@@ -1,7 +1,7 @@
-import generatedTokens from './generated/tokens';
-import { budgetTokenRecipes } from '@/features/budgets/tokenRecipes';
 import { onboardingTokenRecipes } from '@/components/onboarding/tokenRecipes';
+import { budgetTokenRecipes } from '@/features/budgets/tokenRecipes';
 import { primitiveTokenRecipes } from '@/ui/primitives/tokenRecipes';
+import generatedTokens from './generated/tokens';
 
 export type ThemeMode = 'light' | 'dark';
 export type HeroAccent = 'slate' | 'emerald' | 'sky' | 'violet' | 'amber' | 'rose';
@@ -151,8 +151,7 @@ const gradientPrimitives = {
     'dark:bg-[radial-gradient(100%_85%_at_20%_-10%,#0f172a_0%,#0b162c_55%,#05070d_100%)]',
   auraBlue:
     'bg-[radial-gradient(136%_108%_at_20%_-18%,rgba(14,165,233,0.42)_0%,#e1f2ff_36%,#ffffff_100%)]',
-  auraBlueDark:
-    'dark:bg-[radial-gradient(92%_80%_at_20%_-6%,#0f172a_0%,#0a1224_50%,#05070d_100%)]',
+  auraBlueDark: 'dark:bg-[radial-gradient(92%_80%_at_20%_-6%,#0f172a_0%,#0a1224_50%,#05070d_100%)]',
   auraViolet:
     'bg-[radial-gradient(86%_64%_at_86%_18%,rgba(167,139,250,0.28)_0%,rgba(59,130,246,0.14)_55%,transparent_78%)]',
   auraCyan:
@@ -186,7 +185,8 @@ const layoutEffects = {
       'pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80',
   },
   emptyState: {
-    iconHoverGlowLight: 'hover:shadow-[0_0_30px_rgba(59,130,246,0.4),0_0_60px_rgba(59,130,246,0.2)]',
+    iconHoverGlowLight:
+      'hover:shadow-[0_0_30px_rgba(59,130,246,0.4),0_0_60px_rgba(59,130,246,0.2)]',
     iconHoverGlowDark:
       'dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)]',
   },
@@ -643,7 +643,10 @@ const financePalettes = {
 } as const;
 
 const categoryPillPalettes = Object.fromEntries(
-  categoryThemes.map((theme) => [theme.key, { background: theme.ringHex, text: chartThemeDark.dotFill }])
+  categoryThemes.map((theme) => [
+    theme.key,
+    { background: theme.ringHex, text: chartThemeDark.dotFill },
+  ])
 ) as Record<string, { background: string; text: string }>;
 
 export const designTokens = {
@@ -764,13 +767,15 @@ export const designTokens = {
       title:
         'text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400',
       value: 'text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white',
-      suffix: 'text-sm font-medium text-slate-600 transition-colors duration-500 dark:text-slate-300',
+      suffix:
+        'text-sm font-medium text-slate-600 transition-colors duration-500 dark:text-slate-300',
       overlay:
         'pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100',
       ring: 'pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] opacity-70',
       ringLine: 'absolute inset-0 rounded-[calc(1rem-2px)] ring-2',
       footer: 'relative',
-      footerInner: 'scrollbar-hide flex items-center gap-1.5 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+      footerInner:
+        'scrollbar-hide flex items-center gap-1.5 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
       accent: heroAccentThemes,
       semantic: {
         success: {
@@ -813,7 +818,9 @@ function hashString(value: string): number {
 
 export function getCategoryAccent(name?: string | null): CategoryTheme {
   const key = (name || 'Uncategorized').toLowerCase();
-  return designTokens.colors.categoryAccents[hashString(key) % designTokens.colors.categoryAccents.length];
+  return designTokens.colors.categoryAccents[
+    hashString(key) % designTokens.colors.categoryAccents.length
+  ];
 }
 
 export function getHeroAccentTheme(accent: HeroAccent): HeroAccentTheme {

@@ -1,6 +1,6 @@
 import { RefreshCcw } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { GlassCard, cn } from '@/ui/primitives';
+import { cn, GlassCard } from '@/ui/primitives';
 
 interface DashboardChartCardProps {
   title: string;

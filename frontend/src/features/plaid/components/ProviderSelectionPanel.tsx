@@ -1,6 +1,6 @@
-import { GlassCard, cn } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
 import type { FinancialProvider } from '@/types/api';
+import { cn, GlassCard } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import { getProviderCardConfig } from '../../../utils/providerCards';
 
 interface ProviderSelectionPanelProps {
@@ -86,7 +86,13 @@ export const ProviderSelectionPanel = ({
         <div className={cn('space-y-3', 'text-center')}>
           <span className={cn(designTokens.surfaces.layered.eyebrowChip)}>Select Provider</span>
           <h1
-            className={cn('text-3xl', 'font-bold', 'text-slate-900', 'dark:text-white', 'sm:text-4xl')}
+            className={cn(
+              'text-3xl',
+              'font-bold',
+              'text-slate-900',
+              'dark:text-white',
+              'sm:text-4xl'
+            )}
           >
             Choose how you connect accounts
           </h1>

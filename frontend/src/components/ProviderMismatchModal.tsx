@@ -77,16 +77,9 @@ export const ProviderMismatchModal = ({
           <div className="space-y-3">
             <p className={cn('text-sm')}>
               Your account is configured to use
-              <span className={cn('font-semibold')}>
-                {' '}
-                {userProviderLabel}{' '}
-              </span>
+              <span className={cn('font-semibold')}> {userProviderLabel} </span>
               but the application default is
-              <span className={cn('font-semibold')}>
-                {' '}
-                {defaultProviderLabel}
-              </span>
-              .
+              <span className={cn('font-semibold')}> {defaultProviderLabel}</span>.
             </p>
             <p className={cn('text-sm')}>
               Update your environment to set

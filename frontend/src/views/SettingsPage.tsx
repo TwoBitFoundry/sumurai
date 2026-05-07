@@ -1,5 +1,5 @@
-import { type FormEvent, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { type FormEvent, useState } from 'react';
 import { PasswordChecker } from '@/components/PasswordChecker';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { AuthService } from '@/services/authService';
@@ -209,11 +209,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           </div>
         </GlassCard>
 
-        <GlassCard
-          variant="default"
-          padding="lg"
-          className={cn('space-y-4')}
-        >
+        <GlassCard variant="default" padding="lg" className={cn('space-y-4')}>
           <Alert
             variant="error"
             title="Danger Zone"

@@ -14,8 +14,8 @@
     "build": "next build",
     "typecheck": "tsc --noEmit --project tsconfig.ci.json",
     "start": "next start",
-    "lint": "biome lint --diagnostic-level=error .",
-    "lint:verbose": "biome lint .",
+    "lint": "biome check --diagnostic-level=error .",
+    "lint:verbose": "biome check .",
     "format": "biome format --write .",
     "check": "biome check --write .",
     "test": "jest --silent --maxWorkers=50%",
@@ -35,10 +35,7 @@
     "test:storybook": "vitest --project=storybook run",
     "test:storybook:watch": "vitest --project=storybook",
     "playwright:install": "playwright install chromium",
-    "test:visual:run": "playwright test --config playwright.visual.config.ts",
     "test:storybook-runtime:run": "playwright test --config playwright.storybook-runtime.config.ts",
-    "test:visual": "npm run storybook:build && npm run test:visual:run",
-    "test:visual:update": "npm run storybook:build && npm run test:visual:run -- --update-snapshots",
     "test:storybook-runtime": "npm run storybook:build && npm run test:storybook-runtime:run"
   },
   "dependencies": {
@@ -66,6 +63,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.14",
+    "@google/design.md": "^0.1.1",
     "@playwright/test": "^1.59.1",
     "@storybook/addon-a11y": "^10.3.6",
     "@storybook/addon-docs": "^10.3.6",

@@ -1,13 +1,6 @@
-import {
-  Activity,
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  Plus,
-  Target,
-} from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, Clock, Plus, Target } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Button, GlassCard, cn, EmptyState } from '@/ui/primitives';
+import { Button, cn, EmptyState, GlassCard } from '@/ui/primitives';
 import HeroStatCard, { type HeroPill } from '../components/widgets/HeroStatCard';
 import { BudgetCalculator } from '../domain/BudgetCalculator';
 import { BudgetForm, type BudgetFormValue } from '../features/budgets/components/BudgetForm';
@@ -257,12 +250,7 @@ export default function BudgetsPage() {
                 description="Create your first category plan to watch spending settle into rhythm."
                 action={
                   !isAdding ? (
-                    <Button
-                      type="button"
-                      onClick={startAdd}
-                      variant="primary"
-                      size="md"
-                    >
+                    <Button type="button" onClick={startAdd} variant="primary" size="md">
                       <Plus className={cn('h-4', 'w-4')} />
                       Add budget
                     </Button>

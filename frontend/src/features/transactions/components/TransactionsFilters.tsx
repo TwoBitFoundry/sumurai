@@ -113,12 +113,8 @@ export const TransactionsFilters: React.FC<Props> = ({
                 );
               })}
             </div>
-            {showLeftFade && (
-              <div className={cn(designTokens.components.pill.fadeLeft, 'w-8')} />
-            )}
-            {showRightFade && (
-              <div className={cn(designTokens.components.pill.fadeRight, 'w-8')} />
-            )}
+            {showLeftFade && <div className={cn(designTokens.components.pill.fadeLeft, 'w-8')} />}
+            {showRightFade && <div className={cn(designTokens.components.pill.fadeRight, 'w-8')} />}
           </div>
         </div>
       )}

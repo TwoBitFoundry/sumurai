@@ -270,15 +270,9 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
                   'pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] z-0'
                 )}
               >
-                <div
-                  className={cn(designTokens.surfaces.glass.wizardInsetRing)}
-                />
-                <div
-                  className={cn(designTokens.surfaces.glass.wizardSoftWash)}
-                />
-                <div
-                  className={cn(designTokens.surfaces.glass.wizardBrandWash)}
-                />
+                <div className={cn(designTokens.surfaces.glass.wizardInsetRing)} />
+                <div className={cn(designTokens.surfaces.glass.wizardSoftWash)} />
+                <div className={cn(designTokens.surfaces.glass.wizardBrandWash)} />
                 <div
                   className={cn(
                     'absolute -left-24 top-16 h-60 w-60 rounded-full bg-sky-200/25 blur-3xl',

@@ -3,27 +3,24 @@ import React from 'react';
 import { designTokens } from '@/ui/tokens';
 import { cn } from './utils';
 
-const inputVariants = cva(
-  [...designTokens.components.input.base],
-  {
-    variants: {
-      variant: {
-        default: [...designTokens.components.input.default],
-        invalid: [...designTokens.components.input.invalid],
-        glass: [...designTokens.components.input.glass],
-      },
-      inputSize: {
-        sm: designTokens.components.input.size.sm,
-        md: designTokens.components.input.size.md,
-        lg: designTokens.components.input.size.lg,
-      },
+const inputVariants = cva([...designTokens.components.input.base], {
+  variants: {
+    variant: {
+      default: [...designTokens.components.input.default],
+      invalid: [...designTokens.components.input.invalid],
+      glass: [...designTokens.components.input.glass],
     },
-    defaultVariants: {
-      variant: 'default',
-      inputSize: 'md',
+    inputSize: {
+      sm: designTokens.components.input.size.sm,
+      md: designTokens.components.input.size.md,
+      lg: designTokens.components.input.size.lg,
     },
-  }
-);
+  },
+  defaultVariants: {
+    variant: 'default',
+    inputSize: 'md',
+  },
+});
 
 export interface InputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
