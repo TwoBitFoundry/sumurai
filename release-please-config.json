@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "component": "sumurai-root",
+      "release-type": "node",
+      "changelog-path": "CHANGELOG.md",
+      "include-component-in-tag": false,
+      "extra-files": [
+        "frontend/package.json",
+        {
+          "type": "json",
+          "path": "frontend/package-lock.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "frontend/package-lock.json",
+          "jsonpath": "$.packages[''].version"
+        }
+      ]
+    },
+    "backend": {
+      "component": "sumurai-backend",
+      "release-type": "rust",
+      "changelog-path": "CHANGELOG.md",
+      "skip-changelog": true,
+      "skip-github-release": true,
+      "include-component-in-tag": false
+    }
+  },
+  "plugins": [
+    {
+      "type": "linked-versions",
+      "groupName": "sumurai",
+      "components": ["sumurai-root", "sumurai-backend"]
+    }
+  ]
+}
