@@ -174,6 +174,8 @@ Status: complete
 
 ## Phase 4: Validation, Runtime Decision, And Handoff Notes
 
+Status: complete
+
 ### Implementation
 
 - Run validation:
@@ -201,6 +203,23 @@ Status: complete
   - Playwright visual for screenshots.
 - Precommit includes Storybook Vitest only if measured runtime and stability justify it.
 - Deferred Jest consolidation work is explicitly called out as follow-up, not mixed into this implementation.
+
+### Notes
+
+- Validation passed for `npm --prefix frontend test`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run lint`, and `npm --prefix frontend run test:storybook` when run outside the sandboxed shell.
+- The Storybook Vitest batch completed in about 6.4 seconds of test time after setup.
+- The browser-mode runner still needs a local API bind that the sandboxed shell blocks, so the script remains explicit rather than folded into precommit.
+- Storybook MCP and the Storybook stories were used to verify the migrated UI surfaces before dropping Jest coverage.
+
+### TDD Log
+
+- Red: the sandboxed browser-mode Vitest run failed to bind its API port.
+- Green: moved the browser API host to `0.0.0.0`, which allowed the runner to start outside the sandboxed shell.
+- Verify: the frontend lint, typecheck, Jest suite, and Storybook Vitest suite all completed successfully.
+
+### Result
+
+- The plan now reflects the current split: Storybook Vitest owns the migrated UI presentation surface, and Jest keeps the remaining business-logic-focused checks.
 
 ## Assumptions
 
