@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { WelcomeStep } from './WelcomeStep';
 
 const meta = {
@@ -15,3 +16,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const DefaultDark: Story = {
+  ...storyDarkTheme,
+};

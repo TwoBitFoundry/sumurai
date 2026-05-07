@@ -20,7 +20,8 @@
 
 - `npm --prefix frontend run design:guard` runs DESIGN.md lint, token drift checks, raw styling guard, and regenerates DTCG + Tailwind exports from `DESIGN.md` (same guard chain as `frontend:design` in root `package.json`).
 - `npm --prefix frontend run storybook` serves Storybook on port 6006. Global Cursor MCP may point at `http://localhost:6006/mcp`; that endpoint exists only while Storybook is running. Start Storybook first, wait until it prints ready, then reload the Cursor window or toggle the Storybook MCP server off and on so the client reconnects. If it still fails, use Output → MCP Logs. Use Storybook MCP tools for component docs and story workflows before inventing new UI patterns.
-- `npm run frontend:visual` from the repo root runs Playwright visual regression over the built static Storybook (Chromium; Linux baselines are committed for CI).
+- `npm run frontend:playwright-install` (or `npm --prefix frontend run playwright:install`) downloads Playwright’s Chromium once; required before `frontend:visual` or `test:storybook-runtime` if you see “Executable doesn't exist” under `~/Library/Caches/ms-playwright/`. Re-run after `@playwright/test` upgrades.
+- `npm run frontend:visual` from the repo root runs Playwright visual regression over the built static Storybook (Chromium; Linux baselines are committed for CI). CI runs Storybook iframe smoke on pull requests and adds visual regression on pushes to `main` (and manual workflow runs); there are no scheduled workflows.
 
 ## Coding Style
 - Rust: keep units small and testable, prefer idiomatic error handling, and use `cargo fmt` and `cargo clippy`.

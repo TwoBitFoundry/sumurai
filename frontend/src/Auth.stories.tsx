@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect } from 'storybook/test';
+import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { LoginScreen, RegisterScreen } from './Auth';
 
 const meta = {
@@ -16,6 +17,11 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const LoginDefault: Story = {
+  render: () => <LoginScreen onNavigateToRegister={() => {}} />,
+};
+
+export const LoginDefaultDark: Story = {
+  ...storyDarkTheme,
   render: () => <LoginScreen onNavigateToRegister={() => {}} />,
 };
 

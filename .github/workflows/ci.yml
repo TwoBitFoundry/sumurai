@@ -3,6 +3,8 @@ name: ci
 on:
   pull_request:
     branches: ["main"]
+  push:
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -122,5 +124,12 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install chromium --with-deps
 
-      - name: Visual regression (Storybook)
-        run: npm run test:visual
+      - name: Storybook static build
+        run: npm run storybook:build
+
+      - name: Storybook iframe smoke
+        run: npm run test:storybook-runtime:run
+
+      - name: Storybook visual regression
+        if: github.event_name != 'pull_request'
+        run: npm run test:visual:run

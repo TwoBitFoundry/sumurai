@@ -1,20 +1,10 @@
 import { expect, test } from '@playwright/test';
-
-const storyIds = [
-  'primitives-button--primary',
-  'primitives-button--disabled',
-  'primitives-glasscard--default',
-  'primitives-input--invalid',
-  'features-budgets-budgetsummarycard--default',
-  'features-transactions-transactionstoolbar--default',
-  'features-analytics-dashboardchartcard--default',
-  'storybook-fullpagesmoke--deprecated-placeholder',
-];
+import { VISUAL_STORYBOOK_MATRIX_IDS } from '../storybook/visualMatrix';
 
 test.describe('storybook visual regression', () => {
-  for (const id of storyIds) {
+  for (const id of VISUAL_STORYBOOK_MATRIX_IDS) {
     test(`iframe ${id}`, async ({ page }) => {
-      await page.goto(`/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, {
+      await page.goto(`/iframe?id=${encodeURIComponent(id)}&viewMode=story`, {
         waitUntil: 'domcontentloaded',
       });
       await page.waitForFunction(() => document.body.classList.contains('sb-show-main'), {

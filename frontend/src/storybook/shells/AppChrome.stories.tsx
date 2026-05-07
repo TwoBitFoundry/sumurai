@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { LoginScreen } from '@/Auth';
 import { useTheme } from '@/context/ThemeContext';
 import { AppLayout } from '@/layouts/AppLayout';
+import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { AppFooter, AppTitleBar, cn, GradientShell } from '@/ui/primitives';
 
 function UnauthenticatedLoginShell() {
@@ -59,6 +60,16 @@ export const UnauthenticatedLogin: Story = {
   render: () => <UnauthenticatedLoginShell />,
 };
 
+export const UnauthenticatedLoginDark: Story = {
+  ...storyDarkTheme,
+  render: () => <UnauthenticatedLoginShell />,
+};
+
 export const AuthenticatedDashboard: Story = {
+  render: () => <AuthenticatedDashboardShell />,
+};
+
+export const AuthenticatedDashboardDark: Story = {
+  ...storyDarkTheme,
   render: () => <AuthenticatedDashboardShell />,
 };

@@ -17,6 +17,10 @@
     "frontend:design": "npm --prefix frontend run design:guard",
     "frontend:build": "npm --prefix frontend run build",
     "frontend:visual": "npm --prefix frontend run test:visual",
+    "frontend:visual:run": "npm --prefix frontend run test:visual:run",
+    "frontend:storybook-runtime:run": "npm --prefix frontend run test:storybook-runtime:run",
+    "frontend:playwright-install": "npm --prefix frontend run playwright:install",
+    "test:storybook-runtime": "npm --prefix frontend run test:storybook-runtime",
     "storybook": "npm --prefix frontend run storybook",
     "storybook:build": "npm --prefix frontend run storybook:build",
     "precommit": "npm run rust:typecheck && npm run rust:lint && npm run rust:test && npm run frontend:typecheck && npm run frontend:lint && npm run frontend:design && npm run frontend:test && npm run frontend:build"
