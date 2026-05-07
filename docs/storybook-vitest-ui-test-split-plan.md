@@ -210,6 +210,11 @@ Status: complete
 - The Storybook Vitest batch completed in about 6.4 seconds of test time after setup.
 - The browser-mode runner still needs a local API bind that the sandboxed shell blocks, so the script remains explicit rather than folded into precommit.
 - Storybook MCP and the Storybook stories were used to verify the migrated UI surfaces before dropping Jest coverage.
+- Added Storybook journey coverage for dashboard range switching, transaction search and category filtering, budget month and add-budget flows, provider selection and sync, and password plus delete-account confirmation.
+- Split the journey coverage into `frontend/src/storybook/screens/user-journeys/` with one story file per page so the filesystem mirrors the user journey split.
+- Storybook Vitest now treats those journey stories as the primary UI interaction coverage for the cross-page flows, while Jest remains on the business-logic and contract surface.
+- Converted the remaining journey shells to render the real page components with a story-local fetch harness so the stories exercise the same page code paths as the app.
+- Kept the mocked network boundary in Storybook only; the page implementations remain the single UI source of truth.
 
 ### TDD Log
 
@@ -221,6 +226,8 @@ Status: complete
 
 - The plan now reflects the current split: Storybook Vitest owns the migrated UI presentation surface, and Jest keeps the remaining business-logic-focused checks.
 - Follow-up primitive coverage now also lives in Storybook for `AppFooter`, `Badge`, `GradientShell`, and `Select`.
+- The new journey stories give the runner explicit screen-level coverage instead of only component-level smoke tests.
+- The journey stories now use the real page components rather than story-only shells, which keeps the harness thin and the UI state singular.
 
 ## Assumptions
 
