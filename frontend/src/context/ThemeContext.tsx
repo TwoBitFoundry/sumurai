@@ -46,6 +46,12 @@ export function ThemeProvider({ children, initialMode }: ThemeProviderProps) {
   );
 
   useEffect(() => {
+    if (initialMode !== undefined) {
+      setModeState(initialMode);
+    }
+  }, [initialMode]);
+
+  useEffect(() => {
     applyTheme(mode);
     localStorage.setItem('theme', mode);
   }, [mode]);
