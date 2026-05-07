@@ -181,6 +181,13 @@ describe('AuthService with Injected Boundaries', () => {
 
       expect(AuthService.getToken()).toBeNull();
     });
+
+    it('should clear token after logout failure', async () => {
+      mockHttpClient.post.mockRejectedValueOnce(new Error('Server error'));
+
+      await expect(AuthService.logout()).rejects.toThrow('Server error');
+      expect(AuthService.getToken()).toBeNull();
+    });
   });
 
   describe('refreshToken', () => {

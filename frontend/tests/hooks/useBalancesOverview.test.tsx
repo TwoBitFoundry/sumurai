@@ -42,7 +42,7 @@ const createDeferred = <T,>() => {
   return { promise, resolve, reject };
 };
 
-describe('useBalancesOverview (Phase 6)', () => {
+describe('useBalancesOverview', () => {
   const connectedStatus = createProviderStatus({
     connections: [
       createProviderConnection({

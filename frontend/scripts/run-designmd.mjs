@@ -3,17 +3,29 @@ import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const originalArgs = process.argv.slice(2);
+const quiet = originalArgs[0] === '--quiet';
+const commandArgs = quiet ? originalArgs.slice(1) : originalArgs;
 const args =
-  originalArgs[0] === 'export' &&
-  originalArgs[1] === '--format' &&
-  originalArgs[2] === 'css-tailwind'
-    ? ['export', '--format', 'tailwind', ...originalArgs.slice(3)]
-    : originalArgs;
+  commandArgs[0] === 'export' &&
+  commandArgs[1] === '--format' &&
+  commandArgs[2] === 'css-tailwind'
+    ? ['export', '--format', 'tailwind', ...commandArgs.slice(3)]
+    : commandArgs;
 
-const pathResult = spawnSync('designmd', args, { stdio: 'inherit' });
+const stdio = quiet ? 'pipe' : 'inherit';
+
+function exitFromResult(result) {
+  if (quiet && result.status !== 0) {
+    process.stdout.write(result.stdout?.toString() ?? '');
+    process.stderr.write(result.stderr?.toString() ?? '');
+  }
+  process.exit(result.status ?? 1);
+}
+
+const pathResult = spawnSync('designmd', args, { stdio });
 
 if (pathResult.error?.code !== 'ENOENT') {
-  process.exit(pathResult.status ?? 1);
+  exitFromResult(pathResult);
 }
 
 const npmEnv = { ...process.env };
@@ -50,5 +62,5 @@ if (!cliPath) {
   process.exit(1);
 }
 
-const nodeResult = spawnSync(process.execPath, [cliPath, ...args], { stdio: 'inherit' });
-process.exit(nodeResult.status ?? 1);
+const nodeResult = spawnSync(process.execPath, [cliPath, ...args], { stdio });
+exitFromResult(nodeResult);

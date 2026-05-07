@@ -20,7 +20,7 @@ describe('computeRatio (balances helper)', () => {
   });
 });
 
-describe('AnalyticsService.getBalancesOverview (Phase 5)', () => {
+describe('AnalyticsService.getBalancesOverview', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });

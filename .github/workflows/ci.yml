@@ -116,7 +116,7 @@ jobs:
         run: npm run design:guard
 
       - name: Unit tests
-        run: npm test
+        run: npm run test:ci
 
       - name: Production build
         run: npm run build

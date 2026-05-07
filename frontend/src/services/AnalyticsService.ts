@@ -25,7 +25,6 @@ export class AnalyticsService {
     appendAccountQueryParams(params, accountIds);
     const qs = params.toString();
     if (qs) endpoint += `?${qs}`;
-    // Backend returns a decimal as JSON number/string; ApiClient will parse JSON value.
     const result = await ApiClient.get<number | string>(endpoint);
     return typeof result === 'number' ? result : Number(result);
   }
@@ -72,7 +71,6 @@ export class AnalyticsService {
     return ApiClient.get<AnalyticsTopMerchantsResponse[]>(endpoint);
   }
 
-  // --- Phase 5: Balances Overview (latest-only)
   static async getBalancesOverview(accountIds?: string[]): Promise<BalancesOverview> {
     let endpoint = '/analytics/balances/overview';
     const params = new URLSearchParams();
@@ -82,7 +80,6 @@ export class AnalyticsService {
     return ApiClient.get<BalancesOverview>(endpoint);
   }
 
-  // Net Worth Over Time (Depository ledger-based)
   static async getNetWorthOverTime(
     startDate: string,
     endDate: string,
@@ -102,7 +99,6 @@ export class AnalyticsService {
   }
 }
 
-// --- Balances Overview helpers (Phase 0) ---
 export function computeRatio(positivesTotal: number, negativesTotal: number): number | null {
   if (negativesTotal === 0) return null;
   const denom = Math.max(1, Math.abs(negativesTotal));
@@ -110,7 +106,6 @@ export function computeRatio(positivesTotal: number, negativesTotal: number): nu
   return Math.round(ratio * 100) / 100;
 }
 
-// Phase 5 formatter used by UI
 export function formatRatio(ratio: number | string | null): string {
   if (ratio === null || ratio === undefined) return '∞';
   const n = typeof ratio === 'string' ? Number(ratio) : ratio;
