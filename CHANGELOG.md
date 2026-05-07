@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.3.1](https://github.com/TwoBitFoundry/sumurai/compare/v5.3.0...v5.3.1) (2026-05-07)
+
+
+### Bug Fixes
+
+* only run publish images once per pr. ([0626f0a](https://github.com/TwoBitFoundry/sumurai/commit/0626f0a1747a0311beed35bc1ac4b08871c73885))
+* resolve release please issues ([2770602](https://github.com/TwoBitFoundry/sumurai/commit/277060249be78a3a966649cc329d9cad00d3607b))
+
 ## [5.3.0](https://github.com/TwoBitFoundry/sumurai/compare/v5.2.7...v5.3.0) (2026-05-07)
 
 
