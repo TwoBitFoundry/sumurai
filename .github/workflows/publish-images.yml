@@ -2,7 +2,6 @@ name: publish-images
 
 on:
   push:
-    branches: ["main"]
     tags: ["v*"]
   workflow_dispatch:
 
