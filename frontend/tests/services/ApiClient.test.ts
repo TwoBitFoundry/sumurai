@@ -14,13 +14,24 @@ import { setupTestBoundaries } from '../setup/setupTestBoundaries';
 
 describe('ApiClient with Injected IHttpClient', () => {
   let mockHttp: any;
+  let setTimeoutSpy: ReturnType<typeof jest.spyOn>;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    setTimeoutSpy = jest.spyOn(globalThis, 'setTimeout').mockImplementation(((handler: TimerHandler) => {
+      if (typeof handler === 'function') {
+        handler();
+      }
+      return 0 as unknown as ReturnType<typeof setTimeout>;
+    }) as typeof setTimeout);
     const boundaries = setupTestBoundaries();
     mockHttp = boundaries.http;
     jest.spyOn(AuthService, 'clearToken');
     ApiClient.setTestMaxRetries(0);
+  });
+
+  afterEach(() => {
+    setTimeoutSpy.mockRestore();
   });
 
   describe('Basic HTTP Methods', () => {
