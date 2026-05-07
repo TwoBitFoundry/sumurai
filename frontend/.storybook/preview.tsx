@@ -3,6 +3,7 @@ import { ThemeProvider } from '../src/context/ThemeContext';
 import '../src/app/globals.css';
 
 const preview: Preview = {
+  tags: ['!test'],
   decorators: [
     (Story, context) => {
       const raw = context.globals.theme;

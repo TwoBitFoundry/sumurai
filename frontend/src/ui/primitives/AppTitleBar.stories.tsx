@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { fn } from 'storybook/test';
+import { expect, fn, userEvent, within } from 'storybook/test';
 import { AppTitleBar } from './AppTitleBar';
 
 const meta = {
   title: 'Primitives/AppTitleBar',
   component: AppTitleBar,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
   args: {
     scrolled: false,
     themeMode: 'light' as const,
@@ -40,6 +40,18 @@ export const AuthenticatedDashboard: Story = {
     accountFilterNode: (
       <span className="text-xs font-medium text-slate-600 dark:text-slate-300">All accounts</span>
     ),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await userEvent.click(canvas.getByLabelText('Toggle theme'));
+    await expect(args.onThemeToggle).toHaveBeenCalledTimes(1);
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Transactions' }));
+    await expect(args.onTabChange).toHaveBeenCalledWith('transactions');
+
+    await userEvent.click(canvas.getByRole('button', { name: /logout/i }));
+    await expect(args.onLogout).toHaveBeenCalledTimes(1);
   },
 };
 

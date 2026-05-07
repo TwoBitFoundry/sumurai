@@ -30,7 +30,9 @@
 
 ## Testing
 - Backend tests live in `backend/src/tests/` and run with `cargo test --manifest-path backend/Cargo.toml`.
-- Frontend tests use Jest + React Testing Library under `frontend/`.
+- Frontend Jest tests live under `frontend/tests/` and own services, domain logic, hooks, API contracts, observability, setup, mocks, token flows, and business rules.
+- Storybook Vitest owns rendered UI states, browser interactions, loading/error/disabled states, form validation display, callback outcomes, and other browser-only component behavior.
+- Playwright visual tests own screenshot regression only.
 - Add or adjust tests when changing business logic, especially around auth, provider sync, budgets, and cache behavior.
 
 ## Commit And PRs

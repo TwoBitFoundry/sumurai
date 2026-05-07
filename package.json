@@ -19,6 +19,7 @@
     "frontend:visual": "npm --prefix frontend run test:visual",
     "frontend:visual:run": "npm --prefix frontend run test:visual:run",
     "frontend:storybook-runtime:run": "npm --prefix frontend run test:storybook-runtime:run",
+    "frontend:storybook-test": "npm --prefix frontend run test:storybook",
     "frontend:playwright-install": "npm --prefix frontend run playwright:install",
     "test:storybook-runtime": "npm --prefix frontend run test:storybook-runtime",
     "storybook": "npm --prefix frontend run storybook",

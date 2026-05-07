@@ -1,16 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { useState } from 'react';
+import { expect, fn, userEvent, within } from 'storybook/test';
 import { TransactionsToolbar } from './TransactionsToolbar';
 
 const meta = {
   title: 'Features/Transactions/TransactionsToolbar',
   component: TransactionsToolbar,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
   args: {
     search: '',
-    onSearch: () => {},
+    onSearch: fn(),
     categories: ['Food', 'Transit', 'Income'],
     selectedCategory: null,
-    onSelectCategory: () => {},
+    onSelectCategory: fn(),
   },
 } satisfies Meta<typeof TransactionsToolbar>;
 
@@ -18,7 +20,32 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  render: (args) => {
+    const [search, setSearch] = useState(args.search);
+
+    return (
+      <TransactionsToolbar
+        {...args}
+        search={search}
+        onSearch={(value) => {
+          setSearch(value);
+          args.onSearch(value);
+        }}
+      />
+    );
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const search = canvas.getByPlaceholderText('Search transactions...');
+
+    await userEvent.type(search, 'coffee');
+    await expect(args.onSearch).toHaveBeenLastCalledWith('coffee');
+
+    await userEvent.click(canvas.getByRole('button', { name: /^food$/i }));
+    await expect(args.onSelectCategory).toHaveBeenCalledWith('Food');
+  },
+};
 
 export const Filtered: Story = {
   args: {

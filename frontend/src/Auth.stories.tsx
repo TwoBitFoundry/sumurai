@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { expect } from 'storybook/test';
+import { expect, userEvent, within, waitFor } from 'storybook/test';
 import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { LoginScreen, RegisterScreen } from './Auth';
 
@@ -10,6 +8,7 @@ const meta = {
   parameters: {
     layout: 'fullscreen',
   },
+  tags: ['autodocs', 'test'],
 } satisfies Meta;
 
 export default meta;

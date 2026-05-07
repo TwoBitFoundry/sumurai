@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { fn } from 'storybook/test';
+import { expect, fn, userEvent, within } from 'storybook/test';
 import { CONNECT_ACCOUNT_PROVIDER_CONTENT } from '@/utils/providerCards';
 import { ConnectAccountStep } from './ConnectAccountStep';
 
@@ -9,7 +9,7 @@ const teller = CONNECT_ACCOUNT_PROVIDER_CONTENT.teller;
 const meta = {
   title: 'App/Onboarding/ConnectAccountStep',
   component: ConnectAccountStep,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
   args: {
     content: plaid,
     providerLoading: false,
@@ -29,7 +29,15 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const PlaidDefault: Story = {};
+export const PlaidDefault: Story = {
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole('button', { name: new RegExp(plaid.cta.defaultLabel, 'i') })
+    );
+    await expect(args.onConnect).toHaveBeenCalledTimes(1);
+  },
+};
 
 export const ProviderLoading: Story = {
   args: {
@@ -40,6 +48,11 @@ export const ProviderLoading: Story = {
 export const ProviderConfigurationError: Story = {
   args: {
     providerError: 'Unable to load provider configuration.',
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: /^retry$/i }));
+    await expect(args.onRetryProvider).toHaveBeenCalledTimes(1);
   },
 };
 

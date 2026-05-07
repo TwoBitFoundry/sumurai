@@ -5,7 +5,7 @@ import { Button } from './Button';
 const meta = {
   title: 'Primitives/Button',
   component: Button,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
   args: {
     children: 'Continue',
     variant: 'primary',

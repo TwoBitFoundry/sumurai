@@ -6,7 +6,7 @@ import { EmptyState } from './EmptyState';
 const meta = {
   title: 'Primitives/EmptyState',
   component: EmptyState,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
   args: {
     icon: Target,
     title: 'Nothing here yet',

@@ -4,7 +4,7 @@ import { GlassCard } from './GlassCard';
 const meta = {
   title: 'Primitives/GlassCard',
   component: GlassCard,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
   args: {
     children: <p className="text-slate-800 dark:text-slate-100">Card body with glass styling.</p>,
     variant: 'default',
