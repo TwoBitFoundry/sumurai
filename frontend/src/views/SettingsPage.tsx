@@ -6,6 +6,7 @@ import { AuthService } from '@/services/authService';
 import { SettingsService } from '@/services/SettingsService';
 import { Alert, Badge, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
+import { designTokens } from '@/ui/tokens';
 
 interface SettingsPageProps {
   onLogout?: () => void;
@@ -109,11 +110,21 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
             <div className={cn('space-y-3')}>
               <Badge size="md">ACCOUNT SETTINGS</Badge>
               <h2
-                className={cn('text-2xl', 'font-semibold', 'text-slate-900', 'dark:text-slate-100')}
+                className={cn(
+                  designTokens.typography.sectionTitle,
+                  'text-slate-900',
+                  'dark:text-slate-100'
+                )}
               >
                 Change Password
               </h2>
-              <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400')}>
+              <p
+                className={cn(
+                  designTokens.typography.body,
+                  'text-slate-600',
+                  'dark:text-slate-400'
+                )}
+              >
                 Update your password to keep your account secure
               </p>
             </div>
@@ -182,7 +193,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                     disabled={isChangingPassword}
                   />
                   {confirmPassword && !isPasswordMatch && (
-                    <p className={cn('text-xs', 'text-red-600', 'dark:text-red-300')}>
+                    <p
+                      className={cn(
+                        designTokens.typography.caption,
+                        'text-red-600',
+                        'dark:text-red-300'
+                      )}
+                    >
                       Passwords do not match.
                     </p>
                   )}
@@ -240,8 +257,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           <h2
             id="delete-account-modal-title"
             className={cn(
-              'text-xl',
-              'font-semibold',
+              designTokens.typography.cardTitle,
               'mb-4',
               'text-slate-900',
               'dark:text-slate-100'
@@ -256,7 +272,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
             icon={<AlertTriangle className={cn('h-5', 'w-5')} />}
             className={cn('mb-6')}
           >
-            <ul className={cn('space-y-1', 'text-xs')}>
+            <ul className={cn('space-y-1', designTokens.typography.caption)}>
               <li>• All bank connections (Plaid/Teller)</li>
               <li>• All transactions and accounts</li>
               <li>• All budgets and settings</li>

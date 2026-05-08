@@ -483,8 +483,7 @@ const layeredSurfaces = {
     'bg-white/75',
     'px-3',
     'py-1',
-    'text-[11px]',
-    'font-semibold',
+    primitiveTypographyRecipes.label,
     'uppercase',
     'tracking-[0.32em]',
     'text-[#475569]',
@@ -765,11 +764,9 @@ export const designTokens = {
       base: 'hero-stat-card group relative rounded-2xl transition-colors duration-300',
       shell:
         'relative h-full w-full overflow-hidden rounded-2xl border-2 bg-white/80 p-4 transform-gpu origin-center will-change-transform transition-transform duration-200 dark:bg-[#111a2f]/70',
-      title:
-        'text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400',
-      value: 'text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white',
-      suffix:
-        'text-sm font-medium text-slate-600 transition-colors duration-500 dark:text-slate-300',
+      title: `${primitiveTypographyRecipes.label} text-slate-500 transition-colors duration-500 dark:text-slate-400`,
+      value: `${primitiveTypographyRecipes.cardTitle} text-slate-900 transition-colors duration-500 dark:text-white`,
+      suffix: `${primitiveTypographyRecipes.captionStrong} text-slate-600 transition-colors duration-500 dark:text-slate-300`,
       overlay:
         'pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100',
       ring: 'pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] opacity-70',

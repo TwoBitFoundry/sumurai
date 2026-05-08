@@ -1,3 +1,5 @@
+import { primitiveTypographyRecipes } from '@/ui/primitives/tokenRecipes';
+
 export const budgetTokenRecipes = {
   budgetCard: {
     shell: [
@@ -80,7 +82,9 @@ export const budgetTokenRecipes = {
       'dark:hover:bg-[#1e293b]/85 dark:focus-visible:ring-offset-[#0f172a]',
     ],
     accountsToolbar: [
-      'inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/85 px-5 py-2 text-sm font-semibold text-[#0f172a]',
+      'inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/85 px-5 py-2',
+      primitiveTypographyRecipes.bodyStrong,
+      'text-[#0f172a]',
       'shadow-[0_18px_48px_-32px_rgba(15,23,42,0.45)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[#93c5fd] hover:text-[#0f172a]',
       'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
       'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none',

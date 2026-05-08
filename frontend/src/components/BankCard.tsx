@@ -3,6 +3,7 @@ import { ChevronDown, MoreVertical, RefreshCw, Unlink } from 'lucide-react';
 import type React from 'react';
 import { useMemo, useState } from 'react';
 import { Button, cn, GlassCard, MenuDropdown, MenuItem } from '../ui/primitives';
+import { designTokens } from '../ui/tokens';
 import { AccountRow } from './AccountRow';
 import { DisconnectModal } from './DisconnectModal';
 import { StatusPill } from './StatusPill';
@@ -63,7 +64,7 @@ const CardMenu: React.FC<{
 };
 
 export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect }) => {
-  const sectionBadgeClass = 'text-xs font-semibold text-slate-600 dark:text-slate-200';
+  const sectionBadgeClass = cn(designTokens.typography.label, 'text-slate-600 dark:text-slate-200');
 
   const [expanded, setExpanded] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -86,7 +87,7 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect }
           'dark:text-sky-300'
         )}
       >
-        <span className={cn('text-sm', 'font-semibold')}>{bank.short}</span>
+        <span className={cn(designTokens.typography.bodyStrong)}>{bank.short}</span>
       </GlassCard>
     ),
     [bank.short]
@@ -140,15 +141,14 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect }
               <h3
                 className={cn(
                   'truncate',
-                  'text-lg',
-                  'font-semibold',
+                  designTokens.typography.cardTitle,
                   'text-slate-900',
                   'dark:text-white'
                 )}
               >
                 {bank.name}
               </h3>
-              <div className={cn('flex', 'items-center', 'gap-2', 'text-xs')}>
+              <div className={cn('flex', 'items-center', 'gap-2', designTokens.typography.caption)}>
                 <StatusPill status={bank.status} />
                 <span className={cn('text-slate-600', 'dark:text-slate-300')}>
                   {(() => {

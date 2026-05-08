@@ -39,7 +39,13 @@ export const ProviderSelectionPanel = ({
     return (
       <section className={panelClasses} data-testid="provider-loading-panel">
         <div className={cn('p-12', 'text-center')}>
-          <div className={cn('text-sm', 'font-medium', 'text-slate-600', 'dark:text-slate-300')}>
+          <div
+            className={cn(
+              designTokens.typography.bodyStrong,
+              'text-slate-600',
+              'dark:text-slate-300'
+            )}
+          >
             Loading provider catalogue…
           </div>
         </div>
@@ -66,10 +72,19 @@ export const ProviderSelectionPanel = ({
         )}
         data-testid="provider-error-panel"
       >
-        <div className={cn('text-sm', 'font-semibold', 'text-red-600', 'dark:text-red-300')}>
+        <div
+          className={cn(designTokens.typography.bodyStrong, 'text-red-600', 'dark:text-red-300')}
+        >
           {error}
         </div>
-        <div className={cn('mt-2', 'text-xs', 'text-red-500', 'dark:text-red-200')}>
+        <div
+          className={cn(
+            'mt-2',
+            designTokens.typography.caption,
+            'text-red-500',
+            'dark:text-red-200'
+          )}
+        >
           Please refresh or try again later.
         </div>
       </section>
@@ -87,16 +102,15 @@ export const ProviderSelectionPanel = ({
           <span className={cn(designTokens.surfaces.layered.eyebrowChip)}>Select Provider</span>
           <h1
             className={cn(
-              'text-3xl',
-              'font-bold',
+              designTokens.typography.pageTitle,
               'text-slate-900',
               'dark:text-white',
-              'sm:text-4xl'
+              'sm:text-[2.25rem]'
             )}
           >
             Choose how you connect accounts
           </h1>
-          <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-300')}>
+          <p className={cn(designTokens.typography.body, 'text-slate-600', 'dark:text-slate-300')}>
             Pick the data provider that matches your deployment. You can change this later from
             account settings.
           </p>
@@ -155,8 +169,7 @@ export const ProviderSelectionPanel = ({
                     <div className={cn('flex', 'items-center', 'justify-between')}>
                       <div
                         className={cn(
-                          'text-lg',
-                          'font-semibold',
+                          designTokens.typography.cardTitle,
                           'text-slate-900',
                           'dark:text-white'
                         )}
@@ -169,10 +182,7 @@ export const ProviderSelectionPanel = ({
                           'bg-sky-100',
                           'px-3',
                           'py-1',
-                          'text-[10px]',
-                          'font-semibold',
-                          'uppercase',
-                          'tracking-[0.28em]',
+                          designTokens.typography.label,
                           'text-sky-700',
                           'dark:bg-sky-500/15',
                           'dark:text-sky-200'
@@ -181,13 +191,19 @@ export const ProviderSelectionPanel = ({
                         {details.badge}
                       </span>
                     </div>
-                    <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-300')}>
+                    <p
+                      className={cn(
+                        designTokens.typography.body,
+                        'text-slate-600',
+                        'dark:text-slate-300'
+                      )}
+                    >
                       {details.description}
                     </p>
                     <ul
                       className={cn(
                         'space-y-2',
-                        'text-sm',
+                        designTokens.typography.body,
                         'text-slate-500',
                         'dark:text-slate-400'
                       )}
@@ -218,8 +234,7 @@ export const ProviderSelectionPanel = ({
                         'bg-sky-500',
                         'px-4',
                         'py-2',
-                        'text-sm',
-                        'font-semibold',
+                        designTokens.typography.bodyStrong,
                         'text-white',
                         'shadow-[0_18px_48px_-32px_rgba(14,165,233,0.65)]'
                       )}

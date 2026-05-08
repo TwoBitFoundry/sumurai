@@ -9,6 +9,7 @@ import {
   YAxis,
 } from 'recharts';
 import { cn } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import { useTheme } from '../context/ThemeContext';
 
 export const NetWorthOverTimeWidget: React.FC = () => {
@@ -22,7 +23,12 @@ export const NetWorthOverTimeWidget: React.FC = () => {
   return (
     <div data-testid="net-worth-widget" className={cn('h-full', 'w-full', 'min-w-0')}>
       <div
-        className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400', 'mb-4', 'font-medium')}
+        className={cn(
+          designTokens.typography.captionStrong,
+          'mb-4',
+          'text-slate-600',
+          'dark:text-slate-400'
+        )}
       >
         Net Worth Over Time
       </div>

@@ -46,7 +46,7 @@ export const TransactionsTable: React.FC<Props> = ({
       ) : (
         <>
           <div className="overflow-x-auto">
-            <table className={cn('min-w-full', 'text-sm', 'table-fixed')}>
+            <table className={cn('min-w-full', designTokens.typography.caption, 'table-fixed')}>
               <thead
                 className={cn(
                   'bg-slate-200',
@@ -65,10 +65,7 @@ export const TransactionsTable: React.FC<Props> = ({
                       'px-4',
                       'py-3',
                       'text-left',
-                      'text-xs',
-                      'font-semibold',
-                      'uppercase',
-                      'tracking-[0.18em]'
+                      designTokens.typography.label
                     )}
                   >
                     Date
@@ -79,10 +76,7 @@ export const TransactionsTable: React.FC<Props> = ({
                       'px-4',
                       'py-3',
                       'text-left',
-                      'text-xs',
-                      'font-semibold',
-                      'uppercase',
-                      'tracking-[0.18em]'
+                      designTokens.typography.label
                     )}
                   >
                     Merchant
@@ -94,10 +88,7 @@ export const TransactionsTable: React.FC<Props> = ({
                       'px-4',
                       'py-3',
                       'text-right',
-                      'text-xs',
-                      'font-semibold',
-                      'uppercase',
-                      'tracking-[0.18em]'
+                      designTokens.typography.label
                     )}
                   >
                     Amount
@@ -109,10 +100,7 @@ export const TransactionsTable: React.FC<Props> = ({
                       'px-4',
                       'py-3',
                       'text-left',
-                      'text-xs',
-                      'font-semibold',
-                      'uppercase',
-                      'tracking-[0.18em]'
+                      designTokens.typography.label
                     )}
                   >
                     Account
@@ -124,10 +112,7 @@ export const TransactionsTable: React.FC<Props> = ({
                       'px-4',
                       'py-3',
                       'text-left',
-                      'text-xs',
-                      'font-semibold',
-                      'uppercase',
-                      'tracking-[0.18em]'
+                      designTokens.typography.label
                     )}
                   >
                     Category
@@ -162,6 +147,7 @@ export const TransactionsTable: React.FC<Props> = ({
                             'px-4',
                             'py-3',
                             'align-middle',
+                            designTokens.typography.caption,
                             'text-slate-900',
                             'transition-colors',
                             'duration-500',
@@ -178,7 +164,7 @@ export const TransactionsTable: React.FC<Props> = ({
                             className={cn(
                               'block',
                               'truncate',
-                              'font-medium',
+                              designTokens.typography.bodyStrong,
                               'text-slate-900',
                               'transition-colors',
                               'duration-500',
@@ -189,7 +175,7 @@ export const TransactionsTable: React.FC<Props> = ({
                           </span>
                         </td>
                         <td
-                          className={`whitespace-nowrap px-4 py-3 text-right align-middle tabular-nums font-semibold transition-colors duration-500 ${
+                          className={`whitespace-nowrap px-4 py-3 text-right align-middle tabular-nums ${designTokens.typography.bodyStrong} transition-colors duration-500 ${
                             r.amount > 0
                               ? 'text-red-600 dark:text-red-400'
                               : r.amount < 0
@@ -202,7 +188,7 @@ export const TransactionsTable: React.FC<Props> = ({
                         <td className={cn('whitespace-nowrap', 'px-4', 'py-3', 'align-middle')}>
                           <span
                             className={cn(
-                              'text-xs',
+                              designTokens.typography.caption,
                               'text-slate-600',
                               'transition-colors',
                               'duration-500',
@@ -265,7 +251,7 @@ export const TransactionsTable: React.FC<Props> = ({
           >
             <div
               className={cn(
-                'text-xs',
+                designTokens.typography.caption,
                 'text-slate-600',
                 'transition-colors',
                 'duration-500',
@@ -286,7 +272,7 @@ export const TransactionsTable: React.FC<Props> = ({
               </button>
               <div
                 className={cn(
-                  'text-xs',
+                  designTokens.typography.caption,
                   'text-slate-600',
                   'transition-colors',
                   'duration-500',

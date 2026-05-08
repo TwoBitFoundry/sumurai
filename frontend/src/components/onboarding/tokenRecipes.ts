@@ -1,3 +1,5 @@
+import { primitiveTypographyRecipes } from '@/ui/primitives/tokenRecipes';
+
 export const onboardingTokenRecipes = {
   shell: [
     'group relative overflow-hidden border border-[#e2e8f0] bg-white shadow-sm',
@@ -24,12 +26,13 @@ export const onboardingTokenRecipes = {
     'dark:border-[#334155] dark:bg-[#0f172a] dark:hover:border-[#38bdf8] dark:hover:shadow-[0_20px_56px_-40px_rgba(2,6,23,0.65)]',
     'flex h-full items-start gap-4 rounded-2xl p-4 text-[13px]',
   ],
-  titleStrong: ['relative z-10 mt-3 text-sm font-semibold text-[#0f172a]', 'dark:text-white'],
-  titleStrongInline: ['text-sm font-semibold text-[#0f172a]', 'dark:text-white'],
-  bodyMuted: ['relative z-10 mt-1 text-xs text-[#475569]', 'dark:text-[#cbd5e1]'],
-  rowBodyMuted: ['text-xs text-[#475569]', 'dark:text-[#cbd5e1]'],
+  titleStrong: ['relative z-10 mt-3', primitiveTypographyRecipes.bodyStrong, 'dark:text-white'],
+  titleStrongInline: [primitiveTypographyRecipes.bodyStrong, 'dark:text-white'],
+  bodyMuted: ['relative z-10 mt-1', primitiveTypographyRecipes.caption, 'dark:text-[#cbd5e1]'],
+  rowBodyMuted: [primitiveTypographyRecipes.caption, 'dark:text-[#cbd5e1]'],
   eyebrowCaps: [
-    'text-[11px] font-semibold uppercase tracking-[0.3em] text-[#475569] transition-colors duration-300 ease-out dark:text-[#cbd5e1]',
+    primitiveTypographyRecipes.label,
+    'uppercase transition-colors duration-300 ease-out',
   ],
   previewFrame: [
     'relative aspect-[16/10] overflow-hidden rounded-2xl border border-[#e2e8f0] bg-[#0f172a] shadow-lg sm:aspect-[18/10]',

@@ -1,6 +1,7 @@
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import type React from 'react';
 import { cn } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 
 type ConnectionStatus = 'connected' | 'needs_reauth' | 'error';
 
@@ -37,7 +38,8 @@ export const StatusPill: React.FC<StatusPillProps> = ({ status, className }) => 
   return (
     <span
       className={classNames(
-        'inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-full',
+        'inline-flex items-center gap-1.5 px-2 py-1 rounded-full',
+        designTokens.typography.label,
         statusClassName,
         className
       )}

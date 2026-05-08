@@ -12,6 +12,7 @@ import {
   Input,
   RequirementPill,
 } from './ui/primitives';
+import { designTokens } from './ui/tokens';
 
 interface LoginScreenProps {
   onNavigateToRegister: () => void;
@@ -40,7 +41,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
       const errorMessage =
         error instanceof Error ? error.message : 'Login failed. Please check your credentials.';
       setError(errorMessage);
-      if (!import.meta.env.VITEST) {
+      if (!import.meta.env?.VITEST) {
         console.error('Login failed:', error);
       }
     } finally {
@@ -90,10 +91,18 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
             <Badge size="md">Welcome Back</Badge>
-            <h2 className={cn('text-3xl', 'font-semibold', 'text-slate-900', 'dark:text-white')}>
+            <h2
+              className={cn(designTokens.typography.pageTitle, 'text-slate-900', 'dark:text-white')}
+            >
               Sign in to your account
             </h2>
-            <p className={cn('text-[0.85rem]', 'text-slate-600', 'dark:text-slate-400')}>
+            <p
+              className={cn(
+                designTokens.typography.caption,
+                'text-slate-600',
+                'dark:text-slate-400'
+              )}
+            >
               Access your latest financial dashboards and insights.
             </p>
           </div>
@@ -142,7 +151,14 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
             </Button>
           </form>
 
-          <div className={cn('text-center', 'text-sm', 'text-slate-600', 'dark:text-slate-300')}>
+          <div
+            className={cn(
+              'text-center',
+              designTokens.typography.body,
+              'text-slate-600',
+              'dark:text-slate-300'
+            )}
+          >
             <p className="mb-3">Don't have an account?</p>
             <Button type="button" onClick={onNavigateToRegister} variant="ghost" size="sm">
               Create account
@@ -246,10 +262,18 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
             <Badge size="md">JOIN TODAY</Badge>
-            <h2 className={cn('text-3xl', 'font-semibold', 'text-slate-900', 'dark:text-white')}>
+            <h2
+              className={cn(designTokens.typography.pageTitle, 'text-slate-900', 'dark:text-white')}
+            >
               Sign Up for Sumurai
             </h2>
-            <p className={cn('text-[0.85rem]', 'text-slate-600', 'dark:text-slate-400')}>
+            <p
+              className={cn(
+                designTokens.typography.caption,
+                'text-slate-600',
+                'dark:text-slate-400'
+              )}
+            >
               Finish sign up to unlock onboarding and account sync.
             </p>
           </div>
@@ -274,7 +298,13 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
                 disabled={isLoading}
               />
               {email && !isEmailValid && (
-                <p className={cn('text-xs', 'text-red-600', 'dark:text-red-300')}>
+                <p
+                  className={cn(
+                    designTokens.typography.caption,
+                    'text-red-600',
+                    'dark:text-red-300'
+                  )}
+                >
                   Please enter a valid email address.
                 </p>
               )}
@@ -308,7 +338,13 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
                   disabled={isLoading}
                 />
                 {confirmPassword && !isPasswordMatch && (
-                  <p className={cn('text-xs', 'text-red-600', 'dark:text-red-300')}>
+                  <p
+                    className={cn(
+                      designTokens.typography.caption,
+                      'text-red-600',
+                      'dark:text-red-300'
+                    )}
+                  >
                     Passwords do not match.
                   </p>
                 )}
@@ -322,16 +358,14 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
               withInnerEffects={false}
               className={cn(
                 'space-y-1.5',
-                'text-[0.7rem]',
+                designTokens.typography.caption,
                 'text-slate-600',
                 'dark:text-slate-300'
               )}
             >
               <h3
                 className={cn(
-                  'text-[0.65rem]',
-                  'font-semibold',
-                  'uppercase',
+                  designTokens.typography.label,
                   'text-slate-700',
                   'dark:text-slate-200'
                 )}
@@ -365,7 +399,14 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
             </Button>
           </form>
 
-          <div className={cn('text-center', 'text-sm', 'text-slate-600', 'dark:text-slate-300')}>
+          <div
+            className={cn(
+              'text-center',
+              designTokens.typography.body,
+              'text-slate-600',
+              'dark:text-slate-300'
+            )}
+          >
             <p className="mb-3">Already have an account?</p>
             <Button type="button" onClick={onNavigateToLogin} variant="ghost" size="sm">
               Sign in

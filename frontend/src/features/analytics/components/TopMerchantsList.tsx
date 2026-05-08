@@ -51,8 +51,7 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
                     'from-cyan-400',
                     'to-emerald-400',
                     'text-slate-900',
-                    'text-xs',
-                    'font-bold',
+                    designTokens.typography.label,
                     'flex-shrink-0'
                   )}
                   style={{
@@ -64,8 +63,7 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
                 <div className="min-w-0">
                   <div
                     className={cn(
-                      'text-sm',
-                      'font-medium',
+                      designTokens.typography.bodyStrong,
                       'text-slate-900',
                       'dark:text-slate-100',
                       'truncate'
@@ -73,7 +71,13 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
                   >
                     {merchant.name}
                   </div>
-                  <div className={cn('text-xs', 'text-slate-500', 'dark:text-slate-400')}>
+                  <div
+                    className={cn(
+                      designTokens.typography.caption,
+                      'text-slate-500',
+                      'dark:text-slate-400'
+                    )}
+                  >
                     {merchant.count} transaction{merchant.count !== 1 ? 's' : ''}
                   </div>
                 </div>
@@ -81,15 +85,20 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
               <div className={cn('text-right', 'flex-shrink-0', 'ml-4')}>
                 <div
                   className={cn(
-                    'text-sm',
-                    'font-semibold',
+                    designTokens.typography.bodyStrong,
                     'text-slate-900',
                     'dark:text-slate-100'
                   )}
                 >
                   {fmtUSD(merchant.amount)}
                 </div>
-                <div className={cn('text-xs', 'text-slate-500', 'dark:text-slate-400')}>
+                <div
+                  className={cn(
+                    designTokens.typography.caption,
+                    'text-slate-500',
+                    'dark:text-slate-400'
+                  )}
+                >
                   {merchant.percentage}%
                 </div>
               </div>

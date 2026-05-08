@@ -100,7 +100,7 @@ export function BudgetList({
                 />
                 {displayName}
               </div>
-              <div className={cn('flex', 'items-center', 'gap-2', 'text-xs')}>
+              <div className={cn('flex', 'items-center', 'gap-2', designTokens.typography.label)}>
                 {isEditing ? (
                   <>
                     <button
@@ -186,7 +186,7 @@ export function BudgetList({
                   <div
                     className={cn(
                       'text-right',
-                      'text-sm',
+                      designTokens.typography.caption,
                       'text-slate-500',
                       'transition-colors',
                       'duration-300',
@@ -207,8 +207,7 @@ export function BudgetList({
                     </span>
                     <span
                       className={cn(
-                        'text-base',
-                        'font-semibold',
+                        designTokens.typography.bodyStrong,
                         'text-slate-700',
                         'transition-colors',
                         'duration-300',
@@ -225,7 +224,7 @@ export function BudgetList({
                     'grid',
                     'grid-cols-2',
                     'gap-4',
-                    'text-sm',
+                    designTokens.typography.caption,
                     'text-slate-500',
                     'transition-colors',
                     'duration-300',
@@ -247,8 +246,7 @@ export function BudgetList({
                     <div
                       className={cn(
                         'mt-1',
-                        'text-2xl',
-                        'font-semibold',
+                        designTokens.typography.cardTitle,
                         'text-slate-900',
                         'transition-colors',
                         'duration-300',
@@ -271,7 +269,15 @@ export function BudgetList({
                       Spent
                     </span>
                     <div
-                      className={`mt-1 text-2xl font-semibold transition-colors duration-300 ${isOver ? 'text-red-600 dark:text-red-300' : 'text-slate-700 dark:text-slate-200'}`}
+                      className={cn(
+                        'mt-1',
+                        designTokens.typography.cardTitle,
+                        'transition-colors',
+                        'duration-300',
+                        isOver
+                          ? 'text-red-600 dark:text-red-300'
+                          : 'text-slate-700 dark:text-slate-200'
+                      )}
                     >
                       {fmtUSD(b.spent)}
                     </div>

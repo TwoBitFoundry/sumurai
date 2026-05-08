@@ -195,6 +195,20 @@ Acceptance criteria:
 - Dashboard, budgets, transactions, settings, and onboarding are visibly more readable at 100% zoom.
 - Affected frontend tests and `typecheck` pass.
 
+Status: completed.
+
+Notes:
+
+- Dashboard, balances, budgets, transactions, settings, and onboarding now consume the shared semantic typography recipes instead of ad hoc size utilities.
+- Shared app shell components such as the title bar, error boundary, toast, provider mismatch modal, session modal, and footer also use the semantic scale.
+- Remaining raw size hits are limited to story slices, the shared button-size contract, and the generated token artifact.
+
+TDD log:
+
+- Red: `rg -n "text-(xs|sm)|text-\\[10px\\]|text-\\[11px\\]" frontend/src --glob '!**/*.stories.tsx' --glob '!**/README.md'`
+- Green: migrated the app surfaces and shared shell components to semantic typography recipes
+- Verify: `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run design:guard`, `npm --prefix frontend test`
+
 ### 5. Visual QA And Cleanup
 
 Goal: confirm the new hierarchy works in real app contexts and document remaining intentional exceptions.

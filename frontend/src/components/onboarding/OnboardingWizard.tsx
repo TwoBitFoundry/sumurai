@@ -17,7 +17,8 @@ import { WelcomeStep } from './WelcomeStep';
 
 const stepIndicatorVariants = cva(
   [
-    'inline-flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold',
+    'inline-flex h-8 w-8 items-center justify-center rounded-full border',
+    designTokens.typography.label,
     'transition-colors duration-300 ease-out',
     'backdrop-blur-[2px] backdrop-saturate-[140%]',
   ],
@@ -310,7 +311,11 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
               >
                 <p
                   className={cn(
-                    'text-xs text-slate-500 transition-colors duration-300 ease-out',
+                    designTokens.typography.caption,
+                    'text-slate-500',
+                    'transition-colors',
+                    'duration-300',
+                    'ease-out',
                     'dark:text-slate-300'
                   )}
                 >

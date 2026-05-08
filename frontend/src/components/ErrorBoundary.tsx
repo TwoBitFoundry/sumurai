@@ -4,6 +4,7 @@ import type React from 'react';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Button, GlassCard } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
+import { designTokens } from '@/ui/tokens';
 import { ApiError, AuthenticationError } from '../services/ApiClient';
 
 interface Props {
@@ -52,7 +53,7 @@ export class ErrorBoundary extends Component<Props, State> {
       });
     }
 
-    if (!import.meta.env.VITEST) {
+    if (!import.meta.env?.VITEST) {
       console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
   }
@@ -137,10 +138,14 @@ export class ErrorBoundary extends Component<Props, State> {
           <Icon className={cn('h-10', 'w-10', 'text-slate-600', 'dark:text-slate-400')} />
         </div>
         <div className="space-y-2">
-          <h2 className={cn('text-xl', 'font-semibold', 'text-slate-900', 'dark:text-white')}>
+          <h2
+            className={cn(designTokens.typography.cardTitle, 'text-slate-900', 'dark:text-white')}
+          >
             {title}
           </h2>
-          <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-300')}>{message}</p>
+          <p className={cn(designTokens.typography.body, 'text-slate-600', 'dark:text-slate-300')}>
+            {message}
+          </p>
         </div>
         {actions && (
           <div className={cn('flex', 'flex-wrap', 'justify-center', 'gap-3')}>{actions}</div>

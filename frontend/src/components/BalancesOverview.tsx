@@ -22,6 +22,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useBalancesOverview } from '../hooks/useBalancesOverview';
 import { formatRatio } from '../services/AnalyticsService';
 import { Alert, Button, cn, GlassCard } from '../ui/primitives';
+import { designTokens } from '../ui/tokens';
 import { Amount, fmtUSD } from './Amount';
 import HeroStatCard from './widgets/HeroStatCard';
 
@@ -38,7 +39,8 @@ function RatioPill({ ratio }: { ratio: number | string | null }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold',
+        'inline-flex items-center rounded-full border px-2 py-0.5',
+        designTokens.typography.label,
         'border-slate-200 bg-white/70 text-slate-600',
         'dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200'
       )}
@@ -59,7 +61,8 @@ function BalancesLegend({ payload, ratio }: BalancesLegendProps) {
     <div
       className={cn(
         'flex w-full flex-wrap items-center justify-between gap-3',
-        'text-xs text-slate-600',
+        designTokens.typography.caption,
+        'text-slate-600',
         'dark:text-slate-300'
       )}
     >
@@ -76,7 +79,7 @@ function BalancesLegend({ payload, ratio }: BalancesLegendProps) {
           return (
             <span key={`${entry.dataKey ?? label}`} className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-              <span className="font-medium">{label}</span>
+              <span className={cn(designTokens.typography.captionStrong)}>{label}</span>
             </span>
           );
         })}
@@ -335,11 +338,12 @@ export function BalancesOverview() {
               padding="sm"
               withInnerEffects={false}
               className={cn(
-                'flex flex-wrap items-center gap-3 text-xs',
+                'flex flex-wrap items-center gap-3',
+                designTokens.typography.caption,
                 'text-slate-700 dark:text-slate-200'
               )}
             >
-              <span className="font-semibold">{hoverInfo.bank}</span>
+              <span className={cn(designTokens.typography.captionStrong)}>{hoverInfo.bank}</span>
               <span
                 className={cn(
                   'flex',

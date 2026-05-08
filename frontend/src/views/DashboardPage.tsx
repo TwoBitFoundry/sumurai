@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import type { DotItemDotProps } from 'recharts/types/util/types';
 import { Button, cn, EmptyState } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import BalancesOverview from '../components/BalancesOverview';
 import { useTheme } from '../context/ThemeContext';
 import { DashboardCalculator } from '../domain/DashboardCalculator';
@@ -114,7 +115,14 @@ const DashboardPage: React.FC = () => {
               isRefreshing={!analyticsLoading && analyticsRefreshing}
             >
               {analyticsLoading && (
-                <div className={cn('mb-2', 'text-xs', 'text-slate-500', 'dark:text-slate-400')}>
+                <div
+                  className={cn(
+                    'mb-2',
+                    designTokens.typography.caption,
+                    'text-slate-500',
+                    'dark:text-slate-400'
+                  )}
+                >
                   Loading analytics...
                 </div>
               )}
@@ -137,7 +145,7 @@ const DashboardPage: React.FC = () => {
                     <div>
                       <div
                         className={cn(
-                          'text-xs',
+                          designTokens.typography.label,
                           'text-slate-600',
                           'dark:text-slate-400',
                           'mb-2',
@@ -176,8 +184,7 @@ const DashboardPage: React.FC = () => {
                                 />
                                 <span
                                   className={cn(
-                                    'text-xs',
-                                    'font-medium',
+                                    designTokens.typography.captionStrong,
                                     'text-slate-800',
                                     'dark:text-slate-200',
                                     'truncate'
@@ -189,8 +196,7 @@ const DashboardPage: React.FC = () => {
                               <div className={cn('flex', 'items-baseline', 'justify-between')}>
                                 <div
                                   className={cn(
-                                    'text-xs',
-                                    'font-semibold',
+                                    designTokens.typography.bodyStrong,
                                     'text-slate-900',
                                     'dark:text-slate-100'
                                   )}
@@ -199,7 +205,7 @@ const DashboardPage: React.FC = () => {
                                 </div>
                                 <div
                                   className={cn(
-                                    'text-[10px]',
+                                    designTokens.typography.caption,
                                     'text-slate-500',
                                     'dark:text-slate-400'
                                   )}
@@ -257,7 +263,7 @@ const DashboardPage: React.FC = () => {
                   className={cn(
                     'flex-1',
                     'min-h-[220px]',
-                    'text-sm',
+                    designTokens.typography.body,
                     'text-rose-600',
                     'dark:text-rose-400'
                   )}
@@ -410,7 +416,8 @@ const DashboardPage: React.FC = () => {
                   key={option.key}
                   onClick={() => setDateRange(option.key as DateRange)}
                   variant={dateRange === option.key ? 'tabActive' : 'tab'}
-                  className="rounded-lg px-3 py-1.5 text-sm font-medium normal-case transition-all duration-200"
+                  size="sm"
+                  className="rounded-lg px-3 py-1.5 normal-case transition-all duration-200"
                 >
                   {option.label}
                 </Button>

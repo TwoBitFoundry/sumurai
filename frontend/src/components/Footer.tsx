@@ -1,5 +1,6 @@
 import { Handshake, Star } from 'lucide-react';
 import { cn } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 
 export function Footer() {
   return (
@@ -31,7 +32,9 @@ export function Footer() {
         >
           <div className={cn('flex', 'flex-col', 'gap-2', 'items-start')}>
             <img src="/tbf-logo.svg" alt="Two Bit Foundry" className={cn('h-10', 'w-auto')} />
-            <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400')}>
+            <p
+              className={cn(designTokens.typography.body, 'text-slate-600', 'dark:text-slate-400')}
+            >
               Built in the open with the community
             </p>
           </div>
@@ -54,9 +57,7 @@ export function Footer() {
               className={cn(
                 'px-4',
                 'py-2',
-                'text-sm',
-                'font-subheading',
-                'uppercase',
+                designTokens.typography.label,
                 'rounded-lg',
                 'bg-sky-500/80',
                 'backdrop-blur-sm',
@@ -85,9 +86,7 @@ export function Footer() {
               className={cn(
                 'px-4',
                 'py-2',
-                'text-sm',
-                'font-subheading',
-                'uppercase',
+                designTokens.typography.label,
                 'rounded-lg',
                 'bg-amber-500/80',
                 'backdrop-blur-sm',
@@ -116,9 +115,7 @@ export function Footer() {
               className={cn(
                 'px-4',
                 'py-2',
-                'text-sm',
-                'font-subheading',
-                'uppercase',
+                designTokens.typography.label,
                 'rounded-lg',
                 'border',
                 'border-slate-200',
@@ -156,14 +153,16 @@ export function Footer() {
             'dark:border-slate-700/40'
           )}
         >
-          <p className={cn('text-xs', 'text-slate-500', 'dark:text-slate-500')}>
+          <p
+            className={cn(designTokens.typography.caption, 'text-slate-500', 'dark:text-slate-500')}
+          >
             © {new Date().getFullYear()} Two Bit Foundry • Source available
           </p>
           <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-4', 'sm:gap-6')}>
             <a
               href="mailto:contact@twobitfoundry.com"
               className={cn(
-                'text-xs',
+                designTokens.typography.caption,
                 'text-slate-600',
                 'dark:text-slate-400',
                 'hover:text-sky-600',
@@ -175,7 +174,7 @@ export function Footer() {
             <a
               href="mailto:support@twobitfoundry.com"
               className={cn(
-                'text-xs',
+                designTokens.typography.caption,
                 'text-slate-600',
                 'dark:text-slate-400',
                 'hover:text-sky-600',

@@ -48,8 +48,7 @@ const accountMetaClasses = cn(
   'flex',
   'items-center',
   'gap-2',
-  'text-xs',
-  'font-medium',
+  designTokens.typography.captionStrong,
   'capitalize',
   'text-slate-600',
   'transition-colors',
@@ -75,8 +74,7 @@ const transactionsPillClasses = cn(
   'border',
   'px-2.5',
   'py-1',
-  'text-xs',
-  'font-semibold',
+  designTokens.typography.label,
   'border-slate-200',
   'bg-slate-50',
   'text-slate-600',
@@ -110,7 +108,8 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
   const balanceText = formatMoney(rawBalance);
 
   const balanceColor = cn(
-    'text-sm font-semibold tabular-nums',
+    designTokens.typography.bodyStrong,
+    'tabular-nums',
     'transition-colors duration-300 ease-out',
     rawBalance == null && 'text-slate-400 dark:text-slate-500',
     rawBalance != null &&
@@ -142,8 +141,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
           <div className={cn('flex', 'items-center', 'justify-between')}>
             <div
               className={cn(
-                'text-sm',
-                'font-semibold',
+                designTokens.typography.bodyStrong,
                 'text-slate-900',
                 'transition-colors',
                 'duration-300',

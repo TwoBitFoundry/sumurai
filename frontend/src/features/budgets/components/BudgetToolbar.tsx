@@ -60,10 +60,7 @@ export const BudgetToolbar = ({
         </div>
         <div
           className={cn(
-            'text-xs',
-            'font-semibold',
-            'uppercase',
-            'tracking-[0.2em]',
+            designTokens.typography.label,
             'text-slate-600',
             'transition-colors',
             'duration-500',
@@ -79,8 +76,7 @@ export const BudgetToolbar = ({
             'inline-flex',
             'items-center',
             'gap-1',
-            'text-xs',
-            'font-medium',
+            designTokens.typography.caption,
             'text-slate-500',
             'transition-colors',
             'duration-500',

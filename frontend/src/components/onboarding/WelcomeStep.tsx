@@ -91,8 +91,11 @@ export function WelcomeStep() {
           <div className={cn('space-y-3')}>
             <h1
               className={cn(
-                'text-3xl font-bold text-slate-900 transition-colors duration-300 ease-out',
-                'md:text-[2.6rem]',
+                designTokens.typography.pageTitle,
+                'text-slate-900',
+                'transition-colors',
+                'duration-300',
+                'ease-out',
                 'dark:text-white'
               )}
             >
@@ -100,7 +103,13 @@ export function WelcomeStep() {
             </h1>
             <p
               className={cn(
-                'text-base leading-relaxed text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300'
+                designTokens.typography.body,
+                'leading-relaxed',
+                'text-slate-600',
+                'transition-colors',
+                'duration-300',
+                'ease-out',
+                'dark:text-slate-300'
               )}
             >
               Bring every account into one secure place, watch budgets stay on track, and turn raw
