@@ -7,8 +7,12 @@ use opentelemetry::{
     trace::{TraceContextExt, TracerProvider},
 };
 use opentelemetry_otlp::{WithExportConfig, WithHttpConfig};
-use opentelemetry_sdk::{propagation::TraceContextPropagator, trace::SdkTracerProvider, Resource};
-use sha2::{Digest, Sha256};
+use opentelemetry_sdk::{
+    error::{OTelSdkError, OTelSdkResult},
+    propagation::TraceContextPropagator,
+    trace::{SdkTracerProvider, SpanData, SpanExporter},
+    Resource,
+};
 use std::{collections::HashMap, fmt::Write, time::Instant};
 use tracing::{info_span, Instrument, Span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
@@ -20,27 +24,46 @@ use tracing_subscriber::{
         FmtContext,
     },
     layer::SubscriberExt,
-    registry::{LookupSpan, Registry},
+    registry::LookupSpan,
     util::SubscriberInitExt,
     EnvFilter,
 };
 
 const SENSITIVE_REQUEST_PATHS: &[&str] = &["/api/plaid/exchange-token", "/api/providers/connect"];
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TracesExporterKind {
+    Otlp,
+    Console,
+    None,
+}
+
+impl TracesExporterKind {
+    pub fn from_env() -> anyhow::Result<Self> {
+        let raw = std::env::var("OTEL_TRACES_EXPORTER")
+            .map_err(|_| anyhow::anyhow!("OTEL_TRACES_EXPORTER must be set (otlp|console|none)"))?;
+
+        match raw.to_ascii_lowercase().as_str() {
+            "otlp" => Ok(Self::Otlp),
+            "console" => Ok(Self::Console),
+            "none" => Ok(Self::None),
+            other => Err(anyhow::anyhow!(
+                "OTEL_TRACES_EXPORTER must be one of otlp|console|none (got {other:?})"
+            )),
+        }
+    }
+}
+
 pub struct TelemetryConfig {
     pub env_filter: Option<String>,
     pub otlp_endpoint: String,
     pub otlp_headers: Option<HashMap<String, String>>,
-}
-
-impl Default for TelemetryConfig {
-    fn default() -> Self {
-        Self::from_env()
-    }
+    pub traces_exporter: TracesExporterKind,
 }
 
 impl TelemetryConfig {
-    pub fn from_env() -> Self {
+    pub fn from_env() -> anyhow::Result<Self> {
+        let traces_exporter = TracesExporterKind::from_env()?;
         let otlp_endpoint = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
             .unwrap_or_else(|_| "http://localhost:5341/ingest/otlp/v1/traces".to_string());
 
@@ -48,31 +71,58 @@ impl TelemetryConfig {
             .ok()
             .and_then(parse_otlp_headers);
 
-        Self {
+        Ok(Self {
             env_filter: std::env::var("RUST_LOG").ok(),
             otlp_endpoint,
             otlp_headers,
-        }
+            traces_exporter,
+        })
     }
 }
 
 pub struct TelemetryHandle {
-    tracer_provider: SdkTracerProvider,
+    tracer_provider: Option<SdkTracerProvider>,
 }
 
 impl TelemetryHandle {
     pub fn shutdown(self) -> Result<()> {
-        self.tracer_provider
+        let Some(provider) = self.tracer_provider else {
+            return Ok(());
+        };
+        provider
             .shutdown()
             .map_err(|err| anyhow::anyhow!("failed to shutdown tracer provider: {err}"))
     }
 }
 
+#[derive(Debug, Default)]
+struct ConsoleSpanExporter;
+
+impl SpanExporter for ConsoleSpanExporter {
+    fn export(
+        &self,
+        batch: Vec<SpanData>,
+    ) -> impl std::future::Future<Output = OTelSdkResult> + Send {
+        for span in batch {
+            let is_error = matches!(span.status, opentelemetry::trace::Status::Error { .. });
+            if is_error {
+                println!("{span:?}");
+            }
+        }
+        futures::future::ready(Ok(()))
+    }
+
+    fn shutdown(&mut self) -> std::result::Result<(), OTelSdkError> {
+        Ok(())
+    }
+}
+
 pub fn init(config: &TelemetryConfig) -> Result<TelemetryHandle> {
     let env_filter = match &config.env_filter {
-        Some(filter) => {
-            EnvFilter::try_new(filter.clone()).unwrap_or_else(|_| EnvFilter::new("info"))
-        }
+        Some(filter) => EnvFilter::try_new(filter.clone()).unwrap_or_else(|err| {
+            eprintln!("Invalid RUST_LOG value ({filter:?}): {err}. Falling back to \"info\".");
+            EnvFilter::new("info")
+        }),
         None => EnvFilter::new("info"),
     };
 
@@ -82,74 +132,91 @@ pub fn init(config: &TelemetryConfig) -> Result<TelemetryHandle> {
 
     global::set_text_map_propagator(TraceContextPropagator::new());
 
-    println!("OTLP exporter endpoint: {}", config.otlp_endpoint);
-
-    let mut exporter_builder = opentelemetry_otlp::SpanExporter::builder()
-        .with_http()
-        .with_endpoint(config.otlp_endpoint.clone());
-
-    if let Some(headers) = &config.otlp_headers {
-        let header_names = headers.keys().cloned().collect::<Vec<_>>();
-        println!("OTLP exporter headers configured: {:?}", header_names);
-        exporter_builder = exporter_builder.with_headers(headers.clone());
-    }
-
-    let exporter = exporter_builder.build()?;
-
     let resource = Resource::builder()
         .with_service_name("sumurai-backend")
         .build();
 
-    let tracer_provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()
-        .with_resource(resource)
-        .with_batch_exporter(exporter)
-        .build();
+    let (tracer_provider, otel_layer) = match config.traces_exporter {
+        TracesExporterKind::Otlp => {
+            println!("OTLP exporter endpoint: {}", config.otlp_endpoint);
 
-    let tracer = tracer_provider.tracer("accounting-backend");
+            let mut exporter_builder = opentelemetry_otlp::SpanExporter::builder()
+                .with_http()
+                .with_endpoint(config.otlp_endpoint.clone());
 
-    tracing_subscriber::registry()
+            if let Some(headers) = &config.otlp_headers {
+                let header_names = headers.keys().cloned().collect::<Vec<_>>();
+                println!("OTLP exporter headers configured: {:?}", header_names);
+                exporter_builder = exporter_builder.with_headers(headers.clone());
+            }
+
+            let exporter = exporter_builder.build()?;
+            let tracer_provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()
+                .with_resource(resource)
+                .with_batch_exporter(exporter)
+                .build();
+            let tracer = tracer_provider.tracer("accounting-backend");
+            (
+                Some(tracer_provider.clone()),
+                Some(
+                    tracing_opentelemetry::layer()
+                        .with_tracer(tracer)
+                        .with_filter(LevelFilter::INFO),
+                ),
+            )
+        }
+        TracesExporterKind::Console => {
+            println!("OTEL traces exporter: console");
+            let exporter = ConsoleSpanExporter;
+            let tracer_provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()
+                .with_resource(resource)
+                .with_batch_exporter(exporter)
+                .build();
+            let tracer = tracer_provider.tracer("accounting-backend");
+            (
+                Some(tracer_provider.clone()),
+                Some(
+                    tracing_opentelemetry::layer()
+                        .with_tracer(tracer)
+                        .with_filter(LevelFilter::INFO),
+                ),
+            )
+        }
+        TracesExporterKind::None => {
+            println!("OTEL traces exporter: none");
+            let tracer_provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()
+                .with_resource(resource)
+                .build();
+            let tracer = tracer_provider.tracer("accounting-backend");
+            (
+                Some(tracer_provider.clone()),
+                Some(
+                    tracing_opentelemetry::layer()
+                        .with_tracer(tracer)
+                        .with_filter(LevelFilter::INFO),
+                ),
+            )
+        }
+    };
+
+    let base = tracing_subscriber::registry()
         .with(env_filter)
-        .with(fmt_layer)
-        .with(
-            tracing_opentelemetry::layer()
-                .with_tracer(tracer)
-                .with_filter(LevelFilter::INFO),
-        )
-        .try_init()
-        .map_err(|err| anyhow::anyhow!("failed to initialize tracing subscriber: {err}"))?;
+        .with(fmt_layer);
+    match otel_layer {
+        Some(layer) => base
+            .with(layer)
+            .try_init()
+            .map_err(|err| anyhow::anyhow!("failed to initialize tracing subscriber: {err}"))?,
+        None => base
+            .try_init()
+            .map_err(|err| anyhow::anyhow!("failed to initialize tracing subscriber: {err}"))?,
+    };
 
-    global::set_tracer_provider(tracer_provider.clone());
+    if let Some(provider) = tracer_provider.clone() {
+        global::set_tracer_provider(provider);
+    }
 
     Ok(TelemetryHandle { tracer_provider })
-}
-
-#[derive(Clone)]
-pub struct EncryptedToken(pub String);
-
-pub fn hash_token(token: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(token.as_bytes());
-    hex::encode(hasher.finalize())
-}
-
-pub fn attach_encrypted_token_to_span(span: &Span, encrypted_token: &str) {
-    let attribute_value = encrypted_token.to_owned();
-    span.set_attribute("encrypted_token", attribute_value.clone());
-
-    let _ = span.with_subscriber(|(id, dispatch)| {
-        if let Some(registry) = dispatch.downcast_ref::<Registry>() {
-            if let Some(span_ref) = registry.span(id) {
-                span_ref
-                    .extensions_mut()
-                    .replace(EncryptedToken(attribute_value.clone()));
-            }
-        }
-    });
-}
-
-pub fn attach_encrypted_token_to_current_span(encrypted_token: &str) {
-    let span = Span::current();
-    attach_encrypted_token_to_span(&span, encrypted_token);
 }
 
 pub async fn request_tracing_middleware(request: Request<Body>, next: Next) -> Response {
@@ -168,7 +235,8 @@ pub async fn request_tracing_middleware(request: Request<Body>, next: Next) -> R
         http.method = %method,
         http.route = %path,
         http.status_code = tracing::field::Empty,
-        duration_ms = tracing::field::Empty
+        duration_ms = tracing::field::Empty,
+        session_id = tracing::field::Empty
     );
 
     let span_name = format!("{method} {path}");
@@ -221,9 +289,6 @@ where
 
         if let Some(span) = ctx.lookup_current() {
             record.insert("span".to_string(), json!(span.name()));
-            if let Some(token) = span.extensions().get::<EncryptedToken>() {
-                record.insert("encrypted_token".to_string(), json!(token.0.clone()));
-            }
         }
 
         let mut fields = Map::new();

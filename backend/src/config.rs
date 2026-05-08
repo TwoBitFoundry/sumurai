@@ -46,7 +46,7 @@ impl EnvironmentProvider for SystemEnvironment {
 pub struct Config {
     default_provider: String,
     teller_application_id: Option<String>,
-    teller_environment: String,
+    teller_environment: Option<String>,
     auth_cookie_same_site: AuthCookieSameSite,
 }
 
@@ -62,8 +62,7 @@ impl Config {
         let teller_application_id = env.get_var("TELLER_APPLICATION_ID");
         let teller_environment = env
             .get_var("TELLER_ENV")
-            .or_else(|| env.get_var("TELLER_ENVIRONMENT"))
-            .ok_or_else(|| anyhow!("TELLER_ENV (or TELLER_ENVIRONMENT) must be set"))?;
+            .or_else(|| env.get_var("TELLER_ENVIRONMENT"));
         let auth_cookie_same_site = parse_same_site(
             env.get_var("AUTH_COOKIE_SAME_SITE")
                 .ok_or_else(|| anyhow!("AUTH_COOKIE_SAME_SITE must be set"))?,
@@ -86,7 +85,7 @@ impl Config {
     }
 
     pub fn get_teller_environment(&self) -> &str {
-        &self.teller_environment
+        self.teller_environment.as_deref().unwrap_or("sandbox")
     }
 
     pub fn get_auth_cookie_same_site(&self) -> AuthCookieSameSite {

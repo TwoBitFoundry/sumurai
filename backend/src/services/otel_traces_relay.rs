@@ -14,7 +14,6 @@ use reqwest::{
     header::{HeaderMap as ReqwestHeaderMap, HeaderName, HeaderValue},
     Client,
 };
-use serde_json::json;
 
 use crate::middleware::telemetry_middleware::TelemetryConfig;
 use crate::models::api_error::ApiErrorResponse;
@@ -87,13 +86,32 @@ pub(crate) fn upstream_default_headers(
 
 #[derive(Clone)]
 pub struct OtlpTracesRelay {
+    forward_upstream: bool,
+    print_to_console: bool,
     traces_endpoint: String,
     client: Client,
 }
 
 impl OtlpTracesRelay {
     pub fn from_config(config: &TelemetryConfig) -> anyhow::Result<Self> {
-        Self::new(config.otlp_endpoint.clone(), config.otlp_headers.clone())
+        let forward_upstream = config.traces_exporter
+            == crate::middleware::telemetry_middleware::TracesExporterKind::Otlp;
+        let print_to_console = config.traces_exporter
+            == crate::middleware::telemetry_middleware::TracesExporterKind::Console;
+
+        if forward_upstream {
+            return Self::new(config.otlp_endpoint.clone(), config.otlp_headers.clone());
+        }
+
+        Ok(Self {
+            forward_upstream: false,
+            print_to_console,
+            traces_endpoint: String::new(),
+            client: Client::builder()
+                .connect_timeout(RELAY_HTTP_CONNECT_TIMEOUT)
+                .timeout(RELAY_HTTP_REQUEST_TIMEOUT)
+                .build()?,
+        })
     }
 
     pub fn new(
@@ -108,6 +126,8 @@ impl OtlpTracesRelay {
             .build()?;
 
         Ok(Self {
+            forward_upstream: true,
+            print_to_console: false,
             traces_endpoint,
             client,
         })
@@ -124,6 +144,21 @@ impl OtlpTracesRelay {
         inbound_headers: &AxumHeaderMap,
         body: Bytes,
     ) -> Response {
+        if !self.forward_upstream {
+            if self.print_to_console {
+                self.print_browser_traces(inbound_headers, body.as_ref());
+                return Response::builder()
+                    .status(StatusCode::ACCEPTED)
+                    .body(Body::empty())
+                    .unwrap_or_else(|_| Response::new(Body::empty()));
+            }
+
+            return Response::builder()
+                .status(StatusCode::NO_CONTENT)
+                .body(Body::empty())
+                .unwrap_or_else(|_| Response::new(Body::empty()));
+        }
+
         let content_type = match classify_browser_trace_request(inbound_headers, body.as_ref()) {
             Ok(ct) => ct,
             Err(BrowserTraceIngestReject::MissingContentType) => {
@@ -170,7 +205,10 @@ impl OtlpTracesRelay {
             Ok(r) => r,
             Err(e) => {
                 tracing::warn!(error = %e, " OTLP browser relay upstream request failed");
-                return Self::json_error(StatusCode::BAD_GATEWAY, "upstream request failed");
+                return Response::builder()
+                    .status(StatusCode::NO_CONTENT)
+                    .body(Body::empty())
+                    .unwrap_or_else(|_| Response::new(Body::empty()));
             }
         };
 
@@ -197,21 +235,81 @@ impl OtlpTracesRelay {
             }
             Err(e) => {
                 tracing::warn!(error = %e, "OTLP upstream body read failed");
-                Self::json_error(StatusCode::BAD_GATEWAY, "upstream body read failed")
+                Response::builder()
+                    .status(StatusCode::NO_CONTENT)
+                    .body(Body::empty())
+                    .unwrap_or_else(|_| Response::new(Body::empty()))
             }
         }
     }
+}
 
-    fn json_error(status: StatusCode, message: &'static str) -> Response {
-        let payload = serde_json::to_vec(
-            &json!({"error":"OTLP_RELAY","message":message,"code":"UPSTREAM_ERROR"}),
-        )
-        .unwrap_or_else(|_| b"{}".to_vec());
+impl OtlpTracesRelay {
+    fn print_browser_traces(&self, inbound_headers: &AxumHeaderMap, body: &[u8]) {
+        let ct = inbound_headers
+            .get(CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
+        let essence = ct.split(';').next().map(str::trim).unwrap_or("");
 
-        Response::builder()
-            .status(status)
-            .header(CONTENT_TYPE, "application/json")
-            .body(Body::from(payload))
-            .unwrap_or_else(|_| Response::new(Body::empty()))
+        if essence.eq_ignore_ascii_case("application/x-protobuf") {
+            self.print_browser_traces_protobuf(body);
+            return;
+        }
+
+        tracing::info!(
+            target: "browser_otel",
+            content_type = %ct,
+            bytes = body.len(),
+            "Browser OTLP traces received (not decoded)"
+        );
+    }
+
+    fn print_browser_traces_protobuf(&self, body: &[u8]) {
+        use prost::Message;
+
+        let req = match opentelemetry_proto::tonic::collector::trace::v1::ExportTraceServiceRequest::decode(body) {
+            Ok(v) => v,
+            Err(err) => {
+                tracing::warn!(
+                    target: "browser_otel",
+                    error = %err,
+                    bytes = body.len(),
+                    "Browser OTLP traces decode failed"
+                );
+                return;
+            }
+        };
+
+        let mut span_count = 0usize;
+        let mut error_span_count = 0usize;
+        for rs in req.resource_spans {
+            for ss in rs.scope_spans {
+                for span in ss.spans {
+                    span_count += 1;
+                    let is_error = span.status.as_ref().is_some_and(|s| s.code == 2);
+                    if !is_error {
+                        continue;
+                    }
+                    error_span_count += 1;
+                    let trace_id = hex::encode(span.trace_id);
+                    let span_id = hex::encode(span.span_id);
+                    tracing::warn!(
+                        target: "browser_otel",
+                        trace_id = %trace_id,
+                        span_id = %span_id,
+                        span_name = %span.name,
+                        "Browser span error"
+                    );
+                }
+            }
+        }
+
+        tracing::info!(
+            target: "browser_otel",
+            spans = span_count,
+            error_spans = error_span_count,
+            "Browser OTLP traces accepted"
+        );
     }
 }

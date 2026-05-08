@@ -60,10 +60,10 @@ Start the production-like stack:
 docker compose up -d --build
 ```
 
-For source-built local development, use the development compose override:
+For source-built local development:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.development.yml up -d --build
+docker compose -f docker-compose.dev.yml up -d --build
 ```
 
 Demo credentials:
