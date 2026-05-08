@@ -92,11 +92,10 @@ export function WelcomeStep() {
             <h1
               className={cn(
                 designTokens.typography.pageTitle,
-                'text-slate-900',
+                designTokens.text.primary,
                 'transition-colors',
                 'duration-300',
-                'ease-out',
-                'dark:text-white'
+                'ease-out'
               )}
             >
               Your new financial hub
@@ -105,11 +104,10 @@ export function WelcomeStep() {
               className={cn(
                 designTokens.typography.body,
                 'leading-relaxed',
-                'text-slate-600',
+                designTokens.text.body,
                 'transition-colors',
                 'duration-300',
-                'ease-out',
-                'dark:text-slate-300'
+                'ease-out'
               )}
             >
               Bring every account into one secure place, watch budgets stay on track, and turn raw

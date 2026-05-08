@@ -39,13 +39,7 @@ export const ProviderSelectionPanel = ({
     return (
       <section className={panelClasses} data-testid="provider-loading-panel">
         <div className={cn('p-12', 'text-center')}>
-          <div
-            className={cn(
-              designTokens.typography.bodyStrong,
-              'text-slate-600',
-              'dark:text-slate-300'
-            )}
-          >
+          <div className={cn(designTokens.typography.bodyStrong, designTokens.text.body)}>
             Loading provider catalogue…
           </div>
         </div>
@@ -72,19 +66,10 @@ export const ProviderSelectionPanel = ({
         )}
         data-testid="provider-error-panel"
       >
-        <div
-          className={cn(designTokens.typography.bodyStrong, 'text-red-600', 'dark:text-red-300')}
-        >
+        <div className={cn(designTokens.typography.bodyStrong, designTokens.text.danger)}>
           {error}
         </div>
-        <div
-          className={cn(
-            'mt-2',
-            designTokens.typography.caption,
-            'text-red-500',
-            'dark:text-red-200'
-          )}
-        >
+        <div className={cn('mt-2', designTokens.typography.caption, designTokens.text.danger)}>
           Please refresh or try again later.
         </div>
       </section>
@@ -103,14 +88,13 @@ export const ProviderSelectionPanel = ({
           <h1
             className={cn(
               designTokens.typography.pageTitle,
-              'text-slate-900',
-              'dark:text-white',
+              designTokens.text.primary,
               'sm:text-[2.25rem]'
             )}
           >
             Choose how you connect accounts
           </h1>
-          <p className={cn(designTokens.typography.body, 'text-slate-600', 'dark:text-slate-300')}>
+          <p className={cn(designTokens.typography.body, designTokens.text.body)}>
             Pick the data provider that matches your deployment. You can change this later from
             account settings.
           </p>
@@ -168,11 +152,7 @@ export const ProviderSelectionPanel = ({
                   <div className={cn('flex', 'h-full', 'flex-col', 'gap-4')}>
                     <div className={cn('flex', 'items-center', 'justify-between')}>
                       <div
-                        className={cn(
-                          designTokens.typography.cardTitle,
-                          'text-slate-900',
-                          'dark:text-white'
-                        )}
+                        className={cn(designTokens.typography.cardTitle, designTokens.text.primary)}
                       >
                         {details.title}
                       </div>
@@ -191,21 +171,14 @@ export const ProviderSelectionPanel = ({
                         {details.badge}
                       </span>
                     </div>
-                    <p
-                      className={cn(
-                        designTokens.typography.body,
-                        'text-slate-600',
-                        'dark:text-slate-300'
-                      )}
-                    >
+                    <p className={cn(designTokens.typography.body, designTokens.text.body)}>
                       {details.description}
                     </p>
                     <ul
                       className={cn(
                         'space-y-2',
                         designTokens.typography.body,
-                        'text-slate-500',
-                        'dark:text-slate-400'
+                        designTokens.text.subtle
                       )}
                     >
                       {details.bullets.map((bullet) => (

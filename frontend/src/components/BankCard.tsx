@@ -64,7 +64,7 @@ const CardMenu: React.FC<{
 };
 
 export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect }) => {
-  const sectionBadgeClass = cn(designTokens.typography.label, 'text-slate-600 dark:text-slate-200');
+  const sectionBadgeClass = cn(designTokens.typography.label, designTokens.text.muted);
 
   const [expanded, setExpanded] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -142,15 +142,14 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect }
                 className={cn(
                   'truncate',
                   designTokens.typography.cardTitle,
-                  'text-slate-900',
-                  'dark:text-white'
+                  designTokens.text.primary
                 )}
               >
                 {bank.name}
               </h3>
               <div className={cn('flex', 'items-center', 'gap-2', designTokens.typography.caption)}>
                 <StatusPill status={bank.status} />
-                <span className={cn('text-slate-600', 'dark:text-slate-300')}>
+                <span className={cn(designTokens.text.muted)}>
                   {(() => {
                     const label = relativeTime(bank.lastSync);
                     return `Last sync ${label.includes('ago') ? label : `${label} ago`}`;

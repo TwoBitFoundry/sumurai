@@ -108,6 +108,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
           'flex',
           'items-center',
           'gap-2',
+          designTokens.text.body,
           designTokens.typography.captionStrong,
           scrolled ? 'px-2.5 py-1' : 'px-3 py-1.5'
         )}
@@ -159,26 +160,14 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
             )}
           >
             <div className={cn('p-4', 'border-b', 'border-slate-200', 'dark:border-slate-700')}>
-              <div
-                className={cn(
-                  designTokens.typography.captionStrong,
-                  'text-slate-900',
-                  'dark:text-slate-100'
-                )}
-              >
+              <div className={cn(designTokens.typography.captionStrong, designTokens.text.primary)}>
                 Filter by account
               </div>
             </div>
 
             <div className={cn('overflow-y-auto', 'flex-1', 'p-4')}>
               {loading ? (
-                <div
-                  className={cn(
-                    designTokens.typography.caption,
-                    'text-slate-600',
-                    'dark:text-slate-400'
-                  )}
-                >
+                <div className={cn(designTokens.typography.caption, designTokens.text.muted)}>
                   Loading accounts...
                 </div>
               ) : (
@@ -222,8 +211,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                               className={cn(
                                 'h-4',
                                 'w-4',
-                                'text-slate-600',
-                                'dark:text-slate-400',
+                                designTokens.text.muted,
                                 'transition-transform',
                                 !isCollapsed && 'rotate-90'
                               )}
@@ -251,8 +239,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                             htmlFor={`bank-${bankName}`}
                             className={cn(
                               designTokens.typography.captionStrong,
-                              'text-slate-900',
-                              'dark:text-slate-100',
+                              designTokens.text.primary,
                               'flex-1',
                               'cursor-pointer'
                             )}
@@ -293,8 +280,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                                     htmlFor={`account-${account.id}`}
                                     className={cn(
                                       designTokens.typography.caption,
-                                      'text-slate-600',
-                                      'dark:text-slate-400',
+                                      designTokens.text.muted,
                                       'cursor-pointer'
                                     )}
                                   >
@@ -309,13 +295,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                     );
                   })}
                   {Object.keys(accountsByBank).length === 0 && !loading && (
-                    <div
-                      className={cn(
-                        designTokens.typography.caption,
-                        'text-slate-600',
-                        'dark:text-slate-400'
-                      )}
-                    >
+                    <div className={cn(designTokens.typography.caption, designTokens.text.muted)}>
                       No accounts available.
                     </div>
                   )}

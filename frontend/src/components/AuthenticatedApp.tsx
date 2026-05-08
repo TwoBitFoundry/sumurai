@@ -8,6 +8,7 @@ import SettingsPage from '@/views/SettingsPage';
 import TransactionsPage from '@/views/TransactionsPage';
 import { AppLayout } from '../layouts/AppLayout';
 import { GradientShell } from '../ui/primitives';
+import { designTokens } from '../ui/tokens';
 import { ErrorBoundary } from './ErrorBoundary';
 
 export type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
@@ -23,9 +24,7 @@ export function AuthenticatedApp({ onLogout, initialTab }: AuthenticatedAppProps
 
   return (
     <ErrorBoundary>
-      <GradientShell
-        className={cn('text-slate-900', 'dark:text-slate-100', 'transition-colors', 'duration-300')}
-      >
+      <GradientShell className={cn(designTokens.text.primary, 'transition-colors', 'duration-300')}>
         <AppLayout currentTab={tab} onTabChange={setTab} onLogout={onLogout}>
           {error && (
             <Alert variant="error" title="Error" className={cn('mb-6')}>

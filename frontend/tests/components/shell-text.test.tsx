@@ -1,7 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { Footer } from '@/components/Footer';
+import { NetWorthOverTimeWidget } from '@/components/NetWorthOverTimeWidget';
 import { PasswordChecker } from '@/components/PasswordChecker';
 import { Toast } from '@/components/Toast';
+import { ThemeProvider } from '@/context/ThemeContext';
+import { BudgetToolbar } from '@/features/budgets/components/BudgetToolbar';
 import { SessionExpiryModal } from '@/SessionManager';
 import { designTokens } from '@/ui/tokens';
 
@@ -57,5 +60,27 @@ describe('shared shell text surfaces', () => {
     );
     expect(screen.getByRole('link', { name: 'Contact' })).toHaveClass(designTokens.text.accent);
     expect(screen.getByRole('link', { name: 'Support' })).toHaveClass(designTokens.text.accent);
+  });
+
+  it('uses semantic text roles in the budget toolbar and net worth widget', () => {
+    render(
+      <ThemeProvider>
+        <BudgetToolbar
+          monthLabel="May 2026"
+          loading
+          isAdding={false}
+          showAddButton={false}
+          onPreviousMonth={jest.fn()}
+          onNextMonth={jest.fn()}
+          onCurrentMonth={jest.fn()}
+          onAddBudget={jest.fn()}
+        />
+        <NetWorthOverTimeWidget />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByText('May 2026')).toHaveClass(designTokens.text.muted);
+    expect(screen.getByText('Updating')).toHaveClass(designTokens.text.subtle);
+    expect(screen.getByText('Net Worth Over Time')).toHaveClass(designTokens.text.muted);
   });
 });

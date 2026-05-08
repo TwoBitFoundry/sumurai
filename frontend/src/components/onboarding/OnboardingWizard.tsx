@@ -37,8 +37,9 @@ const stepIndicatorVariants = cva(
           'dark:border-emerald-400/70 dark:bg-emerald-500',
         ],
         idle: [
-          'border-slate-200/80 bg-white text-slate-500',
-          'dark:border-slate-700/70 dark:bg-slate-900 dark:text-slate-300',
+          'border-slate-200/80 bg-white',
+          designTokens.text.subtle,
+          'dark:border-slate-700/70 dark:bg-slate-900',
         ],
       },
     },
@@ -312,11 +313,10 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
                 <p
                   className={cn(
                     designTokens.typography.caption,
-                    'text-slate-500',
+                    designTokens.text.subtle,
                     'transition-colors',
                     'duration-300',
-                    'ease-out',
-                    'dark:text-slate-300'
+                    'ease-out'
                   )}
                 >
                   {providerContent.securityNote}

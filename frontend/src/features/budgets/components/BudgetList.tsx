@@ -163,10 +163,9 @@ export function BudgetList({
                       className={cn(
                         'block',
                         designTokens.typography.label,
-                        'text-slate-500',
+                        designTokens.text.subtle,
                         'transition-colors',
-                        'duration-300',
-                        'dark:text-slate-400'
+                        'duration-300'
                       )}
                     >
                       Planned amount
@@ -187,20 +186,18 @@ export function BudgetList({
                     className={cn(
                       'text-right',
                       designTokens.typography.caption,
-                      'text-slate-500',
+                      designTokens.text.subtle,
                       'transition-colors',
-                      'duration-300',
-                      'dark:text-slate-400'
+                      'duration-300'
                     )}
                   >
                     <span
                       className={cn(
                         'block',
                         designTokens.typography.label,
-                        'text-slate-500',
+                        designTokens.text.subtle,
                         'transition-colors',
-                        'duration-300',
-                        'dark:text-slate-400'
+                        'duration-300'
                       )}
                     >
                       Spent
@@ -208,10 +205,9 @@ export function BudgetList({
                     <span
                       className={cn(
                         designTokens.typography.bodyStrong,
-                        'text-slate-700',
+                        designTokens.text.body,
                         'transition-colors',
-                        'duration-300',
-                        'dark:text-slate-200'
+                        'duration-300'
                       )}
                     >
                       {fmtUSD(b.spent)}
@@ -225,20 +221,18 @@ export function BudgetList({
                     'grid-cols-2',
                     'gap-4',
                     designTokens.typography.caption,
-                    'text-slate-500',
+                    designTokens.text.subtle,
                     'transition-colors',
-                    'duration-300',
-                    'dark:text-slate-400'
+                    'duration-300'
                   )}
                 >
                   <div>
                     <span
                       className={cn(
                         designTokens.typography.label,
-                        'text-slate-500',
+                        designTokens.text.subtle,
                         'transition-colors',
-                        'duration-300',
-                        'dark:text-slate-500'
+                        'duration-300'
                       )}
                     >
                       Planned
@@ -247,10 +241,9 @@ export function BudgetList({
                       className={cn(
                         'mt-1',
                         designTokens.typography.cardTitle,
-                        'text-slate-900',
+                        designTokens.text.primary,
                         'transition-colors',
-                        'duration-300',
-                        'dark:text-white'
+                        'duration-300'
                       )}
                     >
                       {fmtUSD(b.amount)}
@@ -260,10 +253,9 @@ export function BudgetList({
                     <span
                       className={cn(
                         designTokens.typography.label,
-                        'text-slate-500',
+                        designTokens.text.subtle,
                         'transition-colors',
-                        'duration-300',
-                        'dark:text-slate-500'
+                        'duration-300'
                       )}
                     >
                       Spent
@@ -274,9 +266,7 @@ export function BudgetList({
                         designTokens.typography.cardTitle,
                         'transition-colors',
                         'duration-300',
-                        isOver
-                          ? 'text-red-600 dark:text-red-300'
-                          : 'text-slate-700 dark:text-slate-200'
+                        isOver ? designTokens.text.danger : designTokens.text.body
                       )}
                     >
                       {fmtUSD(b.spent)}

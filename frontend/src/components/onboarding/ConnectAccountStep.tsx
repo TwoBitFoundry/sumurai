@@ -161,11 +161,10 @@ export function ConnectAccountStep({
             <h1
               className={cn(
                 designTokens.typography.pageTitle,
-                'text-slate-900',
+                designTokens.text.primary,
                 'transition-colors',
                 'duration-300',
-                'ease-out',
-                'dark:text-white'
+                'ease-out'
               )}
             >
               {content.heroTitle}
@@ -174,11 +173,10 @@ export function ConnectAccountStep({
               className={cn(
                 designTokens.typography.body,
                 'leading-relaxed',
-                'text-slate-600',
+                designTokens.text.body,
                 'transition-colors',
                 'duration-300',
-                'ease-out',
-                'dark:text-slate-300'
+                'ease-out'
               )}
             >
               {content.heroDescription}
@@ -214,7 +212,8 @@ export function ConnectAccountStep({
           <Alert
             variant="error"
             className={cn(
-              'flex flex-col gap-1 rounded-[1.6rem] border-2 border-red-200/70 bg-red-50/85 text-red-700 shadow-[0_24px_60px_-36px_rgba(248,113,113,0.45)]',
+              'flex flex-col gap-1 rounded-[1.6rem] border-2 border-red-200/70 bg-red-50/85 shadow-[0_24px_60px_-36px_rgba(248,113,113,0.45)]',
+              designTokens.text.danger,
               'dark:border-red-500/45 dark:bg-red-900/25 dark:text-red-200'
             )}
           >

@@ -50,11 +50,10 @@ export const TransactionsTable: React.FC<Props> = ({
               <thead
                 className={cn(
                   'bg-slate-200',
-                  'text-slate-700',
+                  designTokens.text.body,
                   'transition-colors',
                   'duration-500',
-                  'dark:bg-slate-700',
-                  'dark:text-slate-300'
+                  'dark:bg-slate-700'
                 )}
               >
                 <tr className={cn('border-b', 'border-slate-300', 'dark:border-slate-600')}>
@@ -148,10 +147,9 @@ export const TransactionsTable: React.FC<Props> = ({
                             'py-3',
                             'align-middle',
                             designTokens.typography.caption,
-                            'text-slate-900',
+                            designTokens.text.primary,
                             'transition-colors',
-                            'duration-500',
-                            'dark:text-white'
+                            'duration-500'
                           )}
                         >
                           {new Date(r.date).toLocaleDateString()}
@@ -165,10 +163,9 @@ export const TransactionsTable: React.FC<Props> = ({
                               'block',
                               'truncate',
                               designTokens.typography.bodyStrong,
-                              'text-slate-900',
+                              designTokens.text.primary,
                               'transition-colors',
-                              'duration-500',
-                              'dark:text-white'
+                              'duration-500'
                             )}
                           >
                             {r.name || r.merchant || '-'}
@@ -180,7 +177,7 @@ export const TransactionsTable: React.FC<Props> = ({
                               ? 'text-red-600 dark:text-red-400'
                               : r.amount < 0
                                 ? 'text-green-600 dark:text-green-400'
-                                : 'text-slate-600 dark:text-slate-400'
+                                : designTokens.text.muted
                           }`}
                         >
                           {fmtUSD(r.amount)}
@@ -189,10 +186,9 @@ export const TransactionsTable: React.FC<Props> = ({
                           <span
                             className={cn(
                               designTokens.typography.caption,
-                              'text-slate-600',
+                              designTokens.text.muted,
                               'transition-colors',
-                              'duration-500',
-                              'dark:text-slate-400'
+                              'duration-500'
                             )}
                           >
                             {r.account_name}
@@ -200,10 +196,9 @@ export const TransactionsTable: React.FC<Props> = ({
                               <span
                                 className={cn(
                                   'ml-1',
-                                  'text-slate-400',
+                                  designTokens.text.subtle,
                                   'transition-colors',
-                                  'duration-500',
-                                  'dark:text-slate-500'
+                                  'duration-500'
                                 )}
                               >
                                 ••••{r.account_mask}
@@ -252,10 +247,9 @@ export const TransactionsTable: React.FC<Props> = ({
             <div
               className={cn(
                 designTokens.typography.caption,
-                'text-slate-600',
+                designTokens.text.muted,
                 'transition-colors',
-                'duration-500',
-                'dark:text-slate-400'
+                'duration-500'
               )}
             >
               Showing {from}-{to} of {total}
@@ -273,10 +267,9 @@ export const TransactionsTable: React.FC<Props> = ({
               <div
                 className={cn(
                   designTokens.typography.caption,
-                  'text-slate-600',
+                  designTokens.text.muted,
                   'transition-colors',
-                  'duration-500',
-                  'dark:text-slate-400'
+                  'duration-500'
                 )}
               >
                 Page {currentPage} of {totalPages}
