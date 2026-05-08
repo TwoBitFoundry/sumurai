@@ -86,6 +86,7 @@ Status: completed.
 Notes:
 
 - `designmd` does not accept `clamp(...)` for typography dimensions, so the `display` token is exported as a fixed `3rem` value in the machine-readable contract.
+- If a clamped `display` size is still desired in the app, keep that behavior in the consuming runtime recipe rather than in `DESIGN.md` or the generated token artifacts.
 
 TDD log:
 
@@ -116,6 +117,17 @@ Acceptance criteria:
 - Existing `brand` and `sans` consumers still work or are migrated.
 - Focused token tests pass.
 - `npm --prefix frontend run typecheck` passes.
+
+Status: completed.
+
+Notes:
+
+- `designTokens.typography` now exposes semantic class recipes for the app-facing roles while keeping `brand` and `sans` as font-family strings for existing consumers.
+- The clamped `display` behavior lives in the runtime recipe layer so the design contract remains valid and generated artifacts stay stable.
+
+TDD log:
+
+- Verify: `npm --prefix frontend test -- tests/ui/tokens/typography.test.ts`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend test`
 
 ### 3. Migrate Shared Primitives
 

@@ -1,66 +1,64 @@
-import generatedTokens from '@/ui/tokens/generated/tokens.dtcg.json';
+import { designTokens } from '@/ui/tokens';
+import generatedTokens from '@/ui/tokens/generated/tokens';
 
 const expectedRoles = [
   'brand',
-  'display',
-  'page-title',
-  'section-title',
-  'card-title',
-  'body',
-  'body-strong',
-  'caption',
-  'caption-strong',
   'sans',
-  'subheading',
+  'display',
+  'pageTitle',
+  'sectionTitle',
+  'cardTitle',
+  'body',
+  'bodyStrong',
+  'caption',
+  'captionStrong',
   'label',
-  'pill',
   'badge',
-  'budget-progress-caption',
-  'budget-progress-caption-strong',
+  'subheading',
+  'pill',
+  'budgetProgressCaption',
+  'budgetProgressCaptionStrong',
 ];
 
-describe('generated typography tokens', () => {
-  it('exposes the standardized typography roles and aliases', () => {
-    expect(Object.keys(generatedTokens.typography)).toEqual(expect.arrayContaining(expectedRoles));
+const extractMinimumRemSize = (recipe: string): number | null => {
+  const match = recipe.match(/text-\[(?:clamp\()?(?<value>\d+(?:\.\d+)?)rem/);
+  return match?.groups?.value ? Number(match.groups.value) : null;
+};
+
+describe('design token typography recipes', () => {
+  it('exposes the semantic typography roles', () => {
+    expect(Object.keys(designTokens.typography)).toEqual(expect.arrayContaining(expectedRoles));
   });
 
-  it('keeps the semantic body and caption sizes in the new scale', () => {
-    expect(generatedTokens.typography.body.$value.fontSize).toEqual({
-      value: 1,
-      unit: 'rem',
-    });
-    expect(generatedTokens.typography.caption.$value.fontSize).toEqual({
-      value: 0.875,
-      unit: 'rem',
-    });
+  it('preserves brand and sans font-family access', () => {
+    expect(designTokens.typography.brand).toBe(generatedTokens.typography.brand.$value.fontFamily);
+    expect(designTokens.typography.sans).toBe(generatedTokens.typography.sans.$value.fontFamily);
   });
 
-  it('keeps uppercase label and badge tracking aligned', () => {
-    expect(generatedTokens.typography.label.$value.letterSpacing).toEqual({
-      value: 0.14,
-      unit: 'em',
-    });
-    expect(generatedTokens.typography.badge.$value.letterSpacing).toEqual({
-      value: 0.14,
-      unit: 'em',
-    });
+  it('keeps the display recipe clamped in the runtime layer', () => {
+    expect(designTokens.typography.display).toContain('text-[clamp(2.25rem,3vw,3rem)]');
+    expect(designTokens.typography.display).toContain('font-display');
   });
 
-  it('keeps every generated typography size at or above the caption floor', () => {
-    const sizes = Object.values(generatedTokens.typography)
-      .map((token: any) => token.$value?.fontSize)
-      .filter(
-        (fontSize: any) =>
-          fontSize && typeof fontSize === 'object' && 'value' in fontSize && 'unit' in fontSize
-      );
+  it('keeps the body and caption recipes on the shared scale', () => {
+    expect(designTokens.typography.body).toContain('text-[1rem]');
+    expect(designTokens.typography.caption).toContain('text-[0.875rem]');
+  });
+
+  it('keeps label and badge tracking aligned', () => {
+    expect(designTokens.typography.label).toContain('tracking-[0.14em]');
+    expect(designTokens.typography.badge).toContain('tracking-[0.14em]');
+  });
+
+  it('keeps every semantic recipe at or above the caption floor', () => {
+    const recipes = Object.entries(designTokens.typography)
+      .filter(([key, value]) => key !== 'brand' && key !== 'sans' && typeof value === 'string')
+      .map(([, value]) => value as string);
 
     expect(
-      sizes.every((fontSize: { value: number; unit: string }) => {
-        if (fontSize.unit !== 'rem') {
-          return true;
-        }
-
-        return fontSize.value >= 0.75;
+      recipes.every((recipe) => {
+        const size = extractMinimumRemSize(recipe);
+        return size === null || size >= 0.75;
       })
     ).toBe(true);
   });
