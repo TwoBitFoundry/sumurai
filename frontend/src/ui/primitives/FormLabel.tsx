@@ -6,8 +6,8 @@ import { cn } from './utils';
 const labelVariants = cva(['block', designTokens.typography.label], {
   variants: {
     tone: {
-      default: 'text-slate-700 dark:text-slate-200',
-      subtle: 'text-slate-500 dark:text-slate-400',
+      default: designTokens.text.label,
+      subtle: designTokens.text.subtle,
     },
   },
   defaultVariants: {

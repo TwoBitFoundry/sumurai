@@ -2,22 +2,11 @@ import { onboardingTokenRecipes } from '@/components/onboarding/tokenRecipes';
 import { budgetTokenRecipes } from '@/features/budgets/tokenRecipes';
 import { primitiveTokenRecipes, primitiveTypographyRecipes } from '@/ui/primitives/tokenRecipes';
 import generatedTokens from './generated/tokens';
+import { semanticTextRecipes } from './textRecipes';
 
 export type ThemeMode = 'light' | 'dark';
 export type HeroAccent = 'slate' | 'emerald' | 'sky' | 'violet' | 'amber' | 'rose';
 export type SemanticTone = 'success' | 'info' | 'warning' | 'danger';
-export type SemanticTextRole =
-  | 'primary'
-  | 'body'
-  | 'muted'
-  | 'subtle'
-  | 'label'
-  | 'inverse'
-  | 'accent'
-  | 'danger'
-  | 'success'
-  | 'warning'
-  | 'info';
 
 export type ThemeColors = {
   chart: {
@@ -93,51 +82,6 @@ const chartDark = [
 ];
 const brandFont = generatedTokens.typography.brand.$value.fontFamily;
 const sansFont = generatedTokens.typography.sans.$value.fontFamily;
-const semanticTextLightColors = {
-  primary: generatedTokens.color['text-primary'].$value.hex,
-  body: generatedTokens.color['text-body'].$value.hex,
-  muted: generatedTokens.color['text-muted'].$value.hex,
-  subtle: generatedTokens.color['text-subtle'].$value.hex,
-  label: generatedTokens.color['text-label'].$value.hex,
-  inverse: generatedTokens.color['text-inverse'].$value.hex,
-  accent: generatedTokens.color['text-accent'].$value.hex,
-  danger: generatedTokens.color['text-danger'].$value.hex,
-  success: generatedTokens.color['text-success'].$value.hex,
-  warning: generatedTokens.color['text-warning'].$value.hex,
-  info: generatedTokens.color['text-info'].$value.hex,
-} as const satisfies Record<SemanticTextRole, string>;
-
-const semanticTextDarkColors = {
-  primary: generatedTokens.color['text-primary-dark'].$value.hex,
-  body: generatedTokens.color['text-body-dark'].$value.hex,
-  muted: generatedTokens.color['text-muted-dark'].$value.hex,
-  subtle: generatedTokens.color['text-subtle-dark'].$value.hex,
-  label: generatedTokens.color['text-label-dark'].$value.hex,
-  inverse: generatedTokens.color['text-inverse-dark'].$value.hex,
-  accent: generatedTokens.color['text-accent-dark'].$value.hex,
-  danger: generatedTokens.color['text-danger-dark'].$value.hex,
-  success: generatedTokens.color['text-success-dark'].$value.hex,
-  warning: generatedTokens.color['text-warning-dark'].$value.hex,
-  info: generatedTokens.color['text-info-dark'].$value.hex,
-} as const satisfies Record<SemanticTextRole, string>;
-
-function textRole(light: string, dark: string): string {
-  return `text-[${light}] dark:text-[${dark}]`;
-}
-
-const semanticTextRecipes = {
-  primary: textRole(semanticTextLightColors.primary, semanticTextDarkColors.primary),
-  body: textRole(semanticTextLightColors.body, semanticTextDarkColors.body),
-  muted: textRole(semanticTextLightColors.muted, semanticTextDarkColors.muted),
-  subtle: textRole(semanticTextLightColors.subtle, semanticTextDarkColors.subtle),
-  label: textRole(semanticTextLightColors.label, semanticTextDarkColors.label),
-  inverse: textRole(semanticTextLightColors.inverse, semanticTextDarkColors.inverse),
-  accent: textRole(semanticTextLightColors.accent, semanticTextDarkColors.accent),
-  danger: textRole(semanticTextLightColors.danger, semanticTextDarkColors.danger),
-  success: textRole(semanticTextLightColors.success, semanticTextDarkColors.success),
-  warning: textRole(semanticTextLightColors.warning, semanticTextDarkColors.warning),
-  info: textRole(semanticTextLightColors.info, semanticTextDarkColors.info),
-} as const satisfies Record<SemanticTextRole, string>;
 const glassInsetLight =
   'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]';
 const glassInsetDark =
@@ -155,34 +99,32 @@ const fieldControlBase = [
   'disabled:cursor-not-allowed disabled:opacity-60',
 ];
 const fieldControlDefault = [
-  'bg-white text-slate-900',
+  `bg-white ${semanticTextRecipes.primary}`,
   'border-black/10',
   'focus:ring-2 focus:ring-sky-400',
   'focus:ring-offset-2 focus:ring-offset-white',
   'dark:bg-[#111a2f]',
-  'dark:text-white',
   'dark:border-white/12',
   'dark:focus:ring-sky-400/80',
   'dark:focus:ring-offset-[#0f172a]',
 ];
 const fieldControlInvalid = [
-  'bg-white text-slate-900',
+  `bg-white ${semanticTextRecipes.primary}`,
   'border-red-300',
   'focus:ring-2 focus:ring-red-400',
   'focus:ring-offset-2 focus:ring-offset-white',
   'dark:bg-[#111a2f]',
-  'dark:text-white',
   'dark:border-red-600/80',
   'dark:focus:ring-red-400/75',
   'dark:focus:ring-offset-[#0f172a]',
 ];
 const fieldControlGlass = [
-  'bg-white/80 text-slate-700',
+  `bg-white/80 ${semanticTextRecipes.body}`,
   'border-white/60',
   'shadow-[0_18px_45px_-32px_rgba(15,23,42,0.5)]',
   'focus:ring-2 focus:ring-sky-400/80',
   'focus:ring-offset-2 focus:ring-offset-white',
-  'dark:bg-[#111a2f]/80 dark:text-slate-100',
+  `dark:bg-[#111a2f]/80 ${semanticTextRecipes.inverse}`,
   'dark:border-white/12',
   'dark:focus:ring-offset-[#0f172a]',
 ];
@@ -822,9 +764,9 @@ export const designTokens = {
       base: 'hero-stat-card group relative rounded-2xl transition-colors duration-300',
       shell:
         'relative h-full w-full overflow-hidden rounded-2xl border-2 bg-white/80 p-4 transform-gpu origin-center will-change-transform transition-transform duration-200 dark:bg-[#111a2f]/70',
-      title: `${primitiveTypographyRecipes.label} text-slate-500 transition-colors duration-500 dark:text-slate-400`,
-      value: `${primitiveTypographyRecipes.cardTitle} text-slate-900 transition-colors duration-500 dark:text-white`,
-      suffix: `${primitiveTypographyRecipes.captionStrong} text-slate-600 transition-colors duration-500 dark:text-slate-300`,
+      title: `${primitiveTypographyRecipes.label} ${semanticTextRecipes.label} transition-colors duration-500`,
+      value: `${primitiveTypographyRecipes.cardTitle} ${semanticTextRecipes.primary} transition-colors duration-500`,
+      suffix: `${primitiveTypographyRecipes.captionStrong} ${semanticTextRecipes.body} transition-colors duration-500`,
       overlay:
         'pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100',
       ring: 'pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] opacity-70',

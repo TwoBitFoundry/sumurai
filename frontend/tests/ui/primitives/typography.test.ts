@@ -8,14 +8,20 @@ describe('primitive typography recipes', () => {
     expect(designTokens.components.pageLayout.badge).toContain(designTokens.typography.badge);
     expect(designTokens.components.pageLayout.title).toContain(designTokens.typography.pageTitle);
     expect(designTokens.components.pageLayout.subtitle).toContain(designTokens.typography.body);
+    expect(designTokens.components.pageLayout.badge).toContain(designTokens.text.label);
+    expect(designTokens.components.pageLayout.title).toContain(designTokens.text.primary);
+    expect(designTokens.components.pageLayout.subtitle).toContain(designTokens.text.body);
     expect(designTokens.components.pageLayout.errorText).toContain(
       designTokens.typography.captionStrong
     );
+    expect(designTokens.components.pageLayout.errorText).toContain(designTokens.text.danger);
   });
 
   it('uses semantic typography for empty state copy', () => {
     expect(designTokens.components.emptyState.title).toContain(designTokens.typography.cardTitle);
     expect(designTokens.components.emptyState.description).toContain(designTokens.typography.body);
+    expect(designTokens.components.emptyState.title).toContain(designTokens.text.primary);
+    expect(designTokens.components.emptyState.description).toContain(designTokens.text.body);
   });
 
   it('keeps button sizes on the semantic scale', () => {
@@ -40,10 +46,21 @@ describe('primitive typography recipes', () => {
   it('keeps pill and badge recipes on the shared badge scale', () => {
     expect(primitiveTokenRecipes.badge.base.join(' ')).toContain(designTokens.typography.badge);
     expect(primitiveTokenRecipes.pill.base).toContain(designTokens.typography.badge);
+    expect(primitiveTokenRecipes.badge.default.join(' ')).toContain(designTokens.text.muted);
   });
 
   it('drops the old subheading typography from button base recipes', () => {
     expect(primitiveTokenRecipes.button.base.join(' ')).not.toContain('font-subheading');
     expect(primitiveTokenRecipes.button.base.join(' ')).not.toContain('uppercase');
+    expect(primitiveTokenRecipes.button.secondary.join(' ')).toContain(designTokens.text.muted);
+    expect(primitiveTokenRecipes.button.danger.join(' ')).toContain(designTokens.text.inverse);
+  });
+
+  it('uses semantic text recipes for dropdown and title bar chrome', () => {
+    expect(primitiveTokenRecipes.menuDropdown.item.join(' ')).toContain(designTokens.text.muted);
+    expect(primitiveTokenRecipes.appTitleBar.logo.container.join(' ')).toContain(
+      designTokens.text.primary
+    );
+    expect(primitiveTokenRecipes.appTitleBar.tabIdle).toContain(designTokens.text.muted);
   });
 });

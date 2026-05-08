@@ -84,6 +84,20 @@ Acceptance criteria:
 - New text token tests verify primitives consume semantic roles for common body, muted, label, inverse, and state text.
 - No source comments are added.
 
+Completed:
+
+- Moved shared primitive copy roles onto `semanticTextRecipes` in `frontend/src/ui/primitives/tokenRecipes.ts`.
+- Updated central input and select recipes plus hero stat card text roles in `frontend/src/ui/tokens/index.ts`.
+- Updated `FormLabel`, `Alert`, `RequirementPill`, `Amount`, and `AppTitleBar` to use semantic text roles.
+- Extended primitive typography coverage and added a focused `Amount` test.
+- Preserved the current visual tone while reducing repeated slate and red text classes in the shared layer.
+
+### TDD Log
+
+- Red: extended `frontend/tests/ui/primitives/typography.test.ts` and added `frontend/tests/components/amount.test.tsx` against the existing primitive output.
+- Green: extracted shared semantic text recipes into `frontend/src/ui/tokens/textRecipes.ts`, then updated the primitive recipes and component wrappers to consume them.
+- Verify: `npm --prefix frontend test -- tests/ui/primitives/typography.test.ts`, `npm --prefix frontend test -- tests/components/amount.test.tsx`, `npm --prefix frontend run design:lint`, `npm --prefix frontend run design:drift`, `npm --prefix frontend run typecheck`, and `npm --prefix frontend test`.
+
 ## Phase 3: Shared App Components And Major Surfaces
 
 Migrate repeated hard-coded text colors in major user-visible surfaces:

@@ -1,0 +1,17 @@
+import { render, screen } from '@testing-library/react';
+import { Amount } from '@/components/Amount';
+import { designTokens } from '@/ui/tokens';
+
+describe('Amount', () => {
+  it('uses semantic text roles for positive amounts', () => {
+    render(<Amount value={1250.5} />);
+
+    expect(screen.getByText('$1,250.50')).toHaveClass(designTokens.text.primary);
+  });
+
+  it('uses semantic text roles for negative amounts', () => {
+    render(<Amount value={-45.25} />);
+
+    expect(screen.getByText('-$45.25')).toHaveClass(designTokens.text.danger);
+  });
+});

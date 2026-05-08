@@ -99,8 +99,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                   'flex',
                   'items-center',
                   'gap-2',
-                  'text-slate-900',
-                  'dark:text-white',
+                  designTokens.text.primary,
                   scrolled
                     ? designTokens.typography.sectionTitle
                     : designTokens.typography.pageTitle

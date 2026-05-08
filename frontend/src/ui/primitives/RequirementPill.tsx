@@ -11,8 +11,8 @@ const requirementVariants = cva(
   {
     variants: {
       status: {
-        pending: 'bg-white/60 text-slate-500 dark:bg-white/5 dark:text-slate-400',
-        met: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300',
+        pending: `bg-white/60 ${designTokens.text.subtle} dark:bg-white/5 dark:text-slate-400`,
+        met: `bg-emerald-50 ${designTokens.text.success} dark:bg-emerald-500/10 dark:text-emerald-300`,
       },
     },
     defaultVariants: {
