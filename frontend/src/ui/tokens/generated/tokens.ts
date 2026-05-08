@@ -732,6 +732,94 @@ export const designTokens = {
         "fontWeight": 700
       }
     },
+    "display": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "'Cal Sans', system-ui, sans-serif",
+        "fontSize": {
+          "value": 3,
+          "unit": "rem"
+        },
+        "fontWeight": 700
+      }
+    },
+    "page-title": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "'Cal Sans', system-ui, sans-serif",
+        "fontSize": {
+          "value": 2,
+          "unit": "rem"
+        },
+        "fontWeight": 700
+      }
+    },
+    "section-title": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "'Mr Eaves XL Mod', system-ui, sans-serif",
+        "fontSize": {
+          "value": 1.5,
+          "unit": "rem"
+        },
+        "fontWeight": 600
+      }
+    },
+    "card-title": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "'Mr Eaves XL Mod', system-ui, sans-serif",
+        "fontSize": {
+          "value": 1.25,
+          "unit": "rem"
+        },
+        "fontWeight": 600
+      }
+    },
+    "body": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "'Mr Eaves XL Mod', system-ui, sans-serif",
+        "fontSize": {
+          "value": 1,
+          "unit": "rem"
+        },
+        "fontWeight": 400
+      }
+    },
+    "body-strong": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "'Mr Eaves XL Mod', system-ui, sans-serif",
+        "fontSize": {
+          "value": 1,
+          "unit": "rem"
+        },
+        "fontWeight": 600
+      }
+    },
+    "caption": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "'Mr Eaves XL Mod', system-ui, sans-serif",
+        "fontSize": {
+          "value": 0.875,
+          "unit": "rem"
+        },
+        "fontWeight": 400
+      }
+    },
+    "caption-strong": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "'Mr Eaves XL Mod', system-ui, sans-serif",
+        "fontSize": {
+          "value": 0.875,
+          "unit": "rem"
+        },
+        "fontWeight": 600
+      }
+    },
     "sans": {
       "$type": "typography",
       "$value": {
@@ -748,10 +836,10 @@ export const designTokens = {
       "$value": {
         "fontFamily": "'Mr Eaves XL Mod', system-ui, sans-serif",
         "fontSize": {
-          "value": 0.95,
+          "value": 1,
           "unit": "rem"
         },
-        "fontWeight": 500
+        "fontWeight": 600
       }
     },
     "label": {
@@ -759,12 +847,12 @@ export const designTokens = {
       "$value": {
         "fontFamily": "'Mr Eaves XL Mod', system-ui, sans-serif",
         "fontSize": {
-          "value": 0.65,
+          "value": 0.75,
           "unit": "rem"
         },
         "fontWeight": 600,
         "letterSpacing": {
-          "value": 0.24,
+          "value": 0.14,
           "unit": "em"
         }
       }
@@ -774,12 +862,12 @@ export const designTokens = {
       "$value": {
         "fontFamily": "'Mr Eaves XL Mod', system-ui, sans-serif",
         "fontSize": {
-          "value": 0.6,
+          "value": 0.75,
           "unit": "rem"
         },
         "fontWeight": 700,
         "letterSpacing": {
-          "value": 0.18,
+          "value": 0.14,
           "unit": "em"
         }
       }
@@ -789,12 +877,12 @@ export const designTokens = {
       "$value": {
         "fontFamily": "'Mr Eaves XL Mod', system-ui, sans-serif",
         "fontSize": {
-          "value": 11,
-          "unit": "px"
+          "value": 0.75,
+          "unit": "rem"
         },
-        "fontWeight": 600,
+        "fontWeight": 700,
         "letterSpacing": {
-          "value": 0.32,
+          "value": 0.14,
           "unit": "em"
         }
       }
@@ -804,7 +892,7 @@ export const designTokens = {
       "$value": {
         "fontFamily": "'Mr Eaves XL Mod', system-ui, sans-serif",
         "fontSize": {
-          "value": 0.75,
+          "value": 0.875,
           "unit": "rem"
         },
         "fontWeight": 400
@@ -815,7 +903,7 @@ export const designTokens = {
       "$value": {
         "fontFamily": "'Mr Eaves XL Mod', system-ui, sans-serif",
         "fontSize": {
-          "value": 0.75,
+          "value": 0.875,
           "unit": "rem"
         },
         "fontWeight": 600
