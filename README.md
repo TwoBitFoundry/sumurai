@@ -33,17 +33,19 @@ Sumurai exists because there are not a lot of free, simple, and modern budgeting
 
 ## Quick Start
 
-Provide the required environment variables referenced by `docker-compose.yml` and start the stack:
+The default `docker-compose.yml` is the **OSS-oriented** stack: prebuilt app images, Teller as the default provider, strict auth cookies, and no Seq service. Set the variables Compose marks as required (see `.env.example`), then:
 
 ```bash
 docker compose up -d --build
 ```
 
-For source-built local development:
+For **local development** with images built from this repo (console-friendly telemetry, relaxed cookies):
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d --build
 ```
+
+For **production-style** hosting with Seq and OTLP (public HTTP/HTTPS, different defaults), use `docker-compose.prod.yml` and [docs/PRODUCTION_TLS.md](docs/PRODUCTION_TLS.md).
 
 Open [http://localhost:8080](http://localhost:8080). Demo credentials: `me@test.com` / `Test1234!`
 
@@ -86,9 +88,9 @@ Sumurai is intended to run on any host where Docker Compose is available, includ
 
 The app is a static Next.js export served by Nginx on port 8080, with `/api/*` and `/health` proxied to the Rust backend.
 
-- Frontend: Next.js 16, React 19, TypeScript, Tailwind, Recharts, Biome, Jest, and browser OpenTelemetry
-- Backend: Rust 1.95, Axum, SQLx, Redis, PostgreSQL, JWT auth, provider integrations, and OpenTelemetry export to Seq
-- Deployment: Docker Compose with nginx, frontend, backend, Postgres, Redis, Seq, and certbot
+- Frontend: Next.js 16, React 19, TypeScript, Tailwind, Recharts, Biome, Jest, and browser OpenTelemetry (enabled per compose via `NEXT_PUBLIC_OTEL_*`)
+- Backend: Rust 1.95, Axum, SQLx, Redis, PostgreSQL, JWT auth, provider integrations, and OpenTelemetry tracing (export mode is set per environment; production compose sends OTLP to Seq)
+- Deployment: standalone Docker Compose files—default OSS (`docker-compose.yml`), local dev builds (`docker-compose.dev.yml`), or production with Seq (`docker-compose.prod.yml`); each includes nginx, frontend, backend, Postgres, and Redis
 - Providers: Teller and Plaid through a shared provider registry
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the deeper system breakdown.

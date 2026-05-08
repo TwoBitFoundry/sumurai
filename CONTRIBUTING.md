@@ -54,17 +54,19 @@ For finer slices while iterating, use the commands in **Frontend Development** a
 
 ## Full Stack
 
-Start the production-like stack:
+Start the **default OSS** stack (GHCR images, no Seq):
 
 ```bash
 docker compose up -d --build
 ```
 
-For source-built local development:
+For **source-built** local development (console traces, Lax cookies in compose):
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d --build
 ```
+
+For the **production-oriented** stack with Seq, use `docker-compose.prod.yml` and [docs/PRODUCTION_TLS.md](docs/PRODUCTION_TLS.md).
 
 Demo credentials:
 
