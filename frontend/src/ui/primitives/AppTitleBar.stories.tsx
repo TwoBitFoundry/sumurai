@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
+import { cn } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import { AppTitleBar } from './AppTitleBar';
 
 const meta = {
@@ -38,7 +40,7 @@ export const AuthenticatedDashboard: Story = {
     onTabChange: fn(),
     onLogout: fn(),
     accountFilterNode: (
-      <span className="text-xs font-medium text-slate-600 dark:text-slate-300">All accounts</span>
+      <span className={cn('text-xs', 'font-medium', designTokens.text.muted)}>All accounts</span>
     ),
   },
   play: async ({ args, canvasElement }) => {

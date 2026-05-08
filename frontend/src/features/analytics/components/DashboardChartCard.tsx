@@ -26,25 +26,17 @@ export const DashboardChartCard = ({
     <GlassCard className={cn('p-6', 'h-full', 'flex', 'flex-col', className)}>
       <div className={cn('mb-4', 'flex', 'items-center', 'justify-between')}>
         <div>
-          <h3
-            className={cn(
-              designTokens.typography.cardTitle,
-              'text-slate-900',
-              'dark:text-slate-100'
-            )}
-          >
+          <h3 className={cn(designTokens.typography.cardTitle, designTokens.text.primary)}>
             {title}
           </h3>
-          <p
-            className={cn(designTokens.typography.caption, 'text-slate-600', 'dark:text-slate-400')}
-          >
+          <p className={cn(designTokens.typography.caption, designTokens.text.muted)}>
             {description}
           </p>
         </div>
         {isRefreshing && (
           <RefreshCcw
             aria-label={refreshingLabel}
-            className={cn('h-4', 'w-4', 'text-slate-500', 'dark:text-slate-400', 'animate-spin')}
+            className={cn('h-4', 'w-4', designTokens.text.subtle, 'animate-spin')}
           />
         )}
       </div>

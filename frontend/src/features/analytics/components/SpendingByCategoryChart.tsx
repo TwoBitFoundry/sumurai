@@ -2,6 +2,7 @@ import { BarChart3 } from 'lucide-react';
 import type React from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { cn, EmptyState } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import { useTheme } from '../../../context/ThemeContext';
 import { fmtUSD } from '../../../utils/format';
 import type { DonutDatum } from '../adapters/chartData';
@@ -111,13 +112,7 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
             )}
           >
             <div
-              className={cn(
-                'text-2xl',
-                'font-bold',
-                'text-slate-900',
-                'dark:text-slate-50',
-                'tracking-tight'
-              )}
+              className={cn('text-2xl', 'font-bold', designTokens.text.primary, 'tracking-tight')}
             >
               {fmtUSD(total)}
             </div>

@@ -61,10 +61,9 @@ export const TransactionsFilters: React.FC<Props> = ({
             className={cn(
               'flex-shrink-0',
               designTokens.typography.label,
-              'text-slate-500',
+              designTokens.text.label,
               'transition-colors',
-              'duration-500',
-              'dark:text-slate-400'
+              'duration-500'
             )}
           >
             Filter

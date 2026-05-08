@@ -116,12 +116,7 @@ const DashboardPage: React.FC = () => {
             >
               {analyticsLoading && (
                 <div
-                  className={cn(
-                    'mb-2',
-                    designTokens.typography.caption,
-                    'text-slate-500',
-                    'dark:text-slate-400'
-                  )}
+                  className={cn('mb-2', designTokens.typography.caption, designTokens.text.muted)}
                 >
                   Loading analytics...
                 </div>
@@ -146,8 +141,7 @@ const DashboardPage: React.FC = () => {
                       <div
                         className={cn(
                           designTokens.typography.label,
-                          'text-slate-600',
-                          'dark:text-slate-400',
+                          designTokens.text.label,
                           'mb-2',
                           'font-medium'
                         )}
@@ -185,8 +179,7 @@ const DashboardPage: React.FC = () => {
                                 <span
                                   className={cn(
                                     designTokens.typography.captionStrong,
-                                    'text-slate-800',
-                                    'dark:text-slate-200',
+                                    designTokens.text.primary,
                                     'truncate'
                                   )}
                                 >
@@ -197,8 +190,7 @@ const DashboardPage: React.FC = () => {
                                 <div
                                   className={cn(
                                     designTokens.typography.bodyStrong,
-                                    'text-slate-900',
-                                    'dark:text-slate-100'
+                                    designTokens.text.primary
                                   )}
                                 >
                                   {fmtUSD(cat.value)}
@@ -206,8 +198,7 @@ const DashboardPage: React.FC = () => {
                                 <div
                                   className={cn(
                                     designTokens.typography.caption,
-                                    'text-slate-500',
-                                    'dark:text-slate-400'
+                                    designTokens.text.muted
                                   )}
                                 >
                                   {percentage}%
@@ -264,8 +255,7 @@ const DashboardPage: React.FC = () => {
                     'flex-1',
                     'min-h-[220px]',
                     designTokens.typography.body,
-                    'text-rose-600',
-                    'dark:text-rose-400'
+                    designTokens.text.danger
                   )}
                 >
                   {netError}

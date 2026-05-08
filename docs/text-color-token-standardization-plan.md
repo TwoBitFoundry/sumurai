@@ -151,6 +151,19 @@ Acceptance criteria:
 - Primitive docs no longer teach hard-coded slate text colors for common copy.
 - Full frontend validation path passes: `design:guard`, focused token tests, `typecheck`, and relevant Jest tests.
 
+Completed:
+
+- Added `frontend/scripts/check-text-color-styling.mjs` and wired it into `design:guard`.
+- Updated remaining common-copy production surfaces, including dashboard, transactions, settings, footer, status pills, chart cards, and top merchants, to use semantic text roles.
+- Updated primitive docs and Storybook examples to use semantic text roles instead of hard-coded slate copy.
+- Kept chart, finance, onboarding, and provider-specific color palettes as documented local exceptions.
+
+### TDD Log
+
+- Red: added `frontend/tests/scripts/text-color-audit.test.ts` against a temporary source tree and confirmed it failed before the audit script existed.
+- Green: implemented `frontend/scripts/check-text-color-styling.mjs`, cleaned the remaining common-copy surfaces, and updated the docs/examples.
+- Verify: `npm --prefix frontend test -- tests/scripts/text-color-audit.test.ts tests/ui/tokens/text.test.ts tests/ui/primitives/typography.test.ts tests/components/amount.test.tsx tests/components/shell-text.test.tsx`, `npm --prefix frontend run design:guard`, `npm --prefix frontend run typecheck`, and `npm --prefix frontend run lint`.
+
 ## Local Exceptions
 
 Keep these local or palette-specific rather than global text roles:

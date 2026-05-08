@@ -109,22 +109,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           <div className={cn('space-y-5')}>
             <div className={cn('space-y-3')}>
               <Badge size="md">ACCOUNT SETTINGS</Badge>
-              <h2
-                className={cn(
-                  designTokens.typography.sectionTitle,
-                  'text-slate-900',
-                  'dark:text-slate-100'
-                )}
-              >
+              <h2 className={cn(designTokens.typography.sectionTitle, designTokens.text.primary)}>
                 Change Password
               </h2>
-              <p
-                className={cn(
-                  designTokens.typography.body,
-                  'text-slate-600',
-                  'dark:text-slate-400'
-                )}
-              >
+              <p className={cn(designTokens.typography.body, designTokens.text.body)}>
                 Update your password to keep your account secure
               </p>
             </div>
@@ -193,13 +181,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                     disabled={isChangingPassword}
                   />
                   {confirmPassword && !isPasswordMatch && (
-                    <p
-                      className={cn(
-                        designTokens.typography.caption,
-                        'text-red-600',
-                        'dark:text-red-300'
-                      )}
-                    >
+                    <p className={cn(designTokens.typography.caption, designTokens.text.danger)}>
                       Passwords do not match.
                     </p>
                   )}
@@ -256,12 +238,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         <GlassCard variant="auth" padding="lg">
           <h2
             id="delete-account-modal-title"
-            className={cn(
-              designTokens.typography.cardTitle,
-              'mb-4',
-              'text-slate-900',
-              'dark:text-slate-100'
-            )}
+            className={cn(designTokens.typography.cardTitle, 'mb-4', designTokens.text.primary)}
           >
             Delete Account?
           </h2>

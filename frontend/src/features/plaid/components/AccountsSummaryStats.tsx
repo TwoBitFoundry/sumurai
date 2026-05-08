@@ -45,9 +45,7 @@ export const AccountsSummaryStats = ({
           )}
           data-testid="accounts-flow-error"
         >
-          <div
-            className={cn(designTokens.typography.bodyStrong, 'text-red-600', 'dark:text-red-300')}
-          >
+          <div className={cn(designTokens.typography.bodyStrong, designTokens.text.danger)}>
             {flowError}
           </div>
         </div>

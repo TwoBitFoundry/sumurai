@@ -162,20 +162,13 @@ const TransactionsPage: React.FC = () => {
                 <div
                   className={cn(
                     designTokens.typography.cardTitle,
-                    'text-slate-600',
-                    'dark:text-slate-400',
+                    designTokens.text.primary,
                     'mb-2'
                   )}
                 >
                   Loading transactions...
                 </div>
-                <div
-                  className={cn(
-                    designTokens.typography.caption,
-                    'text-slate-500',
-                    'dark:text-slate-500'
-                  )}
-                >
+                <div className={cn(designTokens.typography.caption, designTokens.text.muted)}>
                   Fetching data from server
                 </div>
               </div>

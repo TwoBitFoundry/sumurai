@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { cn } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import { GradientShell } from './GradientShell';
 
 const meta = {
@@ -7,7 +9,19 @@ const meta = {
   tags: ['autodocs', 'test'],
   args: {
     children: (
-      <div className="rounded-2xl border border-white/10 bg-white/60 px-4 py-3 text-slate-700 shadow-sm dark:bg-slate-900/60 dark:text-slate-200">
+      <div
+        className={cn(
+          'rounded-2xl',
+          'border',
+          'border-white/10',
+          'bg-white/60',
+          'px-4',
+          'py-3',
+          'shadow-sm',
+          'dark:bg-slate-900/60',
+          designTokens.text.body
+        )}
+      >
         Shell content
       </div>
     ),

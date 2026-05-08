@@ -159,8 +159,8 @@ export function Footer() {
               className={cn(
                 designTokens.typography.caption,
                 designTokens.text.accent,
-                'hover:text-sky-700',
-                'dark:hover:text-sky-200'
+                'transition-opacity',
+                'hover:opacity-80'
               )}
             >
               Contact
@@ -170,8 +170,8 @@ export function Footer() {
               className={cn(
                 designTokens.typography.caption,
                 designTokens.text.accent,
-                'hover:text-sky-700',
-                'dark:hover:text-sky-200'
+                'transition-opacity',
+                'hover:opacity-80'
               )}
             >
               Support
