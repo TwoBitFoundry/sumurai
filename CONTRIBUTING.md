@@ -94,9 +94,10 @@ Component stories live under `frontend/src` as `*.stories.tsx`. From the repo ro
 ```bash
 npm run storybook
 npm run storybook:build
+npm run frontend:storybook-test
 ```
 
-These delegate to `frontend/` (same as `cd frontend && npm run …`). `storybook` serves `http://localhost:6006`. `storybook:build` writes `frontend/storybook-static` (used by CI Storybook iframe smoke tests). Storybook MCP needs Storybook running first; see `AGENTS.md`.
+The root Storybook commands delegate to `frontend/` (same as `cd frontend && npm run …`). `storybook` serves `http://localhost:6006`. `storybook:build` writes `frontend/storybook-static` (used by CI Storybook iframe smoke tests). `frontend:storybook-test` runs the Storybook Vitest project from the repo root. Storybook MCP needs Storybook running first; see `AGENTS.md`.
 
 ## Backend Validation
 

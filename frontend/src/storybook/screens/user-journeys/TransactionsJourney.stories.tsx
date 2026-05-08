@@ -62,11 +62,17 @@ export const Journey: Story = {
 
     const search = canvas.getByPlaceholderText('Search transactions...');
     await userEvent.type(search, 'Coffee');
-    await expect(
-      canvas.getByText(/coffee collective wholesale roasters group international/i)
-    ).toBeVisible();
+    await waitFor(
+      () => {
+        expect(
+          page.getByText(/coffee collective wholesale roasters group international/i)
+        ).toBeVisible();
+        expect(page.getByText(/page 1 of 1/i)).toBeVisible();
+      },
+      { timeout: 3000 }
+    );
 
-    const category = canvas.getByRole('button', { name: /food and drink/i });
+    const category = page.getByRole('button', { name: /food and drink/i });
     await userEvent.click(category);
     await expect(category).toHaveAttribute('aria-pressed', 'true');
   },
