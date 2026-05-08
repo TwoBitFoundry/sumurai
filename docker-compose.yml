@@ -27,7 +27,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-accounting}
 
       DEFAULT_PROVIDER: teller
-      AUTH_COOKIE_SAME_SITE: Lax
+      AUTH_COOKIE_SAME_SITE: Strict
 
       OTEL_TRACES_EXPORTER: none
 
