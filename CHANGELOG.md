@@ -1,5 +1,17 @@
 # Changelog
 
+## [5.4.0](https://github.com/TwoBitFoundry/sumurai/compare/v5.3.1...v5.4.0) (2026-05-08)
+
+
+### Features
+
+* establish docker roles and some cleanup ([#91](https://github.com/TwoBitFoundry/sumurai/issues/91)) ([c482426](https://github.com/TwoBitFoundry/sumurai/commit/c482426637e2d263043948b099bffd2515a4e1a8))
+
+
+### Bug Fixes
+
+* resolve dashboard bugs for timeline and net worth ([#90](https://github.com/TwoBitFoundry/sumurai/issues/90)) ([1bd21f6](https://github.com/TwoBitFoundry/sumurai/commit/1bd21f6351c9941da649c44c523b9bf673b7c887))
+
 ## [5.3.1](https://github.com/TwoBitFoundry/sumurai/compare/v5.3.0...v5.3.1) (2026-05-07)
 
 
