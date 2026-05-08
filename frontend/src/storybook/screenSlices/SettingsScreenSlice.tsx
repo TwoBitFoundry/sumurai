@@ -3,6 +3,7 @@ import { PasswordChecker } from '@/components/PasswordChecker';
 import type { PasswordValidation } from '@/hooks/usePasswordValidation';
 import { Alert, Badge, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
+import { designTokens } from '@/ui/tokens';
 
 const validationEmpty: PasswordValidation = {
   minLength: false,
@@ -113,12 +114,10 @@ export function SettingsScreenSlice(props: {
           <div className={cn('space-y-5')}>
             <div className={cn('space-y-3')}>
               <Badge size="md">ACCOUNT SETTINGS</Badge>
-              <h2
-                className={cn('text-2xl', 'font-semibold', 'text-slate-900', 'dark:text-slate-100')}
-              >
+              <h2 className={cn(designTokens.typography.sectionTitle, designTokens.text.primary)}>
                 Change Password
               </h2>
-              <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400')}>
+              <p className={cn(designTokens.typography.body, designTokens.text.body)}>
                 Update your password to keep your account secure
               </p>
             </div>
@@ -182,7 +181,7 @@ export function SettingsScreenSlice(props: {
                     placeholder="Re-enter new password"
                   />
                   {confirmMismatchVisible ? (
-                    <p className={cn('text-xs', 'text-red-600', 'dark:text-red-300')}>
+                    <p className={cn(designTokens.typography.caption, designTokens.text.danger)}>
                       Passwords do not match.
                     </p>
                   ) : null}
@@ -224,13 +223,7 @@ export function SettingsScreenSlice(props: {
         <GlassCard variant="auth" padding="lg">
           <h2
             id={`delete-account-modal-title-${key}`}
-            className={cn(
-              'text-xl',
-              'font-semibold',
-              'mb-4',
-              'text-slate-900',
-              'dark:text-slate-100'
-            )}
+            className={cn(designTokens.typography.cardTitle, 'mb-4', designTokens.text.primary)}
           >
             Delete Account?
           </h2>
