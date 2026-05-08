@@ -235,6 +235,18 @@ Acceptance criteria:
   - `npm --prefix frontend run test:storybook-runtime` if stories changed
 - Final implementation summary lists intentional typography exceptions.
 
+Status: completed.
+
+Notes:
+
+- Dashboard, budgets, transactions, settings, login, register, and onboarding welcome/connect screens were checked at desktop and narrow mobile widths in the live app.
+- The onboarding wizard was reached through a throwaway local account to verify the denser connection screen layout.
+- Storybook was unavailable on the default local port in this session, so the app itself was used for the visual verification pass.
+
+TDD log:
+
+- Verify: `npm --prefix frontend run design:guard`, `npm --prefix frontend run typecheck`, `npm --prefix frontend test`
+
 ## Assumptions
 
 - No package additions are needed.
