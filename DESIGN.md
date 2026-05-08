@@ -51,6 +51,28 @@ colors:
   semantic-dark-credit: "#fb7185"
   semantic-dark-loan: "#fbbf24"
   semantic-dark-net-worth: "#a78bfa"
+  text-primary: "#0f172a"
+  text-primary-dark: "#f8fafc"
+  text-body: "#334155"
+  text-body-dark: "#cbd5e1"
+  text-muted: "#475569"
+  text-muted-dark: "#94a3b8"
+  text-subtle: "#94a3b8"
+  text-subtle-dark: "#64748b"
+  text-label: "#64748b"
+  text-label-dark: "#94a3b8"
+  text-inverse: "#ffffff"
+  text-inverse-dark: "#ffffff"
+  text-accent: "#0369a1"
+  text-accent-dark: "#38bdf8"
+  text-danger: "#dc2626"
+  text-danger-dark: "#fca5a5"
+  text-success: "#059669"
+  text-success-dark: "#6ee7b7"
+  text-warning: "#d97706"
+  text-warning-dark: "#fcd34d"
+  text-info: "#0284c7"
+  text-info-dark: "#7dd3fc"
   category-sky: "#38bdf8"
   category-emerald: "#34d399"
   category-cyan: "#22d3ee"
@@ -218,6 +240,7 @@ components:
     textColor: "#475569"
     rounded: "{rounded.large}"
     padding: 12px
+
   glass-card:
     backgroundColor: "#ffffff"
     rounded: "{rounded.large}"
@@ -454,6 +477,8 @@ components:
     backgroundColor: "{colors.category-lime}"
     textColor: "{colors.chart-dark-dot-fill}"
 ---
+
+Text roles are semantic and reusable. They preserve the current light and dark copy hierarchy without turning this file into a Tailwind class catalog.
 
 ## Overview
 

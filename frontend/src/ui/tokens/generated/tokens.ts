@@ -531,6 +531,248 @@ export const designTokens = {
         "hex": "#a78bfa"
       }
     },
+    "text-primary": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.059,
+          0.09,
+          0.165
+        ],
+        "hex": "#0f172a"
+      }
+    },
+    "text-primary-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.973,
+          0.98,
+          0.988
+        ],
+        "hex": "#f8fafc"
+      }
+    },
+    "text-body": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.2,
+          0.255,
+          0.333
+        ],
+        "hex": "#334155"
+      }
+    },
+    "text-body-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.796,
+          0.835,
+          0.882
+        ],
+        "hex": "#cbd5e1"
+      }
+    },
+    "text-muted": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.278,
+          0.333,
+          0.412
+        ],
+        "hex": "#475569"
+      }
+    },
+    "text-muted-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.58,
+          0.639,
+          0.722
+        ],
+        "hex": "#94a3b8"
+      }
+    },
+    "text-subtle": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.58,
+          0.639,
+          0.722
+        ],
+        "hex": "#94a3b8"
+      }
+    },
+    "text-subtle-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.392,
+          0.455,
+          0.545
+        ],
+        "hex": "#64748b"
+      }
+    },
+    "text-label": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.392,
+          0.455,
+          0.545
+        ],
+        "hex": "#64748b"
+      }
+    },
+    "text-label-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.58,
+          0.639,
+          0.722
+        ],
+        "hex": "#94a3b8"
+      }
+    },
+    "text-inverse": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          1,
+          1,
+          1
+        ],
+        "hex": "#ffffff"
+      }
+    },
+    "text-inverse-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          1,
+          1,
+          1
+        ],
+        "hex": "#ffffff"
+      }
+    },
+    "text-accent": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.012,
+          0.412,
+          0.631
+        ],
+        "hex": "#0369a1"
+      }
+    },
+    "text-accent-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.22,
+          0.741,
+          0.973
+        ],
+        "hex": "#38bdf8"
+      }
+    },
+    "text-danger": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.863,
+          0.149,
+          0.149
+        ],
+        "hex": "#dc2626"
+      }
+    },
+    "text-danger-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.988,
+          0.647,
+          0.647
+        ],
+        "hex": "#fca5a5"
+      }
+    },
+    "text-success": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.02,
+          0.588,
+          0.412
+        ],
+        "hex": "#059669"
+      }
+    },
+    "text-success-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.431,
+          0.906,
+          0.718
+        ],
+        "hex": "#6ee7b7"
+      }
+    },
+    "text-warning": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.851,
+          0.467,
+          0.024
+        ],
+        "hex": "#d97706"
+      }
+    },
+    "text-warning-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.988,
+          0.827,
+          0.302
+        ],
+        "hex": "#fcd34d"
+      }
+    },
+    "text-info": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.008,
+          0.518,
+          0.78
+        ],
+        "hex": "#0284c7"
+      }
+    },
+    "text-info-dark": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.49,
+          0.827,
+          0.988
+        ],
+        "hex": "#7dd3fc"
+      }
+    },
     "category-sky": {
       "$value": {
         "colorSpace": "srgb",
