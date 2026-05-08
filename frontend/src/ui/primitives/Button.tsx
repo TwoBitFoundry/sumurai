@@ -3,6 +3,13 @@ import React from 'react';
 import { designTokens } from '@/ui/tokens';
 import { cn } from './utils';
 
+export const buttonTypographySizes = {
+  xs: designTokens.typography.label,
+  sm: designTokens.typography.captionStrong,
+  md: designTokens.typography.captionStrong,
+  lg: designTokens.typography.bodyStrong,
+} as const;
+
 const buttonVariants = cva([...designTokens.components.button.base], {
   variants: {
     variant: {
@@ -17,10 +24,10 @@ const buttonVariants = cva([...designTokens.components.button.base], {
       connect: [...designTokens.components.button.connect],
     },
     size: {
-      xs: 'px-2.5 py-1 text-xs rounded-xl',
-      sm: 'px-3 py-1.5 text-sm rounded-xl',
-      md: 'px-4 py-2 text-sm rounded-full',
-      lg: 'px-5 py-2.5 text-base rounded-full',
+      xs: `${buttonTypographySizes.xs} px-2.5 py-1 rounded-xl`,
+      sm: `${buttonTypographySizes.sm} px-3 py-1.5 rounded-xl`,
+      md: `${buttonTypographySizes.md} px-4 py-2 rounded-full`,
+      lg: `${buttonTypographySizes.lg} px-5 py-2.5 rounded-full`,
       icon: 'h-10 w-10 rounded-full',
     },
   },

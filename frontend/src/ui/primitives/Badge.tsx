@@ -3,6 +3,13 @@ import type React from 'react';
 import { designTokens } from '@/ui/tokens';
 import { cn } from './utils';
 
+export const badgeSizeStyles = {
+  xs: 'px-2 py-0.5 rounded-md',
+  sm: 'px-2.5 py-1 rounded-lg',
+  md: 'px-3 py-1 rounded-full',
+  lg: 'px-3.5 py-1.5 rounded-full',
+} as const;
+
 const badgeVariants = cva([...designTokens.components.badge.base], {
   variants: {
     variant: {
@@ -11,10 +18,10 @@ const badgeVariants = cva([...designTokens.components.badge.base], {
       feature: [...designTokens.components.badge.feature],
     },
     size: {
-      xs: 'px-2 py-0.5 text-[10px] tracking-[0.2em] rounded-md',
-      sm: 'px-2.5 py-1 text-[11px] tracking-[0.24em] rounded-lg',
-      md: 'px-3 py-1 text-xs tracking-[0.24em] rounded-full',
-      lg: 'px-3.5 py-1.5 text-xs tracking-[0.3em] rounded-full',
+      xs: badgeSizeStyles.xs,
+      sm: badgeSizeStyles.sm,
+      md: badgeSizeStyles.md,
+      lg: badgeSizeStyles.lg,
     },
   },
   defaultVariants: {

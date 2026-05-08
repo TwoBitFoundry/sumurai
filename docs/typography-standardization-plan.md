@@ -151,6 +151,19 @@ Acceptance criteria:
 - Primitive stories render without text clipping.
 - Affected primitive tests and `typecheck` pass.
 
+Status: completed.
+
+Notes:
+
+- Shared typography now comes from the primitive recipe contract and is reused by the global token map and the primitive components.
+- `PageLayout`, `Button`, `Badge`, `FormLabel`, `Alert`, `EmptyState`, `RequirementPill`, and the shared connect button wrapper now rely on semantic typography recipes instead of ad hoc text utilities.
+
+TDD log:
+
+- Red: `npm --prefix frontend test -- tests/ui/primitives/typography.test.ts`
+- Green: updated primitive recipes and components to use semantic typography mappings
+- Verify: `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend test -- tests/ui/primitives/typography.test.ts`, `npm --prefix frontend test`, `npm --prefix frontend run design:guard`
+
 ### 4. Migrate High-Impact App Surfaces
 
 Goal: apply the standard to the screens users see most often and remove the practical `text-sm` default from app content.

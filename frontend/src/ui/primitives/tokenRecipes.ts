@@ -1,8 +1,20 @@
+export const primitiveTypographyRecipes = {
+  display: 'font-display text-[clamp(2.25rem,3vw,3rem)] font-bold leading-[1.1] tracking-normal',
+  pageTitle: 'font-page-title text-[2rem] font-bold leading-[1.1] tracking-normal',
+  sectionTitle: 'font-section-title text-[1.5rem] font-semibold leading-[1.25] tracking-normal',
+  cardTitle: 'font-card-title text-[1.25rem] font-semibold leading-[1.25] tracking-normal',
+  body: 'font-body text-[1rem] font-normal leading-[1.5] tracking-normal',
+  bodyStrong: 'font-body-strong text-[1rem] font-semibold leading-[1.5] tracking-normal',
+  caption: 'font-caption text-[0.875rem] font-normal leading-[1.5] tracking-normal',
+  captionStrong: 'font-caption-strong text-[0.875rem] font-semibold leading-[1.5] tracking-normal',
+  label: 'font-label text-[0.75rem] font-semibold uppercase leading-none tracking-[0.14em]',
+  badge: 'font-badge text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]',
+} as const;
+
 export const primitiveTokenRecipes = {
   button: {
     base: [
       'inline-flex items-center justify-center gap-2',
-      'font-subheading uppercase',
       'transition-all duration-200 ease-out',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-slate-900',
       'disabled:cursor-not-allowed disabled:opacity-60',
@@ -84,7 +96,7 @@ export const primitiveTokenRecipes = {
   },
   connectButton: {
     base: [
-      'inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold whitespace-nowrap',
+      `inline-flex items-center gap-2 rounded-full px-5 py-2 ${primitiveTypographyRecipes.captionStrong} whitespace-nowrap`,
       'transition-all duration-200',
       'focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
       'dark:focus-visible:ring-offset-slate-900',
@@ -101,7 +113,7 @@ export const primitiveTokenRecipes = {
   badge: {
     base: [
       'inline-flex items-center justify-center',
-      'font-semibold uppercase',
+      primitiveTypographyRecipes.badge,
       'transition-all duration-200 ease-out',
     ],
     default: [
@@ -271,15 +283,12 @@ export const primitiveTokenRecipes = {
       'dark:via-slate-900/34',
       'dark:to-transparent',
     ],
-    badge:
-      'inline-flex items-center justify-center rounded-full bg-white/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-600 shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/75 dark:text-slate-200',
-    title:
-      'text-3xl font-bold text-slate-900 transition-colors duration-300 ease-out dark:text-white sm:text-4xl',
-    subtitle:
-      'text-base leading-relaxed text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300',
+    badge: `${primitiveTypographyRecipes.badge} inline-flex items-center justify-center rounded-full bg-white/75 px-3 py-1 text-slate-600 shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/75 dark:text-slate-200`,
+    title: `${primitiveTypographyRecipes.pageTitle} text-slate-900 transition-colors duration-300 ease-out dark:text-white`,
+    subtitle: `${primitiveTypographyRecipes.body} text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300`,
     error:
       'rounded-2xl border border-red-200/70 bg-red-50/80 px-5 py-3 shadow-sm dark:border-red-700/60 dark:bg-red-900/25',
-    errorText: 'text-sm font-medium text-red-600 dark:text-red-300',
+    errorText: `${primitiveTypographyRecipes.captionStrong} text-red-600 dark:text-red-300`,
   },
   emptyState: {
     iconWrapper: [
@@ -297,13 +306,11 @@ export const primitiveTokenRecipes = {
       'dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)]',
       'cursor-pointer',
     ],
-    title:
-      'text-lg font-semibold text-slate-700 transition-colors duration-500 dark:text-slate-200',
-    description:
-      'text-sm text-slate-500 transition-colors duration-500 dark:text-slate-400 max-w-sm',
+    title: `${primitiveTypographyRecipes.cardTitle} text-slate-700 transition-colors duration-500 dark:text-slate-200`,
+    description: `${primitiveTypographyRecipes.body} max-w-sm text-slate-500 transition-colors duration-500 dark:text-slate-400`,
   },
   pill: {
-    base: 'inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-[0.18em]',
+    base: `inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 ${primitiveTypographyRecipes.badge}`,
     dot: 'h-2 w-2 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.85)] dark:shadow-[0_0_0_1px_rgba(15,23,42,0.7)]',
     fadeLeft:
       'pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80',

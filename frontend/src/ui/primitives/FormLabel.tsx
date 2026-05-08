@@ -1,8 +1,9 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
+import { designTokens } from '@/ui/tokens';
 import { cn } from './utils';
 
-const labelVariants = cva(['block text-xs font-semibold uppercase tracking-[0.18em]'], {
+const labelVariants = cva(['block', designTokens.typography.label], {
   variants: {
     tone: {
       default: 'text-slate-700 dark:text-slate-200',

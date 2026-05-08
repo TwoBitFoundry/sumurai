@@ -1,12 +1,10 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
+import { designTokens } from '@/ui/tokens';
 import { cn } from './utils';
 
 const alertVariants = cva(
-  [
-    'relative flex gap-3 rounded-2xl border px-4 py-3 text-sm shadow-sm',
-    'transition-colors duration-300',
-  ],
+  ['relative flex gap-3 rounded-2xl border px-4 py-3 shadow-sm', 'transition-colors duration-300'],
   {
     variants: {
       variant: {
@@ -53,19 +51,9 @@ export function Alert({ variant, tone, title, icon, className, children, ...prop
       {icon && <span className={cn('mt-0.5', 'text-lg')}>{icon}</span>}
       <div className="space-y-1">
         {title && (
-          <p
-            className={cn(
-              'text-xs',
-              'font-semibold',
-              'uppercase',
-              'tracking-[0.24em]',
-              'opacity-85'
-            )}
-          >
-            {title}
-          </p>
+          <p className={cn(designTokens.typography.captionStrong, 'opacity-85')}>{title}</p>
         )}
-        <div className={cn('text-sm', 'leading-relaxed')}>{children}</div>
+        <div className={cn(designTokens.typography.body)}>{children}</div>
       </div>
     </div>
   );

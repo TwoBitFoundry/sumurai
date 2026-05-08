@@ -1,6 +1,6 @@
 import { onboardingTokenRecipes } from '@/components/onboarding/tokenRecipes';
 import { budgetTokenRecipes } from '@/features/budgets/tokenRecipes';
-import { primitiveTokenRecipes } from '@/ui/primitives/tokenRecipes';
+import { primitiveTokenRecipes, primitiveTypographyRecipes } from '@/ui/primitives/tokenRecipes';
 import generatedTokens from './generated/tokens';
 
 export type ThemeMode = 'light' | 'dark';
@@ -81,18 +81,6 @@ const chartDark = [
 ];
 const brandFont = generatedTokens.typography.brand.$value.fontFamily;
 const sansFont = generatedTokens.typography.sans.$value.fontFamily;
-const typographyRecipes = {
-  display: 'font-display text-[clamp(2.25rem,3vw,3rem)] font-bold leading-[1.1] tracking-normal',
-  pageTitle: 'font-page-title text-[2rem] font-bold leading-[1.1] tracking-normal',
-  sectionTitle: 'font-section-title text-[1.5rem] font-semibold leading-[1.25] tracking-normal',
-  cardTitle: 'font-card-title text-[1.25rem] font-semibold leading-[1.25] tracking-normal',
-  body: 'font-body text-[1rem] font-normal leading-[1.5] tracking-normal',
-  bodyStrong: 'font-body-strong text-[1rem] font-semibold leading-[1.5] tracking-normal',
-  caption: 'font-caption text-[0.875rem] font-normal leading-[1.5] tracking-normal',
-  captionStrong: 'font-caption-strong text-[0.875rem] font-semibold leading-[1.5] tracking-normal',
-  label: 'font-label text-[0.75rem] font-semibold uppercase leading-none tracking-[0.14em]',
-  badge: 'font-badge text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]',
-} as const;
 const glassInsetLight =
   'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]';
 const glassInsetDark =
@@ -665,20 +653,11 @@ export const designTokens = {
   typography: {
     brand: brandFont,
     sans: sansFont,
-    display: typographyRecipes.display,
-    pageTitle: typographyRecipes.pageTitle,
-    sectionTitle: typographyRecipes.sectionTitle,
-    cardTitle: typographyRecipes.cardTitle,
-    body: typographyRecipes.body,
-    bodyStrong: typographyRecipes.bodyStrong,
-    caption: typographyRecipes.caption,
-    captionStrong: typographyRecipes.captionStrong,
-    label: typographyRecipes.label,
-    badge: typographyRecipes.badge,
-    subheading: typographyRecipes.bodyStrong,
-    pill: typographyRecipes.badge,
-    budgetProgressCaption: typographyRecipes.caption,
-    budgetProgressCaptionStrong: typographyRecipes.captionStrong,
+    ...primitiveTypographyRecipes,
+    subheading: primitiveTypographyRecipes.bodyStrong,
+    pill: primitiveTypographyRecipes.badge,
+    budgetProgressCaption: primitiveTypographyRecipes.caption,
+    budgetProgressCaptionStrong: primitiveTypographyRecipes.captionStrong,
   },
   radii: {
     panel: 'rounded-[2.25rem]',

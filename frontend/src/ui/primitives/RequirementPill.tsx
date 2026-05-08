@@ -1,10 +1,12 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
+import { designTokens } from '@/ui/tokens';
 import { cn } from './utils';
 
 const requirementVariants = cva(
   [
-    'inline-flex items-center rounded-full px-2.5 py-1 text-[0.7rem] font-medium transition-colors duration-200',
+    designTokens.typography.badge,
+    'inline-flex items-center rounded-full px-2.5 py-1 transition-colors duration-200',
   ],
   {
     variants: {
