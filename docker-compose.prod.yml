@@ -5,8 +5,8 @@ services:
     image: ${SUMURAI_GHCR_PREFIX:-ghcr.io/twobitfoundry/sumurai}-frontend:${SUMURAI_IMAGE_TAG:-latest}
     pull_policy: missing
     environment:
-      DEFAULT_PROVIDER: teller
-      NEXT_PUBLIC_OTEL_ENABLED: "false"
+      DEFAULT_PROVIDER: plaid
+      NEXT_PUBLIC_OTEL_ENABLED: "true"
       NEXT_PUBLIC_OTEL_SERVICE_NAME: sumurai-frontend
       NEXT_PUBLIC_OTEL_SERVICE_VERSION: "1.0.0"
       NEXT_PUBLIC_OTEL_CAPTURE_BODIES: "false"
@@ -26,24 +26,25 @@ services:
       REDIS_URL: redis://redis:6379
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-accounting}
 
-      DEFAULT_PROVIDER: teller
-      AUTH_COOKIE_SAME_SITE: Lax
+      DEFAULT_PROVIDER: plaid
+      AUTH_COOKIE_SAME_SITE: Strict
 
-      OTEL_TRACES_EXPORTER: none
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://seq/ingest/otlp/v1/traces
+      OTEL_EXPORTER_OTLP_HEADERS: X-Seq-ApiKey=${SEQ_API_KEY:?SEQ_API_KEY is required}
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_STARTUP_TEST_SPAN: "0"
 
-      TELLER_APPLICATION_ID: ${TELLER_APPLICATION_ID:?TELLER_APPLICATION_ID is required}
-      TELLER_CERT_PATH: /etc/teller/certificate.pem
-      TELLER_KEY_PATH: /etc/teller/private_key.pem
-      TELLER_ENV: development
+      TELLER_ENV: production
 
-      PLAID_ENV: development
+      PLAID_CLIENT_ID: ${PLAID_CLIENT_ID:?PLAID_CLIENT_ID is required}
+      PLAID_SECRET: ${PLAID_SECRET:?PLAID_SECRET is required}
+      PLAID_ENV: production
 
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
       RUST_LOG: info,otel::tracing=trace,axum_tracing_opentelemetry=trace
-    volumes:
-      - ${TELLER_CERT_PATH:?TELLER_CERT_PATH is required}:/etc/teller/certificate.pem:ro
-      - ${TELLER_KEY_PATH:?TELLER_KEY_PATH is required}:/etc/teller/private_key.pem:ro
+    volumes: []
     command: >
       sh -c "
         echo 'Running database migrations...' &&
@@ -55,6 +56,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_started
+      seq:
         condition: service_started
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:3000/health" ]
@@ -82,6 +85,16 @@ services:
       timeout: 5s
       retries: 5
 
+  seq:
+    image: datalust/seq:2025.2
+    pull_policy: if_not_present
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_INGESTION__OTLP__ENABLED: "true"
+      SEQ_PASSWORD: ${SEQ_PASSWORD:?SEQ_PASSWORD is required}
+    volumes:
+      - seq_data:/data
+
   nginx:
     image: nginx:1.27-alpine
     depends_on:
@@ -89,15 +102,18 @@ services:
         condition: service_healthy
       backend:
         condition: service_healthy
+      seq:
+        condition: service_started
     environment:
-      DOMAIN: localhost
-      SSL_PORT: 8443
+      DOMAIN: ${DOMAIN:?DOMAIN is required for production}
+      ENVIRONMENT: production
+      SSL_PORT: 443
     command: [ "/bin/sh", "/etc/nginx/entrypoint.sh" ]
     ports:
-      - "${HTTP_PORT:-8080}:80"
-      - "${HTTPS_PORT:-8443}:443"
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
     volumes:
-      - ./nginx/nginx.slim.conf.template:/etc/nginx/nginx.conf.template:ro
+      - ./nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
       - ./nginx/entrypoint.sh:/etc/nginx/entrypoint.sh:ro
       - ./nginx/healthcheck.sh:/etc/nginx/healthcheck.sh:ro
       - certbot-etc:/etc/letsencrypt
@@ -119,5 +135,6 @@ services:
 volumes:
   redis_data:
   postgres_data:
+  seq_data:
   certbot-etc:
   certbot-var:

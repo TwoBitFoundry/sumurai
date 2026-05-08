@@ -35,6 +35,7 @@ pub struct TestFixtures;
 
 impl TestFixtures {
     fn create_test_config() -> Config {
+        std::env::set_var("OTEL_TRACES_EXPORTER", "none");
         let mut test_env = MockEnvironment::new();
         test_env.set("TELLER_ENV", "test");
         test_env.set("DEFAULT_PROVIDER", "plaid");

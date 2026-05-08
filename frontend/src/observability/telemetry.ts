@@ -6,7 +6,6 @@ import { resourceFromAttributes } from '@opentelemetry/resources';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
-import { AuthService } from '../services/authService';
 import {
   FilteringSpanProcessor,
   HttpRouteSpanProcessor,
@@ -89,22 +88,6 @@ function getSpanUrl(span: Span): string | undefined {
   return undefined;
 }
 
-function setEncryptedTokenAttribute(span: Span): void {
-  const hash = AuthService.getEncryptedTokenHashSync();
-  if (hash) {
-    span.setAttribute('encrypted_token', hash);
-    return;
-  }
-
-  void AuthService.ensureEncryptedTokenHash()
-    .then((result) => {
-      if (result) {
-        span.setAttribute('encrypted_token', result);
-      }
-    })
-    .catch(() => {});
-}
-
 export async function initTelemetry(): Promise<Tracer | null> {
   const config = getConfig();
 
@@ -157,7 +140,6 @@ export async function initTelemetry(): Promise<Tracer | null> {
             ignoreUrls: ignoreInstrumentationUrls,
             applyCustomAttributesOnSpan: (span: Span, request: Request, response: Response) => {
               setHttpSpanName(span, request.method, request.url);
-              setEncryptedTokenAttribute(span);
               sanitizeSpanAttributes(span, request, response);
             },
           },
@@ -175,7 +157,6 @@ export async function initTelemetry(): Promise<Tracer | null> {
                   : undefined,
                 getSpanUrl(span)
               );
-              setEncryptedTokenAttribute(span);
               sanitizeSpanAttributes(span);
             },
           },
@@ -195,8 +176,6 @@ export async function initTelemetry(): Promise<Tracer | null> {
   } catch {}
 
   tracer = trace.getTracer(config.serviceName, config.serviceVersion);
-
-  void AuthService.ensureEncryptedTokenHash();
 
   return tracer;
 }

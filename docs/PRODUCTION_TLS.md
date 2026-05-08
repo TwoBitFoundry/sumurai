@@ -9,7 +9,7 @@ This guide covers nginx server TLS only. Teller mTLS client certificates are sep
 - `DOMAIN`: public DNS name for the Sumurai deployment.
 - DNS `A` or `AAAA` record pointing `DOMAIN` to the deployment host.
 - Inbound ports `80` and `443` reachable from the public internet for ACME HTTP-01 validation and HTTPS traffic.
-- `docker-compose.production.yml`: production override that sets `ENVIRONMENT=production`, `SSL_PORT=443`, and public host ports `80` and `443`.
+- `docker-compose.prod.yml`: production compose stack (production settings, public host ports `80` and `443`).
 - Persistent Docker volumes `certbot-etc` and `certbot-var`.
 - An operator-owned renewal schedule.
 
@@ -24,7 +24,7 @@ DOMAIN=app.example.com HTTP_PORT=80 docker compose --profile certbot run --rm --
 After issuance, start nginx:
 
 ```bash
-DOMAIN=app.example.com docker compose -f docker-compose.yml -f docker-compose.production.yml up -d nginx
+DOMAIN=app.example.com docker compose -f docker-compose.prod.yml up -d nginx
 ```
 
 If production certificate material is missing, nginx exits non-zero before serving traffic.
@@ -37,7 +37,7 @@ With nginx running, use the ACME webroot served from `/.well-known/acme-challeng
 
 ```bash
 DOMAIN=app.example.com docker compose --profile certbot run --rm --entrypoint certbot certbot renew --webroot --webroot-path /var/www/certbot
-DOMAIN=app.example.com docker compose -f docker-compose.yml -f docker-compose.production.yml restart nginx
+DOMAIN=app.example.com docker compose -f docker-compose.prod.yml restart nginx
 ```
 
 Use the host scheduler appropriate for the deployment environment. The schedule must keep the `certbot-etc` and `certbot-var` volumes intact between runs.
@@ -61,13 +61,13 @@ openssl s_client -connect app.example.com:443 -servername app.example.com </dev/
 Verify local container health:
 
 ```bash
-DOMAIN=app.example.com docker compose -f docker-compose.yml -f docker-compose.production.yml ps nginx
+DOMAIN=app.example.com docker compose -f docker-compose.prod.yml ps nginx
 ```
 
 Verify compose renders the production port mapping:
 
 ```bash
-DOMAIN=app.example.com docker compose -f docker-compose.yml -f docker-compose.production.yml config
+DOMAIN=app.example.com docker compose -f docker-compose.prod.yml config
 ```
 
 ## Failure Behavior

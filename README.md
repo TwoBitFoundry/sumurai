@@ -39,10 +39,10 @@ Provide the required environment variables referenced by `docker-compose.yml` an
 docker compose up -d --build
 ```
 
-For source-built local development, use the development override:
+For source-built local development:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.development.yml up -d --build
+docker compose -f docker-compose.dev.yml up -d --build
 ```
 
 Open [http://localhost:8080](http://localhost:8080). Demo credentials: `me@test.com` / `Test1234!`

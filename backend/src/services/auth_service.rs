@@ -1,7 +1,4 @@
-use crate::{
-    middleware::telemetry_middleware::{attach_encrypted_token_to_current_span, hash_token},
-    models::auth::{AuthError, AuthToken, Claims},
-};
+use crate::models::auth::{AuthError, AuthToken, Claims};
 use argon2::password_hash::{rand_core::OsRng, SaltString};
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use chrono::{Duration, Utc};
@@ -72,8 +69,6 @@ impl AuthService {
             expires_at: expiration,
         };
 
-        attach_encrypted_token_to_current_span(&hash_token(&auth_token.token));
-
         Ok(auth_token)
     }
 
@@ -108,8 +103,6 @@ impl AuthService {
             expires_at: expiration,
         };
 
-        attach_encrypted_token_to_current_span(&hash_token(&auth_token.token));
-
         Ok(auth_token)
     }
 
@@ -127,9 +120,6 @@ impl AuthService {
             &validation,
         ) {
             Ok(token_data) => {
-                let encrypted_token = hash_token(token);
-                attach_encrypted_token_to_current_span(&encrypted_token);
-
                 let now = Utc::now().timestamp() as usize;
                 if token_data.claims.exp < now {
                     return Err(AuthError::TokenExpired);
@@ -170,9 +160,6 @@ impl AuthService {
             &validation,
         ) {
             Ok(token_data) => {
-                let encrypted_token = hash_token(token);
-                attach_encrypted_token_to_current_span(&encrypted_token);
-
                 let now = Utc::now().timestamp() as usize;
                 let grace_period = 300;
                 if token_data.claims.exp + grace_period < now {

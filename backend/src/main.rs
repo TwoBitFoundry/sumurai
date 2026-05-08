@@ -73,10 +73,7 @@ use middleware::auth_ip_ban::auth_ip_ban_middleware;
 use middleware::resource_authorization::{
     AuthorizedBudgetId, AuthorizedConnectionRequest, AuthorizedQuery,
 };
-use middleware::telemetry_middleware::{
-    self, attach_encrypted_token_to_current_span, hash_token, request_tracing_middleware,
-    TelemetryConfig,
-};
+use middleware::telemetry_middleware::{self, request_tracing_middleware, TelemetryConfig};
 use services::repository_service::{DatabaseRepository, PostgresRepository};
 use services::{
     otel_traces_relay::OtlpTracesRelay,
@@ -94,30 +91,75 @@ use utils::auth_cookie::{build_auth_cookie, build_clearing_auth_cookie, extract_
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let telemetry_config = TelemetryConfig::from_env();
+    let telemetry_config = TelemetryConfig::from_env()?;
     let telemetry = telemetry_middleware::init(&telemetry_config)?;
 
     let config = Config::from_env()?;
 
-    let plaid_client = Arc::new(RealPlaidClient::new(
-        std::env::var("PLAID_CLIENT_ID").unwrap_or_else(|_| "test_client_id".to_string()),
-        std::env::var("PLAID_SECRET").unwrap_or_else(|_| "test_secret".to_string()),
-        std::env::var("PLAID_ENV").unwrap_or_else(|_| "sandbox".to_string()),
-    ));
-    let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
-    let plaid_provider: Arc<dyn providers::FinancialDataProvider> =
-        Arc::new(providers::PlaidProvider::new(plaid_client.clone()));
-    let teller_provider: Arc<dyn providers::FinancialDataProvider> =
-        Arc::new(providers::TellerProvider::new()?);
+    let default_provider = config.get_default_provider().to_string();
+    let mut provider_registry = providers::ProviderRegistry::new();
 
-    let provider_registry = Arc::new(providers::ProviderRegistry::from_providers([
-        ("plaid", Arc::clone(&plaid_provider)),
-        ("teller", Arc::clone(&teller_provider)),
-    ]));
+    let plaid_client_id = std::env::var("PLAID_CLIENT_ID").ok();
+    let plaid_secret = std::env::var("PLAID_SECRET").ok();
+    let plaid_env = std::env::var("PLAID_ENV").ok();
+
+    let plaid_configured = plaid_client_id
+        .as_ref()
+        .is_some_and(|v| !v.trim().is_empty())
+        && plaid_secret.as_ref().is_some_and(|v| !v.trim().is_empty())
+        && plaid_env.as_ref().is_some_and(|v| !v.trim().is_empty());
+
+    if plaid_configured {
+        let plaid_client = Arc::new(RealPlaidClient::new(
+            plaid_client_id.clone().unwrap(),
+            plaid_secret.clone().unwrap(),
+            plaid_env.clone().unwrap(),
+        ));
+        let plaid_provider: Arc<dyn providers::FinancialDataProvider> =
+            Arc::new(providers::PlaidProvider::new(plaid_client.clone()));
+        provider_registry.register("plaid", plaid_provider);
+    } else if default_provider == "plaid" {
+        anyhow::bail!(
+            "DEFAULT_PROVIDER is plaid but PLAID_CLIENT_ID/PLAID_SECRET/PLAID_ENV are not all set"
+        );
+    } else {
+        tracing::warn!("Plaid provider not configured; skipping Plaid initialization");
+    }
+
+    match providers::TellerProvider::new() {
+        Ok(teller) => {
+            let teller_provider: Arc<dyn providers::FinancialDataProvider> = Arc::new(teller);
+            provider_registry.register("teller", teller_provider);
+        }
+        Err(e) => {
+            if default_provider == "teller" {
+                return Err(e);
+            }
+            tracing::warn!(error = %e, "Teller provider not configured; skipping Teller initialization");
+        }
+    }
+
+    let provider_registry = Arc::new(provider_registry);
+
+    let plaid_client = if plaid_configured {
+        Arc::new(RealPlaidClient::new(
+            plaid_client_id.clone().unwrap(),
+            plaid_secret.clone().unwrap(),
+            plaid_env.clone().unwrap(),
+        ))
+    } else {
+        Arc::new(RealPlaidClient::new(
+            "test_client_id".to_string(),
+            "test_secret".to_string(),
+            "sandbox".to_string(),
+        ))
+    };
+
+    let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
 
     let sync_service = Arc::new(SyncService::new(
         provider_registry.clone(),
-        config.get_default_provider(),
+        &default_provider,
     ));
 
     let analytics_service = Arc::new(AnalyticsService::new());
@@ -589,9 +631,6 @@ async fn register_user(
         ApiErrorResponse::internal_server_error("Failed to generate authentication token")
     })?;
 
-    let encrypted_token = hash_token(&auth_token.token);
-    attach_encrypted_token_to_current_span(&encrypted_token);
-
     let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
     if ttl > 0 {
         // Set session validity flag in cache with JWT TTL
@@ -615,10 +654,7 @@ async fn register_user(
 
     let expires_at = auth_token.expires_at.to_rfc3339();
 
-    tracing::info!(
-        encrypted_token = %encrypted_token,
-        "User registered successfully"
-    );
+    tracing::info!("User registered successfully");
 
     Ok((
         auth_cookie_headers(build_auth_cookie(
@@ -701,9 +737,6 @@ async fn login_user(
         ApiErrorResponse::internal_server_error("Failed to generate authentication token")
     })?;
 
-    let encrypted_token = hash_token(&auth_token.token);
-    attach_encrypted_token_to_current_span(&encrypted_token);
-
     let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
     if ttl > 0 {
         // Set session validity flag in cache with JWT TTL
@@ -727,10 +760,7 @@ async fn login_user(
 
     let expires_at = auth_token.expires_at.to_rfc3339();
 
-    tracing::info!(
-        encrypted_token = %encrypted_token,
-        "User authenticated successfully"
-    );
+    tracing::info!("User authenticated successfully");
 
     Ok((
         auth_cookie_headers(build_auth_cookie(
@@ -763,9 +793,6 @@ async fn logout_user(
 ) -> Result<(HeaderMap, Json<LogoutResponse>), StatusCode> {
     let auth_header = extract_auth_cookie_token(&headers).ok_or(StatusCode::UNAUTHORIZED)?;
 
-    let encrypted_token = hash_token(&auth_header);
-    attach_encrypted_token_to_current_span(&encrypted_token);
-
     let claims = state
         .auth_service
         .validate_token(&auth_header)
@@ -783,10 +810,7 @@ async fn logout_user(
         tracing::warn!("Failed to clear transaction cache during logout: {}", e);
     }
 
-    tracing::info!(
-        encrypted_token = %encrypted_token,
-        "User logged out successfully"
-    );
+    tracing::info!("User logged out successfully");
 
     Ok((
         auth_cookie_headers(build_clearing_auth_cookie(&state.config)),
@@ -814,9 +838,6 @@ async fn refresh_user_session(
     headers: HeaderMap,
 ) -> Result<(HeaderMap, Json<auth_models::AuthResponse>), StatusCode> {
     let auth_header = extract_auth_cookie_token(&headers).ok_or(StatusCode::UNAUTHORIZED)?;
-
-    let encrypted_token = hash_token(&auth_header);
-    attach_encrypted_token_to_current_span(&encrypted_token);
 
     let claims = state
         .auth_service
@@ -850,9 +871,6 @@ async fn refresh_user_session(
         .generate_token(user_id)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let encrypted_token = hash_token(&auth_token.token);
-    attach_encrypted_token_to_current_span(&encrypted_token);
-
     // Cache refreshed JWT in Redis with TTL
     let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
     if ttl > 0 {
@@ -873,10 +891,7 @@ async fn refresh_user_session(
         }
     }
 
-    tracing::info!(
-        encrypted_token = %encrypted_token,
-        "User session refreshed"
-    );
+    tracing::info!("User session refreshed");
 
     Ok((
         auth_cookie_headers(build_auth_cookie(

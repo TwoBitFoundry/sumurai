@@ -6,11 +6,11 @@
 - `docs/` - architecture docs, screenshots, threat model, compliance docs, and reference diagrams.
 - `nginx/` - local reverse proxy and TLS entrypoint files used by Docker Compose.
 - `docker-compose.yml` - full local stack with nginx, frontend, backend, Postgres, Redis, Seq, and certbot.
-- `docker-compose.development.yml` - local build override for the app images.
+- `docker-compose.dev.yml` - local development stack that builds app images from source.
 
 ## Build And Run
 - `docker compose up -d --build` - start the production-like stack at `http://localhost:8080`.
-- `docker compose -f docker-compose.yml -f docker-compose.development.yml up -d --build` - start the local development compose stack with source builds.
+- `docker compose -f docker-compose.dev.yml up -d --build` - start the local development compose stack with source builds.
 - `npm --prefix frontend install` - install frontend dependencies.
 - `npm --prefix frontend run dev` - Next.js dev server on `http://localhost:3001`.
 - `npm --prefix frontend run build` / `npm --prefix frontend test` - frontend build and tests.
