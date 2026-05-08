@@ -112,7 +112,10 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
             )}
           >
             <div
-              className={cn('text-2xl', 'font-bold', designTokens.text.primary, 'tracking-tight')}
+              className={cn(
+                designTokens.typography.chartDonutCenterTotal,
+                designTokens.text.primary
+              )}
             >
               {fmtUSD(total)}
             </div>

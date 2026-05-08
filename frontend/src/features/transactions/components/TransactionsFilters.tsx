@@ -51,7 +51,7 @@ export const TransactionsFilters: React.FC<Props> = ({
             placeholder="Search transactions..."
             variant="default"
             inputSize="md"
-            className={cn('placeholder:text-slate-400 dark:placeholder:text-slate-500')}
+            className={cn(designTokens.textPlaceholder.muted)}
           />
         </div>
       )}

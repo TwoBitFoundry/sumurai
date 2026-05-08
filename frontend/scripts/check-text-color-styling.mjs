@@ -31,13 +31,10 @@ function isAllowlisted(relPosix) {
   if (relPosix === 'ui/tokens/index.ts' || relPosix === 'ui/tokens/textRecipes.ts') {
     return true;
   }
-  if (relPosix.startsWith('ui/primitives/')) {
+  if (relPosix === 'ui/primitives/tokenRecipes.ts' || relPosix === 'ui/primitives/Alert.tsx') {
     return true;
   }
   if (relPosix === 'features/budgets/tokenRecipes.ts') {
-    return true;
-  }
-  if (relPosix === 'features/transactions/components/TransactionsTable.tsx') {
     return true;
   }
   if (relPosix === 'components/AccountRow.tsx') {
@@ -61,12 +58,6 @@ function isAllowlisted(relPosix) {
   if (relPosix === 'features/plaid/components/ProviderSelectionPanel.tsx') {
     return true;
   }
-  if (relPosix.endsWith('.stories.tsx') || relPosix.endsWith('.stories.ts')) {
-    return true;
-  }
-  if (relPosix.startsWith('storybook/')) {
-    return true;
-  }
   return false;
 }
 
@@ -86,17 +77,21 @@ function walkFiles(dir, acc = []) {
   return acc;
 }
 
+function stripPlaceholderColorTokens(line) {
+  return line
+    .replace(/\bplaceholder:text-[a-z]+-\d{2,3}\b/g, '')
+    .replace(/\bdark:placeholder:text-[a-z]+-\d{2,3}\b/g, '');
+}
+
 function scanFile(content) {
   const hits = [];
   const lines = content.split(/\r?\n/);
   lines.forEach((line, index) => {
-    if (line.includes('placeholder:text-')) {
-      return;
-    }
-    if (DARK_TEXT_PATTERN.test(line)) {
+    const scoped = stripPlaceholderColorTokens(line);
+    if (DARK_TEXT_PATTERN.test(scoped)) {
       hits.push({ line: index + 1, rule: 'dark-text', sample: line.trim().slice(0, 140) });
     }
-    if (LIGHT_TEXT_PATTERN.test(line)) {
+    if (LIGHT_TEXT_PATTERN.test(scoped)) {
       hits.push({ line: index + 1, rule: 'text-color', sample: line.trim().slice(0, 140) });
     }
   });

@@ -11,6 +11,10 @@ export type SemanticTextRole =
   | 'warning'
   | 'info';
 
+export const semanticPlaceholderTextRecipes = {
+  muted: 'placeholder:text-slate-400 dark:placeholder:text-slate-500',
+} as const;
+
 export const semanticTextRecipes = {
   primary: 'text-slate-900 dark:text-slate-100',
   body: 'text-slate-700 dark:text-slate-300',

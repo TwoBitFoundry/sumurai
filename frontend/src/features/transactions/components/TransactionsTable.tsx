@@ -172,13 +172,22 @@ export const TransactionsTable: React.FC<Props> = ({
                           </span>
                         </td>
                         <td
-                          className={`whitespace-nowrap px-4 py-3 text-right align-middle tabular-nums ${designTokens.typography.bodyStrong} transition-colors duration-500 ${
+                          className={cn(
+                            'whitespace-nowrap',
+                            'px-4',
+                            'py-3',
+                            'text-right',
+                            'align-middle',
+                            'tabular-nums',
+                            designTokens.typography.bodyStrong,
+                            'transition-colors',
+                            'duration-500',
                             r.amount > 0
-                              ? 'text-red-600 dark:text-red-400'
+                              ? designTokens.text.danger
                               : r.amount < 0
-                                ? 'text-green-600 dark:text-green-400'
+                                ? designTokens.text.success
                                 : designTokens.text.muted
-                          }`}
+                          )}
                         >
                           {fmtUSD(r.amount)}
                         </td>

@@ -63,4 +63,11 @@ describe('primitive typography recipes', () => {
     );
     expect(primitiveTokenRecipes.appTitleBar.tabIdle).toContain(designTokens.text.muted);
   });
+
+  it('exposes chart and confirmation typography without raw utility stacks', () => {
+    expect(designTokens.typography.chartDonutCenterTotal).toContain('text-2xl');
+    expect(designTokens.typography.chartDonutCenterTotal).toContain('font-bold');
+    expect(designTokens.typography.chartDonutCenterTotal).toContain('tracking-tight');
+    expect(designTokens.typography.confirmationCode).toBe('font-mono font-bold');
+  });
 });

@@ -11,6 +11,8 @@ export const primitiveTypographyRecipes = {
   captionStrong: 'font-caption-strong text-[0.875rem] font-semibold leading-[1.5] tracking-normal',
   label: 'font-label text-[0.75rem] font-semibold uppercase leading-none tracking-[0.14em]',
   badge: 'font-badge text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]',
+  chartDonutCenterTotal: 'font-display text-2xl font-bold tracking-tight',
+  confirmationCode: 'font-mono font-bold',
 } as const;
 
 export const primitiveTokenRecipes = {

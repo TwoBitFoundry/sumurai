@@ -2,7 +2,7 @@ import { onboardingTokenRecipes } from '@/components/onboarding/tokenRecipes';
 import { budgetTokenRecipes } from '@/features/budgets/tokenRecipes';
 import { primitiveTokenRecipes, primitiveTypographyRecipes } from '@/ui/primitives/tokenRecipes';
 import generatedTokens from './generated/tokens';
-import { semanticTextRecipes } from './textRecipes';
+import { semanticPlaceholderTextRecipes, semanticTextRecipes } from './textRecipes';
 
 export type ThemeMode = 'light' | 'dark';
 export type HeroAccent = 'slate' | 'emerald' | 'sky' | 'violet' | 'amber' | 'rose';
@@ -728,6 +728,7 @@ export const designTokens = {
     feature: featurePalettes,
   },
   text: semanticTextRecipes,
+  textPlaceholder: semanticPlaceholderTextRecipes,
   components: {
     button: primitiveTokenRecipes.button,
     connectButton: primitiveTokenRecipes.connectButton,

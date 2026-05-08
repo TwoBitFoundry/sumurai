@@ -164,6 +164,42 @@ Completed:
 - Green: implemented `frontend/scripts/check-text-color-styling.mjs`, cleaned the remaining common-copy surfaces, and updated the docs/examples.
 - Verify: `npm --prefix frontend test -- tests/scripts/text-color-audit.test.ts tests/ui/tokens/text.test.ts tests/ui/primitives/typography.test.ts tests/components/amount.test.tsx tests/components/shell-text.test.tsx`, `npm --prefix frontend run design:guard`, `npm --prefix frontend run typecheck`, and `npm --prefix frontend run lint`.
 
+## Phase 5: Residual Text And Typography Gaps
+
+Close remaining production spots where copy still mixes raw Tailwind text utilities with `designTokens.text.*`, or omits `designTokens.typography.*` for visible strings identified after Phases 1–4.
+
+Scope (initial targets):
+
+- **`frontend/src/features/analytics/components/SpendingByCategoryChart.tsx`** — Donut center total combines `text-2xl`, `font-bold`, and `tracking-tight` with `designTokens.text.primary` instead of a unified typography recipe (for example `designTokens.typography.cardTitle`, `pageTitle`, or a small chart-specific recipe exported from `designTokens` if hierarchy demands it).
+- **`frontend/src/features/transactions/components/TransactionsFilters.tsx`** — Search field uses `placeholder:text-slate-*` classes; introduce shared placeholder color recipes (for example on semantic text or field recipes in `frontend/src/ui/tokens/index.ts` / `textRecipes.ts`) and consume them here so placeholder styling stays aligned with muted/subtle intent.
+- **`frontend/src/features/transactions/components/TransactionsTable.tsx`** — Signed amount column uses raw `text-red-*` / `text-green-*` pairs; map to `designTokens.text.danger` and `designTokens.text.success` (or dedicated signed-amount recipes that compile to the same light/dark classes) while preserving the current positive/negative distinction. Revisit the file’s entry in `frontend/scripts/check-text-color-styling.mjs` allowlist only if the table can rely entirely on token recipes and the audit can still allow true edge cases.
+- **`frontend/src/views/SettingsPage.tsx`** — Delete-account confirmation helper (“Type **DELETE**”) uses raw `font-mono` and `font-bold`; route through `designTokens.typography` (and add a mono emphasis variant on typography primitives if none exists) so emphasis matches the rest of settings copy.
+
+Implementation details:
+
+- Preserve light and dark appearance per existing semantic mappings; extend recipes rather than inventing new palette hues.
+- Prefer extending `semanticTextRecipes`, field/input recipes, or `designTokens.typography` over one-off class strings in feature components.
+- Extend or adjust focused tests (transactions filters/table, settings modal copy, analytics chart snapshot or typography assertions if present) when behavior or class outputs change.
+
+Acceptance criteria:
+
+- The four surfaces above do not rely on raw `text-*` palette classes or unattributed font utilities for the cited copy; they use `designTokens.text.*` and `designTokens.typography.*` (or exported sub-recipes from the same token layer).
+- `npm --prefix frontend run design:guard`, `typecheck`, and relevant Jest tests pass.
+- No new source comments in application code.
+
+Completed:
+
+- Added `semanticPlaceholderTextRecipes` in `frontend/src/ui/tokens/textRecipes.ts` and `designTokens.textPlaceholder` in `frontend/src/ui/tokens/index.ts`; wired `TransactionsFilters` search input to `designTokens.textPlaceholder.muted`.
+- Added `primitiveTypographyRecipes.chartDonutCenterTotal` and `confirmationCode` in `frontend/src/ui/primitives/tokenRecipes.ts`; updated `SpendingByCategoryChart` center total and `SettingsPage` delete confirmation emphasis to use them with existing text roles.
+- Mapped signed amounts in `TransactionsTable` to `designTokens.text.danger`, `designTokens.text.success`, and `designTokens.text.muted`; removed `TransactionsTable.tsx` from `check-text-color-styling.mjs` allowlist after raw palette classes were eliminated from amount cells.
+- Extended `frontend/tests/ui/tokens/text.test.ts`, `frontend/tests/ui/primitives/typography.test.ts`, and added `frontend/tests/components/transactions-table-text.test.tsx`.
+
+### TDD Log
+
+- Red: extended token and typography tests for `textPlaceholder`, chart/confirmation typography recipes, and `TransactionsTable` amount-column semantic classes; confirmed failures before wiring exports and components.
+- Green: implemented recipes and component/className updates; removed TransactionsTable audit allowlist entry.
+- Verify: `npm --prefix frontend test -- tests/ui/tokens/text.test.ts tests/ui/primitives/typography.test.ts tests/components/transactions-table-text.test.ts`, `npm --prefix frontend run design:guard`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run lint`.
+
 ## Local Exceptions
 
 Keep these local or palette-specific rather than global text roles:
@@ -190,7 +226,4 @@ Keep these local or palette-specific rather than global text roles:
 
 ## Next Actions
 
-1. Implement token foundation and tests.
-2. Migrate primitives and central recipes.
-3. Migrate production app surfaces by feature area.
-4. Add guardrails and update docs after the migration is complete.
+1. None for Phase 5; later changes should keep new typography and placeholder recipes in sync with `DESIGN.md` exports when palette intent shifts.

@@ -31,4 +31,10 @@ describe('design token text recipes', () => {
     expect(designTokens.text.body).toBe('text-slate-700 dark:text-slate-300');
     expect(designTokens.text.danger).toBe('text-red-600 dark:text-red-300');
   });
+
+  it('exposes placeholder text recipes aligned with muted intent', () => {
+    expect(designTokens.textPlaceholder.muted).toBe(
+      'placeholder:text-slate-400 dark:placeholder:text-slate-500'
+    );
+  });
 });

@@ -265,7 +265,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
           <div className={cn('mb-6')}>
             <FormLabel htmlFor="confirm-delete">
-              Type <span className={cn('font-mono', 'font-bold')}>DELETE</span> to confirm
+              Type <span className={cn(designTokens.typography.confirmationCode)}>DELETE</span> to
+              confirm
             </FormLabel>
             <Input
               id="confirm-delete"
