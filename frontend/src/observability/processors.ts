@@ -1,6 +1,5 @@
 import { type Attributes, type Context, trace } from '@opentelemetry/api';
 import type { ReadableSpan, Span, SpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { AuthService } from '../services/authService';
 import { redactTokenPatterns } from './sanitization';
 
 const SENSITIVE_ENDPOINTS = [/\/api\/plaid\/exchange-token$/, /\/api\/teller\/exchange-token$/];
@@ -173,27 +172,6 @@ export class HttpRouteSpanProcessor implements SpanProcessor {
 
     if (span.name !== spanName) {
       (span as unknown as { name: string }).name = spanName;
-    }
-
-    const encryptedToken = AuthService.getEncryptedTokenHashSync();
-    const mutableSpan = span as unknown as { attributes: Record<string, unknown> };
-
-    if (encryptedToken) {
-      mutableSpan.attributes = {
-        ...mutableSpan.attributes,
-        encrypted_token: encryptedToken,
-      };
-    } else {
-      void AuthService.ensureEncryptedTokenHash()
-        .then((hash) => {
-          if (hash) {
-            mutableSpan.attributes = {
-              ...mutableSpan.attributes,
-              encrypted_token: hash,
-            };
-          }
-        })
-        .catch(() => {});
     }
   }
 

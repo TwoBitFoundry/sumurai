@@ -2,11 +2,18 @@ name: sumurai
 
 services:
   frontend:
-    image: ${SUMURAI_GHCR_PREFIX:-ghcr.io/twobitfoundry/sumurai}-frontend:${SUMURAI_IMAGE_TAG:-latest}
-    pull_policy: missing
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_OTEL_ENABLED: "true"
+        NEXT_PUBLIC_OTEL_SERVICE_NAME: sumurai-frontend
+        NEXT_PUBLIC_OTEL_SERVICE_VERSION: "1.0.0"
+        NEXT_PUBLIC_OTEL_CAPTURE_BODIES: "false"
+        NEXT_PUBLIC_OTEL_BLOCK_SENSITIVE_ENDPOINTS: "true"
     environment:
       DEFAULT_PROVIDER: teller
-      NEXT_PUBLIC_OTEL_ENABLED: "false"
+      NEXT_PUBLIC_OTEL_ENABLED: "true"
       NEXT_PUBLIC_OTEL_SERVICE_NAME: sumurai-frontend
       NEXT_PUBLIC_OTEL_SERVICE_VERSION: "1.0.0"
       NEXT_PUBLIC_OTEL_CAPTURE_BODIES: "false"
@@ -20,23 +27,24 @@ services:
       retries: 3
 
   backend:
-    image: ${SUMURAI_GHCR_PREFIX:-ghcr.io/twobitfoundry/sumurai}-backend:${SUMURAI_IMAGE_TAG:-latest}
-    pull_policy: missing
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     environment:
       REDIS_URL: redis://redis:6379
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-accounting}
 
       DEFAULT_PROVIDER: teller
-      AUTH_COOKIE_SAME_SITE: Strict
+      AUTH_COOKIE_SAME_SITE: Lax
 
-      OTEL_TRACES_EXPORTER: none
+      OTEL_TRACES_EXPORTER: console
 
       TELLER_APPLICATION_ID: ${TELLER_APPLICATION_ID:?TELLER_APPLICATION_ID is required}
       TELLER_CERT_PATH: /etc/teller/certificate.pem
       TELLER_KEY_PATH: /etc/teller/private_key.pem
-      TELLER_ENV: development
+      TELLER_ENV: sandbox
 
-      PLAID_ENV: development
+      PLAID_ENV: sandbox
 
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}

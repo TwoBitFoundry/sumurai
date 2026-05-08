@@ -7,8 +7,8 @@ This document describes the current runtime architecture, data flow, and major c
 - Frontend: a static Next.js export built from `frontend/` and served by Nginx on port 8080.
 - Backend: a Rust 1.95 Axum API in `backend/` with SQLx, JWT auth, Redis caching, and PostgreSQL persistence.
 - Providers: Teller and Plaid are both supported through a shared provider registry.
-- Observability: backend traces are exported to Seq; frontend includes browser telemetry hooks.
-- Deployment: local and development workflows run through Docker Compose.
+- Observability: OpenTelemetry end to end. The OSS compose file turns off browser export and uses `OTEL_TRACES_EXPORTER=none`; dev compose uses console export; production compose (`docker-compose.prod.yml`) enables OTLP to Seq and the full nginx template for Seq UI and ingestion.
+- Deployment: three standalone Compose files at the repo root (`docker-compose.yml`, `docker-compose.dev.yml`, `docker-compose.prod.yml`) so you pick the stack without merge overrides.
 
 ## Diagram
 
@@ -23,15 +23,14 @@ flowchart LR
 
   Backend -->|cache| Redis[(Redis)]
   Backend -->|SQLx| Postgres[(PostgreSQL)]
-  Backend -->|traces| Seq["Seq"]
+  Backend -.->|OTLP when using prod compose| Seq["Seq"]
   Backend -.->|Teller / Plaid| Providers["External Aggregators"]
 
-  subgraph "Docker Compose Network"
+  subgraph "Typical compose network"
     Nginx
     Backend
     Redis
     Postgres
-    Seq
   end
 ```
 
@@ -68,7 +67,7 @@ flowchart LR
 - Domain models live in `backend/src/models/`.
 - Tests live in `backend/src/tests/`.
 - Middleware covers auth, IP banning, resource authorization, and telemetry.
-- The backend uses Axum, SQLx, Redis, PostgreSQL, JWT access tokens, and OpenTelemetry export to Seq.
+- The backend uses Axum, SQLx, Redis, PostgreSQL, JWT access tokens, and OpenTelemetry; trace export targets depend on `OTEL_TRACES_EXPORTER` (none, console, or OTLP to a collector such as Seq in production compose).
 
 ## API Proxy
 

@@ -54,17 +54,19 @@ For finer slices while iterating, use the commands in **Frontend Development** a
 
 ## Full Stack
 
-Start the production-like stack:
+Start the **default OSS** stack (GHCR images, no Seq):
 
 ```bash
 docker compose up -d --build
 ```
 
-For source-built local development, use the development compose override:
+For **source-built** local development (console traces, Lax cookies in compose):
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.development.yml up -d --build
+docker compose -f docker-compose.dev.yml up -d --build
 ```
+
+For the **production-oriented** stack with Seq, use `docker-compose.prod.yml` and [docs/PRODUCTION_TLS.md](docs/PRODUCTION_TLS.md).
 
 Demo credentials:
 
@@ -92,9 +94,10 @@ Component stories live under `frontend/src` as `*.stories.tsx`. From the repo ro
 ```bash
 npm run storybook
 npm run storybook:build
+npm run frontend:storybook-test
 ```
 
-These delegate to `frontend/` (same as `cd frontend && npm run …`). `storybook` serves `http://localhost:6006`. `storybook:build` writes `frontend/storybook-static` (used by CI Storybook iframe smoke tests). Storybook MCP needs Storybook running first; see `AGENTS.md`.
+The root Storybook commands delegate to `frontend/` (same as `cd frontend && npm run …`). `storybook` serves `http://localhost:6006`. `storybook:build` writes `frontend/storybook-static` (used by CI Storybook iframe smoke tests). `frontend:storybook-test` runs the Storybook Vitest project from the repo root. Storybook MCP needs Storybook running first; see `AGENTS.md`.
 
 ## Backend Validation
 

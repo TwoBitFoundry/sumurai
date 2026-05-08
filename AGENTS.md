@@ -2,15 +2,17 @@
 
 ## Project Structure
 - `frontend/` - Next.js 16 + React 19 + TypeScript UI with Tailwind, Biome, Jest, Recharts, and OpenTelemetry browser instrumentation.
-- `backend/` - Rust 1.95 Axum API with SQLx, Redis, Postgres, JWT auth, provider integrations, and OpenTelemetry export to Seq.
+- `backend/` - Rust 1.95 Axum API with SQLx, Redis, Postgres, JWT auth, provider integrations, and OpenTelemetry tracing (`OTEL_TRACES_EXPORTER`: none, console, or OTLP).
 - `docs/` - architecture docs, screenshots, threat model, compliance docs, and reference diagrams.
 - `nginx/` - local reverse proxy and TLS entrypoint files used by Docker Compose.
-- `docker-compose.yml` - full local stack with nginx, frontend, backend, Postgres, Redis, Seq, and certbot.
-- `docker-compose.development.yml` - local build override for the app images.
+- `docker-compose.yml` - OSS-style deployment: prebuilt GHCR images, nginx (slim template, no Seq), frontend, backend, Postgres, Redis, optional certbot profile.
+- `docker-compose.dev.yml` - same topology as OSS but builds frontend and backend from source; console trace export and relaxed auth cookies for local use.
+- `docker-compose.prod.yml` - production-oriented stack with Seq, full nginx template (Seq UI and OTLP ingress), public 80/443, and OTLP export to Seq.
 
 ## Build And Run
-- `docker compose up -d --build` - start the production-like stack at `http://localhost:8080`.
-- `docker compose -f docker-compose.yml -f docker-compose.development.yml up -d --build` - start the local development compose stack with source builds.
+- `docker compose up -d --build` - start the default OSS stack at `http://localhost:8080` (pulls or uses local GHCR-tagged images per compose).
+- `docker compose -f docker-compose.dev.yml up -d --build` - start the development stack with local image builds.
+- `docker compose -f docker-compose.prod.yml up -d --build` - start the production-oriented stack (requires production env and secrets; see `docs/PRODUCTION_TLS.md`).
 - `npm --prefix frontend install` - install frontend dependencies.
 - `npm --prefix frontend run dev` - Next.js dev server on `http://localhost:3001`.
 - `npm --prefix frontend run build` / `npm --prefix frontend test` - frontend build and tests.
