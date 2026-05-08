@@ -18,7 +18,7 @@ jobs:
   changes:
     name: Path filters
     runs-on: ubuntu-24.04
-    if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false && !contains(join(github.event.pull_request.labels.*.name, ','), 'autorelease: pending'))
+    if: "${{ github.event_name != 'pull_request' || (github.event.pull_request.draft == false && !contains(join(github.event.pull_request.labels.*.name, ','), 'autorelease: pending')) }}"
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
