@@ -37,7 +37,7 @@ export const DashboardChartCard = ({
           />
         )}
       </div>
-      <div className={cn('flex-1', bodyClassName)}>{children}</div>
+      <div className={cn('flex-1', 'min-h-0', 'min-w-0', bodyClassName)}>{children}</div>
     </GlassCard>
   );
 };

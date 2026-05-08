@@ -9,10 +9,15 @@ export type DateRangeKey =
 export function computeDateRange(key?: DateRangeKey): { start?: string; end?: string } {
   const now = new Date();
   const y = now.getFullYear();
-  const m = now.getMonth(); // 0-based
+  const m = now.getMonth();
   const firstOfMonth = (year: number, month0: number) => new Date(year, month0, 1);
   const lastOfMonth = (year: number, month0: number) => new Date(year, month0 + 1, 0);
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  const fmt = (d: Date) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
 
   switch (key) {
     case 'current-month': {

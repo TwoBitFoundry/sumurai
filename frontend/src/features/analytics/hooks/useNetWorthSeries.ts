@@ -30,13 +30,18 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
 
   const abortRef = useRef<AbortController | null>(null);
   const hasLoadedRef = useRef(false);
+  const loadGenerationRef = useRef(0);
+  const prevAccountsLoadingRef = useRef(accountsLoading);
+  const pendingLoadAfterAccountsRef = useRef(false);
+  const accountsLoadingRef = useRef(accountsLoading);
+  accountsLoadingRef.current = accountsLoading;
 
   const { start, end } = useMemo(() => computeDateRange(range), [range]);
 
   const load = useCallback(async () => {
-    abortRef.current?.abort();
-
     if (!start || !end) {
+      abortRef.current?.abort();
+      abortRef.current = null;
       setSeries([]);
       setLoading(false);
       setRefreshing(false);
@@ -45,10 +50,13 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
       return;
     }
 
-    if (accountsLoading) {
+    if (accountsLoadingRef.current) {
+      pendingLoadAfterAccountsRef.current = true;
       return;
     }
 
+    abortRef.current?.abort();
+    const generation = ++loadGenerationRef.current;
     const ac = new AbortController();
     abortRef.current = ac;
 
@@ -86,14 +94,14 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
       setError(message);
       setSeries([]);
     } finally {
-      if (!ac.signal.aborted) {
+      if (generation === loadGenerationRef.current) {
         if (showBlockingState) {
           setLoading(false);
         }
         setRefreshing(false);
       }
     }
-  }, [start, end, isAllAccountsSelected, selectedAccountIds, allAccountIds, accountsLoading]);
+  }, [start, end, isAllAccountsSelected, selectedAccountIds, allAccountIds]);
 
   useEffect(() => {
     load();
@@ -101,6 +109,15 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
       abortRef.current?.abort();
     };
   }, [load]);
+
+  useEffect(() => {
+    const wasLoading = prevAccountsLoadingRef.current;
+    prevAccountsLoadingRef.current = accountsLoading;
+    if (wasLoading && !accountsLoading && pendingLoadAfterAccountsRef.current) {
+      pendingLoadAfterAccountsRef.current = false;
+      load();
+    }
+  }, [accountsLoading, load]);
 
   return { series, loading, refreshing, error, start, end, reload: load };
 }

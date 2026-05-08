@@ -44,8 +44,8 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
       )}
     >
       {data.length > 0 ? (
-        <div className={cn('relative', 'w-[260px]', 'h-[260px]')}>
-          <ResponsiveContainer width="100%" height="100%">
+        <div className={cn('relative', 'h-[260px]', 'w-[260px]', 'min-w-0', 'shrink-0')}>
+          <ResponsiveContainer width={260} height={260}>
             <PieChart>
               <Pie
                 dataKey="value"
