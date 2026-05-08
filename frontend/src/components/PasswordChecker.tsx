@@ -17,12 +17,11 @@ export function PasswordChecker({ validation, className }: PasswordCheckerProps)
       className={cn(
         'space-y-1.5',
         designTokens.typography.caption,
-        'text-slate-600',
-        'dark:text-slate-300',
+        designTokens.text.body,
         className
       )}
     >
-      <h3 className={cn(designTokens.typography.label, 'text-slate-700', 'dark:text-slate-200')}>
+      <h3 className={cn(designTokens.typography.label, designTokens.text.label)}>
         Password checklist
       </h3>
       <div className={cn('flex', 'flex-wrap', 'gap-1.5')}>

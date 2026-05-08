@@ -56,7 +56,7 @@ export const DisconnectModal: React.FC<DisconnectModalProps> = ({
           icon={<AlertTriangle className={cn('h-5', 'w-5')} />}
           className="text-left"
         >
-          <p className={cn(designTokens.typography.body, 'text-slate-600', 'dark:text-slate-300')}>
+          <p className={cn(designTokens.typography.body, designTokens.text.body)}>
             This will remove {accountText} and related transactions from your dashboard. This action
             cannot be undone.
           </p>

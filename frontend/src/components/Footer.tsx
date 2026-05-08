@@ -32,9 +32,7 @@ export function Footer() {
         >
           <div className={cn('flex', 'flex-col', 'gap-2', 'items-start')}>
             <img src="/tbf-logo.svg" alt="Two Bit Foundry" className={cn('h-10', 'w-auto')} />
-            <p
-              className={cn(designTokens.typography.body, 'text-slate-600', 'dark:text-slate-400')}
-            >
+            <p className={cn(designTokens.typography.body, designTokens.text.muted)}>
               Built in the open with the community
             </p>
           </div>
@@ -58,10 +56,10 @@ export function Footer() {
                 'px-4',
                 'py-2',
                 designTokens.typography.label,
+                designTokens.text.inverse,
                 'rounded-lg',
                 'bg-sky-500/80',
                 'backdrop-blur-sm',
-                'text-white',
                 'hover:bg-sky-600/80',
                 'dark:bg-sky-600/80',
                 'dark:hover:bg-sky-700/80',
@@ -87,10 +85,10 @@ export function Footer() {
                 'px-4',
                 'py-2',
                 designTokens.typography.label,
+                designTokens.text.inverse,
                 'rounded-lg',
                 'bg-amber-500/80',
                 'backdrop-blur-sm',
-                'text-white',
                 'hover:bg-amber-600/80',
                 'dark:bg-amber-600/80',
                 'dark:hover:bg-amber-700/80',
@@ -116,14 +114,13 @@ export function Footer() {
                 'px-4',
                 'py-2',
                 designTokens.typography.label,
+                designTokens.text.body,
                 'rounded-lg',
                 'border',
                 'border-slate-200',
                 'dark:border-slate-700',
                 'bg-white/50',
                 'dark:bg-slate-800/50',
-                'text-slate-700',
-                'dark:text-slate-300',
                 'hover:bg-white',
                 'dark:hover:bg-slate-800',
                 'flex',
@@ -153,9 +150,7 @@ export function Footer() {
             'dark:border-slate-700/40'
           )}
         >
-          <p
-            className={cn(designTokens.typography.caption, 'text-slate-500', 'dark:text-slate-500')}
-          >
+          <p className={cn(designTokens.typography.caption, designTokens.text.subtle)}>
             © {new Date().getFullYear()} Two Bit Foundry • Source available
           </p>
           <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-4', 'sm:gap-6')}>
@@ -163,10 +158,9 @@ export function Footer() {
               href="mailto:contact@twobitfoundry.com"
               className={cn(
                 designTokens.typography.caption,
-                'text-slate-600',
-                'dark:text-slate-400',
-                'hover:text-sky-600',
-                'dark:hover:text-sky-400'
+                designTokens.text.accent,
+                'hover:text-sky-700',
+                'dark:hover:text-sky-200'
               )}
             >
               Contact
@@ -175,10 +169,9 @@ export function Footer() {
               href="mailto:support@twobitfoundry.com"
               className={cn(
                 designTokens.typography.caption,
-                'text-slate-600',
-                'dark:text-slate-400',
-                'hover:text-sky-600',
-                'dark:hover:text-sky-400'
+                designTokens.text.accent,
+                'hover:text-sky-700',
+                'dark:hover:text-sky-200'
               )}
             >
               Support

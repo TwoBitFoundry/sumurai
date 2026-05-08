@@ -26,12 +26,7 @@ export const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
         withInnerEffects={false}
       >
         <div
-          className={cn(
-            'flex-1',
-            designTokens.typography.captionStrong,
-            'text-slate-900',
-            'dark:text-white'
-          )}
+          className={cn('flex-1', designTokens.typography.captionStrong, designTokens.text.primary)}
         >
           {message}
         </div>

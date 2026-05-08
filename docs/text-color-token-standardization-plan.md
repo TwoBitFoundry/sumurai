@@ -123,6 +123,18 @@ Acceptance criteria:
 - `typecheck` and relevant Jest tests pass.
 - Storybook stories still compile after component API stability is confirmed.
 
+Completed:
+
+- Updated the main app shell, session expiry modal, auth screens, footer, password checklist, toast, error boundary, and disconnect modal to consume semantic text roles.
+- Preserved domain-specific palette text for finance, category, and chart surfaces that intentionally encode meaning beyond the shared copy hierarchy.
+- Added focused component coverage for shared shell copy, password checklist text, session expiry text, footer copy, and toast text.
+
+### TDD Log
+
+- Red: added `frontend/tests/components/shell-text.test.tsx` to cover shared shell copy surfaces and confirmed the new assertions failed against the previous hard-coded slate text classes.
+- Green: replaced the shared production text classes in `frontend/src/App.tsx`, `frontend/src/SessionManager.tsx`, `frontend/src/Auth.tsx`, `frontend/src/components/Footer.tsx`, `frontend/src/components/PasswordChecker.tsx`, `frontend/src/components/ErrorBoundary.tsx`, `frontend/src/components/Toast.tsx`, and `frontend/src/components/DisconnectModal.tsx`.
+- Verify: `npm --prefix frontend test -- tests/components/shell-text.test.tsx tests/ui/primitives/typography.test.ts tests/components/amount.test.tsx`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, and `npm --prefix frontend run design:guard`.
+
 ## Phase 4: Guardrails And Cleanup
 
 Add a text-color audit to flag new ad hoc `text-slate-*`, broad `dark:text-*`, and raw state text classes outside approved token or recipe files.
