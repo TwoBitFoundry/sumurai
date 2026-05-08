@@ -27,14 +27,8 @@ describe('design token text recipes', () => {
   });
 
   it('maps representative text roles to paired light and dark classes', () => {
-    expect(designTokens.text.primary).toBe(
-      `text-[${generatedTokens.color['text-primary'].$value.hex}] dark:text-[${generatedTokens.color['text-primary-dark'].$value.hex}]`
-    );
-    expect(designTokens.text.body).toBe(
-      `text-[${generatedTokens.color['text-body'].$value.hex}] dark:text-[${generatedTokens.color['text-body-dark'].$value.hex}]`
-    );
-    expect(designTokens.text.danger).toBe(
-      `text-[${generatedTokens.color['text-danger'].$value.hex}] dark:text-[${generatedTokens.color['text-danger-dark'].$value.hex}]`
-    );
+    expect(designTokens.text.primary).toBe('text-slate-900 dark:text-slate-100');
+    expect(designTokens.text.body).toBe('text-slate-700 dark:text-slate-300');
+    expect(designTokens.text.danger).toBe('text-red-600 dark:text-red-300');
   });
 });

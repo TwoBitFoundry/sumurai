@@ -53,7 +53,7 @@ describe('primitive typography recipes', () => {
     expect(primitiveTokenRecipes.button.base.join(' ')).not.toContain('font-subheading');
     expect(primitiveTokenRecipes.button.base.join(' ')).not.toContain('uppercase');
     expect(primitiveTokenRecipes.button.secondary.join(' ')).toContain(designTokens.text.muted);
-    expect(primitiveTokenRecipes.button.danger.join(' ')).toContain(designTokens.text.inverse);
+    expect(primitiveTokenRecipes.button.danger.join(' ')).toContain(designTokens.text.danger);
   });
 
   it('uses semantic text recipes for dropdown and title bar chrome', () => {
