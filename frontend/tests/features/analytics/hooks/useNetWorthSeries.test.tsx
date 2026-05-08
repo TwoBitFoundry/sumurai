@@ -4,6 +4,7 @@ import { useNetWorthSeries } from '@/features/analytics/hooks/useNetWorthSeries'
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
 import { AnalyticsService } from '@/services/AnalyticsService';
 import { PlaidService } from '@/services/PlaidService';
+import { ProviderCatalog } from '@/services/ProviderCatalog';
 import type { DateRangeKey } from '@/utils/dateRanges';
 
 jest.mock('@/services/AnalyticsService', () => ({
@@ -16,6 +17,12 @@ jest.mock('@/services/PlaidService', () => ({
   PlaidService: {
     getAccounts: jest.fn(),
     getStatus: jest.fn(),
+  },
+}));
+
+jest.mock('@/services/ProviderCatalog', () => ({
+  ProviderCatalog: {
+    getAccounts: jest.fn(),
   },
 }));
 
@@ -67,6 +74,7 @@ describe('useNetWorthSeries', () => {
       connection_id: 'conn_1',
     } as any);
     jest.mocked(PlaidService.getAccounts).mockResolvedValue(mockPlaidAccounts as any);
+    jest.mocked(ProviderCatalog.getAccounts).mockResolvedValue(mockPlaidAccounts as any);
   });
 
   afterEach(() => {
@@ -92,6 +100,48 @@ describe('useNetWorthSeries', () => {
     });
 
     expect(result.current.error).toBeNull();
+  });
+
+  it('loads after account filter finishes loading', async () => {
+    const accountsDeferred = createDeferred<any[]>();
+    jest.mocked(ProviderCatalog.getAccounts).mockReturnValueOnce(accountsDeferred.promise as any);
+
+    const { result } = renderHook(
+      () => {
+        return {
+          netWorth: useNetWorthSeries('current-month' as DateRangeKey),
+          filter: useAccountFilter(),
+        };
+      },
+      {
+        wrapper: TestWrapper,
+      }
+    );
+
+    await waitFor(() => {
+      expect(result.current.filter.loading).toBe(true);
+    });
+
+    jest.mocked(AnalyticsService.getNetWorthOverTime).mockClear();
+
+    await act(async () => {
+      await result.current.netWorth.reload();
+    });
+
+    expect(AnalyticsService.getNetWorthOverTime).not.toHaveBeenCalled();
+
+    await act(async () => {
+      accountsDeferred.resolve(mockPlaidAccounts as any);
+    });
+
+    await waitFor(() => {
+      expect(AnalyticsService.getNetWorthOverTime).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(result.current.netWorth.loading).toBe(false);
+    });
+    expect(result.current.netWorth.error).toBeNull();
+    expect(result.current.netWorth.series.length).toBeGreaterThan(0);
   });
 
   it('responds to range changes and ignores aborted results', async () => {

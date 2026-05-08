@@ -31,6 +31,8 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
   const abortRef = useRef<AbortController | null>(null);
   const hasLoadedRef = useRef(false);
   const loadGenerationRef = useRef(0);
+  const prevAccountsLoadingRef = useRef(accountsLoading);
+  const pendingLoadAfterAccountsRef = useRef(false);
   const accountsLoadingRef = useRef(accountsLoading);
   accountsLoadingRef.current = accountsLoading;
 
@@ -49,6 +51,7 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
     }
 
     if (accountsLoadingRef.current) {
+      pendingLoadAfterAccountsRef.current = true;
       return;
     }
 
@@ -106,6 +109,15 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
       abortRef.current?.abort();
     };
   }, [load]);
+
+  useEffect(() => {
+    const wasLoading = prevAccountsLoadingRef.current;
+    prevAccountsLoadingRef.current = accountsLoading;
+    if (wasLoading && !accountsLoading && pendingLoadAfterAccountsRef.current) {
+      pendingLoadAfterAccountsRef.current = false;
+      load();
+    }
+  }, [accountsLoading, load]);
 
   return { series, loading, refreshing, error, start, end, reload: load };
 }
