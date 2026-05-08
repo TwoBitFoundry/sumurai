@@ -240,13 +240,15 @@ describe('useNetWorthSeries', () => {
 
   it('exposes refreshing during pending refetches', async () => {
     const deferred = createDeferred<{ date: string; value: number }[]>();
+    const settled = [
+      { date: '2024-04-01', value: 1000 },
+      { date: '2024-04-02', value: 1100 },
+    ];
 
     jest
       .mocked(AnalyticsService.getNetWorthOverTime)
-      .mockResolvedValueOnce([
-        { date: '2024-04-01', value: 1000 },
-        { date: '2024-04-02', value: 1100 },
-      ])
+      .mockResolvedValueOnce(settled)
+      .mockResolvedValueOnce(settled)
       .mockReturnValueOnce(deferred.promise as any);
 
     let accountFilterHook: ReturnType<typeof useAccountFilter>;

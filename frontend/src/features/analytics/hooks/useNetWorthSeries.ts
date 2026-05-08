@@ -30,13 +30,16 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
 
   const abortRef = useRef<AbortController | null>(null);
   const hasLoadedRef = useRef(false);
+  const loadGenerationRef = useRef(0);
+  const accountsLoadingRef = useRef(accountsLoading);
+  accountsLoadingRef.current = accountsLoading;
 
   const { start, end } = useMemo(() => computeDateRange(range), [range]);
 
   const load = useCallback(async () => {
-    abortRef.current?.abort();
-
     if (!start || !end) {
+      abortRef.current?.abort();
+      abortRef.current = null;
       setSeries([]);
       setLoading(false);
       setRefreshing(false);
@@ -45,10 +48,12 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
       return;
     }
 
-    if (accountsLoading) {
+    if (accountsLoadingRef.current) {
       return;
     }
 
+    abortRef.current?.abort();
+    const generation = ++loadGenerationRef.current;
     const ac = new AbortController();
     abortRef.current = ac;
 
@@ -86,14 +91,14 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
       setError(message);
       setSeries([]);
     } finally {
-      if (!ac.signal.aborted) {
+      if (generation === loadGenerationRef.current) {
         if (showBlockingState) {
           setLoading(false);
         }
         setRefreshing(false);
       }
     }
-  }, [start, end, isAllAccountsSelected, selectedAccountIds, allAccountIds, accountsLoading]);
+  }, [start, end, isAllAccountsSelected, selectedAccountIds, allAccountIds]);
 
   useEffect(() => {
     load();

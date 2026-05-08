@@ -281,8 +281,8 @@ const DashboardPage: React.FC = () => {
                   />
                 </div>
               ) : (
-                <div className={cn('flex-1', 'min-h-[240px]', 'overflow-hidden')}>
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className={cn('h-[240px]', 'w-full', 'min-w-0', 'overflow-hidden')}>
+                  <ResponsiveContainer width="100%" height={240}>
                     <AreaChart data={netSeries} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
                       <defs>
                         <linearGradient id="netGradient" x1="0" y1="0" x2="0" y2="1">
