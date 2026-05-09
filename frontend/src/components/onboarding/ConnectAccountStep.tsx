@@ -1,3 +1,4 @@
+import { onboardingTokenRecipes } from '@/components/onboarding/tokenRecipes';
 import { Alert, Badge, Button } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
 import { designTokens } from '@/ui/tokens';
@@ -38,11 +39,11 @@ function FeatureCard({
   palette,
 }: ConnectAccountProviderContent['features'][number]) {
   return (
-    <div className={cn(designTokens.components.onboarding.stepCard)}>
-      <div className={cn(designTokens.components.onboarding.hoverOverlay)} />
+    <div className={cn(onboardingTokenRecipes.stepCard)}>
+      <div className={cn(onboardingTokenRecipes.hoverOverlay)} />
       <span
         className={cn(
-          designTokens.components.onboarding.iconWell,
+          onboardingTokenRecipes.iconWell,
           palette.ring,
           palette.glow,
           'transition-all duration-200 ease-out group-hover:scale-105'
@@ -50,10 +51,10 @@ function FeatureCard({
         aria-hidden="true"
       >
         <span className={cn('absolute inset-0 bg-gradient-to-br', palette.gradient)} />
-        <span className={cn(designTokens.components.onboarding.iconGlow)} />
+        <span className={cn(onboardingTokenRecipes.iconGlow)} />
         <Icon className={cn('relative h-5 w-5', palette.icon)} strokeWidth={1.7} />
       </span>
-      <h4 className={cn(designTokens.components.onboarding.titleStrong)}>{title}</h4>
+      <h4 className={cn(onboardingTokenRecipes.titleStrong)}>{title}</h4>
     </div>
   );
 }
@@ -65,11 +66,11 @@ function HighlightCard({
   palette,
 }: ConnectAccountProviderContent['highlights'][number]) {
   return (
-    <div className={cn(designTokens.components.onboarding.providerRow)}>
-      <div className={cn(designTokens.components.onboarding.providerHoverOverlay)} />
+    <div className={cn(onboardingTokenRecipes.providerRow)}>
+      <div className={cn(onboardingTokenRecipes.providerHoverOverlay)} />
       <span
         className={cn(
-          designTokens.components.onboarding.iconWellLarge,
+          onboardingTokenRecipes.iconWellLarge,
           palette.ring,
           palette.glow,
           'transition-all duration-200 ease-out group-hover:scale-105'
@@ -77,15 +78,15 @@ function HighlightCard({
         aria-hidden="true"
       >
         <span className={cn('absolute inset-0 bg-gradient-to-br', palette.gradient)} />
-        <span className={cn(designTokens.components.onboarding.providerIconGlow)} />
+        <span className={cn(onboardingTokenRecipes.providerIconGlow)} />
         <Icon
           className={cn('relative h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)}
           strokeWidth={1.7}
         />
       </span>
       <div className="relative z-10 space-y-1">
-        <p className={cn(designTokens.components.onboarding.titleStrongInline)}>{title}</p>
-        <p className={cn(designTokens.components.onboarding.rowBodyMuted)}>{body}</p>
+        <p className={cn(onboardingTokenRecipes.titleStrongInline)}>{title}</p>
+        <p className={cn(onboardingTokenRecipes.rowBodyMuted)}>{body}</p>
       </div>
     </div>
   );
@@ -225,9 +226,7 @@ export function ConnectAccountStep({
         )}
 
         <div className={cn('flex flex-col gap-4')}>
-          <div className={cn(designTokens.components.onboarding.eyebrowCaps)}>
-            {content.highlightLabel}
-          </div>
+          <div className={cn(onboardingTokenRecipes.eyebrowCaps)}>{content.highlightLabel}</div>
           <div className={cn('grid gap-3 sm:grid-cols-3')}>
             {content.features.map((feature) => (
               <FeatureCard key={feature.title} {...feature} />
@@ -237,9 +236,7 @@ export function ConnectAccountStep({
       </div>
 
       <div className={cn('flex flex-col gap-5 self-start mt-[52px]')}>
-        <div className={cn(designTokens.components.onboarding.eyebrowCaps)}>
-          {content.highlightMeta}
-        </div>
+        <div className={cn(onboardingTokenRecipes.eyebrowCaps)}>{content.highlightMeta}</div>
         <div className={cn('flex flex-col gap-4')}>
           <div className={cn('grid auto-rows-fr gap-3 sm:grid-cols-2')}>
             {content.highlights.map((highlight) => (

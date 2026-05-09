@@ -1,8 +1,8 @@
 import { cn } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
 import { fmtUSD } from '../../../utils/format';
+import { budgetTokenRecipes } from '../tokenRecipes';
 
-const bp = designTokens.components.budgetProgress;
+const bp = budgetTokenRecipes.budgetProgress;
 
 export function BudgetProgress({ amount, spent }: { amount: number; spent: number }) {
   const percent = amount > 0 ? (spent / amount) * 100 : 0;

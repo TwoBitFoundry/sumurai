@@ -1,5 +1,6 @@
 import type React from 'react';
 import { designTokens } from '@/ui/tokens';
+import { primitiveTokenRecipes } from './recipes';
 import { cn } from './utils';
 
 export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -46,11 +47,11 @@ export function EmptyState({
       )}
       {...props}
     >
-      <div className={cn(...designTokens.components.emptyState.iconWrapper)}>
+      <div className={cn(...primitiveTokenRecipes.emptyState.iconWrapper)}>
         <Icon className={cn('h-6 w-6 md:h-8 md:w-8 lg:h-10 lg:w-10')} />
       </div>
-      <div className={cn(designTokens.components.emptyState.title)}>{title}</div>
-      <div className={cn(designTokens.components.emptyState.description)}>{description}</div>
+      <div className={cn(primitiveTokenRecipes.emptyState.title)}>{title}</div>
+      <div className={cn(primitiveTokenRecipes.emptyState.description)}>{description}</div>
       {action && <div className={cn('mt-2')}>{action}</div>}
     </div>
   );

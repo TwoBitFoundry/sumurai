@@ -4,18 +4,19 @@ import Image from 'next/image';
 import React from 'react';
 import { designTokens } from '@/ui/tokens';
 import { Button } from './Button';
+import { primitiveTokenRecipes } from './recipes';
 import { cn } from './utils';
 
-const titleBarVariants = cva([...designTokens.components.appTitleBar.base], {
+const titleBarVariants = cva([...primitiveTokenRecipes.appTitleBar.base], {
   variants: {
     state: {
-      unauthenticated: [...designTokens.components.appTitleBar.shell],
-      onboarding: [...designTokens.components.appTitleBar.shell],
-      authenticated: [...designTokens.components.appTitleBar.shell],
+      unauthenticated: [...primitiveTokenRecipes.appTitleBar.shell],
+      onboarding: [...primitiveTokenRecipes.appTitleBar.shell],
+      authenticated: [...primitiveTokenRecipes.appTitleBar.shell],
     },
     scrolled: {
-      true: designTokens.components.appTitleBar.height.scrolled,
-      false: designTokens.components.appTitleBar.height.default,
+      true: primitiveTokenRecipes.appTitleBar.height.scrolled,
+      false: primitiveTokenRecipes.appTitleBar.height.default,
     },
   },
   defaultVariants: {
@@ -98,11 +99,11 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
             <div className={cn('flex', 'items-center', 'gap-6')}>
               <div
                 className={cn(
-                  ...designTokens.components.appTitleBar.logo.container,
+                  ...primitiveTokenRecipes.appTitleBar.logo.container,
                   scrolled
-                    ? designTokens.components.appTitleBar.logo.scrolled
-                    : designTokens.components.appTitleBar.logo.default,
-                  designTokens.components.appTitleBar.logo.wordmark
+                    ? primitiveTokenRecipes.appTitleBar.logo.scrolled
+                    : primitiveTokenRecipes.appTitleBar.logo.default,
+                  primitiveTokenRecipes.appTitleBar.logo.wordmark
                 )}
               >
                 <Image
@@ -126,8 +127,8 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                       variant={currentTab === key ? 'tabActive' : 'tab'}
                       size={chromeSize}
                       className={cn(
-                        designTokens.components.appTitleBar.tabHalo,
-                        currentTab !== key ? designTokens.components.appTitleBar.tabIdle : undefined
+                        primitiveTokenRecipes.appTitleBar.tabHalo,
+                        currentTab !== key ? primitiveTokenRecipes.appTitleBar.tabIdle : undefined
                       )}
                     >
                       {label}
@@ -150,7 +151,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                 onClick={onThemeToggle}
                 variant="secondary"
                 size={chromeSize}
-                className={cn(designTokens.components.appTitleBar.themeToggle)}
+                className={cn(primitiveTokenRecipes.appTitleBar.themeToggle)}
                 aria-label="Toggle theme"
                 title="Toggle theme"
               >
@@ -170,7 +171,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                   className={cn(
                     'rounded-xl',
                     currentTab !== 'settings'
-                      ? designTokens.components.appTitleBar.settingsIdle
+                      ? primitiveTokenRecipes.appTitleBar.settingsIdle
                       : undefined
                   )}
                   aria-label="Settings"

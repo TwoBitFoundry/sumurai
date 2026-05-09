@@ -1,7 +1,9 @@
 import type { LucideIcon } from 'lucide-react';
 import { LayoutDashboard, ReceiptText, Target } from 'lucide-react';
+import { onboardingTokenRecipes } from '@/components/onboarding/tokenRecipes';
 import { Badge, cn } from '@/ui/primitives';
 import { designTokens } from '@/ui/tokens';
+import { featurePalettes } from '@/ui/tokens-runtime';
 
 const dashboardHero = '/dashboard-hero.png';
 
@@ -25,29 +27,29 @@ const welcomeFeatures: WelcomeFeature[] = [
     icon: LayoutDashboard,
     title: 'Dashboard',
     copy: 'Gain real insights into your finances, all in one place.',
-    palette: designTokens.palettes.feature.welcome.sky,
+    palette: featurePalettes.welcome.sky,
   },
   {
     icon: ReceiptText,
     title: 'Transactions',
     copy: 'Track your spending line by line by account.',
-    palette: designTokens.palettes.feature.welcome.amber,
+    palette: featurePalettes.welcome.amber,
   },
   {
     icon: Target,
     title: 'Budgets',
     copy: 'Set goals for your spending habits, and stick to them.',
-    palette: designTokens.palettes.feature.welcome.purple,
+    palette: featurePalettes.welcome.purple,
   },
 ];
 
 function FeatureCard({ icon: Icon, title, copy, palette }: WelcomeFeature) {
   return (
-    <div className={cn(designTokens.components.onboarding.stepCard)}>
-      <div className={cn(designTokens.components.onboarding.hoverOverlay)} />
+    <div className={cn(onboardingTokenRecipes.stepCard)}>
+      <div className={cn(onboardingTokenRecipes.hoverOverlay)} />
       <span
         className={cn(
-          designTokens.components.onboarding.iconWell,
+          onboardingTokenRecipes.iconWell,
           palette.ring,
           palette.glow,
           'transition-all duration-200 ease-out group-hover:scale-105'
@@ -55,14 +57,14 @@ function FeatureCard({ icon: Icon, title, copy, palette }: WelcomeFeature) {
         aria-hidden="true"
       >
         <span className={cn('absolute inset-0 bg-gradient-to-br', palette.gradient)} />
-        <span className={cn(designTokens.components.onboarding.iconGlow)} />
+        <span className={cn(onboardingTokenRecipes.iconGlow)} />
         <Icon
           className={cn('relative h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)}
           strokeWidth={1.7}
         />
       </span>
-      <p className={cn(designTokens.components.onboarding.titleStrong)}>{title}</p>
-      <p className={cn(designTokens.components.onboarding.bodyMuted)}>{copy}</p>
+      <p className={cn(onboardingTokenRecipes.titleStrong)}>{title}</p>
+      <p className={cn(onboardingTokenRecipes.bodyMuted)}>{copy}</p>
     </div>
   );
 }
@@ -119,7 +121,7 @@ export function WelcomeStep() {
         </div>
 
         <div className={cn('flex flex-col gap-4')}>
-          <div className={cn(designTokens.components.onboarding.eyebrowCaps)}>What you'll see</div>
+          <div className={cn(onboardingTokenRecipes.eyebrowCaps)}>What you'll see</div>
           <div className={cn('grid gap-3 sm:grid-cols-3')}>
             {welcomeFeatures.map((feature) => (
               <FeatureCard key={feature.title} {...feature} />
@@ -132,14 +134,14 @@ export function WelcomeStep() {
         <div
           className={cn(
             'mb-3 mt-[52px] flex items-center justify-between sm:mb-4',
-            designTokens.components.onboarding.eyebrowCaps
+            onboardingTokenRecipes.eyebrowCaps
           )}
         >
           <span>Live Dashboard Preview</span>
         </div>
         <div
           className={cn(
-            designTokens.components.onboarding.previewFrame,
+            onboardingTokenRecipes.previewFrame,
             'transition-all duration-300 ease-out'
           )}
         >

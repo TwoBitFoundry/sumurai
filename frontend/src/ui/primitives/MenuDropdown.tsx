@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type React from 'react';
 import { cloneElement, isValidElement, useState } from 'react';
 import { designTokens } from '@/ui/tokens';
+import { primitiveTokenRecipes } from './recipes';
 import { cn } from './utils';
 
 export interface MenuDropdownProps {
@@ -61,7 +62,7 @@ export function MenuDropdown({
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
-            className={cn(designTokens.components.menuDropdown.content, contentClassName)}
+            className={cn(primitiveTokenRecipes.menuDropdown.content, contentClassName)}
             onClick={() => setOpen(false)}
           >
             {children}
@@ -91,7 +92,7 @@ export function MenuItem({ icon, children, className, ...props }: MenuItemProps)
   return (
     <button
       type="button"
-      className={cn(designTokens.components.menuDropdown.item, className)}
+      className={cn(primitiveTokenRecipes.menuDropdown.item, className)}
       {...props}
     >
       {icon}

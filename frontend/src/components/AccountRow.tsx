@@ -1,6 +1,7 @@
 import type React from 'react';
 import { cn, GlassCard, RequirementPill } from '@/ui/primitives';
 import { designTokens } from '@/ui/tokens';
+import { accountTypeDot } from '@/ui/tokens-runtime';
 
 interface Account {
   id: string;
@@ -90,7 +91,7 @@ const AccountTypeDot: React.FC<{ type: Account['type'] }> = ({ type }) => {
   return (
     <span
       className={cn('inline-block', 'h-2.5', 'w-2.5', 'rounded-full')}
-      style={{ backgroundColor: designTokens.colors.accountTypeDot[type] }}
+      style={{ backgroundColor: accountTypeDot[type] }}
     />
   );
 };

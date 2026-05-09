@@ -1,25 +1,26 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 import { designTokens } from '@/ui/tokens';
+import { primitiveTokenRecipes } from './recipes';
 import { cn } from './utils';
 
-const glassCardVariants = cva([...designTokens.components.glassCard.base], {
+const glassCardVariants = cva([...primitiveTokenRecipes.glassCard.base], {
   variants: {
     variant: {
-      default: [...designTokens.components.glassCard.default],
-      auth: [...designTokens.components.glassCard.auth],
-      accent: [...designTokens.components.glassCard.accent],
+      default: [...primitiveTokenRecipes.glassCard.default],
+      auth: [...primitiveTokenRecipes.glassCard.auth],
+      accent: [...primitiveTokenRecipes.glassCard.accent],
     },
     rounded: {
-      default: designTokens.components.glassCard.rounded.default,
-      lg: designTokens.components.glassCard.rounded.lg,
-      xl: designTokens.components.glassCard.rounded.xl,
+      default: primitiveTokenRecipes.glassCard.rounded.default,
+      lg: primitiveTokenRecipes.glassCard.rounded.lg,
+      xl: primitiveTokenRecipes.glassCard.rounded.xl,
     },
     padding: {
-      none: designTokens.components.glassCard.padding.none,
-      sm: designTokens.components.glassCard.padding.sm,
-      md: designTokens.components.glassCard.padding.md,
-      lg: designTokens.components.glassCard.padding.lg,
+      none: primitiveTokenRecipes.glassCard.padding.none,
+      sm: primitiveTokenRecipes.glassCard.padding.sm,
+      md: primitiveTokenRecipes.glassCard.padding.md,
+      lg: primitiveTokenRecipes.glassCard.padding.lg,
     },
   },
   defaultVariants: {

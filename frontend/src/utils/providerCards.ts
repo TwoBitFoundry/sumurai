@@ -1,8 +1,10 @@
 import type { LucideIcon } from 'lucide-react';
 import { Building2, Eye, Fingerprint, Landmark, ShieldCheck, Sparkles, Zap } from 'lucide-react';
+import { onboardingTokenRecipes } from '@/components/onboarding/tokenRecipes';
 import type { FinancialProvider } from '@/types/api';
 import { cn } from '@/ui/primitives';
 import { designTokens } from '@/ui/tokens';
+import { featurePalettes } from '@/ui/tokens-runtime';
 
 export type ProviderCardConfig = {
   title: string;
@@ -94,8 +96,8 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
   displayName: 'Plaid',
   eyebrow: {
     text: 'Plaid Secure Link',
-    backgroundClassName: cn(designTokens.components.onboarding.providerConnect.plaidEyebrowBg),
-    textClassName: cn(designTokens.components.onboarding.providerConnect.plaidEyebrowText),
+    backgroundClassName: cn(onboardingTokenRecipes.providerConnect.plaidEyebrowBg),
+    textClassName: cn(onboardingTokenRecipes.providerConnect.plaidEyebrowText),
   },
   heroTitle: 'Connect your accounts',
   heroDescription:
@@ -107,19 +109,19 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: Landmark,
       title: 'Global accounts & balances',
       body: 'See your checking, savings, cards, and up-to-date balances in one place.',
-      palette: designTokens.palettes.feature.providerFeature.emerald,
+      palette: featurePalettes.providerFeature.emerald,
     },
     {
       icon: Zap,
       title: 'Detailed transactions',
       body: 'New purchases and payments appear automatically for accurate budgets.',
-      palette: designTokens.palettes.feature.providerFeature.amber,
+      palette: featurePalettes.providerFeature.amber,
     },
     {
       icon: Sparkles,
       title: 'Rich categorizations',
       body: 'Merchants and categories are tidied so reports are easy to understand.',
-      palette: designTokens.palettes.feature.providerFeature.purple,
+      palette: featurePalettes.providerFeature.purple,
     },
   ],
   highlights: [
@@ -127,25 +129,25 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: Building2,
       title: 'Independent linking',
       body: 'Credentials never touch our servers—Plaid brokers every session.',
-      palette: designTokens.palettes.feature.highlight.amber,
+      palette: featurePalettes.highlight.amber,
     },
     {
       icon: ShieldCheck,
       title: 'Bank-grade protection',
       body: 'The connection is encrypted and identity-verified before any data is shared.',
-      palette: designTokens.palettes.feature.highlight.sky,
+      palette: featurePalettes.highlight.sky,
     },
     {
       icon: Fingerprint,
       title: 'You stay in control',
       body: 'Disconnect anytime from Settings—data access stops instantly.',
-      palette: designTokens.palettes.feature.highlight.violet,
+      palette: featurePalettes.highlight.violet,
     },
     {
       icon: Eye,
       title: 'Preview first',
       body: 'Not ready yet? Explore demo insights and link when you are.',
-      palette: designTokens.palettes.feature.highlight.fuchsia,
+      palette: featurePalettes.highlight.fuchsia,
     },
   ],
   cta: {
@@ -160,8 +162,8 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
   displayName: 'Teller',
   eyebrow: {
     text: 'Teller Connect',
-    backgroundClassName: cn(designTokens.components.onboarding.providerConnect.tellerEyebrowBg),
-    textClassName: cn(designTokens.components.onboarding.providerConnect.tellerEyebrowText),
+    backgroundClassName: cn(onboardingTokenRecipes.providerConnect.tellerEyebrowBg),
+    textClassName: cn(onboardingTokenRecipes.providerConnect.tellerEyebrowText),
   },
   heroTitle: 'Connect your accounts',
   heroDescription:
@@ -173,19 +175,19 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: Landmark,
       title: 'US Accounts & balances',
       body: 'See your checking, savings, cards, and up-to-date balances in one place.',
-      palette: designTokens.palettes.feature.providerFeature.emerald,
+      palette: featurePalettes.providerFeature.emerald,
     },
     {
       icon: Zap,
       title: 'Recent transactions',
       body: 'New purchases and payments appear automatically for accurate budgets.',
-      palette: designTokens.palettes.feature.providerFeature.amber,
+      palette: featurePalettes.providerFeature.amber,
     },
     {
       icon: Sparkles,
       title: 'Clean categories',
       body: 'Merchants and categories are tidied so reports are easy to understand.',
-      palette: designTokens.palettes.feature.providerFeature.purple,
+      palette: featurePalettes.providerFeature.purple,
     },
   ],
   highlights: [
@@ -193,25 +195,25 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
       icon: Eye,
       title: 'Read-only by design',
       body: "We can't move money or make changes—only view balances and transactions.",
-      palette: designTokens.palettes.feature.highlight.sky,
+      palette: featurePalettes.highlight.sky,
     },
     {
       icon: Fingerprint,
       title: "You're in control",
       body: 'Disconnect anytime from settings; access stops immediately.',
-      palette: designTokens.palettes.feature.highlight.violet,
+      palette: featurePalettes.highlight.violet,
     },
     {
       icon: ShieldCheck,
       title: 'Bank-grade protection',
       body: 'The connection is encrypted and identity-verified before any data is shared.',
-      palette: designTokens.palettes.feature.highlight.emerald,
+      palette: featurePalettes.highlight.emerald,
     },
     {
       icon: Building2,
       title: 'Fully transparent',
       body: 'Every sync is logged so you can see what was accessed and when.',
-      palette: designTokens.palettes.feature.highlight.amber,
+      palette: featurePalettes.highlight.amber,
     },
   ],
   cta: {

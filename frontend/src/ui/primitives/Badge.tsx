@@ -1,6 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 import { designTokens } from '@/ui/tokens';
+import { primitiveTokenRecipes } from './recipes';
 import { cn } from './utils';
 
 export const badgeSizeStyles = {
@@ -10,12 +11,12 @@ export const badgeSizeStyles = {
   lg: 'px-3.5 py-1.5 rounded-full',
 } as const;
 
-const badgeVariants = cva([...designTokens.components.badge.base], {
+const badgeVariants = cva([...primitiveTokenRecipes.badge.base], {
   variants: {
     variant: {
-      default: [...designTokens.components.badge.default],
-      primary: [...designTokens.components.badge.primary],
-      feature: [...designTokens.components.badge.feature],
+      default: [...primitiveTokenRecipes.badge.default],
+      primary: [...primitiveTokenRecipes.badge.primary],
+      feature: [...primitiveTokenRecipes.badge.feature],
     },
     size: {
       xs: badgeSizeStyles.xs,

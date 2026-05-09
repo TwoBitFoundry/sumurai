@@ -9,6 +9,7 @@ import { PageLayout } from '@/layouts/PageLayout';
 import { sampleBankConnections } from '@/storybook/fixtures/plaid';
 import { cn } from '@/ui/primitives';
 import { designTokens } from '@/ui/tokens';
+import { budgetTokenRecipes } from '../../features/budgets/tokenRecipes';
 
 export function AccountsProviderPickerSlice() {
   return (
@@ -50,7 +51,7 @@ export function AccountsConnectedScreenSlice(props: {
     latestSync: props.connectionsEmpty ? null : '2026-05-01T12:00:00.000Z',
   };
 
-  const syncButtonClasses = cn(designTokens.components.actions.accountsToolbar);
+  const syncButtonClasses = cn(budgetTokenRecipes.actions.accountsToolbar);
 
   const actions = (
     <>

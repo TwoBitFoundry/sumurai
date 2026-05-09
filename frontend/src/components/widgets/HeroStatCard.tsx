@@ -1,6 +1,8 @@
 import React, { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/ui/primitives';
-import { designTokens, getHeroAccentTheme } from '@/ui/tokens';
+import { heroStatCard as heroStatCardRecipes, pill as pillRecipes } from '@/ui/primitives/recipes';
+import { designTokens } from '@/ui/tokens';
+import { getHeroAccentTheme, heroAccents } from '@/ui/tokens-runtime';
 import { getTagThemeForCategory } from '../../utils/categories';
 
 type Accent = 'emerald' | 'sky' | 'violet' | 'amber' | 'slate' | 'rose';
@@ -58,7 +60,7 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
   minHeightClassName = 'min-h-[120px]',
 }) => {
   const accent = accentProp ?? accentFromIndex(index);
-  const styles = getHeroAccentTheme(accent);
+  const styles = heroAccents[accent] ?? getHeroAccentTheme(accent);
   const pillsRef = useRef<HTMLDivElement>(null);
   const [showLeftFade, setShowLeftFade] = useState(false);
   const [showRightFade, setShowRightFade] = useState(false);
@@ -82,10 +84,10 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
   } as CSSProperties;
 
   return (
-    <div className={classNames(designTokens.components.heroStatCard.base, className)}>
+    <div className={classNames(heroStatCardRecipes.base, className)}>
       <div
         className={classNames(
-          designTokens.components.heroStatCard.shell,
+          heroStatCardRecipes.shell,
           styles.border,
           styles.borderDark,
           styles.hoverBorder,
@@ -110,11 +112,8 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
             backgroundImage: `linear-gradient(135deg, ${styles.gradFrom}33, ${styles.gradVia}1f, transparent 70%)`,
           }}
         />
-        <div className={cn(designTokens.components.heroStatCard.ring)}>
-          <div
-            className={cn(designTokens.components.heroStatCard.ringLine)}
-            style={ringColorStyle}
-          />
+        <div className={cn(heroStatCardRecipes.ring)}>
+          <div className={cn(heroStatCardRecipes.ringLine)} style={ringColorStyle} />
         </div>
 
         <div
@@ -125,28 +124,24 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
         >
           <div className="flex items-center gap-2">
             {icon ? <span className={classNames('h-4 w-4', styles.icon)}>{icon}</span> : null}
-            <div className={cn(designTokens.components.heroStatCard.title)}>{title}</div>
+            <div className={cn(heroStatCardRecipes.title)}>{title}</div>
           </div>
           <div className="flex items-baseline gap-2">
-            <div className={cn(designTokens.components.heroStatCard.value)}>{value}</div>
-            {suffix ? (
-              <div className={cn(designTokens.components.heroStatCard.suffix)}>{suffix}</div>
-            ) : null}
+            <div className={cn(heroStatCardRecipes.value)}>{value}</div>
+            {suffix ? <div className={cn(heroStatCardRecipes.suffix)}>{suffix}</div> : null}
           </div>
           {subtext || (pills && pills.length > 0) ? (
             <div className="relative">
               <div
                 ref={pillsRef}
                 onScroll={checkScroll}
-                className={cn(designTokens.components.heroStatCard.footerInner)}
+                className={cn(heroStatCardRecipes.footerInner)}
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {subtext ? (
-                  <span
-                    className={classNames(designTokens.components.pill.base, styles.defaultPill)}
-                  >
+                  <span className={classNames(pillRecipes.base, styles.defaultPill)}>
                     <span
-                      className={classNames(designTokens.components.pill.dot, styles.defaultDot)}
+                      className={classNames(pillRecipes.dot, styles.defaultDot)}
                       aria-hidden="true"
                     />
                     <span className="whitespace-nowrap">{subtext}</span>
@@ -157,12 +152,9 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
                   if (p.type === 'category') {
                     const theme = getTagThemeForCategory(p.categoryName || p.label);
                     return (
-                      <span
-                        key={idx}
-                        className={classNames(designTokens.components.pill.base, theme.tag)}
-                      >
+                      <span key={idx} className={classNames(pillRecipes.base, theme.tag)}>
                         <span
-                          className={classNames(designTokens.components.pill.dot, theme.dot)}
+                          className={classNames(pillRecipes.dot, theme.dot)}
                           aria-hidden="true"
                         />
                         <span className="whitespace-nowrap">{p.label}</span>
@@ -173,29 +165,21 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
                   let wrapperClass = styles.defaultPill;
                   let dotClass = styles.defaultDot;
                   if (p.type === 'semantic' && p.tone) {
-                    const semantic = designTokens.components.heroStatCard.semantic[p.tone];
+                    const semantic = heroStatCardRecipes.semantic[p.tone];
                     wrapperClass = semantic.wrapper;
                     dotClass = semantic.dot;
                   }
 
                   return (
-                    <span
-                      key={idx}
-                      className={classNames(designTokens.components.pill.base, wrapperClass)}
-                    >
-                      <span
-                        className={classNames(designTokens.components.pill.dot, dotClass)}
-                        aria-hidden="true"
-                      />
+                    <span key={idx} className={classNames(pillRecipes.base, wrapperClass)}>
+                      <span className={classNames(pillRecipes.dot, dotClass)} aria-hidden="true" />
                       <span className="whitespace-nowrap">{p.label}</span>
                     </span>
                   );
                 })}
               </div>
-              {showLeftFade ? <div className={cn(designTokens.components.pill.fadeLeft)} /> : null}
-              {showRightFade ? (
-                <div className={cn(designTokens.components.pill.fadeRight)} />
-              ) : null}
+              {showLeftFade ? <div className={cn(pillRecipes.fadeLeft)} /> : null}
+              {showRightFade ? <div className={cn(pillRecipes.fadeRight)} /> : null}
             </div>
           ) : null}
         </div>

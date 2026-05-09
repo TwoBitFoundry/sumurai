@@ -2,11 +2,12 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Receipt } from 'lucide-react';
 import type React from 'react';
-import { cn, EmptyState } from '@/ui/primitives';
+import { cn, EmptyState, PaginationButton, Pill } from '@/ui/primitives';
+import { pill as pillRecipes, transactions as transactionRecipes } from '@/ui/primitives/recipes';
 import { designTokens } from '@/ui/tokens';
 import { dashboardTokenRecipes } from '@/views/tokenRecipes';
 import type { Transaction } from '../../../types/api';
-import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
+import { formatCategoryName } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
 
 interface Props {
@@ -121,15 +122,12 @@ export const TransactionsTable: React.FC<Props> = ({
                 >
                   {items.map((r, i) => {
                     const catName = resolveCategoryName(r);
-                    const theme = getTagThemeForCategory(catName);
                     return (
                       <tr
                         key={r.id}
                         className={cn(
-                          designTokens.components.transactions.row.shell,
-                          i % 2
-                            ? designTokens.components.transactions.row.odd
-                            : designTokens.components.transactions.row.even
+                          transactionRecipes.row.shell,
+                          i % 2 ? transactionRecipes.row.odd : transactionRecipes.row.even
                         )}
                       >
                         <td
@@ -209,19 +207,13 @@ export const TransactionsTable: React.FC<Props> = ({
                           </span>
                         </td>
                         <td className={cn('whitespace-nowrap', 'px-4', 'py-3', 'align-middle')}>
-                          <span
-                            className={cn(
-                              designTokens.components.pill.base,
-                              'transition-all duration-200 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
-                              theme.tag
-                            )}
+                          <Pill
+                            variant="category"
+                            categoryName={catName}
+                            className="transition-all duration-200 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10"
                           >
-                            <span
-                              className={cn(designTokens.components.pill.dot, theme.dot)}
-                              aria-hidden="true"
-                            />
                             {catName}
-                          </span>
+                          </Pill>
                         </td>
                       </tr>
                     );
@@ -249,15 +241,14 @@ export const TransactionsTable: React.FC<Props> = ({
               Showing {from}-{to} of {total}
             </div>
             <div className={cn('flex', 'items-center', 'gap-3')}>
-              <button
+              <PaginationButton
                 type="button"
                 onClick={onPrev}
                 disabled={currentPage <= 1}
                 aria-label="Previous page"
-                className={cn(designTokens.components.actions.paginationRound)}
               >
                 <ChevronLeftIcon className={cn('h-4', 'w-4')} />
-              </button>
+              </PaginationButton>
               <div
                 className={cn(
                   designTokens.typography.caption,
@@ -268,15 +259,14 @@ export const TransactionsTable: React.FC<Props> = ({
               >
                 Page {currentPage} of {totalPages}
               </div>
-              <button
+              <PaginationButton
                 type="button"
                 onClick={onNext}
                 disabled={currentPage >= totalPages}
                 aria-label="Next page"
-                className={cn(designTokens.components.actions.paginationRound)}
               >
                 <ChevronRightIcon className={cn('h-4', 'w-4')} />
-              </button>
+              </PaginationButton>
             </div>
           </div>
         </>

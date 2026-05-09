@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn, Input } from '@/ui/primitives';
+import { primitiveTokenRecipes } from '@/ui/primitives/recipes';
 import { designTokens } from '@/ui/tokens';
 import { getTagThemeForCategory } from '../../../utils/categories';
 
@@ -93,7 +94,7 @@ export const TransactionsFilters: React.FC<Props> = ({
                     type="button"
                     onClick={() => onSelectCategory(isSelected ? null : name)}
                     className={cn(
-                      designTokens.components.pill.base,
+                      primitiveTokenRecipes.pill.base,
                       'whitespace-nowrap transition-all duration-150 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
                       theme.tag,
                       isSelected
@@ -104,7 +105,7 @@ export const TransactionsFilters: React.FC<Props> = ({
                     title={isSelected ? `Remove filter: ${name}` : `Filter by ${name}`}
                   >
                     <span
-                      className={cn(designTokens.components.pill.dot, theme.dot)}
+                      className={cn(primitiveTokenRecipes.pill.dot, theme.dot)}
                       aria-hidden="true"
                     />
                     {name}
@@ -112,8 +113,8 @@ export const TransactionsFilters: React.FC<Props> = ({
                 );
               })}
             </div>
-            {showLeftFade && <div className={cn(designTokens.components.pill.fadeLeft, 'w-8')} />}
-            {showRightFade && <div className={cn(designTokens.components.pill.fadeRight, 'w-8')} />}
+            {showLeftFade && <div className={cn(primitiveTokenRecipes.pill.fadeLeft, 'w-8')} />}
+            {showRightFade && <div className={cn(primitiveTokenRecipes.pill.fadeRight, 'w-8')} />}
           </div>
         </div>
       )}

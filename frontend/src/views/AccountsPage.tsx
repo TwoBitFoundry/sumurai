@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { cn } from '@/ui/primitives';
 import { designTokens } from '@/ui/tokens';
 import { Toast } from '../components/Toast';
+import { budgetTokenRecipes } from '../features/budgets/tokenRecipes';
 import AccountsSummaryStats from '../features/plaid/components/AccountsSummaryStats';
 import ConnectButton from '../features/plaid/components/ConnectButton';
 import ConnectionsList from '../features/plaid/components/ConnectionsList';
@@ -193,7 +194,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     ? `Refreshed ${formatAbsoluteTime(summary.latestSync)}`
     : syncFooter;
 
-  const syncButtonClasses = cn(designTokens.components.actions.accountsToolbar);
+  const syncButtonClasses = cn(budgetTokenRecipes.actions.accountsToolbar);
 
   const actions = (
     <>

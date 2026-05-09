@@ -3,6 +3,7 @@ import type React from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { cn, EmptyState } from '@/ui/primitives';
 import { designTokens } from '@/ui/tokens';
+import { chart, getThemeColors } from '@/ui/tokens-runtime';
 import { useTheme } from '../../../context/ThemeContext';
 import { fmtUSD } from '../../../utils/format';
 import type { DonutDatum } from '../adapters/chartData';
@@ -31,7 +32,8 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
   hoveredCategory,
   setHoveredCategory,
 }) => {
-  const { mode, colors } = useTheme();
+  const { mode } = useTheme();
+  const colors = getThemeColors(mode);
   return (
     <div
       className={cn(
@@ -63,7 +65,8 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
                 animationDuration={800}
               >
                 {data.map((cat, index) => {
-                  const color = colors.chart.primary[index % colors.chart.primary.length];
+                  const palette = chart.series[mode];
+                  const color = palette[index % palette.length];
                   const isHovered = hoveredCategory === cat.name;
                   return (
                     <Cell

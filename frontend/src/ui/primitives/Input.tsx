@@ -1,19 +1,20 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 import { designTokens } from '@/ui/tokens';
+import { inputControl } from './recipes';
 import { cn } from './utils';
 
-const inputVariants = cva([...designTokens.components.input.base], {
+const inputVariants = cva([...inputControl.base], {
   variants: {
     variant: {
-      default: [...designTokens.components.input.default],
-      invalid: [...designTokens.components.input.invalid],
-      glass: [...designTokens.components.input.glass],
+      default: [...inputControl.default],
+      invalid: [...inputControl.invalid],
+      glass: [...inputControl.glass],
     },
     inputSize: {
-      sm: designTokens.components.input.size.sm,
-      md: designTokens.components.input.size.md,
-      lg: designTokens.components.input.size.lg,
+      sm: inputControl.size.sm,
+      md: inputControl.size.md,
+      lg: inputControl.size.lg,
     },
   },
   defaultVariants: {

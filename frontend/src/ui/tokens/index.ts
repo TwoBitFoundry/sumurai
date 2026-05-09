@@ -1,6 +1,5 @@
 import { onboardingTokenRecipes } from '@/components/onboarding/tokenRecipes';
 import { budgetTokenRecipes } from '@/features/budgets/tokenRecipes';
-import { primitiveTokenRecipes } from '@/ui/primitives/tokenRecipes';
 import {
   focus as focusSurfaces,
   font as primitiveTypographyRecipes,
@@ -11,52 +10,43 @@ import {
   surface as semanticSurfaces,
   text as semanticTextRecipes,
 } from '@/ui/recipes';
+import type {
+  CategoryTheme,
+  HeroAccent,
+  HeroAccentTheme,
+  SemanticTone,
+  ThemeColors,
+  ThemeMode,
+} from '@/ui/tokens-runtime';
+import {
+  accountTypeDot,
+  categoryAccents,
+  chart,
+  finance,
+  heroAccents,
+  featurePalettes as runtimeFeaturePalettes,
+} from '@/ui/tokens-runtime';
 import generatedTokens from './generated/tokens';
 
-export type ThemeMode = 'light' | 'dark';
-export type HeroAccent = 'slate' | 'emerald' | 'sky' | 'violet' | 'amber' | 'rose';
-export type SemanticTone = 'success' | 'info' | 'warning' | 'danger';
-
-export type ThemeColors = {
-  chart: {
-    primary: string[];
-    grid: string;
-    axis: string;
-    tooltipBg: string;
-    tooltipBorder: string;
-    tooltipText: string;
-    dotFill: string;
-  };
-  semantic: {
-    cash: string;
-    investments: string;
-    credit: string;
-    loan: string;
-    netWorth: string;
-  };
-};
-
-export type CategoryTheme = {
-  key: string;
-  tag: string;
-  dot: string;
-  ring: string;
-  ringHex: string;
-};
-
-export type HeroAccentTheme = {
-  border: string;
-  borderDark: string;
-  hoverBorder: string;
-  hoverBorderDark: string;
-  ringHex: string;
-  gradFrom: string;
-  gradVia: string;
-  icon: string;
-  defaultPill: string;
-  defaultDot: string;
-  glowRgb: string;
-};
+export type {
+  CategoryTheme,
+  HeroAccent,
+  HeroAccentTheme,
+  SemanticTone,
+  ThemeColors,
+  ThemeMode,
+} from '@/ui/tokens-runtime';
+export {
+  accountTypeDot,
+  categoryAccents,
+  chart,
+  featurePalettes,
+  finance,
+  getCategoryAccent,
+  getHeroAccentTheme,
+  getThemeColors,
+  heroAccents,
+} from '@/ui/tokens-runtime';
 
 const brandColors = {
   sky: generatedTokens.color['brand-sky'].$value.hex,
@@ -585,70 +575,81 @@ const featurePalettes = {
 } as const;
 
 const brandAccentPalettes = {
-  sky: { background: brandColors.sky, text: chartThemeLight.tooltipText },
-  skyDark: { background: brandColors.skyDark, text: chartThemeDark.dotFill },
-  emerald: { background: brandColors.emerald, text: chartThemeLight.tooltipText },
-  emeraldDark: { background: brandColors.emeraldDark, text: chartThemeDark.dotFill },
-  amber: { background: brandColors.amber, text: chartThemeLight.tooltipText },
-  amberDark: { background: brandColors.amberDark, text: chartThemeDark.dotFill },
-  rose: { background: brandColors.rose, text: chartThemeLight.tooltipText },
-  roseDark: { background: brandColors.roseDark, text: chartThemeDark.dotFill },
+  sky: { background: brandColors.sky, text: chart.tooltip.light.text },
+  skyDark: { background: brandColors.skyDark, text: chart.dot.dark },
+  emerald: { background: brandColors.emerald, text: chart.tooltip.light.text },
+  emeraldDark: { background: brandColors.emeraldDark, text: chart.dot.dark },
+  amber: { background: brandColors.amber, text: chart.tooltip.light.text },
+  amberDark: { background: brandColors.amberDark, text: chart.dot.dark },
+  rose: { background: brandColors.rose, text: chart.tooltip.light.text },
+  roseDark: { background: brandColors.roseDark, text: chart.dot.dark },
   violet: { background: brandColors.violet },
-  violetDark: { background: brandColors.violetDark, text: chartThemeDark.dotFill },
-  cyan: { background: brandColors.cyan, text: chartThemeLight.tooltipText },
-  cyanDark: { background: brandColors.cyanDark, text: chartThemeDark.dotFill },
+  violetDark: { background: brandColors.violetDark, text: chart.dot.dark },
+  cyan: { background: brandColors.cyan, text: chart.tooltip.light.text },
+  cyanDark: { background: brandColors.cyanDark, text: chart.dot.dark },
 } as const;
 
-const chartPalettes = {
-  series: {
-    light: chartLight,
-    dark: chartDark,
-  },
-  tooltip: {
-    light: {
-      background: chartThemeLight.tooltipBg,
-      text: chartThemeLight.tooltipText,
-      border: chartThemeLight.tooltipBorder,
-    },
-    dark: {
-      background: chartThemeDark.tooltipBg,
-      text: chartThemeDark.tooltipText,
-      border: chartThemeDark.tooltipBorder,
-    },
-  },
-  axis: {
-    light: chartThemeLight.axis,
-    dark: chartThemeDark.axis,
-  },
-  dot: {
-    light: chartThemeLight.dotFill,
-    dark: chartThemeDark.dotFill,
-  },
-} as const;
+const chartPalettes = chart;
 
 const financePalettes = {
   light: {
-    cash: { text: semanticLight.cash },
-    investments: { text: semanticLight.investments },
-    credit: { text: semanticLight.credit },
-    loan: { text: semanticLight.loan },
-    netWorth: { text: semanticLight.netWorth },
+    cash: { text: finance.light.cash },
+    investments: { text: finance.light.investments },
+    credit: { text: finance.light.credit },
+    loan: { text: finance.light.loan },
+    netWorth: { text: finance.light.netWorth },
   },
   dark: {
-    cash: { text: semanticDark.cash },
-    investments: { text: semanticDark.investments },
-    credit: { text: semanticDark.credit },
-    loan: { text: semanticDark.loan },
-    netWorth: { text: semanticDark.netWorth },
+    cash: { text: finance.dark.cash },
+    investments: { text: finance.dark.investments },
+    credit: { text: finance.dark.credit },
+    loan: { text: finance.dark.loan },
+    netWorth: { text: finance.dark.netWorth },
   },
 } as const;
 
 const categoryPillPalettes = Object.fromEntries(
-  categoryThemes.map((theme) => [
-    theme.key,
-    { background: theme.ringHex, text: chartThemeDark.dotFill },
-  ])
+  categoryAccents.map((theme) => [theme.key, { background: theme.ringHex, text: chart.dot.dark }])
 ) as Record<string, { background: string; text: string }>;
+
+const themeColors: Record<ThemeMode, ThemeColors> = {
+  light: {
+    chart: {
+      primary: chart.series.light,
+      grid: chart.grid.light,
+      axis: chart.axis.light,
+      tooltipBg: chart.tooltip.light.background,
+      tooltipBorder: chart.tooltip.light.border,
+      tooltipText: chart.tooltip.light.text,
+      dotFill: chart.dot.light,
+    },
+    semantic: {
+      cash: finance.light.cash,
+      investments: finance.light.investments,
+      credit: finance.light.credit,
+      loan: finance.light.loan,
+      netWorth: finance.light.netWorth,
+    },
+  },
+  dark: {
+    chart: {
+      primary: chart.series.dark,
+      grid: chart.grid.dark,
+      axis: chart.axis.dark,
+      tooltipBg: chart.tooltip.dark.background,
+      tooltipBorder: chart.tooltip.dark.border,
+      tooltipText: chart.tooltip.dark.text,
+      dotFill: chart.dot.dark,
+    },
+    semantic: {
+      cash: finance.dark.cash,
+      investments: finance.dark.investments,
+      credit: finance.dark.credit,
+      loan: finance.dark.loan,
+      netWorth: finance.dark.netWorth,
+    },
+  },
+} as const;
 
 export const designTokens = {
   typography: {
@@ -721,65 +722,22 @@ export const designTokens = {
   colors: {
     brand: brandColors,
     theme: {
-      light: {
-        chart: chartThemeLight,
-        semantic: semanticLight,
-      },
-      dark: {
-        chart: chartThemeDark,
-        semantic: semanticDark,
-      },
+      light: themeColors.light,
+      dark: themeColors.dark,
     },
-    categoryAccents: categoryThemes,
-    accountTypeDot: {
-      checking: '#38bdf8',
-      savings: '#22c55e',
-      credit: '#f59e0b',
-      loan: '#a78bfa',
-      other: '#94a3b8',
-    },
+    categoryAccents,
+    accountTypeDot,
   },
   palettes: {
     brandAccent: brandAccentPalettes,
     chart: chartPalettes,
     finance: financePalettes,
     categoryPill: categoryPillPalettes,
-    feature: featurePalettes,
+    feature: runtimeFeaturePalettes,
   },
   text: semanticTextRecipes,
   textPlaceholder: semanticPlaceholderTextRecipes,
   components: {
-    button: primitiveTokenRecipes.button,
-    connectButton: primitiveTokenRecipes.connectButton,
-    badge: primitiveTokenRecipes.badge,
-    menuDropdown: primitiveTokenRecipes.menuDropdown,
-    budgetCard: budgetTokenRecipes.budgetCard,
-    actions: budgetTokenRecipes.actions,
-    onboarding: onboardingTokenRecipes,
-    budgetProgress: budgetTokenRecipes.budgetProgress,
-    glassCard: primitiveTokenRecipes.glassCard,
-    gradientShell: primitiveTokenRecipes.gradientShell,
-    appTitleBar: primitiveTokenRecipes.appTitleBar,
-    pageLayout: primitiveTokenRecipes.pageLayout,
-    emptyState: primitiveTokenRecipes.emptyState,
-    pill: primitiveTokenRecipes.pill,
-    transactions: {
-      row: transactionRow,
-    },
-    input: {
-      base: fieldControlBase,
-      default: fieldControlDefault,
-      invalid: fieldControlInvalid,
-      glass: fieldControlGlass,
-      size: fieldControlSizes,
-    },
-    select: {
-      base: fieldControlBase,
-      default: fieldControlDefault,
-      invalid: fieldControlInvalid,
-      glass: fieldControlGlass,
-      size: fieldControlSizes,
-    },
     heroStatCard: {
       base: 'hero-stat-card group relative rounded-2xl transition-colors duration-300',
       shell:
@@ -794,7 +752,7 @@ export const designTokens = {
       footer: 'relative',
       footerInner:
         'scrollbar-hide flex items-center gap-1.5 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-      accent: heroAccentThemes,
+      accent: heroAccents,
       semantic: {
         success: {
           wrapper:
@@ -818,29 +776,15 @@ export const designTokens = {
         },
       },
     },
+    transactions: {
+      row: {
+        shell: [
+          'group relative border-b border-slate-200/70 transition-all duration-150 ease-out hover:-translate-y-[2px] hover:ring-2 hover:ring-sky-400/60',
+          'dark:border-slate-700/50 dark:hover:ring-sky-400/50',
+        ],
+        odd: ['bg-slate-100', 'dark:bg-slate-700/20'],
+        even: ['bg-white', 'dark:bg-transparent'],
+      },
+    },
   },
 } as const;
-
-export function getThemeColors(mode: ThemeMode): ThemeColors {
-  return mode === 'dark' ? designTokens.colors.theme.dark : designTokens.colors.theme.light;
-}
-
-function hashString(value: string): number {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash << 5) - hash + value.charCodeAt(index);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
-
-export function getCategoryAccent(name?: string | null): CategoryTheme {
-  const key = (name || 'Uncategorized').toLowerCase();
-  return designTokens.colors.categoryAccents[
-    hashString(key) % designTokens.colors.categoryAccents.length
-  ];
-}
-
-export function getHeroAccentTheme(accent: HeroAccent): HeroAccentTheme {
-  return designTokens.components.heroStatCard.accent[accent];
-}

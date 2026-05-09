@@ -10,10 +10,12 @@ import {
 } from 'recharts';
 import { cn } from '@/ui/primitives';
 import { designTokens } from '@/ui/tokens';
+import { chart, getThemeColors } from '@/ui/tokens-runtime';
 import { useTheme } from '../context/ThemeContext';
 
 export const NetWorthOverTimeWidget: React.FC = () => {
-  const { colors } = useTheme();
+  const { mode } = useTheme();
+  const colors = getThemeColors(mode);
   const mockData = [
     { date: '2024-01', netWorth: 10000 },
     { date: '2024-02', netWorth: 10500 },
@@ -28,14 +30,14 @@ export const NetWorthOverTimeWidget: React.FC = () => {
       <div className={cn('h-[200px]', 'w-full', 'min-w-0')}>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={mockData}>
-            <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
-            <XAxis dataKey="date" tick={{ fill: colors.chart.axis }} />
-            <YAxis tick={{ fill: colors.chart.axis }} />
+            <CartesianGrid strokeDasharray="3 3" stroke={chart.grid[mode]} />
+            <XAxis dataKey="date" tick={{ fill: chart.axis[mode] }} />
+            <YAxis tick={{ fill: chart.axis[mode] }} />
             <Tooltip
               contentStyle={{
-                background: colors.chart.tooltipBg,
-                borderColor: colors.chart.tooltipBorder,
-                color: colors.chart.tooltipText,
+                background: chart.tooltip[mode].background,
+                borderColor: chart.tooltip[mode].border,
+                color: chart.tooltip[mode].text,
               }}
             />
             <Line type="monotone" dataKey="netWorth" stroke={colors.semantic.netWorth} />

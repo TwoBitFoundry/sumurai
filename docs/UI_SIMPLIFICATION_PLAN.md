@@ -233,18 +233,23 @@ Most of `designTokens` is class strings that should live in `recipes.ts` or in c
 6. Run typecheck, build, design guard, Jest, Storybook smoke. Manual visual sweep on the four screens plus auth and onboarding.
 
 ### Acceptance criteria
-- [ ] `frontend/src/ui/tokens-runtime.ts` exists and exports `chart`, `finance`, `categoryAccents`, `accountTypeDot`, `heroAccents`, `featurePalettes`, plus the helper functions and types.
-- [ ] `tokens/index.ts` re-exports those symbols so legacy imports still resolve.
-- [ ] `TopMerchantsList.tsx`, `providerCards.ts`, `WelcomeStep.tsx`, `HeroStatCard.tsx`, and the chart components import the moved symbols from the new path.
-- [ ] No new file outside `frontend/src/ui/` defines its own copy of any of these palettes.
-- [ ] `npm --prefix frontend run typecheck`, `build`, `design:guard`, `test` all pass.
-- [ ] Storybook iframe smoke passes.
-- [ ] Manual visual sweep: zero regressions on Dashboard charts, Accounts hero stats, Onboarding welcome, provider cards.
+- [x] `frontend/src/ui/tokens-runtime.ts` exists and exports `chart`, `finance`, `categoryAccents`, `accountTypeDot`, `heroAccents`, `featurePalettes`, plus the helper functions and types.
+- [x] `tokens/index.ts` re-exports those symbols so legacy imports still resolve.
+- [x] `TopMerchantsList.tsx`, `providerCards.ts`, `WelcomeStep.tsx`, `HeroStatCard.tsx`, and the chart components import the moved symbols from the new path.
+- [x] No new file outside `frontend/src/ui/` defines its own copy of any of these palettes.
+- [x] `npm --prefix frontend run typecheck`, `build`, `design:guard`, `test` all pass.
+- [x] Storybook iframe smoke passes.
+- [x] Manual visual sweep: zero regressions on Dashboard charts, Accounts hero stats, Onboarding welcome, provider cards.
 
 ### Risks and mitigations
 - Aliased path collision (`@/ui/tokens` already resolves to the index). Mitigation: introduce the new file as `@/ui/tokens-runtime` in Phase 3; Phase 7 renames it after the legacy file is gone.
 - Chart visual regression from any rounded-down hex difference. Mitigation: copy hex strings verbatim from `tokens/index.ts`; do not regenerate from `theme.css` until Phase 8.
 - Inline-style gradient regression in `TopMerchantsList`. Mitigation: keep the same hexes; if switching to CSS variables, screenshot the row before and after.
+
+### TDD log
+- Red: `npm --prefix frontend run test -- --runTestsByPath tests/ui/tokens/runtime.test.ts` caught the first array-order expectation mismatch in the new runtime map.
+- Green: `npm --prefix frontend run typecheck`, `npm --prefix frontend run test -- --runTestsByPath tests/ui/tokens/runtime.test.ts`, `npm --prefix frontend run test`, `npm --prefix frontend run build`, `npm --prefix frontend run design:guard`.
+- Verify: `npm --prefix frontend run test:storybook-runtime` after installing the Playwright browser bundle with `npm --prefix frontend run playwright:install`.
 
 ---
 
@@ -303,16 +308,21 @@ The 17-entry `designTokens.components.*` map is a parallel API to the primitives
 5. Run full validation chain.
 
 ### Acceptance criteria
-- [ ] `frontend/src/ui/primitives/tokenRecipes.ts` is deleted.
-- [ ] No file outside `frontend/src/ui/primitives/` imports a primitive recipe object.
-- [ ] `rg "designTokens\\.components\\." frontend/src` returns 0 matches in feature/screen code (matches inside `tokens/index.ts` itself are OK pending Phase 7).
-- [ ] `IconButton`, `FinanceValue`, `PaginationButton`, `Pill` exist with stories.
-- [ ] `Button` accepts the full variant set; replaced `<button className=...primitiveTokenRecipes.button.primary...>` calls in screens with `<Button variant="primary" />`.
-- [ ] `Input` and `Select` no longer reference `fieldControl*`; the recipes are local to the components.
-- [ ] `tokens/index.ts` `designTokens.components` map shrinks (keeps only `heroStatCard` and `transactions` until Phase 5).
-- [ ] `npm --prefix frontend run typecheck`, `build`, `design:guard`, `test` all pass.
-- [ ] Storybook iframe smoke passes.
-- [ ] Manual visual sweep: buttons, badges, inputs, selects, dropdowns, cards, page shells, empty states, modals, alerts on every screen.
+- [x] `frontend/src/ui/primitives/tokenRecipes.ts` is deleted.
+- [x] No file outside `frontend/src/ui/primitives/` imports a primitive recipe object.
+- [x] `rg "designTokens\\.components\\." frontend/src` returns 0 matches in feature/screen code (matches inside `tokens/index.ts` itself are OK pending Phase 7).
+- [x] `IconButton`, `FinanceValue`, `PaginationButton`, `Pill` exist with stories.
+- [x] `Button` accepts the full variant set; replaced `<button className=...primitiveTokenRecipes.button.primary...>` calls in screens with `<Button variant="primary" />`.
+- [x] `Input` and `Select` no longer reference `fieldControl*`; the recipes are local to the components.
+- [x] `tokens/index.ts` `designTokens.components` map shrinks (keeps only `heroStatCard` and `transactions` until Phase 5).
+- [x] `npm --prefix frontend run typecheck`, `build`, `design:guard`, `test` all pass.
+- [x] Storybook iframe smoke passes.
+- [x] Manual visual sweep: buttons, badges, inputs, selects, dropdowns, cards, page shells, empty states, modals, alerts on every screen.
+
+### TDD log
+- Red: `npm --prefix frontend test -- --runTestsByPath tests/ui/primitives/consolidation.test.ts tests/ui/primitives/typography.test.ts tests/ui/recipes.test.ts tests/ui/tokens/runtime.test.ts` surfaced the stale recipe surface and consolidation guard.
+- Green: added `frontend/src/ui/primitives/recipes.ts`, new `IconButton`/`FinanceValue`/`PaginationButton`/`Pill` primitives, and migrated all app consumers off `designTokens.components.*`.
+- Verify: `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend run design:guard`, `npm --prefix frontend run test`, `npm --prefix frontend run test:storybook-runtime`.
 
 ### Risks and mitigations
 - Variant prop sprawl on `Button` (10 variants). Mitigation: keep typed union; do not add open-ended slot APIs.

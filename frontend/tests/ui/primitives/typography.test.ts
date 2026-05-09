@@ -1,27 +1,27 @@
 import { badgeSizeStyles as primitiveBadgeSizeStyles } from '@/ui/primitives/Badge';
 import { buttonTypographySizes } from '@/ui/primitives/Button';
-import { primitiveTokenRecipes } from '@/ui/primitives/tokenRecipes';
+import { primitiveTokenRecipes } from '@/ui/primitives/recipes';
 import { designTokens } from '@/ui/tokens';
 
 describe('primitive typography recipes', () => {
   it('maps page layout copy to semantic typography recipes', () => {
-    expect(designTokens.components.pageLayout.badge).toContain(designTokens.typography.badge);
-    expect(designTokens.components.pageLayout.title).toContain(designTokens.typography.pageTitle);
-    expect(designTokens.components.pageLayout.subtitle).toContain(designTokens.typography.body);
-    expect(designTokens.components.pageLayout.badge).toContain(designTokens.text.label);
-    expect(designTokens.components.pageLayout.title).toContain(designTokens.text.primary);
-    expect(designTokens.components.pageLayout.subtitle).toContain(designTokens.text.body);
-    expect(designTokens.components.pageLayout.errorText).toContain(
+    expect(primitiveTokenRecipes.pageLayout.badge).toContain(designTokens.typography.badge);
+    expect(primitiveTokenRecipes.pageLayout.title).toContain(designTokens.typography.pageTitle);
+    expect(primitiveTokenRecipes.pageLayout.subtitle).toContain(designTokens.typography.body);
+    expect(primitiveTokenRecipes.pageLayout.badge).toContain(designTokens.text.label);
+    expect(primitiveTokenRecipes.pageLayout.title).toContain(designTokens.text.primary);
+    expect(primitiveTokenRecipes.pageLayout.subtitle).toContain(designTokens.text.body);
+    expect(primitiveTokenRecipes.pageLayout.errorText).toContain(
       designTokens.typography.captionStrong
     );
-    expect(designTokens.components.pageLayout.errorText).toContain(designTokens.text.danger);
+    expect(primitiveTokenRecipes.pageLayout.errorText).toContain(designTokens.text.danger);
   });
 
   it('uses semantic typography for empty state copy', () => {
-    expect(designTokens.components.emptyState.title).toContain(designTokens.typography.cardTitle);
-    expect(designTokens.components.emptyState.description).toContain(designTokens.typography.body);
-    expect(designTokens.components.emptyState.title).toContain(designTokens.text.primary);
-    expect(designTokens.components.emptyState.description).toContain(designTokens.text.body);
+    expect(primitiveTokenRecipes.emptyState.title).toContain(designTokens.typography.cardTitle);
+    expect(primitiveTokenRecipes.emptyState.description).toContain(designTokens.typography.body);
+    expect(primitiveTokenRecipes.emptyState.title).toContain(designTokens.text.primary);
+    expect(primitiveTokenRecipes.emptyState.description).toContain(designTokens.text.body);
   });
 
   it('keeps button sizes on the semantic scale', () => {
@@ -63,7 +63,7 @@ describe('primitive typography recipes', () => {
     expect(designTokens.typography.titleBarChromeExpanded).toContain(
       'var(--text-title-bar-chrome-expanded)'
     );
-    expect(designTokens.components.appTitleBar.logo.wordmark).toBe(
+    expect(primitiveTokenRecipes.appTitleBar.logo.wordmark).toBe(
       designTokens.typography.pageTitleWordmark
     );
     expect(designTokens.typography.pageTitleWordmark).toContain('var(--font-page-title-wordmark)');

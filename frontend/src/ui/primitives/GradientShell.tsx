@@ -1,5 +1,6 @@
 import type React from 'react';
 import { designTokens } from '@/ui/tokens';
+import { primitiveTokenRecipes } from './recipes';
 import { cn } from './utils';
 
 export interface GradientShellProps {
@@ -32,21 +33,19 @@ export function GradientShell({ children, className, centered = false }: Gradien
       )}
     >
       <div className={cn('pointer-events-none', centered ? 'absolute inset-0' : 'fixed inset-0')}>
-        <div className={cn('absolute inset-0', ...designTokens.components.gradientShell.aura)} />
+        <div className={cn('absolute inset-0', ...primitiveTokenRecipes.gradientShell.aura)} />
 
-        <div className={cn('absolute inset-0', ...designTokens.components.gradientShell.overlay)} />
+        <div className={cn('absolute inset-0', ...primitiveTokenRecipes.gradientShell.overlay)} />
         <div
-          className={cn('absolute inset-0', ...designTokens.components.gradientShell.violetAura)}
+          className={cn('absolute inset-0', ...primitiveTokenRecipes.gradientShell.violetAura)}
         />
-        <div
-          className={cn('absolute inset-0', ...designTokens.components.gradientShell.cyanAura)}
-        />
+        <div className={cn('absolute inset-0', ...primitiveTokenRecipes.gradientShell.cyanAura)} />
 
         <div className={cn('absolute', 'inset-0', 'flex', 'items-center', 'justify-center')}>
           <div
             className={cn(
               'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
-              designTokens.components.gradientShell.centerGlow
+              primitiveTokenRecipes.gradientShell.centerGlow
             )}
           />
         </div>
@@ -54,20 +53,20 @@ export function GradientShell({ children, className, centered = false }: Gradien
         <div
           className={cn(
             'absolute inset-0 bg-gradient-to-b',
-            designTokens.components.gradientShell.vignette
+            primitiveTokenRecipes.gradientShell.vignette
           )}
         />
 
         <div
-          className={cn('absolute inset-0', designTokens.components.gradientShell.vignetteOverlay)}
+          className={cn('absolute inset-0', primitiveTokenRecipes.gradientShell.vignetteOverlay)}
         />
       </div>
 
       <div
         className={cn(
-          ...designTokens.components.gradientShell.base,
-          centered ? designTokens.components.gradientShell.centered : '',
-          centered ? designTokens.components.gradientShell.contentCentered : ''
+          ...primitiveTokenRecipes.gradientShell.base,
+          centered ? primitiveTokenRecipes.gradientShell.centered : '',
+          centered ? primitiveTokenRecipes.gradientShell.contentCentered : ''
         )}
       >
         {children}

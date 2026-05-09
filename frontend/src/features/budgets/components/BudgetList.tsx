@@ -2,11 +2,13 @@ import { CheckIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/outl
 import { TrashIcon as TrashSolidIcon } from '@heroicons/react/24/solid';
 import { Target } from 'lucide-react';
 import React from 'react';
-import { cn, EmptyState, Input } from '@/ui/primitives';
+import { cn, EmptyState, IconButton, Input } from '@/ui/primitives';
+import { primitiveTokenRecipes } from '@/ui/primitives/recipes';
 import { designTokens } from '@/ui/tokens';
 import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
 import type { BudgetProgressEntry } from '../hooks/useBudgets';
+import { budgetTokenRecipes } from '../tokenRecipes';
 import BudgetProgress from './BudgetProgress';
 
 export type BudgetWithProgress = BudgetProgressEntry;
@@ -63,7 +65,7 @@ export function BudgetList({
           <li
             key={b.id}
             className={cn(
-              designTokens.components.budgetCard.shell,
+              budgetTokenRecipes.budgetCard.shell,
               tagTheme.ring,
               'ring-1 ring-offset-1',
               designTokens.surfaces.focus.ringOffsetLightOnDark
@@ -89,13 +91,13 @@ export function BudgetList({
             <div className={cn('flex', 'items-start', 'justify-between', 'gap-3')}>
               <div
                 className={cn(
-                  designTokens.components.pill.base,
+                  primitiveTokenRecipes.pill.base,
                   'transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
                   tagTheme.tag
                 )}
               >
                 <span
-                  className={cn(designTokens.components.pill.dot, tagTheme.dot)}
+                  className={cn(primitiveTokenRecipes.pill.dot, tagTheme.dot)}
                   aria-hidden="true"
                 />
                 {displayName}
@@ -103,45 +105,41 @@ export function BudgetList({
               <div className={cn('flex', 'items-center', 'gap-2', designTokens.typography.label)}>
                 {isEditing ? (
                   <>
-                    <button
-                      type="button"
+                    <IconButton
+                      variant="success"
                       onClick={() => onSaveEdit(b.id, Number(draft))}
                       title="Save"
                       aria-label="Save budget"
-                      className={cn(designTokens.components.actions.budgetSaveIcon)}
                     >
                       <CheckIcon className={cn('h-4', 'w-4')} />
-                    </button>
-                    <button
-                      type="button"
+                    </IconButton>
+                    <IconButton
+                      variant="ghost"
                       onClick={onCancelEdit}
                       title="Cancel"
                       aria-label="Cancel edit"
-                      className={cn(designTokens.components.actions.budgetIconGhost)}
                     >
                       <XMarkIcon className={cn('h-4', 'w-4')} />
-                    </button>
+                    </IconButton>
                   </>
                 ) : (
                   <>
-                    <button
-                      type="button"
+                    <IconButton
+                      variant="ghost"
                       onClick={() => onStartEdit(b)}
                       title="Edit budget"
                       aria-label="Edit budget"
-                      className={cn(designTokens.components.actions.budgetIconGhost)}
                     >
                       <PencilSquareIcon className={cn('h-4', 'w-4')} />
-                    </button>
-                    <button
-                      type="button"
+                    </IconButton>
+                    <IconButton
+                      variant="danger"
                       onClick={() => onDelete(b.id)}
                       title="Delete budget"
                       aria-label="Delete budget"
-                      className={cn(designTokens.components.actions.budgetDeleteIcon)}
                     >
                       <TrashSolidIcon className={cn('h-4', 'w-4')} />
-                    </button>
+                    </IconButton>
                   </>
                 )}
               </div>

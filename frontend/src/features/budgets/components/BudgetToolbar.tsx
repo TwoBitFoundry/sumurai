@@ -1,6 +1,6 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Calendar as CalendarIcon, Loader2, Plus } from 'lucide-react';
-import { Button, cn } from '@/ui/primitives';
+import { Button, cn, PaginationButton } from '@/ui/primitives';
 import { designTokens } from '@/ui/tokens';
 
 interface BudgetToolbarProps {
@@ -39,24 +39,22 @@ export const BudgetToolbar = ({
     >
       <div className={cn('flex', 'items-center', 'gap-3')}>
         <div className={cn('flex', 'items-center', 'gap-2')}>
-          <button
+          <PaginationButton
             type="button"
             onClick={onPreviousMonth}
             aria-label="Previous month"
-            className={cn(designTokens.components.actions.paginationRound)}
             title="Previous month"
           >
             <ChevronLeftIcon className={cn('h-4', 'w-4')} />
-          </button>
-          <button
+          </PaginationButton>
+          <PaginationButton
             type="button"
             onClick={onNextMonth}
             aria-label="Next month"
-            className={cn(designTokens.components.actions.paginationRound)}
             title="Next month"
           >
             <ChevronRightIcon className={cn('h-4', 'w-4')} />
-          </button>
+          </PaginationButton>
         </div>
         <div
           className={cn(

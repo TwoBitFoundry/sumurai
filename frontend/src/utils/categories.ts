@@ -1,4 +1,4 @@
-import { getCategoryAccent } from '@/ui/tokens';
+import { getCategoryAccent } from '@/ui/tokens-runtime';
 
 export function formatCategoryName(categoryPrimary: string | undefined | null): string {
   if (!categoryPrimary) return 'Other';

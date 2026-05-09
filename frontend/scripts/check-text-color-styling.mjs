@@ -30,8 +30,10 @@ function isAllowlisted(relPosix) {
   }
   if (
     relPosix === 'ui/tokens/index.ts' ||
+    relPosix === 'ui/tokens-runtime.ts' ||
     relPosix === 'ui/tokens/textRecipes.ts' ||
-    relPosix === 'ui/recipes.ts'
+    relPosix === 'ui/recipes.ts' ||
+    relPosix === 'ui/primitives/recipes.ts'
   ) {
     return true;
   }

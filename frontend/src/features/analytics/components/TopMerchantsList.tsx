@@ -2,6 +2,7 @@ import { MapPin } from 'lucide-react';
 import type React from 'react';
 import { cn, EmptyState } from '@/ui/primitives';
 import { designTokens } from '@/ui/tokens';
+import { categoryAccents, chart } from '@/ui/tokens-runtime';
 import { dashboardTokenRecipes } from '@/views/tokenRecipes';
 import type { AnalyticsTopMerchantsResponse } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
@@ -30,14 +31,13 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
                     'h-6',
                     'rounded-full',
                     'bg-gradient-to-r',
-                    'from-cyan-400',
-                    'to-emerald-400',
                     designTokens.text.primary,
                     designTokens.typography.label,
                     'flex-shrink-0'
                   )}
                   style={{
-                    backgroundImage: `linear-gradient(90deg, ${designTokens.palettes.brandAccent.cyan.background}, ${designTokens.palettes.brandAccent.emerald.background})`,
+                    backgroundImage: `linear-gradient(90deg, ${chart.series.light[0]}, ${chart.series.light[1]})`,
+                    boxShadow: `0 0 0 1px ${categoryAccents[index % categoryAccents.length].ringHex}33`,
                   }}
                 >
                   {index + 1}

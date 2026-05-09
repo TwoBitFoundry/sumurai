@@ -1,7 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 import { designTokens } from '@/ui/tokens';
-import { buttonChromeInset } from './tokenRecipes';
+import { buttonChromeInset, primitiveTokenRecipes } from './recipes';
 import { cn } from './utils';
 
 export const buttonTypographySizes = {
@@ -11,18 +11,18 @@ export const buttonTypographySizes = {
   lg: designTokens.typography.bodyStrong,
 } as const;
 
-const buttonVariants = cva([...designTokens.components.button.base], {
+const buttonVariants = cva([...primitiveTokenRecipes.button.base], {
   variants: {
     variant: {
-      primary: [...designTokens.components.button.primary],
-      secondary: [...designTokens.components.button.secondary],
-      ghost: [...designTokens.components.button.ghost],
-      icon: [...designTokens.components.button.icon],
-      tab: [...designTokens.components.button.tab],
-      tabActive: [...designTokens.components.button.tabActive],
-      danger: [...designTokens.components.button.danger],
-      success: [...designTokens.components.button.success],
-      connect: [...designTokens.components.button.connect],
+      primary: [...primitiveTokenRecipes.button.primary],
+      secondary: [...primitiveTokenRecipes.button.secondary],
+      ghost: [...primitiveTokenRecipes.button.ghost],
+      icon: [...primitiveTokenRecipes.button.icon],
+      tab: [...primitiveTokenRecipes.button.tab],
+      tabActive: [...primitiveTokenRecipes.button.tabActive],
+      danger: [...primitiveTokenRecipes.button.danger],
+      success: [...primitiveTokenRecipes.button.success],
+      connect: [...primitiveTokenRecipes.button.connect],
     },
     size: {
       xs: `${buttonTypographySizes.xs} ${buttonChromeInset.xs}`,
