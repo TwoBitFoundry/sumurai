@@ -44,12 +44,16 @@ Regenerate token artifacts and expose the new roles through the TypeScript token
 
 Acceptance criteria:
 
-- [ ] Generated artifacts include the new `--color-surface-*` token fields.
-- [ ] Generated artifacts include the new `--color-border-*` token fields.
-- [ ] Generated artifacts include status and effect color fields.
-- [ ] `designTokens` exposes ergonomic runtime recipes for surfaces, borders, status tones, and effects.
-- [ ] Existing imports of `designTokens` continue to typecheck.
-- [ ] `npm --prefix frontend run design:drift` passes.
+- [x] Generated artifacts include the new `--color-surface-*` token fields.
+- [x] Generated artifacts include the new `--color-border-*` token fields.
+- [x] Generated artifacts include status and effect color fields.
+- [x] `designTokens` exposes ergonomic runtime recipes for surfaces, borders, status tones, and effects.
+- [x] Existing imports of `designTokens` continue to typecheck.
+- [x] `npm --prefix frontend run design:drift` passes.
+
+TDD log:
+
+- Regenerated the design artifacts, added runtime semantic recipes in `frontend/src/ui/tokens/index.ts`, and verified the frontend typecheck plus design drift checks passed.
 
 ## Phase 3: Migrate Shared Recipes And Primitives
 
