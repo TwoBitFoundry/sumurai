@@ -56,6 +56,14 @@ describe('design token surface recipes', () => {
       'bg-[var(--color-surface-app-shell)]',
       'dark:bg-[var(--color-surface-app-shell-dark)]',
     ]);
+    expect(designTokens.surfaces.semantic.glassPanel).toEqual([
+      'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel-dark)_55%,transparent)]',
+    ]);
+    expect(designTokens.surfaces.semantic.card).toEqual([
+      'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card-dark)_55%,transparent)]',
+    ]);
     expect(designTokens.surfaces.semantic.overlay).toEqual([
       'bg-[var(--color-surface-overlay)]',
       'dark:bg-[var(--color-surface-overlay-dark)]',

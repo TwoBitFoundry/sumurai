@@ -72,5 +72,9 @@ describe('design token status recipes', () => {
       'border-[var(--color-status-danger-border)]',
       'dark:border-[var(--color-status-danger-border-dark)]',
     ]);
+    expect(designTokens.status.danger.surface).toEqual([
+      'bg-[color:color-mix(in_srgb,var(--color-status-danger-surface)_82%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-status-danger-surface-dark)_28%,transparent)]',
+    ]);
   });
 });

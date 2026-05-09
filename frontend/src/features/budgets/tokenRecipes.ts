@@ -1,7 +1,10 @@
 import { primitiveTypographyRecipes } from '@/ui/primitives/tokenRecipes';
 
 const semanticSurfaces = {
-  card: ['bg-[var(--color-surface-card)]', 'dark:bg-[var(--color-surface-card-dark)]'],
+  card: [
+    'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card-dark)_55%,transparent)]',
+  ],
   mutedChip: [
     'bg-[var(--color-surface-muted-chip)]',
     'dark:bg-[var(--color-surface-muted-chip-dark)]',
@@ -14,7 +17,10 @@ const semanticSurfaces = {
 
 const semanticBorders = {
   subtle: ['border-[var(--color-border-subtle)]', 'dark:border-[var(--color-border-subtle-dark)]'],
-  glass: ['border-[var(--color-border-glass)]', 'dark:border-[var(--color-border-glass-dark)]'],
+  glass: [
+    'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
+    'dark:border-[color:color-mix(in_srgb,var(--color-border-glass-dark)_12%,transparent)]',
+  ],
   control: [
     'border-[var(--color-border-control)]',
     'dark:border-[var(--color-border-control-dark)]',
@@ -63,8 +69,8 @@ const semanticEffects = {
     'dark:shadow-[0_0_12px_var(--color-effect-danger-glow-dark)]',
   ],
   accentHover: [
-    'hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
-    'dark:hover:shadow-[0_0_30px_var(--color-effect-accent-hover-dark),0_0_60px_var(--color-effect-accent-hover-dark)]',
+    'hover:shadow-[0_18px_44px_-30px_var(--color-effect-accent-hover)]',
+    'dark:hover:shadow-[0_20px_52px_-34px_var(--color-effect-accent-hover-dark)]',
   ],
 } as const;
 
@@ -142,10 +148,11 @@ export const budgetTokenRecipes = {
       'dark:focus-visible:ring-offset-[#0f172a]',
     ],
     budgetDeleteIcon: [
-      'inline-flex items-center justify-center rounded-full p-2',
+      'inline-flex items-center justify-center rounded-full border p-2',
+      ...semanticStatus.danger.border,
       ...semanticStatus.danger.surface,
       ...semanticStatus.danger.text,
-      ...semanticEffects.dangerGlow,
+      'shadow-sm',
       'transition-transform duration-200 hover:-translate-y-[2px] hover:bg-[var(--color-status-danger-strong-surface)] dark:hover:bg-[var(--color-status-danger-strong-surface-dark)]',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-danger)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-[var(--color-border-danger-dark)] dark:focus-visible:ring-offset-[#0f172a]',
     ],

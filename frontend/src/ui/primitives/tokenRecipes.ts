@@ -1,10 +1,13 @@
 import { semanticTextRecipes } from '@/ui/tokens/textRecipes';
 
 const semanticSurfaces = {
-  card: ['bg-[var(--color-surface-card)]', 'dark:bg-[var(--color-surface-card-dark)]'],
+  card: [
+    'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card-dark)_55%,transparent)]',
+  ],
   glassPanel: [
-    'bg-[var(--color-surface-glass-panel)]',
-    'dark:bg-[var(--color-surface-glass-panel-dark)]',
+    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel-dark)_55%,transparent)]',
   ],
   solidPanel: [
     'bg-[var(--color-surface-solid-panel)]',
@@ -26,7 +29,10 @@ const semanticSurfaces = {
 
 const semanticBorders = {
   subtle: ['border-[var(--color-border-subtle)]', 'dark:border-[var(--color-border-subtle-dark)]'],
-  glass: ['border-[var(--color-border-glass)]', 'dark:border-[var(--color-border-glass-dark)]'],
+  glass: [
+    'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
+    'dark:border-[color:color-mix(in_srgb,var(--color-border-glass-dark)_12%,transparent)]',
+  ],
   control: [
     'border-[var(--color-border-control)]',
     'dark:border-[var(--color-border-control-dark)]',
@@ -79,8 +85,8 @@ const semanticStatus = {
   },
   danger: {
     surface: [
-      'bg-[var(--color-status-danger-surface)]',
-      'dark:bg-[var(--color-status-danger-surface-dark)]',
+      'bg-[color:color-mix(in_srgb,var(--color-status-danger-surface)_82%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-status-danger-surface-dark)_28%,transparent)]',
     ],
     border: [
       'border-[var(--color-status-danger-border)]',
@@ -107,8 +113,8 @@ const semanticEffects = {
     'dark:shadow-[0_0_12px_var(--color-effect-danger-glow-dark)]',
   ],
   accentHover: [
-    'hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
-    'dark:hover:shadow-[0_0_30px_var(--color-effect-accent-hover-dark),0_0_60px_var(--color-effect-accent-hover-dark)]',
+    'hover:shadow-[0_18px_44px_-30px_var(--color-effect-accent-hover)]',
+    'dark:hover:shadow-[0_20px_52px_-34px_var(--color-effect-accent-hover-dark)]',
   ],
 } as const;
 
@@ -190,7 +196,7 @@ export const primitiveTokenRecipes = {
       ...semanticStatus.danger.surface,
       semanticTextRecipes.danger,
       'hover:bg-[var(--color-status-danger-strong-surface)]',
-      'dark:hover:bg-[var(--color-status-danger-strong-surface-dark)]',
+      'dark:hover:bg-[color:color-mix(in_srgb,var(--color-status-danger-strong-surface-dark)_46%,transparent)]',
     ],
     success: [
       'bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400',
@@ -281,7 +287,12 @@ export const primitiveTokenRecipes = {
       'backdrop-saturate-[140%]',
       'dark:shadow-[0_40px_120px_-58px_var(--color-effect-glass-shadow-dark)]',
     ],
-    accent: [...semanticBorders.glass, ...semanticSurfaces.solidPanel, 'backdrop-blur-sm'],
+    accent: [
+      ...semanticBorders.glass,
+      'bg-[color:color-mix(in_srgb,var(--color-surface-solid-panel)_85%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-surface-solid-panel-dark)_75%,transparent)]',
+      'backdrop-blur-sm',
+    ],
     rounded: {
       default: 'rounded-[2.25rem]',
       lg: 'rounded-2xl',
@@ -355,7 +366,7 @@ export const primitiveTokenRecipes = {
       'after:absolute after:inset-[-28%] after:rounded-[999px] after:bg-[radial-gradient(circle_at_35%_30%,rgba(14,165,233,0.16),transparent_62%)] after:opacity-0 after:transition-opacity after:duration-300 hover:after:opacity-90 dark:after:bg-[radial-gradient(circle_at_35%_30%,rgba(56,189,248,0.22),transparent_62%)]',
     divider: 'w-px h-6 bg-[var(--color-border-divider)] dark:bg-[var(--color-border-divider-dark)]',
     themeToggle:
-      'rounded-lg !bg-[var(--color-status-warning-surface)] dark:!bg-[var(--color-status-warning-surface-dark)] hover:!bg-[var(--color-status-warning-strong-surface)] dark:hover:!bg-[var(--color-status-warning-strong-surface-dark)] !border !border-[var(--color-status-warning-border)] dark:!border-[var(--color-status-warning-border-dark)] !text-white backdrop-blur-sm transition-colors',
+      'rounded-lg !bg-[color:color-mix(in_srgb,var(--color-brand-amber)_80%,transparent)] dark:!bg-[color:color-mix(in_srgb,var(--color-brand-violet)_80%,transparent)] hover:!bg-[color:color-mix(in_srgb,var(--color-brand-amber)_90%,transparent)] dark:hover:!bg-[color:color-mix(in_srgb,var(--color-brand-violet)_90%,transparent)] !border !border-[color:color-mix(in_srgb,var(--color-brand-amber-dark)_30%,transparent)] dark:!border-[color:color-mix(in_srgb,var(--color-brand-violet-dark)_30%,transparent)] !text-white backdrop-blur-sm transition-colors',
     settingsIdle:
       'border border-[var(--color-border-divider)] dark:border-[var(--color-border-divider-dark)] bg-[var(--color-surface-muted-chip)] dark:bg-[var(--color-surface-muted-chip-dark)] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row-dark)]',
   },
@@ -382,10 +393,10 @@ export const primitiveTokenRecipes = {
       'inset-[1px]',
       'rounded-[2.2rem]',
       'ring-1',
-      'ring-[var(--color-border-glass)]',
-      'shadow-[inset_0_1px_0_var(--color-border-glass),inset_0_-1px_0_var(--color-effect-glass-shadow)]',
-      'dark:ring-[var(--color-border-glass-dark)]',
-      'dark:shadow-[inset_0_1px_0_var(--color-border-glass-dark),inset_0_-1px_0_var(--color-effect-glass-shadow-dark)]',
+      'ring-white/45',
+      'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]',
+      'dark:ring-white/12',
+      'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.48)]',
     ],
     innerGradient: [
       'absolute',

@@ -1,7 +1,10 @@
 import { designTokens } from '@/ui/tokens';
 
 const semanticSurfaces = {
-  card: ['bg-[var(--color-surface-card)]', 'dark:bg-[var(--color-surface-card-dark)]'],
+  card: [
+    'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card-dark)_55%,transparent)]',
+  ],
   hoverRow: [
     'bg-[var(--color-surface-hover-row)]',
     'dark:bg-[var(--color-surface-hover-row-dark)]',
@@ -18,6 +21,10 @@ const semanticBorders = {
     'dark:border-[var(--color-border-default-dark)]',
   ],
   subtle: ['border-[var(--color-border-subtle)]', 'dark:border-[var(--color-border-subtle-dark)]'],
+  glass: [
+    'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
+    'dark:border-[color:color-mix(in_srgb,var(--color-border-glass-dark)_12%,transparent)]',
+  ],
 } as const;
 
 const semanticEffects = {
@@ -26,8 +33,8 @@ const semanticEffects = {
     'dark:shadow-[0_20px_56px_-40px_var(--color-effect-glass-shadow-dark)]',
   ],
   accentHover: [
-    'hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
-    'dark:hover:shadow-[0_0_30px_var(--color-effect-accent-hover-dark),0_0_60px_var(--color-effect-accent-hover-dark)]',
+    'hover:shadow-[0_18px_44px_-30px_var(--color-effect-accent-hover)]',
+    'dark:hover:shadow-[0_20px_52px_-34px_var(--color-effect-accent-hover-dark)]',
   ],
 } as const;
 
@@ -73,6 +80,14 @@ export const dashboardTokenRecipes = {
     ...semanticEffects.glassShadow,
   ],
   toolbarShell: ['border-b px-6 pb-4 pt-6', ...semanticBorders.subtle],
+  floatingRangeShell: [
+    'flex gap-2 rounded-2xl border px-3 py-2',
+    ...semanticBorders.glass,
+    ...semanticSurfaces.card,
+    ...semanticEffects.glassShadow,
+    'backdrop-blur-md',
+    'backdrop-saturate-[150%]',
+  ],
   tableHeader: [
     ...semanticSurfaces.mutedChip,
     designTokens.text.body,
@@ -80,7 +95,10 @@ export const dashboardTokenRecipes = {
   ],
   tableFooter: [
     'border-t px-4 py-4 transition-colors duration-500',
-    ...semanticBorders.subtle,
-    ...semanticSurfaces.mutedChip,
+    ...semanticBorders.glass,
+    ...semanticSurfaces.card,
+    ...semanticEffects.glassShadow,
+    'backdrop-blur-md',
+    'backdrop-saturate-[150%]',
   ],
 } as const;

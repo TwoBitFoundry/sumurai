@@ -50,8 +50,8 @@ describe('design token effect recipes', () => {
       'dark:shadow-[0_0_12px_var(--color-effect-danger-glow-dark)]',
     ]);
     expect(designTokens.effects.semantic.accentHover).toEqual([
-      'hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
-      'dark:hover:shadow-[0_0_30px_var(--color-effect-accent-hover-dark),0_0_60px_var(--color-effect-accent-hover-dark)]',
+      'hover:shadow-[0_18px_44px_-30px_var(--color-effect-accent-hover)]',
+      'dark:hover:shadow-[0_20px_52px_-34px_var(--color-effect-accent-hover-dark)]',
     ]);
   });
 });

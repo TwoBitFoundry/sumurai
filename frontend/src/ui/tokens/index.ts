@@ -504,14 +504,17 @@ const semanticSurfaces = {
     'dark:bg-[var(--color-surface-app-shell-dark)]',
   ],
   glassPanel: [
-    'bg-[var(--color-surface-glass-panel)]',
-    'dark:bg-[var(--color-surface-glass-panel-dark)]',
+    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel-dark)_55%,transparent)]',
   ],
   solidPanel: [
     'bg-[var(--color-surface-solid-panel)]',
     'dark:bg-[var(--color-surface-solid-panel-dark)]',
   ],
-  card: ['bg-[var(--color-surface-card)]', 'dark:bg-[var(--color-surface-card-dark)]'],
+  card: [
+    'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card-dark)_55%,transparent)]',
+  ],
   elevatedCard: [
     'bg-[var(--color-surface-elevated-card)]',
     'dark:bg-[var(--color-surface-elevated-card-dark)]',
@@ -543,7 +546,10 @@ const semanticBorders = {
   ],
   subtle: ['border-[var(--color-border-subtle)]', 'dark:border-[var(--color-border-subtle-dark)]'],
   strong: ['border-[var(--color-border-strong)]', 'dark:border-[var(--color-border-strong-dark)]'],
-  glass: ['border-[var(--color-border-glass)]', 'dark:border-[var(--color-border-glass-dark)]'],
+  glass: [
+    'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
+    'dark:border-[color:color-mix(in_srgb,var(--color-border-glass-dark)_12%,transparent)]',
+  ],
   control: [
     'border-[var(--color-border-control)]',
     'dark:border-[var(--color-border-control-dark)]',
@@ -632,8 +638,8 @@ const semanticStatusRecipes = {
   },
   danger: {
     surface: [
-      'bg-[var(--color-status-danger-surface)]',
-      'dark:bg-[var(--color-status-danger-surface-dark)]',
+      'bg-[color:color-mix(in_srgb,var(--color-status-danger-surface)_82%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-status-danger-surface-dark)_28%,transparent)]',
     ],
     border: [
       'border-[var(--color-status-danger-border)]',
@@ -645,7 +651,7 @@ const semanticStatusRecipes = {
     ],
     strongSurface: [
       'bg-[var(--color-status-danger-strong-surface)]',
-      'dark:bg-[var(--color-status-danger-strong-surface-dark)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-status-danger-strong-surface-dark)_46%,transparent)]',
     ],
     icon: [
       'text-[var(--color-status-danger-icon)]',
@@ -672,8 +678,8 @@ const semanticEffects = {
     'dark:shadow-[0_0_12px_var(--color-effect-danger-glow-dark)]',
   ],
   accentHover: [
-    'hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
-    'dark:hover:shadow-[0_0_30px_var(--color-effect-accent-hover-dark),0_0_60px_var(--color-effect-accent-hover-dark)]',
+    'hover:shadow-[0_18px_44px_-30px_var(--color-effect-accent-hover)]',
+    'dark:hover:shadow-[0_20px_52px_-34px_var(--color-effect-accent-hover-dark)]',
   ],
   chartTooltipShadow: [
     'shadow-[0_18px_45px_-25px_var(--color-effect-chart-tooltip-shadow)]',

@@ -49,8 +49,8 @@ describe('design token border recipes', () => {
       'dark:border-[var(--color-border-default-dark)]',
     ]);
     expect(designTokens.borders.glass).toEqual([
-      'border-[var(--color-border-glass)]',
-      'dark:border-[var(--color-border-glass-dark)]',
+      'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
+      'dark:border-[color:color-mix(in_srgb,var(--color-border-glass-dark)_12%,transparent)]',
     ]);
     expect(designTokens.borders.danger).toEqual([
       'border-[var(--color-border-danger)]',

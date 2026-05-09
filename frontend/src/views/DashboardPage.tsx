@@ -364,23 +364,7 @@ const DashboardPage: React.FC = () => {
             )}
             style={{ bottom: 24 }}
           >
-            <div
-              className={cn(
-                'flex',
-                'gap-2',
-                'px-3',
-                'py-2',
-                'rounded-2xl',
-                'border',
-                ...designTokens.borders.default,
-                ...designTokens.surfaces.semantic.card,
-                'shadow-xl',
-                'backdrop-blur-md',
-                'ring-1',
-                'ring-[var(--color-border-divider)]',
-                'dark:ring-[var(--color-border-divider-dark)]'
-              )}
-            >
+            <div className={cn(dashboardTokenRecipes.floatingRangeShell)}>
               {[
                 { key: 'current-month', label: 'Current Month' },
                 { key: 'past-2-months', label: '2 Months' },

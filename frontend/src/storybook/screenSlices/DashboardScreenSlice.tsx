@@ -337,21 +337,7 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
             )}
             style={{ bottom: 24 }}
           >
-            <div
-              className={cn(
-                'pointer-events-auto',
-                'flex',
-                'gap-2',
-                'px-3',
-                'py-2',
-                'rounded-2xl',
-                'border',
-                ...designTokens.borders.default,
-                ...designTokens.surfaces.semantic.card,
-                'shadow-xl',
-                'backdrop-blur-md'
-              )}
-            >
+            <div className={cn('pointer-events-auto', dashboardTokenRecipes.floatingRangeShell)}>
               {DATE_RANGE_OPTIONS.map((option) => (
                 <Button
                   type="button"

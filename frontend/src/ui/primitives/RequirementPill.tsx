@@ -11,10 +11,16 @@ const requirementVariants = cva(
   {
     variants: {
       status: {
-        pending: [...designTokens.surfaces.semantic.mutedChip, designTokens.text.subtle].join(' '),
-        met: [...designTokens.status.success.surface, ...designTokens.status.success.text].join(
-          ' '
-        ),
+        pending: [
+          'bg-[color:color-mix(in_srgb,var(--color-surface-card)_60%,transparent)]',
+          'dark:bg-[color:color-mix(in_srgb,var(--color-border-glass-dark)_5%,transparent)]',
+          designTokens.text.subtle,
+        ].join(' '),
+        met: [
+          'bg-[color:color-mix(in_srgb,var(--color-status-success-surface)_70%,transparent)]',
+          'dark:bg-[color:color-mix(in_srgb,var(--color-status-success-icon-dark)_10%,transparent)]',
+          designTokens.text.success,
+        ].join(' '),
       },
     },
     defaultVariants: {
