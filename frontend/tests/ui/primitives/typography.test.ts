@@ -66,9 +66,7 @@ describe('primitive typography recipes', () => {
     expect(designTokens.components.appTitleBar.logo.wordmark).toBe(
       designTokens.typography.pageTitleWordmark
     );
-    expect(designTokens.typography.pageTitleWordmark).toContain(
-      'var(--font-page-title-wordmark)'
-    );
+    expect(designTokens.typography.pageTitleWordmark).toContain('var(--font-page-title-wordmark)');
   });
 
   it('uses semantic text recipes for dropdown and title bar chrome', () => {
