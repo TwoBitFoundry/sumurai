@@ -145,14 +145,19 @@ Add tests and guardrails so the tokenization does not regress.
 
 Acceptance criteria:
 
-- [ ] Token tests assert that surface roles exist and map to generated token fields.
-- [ ] Token tests assert that border roles exist and map to generated token fields.
-- [ ] Token tests assert that status tone recipes exist for info, success, warning, and danger.
-- [ ] Token tests assert that key effect roles exist for glass, success, danger, and accent glow behavior.
-- [ ] `npm --prefix frontend run design:guard` passes.
-- [ ] `npm --prefix frontend run typecheck` passes.
-- [ ] `npm --prefix frontend test -- --runTestsByPath frontend/tests/ui/tokens/surfaces.test.ts frontend/tests/ui/tokens/borders.test.ts frontend/tests/ui/tokens/status.test.ts` passes, using the actual test filenames created.
-- [ ] `npm --prefix frontend run build` passes.
+- [x] Token tests assert that surface roles exist and map to generated token fields.
+- [x] Token tests assert that border roles exist and map to generated token fields.
+- [x] Token tests assert that status tone recipes exist for info, success, warning, and danger.
+- [x] Token tests assert that key effect roles exist for glass, success, danger, and accent glow behavior.
+- [x] `npm --prefix frontend run design:guard` passes.
+- [x] `npm --prefix frontend run typecheck` passes.
+- [x] `npm --prefix frontend test -- --runTestsByPath frontend/tests/ui/tokens/surfaces.test.ts frontend/tests/ui/tokens/borders.test.ts frontend/tests/ui/tokens/status.test.ts` passes, using the actual test filenames created.
+- [x] `npm --prefix frontend run build` passes.
+
+TDD log:
+
+- Added focused surface, border, status, and effect token tests under `frontend/tests/ui/tokens/`.
+- Verified the package-relative Jest invocation for the new token tests, then ran `design:guard`, `typecheck`, and the production build successfully.
 
 ## Assumptions
 
