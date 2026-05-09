@@ -1,7 +1,8 @@
 import { onboardingTokenRecipes } from '@/components/onboarding/tokenRecipes';
 import { budgetTokenRecipes } from '@/features/budgets/tokenRecipes';
-import { primitiveTokenRecipes } from '@/ui/primitives/tokenRecipes';
+import { primitiveTokenRecipes, primitiveTypographyRecipes } from '@/ui/primitives/tokenRecipes';
 import generatedTokens from './generated/tokens';
+import { semanticPlaceholderTextRecipes, semanticTextRecipes } from './textRecipes';
 
 export type ThemeMode = 'light' | 'dark';
 export type HeroAccent = 'slate' | 'emerald' | 'sky' | 'violet' | 'amber' | 'rose';
@@ -98,34 +99,32 @@ const fieldControlBase = [
   'disabled:cursor-not-allowed disabled:opacity-60',
 ];
 const fieldControlDefault = [
-  'bg-white text-slate-900',
+  `bg-white ${semanticTextRecipes.primary}`,
   'border-black/10',
   'focus:ring-2 focus:ring-sky-400',
   'focus:ring-offset-2 focus:ring-offset-white',
   'dark:bg-[#111a2f]',
-  'dark:text-white',
   'dark:border-white/12',
   'dark:focus:ring-sky-400/80',
   'dark:focus:ring-offset-[#0f172a]',
 ];
 const fieldControlInvalid = [
-  'bg-white text-slate-900',
+  `bg-white ${semanticTextRecipes.primary}`,
   'border-red-300',
   'focus:ring-2 focus:ring-red-400',
   'focus:ring-offset-2 focus:ring-offset-white',
   'dark:bg-[#111a2f]',
-  'dark:text-white',
   'dark:border-red-600/80',
   'dark:focus:ring-red-400/75',
   'dark:focus:ring-offset-[#0f172a]',
 ];
 const fieldControlGlass = [
-  'bg-white/80 text-slate-700',
+  `bg-white/80 ${semanticTextRecipes.body}`,
   'border-white/60',
   'shadow-[0_18px_45px_-32px_rgba(15,23,42,0.5)]',
   'focus:ring-2 focus:ring-sky-400/80',
   'focus:ring-offset-2 focus:ring-offset-white',
-  'dark:bg-[#111a2f]/80 dark:text-slate-100',
+  `dark:bg-[#111a2f]/80 ${semanticTextRecipes.inverse}`,
   'dark:border-white/12',
   'dark:focus:ring-offset-[#0f172a]',
 ];
@@ -483,8 +482,7 @@ const layeredSurfaces = {
     'bg-white/75',
     'px-3',
     'py-1',
-    'text-[11px]',
-    'font-semibold',
+    primitiveTypographyRecipes.label,
     'uppercase',
     'tracking-[0.32em]',
     'text-[#475569]',
@@ -653,10 +651,11 @@ export const designTokens = {
   typography: {
     brand: brandFont,
     sans: sansFont,
-    subheading: sansFont,
-    label: 'text-[0.65rem] font-semibold uppercase tracking-[0.24em]',
-    pill: pillTypography,
-    badge: 'text-[11px] font-semibold uppercase tracking-[0.32em]',
+    ...primitiveTypographyRecipes,
+    subheading: primitiveTypographyRecipes.bodyStrong,
+    pill: primitiveTypographyRecipes.badge,
+    budgetProgressCaption: primitiveTypographyRecipes.caption,
+    budgetProgressCaptionStrong: primitiveTypographyRecipes.captionStrong,
   },
   radii: {
     panel: 'rounded-[2.25rem]',
@@ -673,6 +672,7 @@ export const designTokens = {
     shellY: 'py-12 sm:py-16',
     compactGap: 'gap-2',
     sectionGap: 'gap-5',
+    labeledFieldGap: 'gap-3',
   },
   shadows: {
     glass: {
@@ -728,6 +728,8 @@ export const designTokens = {
     categoryPill: categoryPillPalettes,
     feature: featurePalettes,
   },
+  text: semanticTextRecipes,
+  textPlaceholder: semanticPlaceholderTextRecipes,
   components: {
     button: primitiveTokenRecipes.button,
     connectButton: primitiveTokenRecipes.connectButton,
@@ -764,11 +766,9 @@ export const designTokens = {
       base: 'hero-stat-card group relative rounded-2xl transition-colors duration-300',
       shell:
         'relative h-full w-full overflow-hidden rounded-2xl border-2 bg-white/80 p-4 transform-gpu origin-center will-change-transform transition-transform duration-200 dark:bg-[#111a2f]/70',
-      title:
-        'text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition-colors duration-500 dark:text-slate-400',
-      value: 'text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white',
-      suffix:
-        'text-sm font-medium text-slate-600 transition-colors duration-500 dark:text-slate-300',
+      title: `${primitiveTypographyRecipes.label} ${semanticTextRecipes.label} transition-colors duration-500`,
+      value: `${primitiveTypographyRecipes.cardTitle} ${semanticTextRecipes.primary} transition-colors duration-500`,
+      suffix: `${primitiveTypographyRecipes.captionStrong} ${semanticTextRecipes.body} transition-colors duration-500`,
       overlay:
         'pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100',
       ring: 'pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] opacity-70',

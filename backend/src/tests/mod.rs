@@ -16,6 +16,7 @@ mod config_tests;
 mod connection_cache_integration_tests;
 mod connection_service_tests;
 mod integration_tests;
+mod merchant_name_normalization_tests;
 mod migration_tests;
 mod models_tests;
 mod openapi_tests;

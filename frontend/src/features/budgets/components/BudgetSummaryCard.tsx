@@ -22,7 +22,7 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
         'border-slate-200',
         'bg-white/80',
         'p-5',
-        'text-slate-700',
+        designTokens.text.body,
         'shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)]',
         'transition-all',
         'duration-300',
@@ -30,7 +30,7 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
         'hover:border-slate-300',
         'dark:border-slate-700',
         ...designTokens.surfaces.layered.panel70,
-        'dark:text-slate-200',
+        designTokens.text.body,
         'dark:hover:border-slate-600'
       )}
       data-testid="budget-summary-card"
@@ -58,10 +58,9 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
           <div
             className={cn(
               designTokens.typography.label,
-              'text-slate-500',
+              designTokens.text.subtle,
               'transition-colors',
-              'duration-500',
-              'dark:text-slate-400'
+              'duration-500'
             )}
           >
             Total Planned
@@ -71,10 +70,9 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
               'mt-1',
               'text-2xl',
               'font-semibold',
-              'text-slate-900',
+              designTokens.text.primary,
               'transition-colors',
-              'duration-500',
-              'dark:text-white'
+              'duration-500'
             )}
           >
             {fmtUSD(totalBudgeted)}
@@ -84,10 +82,9 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
           <div
             className={cn(
               designTokens.typography.label,
-              'text-slate-500',
+              designTokens.text.subtle,
               'transition-colors',
-              'duration-500',
-              'dark:text-slate-400'
+              'duration-500'
             )}
           >
             Total Spent
@@ -99,7 +96,7 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
               'font-semibold',
               'transition-colors',
               'duration-500',
-              overBudget ? 'text-red-600 dark:text-red-300' : 'text-slate-700 dark:text-slate-200'
+              overBudget ? designTokens.text.danger : designTokens.text.body
             )}
           >
             {fmtUSD(totalSpent)}

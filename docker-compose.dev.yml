@@ -30,12 +30,15 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
     environment:
       REDIS_URL: redis://redis:6379
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-accounting}
 
       DEFAULT_PROVIDER: teller
       AUTH_COOKIE_SAME_SITE: Lax
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080,http://localhost:3001}
 
       OTEL_TRACES_EXPORTER: console
 

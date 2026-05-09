@@ -1,6 +1,7 @@
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import type React from 'react';
 import { cn } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 
 type ConnectionStatus = 'connected' | 'needs_reauth' | 'error';
 
@@ -17,17 +18,17 @@ export const StatusPill: React.FC<StatusPillProps> = ({ status, className }) => 
   const statusConfig = {
     connected: {
       label: 'Connected',
-      className: 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/20',
+      className: `bg-emerald-500/15 ${designTokens.text.success} ring-1 ring-emerald-500/20`,
       Icon: CheckCircle2,
     },
     needs_reauth: {
       label: 'Re-auth needed',
-      className: 'bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/20',
+      className: `bg-amber-500/15 ${designTokens.text.warning} ring-1 ring-amber-500/20`,
       Icon: AlertTriangle,
     },
     error: {
       label: 'Error',
-      className: 'bg-rose-500/15 text-rose-400 ring-1 ring-rose-500/20',
+      className: `bg-rose-500/15 ${designTokens.text.danger} ring-1 ring-rose-500/20`,
       Icon: AlertTriangle,
     },
   } as const;
@@ -37,7 +38,8 @@ export const StatusPill: React.FC<StatusPillProps> = ({ status, className }) => 
   return (
     <span
       className={classNames(
-        'inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-full',
+        'inline-flex items-center gap-1.5 px-2 py-1 rounded-full',
+        designTokens.typography.label,
         statusClassName,
         className
       )}

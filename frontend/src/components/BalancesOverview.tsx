@@ -22,6 +22,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useBalancesOverview } from '../hooks/useBalancesOverview';
 import { formatRatio } from '../services/AnalyticsService';
 import { Alert, Button, cn, GlassCard } from '../ui/primitives';
+import { designTokens } from '../ui/tokens';
 import { Amount, fmtUSD } from './Amount';
 import HeroStatCard from './widgets/HeroStatCard';
 
@@ -38,9 +39,11 @@ function RatioPill({ ratio }: { ratio: number | string | null }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold',
-        'border-slate-200 bg-white/70 text-slate-600',
-        'dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200'
+        'inline-flex items-center rounded-full border px-2 py-0.5',
+        designTokens.typography.label,
+        'border-slate-200 bg-white/70',
+        designTokens.text.muted,
+        'dark:border-slate-700 dark:bg-slate-800/60'
       )}
     >
       A/L: {label}
@@ -59,8 +62,8 @@ function BalancesLegend({ payload, ratio }: BalancesLegendProps) {
     <div
       className={cn(
         'flex w-full flex-wrap items-center justify-between gap-3',
-        'text-xs text-slate-600',
-        'dark:text-slate-300'
+        designTokens.typography.caption,
+        designTokens.text.body
       )}
     >
       <div className="flex flex-wrap items-center gap-3">
@@ -76,7 +79,7 @@ function BalancesLegend({ payload, ratio }: BalancesLegendProps) {
           return (
             <span key={`${entry.dataKey ?? label}`} className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-              <span className="font-medium">{label}</span>
+              <span className={cn(designTokens.typography.captionStrong)}>{label}</span>
             </span>
           );
         })}
@@ -254,13 +257,7 @@ export function BalancesOverview() {
         {!loading && refreshing && (
           <RefreshCcw
             aria-label="Refreshing balances"
-            className={cn(
-              'h-4',
-              'w-4',
-              'text-slate-500',
-              'dark:text-slate-400',
-              refreshing && 'animate-spin'
-            )}
+            className={cn('h-4', 'w-4', designTokens.text.subtle, refreshing && 'animate-spin')}
           />
         )}
       </div>
@@ -335,56 +332,25 @@ export function BalancesOverview() {
               padding="sm"
               withInnerEffects={false}
               className={cn(
-                'flex flex-wrap items-center gap-3 text-xs',
-                'text-slate-700 dark:text-slate-200'
+                'flex flex-wrap items-center gap-3',
+                designTokens.typography.caption,
+                designTokens.text.body
               )}
             >
-              <span className="font-semibold">{hoverInfo.bank}</span>
-              <span
-                className={cn(
-                  'flex',
-                  'items-center',
-                  'gap-1',
-                  'text-emerald-600',
-                  'dark:text-emerald-300'
-                )}
-              >
+              <span className={cn(designTokens.typography.captionStrong)}>{hoverInfo.bank}</span>
+              <span className={cn('flex', 'items-center', 'gap-1', designTokens.text.success)}>
                 <span className={cn('h-2', 'w-2', 'rounded-full', 'bg-emerald-500')} />
                 Cash: {fmtUSD(hoverInfo.cash ?? 0)}
               </span>
-              <span
-                className={cn(
-                  'flex',
-                  'items-center',
-                  'gap-1',
-                  'text-cyan-600',
-                  'dark:text-cyan-300'
-                )}
-              >
+              <span className={cn('flex', 'items-center', 'gap-1', designTokens.text.info)}>
                 <span className={cn('h-2', 'w-2', 'rounded-full', 'bg-cyan-500')} />
                 Investments: {fmtUSD(hoverInfo.investments ?? 0)}
               </span>
-              <span
-                className={cn(
-                  'flex',
-                  'items-center',
-                  'gap-1',
-                  'text-rose-600',
-                  'dark:text-rose-300'
-                )}
-              >
+              <span className={cn('flex', 'items-center', 'gap-1', designTokens.text.danger)}>
                 <span className={cn('h-2', 'w-2', 'rounded-full', 'bg-rose-500')} />
                 Credit: {fmtUSD(hoverInfo.credit ?? 0)}
               </span>
-              <span
-                className={cn(
-                  'flex',
-                  'items-center',
-                  'gap-1',
-                  'text-amber-600',
-                  'dark:text-amber-300'
-                )}
-              >
+              <span className={cn('flex', 'items-center', 'gap-1', designTokens.text.warning)}>
                 <span className={cn('h-2', 'w-2', 'rounded-full', 'bg-amber-500')} />
                 Loan: {fmtUSD(hoverInfo.loan ?? 0)}
               </span>

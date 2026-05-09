@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
+import { cn } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import { AppLayout } from './AppLayout';
 
 const meta = {
@@ -13,7 +15,19 @@ const meta = {
     onTabChange: fn(),
     onLogout: fn(),
     renderAccountFilter: () => (
-      <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-600 dark:text-slate-300">
+      <span
+        className={cn(
+          'rounded-full',
+          'border',
+          'border-slate-200',
+          'px-3',
+          'py-1',
+          'text-xs',
+          'font-medium',
+          designTokens.text.muted,
+          'dark:border-slate-600'
+        )}
+      >
         All accounts
       </span>
     ),

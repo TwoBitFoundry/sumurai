@@ -91,16 +91,23 @@ export function WelcomeStep() {
           <div className={cn('space-y-3')}>
             <h1
               className={cn(
-                'text-3xl font-bold text-slate-900 transition-colors duration-300 ease-out',
-                'md:text-[2.6rem]',
-                'dark:text-white'
+                designTokens.typography.pageTitle,
+                designTokens.text.primary,
+                'transition-colors',
+                'duration-300',
+                'ease-out'
               )}
             >
               Your new financial hub
             </h1>
             <p
               className={cn(
-                'text-base leading-relaxed text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300'
+                designTokens.typography.body,
+                'leading-relaxed',
+                designTokens.text.body,
+                'transition-colors',
+                'duration-300',
+                'ease-out'
               )}
             >
               Bring every account into one secure place, watch budgets stay on track, and turn raw

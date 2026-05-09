@@ -117,6 +117,21 @@ fn given_teller_transaction_without_counterparty_when_from_teller_then_uses_desc
 }
 
 #[test]
+fn merchant_name_from_teller_falls_back_when_counterparty_name_empty() {
+    let v = serde_json::json!({
+        "description": "Statement line text",
+        "details": {
+            "category": "general",
+            "counterparty": { "name": "", "type": "organization" }
+        }
+    });
+    assert_eq!(
+        Transaction::merchant_name_from_teller(&v),
+        Some("Statement Line Text".to_string())
+    );
+}
+
+#[test]
 fn given_teller_transaction_with_invalid_date_when_from_teller_then_uses_current_date() {
     let account_id = Uuid::new_v4();
     let teller_json =

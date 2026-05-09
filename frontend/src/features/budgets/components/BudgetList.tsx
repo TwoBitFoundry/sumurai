@@ -100,7 +100,7 @@ export function BudgetList({
                 />
                 {displayName}
               </div>
-              <div className={cn('flex', 'items-center', 'gap-2', 'text-xs')}>
+              <div className={cn('flex', 'items-center', 'gap-2', designTokens.typography.label)}>
                 {isEditing ? (
                   <>
                     <button
@@ -163,10 +163,9 @@ export function BudgetList({
                       className={cn(
                         'block',
                         designTokens.typography.label,
-                        'text-slate-500',
+                        designTokens.text.subtle,
                         'transition-colors',
-                        'duration-300',
-                        'dark:text-slate-400'
+                        'duration-300'
                       )}
                     >
                       Planned amount
@@ -186,33 +185,29 @@ export function BudgetList({
                   <div
                     className={cn(
                       'text-right',
-                      'text-sm',
-                      'text-slate-500',
+                      designTokens.typography.caption,
+                      designTokens.text.subtle,
                       'transition-colors',
-                      'duration-300',
-                      'dark:text-slate-400'
+                      'duration-300'
                     )}
                   >
                     <span
                       className={cn(
                         'block',
                         designTokens.typography.label,
-                        'text-slate-500',
+                        designTokens.text.subtle,
                         'transition-colors',
-                        'duration-300',
-                        'dark:text-slate-400'
+                        'duration-300'
                       )}
                     >
                       Spent
                     </span>
                     <span
                       className={cn(
-                        'text-base',
-                        'font-semibold',
-                        'text-slate-700',
+                        designTokens.typography.bodyStrong,
+                        designTokens.text.body,
                         'transition-colors',
-                        'duration-300',
-                        'dark:text-slate-200'
+                        'duration-300'
                       )}
                     >
                       {fmtUSD(b.spent)}
@@ -225,21 +220,19 @@ export function BudgetList({
                     'grid',
                     'grid-cols-2',
                     'gap-4',
-                    'text-sm',
-                    'text-slate-500',
+                    designTokens.typography.caption,
+                    designTokens.text.subtle,
                     'transition-colors',
-                    'duration-300',
-                    'dark:text-slate-400'
+                    'duration-300'
                   )}
                 >
                   <div>
                     <span
                       className={cn(
                         designTokens.typography.label,
-                        'text-slate-500',
+                        designTokens.text.subtle,
                         'transition-colors',
-                        'duration-300',
-                        'dark:text-slate-500'
+                        'duration-300'
                       )}
                     >
                       Planned
@@ -247,12 +240,10 @@ export function BudgetList({
                     <div
                       className={cn(
                         'mt-1',
-                        'text-2xl',
-                        'font-semibold',
-                        'text-slate-900',
+                        designTokens.typography.cardTitle,
+                        designTokens.text.primary,
                         'transition-colors',
-                        'duration-300',
-                        'dark:text-white'
+                        'duration-300'
                       )}
                     >
                       {fmtUSD(b.amount)}
@@ -262,16 +253,21 @@ export function BudgetList({
                     <span
                       className={cn(
                         designTokens.typography.label,
-                        'text-slate-500',
+                        designTokens.text.subtle,
                         'transition-colors',
-                        'duration-300',
-                        'dark:text-slate-500'
+                        'duration-300'
                       )}
                     >
                       Spent
                     </span>
                     <div
-                      className={`mt-1 text-2xl font-semibold transition-colors duration-300 ${isOver ? 'text-red-600 dark:text-red-300' : 'text-slate-700 dark:text-slate-200'}`}
+                      className={cn(
+                        'mt-1',
+                        designTokens.typography.cardTitle,
+                        'transition-colors',
+                        'duration-300',
+                        isOver ? designTokens.text.danger : designTokens.text.body
+                      )}
                     >
                       {fmtUSD(b.spent)}
                     </div>

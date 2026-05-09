@@ -3,6 +3,7 @@ import type React from 'react';
 
 import { Button, GlassCard } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
+import { designTokens } from '@/ui/tokens';
 
 interface ToastProps {
   message: string;
@@ -25,7 +26,7 @@ export const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
         withInnerEffects={false}
       >
         <div
-          className={cn('flex-1', 'text-sm', 'font-medium', 'text-slate-900', 'dark:text-white')}
+          className={cn('flex-1', designTokens.typography.captionStrong, designTokens.text.primary)}
         >
           {message}
         </div>

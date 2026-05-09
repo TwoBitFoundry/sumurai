@@ -33,6 +33,16 @@ interface AuthServiceDependencies {
   storage: IStorageAdapter;
 }
 
+function hasUnauthorizedStatus(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    typeof (error as { status: unknown }).status === 'number' &&
+    (error as { status: number }).status === 401
+  );
+}
+
 export class AuthService {
   private static refreshPromise: Promise<RefreshResponse> | null = null;
 
@@ -54,7 +64,7 @@ export class AuthService {
       span.recordException(error as Error);
       span.setStatus({ code: SpanStatusCode.ERROR });
 
-      if (error instanceof AuthenticationError) {
+      if (error instanceof AuthenticationError || hasUnauthorizedStatus(error)) {
         throw new Error('Invalid email or password');
       }
       if (error instanceof Error) {

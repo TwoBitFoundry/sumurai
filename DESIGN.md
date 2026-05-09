@@ -51,6 +51,28 @@ colors:
   semantic-dark-credit: "#fb7185"
   semantic-dark-loan: "#fbbf24"
   semantic-dark-net-worth: "#a78bfa"
+  text-primary: "#0f172a"
+  text-primary-dark: "#f8fafc"
+  text-body: "#334155"
+  text-body-dark: "#cbd5e1"
+  text-muted: "#475569"
+  text-muted-dark: "#94a3b8"
+  text-subtle: "#94a3b8"
+  text-subtle-dark: "#64748b"
+  text-label: "#64748b"
+  text-label-dark: "#94a3b8"
+  text-inverse: "#ffffff"
+  text-inverse-dark: "#ffffff"
+  text-accent: "#0369a1"
+  text-accent-dark: "#38bdf8"
+  text-danger: "#dc2626"
+  text-danger-dark: "#fca5a5"
+  text-success: "#059669"
+  text-success-dark: "#6ee7b7"
+  text-warning: "#d97706"
+  text-warning-dark: "#fcd34d"
+  text-info: "#0284c7"
+  text-info-dark: "#7dd3fc"
   category-sky: "#38bdf8"
   category-emerald: "#34d399"
   category-cyan: "#22d3ee"
@@ -68,6 +90,54 @@ typography:
     fontWeight: 700
     lineHeight: 1
     letterSpacing: 0
+  display:
+    fontFamily: "'Cal Sans', system-ui, sans-serif"
+    fontSize: 3rem
+    fontWeight: 700
+    lineHeight: 1.1
+    letterSpacing: 0
+  page-title:
+    fontFamily: "'Cal Sans', system-ui, sans-serif"
+    fontSize: 2rem
+    fontWeight: 700
+    lineHeight: 1.1
+    letterSpacing: 0
+  section-title:
+    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
+    fontSize: 1.5rem
+    fontWeight: 600
+    lineHeight: 1.25
+    letterSpacing: 0
+  card-title:
+    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
+    fontSize: 1.25rem
+    fontWeight: 600
+    lineHeight: 1.25
+    letterSpacing: 0
+  body:
+    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
+    fontSize: 1rem
+    fontWeight: 400
+    lineHeight: 1.5
+    letterSpacing: 0
+  body-strong:
+    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
+    fontSize: 1rem
+    fontWeight: 600
+    lineHeight: 1.5
+    letterSpacing: 0
+  caption:
+    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
+    fontSize: 0.875rem
+    fontWeight: 400
+    lineHeight: 1.5
+    letterSpacing: 0
+  caption-strong:
+    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
+    fontSize: 0.875rem
+    fontWeight: 600
+    lineHeight: 1.5
+    letterSpacing: 0
   sans:
     fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
     fontSize: 1rem
@@ -76,37 +146,37 @@ typography:
     letterSpacing: 0
   subheading:
     fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
-    fontSize: 0.95rem
-    fontWeight: 500
-    lineHeight: 1.35
+    fontSize: 1rem
+    fontWeight: 600
+    lineHeight: 1.5
     letterSpacing: 0
   label:
     fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
-    fontSize: 0.65rem
+    fontSize: 0.75rem
     fontWeight: 600
     lineHeight: 1
-    letterSpacing: 0.24em
+    letterSpacing: 0.14em
   pill:
     fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
-    fontSize: 0.6rem
+    fontSize: 0.75rem
     fontWeight: 700
     lineHeight: 1
-    letterSpacing: 0.18em
+    letterSpacing: 0.14em
   badge:
     fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
-    fontSize: 11px
-    fontWeight: 600
+    fontSize: 0.75rem
+    fontWeight: 700
     lineHeight: 1
-    letterSpacing: 0.32em
+    letterSpacing: 0.14em
   budget-progress-caption:
     fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
-    fontSize: 0.75rem
+    fontSize: 0.875rem
     fontWeight: 400
     lineHeight: 1.5
     letterSpacing: 0
   budget-progress-caption-strong:
     fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
-    fontSize: 0.75rem
+    fontSize: 0.875rem
     fontWeight: 600
     lineHeight: 1.5
     letterSpacing: 0
@@ -170,6 +240,7 @@ components:
     textColor: "#475569"
     rounded: "{rounded.large}"
     padding: 12px
+
   glass-card:
     backgroundColor: "#ffffff"
     rounded: "{rounded.large}"
@@ -407,6 +478,8 @@ components:
     textColor: "{colors.chart-dark-dot-fill}"
 ---
 
+Text roles are semantic and reusable. They preserve the current light and dark copy hierarchy without turning this file into a Tailwind class catalog.
+
 ## Overview
 
 Sumurai should read as a restrained financial workspace: dark first, bright enough for legibility, and layered with glass depth instead of heavy borders. The visual identity comes from cyan and violet accents, cool neutral surfaces, compact labels, and semantic finance colors that separate cash, investments, credit, loans, and net worth without adding unnecessary hues.
@@ -421,7 +494,9 @@ Surfaces should stay neutral. The shell can keep an ambient blue aura and violet
 
 ## Typography
 
-Use the brand face for the product mark and the main sans family for interface copy. Use subheading, label, pill, and badge roles only when the hierarchy needs to stay compact and fast to scan. Labels, pills, and badges should stay uppercase and tightly tracked.
+Use the brand face for the product mark and display moments. Use the body role for normal readable UI copy, caption for secondary text, and the compact label and badge roles only when the hierarchy needs to stay tight. Uppercase labels, badges, and pills are the only places that should use nonzero tracking.
+
+The typography scale should stay small and semantic so dense finance content remains legible at 100% zoom. Keep `1rem` as the default readable size, reserve `0.875rem` for caption-sized UI, and avoid one-off font sizing unless a constrained surface truly needs it.
 
 ## Layout
 

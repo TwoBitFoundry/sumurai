@@ -3,6 +3,7 @@ import { Building2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { cn } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 
 interface HeaderAccountFilterProps {
   scrolled: boolean;
@@ -107,7 +108,9 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
           'flex',
           'items-center',
           'gap-2',
-          scrolled ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm'
+          designTokens.text.body,
+          designTokens.typography.captionStrong,
+          scrolled ? 'px-2.5 py-1' : 'px-3 py-1.5'
         )}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
@@ -157,16 +160,14 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
             )}
           >
             <div className={cn('p-4', 'border-b', 'border-slate-200', 'dark:border-slate-700')}>
-              <div
-                className={cn('text-sm', 'font-medium', 'text-slate-900', 'dark:text-slate-100')}
-              >
+              <div className={cn(designTokens.typography.captionStrong, designTokens.text.primary)}>
                 Filter by account
               </div>
             </div>
 
             <div className={cn('overflow-y-auto', 'flex-1', 'p-4')}>
               {loading ? (
-                <div className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400')}>
+                <div className={cn(designTokens.typography.caption, designTokens.text.muted)}>
                   Loading accounts...
                 </div>
               ) : (
@@ -210,8 +211,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                               className={cn(
                                 'h-4',
                                 'w-4',
-                                'text-slate-600',
-                                'dark:text-slate-400',
+                                designTokens.text.muted,
                                 'transition-transform',
                                 !isCollapsed && 'rotate-90'
                               )}
@@ -238,10 +238,8 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                           <label
                             htmlFor={`bank-${bankName}`}
                             className={cn(
-                              'text-sm',
-                              'font-medium',
-                              'text-slate-900',
-                              'dark:text-slate-100',
+                              designTokens.typography.captionStrong,
+                              designTokens.text.primary,
                               'flex-1',
                               'cursor-pointer'
                             )}
@@ -281,9 +279,8 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                                   <label
                                     htmlFor={`account-${account.id}`}
                                     className={cn(
-                                      'text-sm',
-                                      'text-slate-600',
-                                      'dark:text-slate-400',
+                                      designTokens.typography.caption,
+                                      designTokens.text.muted,
                                       'cursor-pointer'
                                     )}
                                   >
@@ -298,7 +295,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                     );
                   })}
                   {Object.keys(accountsByBank).length === 0 && !loading && (
-                    <div className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400')}>
+                    <div className={cn(designTokens.typography.caption, designTokens.text.muted)}>
                       No accounts available.
                     </div>
                   )}

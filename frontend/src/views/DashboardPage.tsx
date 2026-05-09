@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import type { DotItemDotProps } from 'recharts/types/util/types';
 import { Button, cn, EmptyState } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import BalancesOverview from '../components/BalancesOverview';
 import { useTheme } from '../context/ThemeContext';
 import { DashboardCalculator } from '../domain/DashboardCalculator';
@@ -114,7 +115,9 @@ const DashboardPage: React.FC = () => {
               isRefreshing={!analyticsLoading && analyticsRefreshing}
             >
               {analyticsLoading && (
-                <div className={cn('mb-2', 'text-xs', 'text-slate-500', 'dark:text-slate-400')}>
+                <div
+                  className={cn('mb-2', designTokens.typography.caption, designTokens.text.muted)}
+                >
                   Loading analytics...
                 </div>
               )}
@@ -137,9 +140,8 @@ const DashboardPage: React.FC = () => {
                     <div>
                       <div
                         className={cn(
-                          'text-xs',
-                          'text-slate-600',
-                          'dark:text-slate-400',
+                          designTokens.typography.label,
+                          designTokens.text.label,
                           'mb-2',
                           'font-medium'
                         )}
@@ -176,10 +178,8 @@ const DashboardPage: React.FC = () => {
                                 />
                                 <span
                                   className={cn(
-                                    'text-xs',
-                                    'font-medium',
-                                    'text-slate-800',
-                                    'dark:text-slate-200',
+                                    designTokens.typography.captionStrong,
+                                    designTokens.text.primary,
                                     'truncate'
                                   )}
                                 >
@@ -189,19 +189,16 @@ const DashboardPage: React.FC = () => {
                               <div className={cn('flex', 'items-baseline', 'justify-between')}>
                                 <div
                                   className={cn(
-                                    'text-xs',
-                                    'font-semibold',
-                                    'text-slate-900',
-                                    'dark:text-slate-100'
+                                    designTokens.typography.bodyStrong,
+                                    designTokens.text.primary
                                   )}
                                 >
                                   {fmtUSD(cat.value)}
                                 </div>
                                 <div
                                   className={cn(
-                                    'text-[10px]',
-                                    'text-slate-500',
-                                    'dark:text-slate-400'
+                                    designTokens.typography.caption,
+                                    designTokens.text.muted
                                   )}
                                 >
                                   {percentage}%
@@ -257,9 +254,8 @@ const DashboardPage: React.FC = () => {
                   className={cn(
                     'flex-1',
                     'min-h-[220px]',
-                    'text-sm',
-                    'text-rose-600',
-                    'dark:text-rose-400'
+                    designTokens.typography.body,
+                    designTokens.text.danger
                   )}
                 >
                   {netError}
@@ -410,7 +406,8 @@ const DashboardPage: React.FC = () => {
                   key={option.key}
                   onClick={() => setDateRange(option.key as DateRange)}
                   variant={dateRange === option.key ? 'tabActive' : 'tab'}
-                  className="rounded-lg px-3 py-1.5 text-sm font-medium normal-case transition-all duration-200"
+                  size="sm"
+                  className="rounded-lg px-3 py-1.5 normal-case transition-all duration-200"
                 >
                   {option.label}
                 </Button>

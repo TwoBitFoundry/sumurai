@@ -17,7 +17,8 @@ import { WelcomeStep } from './WelcomeStep';
 
 const stepIndicatorVariants = cva(
   [
-    'inline-flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold',
+    'inline-flex h-8 w-8 items-center justify-center rounded-full border',
+    designTokens.typography.label,
     'transition-colors duration-300 ease-out',
     'backdrop-blur-[2px] backdrop-saturate-[140%]',
   ],
@@ -36,8 +37,9 @@ const stepIndicatorVariants = cva(
           'dark:border-emerald-400/70 dark:bg-emerald-500',
         ],
         idle: [
-          'border-slate-200/80 bg-white text-slate-500',
-          'dark:border-slate-700/70 dark:bg-slate-900 dark:text-slate-300',
+          'border-slate-200/80 bg-white',
+          designTokens.text.subtle,
+          'dark:border-slate-700/70 dark:bg-slate-900',
         ],
       },
     },
@@ -310,8 +312,11 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
               >
                 <p
                   className={cn(
-                    'text-xs text-slate-500 transition-colors duration-300 ease-out',
-                    'dark:text-slate-300'
+                    designTokens.typography.caption,
+                    designTokens.text.subtle,
+                    'transition-colors',
+                    'duration-300',
+                    'ease-out'
                   )}
                 >
                   {providerContent.securityNote}

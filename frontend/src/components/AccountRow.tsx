@@ -48,23 +48,20 @@ const accountMetaClasses = cn(
   'flex',
   'items-center',
   'gap-2',
-  'text-xs',
-  'font-medium',
+  designTokens.typography.captionStrong,
   'capitalize',
-  'text-slate-600',
+  designTokens.text.muted,
   'transition-colors',
   'duration-300',
-  'ease-out',
-  'dark:text-slate-300'
+  'ease-out'
 );
 
 const accountMaskClasses = cn(
   'font-mono',
-  'text-slate-400',
+  designTokens.text.subtle,
   'transition-colors',
   'duration-300',
-  'ease-out',
-  'dark:text-slate-500'
+  'ease-out'
 );
 
 const transactionsPillClasses = cn(
@@ -75,17 +72,15 @@ const transactionsPillClasses = cn(
   'border',
   'px-2.5',
   'py-1',
-  'text-xs',
-  'font-semibold',
+  designTokens.typography.label,
   'border-slate-200',
   'bg-slate-50',
-  'text-slate-600',
+  designTokens.text.muted,
   'transition-colors',
   'duration-300',
   'ease-out',
   'dark:border-slate-600',
-  'dark:bg-slate-800',
-  'dark:text-slate-300'
+  'dark:bg-slate-800'
 );
 
 const formatMoney = (amount?: number) => {
@@ -110,9 +105,10 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
   const balanceText = formatMoney(rawBalance);
 
   const balanceColor = cn(
-    'text-sm font-semibold tabular-nums',
+    designTokens.typography.bodyStrong,
+    'tabular-nums',
     'transition-colors duration-300 ease-out',
-    rawBalance == null && 'text-slate-400 dark:text-slate-500',
+    rawBalance == null && designTokens.text.subtle,
     rawBalance != null &&
       !isDebtAccount &&
       rawBalance > 0 &&
@@ -122,10 +118,10 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
       !isDebtAccount &&
       rawBalance > 0 &&
       isOtherAccount &&
-      'text-slate-500 dark:text-slate-400',
+      designTokens.text.muted,
     rawBalance != null && rawBalance < 0 && 'text-rose-500 dark:text-rose-400',
     isDebtAccount && rawBalance != null && 'text-red-500 dark:text-red-400',
-    rawBalance === 0 && 'text-slate-500 dark:text-slate-600'
+    rawBalance === 0 && designTokens.text.subtle
   );
 
   return (
@@ -142,13 +138,11 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
           <div className={cn('flex', 'items-center', 'justify-between')}>
             <div
               className={cn(
-                'text-sm',
-                'font-semibold',
-                'text-slate-900',
+                designTokens.typography.bodyStrong,
+                designTokens.text.primary,
                 'transition-colors',
                 'duration-300',
-                'ease-out',
-                'dark:text-white'
+                'ease-out'
               )}
             >
               {account.name}

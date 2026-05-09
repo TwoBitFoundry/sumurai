@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { cn } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import { AuthService } from './services/authService';
 import { Button, GlassCard, Modal } from './ui/primitives';
 
@@ -85,14 +86,14 @@ export function SessionExpiryModal({
         <div className="space-y-2">
           <h2
             id="session-expiry-heading"
-            className={cn('text-xl', 'font-semibold', 'text-slate-900', 'dark:text-slate-100')}
+            className={cn(designTokens.typography.cardTitle, designTokens.text.primary)}
           >
             Session expiring
           </h2>
-          <div className={cn('text-3xl', 'font-mono', 'text-red-600', 'dark:text-red-400')}>
+          <div className={cn('text-3xl', 'font-mono', designTokens.text.danger)}>
             {formatTime(timeRemaining)}
           </div>
-          <p className={cn('text-sm', 'text-slate-600', 'dark:text-slate-400')}>
+          <p className={cn(designTokens.typography.body, designTokens.text.muted)}>
             Your session will expire in {Math.ceil(timeRemaining / 60)} minutes.
           </p>
         </div>
@@ -110,7 +111,7 @@ export function SessionExpiryModal({
           >
             Logout now
           </Button>
-          <p className={cn('text-xs', 'text-slate-500', 'dark:text-slate-400')}>
+          <p className={cn(designTokens.typography.caption, designTokens.text.subtle)}>
             Do nothing to auto-logout when the timer reaches zero.
           </p>
         </div>

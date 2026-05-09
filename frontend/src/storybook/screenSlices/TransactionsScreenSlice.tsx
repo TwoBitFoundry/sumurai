@@ -6,6 +6,7 @@ import TransactionsToolbar from '@/features/transactions/components/Transactions
 import { PageLayout } from '@/layouts/PageLayout';
 import { denseLabelTransaction, transactionsTablePage } from '@/storybook/fixtures/transactions';
 import { cn, GlassCard } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import { formatCategoryName } from '@/utils/categories';
 import { fmtUSD } from '@/utils/format';
 
@@ -150,18 +151,10 @@ export function TransactionsScreenSlice(props: {
           {props.state === 'loading' ? (
             <div className={cn('flex', 'items-center', 'justify-center', 'py-16')}>
               <div className="text-center">
-                <div
-                  className={cn(
-                    'text-lg',
-                    'font-medium',
-                    'text-slate-600',
-                    'dark:text-slate-400',
-                    'mb-2'
-                  )}
-                >
+                <div className={cn('text-lg', 'font-medium', designTokens.text.muted, 'mb-2')}>
                   Loading transactions...
                 </div>
-                <div className={cn('text-sm', 'text-slate-500', 'dark:text-slate-500')}>
+                <div className={cn('text-sm', designTokens.text.subtle)}>
                   Fetching data from server
                 </div>
               </div>

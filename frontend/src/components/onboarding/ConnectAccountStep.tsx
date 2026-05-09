@@ -160,14 +160,23 @@ export function ConnectAccountStep({
           <div className={cn('space-y-3')}>
             <h1
               className={cn(
-                'text-3xl font-bold text-slate-900 transition-colors duration-300 ease-out dark:text-white md:text-[2.6rem]'
+                designTokens.typography.pageTitle,
+                designTokens.text.primary,
+                'transition-colors',
+                'duration-300',
+                'ease-out'
               )}
             >
               {content.heroTitle}
             </h1>
             <p
               className={cn(
-                'text-base leading-relaxed text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300'
+                designTokens.typography.body,
+                'leading-relaxed',
+                designTokens.text.body,
+                'transition-colors',
+                'duration-300',
+                'ease-out'
               )}
             >
               {content.heroDescription}
@@ -183,13 +192,13 @@ export function ConnectAccountStep({
                 variant={statusVariantMap[status.tone]}
                 className={cn('flex flex-col gap-2 rounded-2xl')}
               >
-                <p className="font-semibold">{status.text}</p>
+                <p className={cn(designTokens.typography.bodyStrong)}>{status.text}</p>
                 {status.action && status.actionLabel && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => status.action?.()}
-                    className={cn('self-start rounded-full border px-3 py-1 text-xs font-semibold')}
+                    className={cn('self-start rounded-full border px-3 py-1')}
                   >
                     {status.actionLabel}
                   </Button>
@@ -203,12 +212,13 @@ export function ConnectAccountStep({
           <Alert
             variant="error"
             className={cn(
-              'flex flex-col gap-1 rounded-[1.6rem] border-2 border-red-200/70 bg-red-50/85 text-red-700 shadow-[0_24px_60px_-36px_rgba(248,113,113,0.45)]',
+              'flex flex-col gap-1 rounded-[1.6rem] border-2 border-red-200/70 bg-red-50/85 shadow-[0_24px_60px_-36px_rgba(248,113,113,0.45)]',
+              designTokens.text.danger,
               'dark:border-red-500/45 dark:bg-red-900/25 dark:text-red-200'
             )}
           >
-            <p className="font-semibold">Connection failed</p>
-            <p className="text-xs">{error}</p>
+            <p className={cn(designTokens.typography.bodyStrong)}>Connection failed</p>
+            <p className={cn(designTokens.typography.caption)}>{error}</p>
           </Alert>
         )}
 
@@ -237,17 +247,17 @@ export function ConnectAccountStep({
           <Button
             variant={isConnected ? 'success' : 'connect'}
             size="lg"
-            className={cn('w-full px-6 py-3 text-base')}
+            className={cn('w-full px-6 py-3')}
             onClick={error ? onRetry : onConnect}
             disabled={connectionInProgress || isConnected || disablePrimaryAction}
           >
             {isConnected ? (
-              <span className={cn('flex items-center gap-2 text-sm sm:text-base')}>
+              <span className={cn('flex items-center gap-2', designTokens.typography.bodyStrong)}>
                 <span aria-hidden="true">✓</span>
                 {institutionName ? `Connected to ${institutionName}` : 'Connected'}
               </span>
             ) : connectionInProgress ? (
-              <span className={cn('flex items-center gap-2 text-sm')}>
+              <span className={cn('flex items-center gap-2', designTokens.typography.bodyStrong)}>
                 <span
                   className={cn(
                     'inline-flex h-4 w-4',
@@ -261,7 +271,7 @@ export function ConnectAccountStep({
             ) : error ? (
               'Try again'
             ) : (
-              <span className={cn('flex items-center gap-2 text-sm sm:text-base')}>
+              <span className={cn('flex items-center gap-2', designTokens.typography.bodyStrong)}>
                 <span>{content.cta.defaultLabel}</span>
                 {content.cta.badge && (
                   <Badge variant="default" size="xs" className="tracking-[0.2em]">

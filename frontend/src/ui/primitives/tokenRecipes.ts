@@ -1,22 +1,38 @@
+import { semanticTextRecipes } from '@/ui/tokens/textRecipes';
+
+export const primitiveTypographyRecipes = {
+  display: 'font-display text-[clamp(2.25rem,3vw,3rem)] font-bold leading-[1.1] tracking-normal',
+  pageTitle: 'font-page-title text-[2rem] font-bold leading-[1.1] tracking-normal',
+  sectionTitle: 'font-section-title text-[1.5rem] font-semibold leading-[1.25] tracking-normal',
+  cardTitle: 'font-card-title text-[1.25rem] font-semibold leading-[1.25] tracking-normal',
+  body: 'font-body text-[1rem] font-normal leading-[1.5] tracking-normal',
+  bodyStrong: 'font-body-strong text-[1rem] font-semibold leading-[1.5] tracking-normal',
+  caption: 'font-caption text-[0.875rem] font-normal leading-[1.5] tracking-normal',
+  captionStrong: 'font-caption-strong text-[0.875rem] font-semibold leading-[1.5] tracking-normal',
+  label: 'font-label text-[0.75rem] font-semibold uppercase leading-none tracking-[0.14em]',
+  badge: 'font-badge text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]',
+  chartDonutCenterTotal: 'font-display text-2xl font-bold tracking-tight',
+  confirmationCode: 'font-mono font-bold',
+} as const;
+
 export const primitiveTokenRecipes = {
   button: {
     base: [
       'inline-flex items-center justify-center gap-2',
-      'font-subheading uppercase',
       'transition-all duration-200 ease-out',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-slate-900',
       'disabled:cursor-not-allowed disabled:opacity-60',
     ],
     primary: [
       'bg-gradient-to-r from-sky-500 via-sky-400 to-violet-500',
-      'text-white',
+      semanticTextRecipes.inverse,
       'shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)]',
       'hover:-translate-y-0.5',
       'disabled:hover:translate-y-0',
     ],
     secondary: [
       'border border-slate-200/70 bg-white/70',
-      'text-slate-600',
+      semanticTextRecipes.muted,
       'shadow-[0_14px_38px_-30px_rgba(15,23,42,0.45)]',
       'hover:border-sky-300/50 hover:text-slate-900',
       'hover:shadow-[0_14px_32px_-18px_rgba(56,189,248,0.35)]',
@@ -26,7 +42,7 @@ export const primitiveTokenRecipes = {
     ],
     ghost: [
       'border border-white/50 bg-white/70',
-      'text-slate-800',
+      semanticTextRecipes.primary,
       'shadow-[0_12px_30px_-20px_rgba(15,23,42,0.45)]',
       'hover:-translate-y-0.5',
       'dark:border-white/15 dark:bg-[#1e293b]/70',
@@ -34,7 +50,7 @@ export const primitiveTokenRecipes = {
     ],
     icon: [
       'border border-transparent bg-white/75',
-      'text-slate-600',
+      semanticTextRecipes.muted,
       'shadow-[0_14px_36px_-28px_rgba(15,23,42,0.45)]',
       'hover:-translate-y-[1px] hover:border-sky-300',
       'hover:text-slate-900',
@@ -59,22 +75,21 @@ export const primitiveTokenRecipes = {
     ],
     danger: [
       'border border-red-200 bg-red-50',
-      'text-red-600',
+      semanticTextRecipes.danger,
       'hover:bg-red-100',
       'dark:border-red-700 dark:bg-red-900/20',
-      'dark:text-red-400',
       'dark:hover:bg-red-900/30',
     ],
     success: [
       'bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400',
-      'text-white',
+      semanticTextRecipes.inverse,
       'shadow-[0_20px_55px_-28px_rgba(16,185,129,0.65)]',
       'hover:-translate-y-[3px]',
       'disabled:hover:translate-y-0',
     ],
     connect: [
       'bg-gradient-to-r from-[#0ea5e9] via-[#38bdf8] to-[#a78bfa]',
-      'text-white',
+      semanticTextRecipes.inverse,
       'shadow-[0_22px_60px_-32px_rgba(14,165,233,0.78)]',
       'hover:-translate-y-[1px]',
       'hover:shadow-[0_28px_70px_-35px_rgba(14,165,233,0.85)]',
@@ -84,14 +99,15 @@ export const primitiveTokenRecipes = {
   },
   connectButton: {
     base: [
-      'inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold whitespace-nowrap',
+      `inline-flex items-center gap-2 rounded-full px-5 py-2 ${primitiveTypographyRecipes.captionStrong} whitespace-nowrap`,
       'transition-all duration-200',
       'focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
       'dark:focus-visible:ring-offset-slate-900',
       'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none',
     ],
     secondary: [
-      'border border-[#e2e8f0] bg-white/90 text-[#475569]',
+      'border border-[#e2e8f0] bg-white/90',
+      semanticTextRecipes.muted,
       'shadow-[0_14px_38px_-30px_rgba(15,23,42,0.45)]',
       'hover:border-[#93c5fd] hover:text-[#0f172a]',
       'dark:border-[#334155] dark:bg-[#1e293b]/90 dark:text-[#cbd5e1]',
@@ -101,11 +117,11 @@ export const primitiveTokenRecipes = {
   badge: {
     base: [
       'inline-flex items-center justify-center',
-      'font-semibold uppercase',
+      primitiveTypographyRecipes.badge,
       'transition-all duration-200 ease-out',
     ],
     default: [
-      'bg-white/70 text-slate-600',
+      `bg-white/70 ${semanticTextRecipes.muted}`,
       'shadow-[0_12px_32px_-22px_rgba(15,23,42,0.45)]',
       'dark:bg-[#1e293b]/70 dark:text-slate-200',
     ],
@@ -126,7 +142,7 @@ export const primitiveTokenRecipes = {
     item: [
       'flex w-full items-center gap-2',
       'rounded-xl px-3 py-2',
-      'text-left text-slate-600',
+      `text-left ${semanticTextRecipes.muted}`,
       'transition-all duration-200 ease-out',
       'hover:bg-slate-50',
       'dark:text-slate-300',
@@ -212,13 +228,12 @@ export const primitiveTokenRecipes = {
       default: 'h-16',
     },
     logo: {
-      container: ['flex', 'items-center', 'gap-2', 'text-slate-900', 'dark:text-white'],
+      container: ['flex', 'items-center', 'gap-2', semanticTextRecipes.primary],
       scrolled: 'text-xl',
       default: 'text-3xl',
       fontFamily: { fontFamily: "'Cal Sans', system-ui, sans-serif" },
     },
-    tabIdle:
-      'border border-slate-200/70 dark:border-white/10 bg-white/70 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-sky-300/50 dark:hover:border-sky-500/60 hover:shadow-[0_14px_32px_-18px_rgba(56,189,248,0.35)]',
+    tabIdle: `border border-slate-200/70 dark:border-white/10 bg-white/70 dark:bg-white/5 ${semanticTextRecipes.muted} hover:text-slate-900 dark:hover:text-white hover:border-sky-300/50 dark:hover:border-sky-500/60 hover:shadow-[0_14px_32px_-18px_rgba(56,189,248,0.35)]`,
     tabHalo:
       'after:absolute after:inset-[-28%] after:rounded-[999px] after:bg-[radial-gradient(circle_at_35%_30%,rgba(14,165,233,0.16),transparent_62%)] after:opacity-0 after:transition-opacity after:duration-300 hover:after:opacity-90 dark:after:bg-[radial-gradient(circle_at_35%_30%,rgba(56,189,248,0.22),transparent_62%)]',
     divider: 'w-px h-6 bg-slate-200 dark:bg-slate-600',
@@ -271,15 +286,12 @@ export const primitiveTokenRecipes = {
       'dark:via-slate-900/34',
       'dark:to-transparent',
     ],
-    badge:
-      'inline-flex items-center justify-center rounded-full bg-white/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-600 shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/75 dark:text-slate-200',
-    title:
-      'text-3xl font-bold text-slate-900 transition-colors duration-300 ease-out dark:text-white sm:text-4xl',
-    subtitle:
-      'text-base leading-relaxed text-slate-600 transition-colors duration-300 ease-out dark:text-slate-300',
+    badge: `${primitiveTypographyRecipes.badge} inline-flex items-center justify-center rounded-full bg-white/75 px-3 py-1 ${semanticTextRecipes.label} shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/75 dark:text-slate-200`,
+    title: `${primitiveTypographyRecipes.pageTitle} ${semanticTextRecipes.primary} transition-colors duration-300 ease-out`,
+    subtitle: `${primitiveTypographyRecipes.body} ${semanticTextRecipes.body} transition-colors duration-300 ease-out`,
     error:
       'rounded-2xl border border-red-200/70 bg-red-50/80 px-5 py-3 shadow-sm dark:border-red-700/60 dark:bg-red-900/25',
-    errorText: 'text-sm font-medium text-red-600 dark:text-red-300',
+    errorText: `${primitiveTypographyRecipes.captionStrong} ${semanticTextRecipes.danger}`,
   },
   emptyState: {
     iconWrapper: [
@@ -289,7 +301,7 @@ export const primitiveTokenRecipes = {
       'justify-center',
       'rounded-full',
       'bg-[radial-gradient(136%_108%_at_20%_-18%,rgba(14,165,233,0.42)_0%,#e1f2ff_36%,#ffffff_100%)]',
-      'text-slate-600',
+      semanticTextRecipes.muted,
       'transition-all duration-300 ease-out',
       'hover:scale-110 hover:-translate-y-1',
       'hover:shadow-[0_0_30px_rgba(59,130,246,0.4),0_0_60px_rgba(59,130,246,0.2)]',
@@ -297,13 +309,11 @@ export const primitiveTokenRecipes = {
       'dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)]',
       'cursor-pointer',
     ],
-    title:
-      'text-lg font-semibold text-slate-700 transition-colors duration-500 dark:text-slate-200',
-    description:
-      'text-sm text-slate-500 transition-colors duration-500 dark:text-slate-400 max-w-sm',
+    title: `${primitiveTypographyRecipes.cardTitle} ${semanticTextRecipes.primary} transition-colors duration-500`,
+    description: `${primitiveTypographyRecipes.body} max-w-sm ${semanticTextRecipes.body} transition-colors duration-500`,
   },
   pill: {
-    base: 'inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-[0.18em]',
+    base: `inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 ${primitiveTypographyRecipes.badge}`,
     dot: 'h-2 w-2 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.85)] dark:shadow-[0_0_0_1px_rgba(15,23,42,0.7)]',
     fadeLeft:
       'pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80',

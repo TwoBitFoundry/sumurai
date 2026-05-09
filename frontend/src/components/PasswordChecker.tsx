@@ -1,5 +1,6 @@
 import type { PasswordValidation } from '@/hooks/usePasswordValidation';
 import { cn, GlassCard, RequirementPill } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 
 interface PasswordCheckerProps {
   validation: PasswordValidation;
@@ -15,21 +16,12 @@ export function PasswordChecker({ validation, className }: PasswordCheckerProps)
       withInnerEffects={false}
       className={cn(
         'space-y-1.5',
-        'text-[0.7rem]',
-        'text-slate-600',
-        'dark:text-slate-300',
+        designTokens.typography.caption,
+        designTokens.text.body,
         className
       )}
     >
-      <h3
-        className={cn(
-          'text-[0.65rem]',
-          'font-semibold',
-          'uppercase',
-          'text-slate-700',
-          'dark:text-slate-200'
-        )}
-      >
+      <h3 className={cn(designTokens.typography.label, designTokens.text.label)}>
         Password checklist
       </h3>
       <div className={cn('flex', 'flex-wrap', 'gap-1.5')}>

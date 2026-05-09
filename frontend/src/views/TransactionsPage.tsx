@@ -2,6 +2,7 @@ import { AlertTriangle, ReceiptText, RefreshCcw, TrendingUp } from 'lucide-react
 import type React from 'react';
 import { useMemo } from 'react';
 import { cn, GlassCard } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import HeroStatCard from '../components/widgets/HeroStatCard';
 import TransactionsTable from '../features/transactions/components/TransactionsTable';
 import TransactionsToolbar from '../features/transactions/components/TransactionsToolbar';
@@ -160,16 +161,14 @@ const TransactionsPage: React.FC = () => {
               <div className="text-center">
                 <div
                   className={cn(
-                    'text-lg',
-                    'font-medium',
-                    'text-slate-600',
-                    'dark:text-slate-400',
+                    designTokens.typography.cardTitle,
+                    designTokens.text.primary,
                     'mb-2'
                   )}
                 >
                   Loading transactions...
                 </div>
-                <div className={cn('text-sm', 'text-slate-500', 'dark:text-slate-500')}>
+                <div className={cn(designTokens.typography.caption, designTokens.text.muted)}>
                   Fetching data from server
                 </div>
               </div>

@@ -23,7 +23,10 @@ export {
   ValidationError,
 };
 
-const DEFAULT_API_BASE = process.env.NEXT_PUBLIC_API_BASE || '/api';
+const DEV_DOCKER_API_BASE = 'http://localhost:3000/api';
+const DEFAULT_API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE ||
+  (process.env.NODE_ENV === 'development' ? DEV_DOCKER_API_BASE : '/api');
 
 interface RetryConfig {
   maxRetries: number;
@@ -200,6 +203,11 @@ export class ApiClient {
   ): Promise<T> {
     // Don't try to refresh if we're already refreshing
     if (endpoint === '/auth/refresh') {
+      AuthService.clearToken();
+      throw new AuthenticationError();
+    }
+
+    if (endpoint === '/auth/login') {
       AuthService.clearToken();
       throw new AuthenticationError();
     }

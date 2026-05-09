@@ -26,6 +26,7 @@ import {
 } from '@/storybook/fixtures/analytics';
 import { sampleNetWorthSeries } from '@/storybook/fixtures/netWorth';
 import { Button, cn } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 import { fmtUSD } from '@/utils/format';
 
 const DATE_RANGE_OPTIONS = [
@@ -144,7 +145,9 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
               isRefreshing={false}
             >
               {analyticsLoading && (
-                <div className={cn('mb-2', 'text-xs', 'text-slate-500', 'dark:text-slate-400')}>
+                <div
+                  className={cn('mb-2', designTokens.typography.caption, designTokens.text.muted)}
+                >
                   Loading analytics...
                 </div>
               )}
@@ -158,9 +161,8 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
                 <div className="mt-4">
                   <div
                     className={cn(
-                      'text-xs',
-                      'text-slate-600',
-                      'dark:text-slate-400',
+                      designTokens.typography.caption,
+                      designTokens.text.label,
                       'mb-2',
                       'font-medium'
                     )}
@@ -197,10 +199,9 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
                             />
                             <span
                               className={cn(
-                                'text-xs',
+                                designTokens.typography.caption,
                                 'font-medium',
-                                'text-slate-800',
-                                'dark:text-slate-200',
+                                designTokens.text.body,
                                 'truncate'
                               )}
                             >
@@ -210,17 +211,14 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
                           <div className={cn('flex', 'items-baseline', 'justify-between')}>
                             <div
                               className={cn(
-                                'text-xs',
+                                designTokens.typography.caption,
                                 'font-semibold',
-                                'text-slate-900',
-                                'dark:text-slate-100'
+                                designTokens.text.primary
                               )}
                             >
                               {fmtUSD(cat.value)}
                             </div>
-                            <div
-                              className={cn('text-[10px]', 'text-slate-500', 'dark:text-slate-400')}
-                            >
+                            <div className={cn('text-[10px]', designTokens.text.muted)}>
                               {percentage}%
                             </div>
                           </div>
@@ -272,9 +270,8 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
                   className={cn(
                     'flex-1',
                     'min-h-[220px]',
-                    'text-sm',
-                    'text-rose-600',
-                    'dark:text-rose-400'
+                    designTokens.typography.body,
+                    designTokens.text.danger
                   )}
                 >
                   {netError}

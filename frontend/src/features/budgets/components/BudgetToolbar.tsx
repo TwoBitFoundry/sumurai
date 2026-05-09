@@ -60,14 +60,10 @@ export const BudgetToolbar = ({
         </div>
         <div
           className={cn(
-            'text-xs',
-            'font-semibold',
-            'uppercase',
-            'tracking-[0.2em]',
-            'text-slate-600',
+            designTokens.typography.label,
+            designTokens.text.muted,
             'transition-colors',
-            'duration-500',
-            'dark:text-slate-300'
+            'duration-500'
           )}
         >
           {monthLabel}
@@ -79,12 +75,10 @@ export const BudgetToolbar = ({
             'inline-flex',
             'items-center',
             'gap-1',
-            'text-xs',
-            'font-medium',
-            'text-slate-500',
+            designTokens.typography.caption,
+            designTokens.text.subtle,
             'transition-colors',
-            'duration-500',
-            'dark:text-slate-400'
+            'duration-500'
           )}
         >
           {loading && (

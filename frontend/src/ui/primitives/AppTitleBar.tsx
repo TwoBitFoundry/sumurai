@@ -99,9 +99,10 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                   'flex',
                   'items-center',
                   'gap-2',
-                  'text-slate-900',
-                  'dark:text-white',
-                  scrolled ? 'text-xl' : 'text-3xl'
+                  designTokens.text.primary,
+                  scrolled
+                    ? designTokens.typography.sectionTitle
+                    : designTokens.typography.pageTitle
                 )}
               >
                 <Image
@@ -123,7 +124,8 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                       type="button"
                       onClick={() => onTabChange?.(key)}
                       variant={currentTab === key ? 'tabActive' : 'tab'}
-                      className={`${scrolled ? 'px-3 py-1 text-xs' : 'px-4 py-1.5 text-sm'} ${designTokens.components.appTitleBar.tabHalo} ${
+                      size={scrolled ? 'xs' : 'sm'}
+                      className={`${designTokens.components.appTitleBar.tabHalo} ${
                         currentTab !== key ? designTokens.components.appTitleBar.tabIdle : ''
                       }`}
                     >

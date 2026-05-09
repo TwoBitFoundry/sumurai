@@ -4,12 +4,13 @@ import { useTheme } from '@/context/ThemeContext';
 import { AppLayout } from '@/layouts/AppLayout';
 import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { AppFooter, AppTitleBar, cn, GradientShell } from '@/ui/primitives';
+import { designTokens } from '@/ui/tokens';
 
 function UnauthenticatedLoginShell() {
   const { mode, toggle } = useTheme();
 
   return (
-    <GradientShell className={cn('text-slate-900', 'dark:text-slate-100')}>
+    <GradientShell className={cn(designTokens.text.primary)}>
       <div className={cn('flex', 'flex-col', 'min-h-screen')}>
         <AppTitleBar
           state="unauthenticated"
@@ -33,7 +34,19 @@ function AuthenticatedDashboardShell() {
       onTabChange={() => {}}
       onLogout={() => {}}
       renderAccountFilter={() => (
-        <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-600 dark:text-slate-300">
+        <span
+          className={cn(
+            'rounded-full',
+            'border',
+            'border-slate-200',
+            'px-3',
+            'py-1',
+            designTokens.typography.caption,
+            'font-medium',
+            'dark:border-slate-600',
+            designTokens.text.muted
+          )}
+        >
           All accounts
         </span>
       )}

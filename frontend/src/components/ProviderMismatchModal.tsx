@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 
 import { Alert, Badge, Button, GlassCard, Modal } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
+import { designTokens } from '@/ui/tokens';
 
 interface ProviderMismatchModalProps {
   userProvider: string;
@@ -75,18 +76,22 @@ export const ProviderMismatchModal = ({
           id="provider-mismatch-title"
         >
           <div className="space-y-3">
-            <p className={cn('text-sm')}>
+            <p className={cn(designTokens.typography.body)}>
               Your account is configured to use
-              <span className={cn('font-semibold')}> {userProviderLabel} </span>
+              <span className={cn(designTokens.typography.bodyStrong)}> {userProviderLabel} </span>
               but the application default is
-              <span className={cn('font-semibold')}> {defaultProviderLabel}</span>.
+              <span className={cn(designTokens.typography.bodyStrong)}>
+                {' '}
+                {defaultProviderLabel}
+              </span>
+              .
             </p>
-            <p className={cn('text-sm')}>
+            <p className={cn(designTokens.typography.body)}>
               Update your environment to set
               <Badge
                 variant="feature"
                 size="sm"
-                className={cn('mx-1', 'font-mono', 'tracking-[0.2em]')}
+                className={cn('mx-1', 'font-mono', designTokens.typography.label)}
               >
                 DEFAULT_PROVIDER={userProvider}
               </Badge>

@@ -13,6 +13,7 @@ import { SessionManager } from './SessionManager';
 import { AuthService } from './services/authService';
 import { BrowserStorageAdapter } from './services/boundaries';
 import { AppFooter, AppTitleBar, GlassCard, GradientShell } from './ui/primitives';
+import { designTokens } from './ui/tokens';
 
 AuthService.configure({
   storage: new BrowserStorageAdapter(),
@@ -110,7 +111,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
             rounded="lg"
             padding="md"
             withInnerEffects={false}
-            className={cn('text-center', 'text-sm', 'text-slate-600', 'dark:text-slate-300')}
+            className={cn('text-center', designTokens.typography.body, designTokens.text.body)}
           >
             Loading...
           </GlassCard>
@@ -121,7 +122,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
 
   if (!isAuthenticated) {
     return (
-      <GradientShell className={cn('text-slate-900', 'dark:text-slate-100')}>
+      <GradientShell className={designTokens.text.primary}>
         <div className={cn('flex', 'flex-col', 'min-h-screen')}>
           <AppTitleBar
             state="unauthenticated"

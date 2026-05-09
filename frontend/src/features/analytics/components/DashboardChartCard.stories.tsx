@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { cn } from '@/ui/primitives/utils';
+import { designTokens } from '@/ui/tokens';
 import { DashboardChartCard } from './DashboardChartCard';
 
 const meta = {
@@ -11,7 +13,12 @@ const meta = {
     refreshingLabel: 'Refreshing chart',
     isRefreshing: false,
     children: (
-      <div className="flex h-48 items-center justify-center rounded-xl border border-dashed border-slate-300 text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400">
+      <div
+        className={cn(
+          'flex h-48 items-center justify-center rounded-xl border border-dashed border-slate-300 text-sm dark:border-slate-600',
+          designTokens.text.muted
+        )}
+      >
         Chart placeholder
       </div>
     ),
@@ -31,7 +38,7 @@ export const Loading: Story = {
 export const EmptyBody: Story = {
   args: {
     children: (
-      <div className="flex h-40 items-center justify-center text-sm text-slate-500 dark:text-slate-400">
+      <div className={cn('flex h-40 items-center justify-center text-sm', designTokens.text.muted)}>
         No transactions in range
       </div>
     ),

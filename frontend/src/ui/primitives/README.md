@@ -116,12 +116,15 @@ interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
 **Example:**
 ```tsx
 import { GlassCard } from '@/ui/primitives'
+import { designTokens } from '@/ui/tokens'
 
 function ProfileCard() {
   return (
     <GlassCard variant="accent" padding="lg" rounded="xl">
-      <h2 className="text-xl font-bold">User Profile</h2>
-      <p className="mt-2 text-slate-600 dark:text-slate-300">
+      <h2 className={designTokens.typography.cardTitle + ' ' + designTokens.text.primary}>
+        User Profile
+      </h2>
+      <p className={designTokens.typography.body + ' mt-2 ' + designTokens.text.body}>
         Profile details here...
       </p>
     </GlassCard>
@@ -169,13 +172,16 @@ interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
 **Example:**
 ```tsx
 import { Modal, GlassCard, Button } from '@/ui/primitives'
+import { designTokens } from '@/ui/tokens'
 
 function ConfirmDisconnect({ open, onClose, onConfirm }: Props) {
   return (
     <Modal isOpen={open} onClose={onClose} size="md">
       <GlassCard variant="accent" rounded="xl" padding="lg">
-        <h2 className="text-lg font-semibold">Disconnect bank?</h2>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+        <h2 className={designTokens.typography.cardTitle + ' ' + designTokens.text.primary}>
+          Disconnect bank?
+        </h2>
+        <p className={designTokens.typography.body + ' mt-2 ' + designTokens.text.body}>
           This will remove all related accounts.
         </p>
         <div className="mt-6 flex justify-end gap-3">
