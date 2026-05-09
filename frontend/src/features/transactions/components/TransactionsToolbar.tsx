@@ -1,5 +1,5 @@
 import { cn } from '@/ui/primitives';
-import { dashboardTokenRecipes } from '@/views/tokenRecipes';
+import { border as semanticBorders } from '@/ui/recipes';
 import TransactionsFilters from './TransactionsFilters';
 
 interface TransactionsToolbarProps {
@@ -10,6 +10,8 @@ interface TransactionsToolbarProps {
   onSelectCategory: (c: string | null) => void;
 }
 
+const toolbarShell = ['border-b px-6 pb-4 pt-6', ...semanticBorders.subtle] as const;
+
 export const TransactionsToolbar = ({
   search,
   onSearch,
@@ -18,7 +20,7 @@ export const TransactionsToolbar = ({
   onSelectCategory,
 }: TransactionsToolbarProps) => {
   return (
-    <div className={cn(dashboardTokenRecipes.toolbarShell)} data-testid="transactions-toolbar">
+    <div className={cn(toolbarShell)} data-testid="transactions-toolbar">
       <div className={cn('flex', 'items-center', 'gap-4')}>
         <div className={cn('flex-1', 'min-w-0')}>
           <TransactionsFilters

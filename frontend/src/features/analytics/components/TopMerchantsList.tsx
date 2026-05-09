@@ -3,7 +3,6 @@ import type React from 'react';
 import { cn, EmptyState } from '@/ui/primitives';
 import { designTokens } from '@/ui/tokens';
 import { categoryAccents, chart } from '@/ui/tokens-runtime';
-import { dashboardTokenRecipes } from '@/views/tokenRecipes';
 import type { AnalyticsTopMerchantsResponse } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
 
@@ -11,6 +10,13 @@ type Props = {
   merchants: AnalyticsTopMerchantsResponse[];
   className?: string;
 };
+
+const merchantRow = [
+  'flex items-center justify-between rounded-lg border p-3 transition-all duration-300 hover:-translate-y-[2px]',
+  ...designTokens.borders.subtle,
+  ...designTokens.surfaces.semantic.card,
+  ...designTokens.effects.semantic.accentHover,
+] as const;
 
 export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' }) => {
   const merchantsToShow = merchants.slice(0, 6);
@@ -20,7 +26,7 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
       {merchantsToShow.length > 0 ? (
         <div className={cn('space-y-3')}>
           {merchantsToShow.map((merchant, index) => (
-            <div key={merchant.name} className={cn(dashboardTokenRecipes.merchantRow)}>
+            <div key={merchant.name} className={cn(merchantRow)}>
               <div className={cn('flex', 'items-center', 'gap-3', 'min-w-0', 'flex-1')}>
                 <div
                   className={cn(

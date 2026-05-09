@@ -26,9 +26,42 @@ import {
 } from '@/storybook/fixtures/analytics';
 import { sampleNetWorthSeries } from '@/storybook/fixtures/netWorth';
 import { Button, cn } from '@/ui/primitives';
+import {
+  border as semanticBorders,
+  effect as semanticEffects,
+  surface as semanticSurfaces,
+} from '@/ui/recipes';
 import { designTokens } from '@/ui/tokens';
 import { fmtUSD } from '@/utils/format';
-import { dashboardTokenRecipes } from '@/views/tokenRecipes';
+
+const dashboardCardShell = [
+  'rounded-lg border transition-all duration-300',
+  ...semanticBorders.subtle,
+  ...semanticSurfaces.card,
+  ...semanticEffects.glassShadow,
+] as const;
+
+const dashboardCardShellActive = [
+  'rounded-lg border transition-all duration-300 -translate-y-[2px]',
+  ...semanticBorders.default,
+  ...semanticSurfaces.hoverRow,
+  ...semanticEffects.glassShadow,
+] as const;
+
+const dashboardLoadingCard = [
+  'min-h-[220px] rounded-xl border animate-pulse',
+  ...semanticBorders.subtle,
+  ...semanticSurfaces.mutedChip,
+] as const;
+
+const dashboardFloatingRangeShell = [
+  'flex gap-2 rounded-2xl border px-3 py-2',
+  ...semanticBorders.glass,
+  ...semanticSurfaces.card,
+  ...semanticEffects.glassShadow,
+  'backdrop-blur-md',
+  'backdrop-saturate-[150%]',
+] as const;
 
 const DATE_RANGE_OPTIONS = [
   { key: 'current-month', label: 'Current Month' },
@@ -186,9 +219,7 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
                           key={`topcard-${cat.name}`}
                           className={cn(
                             'p-2',
-                            isHovered
-                              ? dashboardTokenRecipes.cardShellActive
-                              : dashboardTokenRecipes.cardShell
+                            isHovered ? dashboardCardShellActive : dashboardCardShell
                           )}
                           style={isHovered ? { borderColor: colors.chart.primary[0] } : undefined}
                           onMouseEnter={() => setHoveredCategory(cat.name)}
@@ -254,7 +285,7 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
               isRefreshing={false}
             >
               {netLoading ? (
-                <div className={cn('flex-1', dashboardTokenRecipes.loadingCard)} />
+                <div className={cn('flex-1', dashboardLoadingCard)} />
               ) : netError ? (
                 <div
                   className={cn(
@@ -337,7 +368,7 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
             )}
             style={{ bottom: 24 }}
           >
-            <div className={cn('pointer-events-auto', dashboardTokenRecipes.floatingRangeShell)}>
+            <div className={cn('pointer-events-auto', dashboardFloatingRangeShell)}>
               {DATE_RANGE_OPTIONS.map((option) => (
                 <Button
                   type="button"

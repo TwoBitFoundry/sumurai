@@ -13,6 +13,11 @@ import {
 } from 'recharts';
 import type { DotItemDotProps } from 'recharts/types/util/types';
 import { Button, cn, EmptyState } from '@/ui/primitives';
+import {
+  border as semanticBorders,
+  effect as semanticEffects,
+  surface as semanticSurfaces,
+} from '@/ui/recipes';
 import { designTokens } from '@/ui/tokens';
 import BalancesOverview from '../components/BalancesOverview';
 import { useTheme } from '../context/ThemeContext';
@@ -26,7 +31,35 @@ import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries
 import { PageLayout } from '../layouts/PageLayout';
 import type { DateRangeKey as DateRange } from '../utils/dateRanges';
 import { fmtUSD } from '../utils/format';
-import { dashboardTokenRecipes } from './tokenRecipes';
+
+const dashboardCardShell = [
+  'rounded-lg border transition-all duration-300',
+  ...semanticBorders.subtle,
+  ...semanticSurfaces.card,
+  ...semanticEffects.glassShadow,
+] as const;
+
+const dashboardCardShellActive = [
+  'rounded-lg border transition-all duration-300 -translate-y-[2px]',
+  ...semanticBorders.default,
+  ...semanticSurfaces.hoverRow,
+  ...semanticEffects.glassShadow,
+] as const;
+
+const dashboardLoadingCard = [
+  'min-h-[220px] rounded-xl border animate-pulse',
+  ...semanticBorders.subtle,
+  ...semanticSurfaces.mutedChip,
+] as const;
+
+const dashboardFloatingRangeShell = [
+  'flex gap-2 rounded-2xl border px-3 py-2',
+  ...semanticBorders.glass,
+  ...semanticSurfaces.card,
+  ...semanticEffects.glassShadow,
+  'backdrop-blur-md',
+  'backdrop-saturate-[150%]',
+] as const;
 
 const netTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) => {
   const numericValue = Array.isArray(value) ? Number(value[0]) : Number(value);
@@ -161,9 +194,7 @@ const DashboardPage: React.FC = () => {
                               key={`topcard-${cat.name}`}
                               className={cn(
                                 'p-2',
-                                isHovered
-                                  ? dashboardTokenRecipes.cardShellActive
-                                  : dashboardTokenRecipes.cardShell
+                                isHovered ? dashboardCardShellActive : dashboardCardShell
                               )}
                               style={
                                 isHovered ? { borderColor: colors.chart.primary[0] } : undefined
@@ -238,7 +269,7 @@ const DashboardPage: React.FC = () => {
               isRefreshing={!netLoading && netRefreshing}
             >
               {netLoading ? (
-                <div className={cn('flex-1', dashboardTokenRecipes.loadingCard)} />
+                <div className={cn('flex-1', dashboardLoadingCard)} />
               ) : netError ? (
                 <div
                   className={cn(
@@ -364,7 +395,7 @@ const DashboardPage: React.FC = () => {
             )}
             style={{ bottom: 24 }}
           >
-            <div className={cn(dashboardTokenRecipes.floatingRangeShell)}>
+            <div className={cn(dashboardFloatingRangeShell)}>
               {[
                 { key: 'current-month', label: 'Current Month' },
                 { key: 'past-2-months', label: '2 Months' },

@@ -22,10 +22,27 @@ import { useTheme } from '../context/ThemeContext';
 import { useBalancesOverview } from '../hooks/useBalancesOverview';
 import { formatRatio } from '../services/AnalyticsService';
 import { Alert, Button, cn, GlassCard } from '../ui/primitives';
+import {
+  border as semanticBorders,
+  effect as semanticEffects,
+  surface as semanticSurfaces,
+} from '../ui/recipes';
 import { designTokens } from '../ui/tokens';
-import { dashboardTokenRecipes } from '../views/tokenRecipes';
 import { Amount, fmtUSD } from './Amount';
 import HeroStatCard from './widgets/HeroStatCard';
+
+const dashboardSummaryShellLoading = [
+  'h-16 rounded-xl border',
+  ...semanticBorders.subtle,
+  ...semanticSurfaces.mutedChip,
+] as const;
+
+const dashboardHoverInfoShell = [
+  'flex flex-wrap items-center gap-3 rounded-lg border p-3',
+  ...semanticBorders.subtle,
+  ...semanticSurfaces.card,
+  ...semanticEffects.glassShadow,
+] as const;
 
 type BankBarDatum = {
   bank: string;
@@ -263,7 +280,7 @@ export function BalancesOverview() {
           className={cn('grid', 'gap-3', 'sm:grid-cols-2', 'lg:grid-cols-5')}
         >
           {[1, 2, 3, 4, 5].map((id) => {
-            return <div key={id} className={cn(dashboardTokenRecipes.summaryShellLoading)} />;
+            return <div key={id} className={cn(dashboardSummaryShellLoading)} />;
           })}
         </div>
       )}
@@ -319,7 +336,7 @@ export function BalancesOverview() {
               padding="sm"
               withInnerEffects={false}
               className={cn(
-                dashboardTokenRecipes.hoverInfoShell,
+                dashboardHoverInfoShell,
                 designTokens.typography.caption,
                 designTokens.text.body
               )}

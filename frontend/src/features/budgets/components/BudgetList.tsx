@@ -4,14 +4,27 @@ import { Target } from 'lucide-react';
 import React from 'react';
 import { cn, EmptyState, IconButton, Input } from '@/ui/primitives';
 import { primitiveTokenRecipes } from '@/ui/primitives/recipes';
+import {
+  border as semanticBorders,
+  effect as semanticEffects,
+  surface as semanticSurfaces,
+} from '@/ui/recipes';
 import { designTokens } from '@/ui/tokens';
 import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
 import type { BudgetProgressEntry } from '../hooks/useBudgets';
-import { budgetTokenRecipes } from '../tokenRecipes';
 import BudgetProgress from './BudgetProgress';
 
 export type BudgetWithProgress = BudgetProgressEntry;
+
+const budgetCardShell = [
+  'group relative overflow-hidden rounded-[1.75rem] p-6',
+  ...semanticBorders.subtle,
+  ...semanticSurfaces.card,
+  ...semanticEffects.glassShadow,
+  'transition-all duration-300 hover:-translate-y-1',
+  ...semanticEffects.accentHover,
+] as const;
 
 export function BudgetList({
   items,
@@ -65,7 +78,7 @@ export function BudgetList({
           <li
             key={b.id}
             className={cn(
-              budgetTokenRecipes.budgetCard.shell,
+              budgetCardShell,
               tagTheme.ring,
               'ring-1 ring-offset-1',
               designTokens.surfaces.focus.ringOffsetLightOnDark

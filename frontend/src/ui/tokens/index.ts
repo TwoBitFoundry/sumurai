@@ -1,5 +1,3 @@
-import { onboardingTokenRecipes } from '@/components/onboarding/tokenRecipes';
-import { budgetTokenRecipes } from '@/features/budgets/tokenRecipes';
 import {
   focus as focusSurfaces,
   font as primitiveTypographyRecipes,
@@ -14,7 +12,6 @@ import type {
   CategoryTheme,
   HeroAccent,
   HeroAccentTheme,
-  SemanticTone,
   ThemeColors,
   ThemeMode,
 } from '@/ui/tokens-runtime';
@@ -87,61 +84,6 @@ const glassInsetDark =
   'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.5)]';
 const panelShadow = 'shadow-[0_32px_110px_-60px_rgba(15,23,42,0.75)]';
 const panelShadowDark = 'dark:shadow-[0_36px_120px_-62px_rgba(2,6,23,0.85)]';
-const fieldControlBase = [
-  'w-full',
-  'px-4',
-  'border',
-  'font-medium',
-  'shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)]',
-  'transition-all duration-200 ease-out',
-  'focus:outline-none',
-  'disabled:cursor-not-allowed disabled:opacity-60',
-];
-const fieldControlDefault = [
-  `bg-white ${semanticTextRecipes.primary}`,
-  'border-black/10',
-  'focus:ring-2 focus:ring-sky-400',
-  'focus:ring-offset-2 focus:ring-offset-white',
-  'dark:bg-[#111a2f]',
-  'dark:border-white/12',
-  'dark:focus:ring-sky-400/80',
-  'dark:focus:ring-offset-[#0f172a]',
-];
-const fieldControlInvalid = [
-  `bg-white ${semanticTextRecipes.primary}`,
-  'border-red-300',
-  'focus:ring-2 focus:ring-red-400',
-  'focus:ring-offset-2 focus:ring-offset-white',
-  'dark:bg-[#111a2f]',
-  'dark:border-red-600/80',
-  'dark:focus:ring-red-400/75',
-  'dark:focus:ring-offset-[#0f172a]',
-];
-const fieldControlGlass = [
-  `bg-white/80 ${semanticTextRecipes.body}`,
-  'border-white/60',
-  'shadow-[0_18px_45px_-32px_rgba(15,23,42,0.5)]',
-  'focus:ring-2 focus:ring-sky-400/80',
-  'focus:ring-offset-2 focus:ring-offset-white',
-  `dark:bg-[#111a2f]/80 ${semanticTextRecipes.inverse}`,
-  'dark:border-white/12',
-  'dark:focus:ring-offset-[#0f172a]',
-];
-const fieldControlSizes = {
-  sm: 'py-1.5 text-xs rounded-lg',
-  md: 'py-2.5 text-sm rounded-xl',
-  lg: 'py-3 text-base rounded-xl',
-} as const;
-
-const transactionRow = {
-  shell: [
-    'group relative border-b border-slate-200/70 transition-all duration-150 ease-out hover:-translate-y-[2px] hover:ring-2 hover:ring-sky-400/60',
-    'dark:border-slate-700/50 dark:hover:ring-sky-400/50',
-  ],
-  odd: ['bg-slate-100', 'dark:bg-slate-700/20'],
-  even: ['bg-white', 'dark:bg-transparent'],
-} as const;
-
 const gradientPrimitives = {
   appShellLight:
     'bg-[radial-gradient(128%_96%_at_18%_-20%,#c4e2ff_0%,#dbeafe_30%,#e5f2ff_56%,#ffffff_96%)]',
@@ -189,22 +131,6 @@ const layoutEffects = {
       'dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)]',
   },
 } as const;
-
-const semanticLight = {
-  cash: generatedTokens.color['semantic-light-cash'].$value.hex,
-  investments: generatedTokens.color['semantic-light-investments'].$value.hex,
-  credit: generatedTokens.color['semantic-light-credit'].$value.hex,
-  loan: generatedTokens.color['semantic-light-loan'].$value.hex,
-  netWorth: generatedTokens.color['semantic-light-net-worth'].$value.hex,
-};
-
-const semanticDark = {
-  cash: generatedTokens.color['semantic-dark-cash'].$value.hex,
-  investments: generatedTokens.color['semantic-dark-investments'].$value.hex,
-  credit: generatedTokens.color['semantic-dark-credit'].$value.hex,
-  loan: generatedTokens.color['semantic-dark-loan'].$value.hex,
-  netWorth: generatedTokens.color['semantic-dark-net-worth'].$value.hex,
-};
 
 const chartThemeLight = {
   primary: chartLight,
@@ -774,16 +700,6 @@ export const designTokens = {
             'border border-rose-200/70 dark:border-rose-500/40 text-rose-700 dark:text-rose-200 bg-[linear-gradient(135deg,_rgba(244,63,94,0.24),_rgba(244,63,94,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,113,133,0.22),_rgba(251,113,133,0.08))] shadow-[0_14px_40px_-28px_rgba(244,63,94,0.48)] backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
           dot: 'bg-rose-500/90 dark:bg-rose-300/80',
         },
-      },
-    },
-    transactions: {
-      row: {
-        shell: [
-          'group relative border-b border-slate-200/70 transition-all duration-150 ease-out hover:-translate-y-[2px] hover:ring-2 hover:ring-sky-400/60',
-          'dark:border-slate-700/50 dark:hover:ring-sky-400/50',
-        ],
-        odd: ['bg-slate-100', 'dark:bg-slate-700/20'],
-        even: ['bg-white', 'dark:bg-transparent'],
       },
     },
   },

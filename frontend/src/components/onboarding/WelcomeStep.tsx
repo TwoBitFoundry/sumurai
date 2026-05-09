@@ -1,7 +1,12 @@
 import type { LucideIcon } from 'lucide-react';
 import { LayoutDashboard, ReceiptText, Target } from 'lucide-react';
-import { onboardingTokenRecipes } from '@/components/onboarding/tokenRecipes';
 import { Badge, cn } from '@/ui/primitives';
+import {
+  font as primitiveTypographyRecipes,
+  border as semanticBorders,
+  effect as semanticEffects,
+  surface as semanticSurfaces,
+} from '@/ui/recipes';
 import { designTokens } from '@/ui/tokens';
 import { featurePalettes } from '@/ui/tokens-runtime';
 
@@ -21,6 +26,48 @@ type WelcomeFeature = {
   copy: string;
   palette: FeaturePalette;
 };
+
+const onboardingStepCard = [
+  'group relative overflow-hidden',
+  ...semanticBorders.subtle,
+  ...semanticSurfaces.card,
+  ...semanticEffects.glassShadow,
+  'transition-all duration-300 ease-out hover:-translate-y-[2px]',
+  ...semanticEffects.accentHover,
+] as const;
+
+const onboardingIconWell = [
+  'relative z-10 inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full',
+  ...semanticSurfaces.insetWell,
+  'ring-1 ring-inset',
+] as const;
+
+const onboardingHoverOverlay =
+  'pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20';
+
+const onboardingIconGlow =
+  'absolute inset-[20%] rounded-full bg-[var(--color-effect-accent-hover)] opacity-20 blur-[6px] dark:bg-[var(--color-effect-accent-hover-dark)] dark:opacity-[0.18]';
+
+const onboardingTitleStrong = [
+  'relative z-10 mt-3',
+  primitiveTypographyRecipes.bodyStrong,
+  'dark:text-white',
+] as const;
+const onboardingBodyMuted = [
+  'relative z-10 mt-1',
+  primitiveTypographyRecipes.caption,
+  designTokens.text.body,
+] as const;
+const onboardingEyebrowCaps = [
+  primitiveTypographyRecipes.label,
+  'uppercase transition-colors duration-300 ease-out',
+] as const;
+const onboardingPreviewFrame = [
+  'relative aspect-[16/10] overflow-hidden rounded-2xl',
+  ...semanticBorders.subtle,
+  'bg-[var(--color-surface-overlay)]',
+  'shadow-lg sm:aspect-[18/10]',
+] as const;
 
 const welcomeFeatures: WelcomeFeature[] = [
   {
@@ -45,11 +92,11 @@ const welcomeFeatures: WelcomeFeature[] = [
 
 function FeatureCard({ icon: Icon, title, copy, palette }: WelcomeFeature) {
   return (
-    <div className={cn(onboardingTokenRecipes.stepCard)}>
-      <div className={cn(onboardingTokenRecipes.hoverOverlay)} />
+    <div className={cn(onboardingStepCard)}>
+      <div className={cn(onboardingHoverOverlay)} />
       <span
         className={cn(
-          onboardingTokenRecipes.iconWell,
+          onboardingIconWell,
           palette.ring,
           palette.glow,
           'transition-all duration-200 ease-out group-hover:scale-105'
@@ -57,14 +104,14 @@ function FeatureCard({ icon: Icon, title, copy, palette }: WelcomeFeature) {
         aria-hidden="true"
       >
         <span className={cn('absolute inset-0 bg-gradient-to-br', palette.gradient)} />
-        <span className={cn(onboardingTokenRecipes.iconGlow)} />
+        <span className={cn(onboardingIconGlow)} />
         <Icon
           className={cn('relative h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)}
           strokeWidth={1.7}
         />
       </span>
-      <p className={cn(onboardingTokenRecipes.titleStrong)}>{title}</p>
-      <p className={cn(onboardingTokenRecipes.bodyMuted)}>{copy}</p>
+      <p className={cn(onboardingTitleStrong)}>{title}</p>
+      <p className={cn(onboardingBodyMuted)}>{copy}</p>
     </div>
   );
 }
@@ -121,7 +168,7 @@ export function WelcomeStep() {
         </div>
 
         <div className={cn('flex flex-col gap-4')}>
-          <div className={cn(onboardingTokenRecipes.eyebrowCaps)}>What you'll see</div>
+          <div className={cn(onboardingEyebrowCaps)}>What you'll see</div>
           <div className={cn('grid gap-3 sm:grid-cols-3')}>
             {welcomeFeatures.map((feature) => (
               <FeatureCard key={feature.title} {...feature} />
@@ -134,17 +181,12 @@ export function WelcomeStep() {
         <div
           className={cn(
             'mb-3 mt-[52px] flex items-center justify-between sm:mb-4',
-            onboardingTokenRecipes.eyebrowCaps
+            onboardingEyebrowCaps
           )}
         >
           <span>Live Dashboard Preview</span>
         </div>
-        <div
-          className={cn(
-            onboardingTokenRecipes.previewFrame,
-            'transition-all duration-300 ease-out'
-          )}
-        >
+        <div className={cn(onboardingPreviewFrame, 'transition-all duration-300 ease-out')}>
           <img
             src={dashboardHero}
             alt="Sumurai dashboard preview"

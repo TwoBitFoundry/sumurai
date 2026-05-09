@@ -1,6 +1,11 @@
-import { onboardingTokenRecipes } from '@/components/onboarding/tokenRecipes';
 import { Alert, Badge, Button } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
+import {
+  font as primitiveTypographyRecipes,
+  border as semanticBorders,
+  effect as semanticEffects,
+  surface as semanticSurfaces,
+} from '@/ui/recipes';
 import { designTokens } from '@/ui/tokens';
 import type { ConnectAccountProviderContent } from '@/utils/providerCards';
 
@@ -33,17 +38,69 @@ const statusVariantMap: Record<StatusTone, 'info' | 'warning' | 'error'> = {
   error: 'error',
 };
 
+const onboardingStepCard = [
+  'group relative overflow-hidden',
+  ...semanticBorders.subtle,
+  ...semanticSurfaces.card,
+  ...semanticEffects.glassShadow,
+  'transition-all duration-300 ease-out hover:-translate-y-[2px]',
+  ...semanticEffects.accentHover,
+] as const;
+
+const onboardingIconWell = [
+  'relative z-10 inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full',
+  ...semanticSurfaces.insetWell,
+  'ring-1 ring-inset',
+] as const;
+
+const onboardingHoverOverlay =
+  'pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20';
+
+const onboardingIconGlow =
+  'absolute inset-[20%] rounded-full bg-[var(--color-effect-accent-hover)] opacity-20 blur-[6px] dark:bg-[var(--color-effect-accent-hover-dark)] dark:opacity-[0.18]';
+
+const onboardingTitleStrong = [
+  'relative z-10 mt-3',
+  primitiveTypographyRecipes.bodyStrong,
+  'dark:text-white',
+] as const;
+const onboardingTitleStrongInline = [
+  primitiveTypographyRecipes.bodyStrong,
+  'dark:text-white',
+] as const;
+const onboardingRowBodyMuted = [
+  primitiveTypographyRecipes.caption,
+  designTokens.text.body,
+] as const;
+const onboardingEyebrowCaps = [
+  primitiveTypographyRecipes.label,
+  'uppercase transition-colors duration-300 ease-out',
+] as const;
+const onboardingProviderRow = [
+  'group relative overflow-hidden',
+  ...semanticBorders.subtle,
+  ...semanticSurfaces.card,
+  ...semanticEffects.glassShadow,
+  'transition-all duration-300 ease-out hover:-translate-y-[2px]',
+  ...semanticEffects.accentHover,
+  'flex h-full items-start gap-4 rounded-2xl p-4 text-[13px]',
+] as const;
+const onboardingProviderHoverOverlay =
+  'pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20';
+const onboardingProviderIconGlow =
+  'absolute inset-[18%] rounded-full bg-[var(--color-effect-accent-hover)] opacity-[0.22] blur-[6px] dark:bg-[var(--color-effect-accent-hover-dark)] dark:opacity-[0.18]';
+
 function FeatureCard({
   icon: Icon,
   title,
   palette,
 }: ConnectAccountProviderContent['features'][number]) {
   return (
-    <div className={cn(onboardingTokenRecipes.stepCard)}>
-      <div className={cn(onboardingTokenRecipes.hoverOverlay)} />
+    <div className={cn(onboardingStepCard)}>
+      <div className={cn(onboardingHoverOverlay)} />
       <span
         className={cn(
-          onboardingTokenRecipes.iconWell,
+          onboardingIconWell,
           palette.ring,
           palette.glow,
           'transition-all duration-200 ease-out group-hover:scale-105'
@@ -51,10 +108,10 @@ function FeatureCard({
         aria-hidden="true"
       >
         <span className={cn('absolute inset-0 bg-gradient-to-br', palette.gradient)} />
-        <span className={cn(onboardingTokenRecipes.iconGlow)} />
+        <span className={cn(onboardingIconGlow)} />
         <Icon className={cn('relative h-5 w-5', palette.icon)} strokeWidth={1.7} />
       </span>
-      <h4 className={cn(onboardingTokenRecipes.titleStrong)}>{title}</h4>
+      <h4 className={cn(onboardingTitleStrong)}>{title}</h4>
     </div>
   );
 }
@@ -66,11 +123,13 @@ function HighlightCard({
   palette,
 }: ConnectAccountProviderContent['highlights'][number]) {
   return (
-    <div className={cn(onboardingTokenRecipes.providerRow)}>
-      <div className={cn(onboardingTokenRecipes.providerHoverOverlay)} />
+    <div className={cn(onboardingProviderRow)}>
+      <div className={cn(onboardingProviderHoverOverlay)} />
       <span
         className={cn(
-          onboardingTokenRecipes.iconWellLarge,
+          'relative z-10 inline-flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full',
+          ...semanticSurfaces.insetWell,
+          'ring-1 ring-inset',
           palette.ring,
           palette.glow,
           'transition-all duration-200 ease-out group-hover:scale-105'
@@ -78,15 +137,15 @@ function HighlightCard({
         aria-hidden="true"
       >
         <span className={cn('absolute inset-0 bg-gradient-to-br', palette.gradient)} />
-        <span className={cn(onboardingTokenRecipes.providerIconGlow)} />
+        <span className={cn(onboardingProviderIconGlow)} />
         <Icon
           className={cn('relative h-5 w-5', palette.iconLight, `dark:${palette.iconDark}`)}
           strokeWidth={1.7}
         />
       </span>
       <div className="relative z-10 space-y-1">
-        <p className={cn(onboardingTokenRecipes.titleStrongInline)}>{title}</p>
-        <p className={cn(onboardingTokenRecipes.rowBodyMuted)}>{body}</p>
+        <p className={cn(onboardingTitleStrongInline)}>{title}</p>
+        <p className={cn(onboardingRowBodyMuted)}>{body}</p>
       </div>
     </div>
   );
@@ -226,7 +285,7 @@ export function ConnectAccountStep({
         )}
 
         <div className={cn('flex flex-col gap-4')}>
-          <div className={cn(onboardingTokenRecipes.eyebrowCaps)}>{content.highlightLabel}</div>
+          <div className={cn(onboardingEyebrowCaps)}>{content.highlightLabel}</div>
           <div className={cn('grid gap-3 sm:grid-cols-3')}>
             {content.features.map((feature) => (
               <FeatureCard key={feature.title} {...feature} />
@@ -236,7 +295,7 @@ export function ConnectAccountStep({
       </div>
 
       <div className={cn('flex flex-col gap-5 self-start mt-[52px]')}>
-        <div className={cn(onboardingTokenRecipes.eyebrowCaps)}>{content.highlightMeta}</div>
+        <div className={cn(onboardingEyebrowCaps)}>{content.highlightMeta}</div>
         <div className={cn('flex flex-col gap-4')}>
           <div className={cn('grid auto-rows-fr gap-3 sm:grid-cols-2')}>
             {content.highlights.map((highlight) => (

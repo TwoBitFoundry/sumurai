@@ -1,38 +1,40 @@
-import { dashboardTokenRecipes } from '@/views/tokenRecipes';
+import { render, screen } from '@testing-library/react';
+import { createElement } from 'react';
+import { BudgetProgress } from '@/features/budgets/components/BudgetProgress';
+import { TransactionsTable } from '@/features/transactions/components/TransactionsTable';
+import type { Transaction } from '@/types/api';
 
-describe('dashboard token recipes', () => {
-  it('keeps the floating range selector on the shared glass outline recipe', () => {
-    expect(dashboardTokenRecipes.floatingRangeShell).toEqual(
-      expect.arrayContaining([
-        'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
-        'dark:border-[color:color-mix(in_srgb,var(--color-border-glass-dark)_12%,transparent)]',
-        'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
-        'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card-dark)_55%,transparent)]',
-      ])
-    );
-    expect(dashboardTokenRecipes.floatingRangeShell).not.toEqual(
-      expect.arrayContaining([
-        'ring-[var(--color-border-divider)]',
-        'dark:ring-[var(--color-border-divider-dark)]',
-      ])
-    );
+const transaction = (amount: number): Transaction => ({
+  id: `tx-${amount}`,
+  date: '2025-01-15',
+  name: 'Coffee',
+  amount,
+  category: { primary: 'Food' },
+  account_name: 'Checking',
+});
+
+describe('dashboard surface components', () => {
+  it('keeps the budget progress copy intact', () => {
+    render(createElement(BudgetProgress, { amount: 500, spent: 220 }));
+
+    expect(screen.getByText(/44% used/i)).toBeVisible();
+    expect(screen.getByText(/\$280\.00 left/i)).toBeVisible();
   });
 
-  it('keeps the transaction table footer on the shared glass recipe', () => {
-    expect(dashboardTokenRecipes.tableFooter).toEqual(
-      expect.arrayContaining([
-        'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
-        'dark:border-[color:color-mix(in_srgb,var(--color-border-glass-dark)_12%,transparent)]',
-        'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
-        'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card-dark)_55%,transparent)]',
-        'backdrop-blur-md',
-      ])
+  it('keeps the transactions table navigation intact', () => {
+    render(
+      createElement(TransactionsTable, {
+        items: [transaction(42), transaction(-42)],
+        total: 2,
+        currentPage: 1,
+        totalPages: 1,
+        onPrev: () => {},
+        onNext: () => {},
+      })
     );
-    expect(dashboardTokenRecipes.tableFooter).not.toEqual(
-      expect.arrayContaining([
-        'bg-[var(--color-surface-muted-chip)]',
-        'dark:bg-[var(--color-surface-muted-chip-dark)]',
-      ])
-    );
+
+    expect(screen.getByText(/showing 1-2 of 2/i)).toBeVisible();
+    expect(screen.getByRole('button', { name: /previous page/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /next page/i })).toBeDisabled();
   });
 });

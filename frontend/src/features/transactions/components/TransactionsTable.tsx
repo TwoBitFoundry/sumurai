@@ -3,9 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Receipt } from 'lucide-react';
 import type React from 'react';
 import { cn, EmptyState, PaginationButton, Pill } from '@/ui/primitives';
-import { pill as pillRecipes, transactions as transactionRecipes } from '@/ui/primitives/recipes';
 import { designTokens } from '@/ui/tokens';
-import { dashboardTokenRecipes } from '@/views/tokenRecipes';
 import type { Transaction } from '../../../types/api';
 import { formatCategoryName } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
@@ -25,6 +23,30 @@ const resolveCategoryName = (transaction: Transaction): string => {
   }
   return formatCategoryName(transaction.category.primary);
 };
+
+const tableHeader = [
+  ...designTokens.surfaces.semantic.mutedChip,
+  designTokens.text.body,
+  'transition-colors duration-500',
+] as const;
+
+const tableFooter = [
+  'border-t px-4 py-4 transition-colors duration-500',
+  ...designTokens.borders.glass,
+  ...designTokens.surfaces.semantic.card,
+  ...designTokens.effects.semantic.glassShadow,
+  'backdrop-blur-md',
+  'backdrop-saturate-[150%]',
+] as const;
+
+const transactionRow = {
+  shell: [
+    'group relative border-b border-slate-200/70 transition-all duration-150 ease-out hover:-translate-y-[2px] hover:ring-2 hover:ring-sky-400/60',
+    'dark:border-slate-700/50 dark:hover:ring-sky-400/50',
+  ],
+  odd: ['bg-slate-100', 'dark:bg-slate-700/20'],
+  even: ['bg-white', 'dark:bg-transparent'],
+} as const;
 
 export const TransactionsTable: React.FC<Props> = ({
   items,
@@ -49,7 +71,7 @@ export const TransactionsTable: React.FC<Props> = ({
         <>
           <div className="overflow-x-auto">
             <table className={cn('min-w-full', 'table-fixed')}>
-              <thead className={cn(dashboardTokenRecipes.tableHeader)}>
+              <thead className={cn(tableHeader)}>
                 <tr className={cn('border-b', ...designTokens.borders.divider)}>
                   <th
                     className={cn(
@@ -126,8 +148,8 @@ export const TransactionsTable: React.FC<Props> = ({
                       <tr
                         key={r.id}
                         className={cn(
-                          transactionRecipes.row.shell,
-                          i % 2 ? transactionRecipes.row.odd : transactionRecipes.row.even
+                          transactionRow.shell,
+                          i % 2 ? transactionRow.odd : transactionRow.even
                         )}
                       >
                         <td
@@ -222,14 +244,7 @@ export const TransactionsTable: React.FC<Props> = ({
               </AnimatePresence>
             </table>
           </div>
-          <div
-            className={cn(
-              'flex',
-              'items-center',
-              'justify-between',
-              dashboardTokenRecipes.tableFooter
-            )}
-          >
+          <div className={cn('flex', 'items-center', 'justify-between', tableFooter)}>
             <div
               className={cn(
                 designTokens.typography.caption,

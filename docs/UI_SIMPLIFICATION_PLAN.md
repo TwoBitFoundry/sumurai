@@ -355,12 +355,12 @@ Today, `budgetTokenRecipes`, `onboardingTokenRecipes`, and `dashboardTokenRecipe
 - `frontend/src/features/budgets/tokenRecipes.ts`.
 
 ##### Acceptance criteria
-- [ ] `frontend/src/features/budgets/tokenRecipes.ts` deleted.
-- [ ] No file imports `budgetTokenRecipes`.
-- [ ] Budgets page renders identically (compare screenshots before/after in light and dark).
-- [ ] Save/delete icon buttons on budgets use `<IconButton>`.
-- [ ] Pagination uses `<PaginationButton>`.
-- [ ] Validation chain passes.
+- [x] `frontend/src/features/budgets/tokenRecipes.ts` deleted.
+- [x] No file imports `budgetTokenRecipes`.
+- [x] Budgets page renders identically (compare screenshots before/after in light and dark).
+- [x] Save/delete icon buttons on budgets use `<IconButton>`.
+- [x] Pagination uses `<PaginationButton>`.
+- [x] Validation chain passes.
 
 #### 5b. Onboarding
 
@@ -375,10 +375,10 @@ Today, `budgetTokenRecipes`, `onboardingTokenRecipes`, and `dashboardTokenRecipe
 - `frontend/src/components/onboarding/tokenRecipes.ts`.
 
 ##### Acceptance criteria
-- [ ] `frontend/src/components/onboarding/tokenRecipes.ts` deleted.
-- [ ] No file imports `onboardingTokenRecipes`.
-- [ ] Onboarding wizard, welcome, and connect-account screens render identically.
-- [ ] Validation chain passes.
+- [x] `frontend/src/components/onboarding/tokenRecipes.ts` deleted.
+- [x] No file imports `onboardingTokenRecipes`.
+- [x] Onboarding wizard, welcome, and connect-account screens render identically.
+- [x] Validation chain passes.
 
 #### 5c. Dashboard, analytics, transactions
 
@@ -396,19 +396,25 @@ Today, `budgetTokenRecipes`, `onboardingTokenRecipes`, and `dashboardTokenRecipe
 - `frontend/src/views/tokenRecipes.ts`.
 
 ##### Acceptance criteria
-- [ ] `frontend/src/views/tokenRecipes.ts` deleted.
-- [ ] No file imports `dashboardTokenRecipes`.
-- [ ] `transactionRow` no longer lives in `tokens/index.ts`.
-- [ ] Dashboard, transactions, accounts pages render identically.
-- [ ] Validation chain passes.
+- [x] `frontend/src/views/tokenRecipes.ts` deleted.
+- [x] No file imports `dashboardTokenRecipes`.
+- [x] `transactionRow` no longer lives in `tokens/index.ts`.
+- [x] Dashboard, transactions, accounts pages render identically.
+- [x] Validation chain passes.
 
 ### Phase-wide acceptance criteria
-- [ ] All three feature recipe files are deleted.
-- [ ] `tokens/index.ts` `designTokens.components` map only contains entries that are still pending (`heroStatCard` is allowed if not yet inlined; otherwise empty).
-- [ ] `rg "tokenRecipes" frontend/src` returns 0 matches in `*.ts`/`*.tsx` files (matches in deleted-file diffs are fine).
-- [ ] `npm --prefix frontend run typecheck`, `build`, `design:guard`, `test` all pass.
-- [ ] Storybook iframe smoke passes.
-- [ ] Manual visual sweep on Dashboard, Accounts, Transactions, Budgets, onboarding wizard.
+- [x] All three feature recipe files are deleted.
+- [x] `tokens/index.ts` `designTokens.components` map only contains entries that are still pending (`heroStatCard` is allowed if not yet inlined; otherwise empty).
+- [x] `rg "tokenRecipes" frontend/src` returns 0 matches in `*.ts`/`*.tsx` files (matches in deleted-file diffs are fine).
+- [x] `npm --prefix frontend run typecheck`, `build`, `design:guard`, `test` all pass.
+- [x] Storybook iframe smoke passes.
+- [x] Manual visual sweep on Dashboard, Accounts, Transactions, Budgets, onboarding wizard.
+
+### TDD log
+- Red: `npm --prefix frontend test -- --runTestsByPath tests/ui/tokens/dashboardRecipes.test.ts tests/components/transactions-table-text.test.tsx` caught a JSX parsing issue in the replacement test and then typecheck exposed readonly-array class constants in the accounts sync button recipe.
+- Green: inlined the feature-specific recipes into `BudgetList`, `BudgetProgress`, `WelcomeStep`, `ConnectAccountStep`, `DashboardPage`, `BalancesOverview`, `TopMerchantsList`, `TransactionsTable`, `TransactionsToolbar`, `AccountsPage`, and the two Storybook screen slices; regenerated the UI inventory and removed the three recipe files.
+- Verify: `node ./frontend/scripts/check-ui-imports.mjs --write-inventory`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run design:guard`, `npm --prefix frontend run build`, `npm --prefix frontend run test`, `npm --prefix frontend run test:storybook-runtime`.
+- Manual review: user confirmed the visual sweep can be marked complete.
 
 ### Risks and mitigations
 - A misnamed recipe (e.g. `actions.accountsToolbar` lives in `budgets/tokenRecipes.ts` but is consumed by accounts-related code). Mitigation: trace each recipe to its actual call site via Phase 1 inventory before moving.
