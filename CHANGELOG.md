@@ -1,5 +1,19 @@
 # Changelog
 
+## [5.5.0](https://github.com/TwoBitFoundry/sumurai/compare/v5.4.0...v5.5.0) (2026-05-09)
+
+
+### Features
+
+* bg border tokens std ([#95](https://github.com/TwoBitFoundry/sumurai/issues/95)) ([83de706](https://github.com/TwoBitFoundry/sumurai/commit/83de7068cf2c014ba33f45906cddbebce538d438))
+* font hierarchy std ([#93](https://github.com/TwoBitFoundry/sumurai/issues/93)) ([b7d6f04](https://github.com/TwoBitFoundry/sumurai/commit/b7d6f042ad67a638eb574a040b0cf95890f37fd8))
+
+
+### Bug Fixes
+
+* ci/cd issues found ([#97](https://github.com/TwoBitFoundry/sumurai/issues/97)) ([d8edb57](https://github.com/TwoBitFoundry/sumurai/commit/d8edb571d8bc8a9bc07e9f803a4b4e5f13f16292))
+* resolve skill misalignment with project ([#98](https://github.com/TwoBitFoundry/sumurai/issues/98)) ([a6d1a22](https://github.com/TwoBitFoundry/sumurai/commit/a6d1a22df1b6d34d38ce039e942876143e4ddef1))
+
 ## [5.4.0](https://github.com/TwoBitFoundry/sumurai/compare/v5.3.1...v5.4.0) (2026-05-08)
 
 
