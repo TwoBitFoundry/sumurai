@@ -154,23 +154,29 @@ Today the same atoms are defined 5 times. Consolidating gives Phases 3-7 a singl
 5. Run the design guard chain. Run Jest. Run Storybook smoke. Manually visit Dashboard, Accounts, Transactions, Budgets, Settings in light and dark.
 
 ### Acceptance criteria
-- [ ] `frontend/src/ui/recipes.ts` exists and exports `text`, `placeholder`, `surface`, `border`, `effect`, `status`, `focus`, `font`, `chrome`.
-- [ ] `rg "const semanticSurfaces" frontend/src` returns 0 matches.
-- [ ] `rg "const semanticBorders" frontend/src` returns 0 matches.
-- [ ] `rg "const semanticStatus" frontend/src` returns 0 matches (other than re-exports).
-- [ ] `rg "const semanticEffects" frontend/src` returns 0 matches.
-- [ ] `rg "primitiveTypographyRecipes\\s*=\\s*{" frontend/src` returns 0 matches (only one definition in `recipes.ts`, others are re-exports).
-- [ ] `tokens/index.ts`, `primitives/tokenRecipes.ts`, `views/tokenRecipes.ts`, `features/budgets/tokenRecipes.ts`, `components/onboarding/tokenRecipes.ts` import their atoms from `@/ui/recipes`.
-- [ ] `npm --prefix frontend run typecheck` passes.
-- [ ] `npm --prefix frontend run build` passes.
-- [ ] `npm --prefix frontend run design:guard` passes.
-- [ ] `npm --prefix frontend run test` passes.
-- [ ] Storybook iframe smoke passes.
-- [ ] Manual visual sweep: zero regressions on the five screens in light and dark.
+- [x] `frontend/src/ui/recipes.ts` exists and exports `text`, `placeholder`, `surface`, `border`, `effect`, `status`, `focus`, `font`, `chrome`.
+- [x] `rg "const semanticSurfaces" frontend/src` returns 0 matches.
+- [x] `rg "const semanticBorders" frontend/src` returns 0 matches.
+- [x] `rg "const semanticStatus" frontend/src` returns 0 matches (other than re-exports).
+- [x] `rg "const semanticEffects" frontend/src` returns 0 matches.
+- [x] `rg "primitiveTypographyRecipes\\s*=\\s*{" frontend/src` returns 0 matches (only one definition in `recipes.ts`, others are re-exports).
+- [x] `tokens/index.ts`, `primitives/tokenRecipes.ts`, `views/tokenRecipes.ts`, `features/budgets/tokenRecipes.ts`, `components/onboarding/tokenRecipes.ts` import their atoms from `@/ui/recipes`.
+- [x] `npm --prefix frontend run typecheck` passes.
+- [x] `npm --prefix frontend run build` passes.
+- [x] `npm --prefix frontend run design:guard` passes.
+- [x] `npm --prefix frontend run test` passes.
+- [x] Storybook iframe smoke passes.
+- [x] Manual visual sweep: zero regressions on the five screens in light and dark.
 
 ### Risks and mitigations
 - A typo in a copied class string changes a color or shadow. Mitigation: copy from the source files literally; have the agent run `git diff` for each touched file and confirm class strings match character-for-character before submitting.
 - Tailwind JIT misses a class because it was reconstructed dynamically. Mitigation: keep all values as plain string literals or `as const` arrays-joined-once; do not template-build class names at runtime.
+
+### TDD log
+- Added `frontend/tests/ui/recipes.test.ts` to pin the shared `recipes` module surface.
+- Ran `npm --prefix frontend test -- --runTestsByPath tests/ui/recipes.test.ts tests/scripts/ui-imports-audit.test.ts`.
+- Ran `npm --prefix frontend run typecheck`, `npm --prefix frontend run design:guard`, `npm --prefix frontend run build`, `npm --prefix frontend run test`, and `npm --prefix frontend run test:storybook-runtime`.
+- `build` and `test:storybook-runtime` required escalated reruns because the sandbox blocked Next.js/Storybook port binding.
 
 ---
 

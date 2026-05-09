@@ -1,8 +1,101 @@
 {
-  "generatedAt": "2026-05-09T18:47:19.896Z",
+  "generatedAt": "2026-05-09T18:57:35.575Z",
   "srcRoot": "/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src",
   "designPath": "/Users/kodybuss/Repos/two-bit-foundry/sumurai/DESIGN.md",
   "sources": [
+    {
+      "source": "@/ui/recipes",
+      "symbols": [
+        {
+          "symbol": "border as semanticBorders",
+          "consumerFiles": [
+            "components/onboarding/tokenRecipes.ts",
+            "features/budgets/tokenRecipes.ts",
+            "ui/primitives/tokenRecipes.ts",
+            "ui/tokens/index.ts",
+            "views/tokenRecipes.ts"
+          ],
+          "consumerCount": 5
+        },
+        {
+          "symbol": "chrome as buttonChromeInset",
+          "consumerFiles": [
+            "ui/primitives/tokenRecipes.ts"
+          ],
+          "consumerCount": 1
+        },
+        {
+          "symbol": "effect as semanticEffects",
+          "consumerFiles": [
+            "components/onboarding/tokenRecipes.ts",
+            "features/budgets/tokenRecipes.ts",
+            "ui/primitives/tokenRecipes.ts",
+            "ui/tokens/index.ts",
+            "views/tokenRecipes.ts"
+          ],
+          "consumerCount": 5
+        },
+        {
+          "symbol": "focus as focusSurfaces",
+          "consumerFiles": [
+            "ui/tokens/index.ts"
+          ],
+          "consumerCount": 1
+        },
+        {
+          "symbol": "font as primitiveTypographyRecipes",
+          "consumerFiles": [
+            "components/onboarding/tokenRecipes.ts",
+            "features/budgets/tokenRecipes.ts",
+            "ui/primitives/tokenRecipes.ts",
+            "ui/tokens/index.ts"
+          ],
+          "consumerCount": 4
+        },
+        {
+          "symbol": "placeholder as semanticPlaceholderTextRecipes",
+          "consumerFiles": [
+            "ui/tokens/index.ts"
+          ],
+          "consumerCount": 1
+        },
+        {
+          "symbol": "status as semanticStatus",
+          "consumerFiles": [
+            "components/onboarding/tokenRecipes.ts",
+            "features/budgets/tokenRecipes.ts",
+            "ui/primitives/tokenRecipes.ts"
+          ],
+          "consumerCount": 3
+        },
+        {
+          "symbol": "status as semanticStatusRecipes",
+          "consumerFiles": [
+            "ui/tokens/index.ts"
+          ],
+          "consumerCount": 1
+        },
+        {
+          "symbol": "surface as semanticSurfaces",
+          "consumerFiles": [
+            "components/onboarding/tokenRecipes.ts",
+            "features/budgets/tokenRecipes.ts",
+            "ui/primitives/tokenRecipes.ts",
+            "ui/tokens/index.ts",
+            "views/tokenRecipes.ts"
+          ],
+          "consumerCount": 5
+        },
+        {
+          "symbol": "text as semanticTextRecipes",
+          "consumerFiles": [
+            "ui/primitives/tokenRecipes.ts",
+            "ui/tokens/index.ts"
+          ],
+          "consumerCount": 2
+        }
+      ]
+    },
     {
       "source": "@/ui/tokens",
       "symbols": [
@@ -109,15 +202,7 @@
     },
     {
       "source": "@/ui/tokens/textRecipes",
-      "symbols": [
-        {
-          "symbol": "semanticTextRecipes",
-          "consumerFiles": [
-            "ui/primitives/tokenRecipes.ts"
-          ],
-          "consumerCount": 1
-        }
-      ]
+      "symbols": []
     },
     {
       "source": "@/ui/primitives/tokenRecipes",
@@ -128,15 +213,6 @@
             "ui/tokens/index.ts"
           ],
           "consumerCount": 1
-        },
-        {
-          "symbol": "primitiveTypographyRecipes",
-          "consumerFiles": [
-            "components/onboarding/tokenRecipes.ts",
-            "features/budgets/tokenRecipes.ts",
-            "ui/tokens/index.ts"
-          ],
-          "consumerCount": 3
         }
       ]
     },

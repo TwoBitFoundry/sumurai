@@ -1,78 +1,10 @@
-import { primitiveTypographyRecipes } from '@/ui/primitives/tokenRecipes';
-
-const semanticSurfaces = {
-  card: [
-    'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card-dark)_55%,transparent)]',
-  ],
-  mutedChip: [
-    'bg-[var(--color-surface-muted-chip)]',
-    'dark:bg-[var(--color-surface-muted-chip-dark)]',
-  ],
-  hoverRow: [
-    'bg-[var(--color-surface-hover-row)]',
-    'dark:bg-[var(--color-surface-hover-row-dark)]',
-  ],
-} as const;
-
-const semanticBorders = {
-  subtle: ['border-[var(--color-border-subtle)]', 'dark:border-[var(--color-border-subtle-dark)]'],
-  glass: [
-    'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
-    'dark:border-[color:color-mix(in_srgb,var(--color-border-glass-dark)_12%,transparent)]',
-  ],
-  control: [
-    'border-[var(--color-border-control)]',
-    'dark:border-[var(--color-border-control-dark)]',
-  ],
-  danger: ['border-[var(--color-border-danger)]', 'dark:border-[var(--color-border-danger-dark)]'],
-} as const;
-
-const semanticStatus = {
-  success: {
-    surface: [
-      'bg-[var(--color-status-success-surface)]',
-      'dark:bg-[var(--color-status-success-surface-dark)]',
-    ],
-    text: [
-      'text-[var(--color-status-success-text)]',
-      'dark:text-[var(--color-status-success-text-dark)]',
-    ],
-  },
-  danger: {
-    surface: [
-      'bg-[var(--color-status-danger-surface)]',
-      'dark:bg-[var(--color-status-danger-surface-dark)]',
-    ],
-    border: [
-      'border-[var(--color-status-danger-border)]',
-      'dark:border-[var(--color-status-danger-border-dark)]',
-    ],
-    text: [
-      'text-[var(--color-status-danger-text)]',
-      'dark:text-[var(--color-status-danger-text-dark)]',
-    ],
-  },
-} as const;
-
-const semanticEffects = {
-  glassShadow: [
-    'shadow-[0_32px_80px_-58px_var(--color-effect-glass-shadow)]',
-    'dark:shadow-[0_32px_90px_-60px_var(--color-effect-glass-shadow-dark)]',
-  ],
-  successGlow: [
-    'shadow-[0_0_12px_var(--color-effect-success-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-success-glow-dark)]',
-  ],
-  dangerGlow: [
-    'shadow-[0_0_12px_var(--color-effect-danger-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-danger-glow-dark)]',
-  ],
-  accentHover: [
-    'hover:shadow-[0_18px_44px_-30px_var(--color-effect-accent-hover)]',
-    'dark:hover:shadow-[0_20px_52px_-34px_var(--color-effect-accent-hover-dark)]',
-  ],
-} as const;
+import {
+  font as primitiveTypographyRecipes,
+  border as semanticBorders,
+  effect as semanticEffects,
+  status as semanticStatus,
+  surface as semanticSurfaces,
+} from '@/ui/recipes';
 
 export const budgetTokenRecipes = {
   budgetCard: {

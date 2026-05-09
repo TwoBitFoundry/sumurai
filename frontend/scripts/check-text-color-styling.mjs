@@ -28,7 +28,11 @@ function isAllowlisted(relPosix) {
   if (relPosix.startsWith('ui/tokens/generated/')) {
     return true;
   }
-  if (relPosix === 'ui/tokens/index.ts' || relPosix === 'ui/tokens/textRecipes.ts') {
+  if (
+    relPosix === 'ui/tokens/index.ts' ||
+    relPosix === 'ui/tokens/textRecipes.ts' ||
+    relPosix === 'ui/recipes.ts'
+  ) {
     return true;
   }
   if (relPosix === 'ui/primitives/tokenRecipes.ts' || relPosix === 'ui/primitives/Alert.tsx') {

@@ -1,69 +1,10 @@
-import { primitiveTypographyRecipes } from '@/ui/primitives/tokenRecipes';
-
-const semanticSurfaces = {
-  card: [
-    'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card-dark)_55%,transparent)]',
-  ],
-  solidPanel: [
-    'bg-[var(--color-surface-solid-panel)]',
-    'dark:bg-[var(--color-surface-solid-panel-dark)]',
-  ],
-  insetWell: [
-    'bg-[var(--color-surface-inset-well)]',
-    'dark:bg-[var(--color-surface-inset-well-dark)]',
-  ],
-  hoverRow: [
-    'bg-[var(--color-surface-hover-row)]',
-    'dark:bg-[var(--color-surface-hover-row-dark)]',
-  ],
-} as const;
-
-const semanticBorders = {
-  subtle: ['border-[var(--color-border-subtle)]', 'dark:border-[var(--color-border-subtle-dark)]'],
-  hoverAccent: [
-    'border-[var(--color-border-hover-accent)]',
-    'dark:border-[var(--color-border-hover-accent-dark)]',
-  ],
-  divider: [
-    'border-[var(--color-border-divider)]',
-    'dark:border-[var(--color-border-divider-dark)]',
-  ],
-} as const;
-
-const semanticStatus = {
-  success: {
-    surface: [
-      'bg-[var(--color-status-success-surface)]',
-      'dark:bg-[var(--color-status-success-surface-dark)]',
-    ],
-    text: [
-      'text-[var(--color-status-success-text)]',
-      'dark:text-[var(--color-status-success-text-dark)]',
-    ],
-  },
-  info: {
-    surface: [
-      'bg-[var(--color-status-info-surface)]',
-      'dark:bg-[var(--color-status-info-surface-dark)]',
-    ],
-    text: [
-      'text-[var(--color-status-info-text)]',
-      'dark:text-[var(--color-status-info-text-dark)]',
-    ],
-  },
-} as const;
-
-const semanticEffects = {
-  glassShadow: [
-    'shadow-[0_18px_48px_-36px_var(--color-effect-glass-shadow)]',
-    'dark:shadow-[0_20px_56px_-40px_var(--color-effect-glass-shadow-dark)]',
-  ],
-  accentHover: [
-    'hover:shadow-[0_18px_44px_-30px_var(--color-effect-accent-hover)]',
-    'dark:hover:shadow-[0_20px_52px_-34px_var(--color-effect-accent-hover-dark)]',
-  ],
-} as const;
+import {
+  font as primitiveTypographyRecipes,
+  border as semanticBorders,
+  effect as semanticEffects,
+  status as semanticStatus,
+  surface as semanticSurfaces,
+} from '@/ui/recipes';
 
 export const onboardingTokenRecipes = {
   shell: [

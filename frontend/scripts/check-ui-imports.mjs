@@ -10,6 +10,7 @@ const defaultDocsDir = resolve(frontendRoot, '..', 'docs');
 const defaultDesignPath = resolve(frontendRoot, '..', 'DESIGN.md');
 
 const monitoredSources = [
+  '@/ui/recipes',
   '@/ui/tokens',
   '@/ui/tokens/textRecipes',
   '@/ui/primitives/tokenRecipes',

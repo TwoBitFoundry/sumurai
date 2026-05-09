@@ -1,6 +1,21 @@
 # UI Inventory
 
-Generated from `src` and `../DESIGN.md` on 2026-05-09T18:47:19.896Z.
+Generated from `src` and `../DESIGN.md` on 2026-05-09T18:57:35.575Z.
+
+## @/ui/recipes
+
+| symbol | consumer files | consumer count |
+| --- | --- | --- |
+| `border as semanticBorders` | `components/onboarding/tokenRecipes.ts`, `features/budgets/tokenRecipes.ts`, `ui/primitives/tokenRecipes.ts`, `ui/tokens/index.ts`, `views/tokenRecipes.ts` | 5 |
+| `chrome as buttonChromeInset` | `ui/primitives/tokenRecipes.ts` | 1 |
+| `effect as semanticEffects` | `components/onboarding/tokenRecipes.ts`, `features/budgets/tokenRecipes.ts`, `ui/primitives/tokenRecipes.ts`, `ui/tokens/index.ts`, `views/tokenRecipes.ts` | 5 |
+| `focus as focusSurfaces` | `ui/tokens/index.ts` | 1 |
+| `font as primitiveTypographyRecipes` | `components/onboarding/tokenRecipes.ts`, `features/budgets/tokenRecipes.ts`, `ui/primitives/tokenRecipes.ts`, `ui/tokens/index.ts` | 4 |
+| `placeholder as semanticPlaceholderTextRecipes` | `ui/tokens/index.ts` | 1 |
+| `status as semanticStatus` | `components/onboarding/tokenRecipes.ts`, `features/budgets/tokenRecipes.ts`, `ui/primitives/tokenRecipes.ts` | 3 |
+| `status as semanticStatusRecipes` | `ui/tokens/index.ts` | 1 |
+| `surface as semanticSurfaces` | `components/onboarding/tokenRecipes.ts`, `features/budgets/tokenRecipes.ts`, `ui/primitives/tokenRecipes.ts`, `ui/tokens/index.ts`, `views/tokenRecipes.ts` | 5 |
+| `text as semanticTextRecipes` | `ui/primitives/tokenRecipes.ts`, `ui/tokens/index.ts` | 2 |
 
 ## @/ui/tokens
 
@@ -17,14 +32,13 @@ Generated from `src` and `../DESIGN.md` on 2026-05-09T18:47:19.896Z.
 
 | symbol | consumer files | consumer count |
 | --- | --- | --- |
-| `semanticTextRecipes` | `ui/primitives/tokenRecipes.ts` | 1 |
+| _None_ | _None_ | 0 |
 
 ## @/ui/primitives/tokenRecipes
 
 | symbol | consumer files | consumer count |
 | --- | --- | --- |
 | `primitiveTokenRecipes` | `ui/tokens/index.ts` | 1 |
-| `primitiveTypographyRecipes` | `components/onboarding/tokenRecipes.ts`, `features/budgets/tokenRecipes.ts`, `ui/tokens/index.ts` | 3 |
 
 ## @/views/tokenRecipes
 
