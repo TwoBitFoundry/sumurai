@@ -51,7 +51,7 @@ describe('shared UI recipes', () => {
     ]);
     expect(focus.visible).toContain('focus-visible:ring-sky-400');
     expect(font.badge).toBe(
-      'font-badge text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]'
+      'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]'
     );
     expect(chrome.smInset).toContain('px-[length:var(--spacing-button-chrome-inset-sm-x)]');
     expect(buttonChromeInset).toBe(chrome);

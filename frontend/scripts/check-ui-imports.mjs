@@ -13,10 +13,6 @@ const monitoredSources = [
   '@/ui/recipes',
   '@/ui/tokens',
   '@/ui/tokens/textRecipes',
-  '@/ui/primitives/tokenRecipes',
-  '@/views/tokenRecipes',
-  '@/features/budgets/tokenRecipes',
-  '@/components/onboarding/tokenRecipes',
 ];
 
 function parseArgs(argv) {

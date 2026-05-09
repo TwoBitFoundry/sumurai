@@ -46,9 +46,6 @@ function isAllowlisted(relPosix) {
   if (relPosix.startsWith('components/')) {
     return true;
   }
-  if (relPosix.endsWith('/tokenRecipes.ts') || relPosix === 'tokenRecipes.ts') {
-    return true;
-  }
   if (relPosix === 'app/globals.css') {
     return true;
   }

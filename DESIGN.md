@@ -23,24 +23,12 @@ colors:
   chart-light-4: "#ef4444"
   chart-light-5: "#8b5cf6"
   chart-light-6: "#059669"
-  chart-light-grid: "#e2e8f0"
-  chart-light-axis: "#64748b"
-  chart-light-tooltip-bg: "#ffffff"
-  chart-light-tooltip-border: "#e2e8f0"
-  chart-light-tooltip-text: "#0f172a"
-  chart-light-dot-fill: "#ffffff"
   chart-dark-1: "#38bdf8"
   chart-dark-2: "#34d399"
   chart-dark-3: "#fbbf24"
   chart-dark-4: "#f87171"
   chart-dark-5: "#a78bfa"
   chart-dark-6: "#10b981"
-  chart-dark-grid: "#334155"
-  chart-dark-axis: "#94a3b8"
-  chart-dark-tooltip-bg: "#1e293b"
-  chart-dark-tooltip-border: "#475569"
-  chart-dark-tooltip-text: "#f8fafc"
-  chart-dark-dot-fill: "#0b1220"
   semantic-light-cash: "#10b981"
   semantic-light-investments: "#06b6d4"
   semantic-light-credit: "#fb7185"
@@ -163,25 +151,7 @@ colors:
   effect-danger-glow-dark: "#f87171"
   effect-accent-hover: "#3b82f6"
   effect-accent-hover-dark: "#60a5fa"
-  effect-chart-tooltip-shadow: "#0f172a"
-  effect-chart-tooltip-shadow-dark: "#020617"
-  category-sky: "#38bdf8"
-  category-emerald: "#34d399"
-  category-cyan: "#22d3ee"
-  category-violet: "#a78bfa"
-  category-amber: "#fbbf24"
-  category-rose: "#fb7185"
-  category-indigo: "#818cf8"
-  category-fuchsia: "#e879f9"
-  category-teal: "#2dd4bf"
-  category-lime: "#a3e635"
 typography:
-  brand:
-    fontFamily: "'Cal Sans', system-ui, sans-serif"
-    fontSize: 1.75rem
-    fontWeight: 700
-    lineHeight: 1
-    letterSpacing: 0
   display:
     fontFamily: "'Cal Sans', system-ui, sans-serif"
     fontSize: 3rem
@@ -191,11 +161,6 @@ typography:
   page-title:
     fontFamily: "'Cal Sans', system-ui, sans-serif"
     fontSize: 2rem
-    fontWeight: 700
-    lineHeight: 1.1
-    letterSpacing: 0
-  page-title-wordmark:
-    fontFamily: "'Cal Sans', system-ui, sans-serif"
     fontWeight: 700
     lineHeight: 1.1
     letterSpacing: 0
@@ -229,63 +194,14 @@ typography:
     fontWeight: 400
     lineHeight: 1.5
     letterSpacing: 0
-  caption-strong:
-    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
-    fontSize: 0.875rem
-    fontWeight: 600
-    lineHeight: 1.5
-    letterSpacing: 0
-  sans:
-    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
-    fontSize: 1rem
-    fontWeight: 400
-    lineHeight: 1.5
-    letterSpacing: 0
-  subheading:
-    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
-    fontSize: 1rem
-    fontWeight: 600
-    lineHeight: 1.5
-    letterSpacing: 0
   label:
     fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
     fontSize: 0.75rem
     fontWeight: 600
     lineHeight: 1
     letterSpacing: 0.14em
-  title-bar-chrome-expanded:
-    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
-    fontSize: 0.875rem
-    fontWeight: 600
-    lineHeight: 1
-    letterSpacing: 0.14em
-  pill:
-    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
-    fontSize: 0.75rem
-    fontWeight: 700
-    lineHeight: 1
-    letterSpacing: 0.14em
-  badge:
-    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
-    fontSize: 0.75rem
-    fontWeight: 700
-    lineHeight: 1
-    letterSpacing: 0.14em
-  budget-progress-caption:
-    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
-    fontSize: 0.875rem
-    fontWeight: 400
-    lineHeight: 1.5
-    letterSpacing: 0
-  budget-progress-caption-strong:
-    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
-    fontSize: 0.875rem
-    fontWeight: 600
-    lineHeight: 1.5
-    letterSpacing: 0
 rounded:
   panel: 2.25rem
-  card: 1rem
   large: 1.5rem
   pill: 9999px
   medium: 0.75rem
@@ -297,15 +213,9 @@ spacing:
   shell-y: 48px
   compact-gap: 8px
   section-gap: 20px
-  button-chrome-inset-xs-x: 10px
-  button-chrome-inset-xs-y: 4px
   button-chrome-inset-sm-x: 12px
   button-chrome-inset-sm-y: 6px
 components:
-  app-title-bar-wordmark:
-    typography: "{typography.page-title-wordmark}"
-  app-title-bar-chrome-expanded:
-    typography: "{typography.title-bar-chrome-expanded}"
   button-primary:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.on-primary}"
@@ -326,29 +236,9 @@ components:
     textColor: "#0f172a"
     rounded: "{rounded.large}"
     padding: 12px
-  input-invalid:
-    backgroundColor: "#ffffff"
-    textColor: "#0f172a"
-    rounded: "{rounded.large}"
-    padding: 12px
-  input-glass:
-    backgroundColor: "rgba(255, 255, 255, 0.8)"
-    textColor: "#475569"
-    rounded: "{rounded.large}"
-    padding: 12px
   select-default:
     backgroundColor: "#ffffff"
     textColor: "#0f172a"
-    rounded: "{rounded.large}"
-    padding: 12px
-  select-invalid:
-    backgroundColor: "#ffffff"
-    textColor: "#0f172a"
-    rounded: "{rounded.large}"
-    padding: 12px
-  select-glass:
-    backgroundColor: "rgba(255, 255, 255, 0.8)"
-    textColor: "#475569"
     rounded: "{rounded.large}"
     padding: 12px
 
@@ -365,286 +255,48 @@ components:
     textColor: "#0f172a"
     rounded: "{rounded.pill}"
     padding: 8px
-  hero-stat-card:
-    backgroundColor: "#ffffff"
-    rounded: "{rounded.card}"
-    padding: 16px
-  budget-progress-track:
-    backgroundColor: "{colors.chart-light-grid}"
-    rounded: "{rounded.pill}"
-    height: "10px"
-  budget-progress-track-dark:
-    backgroundColor: "{colors.chart-dark-grid}"
-    rounded: "{rounded.pill}"
-    height: "10px"
-  budget-progress-fill-within:
-    backgroundColor: "linear-gradient(90deg, {colors.brand-sky-dark}, {colors.brand-cyan-dark}, {colors.brand-violet})"
-    rounded: "{rounded.pill}"
-    height: "10px"
-  budget-progress-fill-over:
-    backgroundColor: "linear-gradient(90deg, {colors.category-rose}, #f43f5e, #e11d48)"
-    rounded: "{rounded.pill}"
-    height: "10px"
-  budget-progress-caption-row:
-    typography: "{typography.budget-progress-caption}"
-    textColor: "{colors.chart-light-axis}"
-  budget-progress-caption-summary:
-    typography: "{typography.budget-progress-caption-strong}"
-    textColor: "{colors.chart-light-axis}"
-  budget-progress-caption-danger:
-    typography: "{typography.budget-progress-caption-strong}"
-    textColor: "#dc2626"
-  surface-panel-glass-dark:
-    backgroundColor: "#0f172a"
-    rounded: "{rounded.large}"
-  surface-layered-panel-dark:
-    backgroundColor: "#111a2f"
-    rounded: "{rounded.large}"
-  surface-data-row-dark:
-    backgroundColor: "#1e293b"
-    rounded: "{rounded.medium}"
-  surface-secondary-text:
-    typography: "{typography.budget-progress-caption}"
-    textColor: "{colors.chart-light-axis}"
-  surface-secondary-text-dark:
-    typography: "{typography.budget-progress-caption}"
-    textColor: "#cbd5e1"
-  budget-card-shell:
-    backgroundColor: "#ffffff"
-    rounded: "{rounded.large}"
-    padding: 24px
-  budget-card-shell-dark:
-    backgroundColor: "#111a2f"
-    rounded: "{rounded.large}"
-    padding: 24px
-  pagination-round-button:
-    backgroundColor: "#ffffff"
-    textColor: "{colors.chart-light-axis}"
-    rounded: "{rounded.pill}"
-    size: 36px
-  pagination-round-button-dark:
-    backgroundColor: "#1e293b"
-    textColor: "#cbd5e1"
-    rounded: "{rounded.pill}"
-    size: 36px
-  accounts-toolbar-button:
-    backgroundColor: "#ffffff"
-    textColor: "#0f172a"
-    rounded: "{rounded.pill}"
-    padding: 10px
-  accounts-toolbar-button-dark:
-    backgroundColor: "#1e293b"
-    textColor: "#cbd5e1"
-    rounded: "{rounded.pill}"
-    padding: 10px
-  provider-connect-plaid-eyebrow:
-    backgroundColor: "rgba(52, 211, 153, 0.2)"
-    textColor: "{colors.semantic-light-cash}"
-  provider-connect-teller-eyebrow:
-    backgroundColor: "rgba(56, 189, 248, 0.2)"
-    textColor: "{colors.brand-sky}"
-  onboarding-step-card:
-    backgroundColor: "#ffffff"
-    textColor: "#0f172a"
-    rounded: "{rounded.medium}"
-    padding: 16px
-  onboarding-step-card-dark:
-    backgroundColor: "#0f172a"
-    textColor: "#ffffff"
-    rounded: "{rounded.medium}"
-    padding: 16px
-  onboarding-preview-frame:
-    backgroundColor: "#0f172a"
-    rounded: "{rounded.large}"
-  onboarding-body-muted:
-    typography: "{typography.budget-progress-caption}"
-    textColor: "{colors.chart-light-axis}"
-  onboarding-body-muted-dark:
-    typography: "{typography.budget-progress-caption}"
-    textColor: "#cbd5e1"
-  brand-accent-sky:
-    backgroundColor: "{colors.brand-sky}"
-    textColor: "{colors.chart-light-tooltip-text}"
-  brand-accent-sky-dark:
-    backgroundColor: "{colors.brand-sky-dark}"
-    textColor: "{colors.chart-dark-dot-fill}"
-  brand-accent-emerald:
-    backgroundColor: "{colors.brand-emerald}"
-    textColor: "{colors.chart-light-tooltip-text}"
-  brand-accent-emerald-dark:
-    backgroundColor: "{colors.brand-emerald-dark}"
-    textColor: "{colors.chart-dark-dot-fill}"
-  brand-accent-amber:
-    backgroundColor: "{colors.brand-amber}"
-    textColor: "{colors.chart-light-tooltip-text}"
-  brand-accent-amber-dark:
-    backgroundColor: "{colors.brand-amber-dark}"
-    textColor: "{colors.chart-dark-dot-fill}"
-  brand-accent-rose:
-    backgroundColor: "{colors.brand-rose}"
-    textColor: "{colors.chart-light-tooltip-text}"
-  brand-accent-rose-dark:
-    backgroundColor: "{colors.brand-rose-dark}"
-    textColor: "{colors.chart-dark-dot-fill}"
-  brand-accent-violet:
-    backgroundColor: "{colors.brand-violet}"
-  brand-accent-violet-dark:
-    backgroundColor: "{colors.brand-violet-dark}"
-    textColor: "{colors.chart-dark-dot-fill}"
-  brand-accent-cyan:
-    backgroundColor: "{colors.brand-cyan}"
-    textColor: "{colors.chart-light-tooltip-text}"
-  brand-accent-cyan-dark:
-    backgroundColor: "{colors.brand-cyan-dark}"
-    textColor: "{colors.chart-dark-dot-fill}"
-  chart-series-light-1:
-    backgroundColor: "{colors.chart-light-1}"
-  chart-series-light-2:
-    backgroundColor: "{colors.chart-light-2}"
-  chart-series-light-3:
-    backgroundColor: "{colors.chart-light-3}"
-  chart-series-light-4:
-    backgroundColor: "{colors.chart-light-4}"
-  chart-series-light-5:
-    backgroundColor: "{colors.chart-light-5}"
-  chart-series-light-6:
-    backgroundColor: "{colors.chart-light-6}"
-  chart-series-dark-1:
-    backgroundColor: "{colors.chart-dark-1}"
-  chart-series-dark-2:
-    backgroundColor: "{colors.chart-dark-2}"
-  chart-series-dark-3:
-    backgroundColor: "{colors.chart-dark-3}"
-  chart-series-dark-4:
-    backgroundColor: "{colors.chart-dark-4}"
-  chart-series-dark-5:
-    backgroundColor: "{colors.chart-dark-5}"
-  chart-series-dark-6:
-    backgroundColor: "{colors.chart-dark-6}"
-  chart-tooltip-light:
-    backgroundColor: "{colors.chart-light-tooltip-bg}"
-    textColor: "{colors.chart-light-tooltip-text}"
-  chart-tooltip-dark:
-    backgroundColor: "{colors.chart-dark-tooltip-bg}"
-    textColor: "{colors.chart-dark-tooltip-text}"
-  chart-tooltip-border-light:
-    backgroundColor: "{colors.chart-light-tooltip-border}"
-  chart-tooltip-border-dark:
-    backgroundColor: "{colors.chart-dark-tooltip-border}"
-  chart-axis-dark:
-    textColor: "{colors.chart-dark-axis}"
-  chart-dot-light:
-    backgroundColor: "{colors.chart-light-dot-fill}"
-  chart-dot-dark:
-    backgroundColor: "{colors.chart-dark-dot-fill}"
-  finance-cash-light:
-    textColor: "{colors.semantic-light-cash}"
-  finance-investments-light:
-    textColor: "{colors.semantic-light-investments}"
-  finance-credit-light:
-    textColor: "{colors.semantic-light-credit}"
-  finance-loan-light:
-    textColor: "{colors.semantic-light-loan}"
-  finance-net-worth-light:
-    textColor: "{colors.semantic-light-net-worth}"
-  finance-cash-dark:
-    textColor: "{colors.semantic-dark-cash}"
-  finance-investments-dark:
-    textColor: "{colors.semantic-dark-investments}"
-  finance-credit-dark:
-    textColor: "{colors.semantic-dark-credit}"
-  finance-loan-dark:
-    textColor: "{colors.semantic-dark-loan}"
-  finance-net-worth-dark:
-    textColor: "{colors.semantic-dark-net-worth}"
-  category-pill-sky:
-    backgroundColor: "{colors.category-sky}"
-    textColor: "{colors.chart-dark-dot-fill}"
-  category-pill-emerald:
-    backgroundColor: "{colors.category-emerald}"
-    textColor: "{colors.chart-dark-dot-fill}"
-  category-pill-cyan:
-    backgroundColor: "{colors.category-cyan}"
-    textColor: "{colors.chart-dark-dot-fill}"
-  category-pill-violet:
-    backgroundColor: "{colors.category-violet}"
-    textColor: "{colors.chart-dark-dot-fill}"
-  category-pill-amber:
-    backgroundColor: "{colors.category-amber}"
-    textColor: "{colors.chart-dark-dot-fill}"
-  category-pill-rose:
-    backgroundColor: "{colors.category-rose}"
-    textColor: "{colors.chart-dark-dot-fill}"
-  category-pill-indigo:
-    backgroundColor: "{colors.category-indigo}"
-    textColor: "{colors.chart-dark-dot-fill}"
-  category-pill-fuchsia:
-    backgroundColor: "{colors.category-fuchsia}"
-    textColor: "{colors.chart-dark-dot-fill}"
-  category-pill-teal:
-    backgroundColor: "{colors.category-teal}"
-    textColor: "{colors.chart-dark-dot-fill}"
-  category-pill-lime:
-    backgroundColor: "{colors.category-lime}"
-    textColor: "{colors.chart-dark-dot-fill}"
 ---
 
-Text roles are semantic and reusable. They preserve the current light and dark copy hierarchy without turning this file into a Tailwind class catalog.
-
 ## Overview
+Sumurai stays dark-first, glassy, and cyan/violet forward. This file is the visual contract, not a recipe catalog.
 
-Sumurai should read as a restrained financial workspace: dark first, bright enough for legibility, and layered with glass depth instead of heavy borders. The visual identity comes from cyan and violet accents, cool neutral surfaces, compact labels, and semantic finance colors that separate cash, investments, credit, loans, and net worth without adding unnecessary hues.
-
-Use this file as the visual contract. Keep the front matter normative, keep the prose human-readable, and move implementation recipes into primitives, feature components, or generated token artifacts.
+Read `DESIGN.md` before changing UI, then use primitives, shared recipes, and feature-local styling to keep the surface coherent.
 
 ## Colors
+Use brand colors for emphasis and semantic finance colors for meaning. Keep surfaces, borders, and status tones neutral and reusable.
 
-Use the brand accents for emphasis, navigation chrome, and small highlights. Reserve semantic finance colors for meaning, not decoration. Charts, tooltips, axis text, and category labels should reuse the same palette in both light and dark contexts so values stay consistent at a glance.
-
-Surfaces should stay neutral. The shell can keep an ambient blue aura and violet overlay, but the supporting layers should not introduce extra brand colors.
-
-Surface, border, status, and effect roles should stay semantic and reusable. Use them to describe intent and hierarchy, not Tailwind implementation details or one-off component styling.
+The shell may keep ambient depth and aura, but the steady-state palette should stay restrained so dashboard data stays easy to read.
 
 ## Typography
+Keep the scale compact: display, page title, section title, card title, body, body strong, caption, and label.
 
-Use the brand face for the product mark and display moments. Use the body role for normal readable UI copy, caption for secondary text, and the compact label and badge roles only when the hierarchy needs to stay tight. Uppercase labels, badges, and pills are the only places that should use nonzero tracking.
-
-The typography scale should stay small and semantic so dense finance content remains legible at 100% zoom. Keep `1rem` as the default readable size, reserve `0.875rem` for caption-sized UI, and avoid one-off font sizing unless a constrained surface truly needs it.
-
-The `page-title-wordmark` role is for the product wordmark at the top of the shell: Cal Sans with page-title weight and leading while vertical scale follows layout (`text-xl` / `text-3xl`). The `title-bar-chrome-expanded` role is uppercase navigation chrome at rest: label tracking and weight at the caption-strong size so expanded title-bar controls stay readable without switching to sentence-case styles.
+Use uppercase only when the UI needs tight chrome or badge-like hierarchy. If a new visual role is needed, prefer a primitive or shared recipe instead of adding another DESIGN.md token.
 
 ## Layout
-
-Use the spacing tokens to keep framing consistent. Prefer compact gaps for controls and moderate section gaps for dashboard blocks. Layout should stay wide, calm, and easy to scan.
-
-Main surfaces should float inside a glass shell, with enough inset to separate content from the app edge and enough breathing room to keep the interface from feeling crowded.
+Keep page framing consistent with the spacing tokens. Favor calm horizontal rhythm, compact control gaps, and comfortable section gaps.
 
 ## Elevation & Depth
-
-Depth comes from blur, inset highlights, soft shadows, and faint gradients. Use those cues for cards and shells, and keep the strongest depth for auth and hero surfaces.
-
-Do not flatten the UI into pure borders. The depth system should imply hierarchy without creating noisy contrast.
+Use blur, inset highlights, soft shadows, and subtle gradients for depth. Reserve the strongest depth for shells, auth flows, and hero surfaces.
 
 ## Shapes
-
-Use the largest radius only for shells and page containers. Use softer card and input radii for the surrounding surfaces. Use full pills for chips, buttons, and status markers.
-
-The shape language should stay smooth and modern, with compact controls retaining clarity in dense layouts.
+Use larger radii for shells, medium radii for cards and inputs, and pills for chips and status markers. Keep the shape language smooth and modern.
 
 ## Components
+Only keep stable, reusable component roles here: `button-primary`, `button-secondary`, `button-icon`, `input-default`, `select-default`, `glass-card`, `page-shell`, and `pill`.
 
-Reusable roles should stay semantically named and simple: primary and secondary buttons, icon buttons, glass cards, page shells, inputs, selects, pills, progress bars, chart surfaces, finance values, category markers, onboarding cards, and provider connect badges.
+Move feature-specific styling into the owning primitive or feature component instead of expanding this catalog.
 
-Keep shared tokens here when the role is stable and reused across the interface. Move one-off recipes and implementation details into primitives or feature components instead of expanding this contract into a style dump.
+### For agents
+- Read `DESIGN.md` first, then `@/ui/primitives`, then `@/ui/recipes`.
+- Prefer primitives and shared recipes before introducing new styling.
+- Do not add feature recipes or a global registry entry here.
+- Regenerate tokens after editing the front matter.
 
 ## Do's and Don'ts
+Do keep the palette small and semantic.
+Do keep labels compact and uppercase when needed.
+Do preserve the glassy financial identity.
 
-Do keep the palette small and intentional.
-Do keep semantic finance colors consistent.
-Do preserve compact uppercase labels.
-Do map the token system directly into implementation layers.
-
-Don't introduce new brand colors outside the token set.
-Don't use semantic colors for decoration.
-Don't add noisy shadows or extra surface hues.
-Don't embed utility strings or implementation recipes in this file.
+Don't add new brand colors or one-off shadows.
+Don't turn this file into a recipe catalog.
+Don't mirror implementation details here.

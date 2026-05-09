@@ -521,18 +521,18 @@ Verify references in code before removing each typography alias.
 7. Run full validation chain.
 
 ### Acceptance criteria
-- [ ] DESIGN.md `components:` has ~8 entries (down from 84).
-- [ ] DESIGN.md `colors:` has ~80 entries pre-Phase-8 (down from 116; 45 unique x 2 light/dark) - exact number depends on which `*-dark` aliases survive into Phase 8.
-- [ ] DESIGN.md `typography:` has 8 roles.
-- [ ] DESIGN.md `rounded:` has 5 entries.
-- [ ] DESIGN.md `spacing:` has 8 entries.
-- [ ] `theme.css`, `tokens.ts`, `tokens.dtcg.json` are regenerated and committed.
-- [ ] DESIGN.md drift check passes.
-- [ ] Raw styling and text color guards pass with updated allowlists.
-- [ ] No DESIGN.md component entry is referenced by a deleted code path.
-- [ ] `npm --prefix frontend run typecheck`, `build`, `design:guard`, `test` all pass.
-- [ ] Storybook iframe smoke passes.
-- [ ] Manual visual sweep on all five screens, light and dark.
+- [x] DESIGN.md `components:` has ~8 entries (down from 84).
+- [x] DESIGN.md `colors:` has ~80 entries pre-Phase-8 (down from 116; 45 unique x 2 light/dark) - exact number depends on which `*-dark` aliases survive into Phase 8.
+- [x] DESIGN.md `typography:` has 8 roles.
+- [x] DESIGN.md `rounded:` has 5 entries.
+- [x] DESIGN.md `spacing:` has 8 entries.
+- [x] `theme.css`, `tokens.ts`, `tokens.dtcg.json` are regenerated and committed.
+- [x] DESIGN.md drift check passes.
+- [x] Raw styling and text color guards pass with updated allowlists.
+- [x] No DESIGN.md component entry is referenced by a deleted code path.
+- [x] `npm --prefix frontend run typecheck`, `build`, `design:guard`, `test` all pass.
+- [x] Storybook iframe smoke passes.
+- [x] Manual visual sweep on all five screens, light and dark.
 
 ### Risks and mitigations
 - Removing a DESIGN.md entry that the generator still emits a CSS variable for could leave dangling variables. Mitigation: run the regenerator and confirm `theme.css` no longer contains the deleted variable names.

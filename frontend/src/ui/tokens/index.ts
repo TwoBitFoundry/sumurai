@@ -76,8 +76,8 @@ const chartDark = [
   generatedTokens.color['chart-dark-5'].$value.hex,
   generatedTokens.color['chart-dark-6'].$value.hex,
 ];
-const brandFont = generatedTokens.typography.brand.$value.fontFamily;
-const sansFont = generatedTokens.typography.sans.$value.fontFamily;
+const brandFont = generatedTokens.typography['page-title'].$value.fontFamily;
+const sansFont = generatedTokens.typography.body.$value.fontFamily;
 const glassInsetLight =
   'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]';
 const glassInsetDark =

@@ -37,10 +37,7 @@ function isAllowlisted(relPosix) {
   ) {
     return true;
   }
-  if (relPosix === 'ui/primitives/tokenRecipes.ts' || relPosix === 'ui/primitives/Alert.tsx') {
-    return true;
-  }
-  if (relPosix === 'features/budgets/tokenRecipes.ts') {
+  if (relPosix === 'ui/primitives/Alert.tsx') {
     return true;
   }
   if (relPosix === 'components/AccountRow.tsx') {

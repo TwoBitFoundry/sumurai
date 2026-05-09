@@ -31,8 +31,10 @@ describe('design token typography recipes', () => {
   });
 
   it('preserves brand and sans font-family access', () => {
-    expect(designTokens.typography.brand).toBe(generatedTokens.typography.brand.$value.fontFamily);
-    expect(designTokens.typography.sans).toBe(generatedTokens.typography.sans.$value.fontFamily);
+    expect(designTokens.typography.brand).toBe(
+      generatedTokens.typography['page-title'].$value.fontFamily
+    );
+    expect(designTokens.typography.sans).toBe(generatedTokens.typography.body.$value.fontFamily);
   });
 
   it('keeps the display recipe clamped in the runtime layer', () => {

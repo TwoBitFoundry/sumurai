@@ -138,8 +138,8 @@ export const effect = {
     'dark:shadow-[0_0_12px_var(--color-effect-danger-glow-dark)]',
   ],
   chartTooltipShadow: [
-    'shadow-[0_18px_45px_-25px_var(--color-effect-chart-tooltip-shadow)]',
-    'dark:shadow-[0_18px_45px_-25px_var(--color-effect-chart-tooltip-shadow-dark)]',
+    'shadow-[0_18px_45px_-25px_var(--color-effect-glass-shadow)]',
+    'dark:shadow-[0_18px_45px_-25px_var(--color-effect-glass-shadow-dark)]',
   ],
 } as const;
 
@@ -247,28 +247,27 @@ export const focus = {
 export const font = {
   display: 'font-display text-[clamp(2.25rem,3vw,3rem)] font-bold leading-[1.1] tracking-normal',
   pageTitle: 'font-page-title text-[2rem] font-bold leading-[1.1] tracking-normal',
-  pageTitleWordmark:
-    'font-[family-name:var(--font-page-title-wordmark)] font-[weight:var(--font-weight-page-title-wordmark)] leading-[1.1] tracking-normal',
+  pageTitleWordmark: 'font-page-title text-[2rem] font-bold leading-[1.1] tracking-normal',
   sectionTitle: 'font-section-title text-[1.5rem] font-semibold leading-[1.25] tracking-normal',
   cardTitle: 'font-card-title text-[1.25rem] font-semibold leading-[1.25] tracking-normal',
   body: 'font-body text-[1rem] font-normal leading-[1.5] tracking-normal',
   bodyStrong: 'font-body-strong text-[1rem] font-semibold leading-[1.5] tracking-normal',
   caption: 'font-caption text-[0.875rem] font-normal leading-[1.5] tracking-normal',
-  captionStrong: 'font-caption-strong text-[0.875rem] font-semibold leading-[1.5] tracking-normal',
+  captionStrong: 'font-caption text-[0.875rem] font-semibold leading-[1.5] tracking-normal',
   label: 'font-label text-[0.75rem] font-semibold uppercase leading-none tracking-[0.14em]',
   titleBarChromeExpanded:
-    'font-[family-name:var(--font-title-bar-chrome-expanded)] text-[length:var(--text-title-bar-chrome-expanded)] font-[weight:var(--font-weight-title-bar-chrome-expanded)] uppercase leading-none tracking-[var(--tracking-title-bar-chrome-expanded)]',
-  badge: 'font-badge text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]',
+    'font-caption text-[0.875rem] font-semibold uppercase leading-none tracking-[0.14em]',
+  badge: 'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]',
   chartDonutCenterTotal: 'font-display text-2xl font-bold tracking-tight',
   confirmationCode: 'font-mono font-bold',
 } as const;
 
 export const chrome = {
   xsInset:
-    'px-[length:var(--spacing-button-chrome-inset-xs-x)] py-[length:var(--spacing-button-chrome-inset-xs-y)] rounded-[length:var(--radius-medium)]',
+    'px-[length:var(--spacing-button-chrome-inset-sm-x)] py-[length:var(--spacing-button-chrome-inset-sm-y)] rounded-[length:var(--radius-medium)]',
   smInset:
     'px-[length:var(--spacing-button-chrome-inset-sm-x)] py-[length:var(--spacing-button-chrome-inset-sm-y)] rounded-[length:var(--radius-medium)]',
-  xs: 'px-[length:var(--spacing-button-chrome-inset-xs-x)] py-[length:var(--spacing-button-chrome-inset-xs-y)] rounded-[length:var(--radius-medium)]',
+  xs: 'px-[length:var(--spacing-button-chrome-inset-sm-x)] py-[length:var(--spacing-button-chrome-inset-sm-y)] rounded-[length:var(--radius-medium)]',
   sm: 'px-[length:var(--spacing-button-chrome-inset-sm-x)] py-[length:var(--spacing-button-chrome-inset-sm-y)] rounded-[length:var(--radius-medium)]',
 } as const;
 

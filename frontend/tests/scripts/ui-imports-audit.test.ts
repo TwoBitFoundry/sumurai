@@ -20,12 +20,12 @@ describe('ui imports audit', () => {
     const srcDir = join(root, 'src');
 
     try {
-      mkdirSync(join(srcDir, 'views'), { recursive: true });
+      mkdirSync(join(srcDir, 'ui'), { recursive: true });
       mkdirSync(join(srcDir, 'components'), { recursive: true });
-      writeFileSync(join(srcDir, 'views', 'tokenRecipes.ts'), 'export const tokenRecipes = "ok";');
+      writeFileSync(join(srcDir, 'ui', 'recipes.ts'), 'export const recipes = "ok";');
       writeFileSync(
-        join(srcDir, 'views', 'Allowed.tsx'),
-        'import { tokenRecipes } from "@/views/tokenRecipes"; export const Allowed = () => tokenRecipes;'
+        join(srcDir, 'components', 'Allowed.tsx'),
+        'import { recipes } from "@/ui/recipes"; export const Allowed = () => recipes;'
       );
       writeFileSync(
         join(root, 'DESIGN.md'),
@@ -54,7 +54,7 @@ describe('ui imports audit', () => {
 
       writeFileSync(
         join(srcDir, 'components', 'Bad.tsx'),
-        'import { tokenRecipes } from "@/views/tokenRecipes"; export const Bad = () => tokenRecipes;'
+        'import { recipes } from "@/ui/recipes"; export const Bad = () => recipes;'
       );
 
       expect(() =>

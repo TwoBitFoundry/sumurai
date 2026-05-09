@@ -21,8 +21,6 @@ const expectedTokenKeys = [
   'effect-danger-glow-dark',
   'effect-accent-hover',
   'effect-accent-hover-dark',
-  'effect-chart-tooltip-shadow',
-  'effect-chart-tooltip-shadow-dark',
 ];
 
 describe('design token effect recipes', () => {
