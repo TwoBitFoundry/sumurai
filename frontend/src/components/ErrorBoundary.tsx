@@ -4,7 +4,7 @@ import type React from 'react';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Button, GlassCard } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { ApiError, AuthenticationError } from '../services/ApiClient';
 
 interface Props {
@@ -135,13 +135,11 @@ export class ErrorBoundary extends Component<Props, State> {
         className={cn('space-y-5', 'text-center')}
       >
         <div className={cn('flex', 'justify-center')}>
-          <Icon className={cn('h-10', 'w-10', designTokens.text.muted)} />
+          <Icon className={cn('h-10', 'w-10', uiTextRecipes.muted)} />
         </div>
         <div className="space-y-2">
-          <h2 className={cn(designTokens.typography.cardTitle, designTokens.text.primary)}>
-            {title}
-          </h2>
-          <p className={cn(designTokens.typography.body, designTokens.text.body)}>{message}</p>
+          <h2 className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>{title}</h2>
+          <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>{message}</p>
         </div>
         {actions && (
           <div className={cn('flex', 'flex-wrap', 'justify-center', 'gap-3')}>{actions}</div>
@@ -225,7 +223,7 @@ export class ErrorBoundary extends Component<Props, State> {
           className={cn(
             'min-h-screen p-4',
             'bg-slate-100 dark:bg-slate-900',
-            designTokens.text.primary
+            uiTextRecipes.primary
           )}
         >
           <div className={cn('flex', 'h-full', 'items-center', 'justify-center')}>

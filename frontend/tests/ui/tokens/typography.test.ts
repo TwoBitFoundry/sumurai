@@ -1,11 +1,10 @@
-import { designTokens } from '@/ui/tokens';
-import generatedTokens from '@/ui/tokens/generated/tokens';
+import generatedTokens from '@/ui/generated/tokens';
+import { font as uiTypographyRecipes } from '@/ui/recipes';
 
 const expectedRoles = [
-  'brand',
-  'sans',
   'display',
   'pageTitle',
+  'pageTitleWordmark',
   'sectionTitle',
   'cardTitle',
   'body',
@@ -13,11 +12,10 @@ const expectedRoles = [
   'caption',
   'captionStrong',
   'label',
+  'titleBarChromeExpanded',
   'badge',
-  'subheading',
-  'pill',
-  'budgetProgressCaption',
-  'budgetProgressCaptionStrong',
+  'chartDonutCenterTotal',
+  'confirmationCode',
 ];
 
 const extractMinimumRemSize = (recipe: string): number | null => {
@@ -27,35 +25,31 @@ const extractMinimumRemSize = (recipe: string): number | null => {
 
 describe('design token typography recipes', () => {
   it('exposes the semantic typography roles', () => {
-    expect(Object.keys(designTokens.typography)).toEqual(expect.arrayContaining(expectedRoles));
+    expect(Object.keys(uiTypographyRecipes)).toEqual(expect.arrayContaining(expectedRoles));
   });
 
   it('preserves brand and sans font-family access', () => {
-    expect(designTokens.typography.brand).toBe(
-      generatedTokens.typography['page-title'].$value.fontFamily
-    );
-    expect(designTokens.typography.sans).toBe(generatedTokens.typography.body.$value.fontFamily);
+    expect(generatedTokens.typography['page-title'].$value.fontFamily).toBeDefined();
+    expect(generatedTokens.typography.body.$value.fontFamily).toBeDefined();
   });
 
   it('keeps the display recipe clamped in the runtime layer', () => {
-    expect(designTokens.typography.display).toContain('text-[clamp(2.25rem,3vw,3rem)]');
-    expect(designTokens.typography.display).toContain('font-display');
+    expect(uiTypographyRecipes.display).toContain('text-[clamp(2.25rem,3vw,3rem)]');
+    expect(uiTypographyRecipes.display).toContain('font-display');
   });
 
   it('keeps the body and caption recipes on the shared scale', () => {
-    expect(designTokens.typography.body).toContain('text-[1rem]');
-    expect(designTokens.typography.caption).toContain('text-[0.875rem]');
+    expect(uiTypographyRecipes.body).toContain('text-[1rem]');
+    expect(uiTypographyRecipes.caption).toContain('text-[0.875rem]');
   });
 
   it('keeps label and badge tracking aligned', () => {
-    expect(designTokens.typography.label).toContain('tracking-[0.14em]');
-    expect(designTokens.typography.badge).toContain('tracking-[0.14em]');
+    expect(uiTypographyRecipes.label).toContain('tracking-[0.14em]');
+    expect(uiTypographyRecipes.badge).toContain('tracking-[0.14em]');
   });
 
   it('keeps every semantic recipe at or above the caption floor', () => {
-    const recipes = Object.entries(designTokens.typography)
-      .filter(([key, value]) => key !== 'brand' && key !== 'sans' && typeof value === 'string')
-      .map(([, value]) => value as string);
+    const recipes = Object.values(uiTypographyRecipes);
 
     expect(
       recipes.every((recipe) => {

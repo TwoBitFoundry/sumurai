@@ -2,7 +2,11 @@ import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn, Input } from '@/ui/primitives';
 import { primitiveTokenRecipes } from '@/ui/primitives/recipes';
-import { designTokens } from '@/ui/tokens';
+import {
+  placeholder as uiPlaceholderRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import { getTagThemeForCategory } from '../../../utils/categories';
 
 interface Props {
@@ -52,7 +56,7 @@ export const TransactionsFilters: React.FC<Props> = ({
             placeholder="Search transactions..."
             variant="default"
             inputSize="md"
-            className={cn(designTokens.textPlaceholder.muted)}
+            className={cn(uiPlaceholderRecipes.muted)}
           />
         </div>
       )}
@@ -61,8 +65,8 @@ export const TransactionsFilters: React.FC<Props> = ({
           <span
             className={cn(
               'flex-shrink-0',
-              designTokens.typography.label,
-              designTokens.text.label,
+              uiTypographyRecipes.label,
+              uiTextRecipes.label,
               'transition-colors',
               'duration-500'
             )}

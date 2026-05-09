@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { cn } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes } from '@/ui/recipes';
 import { AppLayout } from './AppLayout';
 
 const meta = {
@@ -24,7 +24,7 @@ const meta = {
           'py-1',
           'text-xs',
           'font-medium',
-          designTokens.text.muted,
+          uiTextRecipes.muted,
           'dark:border-slate-600'
         )}
       >

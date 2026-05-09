@@ -1,8 +1,7 @@
 import React, { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/ui/primitives';
 import { heroStatCard as heroStatCardRecipes, pill as pillRecipes } from '@/ui/primitives/recipes';
-import { designTokens } from '@/ui/tokens';
-import { getHeroAccentTheme, heroAccents } from '@/ui/tokens-runtime';
+import { getHeroAccentTheme, heroAccents } from '@/ui/tokens';
 import { getTagThemeForCategory } from '../../utils/categories';
 
 type Accent = 'emerald' | 'sky' | 'violet' | 'amber' | 'slate' | 'rose';
@@ -148,11 +147,14 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
                   </span>
                 ) : null}
 
-                {pills?.map((p, idx) => {
+                {pills?.map((p, _idx) => {
                   if (p.type === 'category') {
                     const theme = getTagThemeForCategory(p.categoryName || p.label);
                     return (
-                      <span key={idx} className={classNames(pillRecipes.base, theme.tag)}>
+                      <span
+                        key={`${p.type}-${p.categoryName || p.label}`}
+                        className={classNames(pillRecipes.base, theme.tag)}
+                      >
                         <span
                           className={classNames(pillRecipes.dot, theme.dot)}
                           aria-hidden="true"
@@ -171,7 +173,10 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
                   }
 
                   return (
-                    <span key={idx} className={classNames(pillRecipes.base, wrapperClass)}>
+                    <span
+                      key={`${p.type}-${p.label}`}
+                      className={classNames(pillRecipes.base, wrapperClass)}
+                    >
                       <span className={classNames(pillRecipes.dot, dotClass)} aria-hidden="true" />
                       <span className="whitespace-nowrap">{p.label}</span>
                     </span>

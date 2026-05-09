@@ -13,15 +13,15 @@ import {
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
+  text as uiTextRecipes,
 } from '@/ui/recipes';
-import { designTokens } from '@/ui/tokens';
 
 const syncButtonClasses = cn(
   'inline-flex items-center gap-2 rounded-full px-5 py-2',
   ...semanticBorders.control,
   ...semanticSurfaces.card,
   primitiveTypographyRecipes.bodyStrong,
-  designTokens.text.body,
+  uiTextRecipes.body,
   ...semanticEffects.glassShadow,
   'transition-all duration-200 hover:-translate-y-[1px]',
   ...semanticBorders.hoverAccent,

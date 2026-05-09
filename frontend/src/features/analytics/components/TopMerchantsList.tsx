@@ -1,8 +1,14 @@
 import { MapPin } from 'lucide-react';
 import type React from 'react';
 import { cn, EmptyState } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
-import { categoryAccents, chart } from '@/ui/tokens-runtime';
+import {
+  border as uiBorderRecipes,
+  effect as uiEffectRecipes,
+  surface as uiSurfaceRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
+import { categoryAccents, chart } from '@/ui/tokens';
 import type { AnalyticsTopMerchantsResponse } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
 
@@ -13,9 +19,9 @@ type Props = {
 
 const merchantRow = [
   'flex items-center justify-between rounded-lg border p-3 transition-all duration-300 hover:-translate-y-[2px]',
-  ...designTokens.borders.subtle,
-  ...designTokens.surfaces.semantic.card,
-  ...designTokens.effects.semantic.accentHover,
+  ...uiBorderRecipes.subtle,
+  ...uiSurfaceRecipes.card,
+  ...uiEffectRecipes.accentHover,
 ] as const;
 
 export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' }) => {
@@ -37,8 +43,8 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
                     'h-6',
                     'rounded-full',
                     'bg-gradient-to-r',
-                    designTokens.text.primary,
-                    designTokens.typography.label,
+                    uiTextRecipes.primary,
+                    uiTypographyRecipes.label,
                     'flex-shrink-0'
                   )}
                   style={{
@@ -51,23 +57,23 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
                 <div className="min-w-0">
                   <div
                     className={cn(
-                      designTokens.typography.bodyStrong,
-                      designTokens.text.primary,
+                      uiTypographyRecipes.bodyStrong,
+                      uiTextRecipes.primary,
                       'truncate'
                     )}
                   >
                     {merchant.name}
                   </div>
-                  <div className={cn(designTokens.typography.caption, designTokens.text.muted)}>
+                  <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
                     {merchant.count} transaction{merchant.count !== 1 ? 's' : ''}
                   </div>
                 </div>
               </div>
               <div className={cn('text-right', 'flex-shrink-0', 'ml-4')}>
-                <div className={cn(designTokens.typography.bodyStrong, designTokens.text.primary)}>
+                <div className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>
                   {fmtUSD(merchant.amount)}
                 </div>
-                <div className={cn(designTokens.typography.caption, designTokens.text.muted)}>
+                <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
                   {merchant.percentage}%
                 </div>
               </div>

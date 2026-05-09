@@ -1,5 +1,5 @@
-import { designTokens } from '@/ui/tokens';
-import generatedTokens from '@/ui/tokens/generated/tokens';
+import generatedTokens from '@/ui/generated/tokens';
+import { surface as uiSurfaceRecipes } from '@/ui/recipes';
 
 const expectedRoles = [
   'appShell',
@@ -42,9 +42,7 @@ const expectedTokenKeys = [
 
 describe('design token surface recipes', () => {
   it('exposes the semantic surface roles', () => {
-    expect(Object.keys(designTokens.surfaces.semantic)).toEqual(
-      expect.arrayContaining(expectedRoles)
-    );
+    expect(Object.keys(uiSurfaceRecipes)).toEqual(expect.arrayContaining(expectedRoles));
   });
 
   it('maps the semantic surface roles to generated token fields', () => {
@@ -52,23 +50,23 @@ describe('design token surface recipes', () => {
   });
 
   it('keeps representative surface recipes pinned to generated CSS variables', () => {
-    expect(designTokens.surfaces.semantic.appShell).toEqual([
+    expect(uiSurfaceRecipes.appShell).toEqual([
       'bg-[var(--color-surface-app-shell)]',
       'dark:bg-[var(--color-surface-app-shell-dark)]',
     ]);
-    expect(designTokens.surfaces.semantic.glassPanel).toEqual([
+    expect(uiSurfaceRecipes.glassPanel).toEqual([
       'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)]',
       'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel-dark)_55%,transparent)]',
     ]);
-    expect(designTokens.surfaces.semantic.card).toEqual([
+    expect(uiSurfaceRecipes.card).toEqual([
       'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
       'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card-dark)_55%,transparent)]',
     ]);
-    expect(designTokens.surfaces.semantic.overlay).toEqual([
+    expect(uiSurfaceRecipes.overlay).toEqual([
       'bg-[var(--color-surface-overlay)]',
       'dark:bg-[var(--color-surface-overlay-dark)]',
     ]);
-    expect(designTokens.surfaces.semantic.mutedChip).toEqual([
+    expect(uiSurfaceRecipes.mutedChip).toEqual([
       'bg-[var(--color-surface-muted-chip)]',
       'dark:bg-[var(--color-surface-muted-chip-dark)]',
     ]);

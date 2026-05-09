@@ -1,6 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
-import { designTokens } from '@/ui/tokens';
 import { selectControl } from './recipes';
 import { cn } from './utils';
 

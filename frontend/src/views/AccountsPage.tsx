@@ -7,8 +7,8 @@ import {
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
+  text as uiTextRecipes,
 } from '@/ui/recipes';
-import { designTokens } from '@/ui/tokens';
 import { Toast } from '../components/Toast';
 import AccountsSummaryStats from '../features/plaid/components/AccountsSummaryStats';
 import ConnectButton from '../features/plaid/components/ConnectButton';
@@ -25,7 +25,7 @@ const syncButtonClasses = cn(
   ...semanticBorders.control,
   ...semanticSurfaces.card,
   primitiveTypographyRecipes.bodyStrong,
-  designTokens.text.body,
+  uiTextRecipes.body,
   ...semanticEffects.glassShadow,
   'transition-all duration-200 hover:-translate-y-[1px]',
   ...semanticBorders.hoverAccent,

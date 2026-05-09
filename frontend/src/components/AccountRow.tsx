@@ -1,7 +1,13 @@
 import type React from 'react';
 import { cn, GlassCard, RequirementPill } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
-import { accountTypeDot } from '@/ui/tokens-runtime';
+import {
+  border as uiBorderRecipes,
+  status as uiStatusRecipes,
+  surface as uiSurfaceRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
+import { accountTypeDot } from '@/ui/tokens';
 
 interface Account {
   id: string;
@@ -49,9 +55,9 @@ const accountMetaClasses = cn(
   'flex',
   'items-center',
   'gap-2',
-  designTokens.typography.captionStrong,
+  uiTypographyRecipes.captionStrong,
   'capitalize',
-  designTokens.text.muted,
+  uiTextRecipes.muted,
   'transition-colors',
   'duration-300',
   'ease-out'
@@ -59,7 +65,7 @@ const accountMetaClasses = cn(
 
 const accountMaskClasses = cn(
   'font-mono',
-  designTokens.text.subtle,
+  uiTextRecipes.subtle,
   'transition-colors',
   'duration-300',
   'ease-out'
@@ -73,10 +79,10 @@ const transactionsPillClasses = cn(
   'border',
   'px-2.5',
   'py-1',
-  designTokens.typography.label,
-  ...designTokens.borders.subtle,
-  ...designTokens.surfaces.semantic.card,
-  designTokens.text.muted,
+  uiTypographyRecipes.label,
+  ...uiBorderRecipes.subtle,
+  ...uiSurfaceRecipes.card,
+  uiTextRecipes.muted,
   'transition-colors',
   'duration-300',
   'ease-out'
@@ -104,23 +110,19 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
   const balanceText = formatMoney(rawBalance);
 
   const balanceColor = cn(
-    designTokens.typography.bodyStrong,
+    uiTypographyRecipes.bodyStrong,
     'tabular-nums',
     'transition-colors duration-300 ease-out',
-    rawBalance == null && designTokens.text.subtle,
+    rawBalance == null && uiTextRecipes.subtle,
     rawBalance != null &&
       !isDebtAccount &&
       rawBalance > 0 &&
       !isOtherAccount &&
-      designTokens.status.success.text,
-    rawBalance != null &&
-      !isDebtAccount &&
-      rawBalance > 0 &&
-      isOtherAccount &&
-      designTokens.text.muted,
-    rawBalance != null && rawBalance < 0 && designTokens.status.danger.text,
-    isDebtAccount && rawBalance != null && designTokens.status.danger.text,
-    rawBalance === 0 && designTokens.text.subtle
+      uiStatusRecipes.success.text,
+    rawBalance != null && !isDebtAccount && rawBalance > 0 && isOtherAccount && uiTextRecipes.muted,
+    rawBalance != null && rawBalance < 0 && uiStatusRecipes.danger.text,
+    isDebtAccount && rawBalance != null && uiStatusRecipes.danger.text,
+    rawBalance === 0 && uiTextRecipes.subtle
   );
 
   return (
@@ -137,8 +139,8 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
           <div className={cn('flex', 'items-center', 'justify-between')}>
             <div
               className={cn(
-                designTokens.typography.bodyStrong,
-                designTokens.text.primary,
+                uiTypographyRecipes.bodyStrong,
+                uiTextRecipes.primary,
                 'transition-colors',
                 'duration-300',
                 'ease-out'

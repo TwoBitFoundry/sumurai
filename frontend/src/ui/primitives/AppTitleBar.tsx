@@ -2,7 +2,7 @@ import { cva } from 'class-variance-authority';
 import { Moon, Settings, Sun } from 'lucide-react';
 import Image from 'next/image';
 import React from 'react';
-import { designTokens } from '@/ui/tokens';
+import { font as uiTypographyRecipes } from '@/ui/recipes';
 import { Button } from './Button';
 import { primitiveTokenRecipes } from './recipes';
 import { cn } from './utils';
@@ -114,7 +114,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                   className={cn('rounded-md')}
                   unoptimized
                 />
-                <span style={{ fontFamily: designTokens.typography.brand }}>Sumurai</span>
+                <span className={uiTypographyRecipes.pageTitleWordmark}>Sumurai</span>
               </div>
 
               {state === 'authenticated' && (

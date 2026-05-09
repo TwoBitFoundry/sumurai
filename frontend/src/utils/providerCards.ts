@@ -2,8 +2,8 @@ import type { LucideIcon } from 'lucide-react';
 import { Building2, Eye, Fingerprint, Landmark, ShieldCheck, Sparkles, Zap } from 'lucide-react';
 import type { FinancialProvider } from '@/types/api';
 import { cn } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
-import { featurePalettes } from '@/ui/tokens-runtime';
+import { status as uiStatusRecipes } from '@/ui/recipes';
+import { featurePalettes } from '@/ui/tokens';
 
 export type ProviderCardConfig = {
   title: string;
@@ -95,8 +95,8 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
   displayName: 'Plaid',
   eyebrow: {
     text: 'Plaid Secure Link',
-    backgroundClassName: cn(designTokens.status.success.surface),
-    textClassName: cn(designTokens.status.success.text),
+    backgroundClassName: cn(uiStatusRecipes.success.surface),
+    textClassName: cn(uiStatusRecipes.success.text),
   },
   heroTitle: 'Connect your accounts',
   heroDescription:
@@ -161,8 +161,8 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
   displayName: 'Teller',
   eyebrow: {
     text: 'Teller Connect',
-    backgroundClassName: cn(designTokens.status.info.surface),
-    textClassName: cn(designTokens.status.info.text),
+    backgroundClassName: cn(uiStatusRecipes.info.surface),
+    textClassName: cn(uiStatusRecipes.info.text),
   },
   heroTitle: 'Connect your accounts',
   heroDescription:

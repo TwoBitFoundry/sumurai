@@ -3,7 +3,12 @@ import { Building2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { cn } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import {
+  border as uiBorderRecipes,
+  surface as uiSurfaceRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 
 interface HeaderAccountFilterProps {
   scrolled: boolean;
@@ -96,8 +101,8 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
         className={cn(
           'rounded-xl',
           'border',
-          ...designTokens.borders.default,
-          ...designTokens.surfaces.semantic.mutedChip,
+          ...uiBorderRecipes.default,
+          ...uiSurfaceRecipes.mutedChip,
           'backdrop-blur-sm',
           'hover:bg-[var(--color-surface-hover-row)]',
           'dark:hover:bg-[var(--color-surface-hover-row-dark)]',
@@ -106,8 +111,8 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
           'flex',
           'items-center',
           'gap-2',
-          designTokens.text.body,
-          designTokens.typography.captionStrong,
+          uiTextRecipes.body,
+          uiTypographyRecipes.captionStrong,
           scrolled ? 'px-2.5 py-1' : 'px-3 py-1.5'
         )}
         aria-haspopup="dialog"
@@ -147,23 +152,23 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
               'flex-col',
               'rounded-xl',
               'border',
-              ...designTokens.borders.default,
-              ...designTokens.surfaces.semantic.card,
+              ...uiBorderRecipes.default,
+              ...uiSurfaceRecipes.card,
               'backdrop-blur-sm',
               'shadow-lg',
               'z-50',
               'origin-top'
             )}
           >
-            <div className={cn('p-4', 'border-b', ...designTokens.borders.divider)}>
-              <div className={cn(designTokens.typography.captionStrong, designTokens.text.primary)}>
+            <div className={cn('p-4', 'border-b', ...uiBorderRecipes.divider)}>
+              <div className={cn(uiTypographyRecipes.captionStrong, uiTextRecipes.primary)}>
                 Filter by account
               </div>
             </div>
 
             <div className={cn('overflow-y-auto', 'flex-1', 'p-4')}>
               {loading ? (
-                <div className={cn(designTokens.typography.caption, designTokens.text.muted)}>
+                <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
                   Loading accounts...
                 </div>
               ) : (
@@ -183,7 +188,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                         key={bankName}
                         className={cn(
                           'border-t',
-                          ...designTokens.borders.divider,
+                          ...uiBorderRecipes.divider,
                           'pt-2',
                           'first:border-t-0',
                           'first:pt-0'
@@ -206,7 +211,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                               className={cn(
                                 'h-4',
                                 'w-4',
-                                designTokens.text.muted,
+                                uiTextRecipes.muted,
                                 'transition-transform',
                                 !isCollapsed && 'rotate-90'
                               )}
@@ -224,7 +229,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                             onChange={() => toggleBank(bankName)}
                             className={cn(
                               'rounded',
-                              ...designTokens.borders.control,
+                              ...uiBorderRecipes.control,
                               'text-primary-600',
                               'focus:ring-primary-500'
                             )}
@@ -232,8 +237,8 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                           <label
                             htmlFor={`bank-${bankName}`}
                             className={cn(
-                              designTokens.typography.captionStrong,
-                              designTokens.text.primary,
+                              uiTypographyRecipes.captionStrong,
+                              uiTextRecipes.primary,
                               'flex-1',
                               'cursor-pointer'
                             )}
@@ -264,7 +269,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                                     onChange={() => toggleAccount(account.id)}
                                     className={cn(
                                       'rounded',
-                                      ...designTokens.borders.control,
+                                      ...uiBorderRecipes.control,
                                       'text-primary-600',
                                       'focus:ring-primary-500'
                                     )}
@@ -272,8 +277,8 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                                   <label
                                     htmlFor={`account-${account.id}`}
                                     className={cn(
-                                      designTokens.typography.caption,
-                                      designTokens.text.muted,
+                                      uiTypographyRecipes.caption,
+                                      uiTextRecipes.muted,
                                       'cursor-pointer'
                                     )}
                                   >
@@ -288,7 +293,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                     );
                   })}
                   {Object.keys(accountsByBank).length === 0 && !loading && (
-                    <div className={cn(designTokens.typography.caption, designTokens.text.muted)}>
+                    <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
                       No accounts available.
                     </div>
                   )}

@@ -6,9 +6,11 @@ import {
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
+  status as uiStatusRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { designTokens } from '@/ui/tokens';
-import { featurePalettes } from '@/ui/tokens-runtime';
+import { featurePalettes } from '@/ui/tokens';
 
 const dashboardHero = '/dashboard-hero.png';
 
@@ -56,7 +58,7 @@ const onboardingTitleStrong = [
 const onboardingBodyMuted = [
   'relative z-10 mt-1',
   primitiveTypographyRecipes.caption,
-  designTokens.text.body,
+  uiTextRecipes.body,
 ] as const;
 const onboardingEyebrowCaps = [
   primitiveTypographyRecipes.label,
@@ -132,8 +134,8 @@ export function WelcomeStep() {
             size="sm"
             className={cn(
               'w-fit tracking-[0.3em]',
-              ...designTokens.status.info.surface,
-              ...designTokens.status.info.text
+              ...uiStatusRecipes.info.surface,
+              ...uiStatusRecipes.info.text
             )}
           >
             Welcome
@@ -142,8 +144,8 @@ export function WelcomeStep() {
           <div className={cn('space-y-3')}>
             <h1
               className={cn(
-                designTokens.typography.pageTitle,
-                designTokens.text.primary,
+                uiTypographyRecipes.pageTitle,
+                uiTextRecipes.primary,
                 'transition-colors',
                 'duration-300',
                 'ease-out'
@@ -153,9 +155,9 @@ export function WelcomeStep() {
             </h1>
             <p
               className={cn(
-                designTokens.typography.body,
+                uiTypographyRecipes.body,
                 'leading-relaxed',
-                designTokens.text.body,
+                uiTextRecipes.body,
                 'transition-colors',
                 'duration-300',
                 'ease-out'

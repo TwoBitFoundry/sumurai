@@ -1,7 +1,7 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Calendar as CalendarIcon, Loader2, Plus } from 'lucide-react';
 import { Button, cn, PaginationButton } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
 interface BudgetToolbarProps {
   monthLabel: string;
@@ -58,8 +58,8 @@ export const BudgetToolbar = ({
         </div>
         <div
           className={cn(
-            designTokens.typography.label,
-            designTokens.text.muted,
+            uiTypographyRecipes.label,
+            uiTextRecipes.muted,
             'transition-colors',
             'duration-500'
           )}
@@ -73,8 +73,8 @@ export const BudgetToolbar = ({
             'inline-flex',
             'items-center',
             'gap-1',
-            designTokens.typography.caption,
-            designTokens.text.subtle,
+            uiTypographyRecipes.caption,
+            uiTextRecipes.subtle,
             'transition-colors',
             'duration-500'
           )}

@@ -17,8 +17,9 @@ import {
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { designTokens } from '@/ui/tokens';
 import BalancesOverview from '../components/BalancesOverview';
 import { useTheme } from '../context/ThemeContext';
 import { DashboardCalculator } from '../domain/DashboardCalculator';
@@ -149,9 +150,7 @@ const DashboardPage: React.FC = () => {
               isRefreshing={!analyticsLoading && analyticsRefreshing}
             >
               {analyticsLoading && (
-                <div
-                  className={cn('mb-2', designTokens.typography.caption, designTokens.text.muted)}
-                >
+                <div className={cn('mb-2', uiTypographyRecipes.caption, uiTextRecipes.muted)}>
                   Loading analytics...
                 </div>
               )}
@@ -174,8 +173,8 @@ const DashboardPage: React.FC = () => {
                     <div>
                       <div
                         className={cn(
-                          designTokens.typography.label,
-                          designTokens.text.label,
+                          uiTypographyRecipes.label,
+                          uiTextRecipes.label,
                           'mb-2',
                           'font-medium'
                         )}
@@ -211,8 +210,8 @@ const DashboardPage: React.FC = () => {
                                 />
                                 <span
                                   className={cn(
-                                    designTokens.typography.captionStrong,
-                                    designTokens.text.primary,
+                                    uiTypographyRecipes.captionStrong,
+                                    uiTextRecipes.primary,
                                     'truncate'
                                   )}
                                 >
@@ -222,17 +221,14 @@ const DashboardPage: React.FC = () => {
                               <div className={cn('flex', 'items-baseline', 'justify-between')}>
                                 <div
                                   className={cn(
-                                    designTokens.typography.bodyStrong,
-                                    designTokens.text.primary
+                                    uiTypographyRecipes.bodyStrong,
+                                    uiTextRecipes.primary
                                   )}
                                 >
                                   {fmtUSD(cat.value)}
                                 </div>
                                 <div
-                                  className={cn(
-                                    designTokens.typography.caption,
-                                    designTokens.text.muted
-                                  )}
+                                  className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}
                                 >
                                   {percentage}%
                                 </div>
@@ -275,8 +271,8 @@ const DashboardPage: React.FC = () => {
                   className={cn(
                     'flex-1',
                     'min-h-[220px]',
-                    designTokens.typography.body,
-                    designTokens.text.danger
+                    uiTypographyRecipes.body,
+                    uiTextRecipes.danger
                   )}
                 >
                   {netError}

@@ -12,7 +12,7 @@ import {
   Input,
   RequirementPill,
 } from './ui/primitives';
-import { designTokens } from './ui/tokens';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from './ui/recipes';
 
 interface LoginScreenProps {
   onNavigateToRegister: () => void;
@@ -91,10 +91,10 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
             <Badge size="md">Welcome Back</Badge>
-            <h2 className={cn(designTokens.typography.pageTitle, designTokens.text.primary)}>
+            <h2 className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}>
               Sign in to your account
             </h2>
-            <p className={cn(designTokens.typography.caption, designTokens.text.muted)}>
+            <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
               Access your latest financial dashboards and insights.
             </p>
           </div>
@@ -143,7 +143,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
             </Button>
           </form>
 
-          <div className={cn('text-center', designTokens.typography.body, designTokens.text.body)}>
+          <div className={cn('text-center', uiTypographyRecipes.body, uiTextRecipes.body)}>
             <p className="mb-3">Don't have an account?</p>
             <Button type="button" onClick={onNavigateToRegister} variant="ghost" size="sm">
               Create account
@@ -247,10 +247,10 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
             <Badge size="md">JOIN TODAY</Badge>
-            <h2 className={cn(designTokens.typography.pageTitle, designTokens.text.primary)}>
+            <h2 className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}>
               Sign Up for Sumurai
             </h2>
-            <p className={cn(designTokens.typography.caption, designTokens.text.muted)}>
+            <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
               Finish sign up to unlock onboarding and account sync.
             </p>
           </div>
@@ -275,7 +275,7 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
                 disabled={isLoading}
               />
               {email && !isEmailValid && (
-                <p className={cn(designTokens.typography.caption, designTokens.text.danger)}>
+                <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.danger)}>
                   Please enter a valid email address.
                 </p>
               )}
@@ -309,7 +309,7 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
                   disabled={isLoading}
                 />
                 {confirmPassword && !isPasswordMatch && (
-                  <p className={cn(designTokens.typography.caption, designTokens.text.danger)}>
+                  <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.danger)}>
                     Passwords do not match.
                   </p>
                 )}
@@ -321,9 +321,9 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
               rounded="lg"
               padding="sm"
               withInnerEffects={false}
-              className={cn('space-y-1.5', designTokens.typography.caption, designTokens.text.body)}
+              className={cn('space-y-1.5', uiTypographyRecipes.caption, uiTextRecipes.body)}
             >
-              <h3 className={cn(designTokens.typography.label, designTokens.text.label)}>
+              <h3 className={cn(uiTypographyRecipes.label, uiTextRecipes.label)}>
                 Password checklist
               </h3>
               <div className={cn('flex', 'flex-wrap', 'gap-1.5')}>
@@ -353,7 +353,7 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
             </Button>
           </form>
 
-          <div className={cn('text-center', designTokens.typography.body, designTokens.text.body)}>
+          <div className={cn('text-center', uiTypographyRecipes.body, uiTextRecipes.body)}>
             <p className="mb-3">Already have an account?</p>
             <Button type="button" onClick={onNavigateToLogin} variant="ghost" size="sm">
               Sign in

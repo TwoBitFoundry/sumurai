@@ -6,7 +6,7 @@ import { Toast } from '@/components/Toast';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { BudgetToolbar } from '@/features/budgets/components/BudgetToolbar';
 import { SessionExpiryModal } from '@/SessionManager';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes } from '@/ui/recipes';
 
 describe('shared shell text surfaces', () => {
   it('uses semantic text roles in the password checklist', () => {
@@ -23,7 +23,7 @@ describe('shared shell text surfaces', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Password checklist' })).toHaveClass(
-      designTokens.text.label
+      uiTextRecipes.label
     );
   });
 
@@ -38,28 +38,28 @@ describe('shared shell text surfaces', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Session expiring' })).toHaveClass(
-      designTokens.text.primary
+      uiTextRecipes.primary
     );
-    expect(screen.getByText('1:05')).toHaveClass(designTokens.text.danger);
+    expect(screen.getByText('1:05')).toHaveClass(uiTextRecipes.danger);
     expect(screen.getByText('Your session will expire in 2 minutes.')).toHaveClass(
-      designTokens.text.muted
+      uiTextRecipes.muted
     );
   });
 
   it('uses semantic text roles in toast copy', () => {
     render(<Toast message="Saved successfully" onClose={jest.fn()} />);
 
-    expect(screen.getByText('Saved successfully')).toHaveClass(designTokens.text.primary);
+    expect(screen.getByText('Saved successfully')).toHaveClass(uiTextRecipes.primary);
   });
 
   it('uses semantic text roles in the footer copy and links', () => {
     render(<Footer />);
 
     expect(screen.getByText('Built in the open with the community')).toHaveClass(
-      designTokens.text.muted
+      uiTextRecipes.muted
     );
-    expect(screen.getByRole('link', { name: 'Contact' })).toHaveClass(designTokens.text.accent);
-    expect(screen.getByRole('link', { name: 'Support' })).toHaveClass(designTokens.text.accent);
+    expect(screen.getByRole('link', { name: 'Contact' })).toHaveClass(uiTextRecipes.accent);
+    expect(screen.getByRole('link', { name: 'Support' })).toHaveClass(uiTextRecipes.accent);
   });
 
   it('uses semantic text roles in the budget toolbar and net worth widget', () => {
@@ -79,8 +79,8 @@ describe('shared shell text surfaces', () => {
       </ThemeProvider>
     );
 
-    expect(screen.getByText('May 2026')).toHaveClass(designTokens.text.muted);
-    expect(screen.getByText('Updating')).toHaveClass(designTokens.text.subtle);
-    expect(screen.getByText('Net Worth Over Time')).toHaveClass(designTokens.text.muted);
+    expect(screen.getByText('May 2026')).toHaveClass(uiTextRecipes.muted);
+    expect(screen.getByText('Updating')).toHaveClass(uiTextRecipes.subtle);
+    expect(screen.getByText('Net Worth Over Time')).toHaveClass(uiTextRecipes.muted);
   });
 });

@@ -1,4 +1,3 @@
-import { designTokens, getThemeColors as getThemeColorsFromIndex } from '@/ui/tokens';
 import {
   accountTypeDot,
   categoryAccents,
@@ -9,7 +8,7 @@ import {
   getHeroAccentTheme,
   getThemeColors,
   heroAccents,
-} from '@/ui/tokens-runtime';
+} from '@/ui/tokens';
 
 describe('ui tokens runtime map', () => {
   it('exposes the chart and finance swatches used at runtime', () => {
@@ -56,9 +55,42 @@ describe('ui tokens runtime map', () => {
   });
 
   it('keeps the helper functions aligned with the legacy registry', () => {
-    expect(getThemeColors('light')).toEqual(designTokens.colors.theme.light);
-    expect(getThemeColors('dark')).toEqual(designTokens.colors.theme.dark);
-    expect(getThemeColorsFromIndex('light')).toEqual(getThemeColors('light'));
+    expect(getThemeColors('light')).toEqual({
+      chart: {
+        primary: chart.series.light,
+        grid: chart.grid.light,
+        axis: chart.axis.light,
+        tooltipBg: chart.tooltip.light.background,
+        tooltipBorder: chart.tooltip.light.border,
+        tooltipText: chart.tooltip.light.text,
+        dotFill: chart.dot.light,
+      },
+      semantic: {
+        cash: finance.light.cash,
+        investments: finance.light.investments,
+        credit: finance.light.credit,
+        loan: finance.light.loan,
+        netWorth: finance.light.netWorth,
+      },
+    });
+    expect(getThemeColors('dark')).toEqual({
+      chart: {
+        primary: chart.series.dark,
+        grid: chart.grid.dark,
+        axis: chart.axis.dark,
+        tooltipBg: chart.tooltip.dark.background,
+        tooltipBorder: chart.tooltip.dark.border,
+        tooltipText: chart.tooltip.dark.text,
+        dotFill: chart.dot.dark,
+      },
+      semantic: {
+        cash: finance.dark.cash,
+        investments: finance.dark.investments,
+        credit: finance.dark.credit,
+        loan: finance.dark.loan,
+        netWorth: finance.dark.netWorth,
+      },
+    });
     expect(getCategoryAccent('Groceries')).toEqual(getCategoryAccent('Groceries'));
     expect(getHeroAccentTheme('sky')).toEqual(heroAccents.sky);
   });

@@ -5,8 +5,11 @@ import {
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
+  effect as uiEffectRecipes,
+  status as uiStatusRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { designTokens } from '@/ui/tokens';
 import type { ConnectAccountProviderContent } from '@/utils/providerCards';
 
 type StatusTone = 'info' | 'warning' | 'error';
@@ -68,10 +71,7 @@ const onboardingTitleStrongInline = [
   primitiveTypographyRecipes.bodyStrong,
   'dark:text-white',
 ] as const;
-const onboardingRowBodyMuted = [
-  primitiveTypographyRecipes.caption,
-  designTokens.text.body,
-] as const;
+const onboardingRowBodyMuted = [primitiveTypographyRecipes.caption, uiTextRecipes.body] as const;
 const onboardingEyebrowCaps = [
   primitiveTypographyRecipes.label,
   'uppercase transition-colors duration-300 ease-out',
@@ -220,8 +220,8 @@ export function ConnectAccountStep({
           <div className={cn('space-y-3')}>
             <h1
               className={cn(
-                designTokens.typography.pageTitle,
-                designTokens.text.primary,
+                uiTypographyRecipes.pageTitle,
+                uiTextRecipes.primary,
                 'transition-colors',
                 'duration-300',
                 'ease-out'
@@ -231,9 +231,9 @@ export function ConnectAccountStep({
             </h1>
             <p
               className={cn(
-                designTokens.typography.body,
+                uiTypographyRecipes.body,
                 'leading-relaxed',
-                designTokens.text.body,
+                uiTextRecipes.body,
                 'transition-colors',
                 'duration-300',
                 'ease-out'
@@ -252,7 +252,7 @@ export function ConnectAccountStep({
                 variant={statusVariantMap[status.tone]}
                 className={cn('flex flex-col gap-2 rounded-2xl')}
               >
-                <p className={cn(designTokens.typography.bodyStrong)}>{status.text}</p>
+                <p className={cn(uiTypographyRecipes.bodyStrong)}>{status.text}</p>
                 {status.action && status.actionLabel && (
                   <Button
                     variant="ghost"
@@ -273,14 +273,14 @@ export function ConnectAccountStep({
             variant="error"
             className={cn(
               'flex flex-col gap-1 rounded-[1.6rem] border-2',
-              ...designTokens.status.danger.border,
-              ...designTokens.status.danger.surface,
-              ...designTokens.status.danger.text,
-              ...designTokens.effects.semantic.dangerGlow
+              ...uiStatusRecipes.danger.border,
+              ...uiStatusRecipes.danger.surface,
+              ...uiStatusRecipes.danger.text,
+              ...uiEffectRecipes.dangerGlow
             )}
           >
-            <p className={cn(designTokens.typography.bodyStrong)}>Connection failed</p>
-            <p className={cn(designTokens.typography.caption)}>{error}</p>
+            <p className={cn(uiTypographyRecipes.bodyStrong)}>Connection failed</p>
+            <p className={cn(uiTypographyRecipes.caption)}>{error}</p>
           </Alert>
         )}
 
@@ -310,12 +310,12 @@ export function ConnectAccountStep({
             disabled={connectionInProgress || isConnected || disablePrimaryAction}
           >
             {isConnected ? (
-              <span className={cn('flex items-center gap-2', designTokens.typography.bodyStrong)}>
+              <span className={cn('flex items-center gap-2', uiTypographyRecipes.bodyStrong)}>
                 <span aria-hidden="true">✓</span>
                 {institutionName ? `Connected to ${institutionName}` : 'Connected'}
               </span>
             ) : connectionInProgress ? (
-              <span className={cn('flex items-center gap-2', designTokens.typography.bodyStrong)}>
+              <span className={cn('flex items-center gap-2', uiTypographyRecipes.bodyStrong)}>
                 <span
                   className={cn(
                     'inline-flex h-4 w-4',
@@ -329,7 +329,7 @@ export function ConnectAccountStep({
             ) : error ? (
               'Try again'
             ) : (
-              <span className={cn('flex items-center gap-2', designTokens.typography.bodyStrong)}>
+              <span className={cn('flex items-center gap-2', uiTypographyRecipes.bodyStrong)}>
                 <span>{content.cta.defaultLabel}</span>
                 {content.cta.badge && (
                   <Badge variant="default" size="xs" className="tracking-[0.2em]">

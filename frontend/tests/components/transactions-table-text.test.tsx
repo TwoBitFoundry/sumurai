@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { TransactionsTable } from '@/features/transactions/components/TransactionsTable';
 import type { Transaction } from '@/types/api';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes } from '@/ui/recipes';
 
 const baseTx = (amount: number): Transaction => ({
   id: `id-${amount}`,
@@ -29,8 +29,8 @@ describe('TransactionsTable text tokens', () => {
     const negative = screen.getByText('-$42.00').closest('td');
     const zero = screen.getByText('$0.00').closest('td');
 
-    expect(positive?.className).toContain(designTokens.text.danger);
-    expect(negative?.className).toContain(designTokens.text.success);
-    expect(zero?.className).toContain(designTokens.text.muted);
+    expect(positive?.className).toContain(uiTextRecipes.danger);
+    expect(negative?.className).toContain(uiTextRecipes.success);
+    expect(zero?.className).toContain(uiTextRecipes.muted);
   });
 });

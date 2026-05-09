@@ -1,7 +1,12 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
-import { designTokens } from '@/ui/tokens';
 import { primitiveTokenRecipes } from './recipes';
+
+const glassInsetLight =
+  'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]';
+const glassInsetDark =
+  'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.5)]';
+
 import { cn } from './utils';
 
 const glassCardVariants = cva([...primitiveTokenRecipes.glassCard.base], {
@@ -83,9 +88,9 @@ export function GlassCard({
               roundedClass,
               'ring-inset ring-1',
               'ring-white/40',
-              designTokens.shadows.glassInset.light,
+              glassInsetLight,
               'dark:ring-white/10',
-              designTokens.shadows.glassInset.dark
+              glassInsetDark
             )}
           />
           <div

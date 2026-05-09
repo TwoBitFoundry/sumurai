@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
-import { designTokens } from '@/ui/tokens';
+import { status as uiStatusRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { cn } from './utils';
 
 const alertVariants = cva(
@@ -9,24 +9,24 @@ const alertVariants = cva(
     variants: {
       variant: {
         info: [
-          ...designTokens.status.info.border,
-          ...designTokens.status.info.surface,
-          ...designTokens.status.info.text,
+          ...uiStatusRecipes.info.border,
+          ...uiStatusRecipes.info.surface,
+          ...uiStatusRecipes.info.text,
         ],
         success: [
-          ...designTokens.status.success.border,
-          ...designTokens.status.success.surface,
-          ...designTokens.status.success.text,
+          ...uiStatusRecipes.success.border,
+          ...uiStatusRecipes.success.surface,
+          ...uiStatusRecipes.success.text,
         ],
         warning: [
-          ...designTokens.status.warning.border,
-          ...designTokens.status.warning.surface,
-          ...designTokens.status.warning.text,
+          ...uiStatusRecipes.warning.border,
+          ...uiStatusRecipes.warning.surface,
+          ...uiStatusRecipes.warning.text,
         ],
         error: [
-          ...designTokens.status.danger.border,
-          ...designTokens.status.danger.surface,
-          ...designTokens.status.danger.text,
+          ...uiStatusRecipes.danger.border,
+          ...uiStatusRecipes.danger.surface,
+          ...uiStatusRecipes.danger.text,
         ],
       },
       tone: {
@@ -54,10 +54,8 @@ export function Alert({ variant, tone, title, icon, className, children, ...prop
     <div className={cn(alertVariants({ variant, tone }), className)} {...props}>
       {icon && <span className={cn('mt-0.5', 'text-lg')}>{icon}</span>}
       <div className="space-y-1">
-        {title && (
-          <p className={cn(designTokens.typography.captionStrong, 'opacity-85')}>{title}</p>
-        )}
-        <div className={cn(designTokens.typography.body)}>{children}</div>
+        {title && <p className={cn(uiTypographyRecipes.captionStrong, 'opacity-85')}>{title}</p>}
+        <div className={cn(uiTypographyRecipes.body)}>{children}</div>
       </div>
     </div>
   );

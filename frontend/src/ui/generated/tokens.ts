@@ -1,4 +1,4 @@
-export const designTokens = {
+export const generatedTokens = {
   "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
   "$description": "Dark-first glass financial UI with cyan-violet brand accents and semantic finance colors.",
   "color": {
@@ -1811,5 +1811,5 @@ export const designTokens = {
     }
   }
 } as const;
-export type DesignTokens = typeof designTokens;
-export default designTokens;
+export type GeneratedTokens = typeof generatedTokens;
+export default generatedTokens;

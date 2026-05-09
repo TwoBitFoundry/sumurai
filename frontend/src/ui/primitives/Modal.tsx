@@ -1,7 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type * as React from 'react';
-import { designTokens } from '@/ui/tokens';
+import { surface as uiSurfaceRecipes } from '@/ui/recipes';
 import { cn } from './utils';
 
 const contentVariants = cva('relative w-full', {
@@ -58,7 +58,7 @@ export function Modal({
             data-testid="modal-backdrop"
             className={cn(
               'absolute inset-0 backdrop-blur-sm',
-              ...designTokens.surfaces.semantic.overlay,
+              ...uiSurfaceRecipes.overlay,
               backdropClassName
             )}
             onPointerDown={(event) => {

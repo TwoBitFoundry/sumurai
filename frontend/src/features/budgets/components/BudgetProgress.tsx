@@ -3,8 +3,8 @@ import {
   effect as semanticEffects,
   status as semanticStatus,
   surface as semanticSurfaces,
+  text as uiTextRecipes,
 } from '@/ui/recipes';
-import { designTokens } from '@/ui/tokens';
 import { fmtUSD } from '../../../utils/format';
 
 const bp = {
@@ -42,12 +42,12 @@ const bp = {
       'items-center',
       'justify-between',
       'text-[0.75rem]',
-      designTokens.text.muted,
+      uiTextRecipes.muted,
       'transition-colors',
       'duration-300',
     ],
     percent: ['font-medium', 'tracking-wide'],
-    summaryWithin: ['font-semibold', designTokens.text.body],
+    summaryWithin: ['font-semibold', uiTextRecipes.body],
     summaryOver: ['font-semibold', ...semanticStatus.danger.text],
   },
 } as const;

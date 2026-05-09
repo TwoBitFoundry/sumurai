@@ -6,7 +6,7 @@ import { AuthService } from '@/services/authService';
 import { SettingsService } from '@/services/SettingsService';
 import { Alert, Badge, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
 interface SettingsPageProps {
   onLogout?: () => void;
@@ -123,10 +123,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           <div className={cn('space-y-5')}>
             <div className={cn('space-y-3')}>
               <Badge size="md">ACCOUNT SETTINGS</Badge>
-              <h2 className={cn(designTokens.typography.sectionTitle, designTokens.text.primary)}>
+              <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
                 Change Password
               </h2>
-              <p className={cn(designTokens.typography.body, designTokens.text.body)}>
+              <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
                 Update your password to keep your account secure
               </p>
             </div>
@@ -195,7 +195,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                     disabled={isChangingPassword}
                   />
                   {confirmPassword && !isPasswordMatch && (
-                    <p className={cn(designTokens.typography.caption, designTokens.text.danger)}>
+                    <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.danger)}>
                       Passwords do not match.
                     </p>
                   )}
@@ -252,7 +252,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         <GlassCard variant="auth" padding="lg">
           <h2
             id="delete-account-modal-title"
-            className={cn(designTokens.typography.cardTitle, 'mb-4', designTokens.text.primary)}
+            className={cn(uiTypographyRecipes.cardTitle, 'mb-4', uiTextRecipes.primary)}
           >
             Delete Account?
           </h2>
@@ -263,7 +263,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
             icon={<AlertTriangle className={cn('h-5', 'w-5')} />}
             className={cn('mb-6')}
           >
-            <ul className={cn('space-y-1', designTokens.typography.caption)}>
+            <ul className={cn('space-y-1', uiTypographyRecipes.caption)}>
               <li>• All bank connections (Plaid/Teller)</li>
               <li>• All transactions and accounts</li>
               <li>• All budgets and settings</li>
@@ -277,9 +277,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
             </Alert>
           )}
 
-          <div className={cn('mb-6', 'flex', 'flex-col', designTokens.spacing.labeledFieldGap)}>
+          <div className={cn('mb-6', 'flex', 'flex-col', 'gap-3')}>
             <FormLabel htmlFor="confirm-delete">
-              Type <span className={cn(designTokens.typography.confirmationCode)}>DELETE</span> to
+              Type <span className={cn(uiTypographyRecipes.confirmationCode)}>DELETE</span> to
               confirm
             </FormLabel>
             <Input

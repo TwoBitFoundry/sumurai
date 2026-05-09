@@ -21,15 +21,15 @@ function walkFiles(rootDir: string): string[] {
 }
 
 describe('ui primitive consolidation', () => {
-  it('keeps designTokens.components out of app source', () => {
+  it('keeps legacy token paths out of app source', () => {
     const sourceRoot = path.resolve(process.cwd(), 'src');
     const offenders = walkFiles(sourceRoot).filter((filePath) => {
-      if (filePath.endsWith('/ui/tokens/index.ts')) {
-        return false;
-      }
-
       const contents = fs.readFileSync(filePath, 'utf8');
-      return contents.includes('designTokens.components.');
+      return (
+        contents.includes('@/ui/tokens/index') ||
+        contents.includes('@/ui/tokens-runtime') ||
+        contents.includes('@/ui/tokens/generated')
+      );
     });
 
     expect(offenders).toEqual([]);

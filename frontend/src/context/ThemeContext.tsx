@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
-import type { ThemeColors, ThemeMode } from '@/ui/tokens-runtime';
-import { getThemeColors } from '@/ui/tokens-runtime';
+import type { ThemeColors, ThemeMode } from '@/ui/tokens';
+import { getThemeColors } from '@/ui/tokens';
 
 interface ThemeContextType {
   mode: ThemeMode;

@@ -1,13 +1,13 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { cn } from './utils';
 
-const labelVariants = cva(['block', designTokens.typography.label], {
+const labelVariants = cva(['block', uiTypographyRecipes.label], {
   variants: {
     tone: {
-      default: designTokens.text.label,
-      subtle: designTokens.text.subtle,
+      default: uiTextRecipes.label,
+      subtle: uiTextRecipes.subtle,
     },
   },
   defaultVariants: {

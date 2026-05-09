@@ -9,8 +9,8 @@ import {
   YAxis,
 } from 'recharts';
 import { cn } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
-import { chart, getThemeColors } from '@/ui/tokens-runtime';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { chart, getThemeColors } from '@/ui/tokens';
 import { useTheme } from '../context/ThemeContext';
 
 export const NetWorthOverTimeWidget: React.FC = () => {
@@ -24,7 +24,7 @@ export const NetWorthOverTimeWidget: React.FC = () => {
 
   return (
     <div data-testid="net-worth-widget" className={cn('h-full', 'w-full', 'min-w-0')}>
-      <div className={cn(designTokens.typography.captionStrong, 'mb-4', designTokens.text.muted)}>
+      <div className={cn(uiTypographyRecipes.captionStrong, 'mb-4', uiTextRecipes.muted)}>
         Net Worth Over Time
       </div>
       <div className={cn('h-[200px]', 'w-full', 'min-w-0')}>

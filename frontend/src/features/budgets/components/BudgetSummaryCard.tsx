@@ -1,5 +1,11 @@
 import { cn } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import {
+  border as uiBorderRecipes,
+  effect as uiEffectRecipes,
+  surface as uiSurfaceRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import { fmtUSD } from '../../../utils/format';
 import BudgetProgress from './BudgetProgress';
 
@@ -19,16 +25,16 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
         'overflow-hidden',
         'rounded-2xl',
         'border-2',
-        ...designTokens.borders.default,
-        ...designTokens.surfaces.semantic.card,
+        ...uiBorderRecipes.default,
+        ...uiSurfaceRecipes.card,
         'p-5',
-        designTokens.text.body,
-        ...designTokens.effects.semantic.glassShadow,
+        uiTextRecipes.body,
+        ...uiEffectRecipes.glassShadow,
         'transition-all',
         'duration-300',
         'hover:-translate-y-[2px]',
-        designTokens.text.body,
-        ...designTokens.borders.hoverAccent
+        uiTextRecipes.body,
+        ...uiBorderRecipes.hoverAccent
       )}
       data-testid="budget-summary-card"
     >
@@ -54,8 +60,8 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
         <div>
           <div
             className={cn(
-              designTokens.typography.label,
-              designTokens.text.subtle,
+              uiTypographyRecipes.label,
+              uiTextRecipes.subtle,
               'transition-colors',
               'duration-500'
             )}
@@ -67,7 +73,7 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
               'mt-1',
               'text-2xl',
               'font-semibold',
-              designTokens.text.primary,
+              uiTextRecipes.primary,
               'transition-colors',
               'duration-500'
             )}
@@ -78,8 +84,8 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
         <div className="text-right">
           <div
             className={cn(
-              designTokens.typography.label,
-              designTokens.text.subtle,
+              uiTypographyRecipes.label,
+              uiTextRecipes.subtle,
               'transition-colors',
               'duration-500'
             )}
@@ -93,7 +99,7 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
               'font-semibold',
               'transition-colors',
               'duration-500',
-              overBudget ? designTokens.text.danger : designTokens.text.body
+              overBudget ? uiTextRecipes.danger : uiTextRecipes.body
             )}
           >
             {fmtUSD(totalSpent)}

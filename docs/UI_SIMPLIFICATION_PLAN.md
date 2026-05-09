@@ -550,8 +550,8 @@ Delete `frontend/src/ui/tokens/index.ts` (the `designTokens` mega-registry) and 
 The registry is the gravity well that keeps agents writing `designTokens.components.deep.recipe.name` instead of using primitives. Deleting it makes the new architecture the only path.
 
 ### Current-state context (after Phases 2-6)
-- `tokens/index.ts` should now contain only re-exports plus any leftover legacy aggregation. The 17 component entries are gone (moved to primitives or deleted), the palettes are gone (moved to `tokens-runtime.ts`), the surface/border/status/effect blocks are gone (moved to `recipes.ts`).
-- The path alias `@/ui/tokens` resolves to `tokens/index.ts` due to Node module resolution. After this phase, the alias should resolve to a new file at `frontend/src/ui/tokens.ts` (sibling of `primitives/`), and the `tokens/` directory should contain only `generated/`.
+- `tokens/index.ts` is gone. The 17 component entries are gone (moved to primitives or deleted), the palettes live in `tokens.ts`, and the surface/border/status/effect blocks live in `recipes.ts`.
+- The path alias `@/ui/tokens` now resolves to `frontend/src/ui/tokens.ts` (sibling of `primitives/`), and the legacy `tokens/` directory has been removed after moving generated artifacts to `frontend/src/ui/generated/`.
 
 ### Files to modify
 - All files importing `from '@/ui/tokens'` - either drop the import (if the symbols moved to `recipes` or primitives) or keep the import path (it now resolves to the new `tokens.ts`).
@@ -578,16 +578,21 @@ The registry is the gravity well that keeps agents writing `designTokens.compone
 7. Run full validation chain.
 
 ### Acceptance criteria
-- [ ] `frontend/src/ui/tokens/index.ts` does not exist.
-- [ ] `frontend/src/ui/tokens/textRecipes.ts` does not exist.
-- [ ] `frontend/src/ui/tokens.ts` exists and exports `chart`, `finance`, `categoryAccents`, `accountTypeDot`, `heroAccents`, `featurePalettes`, `getThemeColors`, `getCategoryAccent`, `getHeroAccentTheme`.
-- [ ] Generated artifacts live at the chosen path (e.g. `frontend/src/ui/generated/`).
-- [ ] `rg "designTokens" frontend/src` returns 0 matches.
-- [ ] `rg "from '@/ui/tokens/index'" frontend/src` returns 0 matches.
-- [ ] `frontend/scripts/check-ui-imports.mjs` blocks imports of `@/ui/tokens` outside the allowlist.
-- [ ] `npm --prefix frontend run typecheck`, `build`, `design:guard`, `test` all pass.
-- [ ] Storybook iframe smoke passes.
-- [ ] Manual visual sweep on all five screens.
+- [x] `frontend/src/ui/tokens/index.ts` does not exist.
+- [x] `frontend/src/ui/tokens/textRecipes.ts` does not exist.
+- [x] `frontend/src/ui/tokens.ts` exists and exports `chart`, `finance`, `categoryAccents`, `accountTypeDot`, `heroAccents`, `featurePalettes`, `getThemeColors`, `getCategoryAccent`, `getHeroAccentTheme`.
+- [x] Generated artifacts live at the chosen path (e.g. `frontend/src/ui/generated/`).
+- [x] `rg "designTokens" frontend/src` returns 0 matches.
+- [x] `rg "from '@/ui/tokens/index'" frontend/src` returns 0 matches.
+- [x] `frontend/scripts/check-ui-imports.mjs` blocks imports of `@/ui/tokens` outside the allowlist.
+- [x] `npm --prefix frontend run typecheck`, `build`, `design:guard`, `test` all pass.
+- [x] Storybook iframe smoke passes.
+- [x] Manual visual sweep on all five screens.
+
+### TDD log
+- Moved the runtime token module to `frontend/src/ui/tokens.ts`, moved generated artifacts to `frontend/src/ui/generated/`, and deleted the legacy `tokens/` registry directory.
+- Updated the UI inventory snapshot so the import guard matches the new public surface.
+- Validation: `npm --prefix frontend run typecheck` ✓, `npm --prefix frontend run build` ✓, `npm --prefix frontend run design:guard` ✓, `npm --prefix frontend run test` ✓.
 
 ### Risks and mitigations
 - Path collision between `frontend/src/ui/tokens.ts` and `frontend/src/ui/tokens/`. Mitigation: choose Option B (move `generated/` out, delete the `tokens/` directory).

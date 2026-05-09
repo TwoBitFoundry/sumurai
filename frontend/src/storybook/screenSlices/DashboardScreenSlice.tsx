@@ -30,8 +30,9 @@ import {
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { designTokens } from '@/ui/tokens';
 import { fmtUSD } from '@/utils/format';
 
 const dashboardCardShell = [
@@ -179,9 +180,7 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
               isRefreshing={false}
             >
               {analyticsLoading && (
-                <div
-                  className={cn('mb-2', designTokens.typography.caption, designTokens.text.muted)}
-                >
+                <div className={cn('mb-2', uiTypographyRecipes.caption, uiTextRecipes.muted)}>
                   Loading analytics...
                 </div>
               )}
@@ -195,8 +194,8 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
                 <div className="mt-4">
                   <div
                     className={cn(
-                      designTokens.typography.caption,
-                      designTokens.text.label,
+                      uiTypographyRecipes.caption,
+                      uiTextRecipes.label,
                       'mb-2',
                       'font-medium'
                     )}
@@ -232,9 +231,9 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
                             />
                             <span
                               className={cn(
-                                designTokens.typography.caption,
+                                uiTypographyRecipes.caption,
                                 'font-medium',
-                                designTokens.text.body,
+                                uiTextRecipes.body,
                                 'truncate'
                               )}
                             >
@@ -244,14 +243,14 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
                           <div className={cn('flex', 'items-baseline', 'justify-between')}>
                             <div
                               className={cn(
-                                designTokens.typography.caption,
+                                uiTypographyRecipes.caption,
                                 'font-semibold',
-                                designTokens.text.primary
+                                uiTextRecipes.primary
                               )}
                             >
                               {fmtUSD(cat.value)}
                             </div>
-                            <div className={cn('text-[10px]', designTokens.text.muted)}>
+                            <div className={cn('text-[10px]', uiTextRecipes.muted)}>
                               {percentage}%
                             </div>
                           </div>
@@ -291,8 +290,8 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
                   className={cn(
                     'flex-1',
                     'min-h-[220px]',
-                    designTokens.typography.body,
-                    designTokens.text.danger
+                    uiTypographyRecipes.body,
+                    uiTextRecipes.danger
                   )}
                 >
                   {netError}

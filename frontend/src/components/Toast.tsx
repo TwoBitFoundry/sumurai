@@ -3,7 +3,7 @@ import type React from 'react';
 
 import { Button, GlassCard } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
 interface ToastProps {
   message: string;
@@ -25,9 +25,7 @@ export const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
         className={cn('flex', 'items-center', 'gap-4')}
         withInnerEffects={false}
       >
-        <div
-          className={cn('flex-1', designTokens.typography.captionStrong, designTokens.text.primary)}
-        >
+        <div className={cn('flex-1', uiTypographyRecipes.captionStrong, uiTextRecipes.primary)}>
           {message}
         </div>
         <Button

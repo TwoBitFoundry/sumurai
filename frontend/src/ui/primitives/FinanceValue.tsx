@@ -1,6 +1,5 @@
-import type React from 'react';
 import { useTheme } from '@/context/ThemeContext';
-import { finance } from '@/ui/tokens-runtime';
+import { finance } from '@/ui/tokens';
 import { cn } from './utils';
 
 export type FinanceTone = 'cash' | 'investments' | 'credit' | 'loan' | 'netWorth';

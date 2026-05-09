@@ -23,23 +23,25 @@ import { useBalancesOverview } from '../hooks/useBalancesOverview';
 import { formatRatio } from '../services/AnalyticsService';
 import { Alert, Button, cn, GlassCard } from '../ui/primitives';
 import {
-  border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
+  border as uiBorderRecipes,
+  status as uiStatusRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
 } from '../ui/recipes';
-import { designTokens } from '../ui/tokens';
 import { Amount, fmtUSD } from './Amount';
 import HeroStatCard from './widgets/HeroStatCard';
 
 const dashboardSummaryShellLoading = [
   'h-16 rounded-xl border',
-  ...semanticBorders.subtle,
+  ...uiBorderRecipes.subtle,
   ...semanticSurfaces.mutedChip,
 ] as const;
 
 const dashboardHoverInfoShell = [
   'flex flex-wrap items-center gap-3 rounded-lg border p-3',
-  ...semanticBorders.subtle,
+  ...uiBorderRecipes.subtle,
   ...semanticSurfaces.card,
   ...semanticEffects.glassShadow,
 ] as const;
@@ -58,10 +60,10 @@ function RatioPill({ ratio }: { ratio: number | string | null }) {
     <span
       className={cn(
         'inline-flex items-center rounded-full border px-2 py-0.5',
-        designTokens.typography.label,
-        ...designTokens.borders.default,
-        ...designTokens.surfaces.semantic.card,
-        designTokens.text.muted
+        uiTypographyRecipes.label,
+        ...uiBorderRecipes.default,
+        ...semanticSurfaces.card,
+        uiTextRecipes.muted
       )}
     >
       A/L: {label}
@@ -80,8 +82,8 @@ function BalancesLegend({ payload, ratio }: BalancesLegendProps) {
     <div
       className={cn(
         'flex w-full flex-wrap items-center justify-between gap-3',
-        designTokens.typography.caption,
-        designTokens.text.body
+        uiTypographyRecipes.caption,
+        uiTextRecipes.body
       )}
     >
       <div className="flex flex-wrap items-center gap-3">
@@ -97,7 +99,7 @@ function BalancesLegend({ payload, ratio }: BalancesLegendProps) {
           return (
             <span key={`${entry.dataKey ?? label}`} className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-              <span className={cn(designTokens.typography.captionStrong)}>{label}</span>
+              <span className={cn(uiTypographyRecipes.captionStrong)}>{label}</span>
             </span>
           );
         })}
@@ -212,7 +214,7 @@ export function BalancesOverview() {
         accent: 'emerald' as const,
         icon: <PiggyBank className={cn('h-4', 'w-4')} />,
         value: (
-          <span data-testid="overall-cash" className={cn(designTokens.status.success.text)}>
+          <span data-testid="overall-cash" className={cn(uiStatusRecipes.success.text)}>
             {fmtUSD(overall?.cash ?? 0)}
           </span>
         ),
@@ -223,7 +225,7 @@ export function BalancesOverview() {
         accent: 'sky' as const,
         icon: <LineChart className={cn('h-4', 'w-4')} />,
         value: (
-          <span data-testid="overall-investments" className={cn(designTokens.status.info.text)}>
+          <span data-testid="overall-investments" className={cn(uiStatusRecipes.info.text)}>
             {fmtUSD(overall?.investments ?? 0)}
           </span>
         ),
@@ -234,7 +236,7 @@ export function BalancesOverview() {
         accent: 'rose' as const,
         icon: <CreditCard className={cn('h-4', 'w-4')} />,
         value: (
-          <span data-testid="overall-credit" className={cn(designTokens.status.danger.text)}>
+          <span data-testid="overall-credit" className={cn(uiStatusRecipes.danger.text)}>
             {fmtUSD(overall?.credit ?? 0)}
           </span>
         ),
@@ -245,7 +247,7 @@ export function BalancesOverview() {
         accent: 'amber' as const,
         icon: <HandCoins className={cn('h-4', 'w-4')} />,
         value: (
-          <span data-testid="overall-loan" className={cn(designTokens.status.warning.text)}>
+          <span data-testid="overall-loan" className={cn(uiStatusRecipes.warning.text)}>
             {fmtUSD(overall?.loan ?? 0)}
           </span>
         ),
@@ -269,7 +271,7 @@ export function BalancesOverview() {
         {!loading && refreshing && (
           <RefreshCcw
             aria-label="Refreshing balances"
-            className={cn('h-4', 'w-4', designTokens.text.subtle, refreshing && 'animate-spin')}
+            className={cn('h-4', 'w-4', uiTextRecipes.subtle, refreshing && 'animate-spin')}
           />
         )}
       </div>
@@ -337,24 +339,24 @@ export function BalancesOverview() {
               withInnerEffects={false}
               className={cn(
                 dashboardHoverInfoShell,
-                designTokens.typography.caption,
-                designTokens.text.body
+                uiTypographyRecipes.caption,
+                uiTextRecipes.body
               )}
             >
-              <span className={cn(designTokens.typography.captionStrong)}>{hoverInfo.bank}</span>
-              <span className={cn('flex', 'items-center', 'gap-1', designTokens.text.success)}>
+              <span className={cn(uiTypographyRecipes.captionStrong)}>{hoverInfo.bank}</span>
+              <span className={cn('flex', 'items-center', 'gap-1', uiStatusRecipes.success.text)}>
                 <span className={cn('h-2', 'w-2', 'rounded-full', 'bg-emerald-500')} />
                 Cash: {fmtUSD(hoverInfo.cash ?? 0)}
               </span>
-              <span className={cn('flex', 'items-center', 'gap-1', designTokens.text.info)}>
+              <span className={cn('flex', 'items-center', 'gap-1', uiStatusRecipes.info.text)}>
                 <span className={cn('h-2', 'w-2', 'rounded-full', 'bg-cyan-500')} />
                 Investments: {fmtUSD(hoverInfo.investments ?? 0)}
               </span>
-              <span className={cn('flex', 'items-center', 'gap-1', designTokens.text.danger)}>
+              <span className={cn('flex', 'items-center', 'gap-1', uiStatusRecipes.danger.text)}>
                 <span className={cn('h-2', 'w-2', 'rounded-full', 'bg-rose-500')} />
                 Credit: {fmtUSD(hoverInfo.credit ?? 0)}
               </span>
-              <span className={cn('flex', 'items-center', 'gap-1', designTokens.text.warning)}>
+              <span className={cn('flex', 'items-center', 'gap-1', uiStatusRecipes.warning.text)}>
                 <span className={cn('h-2', 'w-2', 'rounded-full', 'bg-amber-500')} />
                 Loan: {fmtUSD(hoverInfo.loan ?? 0)}
               </span>

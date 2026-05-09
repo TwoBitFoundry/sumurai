@@ -1,7 +1,7 @@
 import { RefreshCcw } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn, GlassCard } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
 interface DashboardChartCardProps {
   title: string;
@@ -26,17 +26,13 @@ export const DashboardChartCard = ({
     <GlassCard className={cn('p-6', 'h-full', 'flex', 'flex-col', className)}>
       <div className={cn('mb-4', 'flex', 'items-center', 'justify-between')}>
         <div>
-          <h3 className={cn(designTokens.typography.cardTitle, designTokens.text.primary)}>
-            {title}
-          </h3>
-          <p className={cn(designTokens.typography.caption, designTokens.text.muted)}>
-            {description}
-          </p>
+          <h3 className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>{title}</h3>
+          <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>{description}</p>
         </div>
         {isRefreshing && (
           <RefreshCcw
             aria-label={refreshingLabel}
-            className={cn('h-4', 'w-4', designTokens.text.subtle, 'animate-spin')}
+            className={cn('h-4', 'w-4', uiTextRecipes.subtle, 'animate-spin')}
           />
         )}
       </div>

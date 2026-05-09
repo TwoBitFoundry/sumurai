@@ -1,14 +1,14 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
-import { designTokens } from '@/ui/tokens';
+import { font as uiTypographyRecipes } from '@/ui/recipes';
 import { buttonChromeInset, primitiveTokenRecipes } from './recipes';
 import { cn } from './utils';
 
 export const buttonTypographySizes = {
-  xs: designTokens.typography.label,
-  sm: designTokens.typography.captionStrong,
-  md: designTokens.typography.captionStrong,
-  lg: designTokens.typography.bodyStrong,
+  xs: uiTypographyRecipes.label,
+  sm: uiTypographyRecipes.captionStrong,
+  md: uiTypographyRecipes.captionStrong,
+  lg: uiTypographyRecipes.bodyStrong,
 } as const;
 
 const buttonVariants = cva([...primitiveTokenRecipes.button.base], {
@@ -27,7 +27,7 @@ const buttonVariants = cva([...primitiveTokenRecipes.button.base], {
     size: {
       xs: `${buttonTypographySizes.xs} ${buttonChromeInset.xs}`,
       sm: `${buttonTypographySizes.sm} ${buttonChromeInset.sm}`,
-      titleBarExpanded: `${designTokens.typography.titleBarChromeExpanded} ${buttonChromeInset.sm}`,
+      titleBarExpanded: `${uiTypographyRecipes.titleBarChromeExpanded} ${buttonChromeInset.sm}`,
       md: `${buttonTypographySizes.md} px-4 py-2 rounded-full`,
       lg: `${buttonTypographySizes.lg} px-5 py-2.5 rounded-full`,
       icon: 'h-10 w-10 rounded-full',

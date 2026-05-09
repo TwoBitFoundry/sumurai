@@ -3,7 +3,12 @@ import { ChevronDown, MoreVertical, RefreshCw, Unlink } from 'lucide-react';
 import type React from 'react';
 import { useMemo, useState } from 'react';
 import { Button, cn, GlassCard, MenuDropdown, MenuItem } from '../ui/primitives';
-import { designTokens } from '../ui/tokens';
+import {
+  border as uiBorderRecipes,
+  status as uiStatusRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '../ui/recipes';
 import { AccountRow } from './AccountRow';
 import { DisconnectModal } from './DisconnectModal';
 import { StatusPill } from './StatusPill';
@@ -64,7 +69,7 @@ const CardMenu: React.FC<{
 };
 
 export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect }) => {
-  const sectionBadgeClass = cn(designTokens.typography.label, designTokens.text.muted);
+  const sectionBadgeClass = cn(uiTypographyRecipes.label, uiTextRecipes.muted);
 
   const [expanded, setExpanded] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -78,15 +83,9 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect }
         rounded="lg"
         padding="sm"
         withInnerEffects={false}
-        className={cn(
-          'grid',
-          'h-12',
-          'w-12',
-          'place-items-center',
-          ...designTokens.status.info.icon
-        )}
+        className={cn('grid', 'h-12', 'w-12', 'place-items-center', ...uiStatusRecipes.info.icon)}
       >
-        <span className={cn(designTokens.typography.bodyStrong)}>{bank.short}</span>
+        <span className={cn(uiTypographyRecipes.bodyStrong)}>{bank.short}</span>
       </GlassCard>
     ),
     [bank.short]
@@ -137,18 +136,12 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect }
           <div className={cn('flex', 'items-center', 'gap-3')}>
             {Avatar}
             <div className={cn('min-w-0', 'flex-1', 'space-y-1')}>
-              <h3
-                className={cn(
-                  'truncate',
-                  designTokens.typography.cardTitle,
-                  designTokens.text.primary
-                )}
-              >
+              <h3 className={cn('truncate', uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>
                 {bank.name}
               </h3>
-              <div className={cn('flex', 'items-center', 'gap-2', designTokens.typography.caption)}>
+              <div className={cn('flex', 'items-center', 'gap-2', uiTypographyRecipes.caption)}>
                 <StatusPill status={bank.status} />
-                <span className={cn(designTokens.text.muted)}>
+                <span className={cn(uiTextRecipes.muted)}>
                   {(() => {
                     const label = relativeTime(bank.lastSync);
                     return `Last sync ${label.includes('ago') ? label : `${label} ago`}`;
@@ -177,7 +170,7 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect }
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className={cn('space-y-6', 'border-t', ...designTokens.borders.glass, 'pt-4')}
+            className={cn('space-y-6', 'border-t', ...uiBorderRecipes.glass, 'pt-4')}
           >
             {(() => {
               const sortedAccounts = bank.accounts.slice().sort((a, b) => {

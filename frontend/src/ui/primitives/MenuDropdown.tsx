@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import type React from 'react';
 import { cloneElement, isValidElement, useState } from 'react';
-import { designTokens } from '@/ui/tokens';
 import { primitiveTokenRecipes } from './recipes';
 import { cn } from './utils';
 

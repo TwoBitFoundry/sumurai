@@ -7,7 +7,7 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const frontendRoot = resolve(scriptDir, '..');
 const repoRoot = resolve(frontendRoot, '..');
 const defaultDesignPath = resolve(repoRoot, 'DESIGN.md');
-const defaultOutDir = resolve(frontendRoot, 'src/ui/tokens/generated');
+const defaultOutDir = resolve(frontendRoot, 'src/ui/generated');
 const runDesignmdScript = resolve(scriptDir, 'run-designmd.mjs');
 
 function parseArgs(argv) {
@@ -163,7 +163,7 @@ function toThemeCss(dtcg) {
 }
 
 function toTokensTs(dtcg) {
-  return `export const designTokens = ${JSON.stringify(dtcg, null, 2)} as const;\nexport type DesignTokens = typeof designTokens;\nexport default designTokens;\n`;
+  return `export const generatedTokens = ${JSON.stringify(dtcg, null, 2)} as const;\nexport type GeneratedTokens = typeof generatedTokens;\nexport default generatedTokens;\n`;
 }
 
 function writeArtifacts(outDir, dtcg) {

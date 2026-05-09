@@ -1,5 +1,5 @@
 import type React from 'react';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes } from '@/ui/recipes';
 import { getTagThemeForCategory } from '@/utils/categories';
 import { heroStatCard, pill as pillRecipes } from './recipes';
 import { cn } from './utils';
@@ -44,7 +44,7 @@ export function Pill({
 
   if (variant === 'dot') {
     return (
-      <span className={cn(base, designTokens.text.label, className)} {...props}>
+      <span className={cn(base, uiTextRecipes.label, className)} {...props}>
         <span className={cn(dot)} aria-hidden="true" />
         <span className="whitespace-nowrap">{children}</span>
       </span>

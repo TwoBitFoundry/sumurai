@@ -8,8 +8,10 @@ import {
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
+  focus as uiFocusRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { designTokens } from '@/ui/tokens';
 import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
 import type { BudgetProgressEntry } from '../hooks/useBudgets';
@@ -81,7 +83,7 @@ export function BudgetList({
               budgetCardShell,
               tagTheme.ring,
               'ring-1 ring-offset-1',
-              designTokens.surfaces.focus.ringOffsetLightOnDark
+              uiFocusRecipes.ringOffsetLightOnDark
             )}
           >
             <div
@@ -115,7 +117,7 @@ export function BudgetList({
                 />
                 {displayName}
               </div>
-              <div className={cn('flex', 'items-center', 'gap-2', designTokens.typography.label)}>
+              <div className={cn('flex', 'items-center', 'gap-2', uiTypographyRecipes.label)}>
                 {isEditing ? (
                   <>
                     <IconButton
@@ -173,8 +175,8 @@ export function BudgetList({
                       htmlFor={`budget-amount-${b.id}`}
                       className={cn(
                         'block',
-                        designTokens.typography.label,
-                        designTokens.text.subtle,
+                        uiTypographyRecipes.label,
+                        uiTextRecipes.subtle,
                         'transition-colors',
                         'duration-300'
                       )}
@@ -196,8 +198,8 @@ export function BudgetList({
                   <div
                     className={cn(
                       'text-right',
-                      designTokens.typography.caption,
-                      designTokens.text.subtle,
+                      uiTypographyRecipes.caption,
+                      uiTextRecipes.subtle,
                       'transition-colors',
                       'duration-300'
                     )}
@@ -205,8 +207,8 @@ export function BudgetList({
                     <span
                       className={cn(
                         'block',
-                        designTokens.typography.label,
-                        designTokens.text.subtle,
+                        uiTypographyRecipes.label,
+                        uiTextRecipes.subtle,
                         'transition-colors',
                         'duration-300'
                       )}
@@ -215,8 +217,8 @@ export function BudgetList({
                     </span>
                     <span
                       className={cn(
-                        designTokens.typography.bodyStrong,
-                        designTokens.text.body,
+                        uiTypographyRecipes.bodyStrong,
+                        uiTextRecipes.body,
                         'transition-colors',
                         'duration-300'
                       )}
@@ -231,8 +233,8 @@ export function BudgetList({
                     'grid',
                     'grid-cols-2',
                     'gap-4',
-                    designTokens.typography.caption,
-                    designTokens.text.subtle,
+                    uiTypographyRecipes.caption,
+                    uiTextRecipes.subtle,
                     'transition-colors',
                     'duration-300'
                   )}
@@ -240,8 +242,8 @@ export function BudgetList({
                   <div>
                     <span
                       className={cn(
-                        designTokens.typography.label,
-                        designTokens.text.subtle,
+                        uiTypographyRecipes.label,
+                        uiTextRecipes.subtle,
                         'transition-colors',
                         'duration-300'
                       )}
@@ -251,8 +253,8 @@ export function BudgetList({
                     <div
                       className={cn(
                         'mt-1',
-                        designTokens.typography.cardTitle,
-                        designTokens.text.primary,
+                        uiTypographyRecipes.cardTitle,
+                        uiTextRecipes.primary,
                         'transition-colors',
                         'duration-300'
                       )}
@@ -263,8 +265,8 @@ export function BudgetList({
                   <div className="text-right">
                     <span
                       className={cn(
-                        designTokens.typography.label,
-                        designTokens.text.subtle,
+                        uiTypographyRecipes.label,
+                        uiTextRecipes.subtle,
                         'transition-colors',
                         'duration-300'
                       )}
@@ -274,10 +276,10 @@ export function BudgetList({
                     <div
                       className={cn(
                         'mt-1',
-                        designTokens.typography.cardTitle,
+                        uiTypographyRecipes.cardTitle,
                         'transition-colors',
                         'duration-300',
-                        isOver ? designTokens.text.danger : designTokens.text.body
+                        isOver ? uiTextRecipes.danger : uiTextRecipes.body
                       )}
                     >
                       {fmtUSD(b.spent)}

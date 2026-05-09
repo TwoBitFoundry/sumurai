@@ -1,4 +1,4 @@
-import generatedTokens from './tokens/generated/tokens';
+import generatedTokens from './generated/tokens';
 
 export type ThemeMode = 'light' | 'dark';
 export type HeroAccent = 'slate' | 'emerald' | 'sky' | 'violet' | 'amber' | 'rose';

@@ -4,13 +4,13 @@ import { useTheme } from '@/context/ThemeContext';
 import { AppLayout } from '@/layouts/AppLayout';
 import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { AppFooter, AppTitleBar, cn, GradientShell } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
 function UnauthenticatedLoginShell() {
   const { mode, toggle } = useTheme();
 
   return (
-    <GradientShell className={cn(designTokens.text.primary)}>
+    <GradientShell className={cn(uiTextRecipes.primary)}>
       <div className={cn('flex', 'flex-col', 'min-h-screen')}>
         <AppTitleBar
           state="unauthenticated"
@@ -41,10 +41,10 @@ function AuthenticatedDashboardShell() {
             'border-slate-200',
             'px-3',
             'py-1',
-            designTokens.typography.caption,
+            uiTypographyRecipes.caption,
             'font-medium',
             'dark:border-slate-600',
-            designTokens.text.muted
+            uiTextRecipes.muted
           )}
         >
           All accounts

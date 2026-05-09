@@ -1,5 +1,4 @@
 import type React from 'react';
-import { designTokens } from '@/ui/tokens';
 import { primitiveTokenRecipes } from './recipes';
 import { cn } from './utils';
 
