@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 set -e
 
-npm run precommit
+npm --prefix frontend run precommit
