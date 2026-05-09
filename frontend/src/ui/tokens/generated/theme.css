@@ -177,6 +177,10 @@
   --spacing-shell-y: 48px;
   --spacing-compact-gap: 8px;
   --spacing-section-gap: 20px;
+  --spacing-button-chrome-inset-xs-x: 10px;
+  --spacing-button-chrome-inset-xs-y: 4px;
+  --spacing-button-chrome-inset-sm-x: 12px;
+  --spacing-button-chrome-inset-sm-y: 6px;
   --radius-panel: 2.25rem;
   --radius-card: 1rem;
   --radius-large: 1.5rem;
@@ -192,6 +196,8 @@
   --font-page-title: 'Cal Sans', system-ui, sans-serif;
   --text-page-title: 2rem;
   --font-weight-page-title: 700;
+  --font-page-title-wordmark: 'Cal Sans', system-ui, sans-serif;
+  --font-weight-page-title-wordmark: 700;
   --font-section-title: 'Mr Eaves XL Mod', system-ui, sans-serif;
   --text-section-title: 1.5rem;
   --font-weight-section-title: 600;
@@ -220,6 +226,10 @@
   --text-label: 0.75rem;
   --font-weight-label: 600;
   --tracking-label: 0.14em;
+  --font-title-bar-chrome-expanded: 'Mr Eaves XL Mod', system-ui, sans-serif;
+  --text-title-bar-chrome-expanded: 0.875rem;
+  --font-weight-title-bar-chrome-expanded: 600;
+  --tracking-title-bar-chrome-expanded: 0.14em;
   --font-pill: 'Mr Eaves XL Mod', system-ui, sans-serif;
   --text-pill: 0.75rem;
   --font-weight-pill: 700;

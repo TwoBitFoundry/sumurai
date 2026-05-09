@@ -31,7 +31,7 @@ const meta = {
     },
     size: {
       control: 'select',
-      options: ['xs', 'sm', 'md', 'lg', 'icon'],
+      options: ['xs', 'sm', 'titleBarExpanded', 'md', 'lg', 'icon'],
     },
   },
 } satisfies Meta<typeof Button>;

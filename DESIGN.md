@@ -194,6 +194,11 @@ typography:
     fontWeight: 700
     lineHeight: 1.1
     letterSpacing: 0
+  page-title-wordmark:
+    fontFamily: "'Cal Sans', system-ui, sans-serif"
+    fontWeight: 700
+    lineHeight: 1.1
+    letterSpacing: 0
   section-title:
     fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
     fontSize: 1.5rem
@@ -248,6 +253,12 @@ typography:
     fontWeight: 600
     lineHeight: 1
     letterSpacing: 0.14em
+  title-bar-chrome-expanded:
+    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
+    fontSize: 0.875rem
+    fontWeight: 600
+    lineHeight: 1
+    letterSpacing: 0.14em
   pill:
     fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
     fontSize: 0.75rem
@@ -286,7 +297,15 @@ spacing:
   shell-y: 48px
   compact-gap: 8px
   section-gap: 20px
+  button-chrome-inset-xs-x: 10px
+  button-chrome-inset-xs-y: 4px
+  button-chrome-inset-sm-x: 12px
+  button-chrome-inset-sm-y: 6px
 components:
+  app-title-bar-wordmark:
+    typography: "{typography.page-title-wordmark}"
+  app-title-bar-chrome-expanded:
+    typography: "{typography.title-bar-chrome-expanded}"
   button-primary:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.on-primary}"
@@ -591,6 +610,8 @@ Surface, border, status, and effect roles should stay semantic and reusable. Use
 Use the brand face for the product mark and display moments. Use the body role for normal readable UI copy, caption for secondary text, and the compact label and badge roles only when the hierarchy needs to stay tight. Uppercase labels, badges, and pills are the only places that should use nonzero tracking.
 
 The typography scale should stay small and semantic so dense finance content remains legible at 100% zoom. Keep `1rem` as the default readable size, reserve `0.875rem` for caption-sized UI, and avoid one-off font sizing unless a constrained surface truly needs it.
+
+The `page-title-wordmark` role is for the product wordmark at the top of the shell: Cal Sans with page-title weight and leading while vertical scale follows layout (`text-xl` / `text-3xl`). The `title-bar-chrome-expanded` role is uppercase navigation chrome at rest: label tracking and weight at the caption-strong size so expanded title-bar controls stay readable without switching to sentence-case styles.
 
 ## Layout
 

@@ -1933,6 +1933,30 @@
         "value": 20,
         "unit": "px"
       }
+    },
+    "button-chrome-inset-xs-x": {
+      "$value": {
+        "value": 10,
+        "unit": "px"
+      }
+    },
+    "button-chrome-inset-xs-y": {
+      "$value": {
+        "value": 4,
+        "unit": "px"
+      }
+    },
+    "button-chrome-inset-sm-x": {
+      "$value": {
+        "value": 12,
+        "unit": "px"
+      }
+    },
+    "button-chrome-inset-sm-y": {
+      "$value": {
+        "value": 6,
+        "unit": "px"
+      }
     }
   },
   "rounded": {
@@ -2005,6 +2029,13 @@
           "value": 2,
           "unit": "rem"
         },
+        "fontWeight": 700
+      }
+    },
+    "page-title-wordmark": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "'Cal Sans', system-ui, sans-serif",
         "fontWeight": 700
       }
     },
@@ -2102,6 +2133,21 @@
         "fontFamily": "'Mr Eaves XL Mod', system-ui, sans-serif",
         "fontSize": {
           "value": 0.75,
+          "unit": "rem"
+        },
+        "fontWeight": 600,
+        "letterSpacing": {
+          "value": 0.14,
+          "unit": "em"
+        }
+      }
+    },
+    "title-bar-chrome-expanded": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "'Mr Eaves XL Mod', system-ui, sans-serif",
+        "fontSize": {
+          "value": 0.875,
           "unit": "rem"
         },
         "fontWeight": 600,
