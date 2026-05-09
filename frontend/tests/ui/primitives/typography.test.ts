@@ -70,4 +70,8 @@ describe('primitive typography recipes', () => {
     expect(designTokens.typography.chartDonutCenterTotal).toContain('tracking-tight');
     expect(designTokens.typography.confirmationCode).toBe('font-mono font-bold');
   });
+
+  it('reserves labeled-control spacing for label stacks that clear focus rings', () => {
+    expect(designTokens.spacing.labeledFieldGap).toBe('gap-3');
+  });
 });

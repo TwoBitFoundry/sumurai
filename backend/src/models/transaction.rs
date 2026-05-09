@@ -5,6 +5,8 @@ use std::str::FromStr;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+use crate::utils::merchant_name::normalize_merchant_display_case;
+
 #[allow(unused_imports)]
 use serde_json::json;
 
@@ -206,6 +208,25 @@ pub struct SyncMetadata {
 }
 
 impl Transaction {
+    pub fn merchant_name_from_teller(teller_txn: &serde_json::Value) -> Option<String> {
+        let raw = teller_txn["details"]["counterparty"]["name"]
+            .as_str()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .or_else(|| {
+                teller_txn["description"]
+                    .as_str()
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+            })?;
+        let normalized = normalize_merchant_display_case(raw);
+        if normalized.is_empty() {
+            None
+        } else {
+            Some(normalized)
+        }
+    }
+
     pub fn from_teller(
         teller_txn: &serde_json::Value,
         account_id: &Uuid,
@@ -223,10 +244,7 @@ impl Transaction {
             .as_str()
             .unwrap_or("general");
 
-        let merchant_name = teller_txn["details"]["counterparty"]["name"]
-            .as_str()
-            .or_else(|| teller_txn["description"].as_str())
-            .map(String::from);
+        let merchant_name = Self::merchant_name_from_teller(teller_txn);
 
         Self {
             id: Uuid::new_v4(),
@@ -243,6 +261,19 @@ impl Transaction {
             payment_channel: None,
             pending: teller_txn["status"].as_str() != Some("posted"),
             created_at: Some(chrono::Utc::now()),
+        }
+    }
+
+    pub fn merchant_name_from_plaid(plaid_txn: &serde_json::Value) -> Option<String> {
+        let raw = plaid_txn["merchant_name"]
+            .as_str()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())?;
+        let normalized = normalize_merchant_display_case(raw);
+        if normalized.is_empty() {
+            None
+        } else {
+            Some(normalized)
         }
     }
 
@@ -279,10 +310,7 @@ impl Transaction {
             provider_transaction_id: plaid_txn["transaction_id"].as_str().map(String::from),
             amount,
             date,
-            merchant_name: plaid_txn["merchant_name"]
-                .as_str()
-                .or_else(|| plaid_txn["name"].as_str())
-                .map(String::from),
+            merchant_name: Self::merchant_name_from_plaid(plaid_txn),
             category_primary,
             category_detailed,
             category_confidence: plaid_txn["personal_finance_category"]["confidence_level"]

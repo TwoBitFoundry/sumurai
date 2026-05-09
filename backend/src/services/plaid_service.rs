@@ -238,12 +238,6 @@ impl RealPlaidClient {
                 for t in transactions_array {
                     let amount = t.get("amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
 
-                    let name = t
-                        .get("name")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("Unknown")
-                        .to_string();
-
                     let date = t
                         .get("date")
                         .and_then(|v| v.as_str())
@@ -299,7 +293,7 @@ impl RealPlaidClient {
                         date: chrono::NaiveDate::parse_from_str(&date, "%Y-%m-%d").unwrap_or_else(
                             |_| chrono::NaiveDate::from_ymd_opt(1970, 1, 1).unwrap(),
                         ),
-                        merchant_name: Some(name),
+                        merchant_name: Transaction::merchant_name_from_plaid(t),
                         category_primary,
                         category_detailed,
                         category_confidence,

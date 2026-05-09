@@ -1,3 +1,4 @@
+use crate::models::transaction::Transaction;
 use crate::test_fixtures::TestFixtures;
 use serde_json::Value;
 
@@ -90,4 +91,24 @@ fn test_category_parsing_handles_missing_fields() {
     assert_eq!(category_confidence, "MEDIUM");
     assert_eq!(payment_channel, None);
     assert!(!pending);
+}
+
+#[test]
+fn merchant_name_from_plaid_uses_merchant_name_only() {
+    let v: Value = serde_json::json!({
+        "merchant_name": "Starbucks",
+        "name": "CARD PURCHASE STARBUCKS"
+    });
+    assert_eq!(
+        Transaction::merchant_name_from_plaid(&v),
+        Some("Starbucks".to_string())
+    );
+}
+
+#[test]
+fn merchant_name_from_plaid_ignores_legacy_name() {
+    let v: Value = serde_json::json!({
+        "name": "ATM WITHDRAWAL"
+    });
+    assert_eq!(Transaction::merchant_name_from_plaid(&v), None);
 }

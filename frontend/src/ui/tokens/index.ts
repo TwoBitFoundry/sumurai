@@ -672,6 +672,7 @@ export const designTokens = {
     shellY: 'py-12 sm:py-16',
     compactGap: 'gap-2',
     sectionGap: 'gap-5',
+    labeledFieldGap: 'gap-3',
   },
   shadows: {
     glass: {

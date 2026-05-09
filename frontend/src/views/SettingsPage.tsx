@@ -263,7 +263,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
             </Alert>
           )}
 
-          <div className={cn('mb-6')}>
+          <div className={cn('mb-6', 'flex', 'flex-col', designTokens.spacing.labeledFieldGap)}>
             <FormLabel htmlFor="confirm-delete">
               Type <span className={cn(designTokens.typography.confirmationCode)}>DELETE</span> to
               confirm

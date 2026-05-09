@@ -46,7 +46,7 @@ export const TransactionsTable: React.FC<Props> = ({
       ) : (
         <>
           <div className="overflow-x-auto">
-            <table className={cn('min-w-full', designTokens.typography.caption, 'table-fixed')}>
+            <table className={cn('min-w-full', 'table-fixed')}>
               <thead
                 className={cn(
                   'bg-slate-200',
@@ -146,7 +146,7 @@ export const TransactionsTable: React.FC<Props> = ({
                             'px-4',
                             'py-3',
                             'align-middle',
-                            designTokens.typography.caption,
+                            designTokens.typography.body,
                             designTokens.text.primary,
                             'transition-colors',
                             'duration-500'
@@ -162,7 +162,7 @@ export const TransactionsTable: React.FC<Props> = ({
                             className={cn(
                               'block',
                               'truncate',
-                              designTokens.typography.bodyStrong,
+                              designTokens.typography.body,
                               designTokens.text.primary,
                               'transition-colors',
                               'duration-500'
@@ -179,7 +179,7 @@ export const TransactionsTable: React.FC<Props> = ({
                             'text-right',
                             'align-middle',
                             'tabular-nums',
-                            designTokens.typography.bodyStrong,
+                            designTokens.typography.body,
                             'transition-colors',
                             'duration-500',
                             r.amount > 0
@@ -194,7 +194,7 @@ export const TransactionsTable: React.FC<Props> = ({
                         <td className={cn('whitespace-nowrap', 'px-4', 'py-3', 'align-middle')}>
                           <span
                             className={cn(
-                              designTokens.typography.caption,
+                              designTokens.typography.body,
                               designTokens.text.muted,
                               'transition-colors',
                               'duration-500'
