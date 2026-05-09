@@ -109,14 +109,11 @@ jobs:
             npm install
           fi
 
-      - name: Type check
-        run: npm run typecheck
-
       - name: Biome check (format + lint)
         run: npm run lint
 
-      - name: Storybook doctor
-        run: npm run storybook:doctor
+      - name: Type check
+        run: npm run typecheck
 
       - name: Design guard
         run: npm run design:guard
@@ -138,11 +135,11 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install chromium --with-deps
 
-      - name: Storybook static build
-        run: npm run storybook:build
-
       - name: Storybook Vitest
         run: npm run test:storybook
+
+      - name: Storybook static build
+        run: npm run storybook:build
 
       - name: Storybook iframe smoke
         run: npm run test:storybook-runtime:run

@@ -26,7 +26,7 @@ git checkout -b feat/my-change
 
 This project treats **GitHub Actions as the merge gate**. The default Git hook trades some parity for contributor time.
 
-**`npm run precommit` (Husky):** `npm run backend:ci` then frontend `typecheck`, **Biome check**, **design guard**, **`storybook doctor`**, and **Jest**. It does **not** run `npm ci` in `frontend/`, **`next build`**, Storybook static build, Vitest browser tests, or Playwright iframe smoke. Typecheck already includes `*.stories.tsx` under `src/` with the app.
+**`npm run precommit` (Husky):** frontend **Biome check**, `typecheck`, **design guard**, and **Jest**, then **`npm run backend:ci`**. It does **not** run `npm ci` in `frontend/`, **`next build`**, Storybook static build, Vitest browser tests, or Playwright iframe smoke. Typecheck already includes `*.stories.tsx` under `src/` with the app.
 
 For **full parity** with `.github/workflows/ci.yml` frontend steps before you push (for example Storybook/Vite/Playwright paths), run **`npm run backend:ci && npm run frontend:ci`** manually.
 
