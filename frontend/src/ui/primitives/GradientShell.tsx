@@ -1,6 +1,38 @@
 import type React from 'react';
-import { primitiveTokenRecipes } from './recipes';
 import { cn } from './utils';
+
+export const gradientShellRecipes = {
+  base: ['relative', 'min-h-screen'],
+  centered: ['overflow-hidden'],
+  backdrop: ['pointer-events-none'],
+  aura: [
+    'bg-[radial-gradient(128%_96%_at_18%_-20%,#c4e2ff_0%,#dbeafe_30%,#e5f2ff_56%,#ffffff_96%)]',
+    'transition-colors duration-500 ease-out',
+    'dark:bg-[radial-gradient(100%_85%_at_20%_-10%,#0f172a_0%,#0b162c_55%,#05070d_100%)]',
+  ],
+  overlay: [
+    'bg-[radial-gradient(136%_108%_at_20%_-18%,rgba(14,165,233,0.42)_0%,#e1f2ff_36%,#ffffff_100%)]',
+    'transition-colors duration-700',
+    'dark:bg-[radial-gradient(92%_80%_at_20%_-6%,#0f172a_0%,#0a1224_50%,#05070d_100%)]',
+  ],
+  violetAura: [
+    'bg-[radial-gradient(86%_64%_at_86%_18%,rgba(167,139,250,0.28)_0%,rgba(59,130,246,0.14)_55%,transparent_78%)]',
+    'transition-opacity duration-700',
+    'dark:bg-transparent',
+  ],
+  cyanAura: [
+    'bg-[radial-gradient(92%_68%_at_12%_24%,rgba(56,189,248,0.28)_0%,rgba(129,140,248,0.12)_52%,transparent_80%)]',
+    'transition-opacity duration-700',
+    'dark:bg-transparent',
+  ],
+  vignette:
+    'bg-gradient-to-b from-white/70 via-white/38 to-transparent transition-colors duration-700 ease-out dark:from-slate-900/68 dark:via-slate-900/42 dark:to-transparent',
+  vignetteOverlay:
+    'bg-[radial-gradient(120%_120%_at_50%_55%,transparent_60%,rgba(15,23,42,0.1)_100%)] transition-opacity duration-700 ease-out dark:bg-[radial-gradient(120%_120%_at_50%_54%,transparent_58%,rgba(2,6,23,0.38)_100%)]',
+  centerGlow:
+    'rounded-full blur-3xl h-[72rem] w-[72rem] opacity-[0.28] animate-[rotateAura_95s_linear_infinite] bg-[conic-gradient(from_90deg,#93c5fd,#34d399,#fbbf24,#a78bfa,#fb7185,#93c5fd)] transition-opacity duration-500 dark:opacity-[0.4] dark:bg-[conic-gradient(from_110deg,#38bdf8,#34d399,#a78bfa,#fbbf24,#f87171,#38bdf8)]',
+  contentCentered: 'flex min-h-screen items-center justify-center px-4 py-12 sm:px-6',
+} as const;
 
 export interface GradientShellProps {
   children: React.ReactNode;
@@ -32,40 +64,31 @@ export function GradientShell({ children, className, centered = false }: Gradien
       )}
     >
       <div className={cn('pointer-events-none', centered ? 'absolute inset-0' : 'fixed inset-0')}>
-        <div className={cn('absolute inset-0', ...primitiveTokenRecipes.gradientShell.aura)} />
+        <div className={cn('absolute inset-0', ...gradientShellRecipes.aura)} />
 
-        <div className={cn('absolute inset-0', ...primitiveTokenRecipes.gradientShell.overlay)} />
-        <div
-          className={cn('absolute inset-0', ...primitiveTokenRecipes.gradientShell.violetAura)}
-        />
-        <div className={cn('absolute inset-0', ...primitiveTokenRecipes.gradientShell.cyanAura)} />
+        <div className={cn('absolute inset-0', ...gradientShellRecipes.overlay)} />
+        <div className={cn('absolute inset-0', ...gradientShellRecipes.violetAura)} />
+        <div className={cn('absolute inset-0', ...gradientShellRecipes.cyanAura)} />
 
         <div className={cn('absolute', 'inset-0', 'flex', 'items-center', 'justify-center')}>
           <div
             className={cn(
               'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
-              primitiveTokenRecipes.gradientShell.centerGlow
+              gradientShellRecipes.centerGlow
             )}
           />
         </div>
 
-        <div
-          className={cn(
-            'absolute inset-0 bg-gradient-to-b',
-            primitiveTokenRecipes.gradientShell.vignette
-          )}
-        />
+        <div className={cn('absolute inset-0 bg-gradient-to-b', gradientShellRecipes.vignette)} />
 
-        <div
-          className={cn('absolute inset-0', primitiveTokenRecipes.gradientShell.vignetteOverlay)}
-        />
+        <div className={cn('absolute inset-0', gradientShellRecipes.vignetteOverlay)} />
       </div>
 
       <div
         className={cn(
-          ...primitiveTokenRecipes.gradientShell.base,
-          centered ? primitiveTokenRecipes.gradientShell.centered : '',
-          centered ? primitiveTokenRecipes.gradientShell.contentCentered : ''
+          ...gradientShellRecipes.base,
+          centered ? gradientShellRecipes.centered : '',
+          centered ? gradientShellRecipes.contentCentered : ''
         )}
       >
         {children}

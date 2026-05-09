@@ -2,7 +2,6 @@ import type { LucideIcon } from 'lucide-react';
 import { LayoutDashboard, ReceiptText, Target } from 'lucide-react';
 import { Badge, cn } from '@/ui/primitives';
 import {
-  font as primitiveTypographyRecipes,
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
@@ -52,16 +51,16 @@ const onboardingIconGlow =
 
 const onboardingTitleStrong = [
   'relative z-10 mt-3',
-  primitiveTypographyRecipes.bodyStrong,
+  uiTypographyRecipes.bodyStrong,
   'dark:text-white',
 ] as const;
 const onboardingBodyMuted = [
   'relative z-10 mt-1',
-  primitiveTypographyRecipes.caption,
+  uiTypographyRecipes.caption,
   uiTextRecipes.body,
 ] as const;
 const onboardingEyebrowCaps = [
-  primitiveTypographyRecipes.label,
+  uiTypographyRecipes.label,
   'uppercase transition-colors duration-300 ease-out',
 ] as const;
 const onboardingPreviewFrame = [

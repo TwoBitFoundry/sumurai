@@ -1,6 +1,5 @@
 import {
   border,
-  buttonChromeInset,
   chrome,
   effect,
   focus,
@@ -49,12 +48,15 @@ describe('shared UI recipes', () => {
       'shadow-[0_32px_110px_-60px_var(--color-effect-glass-shadow)]',
       'dark:shadow-[0_36px_120px_-62px_var(--color-effect-glass-shadow)]',
     ]);
+    expect(effect.pageShellInsetRing).toEqual([
+      'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]',
+      'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.48)]',
+    ]);
     expect(focus.visible).toContain('focus-visible:ring-sky-400');
     expect(font.badge).toBe(
       'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]'
     );
     expect(chrome.smInset).toContain('px-[length:var(--spacing-button-chrome-inset-sm-x)]');
-    expect(buttonChromeInset).toBe(chrome);
   });
 
   it('exposes the shared status recipes', () => {

@@ -45,7 +45,7 @@ const tableFooter = [
   'backdrop-saturate-[150%]',
 ] as const;
 
-const transactionRow = {
+export const transactionsRowRecipes = {
   shell: [
     'group relative border-b border-slate-200/70 transition-all duration-150 ease-out hover:-translate-y-[2px] hover:ring-2 hover:ring-sky-400/60',
     'dark:border-slate-700/50 dark:hover:ring-sky-400/50',
@@ -154,8 +154,8 @@ export const TransactionsTable: React.FC<Props> = ({
                       <tr
                         key={r.id}
                         className={cn(
-                          transactionRow.shell,
-                          i % 2 ? transactionRow.odd : transactionRow.even
+                          transactionsRowRecipes.shell,
+                          i % 2 ? transactionsRowRecipes.odd : transactionsRowRecipes.even
                         )}
                       >
                         <td

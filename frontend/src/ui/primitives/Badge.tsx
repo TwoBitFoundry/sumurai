@@ -1,7 +1,29 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
-import { primitiveTokenRecipes } from './recipes';
+import {
+  effect as semanticEffects,
+  status as semanticStatus,
+  surface as semanticSurfaces,
+  text as semanticTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import { cn } from './utils';
+
+export const badgeRecipes = {
+  base: [
+    'inline-flex items-center justify-center',
+    uiTypographyRecipes.badge,
+    'transition-all duration-200 ease-out',
+  ],
+  default: [
+    ...semanticSurfaces.mutedChip,
+    semanticTextRecipes.muted,
+    ...semanticEffects.glassShadow,
+    'dark:text-slate-200',
+  ],
+  primary: [...semanticStatus.info.surface, ...semanticStatus.info.text],
+  feature: [...semanticSurfaces.insetWell, 'ring-1 ring-inset'],
+} as const;
 
 export const badgeSizeStyles = {
   xs: 'px-2 py-0.5 rounded-md',
@@ -10,12 +32,12 @@ export const badgeSizeStyles = {
   lg: 'px-3.5 py-1.5 rounded-full',
 } as const;
 
-const badgeVariants = cva([...primitiveTokenRecipes.badge.base], {
+const badgeVariants = cva([...badgeRecipes.base], {
   variants: {
     variant: {
-      default: [...primitiveTokenRecipes.badge.default],
-      primary: [...primitiveTokenRecipes.badge.primary],
-      feature: [...primitiveTokenRecipes.badge.feature],
+      default: [...badgeRecipes.default],
+      primary: [...badgeRecipes.primary],
+      feature: [...badgeRecipes.feature],
     },
     size: {
       xs: badgeSizeStyles.xs,

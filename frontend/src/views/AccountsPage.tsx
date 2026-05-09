@@ -3,11 +3,11 @@ import { RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { cn } from '@/ui/primitives';
 import {
-  font as primitiveTypographyRecipes,
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
   text as uiTextRecipes,
+  font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { Toast } from '../components/Toast';
 import AccountsSummaryStats from '../features/plaid/components/AccountsSummaryStats';
@@ -24,7 +24,7 @@ const syncButtonClasses = cn(
   'inline-flex items-center gap-2 rounded-full px-5 py-2',
   ...semanticBorders.control,
   ...semanticSurfaces.card,
-  primitiveTypographyRecipes.bodyStrong,
+  uiTypographyRecipes.bodyStrong,
   uiTextRecipes.body,
   ...semanticEffects.glassShadow,
   'transition-all duration-200 hover:-translate-y-[1px]',

@@ -1,8 +1,17 @@
 import type React from 'react';
-import { text as uiTextRecipes } from '@/ui/recipes';
+import { heroStatSemanticThemes } from '@/components/widgets/HeroStatCard';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { getTagThemeForCategory } from '@/utils/categories';
-import { heroStatCard, pill as pillRecipes } from './recipes';
 import { cn } from './utils';
+
+export const pillRecipes = {
+  base: `inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 ${uiTypographyRecipes.badge}`,
+  dot: 'h-2 w-2 rounded-full shadow-[0_0_0_1px_var(--color-border-glass)] dark:shadow-[0_0_0_1px_var(--color-effect-glass-shadow)]',
+  fadeLeft:
+    'pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card)]',
+  fadeRight:
+    'pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card)]',
+} as const;
 
 export type PillVariant = 'category' | 'status' | 'dot';
 export type PillTone = 'success' | 'info' | 'warning' | 'danger';
@@ -15,10 +24,10 @@ export interface PillProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const statusThemes = {
-  success: heroStatCard.semantic.success,
-  info: heroStatCard.semantic.info,
-  warning: heroStatCard.semantic.warning,
-  danger: heroStatCard.semantic.danger,
+  success: heroStatSemanticThemes.success,
+  info: heroStatSemanticThemes.info,
+  warning: heroStatSemanticThemes.warning,
+  danger: heroStatSemanticThemes.danger,
 } as const;
 
 export function Pill({

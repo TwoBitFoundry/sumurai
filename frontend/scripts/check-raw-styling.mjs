@@ -31,7 +31,7 @@ function isAllowlisted(relPosix) {
   if (relPosix.startsWith('ui/generated/')) {
     return true;
   }
-  if (relPosix === 'ui/tokens.ts' || relPosix === 'ui/recipes.ts' || relPosix === 'ui/primitives/recipes.ts') {
+  if (relPosix === 'ui/tokens.ts' || relPosix === 'ui/recipes.ts') {
     return true;
   }
   if (relPosix.startsWith('ui/primitives/')) {

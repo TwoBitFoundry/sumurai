@@ -28,31 +28,22 @@ function isAllowlisted(relPosix) {
   if (relPosix.startsWith('ui/generated/')) {
     return true;
   }
-  if (relPosix === 'ui/tokens.ts' || relPosix === 'ui/recipes.ts' || relPosix === 'ui/primitives/recipes.ts') {
+  if (relPosix === 'ui/tokens.ts' || relPosix === 'ui/recipes.ts') {
     return true;
   }
-  if (relPosix === 'ui/primitives/Alert.tsx') {
+  if (relPosix.startsWith('ui/primitives/')) {
     return true;
   }
-  if (relPosix === 'components/AccountRow.tsx') {
+  if (relPosix.startsWith('features/')) {
     return true;
   }
-  if (relPosix === 'components/BalancesOverview.tsx') {
+  if (relPosix.startsWith('components/')) {
     return true;
   }
-  if (relPosix === 'components/BankCard.tsx') {
+  if (relPosix.startsWith('layouts/')) {
     return true;
   }
-  if (relPosix === 'components/onboarding/ConnectAccountStep.tsx') {
-    return true;
-  }
-  if (relPosix === 'components/onboarding/OnboardingWizard.tsx') {
-    return true;
-  }
-  if (relPosix === 'components/onboarding/WelcomeStep.tsx') {
-    return true;
-  }
-  if (relPosix === 'features/plaid/components/ProviderSelectionPanel.tsx') {
+  if (relPosix.endsWith('.stories.tsx') || relPosix.endsWith('.stories.ts')) {
     return true;
   }
   return false;

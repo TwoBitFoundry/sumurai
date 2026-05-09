@@ -2,21 +2,60 @@ import { cva } from 'class-variance-authority';
 import { Moon, Settings, Sun } from 'lucide-react';
 import Image from 'next/image';
 import React from 'react';
-import { font as uiTypographyRecipes } from '@/ui/recipes';
+import {
+  border as semanticBorders,
+  surface as semanticSurfaces,
+  text as semanticTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import { Button } from './Button';
-import { primitiveTokenRecipes } from './recipes';
 import { cn } from './utils';
 
-const titleBarVariants = cva([...primitiveTokenRecipes.appTitleBar.base], {
+export const appTitleBarRecipes = {
+  base: ['sticky top-0 z-50 border-b backdrop-blur-sm transition-all duration-200 ease-out'],
+  shell: [
+    ...semanticSurfaces.card,
+    ...semanticBorders.divider,
+    'dark:bg-[var(--color-surface-solid-panel)]',
+  ],
+  height: {
+    scrolled: 'h-14',
+    default: 'h-16',
+  },
+  logo: {
+    container: ['flex', 'items-center', 'gap-2', semanticTextRecipes.primary],
+    scrolled: 'text-xl',
+    default: 'text-3xl',
+    wordmark: uiTypographyRecipes.pageTitleWordmark,
+    fontFamily: { fontFamily: "'Cal Sans', system-ui, sans-serif" },
+  },
+  tabIdle: [
+    ...semanticBorders.subtle,
+    ...semanticSurfaces.card,
+    semanticTextRecipes.muted,
+    'hover:text-slate-900 dark:hover:text-white',
+    'hover:border-[var(--color-border-hover-accent)] dark:hover:border-[var(--color-border-hover-accent)]',
+    'hover:shadow-[0_14px_32px_-18px_var(--color-effect-accent-hover)]',
+  ].join(' '),
+  tabHalo:
+    'after:absolute after:inset-[-28%] after:rounded-[999px] after:bg-[radial-gradient(circle_at_35%_30%,rgba(14,165,233,0.16),transparent_62%)] after:opacity-0 after:transition-opacity after:duration-300 hover:after:opacity-90 dark:after:bg-[radial-gradient(circle_at_35%_30%,rgba(56,189,248,0.22),transparent_62%)]',
+  divider: 'w-px h-6 bg-[var(--color-border-divider)] dark:bg-[var(--color-border-divider)]',
+  themeToggle:
+    'rounded-lg !bg-[color:color-mix(in_srgb,var(--color-brand-amber)_80%,transparent)] dark:!bg-[color:color-mix(in_srgb,var(--color-brand-violet)_80%,transparent)] hover:!bg-[color:color-mix(in_srgb,var(--color-brand-amber)_90%,transparent)] dark:hover:!bg-[color:color-mix(in_srgb,var(--color-brand-violet)_90%,transparent)] !border !border-[color:color-mix(in_srgb,var(--color-brand-amber)_30%,transparent)] dark:!border-[color:color-mix(in_srgb,var(--color-brand-violet)_30%,transparent)] !text-white backdrop-blur-sm transition-colors',
+  settingsIdle:
+    'border border-[var(--color-border-divider)] dark:border-[var(--color-border-divider)] bg-[var(--color-surface-muted-chip)] dark:bg-[var(--color-surface-muted-chip)] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row)]',
+} as const;
+
+const titleBarVariants = cva([...appTitleBarRecipes.base], {
   variants: {
     state: {
-      unauthenticated: [...primitiveTokenRecipes.appTitleBar.shell],
-      onboarding: [...primitiveTokenRecipes.appTitleBar.shell],
-      authenticated: [...primitiveTokenRecipes.appTitleBar.shell],
+      unauthenticated: [...appTitleBarRecipes.shell],
+      onboarding: [...appTitleBarRecipes.shell],
+      authenticated: [...appTitleBarRecipes.shell],
     },
     scrolled: {
-      true: primitiveTokenRecipes.appTitleBar.height.scrolled,
-      false: primitiveTokenRecipes.appTitleBar.height.default,
+      true: appTitleBarRecipes.height.scrolled,
+      false: appTitleBarRecipes.height.default,
     },
   },
   defaultVariants: {
@@ -99,11 +138,9 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
             <div className={cn('flex', 'items-center', 'gap-6')}>
               <div
                 className={cn(
-                  ...primitiveTokenRecipes.appTitleBar.logo.container,
-                  scrolled
-                    ? primitiveTokenRecipes.appTitleBar.logo.scrolled
-                    : primitiveTokenRecipes.appTitleBar.logo.default,
-                  primitiveTokenRecipes.appTitleBar.logo.wordmark
+                  ...appTitleBarRecipes.logo.container,
+                  scrolled ? appTitleBarRecipes.logo.scrolled : appTitleBarRecipes.logo.default,
+                  appTitleBarRecipes.logo.wordmark
                 )}
               >
                 <Image
@@ -127,8 +164,8 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                       variant={currentTab === key ? 'tabActive' : 'tab'}
                       size={chromeSize}
                       className={cn(
-                        primitiveTokenRecipes.appTitleBar.tabHalo,
-                        currentTab !== key ? primitiveTokenRecipes.appTitleBar.tabIdle : undefined
+                        appTitleBarRecipes.tabHalo,
+                        currentTab !== key ? appTitleBarRecipes.tabIdle : undefined
                       )}
                     >
                       {label}
@@ -151,7 +188,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                 onClick={onThemeToggle}
                 variant="secondary"
                 size={chromeSize}
-                className={cn(primitiveTokenRecipes.appTitleBar.themeToggle)}
+                className={cn(appTitleBarRecipes.themeToggle)}
                 aria-label="Toggle theme"
                 title="Toggle theme"
               >
@@ -170,9 +207,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                   size={chromeSize}
                   className={cn(
                     'rounded-xl',
-                    currentTab !== 'settings'
-                      ? primitiveTokenRecipes.appTitleBar.settingsIdle
-                      : undefined
+                    currentTab !== 'settings' ? appTitleBarRecipes.settingsIdle : undefined
                   )}
                   aria-label="Settings"
                   title="Settings"

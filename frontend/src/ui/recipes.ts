@@ -117,6 +117,10 @@ export const effect = {
     'shadow-[0_18px_45px_-25px_var(--color-effect-glass-shadow)]',
     'dark:shadow-[0_18px_45px_-25px_var(--color-effect-glass-shadow)]',
   ],
+  pageShellInsetRing: [
+    'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]',
+    'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.48)]',
+  ],
 } as const;
 
 export const status = {
@@ -237,5 +241,3 @@ export const chrome = {
 
 export const semanticTextRecipes = text;
 export const semanticPlaceholderTextRecipes = placeholder;
-export const primitiveTypographyRecipes = font;
-export const buttonChromeInset = chrome;

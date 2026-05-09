@@ -375,7 +375,96 @@ function loadInventory(docsDir) {
   return JSON.parse(raw);
 }
 
+function isForbiddenRecipesModuleSpecifier(moduleSpecifier) {
+  if (moduleSpecifier === '@/ui/primitives/recipes') {
+    return true;
+  }
+  return /^@\/ui\/primitives\/[^/]+\/recipes$/.test(moduleSpecifier);
+}
+
+function isPrimitiveComponentTsx(relPosix) {
+  return (
+    relPosix.startsWith('ui/primitives/') &&
+    relPosix.endsWith('.tsx') &&
+    !relPosix.endsWith('.stories.tsx')
+  );
+}
+
+function isAllowedPrimitiveAliasImport(moduleSpecifier) {
+  if (moduleSpecifier === '@/ui/recipes') {
+    return true;
+  }
+  if (moduleSpecifier.startsWith('@/ui/tokens')) {
+    return true;
+  }
+  if (moduleSpecifier.startsWith('@/utils/')) {
+    return true;
+  }
+  if (moduleSpecifier.startsWith('@/context/')) {
+    return true;
+  }
+  if (moduleSpecifier.startsWith('@/components/')) {
+    return true;
+  }
+  return false;
+}
+
+function isAllowedPrimitiveImport(relPosix, moduleSpecifier) {
+  if (!moduleSpecifier.startsWith('@/')) {
+    return true;
+  }
+  return isAllowedPrimitiveAliasImport(moduleSpecifier);
+}
+
+function checkRecipesAndPrimitiveImports(srcRoot) {
+  const files = walkFiles(srcRoot).filter((file) => file.endsWith('.ts') || file.endsWith('.tsx'));
+  const problems = [];
+
+  for (const file of files) {
+    const rel = posixRelative(srcRoot, file);
+    const sourceFile = parseSourceFile(file);
+
+    for (const statement of sourceFile.statements) {
+      if (!ts.isImportDeclaration(statement)) {
+        continue;
+      }
+      if (!ts.isStringLiteral(statement.moduleSpecifier)) {
+        continue;
+      }
+      const moduleSpecifier = statement.moduleSpecifier.text;
+
+      if (isForbiddenRecipesModuleSpecifier(moduleSpecifier)) {
+        problems.push({ file: rel, moduleSpecifier, reason: 'forbidden primitives recipes module' });
+        continue;
+      }
+
+      if (rel.startsWith('ui/primitives/') && moduleSpecifier === './recipes') {
+        problems.push({ file: rel, moduleSpecifier, reason: 'forbidden ./recipes import under ui/primitives' });
+        continue;
+      }
+
+      if (isPrimitiveComponentTsx(rel) && !isAllowedPrimitiveImport(rel, moduleSpecifier)) {
+        problems.push({
+          file: rel,
+          moduleSpecifier,
+          reason:
+            'primitive .tsx may only import @/ from @/ui/recipes, @/ui/tokens, @/utils/, @/context/, or @/components/',
+        });
+      }
+    }
+  }
+
+  if (problems.length > 0) {
+    const details = problems
+      .map((problem) => `  ${problem.file} -> ${problem.moduleSpecifier} (${problem.reason})`)
+      .join('\n');
+    throw new Error(`UI import policy violations:\n${details}`);
+  }
+}
+
 function checkUiImports(srcRoot, docsDir) {
+  checkRecipesAndPrimitiveImports(srcRoot);
+
   const inventory = loadInventory(docsDir);
   const allowedBySource = new Map();
 

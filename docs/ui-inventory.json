@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-09T20:36:29.226Z",
+  "generatedAt": "2026-05-09T21:56:47.463Z",
   "srcRoot": "/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src",
   "designPath": "/Users/kodybuss/Repos/two-bit-foundry/sumurai/DESIGN.md",
   "sources": [
@@ -13,13 +13,19 @@
             "components/onboarding/WelcomeStep.tsx",
             "features/budgets/components/BudgetList.tsx",
             "features/transactions/components/TransactionsToolbar.tsx",
+            "layouts/PageLayout.tsx",
             "storybook/screenSlices/AccountsScreenSlice.tsx",
             "storybook/screenSlices/DashboardScreenSlice.tsx",
-            "ui/primitives/recipes.ts",
+            "ui/primitives/AppTitleBar.tsx",
+            "ui/primitives/Button.tsx",
+            "ui/primitives/GlassCard.tsx",
+            "ui/primitives/IconButton.tsx",
+            "ui/primitives/MenuDropdown.tsx",
+            "ui/primitives/PaginationButton.tsx",
             "views/AccountsPage.tsx",
             "views/DashboardPage.tsx"
           ],
-          "consumerCount": 9
+          "consumerCount": 15
         },
         {
           "symbol": "border as uiBorderRecipes",
@@ -36,9 +42,9 @@
           "consumerCount": 8
         },
         {
-          "symbol": "chrome as buttonChromeInset",
+          "symbol": "chrome",
           "consumerFiles": [
-            "ui/primitives/recipes.ts"
+            "ui/primitives/Button.tsx"
           ],
           "consumerCount": 1
         },
@@ -49,13 +55,19 @@
             "components/onboarding/WelcomeStep.tsx",
             "features/budgets/components/BudgetList.tsx",
             "features/budgets/components/BudgetProgress.tsx",
+            "layouts/PageLayout.tsx",
             "storybook/screenSlices/AccountsScreenSlice.tsx",
             "storybook/screenSlices/DashboardScreenSlice.tsx",
-            "ui/primitives/recipes.ts",
+            "ui/primitives/Badge.tsx",
+            "ui/primitives/Button.tsx",
+            "ui/primitives/GlassCard.tsx",
+            "ui/primitives/IconButton.tsx",
+            "ui/primitives/MenuDropdown.tsx",
+            "ui/primitives/PaginationButton.tsx",
             "views/AccountsPage.tsx",
             "views/DashboardPage.tsx"
           ],
-          "consumerCount": 9
+          "consumerCount": 15
         },
         {
           "symbol": "effect as uiEffectRecipes",
@@ -76,17 +88,6 @@
           "consumerCount": 1
         },
         {
-          "symbol": "font as primitiveTypographyRecipes",
-          "consumerFiles": [
-            "components/onboarding/ConnectAccountStep.tsx",
-            "components/onboarding/WelcomeStep.tsx",
-            "storybook/screenSlices/AccountsScreenSlice.tsx",
-            "ui/primitives/recipes.ts",
-            "views/AccountsPage.tsx"
-          ],
-          "consumerCount": 5
-        },
-        {
           "symbol": "font as uiTypographyRecipes",
           "consumerFiles": [
             "SessionManager.tsx",
@@ -103,6 +104,7 @@
             "components/onboarding/ConnectAccountStep.tsx",
             "components/onboarding/OnboardingWizard.tsx",
             "components/onboarding/WelcomeStep.tsx",
+            "components/widgets/HeroStatCard.tsx",
             "features/analytics/components/DashboardChartCard.tsx",
             "features/analytics/components/SpendingByCategoryChart.tsx",
             "features/analytics/components/TopMerchantsList.tsx",
@@ -113,20 +115,26 @@
             "features/plaid/components/ProviderSelectionPanel.tsx",
             "features/transactions/components/TransactionsFilters.tsx",
             "features/transactions/components/TransactionsTable.tsx",
+            "layouts/PageLayout.tsx",
+            "storybook/screenSlices/AccountsScreenSlice.tsx",
             "storybook/screenSlices/AuthenticatedScreenShell.tsx",
             "storybook/screenSlices/DashboardScreenSlice.tsx",
             "storybook/screenSlices/SettingsScreenSlice.tsx",
             "storybook/shells/AppChrome.stories.tsx",
             "ui/primitives/Alert.tsx",
             "ui/primitives/AppTitleBar.tsx",
+            "ui/primitives/Badge.tsx",
             "ui/primitives/Button.tsx",
+            "ui/primitives/EmptyState.tsx",
             "ui/primitives/FormLabel.tsx",
+            "ui/primitives/Pill.tsx",
             "ui/primitives/RequirementPill.tsx",
+            "views/AccountsPage.tsx",
             "views/DashboardPage.tsx",
             "views/SettingsPage.tsx",
             "views/TransactionsPage.tsx"
           ],
-          "consumerCount": 36
+          "consumerCount": 43
         },
         {
           "symbol": "placeholder as uiPlaceholderRecipes",
@@ -139,9 +147,12 @@
           "symbol": "status as semanticStatus",
           "consumerFiles": [
             "features/budgets/components/BudgetProgress.tsx",
-            "ui/primitives/recipes.ts"
+            "layouts/PageLayout.tsx",
+            "ui/primitives/Badge.tsx",
+            "ui/primitives/Button.tsx",
+            "ui/primitives/IconButton.tsx"
           ],
-          "consumerCount": 2
+          "consumerCount": 5
         },
         {
           "symbol": "status as uiStatusRecipes",
@@ -164,13 +175,21 @@
             "components/onboarding/WelcomeStep.tsx",
             "features/budgets/components/BudgetList.tsx",
             "features/budgets/components/BudgetProgress.tsx",
+            "layouts/PageLayout.tsx",
             "storybook/screenSlices/AccountsScreenSlice.tsx",
             "storybook/screenSlices/DashboardScreenSlice.tsx",
-            "ui/primitives/recipes.ts",
+            "ui/primitives/AppTitleBar.tsx",
+            "ui/primitives/Badge.tsx",
+            "ui/primitives/Button.tsx",
+            "ui/primitives/EmptyState.tsx",
+            "ui/primitives/GlassCard.tsx",
+            "ui/primitives/IconButton.tsx",
+            "ui/primitives/MenuDropdown.tsx",
+            "ui/primitives/PaginationButton.tsx",
             "views/AccountsPage.tsx",
             "views/DashboardPage.tsx"
           ],
-          "consumerCount": 9
+          "consumerCount": 17
         },
         {
           "symbol": "surface as uiSurfaceRecipes",
@@ -190,9 +209,16 @@
         {
           "symbol": "text as semanticTextRecipes",
           "consumerFiles": [
-            "ui/primitives/recipes.ts"
+            "components/widgets/HeroStatCard.tsx",
+            "layouts/PageLayout.tsx",
+            "ui/primitives/AppTitleBar.tsx",
+            "ui/primitives/Badge.tsx",
+            "ui/primitives/Button.tsx",
+            "ui/primitives/EmptyState.tsx",
+            "ui/primitives/Input.tsx",
+            "ui/primitives/MenuDropdown.tsx"
           ],
-          "consumerCount": 1
+          "consumerCount": 8
         },
         {
           "symbol": "text as uiTextRecipes",

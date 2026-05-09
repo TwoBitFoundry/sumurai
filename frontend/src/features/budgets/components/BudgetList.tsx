@@ -2,8 +2,7 @@ import { CheckIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/outl
 import { TrashIcon as TrashSolidIcon } from '@heroicons/react/24/solid';
 import { Target } from 'lucide-react';
 import React from 'react';
-import { cn, EmptyState, IconButton, Input } from '@/ui/primitives';
-import { primitiveTokenRecipes } from '@/ui/primitives/recipes';
+import { cn, EmptyState, IconButton, Input, Pill } from '@/ui/primitives';
 import {
   border as semanticBorders,
   effect as semanticEffects,
@@ -104,19 +103,15 @@ export function BudgetList({
               )}
             />
             <div className={cn('flex', 'items-start', 'justify-between', 'gap-3')}>
-              <div
+              <Pill
+                variant="category"
+                categoryName={displayName}
                 className={cn(
-                  primitiveTokenRecipes.pill.base,
-                  'transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
-                  tagTheme.tag
+                  'transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10'
                 )}
               >
-                <span
-                  className={cn(primitiveTokenRecipes.pill.dot, tagTheme.dot)}
-                  aria-hidden="true"
-                />
                 {displayName}
-              </div>
+              </Pill>
               <div className={cn('flex', 'items-center', 'gap-2', uiTypographyRecipes.label)}>
                 {isEditing ? (
                   <>

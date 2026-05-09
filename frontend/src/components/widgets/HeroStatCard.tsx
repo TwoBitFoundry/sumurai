@@ -1,6 +1,6 @@
 import React, { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/ui/primitives';
-import { heroStatCard as heroStatCardRecipes, pill as pillRecipes } from '@/ui/primitives/recipes';
+import { text as semanticTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { getHeroAccentTheme, heroAccents } from '@/ui/tokens';
 import { getTagThemeForCategory } from '../../utils/categories';
 
@@ -27,8 +27,54 @@ export type HeroStatCardProps = {
   minHeightClassName?: string;
 };
 
-const classNames = (...classes: (string | false | null | undefined)[]) =>
-  classes.filter(Boolean).join(' ');
+export const heroStatSemanticThemes = {
+  success: {
+    wrapper:
+      'border border-emerald-200/70 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-200 bg-[linear-gradient(135deg,_rgba(16,185,129,0.24),_rgba(16,185,129,0.1))] dark:bg-[linear-gradient(135deg,_rgba(34,197,94,0.22),_rgba(34,197,94,0.08))] shadow-[0_14px_40px_-28px_rgba(16,185,129,0.52)] backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
+    dot: 'bg-emerald-500/90 dark:bg-emerald-300/80',
+  },
+  info: {
+    wrapper:
+      'border border-sky-200/70 dark:border-sky-500/40 text-sky-700 dark:text-sky-200 bg-[linear-gradient(135deg,_rgba(14,165,233,0.22),_rgba(14,165,233,0.08))] dark:bg-[linear-gradient(135deg,_rgba(56,189,248,0.22),_rgba(56,189,248,0.08))] shadow-[0_14px_40px_-28px_rgba(14,165,233,0.52)] backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
+    dot: 'bg-sky-500/90 dark:bg-sky-300/80',
+  },
+  warning: {
+    wrapper:
+      'border border-amber-200/70 dark:border-amber-500/40 text-amber-700 dark:text-amber-200 bg-[linear-gradient(135deg,_rgba(245,158,11,0.24),_rgba(245,158,11,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,191,36,0.22),_rgba(251,191,36,0.08))] shadow-[0_14px_40px_-28px_rgba(245,158,11,0.5)] backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
+    dot: 'bg-amber-500/90 dark:bg-amber-300/85',
+  },
+  danger: {
+    wrapper:
+      'border border-rose-200/70 dark:border-rose-500/40 text-rose-700 dark:text-rose-200 bg-[linear-gradient(135deg,_rgba(244,63,94,0.24),_rgba(244,63,94,0.1))] dark:bg-[linear-gradient(135deg,_rgba(251,113,133,0.22),_rgba(251,113,133,0.08))] shadow-[0_14px_40px_-28px_rgba(244,63,94,0.48)] backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
+    dot: 'bg-rose-500/90 dark:bg-rose-300/80',
+  },
+} as const;
+
+const heroFooterPillRecipes = {
+  base: `inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 ${uiTypographyRecipes.badge}`,
+  dot: 'h-2 w-2 rounded-full shadow-[0_0_0_1px_var(--color-border-glass)] dark:shadow-[0_0_0_1px_var(--color-effect-glass-shadow)]',
+  fadeLeft:
+    'pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card)]',
+  fadeRight:
+    'pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card)]',
+} as const;
+
+export const heroStatCardRecipes = {
+  base: 'hero-stat-card group relative rounded-2xl transition-colors duration-300',
+  shell:
+    'relative h-full w-full overflow-hidden rounded-2xl border-2 bg-white/80 p-4 transform-gpu origin-center will-change-transform transition-transform duration-200 dark:bg-[#111a2f]/70',
+  title: `${uiTypographyRecipes.label} ${semanticTextRecipes.label} transition-colors duration-500`,
+  value: `${uiTypographyRecipes.cardTitle} ${semanticTextRecipes.primary} transition-colors duration-500`,
+  suffix: `${uiTypographyRecipes.captionStrong} ${semanticTextRecipes.body} transition-colors duration-500`,
+  overlay:
+    'pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100',
+  ring: 'pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] opacity-70',
+  ringLine: 'absolute inset-0 rounded-[calc(1rem-2px)] ring-2',
+  footer: 'relative',
+  footerInner:
+    'scrollbar-hide flex items-center gap-1.5 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+  semantic: heroStatSemanticThemes,
+} as const;
 
 function accentFromIndex(index?: number): Accent {
   if (!index || index < 1) return 'emerald';
@@ -83,9 +129,9 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
   } as CSSProperties;
 
   return (
-    <div className={classNames(heroStatCardRecipes.base, className)}>
+    <div className={cn(heroStatCardRecipes.base, className)}>
       <div
-        className={classNames(
+        className={cn(
           heroStatCardRecipes.shell,
           styles.border,
           styles.borderDark,
@@ -116,13 +162,13 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
         </div>
 
         <div
-          className={classNames(
+          className={cn(
             'relative z-10 flex h-full flex-col gap-2',
             hasFooter ? 'justify-between' : 'justify-start'
           )}
         >
           <div className="flex items-center gap-2">
-            {icon ? <span className={classNames('h-4 w-4', styles.icon)}>{icon}</span> : null}
+            {icon ? <span className={cn('h-4 w-4', styles.icon)}>{icon}</span> : null}
             <div className={cn(heroStatCardRecipes.title)}>{title}</div>
           </div>
           <div className="flex items-baseline gap-2">
@@ -138,9 +184,9 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {subtext ? (
-                  <span className={classNames(pillRecipes.base, styles.defaultPill)}>
+                  <span className={cn(heroFooterPillRecipes.base, styles.defaultPill)}>
                     <span
-                      className={classNames(pillRecipes.dot, styles.defaultDot)}
+                      className={cn(heroFooterPillRecipes.dot, styles.defaultDot)}
                       aria-hidden="true"
                     />
                     <span className="whitespace-nowrap">{subtext}</span>
@@ -153,10 +199,10 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
                     return (
                       <span
                         key={`${p.type}-${p.categoryName || p.label}`}
-                        className={classNames(pillRecipes.base, theme.tag)}
+                        className={cn(heroFooterPillRecipes.base, theme.tag)}
                       >
                         <span
-                          className={classNames(pillRecipes.dot, theme.dot)}
+                          className={cn(heroFooterPillRecipes.dot, theme.dot)}
                           aria-hidden="true"
                         />
                         <span className="whitespace-nowrap">{p.label}</span>
@@ -175,16 +221,19 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
                   return (
                     <span
                       key={`${p.type}-${p.label}`}
-                      className={classNames(pillRecipes.base, wrapperClass)}
+                      className={cn(heroFooterPillRecipes.base, wrapperClass)}
                     >
-                      <span className={classNames(pillRecipes.dot, dotClass)} aria-hidden="true" />
+                      <span
+                        className={cn(heroFooterPillRecipes.dot, dotClass)}
+                        aria-hidden="true"
+                      />
                       <span className="whitespace-nowrap">{p.label}</span>
                     </span>
                   );
                 })}
               </div>
-              {showLeftFade ? <div className={cn(pillRecipes.fadeLeft)} /> : null}
-              {showRightFade ? <div className={cn(pillRecipes.fadeRight)} /> : null}
+              {showLeftFade ? <div className={cn(heroFooterPillRecipes.fadeLeft)} /> : null}
+              {showRightFade ? <div className={cn(heroFooterPillRecipes.fadeRight)} /> : null}
             </div>
           ) : null}
         </div>

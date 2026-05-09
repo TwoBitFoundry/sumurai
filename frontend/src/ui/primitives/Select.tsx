@@ -1,7 +1,9 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
-import { selectControl } from './recipes';
+import { inputControl } from './Input';
 import { cn } from './utils';
+
+export const selectControl = inputControl;
 
 const selectVariants = cva([...selectControl.base], {
   variants: {

@@ -1,7 +1,6 @@
 import { Alert, Badge, Button } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
 import {
-  font as primitiveTypographyRecipes,
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
@@ -64,16 +63,13 @@ const onboardingIconGlow =
 
 const onboardingTitleStrong = [
   'relative z-10 mt-3',
-  primitiveTypographyRecipes.bodyStrong,
+  uiTypographyRecipes.bodyStrong,
   'dark:text-white',
 ] as const;
-const onboardingTitleStrongInline = [
-  primitiveTypographyRecipes.bodyStrong,
-  'dark:text-white',
-] as const;
-const onboardingRowBodyMuted = [primitiveTypographyRecipes.caption, uiTextRecipes.body] as const;
+const onboardingTitleStrongInline = [uiTypographyRecipes.bodyStrong, 'dark:text-white'] as const;
+const onboardingRowBodyMuted = [uiTypographyRecipes.caption, uiTextRecipes.body] as const;
 const onboardingEyebrowCaps = [
-  primitiveTypographyRecipes.label,
+  uiTypographyRecipes.label,
   'uppercase transition-colors duration-300 ease-out',
 ] as const;
 const onboardingProviderRow = [

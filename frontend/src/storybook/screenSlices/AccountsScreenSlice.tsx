@@ -9,18 +9,18 @@ import { PageLayout } from '@/layouts/PageLayout';
 import { sampleBankConnections } from '@/storybook/fixtures/plaid';
 import { cn } from '@/ui/primitives';
 import {
-  font as primitiveTypographyRecipes,
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
   text as uiTextRecipes,
+  font as uiTypographyRecipes,
 } from '@/ui/recipes';
 
 const syncButtonClasses = cn(
   'inline-flex items-center gap-2 rounded-full px-5 py-2',
   ...semanticBorders.control,
   ...semanticSurfaces.card,
-  primitiveTypographyRecipes.bodyStrong,
+  uiTypographyRecipes.bodyStrong,
   uiTextRecipes.body,
   ...semanticEffects.glassShadow,
   'transition-all duration-200 hover:-translate-y-[1px]',
