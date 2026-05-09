@@ -1,8 +1,35 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import type React from 'react';
 import { cloneElement, isValidElement, useState } from 'react';
-import { designTokens } from '@/ui/tokens';
+import {
+  border as semanticBorders,
+  effect as semanticEffects,
+  surface as semanticSurfaces,
+  text as semanticTextRecipes,
+} from '@/ui/recipes';
 import { cn } from './utils';
+
+export const menuDropdownRecipes = {
+  content: [
+    'absolute right-0 z-20 mt-3 w-48',
+    'overflow-hidden rounded-2xl',
+    ...semanticBorders.glass,
+    ...semanticSurfaces.solidPanel,
+    'p-2',
+    ...semanticEffects.glassShadow,
+    'backdrop-blur-md',
+    'dark:shadow-[0_28px_70px_-36px_var(--color-effect-glass-shadow)]',
+  ],
+  item: [
+    'flex w-full items-center gap-2',
+    'rounded-xl px-3 py-2',
+    `text-left ${semanticTextRecipes.muted}`,
+    'transition-all duration-200 ease-out',
+    ...semanticSurfaces.hoverRow,
+    'dark:text-slate-300',
+    'dark:hover:bg-[var(--color-surface-hover-row)]',
+  ],
+} as const;
 
 export interface MenuDropdownProps {
   trigger: React.ReactNode;
@@ -61,7 +88,7 @@ export function MenuDropdown({
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
-            className={cn(designTokens.components.menuDropdown.content, contentClassName)}
+            className={cn(menuDropdownRecipes.content, contentClassName)}
             onClick={() => setOpen(false)}
           >
             {children}
@@ -89,11 +116,7 @@ export interface MenuItemProps extends React.ButtonHTMLAttributes<HTMLButtonElem
  */
 export function MenuItem({ icon, children, className, ...props }: MenuItemProps) {
   return (
-    <button
-      type="button"
-      className={cn(designTokens.components.menuDropdown.item, className)}
-      {...props}
-    >
+    <button type="button" className={cn(menuDropdownRecipes.item, className)} {...props}>
       {icon}
       {children}
     </button>

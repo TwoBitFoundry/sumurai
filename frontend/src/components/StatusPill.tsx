@@ -1,7 +1,7 @@
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import type React from 'react';
 import { cn } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import { status as uiStatusRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
 type ConnectionStatus = 'connected' | 'needs_reauth' | 'error';
 
@@ -18,17 +18,17 @@ export const StatusPill: React.FC<StatusPillProps> = ({ status, className }) => 
   const statusConfig = {
     connected: {
       label: 'Connected',
-      className: `${designTokens.status.success.surface.join(' ')} ${designTokens.status.success.text.join(' ')} ring-1 ring-[var(--color-status-success-border)] dark:ring-[var(--color-status-success-border-dark)]`,
+      className: `${uiStatusRecipes.success.surface.join(' ')} ${uiStatusRecipes.success.text.join(' ')} ring-1 ring-[var(--color-status-success-border)] dark:ring-[var(--color-status-success-border)]`,
       Icon: CheckCircle2,
     },
     needs_reauth: {
       label: 'Re-auth needed',
-      className: `${designTokens.status.warning.surface.join(' ')} ${designTokens.status.warning.text.join(' ')} ring-1 ring-[var(--color-status-warning-border)] dark:ring-[var(--color-status-warning-border-dark)]`,
+      className: `${uiStatusRecipes.warning.surface.join(' ')} ${uiStatusRecipes.warning.text.join(' ')} ring-1 ring-[var(--color-status-warning-border)] dark:ring-[var(--color-status-warning-border)]`,
       Icon: AlertTriangle,
     },
     error: {
       label: 'Error',
-      className: `${designTokens.status.danger.surface.join(' ')} ${designTokens.status.danger.text.join(' ')} ring-1 ring-[var(--color-status-danger-border)] dark:ring-[var(--color-status-danger-border-dark)]`,
+      className: `${uiStatusRecipes.danger.surface.join(' ')} ${uiStatusRecipes.danger.text.join(' ')} ring-1 ring-[var(--color-status-danger-border)] dark:ring-[var(--color-status-danger-border)]`,
       Icon: AlertTriangle,
     },
   } as const;
@@ -39,7 +39,7 @@ export const StatusPill: React.FC<StatusPillProps> = ({ status, className }) => 
     <span
       className={classNames(
         'inline-flex items-center gap-1.5 px-2 py-1 rounded-full',
-        designTokens.typography.label,
+        uiTypographyRecipes.label,
         statusClassName,
         className
       )}

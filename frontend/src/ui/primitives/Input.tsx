@@ -1,19 +1,67 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
-import { designTokens } from '@/ui/tokens';
+import { text as semanticTextRecipes } from '@/ui/recipes';
 import { cn } from './utils';
 
-const inputVariants = cva([...designTokens.components.input.base], {
+export const inputControl = {
+  base: [
+    'w-full',
+    'px-4',
+    'border',
+    'font-medium',
+    'shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)]',
+    'transition-all duration-200 ease-out',
+    'focus:outline-none',
+    'disabled:cursor-not-allowed disabled:opacity-60',
+  ],
+  default: [
+    `bg-white ${semanticTextRecipes.primary}`,
+    'border-black/10',
+    'focus:ring-2 focus:ring-sky-400',
+    'focus:ring-offset-2 focus:ring-offset-white',
+    'dark:bg-[#111a2f]',
+    'dark:border-white/12',
+    'dark:focus:ring-sky-400/80',
+    'dark:focus:ring-offset-[#0f172a]',
+  ],
+  invalid: [
+    `bg-white ${semanticTextRecipes.primary}`,
+    'border-red-300',
+    'focus:ring-2 focus:ring-red-400',
+    'focus:ring-offset-2 focus:ring-offset-white',
+    'dark:bg-[#111a2f]',
+    'dark:border-red-600/80',
+    'dark:focus:ring-red-400/75',
+    'dark:focus:ring-offset-[#0f172a]',
+  ],
+  glass: [
+    `bg-white/80 ${semanticTextRecipes.body}`,
+    'border-white/60',
+    'shadow-[0_18px_45px_-32px_rgba(15,23,42,0.5)]',
+    'focus:ring-2 focus:ring-sky-400/80',
+    'focus:ring-offset-2 focus:ring-offset-white',
+    `dark:bg-[#111a2f]/80 ${semanticTextRecipes.inverse}`,
+    'dark:border-white/12',
+    'dark:focus:ring-offset-[#0f172a]',
+  ],
+  size: {
+    sm: 'py-1.5 text-xs rounded-lg',
+    md: 'py-2.5 text-sm rounded-xl',
+    lg: 'py-3 text-base rounded-xl',
+  },
+} as const;
+
+const inputVariants = cva([...inputControl.base], {
   variants: {
     variant: {
-      default: [...designTokens.components.input.default],
-      invalid: [...designTokens.components.input.invalid],
-      glass: [...designTokens.components.input.glass],
+      default: [...inputControl.default],
+      invalid: [...inputControl.invalid],
+      glass: [...inputControl.glass],
     },
     inputSize: {
-      sm: designTokens.components.input.size.sm,
-      md: designTokens.components.input.size.md,
-      lg: designTokens.components.input.size.lg,
+      sm: inputControl.size.sm,
+      md: inputControl.size.md,
+      lg: inputControl.size.lg,
     },
   },
   defaultVariants: {

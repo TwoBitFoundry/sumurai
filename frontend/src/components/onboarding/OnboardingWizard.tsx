@@ -10,15 +10,44 @@ import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo';
 import type { FinancialProvider } from '@/types/api';
 import { AppFooter, AppTitleBar, Button, GlassCard, GradientShell } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
-import { designTokens } from '@/ui/tokens';
+import {
+  border as uiBorderRecipes,
+  status as uiStatusRecipes,
+  surface as uiSurfaceRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import { CONNECT_ACCOUNT_PROVIDER_CONTENT } from '@/utils/providerCards';
+
+const wizardInsetRing = [
+  'absolute inset-0 rounded-[inherit]',
+  'ring-1 ring-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-1px_0_rgba(15,23,42,0.12)]',
+  'transition-colors duration-500 ease-out',
+  'dark:ring-white/10',
+  'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(2,6,23,0.45)]',
+] as const;
+const wizardSoftWash = [
+  'absolute inset-0 rounded-[inherit]',
+  'bg-[radial-gradient(120%_120%_at_14%_-8%,rgba(255,255,255,0.38)_0%,rgba(255,255,255,0.12)_42%,transparent_68%)]',
+  'opacity-80',
+  'transition-opacity duration-500 ease-out',
+  'dark:bg-[radial-gradient(120%_120%_at_16%_-10%,rgba(148,163,184,0.16)_0%,rgba(15,23,42,0.2)_38%,transparent_66%)]',
+] as const;
+const wizardBrandWash = [
+  'absolute inset-0 rounded-[inherit]',
+  'bg-[radial-gradient(132%_160%_at_82%_118%,rgba(14,165,233,0.22)_0%,rgba(56,189,248,0.18)_28%,rgba(167,139,250,0.22)_56%,rgba(251,191,36,0.2)_76%,transparent_88%)]',
+  'opacity-75',
+  'transition-opacity duration-500 ease-out',
+  'dark:bg-[radial-gradient(136%_160%_at_86%_122%,rgba(56,189,248,0.35)_0%,rgba(167,139,250,0.32)_48%,rgba(248,113,113,0.28)_68%,transparent_88%)]',
+] as const;
+
 import { ConnectAccountStep } from './ConnectAccountStep';
 import { WelcomeStep } from './WelcomeStep';
 
 const stepIndicatorVariants = cva(
   [
     'inline-flex h-8 w-8 items-center justify-center rounded-full border',
-    designTokens.typography.label,
+    uiTypographyRecipes.label,
     'transition-colors duration-300 ease-out',
     'backdrop-blur-[2px] backdrop-saturate-[140%]',
   ],
@@ -26,24 +55,20 @@ const stepIndicatorVariants = cva(
     variants: {
       state: {
         active: [
-          ...designTokens.status.info.border,
-          ...designTokens.status.info.surface,
-          designTokens.status.info.text,
+          ...uiStatusRecipes.info.border,
+          ...uiStatusRecipes.info.surface,
+          uiStatusRecipes.info.text,
           'shadow-[0_12px_32px_-20px_rgba(14,165,233,0.45)]',
         ],
         complete: [
-          ...designTokens.status.success.border,
-          ...designTokens.status.success.strongSurface,
-          designTokens.text.inverse,
+          ...uiStatusRecipes.success.border,
+          ...uiStatusRecipes.success.strongSurface,
+          uiTextRecipes.inverse,
           'shadow-[0_18px_46px_-24px_rgba(16,185,129,0.65)]',
           'animate-[successFlash_400ms_ease-out]',
-          'dark:border-[var(--color-status-success-border-dark)]',
+          'dark:border-[var(--color-status-success-border)]',
         ],
-        idle: [
-          ...designTokens.borders.default,
-          ...designTokens.surfaces.semantic.card,
-          designTokens.text.subtle,
-        ],
+        idle: [...uiBorderRecipes.default, ...uiSurfaceRecipes.card, uiTextRecipes.subtle],
       },
     },
     defaultVariants: {
@@ -235,7 +260,7 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
             <span
               className={cn(
                 'h-px w-8',
-                ...designTokens.borders.divider,
+                ...uiBorderRecipes.divider,
                 'transition-colors duration-300 ease-out'
               )}
               aria-hidden="true"
@@ -274,9 +299,9 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
                   'pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] z-0'
                 )}
               >
-                <div className={cn(designTokens.surfaces.glass.wizardInsetRing)} />
-                <div className={cn(designTokens.surfaces.glass.wizardSoftWash)} />
-                <div className={cn(designTokens.surfaces.glass.wizardBrandWash)} />
+                <div className={cn(wizardInsetRing)} />
+                <div className={cn(wizardSoftWash)} />
+                <div className={cn(wizardBrandWash)} />
                 <div
                   className={cn(
                     'absolute -left-24 top-16 h-60 w-60 rounded-full bg-sky-200/25 blur-3xl',
@@ -314,8 +339,8 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
               >
                 <p
                   className={cn(
-                    designTokens.typography.caption,
-                    designTokens.text.subtle,
+                    uiTypographyRecipes.caption,
+                    uiTextRecipes.subtle,
                     'transition-colors',
                     'duration-300',
                     'ease-out'

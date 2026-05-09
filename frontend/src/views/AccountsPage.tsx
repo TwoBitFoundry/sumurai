@@ -2,7 +2,13 @@ import { AnimatePresence } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { cn } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import {
+  border as semanticBorders,
+  effect as semanticEffects,
+  surface as semanticSurfaces,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import { Toast } from '../components/Toast';
 import AccountsSummaryStats from '../features/plaid/components/AccountsSummaryStats';
 import ConnectButton from '../features/plaid/components/ConnectButton';
@@ -13,6 +19,20 @@ import { useTellerLinkFlow } from '../hooks/useTellerLinkFlow';
 import { useTellerProviderInfo } from '../hooks/useTellerProviderInfo';
 import { PageLayout } from '../layouts/PageLayout';
 import type { FinancialProvider } from '../types/api';
+
+const syncButtonClasses = cn(
+  'inline-flex items-center gap-2 rounded-full px-5 py-2',
+  ...semanticBorders.control,
+  ...semanticSurfaces.card,
+  uiTypographyRecipes.bodyStrong,
+  uiTextRecipes.body,
+  ...semanticEffects.glassShadow,
+  'transition-all duration-200 hover:-translate-y-[1px]',
+  ...semanticBorders.hoverAccent,
+  'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+  'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none',
+  'dark:focus-visible:ring-offset-slate-900'
+);
 
 const formatRelativeTime = (iso: string): string => {
   const timestamp = Date.parse(iso);
@@ -192,8 +212,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const lastSyncDetail = summary.latestSync
     ? `Refreshed ${formatAbsoluteTime(summary.latestSync)}`
     : syncFooter;
-
-  const syncButtonClasses = cn(designTokens.components.actions.accountsToolbar);
 
   const actions = (
     <>

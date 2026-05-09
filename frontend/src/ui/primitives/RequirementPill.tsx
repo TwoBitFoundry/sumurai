@@ -1,11 +1,11 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { cn } from './utils';
 
 const requirementVariants = cva(
   [
-    designTokens.typography.badge,
+    uiTypographyRecipes.badge,
     'inline-flex items-center rounded-full px-2.5 py-1 transition-colors duration-200',
   ],
   {
@@ -13,13 +13,13 @@ const requirementVariants = cva(
       status: {
         pending: [
           'bg-[color:color-mix(in_srgb,var(--color-surface-card)_60%,transparent)]',
-          'dark:bg-[color:color-mix(in_srgb,var(--color-border-glass-dark)_5%,transparent)]',
-          designTokens.text.subtle,
+          'dark:bg-[color:color-mix(in_srgb,var(--color-border-glass)_5%,transparent)]',
+          uiTextRecipes.subtle,
         ].join(' '),
         met: [
           'bg-[color:color-mix(in_srgb,var(--color-status-success-surface)_70%,transparent)]',
-          'dark:bg-[color:color-mix(in_srgb,var(--color-status-success-icon-dark)_10%,transparent)]',
-          designTokens.text.success,
+          'dark:bg-[color:color-mix(in_srgb,var(--color-status-success-icon)_10%,transparent)]',
+          uiTextRecipes.success,
         ].join(' '),
       },
     },

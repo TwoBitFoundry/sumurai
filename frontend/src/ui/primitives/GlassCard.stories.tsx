@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { cn } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes } from '@/ui/recipes';
 import { GlassCard } from './GlassCard';
 
 const meta = {
@@ -8,7 +8,7 @@ const meta = {
   component: GlassCard,
   tags: ['autodocs', 'test'],
   args: {
-    children: <p className={designTokens.text.body}>Card body with glass styling.</p>,
+    children: <p className={uiTextRecipes.body}>Card body with glass styling.</p>,
     variant: 'default',
     rounded: 'lg',
     padding: 'md',
@@ -30,7 +30,7 @@ export const DenseData: Story = {
   args: {
     padding: 'sm',
     children: (
-      <div className={cn('space-y-2', 'font-mono', 'text-xs', designTokens.text.muted)}>
+      <div className={cn('space-y-2', 'font-mono', 'text-xs', uiTextRecipes.muted)}>
         {Array.from({ length: 12 }, (_, index) => (
           <div key={index} className="flex justify-between gap-4 border-b border-white/10 pb-1">
             <span>TX-{1000 + index}</span>
@@ -46,7 +46,7 @@ export const Overflow: Story = {
   args: {
     className: 'max-h-36 overflow-y-auto',
     children: (
-      <div className={cn('space-y-2', 'text-sm', designTokens.text.body)}>
+      <div className={cn('space-y-2', 'text-sm', uiTextRecipes.body)}>
         {Array.from({ length: 40 }, (_, index) => (
           <div key={index}>Scrollable row {index + 1}</div>
         ))}

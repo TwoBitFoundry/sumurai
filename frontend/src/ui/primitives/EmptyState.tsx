@@ -1,6 +1,30 @@
 import type React from 'react';
-import { designTokens } from '@/ui/tokens';
+import {
+  surface as semanticSurfaces,
+  text as semanticTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import { cn } from './utils';
+
+export const emptyStateRecipes = {
+  iconWrapper: [
+    'flex',
+    'h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20',
+    'items-center',
+    'justify-center',
+    'rounded-full',
+    ...semanticSurfaces.card,
+    semanticTextRecipes.muted,
+    'transition-all duration-300 ease-out',
+    'hover:scale-110 hover:-translate-y-1',
+    'hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
+    'dark:text-slate-300',
+    'dark:hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
+    'cursor-pointer',
+  ],
+  title: `${uiTypographyRecipes.cardTitle} ${semanticTextRecipes.primary} transition-colors duration-500`,
+  description: `${uiTypographyRecipes.body} max-w-sm ${semanticTextRecipes.body} transition-colors duration-500`,
+} as const;
 
 export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
   icon: React.ComponentType<{ className?: string }>;
@@ -46,11 +70,11 @@ export function EmptyState({
       )}
       {...props}
     >
-      <div className={cn(...designTokens.components.emptyState.iconWrapper)}>
+      <div className={cn(...emptyStateRecipes.iconWrapper)}>
         <Icon className={cn('h-6 w-6 md:h-8 md:w-8 lg:h-10 lg:w-10')} />
       </div>
-      <div className={cn(designTokens.components.emptyState.title)}>{title}</div>
-      <div className={cn(designTokens.components.emptyState.description)}>{description}</div>
+      <div className={cn(emptyStateRecipes.title)}>{title}</div>
+      <div className={cn(emptyStateRecipes.description)}>{description}</div>
       {action && <div className={cn('mt-2')}>{action}</div>}
     </div>
   );

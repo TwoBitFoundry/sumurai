@@ -2,14 +2,30 @@ import { CheckIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/outl
 import { TrashIcon as TrashSolidIcon } from '@heroicons/react/24/solid';
 import { Target } from 'lucide-react';
 import React from 'react';
-import { cn, EmptyState, Input } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import { cn, EmptyState, IconButton, Input, Pill } from '@/ui/primitives';
+import {
+  border as semanticBorders,
+  effect as semanticEffects,
+  surface as semanticSurfaces,
+  focus as uiFocusRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
 import type { BudgetProgressEntry } from '../hooks/useBudgets';
 import BudgetProgress from './BudgetProgress';
 
 export type BudgetWithProgress = BudgetProgressEntry;
+
+const budgetCardShell = [
+  'group relative overflow-hidden rounded-[1.75rem] p-6',
+  ...semanticBorders.subtle,
+  ...semanticSurfaces.card,
+  ...semanticEffects.glassShadow,
+  'transition-all duration-300 hover:-translate-y-1',
+  ...semanticEffects.accentHover,
+] as const;
 
 export function BudgetList({
   items,
@@ -63,10 +79,10 @@ export function BudgetList({
           <li
             key={b.id}
             className={cn(
-              designTokens.components.budgetCard.shell,
+              budgetCardShell,
               tagTheme.ring,
               'ring-1 ring-offset-1',
-              designTokens.surfaces.focus.ringOffsetLightOnDark
+              uiFocusRecipes.ringOffsetLightOnDark
             )}
           >
             <div
@@ -87,61 +103,53 @@ export function BudgetList({
               )}
             />
             <div className={cn('flex', 'items-start', 'justify-between', 'gap-3')}>
-              <div
+              <Pill
+                variant="category"
+                categoryName={displayName}
                 className={cn(
-                  designTokens.components.pill.base,
-                  'transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
-                  tagTheme.tag
+                  'transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10'
                 )}
               >
-                <span
-                  className={cn(designTokens.components.pill.dot, tagTheme.dot)}
-                  aria-hidden="true"
-                />
                 {displayName}
-              </div>
-              <div className={cn('flex', 'items-center', 'gap-2', designTokens.typography.label)}>
+              </Pill>
+              <div className={cn('flex', 'items-center', 'gap-2', uiTypographyRecipes.label)}>
                 {isEditing ? (
                   <>
-                    <button
-                      type="button"
+                    <IconButton
+                      variant="success"
                       onClick={() => onSaveEdit(b.id, Number(draft))}
                       title="Save"
                       aria-label="Save budget"
-                      className={cn(designTokens.components.actions.budgetSaveIcon)}
                     >
                       <CheckIcon className={cn('h-4', 'w-4')} />
-                    </button>
-                    <button
-                      type="button"
+                    </IconButton>
+                    <IconButton
+                      variant="ghost"
                       onClick={onCancelEdit}
                       title="Cancel"
                       aria-label="Cancel edit"
-                      className={cn(designTokens.components.actions.budgetIconGhost)}
                     >
                       <XMarkIcon className={cn('h-4', 'w-4')} />
-                    </button>
+                    </IconButton>
                   </>
                 ) : (
                   <>
-                    <button
-                      type="button"
+                    <IconButton
+                      variant="ghost"
                       onClick={() => onStartEdit(b)}
                       title="Edit budget"
                       aria-label="Edit budget"
-                      className={cn(designTokens.components.actions.budgetIconGhost)}
                     >
                       <PencilSquareIcon className={cn('h-4', 'w-4')} />
-                    </button>
-                    <button
-                      type="button"
+                    </IconButton>
+                    <IconButton
+                      variant="danger"
                       onClick={() => onDelete(b.id)}
                       title="Delete budget"
                       aria-label="Delete budget"
-                      className={cn(designTokens.components.actions.budgetDeleteIcon)}
                     >
                       <TrashSolidIcon className={cn('h-4', 'w-4')} />
-                    </button>
+                    </IconButton>
                   </>
                 )}
               </div>
@@ -162,8 +170,8 @@ export function BudgetList({
                       htmlFor={`budget-amount-${b.id}`}
                       className={cn(
                         'block',
-                        designTokens.typography.label,
-                        designTokens.text.subtle,
+                        uiTypographyRecipes.label,
+                        uiTextRecipes.subtle,
                         'transition-colors',
                         'duration-300'
                       )}
@@ -185,8 +193,8 @@ export function BudgetList({
                   <div
                     className={cn(
                       'text-right',
-                      designTokens.typography.caption,
-                      designTokens.text.subtle,
+                      uiTypographyRecipes.caption,
+                      uiTextRecipes.subtle,
                       'transition-colors',
                       'duration-300'
                     )}
@@ -194,8 +202,8 @@ export function BudgetList({
                     <span
                       className={cn(
                         'block',
-                        designTokens.typography.label,
-                        designTokens.text.subtle,
+                        uiTypographyRecipes.label,
+                        uiTextRecipes.subtle,
                         'transition-colors',
                         'duration-300'
                       )}
@@ -204,8 +212,8 @@ export function BudgetList({
                     </span>
                     <span
                       className={cn(
-                        designTokens.typography.bodyStrong,
-                        designTokens.text.body,
+                        uiTypographyRecipes.bodyStrong,
+                        uiTextRecipes.body,
                         'transition-colors',
                         'duration-300'
                       )}
@@ -220,8 +228,8 @@ export function BudgetList({
                     'grid',
                     'grid-cols-2',
                     'gap-4',
-                    designTokens.typography.caption,
-                    designTokens.text.subtle,
+                    uiTypographyRecipes.caption,
+                    uiTextRecipes.subtle,
                     'transition-colors',
                     'duration-300'
                   )}
@@ -229,8 +237,8 @@ export function BudgetList({
                   <div>
                     <span
                       className={cn(
-                        designTokens.typography.label,
-                        designTokens.text.subtle,
+                        uiTypographyRecipes.label,
+                        uiTextRecipes.subtle,
                         'transition-colors',
                         'duration-300'
                       )}
@@ -240,8 +248,8 @@ export function BudgetList({
                     <div
                       className={cn(
                         'mt-1',
-                        designTokens.typography.cardTitle,
-                        designTokens.text.primary,
+                        uiTypographyRecipes.cardTitle,
+                        uiTextRecipes.primary,
                         'transition-colors',
                         'duration-300'
                       )}
@@ -252,8 +260,8 @@ export function BudgetList({
                   <div className="text-right">
                     <span
                       className={cn(
-                        designTokens.typography.label,
-                        designTokens.text.subtle,
+                        uiTypographyRecipes.label,
+                        uiTextRecipes.subtle,
                         'transition-colors',
                         'duration-300'
                       )}
@@ -263,10 +271,10 @@ export function BudgetList({
                     <div
                       className={cn(
                         'mt-1',
-                        designTokens.typography.cardTitle,
+                        uiTypographyRecipes.cardTitle,
                         'transition-colors',
                         'duration-300',
-                        isOver ? designTokens.text.danger : designTokens.text.body
+                        isOver ? uiTextRecipes.danger : uiTextRecipes.body
                       )}
                     >
                       {fmtUSD(b.spent)}

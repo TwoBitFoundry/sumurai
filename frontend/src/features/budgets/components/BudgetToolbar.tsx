@@ -1,7 +1,7 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Calendar as CalendarIcon, Loader2, Plus } from 'lucide-react';
-import { Button, cn } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import { Button, cn, PaginationButton } from '@/ui/primitives';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
 interface BudgetToolbarProps {
   monthLabel: string;
@@ -39,29 +39,27 @@ export const BudgetToolbar = ({
     >
       <div className={cn('flex', 'items-center', 'gap-3')}>
         <div className={cn('flex', 'items-center', 'gap-2')}>
-          <button
+          <PaginationButton
             type="button"
             onClick={onPreviousMonth}
             aria-label="Previous month"
-            className={cn(designTokens.components.actions.paginationRound)}
             title="Previous month"
           >
             <ChevronLeftIcon className={cn('h-4', 'w-4')} />
-          </button>
-          <button
+          </PaginationButton>
+          <PaginationButton
             type="button"
             onClick={onNextMonth}
             aria-label="Next month"
-            className={cn(designTokens.components.actions.paginationRound)}
             title="Next month"
           >
             <ChevronRightIcon className={cn('h-4', 'w-4')} />
-          </button>
+          </PaginationButton>
         </div>
         <div
           className={cn(
-            designTokens.typography.label,
-            designTokens.text.muted,
+            uiTypographyRecipes.label,
+            uiTextRecipes.muted,
             'transition-colors',
             'duration-500'
           )}
@@ -75,8 +73,8 @@ export const BudgetToolbar = ({
             'inline-flex',
             'items-center',
             'gap-1',
-            designTokens.typography.caption,
-            designTokens.text.subtle,
+            uiTypographyRecipes.caption,
+            uiTextRecipes.subtle,
             'transition-colors',
             'duration-500'
           )}

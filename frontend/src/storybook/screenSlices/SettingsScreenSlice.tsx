@@ -3,7 +3,8 @@ import { PasswordChecker } from '@/components/PasswordChecker';
 import type { PasswordValidation } from '@/hooks/usePasswordValidation';
 import { Alert, Badge, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { settingsConfirmationCodeTypography } from '@/views/SettingsPage';
 
 const validationEmpty: PasswordValidation = {
   minLength: false,
@@ -114,10 +115,10 @@ export function SettingsScreenSlice(props: {
           <div className={cn('space-y-5')}>
             <div className={cn('space-y-3')}>
               <Badge size="md">ACCOUNT SETTINGS</Badge>
-              <h2 className={cn(designTokens.typography.sectionTitle, designTokens.text.primary)}>
+              <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
                 Change Password
               </h2>
-              <p className={cn(designTokens.typography.body, designTokens.text.body)}>
+              <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
                 Update your password to keep your account secure
               </p>
             </div>
@@ -181,7 +182,7 @@ export function SettingsScreenSlice(props: {
                     placeholder="Re-enter new password"
                   />
                   {confirmMismatchVisible ? (
-                    <p className={cn(designTokens.typography.caption, designTokens.text.danger)}>
+                    <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.danger)}>
                       Passwords do not match.
                     </p>
                   ) : null}
@@ -223,7 +224,7 @@ export function SettingsScreenSlice(props: {
         <GlassCard variant="auth" padding="lg">
           <h2
             id={`delete-account-modal-title-${key}`}
-            className={cn(designTokens.typography.cardTitle, 'mb-4', designTokens.text.primary)}
+            className={cn(uiTypographyRecipes.cardTitle, 'mb-4', uiTextRecipes.primary)}
           >
             Delete Account?
           </h2>
@@ -248,10 +249,9 @@ export function SettingsScreenSlice(props: {
             </Alert>
           ) : null}
 
-          <div className={cn('mb-6', 'flex', 'flex-col', designTokens.spacing.labeledFieldGap)}>
+          <div className={cn('mb-6', 'flex', 'flex-col', 'gap-3')}>
             <FormLabel htmlFor={`confirm-delete-${key}`}>
-              Type <span className={cn(designTokens.typography.confirmationCode)}>DELETE</span> to
-              confirm
+              Type <span className={cn(settingsConfirmationCodeTypography)}>DELETE</span> to confirm
             </FormLabel>
             <Input
               id={`confirm-delete-${key}`}

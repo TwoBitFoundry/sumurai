@@ -43,6 +43,10 @@
 - Ensure CI is green before requesting review once the PR is marked ready (**`ci`** skips draft PRs on GitHub). **CodeQL** runs on a weekly schedule only.
 - Use `feat!:` or `BREAKING CHANGE:` for breaking changes.
 
+## UI policy
+- Use `.agents/skills/sumurai-ui-policy/SKILL.md` for Sumurai frontend UI work.
+- That skill is the source of truth for `DESIGN.md`, primitives, recipes, tokens, and examples.
+
 ## Security
 - Never read or write `.env` files from automation.
 - Use `.env.example` as the reference for local configuration.

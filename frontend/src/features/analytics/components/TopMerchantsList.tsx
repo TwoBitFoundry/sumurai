@@ -1,8 +1,14 @@
 import { MapPin } from 'lucide-react';
 import type React from 'react';
 import { cn, EmptyState } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
-import { dashboardTokenRecipes } from '@/views/tokenRecipes';
+import {
+  border as uiBorderRecipes,
+  effect as uiEffectRecipes,
+  surface as uiSurfaceRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
+import { categoryAccents, chart } from '@/ui/tokens';
 import type { AnalyticsTopMerchantsResponse } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
 
@@ -10,6 +16,13 @@ type Props = {
   merchants: AnalyticsTopMerchantsResponse[];
   className?: string;
 };
+
+const merchantRow = [
+  'flex items-center justify-between rounded-lg border p-3 transition-all duration-300 hover:-translate-y-[2px]',
+  ...uiBorderRecipes.subtle,
+  ...uiSurfaceRecipes.card,
+  ...uiEffectRecipes.accentHover,
+] as const;
 
 export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' }) => {
   const merchantsToShow = merchants.slice(0, 6);
@@ -19,7 +32,7 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
       {merchantsToShow.length > 0 ? (
         <div className={cn('space-y-3')}>
           {merchantsToShow.map((merchant, index) => (
-            <div key={merchant.name} className={cn(dashboardTokenRecipes.merchantRow)}>
+            <div key={merchant.name} className={cn(merchantRow)}>
               <div className={cn('flex', 'items-center', 'gap-3', 'min-w-0', 'flex-1')}>
                 <div
                   className={cn(
@@ -30,14 +43,13 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
                     'h-6',
                     'rounded-full',
                     'bg-gradient-to-r',
-                    'from-cyan-400',
-                    'to-emerald-400',
-                    designTokens.text.primary,
-                    designTokens.typography.label,
+                    uiTextRecipes.primary,
+                    uiTypographyRecipes.label,
                     'flex-shrink-0'
                   )}
                   style={{
-                    backgroundImage: `linear-gradient(90deg, ${designTokens.palettes.brandAccent.cyan.background}, ${designTokens.palettes.brandAccent.emerald.background})`,
+                    backgroundImage: `linear-gradient(90deg, ${chart.series.light[0]}, ${chart.series.light[1]})`,
+                    boxShadow: `0 0 0 1px ${categoryAccents[index % categoryAccents.length].ringHex}33`,
                   }}
                 >
                   {index + 1}
@@ -45,23 +57,23 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
                 <div className="min-w-0">
                   <div
                     className={cn(
-                      designTokens.typography.bodyStrong,
-                      designTokens.text.primary,
+                      uiTypographyRecipes.bodyStrong,
+                      uiTextRecipes.primary,
                       'truncate'
                     )}
                   >
                     {merchant.name}
                   </div>
-                  <div className={cn(designTokens.typography.caption, designTokens.text.muted)}>
+                  <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
                     {merchant.count} transaction{merchant.count !== 1 ? 's' : ''}
                   </div>
                 </div>
               </div>
               <div className={cn('text-right', 'flex-shrink-0', 'ml-4')}>
-                <div className={cn(designTokens.typography.bodyStrong, designTokens.text.primary)}>
+                <div className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>
                   {fmtUSD(merchant.amount)}
                 </div>
-                <div className={cn(designTokens.typography.caption, designTokens.text.muted)}>
+                <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
                   {merchant.percentage}%
                 </div>
               </div>

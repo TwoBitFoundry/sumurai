@@ -1,6 +1,12 @@
 # Sumurai UI Primitives
 
-This directory contains reusable UI primitives that implement Sumurai's glassmorphism design system with support for light and dark modes.
+This directory contains the reusable UI primitives that implement Sumurai's glassmorphism design system with support for light and dark modes.
+
+Start here when editing UI:
+- `.agents/skills/sumurai-ui-policy/SKILL.md` for the UI policy.
+- `.agents/skills/sumurai-ui-policy/examples.md` for good and bad composition patterns.
+- `frontend/src/ui/recipes.ts` for shared class atoms.
+- `frontend/src/ui/tokens.ts` for runtime JS values.
 
 ## Overview
 
@@ -116,15 +122,15 @@ interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
 **Example:**
 ```tsx
 import { GlassCard } from '@/ui/primitives'
-import { designTokens } from '@/ui/tokens'
+import { font as uiTypographyRecipes, text as uiTextRecipes } from '@/ui/recipes'
 
 function ProfileCard() {
   return (
     <GlassCard variant="accent" padding="lg" rounded="xl">
-      <h2 className={designTokens.typography.cardTitle + ' ' + designTokens.text.primary}>
+      <h2 className={uiTypographyRecipes.cardTitle + ' ' + uiTextRecipes.primary}>
         User Profile
       </h2>
-      <p className={designTokens.typography.body + ' mt-2 ' + designTokens.text.body}>
+      <p className={uiTypographyRecipes.body + ' mt-2 ' + uiTextRecipes.body}>
         Profile details here...
       </p>
     </GlassCard>
@@ -172,16 +178,16 @@ interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
 **Example:**
 ```tsx
 import { Modal, GlassCard, Button } from '@/ui/primitives'
-import { designTokens } from '@/ui/tokens'
+import { font as uiTypographyRecipes, text as uiTextRecipes } from '@/ui/recipes'
 
 function ConfirmDisconnect({ open, onClose, onConfirm }: Props) {
   return (
     <Modal isOpen={open} onClose={onClose} size="md">
       <GlassCard variant="accent" rounded="xl" padding="lg">
-        <h2 className={designTokens.typography.cardTitle + ' ' + designTokens.text.primary}>
+        <h2 className={uiTypographyRecipes.cardTitle + ' ' + uiTextRecipes.primary}>
           Disconnect bank?
         </h2>
-        <p className={designTokens.typography.body + ' mt-2 ' + designTokens.text.body}>
+        <p className={uiTypographyRecipes.body + ' mt-2 ' + uiTextRecipes.body}>
           This will remove all related accounts.
         </p>
         <div className="mt-6 flex justify-end gap-3">
@@ -767,7 +773,9 @@ See `__tests__/` directory for examples.
 
 ## Related Documentation
 
-- [DESIGN.md](../../../DESIGN.md) - Design system fundamentals
+- [DESIGN.md](../../../../DESIGN.md) - Design system fundamentals
+- [UI skill](../../../../.agents/skills/sumurai-ui-policy/SKILL.md) - the authoritative UI policy and examples
+- [AGENTS.md](../../../../AGENTS.md) - repository-wide guidance
 
 ---
 

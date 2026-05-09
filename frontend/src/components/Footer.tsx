@@ -1,6 +1,11 @@
 import { Handshake, Star } from 'lucide-react';
 import { cn } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import {
+  border as uiBorderRecipes,
+  surface as uiSurfaceRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 
 export function Footer() {
   return (
@@ -8,7 +13,7 @@ export function Footer() {
       className={cn(
         'relative',
         'border-t',
-        ...designTokens.borders.divider,
+        ...uiBorderRecipes.divider,
         'bg-gradient-to-b',
         'from-white/60',
         'to-sky-50/30',
@@ -31,7 +36,7 @@ export function Footer() {
         >
           <div className={cn('flex', 'flex-col', 'gap-2', 'items-start')}>
             <img src="/tbf-logo.svg" alt="Two Bit Foundry" className={cn('h-10', 'w-auto')} />
-            <p className={cn(designTokens.typography.body, designTokens.text.muted)}>
+            <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
               Built in the open with the community
             </p>
           </div>
@@ -54,8 +59,8 @@ export function Footer() {
               className={cn(
                 'px-4',
                 'py-2',
-                designTokens.typography.label,
-                designTokens.text.inverse,
+                uiTypographyRecipes.label,
+                uiTextRecipes.inverse,
                 'rounded-lg',
                 'bg-sky-500/80',
                 'backdrop-blur-sm',
@@ -83,8 +88,8 @@ export function Footer() {
               className={cn(
                 'px-4',
                 'py-2',
-                designTokens.typography.label,
-                designTokens.text.inverse,
+                uiTypographyRecipes.label,
+                uiTextRecipes.inverse,
                 'rounded-lg',
                 'bg-amber-500/80',
                 'backdrop-blur-sm',
@@ -112,14 +117,14 @@ export function Footer() {
               className={cn(
                 'px-4',
                 'py-2',
-                designTokens.typography.label,
-                designTokens.text.body,
+                uiTypographyRecipes.label,
+                uiTextRecipes.body,
                 'rounded-lg',
                 'border',
-                ...designTokens.borders.default,
-                ...designTokens.surfaces.semantic.card,
+                ...uiBorderRecipes.default,
+                ...uiSurfaceRecipes.card,
                 'hover:bg-[var(--color-surface-hover-row)]',
-                'dark:hover:bg-[var(--color-surface-hover-row-dark)]',
+                'dark:hover:bg-[var(--color-surface-hover-row)]',
                 'flex',
                 'items-center',
                 'justify-center',
@@ -143,18 +148,18 @@ export function Footer() {
             'gap-4',
             'pt-5',
             'border-t',
-            ...designTokens.borders.divider
+            ...uiBorderRecipes.divider
           )}
         >
-          <p className={cn(designTokens.typography.caption, designTokens.text.subtle)}>
+          <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.subtle)}>
             © {new Date().getFullYear()} Two Bit Foundry • Source available
           </p>
           <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-4', 'sm:gap-6')}>
             <a
               href="mailto:contact@twobitfoundry.com"
               className={cn(
-                designTokens.typography.caption,
-                designTokens.text.accent,
+                uiTypographyRecipes.caption,
+                uiTextRecipes.accent,
                 'transition-opacity',
                 'hover:opacity-80'
               )}
@@ -164,8 +169,8 @@ export function Footer() {
             <a
               href="mailto:support@twobitfoundry.com"
               className={cn(
-                designTokens.typography.caption,
-                designTokens.text.accent,
+                uiTypographyRecipes.caption,
+                uiTextRecipes.accent,
                 'transition-opacity',
                 'hover:opacity-80'
               )}

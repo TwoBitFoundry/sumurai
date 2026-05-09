@@ -1,25 +1,71 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
-import { designTokens } from '@/ui/tokens';
+import {
+  border as semanticBorders,
+  effect as semanticEffects,
+  surface as semanticSurfaces,
+} from '@/ui/recipes';
 import { cn } from './utils';
 
-const glassCardVariants = cva([...designTokens.components.glassCard.base], {
+export const glassCardRecipes = {
+  base: [
+    'relative overflow-hidden',
+    'border',
+    ...semanticEffects.glassShadow,
+    'backdrop-blur-2xl backdrop-saturate-[150%]',
+    'transition-colors duration-500',
+    'dark:shadow-[0_42px_140px_-80px_var(--color-effect-glass-shadow)]',
+  ],
+  default: [...semanticBorders.glass, ...semanticSurfaces.glassPanel],
+  auth: [
+    ...semanticBorders.glass,
+    ...semanticSurfaces.glassPanel,
+    'shadow-[0_38px_120px_-60px_var(--color-effect-glass-shadow)]',
+    'backdrop-blur-[26px]',
+    'backdrop-saturate-[140%]',
+    'dark:shadow-[0_40px_120px_-58px_var(--color-effect-glass-shadow)]',
+  ],
+  accent: [
+    ...semanticBorders.glass,
+    'bg-[color:color-mix(in_srgb,var(--color-surface-solid-panel)_85%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-solid-panel)_75%,transparent)]',
+    'backdrop-blur-sm',
+  ],
+  rounded: {
+    default: 'rounded-[2.25rem]',
+    lg: 'rounded-2xl',
+    xl: 'rounded-3xl',
+  },
+  padding: {
+    none: 'p-0',
+    sm: 'p-4',
+    md: 'p-6',
+    lg: 'p-8',
+  },
+} as const;
+
+const glassInsetLight =
+  'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]';
+const glassInsetDark =
+  'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.5)]';
+
+const glassCardVariants = cva([...glassCardRecipes.base], {
   variants: {
     variant: {
-      default: [...designTokens.components.glassCard.default],
-      auth: [...designTokens.components.glassCard.auth],
-      accent: [...designTokens.components.glassCard.accent],
+      default: [...glassCardRecipes.default],
+      auth: [...glassCardRecipes.auth],
+      accent: [...glassCardRecipes.accent],
     },
     rounded: {
-      default: designTokens.components.glassCard.rounded.default,
-      lg: designTokens.components.glassCard.rounded.lg,
-      xl: designTokens.components.glassCard.rounded.xl,
+      default: glassCardRecipes.rounded.default,
+      lg: glassCardRecipes.rounded.lg,
+      xl: glassCardRecipes.rounded.xl,
     },
     padding: {
-      none: designTokens.components.glassCard.padding.none,
-      sm: designTokens.components.glassCard.padding.sm,
-      md: designTokens.components.glassCard.padding.md,
-      lg: designTokens.components.glassCard.padding.lg,
+      none: glassCardRecipes.padding.none,
+      sm: glassCardRecipes.padding.sm,
+      md: glassCardRecipes.padding.md,
+      lg: glassCardRecipes.padding.lg,
     },
   },
   defaultVariants: {
@@ -82,9 +128,9 @@ export function GlassCard({
               roundedClass,
               'ring-inset ring-1',
               'ring-white/40',
-              designTokens.shadows.glassInset.light,
+              glassInsetLight,
               'dark:ring-white/10',
-              designTokens.shadows.glassInset.dark
+              glassInsetDark
             )}
           />
           <div

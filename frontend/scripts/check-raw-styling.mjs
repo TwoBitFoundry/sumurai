@@ -28,10 +28,10 @@ function posixRelative(fromRoot, absolutePath) {
 }
 
 function isAllowlisted(relPosix) {
-  if (relPosix.startsWith('ui/tokens/generated/')) {
+  if (relPosix.startsWith('ui/generated/')) {
     return true;
   }
-  if (relPosix === 'ui/tokens/index.ts') {
+  if (relPosix === 'ui/tokens.ts' || relPosix === 'ui/recipes.ts') {
     return true;
   }
   if (relPosix.startsWith('ui/primitives/')) {
@@ -41,9 +41,6 @@ function isAllowlisted(relPosix) {
     return true;
   }
   if (relPosix.startsWith('components/')) {
-    return true;
-  }
-  if (relPosix.endsWith('/tokenRecipes.ts') || relPosix === 'tokenRecipes.ts') {
     return true;
   }
   if (relPosix === 'app/globals.css') {

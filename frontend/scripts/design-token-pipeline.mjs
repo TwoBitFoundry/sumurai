@@ -7,7 +7,7 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const frontendRoot = resolve(scriptDir, '..');
 const repoRoot = resolve(frontendRoot, '..');
 const defaultDesignPath = resolve(repoRoot, 'DESIGN.md');
-const defaultOutDir = resolve(frontendRoot, 'src/ui/tokens/generated');
+const defaultOutDir = resolve(frontendRoot, 'src/ui/generated');
 const runDesignmdScript = resolve(scriptDir, 'run-designmd.mjs');
 
 function parseArgs(argv) {
@@ -127,7 +127,8 @@ function walkTokens(node, path = []) {
 }
 
 function toThemeCss(dtcg) {
-  const lines = ['@theme static {'];
+  const rootLines = [];
+  const darkLines = [];
   const tokens = walkTokens(dtcg);
 
   for (const token of tokens) {
@@ -139,31 +140,38 @@ function toThemeCss(dtcg) {
     }
 
     if (group === 'color') {
-      lines.push(`  --color-${name}: ${normalizePrimitive(token.value)};`);
+      const colorName = name.endsWith('-dark') ? name.slice(0, -5) : name;
+      const targetLines = name.endsWith('-dark') ? darkLines : rootLines;
+      targetLines.push(`  --color-${colorName}: ${normalizePrimitive(token.value)};`);
       continue;
     }
 
     if (group === 'spacing') {
-      lines.push(`  --spacing-${name}: ${normalizePrimitive(token.value)};`);
+      rootLines.push(`  --spacing-${name}: ${normalizePrimitive(token.value)};`);
       continue;
     }
 
     if (group === 'rounded') {
-      lines.push(`  --radius-${name}: ${normalizePrimitive(token.value)};`);
+      rootLines.push(`  --radius-${name}: ${normalizePrimitive(token.value)};`);
       continue;
     }
 
     if (group === 'typography' && token.type === 'typography' && token.value && typeof token.value === 'object') {
-      lines.push(...emitTypographyVariables(name, token.value));
+      rootLines.push(...emitTypographyVariables(name, token.value));
     }
   }
 
-  lines.push('}');
+  const lines = ['@theme static {', ...rootLines, '}'];
+
+  if (darkLines.length > 0) {
+    lines.push('.dark {', ...darkLines, '}');
+  }
+
   return `${lines.join('\n')}\n`;
 }
 
 function toTokensTs(dtcg) {
-  return `export const designTokens = ${JSON.stringify(dtcg, null, 2)} as const;\nexport type DesignTokens = typeof designTokens;\nexport default designTokens;\n`;
+  return `export const generatedTokens = ${JSON.stringify(dtcg, null, 2)} as const;\nexport type GeneratedTokens = typeof generatedTokens;\nexport default generatedTokens;\n`;
 }
 
 function writeArtifacts(outDir, dtcg) {

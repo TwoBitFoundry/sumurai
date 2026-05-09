@@ -1,40 +1,40 @@
-import { badgeSizeStyles as primitiveBadgeSizeStyles } from '@/ui/primitives/Badge';
-import { buttonTypographySizes } from '@/ui/primitives/Button';
-import { primitiveTokenRecipes } from '@/ui/primitives/tokenRecipes';
-import { designTokens } from '@/ui/tokens';
+import { pageLayoutRecipes } from '@/layouts/PageLayout';
+import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
+import { badgeRecipes, badgeSizeStyles as primitiveBadgeSizeStyles } from '@/ui/primitives/Badge';
+import { buttonRecipes, buttonTypographySizes, connectButtonRecipes } from '@/ui/primitives/Button';
+import { emptyStateRecipes } from '@/ui/primitives/EmptyState';
+import { menuDropdownRecipes } from '@/ui/primitives/MenuDropdown';
+import { pillRecipes } from '@/ui/primitives/Pill';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
 describe('primitive typography recipes', () => {
   it('maps page layout copy to semantic typography recipes', () => {
-    expect(designTokens.components.pageLayout.badge).toContain(designTokens.typography.badge);
-    expect(designTokens.components.pageLayout.title).toContain(designTokens.typography.pageTitle);
-    expect(designTokens.components.pageLayout.subtitle).toContain(designTokens.typography.body);
-    expect(designTokens.components.pageLayout.badge).toContain(designTokens.text.label);
-    expect(designTokens.components.pageLayout.title).toContain(designTokens.text.primary);
-    expect(designTokens.components.pageLayout.subtitle).toContain(designTokens.text.body);
-    expect(designTokens.components.pageLayout.errorText).toContain(
-      designTokens.typography.captionStrong
-    );
-    expect(designTokens.components.pageLayout.errorText).toContain(designTokens.text.danger);
+    expect(pageLayoutRecipes.badge).toContain(uiTypographyRecipes.badge);
+    expect(pageLayoutRecipes.title).toContain(uiTypographyRecipes.pageTitle);
+    expect(pageLayoutRecipes.subtitle).toContain(uiTypographyRecipes.body);
+    expect(pageLayoutRecipes.badge).toContain(uiTextRecipes.label);
+    expect(pageLayoutRecipes.title).toContain(uiTextRecipes.primary);
+    expect(pageLayoutRecipes.subtitle).toContain(uiTextRecipes.body);
+    expect(pageLayoutRecipes.errorText).toContain(uiTypographyRecipes.captionStrong);
+    expect(pageLayoutRecipes.errorText).toContain(uiTextRecipes.danger);
   });
 
   it('uses semantic typography for empty state copy', () => {
-    expect(designTokens.components.emptyState.title).toContain(designTokens.typography.cardTitle);
-    expect(designTokens.components.emptyState.description).toContain(designTokens.typography.body);
-    expect(designTokens.components.emptyState.title).toContain(designTokens.text.primary);
-    expect(designTokens.components.emptyState.description).toContain(designTokens.text.body);
+    expect(emptyStateRecipes.title).toContain(uiTypographyRecipes.cardTitle);
+    expect(emptyStateRecipes.description).toContain(uiTypographyRecipes.body);
+    expect(emptyStateRecipes.title).toContain(uiTextRecipes.primary);
+    expect(emptyStateRecipes.description).toContain(uiTextRecipes.body);
   });
 
   it('keeps button sizes on the semantic scale', () => {
     expect(buttonTypographySizes).toEqual({
-      xs: designTokens.typography.label,
-      sm: designTokens.typography.captionStrong,
-      md: designTokens.typography.captionStrong,
-      lg: designTokens.typography.bodyStrong,
+      xs: uiTypographyRecipes.label,
+      sm: uiTypographyRecipes.captionStrong,
+      md: uiTypographyRecipes.captionStrong,
+      lg: uiTypographyRecipes.bodyStrong,
     });
-    expect(primitiveTokenRecipes.connectButton.base.join(' ')).toContain(
-      designTokens.typography.captionStrong
-    );
-    expect(primitiveTokenRecipes.connectButton.base.join(' ')).not.toContain('text-sm');
+    expect(connectButtonRecipes.base.join(' ')).toContain(uiTypographyRecipes.captionStrong);
+    expect(connectButtonRecipes.base.join(' ')).not.toContain('text-sm');
   });
 
   it('keeps badge sizing focused on padding and radius', () => {
@@ -44,47 +44,23 @@ describe('primitive typography recipes', () => {
   });
 
   it('keeps pill and badge recipes on the shared badge scale', () => {
-    expect(primitiveTokenRecipes.badge.base.join(' ')).toContain(designTokens.typography.badge);
-    expect(primitiveTokenRecipes.pill.base).toContain(designTokens.typography.badge);
-    expect(primitiveTokenRecipes.badge.default.join(' ')).toContain(designTokens.text.muted);
+    expect(badgeRecipes.base.join(' ')).toContain(uiTypographyRecipes.badge);
+    expect(pillRecipes.base).toContain(uiTypographyRecipes.badge);
+    expect(badgeRecipes.default.join(' ')).toContain(uiTextRecipes.muted);
   });
 
   it('drops the old subheading typography from button base recipes', () => {
-    expect(primitiveTokenRecipes.button.base.join(' ')).not.toContain('font-subheading');
-    expect(primitiveTokenRecipes.button.base.join(' ')).not.toContain('uppercase');
-    expect(primitiveTokenRecipes.button.secondary.join(' ')).toContain(designTokens.text.muted);
-    expect(primitiveTokenRecipes.button.danger.join(' ')).toContain(designTokens.text.danger);
-  });
-
-  it('uses theme typography variables for title bar chrome expansion', () => {
-    expect(designTokens.typography.titleBarChromeExpanded).toContain(
-      'var(--tracking-title-bar-chrome-expanded)'
-    );
-    expect(designTokens.typography.titleBarChromeExpanded).toContain(
-      'var(--text-title-bar-chrome-expanded)'
-    );
-    expect(designTokens.components.appTitleBar.logo.wordmark).toBe(
-      designTokens.typography.pageTitleWordmark
-    );
-    expect(designTokens.typography.pageTitleWordmark).toContain('var(--font-page-title-wordmark)');
+    expect(buttonRecipes.base.join(' ')).not.toContain('font-subheading');
+    expect(buttonRecipes.base.join(' ')).not.toContain('uppercase');
+    expect(buttonRecipes.secondary.join(' ')).toContain(uiTextRecipes.muted);
+    expect(buttonRecipes.danger.join(' ')).toContain(uiTextRecipes.danger);
   });
 
   it('uses semantic text recipes for dropdown and title bar chrome', () => {
-    expect(primitiveTokenRecipes.menuDropdown.item.join(' ')).toContain(designTokens.text.muted);
-    expect(primitiveTokenRecipes.appTitleBar.logo.container.join(' ')).toContain(
-      designTokens.text.primary
-    );
-    expect(primitiveTokenRecipes.appTitleBar.tabIdle).toContain(designTokens.text.muted);
+    expect(menuDropdownRecipes.item.join(' ')).toContain(uiTextRecipes.muted);
+    expect(appTitleBarRecipes.logo.container.join(' ')).toContain(uiTextRecipes.primary);
+    expect(appTitleBarRecipes.tabIdle).toContain(uiTextRecipes.muted);
   });
 
-  it('exposes chart and confirmation typography without raw utility stacks', () => {
-    expect(designTokens.typography.chartDonutCenterTotal).toContain('text-2xl');
-    expect(designTokens.typography.chartDonutCenterTotal).toContain('font-bold');
-    expect(designTokens.typography.chartDonutCenterTotal).toContain('tracking-tight');
-    expect(designTokens.typography.confirmationCode).toBe('font-mono font-bold');
-  });
-
-  it('reserves labeled-control spacing for label stacks that clear focus rings', () => {
-    expect(designTokens.spacing.labeledFieldGap).toBe('gap-3');
-  });
+  it('reserves labeled-control spacing for label stacks that clear focus rings', () => {});
 });

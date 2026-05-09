@@ -1,6 +1,66 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/ui/primitives/utils';
-import { designTokens } from '@/ui/tokens';
+import {
+  border as semanticBorders,
+  effect as semanticEffects,
+  status as semanticStatus,
+  surface as semanticSurfaces,
+  text as semanticTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
+
+export const pageLayoutRecipes = {
+  shell: [
+    'relative',
+    'overflow-hidden',
+    'rounded-[2.25rem]',
+    'border',
+    ...semanticBorders.glass,
+    ...semanticSurfaces.glassPanel,
+    'p-8',
+    ...semanticEffects.glassShadow,
+    'backdrop-blur-[28px]',
+    'backdrop-saturate-[150%]',
+    'transition-colors',
+    'duration-500',
+    'ease-out',
+    'sm:p-12',
+  ],
+  innerRing: [
+    'absolute',
+    'inset-[1px]',
+    'rounded-[2.2rem]',
+    'ring-1',
+    'ring-white/45',
+    ...semanticEffects.pageShellInsetRing,
+    'dark:ring-white/12',
+  ],
+  innerGradient: [
+    'absolute',
+    'inset-0',
+    'rounded-[2.2rem]',
+    'bg-gradient-to-b',
+    'from-white/72',
+    'via-white/28',
+    'to-transparent',
+    'transition-colors',
+    'duration-500',
+    'dark:from-slate-900/68',
+    'dark:via-slate-900/34',
+    'dark:to-transparent',
+  ],
+  badge: `${uiTypographyRecipes.badge} inline-flex items-center justify-center rounded-full ${semanticSurfaces.mutedChip.join(' ')} px-3 py-1 ${semanticTextRecipes.label} ${semanticEffects.glassShadow[0]} dark:text-slate-200`,
+  title: `${uiTypographyRecipes.pageTitle} ${semanticTextRecipes.primary} transition-colors duration-300 ease-out`,
+  subtitle: `${uiTypographyRecipes.body} ${semanticTextRecipes.body} transition-colors duration-300 ease-out`,
+  error: [
+    'rounded-2xl',
+    ...semanticBorders.danger,
+    ...semanticStatus.danger.surface,
+    'px-5 py-3',
+    'shadow-sm',
+  ].join(' '),
+  errorText: `${uiTypographyRecipes.captionStrong} ${semanticTextRecipes.danger}`,
+} as const;
 
 interface PageLayoutProps {
   badge?: string;
@@ -25,10 +85,10 @@ export function PageLayout({
 }: PageLayoutProps) {
   return (
     <div className={cn('space-y-8', className)}>
-      <section className={cn(...designTokens.components.pageLayout.shell)}>
+      <section className={cn(...pageLayoutRecipes.shell)}>
         <div className={cn('pointer-events-none', 'absolute', 'inset-0')}>
-          <div className={cn(designTokens.components.pageLayout.innerRing)} />
-          <div className={cn(designTokens.components.pageLayout.innerGradient)} />
+          <div className={cn(pageLayoutRecipes.innerRing)} />
+          <div className={cn(pageLayoutRecipes.innerGradient)} />
         </div>
 
         <div className={cn('relative', 'z-10', 'flex', 'flex-col', 'gap-5')}>
@@ -43,14 +103,10 @@ export function PageLayout({
             )}
           >
             <div className={cn('max-w-2xl', 'space-y-3')}>
-              {badge && (
-                <span className={cn(designTokens.components.pageLayout.badge)}>{badge}</span>
-              )}
+              {badge && <span className={cn(pageLayoutRecipes.badge)}>{badge}</span>}
               <div className="space-y-2">
-                <h1 className={cn(designTokens.components.pageLayout.title)}>{title}</h1>
-                {subtitle && (
-                  <p className={cn(designTokens.components.pageLayout.subtitle)}>{subtitle}</p>
-                )}
+                <h1 className={cn(pageLayoutRecipes.title)}>{title}</h1>
+                {subtitle && <p className={cn(pageLayoutRecipes.subtitle)}>{subtitle}</p>}
               </div>
             </div>
 
@@ -62,8 +118,8 @@ export function PageLayout({
           </div>
 
           {error && (
-            <div className={cn(designTokens.components.pageLayout.error)}>
-              <div className={cn(designTokens.components.pageLayout.errorText)}>Error: {error}</div>
+            <div className={cn(pageLayoutRecipes.error)}>
+              <div className={cn(pageLayoutRecipes.errorText)}>Error: {error}</div>
             </div>
           )}
 

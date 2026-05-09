@@ -2,7 +2,11 @@ import { BarChart3 } from 'lucide-react';
 import type React from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { cn, EmptyState } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes } from '@/ui/recipes';
+
+const donutCenterTotalTypography = 'font-display text-2xl font-bold tracking-tight';
+
+import { chart, getThemeColors } from '@/ui/tokens';
 import { useTheme } from '../../../context/ThemeContext';
 import { fmtUSD } from '../../../utils/format';
 import type { DonutDatum } from '../adapters/chartData';
@@ -31,7 +35,8 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
   hoveredCategory,
   setHoveredCategory,
 }) => {
-  const { mode, colors } = useTheme();
+  const { mode } = useTheme();
+  const colors = getThemeColors(mode);
   return (
     <div
       className={cn(
@@ -63,7 +68,8 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
                 animationDuration={800}
               >
                 {data.map((cat, index) => {
-                  const color = colors.chart.primary[index % colors.chart.primary.length];
+                  const palette = chart.series[mode];
+                  const color = palette[index % palette.length];
                   const isHovered = hoveredCategory === cat.name;
                   return (
                     <Cell
@@ -111,12 +117,7 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
               'pointer-events-none'
             )}
           >
-            <div
-              className={cn(
-                designTokens.typography.chartDonutCenterTotal,
-                designTokens.text.primary
-              )}
-            >
+            <div className={cn(donutCenterTotalTypography, uiTextRecipes.primary)}>
               {fmtUSD(total)}
             </div>
           </div>

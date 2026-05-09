@@ -1,6 +1,6 @@
 import { Building2, Clock, CreditCard } from 'lucide-react';
 import { cn } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import HeroStatCard from '../../../components/widgets/HeroStatCard';
 
 interface AccountsSummaryStatsProps {
@@ -45,7 +45,7 @@ export const AccountsSummaryStats = ({
           )}
           data-testid="accounts-flow-error"
         >
-          <div className={cn(designTokens.typography.bodyStrong, designTokens.text.danger)}>
+          <div className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.danger)}>
             {flowError}
           </div>
         </div>

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { cn } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes } from '@/ui/recipes';
 import { GradientShell } from './GradientShell';
 
 const meta = {
@@ -19,7 +19,7 @@ const meta = {
           'py-3',
           'shadow-sm',
           'dark:bg-slate-900/60',
-          designTokens.text.body
+          uiTextRecipes.body
         )}
       >
         Shell content

@@ -1,7 +1,17 @@
 import type { FinancialProvider } from '@/types/api';
 import { cn, GlassCard } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import {
+  border as uiBorderRecipes,
+  effect as uiEffectRecipes,
+  status as uiStatusRecipes,
+  surface as uiSurfaceRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import { getProviderCardConfig } from '../../../utils/providerCards';
+
+const eyebrowChip =
+  'inline-flex items-center justify-center rounded-full bg-white/75 px-3 py-1 font-label uppercase tracking-[0.32em] text-[#475569] shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/75 dark:text-[#cbd5e1]';
 
 interface ProviderSelectionPanelProps {
   loading: boolean;
@@ -17,10 +27,10 @@ const panelClasses = cn(
   'overflow-hidden',
   'rounded-[2.25rem]',
   'border',
-  ...designTokens.borders.glass,
-  ...designTokens.surfaces.semantic.glassPanel,
+  ...uiBorderRecipes.glass,
+  ...uiSurfaceRecipes.glassPanel,
   'p-10',
-  ...designTokens.effects.semantic.glassShadow,
+  ...uiEffectRecipes.glassShadow,
   'backdrop-blur-[28px]'
 );
 
@@ -36,7 +46,7 @@ export const ProviderSelectionPanel = ({
     return (
       <section className={panelClasses} data-testid="provider-loading-panel">
         <div className={cn('p-12', 'text-center')}>
-          <div className={cn(designTokens.typography.bodyStrong, designTokens.text.body)}>
+          <div className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.body)}>
             Loading provider catalogue…
           </div>
         </div>
@@ -52,19 +62,17 @@ export const ProviderSelectionPanel = ({
           'overflow-hidden',
           'rounded-[2.25rem]',
           'border',
-          ...designTokens.status.danger.border,
-          ...designTokens.status.danger.surface,
+          ...uiStatusRecipes.danger.border,
+          ...uiStatusRecipes.danger.surface,
           'p-12',
           'text-center',
-          ...designTokens.effects.semantic.dangerGlow,
+          ...uiEffectRecipes.dangerGlow,
           'backdrop-blur-[28px]'
         )}
         data-testid="provider-error-panel"
       >
-        <div className={cn(designTokens.typography.bodyStrong, designTokens.text.danger)}>
-          {error}
-        </div>
-        <div className={cn('mt-2', designTokens.typography.caption, designTokens.text.danger)}>
+        <div className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.danger)}>{error}</div>
+        <div className={cn('mt-2', uiTypographyRecipes.caption, uiTextRecipes.danger)}>
           Please refresh or try again later.
         </div>
       </section>
@@ -79,17 +87,17 @@ export const ProviderSelectionPanel = ({
     <section className={panelClasses} data-testid="provider-selection-panel">
       <div className={cn('relative', 'z-10', 'flex', 'flex-col', 'gap-8')}>
         <div className={cn('space-y-3', 'text-center')}>
-          <span className={cn(designTokens.surfaces.layered.eyebrowChip)}>Select Provider</span>
+          <span className={cn(eyebrowChip)}>Select Provider</span>
           <h1
             className={cn(
-              designTokens.typography.pageTitle,
-              designTokens.text.primary,
+              uiTypographyRecipes.pageTitle,
+              uiTextRecipes.primary,
               'sm:text-[2.25rem]'
             )}
           >
             Choose how you connect accounts
           </h1>
-          <p className={cn(designTokens.typography.body, designTokens.text.body)}>
+          <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
             Pick the data provider that matches your deployment. You can change this later from
             account settings.
           </p>
@@ -135,43 +143,35 @@ export const ProviderSelectionPanel = ({
                     'w-full',
                     'transition-all',
                     'duration-200',
-                    ...designTokens.borders.glass,
-                    ...designTokens.surfaces.semantic.card,
+                    ...uiBorderRecipes.glass,
+                    ...uiSurfaceRecipes.card,
                     'hover:shadow-[0_24px_80px_-50px_rgba(15,23,42,0.55)]',
-                    'dark:hover:border-[var(--color-border-hover-accent-dark)]',
+                    'dark:hover:border-[var(--color-border-hover-accent)]',
                     'dark:hover:shadow-[0_28px_90px_-60px_rgba(2,6,23,0.7)]'
                   )}
                 >
                   <div className={cn('flex', 'h-full', 'flex-col', 'gap-4')}>
                     <div className={cn('flex', 'items-center', 'justify-between')}>
-                      <div
-                        className={cn(designTokens.typography.cardTitle, designTokens.text.primary)}
-                      >
+                      <div className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>
                         {details.title}
                       </div>
                       <span
                         className={cn(
                           'rounded-full',
-                          ...designTokens.status.info.surface,
+                          ...uiStatusRecipes.info.surface,
                           'px-3',
                           'py-1',
-                          designTokens.typography.label,
-                          ...designTokens.status.info.text
+                          uiTypographyRecipes.label,
+                          ...uiStatusRecipes.info.text
                         )}
                       >
                         {details.badge}
                       </span>
                     </div>
-                    <p className={cn(designTokens.typography.body, designTokens.text.body)}>
+                    <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
                       {details.description}
                     </p>
-                    <ul
-                      className={cn(
-                        'space-y-2',
-                        designTokens.typography.body,
-                        designTokens.text.subtle
-                      )}
-                    >
+                    <ul className={cn('space-y-2', uiTypographyRecipes.body, uiTextRecipes.subtle)}>
                       {details.bullets.map((bullet) => (
                         <li key={bullet} className={cn('flex', 'items-start', 'gap-2')}>
                           <span
@@ -181,7 +181,7 @@ export const ProviderSelectionPanel = ({
                               'w-1.5',
                               'rounded-full',
                               'bg-[var(--color-brand-sky)]',
-                              'dark:bg-[var(--color-brand-sky-dark)]'
+                              'dark:bg-[var(--color-brand-sky)]'
                             )}
                           />
                           <span>{bullet}</span>
@@ -198,7 +198,7 @@ export const ProviderSelectionPanel = ({
                         'bg-[var(--color-brand-sky)]',
                         'px-4',
                         'py-2',
-                        designTokens.typography.bodyStrong,
+                        uiTypographyRecipes.bodyStrong,
                         'text-white',
                         'shadow-[0_18px_48px_-32px_rgba(14,165,233,0.65)]'
                       )}

@@ -64,10 +64,10 @@
       "**/*.json",
       "!.next",
       "!next-env.d.ts",
-      "!src/ui/tokens/generated/**",
+      "!src/ui/generated",
       "!node_modules",
       "!coverage",
-      "!test-results/**",
+      "!test-results",
       "!out",
       "!.playwright-browsers",
       "!storybook-static"

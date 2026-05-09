@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { cn } from '@/ui/primitives/utils';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes } from '@/ui/recipes';
 import { DashboardChartCard } from './DashboardChartCard';
 
 const meta = {
@@ -16,7 +16,7 @@ const meta = {
       <div
         className={cn(
           'flex h-48 items-center justify-center rounded-xl border border-dashed border-slate-300 text-sm dark:border-slate-600',
-          designTokens.text.muted
+          uiTextRecipes.muted
         )}
       >
         Chart placeholder
@@ -38,7 +38,7 @@ export const Loading: Story = {
 export const EmptyBody: Story = {
   args: {
     children: (
-      <div className={cn('flex h-40 items-center justify-center text-sm', designTokens.text.muted)}>
+      <div className={cn('flex h-40 items-center justify-center text-sm', uiTextRecipes.muted)}>
         No transactions in range
       </div>
     ),

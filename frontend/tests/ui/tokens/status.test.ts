@@ -1,5 +1,5 @@
-import { designTokens } from '@/ui/tokens';
-import generatedTokens from '@/ui/tokens/generated/tokens';
+import generatedTokens from '@/ui/generated/tokens';
+import { status as uiStatusRecipes } from '@/ui/recipes';
 
 const expectedRoles = ['info', 'success', 'warning', 'danger'];
 
@@ -48,7 +48,7 @@ const expectedTokenKeys = [
 
 describe('design token status recipes', () => {
   it('exposes the semantic status tone roles', () => {
-    expect(Object.keys(designTokens.status)).toEqual(expect.arrayContaining(expectedRoles));
+    expect(Object.keys(uiStatusRecipes)).toEqual(expect.arrayContaining(expectedRoles));
   });
 
   it('maps the semantic status tone roles to generated token fields', () => {
@@ -56,25 +56,25 @@ describe('design token status recipes', () => {
   });
 
   it('keeps representative status recipes pinned to generated CSS variables', () => {
-    expect(designTokens.status.info.surface).toEqual([
+    expect(uiStatusRecipes.info.surface).toEqual([
       'bg-[var(--color-status-info-surface)]',
-      'dark:bg-[var(--color-status-info-surface-dark)]',
+      'dark:bg-[var(--color-status-info-surface)]',
     ]);
-    expect(designTokens.status.success.text).toEqual([
+    expect(uiStatusRecipes.success.text).toEqual([
       'text-[var(--color-status-success-text)]',
-      'dark:text-[var(--color-status-success-text-dark)]',
+      'dark:text-[var(--color-status-success-text)]',
     ]);
-    expect(designTokens.status.warning.icon).toEqual([
+    expect(uiStatusRecipes.warning.icon).toEqual([
       'text-[var(--color-status-warning-icon)]',
-      'dark:text-[var(--color-status-warning-icon-dark)]',
+      'dark:text-[var(--color-status-warning-icon)]',
     ]);
-    expect(designTokens.status.danger.border).toEqual([
+    expect(uiStatusRecipes.danger.border).toEqual([
       'border-[var(--color-status-danger-border)]',
-      'dark:border-[var(--color-status-danger-border-dark)]',
+      'dark:border-[var(--color-status-danger-border)]',
     ]);
-    expect(designTokens.status.danger.surface).toEqual([
+    expect(uiStatusRecipes.danger.surface).toEqual([
       'bg-[color:color-mix(in_srgb,var(--color-status-danger-surface)_82%,transparent)]',
-      'dark:bg-[color:color-mix(in_srgb,var(--color-status-danger-surface-dark)_28%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-status-danger-surface)_28%,transparent)]',
     ]);
   });
 });

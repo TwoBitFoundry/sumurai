@@ -2,11 +2,16 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Receipt } from 'lucide-react';
 import type React from 'react';
-import { cn, EmptyState } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
-import { dashboardTokenRecipes } from '@/views/tokenRecipes';
+import { cn, EmptyState, PaginationButton, Pill } from '@/ui/primitives';
+import {
+  border as uiBorderRecipes,
+  effect as uiEffectRecipes,
+  surface as uiSurfaceRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import type { Transaction } from '../../../types/api';
-import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
+import { formatCategoryName } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
 
 interface Props {
@@ -24,6 +29,30 @@ const resolveCategoryName = (transaction: Transaction): string => {
   }
   return formatCategoryName(transaction.category.primary);
 };
+
+const tableHeader = [
+  ...uiSurfaceRecipes.mutedChip,
+  uiTextRecipes.body,
+  'transition-colors duration-500',
+] as const;
+
+const tableFooter = [
+  'border-t px-4 py-4 transition-colors duration-500',
+  ...uiBorderRecipes.glass,
+  ...uiSurfaceRecipes.card,
+  ...uiEffectRecipes.glassShadow,
+  'backdrop-blur-md',
+  'backdrop-saturate-[150%]',
+] as const;
+
+export const transactionsRowRecipes = {
+  shell: [
+    'group relative border-b border-slate-200/70 transition-all duration-150 ease-out hover:-translate-y-[2px] hover:ring-2 hover:ring-sky-400/60',
+    'dark:border-slate-700/50 dark:hover:ring-sky-400/50',
+  ],
+  odd: ['bg-slate-100', 'dark:bg-slate-700/20'],
+  even: ['bg-white', 'dark:bg-transparent'],
+} as const;
 
 export const TransactionsTable: React.FC<Props> = ({
   items,
@@ -48,8 +77,8 @@ export const TransactionsTable: React.FC<Props> = ({
         <>
           <div className="overflow-x-auto">
             <table className={cn('min-w-full', 'table-fixed')}>
-              <thead className={cn(dashboardTokenRecipes.tableHeader)}>
-                <tr className={cn('border-b', ...designTokens.borders.divider)}>
+              <thead className={cn(tableHeader)}>
+                <tr className={cn('border-b', ...uiBorderRecipes.divider)}>
                   <th
                     className={cn(
                       'w-[15%]',
@@ -57,7 +86,7 @@ export const TransactionsTable: React.FC<Props> = ({
                       'px-4',
                       'py-3',
                       'text-left',
-                      designTokens.typography.label
+                      uiTypographyRecipes.label
                     )}
                   >
                     Date
@@ -68,7 +97,7 @@ export const TransactionsTable: React.FC<Props> = ({
                       'px-4',
                       'py-3',
                       'text-left',
-                      designTokens.typography.label
+                      uiTypographyRecipes.label
                     )}
                   >
                     Merchant
@@ -80,7 +109,7 @@ export const TransactionsTable: React.FC<Props> = ({
                       'px-4',
                       'py-3',
                       'text-right',
-                      designTokens.typography.label
+                      uiTypographyRecipes.label
                     )}
                   >
                     Amount
@@ -92,7 +121,7 @@ export const TransactionsTable: React.FC<Props> = ({
                       'px-4',
                       'py-3',
                       'text-left',
-                      designTokens.typography.label
+                      uiTypographyRecipes.label
                     )}
                   >
                     Account
@@ -104,7 +133,7 @@ export const TransactionsTable: React.FC<Props> = ({
                       'px-4',
                       'py-3',
                       'text-left',
-                      designTokens.typography.label
+                      uiTypographyRecipes.label
                     )}
                   >
                     Category
@@ -121,15 +150,12 @@ export const TransactionsTable: React.FC<Props> = ({
                 >
                   {items.map((r, i) => {
                     const catName = resolveCategoryName(r);
-                    const theme = getTagThemeForCategory(catName);
                     return (
                       <tr
                         key={r.id}
                         className={cn(
-                          designTokens.components.transactions.row.shell,
-                          i % 2
-                            ? designTokens.components.transactions.row.odd
-                            : designTokens.components.transactions.row.even
+                          transactionsRowRecipes.shell,
+                          i % 2 ? transactionsRowRecipes.odd : transactionsRowRecipes.even
                         )}
                       >
                         <td
@@ -139,8 +165,8 @@ export const TransactionsTable: React.FC<Props> = ({
                             'px-4',
                             'py-3',
                             'align-middle',
-                            designTokens.typography.body,
-                            designTokens.text.primary,
+                            uiTypographyRecipes.body,
+                            uiTextRecipes.primary,
                             'transition-colors',
                             'duration-500'
                           )}
@@ -155,8 +181,8 @@ export const TransactionsTable: React.FC<Props> = ({
                             className={cn(
                               'block',
                               'truncate',
-                              designTokens.typography.body,
-                              designTokens.text.primary,
+                              uiTypographyRecipes.body,
+                              uiTextRecipes.primary,
                               'transition-colors',
                               'duration-500'
                             )}
@@ -172,14 +198,14 @@ export const TransactionsTable: React.FC<Props> = ({
                             'text-right',
                             'align-middle',
                             'tabular-nums',
-                            designTokens.typography.body,
+                            uiTypographyRecipes.body,
                             'transition-colors',
                             'duration-500',
                             r.amount > 0
-                              ? designTokens.text.danger
+                              ? uiTextRecipes.danger
                               : r.amount < 0
-                                ? designTokens.text.success
-                                : designTokens.text.muted
+                                ? uiTextRecipes.success
+                                : uiTextRecipes.muted
                           )}
                         >
                           {fmtUSD(r.amount)}
@@ -187,8 +213,8 @@ export const TransactionsTable: React.FC<Props> = ({
                         <td className={cn('whitespace-nowrap', 'px-4', 'py-3', 'align-middle')}>
                           <span
                             className={cn(
-                              designTokens.typography.body,
-                              designTokens.text.muted,
+                              uiTypographyRecipes.body,
+                              uiTextRecipes.muted,
                               'transition-colors',
                               'duration-500'
                             )}
@@ -198,7 +224,7 @@ export const TransactionsTable: React.FC<Props> = ({
                               <span
                                 className={cn(
                                   'ml-1',
-                                  designTokens.text.subtle,
+                                  uiTextRecipes.subtle,
                                   'transition-colors',
                                   'duration-500'
                                 )}
@@ -209,19 +235,13 @@ export const TransactionsTable: React.FC<Props> = ({
                           </span>
                         </td>
                         <td className={cn('whitespace-nowrap', 'px-4', 'py-3', 'align-middle')}>
-                          <span
-                            className={cn(
-                              designTokens.components.pill.base,
-                              'transition-all duration-200 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
-                              theme.tag
-                            )}
+                          <Pill
+                            variant="category"
+                            categoryName={catName}
+                            className="transition-all duration-200 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10"
                           >
-                            <span
-                              className={cn(designTokens.components.pill.dot, theme.dot)}
-                              aria-hidden="true"
-                            />
                             {catName}
-                          </span>
+                          </Pill>
                         </td>
                       </tr>
                     );
@@ -230,18 +250,11 @@ export const TransactionsTable: React.FC<Props> = ({
               </AnimatePresence>
             </table>
           </div>
-          <div
-            className={cn(
-              'flex',
-              'items-center',
-              'justify-between',
-              dashboardTokenRecipes.tableFooter
-            )}
-          >
+          <div className={cn('flex', 'items-center', 'justify-between', tableFooter)}>
             <div
               className={cn(
-                designTokens.typography.caption,
-                designTokens.text.muted,
+                uiTypographyRecipes.caption,
+                uiTextRecipes.muted,
                 'transition-colors',
                 'duration-500'
               )}
@@ -249,34 +262,32 @@ export const TransactionsTable: React.FC<Props> = ({
               Showing {from}-{to} of {total}
             </div>
             <div className={cn('flex', 'items-center', 'gap-3')}>
-              <button
+              <PaginationButton
                 type="button"
                 onClick={onPrev}
                 disabled={currentPage <= 1}
                 aria-label="Previous page"
-                className={cn(designTokens.components.actions.paginationRound)}
               >
                 <ChevronLeftIcon className={cn('h-4', 'w-4')} />
-              </button>
+              </PaginationButton>
               <div
                 className={cn(
-                  designTokens.typography.caption,
-                  designTokens.text.muted,
+                  uiTypographyRecipes.caption,
+                  uiTextRecipes.muted,
                   'transition-colors',
                   'duration-500'
                 )}
               >
                 Page {currentPage} of {totalPages}
               </div>
-              <button
+              <PaginationButton
                 type="button"
                 onClick={onNext}
                 disabled={currentPage >= totalPages}
                 aria-label="Next page"
-                className={cn(designTokens.components.actions.paginationRound)}
               >
                 <ChevronRightIcon className={cn('h-4', 'w-4')} />
-              </button>
+              </PaginationButton>
             </div>
           </div>
         </>

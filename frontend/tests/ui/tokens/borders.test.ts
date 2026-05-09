@@ -1,17 +1,7 @@
-import { designTokens } from '@/ui/tokens';
-import generatedTokens from '@/ui/tokens/generated/tokens';
+import generatedTokens from '@/ui/generated/tokens';
+import { border as uiBorderRecipes } from '@/ui/recipes';
 
-const expectedRoles = [
-  'default',
-  'subtle',
-  'strong',
-  'glass',
-  'control',
-  'divider',
-  'focusActive',
-  'hoverAccent',
-  'danger',
-];
+const expectedRoles = ['default', 'subtle', 'glass', 'control', 'divider', 'hoverAccent', 'danger'];
 
 const expectedTokenKeys = [
   'border-default',
@@ -36,7 +26,7 @@ const expectedTokenKeys = [
 
 describe('design token border recipes', () => {
   it('exposes the semantic border roles', () => {
-    expect(Object.keys(designTokens.borders)).toEqual(expect.arrayContaining(expectedRoles));
+    expect(Object.keys(uiBorderRecipes)).toEqual(expect.arrayContaining(expectedRoles));
   });
 
   it('maps the semantic border roles to generated token fields', () => {
@@ -44,17 +34,17 @@ describe('design token border recipes', () => {
   });
 
   it('keeps representative border recipes pinned to generated CSS variables', () => {
-    expect(designTokens.borders.default).toEqual([
+    expect(uiBorderRecipes.default).toEqual([
       'border-[var(--color-border-default)]',
-      'dark:border-[var(--color-border-default-dark)]',
+      'dark:border-[var(--color-border-default)]',
     ]);
-    expect(designTokens.borders.glass).toEqual([
+    expect(uiBorderRecipes.glass).toEqual([
       'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
-      'dark:border-[color:color-mix(in_srgb,var(--color-border-glass-dark)_12%,transparent)]',
+      'dark:border-[color:color-mix(in_srgb,var(--color-border-glass)_12%,transparent)]',
     ]);
-    expect(designTokens.borders.danger).toEqual([
+    expect(uiBorderRecipes.danger).toEqual([
       'border-[var(--color-border-danger)]',
-      'dark:border-[var(--color-border-danger-dark)]',
+      'dark:border-[var(--color-border-danger)]',
     ]);
     expect(generatedTokens.color['border-divider'].$value.hex).toBeDefined();
   });

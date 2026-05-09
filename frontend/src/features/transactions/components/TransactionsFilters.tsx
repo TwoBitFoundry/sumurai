@@ -1,7 +1,12 @@
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn, Input } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import { pillRecipes } from '@/ui/primitives/Pill';
+import {
+  placeholder as uiPlaceholderRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import { getTagThemeForCategory } from '../../../utils/categories';
 
 interface Props {
@@ -51,7 +56,7 @@ export const TransactionsFilters: React.FC<Props> = ({
             placeholder="Search transactions..."
             variant="default"
             inputSize="md"
-            className={cn(designTokens.textPlaceholder.muted)}
+            className={cn(uiPlaceholderRecipes.muted)}
           />
         </div>
       )}
@@ -60,8 +65,8 @@ export const TransactionsFilters: React.FC<Props> = ({
           <span
             className={cn(
               'flex-shrink-0',
-              designTokens.typography.label,
-              designTokens.text.label,
+              uiTypographyRecipes.label,
+              uiTextRecipes.label,
               'transition-colors',
               'duration-500'
             )}
@@ -93,7 +98,7 @@ export const TransactionsFilters: React.FC<Props> = ({
                     type="button"
                     onClick={() => onSelectCategory(isSelected ? null : name)}
                     className={cn(
-                      designTokens.components.pill.base,
+                      pillRecipes.base,
                       'whitespace-nowrap transition-all duration-150 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
                       theme.tag,
                       isSelected
@@ -103,17 +108,14 @@ export const TransactionsFilters: React.FC<Props> = ({
                     aria-pressed={isSelected}
                     title={isSelected ? `Remove filter: ${name}` : `Filter by ${name}`}
                   >
-                    <span
-                      className={cn(designTokens.components.pill.dot, theme.dot)}
-                      aria-hidden="true"
-                    />
+                    <span className={cn(pillRecipes.dot, theme.dot)} aria-hidden="true" />
                     {name}
                   </button>
                 );
               })}
             </div>
-            {showLeftFade && <div className={cn(designTokens.components.pill.fadeLeft, 'w-8')} />}
-            {showRightFade && <div className={cn(designTokens.components.pill.fadeRight, 'w-8')} />}
+            {showLeftFade && <div className={cn(pillRecipes.fadeLeft, 'w-8')} />}
+            {showRightFade && <div className={cn(pillRecipes.fadeRight, 'w-8')} />}
           </div>
         </div>
       )}

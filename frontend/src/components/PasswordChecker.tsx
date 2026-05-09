@@ -1,6 +1,6 @@
 import type { PasswordValidation } from '@/hooks/usePasswordValidation';
 import { cn, GlassCard, RequirementPill } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
 interface PasswordCheckerProps {
   validation: PasswordValidation;
@@ -14,16 +14,9 @@ export function PasswordChecker({ validation, className }: PasswordCheckerProps)
       rounded="lg"
       padding="sm"
       withInnerEffects={false}
-      className={cn(
-        'space-y-1.5',
-        designTokens.typography.caption,
-        designTokens.text.body,
-        className
-      )}
+      className={cn('space-y-1.5', uiTypographyRecipes.caption, uiTextRecipes.body, className)}
     >
-      <h3 className={cn(designTokens.typography.label, designTokens.text.label)}>
-        Password checklist
-      </h3>
+      <h3 className={cn(uiTypographyRecipes.label, uiTextRecipes.label)}>Password checklist</h3>
       <div className={cn('flex', 'flex-wrap', 'gap-1.5')}>
         <RequirementPill status={validation.minLength ? 'met' : 'pending'}>
           8+ characters

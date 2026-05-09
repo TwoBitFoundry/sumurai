@@ -33,6 +33,9 @@ pids/
 tmp/
 temp/
 .vscode/
+!.vscode/
+.vscode/*
+!.vscode/settings.json
 .idea/
 *.swp
 *.swo

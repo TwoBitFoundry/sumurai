@@ -13,7 +13,13 @@ import {
 } from 'recharts';
 import type { DotItemDotProps } from 'recharts/types/util/types';
 import { Button, cn, EmptyState } from '@/ui/primitives';
-import { designTokens } from '@/ui/tokens';
+import {
+  border as semanticBorders,
+  effect as semanticEffects,
+  surface as semanticSurfaces,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import BalancesOverview from '../components/BalancesOverview';
 import { useTheme } from '../context/ThemeContext';
 import { DashboardCalculator } from '../domain/DashboardCalculator';
@@ -26,7 +32,35 @@ import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries
 import { PageLayout } from '../layouts/PageLayout';
 import type { DateRangeKey as DateRange } from '../utils/dateRanges';
 import { fmtUSD } from '../utils/format';
-import { dashboardTokenRecipes } from './tokenRecipes';
+
+const dashboardCardShell = [
+  'rounded-lg border transition-all duration-300',
+  ...semanticBorders.subtle,
+  ...semanticSurfaces.card,
+  ...semanticEffects.glassShadow,
+] as const;
+
+const dashboardCardShellActive = [
+  'rounded-lg border transition-all duration-300 -translate-y-[2px]',
+  ...semanticBorders.default,
+  ...semanticSurfaces.hoverRow,
+  ...semanticEffects.glassShadow,
+] as const;
+
+const dashboardLoadingCard = [
+  'min-h-[220px] rounded-xl border animate-pulse',
+  ...semanticBorders.subtle,
+  ...semanticSurfaces.mutedChip,
+] as const;
+
+const dashboardFloatingRangeShell = [
+  'flex gap-2 rounded-2xl border px-3 py-2',
+  ...semanticBorders.glass,
+  ...semanticSurfaces.card,
+  ...semanticEffects.glassShadow,
+  'backdrop-blur-md',
+  'backdrop-saturate-[150%]',
+] as const;
 
 const netTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) => {
   const numericValue = Array.isArray(value) ? Number(value[0]) : Number(value);
@@ -116,9 +150,7 @@ const DashboardPage: React.FC = () => {
               isRefreshing={!analyticsLoading && analyticsRefreshing}
             >
               {analyticsLoading && (
-                <div
-                  className={cn('mb-2', designTokens.typography.caption, designTokens.text.muted)}
-                >
+                <div className={cn('mb-2', uiTypographyRecipes.caption, uiTextRecipes.muted)}>
                   Loading analytics...
                 </div>
               )}
@@ -141,8 +173,8 @@ const DashboardPage: React.FC = () => {
                     <div>
                       <div
                         className={cn(
-                          designTokens.typography.label,
-                          designTokens.text.label,
+                          uiTypographyRecipes.label,
+                          uiTextRecipes.label,
                           'mb-2',
                           'font-medium'
                         )}
@@ -161,9 +193,7 @@ const DashboardPage: React.FC = () => {
                               key={`topcard-${cat.name}`}
                               className={cn(
                                 'p-2',
-                                isHovered
-                                  ? dashboardTokenRecipes.cardShellActive
-                                  : dashboardTokenRecipes.cardShell
+                                isHovered ? dashboardCardShellActive : dashboardCardShell
                               )}
                               style={
                                 isHovered ? { borderColor: colors.chart.primary[0] } : undefined
@@ -180,8 +210,8 @@ const DashboardPage: React.FC = () => {
                                 />
                                 <span
                                   className={cn(
-                                    designTokens.typography.captionStrong,
-                                    designTokens.text.primary,
+                                    uiTypographyRecipes.captionStrong,
+                                    uiTextRecipes.primary,
                                     'truncate'
                                   )}
                                 >
@@ -191,17 +221,14 @@ const DashboardPage: React.FC = () => {
                               <div className={cn('flex', 'items-baseline', 'justify-between')}>
                                 <div
                                   className={cn(
-                                    designTokens.typography.bodyStrong,
-                                    designTokens.text.primary
+                                    uiTypographyRecipes.bodyStrong,
+                                    uiTextRecipes.primary
                                   )}
                                 >
                                   {fmtUSD(cat.value)}
                                 </div>
                                 <div
-                                  className={cn(
-                                    designTokens.typography.caption,
-                                    designTokens.text.muted
-                                  )}
+                                  className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}
                                 >
                                   {percentage}%
                                 </div>
@@ -238,14 +265,14 @@ const DashboardPage: React.FC = () => {
               isRefreshing={!netLoading && netRefreshing}
             >
               {netLoading ? (
-                <div className={cn('flex-1', dashboardTokenRecipes.loadingCard)} />
+                <div className={cn('flex-1', dashboardLoadingCard)} />
               ) : netError ? (
                 <div
                   className={cn(
                     'flex-1',
                     'min-h-[220px]',
-                    designTokens.typography.body,
-                    designTokens.text.danger
+                    uiTypographyRecipes.body,
+                    uiTextRecipes.danger
                   )}
                 >
                   {netError}
@@ -364,7 +391,7 @@ const DashboardPage: React.FC = () => {
             )}
             style={{ bottom: 24 }}
           >
-            <div className={cn(dashboardTokenRecipes.floatingRangeShell)}>
+            <div className={cn(dashboardFloatingRangeShell)}>
               {[
                 { key: 'current-month', label: 'Current Month' },
                 { key: 'past-2-months', label: '2 Months' },
