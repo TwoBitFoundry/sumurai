@@ -14,56 +14,30 @@ describe('ui imports audit', () => {
     });
   });
 
-  it('rejects imports from monitored recipes outside the allowlist', () => {
+  it('rejects forbidden primitives/recipes module specifiers', () => {
     const root = mkdtempSync(join(tmpdir(), 'ui-imports-audit-'));
-    const docsDir = join(root, 'docs');
     const srcDir = join(root, 'src');
 
     try {
-      mkdirSync(join(srcDir, 'ui'), { recursive: true });
+      mkdirSync(join(srcDir, 'ui', 'primitives'), { recursive: true });
       mkdirSync(join(srcDir, 'components'), { recursive: true });
-      writeFileSync(join(srcDir, 'ui', 'recipes.ts'), 'export const recipes = "ok";');
       writeFileSync(
-        join(srcDir, 'components', 'Allowed.tsx'),
-        'import { recipes } from "@/ui/recipes"; export const Allowed = () => recipes;'
+        join(srcDir, 'ui', 'primitives', 'recipes.ts'),
+        'export const recipes = "forbidden";'
       );
       writeFileSync(
-        join(root, 'DESIGN.md'),
-        ['components:', '  sample-card:', '    backgroundColor: "#ffffff"', ''].join('\n')
+        join(srcDir, 'components', 'Bad.tsx'),
+        'import { recipes } from "@/ui/primitives/recipes"; export const Bad = () => recipes;'
       );
 
       const scriptPath = resolve(__dirname, '../../scripts/check-ui-imports.mjs');
-      execFileSync(
-        'node',
-        [
-          scriptPath,
-          '--src-root',
-          srcDir,
-          '--docs-dir',
-          docsDir,
-          '--design-path',
-          join(root, 'DESIGN.md'),
-          '--write-inventory',
-        ],
-        {
-          cwd: root,
-          encoding: 'utf8',
-          stdio: ['ignore', 'pipe', 'pipe'],
-        }
-      );
-
-      writeFileSync(
-        join(srcDir, 'components', 'Bad.tsx'),
-        'import { recipes } from "@/ui/recipes"; export const Bad = () => recipes;'
-      );
-
       expect(() =>
-        execFileSync('node', [scriptPath, '--src-root', srcDir, '--docs-dir', docsDir], {
+        execFileSync('node', [scriptPath, '--src-root', srcDir], {
           cwd: root,
           encoding: 'utf8',
           stdio: ['ignore', 'pipe', 'pipe'],
         })
-      ).toThrow(/disallowed UI imports outside the inventory allowlist/);
+      ).toThrow(/UI import policy violations/);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
