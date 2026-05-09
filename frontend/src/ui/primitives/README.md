@@ -1,6 +1,12 @@
 # Sumurai UI Primitives
 
-This directory contains reusable UI primitives that implement Sumurai's glassmorphism design system with support for light and dark modes.
+This directory contains the reusable UI primitives that implement Sumurai's glassmorphism design system with support for light and dark modes.
+
+Start here when editing UI:
+- `AGENTS.md` for the UI policy.
+- `docs/UI_EXAMPLES.md` for good and bad composition patterns.
+- `frontend/src/ui/recipes.ts` for shared class atoms.
+- `frontend/src/ui/tokens.ts` for runtime JS values.
 
 ## Overview
 
@@ -767,7 +773,9 @@ See `__tests__/` directory for examples.
 
 ## Related Documentation
 
-- [DESIGN.md](../../../DESIGN.md) - Design system fundamentals
+- [DESIGN.md](../../../../DESIGN.md) - Design system fundamentals
+- [UI examples](../../../../docs/UI_EXAMPLES.md) - reference compositions for agents
+- [AGENTS.md](../../../../AGENTS.md) - repository-wide UI policy
 
 ---
 

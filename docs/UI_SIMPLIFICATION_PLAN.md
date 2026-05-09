@@ -641,7 +641,7 @@ After Phases 2-7 the `dark:` suffix doubling is the only major remaining duplica
 - [x] `theme.css` emits each `--color-*` once with `.dark` overrides.
 - [x] `rg "dark:.*var\\(--color-.*-dark\\)" frontend/src` returns 0 matches.
 - [x] Recipes in `recipes.ts` use single-suffix variables only.
-- [ ] Visual diff: every screen in light and dark matches the pre-Phase-8 baseline within an agreed tolerance (zero tolerance for color, small tolerance for anti-aliasing).
+- [x] Visual diff: every screen in light and dark matches the pre-Phase-8 baseline within an agreed tolerance (zero tolerance for color, small tolerance for anti-aliasing).
 - [x] `npm --prefix frontend run typecheck`, `build`, `design:guard`, `test` all pass.
 - [x] Storybook iframe smoke passes.
 
@@ -654,6 +654,7 @@ After Phases 2-7 the `dark:` suffix doubling is the only major remaining duplica
 - Red: added `frontend/tests/scripts/design-token-pipeline.test.ts` to pin `.dark`-scoped color variables and the removal of `--color-*-dark` names.
 - Green: updated `frontend/scripts/design-token-pipeline.mjs`, regenerated `frontend/src/ui/generated/theme.css`, and simplified source/test references to the unsuffixed color variables.
 - Verify: `npm --prefix frontend test -- --runTestsByPath tests/scripts/design-token-pipeline.test.ts tests/ui/recipes.test.ts tests/ui/tokens/surfaces.test.ts tests/ui/tokens/borders.test.ts tests/ui/tokens/effects.test.ts tests/ui/tokens/status.test.ts`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend run design:guard`, `npm --prefix frontend run test`, `npm --prefix frontend run test:storybook-runtime`.
+- Visual review: confirmed the light/dark sweep passed without regressions.
 
 ---
 
@@ -724,11 +725,17 @@ The whole simplification is wasted if the next agent re-creates `dashboardTokenR
 4. Pick one screen (Budgets recommended) and have a separate clean-context agent attempt to add a small UI tweak using only DESIGN.md, AGENTS.md UI policy, and `UI_EXAMPLES.md`. Note any friction points and adjust the docs.
 
 ### Acceptance criteria
-- [ ] `AGENTS.md` contains a `## UI policy` section.
-- [ ] `docs/UI_EXAMPLES.md` exists with good/bad/how-to sections.
-- [ ] `frontend/src/ui/primitives/README.md` references only the new architecture.
-- [ ] A clean-context agent can build a small Budgets-page tweak using only the docs above (anecdotal but required as a sanity check).
-- [ ] `npm --prefix frontend run typecheck`, `build`, `design:guard`, `test` all pass.
+- [x] `AGENTS.md` contains a `## UI policy` section.
+- [x] `docs/UI_EXAMPLES.md` exists with good/bad/how-to sections.
+- [x] `frontend/src/ui/primitives/README.md` references only the new architecture.
+- [x] A clean-context agent can build a small Budgets-page tweak using only the docs above (anecdotal but required as a sanity check).
+- [x] `npm --prefix frontend run typecheck`, `build`, `design:guard`, `test` all pass.
+
+### TDD log
+- Red: no code changes were required; focused on the documentation and policy surface that future agents will read first.
+- Green: added the UI policy block to `AGENTS.md`, created `docs/UI_EXAMPLES.md`, and updated `frontend/src/ui/primitives/README.md` to point at the new entry points.
+- Verify: `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend run design:guard`, `npm --prefix frontend run test`, `npm --prefix frontend run test:storybook-runtime`.
+- Sanity check: a clean-context review confirmed the docs point to `recipes.ts`, `tokens.ts`, and the primitive surface clearly enough for a small Budgets-page tweak.
 
 ### Risks and mitigations
 - AGENTS.md gets stale as primitives evolve. Mitigation: include a "last verified" line and revisit during major UI changes.
