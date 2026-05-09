@@ -1,6 +1,6 @@
 ---
 name: sumurai-testing-policy
-description: Use when adding, updating, reviewing, or debugging Sumurai tests across frontend or backend. Guides agents to keep tests in existing test folders, prefer boundary-focused tests, and run the right validation commands.
+description: Use when adding, updating, reviewing, or debugging Sumurai tests across frontend or backend, including Jest, Storybook Vitest, and Playwright Storybook smoke runs. Guides agents to keep tests in existing test folders, prefer boundary-focused tests, and run the right validation commands.
 ---
 
 # Sumurai Testing Policy
@@ -22,6 +22,7 @@ Read the relevant reference before changing tests:
 - Test observable behavior, contracts, edge cases, and integration boundaries.
 - Keep mocks and fixtures declarative and deterministic.
 - Use existing test utilities before adding new ones.
+- Use Storybook Vitest for browser-rendered UI behavior (interactions, loading and error states, validation display, callbacks) when Jest alone is not the right boundary; keep Playwright Storybook runtime for static build and iframe smoke, not fine-grained behavior specs.
 - Do not read or write `.env` files.
 - Do not add comments to source code.
 
@@ -37,9 +38,11 @@ Read the relevant reference before changing tests:
 
 Use the commands that match the touched area:
 
-- Backend: `cargo test --manifest-path backend/Cargo.toml`
-- Backend type/build sanity: `cargo check --manifest-path backend/Cargo.toml`
+- Backend: `cargo test --manifest-path backend/Cargo.toml --locked`
+- Backend type/build sanity: `cargo check --manifest-path backend/Cargo.toml --locked --all-targets`
 - Frontend tests: `npm --prefix frontend test`
+- Storybook browser tests (Vitest project): `npm --prefix frontend run test:storybook`
+- Storybook static build + Playwright iframe smoke: `npm --prefix frontend run test:storybook-runtime` (needs Playwright Chromium; use `npm run frontend:playwright-install` or `npm --prefix frontend run playwright:install-ci` to match CI)
 - Frontend typecheck: `npm --prefix frontend run typecheck`
 - Frontend build: `npm --prefix frontend run build`
 - Full repo validation (default Husky hook): `npm run precommit`

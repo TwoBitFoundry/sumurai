@@ -4,18 +4,18 @@ Use this policy when changing Sumurai tokens, theme values, or styling constants
 
 ## Source Roles
 
-- `DESIGN.md` is the design intent and agent-readable contract.
-- `frontend/src/ui/tokens/index.ts` is the current TypeScript implementation token surface.
-- `frontend/src/ui/tokens/tailwind-bridge.js` exposes a limited Tailwind bridge.
-- `frontend/tailwind.config.js` consumes the bridge.
-- Future generated artifacts should come from `DESIGN.md` or its exported DTCG shape, not from hand-copying values between files.
+- `DESIGN.md` is the design intent and agent-readable contract for token roles.
+- `frontend/src/ui/tokens.ts` is the TypeScript surface for runtime consumers (charts, finance colors, categories, accents).
+- `frontend/src/ui/generated/tokens.ts` and `frontend/src/ui/generated/theme.css` are produced by the design export pipeline; keep them aligned with `DESIGN.md` through `design:guard` and related scripts rather than duplicating values by hand.
+- `frontend/tailwind.config.js` scopes Tailwind to app sources; visual tokens for CSS typically flow through generated theme output referenced by the app styles.
+- Reusable class composition belongs in `frontend/src/ui/recipes.ts` and primitives, not copied ad hoc across views.
 
 ## Token Boundaries
 
 - Primitive tokens describe visual roles, not file-specific accidents.
 - Semantic finance colors are for meaning, not decoration.
 - Category colors are for stable labels, dots, and rings.
-- Shell gradients and ambient effects belong in token/effect bundles, not page views.
+- Shell gradients and ambient effects belong in token or effect bundles shared via recipes and primitives, not scattered in page views.
 - Component recipes can use Tailwind classes today, but reusable values should stay centralized.
 
 ## Naming Guidance
@@ -27,7 +27,7 @@ Use this policy when changing Sumurai tokens, theme values, or styling constants
 
 ## Anti-Patterns
 
-- Copying hex values from `DESIGN.md` into views.
+- Copying hex values from `DESIGN.md` into views instead of using generated CSS variables or `@/ui/tokens`.
 - Adding arbitrary gradients or shadows in page files.
 - Creating a new component-specific token for a repeated primitive role.
 - Letting Tailwind class arrays become the only place design meaning exists.
@@ -36,5 +36,6 @@ Use this policy when changing Sumurai tokens, theme values, or styling constants
 ## Validation
 
 - Run `npm --prefix frontend run design:lint` after token or design document changes.
-- Run focused tests for components that consume changed tokens.
-- For broad visual changes, prefer visual/browser verification in both light and dark modes.
+- Run `npm --prefix frontend run design:guard` when changing `DESIGN.md` or the generation pipeline.
+- Run focused tests under `frontend/tests/ui/tokens/` when token contracts change.
+- For broad visual changes, prefer visual or browser verification in both light and dark modes.
