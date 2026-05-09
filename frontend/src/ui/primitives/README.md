@@ -3,8 +3,8 @@
 This directory contains the reusable UI primitives that implement Sumurai's glassmorphism design system with support for light and dark modes.
 
 Start here when editing UI:
-- `AGENTS.md` for the UI policy.
-- `docs/UI_EXAMPLES.md` for good and bad composition patterns.
+- `.agents/skills/sumurai-ui-policy/SKILL.md` for the UI policy.
+- `.agents/skills/sumurai-ui-policy/examples.md` for good and bad composition patterns.
 - `frontend/src/ui/recipes.ts` for shared class atoms.
 - `frontend/src/ui/tokens.ts` for runtime JS values.
 
@@ -774,8 +774,8 @@ See `__tests__/` directory for examples.
 ## Related Documentation
 
 - [DESIGN.md](../../../../DESIGN.md) - Design system fundamentals
-- [UI examples](../../../../docs/UI_EXAMPLES.md) - reference compositions for agents
-- [AGENTS.md](../../../../AGENTS.md) - repository-wide UI policy
+- [UI skill](../../../../.agents/skills/sumurai-ui-policy/SKILL.md) - the authoritative UI policy and examples
+- [AGENTS.md](../../../../AGENTS.md) - repository-wide guidance
 
 ---
 

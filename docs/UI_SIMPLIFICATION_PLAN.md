@@ -661,81 +661,40 @@ After Phases 2-7 the `dark:` suffix doubling is the only major remaining duplica
 ## Phase 9 - Agent-readiness pass
 
 ### Goal
-Make the new architecture obvious to future coding agents. Add a UI policy block to AGENTS.md, write a short examples doc, and verify a junior agent can build a small page using only DESIGN.md + primitives.
+Make the new architecture obvious to future coding agents. Package the UI policy and examples as a project skill, then verify a junior agent can build a small page using only DESIGN.md + primitives.
 
 ### Why this matters
 The whole simplification is wasted if the next agent re-creates `dashboardTokenRecipes`. AGENTS.md plus a small examples set is the durable guard.
 
 ### Files to create
-- `docs/UI_EXAMPLES.md` - a short doc with three sections: "good", "bad", "how to add a new visual role". Each section uses real primitives and `recipes.ts` calls.
-- Optionally, a Storybook story `frontend/src/ui/primitives/UIExamples.stories.tsx` rendering the same examples.
+- `.agents/skills/sumurai-ui-policy/SKILL.md` - the authoritative UI policy.
+- `.agents/skills/sumurai-ui-policy/examples.md` - good, bad, and how-to examples.
 
 ### Files to modify
-- `AGENTS.md` (root) - append a `## UI policy` section. Use the draft below verbatim (or trim to taste).
-- `frontend/src/ui/primitives/README.md` - update to point at `recipes.ts`, `tokens.ts`, and `UI_EXAMPLES.md`. Remove any references to the deleted recipe files.
-
-### AGENTS.md UI policy (paste this block)
-
-```
-## UI policy
-
-- DESIGN.md is the visual contract. Read it before changing UI.
-- DESIGN.md is not a Tailwind recipe catalog. Do not add component recipes,
-  gradients, shadows, hover states, or animations to it.
-- Use primitive components from @/ui/primitives first: Button, IconButton,
-  Card, GlassCard, Input, Select, Badge, Pill, PageShell, FinanceValue,
-  EmptyState, Modal, MenuDropdown, Alert, AppTitleBar, AppFooter,
-  GradientShell, PaginationButton.
-- If a primitive does not fit, use or create a feature component under
-  frontend/src/features/<area>/components/. Feature-specific style stays
-  inside that component.
-- Use shared atoms from @/ui/recipes (text, surface, border, effect,
-  status, focus, font) only when authoring or editing a primitive or a
-  feature component.
-- Use @/ui/tokens only for runtime JS values: chart series, finance hex
-  map, category accents, account-type dots.
-- Do not import a designTokens object. There is no global registry.
-- Do not hardcode Tailwind palette colors (text-slate-700, bg-sky-500,
-  dark:text-emerald-300) when a CSS variable exists. Prefer recipes.text.body
-  and similar wrappers.
-- If a new reusable visual role is needed: edit DESIGN.md, run
-  npm --prefix frontend run design:guard, regenerate tokens, then expose
-  the role through a primitive.
-- Prefer <Button variant="primary" /> over composing
-  bg-gradient-to-r from-sky-500 ... in screens.
-- Tests live in frontend/tests/. Stories live next to the component as
-  *.stories.tsx.
-```
-
-### UI_EXAMPLES.md structure
-
-- "Good" - one example each of: a budgets-style screen built from `<PageShell>`, `<Card>`, `<BudgetProgress>`, `<IconButton>`, `<Button>`. Show ~30 lines, no manual gradients.
-- "Bad" - the same screen built with `designTokens.components.button.primary.join(' ')` and inline `from-sky-500 via-violet-500` gradients. Annotate why each line is bad.
-- "How to add a new visual role" - 5-step checklist:
-  1. Decide if a primitive variant covers it; if yes, add the variant.
-  2. If not, add a token to DESIGN.md and run `design:guard`.
-  3. Add the recipe to `recipes.ts` (or to the primitive if it is component-specific).
-  4. Add or update a Storybook story.
-  5. Update tests if behavior changed.
+- `AGENTS.md` (root) - point at the skill instead of duplicating the policy.
+- `frontend/src/ui/primitives/README.md` - point at the skill and its examples, not the deleted examples doc.
+- `docs/UI_EXAMPLES.md` - delete after the examples move into the skill.
 
 ### Implementation steps
-1. Read the existing root `AGENTS.md` to confirm format; append the `## UI policy` block above any "Security" section.
-2. Author `docs/UI_EXAMPLES.md`.
-3. Update `frontend/src/ui/primitives/README.md` to remove stale recipe-file references.
-4. Pick one screen (Budgets recommended) and have a separate clean-context agent attempt to add a small UI tweak using only DESIGN.md, AGENTS.md UI policy, and `UI_EXAMPLES.md`. Note any friction points and adjust the docs.
+1. Read the existing root `AGENTS.md` and the current UI docs to confirm format.
+2. Author `.agents/skills/sumurai-ui-policy/SKILL.md` and `.agents/skills/sumurai-ui-policy/examples.md`.
+3. Update `AGENTS.md` and `frontend/src/ui/primitives/README.md` to point at the skill.
+4. Delete `docs/UI_EXAMPLES.md`.
+5. Pick one screen (Budgets recommended) and have a separate clean-context agent attempt to add a small UI tweak using only `DESIGN.md`, the skill, and the skill examples. Note any friction points and adjust the skill.
 
 ### Acceptance criteria
 - [x] `AGENTS.md` contains a `## UI policy` section.
-- [x] `docs/UI_EXAMPLES.md` exists with good/bad/how-to sections.
-- [x] `frontend/src/ui/primitives/README.md` references only the new architecture.
-- [x] A clean-context agent can build a small Budgets-page tweak using only the docs above (anecdotal but required as a sanity check).
+- [x] `.agents/skills/sumurai-ui-policy/SKILL.md` exists with the UI policy.
+- [x] `.agents/skills/sumurai-ui-policy/examples.md` exists with good/bad/how-to sections.
+- [x] `frontend/src/ui/primitives/README.md` references the skill instead of the old examples doc.
+- [x] A clean-context agent can build a small Budgets-page tweak using only the skill and `DESIGN.md` (anecdotal but required as a sanity check).
 - [x] `npm --prefix frontend run typecheck`, `build`, `design:guard`, `test` all pass.
 
 ### TDD log
-- Red: no code changes were required; focused on the documentation and policy surface that future agents will read first.
-- Green: added the UI policy block to `AGENTS.md`, created `docs/UI_EXAMPLES.md`, and updated `frontend/src/ui/primitives/README.md` to point at the new entry points.
+- Red: no code changes were required; focused on moving the UI policy surface into a reusable project skill.
+- Green: added `.agents/skills/sumurai-ui-policy/SKILL.md`, created `examples.md`, and updated `AGENTS.md` plus `frontend/src/ui/primitives/README.md` to point at the skill.
 - Verify: `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend run design:guard`, `npm --prefix frontend run test`, `npm --prefix frontend run test:storybook-runtime`.
-- Sanity check: a clean-context review confirmed the docs point to `recipes.ts`, `tokens.ts`, and the primitive surface clearly enough for a small Budgets-page tweak.
+- Sanity check: a clean-context review confirmed the skill points to `recipes.ts`, `tokens.ts`, and the primitive surface clearly enough for a small Budgets-page tweak.
 
 ### Risks and mitigations
 - AGENTS.md gets stale as primitives evolve. Mitigation: include a "last verified" line and revisit during major UI changes.
@@ -761,7 +720,7 @@ The whole simplification is wasted if the next agent re-creates `dashboardTokenR
 - Phase 2: `frontend/src/ui/recipes.ts`.
 - Phase 3: `frontend/src/ui/tokens-runtime.ts` (renamed to `tokens.ts` in Phase 7).
 - Phase 4: `IconButton.tsx`, `FinanceValue.tsx`, `PaginationButton.tsx`, `Pill.tsx` (and stories).
-- Phase 9: `docs/UI_EXAMPLES.md`.
+- Phase 9: `.agents/skills/sumurai-ui-policy/SKILL.md`, `.agents/skills/sumurai-ui-policy/examples.md`.
 
 ### Validation commands (used in every phase's acceptance criteria)
 

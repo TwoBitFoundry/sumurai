@@ -1,6 +1,6 @@
-# UI Examples
+# UI Policy Examples
 
-Use this page together with `DESIGN.md`, `AGENTS.md`, `frontend/src/ui/recipes.ts`, and `frontend/src/ui/tokens.ts`.
+Use this file with the skill in `SKILL.md`.
 
 If a screen already has a layout frame like `PageLayout`, keep it and build the visual treatment with primitives inside it. The goal is to compose with the shared surface, border, text, and font recipes instead of inventing new chrome in the screen.
 
@@ -127,4 +127,3 @@ Why this is bad:
 3. Add the shared class recipe to `frontend/src/ui/recipes.ts`, or keep it local to the primitive if it is component-specific.
 4. Add or update a Storybook story for the primitive or feature component.
 5. Update tests only if behavior changed, not just because the styling was refactored.
-

@@ -44,17 +44,8 @@
 - Use `feat!:` or `BREAKING CHANGE:` for breaking changes.
 
 ## UI policy
-- `DESIGN.md` is the visual contract. Read it before changing UI.
-- `DESIGN.md` is not a Tailwind recipe catalog. Do not add component recipes, gradients, shadows, hover states, or animations to it.
-- Use primitive components from `@/ui/primitives` first: `Button`, `IconButton`, `GlassCard`, `Input`, `Select`, `Badge`, `Pill`, `FinanceValue`, `EmptyState`, `Modal`, `MenuDropdown`, `Alert`, `AppTitleBar`, `AppFooter`, `GradientShell`, `PaginationButton`, `RequirementPill`, and `PageLayout`.
-- If a primitive does not fit, use or create a feature component under `frontend/src/features/<area>/components/`.
-- Use shared atoms from `@/ui/recipes` (`text`, `surface`, `border`, `effect`, `status`, `focus`, `font`, `chrome`) only when authoring or editing a primitive or feature component.
-- Use `@/ui/tokens` only for runtime JS values: chart series, finance hex map, category accents, account-type dots, and hero accent themes.
-- Do not import a `designTokens` object. There is no global registry.
-- Do not hardcode Tailwind palette colors when a CSS variable exists. Prefer `recipes.text.body` and similar wrappers.
-- If a new reusable visual role is needed: edit `DESIGN.md`, run `npm --prefix frontend run design:guard`, regenerate tokens, then expose the role through a primitive.
-- Prefer `<Button variant="primary" />` over composing gradients in screens.
-- Tests live in `frontend/tests/`. Stories live next to the component as `*.stories.tsx`.
+- Use `.agents/skills/sumurai-ui-policy/SKILL.md` for Sumurai frontend UI work.
+- That skill is the source of truth for `DESIGN.md`, primitives, recipes, tokens, and examples.
 
 ## Security
 - Never read or write `.env` files from automation.
