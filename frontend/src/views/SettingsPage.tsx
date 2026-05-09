@@ -1,5 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { PasswordChecker } from '@/components/PasswordChecker';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { AuthService } from '@/services/authService';
@@ -13,6 +13,16 @@ interface SettingsPageProps {
 }
 
 export default function SettingsPage({ onLogout }: SettingsPageProps) {
+  const postPasswordChangeLogoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (postPasswordChangeLogoutTimerRef.current !== null) {
+        clearTimeout(postPasswordChangeLogoutTimerRef.current);
+      }
+    };
+  }, []);
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -57,7 +67,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       setNewPassword('');
       setConfirmPassword('');
 
-      setTimeout(() => {
+      if (postPasswordChangeLogoutTimerRef.current !== null) {
+        clearTimeout(postPasswordChangeLogoutTimerRef.current);
+      }
+      postPasswordChangeLogoutTimerRef.current = setTimeout(() => {
+        postPasswordChangeLogoutTimerRef.current = null;
         AuthService.clearToken();
         if (onLogout) onLogout();
       }, 2000);
