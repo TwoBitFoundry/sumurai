@@ -2,3 +2,4 @@
 set -e
 
 npm --prefix frontend run precommit
+npm run backend:ci

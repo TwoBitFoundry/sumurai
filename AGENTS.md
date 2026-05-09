@@ -16,7 +16,7 @@
 - `npm --prefix frontend install` - install frontend dependencies.
 - `npm --prefix frontend run dev` - Next.js dev server on `http://localhost:3001`.
 - `npm --prefix frontend run build` / `npm --prefix frontend test` - frontend build and tests.
-- `npm run precommit` (Husky default): `backend:ci` plus frontend `typecheck`, Biome check, `design:guard`, `storybook doctor` (fast config sanity), and Jest. Does not reinstall `frontend` deps with `npm ci`, nor `next build`, Storybook static build, Vitest browser tests, Playwright iframe smoke, or Chromium install; `typescript`/`tsc` still covers `*.stories.tsx` under `src/` with the rest of the app sources. Assumes dependencies are installed. Run `npm run backend:ci && npm run frontend:ci` when you need full local parity with the GitHub frontend job (`frontend:ci`).
+- `npm run precommit` (Husky default): frontend Biome check, `typecheck`, `design:guard`, and Jest, then `backend:ci`. Does not reinstall `frontend` deps with `npm ci`, nor `next build`, Storybook static build, Vitest browser tests, Playwright iframe smoke, or Chromium install; `typescript`/`tsc` still covers `*.stories.tsx` under `src/` with the rest of the app sources. Assumes dependencies are installed. Run `npm run backend:ci && npm run frontend:ci` when you need full local parity with the GitHub frontend job (`frontend:ci`).
 
 ## Design system guardrails and Storybook AI
 
