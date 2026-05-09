@@ -1,5 +1,5 @@
 import type React from 'react';
-import { heroStatSemanticThemes } from '@/components/widgets/HeroStatCard';
+import { heroStatSemanticThemes } from '@/components/widgets/heroStatSemanticThemes';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { getTagThemeForCategory } from '@/utils/categories';
 import { cn } from './utils';
