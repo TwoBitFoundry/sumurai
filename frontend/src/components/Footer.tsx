@@ -8,8 +8,7 @@ export function Footer() {
       className={cn(
         'relative',
         'border-t',
-        'border-slate-200/40',
-        'dark:border-slate-700/40',
+        ...designTokens.borders.divider,
         'bg-gradient-to-b',
         'from-white/60',
         'to-sky-50/30',
@@ -117,12 +116,10 @@ export function Footer() {
                 designTokens.text.body,
                 'rounded-lg',
                 'border',
-                'border-slate-200',
-                'dark:border-slate-700',
-                'bg-white/50',
-                'dark:bg-slate-800/50',
-                'hover:bg-white',
-                'dark:hover:bg-slate-800',
+                ...designTokens.borders.default,
+                ...designTokens.surfaces.semantic.card,
+                'hover:bg-[var(--color-surface-hover-row)]',
+                'dark:hover:bg-[var(--color-surface-hover-row-dark)]',
                 'flex',
                 'items-center',
                 'justify-center',
@@ -146,8 +143,7 @@ export function Footer() {
             'gap-4',
             'pt-5',
             'border-t',
-            'border-slate-200/40',
-            'dark:border-slate-700/40'
+            ...designTokens.borders.divider
           )}
         >
           <p className={cn(designTokens.typography.caption, designTokens.text.subtle)}>

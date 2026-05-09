@@ -18,17 +18,17 @@ export const StatusPill: React.FC<StatusPillProps> = ({ status, className }) => 
   const statusConfig = {
     connected: {
       label: 'Connected',
-      className: `bg-emerald-500/15 ${designTokens.text.success} ring-1 ring-emerald-500/20`,
+      className: `${designTokens.status.success.surface.join(' ')} ${designTokens.status.success.text.join(' ')} ring-1 ring-[var(--color-status-success-border)] dark:ring-[var(--color-status-success-border-dark)]`,
       Icon: CheckCircle2,
     },
     needs_reauth: {
       label: 'Re-auth needed',
-      className: `bg-amber-500/15 ${designTokens.text.warning} ring-1 ring-amber-500/20`,
+      className: `${designTokens.status.warning.surface.join(' ')} ${designTokens.status.warning.text.join(' ')} ring-1 ring-[var(--color-status-warning-border)] dark:ring-[var(--color-status-warning-border-dark)]`,
       Icon: AlertTriangle,
     },
     error: {
       label: 'Error',
-      className: `bg-rose-500/15 ${designTokens.text.danger} ring-1 ring-rose-500/20`,
+      className: `${designTokens.status.danger.surface.join(' ')} ${designTokens.status.danger.text.join(' ')} ring-1 ring-[var(--color-status-danger-border)] dark:ring-[var(--color-status-danger-border-dark)]`,
       Icon: AlertTriangle,
     },
   } as const;

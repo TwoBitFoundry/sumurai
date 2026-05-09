@@ -83,8 +83,7 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect }
           'h-12',
           'w-12',
           'place-items-center',
-          'text-sky-500',
-          'dark:text-sky-300'
+          ...designTokens.status.info.icon
         )}
       >
         <span className={cn(designTokens.typography.bodyStrong)}>{bank.short}</span>
@@ -178,13 +177,7 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect }
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className={cn(
-              'space-y-6',
-              'border-t',
-              'border-white/40',
-              'pt-4',
-              'dark:border-white/10'
-            )}
+            className={cn('space-y-6', 'border-t', ...designTokens.borders.glass, 'pt-4')}
           >
             {(() => {
               const sortedAccounts = bank.accounts.slice().sort((a, b) => {

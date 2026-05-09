@@ -11,8 +11,16 @@ const requirementVariants = cva(
   {
     variants: {
       status: {
-        pending: `bg-white/60 ${designTokens.text.subtle} dark:bg-white/5`,
-        met: `bg-emerald-50 ${designTokens.text.success} dark:bg-emerald-500/10`,
+        pending: [
+          'bg-[color:color-mix(in_srgb,var(--color-surface-card)_60%,transparent)]',
+          'dark:bg-[color:color-mix(in_srgb,var(--color-border-glass-dark)_5%,transparent)]',
+          designTokens.text.subtle,
+        ].join(' '),
+        met: [
+          'bg-[color:color-mix(in_srgb,var(--color-status-success-surface)_70%,transparent)]',
+          'dark:bg-[color:color-mix(in_srgb,var(--color-status-success-icon-dark)_10%,transparent)]',
+          designTokens.text.success,
+        ].join(' '),
       },
     },
     defaultVariants: {

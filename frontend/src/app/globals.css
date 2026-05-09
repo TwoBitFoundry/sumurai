@@ -47,13 +47,13 @@
 
 @keyframes successFlash {
   0% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    box-shadow: 0 0 0 0 var(--color-effect-success-glow);
   }
   50% {
-    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+    box-shadow: 0 0 0 8px transparent;
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    box-shadow: 0 0 0 0 transparent;
   }
 }
 
@@ -71,12 +71,12 @@
 
 @keyframes errorPulse {
   0%, 100% {
-    border-color: #f87171;
-    box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7);
+    border-color: var(--color-border-danger);
+    box-shadow: 0 0 0 0 var(--color-effect-danger-glow);
   }
   50% {
-    border-color: #fca5a5;
-    box-shadow: 0 0 0 4px rgba(248, 113, 113, 0);
+    border-color: var(--color-border-danger);
+    box-shadow: 0 0 0 4px transparent;
   }
 }
 

@@ -2,6 +2,7 @@ import { MapPin } from 'lucide-react';
 import type React from 'react';
 import { cn, EmptyState } from '@/ui/primitives';
 import { designTokens } from '@/ui/tokens';
+import { dashboardTokenRecipes } from '@/views/tokenRecipes';
 import type { AnalyticsTopMerchantsResponse } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
 
@@ -18,26 +19,7 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
       {merchantsToShow.length > 0 ? (
         <div className={cn('space-y-3')}>
           {merchantsToShow.map((merchant, index) => (
-            <div
-              key={merchant.name}
-              className={cn(
-                'flex',
-                'items-center',
-                'justify-between',
-                'p-3',
-                'rounded-lg',
-                'border',
-                'border-slate-200',
-                'dark:border-slate-700',
-                'bg-slate-50',
-                'dark:bg-slate-800/50',
-                'transition-all',
-                'duration-300',
-                'hover:border-sky-300',
-                'dark:hover:border-sky-400',
-                'hover:-translate-y-[2px]'
-              )}
-            >
+            <div key={merchant.name} className={cn(dashboardTokenRecipes.merchantRow)}>
               <div className={cn('flex', 'items-center', 'gap-3', 'min-w-0', 'flex-1')}>
                 <div
                   className={cn(

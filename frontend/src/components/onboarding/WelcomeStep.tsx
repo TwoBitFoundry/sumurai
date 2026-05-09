@@ -82,7 +82,9 @@ export function WelcomeStep() {
             variant="feature"
             size="sm"
             className={cn(
-              'w-fit tracking-[0.3em] bg-sky-100/65 text-sky-600 dark:bg-sky-500/15 dark:text-sky-200'
+              'w-fit tracking-[0.3em]',
+              ...designTokens.status.info.surface,
+              ...designTokens.status.info.text
             )}
           >
             Welcome

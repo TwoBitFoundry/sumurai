@@ -1,6 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 import { designTokens } from '@/ui/tokens';
+import { buttonChromeInset } from './tokenRecipes';
 import { cn } from './utils';
 
 export const buttonTypographySizes = {
@@ -24,8 +25,9 @@ const buttonVariants = cva([...designTokens.components.button.base], {
       connect: [...designTokens.components.button.connect],
     },
     size: {
-      xs: `${buttonTypographySizes.xs} px-2.5 py-1 rounded-xl`,
-      sm: `${buttonTypographySizes.sm} px-3 py-1.5 rounded-xl`,
+      xs: `${buttonTypographySizes.xs} ${buttonChromeInset.xs}`,
+      sm: `${buttonTypographySizes.sm} ${buttonChromeInset.sm}`,
+      titleBarExpanded: `${designTokens.typography.titleBarChromeExpanded} ${buttonChromeInset.sm}`,
       md: `${buttonTypographySizes.md} px-4 py-2 rounded-full`,
       lg: `${buttonTypographySizes.lg} px-5 py-2.5 rounded-full`,
       icon: 'h-10 w-10 rounded-full',

@@ -73,14 +73,12 @@ const transactionsPillClasses = cn(
   'px-2.5',
   'py-1',
   designTokens.typography.label,
-  'border-slate-200',
-  'bg-slate-50',
+  ...designTokens.borders.subtle,
+  ...designTokens.surfaces.semantic.card,
   designTokens.text.muted,
   'transition-colors',
   'duration-300',
-  'ease-out',
-  'dark:border-slate-600',
-  'dark:bg-slate-800'
+  'ease-out'
 );
 
 const formatMoney = (amount?: number) => {
@@ -113,14 +111,14 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
       !isDebtAccount &&
       rawBalance > 0 &&
       !isOtherAccount &&
-      'text-emerald-500 dark:text-emerald-400',
+      designTokens.status.success.text,
     rawBalance != null &&
       !isDebtAccount &&
       rawBalance > 0 &&
       isOtherAccount &&
       designTokens.text.muted,
-    rawBalance != null && rawBalance < 0 && 'text-rose-500 dark:text-rose-400',
-    isDebtAccount && rawBalance != null && 'text-red-500 dark:text-red-400',
+    rawBalance != null && rawBalance < 0 && designTokens.status.danger.text,
+    isDebtAccount && rawBalance != null && designTokens.status.danger.text,
     rawBalance === 0 && designTokens.text.subtle
   );
 

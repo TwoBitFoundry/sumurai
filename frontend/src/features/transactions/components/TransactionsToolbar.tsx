@@ -1,4 +1,5 @@
 import { cn } from '@/ui/primitives';
+import { dashboardTokenRecipes } from '@/views/tokenRecipes';
 import TransactionsFilters from './TransactionsFilters';
 
 interface TransactionsToolbarProps {
@@ -17,17 +18,7 @@ export const TransactionsToolbar = ({
   onSelectCategory,
 }: TransactionsToolbarProps) => {
   return (
-    <div
-      className={cn(
-        'border-b',
-        'border-slate-200/70',
-        'px-6',
-        'pb-4',
-        'pt-6',
-        'dark:border-slate-700/50'
-      )}
-      data-testid="transactions-toolbar"
-    >
+    <div className={cn(dashboardTokenRecipes.toolbarShell)} data-testid="transactions-toolbar">
       <div className={cn('flex', 'items-center', 'gap-4')}>
         <div className={cn('flex-1', 'min-w-0')}>
           <TransactionsFilters

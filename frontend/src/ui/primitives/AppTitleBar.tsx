@@ -75,6 +75,8 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
     },
     ref
   ) => {
+    const chromeSize = scrolled ? 'xs' : 'titleBarExpanded';
+
     return (
       <header
         ref={ref}
@@ -96,13 +98,11 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
             <div className={cn('flex', 'items-center', 'gap-6')}>
               <div
                 className={cn(
-                  'flex',
-                  'items-center',
-                  'gap-2',
-                  designTokens.text.primary,
+                  ...designTokens.components.appTitleBar.logo.container,
                   scrolled
-                    ? designTokens.typography.sectionTitle
-                    : designTokens.typography.pageTitle
+                    ? designTokens.components.appTitleBar.logo.scrolled
+                    : designTokens.components.appTitleBar.logo.default,
+                  designTokens.components.appTitleBar.logo.wordmark
                 )}
               >
                 <Image
@@ -124,10 +124,11 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                       type="button"
                       onClick={() => onTabChange?.(key)}
                       variant={currentTab === key ? 'tabActive' : 'tab'}
-                      size={scrolled ? 'xs' : 'sm'}
-                      className={`${designTokens.components.appTitleBar.tabHalo} ${
-                        currentTab !== key ? designTokens.components.appTitleBar.tabIdle : ''
-                      }`}
+                      size={chromeSize}
+                      className={cn(
+                        designTokens.components.appTitleBar.tabHalo,
+                        currentTab !== key ? designTokens.components.appTitleBar.tabIdle : undefined
+                      )}
                     >
                       {label}
                     </Button>
@@ -148,7 +149,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                 type="button"
                 onClick={onThemeToggle}
                 variant="secondary"
-                size={scrolled ? 'xs' : 'sm'}
+                size={chromeSize}
                 className={cn(designTokens.components.appTitleBar.themeToggle)}
                 aria-label="Toggle theme"
                 title="Toggle theme"
@@ -165,12 +166,12 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                   type="button"
                   onClick={() => onTabChange('settings')}
                   variant={currentTab === 'settings' ? 'tabActive' : 'ghost'}
-                  size={scrolled ? 'xs' : 'sm'}
+                  size={chromeSize}
                   className={cn(
                     'rounded-xl',
                     currentTab !== 'settings'
                       ? designTokens.components.appTitleBar.settingsIdle
-                      : ''
+                      : undefined
                   )}
                   aria-label="Settings"
                   title="Settings"
@@ -184,7 +185,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                   type="button"
                   onClick={onLogout}
                   variant="danger"
-                  size={scrolled ? 'xs' : 'sm'}
+                  size={chromeSize}
                   title="Logout"
                 >
                   Logout

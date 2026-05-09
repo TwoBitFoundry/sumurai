@@ -56,6 +56,19 @@ describe('primitive typography recipes', () => {
     expect(primitiveTokenRecipes.button.danger.join(' ')).toContain(designTokens.text.danger);
   });
 
+  it('uses theme typography variables for title bar chrome expansion', () => {
+    expect(designTokens.typography.titleBarChromeExpanded).toContain(
+      'var(--tracking-title-bar-chrome-expanded)'
+    );
+    expect(designTokens.typography.titleBarChromeExpanded).toContain(
+      'var(--text-title-bar-chrome-expanded)'
+    );
+    expect(designTokens.components.appTitleBar.logo.wordmark).toBe(
+      designTokens.typography.pageTitleWordmark
+    );
+    expect(designTokens.typography.pageTitleWordmark).toContain('var(--font-page-title-wordmark)');
+  });
+
   it('uses semantic text recipes for dropdown and title bar chrome', () => {
     expect(primitiveTokenRecipes.menuDropdown.item.join(' ')).toContain(designTokens.text.muted);
     expect(primitiveTokenRecipes.appTitleBar.logo.container.join(' ')).toContain(

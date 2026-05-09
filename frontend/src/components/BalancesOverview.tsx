@@ -23,6 +23,7 @@ import { useBalancesOverview } from '../hooks/useBalancesOverview';
 import { formatRatio } from '../services/AnalyticsService';
 import { Alert, Button, cn, GlassCard } from '../ui/primitives';
 import { designTokens } from '../ui/tokens';
+import { dashboardTokenRecipes } from '../views/tokenRecipes';
 import { Amount, fmtUSD } from './Amount';
 import HeroStatCard from './widgets/HeroStatCard';
 
@@ -41,9 +42,9 @@ function RatioPill({ ratio }: { ratio: number | string | null }) {
       className={cn(
         'inline-flex items-center rounded-full border px-2 py-0.5',
         designTokens.typography.label,
-        'border-slate-200 bg-white/70',
-        designTokens.text.muted,
-        'dark:border-slate-700 dark:bg-slate-800/60'
+        ...designTokens.borders.default,
+        ...designTokens.surfaces.semantic.card,
+        designTokens.text.muted
       )}
     >
       A/L: {label}
@@ -194,10 +195,7 @@ export function BalancesOverview() {
         accent: 'emerald' as const,
         icon: <PiggyBank className={cn('h-4', 'w-4')} />,
         value: (
-          <span
-            data-testid="overall-cash"
-            className={cn('text-emerald-500', 'dark:text-emerald-300')}
-          >
+          <span data-testid="overall-cash" className={cn(designTokens.status.success.text)}>
             {fmtUSD(overall?.cash ?? 0)}
           </span>
         ),
@@ -208,10 +206,7 @@ export function BalancesOverview() {
         accent: 'sky' as const,
         icon: <LineChart className={cn('h-4', 'w-4')} />,
         value: (
-          <span
-            data-testid="overall-investments"
-            className={cn('text-sky-500', 'dark:text-sky-300')}
-          >
+          <span data-testid="overall-investments" className={cn(designTokens.status.info.text)}>
             {fmtUSD(overall?.investments ?? 0)}
           </span>
         ),
@@ -222,7 +217,7 @@ export function BalancesOverview() {
         accent: 'rose' as const,
         icon: <CreditCard className={cn('h-4', 'w-4')} />,
         value: (
-          <span data-testid="overall-credit" className={cn('text-rose-500', 'dark:text-rose-300')}>
+          <span data-testid="overall-credit" className={cn(designTokens.status.danger.text)}>
             {fmtUSD(overall?.credit ?? 0)}
           </span>
         ),
@@ -233,7 +228,7 @@ export function BalancesOverview() {
         accent: 'amber' as const,
         icon: <HandCoins className={cn('h-4', 'w-4')} />,
         value: (
-          <span data-testid="overall-loan" className={cn('text-amber-600', 'dark:text-amber-400')}>
+          <span data-testid="overall-loan" className={cn(designTokens.status.warning.text)}>
             {fmtUSD(overall?.loan ?? 0)}
           </span>
         ),
@@ -268,15 +263,7 @@ export function BalancesOverview() {
           className={cn('grid', 'gap-3', 'sm:grid-cols-2', 'lg:grid-cols-5')}
         >
           {[1, 2, 3, 4, 5].map((id) => {
-            return (
-              <div
-                key={id}
-                className={cn(
-                  'h-16 rounded-xl border bg-slate-100/60',
-                  'border-slate-200/60 dark:border-slate-700/60 dark:bg-slate-900/40'
-                )}
-              />
-            );
+            return <div key={id} className={cn(dashboardTokenRecipes.summaryShellLoading)} />;
           })}
         </div>
       )}
@@ -332,7 +319,7 @@ export function BalancesOverview() {
               padding="sm"
               withInnerEffects={false}
               className={cn(
-                'flex flex-wrap items-center gap-3',
+                dashboardTokenRecipes.hoverInfoShell,
                 designTokens.typography.caption,
                 designTokens.text.body
               )}

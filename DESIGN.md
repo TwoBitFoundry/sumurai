@@ -73,6 +73,98 @@ colors:
   text-warning-dark: "#fcd34d"
   text-info: "#0284c7"
   text-info-dark: "#7dd3fc"
+  surface-app-shell: "#ffffff"
+  surface-app-shell-dark: "#05070d"
+  surface-glass-panel: "#ffffff"
+  surface-glass-panel-dark: "#0f172a"
+  surface-solid-panel: "#ffffff"
+  surface-solid-panel-dark: "#111a2f"
+  surface-card: "#ffffff"
+  surface-card-dark: "#0f172a"
+  surface-elevated-card: "#ffffff"
+  surface-elevated-card-dark: "#111a2f"
+  surface-data-row: "#f8fafc"
+  surface-data-row-dark: "#1e293b"
+  surface-hover-row: "#f1f5f9"
+  surface-hover-row-dark: "#334155"
+  surface-input-control: "#ffffff"
+  surface-input-control-dark: "#0f172a"
+  surface-overlay: "#0f172a"
+  surface-overlay-dark: "#020617"
+  surface-inset-well: "#f8fafc"
+  surface-inset-well-dark: "#111827"
+  surface-muted-chip: "#e2e8f0"
+  surface-muted-chip-dark: "#1e293b"
+  border-default: "#e2e8f0"
+  border-default-dark: "#334155"
+  border-subtle: "#e2e8f0"
+  border-subtle-dark: "#334155"
+  border-strong: "#cbd5e1"
+  border-strong-dark: "#475569"
+  border-glass: "#ffffff"
+  border-glass-dark: "#ffffff"
+  border-control: "#cbd5e1"
+  border-control-dark: "#475569"
+  border-divider: "#e2e8f0"
+  border-divider-dark: "#334155"
+  border-focus-active: "#38bdf8"
+  border-focus-active-dark: "#0ea5e9"
+  border-hover-accent: "#93c5fd"
+  border-hover-accent-dark: "#38bdf8"
+  border-danger: "#fca5a5"
+  border-danger-dark: "#f87171"
+  status-info-surface: "#e0f2fe"
+  status-info-surface-dark: "#082f49"
+  status-info-border: "#bae6fd"
+  status-info-border-dark: "#38bdf8"
+  status-info-text: "#0369a1"
+  status-info-text-dark: "#7dd3fc"
+  status-info-strong-surface: "#dbeafe"
+  status-info-strong-surface-dark: "#0c4a6e"
+  status-info-icon: "#0ea5e9"
+  status-info-icon-dark: "#38bdf8"
+  status-success-surface: "#ecfdf5"
+  status-success-surface-dark: "#065f46"
+  status-success-border: "#a7f3d0"
+  status-success-border-dark: "#34d399"
+  status-success-text: "#047857"
+  status-success-text-dark: "#6ee7b7"
+  status-success-strong-surface: "#d1fae5"
+  status-success-strong-surface-dark: "#064e3b"
+  status-success-icon: "#10b981"
+  status-success-icon-dark: "#34d399"
+  status-warning-surface: "#fffbeb"
+  status-warning-surface-dark: "#78350f"
+  status-warning-border: "#fde68a"
+  status-warning-border-dark: "#fbbf24"
+  status-warning-text: "#b45309"
+  status-warning-text-dark: "#fcd34d"
+  status-warning-strong-surface: "#fef3c7"
+  status-warning-strong-surface-dark: "#78350f"
+  status-warning-icon: "#f59e0b"
+  status-warning-icon-dark: "#fbbf24"
+  status-danger-surface: "#fef2f2"
+  status-danger-surface-dark: "#7f1d1d"
+  status-danger-border: "#fecaca"
+  status-danger-border-dark: "#f87171"
+  status-danger-text: "#b91c1c"
+  status-danger-text-dark: "#fca5a5"
+  status-danger-strong-surface: "#fee2e2"
+  status-danger-strong-surface-dark: "#7f1d1d"
+  status-danger-icon: "#ef4444"
+  status-danger-icon-dark: "#f87171"
+  effect-glass-shadow: "#0f172a"
+  effect-glass-shadow-dark: "#020617"
+  effect-success-glow: "#10b981"
+  effect-success-glow-dark: "#34d399"
+  effect-warning-glow: "#f59e0b"
+  effect-warning-glow-dark: "#fbbf24"
+  effect-danger-glow: "#f43f5e"
+  effect-danger-glow-dark: "#f87171"
+  effect-accent-hover: "#3b82f6"
+  effect-accent-hover-dark: "#60a5fa"
+  effect-chart-tooltip-shadow: "#0f172a"
+  effect-chart-tooltip-shadow-dark: "#020617"
   category-sky: "#38bdf8"
   category-emerald: "#34d399"
   category-cyan: "#22d3ee"
@@ -99,6 +191,11 @@ typography:
   page-title:
     fontFamily: "'Cal Sans', system-ui, sans-serif"
     fontSize: 2rem
+    fontWeight: 700
+    lineHeight: 1.1
+    letterSpacing: 0
+  page-title-wordmark:
+    fontFamily: "'Cal Sans', system-ui, sans-serif"
     fontWeight: 700
     lineHeight: 1.1
     letterSpacing: 0
@@ -156,6 +253,12 @@ typography:
     fontWeight: 600
     lineHeight: 1
     letterSpacing: 0.14em
+  title-bar-chrome-expanded:
+    fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
+    fontSize: 0.875rem
+    fontWeight: 600
+    lineHeight: 1
+    letterSpacing: 0.14em
   pill:
     fontFamily: "'Mr Eaves XL Mod', system-ui, sans-serif"
     fontSize: 0.75rem
@@ -194,7 +297,15 @@ spacing:
   shell-y: 48px
   compact-gap: 8px
   section-gap: 20px
+  button-chrome-inset-xs-x: 10px
+  button-chrome-inset-xs-y: 4px
+  button-chrome-inset-sm-x: 12px
+  button-chrome-inset-sm-y: 6px
 components:
+  app-title-bar-wordmark:
+    typography: "{typography.page-title-wordmark}"
+  app-title-bar-chrome-expanded:
+    typography: "{typography.title-bar-chrome-expanded}"
   button-primary:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.on-primary}"
@@ -492,11 +603,15 @@ Use the brand accents for emphasis, navigation chrome, and small highlights. Res
 
 Surfaces should stay neutral. The shell can keep an ambient blue aura and violet overlay, but the supporting layers should not introduce extra brand colors.
 
+Surface, border, status, and effect roles should stay semantic and reusable. Use them to describe intent and hierarchy, not Tailwind implementation details or one-off component styling.
+
 ## Typography
 
 Use the brand face for the product mark and display moments. Use the body role for normal readable UI copy, caption for secondary text, and the compact label and badge roles only when the hierarchy needs to stay tight. Uppercase labels, badges, and pills are the only places that should use nonzero tracking.
 
 The typography scale should stay small and semantic so dense finance content remains legible at 100% zoom. Keep `1rem` as the default readable size, reserve `0.875rem` for caption-sized UI, and avoid one-off font sizing unless a constrained surface truly needs it.
+
+The `page-title-wordmark` role is for the product wordmark at the top of the shell: Cal Sans with page-title weight and leading while vertical scale follows layout (`text-xl` / `text-3xl`). The `title-bar-chrome-expanded` role is uppercase navigation chrome at rest: label tracking and weight at the caption-strong size so expanded title-bar controls stay readable without switching to sentence-case styles.
 
 ## Layout
 

@@ -212,9 +212,11 @@ export function ConnectAccountStep({
           <Alert
             variant="error"
             className={cn(
-              'flex flex-col gap-1 rounded-[1.6rem] border-2 border-red-200/70 bg-red-50/85 shadow-[0_24px_60px_-36px_rgba(248,113,113,0.45)]',
-              designTokens.text.danger,
-              'dark:border-red-500/45 dark:bg-red-900/25 dark:text-red-200'
+              'flex flex-col gap-1 rounded-[1.6rem] border-2',
+              ...designTokens.status.danger.border,
+              ...designTokens.status.danger.surface,
+              ...designTokens.status.danger.text,
+              ...designTokens.effects.semantic.dangerGlow
             )}
           >
             <p className={cn(designTokens.typography.bodyStrong)}>Connection failed</p>

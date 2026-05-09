@@ -9,24 +9,24 @@ const alertVariants = cva(
     variants: {
       variant: {
         info: [
-          'border-sky-200/70 bg-sky-50/80',
-          designTokens.text.info,
-          'dark:border-sky-500/30 dark:bg-sky-900/20 dark:text-sky-300',
+          ...designTokens.status.info.border,
+          ...designTokens.status.info.surface,
+          ...designTokens.status.info.text,
         ],
         success: [
-          'border-emerald-200/70 bg-emerald-50/85',
-          designTokens.text.success,
-          'dark:border-emerald-500/35 dark:bg-emerald-900/20 dark:text-emerald-300',
+          ...designTokens.status.success.border,
+          ...designTokens.status.success.surface,
+          ...designTokens.status.success.text,
         ],
         warning: [
-          'border-amber-200/70 bg-amber-50/80',
-          designTokens.text.warning,
-          'dark:border-amber-500/35 dark:bg-amber-900/25 dark:text-amber-300',
+          ...designTokens.status.warning.border,
+          ...designTokens.status.warning.surface,
+          ...designTokens.status.warning.text,
         ],
         error: [
-          'border-red-200/70 bg-red-50/80',
-          designTokens.text.danger,
-          'dark:border-red-600/45 dark:bg-red-900/25 dark:text-red-300',
+          ...designTokens.status.danger.border,
+          ...designTokens.status.danger.surface,
+          ...designTokens.status.danger.text,
         ],
       },
       tone: {

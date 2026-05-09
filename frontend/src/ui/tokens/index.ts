@@ -498,6 +498,195 @@ const focusSurfaces = {
   ringOffsetLightOnDark: ['ring-offset-white', 'dark:ring-offset-[#0f172a]'],
 } as const;
 
+const semanticSurfaces = {
+  appShell: [
+    'bg-[var(--color-surface-app-shell)]',
+    'dark:bg-[var(--color-surface-app-shell-dark)]',
+  ],
+  glassPanel: [
+    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel-dark)_55%,transparent)]',
+  ],
+  solidPanel: [
+    'bg-[var(--color-surface-solid-panel)]',
+    'dark:bg-[var(--color-surface-solid-panel-dark)]',
+  ],
+  card: [
+    'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card-dark)_55%,transparent)]',
+  ],
+  elevatedCard: [
+    'bg-[var(--color-surface-elevated-card)]',
+    'dark:bg-[var(--color-surface-elevated-card-dark)]',
+  ],
+  dataRow: ['bg-[var(--color-surface-data-row)]', 'dark:bg-[var(--color-surface-data-row-dark)]'],
+  hoverRow: [
+    'bg-[var(--color-surface-hover-row)]',
+    'dark:bg-[var(--color-surface-hover-row-dark)]',
+  ],
+  inputControl: [
+    'bg-[var(--color-surface-input-control)]',
+    'dark:bg-[var(--color-surface-input-control-dark)]',
+  ],
+  overlay: ['bg-[var(--color-surface-overlay)]', 'dark:bg-[var(--color-surface-overlay-dark)]'],
+  insetWell: [
+    'bg-[var(--color-surface-inset-well)]',
+    'dark:bg-[var(--color-surface-inset-well-dark)]',
+  ],
+  mutedChip: [
+    'bg-[var(--color-surface-muted-chip)]',
+    'dark:bg-[var(--color-surface-muted-chip-dark)]',
+  ],
+} as const;
+
+const semanticBorders = {
+  default: [
+    'border-[var(--color-border-default)]',
+    'dark:border-[var(--color-border-default-dark)]',
+  ],
+  subtle: ['border-[var(--color-border-subtle)]', 'dark:border-[var(--color-border-subtle-dark)]'],
+  strong: ['border-[var(--color-border-strong)]', 'dark:border-[var(--color-border-strong-dark)]'],
+  glass: [
+    'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
+    'dark:border-[color:color-mix(in_srgb,var(--color-border-glass-dark)_12%,transparent)]',
+  ],
+  control: [
+    'border-[var(--color-border-control)]',
+    'dark:border-[var(--color-border-control-dark)]',
+  ],
+  divider: [
+    'border-[var(--color-border-divider)]',
+    'dark:border-[var(--color-border-divider-dark)]',
+  ],
+  focusActive: [
+    'border-[var(--color-border-focus-active)]',
+    'dark:border-[var(--color-border-focus-active-dark)]',
+  ],
+  hoverAccent: [
+    'border-[var(--color-border-hover-accent)]',
+    'dark:border-[var(--color-border-hover-accent-dark)]',
+  ],
+  danger: ['border-[var(--color-border-danger)]', 'dark:border-[var(--color-border-danger-dark)]'],
+} as const;
+
+const semanticStatusRecipes = {
+  info: {
+    surface: [
+      'bg-[var(--color-status-info-surface)]',
+      'dark:bg-[var(--color-status-info-surface-dark)]',
+    ],
+    border: [
+      'border-[var(--color-status-info-border)]',
+      'dark:border-[var(--color-status-info-border-dark)]',
+    ],
+    text: [
+      'text-[var(--color-status-info-text)]',
+      'dark:text-[var(--color-status-info-text-dark)]',
+    ],
+    strongSurface: [
+      'bg-[var(--color-status-info-strong-surface)]',
+      'dark:bg-[var(--color-status-info-strong-surface-dark)]',
+    ],
+    icon: [
+      'text-[var(--color-status-info-icon)]',
+      'dark:text-[var(--color-status-info-icon-dark)]',
+    ],
+  },
+  success: {
+    surface: [
+      'bg-[var(--color-status-success-surface)]',
+      'dark:bg-[var(--color-status-success-surface-dark)]',
+    ],
+    border: [
+      'border-[var(--color-status-success-border)]',
+      'dark:border-[var(--color-status-success-border-dark)]',
+    ],
+    text: [
+      'text-[var(--color-status-success-text)]',
+      'dark:text-[var(--color-status-success-text-dark)]',
+    ],
+    strongSurface: [
+      'bg-[var(--color-status-success-strong-surface)]',
+      'dark:bg-[var(--color-status-success-strong-surface-dark)]',
+    ],
+    icon: [
+      'text-[var(--color-status-success-icon)]',
+      'dark:text-[var(--color-status-success-icon-dark)]',
+    ],
+  },
+  warning: {
+    surface: [
+      'bg-[var(--color-status-warning-surface)]',
+      'dark:bg-[var(--color-status-warning-surface-dark)]',
+    ],
+    border: [
+      'border-[var(--color-status-warning-border)]',
+      'dark:border-[var(--color-status-warning-border-dark)]',
+    ],
+    text: [
+      'text-[var(--color-status-warning-text)]',
+      'dark:text-[var(--color-status-warning-text-dark)]',
+    ],
+    strongSurface: [
+      'bg-[var(--color-status-warning-strong-surface)]',
+      'dark:bg-[var(--color-status-warning-strong-surface-dark)]',
+    ],
+    icon: [
+      'text-[var(--color-status-warning-icon)]',
+      'dark:text-[var(--color-status-warning-icon-dark)]',
+    ],
+  },
+  danger: {
+    surface: [
+      'bg-[color:color-mix(in_srgb,var(--color-status-danger-surface)_82%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-status-danger-surface-dark)_28%,transparent)]',
+    ],
+    border: [
+      'border-[var(--color-status-danger-border)]',
+      'dark:border-[var(--color-status-danger-border-dark)]',
+    ],
+    text: [
+      'text-[var(--color-status-danger-text)]',
+      'dark:text-[var(--color-status-danger-text-dark)]',
+    ],
+    strongSurface: [
+      'bg-[var(--color-status-danger-strong-surface)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-status-danger-strong-surface-dark)_46%,transparent)]',
+    ],
+    icon: [
+      'text-[var(--color-status-danger-icon)]',
+      'dark:text-[var(--color-status-danger-icon-dark)]',
+    ],
+  },
+} as const;
+
+const semanticEffects = {
+  glassShadow: [
+    'shadow-[0_32px_110px_-60px_var(--color-effect-glass-shadow)]',
+    'dark:shadow-[0_36px_120px_-62px_var(--color-effect-glass-shadow-dark)]',
+  ],
+  successGlow: [
+    'shadow-[0_0_12px_var(--color-effect-success-glow)]',
+    'dark:shadow-[0_0_12px_var(--color-effect-success-glow-dark)]',
+  ],
+  warningGlow: [
+    'shadow-[0_0_12px_var(--color-effect-warning-glow)]',
+    'dark:shadow-[0_0_12px_var(--color-effect-warning-glow-dark)]',
+  ],
+  dangerGlow: [
+    'shadow-[0_0_12px_var(--color-effect-danger-glow)]',
+    'dark:shadow-[0_0_12px_var(--color-effect-danger-glow-dark)]',
+  ],
+  accentHover: [
+    'hover:shadow-[0_18px_44px_-30px_var(--color-effect-accent-hover)]',
+    'dark:hover:shadow-[0_20px_52px_-34px_var(--color-effect-accent-hover-dark)]',
+  ],
+  chartTooltipShadow: [
+    'shadow-[0_18px_45px_-25px_var(--color-effect-chart-tooltip-shadow)]',
+    'dark:shadow-[0_18px_45px_-25px_var(--color-effect-chart-tooltip-shadow-dark)]',
+  ],
+} as const;
+
 const featurePalettes = {
   welcome: {
     sky: {
@@ -688,7 +877,10 @@ export const designTokens = {
     buttonPrimary: 'shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)]',
   },
   gradients: gradientPrimitives,
-  effects: layoutEffects,
+  effects: {
+    ...layoutEffects,
+    semantic: semanticEffects,
+  },
   motion: {
     fast: 'duration-200',
     medium: 'duration-300',
@@ -699,7 +891,10 @@ export const designTokens = {
     glass: glassSurfaces,
     layered: layeredSurfaces,
     focus: focusSurfaces,
+    semantic: semanticSurfaces,
   },
+  borders: semanticBorders,
+  status: semanticStatusRecipes,
   colors: {
     brand: brandColors,
     theme: {

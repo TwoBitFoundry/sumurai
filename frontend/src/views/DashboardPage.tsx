@@ -26,6 +26,7 @@ import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries
 import { PageLayout } from '../layouts/PageLayout';
 import type { DateRangeKey as DateRange } from '../utils/dateRanges';
 import { fmtUSD } from '../utils/format';
+import { dashboardTokenRecipes } from './tokenRecipes';
 
 const netTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) => {
   const numericValue = Array.isArray(value) ? Number(value[0]) : Number(value);
@@ -158,11 +159,12 @@ const DashboardPage: React.FC = () => {
                             // biome-ignore lint/a11y/noStaticElementInteractions: visual hover only
                             <div
                               key={`topcard-${cat.name}`}
-                              className={`p-2 rounded-lg border transition-all duration-300 ${
+                              className={cn(
+                                'p-2',
                                 isHovered
-                                  ? 'bg-slate-50 dark:bg-slate-700/40 -translate-y-[2px]'
-                                  : 'border-slate-200 dark:border-slate-700'
-                              }`}
+                                  ? dashboardTokenRecipes.cardShellActive
+                                  : dashboardTokenRecipes.cardShell
+                              )}
                               style={
                                 isHovered ? { borderColor: colors.chart.primary[0] } : undefined
                               }
@@ -236,19 +238,7 @@ const DashboardPage: React.FC = () => {
               isRefreshing={!netLoading && netRefreshing}
             >
               {netLoading ? (
-                <div
-                  className={cn(
-                    'flex-1',
-                    'min-h-[220px]',
-                    'rounded-xl',
-                    'bg-slate-100/60',
-                    'dark:bg-slate-900/40',
-                    'animate-pulse',
-                    'border',
-                    'border-slate-200/60',
-                    'dark:border-slate-700/60'
-                  )}
-                />
+                <div className={cn('flex-1', dashboardTokenRecipes.loadingCard)} />
               ) : netError ? (
                 <div
                   className={cn(
@@ -374,25 +364,7 @@ const DashboardPage: React.FC = () => {
             )}
             style={{ bottom: 24 }}
           >
-            <div
-              className={cn(
-                'flex',
-                'gap-2',
-                'px-3',
-                'py-2',
-                'rounded-2xl',
-                'bg-white/80',
-                'dark:bg-slate-800/80',
-                'border',
-                'border-slate-200/70',
-                'dark:border-slate-700/70',
-                'shadow-xl',
-                'backdrop-blur-md',
-                'ring-1',
-                'ring-slate-200/60',
-                'dark:ring-slate-700/60'
-              )}
-            >
+            <div className={cn(dashboardTokenRecipes.floatingRangeShell)}>
               {[
                 { key: 'current-month', label: 'Current Month' },
                 { key: 'past-2-months', label: '2 Months' },

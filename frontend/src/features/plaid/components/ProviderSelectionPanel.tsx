@@ -17,14 +17,11 @@ const panelClasses = cn(
   'overflow-hidden',
   'rounded-[2.25rem]',
   'border',
-  'border-white/35',
-  'bg-white/24',
+  ...designTokens.borders.glass,
+  ...designTokens.surfaces.semantic.glassPanel,
   'p-10',
-  'shadow-[0_32px_110px_-60px_rgba(15,23,42,0.75)]',
-  'backdrop-blur-[28px]',
-  'dark:border-white/12',
-  ...designTokens.surfaces.glass.panelDark,
-  ...designTokens.surfaces.glass.panelShadow
+  ...designTokens.effects.semantic.glassShadow,
+  'backdrop-blur-[28px]'
 );
 
 export const ProviderSelectionPanel = ({
@@ -55,14 +52,12 @@ export const ProviderSelectionPanel = ({
           'overflow-hidden',
           'rounded-[2.25rem]',
           'border',
-          'border-red-200/70',
-          'bg-red-50/80',
+          ...designTokens.status.danger.border,
+          ...designTokens.status.danger.surface,
           'p-12',
           'text-center',
-          'shadow-[0_32px_110px_-60px_rgba(220,38,38,0.45)]',
-          'backdrop-blur-[28px]',
-          'dark:border-red-700/60',
-          'dark:bg-red-900/25'
+          ...designTokens.effects.semantic.dangerGlow,
+          'backdrop-blur-[28px]'
         )}
         data-testid="provider-error-panel"
       >
@@ -140,12 +135,10 @@ export const ProviderSelectionPanel = ({
                     'w-full',
                     'transition-all',
                     'duration-200',
-                    'border-white/45',
-                    'bg-white/80',
-                    'dark:border-white/10',
-                    'dark:bg-[#111a2f]/70',
+                    ...designTokens.borders.glass,
+                    ...designTokens.surfaces.semantic.card,
                     'hover:shadow-[0_24px_80px_-50px_rgba(15,23,42,0.55)]',
-                    'dark:hover:border-sky-400/40',
+                    'dark:hover:border-[var(--color-border-hover-accent-dark)]',
                     'dark:hover:shadow-[0_28px_90px_-60px_rgba(2,6,23,0.7)]'
                   )}
                 >
@@ -159,13 +152,11 @@ export const ProviderSelectionPanel = ({
                       <span
                         className={cn(
                           'rounded-full',
-                          'bg-sky-100',
+                          ...designTokens.status.info.surface,
                           'px-3',
                           'py-1',
                           designTokens.typography.label,
-                          'text-sky-700',
-                          'dark:bg-sky-500/15',
-                          'dark:text-sky-200'
+                          ...designTokens.status.info.text
                         )}
                       >
                         {details.badge}
@@ -189,8 +180,8 @@ export const ProviderSelectionPanel = ({
                               'h-1.5',
                               'w-1.5',
                               'rounded-full',
-                              'bg-sky-400',
-                              'dark:bg-sky-500'
+                              'bg-[var(--color-brand-sky)]',
+                              'dark:bg-[var(--color-brand-sky-dark)]'
                             )}
                           />
                           <span>{bullet}</span>
@@ -204,7 +195,7 @@ export const ProviderSelectionPanel = ({
                         'items-center',
                         'justify-center',
                         'rounded-full',
-                        'bg-sky-500',
+                        'bg-[var(--color-brand-sky)]',
                         'px-4',
                         'py-2',
                         designTokens.typography.bodyStrong,
