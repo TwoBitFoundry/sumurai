@@ -4,7 +4,6 @@ import { font as uiTypographyRecipes } from '@/ui/recipes';
 const expectedRoles = [
   'display',
   'pageTitle',
-  'pageTitleWordmark',
   'sectionTitle',
   'cardTitle',
   'body',
@@ -12,10 +11,7 @@ const expectedRoles = [
   'caption',
   'captionStrong',
   'label',
-  'titleBarChromeExpanded',
   'badge',
-  'chartDonutCenterTotal',
-  'confirmationCode',
 ];
 
 const extractMinimumRemSize = (recipe: string): number | null => {

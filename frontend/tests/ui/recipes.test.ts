@@ -56,7 +56,7 @@ describe('shared UI recipes', () => {
     expect(font.badge).toBe(
       'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]'
     );
-    expect(chrome.smInset).toContain('px-[length:var(--spacing-button-chrome-inset-sm-x)]');
+    expect(chrome.sm).toContain('px-[length:var(--spacing-button-chrome-inset-sm-x)]');
   });
 
   it('exposes the shared status recipes', () => {

@@ -26,7 +26,7 @@ export const appTitleBarRecipes = {
     container: ['flex', 'items-center', 'gap-2', semanticTextRecipes.primary],
     scrolled: 'text-xl',
     default: 'text-3xl',
-    wordmark: uiTypographyRecipes.pageTitleWordmark,
+    wordmark: uiTypographyRecipes.pageTitle,
     fontFamily: { fontFamily: "'Cal Sans', system-ui, sans-serif" },
   },
   tabIdle: [
@@ -151,7 +151,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                   className={cn('rounded-md')}
                   unoptimized
                 />
-                <span className={uiTypographyRecipes.pageTitleWordmark}>Sumurai</span>
+                <span className={uiTypographyRecipes.pageTitle}>Sumurai</span>
               </div>
 
               {state === 'authenticated' && (

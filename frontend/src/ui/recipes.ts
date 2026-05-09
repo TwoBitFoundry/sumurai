@@ -30,17 +30,11 @@ export const placeholder = {
 } as const;
 
 export const surface = {
-  app: ['bg-[var(--color-surface-app-shell)]', 'dark:bg-[var(--color-surface-app-shell)]'],
   appShell: ['bg-[var(--color-surface-app-shell)]', 'dark:bg-[var(--color-surface-app-shell)]'],
-  glass: [
-    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
-  ],
   glassPanel: [
     'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)]',
     'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
   ],
-  panel: ['bg-[var(--color-surface-solid-panel)]', 'dark:bg-[var(--color-surface-solid-panel)]'],
   solidPanel: [
     'bg-[var(--color-surface-solid-panel)]',
     'dark:bg-[var(--color-surface-solid-panel)]',
@@ -53,38 +47,21 @@ export const surface = {
     'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
     'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
   ],
-  dataRow: ['bg-[var(--color-surface-data-row)]', 'dark:bg-[var(--color-surface-data-row)]'],
-  row: ['bg-[var(--color-surface-data-row)]', 'dark:bg-[var(--color-surface-data-row)]'],
   hoverRow: ['bg-[var(--color-surface-hover-row)]', 'dark:bg-[var(--color-surface-hover-row)]'],
   mutedChip: ['bg-[var(--color-surface-muted-chip)]', 'dark:bg-[var(--color-surface-muted-chip)]'],
-  chip: ['bg-[var(--color-surface-muted-chip)]', 'dark:bg-[var(--color-surface-muted-chip)]'],
-  input: [
-    'bg-[var(--color-surface-input-control)]',
-    'dark:bg-[var(--color-surface-input-control)]',
-  ],
-  inputControl: [
-    'bg-[var(--color-surface-input-control)]',
-    'dark:bg-[var(--color-surface-input-control)]',
-  ],
   insetWell: ['bg-[var(--color-surface-inset-well)]', 'dark:bg-[var(--color-surface-inset-well)]'],
-  inset: ['bg-[var(--color-surface-inset-well)]', 'dark:bg-[var(--color-surface-inset-well)]'],
   overlay: ['bg-[var(--color-surface-overlay)]', 'dark:bg-[var(--color-surface-overlay)]'],
 } as const;
 
 export const border = {
   default: ['border-[var(--color-border-default)]', 'dark:border-[var(--color-border-default)]'],
   subtle: ['border-[var(--color-border-subtle)]', 'dark:border-[var(--color-border-subtle)]'],
-  strong: ['border-[var(--color-border-strong)]', 'dark:border-[var(--color-border-strong)]'],
   glass: [
     'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
     'dark:border-[color:color-mix(in_srgb,var(--color-border-glass)_12%,transparent)]',
   ],
   control: ['border-[var(--color-border-control)]', 'dark:border-[var(--color-border-control)]'],
   divider: ['border-[var(--color-border-divider)]', 'dark:border-[var(--color-border-divider)]'],
-  focusActive: [
-    'border-[var(--color-border-focus-active)]',
-    'dark:border-[var(--color-border-focus-active)]',
-  ],
   hoverAccent: [
     'border-[var(--color-border-hover-accent)]',
     'dark:border-[var(--color-border-hover-accent)]',
@@ -105,17 +82,9 @@ export const effect = {
     'shadow-[0_0_12px_var(--color-effect-success-glow)]',
     'dark:shadow-[0_0_12px_var(--color-effect-success-glow)]',
   ],
-  warningGlow: [
-    'shadow-[0_0_12px_var(--color-effect-warning-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-warning-glow)]',
-  ],
   dangerGlow: [
     'shadow-[0_0_12px_var(--color-effect-danger-glow)]',
     'dark:shadow-[0_0_12px_var(--color-effect-danger-glow)]',
-  ],
-  chartTooltipShadow: [
-    'shadow-[0_18px_45px_-25px_var(--color-effect-glass-shadow)]',
-    'dark:shadow-[0_18px_45px_-25px_var(--color-effect-glass-shadow)]',
   ],
   pageShellInsetRing: [
     'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]',
@@ -207,15 +176,17 @@ export const focus = {
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-slate-900',
   danger:
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-red-400/75 dark:focus-visible:ring-offset-slate-900',
-  darkOffset: 'dark:focus:ring-offset-[#0f172a]',
-  visibleDarkOffset: 'dark:focus-visible:ring-offset-[#0f172a]',
-  ringOffsetLightOnDark: ['ring-offset-white', 'dark:ring-offset-[#0f172a]'],
+  darkOffset: 'dark:focus:ring-offset-[var(--color-surface-glass-panel)]',
+  visibleDarkOffset: 'dark:focus-visible:ring-offset-[var(--color-surface-glass-panel)]',
+  ringOffsetLightOnDark: [
+    'ring-offset-white',
+    'dark:ring-offset-[var(--color-surface-glass-panel)]',
+  ],
 } as const;
 
 export const font = {
   display: 'font-display text-[clamp(2.25rem,3vw,3rem)] font-bold leading-[1.1] tracking-normal',
   pageTitle: 'font-page-title text-[2rem] font-bold leading-[1.1] tracking-normal',
-  pageTitleWordmark: 'font-page-title text-[2rem] font-bold leading-[1.1] tracking-normal',
   sectionTitle: 'font-section-title text-[1.5rem] font-semibold leading-[1.25] tracking-normal',
   cardTitle: 'font-card-title text-[1.25rem] font-semibold leading-[1.25] tracking-normal',
   body: 'font-body text-[1rem] font-normal leading-[1.5] tracking-normal',
@@ -223,18 +194,10 @@ export const font = {
   caption: 'font-caption text-[0.875rem] font-normal leading-[1.5] tracking-normal',
   captionStrong: 'font-caption text-[0.875rem] font-semibold leading-[1.5] tracking-normal',
   label: 'font-label text-[0.75rem] font-semibold uppercase leading-none tracking-[0.14em]',
-  titleBarChromeExpanded:
-    'font-caption text-[0.875rem] font-semibold uppercase leading-none tracking-[0.14em]',
   badge: 'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]',
-  chartDonutCenterTotal: 'font-display text-2xl font-bold tracking-tight',
-  confirmationCode: 'font-mono font-bold',
 } as const;
 
 export const chrome = {
-  xsInset:
-    'px-[length:var(--spacing-button-chrome-inset-sm-x)] py-[length:var(--spacing-button-chrome-inset-sm-y)] rounded-[length:var(--radius-medium)]',
-  smInset:
-    'px-[length:var(--spacing-button-chrome-inset-sm-x)] py-[length:var(--spacing-button-chrome-inset-sm-y)] rounded-[length:var(--radius-medium)]',
   xs: 'px-[length:var(--spacing-button-chrome-inset-sm-x)] py-[length:var(--spacing-button-chrome-inset-sm-y)] rounded-[length:var(--radius-medium)]',
   sm: 'px-[length:var(--spacing-button-chrome-inset-sm-x)] py-[length:var(--spacing-button-chrome-inset-sm-y)] rounded-[length:var(--radius-medium)]',
 } as const;

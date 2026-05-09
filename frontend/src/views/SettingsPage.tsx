@@ -8,6 +8,8 @@ import { Alert, Badge, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/p
 import { cn } from '@/ui/primitives/utils';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
+export const settingsConfirmationCodeTypography = 'font-mono font-bold';
+
 interface SettingsPageProps {
   onLogout?: () => void;
 }
@@ -279,8 +281,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
           <div className={cn('mb-6', 'flex', 'flex-col', 'gap-3')}>
             <FormLabel htmlFor="confirm-delete">
-              Type <span className={cn(uiTypographyRecipes.confirmationCode)}>DELETE</span> to
-              confirm
+              Type <span className={cn(settingsConfirmationCodeTypography)}>DELETE</span> to confirm
             </FormLabel>
             <Input
               id="confirm-delete"

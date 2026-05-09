@@ -1,17 +1,7 @@
 import generatedTokens from '@/ui/generated/tokens';
 import { border as uiBorderRecipes } from '@/ui/recipes';
 
-const expectedRoles = [
-  'default',
-  'subtle',
-  'strong',
-  'glass',
-  'control',
-  'divider',
-  'focusActive',
-  'hoverAccent',
-  'danger',
-];
+const expectedRoles = ['default', 'subtle', 'glass', 'control', 'divider', 'hoverAccent', 'danger'];
 
 const expectedTokenKeys = [
   'border-default',

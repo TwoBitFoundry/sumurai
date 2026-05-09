@@ -1,14 +1,7 @@
 import generatedTokens from '@/ui/generated/tokens';
 import { effect as uiEffectRecipes } from '@/ui/recipes';
 
-const expectedRoles = [
-  'glassShadow',
-  'successGlow',
-  'warningGlow',
-  'dangerGlow',
-  'accentHover',
-  'chartTooltipShadow',
-];
+const expectedRoles = ['glassShadow', 'successGlow', 'dangerGlow', 'accentHover'];
 
 const expectedTokenKeys = [
   'effect-glass-shadow',

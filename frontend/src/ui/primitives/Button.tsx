@@ -18,6 +18,9 @@ export const buttonTypographySizes = {
   lg: uiTypographyRecipes.bodyStrong,
 } as const;
 
+const titleBarChromeExpandedTypography =
+  'font-caption text-[0.875rem] font-semibold uppercase leading-none tracking-[0.14em]';
+
 export const connectButtonRecipes = {
   base: [
     `inline-flex items-center gap-2 rounded-full px-5 py-2 ${uiTypographyRecipes.captionStrong} whitespace-nowrap`,
@@ -135,7 +138,7 @@ const buttonVariants = cva([...buttonRecipes.base], {
     size: {
       xs: `${buttonTypographySizes.xs} ${chrome.xs}`,
       sm: `${buttonTypographySizes.sm} ${chrome.sm}`,
-      titleBarExpanded: `${uiTypographyRecipes.titleBarChromeExpanded} ${chrome.sm}`,
+      titleBarExpanded: `${titleBarChromeExpandedTypography} ${chrome.sm}`,
       md: `${buttonTypographySizes.md} px-4 py-2 rounded-full`,
       lg: `${buttonTypographySizes.lg} px-5 py-2.5 rounded-full`,
       icon: 'h-10 w-10 rounded-full',

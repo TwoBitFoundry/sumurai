@@ -2,7 +2,10 @@ import { BarChart3 } from 'lucide-react';
 import type React from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { cn, EmptyState } from '@/ui/primitives';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { text as uiTextRecipes } from '@/ui/recipes';
+
+const donutCenterTotalTypography = 'font-display text-2xl font-bold tracking-tight';
+
 import { chart, getThemeColors } from '@/ui/tokens';
 import { useTheme } from '../../../context/ThemeContext';
 import { fmtUSD } from '../../../utils/format';
@@ -114,7 +117,7 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
               'pointer-events-none'
             )}
           >
-            <div className={cn(uiTypographyRecipes.chartDonutCenterTotal, uiTextRecipes.primary)}>
+            <div className={cn(donutCenterTotalTypography, uiTextRecipes.primary)}>
               {fmtUSD(total)}
             </div>
           </div>

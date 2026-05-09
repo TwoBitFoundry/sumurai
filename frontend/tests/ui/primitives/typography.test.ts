@@ -62,12 +62,5 @@ describe('primitive typography recipes', () => {
     expect(appTitleBarRecipes.tabIdle).toContain(uiTextRecipes.muted);
   });
 
-  it('exposes chart and confirmation typography without raw utility stacks', () => {
-    expect(uiTypographyRecipes.chartDonutCenterTotal).toContain('text-2xl');
-    expect(uiTypographyRecipes.chartDonutCenterTotal).toContain('font-bold');
-    expect(uiTypographyRecipes.chartDonutCenterTotal).toContain('tracking-tight');
-    expect(uiTypographyRecipes.confirmationCode).toBe('font-mono font-bold');
-  });
-
   it('reserves labeled-control spacing for label stacks that clear focus rings', () => {});
 });
