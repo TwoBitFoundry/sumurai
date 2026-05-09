@@ -1,0 +1,2444 @@
+{
+  "generatedAt": "2026-05-09T18:47:19.896Z",
+  "srcRoot": "/Users/kodybuss/Repos/two-bit-foundry/sumurai/frontend/src",
+  "designPath": "/Users/kodybuss/Repos/two-bit-foundry/sumurai/DESIGN.md",
+  "sources": [
+    {
+      "source": "@/ui/tokens",
+      "symbols": [
+        {
+          "symbol": "designTokens",
+          "consumerFiles": [
+            "SessionManager.tsx",
+            "components/AccountRow.tsx",
+            "components/Amount.tsx",
+            "components/DisconnectModal.tsx",
+            "components/ErrorBoundary.tsx",
+            "components/Footer.tsx",
+            "components/HeaderAccountFilter.tsx",
+            "components/NetWorthOverTimeWidget.tsx",
+            "components/PasswordChecker.tsx",
+            "components/ProviderMismatchModal.tsx",
+            "components/StatusPill.tsx",
+            "components/Toast.tsx",
+            "components/onboarding/ConnectAccountStep.tsx",
+            "components/onboarding/OnboardingWizard.tsx",
+            "components/onboarding/WelcomeStep.tsx",
+            "components/widgets/HeroStatCard.tsx",
+            "features/analytics/components/DashboardChartCard.stories.tsx",
+            "features/analytics/components/DashboardChartCard.tsx",
+            "features/analytics/components/SpendingByCategoryChart.tsx",
+            "features/analytics/components/TopMerchantsList.tsx",
+            "features/budgets/components/BudgetList.tsx",
+            "features/budgets/components/BudgetProgress.tsx",
+            "features/budgets/components/BudgetSummaryCard.tsx",
+            "features/budgets/components/BudgetToolbar.tsx",
+            "features/plaid/components/AccountsSummaryStats.tsx",
+            "features/plaid/components/ProviderSelectionPanel.tsx",
+            "features/transactions/components/TransactionsFilters.tsx",
+            "features/transactions/components/TransactionsTable.tsx",
+            "layouts/AppLayout.stories.tsx",
+            "layouts/PageLayout.tsx",
+            "storybook/screenSlices/AccountsScreenSlice.tsx",
+            "storybook/screenSlices/AuthenticatedScreenShell.tsx",
+            "storybook/screenSlices/DashboardScreenSlice.tsx",
+            "storybook/screenSlices/SettingsScreenSlice.tsx",
+            "storybook/screenSlices/TransactionsScreenSlice.tsx",
+            "storybook/shells/AppChrome.stories.tsx",
+            "ui/primitives/Alert.tsx",
+            "ui/primitives/AppTitleBar.stories.tsx",
+            "ui/primitives/AppTitleBar.tsx",
+            "ui/primitives/Badge.tsx",
+            "ui/primitives/Button.tsx",
+            "ui/primitives/EmptyState.tsx",
+            "ui/primitives/FormLabel.tsx",
+            "ui/primitives/GlassCard.stories.tsx",
+            "ui/primitives/GlassCard.tsx",
+            "ui/primitives/GradientShell.stories.tsx",
+            "ui/primitives/GradientShell.tsx",
+            "ui/primitives/Input.tsx",
+            "ui/primitives/MenuDropdown.tsx",
+            "ui/primitives/Modal.tsx",
+            "ui/primitives/RequirementPill.tsx",
+            "ui/primitives/Select.tsx",
+            "utils/providerCards.ts",
+            "views/AccountsPage.tsx",
+            "views/DashboardPage.tsx",
+            "views/SettingsPage.tsx",
+            "views/TransactionsPage.tsx",
+            "views/tokenRecipes.ts"
+          ],
+          "consumerCount": 58
+        },
+        {
+          "symbol": "getCategoryAccent",
+          "consumerFiles": [
+            "utils/categories.ts"
+          ],
+          "consumerCount": 1
+        },
+        {
+          "symbol": "getHeroAccentTheme",
+          "consumerFiles": [
+            "components/widgets/HeroStatCard.tsx"
+          ],
+          "consumerCount": 1
+        },
+        {
+          "symbol": "getThemeColors",
+          "consumerFiles": [
+            "context/ThemeContext.tsx"
+          ],
+          "consumerCount": 1
+        },
+        {
+          "symbol": "ThemeColors",
+          "consumerFiles": [
+            "context/ThemeContext.tsx"
+          ],
+          "consumerCount": 1
+        },
+        {
+          "symbol": "ThemeMode",
+          "consumerFiles": [
+            "context/ThemeContext.tsx"
+          ],
+          "consumerCount": 1
+        }
+      ]
+    },
+    {
+      "source": "@/ui/tokens/textRecipes",
+      "symbols": [
+        {
+          "symbol": "semanticTextRecipes",
+          "consumerFiles": [
+            "ui/primitives/tokenRecipes.ts"
+          ],
+          "consumerCount": 1
+        }
+      ]
+    },
+    {
+      "source": "@/ui/primitives/tokenRecipes",
+      "symbols": [
+        {
+          "symbol": "primitiveTokenRecipes",
+          "consumerFiles": [
+            "ui/tokens/index.ts"
+          ],
+          "consumerCount": 1
+        },
+        {
+          "symbol": "primitiveTypographyRecipes",
+          "consumerFiles": [
+            "components/onboarding/tokenRecipes.ts",
+            "features/budgets/tokenRecipes.ts",
+            "ui/tokens/index.ts"
+          ],
+          "consumerCount": 3
+        }
+      ]
+    },
+    {
+      "source": "@/views/tokenRecipes",
+      "symbols": [
+        {
+          "symbol": "dashboardTokenRecipes",
+          "consumerFiles": [
+            "features/analytics/components/TopMerchantsList.tsx",
+            "features/transactions/components/TransactionsTable.tsx",
+            "features/transactions/components/TransactionsToolbar.tsx",
+            "storybook/screenSlices/DashboardScreenSlice.tsx"
+          ],
+          "consumerCount": 4
+        }
+      ]
+    },
+    {
+      "source": "@/features/budgets/tokenRecipes",
+      "symbols": [
+        {
+          "symbol": "budgetTokenRecipes",
+          "consumerFiles": [
+            "ui/tokens/index.ts"
+          ],
+          "consumerCount": 1
+        }
+      ]
+    },
+    {
+      "source": "@/components/onboarding/tokenRecipes",
+      "symbols": [
+        {
+          "symbol": "onboardingTokenRecipes",
+          "consumerFiles": [
+            "ui/tokens/index.ts"
+          ],
+          "consumerCount": 1
+        }
+      ]
+    }
+  ],
+  "designTokens": [
+    {
+      "symbol": "designTokens.borders",
+      "consumerFiles": [
+        "components/AccountRow.tsx",
+        "components/BalancesOverview.tsx",
+        "components/BankCard.tsx",
+        "components/Footer.tsx",
+        "components/HeaderAccountFilter.tsx",
+        "components/onboarding/OnboardingWizard.tsx",
+        "features/budgets/components/BudgetSummaryCard.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "features/transactions/components/TransactionsTable.tsx"
+      ],
+      "consumerCount": 9
+    },
+    {
+      "symbol": "designTokens.borders.control",
+      "consumerFiles": [
+        "components/HeaderAccountFilter.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.borders.default",
+      "consumerFiles": [
+        "components/BalancesOverview.tsx",
+        "components/Footer.tsx",
+        "components/HeaderAccountFilter.tsx",
+        "components/onboarding/OnboardingWizard.tsx",
+        "features/budgets/components/BudgetSummaryCard.tsx"
+      ],
+      "consumerCount": 5
+    },
+    {
+      "symbol": "designTokens.borders.divider",
+      "consumerFiles": [
+        "components/Footer.tsx",
+        "components/HeaderAccountFilter.tsx",
+        "components/onboarding/OnboardingWizard.tsx",
+        "features/transactions/components/TransactionsTable.tsx"
+      ],
+      "consumerCount": 4
+    },
+    {
+      "symbol": "designTokens.borders.glass",
+      "consumerFiles": [
+        "components/BankCard.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.borders.hoverAccent",
+      "consumerFiles": [
+        "features/budgets/components/BudgetSummaryCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.borders.subtle",
+      "consumerFiles": [
+        "components/AccountRow.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.colors",
+      "consumerFiles": [
+        "components/AccountRow.tsx",
+        "ui/tokens/index.ts"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.colors.accountTypeDot",
+      "consumerFiles": [
+        "components/AccountRow.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.colors.accountTypeDot[type]",
+      "consumerFiles": [
+        "components/AccountRow.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.colors.categoryAccents",
+      "consumerFiles": [
+        "ui/tokens/index.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.colors.categoryAccents.length",
+      "consumerFiles": [
+        "ui/tokens/index.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.colors.categoryAccents[hashString(key) % designTokens.colors.categoryAccents.length]",
+      "consumerFiles": [
+        "ui/tokens/index.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.colors.theme",
+      "consumerFiles": [
+        "ui/tokens/index.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.colors.theme.dark",
+      "consumerFiles": [
+        "ui/tokens/index.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.colors.theme.light",
+      "consumerFiles": [
+        "ui/tokens/index.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx",
+        "components/onboarding/WelcomeStep.tsx",
+        "components/widgets/HeroStatCard.tsx",
+        "features/budgets/components/BudgetList.tsx",
+        "features/budgets/components/BudgetProgress.tsx",
+        "features/budgets/components/BudgetToolbar.tsx",
+        "features/transactions/components/TransactionsFilters.tsx",
+        "features/transactions/components/TransactionsTable.tsx",
+        "layouts/PageLayout.tsx",
+        "storybook/screenSlices/AccountsScreenSlice.tsx",
+        "ui/primitives/AppTitleBar.tsx",
+        "ui/primitives/Badge.tsx",
+        "ui/primitives/Button.tsx",
+        "ui/primitives/EmptyState.tsx",
+        "ui/primitives/GlassCard.tsx",
+        "ui/primitives/GradientShell.tsx",
+        "ui/primitives/Input.tsx",
+        "ui/primitives/MenuDropdown.tsx",
+        "ui/primitives/Select.tsx",
+        "ui/tokens/index.ts",
+        "utils/providerCards.ts",
+        "views/AccountsPage.tsx"
+      ],
+      "consumerCount": 22
+    },
+    {
+      "symbol": "designTokens.components.actions",
+      "consumerFiles": [
+        "features/budgets/components/BudgetList.tsx",
+        "features/budgets/components/BudgetToolbar.tsx",
+        "features/transactions/components/TransactionsTable.tsx",
+        "storybook/screenSlices/AccountsScreenSlice.tsx",
+        "views/AccountsPage.tsx"
+      ],
+      "consumerCount": 5
+    },
+    {
+      "symbol": "designTokens.components.actions.accountsToolbar",
+      "consumerFiles": [
+        "storybook/screenSlices/AccountsScreenSlice.tsx",
+        "views/AccountsPage.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.components.actions.budgetDeleteIcon",
+      "consumerFiles": [
+        "features/budgets/components/BudgetList.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.actions.budgetIconGhost",
+      "consumerFiles": [
+        "features/budgets/components/BudgetList.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.actions.budgetSaveIcon",
+      "consumerFiles": [
+        "features/budgets/components/BudgetList.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.actions.paginationRound",
+      "consumerFiles": [
+        "features/budgets/components/BudgetToolbar.tsx",
+        "features/transactions/components/TransactionsTable.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.components.appTitleBar",
+      "consumerFiles": [
+        "ui/primitives/AppTitleBar.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.appTitleBar.base",
+      "consumerFiles": [
+        "ui/primitives/AppTitleBar.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.appTitleBar.height",
+      "consumerFiles": [
+        "ui/primitives/AppTitleBar.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.appTitleBar.height.default",
+      "consumerFiles": [
+        "ui/primitives/AppTitleBar.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.appTitleBar.height.scrolled",
+      "consumerFiles": [
+        "ui/primitives/AppTitleBar.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.appTitleBar.logo",
+      "consumerFiles": [
+        "ui/primitives/AppTitleBar.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.appTitleBar.logo.container",
+      "consumerFiles": [
+        "ui/primitives/AppTitleBar.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.appTitleBar.logo.default",
+      "consumerFiles": [
+        "ui/primitives/AppTitleBar.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.appTitleBar.logo.scrolled",
+      "consumerFiles": [
+        "ui/primitives/AppTitleBar.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.appTitleBar.logo.wordmark",
+      "consumerFiles": [
+        "ui/primitives/AppTitleBar.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.appTitleBar.settingsIdle",
+      "consumerFiles": [
+        "ui/primitives/AppTitleBar.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.appTitleBar.shell",
+      "consumerFiles": [
+        "ui/primitives/AppTitleBar.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.appTitleBar.tabHalo",
+      "consumerFiles": [
+        "ui/primitives/AppTitleBar.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.appTitleBar.tabIdle",
+      "consumerFiles": [
+        "ui/primitives/AppTitleBar.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.appTitleBar.themeToggle",
+      "consumerFiles": [
+        "ui/primitives/AppTitleBar.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.badge",
+      "consumerFiles": [
+        "ui/primitives/Badge.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.badge.base",
+      "consumerFiles": [
+        "ui/primitives/Badge.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.badge.default",
+      "consumerFiles": [
+        "ui/primitives/Badge.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.badge.feature",
+      "consumerFiles": [
+        "ui/primitives/Badge.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.badge.primary",
+      "consumerFiles": [
+        "ui/primitives/Badge.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.budgetCard",
+      "consumerFiles": [
+        "features/budgets/components/BudgetList.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.budgetCard.shell",
+      "consumerFiles": [
+        "features/budgets/components/BudgetList.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.budgetProgress",
+      "consumerFiles": [
+        "features/budgets/components/BudgetProgress.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.button",
+      "consumerFiles": [
+        "ui/primitives/Button.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.button.base",
+      "consumerFiles": [
+        "ui/primitives/Button.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.button.connect",
+      "consumerFiles": [
+        "ui/primitives/Button.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.button.danger",
+      "consumerFiles": [
+        "ui/primitives/Button.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.button.ghost",
+      "consumerFiles": [
+        "ui/primitives/Button.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.button.icon",
+      "consumerFiles": [
+        "ui/primitives/Button.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.button.primary",
+      "consumerFiles": [
+        "ui/primitives/Button.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.button.secondary",
+      "consumerFiles": [
+        "ui/primitives/Button.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.button.success",
+      "consumerFiles": [
+        "ui/primitives/Button.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.button.tab",
+      "consumerFiles": [
+        "ui/primitives/Button.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.button.tabActive",
+      "consumerFiles": [
+        "ui/primitives/Button.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.emptyState",
+      "consumerFiles": [
+        "ui/primitives/EmptyState.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.emptyState.description",
+      "consumerFiles": [
+        "ui/primitives/EmptyState.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.emptyState.iconWrapper",
+      "consumerFiles": [
+        "ui/primitives/EmptyState.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.emptyState.title",
+      "consumerFiles": [
+        "ui/primitives/EmptyState.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.glassCard",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.glassCard.accent",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.glassCard.auth",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.glassCard.base",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.glassCard.default",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.glassCard.padding",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.glassCard.padding.lg",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.glassCard.padding.md",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.glassCard.padding.none",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.glassCard.padding.sm",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.glassCard.rounded",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.glassCard.rounded.default",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.glassCard.rounded.lg",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.glassCard.rounded.xl",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.gradientShell",
+      "consumerFiles": [
+        "ui/primitives/GradientShell.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.gradientShell.aura",
+      "consumerFiles": [
+        "ui/primitives/GradientShell.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.gradientShell.base",
+      "consumerFiles": [
+        "ui/primitives/GradientShell.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.gradientShell.centered",
+      "consumerFiles": [
+        "ui/primitives/GradientShell.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.gradientShell.centerGlow",
+      "consumerFiles": [
+        "ui/primitives/GradientShell.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.gradientShell.contentCentered",
+      "consumerFiles": [
+        "ui/primitives/GradientShell.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.gradientShell.cyanAura",
+      "consumerFiles": [
+        "ui/primitives/GradientShell.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.gradientShell.overlay",
+      "consumerFiles": [
+        "ui/primitives/GradientShell.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.gradientShell.vignette",
+      "consumerFiles": [
+        "ui/primitives/GradientShell.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.gradientShell.vignetteOverlay",
+      "consumerFiles": [
+        "ui/primitives/GradientShell.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.gradientShell.violetAura",
+      "consumerFiles": [
+        "ui/primitives/GradientShell.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.heroStatCard",
+      "consumerFiles": [
+        "components/widgets/HeroStatCard.tsx",
+        "ui/tokens/index.ts"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.components.heroStatCard.accent",
+      "consumerFiles": [
+        "ui/tokens/index.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.heroStatCard.accent[accent]",
+      "consumerFiles": [
+        "ui/tokens/index.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.heroStatCard.base",
+      "consumerFiles": [
+        "components/widgets/HeroStatCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.heroStatCard.footerInner",
+      "consumerFiles": [
+        "components/widgets/HeroStatCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.heroStatCard.ring",
+      "consumerFiles": [
+        "components/widgets/HeroStatCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.heroStatCard.ringLine",
+      "consumerFiles": [
+        "components/widgets/HeroStatCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.heroStatCard.semantic",
+      "consumerFiles": [
+        "components/widgets/HeroStatCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.heroStatCard.semantic[p.tone]",
+      "consumerFiles": [
+        "components/widgets/HeroStatCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.heroStatCard.shell",
+      "consumerFiles": [
+        "components/widgets/HeroStatCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.heroStatCard.suffix",
+      "consumerFiles": [
+        "components/widgets/HeroStatCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.heroStatCard.title",
+      "consumerFiles": [
+        "components/widgets/HeroStatCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.heroStatCard.value",
+      "consumerFiles": [
+        "components/widgets/HeroStatCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.input",
+      "consumerFiles": [
+        "ui/primitives/Input.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.input.base",
+      "consumerFiles": [
+        "ui/primitives/Input.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.input.default",
+      "consumerFiles": [
+        "ui/primitives/Input.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.input.glass",
+      "consumerFiles": [
+        "ui/primitives/Input.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.input.invalid",
+      "consumerFiles": [
+        "ui/primitives/Input.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.input.size",
+      "consumerFiles": [
+        "ui/primitives/Input.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.input.size.lg",
+      "consumerFiles": [
+        "ui/primitives/Input.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.input.size.md",
+      "consumerFiles": [
+        "ui/primitives/Input.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.input.size.sm",
+      "consumerFiles": [
+        "ui/primitives/Input.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.menuDropdown",
+      "consumerFiles": [
+        "ui/primitives/MenuDropdown.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.menuDropdown.content",
+      "consumerFiles": [
+        "ui/primitives/MenuDropdown.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.menuDropdown.item",
+      "consumerFiles": [
+        "ui/primitives/MenuDropdown.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.onboarding",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx",
+        "components/onboarding/WelcomeStep.tsx",
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 3
+    },
+    {
+      "symbol": "designTokens.components.onboarding.bodyMuted",
+      "consumerFiles": [
+        "components/onboarding/WelcomeStep.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.onboarding.eyebrowCaps",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx",
+        "components/onboarding/WelcomeStep.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.components.onboarding.hoverOverlay",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx",
+        "components/onboarding/WelcomeStep.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.components.onboarding.iconGlow",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx",
+        "components/onboarding/WelcomeStep.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.components.onboarding.iconWell",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx",
+        "components/onboarding/WelcomeStep.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.components.onboarding.iconWellLarge",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.onboarding.previewFrame",
+      "consumerFiles": [
+        "components/onboarding/WelcomeStep.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.onboarding.providerConnect",
+      "consumerFiles": [
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.onboarding.providerConnect.plaidEyebrowBg",
+      "consumerFiles": [
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.onboarding.providerConnect.plaidEyebrowText",
+      "consumerFiles": [
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.onboarding.providerConnect.tellerEyebrowBg",
+      "consumerFiles": [
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.onboarding.providerConnect.tellerEyebrowText",
+      "consumerFiles": [
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.onboarding.providerHoverOverlay",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.onboarding.providerIconGlow",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.onboarding.providerRow",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.onboarding.rowBodyMuted",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.onboarding.stepCard",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx",
+        "components/onboarding/WelcomeStep.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.components.onboarding.titleStrong",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx",
+        "components/onboarding/WelcomeStep.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.components.onboarding.titleStrongInline",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.pageLayout",
+      "consumerFiles": [
+        "layouts/PageLayout.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.pageLayout.badge",
+      "consumerFiles": [
+        "layouts/PageLayout.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.pageLayout.error",
+      "consumerFiles": [
+        "layouts/PageLayout.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.pageLayout.errorText",
+      "consumerFiles": [
+        "layouts/PageLayout.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.pageLayout.innerGradient",
+      "consumerFiles": [
+        "layouts/PageLayout.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.pageLayout.innerRing",
+      "consumerFiles": [
+        "layouts/PageLayout.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.pageLayout.shell",
+      "consumerFiles": [
+        "layouts/PageLayout.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.pageLayout.subtitle",
+      "consumerFiles": [
+        "layouts/PageLayout.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.pageLayout.title",
+      "consumerFiles": [
+        "layouts/PageLayout.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.pill",
+      "consumerFiles": [
+        "components/widgets/HeroStatCard.tsx",
+        "features/budgets/components/BudgetList.tsx",
+        "features/transactions/components/TransactionsFilters.tsx",
+        "features/transactions/components/TransactionsTable.tsx"
+      ],
+      "consumerCount": 4
+    },
+    {
+      "symbol": "designTokens.components.pill.base",
+      "consumerFiles": [
+        "components/widgets/HeroStatCard.tsx",
+        "features/budgets/components/BudgetList.tsx",
+        "features/transactions/components/TransactionsFilters.tsx",
+        "features/transactions/components/TransactionsTable.tsx"
+      ],
+      "consumerCount": 4
+    },
+    {
+      "symbol": "designTokens.components.pill.dot",
+      "consumerFiles": [
+        "components/widgets/HeroStatCard.tsx",
+        "features/budgets/components/BudgetList.tsx",
+        "features/transactions/components/TransactionsFilters.tsx",
+        "features/transactions/components/TransactionsTable.tsx"
+      ],
+      "consumerCount": 4
+    },
+    {
+      "symbol": "designTokens.components.pill.fadeLeft",
+      "consumerFiles": [
+        "components/widgets/HeroStatCard.tsx",
+        "features/transactions/components/TransactionsFilters.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.components.pill.fadeRight",
+      "consumerFiles": [
+        "components/widgets/HeroStatCard.tsx",
+        "features/transactions/components/TransactionsFilters.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.components.select",
+      "consumerFiles": [
+        "ui/primitives/Select.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.select.base",
+      "consumerFiles": [
+        "ui/primitives/Select.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.select.default",
+      "consumerFiles": [
+        "ui/primitives/Select.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.select.glass",
+      "consumerFiles": [
+        "ui/primitives/Select.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.select.invalid",
+      "consumerFiles": [
+        "ui/primitives/Select.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.select.size",
+      "consumerFiles": [
+        "ui/primitives/Select.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.select.size.lg",
+      "consumerFiles": [
+        "ui/primitives/Select.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.select.size.md",
+      "consumerFiles": [
+        "ui/primitives/Select.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.select.size.sm",
+      "consumerFiles": [
+        "ui/primitives/Select.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.transactions",
+      "consumerFiles": [
+        "features/transactions/components/TransactionsTable.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.transactions.row",
+      "consumerFiles": [
+        "features/transactions/components/TransactionsTable.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.transactions.row.even",
+      "consumerFiles": [
+        "features/transactions/components/TransactionsTable.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.transactions.row.odd",
+      "consumerFiles": [
+        "features/transactions/components/TransactionsTable.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.components.transactions.row.shell",
+      "consumerFiles": [
+        "features/transactions/components/TransactionsTable.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.effects",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx",
+        "features/budgets/components/BudgetSummaryCard.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx"
+      ],
+      "consumerCount": 3
+    },
+    {
+      "symbol": "designTokens.effects.semantic",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx",
+        "features/budgets/components/BudgetSummaryCard.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx"
+      ],
+      "consumerCount": 3
+    },
+    {
+      "symbol": "designTokens.effects.semantic.dangerGlow",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.effects.semantic.glassShadow",
+      "consumerFiles": [
+        "features/budgets/components/BudgetSummaryCard.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.palettes",
+      "consumerFiles": [
+        "components/onboarding/WelcomeStep.tsx",
+        "features/analytics/components/TopMerchantsList.tsx",
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 3
+    },
+    {
+      "symbol": "designTokens.palettes.brandAccent",
+      "consumerFiles": [
+        "features/analytics/components/TopMerchantsList.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.brandAccent.cyan",
+      "consumerFiles": [
+        "features/analytics/components/TopMerchantsList.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.brandAccent.cyan.background",
+      "consumerFiles": [
+        "features/analytics/components/TopMerchantsList.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.brandAccent.emerald",
+      "consumerFiles": [
+        "features/analytics/components/TopMerchantsList.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.brandAccent.emerald.background",
+      "consumerFiles": [
+        "features/analytics/components/TopMerchantsList.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.feature",
+      "consumerFiles": [
+        "components/onboarding/WelcomeStep.tsx",
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.palettes.feature.highlight",
+      "consumerFiles": [
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.feature.highlight.amber",
+      "consumerFiles": [
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.feature.highlight.emerald",
+      "consumerFiles": [
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.feature.highlight.fuchsia",
+      "consumerFiles": [
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.feature.highlight.sky",
+      "consumerFiles": [
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.feature.highlight.violet",
+      "consumerFiles": [
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.feature.providerFeature",
+      "consumerFiles": [
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.feature.providerFeature.amber",
+      "consumerFiles": [
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.feature.providerFeature.emerald",
+      "consumerFiles": [
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.feature.providerFeature.purple",
+      "consumerFiles": [
+        "utils/providerCards.ts"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.feature.welcome",
+      "consumerFiles": [
+        "components/onboarding/WelcomeStep.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.feature.welcome.amber",
+      "consumerFiles": [
+        "components/onboarding/WelcomeStep.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.feature.welcome.purple",
+      "consumerFiles": [
+        "components/onboarding/WelcomeStep.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.palettes.feature.welcome.sky",
+      "consumerFiles": [
+        "components/onboarding/WelcomeStep.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.shadows",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.shadows.glassInset",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.shadows.glassInset.dark",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.shadows.glassInset.light",
+      "consumerFiles": [
+        "ui/primitives/GlassCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.spacing",
+      "consumerFiles": [
+        "storybook/screenSlices/SettingsScreenSlice.tsx",
+        "views/SettingsPage.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.spacing.labeledFieldGap",
+      "consumerFiles": [
+        "storybook/screenSlices/SettingsScreenSlice.tsx",
+        "views/SettingsPage.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.status",
+      "consumerFiles": [
+        "components/AccountRow.tsx",
+        "components/BalancesOverview.tsx",
+        "components/BankCard.tsx",
+        "components/StatusPill.tsx",
+        "components/onboarding/ConnectAccountStep.tsx",
+        "components/onboarding/OnboardingWizard.tsx",
+        "components/onboarding/WelcomeStep.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 9
+    },
+    {
+      "symbol": "designTokens.status.danger",
+      "consumerFiles": [
+        "components/AccountRow.tsx",
+        "components/BalancesOverview.tsx",
+        "components/StatusPill.tsx",
+        "components/onboarding/ConnectAccountStep.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 6
+    },
+    {
+      "symbol": "designTokens.status.danger.border",
+      "consumerFiles": [
+        "components/onboarding/ConnectAccountStep.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 3
+    },
+    {
+      "symbol": "designTokens.status.danger.surface",
+      "consumerFiles": [
+        "components/StatusPill.tsx",
+        "components/onboarding/ConnectAccountStep.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 4
+    },
+    {
+      "symbol": "designTokens.status.danger.surface.join",
+      "consumerFiles": [
+        "components/StatusPill.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.status.danger.text",
+      "consumerFiles": [
+        "components/AccountRow.tsx",
+        "components/BalancesOverview.tsx",
+        "components/StatusPill.tsx",
+        "components/onboarding/ConnectAccountStep.tsx",
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 5
+    },
+    {
+      "symbol": "designTokens.status.danger.text.join",
+      "consumerFiles": [
+        "components/StatusPill.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.status.info",
+      "consumerFiles": [
+        "components/BalancesOverview.tsx",
+        "components/BankCard.tsx",
+        "components/onboarding/OnboardingWizard.tsx",
+        "components/onboarding/WelcomeStep.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 6
+    },
+    {
+      "symbol": "designTokens.status.info.border",
+      "consumerFiles": [
+        "components/onboarding/OnboardingWizard.tsx",
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.status.info.icon",
+      "consumerFiles": [
+        "components/BankCard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.status.info.surface",
+      "consumerFiles": [
+        "components/onboarding/OnboardingWizard.tsx",
+        "components/onboarding/WelcomeStep.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 4
+    },
+    {
+      "symbol": "designTokens.status.info.text",
+      "consumerFiles": [
+        "components/BalancesOverview.tsx",
+        "components/onboarding/OnboardingWizard.tsx",
+        "components/onboarding/WelcomeStep.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 5
+    },
+    {
+      "symbol": "designTokens.status.success",
+      "consumerFiles": [
+        "components/AccountRow.tsx",
+        "components/BalancesOverview.tsx",
+        "components/StatusPill.tsx",
+        "components/onboarding/OnboardingWizard.tsx",
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 5
+    },
+    {
+      "symbol": "designTokens.status.success.border",
+      "consumerFiles": [
+        "components/onboarding/OnboardingWizard.tsx",
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.status.success.strongSurface",
+      "consumerFiles": [
+        "components/onboarding/OnboardingWizard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.status.success.surface",
+      "consumerFiles": [
+        "components/StatusPill.tsx",
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.status.success.surface.join",
+      "consumerFiles": [
+        "components/StatusPill.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.status.success.text",
+      "consumerFiles": [
+        "components/AccountRow.tsx",
+        "components/BalancesOverview.tsx",
+        "components/StatusPill.tsx",
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 4
+    },
+    {
+      "symbol": "designTokens.status.success.text.join",
+      "consumerFiles": [
+        "components/StatusPill.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.status.warning",
+      "consumerFiles": [
+        "components/BalancesOverview.tsx",
+        "components/StatusPill.tsx",
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 3
+    },
+    {
+      "symbol": "designTokens.status.warning.border",
+      "consumerFiles": [
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.status.warning.surface",
+      "consumerFiles": [
+        "components/StatusPill.tsx",
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.status.warning.surface.join",
+      "consumerFiles": [
+        "components/StatusPill.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.status.warning.text",
+      "consumerFiles": [
+        "components/BalancesOverview.tsx",
+        "components/StatusPill.tsx",
+        "ui/primitives/Alert.tsx"
+      ],
+      "consumerCount": 3
+    },
+    {
+      "symbol": "designTokens.status.warning.text.join",
+      "consumerFiles": [
+        "components/StatusPill.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.surfaces",
+      "consumerFiles": [
+        "components/AccountRow.tsx",
+        "components/BalancesOverview.tsx",
+        "components/Footer.tsx",
+        "components/HeaderAccountFilter.tsx",
+        "components/onboarding/OnboardingWizard.tsx",
+        "features/budgets/components/BudgetList.tsx",
+        "features/budgets/components/BudgetSummaryCard.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "ui/primitives/Modal.tsx"
+      ],
+      "consumerCount": 9
+    },
+    {
+      "symbol": "designTokens.surfaces.focus",
+      "consumerFiles": [
+        "features/budgets/components/BudgetList.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.surfaces.focus.ringOffsetLightOnDark",
+      "consumerFiles": [
+        "features/budgets/components/BudgetList.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.surfaces.glass",
+      "consumerFiles": [
+        "components/onboarding/OnboardingWizard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.surfaces.glass.wizardBrandWash",
+      "consumerFiles": [
+        "components/onboarding/OnboardingWizard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.surfaces.glass.wizardInsetRing",
+      "consumerFiles": [
+        "components/onboarding/OnboardingWizard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.surfaces.glass.wizardSoftWash",
+      "consumerFiles": [
+        "components/onboarding/OnboardingWizard.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.surfaces.layered",
+      "consumerFiles": [
+        "features/plaid/components/ProviderSelectionPanel.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.surfaces.layered.eyebrowChip",
+      "consumerFiles": [
+        "features/plaid/components/ProviderSelectionPanel.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.surfaces.semantic",
+      "consumerFiles": [
+        "components/AccountRow.tsx",
+        "components/BalancesOverview.tsx",
+        "components/Footer.tsx",
+        "components/HeaderAccountFilter.tsx",
+        "components/onboarding/OnboardingWizard.tsx",
+        "features/budgets/components/BudgetSummaryCard.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "ui/primitives/Modal.tsx"
+      ],
+      "consumerCount": 8
+    },
+    {
+      "symbol": "designTokens.surfaces.semantic.card",
+      "consumerFiles": [
+        "components/AccountRow.tsx",
+        "components/BalancesOverview.tsx",
+        "components/Footer.tsx",
+        "components/HeaderAccountFilter.tsx",
+        "components/onboarding/OnboardingWizard.tsx",
+        "features/budgets/components/BudgetSummaryCard.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx"
+      ],
+      "consumerCount": 7
+    },
+    {
+      "symbol": "designTokens.surfaces.semantic.glassPanel",
+      "consumerFiles": [
+        "features/plaid/components/ProviderSelectionPanel.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.surfaces.semantic.mutedChip",
+      "consumerFiles": [
+        "components/HeaderAccountFilter.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.surfaces.semantic.overlay",
+      "consumerFiles": [
+        "ui/primitives/Modal.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.text",
+      "consumerFiles": [
+        "App.tsx",
+        "Auth.tsx",
+        "SessionManager.tsx",
+        "components/AccountRow.tsx",
+        "components/Amount.tsx",
+        "components/AuthenticatedApp.tsx",
+        "components/BalancesOverview.tsx",
+        "components/BankCard.tsx",
+        "components/DisconnectModal.tsx",
+        "components/ErrorBoundary.tsx",
+        "components/Footer.tsx",
+        "components/HeaderAccountFilter.tsx",
+        "components/NetWorthOverTimeWidget.tsx",
+        "components/PasswordChecker.tsx",
+        "components/Toast.tsx",
+        "components/onboarding/ConnectAccountStep.tsx",
+        "components/onboarding/OnboardingWizard.tsx",
+        "components/onboarding/WelcomeStep.tsx",
+        "features/analytics/components/DashboardChartCard.stories.tsx",
+        "features/analytics/components/DashboardChartCard.tsx",
+        "features/analytics/components/SpendingByCategoryChart.tsx",
+        "features/analytics/components/TopMerchantsList.tsx",
+        "features/budgets/components/BudgetList.tsx",
+        "features/budgets/components/BudgetSummaryCard.tsx",
+        "features/budgets/components/BudgetToolbar.tsx",
+        "features/plaid/components/AccountsSummaryStats.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "features/transactions/components/TransactionsFilters.tsx",
+        "features/transactions/components/TransactionsTable.tsx",
+        "layouts/AppLayout.stories.tsx",
+        "storybook/screenSlices/AuthenticatedScreenShell.tsx",
+        "storybook/screenSlices/DashboardScreenSlice.tsx",
+        "storybook/screenSlices/SettingsScreenSlice.tsx",
+        "storybook/screenSlices/TransactionsScreenSlice.tsx",
+        "storybook/shells/AppChrome.stories.tsx",
+        "ui/primitives/AppTitleBar.stories.tsx",
+        "ui/primitives/FormLabel.tsx",
+        "ui/primitives/GlassCard.stories.tsx",
+        "ui/primitives/GradientShell.stories.tsx",
+        "ui/primitives/RequirementPill.tsx",
+        "views/DashboardPage.tsx",
+        "views/SettingsPage.tsx",
+        "views/TransactionsPage.tsx",
+        "views/tokenRecipes.ts"
+      ],
+      "consumerCount": 44
+    },
+    {
+      "symbol": "designTokens.text.accent",
+      "consumerFiles": [
+        "components/Footer.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.text.body",
+      "consumerFiles": [
+        "App.tsx",
+        "Auth.tsx",
+        "components/BalancesOverview.tsx",
+        "components/DisconnectModal.tsx",
+        "components/ErrorBoundary.tsx",
+        "components/Footer.tsx",
+        "components/HeaderAccountFilter.tsx",
+        "components/PasswordChecker.tsx",
+        "components/onboarding/ConnectAccountStep.tsx",
+        "components/onboarding/WelcomeStep.tsx",
+        "features/budgets/components/BudgetList.tsx",
+        "features/budgets/components/BudgetSummaryCard.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "storybook/screenSlices/DashboardScreenSlice.tsx",
+        "storybook/screenSlices/SettingsScreenSlice.tsx",
+        "ui/primitives/GlassCard.stories.tsx",
+        "ui/primitives/GradientShell.stories.tsx",
+        "views/SettingsPage.tsx",
+        "views/tokenRecipes.ts"
+      ],
+      "consumerCount": 19
+    },
+    {
+      "symbol": "designTokens.text.danger",
+      "consumerFiles": [
+        "Auth.tsx",
+        "SessionManager.tsx",
+        "components/Amount.tsx",
+        "components/BalancesOverview.tsx",
+        "features/budgets/components/BudgetList.tsx",
+        "features/budgets/components/BudgetSummaryCard.tsx",
+        "features/plaid/components/AccountsSummaryStats.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "features/transactions/components/TransactionsTable.tsx",
+        "storybook/screenSlices/DashboardScreenSlice.tsx",
+        "storybook/screenSlices/SettingsScreenSlice.tsx",
+        "views/DashboardPage.tsx",
+        "views/SettingsPage.tsx"
+      ],
+      "consumerCount": 13
+    },
+    {
+      "symbol": "designTokens.text.info",
+      "consumerFiles": [
+        "components/BalancesOverview.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.text.inverse",
+      "consumerFiles": [
+        "components/Footer.tsx",
+        "components/onboarding/OnboardingWizard.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.text.label",
+      "consumerFiles": [
+        "Auth.tsx",
+        "components/PasswordChecker.tsx",
+        "features/transactions/components/TransactionsFilters.tsx",
+        "storybook/screenSlices/DashboardScreenSlice.tsx",
+        "ui/primitives/FormLabel.tsx",
+        "views/DashboardPage.tsx"
+      ],
+      "consumerCount": 6
+    },
+    {
+      "symbol": "designTokens.text.muted",
+      "consumerFiles": [
+        "Auth.tsx",
+        "SessionManager.tsx",
+        "components/AccountRow.tsx",
+        "components/BalancesOverview.tsx",
+        "components/BankCard.tsx",
+        "components/ErrorBoundary.tsx",
+        "components/Footer.tsx",
+        "components/HeaderAccountFilter.tsx",
+        "components/NetWorthOverTimeWidget.tsx",
+        "features/analytics/components/DashboardChartCard.stories.tsx",
+        "features/analytics/components/DashboardChartCard.tsx",
+        "features/analytics/components/TopMerchantsList.tsx",
+        "features/budgets/components/BudgetToolbar.tsx",
+        "features/transactions/components/TransactionsTable.tsx",
+        "layouts/AppLayout.stories.tsx",
+        "storybook/screenSlices/AuthenticatedScreenShell.tsx",
+        "storybook/screenSlices/DashboardScreenSlice.tsx",
+        "storybook/screenSlices/TransactionsScreenSlice.tsx",
+        "storybook/shells/AppChrome.stories.tsx",
+        "ui/primitives/AppTitleBar.stories.tsx",
+        "ui/primitives/GlassCard.stories.tsx",
+        "views/DashboardPage.tsx",
+        "views/TransactionsPage.tsx"
+      ],
+      "consumerCount": 23
+    },
+    {
+      "symbol": "designTokens.text.primary",
+      "consumerFiles": [
+        "App.tsx",
+        "Auth.tsx",
+        "SessionManager.tsx",
+        "components/AccountRow.tsx",
+        "components/Amount.tsx",
+        "components/AuthenticatedApp.tsx",
+        "components/BankCard.tsx",
+        "components/ErrorBoundary.tsx",
+        "components/HeaderAccountFilter.tsx",
+        "components/Toast.tsx",
+        "components/onboarding/ConnectAccountStep.tsx",
+        "components/onboarding/WelcomeStep.tsx",
+        "features/analytics/components/DashboardChartCard.tsx",
+        "features/analytics/components/SpendingByCategoryChart.tsx",
+        "features/analytics/components/TopMerchantsList.tsx",
+        "features/budgets/components/BudgetList.tsx",
+        "features/budgets/components/BudgetSummaryCard.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "features/transactions/components/TransactionsTable.tsx",
+        "storybook/screenSlices/DashboardScreenSlice.tsx",
+        "storybook/screenSlices/SettingsScreenSlice.tsx",
+        "storybook/shells/AppChrome.stories.tsx",
+        "views/DashboardPage.tsx",
+        "views/SettingsPage.tsx",
+        "views/TransactionsPage.tsx"
+      ],
+      "consumerCount": 25
+    },
+    {
+      "symbol": "designTokens.text.subtle",
+      "consumerFiles": [
+        "SessionManager.tsx",
+        "components/AccountRow.tsx",
+        "components/BalancesOverview.tsx",
+        "components/Footer.tsx",
+        "components/onboarding/OnboardingWizard.tsx",
+        "features/analytics/components/DashboardChartCard.tsx",
+        "features/budgets/components/BudgetList.tsx",
+        "features/budgets/components/BudgetSummaryCard.tsx",
+        "features/budgets/components/BudgetToolbar.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "features/transactions/components/TransactionsTable.tsx",
+        "storybook/screenSlices/TransactionsScreenSlice.tsx",
+        "ui/primitives/FormLabel.tsx",
+        "ui/primitives/RequirementPill.tsx"
+      ],
+      "consumerCount": 14
+    },
+    {
+      "symbol": "designTokens.text.success",
+      "consumerFiles": [
+        "components/BalancesOverview.tsx",
+        "features/transactions/components/TransactionsTable.tsx",
+        "ui/primitives/RequirementPill.tsx"
+      ],
+      "consumerCount": 3
+    },
+    {
+      "symbol": "designTokens.text.warning",
+      "consumerFiles": [
+        "components/BalancesOverview.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.textPlaceholder",
+      "consumerFiles": [
+        "features/transactions/components/TransactionsFilters.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.textPlaceholder.muted",
+      "consumerFiles": [
+        "features/transactions/components/TransactionsFilters.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.typography",
+      "consumerFiles": [
+        "App.tsx",
+        "Auth.tsx",
+        "SessionManager.tsx",
+        "components/AccountRow.tsx",
+        "components/BalancesOverview.tsx",
+        "components/BankCard.tsx",
+        "components/DisconnectModal.tsx",
+        "components/ErrorBoundary.tsx",
+        "components/Footer.tsx",
+        "components/HeaderAccountFilter.tsx",
+        "components/NetWorthOverTimeWidget.tsx",
+        "components/PasswordChecker.tsx",
+        "components/ProviderMismatchModal.tsx",
+        "components/StatusPill.tsx",
+        "components/Toast.tsx",
+        "components/onboarding/ConnectAccountStep.tsx",
+        "components/onboarding/OnboardingWizard.tsx",
+        "components/onboarding/WelcomeStep.tsx",
+        "features/analytics/components/DashboardChartCard.tsx",
+        "features/analytics/components/SpendingByCategoryChart.tsx",
+        "features/analytics/components/TopMerchantsList.tsx",
+        "features/budgets/components/BudgetList.tsx",
+        "features/budgets/components/BudgetSummaryCard.tsx",
+        "features/budgets/components/BudgetToolbar.tsx",
+        "features/plaid/components/AccountsSummaryStats.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "features/transactions/components/TransactionsFilters.tsx",
+        "features/transactions/components/TransactionsTable.tsx",
+        "storybook/screenSlices/AuthenticatedScreenShell.tsx",
+        "storybook/screenSlices/DashboardScreenSlice.tsx",
+        "storybook/screenSlices/SettingsScreenSlice.tsx",
+        "storybook/shells/AppChrome.stories.tsx",
+        "ui/primitives/Alert.tsx",
+        "ui/primitives/AppTitleBar.tsx",
+        "ui/primitives/Button.tsx",
+        "ui/primitives/FormLabel.tsx",
+        "ui/primitives/RequirementPill.tsx",
+        "views/DashboardPage.tsx",
+        "views/SettingsPage.tsx",
+        "views/TransactionsPage.tsx"
+      ],
+      "consumerCount": 40
+    },
+    {
+      "symbol": "designTokens.typography.badge",
+      "consumerFiles": [
+        "ui/primitives/RequirementPill.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.typography.body",
+      "consumerFiles": [
+        "App.tsx",
+        "Auth.tsx",
+        "SessionManager.tsx",
+        "components/DisconnectModal.tsx",
+        "components/ErrorBoundary.tsx",
+        "components/Footer.tsx",
+        "components/ProviderMismatchModal.tsx",
+        "components/onboarding/ConnectAccountStep.tsx",
+        "components/onboarding/WelcomeStep.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "features/transactions/components/TransactionsTable.tsx",
+        "storybook/screenSlices/DashboardScreenSlice.tsx",
+        "storybook/screenSlices/SettingsScreenSlice.tsx",
+        "ui/primitives/Alert.tsx",
+        "views/DashboardPage.tsx",
+        "views/SettingsPage.tsx"
+      ],
+      "consumerCount": 16
+    },
+    {
+      "symbol": "designTokens.typography.bodyStrong",
+      "consumerFiles": [
+        "components/AccountRow.tsx",
+        "components/BankCard.tsx",
+        "components/ProviderMismatchModal.tsx",
+        "components/onboarding/ConnectAccountStep.tsx",
+        "features/analytics/components/TopMerchantsList.tsx",
+        "features/budgets/components/BudgetList.tsx",
+        "features/plaid/components/AccountsSummaryStats.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "ui/primitives/Button.tsx",
+        "views/DashboardPage.tsx"
+      ],
+      "consumerCount": 10
+    },
+    {
+      "symbol": "designTokens.typography.brand",
+      "consumerFiles": [
+        "ui/primitives/AppTitleBar.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.typography.caption",
+      "consumerFiles": [
+        "Auth.tsx",
+        "SessionManager.tsx",
+        "components/BalancesOverview.tsx",
+        "components/BankCard.tsx",
+        "components/Footer.tsx",
+        "components/HeaderAccountFilter.tsx",
+        "components/PasswordChecker.tsx",
+        "components/onboarding/ConnectAccountStep.tsx",
+        "components/onboarding/OnboardingWizard.tsx",
+        "features/analytics/components/DashboardChartCard.tsx",
+        "features/analytics/components/TopMerchantsList.tsx",
+        "features/budgets/components/BudgetList.tsx",
+        "features/budgets/components/BudgetToolbar.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "features/transactions/components/TransactionsTable.tsx",
+        "storybook/screenSlices/AuthenticatedScreenShell.tsx",
+        "storybook/screenSlices/DashboardScreenSlice.tsx",
+        "storybook/screenSlices/SettingsScreenSlice.tsx",
+        "storybook/shells/AppChrome.stories.tsx",
+        "views/DashboardPage.tsx",
+        "views/SettingsPage.tsx",
+        "views/TransactionsPage.tsx"
+      ],
+      "consumerCount": 22
+    },
+    {
+      "symbol": "designTokens.typography.captionStrong",
+      "consumerFiles": [
+        "components/AccountRow.tsx",
+        "components/BalancesOverview.tsx",
+        "components/HeaderAccountFilter.tsx",
+        "components/NetWorthOverTimeWidget.tsx",
+        "components/Toast.tsx",
+        "ui/primitives/Alert.tsx",
+        "ui/primitives/Button.tsx",
+        "views/DashboardPage.tsx"
+      ],
+      "consumerCount": 8
+    },
+    {
+      "symbol": "designTokens.typography.cardTitle",
+      "consumerFiles": [
+        "SessionManager.tsx",
+        "components/BankCard.tsx",
+        "components/ErrorBoundary.tsx",
+        "features/analytics/components/DashboardChartCard.tsx",
+        "features/budgets/components/BudgetList.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "storybook/screenSlices/SettingsScreenSlice.tsx",
+        "views/SettingsPage.tsx",
+        "views/TransactionsPage.tsx"
+      ],
+      "consumerCount": 9
+    },
+    {
+      "symbol": "designTokens.typography.chartDonutCenterTotal",
+      "consumerFiles": [
+        "features/analytics/components/SpendingByCategoryChart.tsx"
+      ],
+      "consumerCount": 1
+    },
+    {
+      "symbol": "designTokens.typography.confirmationCode",
+      "consumerFiles": [
+        "storybook/screenSlices/SettingsScreenSlice.tsx",
+        "views/SettingsPage.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.typography.label",
+      "consumerFiles": [
+        "Auth.tsx",
+        "components/AccountRow.tsx",
+        "components/BalancesOverview.tsx",
+        "components/BankCard.tsx",
+        "components/Footer.tsx",
+        "components/PasswordChecker.tsx",
+        "components/ProviderMismatchModal.tsx",
+        "components/StatusPill.tsx",
+        "components/onboarding/OnboardingWizard.tsx",
+        "features/analytics/components/TopMerchantsList.tsx",
+        "features/budgets/components/BudgetList.tsx",
+        "features/budgets/components/BudgetSummaryCard.tsx",
+        "features/budgets/components/BudgetToolbar.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx",
+        "features/transactions/components/TransactionsFilters.tsx",
+        "features/transactions/components/TransactionsTable.tsx",
+        "ui/primitives/Button.tsx",
+        "ui/primitives/FormLabel.tsx",
+        "views/DashboardPage.tsx"
+      ],
+      "consumerCount": 19
+    },
+    {
+      "symbol": "designTokens.typography.pageTitle",
+      "consumerFiles": [
+        "Auth.tsx",
+        "components/onboarding/ConnectAccountStep.tsx",
+        "components/onboarding/WelcomeStep.tsx",
+        "features/plaid/components/ProviderSelectionPanel.tsx"
+      ],
+      "consumerCount": 4
+    },
+    {
+      "symbol": "designTokens.typography.sectionTitle",
+      "consumerFiles": [
+        "storybook/screenSlices/SettingsScreenSlice.tsx",
+        "views/SettingsPage.tsx"
+      ],
+      "consumerCount": 2
+    },
+    {
+      "symbol": "designTokens.typography.titleBarChromeExpanded",
+      "consumerFiles": [
+        "ui/primitives/Button.tsx"
+      ],
+      "consumerCount": 1
+    }
+  ],
+  "zeroRefComponents": [
+    "brand-accent-sky",
+    "brand-accent-sky-dark",
+    "brand-accent-emerald",
+    "brand-accent-emerald-dark",
+    "brand-accent-amber",
+    "brand-accent-amber-dark",
+    "brand-accent-rose",
+    "brand-accent-rose-dark",
+    "brand-accent-violet",
+    "brand-accent-violet-dark",
+    "brand-accent-cyan",
+    "brand-accent-cyan-dark",
+    "chart-series-light-1",
+    "chart-series-light-2",
+    "chart-series-light-3",
+    "chart-series-light-4",
+    "chart-series-light-5",
+    "chart-series-light-6",
+    "chart-series-dark-1",
+    "chart-series-dark-2",
+    "chart-series-dark-3",
+    "chart-series-dark-4",
+    "chart-series-dark-5",
+    "chart-series-dark-6",
+    "chart-tooltip-light",
+    "chart-tooltip-dark",
+    "chart-tooltip-border-light",
+    "chart-tooltip-border-dark",
+    "chart-axis-dark",
+    "chart-dot-light",
+    "chart-dot-dark",
+    "finance-cash-light",
+    "finance-investments-light",
+    "finance-credit-light",
+    "finance-loan-light",
+    "finance-net-worth-light",
+    "finance-cash-dark",
+    "finance-investments-dark",
+    "finance-credit-dark",
+    "finance-loan-dark",
+    "finance-net-worth-dark",
+    "category-pill-sky",
+    "category-pill-emerald",
+    "category-pill-cyan",
+    "category-pill-violet",
+    "category-pill-amber",
+    "category-pill-rose",
+    "category-pill-indigo",
+    "category-pill-fuchsia",
+    "category-pill-teal",
+    "category-pill-lime"
+  ]
+}
