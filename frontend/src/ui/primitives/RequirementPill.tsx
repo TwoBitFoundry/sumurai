@@ -13,12 +13,12 @@ const requirementVariants = cva(
       status: {
         pending: [
           'bg-[color:color-mix(in_srgb,var(--color-surface-card)_60%,transparent)]',
-          'dark:bg-[color:color-mix(in_srgb,var(--color-border-glass-dark)_5%,transparent)]',
+          'dark:bg-[color:color-mix(in_srgb,var(--color-border-glass)_5%,transparent)]',
           uiTextRecipes.subtle,
         ].join(' '),
         met: [
           'bg-[color:color-mix(in_srgb,var(--color-status-success-surface)_70%,transparent)]',
-          'dark:bg-[color:color-mix(in_srgb,var(--color-status-success-icon-dark)_10%,transparent)]',
+          'dark:bg-[color:color-mix(in_srgb,var(--color-status-success-icon)_10%,transparent)]',
           uiTextRecipes.success,
         ].join(' '),
       },

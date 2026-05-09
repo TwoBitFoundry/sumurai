@@ -17,7 +17,7 @@ const bp = {
     'shadow-[inset_0_1px_2px_var(--color-effect-glass-shadow)]',
     'transition-colors',
     'duration-300',
-    'dark:shadow-[inset_0_1px_2px_var(--color-effect-glass-shadow-dark)]',
+    'dark:shadow-[inset_0_1px_2px_var(--color-effect-glass-shadow)]',
   ],
   fill: {
     base: ['absolute', 'inset-y-0', 'left-0', 'rounded-full', 'transition-all', 'duration-500'],
@@ -30,7 +30,7 @@ const bp = {
     ],
     over: [
       'bg-gradient-to-r',
-      'from-[var(--color-brand-rose-dark)]',
+      'from-[var(--color-brand-rose)]',
       'via-[var(--color-brand-rose)]',
       'to-[var(--color-text-danger)]',
       ...semanticEffects.dangerGlow,

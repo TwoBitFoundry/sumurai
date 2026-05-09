@@ -18,17 +18,17 @@ export const StatusPill: React.FC<StatusPillProps> = ({ status, className }) => 
   const statusConfig = {
     connected: {
       label: 'Connected',
-      className: `${uiStatusRecipes.success.surface.join(' ')} ${uiStatusRecipes.success.text.join(' ')} ring-1 ring-[var(--color-status-success-border)] dark:ring-[var(--color-status-success-border-dark)]`,
+      className: `${uiStatusRecipes.success.surface.join(' ')} ${uiStatusRecipes.success.text.join(' ')} ring-1 ring-[var(--color-status-success-border)] dark:ring-[var(--color-status-success-border)]`,
       Icon: CheckCircle2,
     },
     needs_reauth: {
       label: 'Re-auth needed',
-      className: `${uiStatusRecipes.warning.surface.join(' ')} ${uiStatusRecipes.warning.text.join(' ')} ring-1 ring-[var(--color-status-warning-border)] dark:ring-[var(--color-status-warning-border-dark)]`,
+      className: `${uiStatusRecipes.warning.surface.join(' ')} ${uiStatusRecipes.warning.text.join(' ')} ring-1 ring-[var(--color-status-warning-border)] dark:ring-[var(--color-status-warning-border)]`,
       Icon: AlertTriangle,
     },
     error: {
       label: 'Error',
-      className: `${uiStatusRecipes.danger.surface.join(' ')} ${uiStatusRecipes.danger.text.join(' ')} ring-1 ring-[var(--color-status-danger-border)] dark:ring-[var(--color-status-danger-border-dark)]`,
+      className: `${uiStatusRecipes.danger.surface.join(' ')} ${uiStatusRecipes.danger.text.join(' ')} ring-1 ring-[var(--color-status-danger-border)] dark:ring-[var(--color-status-danger-border)]`,
       Icon: AlertTriangle,
     },
   } as const;

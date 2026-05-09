@@ -35,19 +35,19 @@ describe('design token effect recipes', () => {
   it('keeps representative effect recipes pinned to generated CSS variables', () => {
     expect(uiEffectRecipes.glassShadow).toEqual([
       'shadow-[0_32px_110px_-60px_var(--color-effect-glass-shadow)]',
-      'dark:shadow-[0_36px_120px_-62px_var(--color-effect-glass-shadow-dark)]',
+      'dark:shadow-[0_36px_120px_-62px_var(--color-effect-glass-shadow)]',
     ]);
     expect(uiEffectRecipes.successGlow).toEqual([
       'shadow-[0_0_12px_var(--color-effect-success-glow)]',
-      'dark:shadow-[0_0_12px_var(--color-effect-success-glow-dark)]',
+      'dark:shadow-[0_0_12px_var(--color-effect-success-glow)]',
     ]);
     expect(uiEffectRecipes.dangerGlow).toEqual([
       'shadow-[0_0_12px_var(--color-effect-danger-glow)]',
-      'dark:shadow-[0_0_12px_var(--color-effect-danger-glow-dark)]',
+      'dark:shadow-[0_0_12px_var(--color-effect-danger-glow)]',
     ]);
     expect(uiEffectRecipes.accentHover).toEqual([
       'hover:shadow-[0_18px_44px_-30px_var(--color-effect-accent-hover)]',
-      'dark:hover:shadow-[0_20px_52px_-34px_var(--color-effect-accent-hover-dark)]',
+      'dark:hover:shadow-[0_20px_52px_-34px_var(--color-effect-accent-hover)]',
     ]);
   });
 });

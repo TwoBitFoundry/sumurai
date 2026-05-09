@@ -105,7 +105,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
           ...uiSurfaceRecipes.mutedChip,
           'backdrop-blur-sm',
           'hover:bg-[var(--color-surface-hover-row)]',
-          'dark:hover:bg-[var(--color-surface-hover-row-dark)]',
+          'dark:hover:bg-[var(--color-surface-hover-row)]',
           'transition-all',
           'duration-200',
           'flex',
@@ -201,7 +201,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                             className={cn(
                               'p-1',
                               'hover:bg-[var(--color-surface-hover-row)]',
-                              'dark:hover:bg-[var(--color-surface-hover-row-dark)]',
+                              'dark:hover:bg-[var(--color-surface-hover-row)]',
                               'rounded',
                               'transition-colors'
                             )}

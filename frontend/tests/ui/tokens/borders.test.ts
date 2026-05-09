@@ -46,15 +46,15 @@ describe('design token border recipes', () => {
   it('keeps representative border recipes pinned to generated CSS variables', () => {
     expect(uiBorderRecipes.default).toEqual([
       'border-[var(--color-border-default)]',
-      'dark:border-[var(--color-border-default-dark)]',
+      'dark:border-[var(--color-border-default)]',
     ]);
     expect(uiBorderRecipes.glass).toEqual([
       'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
-      'dark:border-[color:color-mix(in_srgb,var(--color-border-glass-dark)_12%,transparent)]',
+      'dark:border-[color:color-mix(in_srgb,var(--color-border-glass)_12%,transparent)]',
     ]);
     expect(uiBorderRecipes.danger).toEqual([
       'border-[var(--color-border-danger)]',
-      'dark:border-[var(--color-border-danger-dark)]',
+      'dark:border-[var(--color-border-danger)]',
     ]);
     expect(generatedTokens.color['border-divider'].$value.hex).toBeDefined();
   });

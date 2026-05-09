@@ -52,8 +52,8 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
           'transition-opacity',
           'duration-300',
           'group-hover:opacity-100',
-          'dark:from-[var(--color-surface-muted-chip-dark)]/40',
-          'dark:via-[var(--color-surface-card-dark)]/20'
+          'dark:from-[var(--color-surface-muted-chip)]/40',
+          'dark:via-[var(--color-surface-card)]/20'
         )}
       />
       <div className={cn('relative', 'z-10', 'flex', 'items-center', 'justify-between', 'gap-4')}>

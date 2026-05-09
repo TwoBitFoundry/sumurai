@@ -33,7 +33,7 @@ export const primitiveTokenRecipes = {
       'hover:border-[var(--color-border-hover-accent)] hover:text-slate-900',
       'hover:shadow-[0_14px_32px_-18px_var(--color-effect-accent-hover)]',
       'dark:text-slate-300',
-      'dark:hover:border-[var(--color-border-hover-accent-dark)] dark:hover:text-white',
+      'dark:hover:border-[var(--color-border-hover-accent)] dark:hover:text-white',
     ],
     ghost: [
       ...semanticBorders.glass,
@@ -51,7 +51,7 @@ export const primitiveTokenRecipes = {
       'hover:-translate-y-[1px] hover:border-[var(--color-border-hover-accent)]',
       'hover:text-slate-900',
       'dark:text-slate-400',
-      'dark:hover:border-[var(--color-border-hover-accent-dark)] dark:hover:text-white',
+      'dark:hover:border-[var(--color-border-hover-accent)] dark:hover:text-white',
     ],
     tab: ['group relative', 'overflow-hidden', 'backdrop-blur-sm'],
     tabActive: [
@@ -65,7 +65,7 @@ export const primitiveTokenRecipes = {
       'before:absolute before:inset-0',
       'before:bg-[linear-gradient(140deg,rgba(255,255,255,0.38)_0%,rgba(255,255,255,0)_60%)]',
       'before:opacity-80 before:pointer-events-none',
-      'dark:border-[var(--color-border-glass-dark)]',
+      'dark:border-[var(--color-border-glass)]',
       'dark:shadow-[0_16px_38px_-18px_rgba(56,189,248,0.55)]',
     ],
     danger: [
@@ -73,7 +73,7 @@ export const primitiveTokenRecipes = {
       ...semanticStatus.danger.surface,
       semanticTextRecipes.danger,
       'hover:bg-[var(--color-status-danger-strong-surface)]',
-      'dark:hover:bg-[color:color-mix(in_srgb,var(--color-status-danger-strong-surface-dark)_46%,transparent)]',
+      'dark:hover:bg-[color:color-mix(in_srgb,var(--color-status-danger-strong-surface)_46%,transparent)]',
     ],
     success: [
       'bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400',
@@ -107,7 +107,7 @@ export const primitiveTokenRecipes = {
       ...semanticEffects.glassShadow,
       'hover:border-[var(--color-border-hover-accent)] hover:text-[var(--color-text-primary)]',
       'dark:text-[#cbd5e1]',
-      'dark:hover:border-[var(--color-border-hover-accent-dark)] dark:hover:text-white',
+      'dark:hover:border-[var(--color-border-hover-accent)] dark:hover:text-white',
     ],
   },
   badge: {
@@ -134,7 +134,7 @@ export const primitiveTokenRecipes = {
       'p-2',
       ...semanticEffects.glassShadow,
       'backdrop-blur-md',
-      'dark:shadow-[0_28px_70px_-36px_var(--color-effect-glass-shadow-dark)]',
+      'dark:shadow-[0_28px_70px_-36px_var(--color-effect-glass-shadow)]',
     ],
     item: [
       'flex w-full items-center gap-2',
@@ -143,7 +143,7 @@ export const primitiveTokenRecipes = {
       'transition-all duration-200 ease-out',
       ...semanticSurfaces.hoverRow,
       'dark:text-slate-300',
-      'dark:hover:bg-[var(--color-surface-hover-row-dark)]',
+      'dark:hover:bg-[var(--color-surface-hover-row)]',
     ],
   },
   glassCard: {
@@ -153,7 +153,7 @@ export const primitiveTokenRecipes = {
       ...semanticEffects.glassShadow,
       'backdrop-blur-2xl backdrop-saturate-[150%]',
       'transition-colors duration-500',
-      'dark:shadow-[0_42px_140px_-80px_var(--color-effect-glass-shadow-dark)]',
+      'dark:shadow-[0_42px_140px_-80px_var(--color-effect-glass-shadow)]',
     ],
     default: [...semanticBorders.glass, ...semanticSurfaces.glassPanel],
     auth: [
@@ -162,12 +162,12 @@ export const primitiveTokenRecipes = {
       'shadow-[0_38px_120px_-60px_var(--color-effect-glass-shadow)]',
       'backdrop-blur-[26px]',
       'backdrop-saturate-[140%]',
-      'dark:shadow-[0_40px_120px_-58px_var(--color-effect-glass-shadow-dark)]',
+      'dark:shadow-[0_40px_120px_-58px_var(--color-effect-glass-shadow)]',
     ],
     accent: [
       ...semanticBorders.glass,
       'bg-[color:color-mix(in_srgb,var(--color-surface-solid-panel)_85%,transparent)]',
-      'dark:bg-[color:color-mix(in_srgb,var(--color-surface-solid-panel-dark)_75%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-surface-solid-panel)_75%,transparent)]',
       'backdrop-blur-sm',
     ],
     rounded: {
@@ -219,7 +219,7 @@ export const primitiveTokenRecipes = {
     shell: [
       ...semanticSurfaces.card,
       ...semanticBorders.divider,
-      'dark:bg-[var(--color-surface-solid-panel-dark)]',
+      'dark:bg-[var(--color-surface-solid-panel)]',
     ],
     height: {
       scrolled: 'h-14',
@@ -237,16 +237,16 @@ export const primitiveTokenRecipes = {
       ...semanticSurfaces.card,
       semanticTextRecipes.muted,
       'hover:text-slate-900 dark:hover:text-white',
-      'hover:border-[var(--color-border-hover-accent)] dark:hover:border-[var(--color-border-hover-accent-dark)]',
+      'hover:border-[var(--color-border-hover-accent)] dark:hover:border-[var(--color-border-hover-accent)]',
       'hover:shadow-[0_14px_32px_-18px_var(--color-effect-accent-hover)]',
     ].join(' '),
     tabHalo:
       'after:absolute after:inset-[-28%] after:rounded-[999px] after:bg-[radial-gradient(circle_at_35%_30%,rgba(14,165,233,0.16),transparent_62%)] after:opacity-0 after:transition-opacity after:duration-300 hover:after:opacity-90 dark:after:bg-[radial-gradient(circle_at_35%_30%,rgba(56,189,248,0.22),transparent_62%)]',
-    divider: 'w-px h-6 bg-[var(--color-border-divider)] dark:bg-[var(--color-border-divider-dark)]',
+    divider: 'w-px h-6 bg-[var(--color-border-divider)] dark:bg-[var(--color-border-divider)]',
     themeToggle:
-      'rounded-lg !bg-[color:color-mix(in_srgb,var(--color-brand-amber)_80%,transparent)] dark:!bg-[color:color-mix(in_srgb,var(--color-brand-violet)_80%,transparent)] hover:!bg-[color:color-mix(in_srgb,var(--color-brand-amber)_90%,transparent)] dark:hover:!bg-[color:color-mix(in_srgb,var(--color-brand-violet)_90%,transparent)] !border !border-[color:color-mix(in_srgb,var(--color-brand-amber-dark)_30%,transparent)] dark:!border-[color:color-mix(in_srgb,var(--color-brand-violet-dark)_30%,transparent)] !text-white backdrop-blur-sm transition-colors',
+      'rounded-lg !bg-[color:color-mix(in_srgb,var(--color-brand-amber)_80%,transparent)] dark:!bg-[color:color-mix(in_srgb,var(--color-brand-violet)_80%,transparent)] hover:!bg-[color:color-mix(in_srgb,var(--color-brand-amber)_90%,transparent)] dark:hover:!bg-[color:color-mix(in_srgb,var(--color-brand-violet)_90%,transparent)] !border !border-[color:color-mix(in_srgb,var(--color-brand-amber)_30%,transparent)] dark:!border-[color:color-mix(in_srgb,var(--color-brand-violet)_30%,transparent)] !text-white backdrop-blur-sm transition-colors',
     settingsIdle:
-      'border border-[var(--color-border-divider)] dark:border-[var(--color-border-divider-dark)] bg-[var(--color-surface-muted-chip)] dark:bg-[var(--color-surface-muted-chip-dark)] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row-dark)]',
+      'border border-[var(--color-border-divider)] dark:border-[var(--color-border-divider)] bg-[var(--color-surface-muted-chip)] dark:bg-[var(--color-surface-muted-chip)] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row)]',
   },
   pageLayout: {
     shell: [
@@ -263,7 +263,7 @@ export const primitiveTokenRecipes = {
       'transition-colors',
       'duration-500',
       'ease-out',
-      'dark:shadow-[0_36px_120px_-62px_var(--color-effect-glass-shadow-dark)]',
+      'dark:shadow-[0_36px_120px_-62px_var(--color-effect-glass-shadow)]',
       'sm:p-12',
     ],
     innerRing: [
@@ -315,7 +315,7 @@ export const primitiveTokenRecipes = {
       'hover:scale-110 hover:-translate-y-1',
       'hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
       'dark:text-slate-300',
-      'dark:hover:shadow-[0_0_30px_var(--color-effect-accent-hover-dark),0_0_60px_var(--color-effect-accent-hover-dark)]',
+      'dark:hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
       'cursor-pointer',
     ],
     title: `${primitiveTypographyRecipes.cardTitle} ${semanticTextRecipes.primary} transition-colors duration-500`,
@@ -323,11 +323,11 @@ export const primitiveTokenRecipes = {
   },
   pill: {
     base: `inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 ${primitiveTypographyRecipes.badge}`,
-    dot: 'h-2 w-2 rounded-full shadow-[0_0_0_1px_var(--color-border-glass)] dark:shadow-[0_0_0_1px_var(--color-effect-glass-shadow-dark)]',
+    dot: 'h-2 w-2 rounded-full shadow-[0_0_0_1px_var(--color-border-glass)] dark:shadow-[0_0_0_1px_var(--color-effect-glass-shadow)]',
     fadeLeft:
-      'pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card-dark)]',
+      'pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card)]',
     fadeRight:
-      'pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card-dark)]',
+      'pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card)]',
   },
 } as const;
 
@@ -338,11 +338,11 @@ export const iconButton = {
     ...semanticSurfaces.card,
     'text-slate-600 dark:text-slate-200',
     ...semanticEffects.glassShadow,
-    'transition-transform duration-200 hover:-translate-y-[2px] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row-dark)]',
+    'transition-transform duration-200 hover:-translate-y-[2px] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row)]',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]',
   ],
   success: [
-    'inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[var(--color-brand-emerald)] via-[var(--color-brand-emerald-dark)] to-[var(--color-brand-sky-dark)] p-2 text-white',
+    'inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[var(--color-brand-emerald)] via-[var(--color-brand-emerald)] to-[var(--color-brand-sky)] p-2 text-white',
     ...semanticEffects.successGlow,
     'transition-transform duration-200 hover:-translate-y-[2px]',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
@@ -354,8 +354,8 @@ export const iconButton = {
     ...semanticStatus.danger.surface,
     ...semanticStatus.danger.text,
     'shadow-sm',
-    'transition-transform duration-200 hover:-translate-y-[2px] hover:bg-[var(--color-status-danger-strong-surface)] dark:hover:bg-[var(--color-status-danger-strong-surface-dark)]',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-danger)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-[var(--color-border-danger-dark)] dark:focus-visible:ring-offset-[#0f172a]',
+    'transition-transform duration-200 hover:-translate-y-[2px] hover:bg-[var(--color-status-danger-strong-surface)] dark:hover:bg-[var(--color-status-danger-strong-surface)]',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-danger)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-[var(--color-border-danger)] dark:focus-visible:ring-offset-[#0f172a]',
   ],
 } as const;
 
@@ -365,7 +365,7 @@ export const paginationButton = [
   ...semanticSurfaces.card,
   'text-slate-600 dark:text-slate-200',
   ...semanticEffects.glassShadow,
-  'transition-all duration-200 hover:-translate-y-[2px] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row-dark)]',
+  'transition-all duration-200 hover:-translate-y-[2px] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row)]',
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]',
   'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0',
 ] as const;
@@ -435,7 +435,7 @@ export const pageLayout = {
     'transition-colors',
     'duration-500',
     'ease-out',
-    'dark:shadow-[0_36px_120px_-62px_var(--color-effect-glass-shadow-dark)]',
+    'dark:shadow-[0_36px_120px_-62px_var(--color-effect-glass-shadow)]',
     'sm:p-12',
   ],
   innerRing: [
@@ -488,7 +488,7 @@ export const emptyState = {
     'hover:scale-110 hover:-translate-y-1',
     'hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
     'dark:text-slate-300',
-    'dark:hover:shadow-[0_0_30px_var(--color-effect-accent-hover-dark),0_0_60px_var(--color-effect-accent-hover-dark)]',
+    'dark:hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
     'cursor-pointer',
   ],
   title: `${primitiveTypographyRecipes.cardTitle} ${semanticTextRecipes.primary} transition-colors duration-500`,
@@ -533,7 +533,7 @@ export const appTitleBar = {
   shell: [
     ...semanticSurfaces.card,
     ...semanticBorders.divider,
-    'dark:bg-[var(--color-surface-solid-panel-dark)]',
+    'dark:bg-[var(--color-surface-solid-panel)]',
   ],
   height: {
     scrolled: 'h-14',
@@ -551,25 +551,25 @@ export const appTitleBar = {
     ...semanticSurfaces.card,
     semanticTextRecipes.muted,
     'hover:text-slate-900 dark:hover:text-white',
-    'hover:border-[var(--color-border-hover-accent)] dark:hover:border-[var(--color-border-hover-accent-dark)]',
+    'hover:border-[var(--color-border-hover-accent)] dark:hover:border-[var(--color-border-hover-accent)]',
     'hover:shadow-[0_14px_32px_-18px_var(--color-effect-accent-hover)]',
   ].join(' '),
   tabHalo:
     'after:absolute after:inset-[-28%] after:rounded-[999px] after:bg-[radial-gradient(circle_at_35%_30%,rgba(14,165,233,0.16),transparent_62%)] after:opacity-0 after:transition-opacity after:duration-300 hover:after:opacity-90 dark:after:bg-[radial-gradient(circle_at_35%_30%,rgba(56,189,248,0.22),transparent_62%)]',
-  divider: 'w-px h-6 bg-[var(--color-border-divider)] dark:bg-[var(--color-border-divider-dark)]',
+  divider: 'w-px h-6 bg-[var(--color-border-divider)] dark:bg-[var(--color-border-divider)]',
   themeToggle:
-    'rounded-lg !bg-[color:color-mix(in_srgb,var(--color-brand-amber)_80%,transparent)] dark:!bg-[color:color-mix(in_srgb,var(--color-brand-violet)_80%,transparent)] hover:!bg-[color:color-mix(in_srgb,var(--color-brand-amber)_90%,transparent)] dark:hover:!bg-[color:color-mix(in_srgb,var(--color-brand-violet)_90%,transparent)] !border !border-[color:color-mix(in_srgb,var(--color-brand-amber-dark)_30%,transparent)] dark:!border-[color:color-mix(in_srgb,var(--color-brand-violet-dark)_30%,transparent)] !text-white backdrop-blur-sm transition-colors',
+    'rounded-lg !bg-[color:color-mix(in_srgb,var(--color-brand-amber)_80%,transparent)] dark:!bg-[color:color-mix(in_srgb,var(--color-brand-violet)_80%,transparent)] hover:!bg-[color:color-mix(in_srgb,var(--color-brand-amber)_90%,transparent)] dark:hover:!bg-[color:color-mix(in_srgb,var(--color-brand-violet)_90%,transparent)] !border !border-[color:color-mix(in_srgb,var(--color-brand-amber)_30%,transparent)] dark:!border-[color:color-mix(in_srgb,var(--color-brand-violet)_30%,transparent)] !text-white backdrop-blur-sm transition-colors',
   settingsIdle:
-    'border border-[var(--color-border-divider)] dark:border-[var(--color-border-divider-dark)] bg-[var(--color-surface-muted-chip)] dark:bg-[var(--color-surface-muted-chip-dark)] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row-dark)]',
+    'border border-[var(--color-border-divider)] dark:border-[var(--color-border-divider)] bg-[var(--color-surface-muted-chip)] dark:bg-[var(--color-surface-muted-chip)] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row)]',
 } as const;
 
 export const pill = {
   base: `inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 ${primitiveTypographyRecipes.badge}`,
-  dot: 'h-2 w-2 rounded-full shadow-[0_0_0_1px_var(--color-border-glass)] dark:shadow-[0_0_0_1px_var(--color-effect-glass-shadow-dark)]',
+  dot: 'h-2 w-2 rounded-full shadow-[0_0_0_1px_var(--color-border-glass)] dark:shadow-[0_0_0_1px_var(--color-effect-glass-shadow)]',
   fadeLeft:
-    'pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card-dark)]',
+    'pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card)]',
   fadeRight:
-    'pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card-dark)]',
+    'pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card)]',
 } as const;
 
 export const heroStatCard = {

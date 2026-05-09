@@ -58,23 +58,23 @@ describe('design token status recipes', () => {
   it('keeps representative status recipes pinned to generated CSS variables', () => {
     expect(uiStatusRecipes.info.surface).toEqual([
       'bg-[var(--color-status-info-surface)]',
-      'dark:bg-[var(--color-status-info-surface-dark)]',
+      'dark:bg-[var(--color-status-info-surface)]',
     ]);
     expect(uiStatusRecipes.success.text).toEqual([
       'text-[var(--color-status-success-text)]',
-      'dark:text-[var(--color-status-success-text-dark)]',
+      'dark:text-[var(--color-status-success-text)]',
     ]);
     expect(uiStatusRecipes.warning.icon).toEqual([
       'text-[var(--color-status-warning-icon)]',
-      'dark:text-[var(--color-status-warning-icon-dark)]',
+      'dark:text-[var(--color-status-warning-icon)]',
     ]);
     expect(uiStatusRecipes.danger.border).toEqual([
       'border-[var(--color-status-danger-border)]',
-      'dark:border-[var(--color-status-danger-border-dark)]',
+      'dark:border-[var(--color-status-danger-border)]',
     ]);
     expect(uiStatusRecipes.danger.surface).toEqual([
       'bg-[color:color-mix(in_srgb,var(--color-status-danger-surface)_82%,transparent)]',
-      'dark:bg-[color:color-mix(in_srgb,var(--color-status-danger-surface-dark)_28%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-status-danger-surface)_28%,transparent)]',
     ]);
   });
 });

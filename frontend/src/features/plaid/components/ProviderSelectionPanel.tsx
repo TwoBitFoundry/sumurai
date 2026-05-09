@@ -146,7 +146,7 @@ export const ProviderSelectionPanel = ({
                     ...uiBorderRecipes.glass,
                     ...uiSurfaceRecipes.card,
                     'hover:shadow-[0_24px_80px_-50px_rgba(15,23,42,0.55)]',
-                    'dark:hover:border-[var(--color-border-hover-accent-dark)]',
+                    'dark:hover:border-[var(--color-border-hover-accent)]',
                     'dark:hover:shadow-[0_28px_90px_-60px_rgba(2,6,23,0.7)]'
                   )}
                 >
@@ -181,7 +181,7 @@ export const ProviderSelectionPanel = ({
                               'w-1.5',
                               'rounded-full',
                               'bg-[var(--color-brand-sky)]',
-                              'dark:bg-[var(--color-brand-sky-dark)]'
+                              'dark:bg-[var(--color-brand-sky)]'
                             )}
                           />
                           <span>{bullet}</span>

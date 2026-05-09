@@ -52,23 +52,23 @@ describe('design token surface recipes', () => {
   it('keeps representative surface recipes pinned to generated CSS variables', () => {
     expect(uiSurfaceRecipes.appShell).toEqual([
       'bg-[var(--color-surface-app-shell)]',
-      'dark:bg-[var(--color-surface-app-shell-dark)]',
+      'dark:bg-[var(--color-surface-app-shell)]',
     ]);
     expect(uiSurfaceRecipes.glassPanel).toEqual([
       'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)]',
-      'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel-dark)_55%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
     ]);
     expect(uiSurfaceRecipes.card).toEqual([
       'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
-      'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card-dark)_55%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
     ]);
     expect(uiSurfaceRecipes.overlay).toEqual([
       'bg-[var(--color-surface-overlay)]',
-      'dark:bg-[var(--color-surface-overlay-dark)]',
+      'dark:bg-[var(--color-surface-overlay)]',
     ]);
     expect(uiSurfaceRecipes.mutedChip).toEqual([
       'bg-[var(--color-surface-muted-chip)]',
-      'dark:bg-[var(--color-surface-muted-chip-dark)]',
+      'dark:bg-[var(--color-surface-muted-chip)]',
     ]);
     expect(generatedTokens.color['surface-card'].$value.hex).toBeDefined();
   });

@@ -30,116 +30,92 @@ export const placeholder = {
 } as const;
 
 export const surface = {
-  app: ['bg-[var(--color-surface-app-shell)]', 'dark:bg-[var(--color-surface-app-shell-dark)]'],
-  appShell: [
-    'bg-[var(--color-surface-app-shell)]',
-    'dark:bg-[var(--color-surface-app-shell-dark)]',
-  ],
+  app: ['bg-[var(--color-surface-app-shell)]', 'dark:bg-[var(--color-surface-app-shell)]'],
+  appShell: ['bg-[var(--color-surface-app-shell)]', 'dark:bg-[var(--color-surface-app-shell)]'],
   glass: [
     'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel-dark)_55%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
   ],
   glassPanel: [
     'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel-dark)_55%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
   ],
-  panel: [
-    'bg-[var(--color-surface-solid-panel)]',
-    'dark:bg-[var(--color-surface-solid-panel-dark)]',
-  ],
+  panel: ['bg-[var(--color-surface-solid-panel)]', 'dark:bg-[var(--color-surface-solid-panel)]'],
   solidPanel: [
     'bg-[var(--color-surface-solid-panel)]',
-    'dark:bg-[var(--color-surface-solid-panel-dark)]',
+    'dark:bg-[var(--color-surface-solid-panel)]',
   ],
   elevatedCard: [
     'bg-[var(--color-surface-elevated-card)]',
-    'dark:bg-[var(--color-surface-elevated-card-dark)]',
+    'dark:bg-[var(--color-surface-elevated-card)]',
   ],
   card: [
     'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card-dark)_55%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
   ],
-  dataRow: ['bg-[var(--color-surface-data-row)]', 'dark:bg-[var(--color-surface-data-row-dark)]'],
-  row: ['bg-[var(--color-surface-data-row)]', 'dark:bg-[var(--color-surface-data-row-dark)]'],
-  hoverRow: [
-    'bg-[var(--color-surface-hover-row)]',
-    'dark:bg-[var(--color-surface-hover-row-dark)]',
-  ],
-  mutedChip: [
-    'bg-[var(--color-surface-muted-chip)]',
-    'dark:bg-[var(--color-surface-muted-chip-dark)]',
-  ],
-  chip: ['bg-[var(--color-surface-muted-chip)]', 'dark:bg-[var(--color-surface-muted-chip-dark)]'],
+  dataRow: ['bg-[var(--color-surface-data-row)]', 'dark:bg-[var(--color-surface-data-row)]'],
+  row: ['bg-[var(--color-surface-data-row)]', 'dark:bg-[var(--color-surface-data-row)]'],
+  hoverRow: ['bg-[var(--color-surface-hover-row)]', 'dark:bg-[var(--color-surface-hover-row)]'],
+  mutedChip: ['bg-[var(--color-surface-muted-chip)]', 'dark:bg-[var(--color-surface-muted-chip)]'],
+  chip: ['bg-[var(--color-surface-muted-chip)]', 'dark:bg-[var(--color-surface-muted-chip)]'],
   input: [
     'bg-[var(--color-surface-input-control)]',
-    'dark:bg-[var(--color-surface-input-control-dark)]',
+    'dark:bg-[var(--color-surface-input-control)]',
   ],
   inputControl: [
     'bg-[var(--color-surface-input-control)]',
-    'dark:bg-[var(--color-surface-input-control-dark)]',
+    'dark:bg-[var(--color-surface-input-control)]',
   ],
-  insetWell: [
-    'bg-[var(--color-surface-inset-well)]',
-    'dark:bg-[var(--color-surface-inset-well-dark)]',
-  ],
-  inset: ['bg-[var(--color-surface-inset-well)]', 'dark:bg-[var(--color-surface-inset-well-dark)]'],
-  overlay: ['bg-[var(--color-surface-overlay)]', 'dark:bg-[var(--color-surface-overlay-dark)]'],
+  insetWell: ['bg-[var(--color-surface-inset-well)]', 'dark:bg-[var(--color-surface-inset-well)]'],
+  inset: ['bg-[var(--color-surface-inset-well)]', 'dark:bg-[var(--color-surface-inset-well)]'],
+  overlay: ['bg-[var(--color-surface-overlay)]', 'dark:bg-[var(--color-surface-overlay)]'],
 } as const;
 
 export const border = {
-  default: [
-    'border-[var(--color-border-default)]',
-    'dark:border-[var(--color-border-default-dark)]',
-  ],
-  subtle: ['border-[var(--color-border-subtle)]', 'dark:border-[var(--color-border-subtle-dark)]'],
-  strong: ['border-[var(--color-border-strong)]', 'dark:border-[var(--color-border-strong-dark)]'],
+  default: ['border-[var(--color-border-default)]', 'dark:border-[var(--color-border-default)]'],
+  subtle: ['border-[var(--color-border-subtle)]', 'dark:border-[var(--color-border-subtle)]'],
+  strong: ['border-[var(--color-border-strong)]', 'dark:border-[var(--color-border-strong)]'],
   glass: [
     'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
-    'dark:border-[color:color-mix(in_srgb,var(--color-border-glass-dark)_12%,transparent)]',
+    'dark:border-[color:color-mix(in_srgb,var(--color-border-glass)_12%,transparent)]',
   ],
-  control: [
-    'border-[var(--color-border-control)]',
-    'dark:border-[var(--color-border-control-dark)]',
-  ],
-  divider: [
-    'border-[var(--color-border-divider)]',
-    'dark:border-[var(--color-border-divider-dark)]',
-  ],
+  control: ['border-[var(--color-border-control)]', 'dark:border-[var(--color-border-control)]'],
+  divider: ['border-[var(--color-border-divider)]', 'dark:border-[var(--color-border-divider)]'],
   focusActive: [
     'border-[var(--color-border-focus-active)]',
-    'dark:border-[var(--color-border-focus-active-dark)]',
+    'dark:border-[var(--color-border-focus-active)]',
   ],
   hoverAccent: [
     'border-[var(--color-border-hover-accent)]',
-    'dark:border-[var(--color-border-hover-accent-dark)]',
+    'dark:border-[var(--color-border-hover-accent)]',
   ],
-  danger: ['border-[var(--color-border-danger)]', 'dark:border-[var(--color-border-danger-dark)]'],
+  danger: ['border-[var(--color-border-danger)]', 'dark:border-[var(--color-border-danger)]'],
 } as const;
 
 export const effect = {
   glassShadow: [
     'shadow-[0_32px_110px_-60px_var(--color-effect-glass-shadow)]',
-    'dark:shadow-[0_36px_120px_-62px_var(--color-effect-glass-shadow-dark)]',
+    'dark:shadow-[0_36px_120px_-62px_var(--color-effect-glass-shadow)]',
   ],
   accentHover: [
     'hover:shadow-[0_18px_44px_-30px_var(--color-effect-accent-hover)]',
-    'dark:hover:shadow-[0_20px_52px_-34px_var(--color-effect-accent-hover-dark)]',
+    'dark:hover:shadow-[0_20px_52px_-34px_var(--color-effect-accent-hover)]',
   ],
   successGlow: [
     'shadow-[0_0_12px_var(--color-effect-success-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-success-glow-dark)]',
+    'dark:shadow-[0_0_12px_var(--color-effect-success-glow)]',
   ],
   warningGlow: [
     'shadow-[0_0_12px_var(--color-effect-warning-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-warning-glow-dark)]',
+    'dark:shadow-[0_0_12px_var(--color-effect-warning-glow)]',
   ],
   dangerGlow: [
     'shadow-[0_0_12px_var(--color-effect-danger-glow)]',
-    'dark:shadow-[0_0_12px_var(--color-effect-danger-glow-dark)]',
+    'dark:shadow-[0_0_12px_var(--color-effect-danger-glow)]',
   ],
   chartTooltipShadow: [
     'shadow-[0_18px_45px_-25px_var(--color-effect-glass-shadow)]',
-    'dark:shadow-[0_18px_45px_-25px_var(--color-effect-glass-shadow-dark)]',
+    'dark:shadow-[0_18px_45px_-25px_var(--color-effect-glass-shadow)]',
   ],
 } as const;
 
@@ -147,90 +123,78 @@ export const status = {
   info: {
     surface: [
       'bg-[var(--color-status-info-surface)]',
-      'dark:bg-[var(--color-status-info-surface-dark)]',
+      'dark:bg-[var(--color-status-info-surface)]',
     ],
     border: [
       'border-[var(--color-status-info-border)]',
-      'dark:border-[var(--color-status-info-border-dark)]',
+      'dark:border-[var(--color-status-info-border)]',
     ],
-    text: [
-      'text-[var(--color-status-info-text)]',
-      'dark:text-[var(--color-status-info-text-dark)]',
-    ],
+    text: ['text-[var(--color-status-info-text)]', 'dark:text-[var(--color-status-info-text)]'],
     strongSurface: [
       'bg-[var(--color-status-info-strong-surface)]',
-      'dark:bg-[var(--color-status-info-strong-surface-dark)]',
+      'dark:bg-[var(--color-status-info-strong-surface)]',
     ],
-    icon: [
-      'text-[var(--color-status-info-icon)]',
-      'dark:text-[var(--color-status-info-icon-dark)]',
-    ],
+    icon: ['text-[var(--color-status-info-icon)]', 'dark:text-[var(--color-status-info-icon)]'],
   },
   success: {
     surface: [
       'bg-[var(--color-status-success-surface)]',
-      'dark:bg-[var(--color-status-success-surface-dark)]',
+      'dark:bg-[var(--color-status-success-surface)]',
     ],
     border: [
       'border-[var(--color-status-success-border)]',
-      'dark:border-[var(--color-status-success-border-dark)]',
+      'dark:border-[var(--color-status-success-border)]',
     ],
     text: [
       'text-[var(--color-status-success-text)]',
-      'dark:text-[var(--color-status-success-text-dark)]',
+      'dark:text-[var(--color-status-success-text)]',
     ],
     strongSurface: [
       'bg-[var(--color-status-success-strong-surface)]',
-      'dark:bg-[var(--color-status-success-strong-surface-dark)]',
+      'dark:bg-[var(--color-status-success-strong-surface)]',
     ],
     icon: [
       'text-[var(--color-status-success-icon)]',
-      'dark:text-[var(--color-status-success-icon-dark)]',
+      'dark:text-[var(--color-status-success-icon)]',
     ],
   },
   warning: {
     surface: [
       'bg-[var(--color-status-warning-surface)]',
-      'dark:bg-[var(--color-status-warning-surface-dark)]',
+      'dark:bg-[var(--color-status-warning-surface)]',
     ],
     border: [
       'border-[var(--color-status-warning-border)]',
-      'dark:border-[var(--color-status-warning-border-dark)]',
+      'dark:border-[var(--color-status-warning-border)]',
     ],
     text: [
       'text-[var(--color-status-warning-text)]',
-      'dark:text-[var(--color-status-warning-text-dark)]',
+      'dark:text-[var(--color-status-warning-text)]',
     ],
     strongSurface: [
       'bg-[var(--color-status-warning-strong-surface)]',
-      'dark:bg-[var(--color-status-warning-strong-surface-dark)]',
+      'dark:bg-[var(--color-status-warning-strong-surface)]',
     ],
     icon: [
       'text-[var(--color-status-warning-icon)]',
-      'dark:text-[var(--color-status-warning-icon-dark)]',
+      'dark:text-[var(--color-status-warning-icon)]',
     ],
   },
   danger: {
     surface: [
       'bg-[color:color-mix(in_srgb,var(--color-status-danger-surface)_82%,transparent)]',
-      'dark:bg-[color:color-mix(in_srgb,var(--color-status-danger-surface-dark)_28%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-status-danger-surface)_28%,transparent)]',
     ],
     border: [
       'border-[var(--color-status-danger-border)]',
-      'dark:border-[var(--color-status-danger-border-dark)]',
+      'dark:border-[var(--color-status-danger-border)]',
     ],
-    text: [
-      'text-[var(--color-status-danger-text)]',
-      'dark:text-[var(--color-status-danger-text-dark)]',
-    ],
+    text: ['text-[var(--color-status-danger-text)]', 'dark:text-[var(--color-status-danger-text)]'],
     strongSurface: [
       'bg-[var(--color-status-danger-strong-surface)]',
-      'dark:bg-[color:color-mix(in_srgb,var(--color-status-danger-strong-surface-dark)_46%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-status-danger-strong-surface)_46%,transparent)]',
     ],
-    icon: [
-      'text-[var(--color-status-danger-icon)]',
-      'dark:text-[var(--color-status-danger-icon-dark)]',
-    ],
+    icon: ['text-[var(--color-status-danger-icon)]', 'dark:text-[var(--color-status-danger-icon)]'],
   },
 } as const;
 

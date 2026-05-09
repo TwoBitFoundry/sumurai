@@ -66,7 +66,7 @@ const stepIndicatorVariants = cva(
           uiTextRecipes.inverse,
           'shadow-[0_18px_46px_-24px_rgba(16,185,129,0.65)]',
           'animate-[successFlash_400ms_ease-out]',
-          'dark:border-[var(--color-status-success-border-dark)]',
+          'dark:border-[var(--color-status-success-border)]',
         ],
         idle: [...uiBorderRecipes.default, ...uiSurfaceRecipes.card, uiTextRecipes.subtle],
       },

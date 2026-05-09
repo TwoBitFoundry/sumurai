@@ -638,17 +638,22 @@ After Phases 2-7 the `dark:` suffix doubling is the only major remaining duplica
 5. Visual diff every screen in light and dark using Storybook iframe screenshots or a Playwright snapshot run if available.
 
 ### Acceptance criteria
-- [ ] `theme.css` emits each `--color-*` once with `.dark` overrides.
-- [ ] `rg "dark:.*var\\(--color-.*-dark\\)" frontend/src` returns 0 matches.
-- [ ] Recipes in `recipes.ts` use single-suffix variables only.
+- [x] `theme.css` emits each `--color-*` once with `.dark` overrides.
+- [x] `rg "dark:.*var\\(--color-.*-dark\\)" frontend/src` returns 0 matches.
+- [x] Recipes in `recipes.ts` use single-suffix variables only.
 - [ ] Visual diff: every screen in light and dark matches the pre-Phase-8 baseline within an agreed tolerance (zero tolerance for color, small tolerance for anti-aliasing).
-- [ ] `npm --prefix frontend run typecheck`, `build`, `design:guard`, `test` all pass.
-- [ ] Storybook iframe smoke passes.
+- [x] `npm --prefix frontend run typecheck`, `build`, `design:guard`, `test` all pass.
+- [x] Storybook iframe smoke passes.
 
 ### Risks and mitigations
 - `.dark` selector specificity issues with Tailwind v4. Mitigation: validate via spike before committing; if v4 specificity collides with `dark:` utilities, keep the suffixed variables and skip this phase.
 - Components that bypassed `var(--color-*)` and used `var(--color-*-dark)` directly are now broken. Mitigation: grep specifically for `var(--color-.*-dark)` before merging and rewrite each.
 - Subtle finance / category color shifts due to color-mix differences. Mitigation: include a chart and a budget card in the visual diff set.
+
+### TDD log
+- Red: added `frontend/tests/scripts/design-token-pipeline.test.ts` to pin `.dark`-scoped color variables and the removal of `--color-*-dark` names.
+- Green: updated `frontend/scripts/design-token-pipeline.mjs`, regenerated `frontend/src/ui/generated/theme.css`, and simplified source/test references to the unsuffixed color variables.
+- Verify: `npm --prefix frontend test -- --runTestsByPath tests/scripts/design-token-pipeline.test.ts tests/ui/recipes.test.ts tests/ui/tokens/surfaces.test.ts tests/ui/tokens/borders.test.ts tests/ui/tokens/effects.test.ts tests/ui/tokens/status.test.ts`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend run design:guard`, `npm --prefix frontend run test`, `npm --prefix frontend run test:storybook-runtime`.
 
 ---
 

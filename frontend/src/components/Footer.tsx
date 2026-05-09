@@ -124,7 +124,7 @@ export function Footer() {
                 ...uiBorderRecipes.default,
                 ...uiSurfaceRecipes.card,
                 'hover:bg-[var(--color-surface-hover-row)]',
-                'dark:hover:bg-[var(--color-surface-hover-row-dark)]',
+                'dark:hover:bg-[var(--color-surface-hover-row)]',
                 'flex',
                 'items-center',
                 'justify-center',

@@ -39,15 +39,15 @@ describe('shared UI recipes', () => {
   it('exposes the shared surface, border, effect, focus, font, and chrome recipes', () => {
     expect(surface.card).toEqual([
       'bg-[color:color-mix(in_srgb,var(--color-surface-card)_70%,transparent)]',
-      'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card-dark)_55%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
     ]);
     expect(border.glass).toEqual([
       'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
-      'dark:border-[color:color-mix(in_srgb,var(--color-border-glass-dark)_12%,transparent)]',
+      'dark:border-[color:color-mix(in_srgb,var(--color-border-glass)_12%,transparent)]',
     ]);
     expect(effect.glassShadow).toEqual([
       'shadow-[0_32px_110px_-60px_var(--color-effect-glass-shadow)]',
-      'dark:shadow-[0_36px_120px_-62px_var(--color-effect-glass-shadow-dark)]',
+      'dark:shadow-[0_36px_120px_-62px_var(--color-effect-glass-shadow)]',
     ]);
     expect(focus.visible).toContain('focus-visible:ring-sky-400');
     expect(font.badge).toBe(
@@ -63,7 +63,7 @@ describe('shared UI recipes', () => {
     );
     expect(status.danger.border).toEqual([
       'border-[var(--color-status-danger-border)]',
-      'dark:border-[var(--color-status-danger-border-dark)]',
+      'dark:border-[var(--color-status-danger-border)]',
     ]);
   });
 });

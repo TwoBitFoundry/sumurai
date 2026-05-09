@@ -127,7 +127,8 @@ function walkTokens(node, path = []) {
 }
 
 function toThemeCss(dtcg) {
-  const lines = ['@theme static {'];
+  const rootLines = [];
+  const darkLines = [];
   const tokens = walkTokens(dtcg);
 
   for (const token of tokens) {
@@ -139,26 +140,33 @@ function toThemeCss(dtcg) {
     }
 
     if (group === 'color') {
-      lines.push(`  --color-${name}: ${normalizePrimitive(token.value)};`);
+      const colorName = name.endsWith('-dark') ? name.slice(0, -5) : name;
+      const targetLines = name.endsWith('-dark') ? darkLines : rootLines;
+      targetLines.push(`  --color-${colorName}: ${normalizePrimitive(token.value)};`);
       continue;
     }
 
     if (group === 'spacing') {
-      lines.push(`  --spacing-${name}: ${normalizePrimitive(token.value)};`);
+      rootLines.push(`  --spacing-${name}: ${normalizePrimitive(token.value)};`);
       continue;
     }
 
     if (group === 'rounded') {
-      lines.push(`  --radius-${name}: ${normalizePrimitive(token.value)};`);
+      rootLines.push(`  --radius-${name}: ${normalizePrimitive(token.value)};`);
       continue;
     }
 
     if (group === 'typography' && token.type === 'typography' && token.value && typeof token.value === 'object') {
-      lines.push(...emitTypographyVariables(name, token.value));
+      rootLines.push(...emitTypographyVariables(name, token.value));
     }
   }
 
-  lines.push('}');
+  const lines = ['@theme static {', ...rootLines, '}'];
+
+  if (darkLines.length > 0) {
+    lines.push('.dark {', ...darkLines, '}');
+  }
+
   return `${lines.join('\n')}\n`;
 }
 
