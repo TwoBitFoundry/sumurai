@@ -11,8 +11,10 @@ const requirementVariants = cva(
   {
     variants: {
       status: {
-        pending: `bg-white/60 ${designTokens.text.subtle} dark:bg-white/5`,
-        met: `bg-emerald-50 ${designTokens.text.success} dark:bg-emerald-500/10`,
+        pending: [...designTokens.surfaces.semantic.mutedChip, designTokens.text.subtle].join(' '),
+        met: [...designTokens.status.success.surface, ...designTokens.status.success.text].join(
+          ' '
+        ),
       },
     },
     defaultVariants: {

@@ -1,5 +1,117 @@
 import { semanticTextRecipes } from '@/ui/tokens/textRecipes';
 
+const semanticSurfaces = {
+  card: ['bg-[var(--color-surface-card)]', 'dark:bg-[var(--color-surface-card-dark)]'],
+  glassPanel: [
+    'bg-[var(--color-surface-glass-panel)]',
+    'dark:bg-[var(--color-surface-glass-panel-dark)]',
+  ],
+  solidPanel: [
+    'bg-[var(--color-surface-solid-panel)]',
+    'dark:bg-[var(--color-surface-solid-panel-dark)]',
+  ],
+  hoverRow: [
+    'bg-[var(--color-surface-hover-row)]',
+    'dark:bg-[var(--color-surface-hover-row-dark)]',
+  ],
+  mutedChip: [
+    'bg-[var(--color-surface-muted-chip)]',
+    'dark:bg-[var(--color-surface-muted-chip-dark)]',
+  ],
+  insetWell: [
+    'bg-[var(--color-surface-inset-well)]',
+    'dark:bg-[var(--color-surface-inset-well-dark)]',
+  ],
+} as const;
+
+const semanticBorders = {
+  subtle: ['border-[var(--color-border-subtle)]', 'dark:border-[var(--color-border-subtle-dark)]'],
+  glass: ['border-[var(--color-border-glass)]', 'dark:border-[var(--color-border-glass-dark)]'],
+  control: [
+    'border-[var(--color-border-control)]',
+    'dark:border-[var(--color-border-control-dark)]',
+  ],
+  divider: [
+    'border-[var(--color-border-divider)]',
+    'dark:border-[var(--color-border-divider-dark)]',
+  ],
+  hoverAccent: [
+    'border-[var(--color-border-hover-accent)]',
+    'dark:border-[var(--color-border-hover-accent-dark)]',
+  ],
+  danger: ['border-[var(--color-border-danger)]', 'dark:border-[var(--color-border-danger-dark)]'],
+} as const;
+
+const semanticStatus = {
+  success: {
+    surface: [
+      'bg-[var(--color-status-success-surface)]',
+      'dark:bg-[var(--color-status-success-surface-dark)]',
+    ],
+    border: [
+      'border-[var(--color-status-success-border)]',
+      'dark:border-[var(--color-status-success-border-dark)]',
+    ],
+    text: [
+      'text-[var(--color-status-success-text)]',
+      'dark:text-[var(--color-status-success-text-dark)]',
+    ],
+  },
+  info: {
+    surface: [
+      'bg-[var(--color-status-info-surface)]',
+      'dark:bg-[var(--color-status-info-surface-dark)]',
+    ],
+    text: [
+      'text-[var(--color-status-info-text)]',
+      'dark:text-[var(--color-status-info-text-dark)]',
+    ],
+  },
+  warning: {
+    surface: [
+      'bg-[var(--color-status-warning-surface)]',
+      'dark:bg-[var(--color-status-warning-surface-dark)]',
+    ],
+    text: [
+      'text-[var(--color-status-warning-text)]',
+      'dark:text-[var(--color-status-warning-text-dark)]',
+    ],
+  },
+  danger: {
+    surface: [
+      'bg-[var(--color-status-danger-surface)]',
+      'dark:bg-[var(--color-status-danger-surface-dark)]',
+    ],
+    border: [
+      'border-[var(--color-status-danger-border)]',
+      'dark:border-[var(--color-status-danger-border-dark)]',
+    ],
+    text: [
+      'text-[var(--color-status-danger-text)]',
+      'dark:text-[var(--color-status-danger-text-dark)]',
+    ],
+  },
+} as const;
+
+const semanticEffects = {
+  glassShadow: [
+    'shadow-[0_40px_120px_-82px_var(--color-effect-glass-shadow)]',
+    'dark:shadow-[0_42px_140px_-80px_var(--color-effect-glass-shadow-dark)]',
+  ],
+  successGlow: [
+    'shadow-[0_0_12px_var(--color-effect-success-glow)]',
+    'dark:shadow-[0_0_12px_var(--color-effect-success-glow-dark)]',
+  ],
+  dangerGlow: [
+    'shadow-[0_0_12px_var(--color-effect-danger-glow)]',
+    'dark:shadow-[0_0_12px_var(--color-effect-danger-glow-dark)]',
+  ],
+  accentHover: [
+    'hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
+    'dark:hover:shadow-[0_0_30px_var(--color-effect-accent-hover-dark),0_0_60px_var(--color-effect-accent-hover-dark)]',
+  ],
+} as const;
+
 export const primitiveTypographyRecipes = {
   display: 'font-display text-[clamp(2.25rem,3vw,3rem)] font-bold leading-[1.1] tracking-normal',
   pageTitle: 'font-page-title text-[2rem] font-bold leading-[1.1] tracking-normal',
@@ -31,38 +143,38 @@ export const primitiveTokenRecipes = {
       'disabled:hover:translate-y-0',
     ],
     secondary: [
-      'border border-slate-200/70 bg-white/70',
+      ...semanticBorders.subtle,
+      ...semanticSurfaces.card,
       semanticTextRecipes.muted,
-      'shadow-[0_14px_38px_-30px_rgba(15,23,42,0.45)]',
-      'hover:border-sky-300/50 hover:text-slate-900',
-      'hover:shadow-[0_14px_32px_-18px_rgba(56,189,248,0.35)]',
-      'dark:border-white/10 dark:bg-white/5',
+      ...semanticEffects.glassShadow,
+      'hover:border-[var(--color-border-hover-accent)] hover:text-slate-900',
+      'hover:shadow-[0_14px_32px_-18px_var(--color-effect-accent-hover)]',
       'dark:text-slate-300',
-      'dark:hover:border-sky-500/60 dark:hover:text-white',
+      'dark:hover:border-[var(--color-border-hover-accent-dark)] dark:hover:text-white',
     ],
     ghost: [
-      'border border-white/50 bg-white/70',
+      ...semanticBorders.glass,
+      ...semanticSurfaces.glassPanel,
       semanticTextRecipes.primary,
-      'shadow-[0_12px_30px_-20px_rgba(15,23,42,0.45)]',
       'hover:-translate-y-0.5',
-      'dark:border-white/15 dark:bg-[#1e293b]/70',
+      ...semanticEffects.glassShadow,
       'dark:text-slate-200',
     ],
     icon: [
-      'border border-transparent bg-white/75',
+      'border border-transparent',
+      ...semanticSurfaces.mutedChip,
       semanticTextRecipes.muted,
-      'shadow-[0_14px_36px_-28px_rgba(15,23,42,0.45)]',
-      'hover:-translate-y-[1px] hover:border-sky-300',
+      ...semanticEffects.glassShadow,
+      'hover:-translate-y-[1px] hover:border-[var(--color-border-hover-accent)]',
       'hover:text-slate-900',
-      'dark:bg-[#1e293b]/85',
       'dark:text-slate-400',
-      'dark:hover:border-sky-400 dark:hover:text-white',
+      'dark:hover:border-[var(--color-border-hover-accent-dark)] dark:hover:text-white',
     ],
     tab: ['group relative', 'overflow-hidden', 'backdrop-blur-sm'],
     tabActive: [
       'group relative',
       'overflow-hidden',
-      'border border-white/65',
+      ...semanticBorders.glass,
       'bg-[linear-gradient(115deg,#38bdf8_0%,#22d3ee_46%,#a855f7_100%)]',
       'text-white',
       'shadow-[0_16px_42px_-18px_rgba(14,165,233,0.55)]',
@@ -70,15 +182,15 @@ export const primitiveTokenRecipes = {
       'before:absolute before:inset-0',
       'before:bg-[linear-gradient(140deg,rgba(255,255,255,0.38)_0%,rgba(255,255,255,0)_60%)]',
       'before:opacity-80 before:pointer-events-none',
-      'dark:border-white/20',
+      'dark:border-[var(--color-border-glass-dark)]',
       'dark:shadow-[0_16px_38px_-18px_rgba(56,189,248,0.55)]',
     ],
     danger: [
-      'border border-red-200 bg-red-50',
+      ...semanticBorders.danger,
+      ...semanticStatus.danger.surface,
       semanticTextRecipes.danger,
-      'hover:bg-red-100',
-      'dark:border-red-700 dark:bg-red-900/20',
-      'dark:hover:bg-red-900/30',
+      'hover:bg-[var(--color-status-danger-strong-surface)]',
+      'dark:hover:bg-[var(--color-status-danger-strong-surface-dark)]',
     ],
     success: [
       'bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400',
@@ -106,12 +218,13 @@ export const primitiveTokenRecipes = {
       'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none',
     ],
     secondary: [
-      'border border-[#e2e8f0] bg-white/90',
+      ...semanticBorders.subtle,
+      ...semanticSurfaces.card,
       semanticTextRecipes.muted,
-      'shadow-[0_14px_38px_-30px_rgba(15,23,42,0.45)]',
-      'hover:border-[#93c5fd] hover:text-[#0f172a]',
-      'dark:border-[#334155] dark:bg-[#1e293b]/90 dark:text-[#cbd5e1]',
-      'dark:hover:border-[#38bdf8] dark:hover:text-white',
+      ...semanticEffects.glassShadow,
+      'hover:border-[var(--color-border-hover-accent)] hover:text-[var(--color-text-primary)]',
+      'dark:text-[#cbd5e1]',
+      'dark:hover:border-[var(--color-border-hover-accent-dark)] dark:hover:text-white',
     ],
   },
   badge: {
@@ -121,61 +234,54 @@ export const primitiveTokenRecipes = {
       'transition-all duration-200 ease-out',
     ],
     default: [
-      `bg-white/70 ${semanticTextRecipes.muted}`,
-      'shadow-[0_12px_32px_-22px_rgba(15,23,42,0.45)]',
-      'dark:bg-[#1e293b]/70 dark:text-slate-200',
+      ...semanticSurfaces.mutedChip,
+      semanticTextRecipes.muted,
+      ...semanticEffects.glassShadow,
+      'dark:text-slate-200',
     ],
-    primary: ['bg-[#93c5fd]/20 text-[#0ea5e9]', 'dark:bg-[#38bdf8]/20 dark:text-[#38bdf8]'],
-    feature: ['bg-[#f8fafc] ring-1 ring-inset', 'dark:bg-[#1e293b]'],
+    primary: [...semanticStatus.info.surface, ...semanticStatus.info.text],
+    feature: [...semanticSurfaces.insetWell, 'ring-1 ring-inset'],
   },
   menuDropdown: {
     content: [
       'absolute right-0 z-20 mt-3 w-48',
       'overflow-hidden rounded-2xl',
-      'border border-white/45 bg-white/95',
+      ...semanticBorders.glass,
+      ...semanticSurfaces.solidPanel,
       'p-2',
-      'shadow-[0_22px_60px_-32px_rgba(15,23,42,0.45)]',
+      ...semanticEffects.glassShadow,
       'backdrop-blur-md',
-      'dark:border-white/12 dark:bg-[#0f172a]/92',
-      'dark:shadow-[0_28px_70px_-36px_rgba(2,6,23,0.7)]',
+      'dark:shadow-[0_28px_70px_-36px_var(--color-effect-glass-shadow-dark)]',
     ],
     item: [
       'flex w-full items-center gap-2',
       'rounded-xl px-3 py-2',
       `text-left ${semanticTextRecipes.muted}`,
       'transition-all duration-200 ease-out',
-      'hover:bg-slate-50',
+      ...semanticSurfaces.hoverRow,
       'dark:text-slate-300',
-      'dark:hover:bg-[#1e293b]',
+      'dark:hover:bg-[var(--color-surface-hover-row-dark)]',
     ],
   },
   glassCard: {
     base: [
       'relative overflow-hidden',
       'border',
-      'shadow-[0_40px_120px_-82px_rgba(15,23,42,0.75)]',
+      ...semanticEffects.glassShadow,
       'backdrop-blur-2xl backdrop-saturate-[150%]',
       'transition-colors duration-500',
-      'dark:shadow-[0_42px_140px_-80px_rgba(2,6,23,0.85)]',
+      'dark:shadow-[0_42px_140px_-80px_var(--color-effect-glass-shadow-dark)]',
     ],
-    default: ['border-white/35', 'bg-white/18', 'dark:border-white/12', 'dark:bg-[#0f172a]/55'],
+    default: [...semanticBorders.glass, ...semanticSurfaces.glassPanel],
     auth: [
-      'border-white/35',
-      'bg-white/20',
-      'shadow-[0_38px_120px_-60px_rgba(15,23,42,0.78)]',
+      ...semanticBorders.glass,
+      ...semanticSurfaces.glassPanel,
+      'shadow-[0_38px_120px_-60px_var(--color-effect-glass-shadow)]',
       'backdrop-blur-[26px]',
       'backdrop-saturate-[140%]',
-      'dark:border-white/12',
-      'dark:bg-[#0f172a]/55',
-      'dark:shadow-[0_40px_120px_-58px_rgba(2,6,23,0.85)]',
+      'dark:shadow-[0_40px_120px_-58px_var(--color-effect-glass-shadow-dark)]',
     ],
-    accent: [
-      'border-white/40',
-      'bg-white/85',
-      'backdrop-blur-sm',
-      'dark:border-white/10',
-      'dark:bg-[#111a2f]/75',
-    ],
+    accent: [...semanticBorders.glass, ...semanticSurfaces.solidPanel, 'backdrop-blur-sm'],
     rounded: {
       default: 'rounded-[2.25rem]',
       lg: 'rounded-2xl',
@@ -222,7 +328,11 @@ export const primitiveTokenRecipes = {
   },
   appTitleBar: {
     base: ['sticky top-0 z-50 border-b backdrop-blur-sm transition-all duration-200 ease-out'],
-    shell: ['bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700'],
+    shell: [
+      ...semanticSurfaces.card,
+      ...semanticBorders.divider,
+      'dark:bg-[var(--color-surface-solid-panel-dark)]',
+    ],
     height: {
       scrolled: 'h-14',
       default: 'h-16',
@@ -233,14 +343,21 @@ export const primitiveTokenRecipes = {
       default: 'text-3xl',
       fontFamily: { fontFamily: "'Cal Sans', system-ui, sans-serif" },
     },
-    tabIdle: `border border-slate-200/70 dark:border-white/10 bg-white/70 dark:bg-white/5 ${semanticTextRecipes.muted} hover:text-slate-900 dark:hover:text-white hover:border-sky-300/50 dark:hover:border-sky-500/60 hover:shadow-[0_14px_32px_-18px_rgba(56,189,248,0.35)]`,
+    tabIdle: [
+      ...semanticBorders.subtle,
+      ...semanticSurfaces.card,
+      semanticTextRecipes.muted,
+      'hover:text-slate-900 dark:hover:text-white',
+      'hover:border-[var(--color-border-hover-accent)] dark:hover:border-[var(--color-border-hover-accent-dark)]',
+      'hover:shadow-[0_14px_32px_-18px_var(--color-effect-accent-hover)]',
+    ].join(' '),
     tabHalo:
       'after:absolute after:inset-[-28%] after:rounded-[999px] after:bg-[radial-gradient(circle_at_35%_30%,rgba(14,165,233,0.16),transparent_62%)] after:opacity-0 after:transition-opacity after:duration-300 hover:after:opacity-90 dark:after:bg-[radial-gradient(circle_at_35%_30%,rgba(56,189,248,0.22),transparent_62%)]',
-    divider: 'w-px h-6 bg-slate-200 dark:bg-slate-600',
+    divider: 'w-px h-6 bg-[var(--color-border-divider)] dark:bg-[var(--color-border-divider-dark)]',
     themeToggle:
-      'rounded-lg !bg-amber-500/80 dark:!bg-purple-600/80 hover:!bg-amber-600/80 dark:hover:!bg-purple-700/80 !border !border-amber-400/30 dark:!border-purple-500/30 !text-white backdrop-blur-sm transition-colors',
+      'rounded-lg !bg-[var(--color-status-warning-surface)] dark:!bg-[var(--color-status-warning-surface-dark)] hover:!bg-[var(--color-status-warning-strong-surface)] dark:hover:!bg-[var(--color-status-warning-strong-surface-dark)] !border !border-[var(--color-status-warning-border)] dark:!border-[var(--color-status-warning-border-dark)] !text-white backdrop-blur-sm transition-colors',
     settingsIdle:
-      'border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600',
+      'border border-[var(--color-border-divider)] dark:border-[var(--color-border-divider-dark)] bg-[var(--color-surface-muted-chip)] dark:bg-[var(--color-surface-muted-chip-dark)] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row-dark)]',
   },
   pageLayout: {
     shell: [
@@ -248,18 +365,16 @@ export const primitiveTokenRecipes = {
       'overflow-hidden',
       'rounded-[2.25rem]',
       'border',
-      'border-white/35',
-      'bg-white/24',
+      ...semanticBorders.glass,
+      ...semanticSurfaces.glassPanel,
       'p-8',
-      'shadow-[0_32px_110px_-60px_rgba(15,23,42,0.75)]',
+      ...semanticEffects.glassShadow,
       'backdrop-blur-[28px]',
       'backdrop-saturate-[150%]',
       'transition-colors',
       'duration-500',
       'ease-out',
-      'dark:border-white/12',
-      'dark:bg-[#0f172a]/55',
-      'dark:shadow-[0_36px_120px_-62px_rgba(2,6,23,0.85)]',
+      'dark:shadow-[0_36px_120px_-62px_var(--color-effect-glass-shadow-dark)]',
       'sm:p-12',
     ],
     innerRing: [
@@ -267,10 +382,10 @@ export const primitiveTokenRecipes = {
       'inset-[1px]',
       'rounded-[2.2rem]',
       'ring-1',
-      'ring-white/45',
-      'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]',
-      'dark:ring-white/12',
-      'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.48)]',
+      'ring-[var(--color-border-glass)]',
+      'shadow-[inset_0_1px_0_var(--color-border-glass),inset_0_-1px_0_var(--color-effect-glass-shadow)]',
+      'dark:ring-[var(--color-border-glass-dark)]',
+      'dark:shadow-[inset_0_1px_0_var(--color-border-glass-dark),inset_0_-1px_0_var(--color-effect-glass-shadow-dark)]',
     ],
     innerGradient: [
       'absolute',
@@ -286,11 +401,16 @@ export const primitiveTokenRecipes = {
       'dark:via-slate-900/34',
       'dark:to-transparent',
     ],
-    badge: `${primitiveTypographyRecipes.badge} inline-flex items-center justify-center rounded-full bg-white/75 px-3 py-1 ${semanticTextRecipes.label} shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/75 dark:text-slate-200`,
+    badge: `${primitiveTypographyRecipes.badge} inline-flex items-center justify-center rounded-full ${semanticSurfaces.mutedChip.join(' ')} px-3 py-1 ${semanticTextRecipes.label} ${semanticEffects.glassShadow[0]} dark:text-slate-200`,
     title: `${primitiveTypographyRecipes.pageTitle} ${semanticTextRecipes.primary} transition-colors duration-300 ease-out`,
     subtitle: `${primitiveTypographyRecipes.body} ${semanticTextRecipes.body} transition-colors duration-300 ease-out`,
-    error:
-      'rounded-2xl border border-red-200/70 bg-red-50/80 px-5 py-3 shadow-sm dark:border-red-700/60 dark:bg-red-900/25',
+    error: [
+      'rounded-2xl',
+      ...semanticBorders.danger,
+      ...semanticStatus.danger.surface,
+      'px-5 py-3',
+      'shadow-sm',
+    ].join(' '),
     errorText: `${primitiveTypographyRecipes.captionStrong} ${semanticTextRecipes.danger}`,
   },
   emptyState: {
@@ -300,13 +420,13 @@ export const primitiveTokenRecipes = {
       'items-center',
       'justify-center',
       'rounded-full',
-      'bg-[radial-gradient(136%_108%_at_20%_-18%,rgba(14,165,233,0.42)_0%,#e1f2ff_36%,#ffffff_100%)]',
+      ...semanticSurfaces.card,
       semanticTextRecipes.muted,
       'transition-all duration-300 ease-out',
       'hover:scale-110 hover:-translate-y-1',
-      'hover:shadow-[0_0_30px_rgba(59,130,246,0.4),0_0_60px_rgba(59,130,246,0.2)]',
+      'hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
       'dark:text-slate-300',
-      'dark:hover:shadow-[0_0_30px_rgba(96,165,250,0.5),0_0_60px_rgba(96,165,250,0.25)]',
+      'dark:hover:shadow-[0_0_30px_var(--color-effect-accent-hover-dark),0_0_60px_var(--color-effect-accent-hover-dark)]',
       'cursor-pointer',
     ],
     title: `${primitiveTypographyRecipes.cardTitle} ${semanticTextRecipes.primary} transition-colors duration-500`,
@@ -314,10 +434,10 @@ export const primitiveTokenRecipes = {
   },
   pill: {
     base: `inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 ${primitiveTypographyRecipes.badge}`,
-    dot: 'h-2 w-2 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.85)] dark:shadow-[0_0_0_1px_rgba(15,23,42,0.7)]',
+    dot: 'h-2 w-2 rounded-full shadow-[0_0_0_1px_var(--color-border-glass)] dark:shadow-[0_0_0_1px_var(--color-effect-glass-shadow-dark)]',
     fadeLeft:
-      'pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80',
+      'pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card-dark)]',
     fadeRight:
-      'pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-white/80 to-transparent transition-opacity duration-200 dark:from-[#111a2f]/80',
+      'pointer-events-none absolute bottom-0 right-0 top-0 w-6 bg-gradient-to-l from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card-dark)]',
   },
 } as const;

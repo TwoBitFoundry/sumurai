@@ -1,12 +1,82 @@
 import { primitiveTypographyRecipes } from '@/ui/primitives/tokenRecipes';
 
+const semanticSurfaces = {
+  card: ['bg-[var(--color-surface-card)]', 'dark:bg-[var(--color-surface-card-dark)]'],
+  mutedChip: [
+    'bg-[var(--color-surface-muted-chip)]',
+    'dark:bg-[var(--color-surface-muted-chip-dark)]',
+  ],
+  hoverRow: [
+    'bg-[var(--color-surface-hover-row)]',
+    'dark:bg-[var(--color-surface-hover-row-dark)]',
+  ],
+} as const;
+
+const semanticBorders = {
+  subtle: ['border-[var(--color-border-subtle)]', 'dark:border-[var(--color-border-subtle-dark)]'],
+  glass: ['border-[var(--color-border-glass)]', 'dark:border-[var(--color-border-glass-dark)]'],
+  control: [
+    'border-[var(--color-border-control)]',
+    'dark:border-[var(--color-border-control-dark)]',
+  ],
+  danger: ['border-[var(--color-border-danger)]', 'dark:border-[var(--color-border-danger-dark)]'],
+} as const;
+
+const semanticStatus = {
+  success: {
+    surface: [
+      'bg-[var(--color-status-success-surface)]',
+      'dark:bg-[var(--color-status-success-surface-dark)]',
+    ],
+    text: [
+      'text-[var(--color-status-success-text)]',
+      'dark:text-[var(--color-status-success-text-dark)]',
+    ],
+  },
+  danger: {
+    surface: [
+      'bg-[var(--color-status-danger-surface)]',
+      'dark:bg-[var(--color-status-danger-surface-dark)]',
+    ],
+    border: [
+      'border-[var(--color-status-danger-border)]',
+      'dark:border-[var(--color-status-danger-border-dark)]',
+    ],
+    text: [
+      'text-[var(--color-status-danger-text)]',
+      'dark:text-[var(--color-status-danger-text-dark)]',
+    ],
+  },
+} as const;
+
+const semanticEffects = {
+  glassShadow: [
+    'shadow-[0_32px_80px_-58px_var(--color-effect-glass-shadow)]',
+    'dark:shadow-[0_32px_90px_-60px_var(--color-effect-glass-shadow-dark)]',
+  ],
+  successGlow: [
+    'shadow-[0_0_12px_var(--color-effect-success-glow)]',
+    'dark:shadow-[0_0_12px_var(--color-effect-success-glow-dark)]',
+  ],
+  dangerGlow: [
+    'shadow-[0_0_12px_var(--color-effect-danger-glow)]',
+    'dark:shadow-[0_0_12px_var(--color-effect-danger-glow-dark)]',
+  ],
+  accentHover: [
+    'hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
+    'dark:hover:shadow-[0_0_30px_var(--color-effect-accent-hover-dark),0_0_60px_var(--color-effect-accent-hover-dark)]',
+  ],
+} as const;
+
 export const budgetTokenRecipes = {
   budgetCard: {
     shell: [
-      'group relative overflow-hidden rounded-[1.75rem] border border-slate-200/70 bg-white/90 p-6',
-      'shadow-[0_32px_80px_-58px_rgba(15,23,42,0.58)] transition-all duration-300 hover:-translate-y-1',
-      'hover:shadow-[0_38px_110px_-62px_rgba(14,165,233,0.35)] dark:border-white/10 dark:bg-[#111a2f]/90',
-      'dark:shadow-[0_32px_90px_-60px_rgba(2,6,23,0.76)]',
+      'group relative overflow-hidden rounded-[1.75rem] p-6',
+      ...semanticBorders.subtle,
+      ...semanticSurfaces.card,
+      ...semanticEffects.glassShadow,
+      'transition-all duration-300 hover:-translate-y-1',
+      ...semanticEffects.accentHover,
     ],
   },
   budgetProgress: {
@@ -15,28 +85,27 @@ export const budgetTokenRecipes = {
       'h-2.5',
       'overflow-hidden',
       'rounded-full',
-      'bg-slate-200/70',
-      'shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)]',
+      ...semanticSurfaces.mutedChip,
+      'shadow-[inset_0_1px_2px_var(--color-effect-glass-shadow)]',
       'transition-colors',
       'duration-300',
-      'dark:bg-slate-700/60',
-      'dark:shadow-[inset_0_1px_2px_rgba(2,6,23,0.35)]',
+      'dark:shadow-[inset_0_1px_2px_var(--color-effect-glass-shadow-dark)]',
     ],
     fill: {
       base: ['absolute', 'inset-y-0', 'left-0', 'rounded-full', 'transition-all', 'duration-500'],
       within: [
         'bg-gradient-to-r',
-        'from-sky-400',
-        'via-cyan-400',
-        'to-violet-500',
-        'shadow-[0_0_12px_rgba(14,165,233,0.35)]',
+        'from-[var(--color-brand-sky)]',
+        'via-[var(--color-brand-cyan)]',
+        'to-[var(--color-brand-violet)]',
+        ...semanticEffects.successGlow,
       ],
       over: [
         'bg-gradient-to-r',
-        'from-rose-400',
-        'via-rose-500',
-        'to-rose-600',
-        'shadow-[0_0_12px_rgba(244,63,94,0.35)]',
+        'from-[var(--color-brand-rose-dark)]',
+        'via-[var(--color-brand-rose)]',
+        'to-[var(--color-text-danger)]',
+        ...semanticEffects.dangerGlow,
       ],
     },
     caption: {
@@ -52,43 +121,55 @@ export const budgetTokenRecipes = {
       ],
       percent: ['font-medium', 'tracking-wide'],
       summaryWithin: ['font-semibold', 'text-slate-600', 'dark:text-slate-300'],
-      summaryOver: ['font-semibold', 'text-red-600', 'dark:text-red-300'],
+      summaryOver: ['font-semibold', ...semanticStatus.danger.text],
     },
   },
   actions: {
     budgetIconGhost: [
-      'inline-flex items-center justify-center rounded-full border border-white/60 bg-white/80 p-2 text-slate-600',
-      'shadow-[0_14px_38px_-28px_rgba(15,23,42,0.55)] transition-transform duration-200 hover:-translate-y-[2px] hover:bg-white',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
-      'dark:border-white/12 dark:bg-[#1e293b]/70 dark:text-slate-200 dark:hover:bg-[#1e293b]/80 dark:focus-visible:ring-offset-[#0f172a]',
+      'inline-flex items-center justify-center rounded-full p-2',
+      ...semanticBorders.glass,
+      ...semanticSurfaces.card,
+      'text-slate-600 dark:text-slate-200',
+      ...semanticEffects.glassShadow,
+      'transition-transform duration-200 hover:-translate-y-[2px] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row-dark)]',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]',
     ],
     budgetSaveIcon: [
-      'inline-flex items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400 p-2 text-white',
-      'shadow-[0_18px_45px_-28px_rgba(16,185,129,0.6)] transition-transform duration-200 hover:-translate-y-[2px]',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+      'inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[var(--color-brand-emerald)] via-[var(--color-brand-emerald-dark)] to-[var(--color-brand-sky-dark)] p-2 text-white',
+      ...semanticEffects.successGlow,
+      'transition-transform duration-200 hover:-translate-y-[2px]',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
       'dark:focus-visible:ring-offset-[#0f172a]',
     ],
     budgetDeleteIcon: [
-      'inline-flex items-center justify-center rounded-full bg-red-500/15 p-2 text-red-600',
-      'shadow-[0_16px_38px_-26px_rgba(248,113,113,0.55)] transition-transform duration-200 hover:-translate-y-[2px] hover:bg-red-500/25',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
-      'dark:bg-red-500/20 dark:text-red-300 dark:hover:bg-red-500/25 dark:focus-visible:ring-offset-[#0f172a]',
+      'inline-flex items-center justify-center rounded-full p-2',
+      ...semanticStatus.danger.surface,
+      ...semanticStatus.danger.text,
+      ...semanticEffects.dangerGlow,
+      'transition-transform duration-200 hover:-translate-y-[2px] hover:bg-[var(--color-status-danger-strong-surface)] dark:hover:bg-[var(--color-status-danger-strong-surface-dark)]',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-danger)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-[var(--color-border-danger-dark)] dark:focus-visible:ring-offset-[#0f172a]',
     ],
     paginationRound: [
-      'inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/50 bg-white/70 text-slate-600',
-      'shadow-[0_14px_38px_-28px_rgba(15,23,42,0.55)] transition-all duration-200 hover:-translate-y-[2px] hover:bg-white/90',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
-      'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 dark:border-white/10 dark:bg-[#1e293b]/70 dark:text-slate-200',
-      'dark:hover:bg-[#1e293b]/85 dark:focus-visible:ring-offset-[#0f172a]',
+      'inline-flex h-9 w-9 items-center justify-center rounded-full',
+      ...semanticBorders.glass,
+      ...semanticSurfaces.card,
+      'text-slate-600 dark:text-slate-200',
+      ...semanticEffects.glassShadow,
+      'transition-all duration-200 hover:-translate-y-[2px] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row-dark)]',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]',
+      'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0',
     ],
     accountsToolbar: [
-      'inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/85 px-5 py-2',
+      'inline-flex items-center gap-2 rounded-full px-5 py-2',
+      ...semanticBorders.control,
+      ...semanticSurfaces.card,
       primitiveTypographyRecipes.bodyStrong,
-      'text-[#0f172a]',
-      'shadow-[0_18px_48px_-32px_rgba(15,23,42,0.45)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[#93c5fd] hover:text-[#0f172a]',
-      'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+      'text-[var(--color-text-primary)]',
+      ...semanticEffects.glassShadow,
+      'transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--color-border-hover-accent)] hover:text-[var(--color-text-primary)]',
+      'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
       'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none',
-      'dark:border-[#334155] dark:bg-[#1e293b]/90 dark:text-[#cbd5e1] dark:hover:border-[#38bdf8] dark:hover:text-white dark:focus-visible:ring-offset-slate-900',
+      'dark:text-[#cbd5e1] dark:hover:border-[var(--color-border-hover-accent-dark)] dark:hover:text-white dark:focus-visible:ring-offset-slate-900',
     ],
   },
 } as const;

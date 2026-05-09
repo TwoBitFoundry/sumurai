@@ -78,12 +78,16 @@ Required migrations:
 
 Acceptance criteria:
 
-- [ ] Shared recipes no longer define repeated raw surface or border colors when a semantic token exists.
-- [ ] `Alert` variants use status tone recipes instead of hard-coded color classes.
-- [ ] `Modal` overlay uses a surface/overlay token.
-- [ ] Onboarding and budget token recipes use semantic surface, border, and status recipes.
-- [ ] `globals.css` keyframe colors use generated CSS custom properties where practical.
-- [ ] `npm --prefix frontend run typecheck` passes.
+- [x] Shared recipes no longer define repeated raw surface or border colors when a semantic token exists.
+- [x] `Alert` variants use status tone recipes instead of hard-coded color classes.
+- [x] `Modal` overlay uses a surface/overlay token.
+- [x] Onboarding and budget token recipes use semantic surface, border, and status recipes.
+- [x] `globals.css` keyframe colors use generated CSS custom properties where practical.
+- [x] `npm --prefix frontend run typecheck` passes.
+
+TDD log:
+
+- Reworked the shared primitive, onboarding, and budget recipes to use the new semantic tokens, then verified the frontend typecheck and lint checks passed.
 
 ## Phase 4: Migrate Product Components
 
