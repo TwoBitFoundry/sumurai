@@ -5,7 +5,7 @@ description: Use when working on Sumurai DESIGN.md, designmd exports, DTCG token
 
 # Sumurai Design Token Pipeline
 
-Use this skill for token pipeline planning, token generation, `DESIGN.md` changes, designmd validation/export, Tailwind token integration, and TypeScript token drift cleanup.
+Use this skill for token pipeline planning, token generation, `DESIGN.md` changes, designmd validation/export, Tailwind-facing CSS output, and TypeScript token drift cleanup. For how primitives and screens consume tokens, use `sumurai-frontend-design-system`.
 
 ## Required Reads
 
@@ -13,8 +13,9 @@ Before token pipeline work, read:
 
 - `DESIGN.md`
 - `docs/design-md-standard.md`
-- `frontend/src/ui/tokens/index.ts`
-- `frontend/src/ui/tokens/tailwind-bridge.js`
+- `frontend/src/ui/tokens.ts`
+- `frontend/src/ui/generated/tokens.ts`
+- `frontend/src/ui/generated/theme.css`
 - `frontend/tailwind.config.js`
 - `references/token-pipeline.md`
 
@@ -24,16 +25,16 @@ Before token pipeline work, read:
 - Do not turn `DESIGN.md` into a Tailwind class warehouse.
 - Prefer generated token artifacts over manually duplicated values.
 - Keep semantic token names stable and meaningful.
-- Keep implementation recipes in frontend tokens/primitives, not prose-only docs.
+- Keep implementation recipes in `frontend/src/ui/recipes.ts` and primitives, not prose-only docs.
 - Do not read or write `.env` files.
 - Do not add comments to source code.
 
 ## Workflow
 
-1. Decide whether the change is design intent, primitive token, generated artifact, or component recipe.
+1. Decide whether the change is design intent, generated artifact, `tokens.ts` wiring, or component recipe.
 2. Update `DESIGN.md` only when design meaning or public token roles change.
-3. Keep TypeScript tokens and Tailwind-facing tokens aligned with design roles.
-4. Prefer adding generation/drift checks before large token rewrites.
+3. Keep TypeScript tokens, generated TS, and generated CSS aligned with design roles.
+4. Prefer adding generation or drift checks before large token rewrites.
 5. Validate `DESIGN.md` after token changes.
 
 ## Validation
@@ -41,5 +42,5 @@ Before token pipeline work, read:
 - `npm --prefix frontend run design:lint`
 - `npm --prefix frontend run design:export:dtcg`
 - `npm --prefix frontend run design:export:tailwind`
-- `npm --prefix frontend test -- --runTestsByPath frontend/tests/ui/tokens/designTokens.test.ts`
+- `npm --prefix frontend test -- --runTestsByPath tests/ui/tokens/runtime.test.ts`
 - `npm --prefix frontend run typecheck`

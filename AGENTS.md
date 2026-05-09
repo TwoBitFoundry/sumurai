@@ -44,8 +44,8 @@
 - Use `feat!:` or `BREAKING CHANGE:` for breaking changes.
 
 ## UI policy
-- Use `.agents/skills/sumurai-ui-policy/SKILL.md` for Sumurai frontend UI work.
-- That skill is the source of truth for `DESIGN.md`, primitives, recipes, tokens, and examples.
+- Use `.agents/skills/sumurai-frontend-design-system/SKILL.md` for Sumurai frontend UI work.
+- That skill is the source of truth for `DESIGN.md`, primitives, recipes, tokens, and composition examples.
 
 ## Security
 - Never read or write `.env` files from automation.

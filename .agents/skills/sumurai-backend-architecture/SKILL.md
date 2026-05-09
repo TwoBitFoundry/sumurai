@@ -19,7 +19,8 @@ Read the relevant reference before backend changes:
 - Keep models in `backend/src/models`.
 - Keep business logic in `backend/src/services`.
 - Keep provider-specific external integration code in `backend/src/providers`.
-- Keep HTTP routing and request/response glue in handlers, middleware, and `main.rs`.
+- Keep HTTP routing and request/response glue in handlers, `middleware/`, `auth_middleware.rs`, and `main.rs`.
+- Keep environment-driven configuration types and loading in `config.rs`.
 - Keep database schema changes in forward migrations under `backend/migrations`.
 - Keep tests in `backend/src/tests`.
 - Preserve Redis as a required backend dependency.
@@ -37,7 +38,11 @@ Read the relevant reference before backend changes:
 
 ## Validation
 
-- `cargo check --manifest-path backend/Cargo.toml`
-- `cargo test --manifest-path backend/Cargo.toml`
-- `cargo clippy --manifest-path backend/Cargo.toml`
-- `cargo fmt --manifest-path backend/Cargo.toml`
+Match local checks to `npm run backend:ci` (locked dependency graph, same as GitHub):
+
+- `cargo fmt --manifest-path backend/Cargo.toml --all --check`
+- `cargo check --manifest-path backend/Cargo.toml --locked --all-targets`
+- `cargo clippy --manifest-path backend/Cargo.toml --locked --all-targets --no-deps -- -D warnings`
+- `cargo test --manifest-path backend/Cargo.toml --locked`
+
+`npm run backend:ci` runs the same steps and sets `RUST_BACKTRACE=1` for the test invocation only.

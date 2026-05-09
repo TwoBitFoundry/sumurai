@@ -1,6 +1,6 @@
-# UI Policy Examples
+# UI composition examples
 
-Use this file with the skill in `SKILL.md`.
+Use with `SKILL.md` in this directory.
 
 If a screen already has a layout frame like `PageLayout`, keep it and build the visual treatment with primitives inside it. The goal is to compose with the shared surface, border, text, and font recipes instead of inventing new chrome in the screen.
 
@@ -116,11 +116,12 @@ export function BadBudgetCard() {
 ```
 
 Why this is bad:
+
 - It duplicates shell styling that already exists in `GradientShell` and `GlassCard`.
 - It hardcodes palette choices instead of using `recipes.text`, `recipes.surface`, and `recipes.border`.
 - It bakes a visual role into one screen instead of making it reusable through a primitive.
 
-## How To Add A New Visual Role
+## How to add a new visual role
 
 1. Decide whether an existing primitive variant covers it. If yes, add the variant there.
 2. If not, add the reusable role to `DESIGN.md` and run `npm --prefix frontend run design:guard`.
