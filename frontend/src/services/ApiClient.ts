@@ -207,6 +207,11 @@ export class ApiClient {
       throw new AuthenticationError();
     }
 
+    if (endpoint === '/auth/login') {
+      AuthService.clearToken();
+      throw new AuthenticationError();
+    }
+
     try {
       await AuthService.refreshToken();
       return await ApiClient.makeRawRequest<T>(endpoint, options);
