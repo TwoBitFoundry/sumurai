@@ -4,6 +4,7 @@ import { Receipt } from 'lucide-react';
 import type React from 'react';
 import { cn, EmptyState } from '@/ui/primitives';
 import { designTokens } from '@/ui/tokens';
+import { dashboardTokenRecipes } from '@/views/tokenRecipes';
 import type { Transaction } from '../../../types/api';
 import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
@@ -47,16 +48,8 @@ export const TransactionsTable: React.FC<Props> = ({
         <>
           <div className="overflow-x-auto">
             <table className={cn('min-w-full', 'table-fixed')}>
-              <thead
-                className={cn(
-                  'bg-slate-200',
-                  designTokens.text.body,
-                  'transition-colors',
-                  'duration-500',
-                  'dark:bg-slate-700'
-                )}
-              >
-                <tr className={cn('border-b', 'border-slate-300', 'dark:border-slate-600')}>
+              <thead className={cn(dashboardTokenRecipes.tableHeader)}>
+                <tr className={cn('border-b', ...designTokens.borders.divider)}>
                   <th
                     className={cn(
                       'w-[15%]',
@@ -242,15 +235,7 @@ export const TransactionsTable: React.FC<Props> = ({
               'flex',
               'items-center',
               'justify-between',
-              'border-t',
-              'border-slate-200/70',
-              'bg-slate-50/50',
-              'px-4',
-              'py-4',
-              'transition-colors',
-              'duration-500',
-              'dark:border-slate-700/50',
-              'dark:bg-slate-800/30'
+              dashboardTokenRecipes.tableFooter
             )}
           >
             <div

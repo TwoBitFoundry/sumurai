@@ -96,13 +96,11 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
         className={cn(
           'rounded-xl',
           'border',
-          'border-slate-200',
-          'dark:border-slate-600',
-          'bg-slate-100/80',
-          'dark:bg-slate-700/80',
+          ...designTokens.borders.default,
+          ...designTokens.surfaces.semantic.mutedChip,
           'backdrop-blur-sm',
-          'hover:bg-slate-200',
-          'dark:hover:bg-slate-600',
+          'hover:bg-[var(--color-surface-hover-row)]',
+          'dark:hover:bg-[var(--color-surface-hover-row-dark)]',
           'transition-all',
           'duration-200',
           'flex',
@@ -149,17 +147,15 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
               'flex-col',
               'rounded-xl',
               'border',
-              'border-slate-200',
-              'dark:border-slate-600',
-              'bg-white/95',
-              'dark:bg-slate-800/95',
+              ...designTokens.borders.default,
+              ...designTokens.surfaces.semantic.card,
               'backdrop-blur-sm',
               'shadow-lg',
               'z-50',
               'origin-top'
             )}
           >
-            <div className={cn('p-4', 'border-b', 'border-slate-200', 'dark:border-slate-700')}>
+            <div className={cn('p-4', 'border-b', ...designTokens.borders.divider)}>
               <div className={cn(designTokens.typography.captionStrong, designTokens.text.primary)}>
                 Filter by account
               </div>
@@ -187,8 +183,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                         key={bankName}
                         className={cn(
                           'border-t',
-                          'border-slate-200',
-                          'dark:border-slate-700',
+                          ...designTokens.borders.divider,
                           'pt-2',
                           'first:border-t-0',
                           'first:pt-0'
@@ -200,8 +195,8 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                             onClick={() => toggleBankCollapse(bankName)}
                             className={cn(
                               'p-1',
-                              'hover:bg-slate-100',
-                              'dark:hover:bg-slate-700',
+                              'hover:bg-[var(--color-surface-hover-row)]',
+                              'dark:hover:bg-[var(--color-surface-hover-row-dark)]',
                               'rounded',
                               'transition-colors'
                             )}
@@ -229,8 +224,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                             onChange={() => toggleBank(bankName)}
                             className={cn(
                               'rounded',
-                              'border-slate-300',
-                              'dark:border-slate-600',
+                              ...designTokens.borders.control,
                               'text-primary-600',
                               'focus:ring-primary-500'
                             )}
@@ -270,8 +264,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
                                     onChange={() => toggleAccount(account.id)}
                                     className={cn(
                                       'rounded',
-                                      'border-slate-300',
-                                      'dark:border-slate-600',
+                                      ...designTokens.borders.control,
                                       'text-primary-600',
                                       'focus:ring-primary-500'
                                     )}

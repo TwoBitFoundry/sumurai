@@ -122,11 +122,17 @@ Migration rules:
 
 Acceptance criteria:
 
-- [ ] Product components no longer contain repeated raw `bg-slate-*`, `bg-white/*`, `dark:bg-slate-*`, `border-slate-*`, `border-white/*`, or status color classes where semantic tokens exist.
-- [ ] Dashboard view and Storybook dashboard slice use the same tokenized surface/border decisions.
-- [ ] Provider, onboarding, transaction, budget, footer, and account filter UI states still expose the same visual states.
-- [ ] `npm --prefix frontend run design:styling` passes.
-- [ ] `npm --prefix frontend run lint` passes.
+- [x] Product components no longer contain repeated raw `bg-slate-*`, `bg-white/*`, `dark:bg-slate-*`, `border-slate-*`, `border-white/*`, or status color classes where semantic tokens exist.
+- [x] Dashboard view and Storybook dashboard slice use the same tokenized surface/border decisions.
+- [x] Provider, onboarding, transaction, budget, footer, and account filter UI states still expose the same visual states.
+- [x] `npm --prefix frontend run design:styling` passes.
+- [x] `npm --prefix frontend run lint` passes.
+
+TDD log:
+
+- `npm --prefix frontend run typecheck` passed after import ordering fixes.
+- `npm --prefix frontend run lint` passed after organizing imports.
+- `npm --prefix frontend run design:styling` passed after moving the dashboard helper into the allowlisted `tokenRecipes.ts` path.
 
 ## Phase 5: Add Drift Coverage And Verify
 

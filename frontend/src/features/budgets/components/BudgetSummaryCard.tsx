@@ -19,19 +19,16 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
         'overflow-hidden',
         'rounded-2xl',
         'border-2',
-        'border-slate-200',
-        'bg-white/80',
+        ...designTokens.borders.default,
+        ...designTokens.surfaces.semantic.card,
         'p-5',
         designTokens.text.body,
-        'shadow-[0_18px_48px_-36px_rgba(15,23,42,0.55)]',
+        ...designTokens.effects.semantic.glassShadow,
         'transition-all',
         'duration-300',
         'hover:-translate-y-[2px]',
-        'hover:border-slate-300',
-        'dark:border-slate-700',
-        ...designTokens.surfaces.layered.panel70,
         designTokens.text.body,
-        'dark:hover:border-slate-600'
+        ...designTokens.borders.hoverAccent
       )}
       data-testid="budget-summary-card"
     >
@@ -42,15 +39,15 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
           'inset-0',
           'rounded-2xl',
           'bg-gradient-to-br',
-          'from-slate-200/40',
-          'via-slate-100/20',
+          'from-[var(--color-surface-muted-chip)]/40',
+          'via-[var(--color-surface-card)]/20',
           'to-transparent',
           'opacity-0',
           'transition-opacity',
           'duration-300',
           'group-hover:opacity-100',
-          'dark:from-slate-700/40',
-          'dark:via-slate-800/20'
+          'dark:from-[var(--color-surface-muted-chip-dark)]/40',
+          'dark:via-[var(--color-surface-card-dark)]/20'
         )}
       />
       <div className={cn('relative', 'z-10', 'flex', 'items-center', 'justify-between', 'gap-4')}>

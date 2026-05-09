@@ -26,20 +26,23 @@ const stepIndicatorVariants = cva(
     variants: {
       state: {
         active: [
-          'border-sky-400/70 bg-sky-100/65 text-sky-600',
+          ...designTokens.status.info.border,
+          ...designTokens.status.info.surface,
+          designTokens.status.info.text,
           'shadow-[0_12px_32px_-20px_rgba(14,165,233,0.45)]',
-          'dark:border-sky-500/60 dark:bg-sky-500/15 dark:text-sky-200',
         ],
         complete: [
-          'border-emerald-400/80 bg-emerald-500 text-white',
+          ...designTokens.status.success.border,
+          ...designTokens.status.success.strongSurface,
+          designTokens.text.inverse,
           'shadow-[0_18px_46px_-24px_rgba(16,185,129,0.65)]',
           'animate-[successFlash_400ms_ease-out]',
-          'dark:border-emerald-400/70 dark:bg-emerald-500',
+          'dark:border-[var(--color-status-success-border-dark)]',
         ],
         idle: [
-          'border-slate-200/80 bg-white',
+          ...designTokens.borders.default,
+          ...designTokens.surfaces.semantic.card,
           designTokens.text.subtle,
-          'dark:border-slate-700/70 dark:bg-slate-900',
         ],
       },
     },
@@ -232,9 +235,8 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
             <span
               className={cn(
                 'h-px w-8',
-                'bg-slate-200/70',
-                'transition-colors duration-300 ease-out',
-                'dark:bg-slate-700/70'
+                ...designTokens.borders.divider,
+                'transition-colors duration-300 ease-out'
               )}
               aria-hidden="true"
             />
