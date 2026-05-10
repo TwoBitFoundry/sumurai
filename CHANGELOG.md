@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.5.1](https://github.com/TwoBitFoundry/sumurai/compare/v5.5.0...v5.5.1) (2026-05-10)
+
+
+### Bug Fixes
+
+* releases now trigger publish images ([#99](https://github.com/TwoBitFoundry/sumurai/issues/99)) ([4f559af](https://github.com/TwoBitFoundry/sumurai/commit/4f559af29612d9e54520a5cd838de8d6d47d8059))
+
 ## [5.5.0](https://github.com/TwoBitFoundry/sumurai/compare/v5.4.0...v5.5.0) (2026-05-09)
 
 
