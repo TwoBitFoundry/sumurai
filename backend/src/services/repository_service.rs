@@ -1043,10 +1043,11 @@ impl DatabaseRepository for PostgresRepository {
 
         let rows = sqlx::query_as::<_, (Uuid, i64)>(
             r#"
-            SELECT account_id, COUNT(*) as count
-            FROM transactions 
-            WHERE user_id = $1
-            GROUP BY account_id
+            SELECT a.id, COUNT(t.id)::bigint AS count
+            FROM accounts a
+            LEFT JOIN transactions t ON t.account_id = a.id AND t.user_id = $1
+            WHERE a.user_id = $1
+            GROUP BY a.id
             "#,
         )
         .bind(user_id)

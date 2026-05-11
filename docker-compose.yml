@@ -26,16 +26,19 @@ services:
       REDIS_URL: redis://redis:6379
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-accounting}
 
-      DEFAULT_PROVIDER: teller
       AUTH_COOKIE_SAME_SITE: Strict
 
       OTEL_TRACES_EXPORTER: none
 
-      TELLER_APPLICATION_ID: ${TELLER_APPLICATION_ID:?TELLER_APPLICATION_ID is required}
+      DEFAULT_PROVIDER: teller
+
+      TELLER_APPLICATION_ID: ${TELLER_APPLICATION_ID}
       TELLER_CERT_PATH: /etc/teller/certificate.pem
       TELLER_KEY_PATH: /etc/teller/private_key.pem
       TELLER_ENV: development
 
+      PLAID_CLIENT_ID: ${PLAID_CLIENT_ID}
+      PLAID_SECRET: ${PLAID_SECRET}
       PLAID_ENV: development
 
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}

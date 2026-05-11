@@ -9,6 +9,7 @@ export function AuthenticatedScreenShell(props: { currentTab: TabKey; children: 
       currentTab={props.currentTab}
       onTabChange={() => {}}
       onLogout={() => {}}
+      isOnline
       renderAccountFilter={() => (
         <span
           className={cn(

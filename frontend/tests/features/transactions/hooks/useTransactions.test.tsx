@@ -63,7 +63,7 @@ const TestWrapper = ({ children }: { children: ReactNode }) => (
 
 describe('useTransactions', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    jest.clearAllMocks();
     jest.mocked(TransactionService.getTransactions).mockResolvedValue([]);
     jest.mocked(PlaidService.getAccounts).mockResolvedValue(mockPlaidAccounts as any);
     jest.mocked(PlaidService.getStatus).mockResolvedValue({

@@ -26,7 +26,6 @@ services:
       REDIS_URL: redis://redis:6379
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-accounting}
 
-      DEFAULT_PROVIDER: plaid
       AUTH_COOKIE_SAME_SITE: Strict
 
       OTEL_TRACES_EXPORTER: otlp
@@ -35,10 +34,15 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_STARTUP_TEST_SPAN: "0"
 
+      DEFAULT_PROVIDER: plaid
+
+      TELLER_APPLICATION_ID: ${TELLER_APPLICATION_ID}
+      TELLER_CERT_PATH: /etc/teller/certificate.pem
+      TELLER_KEY_PATH: /etc/teller/private_key.pem
       TELLER_ENV: production
 
-      PLAID_CLIENT_ID: ${PLAID_CLIENT_ID:?PLAID_CLIENT_ID is required}
-      PLAID_SECRET: ${PLAID_SECRET:?PLAID_SECRET is required}
+      PLAID_CLIENT_ID: ${PLAID_CLIENT_ID}
+      PLAID_SECRET: ${PLAID_SECRET}
       PLAID_ENV: production
 
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}

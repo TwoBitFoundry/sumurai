@@ -408,6 +408,7 @@ impl ConnectionService {
                 .institution_name
                 .clone()
                 .unwrap_or_else(|| "Connected Bank".to_string()),
+            connection_id: connection.id.to_string(),
         })
     }
 

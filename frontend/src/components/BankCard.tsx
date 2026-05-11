@@ -35,10 +35,11 @@ interface BankCardProps {
   bank: BankConnection;
   onSync: (id: string) => Promise<void>;
   onDisconnect: (id: string) => Promise<void>;
+  isOnline: boolean;
 }
 
 const relativeTime = (iso?: string) => {
-  if (!iso) return 'Never';
+  if (!iso) return 'just now';
   const d = new Date(iso);
   const diff = Date.now() - d.getTime();
   const mins = Math.round(diff / 60000);
@@ -68,7 +69,7 @@ const CardMenu: React.FC<{
   );
 };
 
-export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect }) => {
+export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect, isOnline }) => {
   const sectionBadgeClass = cn(uiTypographyRecipes.label, uiTextRecipes.muted);
 
   const [expanded, setExpanded] = useState(true);
@@ -144,7 +145,9 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect }
                 <span className={cn(uiTextRecipes.muted)}>
                   {(() => {
                     const label = relativeTime(bank.lastSync);
-                    return `Last sync ${label.includes('ago') ? label : `${label} ago`}`;
+                    const phrase =
+                      label === 'just now' || label.includes('ago') ? label : `${label} ago`;
+                    return `Last sync ${phrase}`;
                   })()}
                 </span>
               </div>
@@ -152,9 +155,14 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect }
           </div>
         </div>
         <div className={cn('flex', 'items-center', 'gap-2')}>
-          <Button onClick={handleSync} disabled={loading} variant="secondary">
+          <Button
+            onClick={handleSync}
+            disabled={loading || !isOnline}
+            variant="secondary"
+            title={!isOnline ? 'Unavailable while offline' : undefined}
+          >
             <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
-            Sync now
+            {isOnline ? 'Sync now' : 'Offline'}
           </Button>
           <Button onClick={() => setExpanded((v) => !v)} variant="secondary">
             <ChevronDown className={cn('h-4 w-4', expanded && 'rotate-180')} />

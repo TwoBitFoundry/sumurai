@@ -106,9 +106,12 @@ fn merchant_name_from_plaid_uses_merchant_name_only() {
 }
 
 #[test]
-fn merchant_name_from_plaid_ignores_legacy_name() {
+fn merchant_name_from_plaid_falls_back_to_transaction_name() {
     let v: Value = serde_json::json!({
         "name": "ATM WITHDRAWAL"
     });
-    assert_eq!(Transaction::merchant_name_from_plaid(&v), None);
+    assert_eq!(
+        Transaction::merchant_name_from_plaid(&v),
+        Some("Atm Withdrawal".to_string())
+    );
 }

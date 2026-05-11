@@ -21,6 +21,7 @@ const defaultAccounts = [
     mask: '1111',
     provider: 'plaid',
     institution_name: 'Mock Bank',
+    transaction_count: 10,
   },
   {
     id: 'account2',
@@ -31,6 +32,7 @@ const defaultAccounts = [
     mask: '2222',
     provider: 'plaid',
     institution_name: 'Mock Bank',
+    transaction_count: 4,
   },
 ];
 

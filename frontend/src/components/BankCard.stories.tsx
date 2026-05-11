@@ -21,6 +21,7 @@ const meta = {
     bank: storyBank,
     onSync: fn(async () => {}),
     onDisconnect: fn(async () => {}),
+    isOnline: true,
   },
 } satisfies Meta<typeof BankCard>;
 
@@ -51,5 +52,6 @@ export const CollapseAccounts: Story = {
 export const NeedsReauth: Story = {
   args: {
     bank: storyNeedsReauthBank,
+    isOnline: true,
   },
 };

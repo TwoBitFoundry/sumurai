@@ -80,9 +80,10 @@ const stepIndicatorVariants = cva(
 interface OnboardingWizardProps {
   onComplete: () => void;
   onLogout?: () => void;
+  isOnline: boolean;
 }
 
-export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps) {
+export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingWizardProps) {
   const scrolled = useScrollDetection();
   const { mode, toggle } = useTheme();
   const {
@@ -131,6 +132,7 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
   }, []);
 
   const plaidFlow = useOnboardingPlaidFlow({
+    isOnline,
     onConnectionSuccess: handleConnectionSuccess,
     onError: (error) => {
       console.error('Plaid connection error:', error);
@@ -141,6 +143,7 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
     applicationId: providerInfo.tellerApplicationId ?? null,
     environment: providerInfo.tellerEnvironment,
     enabled: activeProvider === 'teller',
+    isOnline,
     onConnectionSuccess: handleConnectionSuccess,
     onError: (error) => {
       console.error('Teller connection error:', error);
@@ -221,6 +224,7 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
             providerError={providerInfo.error}
             onRetryProvider={providerInfo.refresh}
             tellerApplicationId={providerInfo.tellerApplicationId ?? null}
+            isOnline={isOnline}
             isConnected={connectionFlow.isConnected}
             connectionInProgress={connectionFlow.connectionInProgress}
             institutionName={connectionFlow.institutionName}
@@ -278,6 +282,7 @@ export function OnboardingWizard({ onComplete, onLogout }: OnboardingWizardProps
           state="onboarding"
           scrolled={scrolled}
           themeMode={mode}
+          isOnline={isOnline}
           onThemeToggle={toggle}
           onLogout={onLogout}
         />

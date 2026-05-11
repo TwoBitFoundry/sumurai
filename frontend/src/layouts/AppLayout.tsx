@@ -12,6 +12,7 @@ interface AppLayoutProps {
   currentTab: TabKey;
   onTabChange: (tab: TabKey) => void;
   onLogout: () => void;
+  isOnline: boolean;
   className?: string;
   renderAccountFilter?: (scrolled: boolean) => ReactNode;
 }
@@ -21,6 +22,7 @@ export function AppLayout({
   currentTab,
   onTabChange,
   onLogout,
+  isOnline,
   className,
   renderAccountFilter,
 }: AppLayoutProps) {
@@ -34,6 +36,7 @@ export function AppLayout({
           state="authenticated"
           scrolled={scrolled}
           themeMode={mode}
+          isOnline={isOnline}
           onThemeToggle={toggle}
           onLogout={onLogout}
           currentTab={currentTab}

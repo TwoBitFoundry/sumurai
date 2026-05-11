@@ -64,9 +64,12 @@ impl SyncService {
         let mut mapped_transactions = transactions;
 
         for transaction in &mut mapped_transactions {
-            if let Some(provider_account_id) = &transaction.provider_account_id {
-                if let Some(&internal_account_id) = account_mapping.get(provider_account_id) {
-                    transaction.account_id = internal_account_id;
+            match &transaction.provider_account_id {
+                Some(pid) if account_mapping.contains_key(pid) => {
+                    transaction.account_id = account_mapping[pid];
+                }
+                _ => {
+                    transaction.account_id = Uuid::nil();
                 }
             }
         }

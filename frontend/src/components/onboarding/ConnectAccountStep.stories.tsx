@@ -16,6 +16,7 @@ const meta = {
     providerError: null,
     onRetryProvider: fn(),
     tellerApplicationId: null,
+    isOnline: true,
     isConnected: false,
     connectionInProgress: false,
     institutionName: null,
@@ -42,12 +43,14 @@ export const PlaidDefault: Story = {
 export const ProviderLoading: Story = {
   args: {
     providerLoading: true,
+    isOnline: true,
   },
 };
 
 export const ProviderConfigurationError: Story = {
   args: {
     providerError: 'Unable to load provider configuration.',
+    isOnline: true,
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
@@ -60,6 +63,7 @@ export const ConnectionInProgress: Story = {
   args: {
     connectionInProgress: true,
     content: plaid,
+    isOnline: true,
   },
 };
 
@@ -68,6 +72,7 @@ export const Connected: Story = {
     isConnected: true,
     institutionName: 'Story Credit Union',
     content: plaid,
+    isOnline: true,
   },
 };
 
@@ -75,6 +80,7 @@ export const ConnectionFlowError: Story = {
   args: {
     error: 'Link token expired. Retry to generate a fresh session.',
     content: plaid,
+    isOnline: true,
   },
 };
 
@@ -82,5 +88,6 @@ export const TellerMissingApplicationId: Story = {
   args: {
     content: teller,
     tellerApplicationId: null,
+    isOnline: true,
   },
 };

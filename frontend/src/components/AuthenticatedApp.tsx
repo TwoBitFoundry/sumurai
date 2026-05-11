@@ -16,16 +16,17 @@ export type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'se
 interface AuthenticatedAppProps {
   onLogout: () => void;
   initialTab?: TabKey;
+  isOnline: boolean;
 }
 
-export function AuthenticatedApp({ onLogout, initialTab }: AuthenticatedAppProps) {
+export function AuthenticatedApp({ onLogout, initialTab, isOnline }: AuthenticatedAppProps) {
   const [tab, setTab] = useState<TabKey>(initialTab ?? 'dashboard');
   const [error, setError] = useState<string | null>(null);
 
   return (
     <ErrorBoundary>
       <GradientShell className={cn(uiTextRecipes.primary, 'transition-colors', 'duration-300')}>
-        <AppLayout currentTab={tab} onTabChange={setTab} onLogout={onLogout}>
+        <AppLayout currentTab={tab} onTabChange={setTab} onLogout={onLogout} isOnline={isOnline}>
           {error && (
             <Alert variant="error" title="Error" className={cn('mb-6')}>
               {error}

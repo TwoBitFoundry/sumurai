@@ -212,13 +212,15 @@ pub struct ProviderConnectResponse {
     "access_token": "access-sandbox-xyz",
     "item_id": "item-123",
     "institution_id": "ins_123",
-    "institution_name": "Demo Bank"
+    "institution_name": "Demo Bank",
+    "connection_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 }))]
 pub struct ExchangeTokenResponse {
     pub access_token: String,
     pub item_id: String,
     pub institution_id: Option<String>,
     pub institution_name: String,
+    pub connection_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]

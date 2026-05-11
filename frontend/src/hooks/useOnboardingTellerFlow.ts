@@ -6,6 +6,7 @@ export interface UseOnboardingTellerFlowOptions {
   applicationId: string | null;
   environment?: TellerEnvironment;
   enabled?: boolean;
+  isOnline?: boolean;
   onConnectionSuccess?: (institutionName: string) => void;
   onError?: (error: string) => void;
 }
@@ -31,6 +32,7 @@ export function useOnboardingTellerFlow(
     applicationId,
     environment = 'development',
     enabled = true,
+    isOnline = true,
     onConnectionSuccess,
     onError,
   } = options;
@@ -53,7 +55,7 @@ export function useOnboardingTellerFlow(
   );
 
   const refreshStatus = useCallback(async () => {
-    if (!enabled) {
+    if (!enabled || !isOnline) {
       return null;
     }
 
@@ -73,7 +75,7 @@ export function useOnboardingTellerFlow(
     }
 
     return null;
-  }, [enabled, onConnectionSuccess]);
+  }, [enabled, isOnline, onConnectionSuccess]);
 
   useEffect(() => {
     if (!enabled) {
@@ -143,6 +145,10 @@ export function useOnboardingTellerFlow(
       return;
     }
 
+    if (!isOnline) {
+      return;
+    }
+
     setError(null);
 
     if (!applicationId) {
@@ -163,14 +169,14 @@ export function useOnboardingTellerFlow(
       setConnectionInProgress(false);
       handleError('Unable to start Teller Connect. Please try again.');
     }
-  }, [applicationId, enabled, handleError, open, ready]);
+  }, [applicationId, enabled, handleError, open, ready, isOnline]);
 
   const retryConnection = useCallback(async () => {
-    if (!enabled) {
+    if (!enabled || !isOnline) {
       return;
     }
     await initiateConnection();
-  }, [enabled, initiateConnection]);
+  }, [enabled, initiateConnection, isOnline]);
 
   const reset = useCallback(() => {
     if (!enabled) {
