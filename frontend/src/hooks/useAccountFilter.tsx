@@ -63,7 +63,8 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
 
       if (!Array.isArray(accountsResponse) && !warnedInvalidAccountsRef.current) {
         warnedInvalidAccountsRef.current = true;
-        const shouldWarn = process.env.NODE_ENV !== 'test';
+        const nodeEnv = typeof process !== 'undefined' ? process.env.NODE_ENV : undefined;
+        const shouldWarn = nodeEnv !== 'test';
         if (shouldWarn) {
           console.warn('Expected accounts array for filter; received:', accountsResponse);
         }

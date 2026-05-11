@@ -24,7 +24,7 @@ export const IGNORE_OTEL_SELF_EXPORT_URLS = [
 export const PUBLIC_BROWSER_OTLP_EXPORT_PATH = '/api/v1/public/telemetry';
 
 function getConfig() {
-  const env = process.env;
+  const env = typeof process !== 'undefined' ? process.env : ({} as NodeJS.ProcessEnv);
   return {
     enabled: env.NEXT_PUBLIC_OTEL_ENABLED === 'true',
     serviceName: env.NEXT_PUBLIC_OTEL_SERVICE_NAME || 'sumurai-frontend',

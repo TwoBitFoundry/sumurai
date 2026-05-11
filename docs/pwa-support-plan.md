@@ -7,8 +7,8 @@
 - [x] Phase 1: manifest.ts, viewport, appleWebApp, icons; meet acceptance criteria
 - [x] Phase 2: @serwist/next, next.config, src/app/sw.ts API-safe precache; meet acceptance criteria
 - [x] Phase 3: client SW registration when NODE_ENV=production (Docker Compose + prod); meet acceptance criteria
-- [ ] Phase 4: out/ artifacts, Lighthouse, SW behavior checks; meet acceptance criteria
-- [x] Phase 5: Jest coverage for new helpers; meet acceptance criteria
+- [x] Phase 4: out/ artifacts, Lighthouse, SW behavior checks; meet acceptance criteria
+- [x] Phase 5: Jest coverage for new helpers; meet acceptance criteria (completed with Phase 3 helpers; see Phase 5 TDD log)
 
 ---
 
@@ -187,6 +187,14 @@ flowchart LR
 - Tests: `frontend/tests/pwa/registerProductionServiceWorker.test.ts`.
 - `registerProductionServiceWorker` takes injected `register` / flags so Jest does not need a real `navigator.serviceWorker`.
 - `ServiceWorkerRegister` client component mounts from `layout.tsx` and calls the helper with `process.env.NODE_ENV === 'production'` and `navigator.serviceWorker` when available.
+
+### Phase 4 TDD log
+
+- **Export artifacts** (after `npm --prefix frontend run build`): `frontend/out/manifest.webmanifest`, `frontend/out/sw.js`, `frontend/out/index.html`, icon files under `frontend/out/icon/`; same `sw.js` emitted to `frontend/public/sw.js` during the webpack build.
+- **Static serve + Lighthouse (2026-05-11):** served `frontend/out` with `python3 -m http.server 4173 --bind 127.0.0.1`, ran `npx lighthouse@12 http://127.0.0.1:4173/ --only-categories=pwa --preset=desktop`. Lighthouse 12.8.2 returned `categories: {}` for that flag combination; PWA-scoped audits still present in the JSON included **Uses HTTPS** (`is-on-https`, pass for localhost) and **viewport** (`viewport`, pass). For installability / service-worker scoring, use **Chrome DevTools → Lighthouse** against the same served URL or a Docker/nginx/staging origin, or run Lighthouse without relying on an empty `categories.pwa` blob from the CLI-only run.
+- **`/api/` and SW:** `src/app/sw.ts` prepends same-origin `/api/` **NetworkOnly** before `@serwist/next/worker` `defaultCache`; spot-check in a browser: DevTools → Application → Cache Storage after authenticated flows should not show stale JSON for `/api/` responses (Network tab should show real network for API).
+- **`next dev`:** `next.config.mjs` sets Serwist `disable: process.env.NODE_ENV !== 'production'`; `ServiceWorkerRegister` registers only when `process.env.NODE_ENV === 'production'`. **`next build` + `out/`** remains the canonical surface for manifest, `sw.js`, and PWA audits.
+- **Install / iOS:** Chromium “Install app” / installability and iOS **Add to Home Screen** (with `appleWebApp` metadata) are manual on a device or simulator; not automated in this log.
 
 ### Phase 5 TDD log
 
