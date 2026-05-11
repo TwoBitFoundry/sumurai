@@ -11,6 +11,7 @@ export const dynamic = 'force-static';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: '/',
     name: 'Sumurai',
     short_name: 'Sumurai',
     description: 'Personal finance with provider-aware onboarding',

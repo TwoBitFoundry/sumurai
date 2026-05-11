@@ -22,6 +22,10 @@ describe('manifestConstants', () => {
 
   it('lists static export icon routes without extension', () => {
     const icons = pwaManifestIcons();
-    expect(icons?.map((i) => i.src)).toEqual(['/icon/192', '/icon/512', '/icon/512']);
+    expect(icons?.map((i) => i.src)).toEqual([
+      '/app-icon-192.webp',
+      '/app-icon-512.webp',
+      '/app-icon-512.webp',
+    ]);
   });
 });

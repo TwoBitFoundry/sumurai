@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { PWA_THEME_COLOR } from '@/pwa/manifestConstants';
+import { PWA_THEME_COLOR, pwaMetadataIcons } from '@/pwa/manifestConstants';
 import ServiceWorkerRegister from './ServiceWorkerRegister';
 import './globals.css';
 
@@ -13,6 +13,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'Sumurai',
   description: 'Personal finance with provider-aware onboarding',
+  icons: pwaMetadataIcons(),
   appleWebApp: {
     capable: true,
     title: 'Sumurai',
