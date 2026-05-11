@@ -5,7 +5,7 @@
 **Next actions (checklist):**
 
 - [x] Phase 1: manifest.ts, viewport, appleWebApp, icons; meet acceptance criteria
-- [ ] Phase 2: @serwist/next, next.config, src/app/sw.ts API-safe precache; meet acceptance criteria
+- [x] Phase 2: @serwist/next, next.config, src/app/sw.ts API-safe precache; meet acceptance criteria
 - [ ] Phase 3: client SW registration when NODE_ENV=production (Docker Compose + prod); meet acceptance criteria
 - [ ] Phase 4: out/ artifacts, Lighthouse, SW behavior checks; meet acceptance criteria
 - [ ] Phase 5: Jest coverage for new helpers; meet acceptance criteria
@@ -53,12 +53,12 @@ Everything else in the prerequisites section is **verification** (manifest filen
 Facts already grounded in the repo:
 
 - **Paths**: App Router lives under [`frontend/src/app`](../frontend/src/app); Serwist `swSrc` must be **`src/app/sw.ts`**, not `app/sw.ts`.
-- **Export**: [`frontend/next.config.js`](../frontend/next.config.js) has `output: 'export'` and **`trailingSlash: true`** — manifest `start_url` / `scope` must match how nginx serves the SPA (`try_files` + trailing-slash URLs).
+- **Export**: [`frontend/next.config.mjs`](../frontend/next.config.mjs) has `output: 'export'` and **`trailingSlash: true`** — manifest `start_url` / `scope` must match how nginx serves the SPA (`try_files` + trailing-slash URLs).
 - **Icons today**: [`frontend/public`](../frontend/public) only has **`bmc-new-btn-logo.svg`** and **`tbf-logo.svg`** — implement **reasonable defaults** for manifest icons (generated routes and/or PNGs); Lighthouse expects suitable sizes and often **maskable**.
 - **Manifest colors vs UI theme**: [`DESIGN.md`](../DESIGN.md) supplies brand tokens; **`manifest.ts` uses fixed `theme_color` / `background_color`** for install/OS chrome tied to a **default dark-first** baseline. **User-selected in-app theme stays independent** and does not require updating the manifest each session.
 - **API base**: [`frontend/src/services/ApiClient.ts`](../frontend/src/services/ApiClient.ts) uses `NEXT_PUBLIC_API_BASE` or **`/api`** in non-dev; SW must **never** cache **`/api/**`** on the **deployed origin** (same-origin as the app behind nginx).
 - **Telemetry URLs**: [`frontend/src/observability/telemetry.ts`](../frontend/src/observability/telemetry.ts) exports OTLP via **`/api/v1/public/telemetry`** (and ignore patterns include `/api/v1/public|private/telemetry`) — SW runtime rules must **not** cache these paths.
-- **Config module format**: [`frontend/next.config.js`](../frontend/next.config.js) is **CommonJS** (`module.exports`). Serwist docs often show **ESM** (`import` / `next.config.mjs`). Before implementing Phase 2, confirm **`withSerwistInit`** works with CJS or plan a **`next.config.mjs`** migration that preserves existing options (`reactCompiler`, `output`, `trailingSlash`).
+- **Config module format**: [`frontend/next.config.mjs`](../frontend/next.config.mjs) is **CommonJS** (`module.exports`). Serwist docs often show **ESM** (`import` / `next.config.mjs`). Before implementing Phase 2, confirm **`withSerwistInit`** works with CJS or plan a **`next.config.mjs`** migration that preserves existing options (`reactCompiler`, `output`, `trailingSlash`).
 
 Decisions or verification during implementation (no guessing in advance):
 
@@ -72,7 +72,7 @@ Decisions or verification during implementation (no guessing in advance):
 
 **This is not a constraint on your data-caching design.** It only describes **how the frontend is produced and served**: a prebuilt `out/` tree behind nginx, with **no Node `next start`** in production.
 
-[`frontend/next.config.js`](../frontend/next.config.js) sets `output: 'export'`. The Docker image copies the build output from the image’s frontend `out/` into nginx’s docroot ([`frontend/Dockerfile`](../frontend/Dockerfile)).
+[`frontend/next.config.mjs`](../frontend/next.config.mjs) sets `output: 'export'`. The Docker image copies the build output from the image’s frontend `out/` into nginx’s docroot ([`frontend/Dockerfile`](../frontend/Dockerfile)).
 
 **Why the plan still calls this out:** PWA work must target **`out/` + static files** (manifest, `sw.js`, icons), and Serwist must run correctly in **`next build`**, not assume a long-lived Next server.
 
@@ -96,7 +96,7 @@ flowchart LR
 
 **Scope**
 
-- Add [`frontend/src/app/manifest.ts`](../frontend/src/app/manifest.ts) (`src/app`, not root `app/`): `name`, `short_name`, `description`, `display: 'standalone'`, `start_url` / `scope` aligned with nginx serving the SPA from `/` and [`next.config.js`](../frontend/next.config.js) `trailingSlash: true`.
+- Add [`frontend/src/app/manifest.ts`](../frontend/src/app/manifest.ts) (`src/app`, not root `app/`): `name`, `short_name`, `description`, `display: 'standalone'`, `start_url` / `scope` aligned with nginx serving the SPA from `/` and [`next.config.mjs`](../frontend/next.config.mjs) `trailingSlash: true`.
 - `theme_color` / `background_color`: fixed values from **default dark-first** intent in [`DESIGN.md`](../DESIGN.md) / design-system skill — **not** wired to per-user theme preference (manifest is static at build time for this iteration).
 - Icons: **reasonable defaults** — `icon.tsx` / `apple-icon.tsx` and/or PNGs in [`frontend/public`](../frontend/public) so manifest lists 192 / 512 (and maskable if audits require).
 - Extend [`frontend/src/app/layout.tsx`](../frontend/src/app/layout.tsx): `export const viewport` (mobile-friendly PWA defaults), `metadata.appleWebApp` as needed.
@@ -113,7 +113,7 @@ flowchart LR
 **Scope**
 
 - Add **`@serwist/next`** and **`serwist`** per package README; upgrade/install per repo conventions.
-- Wrap [`frontend/next.config.js`](../frontend/next.config.js) with `withSerwistInit`: `swSrc`: `src/app/sw.ts`, `swDest`: `public/sw.js` (and `swUrl` if dest changes).
+- Wrap [`frontend/next.config.mjs`](../frontend/next.config.mjs) with `withSerwistInit`: `swSrc`: `src/app/sw.ts`, `swDest`: `public/sw.js` (and `swUrl` if dest changes).
 - Implement [`frontend/src/app/sw.ts`](../frontend/src/app/sw.ts): **precache** via `self.__SW_MANIFEST`; **runtime caching** only if explicitly narrowed—**no caching of `/api/`** or authenticated JSON; OTLP/beacon URLs not cached. Optional `additionalPrecacheEntries` only if a real `/offline/` (or similar) page exists.
 - Confirm Serwist integration matches Next 16 static export (configurator / post-prerender behavior per Serwist docs).
 
@@ -173,6 +173,14 @@ flowchart LR
 - Static export requires `export const dynamic = 'force-static'` on `manifest.ts`, `icon.tsx`, and `apple-icon.tsx`.
 - Built manifest path: `frontend/out/manifest.webmanifest`. Icon precache URLs in manifest: `/icon/192`, `/icon/512` (files under `out/icon/192` and `out/icon/512`).
 - Theme and background colors load from `frontend/src/ui/generated/tokens` via `manifestConstants` / ImageResponse icons so `design:guard` passes without raw hex.
+
+### Phase 2 TDD log
+
+- Tests: `frontend/tests/pwa/swCachePolicy.test.ts`; run with `npm --prefix frontend test -- --testPathPatterns=pwa`.
+- Config is `frontend/next.config.mjs` (ESM): `withSerwistInit` with `swSrc` `src/app/sw.ts`, `swDest` `public/sw.js`, `register: false` (Phase 3 registers manually), `disable: process.env.NODE_ENV !== 'production'` so `next dev` avoids Serwist’s webpack integration with Turbopack.
+- Production build: `npm --prefix frontend run build` runs `next build --webpack` so `@serwist/next` can inject the worker bundle.
+- `src/app/sw.ts` prepends a same-origin `/api/` **NetworkOnly** rule ahead of `@serwist/next/worker` `defaultCache` so API GETs are not served from the default **NetworkFirst** `apis` cache.
+- Build output: `frontend/public/sw.js` and `frontend/out/sw.js` (generated; `frontend/public/sw.js` is gitignored). Biome ignores `public/sw.js`.
 
 ## Risk register (short)
 

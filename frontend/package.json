@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "next dev -p 3001 --turbo",
     "dev:webpack": "next dev -p 3001 --webpack",
-    "build": "next build",
+    "build": "next build --webpack",
     "typecheck": "tsc --noEmit --project tsconfig.ci.json",
     "start": "next start",
     "lint": "biome check --diagnostic-level=error .",
@@ -53,6 +53,7 @@
     "@opentelemetry/sdk-trace-web": "^2.2.0",
     "@opentelemetry/semantic-conventions": "^1.38.0",
     "@radix-ui/react-dialog": "^1.1.15",
+    "@serwist/next": "^9.5.11",
     "@tailwindcss/postcss": "^4.2.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -63,7 +64,8 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-plaid-link": "^4.1.1",
-    "recharts": "^3.5.0"
+    "recharts": "^3.5.0",
+    "serwist": "^9.5.11"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.14",

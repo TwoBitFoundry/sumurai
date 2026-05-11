@@ -70,7 +70,8 @@
       "!test-results",
       "!out",
       "!.playwright-browsers",
-      "!storybook-static"
+      "!storybook-static",
+      "!public/sw.js"
     ]
   },
   "overrides": [
@@ -95,7 +96,7 @@
       }
     },
     {
-      "includes": ["next.config.js", "jest.config.cjs", "postcss.config.js", "tailwind.config.js"],
+      "includes": ["next.config.mjs", "jest.config.cjs", "postcss.config.js", "tailwind.config.js"],
       "linter": {
         "rules": {
           "style": {
