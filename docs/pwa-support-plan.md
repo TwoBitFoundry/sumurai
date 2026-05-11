@@ -6,9 +6,9 @@
 
 - [x] Phase 1: manifest.ts, viewport, appleWebApp, icons; meet acceptance criteria
 - [x] Phase 2: @serwist/next, next.config, src/app/sw.ts API-safe precache; meet acceptance criteria
-- [ ] Phase 3: client SW registration when NODE_ENV=production (Docker Compose + prod); meet acceptance criteria
+- [x] Phase 3: client SW registration when NODE_ENV=production (Docker Compose + prod); meet acceptance criteria
 - [ ] Phase 4: out/ artifacts, Lighthouse, SW behavior checks; meet acceptance criteria
-- [ ] Phase 5: Jest coverage for new helpers; meet acceptance criteria
+- [x] Phase 5: Jest coverage for new helpers; meet acceptance criteria
 
 ---
 
@@ -181,6 +181,16 @@ flowchart LR
 - Production build: `npm --prefix frontend run build` runs `next build --webpack` so `@serwist/next` can inject the worker bundle.
 - `src/app/sw.ts` prepends a same-origin `/api/` **NetworkOnly** rule ahead of `@serwist/next/worker` `defaultCache` so API GETs are not served from the default **NetworkFirst** `apis` cache.
 - Build output: `frontend/public/sw.js` and `frontend/out/sw.js` (generated; `frontend/public/sw.js` is gitignored). Biome ignores `public/sw.js`.
+
+### Phase 3 TDD log
+
+- Tests: `frontend/tests/pwa/registerProductionServiceWorker.test.ts`.
+- `registerProductionServiceWorker` takes injected `register` / flags so Jest does not need a real `navigator.serviceWorker`.
+- `ServiceWorkerRegister` client component mounts from `layout.tsx` and calls the helper with `process.env.NODE_ENV === 'production'` and `navigator.serviceWorker` when available.
+
+### Phase 5 TDD log
+
+- Helpers from Phases 1–3 are covered under `frontend/tests/pwa/` (`manifestConstants`, `swCachePolicy`, `registerProductionServiceWorker`). Run `npm --prefix frontend test`.
 
 ## Risk register (short)
 

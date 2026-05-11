@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { PWA_THEME_COLOR } from '@/pwa/manifestConstants';
+import ServiceWorkerRegister from './ServiceWorkerRegister';
 import './globals.css';
 
 export const viewport: Viewport = {
@@ -22,7 +23,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        <ServiceWorkerRegister />
+        {children}
+      </body>
     </html>
   );
 }
