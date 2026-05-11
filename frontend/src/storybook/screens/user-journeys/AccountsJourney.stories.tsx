@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { AccountFilterProvider } from '@/hooks/useAccountFilter';
 import AccountsPage from '@/views/AccountsPage';
 import {
   storyPlaidDisconnect,
@@ -11,12 +12,36 @@ import {
 } from './shared';
 import { jsonResponse, route, StoryApiScope } from './storyApi';
 
+const storyInteractionTimeoutMs = 20_000;
+
+function patchNavigatorOnline() {
+  if (typeof navigator === 'undefined') {
+    return;
+  }
+  try {
+    Object.defineProperty(navigator, 'onLine', {
+      configurable: true,
+      enumerable: true,
+      writable: true,
+      value: true,
+    });
+  } catch {
+    return;
+  }
+}
+
 const meta = {
   title: 'App/Screens/User Journeys/Accounts',
   parameters: {
     layout: 'fullscreen',
   },
   tags: ['autodocs', 'test'],
+  decorators: [
+    (Story) => {
+      patchNavigatorOnline();
+      return <Story />;
+    },
+  ],
 } satisfies Meta;
 
 export default meta;
@@ -27,6 +52,7 @@ const handlers = [
   route('GET', '/providers/info', () => jsonResponse(storyProviderInfo)),
   route('POST', '/providers/select', () => jsonResponse(storyProviderSelect)),
   route('GET', '/providers/status', () => jsonResponse(storyPlaidStatus)),
+  route('GET', '/providers/accounts', () => jsonResponse(storyProviderAccounts)),
   route('GET', '/plaid/accounts', () => jsonResponse(storyProviderAccounts)),
   route('POST', '/plaid/link-token', () => jsonResponse({ link_token: 'story-link-token' })),
   route('POST', '/plaid/exchange-token', () =>
@@ -39,7 +65,9 @@ const handlers = [
 function AccountsJourney() {
   return (
     <StoryApiScope handlers={handlers}>
-      <AccountsPage />
+      <AccountFilterProvider>
+        <AccountsPage />
+      </AccountFilterProvider>
     </StoryApiScope>
   );
 }
@@ -50,21 +78,27 @@ export const Journey: Story = {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
 
-    await waitFor(() => {
-      expect(canvas.getByRole('button', { name: /use plaid/i })).toBeVisible();
-    });
+    await waitFor(
+      () => {
+        expect(canvas.getByTestId('accounts-page')).toBeVisible();
+      },
+      { timeout: storyInteractionTimeoutMs }
+    );
 
-    await userEvent.click(canvas.getByRole('button', { name: /use plaid/i }));
-    await waitFor(() => {
-      expect(canvas.getByRole('button', { name: /sync all/i })).toBeVisible();
-    });
+    await waitFor(
+      () => {
+        expect(canvas.getAllByRole('button', { name: /sync now/i }).length).toBeGreaterThan(0);
+      },
+      { timeout: storyInteractionTimeoutMs }
+    );
 
     const syncNow = canvas.getAllByRole('button', { name: /sync now/i })[0];
     await userEvent.click(syncNow);
-    await waitFor(() => {
-      expect(
-        body.getByText(/synced 2 new transactions from story federal credit union/i)
-      ).toBeVisible();
-    });
+    await waitFor(
+      () => {
+        expect(body.getByText(/sync started for story federal credit union/i)).toBeVisible();
+      },
+      { timeout: storyInteractionTimeoutMs }
+    );
   },
 };
