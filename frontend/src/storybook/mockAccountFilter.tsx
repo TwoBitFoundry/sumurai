@@ -16,6 +16,12 @@ export function accountToProviderAccount(account: Account): ProviderAccount {
     mask: account.mask,
     provider: account.provider ?? 'plaid',
     institution_name: account.institution_name ?? 'Unknown Bank',
+    connection_id:
+      account.connection_id ??
+      account.provider_connection_id ??
+      account.plaid_connection_id ??
+      null,
+    transaction_count: account.transaction_count ?? null,
   };
 }
 
@@ -39,6 +45,7 @@ export function buildMockAccountFilterContext(
     setSelectedAccountIds: partial.setSelectedAccountIds ?? (() => {}),
     toggleBank: partial.toggleBank ?? (() => {}),
     toggleAccount: partial.toggleAccount ?? (() => {}),
+    removeAccountsByIds: partial.removeAccountsByIds ?? (() => {}),
   };
 }
 

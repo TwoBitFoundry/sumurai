@@ -1044,7 +1044,7 @@ async fn create_authenticated_link_token(
     auth_context: AuthContext,
     Json(_req): Json<LinkTokenRequest>,
 ) -> Result<Json<LinkTokenResponse>, StatusCode> {
-    let provider = state.config.get_default_provider();
+    let provider = "plaid";
 
     match state
         .connection_service
@@ -1093,7 +1093,7 @@ async fn exchange_authenticated_public_token(
     Json(req): Json<ExchangeTokenRequest>,
 ) -> Result<Json<ExchangeTokenResponse>, StatusCode> {
     let user_id = auth_context.user_id;
-    let provider = state.config.get_default_provider();
+    let provider = "plaid";
 
     match state
         .connection_service
@@ -1286,7 +1286,7 @@ async fn sync_authenticated_provider_transactions(
     }
 
     let sync_params = SyncConnectionParams {
-        provider: state.config.get_default_provider(),
+        provider: "plaid",
         user_id: &user_id,
         jwt_id: &auth_context.jwt_id,
     };

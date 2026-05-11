@@ -11,6 +11,7 @@ export interface UseTellerLinkFlowOptions {
   environment?: TellerEnvironment;
   onError?: (message: string | null) => void;
   enabled?: boolean;
+  isOnline?: boolean;
 }
 
 export interface UseTellerLinkFlowResult {
@@ -32,7 +33,13 @@ interface LoadResult {
 }
 
 export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerLinkFlowResult {
-  const { applicationId, environment = 'development', onError, enabled = true } = options;
+  const {
+    applicationId,
+    environment = 'development',
+    onError,
+    enabled = true,
+    isOnline = true,
+  } = options;
 
   const [connections, setConnections] = useState<PlaidConnection[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,12 +52,12 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
 
   const handleError = useCallback(
     (message: string) => {
-      if (enabled) {
+      if (enabled && isOnline) {
         setError(message);
         onError?.(message);
       }
     },
-    [enabled, onError]
+    [enabled, onError, isOnline]
   );
 
   const clearError = useCallback(() => {
@@ -61,7 +68,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
   }, [enabled, onError]);
 
   const loadConnections = useCallback(async (): Promise<LoadResult> => {
-    if (!enabled) {
+    if (!enabled || !isOnline) {
       return { hasPopulatedBalances: false, connectionIds: [] };
     }
 
@@ -102,10 +109,20 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
     setLoading(true);
     clearError();
     try {
-      const [statusList, accounts] = await Promise.all([
+      const [statusResult, accountsResult] = await Promise.allSettled([
         TellerService.getStatus(),
         ProviderCatalog.getAccounts(),
       ]);
+      const hadLoadFailure =
+        statusResult.status === 'rejected' || accountsResult.status === 'rejected';
+      const statusList =
+        statusResult.status === 'fulfilled' && Array.isArray(statusResult.value)
+          ? statusResult.value
+          : [];
+      const typedAccounts =
+        accountsResult.status === 'fulfilled' && Array.isArray(accountsResult.value)
+          ? (accountsResult.value as BackendAccount[])
+          : [];
 
       const mapAccountType = (
         value: string | null | undefined
@@ -118,9 +135,64 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
         return 'other';
       };
 
-      const typedAccounts: BackendAccount[] = accounts as BackendAccount[];
+      const mapAccount = (account: BackendAccount) => {
+        const ledger =
+          parseNumeric(account.balance_ledger) ??
+          parseNumeric(account.balance_current) ??
+          parseNumeric(account.current_balance ?? null);
 
-      const mapped: PlaidConnection[] = statusList
+        const txnCount = parseNumeric(account.transaction_count);
+
+        const name =
+          account.name ??
+          account.account_name ??
+          account.official_name ??
+          account.institution_name ??
+          'Account';
+
+        const maskSource =
+          account.mask ?? account.account_mask ?? account.last_four ?? account.lastFour ?? '0000';
+
+        return {
+          id: String(account.id),
+          name,
+          mask: maskSource != null ? String(maskSource) : '0000',
+          type: mapAccountType(
+            account.account_type ?? account.type ?? account.accountType ?? account.subtype ?? null
+          ),
+          balance: ledger ?? undefined,
+          transactions: txnCount ?? undefined,
+        };
+      };
+
+      const buildFallbackConnections = (): PlaidConnection[] => {
+        const grouped = new Map<string, BackendAccount[]>();
+
+        for (const account of typedAccounts) {
+          const connectionId = resolveConnectionId(account);
+          const groupKey = connectionId ?? account.institution_name ?? String(account.id);
+          const group = grouped.get(groupKey) ?? [];
+          group.push(account);
+          grouped.set(groupKey, group);
+        }
+
+        return Array.from(grouped.entries()).map(([groupKey, groupAccounts]) => ({
+          id: groupKey,
+          connectionId: groupKey,
+          institutionName: groupAccounts[0]?.institution_name || 'Unknown Bank',
+          lastSyncAt: null,
+          transactionCount: groupAccounts.reduce(
+            (sum, account) => sum + (parseNumeric(account.transaction_count) ?? 0),
+            0
+          ),
+          accountCount: groupAccounts.length,
+          syncInProgress: false,
+          isConnected: true,
+          accounts: groupAccounts.map(mapAccount),
+        }));
+      };
+
+      const statusConnections: PlaidConnection[] = statusList
         .filter((status) => status.is_connected)
         .map((status) => {
           const statusConnectionId =
@@ -128,43 +200,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
 
           const connectionAccounts = typedAccounts
             .filter((account) => resolveConnectionId(account) === statusConnectionId)
-            .map((account) => {
-              const ledger =
-                parseNumeric(account.balance_ledger) ??
-                parseNumeric(account.balance_current) ??
-                parseNumeric(account.current_balance ?? null);
-
-              const txnCount = parseNumeric(account.transaction_count);
-
-              const name =
-                account.name ??
-                account.account_name ??
-                account.official_name ??
-                account.institution_name ??
-                'Account';
-
-              const maskSource =
-                account.mask ??
-                account.account_mask ??
-                account.last_four ??
-                account.lastFour ??
-                '0000';
-
-              return {
-                id: String(account.id),
-                name,
-                mask: maskSource != null ? String(maskSource) : '0000',
-                type: mapAccountType(
-                  account.account_type ??
-                    account.type ??
-                    account.accountType ??
-                    account.subtype ??
-                    null
-                ),
-                balance: ledger ?? undefined,
-                transactions: txnCount ?? undefined,
-              };
-            });
+            .map(mapAccount);
 
           const connectionId = statusConnectionId ?? 'unknown';
 
@@ -180,23 +216,47 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
             accounts: connectionAccounts,
           };
         });
+      const mapped: PlaidConnection[] =
+        statusConnections.length > 0 ? statusConnections : buildFallbackConnections();
 
-      setConnections(mapped);
-      dispatchAccountsChanged();
-      const connectionIds = mapped.map((conn) => conn.connectionId).filter(Boolean);
-      const hasBalances = mapped.some((conn) =>
+      let effectiveConnections: PlaidConnection[] = [];
+      setConnections((prev) => {
+        effectiveConnections = mapped.length > 0 ? mapped : prev;
+        return effectiveConnections;
+      });
+      if (mapped.length > 0) {
+        dispatchAccountsChanged();
+      }
+
+      setError(
+        hadLoadFailure && effectiveConnections.length > 0 ? 'Failed to load connections' : null
+      );
+
+      const connectionIds = effectiveConnections.map((conn) => conn.connectionId).filter(Boolean);
+      const hasBalances = effectiveConnections.some((conn) =>
         conn.accounts.some((acc) => typeof acc.balance === 'number' && !Number.isNaN(acc.balance))
       );
       return { hasPopulatedBalances: hasBalances, connectionIds };
     } catch (error: unknown) {
       console.warn('Failed to load Teller connections', error);
-      handleError('Failed to load Teller connections');
-      setConnections([]);
-      return { hasPopulatedBalances: false, connectionIds: [] };
+      let effectiveConnections: PlaidConnection[] = [];
+      setConnections((prev) => {
+        effectiveConnections = prev;
+        return prev;
+      });
+      if (effectiveConnections.length > 0) {
+        handleError('Failed to load Teller connections');
+      }
+      return {
+        hasPopulatedBalances: effectiveConnections.some((conn) =>
+          conn.accounts.some((acc) => typeof acc.balance === 'number' && !Number.isNaN(acc.balance))
+        ),
+        connectionIds: effectiveConnections.map((conn) => conn.connectionId).filter(Boolean),
+      };
     } finally {
       setLoading(false);
     }
-  }, [clearError, enabled, handleError]);
+  }, [clearError, enabled, handleError, isOnline]);
 
   const loadConnectionsWithRetry = useCallback(async () => {
     const { hasPopulatedBalances, connectionIds } = await loadConnections();
@@ -236,7 +296,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
   const { ready, open } = useTellerConnect({
     applicationId: enabled ? (applicationId ?? '') : '',
     environment,
-    onConnected: enabled ? loadConnectionsWithRetry : undefined,
+    onConnected: enabled && isOnline ? loadConnectionsWithRetry : undefined,
   });
 
   useEffect(() => {
@@ -245,16 +305,19 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       clearError();
       return;
     }
+    if (!isOnline) {
+      return;
+    }
     if (!applicationId) {
       handleError('Missing Teller application ID');
       return;
     }
     loadConnections();
-  }, [applicationId, enabled, loadConnections, handleError, clearError]);
+  }, [applicationId, enabled, loadConnections, handleError, clearError, isOnline]);
 
   const connect = useCallback(async () => {
     clearError();
-    if (!enabled) {
+    if (!enabled || !isOnline) {
       return;
     }
 
@@ -268,11 +331,11 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
     }
 
     open();
-  }, [applicationId, clearError, handleError, open, ready, enabled]);
+  }, [applicationId, clearError, handleError, open, ready, enabled, isOnline]);
 
   const syncOne = useCallback(
     async (connectionId: string) => {
-      if (!enabled) {
+      if (!enabled || !isOnline) {
         return;
       }
 
@@ -286,11 +349,11 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
         handleError('Failed to sync Teller connection');
       }
     },
-    [clearError, loadConnections, handleError, enabled]
+    [clearError, loadConnections, handleError, enabled, isOnline]
   );
 
   const syncAll = useCallback(async () => {
-    if (!enabled) {
+    if (!enabled || !isOnline) {
       return;
     }
 
@@ -315,11 +378,11 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
     } finally {
       setSyncingAll(false);
     }
-  }, [clearError, connections, loadConnections, handleError, enabled]);
+  }, [clearError, connections, loadConnections, handleError, enabled, isOnline]);
 
   const disconnect = useCallback(
     async (connectionId: string) => {
-      if (!enabled) {
+      if (!enabled || !isOnline) {
         return;
       }
 
@@ -333,7 +396,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
         handleError('Failed to disconnect Teller connection');
       }
     },
-    [clearError, loadConnections, handleError, enabled]
+    [clearError, loadConnections, handleError, enabled, isOnline]
   );
 
   return useMemo(

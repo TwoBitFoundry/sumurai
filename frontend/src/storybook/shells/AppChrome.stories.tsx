@@ -16,6 +16,7 @@ function UnauthenticatedLoginShell() {
           state="unauthenticated"
           scrolled={false}
           themeMode={mode}
+          isOnline
           onThemeToggle={toggle}
         />
         <main className={cn('flex-1', 'flex', 'items-center', 'justify-center')}>
@@ -33,6 +34,7 @@ function AuthenticatedDashboardShell() {
       currentTab="dashboard"
       onTabChange={() => {}}
       onLogout={() => {}}
+      isOnline
       renderAccountFilter={() => (
         <span
           className={cn(

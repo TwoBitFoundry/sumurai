@@ -63,7 +63,8 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
 
       if (!Array.isArray(accountsResponse) && !warnedInvalidAccountsRef.current) {
         warnedInvalidAccountsRef.current = true;
-        const shouldWarn = process.env.NODE_ENV !== 'test';
+        const nodeEnv = typeof process !== 'undefined' ? process.env.NODE_ENV : undefined;
+        const shouldWarn = nodeEnv !== 'test';
         if (shouldWarn) {
           console.warn('Expected accounts array for filter; received:', accountsResponse);
         }
@@ -85,6 +86,21 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
             return null;
           }
           return isNegativeParenthetical ? -parsed : parsed;
+        }
+        return null;
+      };
+
+      const parseTransactionCount = (value: unknown): number | null => {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          return value;
+        }
+        if (typeof value === 'string') {
+          const stripped = value.trim().replace(/[^0-9.-]/g, '');
+          if (stripped.length === 0) {
+            return null;
+          }
+          const parsed = Number(stripped);
+          return Number.isFinite(parsed) ? parsed : null;
         }
         return null;
       };
@@ -116,6 +132,12 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
           mask: account.mask ?? null,
           provider: account.provider ?? 'plaid',
           institution_name: account.institution_name ?? legacy.institutionName ?? 'Unknown Bank',
+          connection_id:
+            account.connection_id ??
+            account.provider_connection_id ??
+            account.plaid_connection_id ??
+            null,
+          transaction_count: parseTransactionCount(account.transaction_count),
         };
       });
 
@@ -151,9 +173,6 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
       previousAllAccountIdsRef.current = newAccountIds;
     } catch (error) {
       console.warn('Failed to fetch accounts for filter:', error);
-      setAccounts([]);
-      setSelectedAccountIds([]);
-      previousAllAccountIdsRef.current = [];
     } finally {
       setLoading(false);
     }
@@ -206,6 +225,19 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
     });
   }, []);
 
+  const removeAccountsByIds = useCallback((accountIds: string[]) => {
+    if (accountIds.length === 0) {
+      return;
+    }
+
+    const idSet = new Set(accountIds);
+    setAccounts((prev) => prev.filter((account) => !idSet.has(account.id)));
+    setSelectedAccountIds((prev) => prev.filter((id) => !idSet.has(id)));
+    previousAllAccountIdsRef.current = previousAllAccountIdsRef.current.filter(
+      (id) => !idSet.has(id)
+    );
+  }, []);
+
   const value = useMemo(
     (): AccountFilterContextType => ({
       selectedAccountIds,
@@ -216,6 +248,7 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
       setSelectedAccountIds,
       toggleBank,
       toggleAccount,
+      removeAccountsByIds,
     }),
     [
       selectedAccountIds,
@@ -225,6 +258,7 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
       loading,
       toggleBank,
       toggleAccount,
+      removeAccountsByIds,
     ]
   );
 

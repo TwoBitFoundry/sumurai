@@ -11,6 +11,7 @@ const meta = {
   args: {
     scrolled: false,
     themeMode: 'light' as const,
+    isOnline: true,
     onThemeToggle: fn(),
   },
 } satisfies Meta<typeof AppTitleBar>;
@@ -28,6 +29,7 @@ export const Unauthenticated: Story = {
 export const Onboarding: Story = {
   args: {
     state: 'onboarding',
+    isOnline: true,
     onLogout: fn(),
   },
 };
@@ -36,6 +38,7 @@ export const AuthenticatedDashboard: Story = {
   args: {
     state: 'authenticated',
     themeMode: 'dark',
+    isOnline: true,
     currentTab: 'dashboard',
     onTabChange: fn(),
     onLogout: fn(),

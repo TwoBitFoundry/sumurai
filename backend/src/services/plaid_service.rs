@@ -285,7 +285,7 @@ impl RealPlaidClient {
 
                     let transaction = Transaction {
                         id: Uuid::new_v4(),
-                        account_id: Uuid::new_v4(),
+                        account_id: Uuid::nil(),
                         user_id: None,
                         provider_account_id,
                         provider_transaction_id,

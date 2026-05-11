@@ -5,6 +5,7 @@ import { PlaidService } from '@/services/PlaidService';
 export interface UseOnboardingPlaidFlowOptions {
   onConnectionSuccess?: (institutionName: string) => void;
   onError?: (error: string) => void;
+  isOnline?: boolean;
 }
 
 export interface UseOnboardingPlaidFlowReturn {
@@ -23,7 +24,7 @@ export interface UseOnboardingPlaidFlowReturn {
 export function useOnboardingPlaidFlow(
   options: UseOnboardingPlaidFlowOptions = {}
 ): UseOnboardingPlaidFlowReturn {
-  const { onConnectionSuccess, onError } = options;
+  const { onConnectionSuccess, onError, isOnline = true } = options;
 
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -48,20 +49,20 @@ export function useOnboardingPlaidFlow(
       setError(null);
 
       try {
-        await PlaidService.exchangeToken(publicToken);
+        const exchange = await PlaidService.exchangeToken(publicToken);
 
         setIsConnected(true);
-        setInstitutionName('Connected Bank');
-        onConnectionSuccess?.('Connected Bank');
+        setInstitutionName(exchange.institution_name ?? 'Connected Bank');
+        onConnectionSuccess?.(exchange.institution_name ?? 'Connected Bank');
 
-        let connectionId: string | null = null;
+        let connectionId: string | null = exchange.connection_id ?? null;
         try {
           const status = await PlaidService.getStatus();
           const connections = Array.isArray(status?.connections) ? status.connections : [];
           const latestConnection = connections.find((conn) => conn.is_connected) ?? connections[0];
           if (latestConnection) {
             setInstitutionName(latestConnection.institution_name || 'Connected Bank');
-            connectionId = latestConnection.connection_id;
+            connectionId = connectionId ?? latestConnection.connection_id;
           }
         } catch (statusError) {
           console.warn('Failed to refresh Plaid status after connection', statusError);
@@ -105,6 +106,10 @@ export function useOnboardingPlaidFlow(
   }, [shouldOpenLink, ready, open]);
 
   const getLinkToken = useCallback(async () => {
+    if (!isOnline) {
+      throw new Error('Unavailable while offline');
+    }
+
     try {
       setError(null);
       const response = await PlaidService.getLinkToken();
@@ -115,9 +120,13 @@ export function useOnboardingPlaidFlow(
       handleError(errorMessage);
       throw error;
     }
-  }, [handleError]);
+  }, [handleError, isOnline]);
 
   const initiateConnection = useCallback(async () => {
+    if (!isOnline) {
+      return;
+    }
+
     try {
       setConnectionInProgress(true);
       await getLinkToken();
@@ -126,12 +135,16 @@ export function useOnboardingPlaidFlow(
       setConnectionInProgress(false);
       setShouldOpenLink(false);
     }
-  }, [getLinkToken]);
+  }, [getLinkToken, isOnline]);
 
   const retryConnection = useCallback(async () => {
+    if (!isOnline) {
+      return;
+    }
+
     setError(null);
     await initiateConnection();
-  }, [initiateConnection]);
+  }, [initiateConnection, isOnline]);
 
   const reset = useCallback(() => {
     setIsConnected(false);

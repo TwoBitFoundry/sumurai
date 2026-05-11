@@ -12,6 +12,7 @@ const meta = {
     onConnect: fn(),
     onSync: fn(async () => {}),
     onDisconnect: fn(async () => {}),
+    isOnline: true,
   },
 } satisfies Meta<typeof ConnectionsList>;
 
@@ -35,6 +36,7 @@ export const BankOperations: Story = {
 export const Empty: Story = {
   args: {
     banks: [],
+    isOnline: true,
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);

@@ -72,7 +72,6 @@ export function useTellerProviderInfo(
     } catch (err) {
       console.warn('Failed to fetch provider information', err);
       setError('Unable to load provider information');
-      setCatalogue(null);
     } finally {
       setLoading(false);
     }

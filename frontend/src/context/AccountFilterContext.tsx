@@ -10,6 +10,8 @@ export interface ProviderAccount {
   mask: string | null;
   provider: Account['provider'];
   institution_name: string;
+  connection_id: string | null;
+  transaction_count: number | null;
 }
 
 export interface AccountsByBank {
@@ -25,6 +27,7 @@ export interface AccountFilterContextType {
   setSelectedAccountIds: (accountIds: string[]) => void;
   toggleBank: (bankName: string) => void;
   toggleAccount: (accountId: string) => void;
+  removeAccountsByIds: (accountIds: string[]) => void;
 }
 
 export const AccountFilterContext = createContext<AccountFilterContextType | undefined>(undefined);

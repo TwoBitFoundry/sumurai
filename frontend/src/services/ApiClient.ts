@@ -24,9 +24,11 @@ export {
 };
 
 const DEV_DOCKER_API_BASE = 'http://localhost:3000/api';
+const NODE_ENV = typeof process !== 'undefined' ? process.env.NODE_ENV : undefined;
+const NEXT_PUBLIC_API_BASE =
+  typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_API_BASE : undefined;
 const DEFAULT_API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ||
-  (process.env.NODE_ENV === 'development' ? DEV_DOCKER_API_BASE : '/api');
+  NEXT_PUBLIC_API_BASE || (NODE_ENV === 'development' ? DEV_DOCKER_API_BASE : '/api');
 
 interface RetryConfig {
   maxRetries: number;
@@ -66,7 +68,7 @@ export class ApiClient {
 
   // Testing helpers: allow tests to tweak retry behavior deterministically
   static setTestMaxRetries(maxRetries: number) {
-    if (process.env.NODE_ENV === 'test') {
+    if (NODE_ENV === 'test') {
       ApiClient.retryConfig.maxRetries = Math.max(0, Math.floor(maxRetries));
     }
   }

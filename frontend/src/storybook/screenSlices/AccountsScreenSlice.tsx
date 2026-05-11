@@ -108,6 +108,7 @@ export function AccountsConnectedScreenSlice(props: {
           onConnect={() => {}}
           onSync={async () => {}}
           onDisconnect={async () => {}}
+          isOnline
         />
         <AnimatePresence>
           {props.toastMessage ? <Toast message={props.toastMessage} onClose={() => {}} /> : null}

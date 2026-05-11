@@ -2,6 +2,7 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures';
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
+import { ACCOUNTS_CHANGED_EVENT } from '@/utils/events';
 
 describe('AccountFilterProvider', () => {
   let fetchMock: ReturnType<typeof installFetchRoutes>;
@@ -21,36 +22,45 @@ describe('AccountFilterProvider', () => {
       ],
     });
 
+    const plaidAccountsFixture = [
+      {
+        id: 'acc_1',
+        name: 'Everyday Checking',
+        account_type: 'depository',
+        balance_current: 1250.5,
+        mask: '0000',
+        plaid_connection_id: 'conn_1',
+        institution_name: 'First Platypus Bank',
+        provider: 'plaid' as const,
+        transaction_count: 42,
+      },
+      {
+        id: 'acc_2',
+        name: 'High-Yield Savings',
+        account_type: 'depository',
+        balance_current: 5000.0,
+        mask: '1111',
+        plaid_connection_id: 'conn_1',
+        institution_name: 'First Platypus Bank',
+        provider: 'plaid' as const,
+        transaction_count: 18,
+      },
+      {
+        id: 'acc_3',
+        name: 'Rewards Credit Card',
+        account_type: 'credit',
+        balance_current: -350.75,
+        mask: '2222',
+        plaid_connection_id: 'conn_2',
+        institution_name: 'Second Platypus Bank',
+        provider: 'plaid' as const,
+        transaction_count: 203,
+      },
+    ];
+
     fetchMock = installFetchRoutes({
-      'GET /api/plaid/accounts': [
-        {
-          id: 'acc_1',
-          name: 'Everyday Checking',
-          account_type: 'depository',
-          balance_current: 1250.5,
-          mask: '0000',
-          plaid_connection_id: 'conn_1',
-          institution_name: 'First Platypus Bank',
-        },
-        {
-          id: 'acc_2',
-          name: 'High-Yield Savings',
-          account_type: 'depository',
-          balance_current: 5000.0,
-          mask: '1111',
-          plaid_connection_id: 'conn_1',
-          institution_name: 'First Platypus Bank',
-        },
-        {
-          id: 'acc_3',
-          name: 'Rewards Credit Card',
-          account_type: 'credit',
-          balance_current: -350.75,
-          mask: '2222',
-          plaid_connection_id: 'conn_2',
-          institution_name: 'Second Platypus Bank',
-        },
-      ],
+      'GET /api/providers/accounts': plaidAccountsFixture,
+      'GET /api/plaid/accounts': plaidAccountsFixture,
       'GET /api/providers/status': providerStatus,
     });
   });
@@ -116,6 +126,25 @@ describe('AccountFilterProvider', () => {
         expect(result.current.accountsByBank['Second Platypus Bank']).toHaveLength(1);
       });
 
+      it('Then it should map transaction_count from unified providers accounts (Plaid route)', async () => {
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
+          <AccountFilterProvider>{children}</AccountFilterProvider>
+        );
+
+        const { result } = renderHook(() => useAccountFilter(), { wrapper });
+
+        await waitFor(() => {
+          expect(result.current.accountsByBank['First Platypus Bank']).toHaveLength(2);
+        });
+
+        const firstBank = result.current.accountsByBank['First Platypus Bank'];
+        expect(firstBank?.[0]?.transaction_count).toBe(42);
+        expect(firstBank?.[1]?.transaction_count).toBe(18);
+        expect(result.current.accountsByBank['Second Platypus Bank']?.[0]?.transaction_count).toBe(
+          203
+        );
+      });
+
       it('Then it should support toggle bank action', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
           <AccountFilterProvider>{children}</AccountFilterProvider>
@@ -173,6 +202,31 @@ describe('AccountFilterProvider', () => {
 
         expect(result.current.selectedAccountIds.sort()).toEqual(['acc_1', 'acc_2', 'acc_3']);
         expect(result.current.isAllAccountsSelected).toBe(true);
+      });
+
+      it('Then it should keep the last loaded accounts when refresh fails', async () => {
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
+          <AccountFilterProvider>{children}</AccountFilterProvider>
+        );
+
+        const { result } = renderHook(() => useAccountFilter(), { wrapper });
+
+        await waitFor(() => {
+          expect(result.current.allAccountIds).toHaveLength(3);
+        });
+
+        fetchMock.mockImplementationOnce(async () => {
+          throw new Error('offline');
+        });
+
+        await act(async () => {
+          window.dispatchEvent(new Event(ACCOUNTS_CHANGED_EVENT));
+        });
+
+        await waitFor(() => {
+          expect(result.current.allAccountIds).toHaveLength(3);
+        });
+        expect(result.current.selectedAccountIds.sort()).toEqual(['acc_1', 'acc_2', 'acc_3']);
       });
     });
   });

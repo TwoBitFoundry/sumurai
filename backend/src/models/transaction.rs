@@ -265,16 +265,23 @@ impl Transaction {
     }
 
     pub fn merchant_name_from_plaid(plaid_txn: &serde_json::Value) -> Option<String> {
-        let raw = plaid_txn["merchant_name"]
-            .as_str()
+        let merchant = plaid_txn
+            .get("merchant_name")
+            .and_then(|v| v.as_str())
             .map(str::trim)
-            .filter(|s| !s.is_empty())?;
-        let normalized = normalize_merchant_display_case(raw);
-        if normalized.is_empty() {
-            None
-        } else {
-            Some(normalized)
+            .filter(|s| !s.is_empty());
+        let name = plaid_txn
+            .get("name")
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .filter(|s| !s.is_empty());
+        for raw in [merchant, name].into_iter().flatten() {
+            let normalized = normalize_merchant_display_case(raw);
+            if !normalized.is_empty() {
+                return Some(normalized);
+            }
         }
+        None
     }
 
     pub fn from_plaid(plaid_txn: &serde_json::Value, account_id: &Uuid) -> Self {

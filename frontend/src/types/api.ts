@@ -70,6 +70,10 @@ export interface PlaidExchangeTokenRequest {
 
 export interface PlaidExchangeTokenResponse {
   access_token: string;
+  item_id?: string;
+  institution_id?: string | null;
+  institution_name?: string;
+  connection_id?: string;
 }
 
 export interface PlaidSyncResponse {

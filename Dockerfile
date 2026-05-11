@@ -24,7 +24,7 @@ RUN npm ci
 
 # Copy configuration and source files for the build
 COPY frontend/tsconfig.json .
-COPY frontend/next.config.js .
+COPY frontend/next.config.mjs .
 COPY frontend/tailwind.config.js .
 COPY frontend/postcss.config.js .
 COPY frontend/src ./src

@@ -36,17 +36,20 @@ services:
       REDIS_URL: redis://redis:6379
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-accounting}
 
-      DEFAULT_PROVIDER: teller
       AUTH_COOKIE_SAME_SITE: Lax
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080,http://localhost:3001}
 
       OTEL_TRACES_EXPORTER: console
 
-      TELLER_APPLICATION_ID: ${TELLER_APPLICATION_ID:?TELLER_APPLICATION_ID is required}
+      DEFAULT_PROVIDER: plaid
+
+      TELLER_APPLICATION_ID: ${TELLER_APPLICATION_ID}
       TELLER_CERT_PATH: /etc/teller/certificate.pem
       TELLER_KEY_PATH: /etc/teller/private_key.pem
       TELLER_ENV: sandbox
 
+      PLAID_CLIENT_ID: ${PLAID_CLIENT_ID}
+      PLAID_SECRET: ${PLAID_SECRET}
       PLAID_ENV: sandbox
 
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}

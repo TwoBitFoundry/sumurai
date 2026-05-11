@@ -4,6 +4,7 @@ import Image from 'next/image';
 import React from 'react';
 import {
   border as semanticBorders,
+  status as semanticStatus,
   surface as semanticSurfaces,
   text as semanticTextRecipes,
   font as uiTypographyRecipes,
@@ -77,6 +78,7 @@ export interface AppTitleBarProps {
   state: 'unauthenticated' | 'onboarding' | 'authenticated';
   scrolled: boolean;
   themeMode: 'light' | 'dark';
+  isOnline: boolean;
   onThemeToggle: () => void;
   onLogout?: () => void;
   currentTab?: TabKey;
@@ -107,6 +109,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
       state,
       scrolled,
       themeMode,
+      isOnline,
       onThemeToggle,
       onLogout,
       currentTab,
@@ -176,6 +179,38 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
             </div>
 
             <div className={cn('flex', 'items-center', 'gap-2')}>
+              <div
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1',
+                  uiTypographyRecipes.badge,
+                  ...(isOnline
+                    ? [
+                        ...semanticStatus.success.surface,
+                        ...semanticStatus.success.border,
+                        ...semanticStatus.success.text,
+                      ]
+                    : [
+                        ...semanticStatus.warning.surface,
+                        ...semanticStatus.warning.border,
+                        ...semanticStatus.warning.text,
+                      ])
+                )}
+                role="status"
+                aria-live="polite"
+                title={isOnline ? 'Online' : 'Offline'}
+              >
+                <span
+                  className={cn(
+                    'h-2 w-2 rounded-full',
+                    isOnline
+                      ? 'bg-[var(--color-status-success-icon)] dark:bg-[var(--color-status-success-icon)]'
+                      : 'bg-[var(--color-status-warning-icon)] dark:bg-[var(--color-status-warning-icon)]'
+                  )}
+                  aria-hidden="true"
+                />
+                <span>{isOnline ? 'Online' : 'Offline'}</span>
+              </div>
+
               {state === 'authenticated' && accountFilterNode && (
                 <>
                   {accountFilterNode}

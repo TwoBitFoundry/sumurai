@@ -8,6 +8,7 @@ import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
 import { ProviderMismatchCheck } from './components/ProviderMismatchCheck';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { AccountFilterProvider } from './hooks/useAccountFilter';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { TelemetryProvider, TelemetryService } from './observability';
 import { SessionManager } from './SessionManager';
 import { AuthService } from './services/authService';
@@ -36,6 +37,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   const [sessionExpiresAt, setSessionExpiresAt] = useState<string | null>(null);
 
   const { mode, toggle } = useTheme();
+  const isOnline = useOnlineStatus();
 
   useEffect(() => {
     let active = true;
@@ -128,6 +130,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
             state="unauthenticated"
             scrolled={false}
             themeMode={mode}
+            isOnline={isOnline}
             onThemeToggle={toggle}
           />
           <main className={cn('flex-1', 'flex', 'items-center', 'justify-center')}>
@@ -150,7 +153,13 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   }
 
   if (showOnboarding) {
-    return <OnboardingWizard onComplete={handleOnboardingComplete} onLogout={handleLogout} />;
+    return (
+      <OnboardingWizard
+        onComplete={handleOnboardingComplete}
+        onLogout={handleLogout}
+        isOnline={isOnline}
+      />
+    );
   }
 
   return (
@@ -164,6 +173,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
           key={`app-${mainAppKey}`}
           onLogout={handleLogout}
           initialTab={initialTab}
+          isOnline={isOnline}
         />
       </AccountFilterProvider>
 

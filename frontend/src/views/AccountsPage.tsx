@@ -1,6 +1,6 @@
 import { AnimatePresence } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { cn } from '@/ui/primitives';
 import {
   border as semanticBorders,
@@ -9,16 +9,21 @@ import {
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
+import { dispatchAccountsChanged } from '@/utils/events';
 import { Toast } from '../components/Toast';
 import AccountsSummaryStats from '../features/plaid/components/AccountsSummaryStats';
 import ConnectButton from '../features/plaid/components/ConnectButton';
-import ConnectionsList from '../features/plaid/components/ConnectionsList';
-import ProviderSelectionPanel from '../features/plaid/components/ProviderSelectionPanel';
+import ConnectionsList, {
+  type BankConnectionViewModel,
+} from '../features/plaid/components/ConnectionsList';
 import { usePlaidLinkFlow } from '../features/plaid/hooks/usePlaidLinkFlow';
+import { useAccountFilter } from '../hooks/useAccountFilter';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useTellerLinkFlow } from '../hooks/useTellerLinkFlow';
 import { useTellerProviderInfo } from '../hooks/useTellerProviderInfo';
 import { PageLayout } from '../layouts/PageLayout';
-import type { FinancialProvider } from '../types/api';
+import { PlaidService } from '../services/PlaidService';
+import { TellerService } from '../services/TellerService';
 
 const syncButtonClasses = cn(
   'inline-flex items-center gap-2 rounded-full px-5 py-2',
@@ -75,75 +80,167 @@ interface AccountsPageProps {
   onError?: (message: string | null) => void;
 }
 
+const toAccountType = (
+  value: string | undefined
+): BankConnectionViewModel['accounts'][number]['type'] => {
+  const normalized = (value ?? '').toLowerCase();
+  if (normalized === 'savings') return 'savings';
+  if (normalized === 'credit' || normalized === 'credit card') return 'credit';
+  if (normalized === 'loan') return 'loan';
+  if (normalized === 'checking' || normalized === 'depository') return 'checking';
+  return 'other';
+};
+
 const AccountsPage = ({ onError }: AccountsPageProps) => {
+  const isOnline = useOnlineStatus();
+  const accountFilter = useAccountFilter();
   const providerInfo = useTellerProviderInfo();
-  const selectedProvider = providerInfo.selectedProvider;
-  const providerLoading = providerInfo.loading;
-  const providerError = providerInfo.error;
-  const [selectingProvider, setSelectingProvider] = useState<FinancialProvider | null>(null);
+  const banks = useMemo(
+    () =>
+      Object.entries(accountFilter.accountsByBank).map(([bankName, accounts]) => {
+        const connectionId =
+          accounts.find((account) => account.connection_id)?.connection_id ?? null;
+        const provider = accounts[0]?.provider ?? 'plaid';
 
-  useEffect(() => {
-    if (providerError) {
-      onError?.(providerError);
-    } else if (!providerLoading && selectedProvider) {
-      onError?.(null);
-    }
-  }, [onError, providerError, providerLoading, selectedProvider]);
+        return {
+          id: connectionId ?? bankName,
+          name: bankName,
+          short: bankName
+            .split(' ')
+            .map((word) => word[0])
+            .join('')
+            .slice(0, 2)
+            .toUpperCase(),
+          status: 'connected' as const,
+          lastSync: null,
+          provider,
+          connectionId,
+          accounts: accounts.map((account) => ({
+            id: account.id,
+            name: account.name,
+            mask: account.mask ?? '0000',
+            type: toAccountType(account.account_type),
+            balance: account.balance_ledger ?? account.balance_available ?? undefined,
+            transactions: account.transaction_count ?? undefined,
+          })),
+        };
+      }),
+    [accountFilter.accountsByBank]
+  );
+  const primaryProvider =
+    providerInfo.selectedProvider ??
+    providerInfo.defaultProvider ??
+    (banks.length > 0 ? banks[0].provider : 'plaid');
+  const providerLabel = primaryProvider === 'teller' ? 'Teller' : 'Plaid';
 
-  const plaidFlow = usePlaidLinkFlow({ onError, enabled: selectedProvider === 'plaid' });
+  const plaidFlow = usePlaidLinkFlow({
+    onError,
+    enabled: true,
+    isOnline,
+  });
   const tellerFlow = useTellerLinkFlow({
     applicationId: providerInfo.tellerApplicationId,
     environment: providerInfo.tellerEnvironment,
     onError,
-    enabled: selectedProvider === 'teller',
+    enabled: primaryProvider === 'teller',
+    isOnline,
   });
 
-  const flow = selectedProvider === 'teller' ? tellerFlow : plaidFlow;
+  const banksWithSync = useMemo(() => {
+    const flowConnections =
+      primaryProvider === 'teller' ? tellerFlow.connections : plaidFlow.connections;
+    const syncByConnectionId = new Map(
+      flowConnections.map((c) => [c.connectionId, c.lastSyncAt] as const)
+    );
+    return banks.map((bank) => {
+      const cid = bank.connectionId;
+      if (!cid) {
+        return bank;
+      }
+      const fromFlow = syncByConnectionId.get(cid);
+      const lastSync = fromFlow ?? bank.lastSync ?? null;
+      return { ...bank, lastSync };
+    });
+  }, [banks, primaryProvider, tellerFlow.connections, plaidFlow.connections]);
 
-  const {
-    connections,
-    toast,
-    setToast,
-    connect,
-    syncOne,
-    syncAll,
-    disconnect,
-    syncingAll,
-    loading: flowLoading,
-    error: flowError,
-  } = flow;
+  const [toast, setToast] = useState<string | null>(null);
+  const [syncingAll, setSyncingAll] = useState(false);
+  const flowError =
+    banks.length > 0 ? (primaryProvider === 'teller' ? tellerFlow.error : plaidFlow.error) : null;
 
-  const handleProviderSelect = useCallback(
-    async (provider: FinancialProvider) => {
-      setSelectingProvider(provider);
+  const syncBank = useCallback(
+    async (bankId: string) => {
+      if (!isOnline) {
+        return;
+      }
+
+      const bank = banks.find((entry) => entry.id === bankId);
+      if (!bank || !bank.connectionId) {
+        return;
+      }
+
       try {
-        await providerInfo.chooseProvider(provider);
-      } catch (err) {
-        console.warn('Failed to select provider', err);
-        onError?.('Failed to select provider');
-      } finally {
-        setSelectingProvider(null);
+        if (bank.provider === 'teller') {
+          await TellerService.syncTransactions(bank.connectionId);
+        } else {
+          await PlaidService.syncTransactions(bank.connectionId);
+        }
+        dispatchAccountsChanged();
+        setToast(`Sync started for ${bank.name}`);
+      } catch (error) {
+        console.warn('Failed to sync bank', error);
+        onError?.('Failed to sync bank');
       }
     },
-    [onError, providerInfo]
+    [banks, isOnline, onError]
   );
 
-  const banks = useMemo(
-    () =>
-      (connections || []).map((conn) => ({
-        id: conn.connectionId,
-        name: conn.institutionName,
-        short: conn.institutionName
-          .split(' ')
-          .map((word) => word[0])
-          .join('')
-          .slice(0, 2)
-          .toUpperCase(),
-        status: conn.isConnected ? ('connected' as const) : ('error' as const),
-        lastSync: conn.lastSyncAt,
-        accounts: conn.accounts,
-      })),
-    [connections]
+  const syncAll = useCallback(async () => {
+    if (!isOnline) {
+      return;
+    }
+
+    setSyncingAll(true);
+    try {
+      for (const bank of banks) {
+        if (!bank.connectionId) continue;
+        if (bank.provider === 'teller') {
+          await TellerService.syncTransactions(bank.connectionId);
+        } else {
+          await PlaidService.syncTransactions(bank.connectionId);
+        }
+      }
+      dispatchAccountsChanged();
+      setToast('Sync started for all banks');
+    } catch (error) {
+      console.warn('Failed to sync all banks', error);
+      onError?.('Failed to sync all banks');
+    } finally {
+      setSyncingAll(false);
+    }
+  }, [banks, isOnline, onError]);
+
+  const disconnect = useCallback(
+    async (bankId: string) => {
+      const bank = banks.find((entry) => entry.id === bankId);
+      if (!bank || !bank.connectionId) {
+        return;
+      }
+
+      try {
+        if (bank.provider === 'teller') {
+          await TellerService.disconnect(bank.connectionId);
+        } else {
+          await PlaidService.disconnect(bank.connectionId);
+        }
+        dispatchAccountsChanged();
+        setToast(`${bank.name} disconnected successfully`);
+      } catch (error) {
+        console.warn('Failed to disconnect bank', error);
+        onError?.('Failed to disconnect bank');
+      }
+    },
+    [banks, onError]
   );
 
   const summary = useMemo(() => {
@@ -152,7 +249,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     let latestSyncIso: string | null = null;
     let latestSyncTime = 0;
 
-    for (const bank of banks) {
+    for (const bank of banksWithSync) {
       if (bank.status === 'connected') connectedInstitutions += 1;
       totalAccounts += bank.accounts.length;
 
@@ -166,70 +263,65 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     }
 
     return {
-      institutions: banks.length,
+      institutions: banksWithSync.length,
       connectedInstitutions,
       accounts: totalAccounts,
       latestSync: latestSyncIso,
     };
-  }, [banks]);
+  }, [banksWithSync]);
 
-  if (providerLoading || providerError || !selectedProvider) {
-    return (
-      <ProviderSelectionPanel
-        loading={providerLoading}
-        error={providerError}
-        selectedProvider={selectedProvider}
-        availableProviders={providerInfo.availableProviders}
-        selectingProvider={selectingProvider}
-        onSelectProvider={handleProviderSelect}
-      />
-    );
-  }
-
-  const providerLabel = selectedProvider === 'plaid' ? 'Plaid' : 'Teller';
-  const providerDescription =
-    selectedProvider === 'plaid'
-      ? 'Securely connect institutions with Plaid. Your credentials never touch Sumurai and you can revoke access at any time.'
-      : 'Launch Teller Connect to link accounts using your own Teller credentials. Connections stay in your control and can be revoked instantly.';
-
-  const syncFooter =
-    selectedProvider === 'plaid'
-      ? 'Plaid keeps credentials read-only and disconnectable anytime.'
-      : 'Teller connections respect your API keys and can be rotated from your Teller dashboard.';
+  const activeFlowLoading = primaryProvider === 'teller' ? tellerFlow.loading : plaidFlow.loading;
 
   const connectDisabled =
-    flowLoading ||
-    selectingProvider !== null ||
-    (selectedProvider === 'teller' && !providerInfo.tellerApplicationId);
+    (primaryProvider === 'teller' ? tellerFlow.loading : plaidFlow.loading) ||
+    !isOnline ||
+    (primaryProvider === 'teller' && !providerInfo.tellerApplicationId);
+  const connect = primaryProvider === 'teller' ? tellerFlow.connect : plaidFlow.connect;
 
   const lastSyncValue = syncingAll
     ? 'Syncing...'
-    : flowLoading
+    : summary.institutions === 0 && activeFlowLoading
       ? 'Loading...'
       : summary.latestSync
         ? formatRelativeTime(summary.latestSync)
-        : 'Awaiting first sync';
+        : summary.institutions > 0
+          ? 'Just now'
+          : 'Awaiting first sync';
   const lastSyncDetail = summary.latestSync
     ? `Refreshed ${formatAbsoluteTime(summary.latestSync)}`
-    : syncFooter;
+    : '';
 
   const actions = (
-    <>
-      {summary.institutions > 0 && (
-        <button
-          type="button"
-          onClick={syncAll}
-          disabled={syncingAll || flowLoading}
-          className={syncButtonClasses}
+    <div className="inline-flex max-w-full flex-col items-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        {summary.institutions > 0 && (
+          <button
+            type="button"
+            onClick={syncAll}
+            disabled={syncingAll || !isOnline}
+            className={syncButtonClasses}
+            title={!isOnline ? 'Unavailable while offline' : undefined}
+          >
+            <RefreshCw className={`h-4 w-4 ${syncingAll ? 'animate-spin' : ''}`} />
+            {syncingAll ? 'Syncing...' : !isOnline ? 'Offline' : 'Sync all'}
+          </button>
+        )}
+        <ConnectButton
+          onClick={connect}
+          disabled={connectDisabled}
+          title={!isOnline ? 'Unavailable while offline' : undefined}
         >
-          <RefreshCw className={`h-4 w-4 ${syncingAll ? 'animate-spin' : ''}`} />
-          {syncingAll ? 'Syncing...' : 'Sync all'}
-        </button>
+          {primaryProvider === 'teller' ? 'Launch Teller Connect' : 'Add account'}
+        </ConnectButton>
+      </div>
+      {!isOnline && (
+        <span
+          className={cn('w-full text-center', uiTypographyRecipes.caption, uiTextRecipes.warning)}
+        >
+          Unavailable while offline
+        </span>
       )}
-      <ConnectButton onClick={connect} disabled={connectDisabled}>
-        {selectedProvider === 'teller' ? 'Launch Teller Connect' : 'Add account'}
-      </ConnectButton>
-    </>
+    </div>
   );
 
   const statsGrid = (
@@ -247,15 +339,20 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       <PageLayout
         badge={`${providerLabel} Accounts`}
         title="Link banks and keep balances current"
-        subtitle={providerDescription}
+        subtitle="View cached balances and sync when you need fresh data."
         actions={actions}
         stats={statsGrid}
       >
         <ConnectionsList
-          banks={banks}
+          banks={banksWithSync}
           onConnect={connect}
-          onSync={syncOne}
+          onSync={syncBank}
           onDisconnect={disconnect}
+          isOnline={isOnline}
+          providerName={providerLabel === 'Teller' ? 'Teller accounts' : 'Plaid accounts'}
+          connectLabel={
+            primaryProvider === 'teller' ? 'Launch Teller Connect' : 'Connect with Plaid'
+          }
         />
 
         <AnimatePresence>

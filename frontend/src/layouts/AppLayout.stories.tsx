@@ -12,6 +12,7 @@ const meta = {
     layout: 'fullscreen',
   },
   args: {
+    isOnline: true,
     onTabChange: fn(),
     onLogout: fn(),
     renderAccountFilter: () => (
@@ -41,6 +42,7 @@ type Story = StoryObj<typeof meta>;
 export const Dashboard: Story = {
   args: {
     currentTab: 'dashboard',
+    isOnline: true,
     children: (
       <div className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white/60 p-8 dark:border-slate-700 dark:bg-slate-900/40">
         Dashboard body placeholder
@@ -61,6 +63,7 @@ export const Dashboard: Story = {
 export const TransactionsTab: Story = {
   args: {
     currentTab: 'transactions',
+    isOnline: true,
     children: (
       <div className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white/60 p-8 dark:border-slate-700 dark:bg-slate-900/40">
         Transactions body placeholder

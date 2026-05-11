@@ -36,4 +36,20 @@ describe('useTellerProviderInfo', () => {
     expect(gateway.selectProvider).toHaveBeenCalledWith('teller');
     expect(result.current.selectedProvider).toBe('teller');
   });
+
+  it('keeps the last catalogue when refresh fails', async () => {
+    const gateway = createGateway();
+    const { result } = renderHook(() => useTellerProviderInfo({ gateway }));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    gateway.fetchInfo = jest.fn().mockRejectedValueOnce(new Error('offline'));
+
+    await act(async () => {
+      await result.current.refresh().catch(() => {});
+    });
+
+    expect(result.current.selectedProvider).toBe('plaid');
+    expect(result.current.availableProviders).toEqual(['plaid', 'teller']);
+    expect(result.current.error).toBe('Unable to load provider information');
+  });
 });

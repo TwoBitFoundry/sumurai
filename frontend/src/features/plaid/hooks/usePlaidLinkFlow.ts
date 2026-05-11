@@ -9,6 +9,7 @@ import { dispatchAccountsChanged } from '../../../utils/events';
 interface UsePlaidLinkFlowOptions {
   onError?: (message: string | null) => void;
   enabled?: boolean;
+  isOnline?: boolean;
 }
 
 export interface UsePlaidLinkFlowResult {
@@ -25,7 +26,7 @@ export interface UsePlaidLinkFlowResult {
 }
 
 export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlaidLinkFlowResult {
-  const { onError, enabled = true } = options;
+  const { onError, enabled = true, isOnline = true } = options;
   const plaidConnections = usePlaidConnections({ enabled });
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,18 +53,24 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
   const handleSuccess = useInstrumentedCallback(
     'PlaidLink.onSuccess',
     async (publicToken: string) => {
-      if (!enabled) return;
+      if (!enabled || !isOnline) return;
 
       try {
         clearError();
-        await PlaidService.exchangeToken(publicToken);
+        const exchange = await PlaidService.exchangeToken(publicToken);
+        const exchangedConnectionId = exchange.connection_id ?? null;
 
         const updatedConnections = await plaidConnections.refresh();
 
-        if (updatedConnections.length > 0) {
-          const latestConnection = updatedConnections[0];
+        const syncConnectionId =
+          exchangedConnectionId ?? updatedConnections[0]?.connectionId ?? null;
+
+        if (syncConnectionId) {
+          const syncTarget =
+            updatedConnections.find((c) => c.connectionId === syncConnectionId) ??
+            updatedConnections[0];
           try {
-            const result = await PlaidService.syncTransactions(latestConnection.connectionId);
+            const result = await PlaidService.syncTransactions(syncConnectionId);
             const { transactions = [] } = result || {};
             const count = Array.isArray(transactions) ? transactions.length : 0;
             setToast(`Bank connected! Synced ${count} transactions`);
@@ -71,7 +78,7 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
             dispatchAccountsChanged();
           } catch (syncError: unknown) {
             console.warn('Failed to sync transactions after connection', syncError);
-            setToast(`Bank connected to ${latestConnection.institutionName}`);
+            setToast(`Bank connected to ${syncTarget?.institutionName ?? 'your bank'}`);
             dispatchAccountsChanged();
           }
         } else {
@@ -83,12 +90,12 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
         handleError(message);
       }
     },
-    [clearError, handleError, plaidConnections, enabled]
+    [clearError, handleError, plaidConnections, enabled, isOnline]
   );
 
   const handleExit = useCallback(
     (err: unknown) => {
-      if (!enabled) return;
+      if (!enabled || !isOnline) return;
       if (err && typeof err === 'object' && 'error_message' in err) {
         const message = (err as { error_message?: string }).error_message || 'Unknown error';
         handleError(`Plaid Link exited with error: ${message}`);
@@ -96,7 +103,7 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
         handleError('Plaid Link exited with an unknown error');
       }
     },
-    [enabled, handleError]
+    [enabled, handleError, isOnline]
   );
 
   const { open, ready } = usePlaidLink({
@@ -113,7 +120,7 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
   }, [enabled, linkToken, ready, open]);
 
   const connect = useInstrumentedCallback('PlaidLink.connect', async () => {
-    if (!enabled) return;
+    if (!enabled || !isOnline) return;
     clearError();
     try {
       const data = await ApiClient.post<{ link_token: string }>('/plaid/link-token', {});
@@ -126,12 +133,12 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
       handleError(message);
       throw error;
     }
-  }, [clearError, handleError, open, ready, enabled]);
+  }, [clearError, handleError, open, ready, enabled, isOnline]);
 
   const syncOne = useInstrumentedCallback(
     'PlaidLink.syncOne',
     async (connectionId: string) => {
-      if (!enabled) return;
+      if (!enabled || !isOnline) return;
       const connection = plaidConnections.getConnection(connectionId);
       if (!connection) return;
 
@@ -150,11 +157,11 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
         plaidConnections.setConnectionSyncInProgress(connectionId, false);
       }
     },
-    [clearError, handleError, plaidConnections, enabled]
+    [clearError, handleError, plaidConnections, enabled, isOnline]
   );
 
   const syncAll = useInstrumentedCallback('PlaidLink.syncAll', async () => {
-    if (!enabled) return;
+    if (!enabled || !isOnline) return;
     clearError();
     setSyncingAll(true);
     try {
@@ -164,12 +171,12 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
     } finally {
       setSyncingAll(false);
     }
-  }, [clearError, plaidConnections, syncOne, enabled]);
+  }, [clearError, plaidConnections, syncOne, enabled, isOnline]);
 
   const disconnect = useInstrumentedCallback(
     'PlaidLink.disconnect',
     async (connectionId: string) => {
-      if (!enabled) return;
+      if (!enabled || !isOnline) return;
       const connection = plaidConnections.getConnection(connectionId);
       if (!connection) return;
 
@@ -184,7 +191,7 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
         handleError(message);
       }
     },
-    [clearError, handleError, plaidConnections, enabled]
+    [clearError, handleError, plaidConnections, enabled, isOnline]
   );
 
   const { connections, loading } = plaidConnections;

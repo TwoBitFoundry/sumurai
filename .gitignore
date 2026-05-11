@@ -5,6 +5,7 @@ target/
 .next/
 .swc/
 out/
+frontend/public/sw.js
 coverage/
 *.tsbuildinfo
 *.log
