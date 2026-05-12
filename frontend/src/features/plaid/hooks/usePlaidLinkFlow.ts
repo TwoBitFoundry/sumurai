@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createElement, useCallback, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { usePlaidLink } from 'react-plaid-link';
+import { PlaidLinkSdk, type PlaidLinkSdkHandle } from '@/features/plaid/components/PlaidLinkSdk';
 import { PLAID_LINK_LOAD_FAILED_MESSAGE, POPUP_BLOCKED_MESSAGE } from '@/utils/popupBlockedMessage';
 import { type PlaidConnection, usePlaidConnections } from '../../../hooks/usePlaidConnections';
 import { useInstrumentedCallback } from '../../../observability';
@@ -25,6 +25,7 @@ export interface UsePlaidLinkFlowResult {
   syncAll: () => Promise<void>;
   disconnect: (connectionId: string) => Promise<void>;
   syncingAll: boolean;
+  plaidLinkMount: ReturnType<typeof createElement> | null;
 }
 
 export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlaidLinkFlowResult {
@@ -34,6 +35,10 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [syncingAll, setSyncingAll] = useState(false);
+  const [plaidSdkNonce, setPlaidSdkNonce] = useState(0);
+
+  const plaidSdkRef = useRef<PlaidLinkSdkHandle>(null);
+  const plaidSdkFailedRef = useRef(false);
 
   const handleError = useCallback(
     (message: string) => {
@@ -105,33 +110,20 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
     [enabled, handleError, isOnline]
   );
 
-  const {
-    open,
-    ready,
-    error: plaidLinkError,
-  } = usePlaidLink({
-    token: enabled && linkToken ? linkToken : undefined,
-    onSuccess: handleSuccess,
-    onExit: handleExit,
-  });
-
-  const readyRef = useRef(ready);
-  const openRef = useRef(open);
-  readyRef.current = ready;
-  openRef.current = open;
-
-  useEffect(() => {
-    if (plaidLinkError) {
-      console.warn('Plaid Link script failed to load', plaidLinkError);
-      handleError(PLAID_LINK_LOAD_FAILED_MESSAGE);
-    }
-  }, [handleError, plaidLinkError]);
+  const onScriptLoadFailed = useCallback(() => {
+    console.warn('Plaid Link script failed to load');
+    plaidSdkFailedRef.current = true;
+    handleError(PLAID_LINK_LOAD_FAILED_MESSAGE);
+  }, [handleError]);
 
   const waitForPlaidReady = useCallback(async (timeoutMs: number) => {
     await new Promise((r) => setTimeout(r, 0));
     const start = performance.now();
     while (performance.now() - start < timeoutMs) {
-      if (readyRef.current) {
+      if (plaidSdkFailedRef.current) {
+        return false;
+      }
+      if (plaidSdkRef.current?.getReady()) {
         return true;
       }
       await new Promise((r) => setTimeout(r, 32));
@@ -142,17 +134,24 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
   const connect = useInstrumentedCallback('PlaidLink.connect', async () => {
     if (!enabled || !isOnline) return;
     clearError();
+
     try {
+      plaidSdkFailedRef.current = false;
+      flushSync(() => {
+        setPlaidSdkNonce((n) => n + 1);
+        setLinkToken(null);
+      });
       const data = await ApiClient.post<{ link_token: string }>('/plaid/link-token', {});
-      setLinkToken(data.link_token);
-      flushSync(() => {});
+      flushSync(() => {
+        setLinkToken(data.link_token);
+      });
       const becameReady = await waitForPlaidReady(60_000);
       if (!becameReady) {
-        handleError('Plaid Link took too long to load. Please try again.');
+        handleError(PLAID_LINK_LOAD_FAILED_MESSAGE);
         return;
       }
       try {
-        openRef.current();
+        plaidSdkRef.current?.open();
       } catch {
         handleError(POPUP_BLOCKED_MESSAGE);
       }
@@ -228,29 +227,29 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
   const resolvedError = enabled ? error : null;
   const resolvedSyncingAll = enabled ? syncingAll : false;
 
-  return useMemo(
-    () => ({
-      connections: resolvedConnections,
-      loading: resolvedLoading,
-      error: resolvedError,
-      toast,
-      setToast,
-      connect,
-      syncOne,
-      syncAll,
-      disconnect,
-      syncingAll: resolvedSyncingAll,
-    }),
-    [
-      resolvedConnections,
-      resolvedLoading,
-      resolvedError,
-      toast,
-      connect,
-      syncOne,
-      syncAll,
-      disconnect,
-      resolvedSyncingAll,
-    ]
-  );
+  const plaidLinkMount =
+    enabled && linkToken
+      ? createElement(PlaidLinkSdk, {
+          key: plaidSdkNonce,
+          ref: plaidSdkRef,
+          token: linkToken,
+          onSuccess: handleSuccess,
+          onExit: handleExit,
+          onScriptLoadFailed: onScriptLoadFailed,
+        })
+      : null;
+
+  return {
+    connections: resolvedConnections,
+    loading: resolvedLoading,
+    error: resolvedError,
+    toast,
+    setToast,
+    connect,
+    syncOne,
+    syncAll,
+    disconnect,
+    syncingAll: resolvedSyncingAll,
+    plaidLinkMount,
+  };
 }

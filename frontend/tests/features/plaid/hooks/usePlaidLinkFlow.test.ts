@@ -1,12 +1,34 @@
-import { act, renderHook, waitFor } from '@testing-library/react';
-import { usePlaidLinkFlow } from '@/features/plaid/hooks/usePlaidLinkFlow';
+import { act, render, renderHook, waitFor } from '@testing-library/react';
+import React from 'react';
+import {
+  type UsePlaidLinkFlowResult,
+  usePlaidLinkFlow,
+} from '@/features/plaid/hooks/usePlaidLinkFlow';
+import { resetPlaidScriptStateForTests } from '@/features/plaid/plaidLinkScript';
+
+type PlaidFlowOptions = Parameters<typeof usePlaidLinkFlow>[0];
+
+const plaidLinkFlowRef = { current: null as UsePlaidLinkFlowResult | null };
+
+function PlaidHookMount({ options }: { options?: PlaidFlowOptions }) {
+  const flow = usePlaidLinkFlow(options ?? {});
+  plaidLinkFlowRef.current = flow;
+  return React.createElement(React.Fragment, null, flow.plaidLinkMount);
+}
+
+function renderPlaidFlowMounted(options?: PlaidFlowOptions) {
+  plaidLinkFlowRef.current = null;
+  return render(React.createElement(PlaidHookMount, { options }));
+}
 
 const plaidLinkMock = (() => {
   const open = jest.fn();
+  const destroy = jest.fn();
   let config: any = null;
   let error: Error | null = null;
   return {
     open,
+    destroy,
     get error() {
       return error;
     },
@@ -15,6 +37,7 @@ const plaidLinkMock = (() => {
       config = null;
       error = null;
       open.mockReset();
+      destroy.mockReset();
     },
     setConfig: (opts: any) => {
       config = opts;
@@ -38,10 +61,7 @@ const plaidConnectionsMock = {
 };
 
 jest.mock('react-plaid-link', () => ({
-  usePlaidLink: (opts: any) => {
-    plaidLinkMock.setConfig(opts);
-    return { open: plaidLinkMock.open, ready: true, error: plaidLinkMock.error };
-  },
+  __esModule: true,
 }));
 
 jest.mock('@/hooks/usePlaidConnections', () => ({
@@ -81,10 +101,40 @@ describe('usePlaidLinkFlow', () => {
     plaidConnectionsMock.refresh.mockReset();
     plaidConnectionsMock.getConnection.mockReset();
     plaidLinkMock.reset();
+    resetPlaidScriptStateForTests();
+    Object.assign(window, {
+      Plaid: {
+        create: (opts: any) => {
+          plaidLinkMock.setConfig(opts);
+          return {
+            open: plaidLinkMock.open,
+            destroy: plaidLinkMock.destroy,
+            exit: (_options?: unknown, callback?: () => void) => {
+              callback?.();
+            },
+          };
+        },
+      },
+    });
     Object.values(plaidServiceMock).forEach((fn) => {
       fn.mockReset();
     });
     apiClientMock.post.mockReset();
+  });
+
+  afterEach(() => {
+    delete window.Plaid;
+  });
+
+  it('does not mount Plaid Link SDK until connect returns a link token', async () => {
+    renderPlaidFlowMounted({ onError: jest.fn() });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(plaidLinkMock.getConfig()).toBeNull();
+    expect(apiClientMock.post).not.toHaveBeenCalled();
   });
 
   it('exchanges token and refreshes status on success', async () => {
@@ -98,10 +148,10 @@ describe('usePlaidLinkFlow', () => {
       connection_id: 'conn-1',
     } as any);
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
+    renderPlaidFlowMounted({ onError });
 
     await act(async () => {
-      await result.current.connect();
+      await plaidLinkFlowRef.current!.connect();
     });
 
     expect(apiClientMock.post).toHaveBeenCalledWith('/plaid/link-token', {});
@@ -114,7 +164,7 @@ describe('usePlaidLinkFlow', () => {
 
     expect(plaidServiceMock.exchangeToken).toHaveBeenCalledWith('public-token');
     expect(plaidConnectionsMock.refresh).toHaveBeenCalled();
-    expect(result.current.toast).toBe('Bank connected successfully!');
+    expect(plaidLinkFlowRef.current!.toast).toBe('Bank connected successfully!');
     expect(onError).toHaveBeenCalled();
     expect(onError.mock.calls.every((call) => call[0] === null)).toBe(true);
   });
@@ -177,14 +227,14 @@ describe('usePlaidLinkFlow', () => {
     const onError = jest.fn();
     apiClientMock.post.mockRejectedValueOnce(new Error('bad request'));
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
+    renderPlaidFlowMounted({ onError });
 
     await act(async () => {
-      await result.current.connect().catch(() => {});
+      await plaidLinkFlowRef.current!.connect().catch(() => {});
     });
 
     expect(onError).toHaveBeenCalledWith('Failed to start bank connection: bad request');
-    expect(result.current.error).toBe('Failed to start bank connection: bad request');
+    expect(plaidLinkFlowRef.current!.error).toBe('Failed to start bank connection: bad request');
   });
 
   it('shows ad blocker guidance when the Plaid popup is blocked', async () => {
@@ -194,16 +244,40 @@ describe('usePlaidLinkFlow', () => {
     });
     apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' });
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
+    renderPlaidFlowMounted({ onError });
 
     await act(async () => {
-      await result.current.connect();
+      await plaidLinkFlowRef.current!.connect();
     });
 
     await waitFor(() => {
-      expect(result.current.error).toContain('ad blocker');
+      expect(plaidLinkFlowRef.current!.error).toContain('ad blocker');
     });
     expect(onError).toHaveBeenCalledWith(expect.stringContaining('ad blocker'));
+  });
+
+  it('cleans up Plaid SDK state after a script load failure without retrying the same click', async () => {
+    const onError = jest.fn();
+    delete window.Plaid;
+    apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-1' });
+    const appendChildSpy = jest.spyOn(document.head, 'appendChild').mockImplementation((node) => {
+      const script = node as HTMLScriptElement;
+      queueMicrotask(() => {
+        script.dispatchEvent(new Event('error'));
+      });
+      return node;
+    });
+
+    renderPlaidFlowMounted({ onError });
+
+    await act(async () => {
+      await plaidLinkFlowRef.current!.connect();
+    });
+
+    expect(apiClientMock.post).toHaveBeenCalledTimes(1);
+    expect(appendChildSpy).toHaveBeenCalledTimes(1);
+    expect(plaidLinkMock.open).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledWith(expect.stringContaining('Plaid Link could not load'));
   });
 });
 
@@ -219,20 +293,39 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
     plaidConnectionsMock.refresh.mockReset();
     plaidConnectionsMock.getConnection.mockReset();
     plaidLinkMock.reset();
+    resetPlaidScriptStateForTests();
+    Object.assign(window, {
+      Plaid: {
+        create: (opts: any) => {
+          plaidLinkMock.setConfig(opts);
+          return {
+            open: plaidLinkMock.open,
+            destroy: plaidLinkMock.destroy,
+            exit: (_options?: unknown, callback?: () => void) => {
+              callback?.();
+            },
+          };
+        },
+      },
+    });
     Object.values(plaidServiceMock).forEach((fn) => {
       fn.mockReset();
     });
     apiClientMock.post.mockReset();
   });
 
+  afterEach(() => {
+    delete window.Plaid;
+  });
+
   it('should wrap connect callback with instrumentation', async () => {
     const onError = jest.fn();
     apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' });
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
+    renderPlaidFlowMounted({ onError });
 
     await act(async () => {
-      await result.current.connect();
+      await plaidLinkFlowRef.current!.connect();
     });
 
     expect(apiClientMock.post).toHaveBeenCalled();
@@ -245,10 +338,10 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
     apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' });
     plaidServiceMock.exchangeToken.mockResolvedValueOnce({ access_token: 'access' } as any);
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
+    renderPlaidFlowMounted({ onError });
 
     await act(async () => {
-      await result.current.connect();
+      await plaidLinkFlowRef.current!.connect();
     });
 
     const config = plaidLinkMock.getConfig();

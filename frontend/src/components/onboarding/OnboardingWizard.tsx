@@ -277,6 +277,8 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
 
   return (
     <GradientShell>
+      {activeProvider === 'plaid' ? plaidFlow.plaidLinkMount : null}
+      {activeProvider === 'teller' ? tellerFlow.tellerConnectMount : null}
       <div className={cn('flex', 'flex-col', 'min-h-screen')}>
         <AppTitleBar
           state="onboarding"
