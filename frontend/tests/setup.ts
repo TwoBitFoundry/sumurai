@@ -174,13 +174,24 @@ afterEach(async () => {
   }
 });
 
-jest.mock('react-plaid-link', () => ({
-  usePlaidLink: () => ({
-    open: jest.fn(),
-    ready: true,
-    error: null,
-  }),
-}));
+var mockPlaidLinkOpen: jest.Mock | undefined;
+jest.mock('react-plaid-link', () => {
+  const { jest: jestLocal } = require('@jest/globals') as typeof import('@jest/globals');
+  if (!mockPlaidLinkOpen) {
+    mockPlaidLinkOpen = jestLocal.fn();
+  }
+  (globalThis as unknown as { __testPlaidLinkOpen: jest.Mock }).__testPlaidLinkOpen =
+    mockPlaidLinkOpen;
+  return {
+    usePlaidLink: () => ({
+      open: mockPlaidLinkOpen,
+      ready: true,
+      error: null,
+      exit: jestLocal.fn(),
+      submit: jestLocal.fn(),
+    }),
+  };
+});
 
 const filterProps = (props: Record<string, unknown>) => {
   const safe: Record<string, unknown> = {};

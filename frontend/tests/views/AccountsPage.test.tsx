@@ -1,10 +1,67 @@
 import { render, screen, within } from '@testing-library/react';
+import type { UsePlaidLinkFlowResult } from '@/features/plaid/hooks/usePlaidLinkFlow';
 import { usePlaidLinkFlow } from '@/features/plaid/hooks/usePlaidLinkFlow';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
-import { useTellerLinkFlow } from '@/hooks/useTellerLinkFlow';
+import type { PlaidConnection } from '@/hooks/usePlaidConnections';
+import { type UseTellerLinkFlowResult, useTellerLinkFlow } from '@/hooks/useTellerLinkFlow';
 import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo';
 import AccountsPage from '@/views/AccountsPage';
+
+function makePlaidLinkFlowMock(
+  overrides: Partial<UsePlaidLinkFlowResult> = {}
+): UsePlaidLinkFlowResult {
+  const base: UsePlaidLinkFlowResult = {
+    connections: [],
+    loading: false,
+    error: null,
+    toast: null,
+    setToast: jest.fn(),
+    connect: jest.fn(),
+    syncOne: jest.fn(),
+    syncAll: jest.fn(),
+    disconnect: jest.fn(),
+    syncingAll: false,
+    plaidLinkMount: null,
+  };
+  return { ...base, ...overrides };
+}
+
+function makeTellerLinkFlowMock(
+  overrides: Partial<UseTellerLinkFlowResult> = {}
+): UseTellerLinkFlowResult {
+  const base: UseTellerLinkFlowResult = {
+    connections: [],
+    loading: false,
+    error: null,
+    toast: null,
+    setToast: jest.fn(),
+    connect: jest.fn(),
+    syncOne: jest.fn(),
+    syncAll: jest.fn(),
+    disconnect: jest.fn(),
+    syncingAll: false,
+    tellerConnectMount: null,
+  };
+  return { ...base, ...overrides };
+}
+
+function minimalConnection(
+  partial: Pick<PlaidConnection, 'connectionId'> & Partial<Omit<PlaidConnection, 'connectionId'>>
+): PlaidConnection {
+  const id = partial.id ?? partial.connectionId;
+  return {
+    id,
+    connectionId: partial.connectionId,
+    institutionName: partial.institutionName ?? 'Demo Bank',
+    lastSyncAt: partial.lastSyncAt ?? null,
+    transactionCount: partial.transactionCount ?? 0,
+    accountCount: partial.accountCount ?? 0,
+    syncInProgress: partial.syncInProgress ?? false,
+    isConnected: partial.isConnected ?? true,
+    accounts: partial.accounts ?? [],
+  };
+}
 
 jest.mock('@/hooks/useOnlineStatus', () => ({
   useOnlineStatus: jest.fn(),
@@ -52,30 +109,8 @@ describe('AccountsPage', () => {
       toggleAccount: jest.fn(),
       removeAccountsByIds: jest.fn(),
     });
-    jest.mocked(usePlaidLinkFlow).mockReturnValue({
-      connections: [],
-      loading: false,
-      error: null,
-      toast: null,
-      setToast: jest.fn(),
-      connect: jest.fn(),
-      syncOne: jest.fn(),
-      syncAll: jest.fn(),
-      disconnect: jest.fn(),
-      syncingAll: false,
-    });
-    jest.mocked(useTellerLinkFlow).mockReturnValue({
-      connections: [],
-      loading: false,
-      error: null,
-      toast: null,
-      setToast: jest.fn(),
-      connect: jest.fn(),
-      syncOne: jest.fn(),
-      syncAll: jest.fn(),
-      disconnect: jest.fn(),
-      syncingAll: false,
-    });
+    jest.mocked(usePlaidLinkFlow).mockReturnValue(makePlaidLinkFlowMock());
+    jest.mocked(useTellerLinkFlow).mockReturnValue(makeTellerLinkFlowMock());
   });
 
   it('keeps the Teller accounts page available while offline', () => {
@@ -114,18 +149,11 @@ describe('AccountsPage', () => {
       toggleAccount: jest.fn(),
       removeAccountsByIds: jest.fn(),
     });
-    jest.mocked(useTellerLinkFlow).mockReturnValue({
-      connections: [{ connectionId: 'conn_1', lastSyncAt: null }],
-      loading: false,
-      error: null,
-      toast: null,
-      setToast: jest.fn(),
-      connect: jest.fn(),
-      syncOne: jest.fn(),
-      syncAll: jest.fn(),
-      disconnect: jest.fn(),
-      syncingAll: false,
-    });
+    jest.mocked(useTellerLinkFlow).mockReturnValue(
+      makeTellerLinkFlowMock({
+        connections: [minimalConnection({ connectionId: 'conn_1', lastSyncAt: null })],
+      })
+    );
 
     render(<AccountsPage />);
 
@@ -150,18 +178,11 @@ describe('AccountsPage', () => {
       removeAccountsByIds: jest.fn(),
     });
 
-    jest.mocked(useTellerLinkFlow).mockReturnValueOnce({
-      connections: [],
-      loading: false,
-      error: 'Failed to load connections',
-      toast: null,
-      setToast: jest.fn(),
-      connect: jest.fn(),
-      syncOne: jest.fn(),
-      syncAll: jest.fn(),
-      disconnect: jest.fn(),
-      syncingAll: false,
-    });
+    jest.mocked(useTellerLinkFlow).mockReturnValueOnce(
+      makeTellerLinkFlowMock({
+        error: 'Failed to load connections',
+      })
+    );
 
     render(<AccountsPage />);
 

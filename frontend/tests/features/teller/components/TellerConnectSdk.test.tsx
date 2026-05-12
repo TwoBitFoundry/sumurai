@@ -1,8 +1,13 @@
-import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, render, waitFor } from '@testing-library/react';
+import { createRef } from 'react';
+import {
+  TellerConnectSdk,
+  type TellerConnectSdkHandle,
+} from '@/features/teller/components/TellerConnectSdk';
 import type { TellerConnectGateway } from '@/hooks/useTellerConnect';
-import { resetTellerScriptStateForTests, useTellerConnect } from '@/hooks/useTellerConnect';
+import { resetTellerScriptStateForTests } from '@/hooks/useTellerConnect';
 
-describe('useTellerConnect', () => {
+describe('TellerConnectSdk', () => {
   const setup = jest.fn();
   const open = jest.fn();
   const destroy = jest.fn();
@@ -11,7 +16,7 @@ describe('useTellerConnect', () => {
     jest.resetAllMocks();
     resetTellerScriptStateForTests();
     setup.mockReturnValue({ open, destroy });
-    Object.assign(globalThis, {
+    Object.assign(window, {
       TellerConnect: {
         setup,
       },
@@ -20,7 +25,8 @@ describe('useTellerConnect', () => {
 
   afterEach(() => {
     cleanup();
-    delete globalThis.TellerConnect;
+    delete window.TellerConnect;
+    jest.restoreAllMocks();
   });
 
   const createGateway = (): TellerConnectGateway => ({
@@ -33,11 +39,12 @@ describe('useTellerConnect', () => {
 
   it('initializes Teller Connect and exposes open callback', async () => {
     const gateway = createGateway();
-    const { result, unmount } = renderHook(() =>
-      useTellerConnect({ applicationId: 'app-123', gateway })
+    const ref = createRef<TellerConnectSdkHandle>();
+    const { unmount } = render(
+      <TellerConnectSdk ref={ref} applicationId="app-123" gateway={gateway} />
     );
 
-    await waitFor(() => expect(result.current.ready).toBe(true));
+    await waitFor(() => expect(ref.current?.getReady()).toBe(true));
     expect(setup).toHaveBeenCalledWith(
       expect.objectContaining({
         applicationId: 'app-123',
@@ -45,7 +52,7 @@ describe('useTellerConnect', () => {
     );
 
     act(() => {
-      result.current.open();
+      ref.current?.open();
     });
 
     expect(open).toHaveBeenCalledTimes(1);
@@ -55,7 +62,8 @@ describe('useTellerConnect', () => {
 
   it('stores enrollment and triggers sync on success', async () => {
     const gateway = createGateway();
-    renderHook(() => useTellerConnect({ applicationId: 'app-123', gateway }));
+    const ref = createRef<TellerConnectSdkHandle>();
+    render(<TellerConnectSdk ref={ref} applicationId="app-123" gateway={gateway} />);
 
     await waitFor(() => expect(setup).toHaveBeenCalled());
 
@@ -80,17 +88,21 @@ describe('useTellerConnect', () => {
   });
 
   it('injects Teller SDK script without crossorigin so execution does not require ACAO', async () => {
-    delete globalThis.TellerConnect;
+    delete window.TellerConnect;
 
-    const appendChildSpy = jest.spyOn(document.head, 'appendChild');
-    renderHook(() => useTellerConnect({ applicationId: 'app-123', gateway: createGateway() }));
+    const appendChildSpy = jest
+      .spyOn(document.head, 'appendChild')
+      .mockImplementation((node) => node);
+    render(
+      <TellerConnectSdk ref={createRef()} applicationId="app-123" gateway={createGateway()} />
+    );
 
     await waitFor(() => expect(appendChildSpy).toHaveBeenCalled());
 
     const script = appendChildSpy.mock.calls[0][0] as HTMLScriptElement;
     expect(script.crossOrigin).toBeNull();
 
-    Object.assign(globalThis, {
+    Object.assign(window, {
       TellerConnect: {
         setup,
       },
@@ -98,5 +110,31 @@ describe('useTellerConnect', () => {
     script.dispatchEvent(new Event('load'));
 
     await waitFor(() => expect(setup).toHaveBeenCalled());
+  });
+
+  it('reports a loaded Teller script without a global as a script load failure', async () => {
+    delete window.TellerConnect;
+    const staleScript = document.createElement('script');
+    staleScript.src = 'https://cdn.teller.io/connect/connect.js';
+    staleScript.dataset.loaded = 'true';
+    staleScript.setAttribute('data-teller-connect', 'true');
+    document.head.appendChild(staleScript);
+
+    const appendChildSpy = jest
+      .spyOn(document.head, 'appendChild')
+      .mockImplementation((node) => node);
+    const onScriptLoadFailed = jest.fn();
+    render(
+      <TellerConnectSdk
+        ref={createRef()}
+        applicationId="app-123"
+        gateway={createGateway()}
+        onScriptLoadFailed={onScriptLoadFailed}
+      />
+    );
+
+    await waitFor(() => expect(onScriptLoadFailed).toHaveBeenCalled());
+    expect(appendChildSpy).not.toHaveBeenCalled();
+    expect(staleScript.isConnected).toBe(true);
   });
 });

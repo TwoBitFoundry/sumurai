@@ -1,6 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createElement, useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import {
+  TellerConnectSdk,
+  type TellerConnectSdkHandle,
+} from '@/features/teller/components/TellerConnectSdk';
+import { type TellerEnvironment } from '@/features/teller/tellerConnectScript';
 import { TellerService } from '@/services/TellerService';
-import { type TellerEnvironment, useTellerConnect } from './useTellerConnect';
+import {
+  POPUP_BLOCKED_MESSAGE,
+  TELLER_CONNECT_LOAD_FAILED_MESSAGE,
+} from '@/utils/popupBlockedMessage';
 
 export interface UseOnboardingTellerFlowOptions {
   applicationId: string | null;
@@ -21,6 +30,7 @@ export interface UseOnboardingTellerFlowResult {
   retryConnection: () => Promise<void>;
   reset: () => void;
   setError: (value: string | null) => void;
+  tellerConnectMount: ReturnType<typeof createElement> | null;
 }
 
 const DEFAULT_INSTITUTION_NAME = 'Connected Bank';
@@ -42,6 +52,10 @@ export function useOnboardingTellerFlow(
   const [isSyncing, setIsSyncing] = useState(false);
   const [institutionName, setInstitutionName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tellerConnectNonce, setTellerConnectNonce] = useState(0);
+
+  const tellerSdkRef = useRef<TellerConnectSdkHandle>(null);
+  const tellerSdkFailedRef = useRef(false);
 
   const handleError = useCallback(
     (message: string) => {
@@ -49,6 +63,7 @@ export function useOnboardingTellerFlow(
         return;
       }
       setError(message);
+      setConnectionInProgress(false);
       onError?.(message);
     },
     [enabled, onError]
@@ -102,43 +117,65 @@ export function useOnboardingTellerFlow(
     };
   }, [enabled, refreshStatus]);
 
-  const { ready, open } = useTellerConnect({
-    applicationId: enabled && applicationId ? applicationId : '',
-    environment,
-    onConnected: async () => {
-      if (!enabled) {
-        return;
-      }
+  const tellerApplicationIdForSdk =
+    enabled && tellerConnectNonce > 0 && applicationId ? applicationId : '';
 
-      setIsSyncing(true);
-      try {
-        const latest = await refreshStatus();
-        if (!latest) {
-          handleError('Connected account not found. Please try again.');
-          setIsConnected(false);
-        } else {
-          setError(null);
-        }
-      } finally {
-        setIsSyncing(false);
-        setConnectionInProgress(false);
-      }
-    },
-    onExit: async () => {
+  const onScriptLoadFailed = useCallback(() => {
+    tellerSdkFailedRef.current = true;
+    handleError(TELLER_CONNECT_LOAD_FAILED_MESSAGE);
+  }, [handleError]);
+
+  const onEnrollmentError = useCallback(
+    async (_err: unknown) => {
       if (!enabled) {
         return;
       }
-      setConnectionInProgress(false);
+      handleError(POPUP_BLOCKED_MESSAGE);
     },
-    onError: async (err) => {
-      if (!enabled) {
-        return;
+    [enabled, handleError]
+  );
+
+  const onTellerConnected = useCallback(async () => {
+    if (!enabled) {
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      const latest = await refreshStatus();
+      if (!latest) {
+        handleError('Connected account not found. Please try again.');
+        setIsConnected(false);
+      } else {
+        setError(null);
       }
-      console.warn('Teller Connect error during onboarding', err);
+    } finally {
+      setIsSyncing(false);
       setConnectionInProgress(false);
-      handleError('Failed to complete Teller connection. Please try again.');
-    },
-  });
+    }
+  }, [enabled, handleError, refreshStatus]);
+
+  const onTellerExit = useCallback(async () => {
+    if (!enabled) {
+      return;
+    }
+    setConnectionInProgress(false);
+  }, [enabled]);
+
+  const waitForTellerReady = useCallback(async (timeoutMs: number) => {
+    await new Promise((r) => setTimeout(r, 0));
+    const start = performance.now();
+    while (performance.now() - start < timeoutMs) {
+      if (tellerSdkFailedRef.current) {
+        return false;
+      }
+      if (tellerSdkRef.current?.getReady()) {
+        return true;
+      }
+      await new Promise((r) => setTimeout(r, 32));
+    }
+    return false;
+  }, []);
 
   const initiateConnection = useCallback(async () => {
     if (!enabled) {
@@ -156,25 +193,32 @@ export function useOnboardingTellerFlow(
       return;
     }
 
-    if (!ready) {
-      handleError('Teller Connect is still initializing. Please wait a moment.');
+    setConnectionInProgress(true);
+
+    tellerSdkFailedRef.current = false;
+    flushSync(() => {
+      setTellerConnectNonce((s) => s + 1);
+    });
+
+    const becameReady = await waitForTellerReady(60_000);
+    if (!becameReady) {
+      handleError(TELLER_CONNECT_LOAD_FAILED_MESSAGE);
       return;
     }
 
     try {
-      setConnectionInProgress(true);
-      open();
+      tellerSdkRef.current?.open();
     } catch (err) {
       console.warn('Failed to open Teller Connect', err);
-      setConnectionInProgress(false);
-      handleError('Unable to start Teller Connect. Please try again.');
+      handleError(POPUP_BLOCKED_MESSAGE);
     }
-  }, [applicationId, enabled, handleError, open, ready, isOnline]);
+  }, [applicationId, enabled, handleError, isOnline, waitForTellerReady]);
 
   const retryConnection = useCallback(async () => {
     if (!enabled || !isOnline) {
       return;
     }
+    setError(null);
     await initiateConnection();
   }, [enabled, initiateConnection, isOnline]);
 
@@ -187,29 +231,33 @@ export function useOnboardingTellerFlow(
     setIsSyncing(false);
     setInstitutionName(null);
     setError(null);
+    setTellerConnectNonce(0);
   }, [enabled]);
 
-  return useMemo(
-    () => ({
-      isConnected,
-      connectionInProgress,
-      isSyncing,
-      institutionName,
-      error,
-      initiateConnection,
-      retryConnection,
-      reset,
-      setError,
-    }),
-    [
-      error,
-      initiateConnection,
-      isConnected,
-      connectionInProgress,
-      isSyncing,
-      institutionName,
-      retryConnection,
-      reset,
-    ]
-  );
+  const tellerConnectMount = enabled
+    ? createElement(TellerConnectSdk, {
+        key: tellerConnectNonce,
+        ref: tellerSdkRef,
+        applicationId: tellerApplicationIdForSdk,
+        environment,
+        retryKey: tellerConnectNonce,
+        onConnected: onTellerConnected,
+        onExit: onTellerExit,
+        onEnrollmentError,
+        onScriptLoadFailed,
+      })
+    : null;
+
+  return {
+    isConnected,
+    connectionInProgress,
+    isSyncing,
+    institutionName,
+    error,
+    initiateConnection,
+    retryConnection,
+    reset,
+    setError,
+    tellerConnectMount,
+  };
 }

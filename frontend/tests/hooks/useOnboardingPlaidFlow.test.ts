@@ -1,37 +1,60 @@
 import { jest } from '@jest/globals';
-import { act, renderHook, waitFor } from '@testing-library/react';
-import * as plaidLink from 'react-plaid-link';
-import { useOnboardingPlaidFlow } from '@/hooks/useOnboardingPlaidFlow';
+import { act, render, renderHook, waitFor } from '@testing-library/react';
+import React from 'react';
+import { resetPlaidScriptStateForTests } from '@/features/plaid/plaidLinkScript';
+import {
+  type UseOnboardingPlaidFlowReturn,
+  useOnboardingPlaidFlow,
+} from '@/hooks/useOnboardingPlaidFlow';
 import { ApiClient } from '@/services/ApiClient';
+
+const onboardingPlaidFlowRef = { current: null as UseOnboardingPlaidFlowReturn | null };
+
+function OnboardingPlaidMount({
+  options,
+}: {
+  options?: Parameters<typeof useOnboardingPlaidFlow>[0];
+}) {
+  const flow = useOnboardingPlaidFlow(options ?? {});
+  onboardingPlaidFlowRef.current = flow;
+  return React.createElement(React.Fragment, null, flow.plaidLinkMount);
+}
+
+function renderOnboardingPlaidMounted(options?: Parameters<typeof useOnboardingPlaidFlow>[0]) {
+  onboardingPlaidFlowRef.current = null;
+  return render(React.createElement(OnboardingPlaidMount, { options }));
+}
+
+const plaidOpen = jest.fn();
+const plaidDestroy = jest.fn();
 
 let postSpy: jest.SpiedFunction<typeof ApiClient.post>;
 let getSpy: jest.SpiedFunction<typeof ApiClient.get>;
-let usePlaidLinkSpy: jest.SpiedFunction<typeof plaidLink.usePlaidLink>;
-let mockOpen: jest.Mock;
 describe('useOnboardingPlaidFlow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    resetPlaidScriptStateForTests();
     postSpy = jest.spyOn(ApiClient, 'post');
     getSpy = jest.spyOn(ApiClient, 'get');
-    mockOpen = jest.fn();
-    usePlaidLinkSpy = jest.spyOn(plaidLink, 'usePlaidLink').mockImplementation(({ token }) => {
-      if (token) {
-        mockOpen();
-      }
-      return {
-        open: mockOpen,
-        ready: true,
-        error: null,
-        exit: jest.fn(),
-        submit: jest.fn(),
-      };
+    plaidOpen.mockReset();
+    plaidDestroy.mockReset();
+    Object.assign(window, {
+      Plaid: {
+        create: () => ({
+          open: plaidOpen,
+          destroy: plaidDestroy,
+          exit: (_options?: unknown, callback?: () => void) => {
+            callback?.();
+          },
+        }),
+      },
     });
   });
 
   afterEach(() => {
     postSpy.mockRestore();
     getSpy.mockRestore();
-    usePlaidLinkSpy?.mockRestore();
+    delete window.Plaid;
   });
 
   it('given onboarding flow when initialized then starts with disconnected state', () => {
@@ -42,22 +65,38 @@ describe('useOnboardingPlaidFlow', () => {
     expect(result.current.error).toBe(null);
   });
 
-  it('given onboarding flow when connect initiated then opens plaid link', async () => {
-    postSpy.mockResolvedValue({ link_token: 'test-link-token' } as any);
+  it('given onboarding flow when mounted then does not fetch link token', async () => {
+    renderHook(() => useOnboardingPlaidFlow());
 
-    const { result } = renderHook(() => useOnboardingPlaidFlow());
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(postSpy).not.toHaveBeenCalled();
+  });
+
+  it('given offline when connect initiated then does not fetch link token', async () => {
+    const { result } = renderHook(() => useOnboardingPlaidFlow({ isOnline: false }));
 
     await act(async () => {
       await result.current.initiateConnection();
     });
-    await act(async () => {}); // flush effect
+
+    expect(postSpy).not.toHaveBeenCalled();
+  });
+
+  it('given onboarding flow when connect initiated then opens plaid link', async () => {
+    postSpy.mockResolvedValue({ link_token: 'test-link-token' } as any);
+
+    renderOnboardingPlaidMounted();
+
     await act(async () => {
-      mockOpen();
+      await onboardingPlaidFlowRef.current!.initiateConnection();
     });
 
     expect(postSpy).toHaveBeenCalledWith('/plaid/link-token', {});
     await waitFor(() => {
-      expect(mockOpen).toHaveBeenCalled();
+      expect(plaidOpen).toHaveBeenCalled();
     });
   });
 
@@ -132,31 +171,60 @@ describe('useOnboardingPlaidFlow', () => {
     const mockError = new Error('Failed to get link token');
     postSpy.mockRejectedValue(mockError);
 
-    const { result } = renderHook(() => useOnboardingPlaidFlow({ onError }));
+    renderOnboardingPlaidMounted({ onError });
 
     await act(async () => {
-      await result.current.initiateConnection();
+      await onboardingPlaidFlowRef.current!.initiateConnection();
     });
 
-    expect(result.current.error).toBe('Failed to get link token');
+    expect(onboardingPlaidFlowRef.current!.error).toBe('Failed to get link token');
     expect(onError).toHaveBeenCalledWith('Failed to get link token');
   });
 
   it('given connection error when retry called then clears error and retries', async () => {
     postSpy.mockResolvedValueOnce({ link_token: 'test-link-token' } as any);
 
-    const { result } = renderHook(() => useOnboardingPlaidFlow());
+    renderOnboardingPlaidMounted();
 
     act(() => {
-      result.current.setError('Previous error');
+      onboardingPlaidFlowRef.current!.setError('Previous error');
     });
 
     await act(async () => {
-      await result.current.retryConnection();
+      await onboardingPlaidFlowRef.current!.retryConnection();
     });
 
-    expect(result.current.error).toBe(null);
+    expect(onboardingPlaidFlowRef.current!.error).toBe(null);
     expect(postSpy).toHaveBeenCalledWith('/plaid/link-token', {});
+  });
+
+  it('given Plaid SDK script fails when retry called then fetches a fresh link token from a user action', async () => {
+    delete window.Plaid;
+    postSpy.mockResolvedValueOnce({ link_token: 'test-link-token' } as any);
+    postSpy.mockResolvedValueOnce({ link_token: 'retry-link-token' } as any);
+    const appendChildSpy = jest.spyOn(document.head, 'appendChild').mockImplementation((node) => {
+      const script = node as HTMLScriptElement;
+      queueMicrotask(() => {
+        script.dispatchEvent(new Event('error'));
+      });
+      return node;
+    });
+
+    renderOnboardingPlaidMounted();
+
+    await act(async () => {
+      await onboardingPlaidFlowRef.current!.initiateConnection();
+    });
+
+    expect(onboardingPlaidFlowRef.current!.error).toContain('Plaid Link could not load');
+
+    await act(async () => {
+      await onboardingPlaidFlowRef.current!.retryConnection();
+    });
+
+    expect(postSpy).toHaveBeenCalledTimes(2);
+    expect(appendChildSpy).toHaveBeenCalledTimes(2);
+    appendChildSpy.mockRestore();
   });
 
   it('given onboarding flow when reset then returns to initial state', () => {

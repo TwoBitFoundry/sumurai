@@ -25,7 +25,7 @@ describe('ApiClient with Injected IHttpClient', () => {
         handler();
       }
       return 0 as unknown as ReturnType<typeof setTimeout>;
-    }) as typeof setTimeout);
+    }) as unknown as typeof setTimeout);
     const boundaries = setupTestBoundaries();
     mockHttp = boundaries.http;
     jest.spyOn(AuthService, 'clearToken');

@@ -33,52 +33,48 @@ Sumurai exists because there are not a lot of free, simple, and modern budgeting
 
 ## Quick Start
 
-The default `docker-compose.yml` is the **OSS-oriented** stack: prebuilt app images, Teller as the default provider, strict auth cookies, and no Seq service. Set the variables Compose marks as required (see `.env.example`), then:
+Set the required secrets in [`.env.example`](.env.example), then choose one provider path.
+
+### 1. Generate Shared Secrets
+
+```bash
+cp .env.example .env
+```
+
+Generate a secret for each of these values:
+- `JWT_TOKEN`
+- `ENCRYPTION_SECRET`
+- `POSTGRES_PASSWORD`
+
+```bash
+openssl rand -hex 32
+```
+
+### 2. Teller (Recommended)
+
+1. Follow the [Teller Quickstart](https://teller.io/docs/guides/quickstart).
+2.  Set `TELLER_APPLICATION_ID`.
+3. Download your Teller client certificate and private key from the Teller dashboard, then place them at `.certs/teller/certificate.pem` and `.certs/teller/private_key.pem`.
+4. Start the app:
 
 ```bash
 docker compose up -d --build
 ```
 
-For **local development** with images built from this repo (console-friendly telemetry, relaxed cookies):
+### 3. Plaid (Challenging)
+
+1. Follow the [Plaid Quickstart](https://plaid.com/docs/quickstart/).
+2. Set `PLAID_CLIENT_ID` and `PLAID_SECRET`.
+3. Use Plaid Sandbox for local testing. Plaid has no development environment, and production keys require Plaid review of your company, use case, and security process before real data access is granted.
+4. Start the app:
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d --build
+docker compose up -d --build
 ```
 
-For **production-style** hosting with Seq and OTLP (public HTTP/HTTPS, different defaults), use `docker-compose.prod.yml` and [docs/PRODUCTION_TLS.md](docs/PRODUCTION_TLS.md).
+Open [http://localhost:8080](http://localhost:8080).
 
-Open [http://localhost:8080](http://localhost:8080). Demo credentials: `me@test.com` / `Test1234!`
-
-For UI-only iteration:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The frontend dev server runs at [http://localhost:3001](http://localhost:3001).
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, validation, and workflow details.
-
-### Teller certificate paths
-
-`TELLER_CERT_PATH` and `TELLER_KEY_PATH` are host paths to the PEM files you mount for Teller mTLS. Docker Compose mounts those files into the backend container at `/etc/teller/certificate.pem` and `/etc/teller/private_key.pem`.
-
-If you need local placeholders, create PEM files under `.certs/teller/` on your machine.
-
-## Sandbox Credentials
-
-Use these provider test credentials for local sandbox flows:
-
-- Teller
-  - Username: `username`
-  - Password: `password`
-- Plaid
-  - Username: `user_good`
-  - Password: `pass_good`
-
-If a sandbox provider prompts for 2FA, click through with empty fields.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, validation, workflow details, and local demo or sandbox credentials.
 
 ## Supported Platforms
 

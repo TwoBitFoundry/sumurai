@@ -1,16 +1,31 @@
-import { cleanup, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, render, renderHook, waitFor } from '@testing-library/react';
 import { errJson, installFetchRoutes } from '@tests/utils/fetchRoutes';
-import { useTellerLinkFlow } from '@/hooks/useTellerLinkFlow';
+import React from 'react';
+import { resetTellerScriptStateForTests } from '@/hooks/useTellerConnect';
+import { type UseTellerLinkFlowResult, useTellerLinkFlow } from '@/hooks/useTellerLinkFlow';
 
-jest.mock('@/hooks/useTellerConnect', () => ({
-  useTellerConnect: () => ({
-    ready: true,
-    open: jest.fn(),
-  }),
-}));
+type TellerLinkFlowOptions = Parameters<typeof useTellerLinkFlow>[0];
+
+const tellerLinkFlowRef = { current: null as UseTellerLinkFlowResult | null };
+
+function TellerLinkMountHost({ props }: { props: TellerLinkFlowOptions }) {
+  const flow = useTellerLinkFlow(props);
+  tellerLinkFlowRef.current = flow;
+  return React.createElement(React.Fragment, null, flow.tellerConnectMount);
+}
+
+const setup = jest.fn();
+const openMock = jest.fn();
 
 describe('useTellerLinkFlow', () => {
   beforeEach(() => {
+    resetTellerScriptStateForTests();
+    jest.clearAllMocks();
+    openMock.mockReset();
+    setup.mockReturnValue({ open: openMock, destroy: jest.fn() });
+    Object.assign(window, {
+      TellerConnect: { setup },
+    });
     installFetchRoutes({
       'GET /api/providers/status': {
         provider: 'plaid',
@@ -46,6 +61,8 @@ describe('useTellerLinkFlow', () => {
     cleanup();
     jest.restoreAllMocks();
     jest.clearAllMocks();
+    openMock.mockReset();
+    delete window.TellerConnect;
   });
 
   it('rebuilds Teller connections from cached accounts when status has none', async () => {
@@ -90,5 +107,36 @@ describe('useTellerLinkFlow', () => {
 
     expect(result.current.connections).toHaveLength(0);
     expect(result.current.error).toBeNull();
+  });
+
+  it('does not pass application id to Teller connect until connect runs', async () => {
+    tellerLinkFlowRef.current = null;
+    render(
+      React.createElement(TellerLinkMountHost, {
+        props: { applicationId: 'app_123', enabled: true, isOnline: true },
+      })
+    );
+
+    await waitFor(() => {
+      expect(tellerLinkFlowRef.current!.loading).toBe(false);
+    });
+
+    expect(setup).not.toHaveBeenCalled();
+  });
+
+  it('given offline when connect runs then does not arm Teller with application id', async () => {
+    const { result } = renderHook(() =>
+      useTellerLinkFlow({
+        applicationId: 'app_123',
+        enabled: true,
+        isOnline: false,
+      })
+    );
+
+    await act(async () => {
+      await result.current.connect();
+    });
+
+    expect(setup).not.toHaveBeenCalled();
   });
 });

@@ -135,7 +135,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
   const plaidFlow = usePlaidLinkFlow({
     onError,
-    enabled: true,
+    enabled: primaryProvider === 'plaid',
     isOnline,
   });
   const tellerFlow = useTellerLinkFlow({
@@ -336,6 +336,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
   return (
     <div data-testid="accounts-page">
+      {primaryProvider === 'plaid' ? plaidFlow.plaidLinkMount : null}
+      {primaryProvider === 'teller' ? tellerFlow.tellerConnectMount : null}
       <PageLayout
         badge={`${providerLabel} Accounts`}
         title="Link banks and keep balances current"

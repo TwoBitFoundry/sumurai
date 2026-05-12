@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
-import { usePlaidLink } from 'react-plaid-link';
+import { createElement, useCallback, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { PlaidLinkSdk, type PlaidLinkSdkHandle } from '@/features/plaid/components/PlaidLinkSdk';
 import { PlaidService } from '@/services/PlaidService';
+import { PLAID_LINK_LOAD_FAILED_MESSAGE, POPUP_BLOCKED_MESSAGE } from '@/utils/popupBlockedMessage';
 
 export interface UseOnboardingPlaidFlowOptions {
   onConnectionSuccess?: (institutionName: string) => void;
@@ -19,6 +21,7 @@ export interface UseOnboardingPlaidFlowReturn {
   retryConnection: () => Promise<void>;
   reset: () => void;
   setError: (error: string | null) => void;
+  plaidLinkMount: ReturnType<typeof createElement> | null;
 }
 
 export function useOnboardingPlaidFlow(
@@ -32,7 +35,10 @@ export function useOnboardingPlaidFlow(
   const [isSyncing, setIsSyncing] = useState(false);
   const [institutionName, setInstitutionName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [shouldOpenLink, setShouldOpenLink] = useState(false);
+  const [plaidSdkNonce, setPlaidSdkNonce] = useState(0);
+
+  const plaidSdkRef = useRef<PlaidLinkSdkHandle>(null);
+  const plaidSdkFailedRef = useRef(false);
 
   const handleError = useCallback(
     (errorMessage: string) => {
@@ -88,22 +94,26 @@ export function useOnboardingPlaidFlow(
     [handleError, onConnectionSuccess]
   );
 
-  const { open, ready } = usePlaidLink({
-    token: linkToken,
-    onSuccess: handleSuccess,
-    onExit: () => {
-      setConnectionInProgress(false);
-      setShouldOpenLink(false);
-    },
-    onEvent: () => {},
-  });
+  const onPlaidScriptLoadFailed = useCallback(() => {
+    console.warn('Plaid Link script failed to load');
+    plaidSdkFailedRef.current = true;
+    handleError(PLAID_LINK_LOAD_FAILED_MESSAGE);
+  }, [handleError]);
 
-  useEffect(() => {
-    if (shouldOpenLink && ready) {
-      open();
-      setShouldOpenLink(false);
+  const waitForPlaidReady = useCallback(async (timeoutMs: number) => {
+    await new Promise((r) => setTimeout(r, 0));
+    const start = performance.now();
+    while (performance.now() - start < timeoutMs) {
+      if (plaidSdkFailedRef.current) {
+        return false;
+      }
+      if (plaidSdkRef.current?.getReady()) {
+        return true;
+      }
+      await new Promise((r) => setTimeout(r, 32));
     }
-  }, [shouldOpenLink, ready, open]);
+    return false;
+  }, []);
 
   const getLinkToken = useCallback(async () => {
     if (!isOnline) {
@@ -113,7 +123,6 @@ export function useOnboardingPlaidFlow(
     try {
       setError(null);
       const response = await PlaidService.getLinkToken();
-      setLinkToken(response.link_token);
       return response.link_token;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to get link token';
@@ -129,19 +138,34 @@ export function useOnboardingPlaidFlow(
 
     try {
       setConnectionInProgress(true);
-      await getLinkToken();
-      setShouldOpenLink(true);
+      plaidSdkFailedRef.current = false;
+      flushSync(() => {
+        setPlaidSdkNonce((n) => n + 1);
+        setLinkToken(null);
+      });
+      const token = await getLinkToken();
+      flushSync(() => {
+        setLinkToken(token);
+      });
+      const becameReady = await waitForPlaidReady(60_000);
+      if (!becameReady) {
+        handleError(PLAID_LINK_LOAD_FAILED_MESSAGE);
+        return;
+      }
+      try {
+        plaidSdkRef.current?.open();
+      } catch {
+        handleError(POPUP_BLOCKED_MESSAGE);
+      }
     } catch {
       setConnectionInProgress(false);
-      setShouldOpenLink(false);
     }
-  }, [getLinkToken, isOnline]);
+  }, [getLinkToken, handleError, isOnline, waitForPlaidReady]);
 
   const retryConnection = useCallback(async () => {
     if (!isOnline) {
       return;
     }
-
     setError(null);
     await initiateConnection();
   }, [initiateConnection, isOnline]);
@@ -153,7 +177,7 @@ export function useOnboardingPlaidFlow(
     setInstitutionName(null);
     setError(null);
     setLinkToken(null);
-    setShouldOpenLink(false);
+    setPlaidSdkNonce(0);
   }, []);
 
   const handlePlaidSuccess = useCallback(
@@ -162,6 +186,22 @@ export function useOnboardingPlaidFlow(
     },
     [handleSuccess]
   );
+
+  const plaidLinkMount = linkToken
+    ? createElement(PlaidLinkSdk, {
+        key: plaidSdkNonce,
+        ref: plaidSdkRef,
+        token: linkToken,
+        onSuccess: handleSuccess,
+        onExit: (err) => {
+          setConnectionInProgress(false);
+          if (err) {
+            handleError(POPUP_BLOCKED_MESSAGE);
+          }
+        },
+        onScriptLoadFailed: onPlaidScriptLoadFailed,
+      })
+    : null;
 
   return {
     isConnected,
@@ -174,5 +214,6 @@ export function useOnboardingPlaidFlow(
     retryConnection,
     reset,
     setError,
+    plaidLinkMount,
   };
 }

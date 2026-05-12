@@ -28,4 +28,30 @@ describe('ConnectAccountStep', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /connect with plaid/i })).toBeDisabled();
   });
+
+  it('renders the Plaid connect action without extra guidance', () => {
+    render(
+      <ConnectAccountStep
+        content={CONNECT_ACCOUNT_PROVIDER_CONTENT.plaid}
+        providerLoading={false}
+        providerError={null}
+        onRetryProvider={jest.fn()}
+        tellerApplicationId={null}
+        isOnline={true}
+        isConnected={false}
+        connectionInProgress={false}
+        institutionName={null}
+        error={null}
+        onConnect={jest.fn()}
+        onRetry={jest.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /connect with plaid/i })).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        'If this provider does not open, disable your ad blocker or privacy extension for this site, then try again.'
+      )
+    ).toBeNull();
+  });
 });
