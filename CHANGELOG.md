@@ -1,5 +1,17 @@
 # Changelog
 
+## [5.7.0](https://github.com/TwoBitFoundry/sumurai/compare/v5.6.0...v5.7.0) (2026-05-12)
+
+
+### Features
+
+* ngrok support ([#103](https://github.com/TwoBitFoundry/sumurai/issues/103)) ([8f65143](https://github.com/TwoBitFoundry/sumurai/commit/8f6514326fa0c77abc4ff4667daf4e77a45d8fe8))
+
+
+### Bug Fixes
+
+* **docs:** use correct env names ([#105](https://github.com/TwoBitFoundry/sumurai/issues/105)) ([106f145](https://github.com/TwoBitFoundry/sumurai/commit/106f145509406e6ccb97d474ab25a722d479f5fd))
+
 ## [5.6.0](https://github.com/TwoBitFoundry/sumurai/compare/v5.5.1...v5.6.0) (2026-05-12)
 
 
