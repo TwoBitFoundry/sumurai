@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { usePlaidLink } from 'react-plaid-link';
 import { PlaidService } from '@/services/PlaidService';
-import { POPUP_BLOCKED_MESSAGE } from '@/utils/popupBlockedMessage';
+import { PLAID_LINK_LOAD_FAILED_MESSAGE, POPUP_BLOCKED_MESSAGE } from '@/utils/popupBlockedMessage';
 
 export interface UseOnboardingPlaidFlowOptions {
   onConnectionSuccess?: (institutionName: string) => void;
@@ -94,7 +94,7 @@ export function useOnboardingPlaidFlow(
     ready,
     error: plaidLinkError,
   } = usePlaidLink({
-    token: linkToken,
+    token: linkToken ?? undefined,
     onSuccess: handleSuccess,
     onExit: (err) => {
       setConnectionInProgress(false);
@@ -112,7 +112,8 @@ export function useOnboardingPlaidFlow(
 
   useEffect(() => {
     if (plaidLinkError) {
-      handleError(POPUP_BLOCKED_MESSAGE);
+      console.warn('Plaid Link script failed to load', plaidLinkError);
+      handleError(PLAID_LINK_LOAD_FAILED_MESSAGE);
     }
   }, [handleError, plaidLinkError]);
 
@@ -152,7 +153,6 @@ export function useOnboardingPlaidFlow(
 
     try {
       setConnectionInProgress(true);
-      setLinkToken(null);
       await getLinkToken();
       flushSync(() => {});
       const becameReady = await waitForPlaidReady(60_000);
@@ -176,7 +176,6 @@ export function useOnboardingPlaidFlow(
     }
 
     setError(null);
-    setLinkToken(null);
     await initiateConnection();
   }, [initiateConnection, isOnline]);
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { usePlaidLink } from 'react-plaid-link';
-import { POPUP_BLOCKED_MESSAGE } from '@/utils/popupBlockedMessage';
+import { PLAID_LINK_LOAD_FAILED_MESSAGE, POPUP_BLOCKED_MESSAGE } from '@/utils/popupBlockedMessage';
 import { type PlaidConnection, usePlaidConnections } from '../../../hooks/usePlaidConnections';
 import { useInstrumentedCallback } from '../../../observability';
 import { ApiClient } from '../../../services/ApiClient';
@@ -122,7 +122,8 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
 
   useEffect(() => {
     if (plaidLinkError) {
-      handleError(POPUP_BLOCKED_MESSAGE);
+      console.warn('Plaid Link script failed to load', plaidLinkError);
+      handleError(PLAID_LINK_LOAD_FAILED_MESSAGE);
     }
   }, [handleError, plaidLinkError]);
 
@@ -142,7 +143,6 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
     if (!enabled || !isOnline) return;
     clearError();
     try {
-      setLinkToken(null);
       const data = await ApiClient.post<{ link_token: string }>('/plaid/link-token', {});
       setLinkToken(data.link_token);
       flushSync(() => {});
