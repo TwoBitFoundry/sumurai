@@ -49,10 +49,12 @@ Acceptance criteria:
 - Remove deferred open-on-ready behavior so Teller also stays behind the click path.
 
 Acceptance criteria:
-- [ ] The onboarding screen does not initialize Teller until `Connect` is clicked.
-- [ ] A failed Teller popup/init leaves the button in `Try again` state.
-- [ ] Clicking `Try again` re-runs the same Teller connect path.
-- [ ] Offline mode still short-circuits before any Teller init or popup attempt.
+- [x] The onboarding screen does not initialize Teller until `Connect` is clicked.
+- [x] A failed Teller popup/init leaves the button in `Try again` state.
+- [x] Clicking `Try again` re-runs the same Teller connect path.
+- [x] Offline mode still short-circuits before any Teller init or popup attempt.
+
+**TDD log (Phase 2):** Added `connectSessionKey` gate so `useTellerConnect` receives an empty `applicationId` until the first connect/retry; replaced `shouldOpenConnect` effect with `waitForTellerReady` + `flushSync` on session bump; `handleError` clears `connectionInProgress`; wait loops use `performance.now()` so global `Date.now` test mocks do not stall timeouts. Tests use a side-effect mock setup module so `jest.mock` runs before hook import; added mount/offline/open/error coverage. Commands: `npm test -- --testPathPatterns='useOnboardingTellerFlow|useOnboardingPlaidFlow'`, Biome on touched paths.
 
 ### Phase 3: Accounts page flows
 - Refactor [frontend/src/features/plaid/hooks/usePlaidLinkFlow.ts](../frontend/src/features/plaid/hooks/usePlaidLinkFlow.ts) so the accounts-page Plaid flow is click-owned too.

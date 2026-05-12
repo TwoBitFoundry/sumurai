@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { usePlaidLink } from 'react-plaid-link';
 import { PlaidService } from '@/services/PlaidService';
 import { POPUP_BLOCKED_MESSAGE } from '@/utils/popupBlockedMessage';
@@ -117,8 +118,8 @@ export function useOnboardingPlaidFlow(
 
   const waitForPlaidReady = useCallback(async (timeoutMs: number) => {
     await new Promise((r) => setTimeout(r, 0));
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() < deadline) {
+    const start = performance.now();
+    while (performance.now() - start < timeoutMs) {
       if (readyRef.current) {
         return true;
       }
@@ -153,6 +154,7 @@ export function useOnboardingPlaidFlow(
       setConnectionInProgress(true);
       setLinkToken(null);
       await getLinkToken();
+      flushSync(() => {});
       const becameReady = await waitForPlaidReady(60_000);
       if (!becameReady) {
         handleError('Plaid Link took too long to load. Please try again.');

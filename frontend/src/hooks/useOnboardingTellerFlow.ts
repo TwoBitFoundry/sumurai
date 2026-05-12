@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { type TellerEnvironment, useTellerConnect } from '@/hooks/useTellerConnect';
 import { TellerService } from '@/services/TellerService';
-import { type TellerEnvironment, useTellerConnect } from './useTellerConnect';
+import { POPUP_BLOCKED_MESSAGE } from '@/utils/popupBlockedMessage';
 
 export interface UseOnboardingTellerFlowOptions {
   applicationId: string | null;
@@ -42,6 +44,7 @@ export function useOnboardingTellerFlow(
   const [isSyncing, setIsSyncing] = useState(false);
   const [institutionName, setInstitutionName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [connectSessionKey, setConnectSessionKey] = useState(0);
 
   const handleError = useCallback(
     (message: string) => {
@@ -49,6 +52,7 @@ export function useOnboardingTellerFlow(
         return;
       }
       setError(message);
+      setConnectionInProgress(false);
       onError?.(message);
     },
     [enabled, onError]
@@ -102,9 +106,13 @@ export function useOnboardingTellerFlow(
     };
   }, [enabled, refreshStatus]);
 
+  const tellerApplicationIdForConnect =
+    enabled && connectSessionKey > 0 && applicationId ? applicationId : '';
+
   const { ready, open } = useTellerConnect({
-    applicationId: enabled && applicationId ? applicationId : '',
+    applicationId: tellerApplicationIdForConnect,
     environment,
+    retryKey: connectSessionKey,
     onConnected: async () => {
       if (!enabled) {
         return;
@@ -135,10 +143,26 @@ export function useOnboardingTellerFlow(
         return;
       }
       console.warn('Teller Connect error during onboarding', err);
-      setConnectionInProgress(false);
-      handleError('Failed to complete Teller connection. Please try again.');
+      handleError(POPUP_BLOCKED_MESSAGE);
     },
   });
+
+  const readyRef = useRef(ready);
+  const openRef = useRef(open);
+  readyRef.current = ready;
+  openRef.current = open;
+
+  const waitForTellerReady = useCallback(async (timeoutMs: number) => {
+    await new Promise((r) => setTimeout(r, 0));
+    const start = performance.now();
+    while (performance.now() - start < timeoutMs) {
+      if (readyRef.current) {
+        return true;
+      }
+      await new Promise((r) => setTimeout(r, 32));
+    }
+    return false;
+  }, []);
 
   const initiateConnection = useCallback(async () => {
     if (!enabled) {
@@ -156,25 +180,30 @@ export function useOnboardingTellerFlow(
       return;
     }
 
-    if (!ready) {
-      handleError('Teller Connect is still initializing. Please wait a moment.');
+    flushSync(() => {
+      setConnectSessionKey((s) => s + 1);
+      setConnectionInProgress(true);
+    });
+
+    const becameReady = await waitForTellerReady(60_000);
+    if (!becameReady) {
+      handleError('Teller Connect took too long to load. Please try again.');
       return;
     }
 
     try {
-      setConnectionInProgress(true);
-      open();
+      openRef.current();
     } catch (err) {
       console.warn('Failed to open Teller Connect', err);
-      setConnectionInProgress(false);
-      handleError('Unable to start Teller Connect. Please try again.');
+      handleError(POPUP_BLOCKED_MESSAGE);
     }
-  }, [applicationId, enabled, handleError, open, ready, isOnline]);
+  }, [applicationId, enabled, handleError, isOnline, waitForTellerReady]);
 
   const retryConnection = useCallback(async () => {
     if (!enabled || !isOnline) {
       return;
     }
+    setError(null);
     await initiateConnection();
   }, [enabled, initiateConnection, isOnline]);
 
@@ -187,6 +216,7 @@ export function useOnboardingTellerFlow(
     setIsSyncing(false);
     setInstitutionName(null);
     setError(null);
+    setConnectSessionKey(0);
   }, [enabled]);
 
   return useMemo(
