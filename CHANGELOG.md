@@ -1,5 +1,17 @@
 # Changelog
 
+## [5.6.0](https://github.com/TwoBitFoundry/sumurai/compare/v5.5.1...v5.6.0) (2026-05-12)
+
+
+### Features
+
+* pwa and offline support ([#101](https://github.com/TwoBitFoundry/sumurai/issues/101)) ([566e6ed](https://github.com/TwoBitFoundry/sumurai/commit/566e6edbb5a51eb74fe8b9bd1a912e0cd6fbd104))
+
+
+### Bug Fixes
+
+* **ci:** set release-please PR title pattern for linked components ([43cc440](https://github.com/TwoBitFoundry/sumurai/commit/43cc44022fe71f0cbd55d495a501c4942572d60d))
+
 ## [5.5.1](https://github.com/TwoBitFoundry/sumurai/compare/v5.5.0...v5.5.1) (2026-05-10)
 
 
