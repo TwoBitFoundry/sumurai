@@ -169,6 +169,7 @@ const apiGateway: TellerConnectGateway = {
 export interface UseTellerConnectOptions {
   applicationId: string;
   environment?: TellerEnvironment;
+  retryKey?: number;
   gateway?: TellerConnectGateway;
   onConnected?: () => Promise<void> | void;
   onExit?: () => Promise<void> | void;
@@ -184,6 +185,7 @@ export function useTellerConnect(options: UseTellerConnectOptions): UseTellerCon
   const {
     applicationId,
     environment = 'development',
+    retryKey = 0,
     gateway = apiGateway,
     onConnected,
     onExit,
@@ -207,6 +209,7 @@ export function useTellerConnect(options: UseTellerConnectOptions): UseTellerCon
   }, [onError]);
 
   useEffect(() => {
+    void retryKey;
     if (!applicationId) {
       setInstance(null);
       return;
@@ -269,7 +272,7 @@ export function useTellerConnect(options: UseTellerConnectOptions): UseTellerCon
         createdInstance.destroy();
       }
     };
-  }, [applicationId, environment, gateway]);
+  }, [applicationId, environment, gateway, retryKey]);
 
   const open = useCallback(() => {
     instance?.open();
