@@ -1,9 +1,10 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "group-pull-request-title-pattern": "chore${scope}: release${component} ${version}",
   "packages": {
     ".": {
       "component": "sumurai-root",
-      "pull-request-title-pattern": "chore${scope}: release ${component} ${version}",
+      "pull-request-title-pattern": "chore${scope}: release${component} ${version}",
       "release-type": "node",
       "changelog-path": "CHANGELOG.md",
       "include-component-in-tag": false,
@@ -23,7 +24,7 @@
     },
     "backend": {
       "component": "sumurai-backend",
-      "pull-request-title-pattern": "chore${scope}: release ${component} ${version}",
+      "pull-request-title-pattern": "chore${scope}: release${component} ${version}",
       "release-type": "rust",
       "changelog-path": "CHANGELOG.md",
       "skip-changelog": true,
