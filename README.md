@@ -42,8 +42,8 @@ cp .env.example .env
 ```
 
 Generate a secret for each of these values:
-- `JWT_TOKEN`
-- `ENCRYPTION_SECRET`
+- `JWT_SECRET`
+- `ENCRYPTION_KEY`
 - `POSTGRES_PASSWORD`
 
 ```bash
