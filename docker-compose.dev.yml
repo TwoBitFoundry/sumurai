@@ -56,8 +56,8 @@ services:
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
       RUST_LOG: info,otel::tracing=trace,axum_tracing_opentelemetry=trace
     volumes:
-      - ${TELLER_CERT_PATH:?TELLER_CERT_PATH is required}:/etc/teller/certificate.pem:ro
-      - ${TELLER_KEY_PATH:?TELLER_KEY_PATH is required}:/etc/teller/private_key.pem:ro
+      - .certs/teller/certificate.pem:/etc/teller/certificate.pem:ro
+      - .certs/teller/private_key.pem:/etc/teller/private_key.pem:ro
     command: >
       sh -c "
         echo 'Running database migrations...' &&

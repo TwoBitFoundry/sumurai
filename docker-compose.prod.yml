@@ -48,7 +48,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
       RUST_LOG: info,otel::tracing=trace,axum_tracing_opentelemetry=trace
-    volumes: []
+    volumes:
+      - .certs/teller/certificate.pem:/etc/teller/certificate.pem:ro
+      - .certs/teller/private_key.pem:/etc/teller/private_key.pem:ro
     command: >
       sh -c "
         echo 'Running database migrations...' &&
