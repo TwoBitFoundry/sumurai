@@ -1,18 +1,26 @@
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { usePlaidLinkFlow } from '@/features/plaid/hooks/usePlaidLinkFlow';
 
 const plaidLinkMock = (() => {
   const open = jest.fn();
   let config: any = null;
+  let error: Error | null = null;
   return {
     open,
+    get error() {
+      return error;
+    },
     getConfig: () => config,
     reset: () => {
       config = null;
+      error = null;
       open.mockReset();
     },
     setConfig: (opts: any) => {
       config = opts;
+    },
+    setError: (next: Error | null) => {
+      error = next;
     },
   };
 })();
@@ -32,7 +40,7 @@ const plaidConnectionsMock = {
 jest.mock('react-plaid-link', () => ({
   usePlaidLink: (opts: any) => {
     plaidLinkMock.setConfig(opts);
-    return { open: plaidLinkMock.open, ready: true };
+    return { open: plaidLinkMock.open, ready: true, error: plaidLinkMock.error };
   },
 }));
 
@@ -178,6 +186,25 @@ describe('usePlaidLinkFlow', () => {
     expect(onError).toHaveBeenCalledWith('Failed to start bank connection: bad request');
     expect(result.current.error).toBe('Failed to start bank connection: bad request');
   });
+
+  it('shows ad blocker guidance when the Plaid popup is blocked', async () => {
+    const onError = jest.fn();
+    plaidLinkMock.open.mockImplementation(() => {
+      throw new Error('popup blocked');
+    });
+    apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' });
+
+    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
+
+    await act(async () => {
+      await result.current.connect();
+    });
+
+    await waitFor(() => {
+      expect(result.current.error).toContain('ad blocker');
+    });
+    expect(onError).toHaveBeenCalledWith(expect.stringContaining('ad blocker'));
+  });
 });
 
 describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
@@ -320,5 +347,25 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
 
     expect(plaidServiceMock.disconnect).toHaveBeenCalledWith('bank-1');
     expect(plaidConnectionsMock.refresh).toHaveBeenCalled();
+  });
+
+  it('does not request link token until connect runs', async () => {
+    renderHook(() => usePlaidLinkFlow({ onError: jest.fn() }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(apiClientMock.post).not.toHaveBeenCalled();
+  });
+
+  it('given offline when connect runs then skips link token request', async () => {
+    const { result } = renderHook(() => usePlaidLinkFlow({ onError: jest.fn(), isOnline: false }));
+
+    await act(async () => {
+      await result.current.connect();
+    });
+
+    expect(apiClientMock.post).not.toHaveBeenCalledWith('/plaid/link-token', expect.anything());
   });
 });

@@ -1,12 +1,15 @@
-import { cleanup, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { errJson, installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { useTellerLinkFlow } from '@/hooks/useTellerLinkFlow';
 
+const openMock = jest.fn();
+const mockUseTellerConnect = jest.fn(() => ({
+  ready: true,
+  open: openMock,
+}));
+
 jest.mock('@/hooks/useTellerConnect', () => ({
-  useTellerConnect: () => ({
-    ready: true,
-    open: jest.fn(),
-  }),
+  useTellerConnect: (...args: unknown[]) => mockUseTellerConnect(...args),
 }));
 
 describe('useTellerLinkFlow', () => {
@@ -46,6 +49,12 @@ describe('useTellerLinkFlow', () => {
     cleanup();
     jest.restoreAllMocks();
     jest.clearAllMocks();
+    openMock.mockReset();
+    mockUseTellerConnect.mockReset();
+    mockUseTellerConnect.mockImplementation(() => ({
+      ready: true,
+      open: openMock,
+    }));
   });
 
   it('rebuilds Teller connections from cached accounts when status has none', async () => {
@@ -90,5 +99,37 @@ describe('useTellerLinkFlow', () => {
 
     expect(result.current.connections).toHaveLength(0);
     expect(result.current.error).toBeNull();
+  });
+
+  it('does not pass application id to Teller connect until connect runs', async () => {
+    const { result } = renderHook(() =>
+      useTellerLinkFlow({
+        applicationId: 'app_123',
+        enabled: true,
+        isOnline: true,
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(mockUseTellerConnect.mock.calls[0][0].applicationId).toBe('');
+  });
+
+  it('given offline when connect runs then does not arm Teller with application id', async () => {
+    const { result } = renderHook(() =>
+      useTellerLinkFlow({
+        applicationId: 'app_123',
+        enabled: true,
+        isOnline: false,
+      })
+    );
+
+    await act(async () => {
+      await result.current.connect();
+    });
+
+    expect(mockUseTellerConnect.mock.calls.every((c) => c[0].applicationId === '')).toBe(true);
   });
 });
