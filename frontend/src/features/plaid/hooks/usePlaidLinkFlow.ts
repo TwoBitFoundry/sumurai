@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { usePlaidLink } from 'react-plaid-link';
+import { POPUP_BLOCKED_MESSAGE } from '@/utils/popupBlockedMessage';
 import { type PlaidConnection, usePlaidConnections } from '../../../hooks/usePlaidConnections';
 import { useInstrumentedCallback } from '../../../observability';
 import { ApiClient } from '../../../services/ApiClient';
@@ -96,44 +98,70 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
   const handleExit = useCallback(
     (err: unknown) => {
       if (!enabled || !isOnline) return;
-      if (err && typeof err === 'object' && 'error_message' in err) {
-        const message = (err as { error_message?: string }).error_message || 'Unknown error';
-        handleError(`Plaid Link exited with error: ${message}`);
-      } else if (err) {
-        handleError('Plaid Link exited with an unknown error');
+      if (err) {
+        handleError(POPUP_BLOCKED_MESSAGE);
       }
     },
     [enabled, handleError, isOnline]
   );
 
-  const { open, ready } = usePlaidLink({
+  const {
+    open,
+    ready,
+    error: plaidLinkError,
+  } = usePlaidLink({
     token: enabled && linkToken ? linkToken : undefined,
     onSuccess: handleSuccess,
     onExit: handleExit,
   });
 
+  const readyRef = useRef(ready);
+  const openRef = useRef(open);
+  readyRef.current = ready;
+  openRef.current = open;
+
   useEffect(() => {
-    if (!enabled) return;
-    if (linkToken && ready && open) {
-      open();
+    if (plaidLinkError) {
+      handleError(POPUP_BLOCKED_MESSAGE);
     }
-  }, [enabled, linkToken, ready, open]);
+  }, [handleError, plaidLinkError]);
+
+  const waitForPlaidReady = useCallback(async (timeoutMs: number) => {
+    await new Promise((r) => setTimeout(r, 0));
+    const start = performance.now();
+    while (performance.now() - start < timeoutMs) {
+      if (readyRef.current) {
+        return true;
+      }
+      await new Promise((r) => setTimeout(r, 32));
+    }
+    return false;
+  }, []);
 
   const connect = useInstrumentedCallback('PlaidLink.connect', async () => {
     if (!enabled || !isOnline) return;
     clearError();
     try {
+      setLinkToken(null);
       const data = await ApiClient.post<{ link_token: string }>('/plaid/link-token', {});
       setLinkToken(data.link_token);
-      if (ready) {
-        open();
+      flushSync(() => {});
+      const becameReady = await waitForPlaidReady(60_000);
+      if (!becameReady) {
+        handleError('Plaid Link took too long to load. Please try again.');
+        return;
+      }
+      try {
+        openRef.current();
+      } catch {
+        handleError(POPUP_BLOCKED_MESSAGE);
       }
     } catch (error: unknown) {
       const message = `Failed to start bank connection: ${error instanceof Error ? error.message : 'Unknown error'}`;
       handleError(message);
       throw error;
     }
-  }, [clearError, handleError, open, ready, enabled, isOnline]);
+  }, [clearError, handleError, enabled, isOnline, waitForPlaidReady]);
 
   const syncOne = useInstrumentedCallback(
     'PlaidLink.syncOne',

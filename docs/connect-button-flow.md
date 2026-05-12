@@ -61,18 +61,22 @@ Acceptance criteria:
 - Refactor [frontend/src/hooks/useTellerLinkFlow.ts](../frontend/src/hooks/useTellerLinkFlow.ts) so the accounts-page Teller flow follows the same pattern.
 
 Acceptance criteria:
-- [ ] The accounts page uses the same click-owned connect/retry behavior as onboarding for both providers.
-- [ ] No provider popup/init work starts before the user clicks Connect.
-- [ ] Retry uses the same button path after a popup/init failure.
+- [x] The accounts page uses the same click-owned connect/retry behavior as onboarding for both providers.
+- [x] No provider popup/init work starts before the user clicks Connect.
+- [x] Retry uses the same button path after a popup/init failure.
+
+**TDD log (Phase 3):** Removed Plaid auto-open `useEffect` on `linkToken`; `connect` now uses `waitForPlaidReady` + `openRef` after token fetch with `flushSync`. Teller accounts flow uses `connectSessionKey` to gate `useTellerConnect` `applicationId`, removed `shouldOpenConnect` effect, `connect` uses `waitForTellerReady` + `flushSync` + `openRef`. Commands: `npm test -- --testPathPatterns='usePlaidLinkFlow|useTellerLinkFlow'`, Biome on touched sources.
 
 ### Phase 4: Button/view and tests
 - Keep [frontend/src/components/onboarding/ConnectAccountStep.tsx](../frontend/src/components/onboarding/ConnectAccountStep.tsx) as a dumb button/view layer that switches between `Connect` and `Try again`.
 - Update tests under [frontend/tests/hooks/](../frontend/tests/hooks/) and [frontend/tests/features/plaid/hooks/](../frontend/tests/features/plaid/hooks/) to assert click-owned connect/retry and offline short-circuiting.
 
 Acceptance criteria:
-- [ ] The button component only delegates to the provided handler and does not own provider logic.
-- [ ] Tests prove the first click triggers the provider init path and the same button retries after failure.
-- [ ] Tests prove offline mode blocks provider init for both providers.
+- [x] The button component only delegates to the provided handler and does not own provider logic.
+- [x] Tests prove the first click triggers the provider init path and the same button retries after failure.
+- [x] Tests prove offline mode blocks provider init for both providers.
+
+**TDD log (Phase 4):** Extended `usePlaidLinkFlow` tests for no eager `/plaid/link-token` and offline connect skip; extended `useTellerLinkFlow` tests for empty Teller `applicationId` until `connect` and offline connect guard. Onboarding coverage remains in `useOnboardingPlaidFlow` / `useOnboardingTellerFlow` specs. Commands: `npm test -- --testPathPatterns='usePlaidLinkFlow|useTellerLinkFlow|ConnectAccountStep'`, Biome on touched tests.
 
 ## Assumptions
 - The connect button remains the single user entry point for both initial connect and retry.
