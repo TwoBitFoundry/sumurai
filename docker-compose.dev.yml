@@ -37,7 +37,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-accounting}
 
       AUTH_COOKIE_SAME_SITE: Lax
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080,http://localhost:3001}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080,http://localhost:3001},${NGROK_URL:-}
 
       OTEL_TRACES_EXPORTER: console
 
@@ -104,8 +104,8 @@ services:
       backend:
         condition: service_healthy
     environment:
-      DOMAIN: localhost
-      SSL_PORT: 8443
+      DOMAIN: ${DOMAIN:-localhost}
+      SSL_PORT: ${SSL_PORT:-8443}
     command: [ "/bin/sh", "/etc/nginx/entrypoint.sh" ]
     ports:
       - "${HTTP_PORT:-8080}:80"
@@ -129,6 +129,26 @@ services:
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/www/certbot
     entrypoint: [ "sh", "-c", "sleep infinity" ]
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    profiles:
+      - ngrok
+    depends_on:
+      nginx:
+        condition: service_healthy
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+      NGROK_URL: ${NGROK_URL:-}
+    entrypoint:
+      - /bin/sh
+      - -c
+    command:
+      - |
+        if [ -n "$$NGROK_URL" ]; then
+          exec ngrok http --url="$$NGROK_URL" https://nginx:443
+        fi
+        exec ngrok http https://nginx:443
 
 volumes:
   redis_data:

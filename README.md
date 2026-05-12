@@ -47,6 +47,18 @@ docker compose -f docker-compose.dev.yml up -d --build
 
 For **production-style** hosting with Seq and OTLP (public HTTP/HTTPS, different defaults), use `docker-compose.prod.yml` and [docs/PRODUCTION_TLS.md](docs/PRODUCTION_TLS.md).
 
+Optional ngrok is available in the standard and development Compose files only. It tunnels to the internal `nginx` service over HTTPS, and you need to enable the `ngrok` profile. Set `NGROK_AUTHTOKEN` in your environment or `.env` first:
+
+```bash
+docker compose --profile ngrok up -d --build
+```
+
+```bash
+docker compose -f docker-compose.dev.yml --profile ngrok up -d --build
+```
+
+When `NGROK_URL` is set, it is automatically added to the backend CORS allowlist for the compose stack.
+
 Open [http://localhost:8080](http://localhost:8080). Demo credentials: `me@test.com` / `Test1234!`
 
 For UI-only iteration:
