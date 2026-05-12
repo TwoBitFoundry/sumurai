@@ -1,37 +1,25 @@
 import { jest } from '@jest/globals';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import * as plaidLink from 'react-plaid-link';
 import { useOnboardingPlaidFlow } from '@/hooks/useOnboardingPlaidFlow';
 import { ApiClient } from '@/services/ApiClient';
 
+function getTestPlaidLinkOpen(): jest.Mock {
+  return (globalThis as unknown as { __testPlaidLinkOpen: jest.Mock }).__testPlaidLinkOpen;
+}
+
 let postSpy: jest.SpiedFunction<typeof ApiClient.post>;
 let getSpy: jest.SpiedFunction<typeof ApiClient.get>;
-let usePlaidLinkSpy: jest.SpiedFunction<typeof plaidLink.usePlaidLink>;
-let mockOpen: jest.Mock;
 describe('useOnboardingPlaidFlow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     postSpy = jest.spyOn(ApiClient, 'post');
     getSpy = jest.spyOn(ApiClient, 'get');
-    mockOpen = jest.fn();
-    usePlaidLinkSpy = jest.spyOn(plaidLink, 'usePlaidLink').mockImplementation(({ token }) => {
-      if (token) {
-        mockOpen();
-      }
-      return {
-        open: mockOpen,
-        ready: true,
-        error: null,
-        exit: jest.fn(),
-        submit: jest.fn(),
-      };
-    });
+    getTestPlaidLinkOpen().mockReset();
   });
 
   afterEach(() => {
     postSpy.mockRestore();
     getSpy.mockRestore();
-    usePlaidLinkSpy?.mockRestore();
   });
 
   it('given onboarding flow when initialized then starts with disconnected state', () => {
@@ -42,6 +30,26 @@ describe('useOnboardingPlaidFlow', () => {
     expect(result.current.error).toBe(null);
   });
 
+  it('given onboarding flow when mounted then does not fetch link token', async () => {
+    renderHook(() => useOnboardingPlaidFlow());
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(postSpy).not.toHaveBeenCalled();
+  });
+
+  it('given offline when connect initiated then does not fetch link token', async () => {
+    const { result } = renderHook(() => useOnboardingPlaidFlow({ isOnline: false }));
+
+    await act(async () => {
+      await result.current.initiateConnection();
+    });
+
+    expect(postSpy).not.toHaveBeenCalled();
+  });
+
   it('given onboarding flow when connect initiated then opens plaid link', async () => {
     postSpy.mockResolvedValue({ link_token: 'test-link-token' } as any);
 
@@ -50,14 +58,10 @@ describe('useOnboardingPlaidFlow', () => {
     await act(async () => {
       await result.current.initiateConnection();
     });
-    await act(async () => {}); // flush effect
-    await act(async () => {
-      mockOpen();
-    });
 
     expect(postSpy).toHaveBeenCalledWith('/plaid/link-token', {});
     await waitFor(() => {
-      expect(mockOpen).toHaveBeenCalled();
+      expect(getTestPlaidLinkOpen()).toHaveBeenCalled();
     });
   });
 

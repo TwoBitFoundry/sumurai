@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
 import { PlaidService } from '@/services/PlaidService';
+import { POPUP_BLOCKED_MESSAGE } from '@/utils/popupBlockedMessage';
 
 export interface UseOnboardingPlaidFlowOptions {
   onConnectionSuccess?: (institutionName: string) => void;
@@ -32,7 +33,6 @@ export function useOnboardingPlaidFlow(
   const [isSyncing, setIsSyncing] = useState(false);
   const [institutionName, setInstitutionName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [shouldOpenLink, setShouldOpenLink] = useState(false);
 
   const handleError = useCallback(
     (errorMessage: string) => {
@@ -88,22 +88,44 @@ export function useOnboardingPlaidFlow(
     [handleError, onConnectionSuccess]
   );
 
-  const { open, ready } = usePlaidLink({
+  const {
+    open,
+    ready,
+    error: plaidLinkError,
+  } = usePlaidLink({
     token: linkToken,
     onSuccess: handleSuccess,
-    onExit: () => {
+    onExit: (err) => {
       setConnectionInProgress(false);
-      setShouldOpenLink(false);
+      if (err) {
+        handleError(POPUP_BLOCKED_MESSAGE);
+      }
     },
     onEvent: () => {},
   });
 
+  const readyRef = useRef(ready);
+  const openRef = useRef(open);
+  readyRef.current = ready;
+  openRef.current = open;
+
   useEffect(() => {
-    if (shouldOpenLink && ready) {
-      open();
-      setShouldOpenLink(false);
+    if (plaidLinkError) {
+      handleError(POPUP_BLOCKED_MESSAGE);
     }
-  }, [shouldOpenLink, ready, open]);
+  }, [handleError, plaidLinkError]);
+
+  const waitForPlaidReady = useCallback(async (timeoutMs: number) => {
+    await new Promise((r) => setTimeout(r, 0));
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (readyRef.current) {
+        return true;
+      }
+      await new Promise((r) => setTimeout(r, 32));
+    }
+    return false;
+  }, []);
 
   const getLinkToken = useCallback(async () => {
     if (!isOnline) {
@@ -129,13 +151,22 @@ export function useOnboardingPlaidFlow(
 
     try {
       setConnectionInProgress(true);
+      setLinkToken(null);
       await getLinkToken();
-      setShouldOpenLink(true);
+      const becameReady = await waitForPlaidReady(60_000);
+      if (!becameReady) {
+        handleError('Plaid Link took too long to load. Please try again.');
+        return;
+      }
+      try {
+        openRef.current();
+      } catch {
+        handleError(POPUP_BLOCKED_MESSAGE);
+      }
     } catch {
       setConnectionInProgress(false);
-      setShouldOpenLink(false);
     }
-  }, [getLinkToken, isOnline]);
+  }, [getLinkToken, handleError, isOnline, waitForPlaidReady]);
 
   const retryConnection = useCallback(async () => {
     if (!isOnline) {
@@ -143,6 +174,7 @@ export function useOnboardingPlaidFlow(
     }
 
     setError(null);
+    setLinkToken(null);
     await initiateConnection();
   }, [initiateConnection, isOnline]);
 
@@ -153,7 +185,6 @@ export function useOnboardingPlaidFlow(
     setInstitutionName(null);
     setError(null);
     setLinkToken(null);
-    setShouldOpenLink(false);
   }, []);
 
   const handlePlaidSuccess = useCallback(
