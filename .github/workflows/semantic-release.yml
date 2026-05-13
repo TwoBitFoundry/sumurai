@@ -18,6 +18,8 @@ jobs:
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
+    env:
+      HUSKY: "0"
     outputs:
       released: ${{ steps.semantic.outputs.new_release_published }}
       version: ${{ steps.semantic.outputs.new_release_version }}
@@ -35,13 +37,7 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        run: npm ci --ignore-scripts
-
-      - name: Disable git hooks completely
-        run: |
-          rm -rf .git/hooks
-          mkdir -p .git/hooks
-          git config core.hooksPath /dev/null
+        run: npm ci
 
       - name: Run Semantic Release
         id: semantic

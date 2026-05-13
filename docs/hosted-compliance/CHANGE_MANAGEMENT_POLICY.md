@@ -15,7 +15,7 @@ Ensure all production changes are reviewed, tested, and documented.
 2. Reviewer approves PR → auto-merge to staging.  
 3. Staging deploy verified by QA or founder.  
 4. Production deploy via CI/CD release job.  
-5. [Release Please](https://github.com/googleapis/release-please) opens or updates a release PR on `main`; merging that PR applies version bumps and `CHANGELOG.md`, creates the git tag and GitHub Release.
+5. [Semantic Release](https://semantic-release.gitbook.io) automatically determines the version bump from conventional commits, updates version files and `CHANGELOG.md`, creates the git tag and GitHub Release.
 
 **Rollback Procedure**
 - Each deployment tagged; rollback = redeploy prior tag.  
