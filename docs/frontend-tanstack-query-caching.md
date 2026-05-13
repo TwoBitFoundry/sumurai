@@ -453,18 +453,18 @@ Changes to `AppTitleBar.tsx`:
    Pass `animated={shouldAnimate}` — tab revisit with same filter skips the animation; account or time-range filter change plays it.
 
 ### Acceptance Criteria
-- [ ] Scrolling down on the dashboard — title bar shrinks smoothly with no content jump at frame 0
-- [ ] Scrolling back to top — title bar expands smoothly
+- [x] Scrolling down on the dashboard — title bar shrinks smoothly with no content jump at frame 0
+- [x] Scrolling back to top — title bar expands smoothly
 - [ ] Switching to Dashboard tab with warm cache — charts appear without replaying the 800ms animation
 - [ ] Account or time-range filter change — donut chart plays entrance animation
 - [ ] Floating date-range selector appears promptly after scroll, not after a 300ms lag
 - [ ] Dashboard: footer visible immediately below last content card with no dead whitespace
-- [ ] `npm run build` and `npm test` pass
+- [x] `npm run build` and `npm test` pass
 
 ### TDD Log
-- For 7a: render test on `AppTitleBar` asserting `scrolled={true}` and `scrolled={false}` produce the same button `size` prop and same `Image` dimensions.
+- For 7a: added a render regression test that compares the `Dashboard` button chrome and logo image dimensions before and after `scrolled` flips, then flattened `AppTitleBar` so only the header height changes on scroll.
+- Verified for 7a: `npm --prefix frontend run test:serial -- tests/ui/primitives/AppTitleBar.test.tsx`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend test`
 - For 7b: render test on `SpendingByCategoryChart` with `animated={false}` asserting `animationDuration` is 0; smoke check that DashboardPage passes `animated={false}` on remount with unchanged query key.
-- Verify: `npm --prefix frontend run test:serial -- tests/ui/primitives/AppTitleBar.test.tsx tests/features/analytics/components/SpendingByCategoryChart.test.tsx`, then `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend test`
 
 ---
 

@@ -1,6 +1,18 @@
 import { render, screen } from '@testing-library/react';
+import React from 'react';
 import { AppTitleBar } from '@/ui/primitives/AppTitleBar';
 import { status as uiStatusRecipes } from '@/ui/recipes';
+
+jest.mock('next/image', () => ({
+  __esModule: true,
+  default: ({ alt, width, height, ...props }: { alt: string; width: number; height: number }) =>
+    React.createElement('img', {
+      alt,
+      'data-width': width,
+      'data-height': height,
+      ...props,
+    }),
+}));
 
 describe('AppTitleBar', () => {
   const baseProps = {
@@ -32,5 +44,23 @@ describe('AppTitleBar', () => {
       ...uiStatusRecipes.warning.border,
       ...uiStatusRecipes.warning.text
     );
+  });
+
+  it('keeps the title bar chrome stable when scrolled changes', () => {
+    const { rerender } = render(<AppTitleBar {...baseProps} isOnline scrolled={false} />);
+
+    const initialState = {
+      dashboardButtonClassName: screen.getByRole('button', { name: 'Dashboard' }).className,
+      logoWidth: screen.getByAltText('Sumurai Logo').getAttribute('data-width'),
+      logoHeight: screen.getByAltText('Sumurai Logo').getAttribute('data-height'),
+    };
+
+    rerender(<AppTitleBar {...baseProps} isOnline scrolled={true} />);
+
+    expect({
+      dashboardButtonClassName: screen.getByRole('button', { name: 'Dashboard' }).className,
+      logoWidth: screen.getByAltText('Sumurai Logo').getAttribute('data-width'),
+      logoHeight: screen.getByAltText('Sumurai Logo').getAttribute('data-height'),
+    }).toEqual(initialState);
   });
 });
