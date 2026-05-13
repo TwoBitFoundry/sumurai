@@ -37,9 +37,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install frontend dependencies
-        run: npm ci --prefix frontend
-
       - name: Run Semantic Release
         id: semantic
         run: npm run release
