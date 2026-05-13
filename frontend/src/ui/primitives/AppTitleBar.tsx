@@ -4,6 +4,7 @@ import Image from 'next/image';
 import React from 'react';
 import {
   border as semanticBorders,
+  effect as semanticEffects,
   status as semanticStatus,
   surface as semanticSurfaces,
   text as semanticTextRecipes,
@@ -13,12 +14,8 @@ import { Button } from './Button';
 import { cn } from './utils';
 
 export const appTitleBarRecipes = {
-  base: ['sticky top-0 z-50 border-b backdrop-blur-sm h-16'],
-  shell: [
-    ...semanticSurfaces.card,
-    ...semanticBorders.divider,
-    'dark:bg-[var(--color-surface-solid-panel)]',
-  ],
+  base: ['sticky top-0 z-50 border-b backdrop-blur-md backdrop-saturate-[150%] h-16'],
+  shell: [...semanticSurfaces.card, ...semanticBorders.divider, ...semanticEffects.glassShadow],
   logo: {
     container: ['flex', 'items-center', 'gap-2', semanticTextRecipes.primary],
     wordmark: uiTypographyRecipes.pageTitle,
