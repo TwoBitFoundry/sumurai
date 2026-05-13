@@ -42,6 +42,7 @@ jobs:
         run: npm run release
         env:
           GITHUB_TOKEN: ${{ secrets.SUMURAI_SEMANTIC_RELEASE }}
+          HUSKY: 0
 
   dispatch-publish-images:
     name: Dispatch publish-images
