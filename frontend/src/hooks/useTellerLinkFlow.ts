@@ -213,7 +213,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
     queryKey: ['teller', 'connections'],
     queryFn: buildTellerConnections,
     enabled: enabled && isOnline && !!applicationId,
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000,
   });
   const connections = connectionsQuery.data ?? [];
   const loading = enabled && isOnline && !!applicationId ? connectionsQuery.isPending : false;

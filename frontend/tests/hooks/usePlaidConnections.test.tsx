@@ -5,6 +5,8 @@ import { type ReactNode, useState } from 'react';
 import { usePlaidConnections } from '@/hooks/usePlaidConnections';
 
 describe('usePlaidConnections', () => {
+  let fetchMock: ReturnType<typeof installFetchRoutes>;
+
   const createWrapper = () => {
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -25,7 +27,7 @@ describe('usePlaidConnections', () => {
   };
 
   beforeEach(() => {
-    installFetchRoutes({
+    fetchMock = installFetchRoutes({
       'GET /api/providers/status': {
         provider: 'plaid',
         connections: [],
@@ -62,6 +64,9 @@ describe('usePlaidConnections', () => {
     jest.clearAllMocks();
   });
 
+  const getFetchCount = (path: string) =>
+    fetchMock.mock.calls.filter(([input]) => String(input).includes(path)).length;
+
   it('rebuilds connections from cached accounts when status has none', async () => {
     const wrapper = createWrapper();
     const { result } = renderHook(() => usePlaidConnections(), { wrapper });
@@ -82,12 +87,8 @@ describe('usePlaidConnections', () => {
     const wrapper = createWrapper();
     const first = renderHook(() => usePlaidConnections(), { wrapper });
 
-    await act(async () => {
-      await first.result.current.refresh();
-    });
-
     await waitFor(() => {
-      expect(first.result.current.connections).toHaveLength(1);
+      expect(first.result.current.loading).toBe(false);
     });
 
     await act(async () => {
@@ -98,11 +99,16 @@ describe('usePlaidConnections', () => {
       expect(first.result.current.connections).toHaveLength(0);
     });
 
+    const statusCallsBefore = getFetchCount('/providers/status');
+    const accountsCallsBefore = getFetchCount('/plaid/accounts');
+
     first.unmount();
 
     const second = renderHook(() => usePlaidConnections(), { wrapper });
 
     expect(second.result.current.loading).toBe(false);
     expect(second.result.current.connections).toHaveLength(0);
+    expect(getFetchCount('/providers/status')).toBe(statusCallsBefore);
+    expect(getFetchCount('/plaid/accounts')).toBe(accountsCallsBefore);
   });
 });

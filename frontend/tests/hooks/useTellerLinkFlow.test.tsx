@@ -19,6 +19,8 @@ const setup = jest.fn();
 const openMock = jest.fn();
 
 describe('useTellerLinkFlow', () => {
+  let fetchMock: ReturnType<typeof installFetchRoutes>;
+
   const createWrapper = () => {
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -46,7 +48,7 @@ describe('useTellerLinkFlow', () => {
     Object.assign(window, {
       TellerConnect: { setup },
     });
-    installFetchRoutes({
+    fetchMock = installFetchRoutes({
       'GET /api/providers/status': {
         provider: 'plaid',
         connections: [],
@@ -84,6 +86,9 @@ describe('useTellerLinkFlow', () => {
     openMock.mockReset();
     delete window.TellerConnect;
   });
+
+  const getFetchCount = (path: string) =>
+    fetchMock.mock.calls.filter(([input]) => String(input).includes(path)).length;
 
   it('rebuilds Teller connections from cached accounts when status has none', async () => {
     const wrapper = createWrapper();
@@ -125,6 +130,9 @@ describe('useTellerLinkFlow', () => {
 
     expect(first.result.current.connections).toHaveLength(1);
 
+    const statusCallsBefore = getFetchCount('/providers/status');
+    const accountsCallsBefore = getFetchCount('/plaid/accounts');
+
     first.unmount();
 
     const second = renderHook(
@@ -139,6 +147,8 @@ describe('useTellerLinkFlow', () => {
 
     expect(second.result.current.loading).toBe(false);
     expect(second.result.current.connections).toHaveLength(1);
+    expect(getFetchCount('/providers/status')).toBe(statusCallsBefore);
+    expect(getFetchCount('/plaid/accounts')).toBe(accountsCallsBefore);
   });
 
   it('does not surface a load error when there are no Teller connections', async () => {

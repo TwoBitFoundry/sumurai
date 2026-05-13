@@ -156,7 +156,7 @@ export const usePlaidConnections = (
         : buildFallbackConnections(backendAccounts);
     },
     enabled,
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000,
   });
 
   const addConnection = useCallback(
