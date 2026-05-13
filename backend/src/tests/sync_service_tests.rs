@@ -124,6 +124,24 @@ fn test_filter_duplicate_transactions_filters_existing_transactions() {
 }
 
 #[test]
+fn test_filter_duplicate_transactions_by_provider_ids_filters_existing_ids() {
+    let sync_service = create_test_sync_service();
+    let existing_provider_transaction_ids = vec!["duplicate_txn_001".to_string()];
+    let (_, new_transactions) = TestFixtures::duplicate_test_transactions();
+
+    let unique_transactions = sync_service.filter_duplicate_transactions_by_provider_ids(
+        &existing_provider_transaction_ids,
+        &new_transactions,
+    );
+
+    assert_eq!(unique_transactions.len(), 1);
+    assert_eq!(
+        unique_transactions[0].provider_transaction_id.as_deref(),
+        Some("new_txn_001")
+    );
+}
+
+#[test]
 fn test_filter_duplicate_transactions_handles_empty_collections() {
     let sync_service = create_test_sync_service();
     let existing = TestFixtures::empty_transactions();

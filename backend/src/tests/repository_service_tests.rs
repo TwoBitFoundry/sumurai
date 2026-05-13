@@ -272,6 +272,56 @@ async fn given_many_transactions_when_batch_upserting_then_writes_all_rows_witho
 }
 
 #[tokio::test]
+async fn given_more_than_thousand_transactions_when_fetching_counts_then_ids_and_counts_are_uncapped(
+) {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+
+    let transactions: Vec<Transaction> = (0..1001)
+        .map(|index| {
+            create_test_transaction(
+                user.id,
+                account.id,
+                format!("uncapped_txn_{index:04}"),
+                -2000 - index as i64,
+                NaiveDate::from_ymd_opt(2024, 2, 1).unwrap(),
+            )
+        })
+        .collect();
+
+    repo.upsert_transactions_batch(&transactions, &user.id)
+        .await
+        .unwrap();
+
+    let capped_transactions = repo.get_transactions_for_user(&user.id).await.unwrap();
+    let transaction_count = repo
+        .count_transactions(&user.id, None, None, None, None, None)
+        .await
+        .unwrap();
+    let provider_transaction_ids = repo
+        .get_provider_transaction_ids_for_user(&user.id)
+        .await
+        .unwrap();
+
+    assert_eq!(capped_transactions.len(), 1000);
+    assert_eq!(transaction_count, 1001);
+    assert_eq!(provider_transaction_ids.len(), 1001);
+    assert_eq!(
+        provider_transaction_ids.first().map(String::as_str),
+        Some("uncapped_txn_0000")
+    );
+    assert_eq!(
+        provider_transaction_ids.last().map(String::as_str),
+        Some("uncapped_txn_1000")
+    );
+}
+
+#[tokio::test]
 async fn given_transactions_when_querying_paginated_then_returns_correct_pages_and_total() {
     let Some(pool) = connect_pool().await else {
         return;

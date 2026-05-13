@@ -137,6 +137,29 @@ impl SyncService {
         self.detect_duplicates(existing, new)
     }
 
+    pub fn filter_duplicate_transactions_by_provider_ids(
+        &self,
+        existing_provider_transaction_ids: &[String],
+        new: &[Transaction],
+    ) -> Vec<Transaction> {
+        let existing_provider_transaction_ids: std::collections::HashSet<&str> =
+            existing_provider_transaction_ids
+                .iter()
+                .map(String::as_str)
+                .collect();
+
+        new.iter()
+            .filter(|t| {
+                if let Some(provider_transaction_id) = &t.provider_transaction_id {
+                    !existing_provider_transaction_ids.contains(provider_transaction_id.as_str())
+                } else {
+                    true
+                }
+            })
+            .cloned()
+            .collect()
+    }
+
     pub fn calculate_sync_date_range(
         &self,
         last_sync_at: Option<DateTime<Utc>>,

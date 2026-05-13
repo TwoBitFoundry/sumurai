@@ -166,10 +166,23 @@ async fn given_plaid_sync_with_many_transactions_when_persisting_then_batches_wr
         });
 
     mock_db
-        .expect_get_transactions_for_user()
+        .expect_get_provider_transaction_ids_for_user()
         .with(mockall::predicate::eq(user_id))
-        .times(2)
+        .times(1)
         .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_count_transactions()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::always(),
+            mockall::predicate::always(),
+            mockall::predicate::always(),
+            mockall::predicate::always(),
+            mockall::predicate::always(),
+        )
+        .times(1)
+        .returning(|_, _, _, _, _, _| Box::pin(async { Ok(600) }));
 
     let observed_batch_sizes_clone = Arc::clone(&observed_batch_sizes);
     mock_db

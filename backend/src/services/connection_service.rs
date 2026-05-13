@@ -483,14 +483,16 @@ impl ConnectionService {
             .await
             .map_err(ProviderSyncError::SyncFailure)?;
 
-        let existing_transactions = self
+        let existing_provider_transaction_ids = self
             .db_repository
-            .get_transactions_for_user(params.user_id)
+            .get_provider_transaction_ids_for_user(params.user_id)
             .await
             .map_err(ProviderSyncError::TransactionLookup)?;
 
-        transactions =
-            sync_service.filter_duplicate_transactions(&existing_transactions, &transactions);
+        transactions = sync_service.filter_duplicate_transactions_by_provider_ids(
+            &existing_provider_transaction_ids,
+            &transactions,
+        );
 
         for txn in &mut transactions {
             txn.user_id = Some(*params.user_id);
@@ -545,9 +547,9 @@ impl ConnectionService {
 
         let total_transactions = self
             .db_repository
-            .get_transactions_for_user(params.user_id)
+            .count_transactions(params.user_id, None, None, None, None, None)
             .await
-            .map(|txns| txns.len() as i32)
+            .map(|count| count as i32)
             .unwrap_or(0);
         let total_accounts = db_accounts.len() as i32;
 
@@ -694,16 +696,14 @@ impl ConnectionService {
             .await
             .map_err(TellerSyncError::ProviderRequest)?;
 
-        let existing_transactions = self
+        let existing_provider_transaction_ids = self
             .db_repository
-            .get_transactions_for_user(user_id)
+            .get_provider_transaction_ids_for_user(user_id)
             .await
             .map_err(TellerSyncError::TransactionLookup)?;
 
-        let mut existing_ids: HashSet<String> = existing_transactions
-            .iter()
-            .filter_map(|t| t.provider_transaction_id.clone())
-            .collect();
+        let mut existing_ids: HashSet<String> =
+            existing_provider_transaction_ids.into_iter().collect();
 
         teller_transactions.retain(|txn| {
             txn.provider_transaction_id
@@ -773,8 +773,12 @@ impl ConnectionService {
             }
         }
 
-        let total_transactions = match self.db_repository.get_transactions_for_user(user_id).await {
-            Ok(txns) => txns.len() as i32,
+        let total_transactions = match self
+            .db_repository
+            .count_transactions(user_id, None, None, None, None, None)
+            .await
+        {
+            Ok(count) => count as i32,
             Err(e) => {
                 tracing::warn!(
                     "Failed to load total transaction count for Teller user {}: {}",

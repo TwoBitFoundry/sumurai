@@ -55,6 +55,7 @@ pub trait DatabaseRepository: Send + Sync {
         start_date: chrono::NaiveDate,
         end_date: chrono::NaiveDate,
     ) -> Result<Vec<Transaction>>;
+    async fn get_provider_transaction_ids_for_user(&self, user_id: &Uuid) -> Result<Vec<String>>;
     async fn get_accounts_for_user(&self, user_id: &Uuid) -> Result<Vec<Account>>;
     async fn get_transaction_count_by_account_for_user(
         &self,
@@ -1285,6 +1286,31 @@ impl DatabaseRepository for PostgresRepository {
                 },
             )
             .collect())
+    }
+
+    async fn get_provider_transaction_ids_for_user(&self, user_id: &Uuid) -> Result<Vec<String>> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let provider_transaction_ids = sqlx::query_scalar::<_, String>(
+            r#"
+            SELECT DISTINCT provider_transaction_id
+            FROM transactions
+            WHERE user_id = $1
+              AND provider_transaction_id IS NOT NULL
+            ORDER BY provider_transaction_id ASC
+            "#,
+        )
+        .bind(user_id)
+        .fetch_all(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(provider_transaction_ids)
     }
 
     async fn get_accounts_for_user(&self, user_id: &Uuid) -> Result<Vec<Account>> {
