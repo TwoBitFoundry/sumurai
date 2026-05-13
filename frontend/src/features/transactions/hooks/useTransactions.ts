@@ -108,6 +108,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     },
     enabled: !accountsLoading,
     staleTime: 2 * 60 * 1000,
+    gcTime: 60 * 1000,
   });
 
   const categoriesQuery = useQuery({
@@ -122,6 +123,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     },
     enabled: !accountsLoading,
     staleTime: 2 * 60 * 1000,
+    gcTime: 60 * 1000,
   });
 
   const categories = categoriesQuery.data ?? [];
