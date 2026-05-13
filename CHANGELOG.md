@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.7.2](https://github.com/TwoBitFoundry/sumurai/compare/v5.7.1...v5.7.2) (2026-05-13)
+
+
+### Bug Fixes
+
+* **ci:** remove component fields to fix linked-versions group PR release matching ([ba92753](https://github.com/TwoBitFoundry/sumurai/commit/ba92753f3bb4b639bb00479704f760b338776937))
+
 ## [5.7.1](https://github.com/TwoBitFoundry/sumurai/compare/v5.7.0...v5.7.1) (2026-05-13)
 
 
