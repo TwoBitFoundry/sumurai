@@ -97,6 +97,8 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
       await AuthService.logout();
     } catch (error) {
       console.error('Logout error:', error);
+    } finally {
+      queryClient.clear();
     }
 
     setIsAuthenticated(false);

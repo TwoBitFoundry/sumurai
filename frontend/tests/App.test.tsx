@@ -1,15 +1,33 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
-import type { ReactNode } from 'react';
-import { AppProviders } from '@/App';
+import { act, render, screen, waitFor } from '@testing-library/react';
+import { type ReactNode, useEffect } from 'react';
+import { App, AppProviders } from '@/App';
+import { AuthService } from '@/services/authService';
 
 jest.mock('@/Auth', () => ({
-  LoginScreen: () => null,
+  LoginScreen: () => {
+    const queryClient = useQueryClient();
+    const cacheState = queryClient.getQueryData(['logout-cache']) ? 'hit' : 'miss';
+
+    return <output data-testid="logout-cache-state">{cacheState}</output>;
+  },
   RegisterScreen: () => null,
 }));
 
 jest.mock('@/components/AuthenticatedApp', () => ({
-  AuthenticatedApp: () => null,
+  AuthenticatedApp: ({ onLogout }: { onLogout: () => void }) => {
+    const queryClient = useQueryClient();
+
+    useEffect(() => {
+      queryClient.setQueryData(['logout-cache'], { value: true });
+    }, [queryClient]);
+
+    return (
+      <button type="button" onClick={onLogout}>
+        Logout
+      </button>
+    );
+  },
 }));
 
 jest.mock('@/components/onboarding/OnboardingWizard', () => ({
@@ -51,6 +69,22 @@ jest.mock('@/observability', () => ({
   })),
 }));
 
+jest.mock('@/services/authService', () => ({
+  AuthService: {
+    configure: jest.fn(),
+    refreshToken: jest.fn().mockResolvedValue({
+      user_id: 'user-1',
+      expires_at: '2099-01-01T00:00:00.000Z',
+      onboarding_completed: true,
+    }),
+    logout: jest.fn().mockResolvedValue({
+      message: 'logged out',
+      cleared_session: 'ok',
+    }),
+    clearToken: jest.fn(),
+  },
+}));
+
 function QueryClientProbe() {
   const queryClient = useQueryClient();
   const queryDefaults = queryClient.getDefaultOptions().queries ?? {};
@@ -83,5 +117,31 @@ describe('AppProviders', () => {
         refetchOnWindowFocus: true,
       })
     );
+  });
+});
+
+describe('App logout cache handling', () => {
+  beforeEach(() => {
+    jest.mocked(AuthService.refreshToken).mockResolvedValue({
+      user_id: 'user-1',
+      expires_at: '2099-01-01T00:00:00.000Z',
+      onboarding_completed: true,
+    });
+  });
+
+  it('clears the query cache when logging out', async () => {
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      screen.getByRole('button', { name: /logout/i }).click();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('logout-cache-state')).toHaveTextContent('miss');
+    });
   });
 });
