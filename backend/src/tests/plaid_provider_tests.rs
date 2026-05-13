@@ -101,6 +101,9 @@ async fn given_plaid_provider_when_get_transactions_then_delegates_to_client() {
         .await;
 
     assert!(result.is_err() || result.is_ok());
+    if let Ok(batch) = result {
+        assert!(batch.page_count >= 1);
+    }
 }
 
 #[tokio::test]

@@ -266,6 +266,12 @@ pub struct SyncTransactionsResponse {
     pub metadata: SyncMetadata,
 }
 
+#[derive(Debug, Clone)]
+pub struct ProviderTransactionsResult {
+    pub transactions: Vec<Transaction>,
+    pub page_count: i32,
+}
+
 #[derive(Serialize, ToSchema)]
 #[schema(example = json!({
     "transaction_count": 25,

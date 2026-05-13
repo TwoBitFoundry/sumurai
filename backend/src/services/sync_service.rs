@@ -4,7 +4,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::models::{account::Account, plaid::ProviderConnection, transaction::Transaction};
+use crate::models::{
+    account::Account,
+    plaid::ProviderConnection,
+    transaction::{ProviderTransactionsResult, Transaction},
+};
 use crate::providers::{FinancialDataProvider, ProviderCredentials, ProviderRegistry};
 
 const MAX_SYNC_YEARS: i64 = 5;
@@ -52,12 +56,15 @@ impl SyncService {
         connection: &ProviderConnection,
         accounts: &[Account],
         reference_date: Option<NaiveDate>,
-    ) -> Result<(Vec<Transaction>, String)> {
+    ) -> Result<(Vec<Transaction>, String, i32)> {
         let (start_date, end_date) =
             self.calculate_sync_date_range(connection.last_sync_at, reference_date);
 
         let provider = self.resolve_provider(Some(&credentials.provider))?;
-        let transactions = provider
+        let ProviderTransactionsResult {
+            transactions,
+            page_count,
+        } = provider
             .get_transactions(credentials, start_date, end_date)
             .await?;
 
@@ -81,7 +88,7 @@ impl SyncService {
             &uuid::Uuid::new_v4().to_string()[..8]
         );
 
-        Ok((mapped_transactions, new_cursor))
+        Ok((mapped_transactions, new_cursor, page_count))
     }
     pub async fn sync_recent_transactions(
         &self,
@@ -98,7 +105,7 @@ impl SyncService {
             .await?;
 
         let new_transactions =
-            self.detect_duplicates(existing_transactions, &provider_transactions);
+            self.detect_duplicates(existing_transactions, &provider_transactions.transactions);
 
         Ok(new_transactions)
     }

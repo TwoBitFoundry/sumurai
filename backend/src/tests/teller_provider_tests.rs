@@ -186,7 +186,8 @@ async fn given_teller_transactions_when_get_transactions_then_filters_by_date_ra
         .await;
 
     assert!(result.is_ok());
-    let transactions = result.unwrap();
+    let result = result.unwrap();
+    let transactions = result.transactions;
 
     assert_eq!(transactions.len(), 2);
     assert_eq!(transactions[0].merchant_name, Some("Starbucks".to_string()));
@@ -290,7 +291,9 @@ async fn given_teller_transactions_when_get_transactions_then_pages_with_from_id
         .await;
 
     assert!(result.is_ok());
-    assert_eq!(result.unwrap().len(), 240);
+    let result = result.unwrap();
+    assert_eq!(result.transactions.len(), 240);
+    assert_eq!(result.page_count, 3);
 
     let urls = observed_urls.lock().unwrap();
     assert_eq!(urls.len(), 3);
@@ -357,6 +360,8 @@ async fn given_teller_transactions_before_start_date_when_get_transactions_then_
         .await;
 
     assert!(result.is_ok());
-    assert_eq!(result.unwrap().len(), 0);
+    let result = result.unwrap();
+    assert_eq!(result.transactions.len(), 0);
+    assert_eq!(result.page_count, 1);
     assert_eq!(observed_urls.lock().unwrap().len(), 1);
 }

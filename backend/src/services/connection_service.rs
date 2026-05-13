@@ -473,7 +473,7 @@ impl ConnectionService {
             .await
             .map_err(ProviderSyncError::AccountLookup)?;
 
-        let (mut transactions, new_cursor) = sync_service
+        let (mut transactions, new_cursor, page_count) = sync_service
             .sync_bank_connection_transactions(
                 &provider_credentials,
                 connection,
@@ -589,6 +589,9 @@ impl ConnectionService {
             connection_id = %connection.id,
             transaction_count = total_transactions,
             account_count = total_accounts,
+            page_count = page_count,
+            start_date = %sync_start_date,
+            end_date = %sync_end_date,
             "Transaction sync completed"
         );
 
@@ -682,7 +685,10 @@ impl ConnectionService {
             })
             .collect();
 
-        let mut teller_transactions = provider
+        let crate::models::transaction::ProviderTransactionsResult {
+            transactions: mut teller_transactions,
+            page_count,
+        } = provider
             .as_ref()
             .get_transactions(&provider_credentials, sync_start_date, sync_end_date)
             .await
@@ -826,6 +832,9 @@ impl ConnectionService {
             connection_id = %connection.id,
             transaction_count = total_transactions,
             account_count = total_accounts,
+            page_count = page_count,
+            start_date = %sync_start_date,
+            end_date = %sync_end_date,
             "Transaction sync completed"
         );
 

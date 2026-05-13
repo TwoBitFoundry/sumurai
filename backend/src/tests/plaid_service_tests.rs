@@ -33,14 +33,15 @@ fn plaid_transaction_page(offset: usize) -> Vec<Value> {
         .collect()
 }
 
-async fn spawn_plaid_test_server(offsets: Arc<Mutex<Vec<usize>>>) -> String {
+async fn spawn_plaid_test_server(requests: Arc<Mutex<Vec<(usize, usize)>>>) -> String {
     let app = Router::new().route(
         "/transactions/get",
         post(move |Json(payload): Json<Value>| {
-            let offsets = Arc::clone(&offsets);
+            let requests = Arc::clone(&requests);
             async move {
-                let offset = payload["offset"].as_u64().unwrap_or(0) as usize;
-                offsets.lock().unwrap().push(offset);
+                let count = payload["options"]["count"].as_u64().unwrap_or(0) as usize;
+                let offset = payload["options"]["offset"].as_u64().unwrap_or(0) as usize;
+                requests.lock().unwrap().push((count, offset));
                 Json(serde_json::json!({
                     "transactions": plaid_transaction_page(offset),
                     "total_transactions": 1100
@@ -174,11 +175,11 @@ fn merchant_name_from_plaid_falls_back_to_transaction_name() {
 
 #[tokio::test]
 async fn given_plaid_transactions_when_getting_transactions_then_paginates_until_total_is_loaded() {
-    let offsets = Arc::new(Mutex::new(Vec::new()));
-    let base_url = spawn_plaid_test_server(Arc::clone(&offsets)).await;
+    let requests = Arc::new(Mutex::new(Vec::new()));
+    let base_url = spawn_plaid_test_server(Arc::clone(&requests)).await;
     let client = crate::services::plaid_service::RealPlaidClient::new_for_test(base_url);
 
-    let transactions = client
+    let result = client
         .get_transactions(
             "access_token",
             chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
@@ -187,6 +188,10 @@ async fn given_plaid_transactions_when_getting_transactions_then_paginates_until
         .await
         .unwrap();
 
-    assert_eq!(transactions.len(), 1100);
-    assert_eq!(*offsets.lock().unwrap(), vec![0, 500, 1000]);
+    assert_eq!(result.transactions.len(), 1100);
+    assert_eq!(result.page_count, 3);
+    assert_eq!(
+        *requests.lock().unwrap(),
+        vec![(500, 0), (500, 500), (500, 1000)]
+    );
 }

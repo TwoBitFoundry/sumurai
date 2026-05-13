@@ -4,7 +4,7 @@ use chrono::NaiveDate;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::models::{account::Account, transaction::Transaction};
+use crate::models::{account::Account, transaction::ProviderTransactionsResult};
 use crate::providers::trait_definition::{
     FinancialDataProvider, InstitutionInfo, ProviderCredentials,
 };
@@ -53,7 +53,7 @@ impl FinancialDataProvider for PlaidProvider {
         credentials: &ProviderCredentials,
         start_date: NaiveDate,
         end_date: NaiveDate,
-    ) -> Result<Vec<Transaction>> {
+    ) -> Result<ProviderTransactionsResult> {
         self.client
             .get_transactions(&credentials.access_token, start_date, end_date)
             .await

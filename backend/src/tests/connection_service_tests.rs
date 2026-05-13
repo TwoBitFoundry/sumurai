@@ -1,4 +1,8 @@
-use crate::models::{account::Account, plaid::ProviderConnection, transaction::Transaction};
+use crate::models::{
+    account::Account,
+    plaid::ProviderConnection,
+    transaction::{ProviderTransactionsResult, Transaction},
+};
 use crate::providers::{
     FinancialDataProvider, InstitutionInfo, ProviderCredentials, ProviderRegistry,
 };
@@ -47,8 +51,11 @@ impl FinancialDataProvider for MockProvider {
         _credentials: &ProviderCredentials,
         _start_date: NaiveDate,
         _end_date: NaiveDate,
-    ) -> Result<Vec<Transaction>> {
-        Ok(self.transactions.clone())
+    ) -> Result<ProviderTransactionsResult> {
+        Ok(ProviderTransactionsResult {
+            transactions: self.transactions.clone(),
+            page_count: 1,
+        })
     }
 
     async fn get_institution_info(

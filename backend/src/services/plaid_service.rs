@@ -6,7 +6,10 @@ use serde_json::json;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::models::{account::Account, transaction::Transaction};
+use crate::models::{
+    account::Account,
+    transaction::{ProviderTransactionsResult, Transaction},
+};
 
 #[derive(Clone)]
 pub struct RealPlaidClient {
@@ -223,20 +226,24 @@ impl RealPlaidClient {
         access_token: &str,
         start_date: NaiveDate,
         end_date: NaiveDate,
-    ) -> Result<Vec<Transaction>> {
+    ) -> Result<ProviderTransactionsResult> {
         let mut transactions = Vec::new();
         let mut offset = 0usize;
         let mut total_transactions = None;
+        let mut page_count = 0i32;
 
         loop {
+            page_count += 1;
             let request_body = json!({
                 "client_id": self.client_id,
                 "secret": self.secret,
                 "access_token": access_token,
                 "start_date": start_date.format("%Y-%m-%d").to_string(),
                 "end_date": end_date.format("%Y-%m-%d").to_string(),
-                "count": 500,
-                "offset": offset
+                "options": {
+                    "count": 500,
+                    "offset": offset
+                }
             });
 
             let response = self
@@ -352,7 +359,10 @@ impl RealPlaidClient {
             }
         }
 
-        Ok(transactions)
+        Ok(ProviderTransactionsResult {
+            transactions,
+            page_count,
+        })
     }
 
     pub async fn get_item_info(
@@ -439,7 +449,7 @@ impl PlaidService {
         access_token: &str,
         start_date: NaiveDate,
         end_date: NaiveDate,
-    ) -> Result<Vec<Transaction>> {
+    ) -> Result<ProviderTransactionsResult> {
         self.client
             .get_transactions(access_token, start_date, end_date)
             .await

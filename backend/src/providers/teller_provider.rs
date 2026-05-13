@@ -8,7 +8,10 @@ use std::str::FromStr;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::models::{account::Account, transaction::Transaction};
+use crate::models::{
+    account::Account,
+    transaction::{ProviderTransactionsResult, Transaction},
+};
 use crate::providers::trait_definition::{
     FinancialDataProvider, InstitutionInfo, ProviderCredentials,
 };
@@ -254,10 +257,11 @@ impl FinancialDataProvider for TellerProvider {
         credentials: &ProviderCredentials,
         start_date: NaiveDate,
         end_date: NaiveDate,
-    ) -> Result<Vec<Transaction>> {
+    ) -> Result<ProviderTransactionsResult> {
         let accounts = self.get_accounts(credentials).await?;
         let mut all_transactions = Vec::new();
         let page_size = 100usize;
+        let mut page_count = 0i32;
 
         for account in accounts {
             let account_id = account
@@ -268,6 +272,7 @@ impl FinancialDataProvider for TellerProvider {
             let mut from_id: Option<String> = None;
 
             loop {
+                page_count += 1;
                 let mut url = format!(
                     "{}/accounts/{}/transactions?count={}",
                     self.base_url, account_id, page_size
@@ -331,7 +336,10 @@ impl FinancialDataProvider for TellerProvider {
             }
         }
 
-        Ok(all_transactions)
+        Ok(ProviderTransactionsResult {
+            transactions: all_transactions,
+            page_count,
+        })
     }
 
     async fn get_institution_info(
