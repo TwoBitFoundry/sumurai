@@ -43,7 +43,7 @@ export const AuthenticatedDashboard: Story = {
     onTabChange: fn(),
     onLogout: fn(),
     accountFilterNode: (
-      <span className={cn('text-xs', 'font-medium', uiTextRecipes.muted)}>All accounts</span>
+      <span className={cn('text-xs', 'font-medium', uiTextRecipes.muted)}>Filter</span>
     ),
   },
   play: async ({ args, canvasElement }) => {

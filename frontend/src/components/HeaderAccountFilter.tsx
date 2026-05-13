@@ -35,7 +35,7 @@ export function HeaderAccountFilter() {
       return 'No accounts selected';
     }
     if (isAllAccountsSelected) {
-      return 'All accounts';
+      return 'Filter';
     }
     return `${selectedCount} ${selectedCount === 1 ? 'account' : 'accounts'}`;
   })();

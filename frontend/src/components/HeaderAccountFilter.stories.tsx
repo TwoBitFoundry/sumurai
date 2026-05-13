@@ -41,7 +41,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const AllAccounts: Story = {
+export const Filter: Story = {
   parameters: {
     mockAccountFilter: buildMockAccountFilterContext({
       accountsByBank: storyBank,

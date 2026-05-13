@@ -38,10 +38,10 @@ describe('HeaderAccountFilter', () => {
 
   it('keeps the trigger size fixed when scrolled changes', () => {
     const { rerender } = render(<HeaderAccountFilter />);
-    const initialClassName = screen.getByRole('button', { name: 'All accounts' }).className;
+    const initialClassName = screen.getByRole('button', { name: 'Filter' }).className;
 
     rerender(<HeaderAccountFilter />);
 
-    expect(screen.getByRole('button', { name: 'All accounts' }).className).toBe(initialClassName);
+    expect(screen.getByRole('button', { name: 'Filter' }).className).toBe(initialClassName);
   });
 });
