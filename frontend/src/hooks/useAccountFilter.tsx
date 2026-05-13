@@ -15,7 +15,6 @@ import {
   type ProviderAccount,
 } from '@/context/AccountFilterContext';
 import { ProviderCatalog } from '@/services/ProviderCatalog';
-import type { Account } from '@/types/api';
 import { ACCOUNTS_CHANGED_EVENT } from '@/utils/events';
 
 const EMPTY_PROVIDER_ACCOUNTS: ProviderAccount[] = [];
@@ -186,34 +185,33 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
   return <AccountFilterContext.Provider value={value}>{children}</AccountFilterContext.Provider>;
 }
 
-type AccountWithLegacyFields = Account & {
-  ledger?: number | string | null;
-  available?: number | string | null;
-  institutionName?: string | null;
-};
-
-function mapProviderAccounts(accounts: Account[]): ProviderAccount[] {
+function mapProviderAccounts(
+  accounts: {
+    id: string;
+    name: string;
+    account_type: string;
+    balance_ledger: number | null;
+    balance_available?: number | null;
+    balance_current?: number | string | null;
+    mask: string | null;
+    provider?: ProviderAccount['provider'];
+    institution_name?: string | null;
+    connection_id?: string | null;
+    provider_connection_id?: string | null;
+    plaid_connection_id?: string | null;
+    transaction_count?: number | null;
+  }[]
+): ProviderAccount[] {
   return accounts.map((account) => {
-    const legacy = account as AccountWithLegacyFields;
-    const ledger =
-      parseBalance(account.balance_ledger) ??
-      parseBalance(account.balance_current) ??
-      parseBalance(legacy.ledger ?? null);
-
-    const available =
-      parseBalance(account.balance_available) ??
-      parseBalance(account.balance_current) ??
-      parseBalance(legacy.available ?? null);
-
     return {
       id: account.id,
       name: account.name,
       account_type: account.account_type,
-      balance_ledger: ledger,
-      balance_available: available,
+      balance_ledger: parseBalance(account.balance_ledger),
+      balance_available: parseBalance(account.balance_available ?? null),
       mask: account.mask ?? null,
       provider: account.provider ?? 'plaid',
-      institution_name: account.institution_name ?? legacy.institutionName ?? 'Unknown Bank',
+      institution_name: account.institution_name ?? 'Unknown Bank',
       connection_id:
         account.connection_id ??
         account.provider_connection_id ??

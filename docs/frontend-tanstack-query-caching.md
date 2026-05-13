@@ -127,8 +127,6 @@ This is the root dependency for every data hook. Migrating it first means all la
 - [x] `ACCOUNTS_CHANGED_EVENT` still triggers a refetch of the account list
 - [x] No duplicate in-flight requests to the accounts endpoint on mount
 
-Note: remove `AccountWithLegacyFields` once the unified accounts API no longer needs legacy field fallbacks.
-
 ### TDD Log
 - Red: added `frontend/tests/hooks/useAccountFilter.test.tsx` and `frontend/tests/utils/cacheKeys.test.ts` coverage for cache key output, mount dedupe, and query invalidation.
 - Green: replaced manual account fetching with `useQuery`, added `accountIdsCacheKey`, and wrapped test/story consumers in a query client provider.
