@@ -30,11 +30,5 @@
       "include-component-in-tag": false
     }
   },
-  "plugins": [
-    {
-      "type": "linked-versions",
-      "groupName": "sumurai",
-      "components": [".", "backend"]
-    }
-  ]
+  "plugins": []
 }
