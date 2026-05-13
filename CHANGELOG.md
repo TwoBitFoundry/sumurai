@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.7.3](https://github.com/TwoBitFoundry/sumurai/compare/v5.7.2...v5.7.3) (2026-05-13)
+
+
+### Bug Fixes
+
+* test semantic-release integration for unified versioning ([8a14b23](https://github.com/TwoBitFoundry/sumurai/commit/8a14b23391fecdcc205fd3e50402dc1c3f2d7971))
+
 ## [5.7.2](https://github.com/TwoBitFoundry/sumurai/compare/v5.7.1...v5.7.2) (2026-05-13)
 
 
