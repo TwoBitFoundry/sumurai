@@ -37,7 +37,6 @@ export interface UseTransactionsResult {
 export function useTransactions(options: UseTransactionsOptions = {}): UseTransactionsResult {
   const { initialSearch = '', initialCategory = null, initialDateRange, pageSize = 10 } = options;
 
-  const [categories, setCategories] = useState<string[]>([]);
   const [search, setSearchState] = useState(initialSearch);
   const [selectedCategory, setSelectedCategoryState] = useState<string | null>(initialCategory);
   const [dateRange, setDateRangeState] = useState<DateRangeKey>(initialDateRange);
@@ -111,18 +110,21 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     staleTime: 2 * 60 * 1000,
   });
 
-  const loadCategories = useCallback(async () => {
-    try {
-      const serverCategories = await TransactionService.getTransactionCategories();
-      setCategories(serverCategories);
-    } catch {
-      setCategories([]);
-    }
-  }, []);
+  const categoriesQuery = useQuery({
+    queryKey: ['transactions', 'categories'],
+    queryFn: async (): Promise<string[]> => {
+      try {
+        const serverCategories = await TransactionService.getTransactionCategories();
+        return Array.isArray(serverCategories) ? serverCategories : [];
+      } catch {
+        return [];
+      }
+    },
+    enabled: !accountsLoading,
+    staleTime: 2 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    void loadCategories();
-  }, [loadCategories]);
+  const categories = categoriesQuery.data ?? [];
 
   useEffect(() => {
     if (accountsLoading) {

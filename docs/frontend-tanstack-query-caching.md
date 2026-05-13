@@ -226,6 +226,7 @@ const query = useQuery({
 - Red: extended `frontend/tests/features/transactions/hooks/useTransactions.test.tsx` with remount/cache reuse expectations, first-visit data wait, and error mapping cases before refactoring the hook.
 - Green: moved paginated transaction loading to `useQuery` with key `['transactions', 'list', dateRange, cacheKey, debounced search, category, page, pageSize]`, `staleTime` 2 minutes, `accountIdsCacheKey` for the account segment, and loading mapped to fetching-without-data so cached remounts avoid empty loading frames; kept debounced search, category state, pagination, and filter-driven page reset.
 - Verify: `npm --prefix frontend run test:serial -- tests/features/transactions/hooks/useTransactions.test.tsx`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend test`
+- Follow-up: `getTransactionCategories` now uses `useQuery` with key `['transactions', 'categories']` (same `enabled` and `staleTime` as the list); remount test asserts categories stay cached with no extra category API calls while fresh.
 
 ---
 

@@ -118,6 +118,9 @@ describe('useTransactions', () => {
           page_size: 10,
         }) as any
     );
+    jest
+      .mocked(TransactionService.getTransactionCategories)
+      .mockResolvedValue(['FOOD_AND_DRINK', 'TRANSPORTATION']);
 
     const { result, unmount } = renderHook(() => useTransactions({ pageSize: 10 }), {
       wrapper: RemountWrapper,
@@ -126,8 +129,13 @@ describe('useTransactions', () => {
     await waitFor(() => {
       expect(result.current.transactions).toHaveLength(2);
     });
+    await waitFor(() => {
+      expect(result.current.categories).toEqual(['FOOD_AND_DRINK', 'TRANSPORTATION']);
+    });
 
     const callCount = jest.mocked(TransactionService.getTransactions).mock.calls.length;
+    const categoriesCallCount = jest.mocked(TransactionService.getTransactionCategories).mock.calls
+      .length;
     const txIds = result.current.transactions.map((t) => t.id);
 
     unmount();
@@ -139,6 +147,7 @@ describe('useTransactions', () => {
     await waitFor(() => {
       expect(next.current.isLoading).toBe(false);
       expect(next.current.transactions.map((t) => t.id)).toEqual(txIds);
+      expect(next.current.categories).toEqual(['FOOD_AND_DRINK', 'TRANSPORTATION']);
     });
 
     await act(async () => {
@@ -147,6 +156,9 @@ describe('useTransactions', () => {
 
     await waitFor(() => {
       expect(jest.mocked(TransactionService.getTransactions).mock.calls.length).toBe(callCount);
+      expect(jest.mocked(TransactionService.getTransactionCategories).mock.calls.length).toBe(
+        categoriesCallCount
+      );
     });
   });
 
