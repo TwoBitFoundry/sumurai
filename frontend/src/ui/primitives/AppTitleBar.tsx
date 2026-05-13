@@ -88,7 +88,7 @@ export interface AppTitleBarProps {
  *   onLogout={handleLogout}
  *   currentTab={currentTab}
  *   onTabChange={handleTabChange}
- *   accountFilterNode={<HeaderAccountFilter scrolled={scrolled} />}
+ *   accountFilterNode={<HeaderAccountFilter />}
  * />
  * ```
  */

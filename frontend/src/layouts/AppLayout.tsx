@@ -42,11 +42,7 @@ export function AppLayout({
           currentTab={currentTab}
           onTabChange={onTabChange}
           accountFilterNode={
-            renderAccountFilter ? (
-              renderAccountFilter(scrolled)
-            ) : (
-              <HeaderAccountFilter scrolled={scrolled} />
-            )
+            renderAccountFilter ? renderAccountFilter(scrolled) : <HeaderAccountFilter />
           }
         />
 

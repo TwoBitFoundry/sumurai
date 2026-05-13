@@ -48,9 +48,6 @@ export const AllAccounts: Story = {
       selectedAccountIds: providerAccounts.map((a) => a.id),
     }),
   },
-  args: {
-    scrolled: false,
-  },
 };
 
 export const PartialSelection: Story = {
@@ -60,9 +57,6 @@ export const PartialSelection: Story = {
       selectedAccountIds: [providerAccounts[0].id],
       isAllAccountsSelected: false,
     }),
-  },
-  args: {
-    scrolled: false,
   },
 };
 
@@ -74,20 +68,5 @@ export const LoadingNoAccounts: Story = {
       selectedAccountIds: [],
       loading: true,
     }),
-  },
-  args: {
-    scrolled: false,
-  },
-};
-
-export const ScrolledCompact: Story = {
-  parameters: {
-    mockAccountFilter: buildMockAccountFilterContext({
-      accountsByBank: storyBank,
-      selectedAccountIds: providerAccounts.map((a) => a.id),
-    }),
-  },
-  args: {
-    scrolled: true,
   },
 };

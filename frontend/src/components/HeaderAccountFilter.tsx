@@ -10,11 +10,7 @@ import {
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 
-interface HeaderAccountFilterProps {
-  scrolled: boolean;
-}
-
-export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
+export function HeaderAccountFilter() {
   const [isOpen, setIsOpen] = useState(false);
   const [collapsedBanks, setCollapsedBanks] = useState<Set<string>>(new Set());
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -113,7 +109,7 @@ export function HeaderAccountFilter({ scrolled }: HeaderAccountFilterProps) {
           'gap-2',
           uiTextRecipes.body,
           uiTypographyRecipes.captionStrong,
-          scrolled ? 'px-2.5 py-1' : 'px-3 py-1.5'
+          'px-3 py-1.5'
         )}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
