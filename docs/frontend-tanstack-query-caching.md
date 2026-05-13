@@ -272,15 +272,18 @@ const addMutation = useMutation({
 - `loadedRef` and `budgetsReady` state are removed (TQ manages fetch lifecycle)
 
 ### Acceptance Criteria
-- [ ] `npm run build` passes
-- [ ] `npm test` passes
-- [ ] Budgets tab loads on first visit
-- [ ] Switching away and back shows previous budgets instantly
-- [ ] Adding/editing/deleting a budget applies optimistically and server confirms without full page reload
-- [ ] Changing the month triggers a new transaction fetch only (budget list cache unchanged)
-- [ ] `optimistic.ts` `SetList`-based functions are no longer called from `useBudgets`
+- [x] `npm run build` passes
+- [x] `npm test` passes
+- [x] Budgets tab loads on first visit
+- [x] Switching away and back shows previous budgets instantly
+- [x] Adding/editing/deleting a budget applies optimistically and server confirms without full page reload
+- [x] Changing the month triggers a new transaction fetch only (budget list cache unchanged)
+- [x] `optimistic.ts` `SetList`-based functions are no longer called from `useBudgets`
 
----
+### TDD Log
+- Red: extended `frontend/tests/features/budgets/hooks/useBudgets.test.tsx` with remount cache assertions, month-change fetch assertions, and stateful fetch handlers so `invalidateQueries` after mutations matches server-backed GET responses.
+- Green: replaced manual budget and transaction loading in `useBudgets.ts` with `useQuery` keys `['budgets']` and `['transactions', 'budget-month', range, cacheKey]`; wired `useMutation` optimistic updates with `cancelQueries` / `setQueryData` / rollback / `invalidateQueries`; removed `optimisticCreate` import; `load` uses `queryClient.refetchQueries` with stable deps to avoid `BudgetsPage` effect loops.
+- Verify: `npm --prefix frontend run test:serial -- tests/features/budgets/hooks/useBudgets.test.tsx`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend test`
 
 ## End-to-End Verification
 

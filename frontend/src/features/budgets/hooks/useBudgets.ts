@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useMemo, useState } from 'react';
 import { BudgetCalculator } from '../../../domain/BudgetCalculator';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { BudgetService } from '../../../services/BudgetService';
 import { TransactionService } from '../../../services/TransactionService';
 import type { Budget, Transaction } from '../../../types/api';
-import { optimisticCreate } from '../../../utils/optimistic';
+import { accountIdsCacheKey } from '../../../utils/cacheKeys';
 
 export interface BudgetProgressEntry extends Budget {
   spent: number;
@@ -35,15 +36,11 @@ export interface UseBudgetsResult {
 }
 
 export function useBudgets(): UseBudgetsResult {
-  const [isLoading, setIsLoading] = useState(false);
-  const [transactionsLoading, setTransactionsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [mutationError, setMutationError] = useState<string | null>(null);
   const [month, setMonthState] = useState(() => normalizeMonth(new Date()));
-  const [budgetsReady, setBudgetsReady] = useState(false);
 
+  const queryClient = useQueryClient();
   const {
     selectedAccountIds,
     isAllAccountsSelected,
@@ -51,8 +48,6 @@ export function useBudgets(): UseBudgetsResult {
     loading: accountsLoading,
   } = useAccountFilter();
 
-  const loadedRef = useRef(false);
-  const lastRangeRef = useRef<string | null>(null);
   const monthFormatter = useMemo(
     () => new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }),
     []
@@ -60,101 +55,120 @@ export function useBudgets(): UseBudgetsResult {
 
   const range = useMemo(() => getMonthRange(month), [month]);
   const monthLabel = useMemo(() => monthFormatter.format(month), [month, monthFormatter]);
+  const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
 
-  const loadTransactions = useCallback(
-    async (start: string, end: string) => {
-      const shouldFilter = selectedAccountIds.length > 0 && !isAllAccountsSelected;
-      const keySuffix =
-        selectedAccountIds.length === 0 && allAccountIds.length > 0
-          ? 'none'
-          : shouldFilter
-            ? selectedAccountIds.join(',')
-            : 'all';
+  const budgetsQuery = useQuery({
+    queryKey: ['budgets'],
+    queryFn: () => BudgetService.getBudgets(),
+    staleTime: 5 * 60 * 1000,
+  });
 
-      const key = `${start}:${end}:${keySuffix}`;
-      lastRangeRef.current = key;
-
-      if (accountsLoading) {
-        return;
-      }
-
+  const txnsQuery = useQuery({
+    queryKey: ['transactions', 'budget-month', range, cacheKey],
+    queryFn: async (): Promise<Transaction[]> => {
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
-        setTransactions([]);
-        return;
+        return [];
       }
-
+      const shouldFilter = selectedAccountIds.length > 0 && !isAllAccountsSelected;
       const accountIds = shouldFilter ? selectedAccountIds : undefined;
-      setTransactionsLoading(true);
-      try {
-        const items = await TransactionService.getTransactions({
-          startDate: start,
-          endDate: end,
-          accountIds,
-        });
-        setTransactions(items);
-      } catch {
-        setTransactions([]);
-      } finally {
-        setTransactionsLoading(false);
+      return TransactionService.getTransactions({
+        startDate: range.start,
+        endDate: range.end,
+        accountIds,
+      });
+    },
+    enabled: !accountsLoading && budgetsQuery.isSuccess,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const budgets = budgetsQuery.data ?? [];
+  const transactions = txnsQuery.data ?? [];
+
+  const loadError = useMemo(() => {
+    if (!budgetsQuery.isError || budgetsQuery.error == null) {
+      return null;
+    }
+    const status = extractStatus(budgetsQuery.error);
+    if (status === 401) {
+      return 'You are not authenticated. Please log in again.';
+    }
+    return 'Failed to load budgets.';
+  }, [budgetsQuery.isError, budgetsQuery.error]);
+
+  const error = loadError ?? mutationError;
+
+  const addMutation = useMutation({
+    mutationFn: (variables: { category: string; amount: number }) =>
+      BudgetService.createBudget(variables),
+    onMutate: async (newBudget) => {
+      await queryClient.cancelQueries({ queryKey: ['budgets'] });
+      const previous = queryClient.getQueryData<Budget[]>(['budgets']);
+      const id = generateId();
+      queryClient.setQueryData<Budget[]>(['budgets'], (old) => [
+        ...(old ?? []),
+        { id, category: newBudget.category, amount: newBudget.amount },
+      ]);
+      return { previous, tempId: id };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(['budgets'], context.previous);
       }
     },
-    [allAccountIds, isAllAccountsSelected, selectedAccountIds, accountsLoading]
-  );
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['budgets'] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (variables: { id: string; amount: number }) =>
+      BudgetService.updateBudget(variables.id, { amount: variables.amount }),
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ['budgets'] });
+      const previous = queryClient.getQueryData<Budget[]>(['budgets']);
+      queryClient.setQueryData<Budget[]>(['budgets'], (old) =>
+        (old ?? []).map((b) => (b.id === variables.id ? { ...b, amount: variables.amount } : b))
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(['budgets'], context.previous);
+      }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['budgets'] });
+    },
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (variables: { id: string }) => BudgetService.deleteBudget(variables.id),
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ['budgets'] });
+      const previous = queryClient.getQueryData<Budget[]>(['budgets']);
+      queryClient.setQueryData<Budget[]>(['budgets'], (old) =>
+        (old ?? []).filter((b) => b.id !== variables.id)
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(['budgets'], context.previous);
+      }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['budgets'] });
+    },
+  });
 
   const load = useCallback(async () => {
-    setError(null);
     setValidationError(null);
-
-    let shouldFetchTransactions = true;
-
-    if (!loadedRef.current) {
-      setIsLoading(true);
-      try {
-        const list = await BudgetService.getBudgets();
-        setBudgets(list);
-        loadedRef.current = true;
-        setBudgetsReady(true);
-      } catch (error: unknown) {
-        setBudgets([]);
-        loadedRef.current = false;
-        shouldFetchTransactions = false;
-        const status = extractStatus(error);
-        if (status === 401) setError('You are not authenticated. Please log in again.');
-        else setError('Failed to load budgets.');
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      setBudgetsReady(true);
-    }
-
-    if (shouldFetchTransactions) {
-      await loadTransactions(range.start, range.end);
-    }
-  }, [loadTransactions, range.end, range.start]);
-
-  useEffect(() => {
-    if (!budgetsReady) return;
-    const shouldFilter = selectedAccountIds.length > 0 && !isAllAccountsSelected;
-    const keySuffix =
-      selectedAccountIds.length === 0 && allAccountIds.length > 0
-        ? 'none'
-        : shouldFilter
-          ? selectedAccountIds.join(',')
-          : 'all';
-
-    const key = `${range.start}:${range.end}:${keySuffix}`;
-    if (key === lastRangeRef.current) return;
-    loadTransactions(range.start, range.end);
-  }, [
-    budgetsReady,
-    loadTransactions,
-    range.end,
-    range.start,
-    isAllAccountsSelected,
-    selectedAccountIds,
-    allAccountIds,
-  ]);
+    setMutationError(null);
+    await queryClient.refetchQueries({ queryKey: ['budgets'] });
+    await queryClient.refetchQueries({
+      queryKey: ['transactions', 'budget-month', range, cacheKey],
+    });
+  }, [queryClient, range, cacheKey]);
 
   const categories = useMemo(() => budgets.map((b) => b.category).sort(), [budgets]);
 
@@ -201,8 +215,9 @@ export function useBudgets(): UseBudgetsResult {
   const add = useCallback(
     async (category: string, amount: number) => {
       setValidationError(null);
-      setError(null);
-      const exists = budgets.some(
+      setMutationError(null);
+      const list = queryClient.getQueryData<Budget[]>(['budgets']) ?? [];
+      const exists = list.some(
         (b) => (b.category || '').toLowerCase() === (category || '').toLowerCase()
       );
       if (exists) {
@@ -210,70 +225,60 @@ export function useBudgets(): UseBudgetsResult {
         setValidationError(msg);
         return Promise.reject(new Error(msg));
       }
-      const temp: Budget = { id: generateId(), category, amount };
       try {
-        await optimisticCreate(setBudgets, temp, () =>
-          BudgetService.createBudget({ category, amount })
-        );
-      } catch (error: unknown) {
-        const status = extractStatus(error);
+        await addMutation.mutateAsync({ category, amount });
+      } catch (err: unknown) {
+        const status = extractStatus(err);
         const msg =
           status === 409
             ? `A budget for "${category}" already exists.`
             : status === 401
               ? 'You are not authenticated. Please log in again.'
               : 'Failed to create budget.';
-        setError(msg);
-        throw error;
+        setMutationError(msg);
+        throw err;
       }
     },
-    [budgets]
+    [addMutation, queryClient]
   );
 
   const update = useCallback(
     async (id: string, amount: number) => {
-      setError(null);
-      const snapshot = budgets;
-      setBudgets((prev) => prev.map((b) => (b.id === id ? { ...b, amount } : b)));
+      setMutationError(null);
       try {
-        const updated = await BudgetService.updateBudget(id, { amount });
-        setBudgets((prev) => prev.map((b) => (b.id === id ? updated : b)));
-      } catch (error: unknown) {
-        setBudgets(snapshot);
-        const status = extractStatus(error);
+        await updateMutation.mutateAsync({ id, amount });
+      } catch (err: unknown) {
+        const status = extractStatus(err);
         const msg =
           status === 401
             ? 'You are not authenticated. Please log in again.'
             : 'Failed to update budget.';
-        setError(msg);
+        setMutationError(msg);
       }
     },
-    [budgets]
+    [updateMutation]
   );
 
   const remove = useCallback(
     async (id: string) => {
-      setError(null);
-      const snapshot = budgets;
-      setBudgets((prev) => prev.filter((b) => b.id !== id));
+      setMutationError(null);
       try {
-        await BudgetService.deleteBudget(id);
-      } catch (error: unknown) {
-        setBudgets(snapshot);
-        const status = extractStatus(error);
+        await removeMutation.mutateAsync({ id });
+      } catch (err: unknown) {
+        const status = extractStatus(err);
         const msg =
           status === 401
             ? 'You are not authenticated. Please log in again.'
             : 'Failed to delete budget.';
-        setError(msg);
+        setMutationError(msg);
       }
     },
-    [budgets]
+    [removeMutation]
   );
 
   return {
-    isLoading,
-    transactionsLoading,
+    isLoading: budgetsQuery.isPending,
+    transactionsLoading: txnsQuery.isFetching,
     error,
     validationError,
     budgets,

@@ -1,9 +1,11 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { AccountFilterTestProvider } from '@tests/utils/AccountFilterTestProvider';
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures';
+import type { ReactNode } from 'react';
 import { useBudgets } from '@/features/budgets/hooks/useBudgets';
-import { useAccountFilter } from '@/hooks/useAccountFilter';
+import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
 
 const TestWrapper = AccountFilterTestProvider;
 
@@ -143,9 +145,14 @@ describe('useBudgets', () => {
   });
 
   it('creates budget optimistically', async () => {
+    const budgetsStore: ReturnType<typeof asBudget>[] = [];
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': [],
-      'POST /api/budgets': asBudget('server-1', 'groceries', 200),
+      'GET /api/budgets': () => budgetsStore,
+      'POST /api/budgets': () => {
+        const created = asBudget('server-1', 'groceries', 200);
+        budgetsStore.push(created);
+        return created;
+      },
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
@@ -197,9 +204,13 @@ describe('useBudgets', () => {
   });
 
   it('updates budget optimistically', async () => {
+    const budgetsStore = [asBudget('1', 'groceries', 100)];
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': [asBudget('1', 'groceries', 100)],
-      'PUT /api/budgets/1': asBudget('1', 'groceries', 250),
+      'GET /api/budgets': () => budgetsStore,
+      'PUT /api/budgets/1': () => {
+        budgetsStore[0] = asBudget('1', 'groceries', 250);
+        return budgetsStore[0];
+      },
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
@@ -223,8 +234,9 @@ describe('useBudgets', () => {
   });
 
   it('handles update budget failure', async () => {
+    const budgetsStore = [asBudget('1', 'groceries', 100)];
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': [asBudget('1', 'groceries', 100)],
+      'GET /api/budgets': () => budgetsStore,
       'PUT /api/budgets/1': () => {
         throw Object.assign(new Error('fail'), { status: 500 });
       },
@@ -251,9 +263,13 @@ describe('useBudgets', () => {
   });
 
   it('deletes budget optimistically', async () => {
+    const budgetsStore = [asBudget('1', 'groceries', 100)];
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': [asBudget('1', 'groceries', 100)],
-      'DELETE /api/budgets/1': new Response(null, { status: 204 }),
+      'GET /api/budgets': () => budgetsStore,
+      'DELETE /api/budgets/1': () => {
+        budgetsStore.length = 0;
+        return new Response(null, { status: 204 });
+      },
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
@@ -277,8 +293,9 @@ describe('useBudgets', () => {
   });
 
   it('handles delete budget failure', async () => {
+    const budgetsStore = [asBudget('1', 'groceries', 100)];
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': [asBudget('1', 'groceries', 100)],
+      'GET /api/budgets': () => budgetsStore,
       'DELETE /api/budgets/1': () => {
         throw Object.assign(new Error('fail'), { status: 500 });
       },
@@ -302,5 +319,98 @@ describe('useBudgets', () => {
     });
 
     expect(result.current.budgets).toHaveLength(1);
+  });
+
+  it('remounting shows cached budgets without extra budget fetches while fresh', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 5 * 60 * 1000,
+          gcTime: 10 * 60 * 1000,
+          retry: false,
+          refetchOnWindowFocus: false,
+        },
+      },
+    });
+
+    function RemountWrapper({ children }: { children: ReactNode }) {
+      return (
+        <QueryClientProvider client={queryClient}>
+          <AccountFilterProvider>{children}</AccountFilterProvider>
+        </QueryClientProvider>
+      );
+    }
+
+    fetchMock = installFetchRoutes({
+      'GET /api/budgets': [asBudget('1', 'groceries', 100)],
+      'GET /api/transactions': [],
+      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/status': createConnectedStatus(),
+    });
+
+    const { result, unmount } = renderHook(() => useBudgets(), { wrapper: RemountWrapper });
+
+    await waitFor(() => {
+      expect(result.current.budgets).toHaveLength(1);
+    });
+
+    const budgetFetchCount = fetchMock.mock.calls.filter((c) =>
+      String(c[0]).includes('/api/budgets')
+    ).length;
+
+    unmount();
+
+    const { result: next } = renderHook(() => useBudgets(), { wrapper: RemountWrapper });
+
+    await waitFor(() => {
+      expect(next.current.isLoading).toBe(false);
+      expect(next.current.budgets).toHaveLength(1);
+      expect(next.current.budgets[0].id).toBe('1');
+    });
+
+    const budgetFetchCountAfter = fetchMock.mock.calls.filter((c) =>
+      String(c[0]).includes('/api/budgets')
+    ).length;
+    expect(budgetFetchCountAfter).toBe(budgetFetchCount);
+  });
+
+  it('changing month refetches transactions but not budgets while budgets stay fresh', async () => {
+    fetchMock = installFetchRoutes({
+      'GET /api/budgets': [asBudget('1', 'groceries', 100)],
+      'GET /api/transactions': [],
+      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/status': createConnectedStatus(),
+    });
+
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper });
+
+    await act(async () => {
+      await result.current.load();
+    });
+
+    await waitFor(() => {
+      expect(result.current.budgets).toHaveLength(1);
+    });
+
+    const budgetFetchCount = fetchMock.mock.calls.filter((c) =>
+      String(c[0]).includes('/api/budgets')
+    ).length;
+    const transactionFetchCount = fetchMock.mock.calls.filter((c) =>
+      String(c[0]).includes('/api/transactions')
+    ).length;
+
+    await act(() => {
+      result.current.goToNextMonth();
+    });
+
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.filter((c) => String(c[0]).includes('/api/transactions')).length
+      ).toBeGreaterThan(transactionFetchCount);
+    });
+
+    expect(fetchMock.mock.calls.filter((c) => String(c[0]).includes('/api/budgets')).length).toBe(
+      budgetFetchCount
+    );
   });
 });
