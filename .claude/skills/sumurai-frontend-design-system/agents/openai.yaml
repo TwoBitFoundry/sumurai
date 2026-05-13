@@ -1,0 +1,8 @@
+interface:
+  display_name: "Sumurai Frontend Design System"
+  short_description: "Guide Sumurai UI tokens and primitives"
+  brand_color: "#0EA5E9"
+  default_prompt: "Use $sumurai-frontend-design-system to update Sumurai frontend UI while preserving the token and primitive architecture."
+
+policy:
+  allow_implicit_invocation: true

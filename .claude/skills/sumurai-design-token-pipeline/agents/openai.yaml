@@ -1,0 +1,8 @@
+interface:
+  display_name: "Sumurai Design Token Pipeline"
+  short_description: "Align DESIGN.md and token artifacts"
+  brand_color: "#8B5CF6"
+  default_prompt: "Use $sumurai-design-token-pipeline to align Sumurai DESIGN.md with frontend token artifacts."
+
+policy:
+  allow_implicit_invocation: true

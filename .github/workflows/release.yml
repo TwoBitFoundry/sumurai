@@ -22,13 +22,47 @@ jobs:
       pull-requests: write
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
+      tag_name: ${{ steps.resolve-tag.outputs.tag }}
     steps:
       - id: release
         uses: googleapis/release-please-action@v5
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      - id: resolve-tag
+        if: steps.release.outputs.release_created == 'true'
+        shell: bash
+        run: |
+          tag="${{ steps.release.outputs.tag_name }}"
+          if [ -z "$tag" ]; then
+            tag="${{ steps.release.outputs['.--tag_name'] }}"
+          fi
+          if [ -z "$tag" ]; then
+            echo "ERROR: tag_name is empty — cannot dispatch publish-images"
+            exit 1
+          fi
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Update autorelease label
+        if: steps.release.outputs.release_created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          pr=$(gh pr list \
+            --repo "${{ github.repository }}" \
+            --state merged \
+            --label "autorelease: pending" \
+            --json number \
+            --jq 'first(.[] | .number)')
+          if [ -n "$pr" ]; then
+            gh label create "autorelease: tagged" --repo "${{ github.repository }}" --color "0075ca" --force || true
+            gh pr edit "$pr" \
+              --repo "${{ github.repository }}" \
+              --remove-label "autorelease: pending" \
+              --add-label "autorelease: tagged"
+          fi
 
   dispatch-publish-images:
     name: Dispatch publish-images
@@ -38,6 +72,12 @@ jobs:
     permissions:
       actions: write
     steps:
-      - env:
+      - name: Dispatch publish-images workflow
+        env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run .github/workflows/publish-images.yml --repo "${{ github.repository }}" --ref "${{ needs.release-please.outputs.tag_name }}"
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          echo "Dispatching publish-images for tag: ${TAG}"
+          gh workflow run .github/workflows/publish-images.yml \
+            --repo "${{ github.repository }}" \
+            --ref "${TAG}"

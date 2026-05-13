@@ -1,0 +1,8 @@
+interface:
+  display_name: "Sumurai Testing Policy"
+  short_description: "Guide Sumurai test placement and scope"
+  brand_color: "#10B981"
+  default_prompt: "Use $sumurai-testing-policy to add focused tests for this Sumurai behavior change."
+
+policy:
+  allow_implicit_invocation: true
