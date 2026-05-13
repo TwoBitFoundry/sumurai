@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.7.1](https://github.com/TwoBitFoundry/sumurai/compare/v5.7.0...v5.7.1) (2026-05-13)
+
+
+### Bug Fixes
+
+* **ci:** remove component from release-please title patterns ([0a58aa6](https://github.com/TwoBitFoundry/sumurai/commit/0a58aa6e8a38ae045682172b2fd3fccf1013bb05))
+* **frontend:** restore corrupted dependency versions in package-lock.json ([bc77d3e](https://github.com/TwoBitFoundry/sumurai/commit/bc77d3e543a3cd3dea615b7621f56b7d0f976eed))
+
 ## [5.7.0](https://github.com/TwoBitFoundry/sumurai/compare/v5.6.0...v5.7.0) (2026-05-13)
 
 
