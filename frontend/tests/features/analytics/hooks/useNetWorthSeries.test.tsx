@@ -100,6 +100,27 @@ describe('useNetWorthSeries', () => {
     expect(result.current.error).toBeNull();
   });
 
+  it('reuses cached net worth data on rerender with the same inputs', async () => {
+    const { result, rerender } = renderHook(
+      () => useNetWorthSeries('current-month' as DateRangeKey),
+      {
+        wrapper: TestWrapper,
+      }
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const initialCalls = jest.mocked(AnalyticsService.getNetWorthOverTime).mock.calls.length;
+
+    rerender();
+
+    expect(jest.mocked(AnalyticsService.getNetWorthOverTime).mock.calls.length).toBe(initialCalls);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.refreshing).toBe(false);
+  });
+
   it('loads after account filter finishes loading', async () => {
     const accountsDeferred = createDeferred<any[]>();
     jest.mocked(ProviderCatalog.getAccounts).mockReturnValueOnce(accountsDeferred.promise as any);
@@ -120,13 +141,13 @@ describe('useNetWorthSeries', () => {
       expect(result.current.filter.loading).toBe(true);
     });
 
-    jest.mocked(AnalyticsService.getNetWorthOverTime).mockClear();
+    const initialCalls = jest.mocked(AnalyticsService.getNetWorthOverTime).mock.calls.length;
 
     await act(async () => {
       await result.current.netWorth.reload();
     });
 
-    expect(AnalyticsService.getNetWorthOverTime).not.toHaveBeenCalled();
+    expect(jest.mocked(AnalyticsService.getNetWorthOverTime).mock.calls.length).toBe(initialCalls);
 
     await act(async () => {
       accountsDeferred.resolve(mockPlaidAccounts as any);
@@ -170,7 +191,9 @@ describe('useNetWorthSeries', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(jest.mocked(AnalyticsService.getNetWorthOverTime).mock.calls.length).toBeGreaterThan(
+        0
+      );
     });
 
     rerender({ range: 'past-3-months' as DateRangeKey });
@@ -215,6 +238,10 @@ describe('useNetWorthSeries', () => {
 
     await waitFor(() => {
       expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2']);
+    });
+
+    await waitFor(() => {
+      expect(accountFilterHook!.selectedAccountIds).toEqual(accountFilterHook!.allAccountIds);
     });
 
     await waitFor(() => {

@@ -124,6 +124,40 @@ describe('useAnalytics', () => {
     });
   });
 
+  it('reuses cached analytics data on rerender with the same inputs', async () => {
+    const { result, rerender } = renderHook(() => useAnalytics('current-month'), {
+      wrapper: TestWrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const initialSpendingCalls = jest.mocked(AnalyticsService.getSpendingTotal).mock.calls.length;
+    const initialCategoryCalls = jest.mocked(AnalyticsService.getCategorySpendingByDateRange).mock
+      .calls.length;
+    const initialMerchantCalls = jest.mocked(AnalyticsService.getTopMerchantsByDateRange).mock.calls
+      .length;
+    const initialMonthlyCalls = jest.mocked(AnalyticsService.getMonthlyTotals).mock.calls.length;
+
+    rerender();
+
+    expect(jest.mocked(AnalyticsService.getSpendingTotal).mock.calls.length).toBe(
+      initialSpendingCalls
+    );
+    expect(jest.mocked(AnalyticsService.getCategorySpendingByDateRange).mock.calls.length).toBe(
+      initialCategoryCalls
+    );
+    expect(jest.mocked(AnalyticsService.getTopMerchantsByDateRange).mock.calls.length).toBe(
+      initialMerchantCalls
+    );
+    expect(jest.mocked(AnalyticsService.getMonthlyTotals).mock.calls.length).toBe(
+      initialMonthlyCalls
+    );
+    expect(result.current.loading).toBe(false);
+    expect(result.current.refreshing).toBe(false);
+  });
+
   it('should not pass account filter when all accounts selected', async () => {
     let accountFilterHook: ReturnType<typeof useAccountFilter>;
 

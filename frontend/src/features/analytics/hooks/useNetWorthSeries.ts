@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useCallback, useMemo } from 'react';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { AnalyticsService } from '../../../services/AnalyticsService';
+import { accountIdsCacheKey } from '../../../utils/cacheKeys';
 import { computeDateRange, type DateRangeKey } from '../../../utils/dateRanges';
 
 export type NetWorthPoint = { date: string; value: number };
@@ -16,11 +18,6 @@ export type UseNetWorthSeriesResult = {
 };
 
 export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult {
-  const [series, setSeries] = useState<NetWorthPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const {
     selectedAccountIds,
     isAllAccountsSelected,
@@ -28,96 +25,48 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
     loading: accountsLoading,
   } = useAccountFilter();
 
-  const abortRef = useRef<AbortController | null>(null);
-  const hasLoadedRef = useRef(false);
-  const loadGenerationRef = useRef(0);
-  const prevAccountsLoadingRef = useRef(accountsLoading);
-  const pendingLoadAfterAccountsRef = useRef(false);
-  const accountsLoadingRef = useRef(accountsLoading);
-  accountsLoadingRef.current = accountsLoading;
-
   const { start, end } = useMemo(() => computeDateRange(range), [range]);
+  const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
 
-  const load = useCallback(async () => {
-    if (!start || !end) {
-      abortRef.current?.abort();
-      abortRef.current = null;
-      setSeries([]);
-      setLoading(false);
-      setRefreshing(false);
-      setError(null);
-      hasLoadedRef.current = true;
-      return;
-    }
+  const query = useQuery<NetWorthPoint[], Error>({
+    queryKey: ['analytics', 'net-worth', range, cacheKey],
+    enabled: !accountsLoading && !!start && !!end,
+    queryFn: async () => {
+      if (!start || !end) {
+        return [];
+      }
 
-    if (accountsLoadingRef.current) {
-      pendingLoadAfterAccountsRef.current = true;
-      return;
-    }
-
-    abortRef.current?.abort();
-    const generation = ++loadGenerationRef.current;
-    const ac = new AbortController();
-    abortRef.current = ac;
-
-    const showBlockingState = !hasLoadedRef.current;
-    if (showBlockingState) {
-      setLoading(true);
-      setRefreshing(false);
-    } else {
-      setRefreshing(true);
-    }
-    setError(null);
-
-    try {
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
-        setSeries([]);
-        hasLoadedRef.current = true;
-        return;
+        return [];
       }
 
       const accountIds =
         !isAllAccountsSelected && selectedAccountIds.length > 0 ? selectedAccountIds : undefined;
       const raw = await AnalyticsService.getNetWorthOverTime(start, end, accountIds);
-      if (ac.signal.aborted) return;
-      const normalized = Array.isArray(raw)
+      return Array.isArray(raw)
         ? raw.map((point) => ({
             date: point?.date ?? '',
             value: Number(point?.value) || 0,
           }))
         : [];
-      setSeries(normalized);
-      hasLoadedRef.current = true;
-    } catch (error: unknown) {
-      if (ac.signal.aborted || (error instanceof Error && error.name === 'AbortError')) return;
-      const message = error instanceof Error ? error.message : 'Failed to load net worth';
-      setError(message);
-      setSeries([]);
-    } finally {
-      if (generation === loadGenerationRef.current) {
-        if (showBlockingState) {
-          setLoading(false);
-        }
-        setRefreshing(false);
-      }
+    },
+  });
+
+  const reload = useCallback(async () => {
+    if (accountsLoading || !start || !end) {
+      return;
     }
-  }, [start, end, isAllAccountsSelected, selectedAccountIds, allAccountIds]);
 
-  useEffect(() => {
-    load();
-    return () => {
-      abortRef.current?.abort();
-    };
-  }, [load]);
+    await query.refetch();
+  }, [accountsLoading, end, query.refetch, start]);
 
-  useEffect(() => {
-    const wasLoading = prevAccountsLoadingRef.current;
-    prevAccountsLoadingRef.current = accountsLoading;
-    if (wasLoading && !accountsLoading && pendingLoadAfterAccountsRef.current) {
-      pendingLoadAfterAccountsRef.current = false;
-      load();
-    }
-  }, [accountsLoading, load]);
-
-  return { series, loading, refreshing, error, start, end, reload: load };
+  return {
+    series: query.data ?? [],
+    loading: accountsLoading || query.isPending,
+    refreshing: query.isFetching && !query.isPending && !accountsLoading,
+    error: query.error?.message ?? null,
+    start,
+    end,
+    reload,
+  };
 }

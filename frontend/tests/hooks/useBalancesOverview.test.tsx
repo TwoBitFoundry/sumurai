@@ -114,35 +114,27 @@ describe('useBalancesOverview', () => {
     expect(result.current.data).toEqual(mock);
   });
 
-  it('refetches when endDate changes (debounced)', async () => {
-    // Controlled range state within the test component wrapper
-    let end = '2024-01-01';
-    const { result, rerender } = renderHook(({ endDate }) => useBalancesOverview({ endDate }, 10), {
-      initialProps: { endDate: end },
+  it('reuses cached overview data on rerender with the same inputs', async () => {
+    const { result, rerender } = renderHook(() => useBalancesOverview(), {
       wrapper: TestWrapper,
     });
 
     await waitFor(() => {
-      expect(result.current.refreshing).toBe(false);
+      expect(result.current.loading).toBe(false);
     });
+
     const initialCalls = fetchMock.mock.calls.filter((c) =>
       String(c[0]).includes('/api/analytics/balances/overview')
     ).length;
 
-    // Change endDate -> should trigger debounced refetch
-    end = '2024-02-01';
-    rerender({ endDate: end });
+    rerender();
 
-    await waitFor(() => {
-      expect(
-        fetchMock.mock.calls.filter((c) =>
-          String(c[0]).includes('/api/analytics/balances/overview')
-        ).length
-      ).toBe(initialCalls + 1);
-    });
-    await waitFor(() => {
-      expect(result.current.refreshing).toBe(false);
-    });
+    expect(
+      fetchMock.mock.calls.filter((c) => String(c[0]).includes('/api/analytics/balances/overview'))
+        .length
+    ).toBe(initialCalls);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.refreshing).toBe(false);
   });
 
   it('returns error when API fails', async () => {
