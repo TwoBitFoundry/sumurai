@@ -13,6 +13,7 @@ import {
 import type { BackendAccount } from '../domain/AccountNormalizer';
 import { ProviderCatalog } from '../services/ProviderCatalog';
 import { TellerService } from '../services/TellerService';
+import { invalidateStaleCacheQueries } from '../utils/queryInvalidation';
 import type { PlaidConnection } from './usePlaidConnections';
 
 export interface UseTellerLinkFlowOptions {
@@ -244,6 +245,10 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
     }
   }, [enabled, onError]);
 
+  const invalidateTellerCache = useCallback(() => {
+    return invalidateStaleCacheQueries(queryClient, ['teller']);
+  }, [queryClient]);
+
   const loadConnectionsWithRetry = useCallback(async () => {
     const result = await connectionsQuery.refetch();
     const effectiveConnections = result.data ?? connectionsQuery.data ?? [];
@@ -255,6 +260,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       hasTriggeredFollowupSyncRef.current = true;
       try {
         await Promise.all(connectionIds.map((id) => TellerService.syncTransactions(id)));
+        await invalidateStaleCacheQueries(queryClient, ['teller']);
       } catch (err) {
         console.warn('Follow-up Teller sync failed', err);
       }
@@ -270,7 +276,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       retryTimeoutRef.current = null;
       void loadConnectionsWithRetry();
     }, 1500);
-  }, [connectionsQuery]);
+  }, [connectionsQuery, queryClient]);
 
   useEffect(() => {
     return () => {
@@ -382,15 +388,14 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       clearError();
       try {
         await TellerService.syncTransactions(connectionId);
-        await queryClient.invalidateQueries({ queryKey: ['teller', 'connections'] });
-        await queryClient.invalidateQueries({ queryKey: ['accounts'] });
+        await invalidateTellerCache();
         setToast('Sync started for Teller connection');
       } catch (err) {
         console.warn('Failed to sync Teller connection', err);
         handleError('Failed to sync Teller connection');
       }
     },
-    [clearError, handleError, enabled, isOnline, queryClient]
+    [clearError, enabled, handleError, invalidateTellerCache, isOnline]
   );
 
   const syncAll = useCallback(async () => {
@@ -411,8 +416,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       }
 
       await Promise.all(ids.map((id) => TellerService.syncTransactions(id)));
-      await queryClient.invalidateQueries({ queryKey: ['teller', 'connections'] });
-      await queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      await invalidateTellerCache();
       setToast('Sync started for all Teller connections');
     } catch (err) {
       console.warn('Failed to sync Teller connections', err);
@@ -420,7 +424,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
     } finally {
       setSyncingAll(false);
     }
-  }, [clearError, connections, enabled, handleError, isOnline, queryClient]);
+  }, [clearError, connections, enabled, handleError, invalidateTellerCache, isOnline]);
 
   const disconnect = useCallback(
     async (connectionId: string) => {
@@ -431,15 +435,14 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       clearError();
       try {
         await TellerService.disconnect(connectionId);
-        await queryClient.invalidateQueries({ queryKey: ['teller', 'connections'] });
-        await queryClient.invalidateQueries({ queryKey: ['accounts'] });
+        await invalidateTellerCache();
         setToast('Disconnected Teller connection');
       } catch (err) {
         console.warn('Failed to disconnect Teller connection', err);
         handleError('Failed to disconnect Teller connection');
       }
     },
-    [clearError, handleError, enabled, isOnline, queryClient]
+    [clearError, enabled, handleError, invalidateTellerCache, isOnline]
   );
 
   return {

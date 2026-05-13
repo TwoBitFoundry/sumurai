@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
@@ -9,7 +10,6 @@ import {
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { dispatchAccountsChanged } from '@/utils/events';
 import { Toast } from '../components/Toast';
 import AccountsSummaryStats from '../features/plaid/components/AccountsSummaryStats';
 import ConnectButton from '../features/plaid/components/ConnectButton';
@@ -24,6 +24,7 @@ import { useTellerProviderInfo } from '../hooks/useTellerProviderInfo';
 import { PageLayout } from '../layouts/PageLayout';
 import { PlaidService } from '../services/PlaidService';
 import { TellerService } from '../services/TellerService';
+import { invalidateStaleCacheQueries, type SyncProvider } from '../utils/queryInvalidation';
 
 const syncButtonClasses = cn(
   'inline-flex items-center gap-2 rounded-full px-5 py-2',
@@ -92,6 +93,7 @@ const toAccountType = (
 };
 
 const AccountsPage = ({ onError }: AccountsPageProps) => {
+  const queryClient = useQueryClient();
   const isOnline = useOnlineStatus();
   const accountFilter = useAccountFilter();
   const providerInfo = useTellerProviderInfo();
@@ -167,6 +169,18 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const [syncingAll, setSyncingAll] = useState(false);
   const flowError =
     banks.length > 0 ? (primaryProvider === 'teller' ? tellerFlow.error : plaidFlow.error) : null;
+  const invalidateBankCache = useCallback(
+    async (provider: SyncProvider) => {
+      await invalidateStaleCacheQueries(queryClient, [provider]);
+    },
+    [queryClient]
+  );
+  const invalidateBankCaches = useCallback(
+    async (providers: SyncProvider[]) => {
+      await invalidateStaleCacheQueries(queryClient, providers);
+    },
+    [queryClient]
+  );
 
   const syncBank = useCallback(
     async (bankId: string) => {
@@ -185,14 +199,14 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         } else {
           await PlaidService.syncTransactions(bank.connectionId);
         }
-        dispatchAccountsChanged();
+        await invalidateBankCache(bank.provider);
         setToast(`Sync started for ${bank.name}`);
       } catch (error) {
         console.warn('Failed to sync bank', error);
         onError?.('Failed to sync bank');
       }
     },
-    [banks, isOnline, onError]
+    [banks, invalidateBankCache, isOnline, onError]
   );
 
   const syncAll = useCallback(async () => {
@@ -202,15 +216,17 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
     setSyncingAll(true);
     try {
+      const providers = new Set<SyncProvider>();
       for (const bank of banks) {
         if (!bank.connectionId) continue;
+        providers.add(bank.provider);
         if (bank.provider === 'teller') {
           await TellerService.syncTransactions(bank.connectionId);
         } else {
           await PlaidService.syncTransactions(bank.connectionId);
         }
       }
-      dispatchAccountsChanged();
+      await invalidateBankCaches(Array.from(providers));
       setToast('Sync started for all banks');
     } catch (error) {
       console.warn('Failed to sync all banks', error);
@@ -218,7 +234,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     } finally {
       setSyncingAll(false);
     }
-  }, [banks, isOnline, onError]);
+  }, [banks, invalidateBankCaches, isOnline, onError]);
 
   const disconnect = useCallback(
     async (bankId: string) => {
@@ -233,14 +249,14 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         } else {
           await PlaidService.disconnect(bank.connectionId);
         }
-        dispatchAccountsChanged();
+        await invalidateBankCache(bank.provider);
         setToast(`${bank.name} disconnected successfully`);
       } catch (error) {
         console.warn('Failed to disconnect bank', error);
         onError?.('Failed to disconnect bank');
       }
     },
-    [banks, onError]
+    [banks, invalidateBankCache, onError]
   );
 
   const summary = useMemo(() => {

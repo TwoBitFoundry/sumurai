@@ -1,8 +1,10 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { createElement, useCallback, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { PlaidLinkSdk, type PlaidLinkSdkHandle } from '@/features/plaid/components/PlaidLinkSdk';
 import { PlaidService } from '@/services/PlaidService';
 import { PLAID_LINK_LOAD_FAILED_MESSAGE, POPUP_BLOCKED_MESSAGE } from '@/utils/popupBlockedMessage';
+import { invalidateStaleCacheQueries } from '@/utils/queryInvalidation';
 
 export interface UseOnboardingPlaidFlowOptions {
   onConnectionSuccess?: (institutionName: string) => void;
@@ -36,9 +38,13 @@ export function useOnboardingPlaidFlow(
   const [institutionName, setInstitutionName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [plaidSdkNonce, setPlaidSdkNonce] = useState(0);
+  const queryClient = useQueryClient();
 
   const plaidSdkRef = useRef<PlaidLinkSdkHandle>(null);
   const plaidSdkFailedRef = useRef(false);
+  const invalidatePlaidCache = useCallback(() => {
+    return invalidateStaleCacheQueries(queryClient, ['plaid']);
+  }, [queryClient]);
 
   const handleError = useCallback(
     (errorMessage: string) => {
@@ -78,6 +84,7 @@ export function useOnboardingPlaidFlow(
           setIsSyncing(true);
           try {
             await PlaidService.syncTransactions(connectionId);
+            await invalidatePlaidCache();
           } catch (syncError) {
             console.warn('Failed to sync transactions during onboarding', syncError);
           } finally {
@@ -91,7 +98,7 @@ export function useOnboardingPlaidFlow(
         setConnectionInProgress(false);
       }
     },
-    [handleError, onConnectionSuccess]
+    [handleError, invalidatePlaidCache, onConnectionSuccess]
   );
 
   const onPlaidScriptLoadFailed = useCallback(() => {
