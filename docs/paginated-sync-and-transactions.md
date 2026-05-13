@@ -79,9 +79,20 @@ for t in &valid {
 ```
 
 ### Acceptance Criteria
-- [ ] `cargo test` passes with no regressions
-- [ ] New test: 600 transactions inserted in two chunks; all 600 in DB, no duplicates on re-insert
-- [ ] Method is on the `DbRepository` trait (mockable)
+- [x] `cargo test` passes with no regressions
+- [x] New test: 600 transactions inserted in two chunks; all 600 in DB, no duplicates on re-insert
+- [x] Method is on the `DbRepository` trait (mockable)
+
+### Notes
+- Added a batch repository write method and switched both sync paths to chunked persistence and cache writes.
+
+### TDD Log
+- `cargo test --manifest-path backend/Cargo.toml --locked connection_service_tests`
+- `cargo test --manifest-path backend/Cargo.toml --locked repository_service_tests`
+- `cargo fmt --manifest-path backend/Cargo.toml --all --check`
+- `cargo check --manifest-path backend/Cargo.toml --locked --all-targets`
+- `cargo clippy --manifest-path backend/Cargo.toml --locked --all-targets --no-deps -- -D warnings`
+- `cargo test --manifest-path backend/Cargo.toml --locked`
 
 ---
 

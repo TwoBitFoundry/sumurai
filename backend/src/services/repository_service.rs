@@ -43,6 +43,11 @@ pub trait DatabaseRepository: Send + Sync {
 
     async fn upsert_account(&self, account: &Account) -> Result<()>;
     async fn upsert_transaction(&self, transaction: &Transaction) -> Result<()>;
+    async fn upsert_transactions_batch(
+        &self,
+        transactions: &[Transaction],
+        user_id: &Uuid,
+    ) -> Result<()>;
 
     async fn store_provider_credentials_for_user(
         &self,
@@ -347,6 +352,64 @@ impl DatabaseRepository for PostgresRepository {
         .bind(transaction.created_at.unwrap_or_else(chrono::Utc::now))
         .execute(&mut *tx)
         .await?;
+        tx.commit().await?;
+
+        Ok(())
+    }
+
+    async fn upsert_transactions_batch(
+        &self,
+        transactions: &[Transaction],
+        user_id: &Uuid,
+    ) -> Result<()> {
+        if transactions.is_empty() {
+            return Ok(());
+        }
+
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let mut qb = sqlx::QueryBuilder::new(
+            r#"
+            INSERT INTO transactions (
+                id, account_id, user_id, provider_transaction_id, amount, date,
+                merchant_name, category_primary, category_detailed,
+                category_confidence, payment_channel, pending, created_at
+            )
+            "#,
+        );
+
+        qb.push_values(transactions, |mut b, transaction| {
+            b.push_bind(transaction.id)
+                .push_bind(transaction.account_id)
+                .push_bind(transaction.user_id)
+                .push_bind(&transaction.provider_transaction_id)
+                .push_bind(transaction.amount)
+                .push_bind(transaction.date)
+                .push_bind(&transaction.merchant_name)
+                .push_bind(&transaction.category_primary)
+                .push_bind(&transaction.category_detailed)
+                .push_bind(&transaction.category_confidence)
+                .push_bind(&transaction.payment_channel)
+                .push_bind(transaction.pending)
+                .push_bind(transaction.created_at.unwrap_or_else(chrono::Utc::now));
+        });
+
+        qb.push(
+            r#"
+            ON CONFLICT (provider_transaction_id)
+            DO UPDATE SET
+                amount = EXCLUDED.amount,
+                merchant_name = EXCLUDED.merchant_name,
+                pending = EXCLUDED.pending
+            "#,
+        );
+
+        qb.build().execute(&mut *tx).await?;
         tx.commit().await?;
 
         Ok(())

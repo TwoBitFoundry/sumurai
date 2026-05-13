@@ -489,26 +489,37 @@ impl ConnectionService {
             txn.user_id = Some(*params.user_id);
         }
 
-        let mut persisted_transactions = Vec::new();
+        let valid_transactions: Vec<Transaction> = transactions
+            .iter()
+            .filter_map(|transaction| {
+                if transaction.account_id.is_nil() {
+                    tracing::warn!(
+                        "Skipping transaction {:?} for user {} because account mapping is missing",
+                        transaction.provider_transaction_id,
+                        params.user_id
+                    );
+                    None
+                } else {
+                    Some(transaction.clone())
+                }
+            })
+            .collect();
 
-        for transaction in &transactions {
-            if transaction.account_id.is_nil() {
+        for chunk in valid_transactions.chunks(500) {
+            if let Err(e) = self
+                .db_repository
+                .upsert_transactions_batch(chunk, params.user_id)
+                .await
+            {
                 tracing::warn!(
-                    "Skipping transaction {:?} for user {} because account mapping is missing",
-                    transaction.provider_transaction_id,
-                    params.user_id
-                );
-                continue;
-            }
-
-            if let Err(e) = self.db_repository.upsert_transaction(transaction).await {
-                tracing::warn!(
-                    "Failed to persist transaction {:?} for user {}: {}",
-                    transaction.provider_transaction_id,
+                    "Failed to persist transaction batch for user {}: {}",
                     params.user_id,
                     e
                 );
             }
+        }
+
+        for transaction in &valid_transactions {
             if let Err(e) = self
                 .cache_service
                 .add_transaction(params.jwt_id, transaction)
@@ -521,11 +532,9 @@ impl ConnectionService {
                     e
                 );
             }
-
-            persisted_transactions.push(transaction.clone());
         }
 
-        let transactions = persisted_transactions;
+        let transactions = valid_transactions;
 
         let total_transactions = self
             .db_repository
@@ -715,18 +724,31 @@ impl ConnectionService {
 
             transaction.account_id = internal_account_id;
 
-            if let Err(e) = self.db_repository.upsert_transaction(&transaction).await {
-                tracing::warn!(
-                    "Failed to persist Teller transaction {:?}: {}",
-                    transaction.provider_transaction_id,
-                    e
-                );
-                continue;
+            if let Some(provider_transaction_id) = transaction.provider_transaction_id.clone() {
+                existing_ids.insert(provider_transaction_id);
             }
 
+            synced_transactions.push(transaction);
+        }
+
+        for chunk in synced_transactions.chunks(500) {
+            if let Err(e) = self
+                .db_repository
+                .upsert_transactions_batch(chunk, user_id)
+                .await
+            {
+                tracing::warn!(
+                    "Failed to persist Teller transaction batch for user {}: {}",
+                    user_id,
+                    e
+                );
+            }
+        }
+
+        for transaction in &synced_transactions {
             if let Err(e) = self
                 .cache_service
-                .add_transaction(jwt_id, &transaction)
+                .add_transaction(jwt_id, transaction)
                 .await
             {
                 tracing::warn!(
@@ -735,12 +757,6 @@ impl ConnectionService {
                     e
                 );
             }
-
-            if let Some(provider_transaction_id) = transaction.provider_transaction_id.clone() {
-                existing_ids.insert(provider_transaction_id);
-            }
-
-            synced_transactions.push(transaction);
         }
 
         let total_transactions = match self.db_repository.get_transactions_for_user(user_id).await {

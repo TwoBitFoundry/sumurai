@@ -1,7 +1,8 @@
-use crate::models::auth::User;
+use crate::models::{account::Account, auth::User, transaction::Transaction};
 use crate::services::repository_service::{DatabaseRepository, PostgresRepository};
 use crate::utils::encryption_key::parse_encryption_key_hex;
-use chrono::Utc;
+use chrono::{NaiveDate, Utc};
+use rust_decimal_macros::dec;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -45,6 +46,48 @@ async fn create_test_user(repo: &PostgresRepository) -> User {
     };
     repo.create_user(&user).await.unwrap();
     user
+}
+
+async fn create_test_account(repo: &PostgresRepository, user_id: Uuid) -> Account {
+    let account = Account {
+        id: Uuid::new_v4(),
+        user_id: Some(user_id),
+        provider_account_id: Some(format!("provider_account_{}", Uuid::new_v4())),
+        provider_connection_id: None,
+        name: "Test Account".to_string(),
+        account_type: "checking".to_string(),
+        balance_current: Some(dec!(1000.00)),
+        mask: Some("1234".to_string()),
+        institution_name: Some("Test Bank".to_string()),
+    };
+
+    repo.upsert_account(&account).await.unwrap();
+    account
+}
+
+fn create_test_transaction(
+    user_id: Uuid,
+    account_id: Uuid,
+    provider_transaction_id: String,
+    amount: i64,
+    date: NaiveDate,
+) -> Transaction {
+    Transaction {
+        id: Uuid::new_v4(),
+        account_id,
+        user_id: Some(user_id),
+        provider_account_id: Some("provider_account".to_string()),
+        provider_transaction_id: Some(provider_transaction_id),
+        amount: rust_decimal::Decimal::new(amount, 2),
+        date,
+        merchant_name: Some("Test Merchant".to_string()),
+        category_primary: "Food".to_string(),
+        category_detailed: "Restaurant".to_string(),
+        category_confidence: "HIGH".to_string(),
+        payment_channel: Some("in_store".to_string()),
+        pending: false,
+        created_at: Some(Utc::now()),
+    }
 }
 
 #[tokio::test]
@@ -151,4 +194,79 @@ async fn given_update_password_when_executed_then_updated_at_changes() {
     let updated_user = repo.get_user_by_id(&user.id).await.unwrap().unwrap();
 
     assert!(updated_user.updated_at > original_updated_at);
+}
+
+#[tokio::test]
+async fn given_many_transactions_when_batch_upserting_then_writes_all_rows_without_duplicates() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+
+    let first_batch: Vec<Transaction> = (0..500)
+        .map(|index| {
+            create_test_transaction(
+                user.id,
+                account.id,
+                format!("batch_txn_{index:03}"),
+                -1000 - index as i64,
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            )
+        })
+        .collect();
+    let second_batch: Vec<Transaction> = (500..600)
+        .map(|index| {
+            create_test_transaction(
+                user.id,
+                account.id,
+                format!("batch_txn_{index:03}"),
+                -1000 - index as i64,
+                NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
+            )
+        })
+        .collect();
+
+    repo.upsert_transactions_batch(&first_batch, &user.id)
+        .await
+        .unwrap();
+    repo.upsert_transactions_batch(&second_batch, &user.id)
+        .await
+        .unwrap();
+
+    let transaction_count_after_first_insert: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM transactions WHERE user_id = $1")
+            .bind(user.id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+
+    assert_eq!(transaction_count_after_first_insert, 600);
+
+    repo.upsert_transactions_batch(&first_batch, &user.id)
+        .await
+        .unwrap();
+    repo.upsert_transactions_batch(&second_batch, &user.id)
+        .await
+        .unwrap();
+
+    let transaction_count_after_reinsert: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM transactions WHERE user_id = $1")
+            .bind(user.id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+
+    let distinct_provider_transaction_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(DISTINCT provider_transaction_id) FROM transactions WHERE user_id = $1",
+    )
+    .bind(user.id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    assert_eq!(transaction_count_after_reinsert, 600);
+    assert_eq!(distinct_provider_transaction_count, 600);
 }
