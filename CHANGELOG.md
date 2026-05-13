@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.7.3](https://github.com/TwoBitFoundry/sumurai/compare/v5.7.2...v5.7.3) (2026-05-13)
+
+
+### Bug Fixes
+
+* **ci:** remove linked-versions plugin to fix group PR release matching ([4940450](https://github.com/TwoBitFoundry/sumurai/commit/4940450751522c1ca371e03e52381678141b18b0))
+
 ## [5.7.2](https://github.com/TwoBitFoundry/sumurai/compare/v5.7.1...v5.7.2) (2026-05-13)
 
 
