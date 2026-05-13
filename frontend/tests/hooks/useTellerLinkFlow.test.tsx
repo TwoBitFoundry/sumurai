@@ -1,6 +1,7 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, render, renderHook, waitFor } from '@testing-library/react';
 import { errJson, installFetchRoutes } from '@tests/utils/fetchRoutes';
-import React from 'react';
+import React, { type ReactNode, useState } from 'react';
 import { resetTellerScriptStateForTests } from '@/hooks/useTellerConnect';
 import { type UseTellerLinkFlowResult, useTellerLinkFlow } from '@/hooks/useTellerLinkFlow';
 
@@ -18,6 +19,25 @@ const setup = jest.fn();
 const openMock = jest.fn();
 
 describe('useTellerLinkFlow', () => {
+  const createWrapper = () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 5 * 60 * 1000,
+          gcTime: 10 * 60 * 1000,
+          retry: false,
+          refetchOnWindowFocus: false,
+        },
+      },
+    });
+
+    return function Wrapper({ children }: { children: ReactNode }) {
+      const [client] = useState(queryClient);
+
+      return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    };
+  };
+
   beforeEach(() => {
     resetTellerScriptStateForTests();
     jest.clearAllMocks();
@@ -66,12 +86,15 @@ describe('useTellerLinkFlow', () => {
   });
 
   it('rebuilds Teller connections from cached accounts when status has none', async () => {
-    const { result } = renderHook(() =>
-      useTellerLinkFlow({
-        applicationId: 'app_123',
-        enabled: true,
-        isOnline: true,
-      })
+    const wrapper = createWrapper();
+    const { result } = renderHook(
+      () =>
+        useTellerLinkFlow({
+          applicationId: 'app_123',
+          enabled: true,
+          isOnline: true,
+        }),
+      { wrapper }
     );
 
     await waitFor(() => {
@@ -84,6 +107,40 @@ describe('useTellerLinkFlow', () => {
     expect(result.current.connections[0].accounts).toHaveLength(2);
   });
 
+  it('keeps Teller connections in the shared query cache across remounts', async () => {
+    const wrapper = createWrapper();
+    const first = renderHook(
+      () =>
+        useTellerLinkFlow({
+          applicationId: 'app_123',
+          enabled: true,
+          isOnline: true,
+        }),
+      { wrapper }
+    );
+
+    await waitFor(() => {
+      expect(first.result.current.loading).toBe(false);
+    });
+
+    expect(first.result.current.connections).toHaveLength(1);
+
+    first.unmount();
+
+    const second = renderHook(
+      () =>
+        useTellerLinkFlow({
+          applicationId: 'app_123',
+          enabled: true,
+          isOnline: true,
+        }),
+      { wrapper }
+    );
+
+    expect(second.result.current.loading).toBe(false);
+    expect(second.result.current.connections).toHaveLength(1);
+  });
+
   it('does not surface a load error when there are no Teller connections', async () => {
     installFetchRoutes({
       'GET /api/providers/status': {
@@ -93,12 +150,15 @@ describe('useTellerLinkFlow', () => {
       'GET /api/providers/accounts': [],
     });
 
-    const { result } = renderHook(() =>
-      useTellerLinkFlow({
-        applicationId: 'app_123',
-        enabled: true,
-        isOnline: true,
-      })
+    const wrapper = createWrapper();
+    const { result } = renderHook(
+      () =>
+        useTellerLinkFlow({
+          applicationId: 'app_123',
+          enabled: true,
+          isOnline: true,
+        }),
+      { wrapper }
     );
 
     await waitFor(() => {
@@ -111,10 +171,12 @@ describe('useTellerLinkFlow', () => {
 
   it('does not pass application id to Teller connect until connect runs', async () => {
     tellerLinkFlowRef.current = null;
+    const wrapper = createWrapper();
     render(
       React.createElement(TellerLinkMountHost, {
         props: { applicationId: 'app_123', enabled: true, isOnline: true },
-      })
+      }),
+      { wrapper }
     );
 
     await waitFor(() => {
@@ -125,12 +187,15 @@ describe('useTellerLinkFlow', () => {
   });
 
   it('given offline when connect runs then does not arm Teller with application id', async () => {
-    const { result } = renderHook(() =>
-      useTellerLinkFlow({
-        applicationId: 'app_123',
-        enabled: true,
-        isOnline: false,
-      })
+    const wrapper = createWrapper();
+    const { result } = renderHook(
+      () =>
+        useTellerLinkFlow({
+          applicationId: 'app_123',
+          enabled: true,
+          isOnline: false,
+        }),
+      { wrapper }
     );
 
     await act(async () => {

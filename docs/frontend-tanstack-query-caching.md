@@ -285,12 +285,198 @@ const addMutation = useMutation({
 - Green: replaced manual budget and transaction loading in `useBudgets.ts` with `useQuery` keys `['budgets']` and `['transactions', 'budget-month', range, cacheKey]`; wired `useMutation` optimistic updates with `cancelQueries` / `setQueryData` / rollback / `invalidateQueries`; removed `optimisticCreate` import; `load` uses `queryClient.refetchQueries` with stable deps to avoid `BudgetsPage` effect loops.
 - Verify: `npm --prefix frontend run test:serial -- tests/features/budgets/hooks/useBudgets.test.tsx`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend test`
 
-## End-to-End Verification
+## End-to-End Verification (Phases 1–5)
+
+- [x] `npm run build` — zero TypeScript errors
+- [x] `npm test` — all existing tests pass
+- [x] Open Dashboard → data loads (first-load state shows briefly)
+- [x] Switch to Transactions → **instant render** of cached data, no loading frame
+- [x] Switch back to Dashboard → **instant render**, silent background refetch only
+- [x] Change account filter → all tabs refetch with new filter (cache keys change)
+- [x] DevTools Network — no duplicate API calls on tab switch after first load
+
+---
+
+## Phase 6 — Accounts Tab Data Caching
+
+### 6a — `useTellerProviderInfo`
+
+**File**: `frontend/src/hooks/useTellerProviderInfo.ts`
+
+Simple useEffect → useQuery migration. The `gateway` is dependency-injected (tests override it), so pass it into `queryFn`.
+
+```ts
+const query = useQuery<TellerProviderCatalogue>({
+  queryKey: ['teller', 'provider-info'],
+  queryFn: () => options?.gateway?.fetchInfo() ?? apiGateway.fetchInfo(),
+  staleTime: 5 * 60 * 1000,
+})
+```
+
+- Derive `availableProviders`, `defaultProvider`, etc. from `query.data`
+- Map `loading = query.isPending`, `error = query.error?.message ?? null`
+- `chooseProvider` mutation calls `gateway.selectProvider` then `queryClient.setQueryData` to update the cached catalogue; keep a local `useState` for mutation errors since `query.error` only covers the fetch
+- Expose `refresh: async () => { await query.refetch() }` to preserve existing interface
+- Remove: `useState` for loading/error/catalogue, `useCallback` for `load`, the `useEffect` that called `gateway.fetchInfo()`
+
+### 6b — `usePlaidConnections`
+
+**File**: `frontend/src/hooks/usePlaidConnections.tsx`
+
+This hook has two concerns: (1) fetching the connection list, and (2) optimistic in-memory state helpers (`addConnection`, `removeConnection`, `updateConnectionSyncInfo`, `setConnectionSyncInProgress`). Migrate concern #1; convert concern #2 to `queryClient.setQueryData` operations.
+
+```ts
+const queryClient = useQueryClient()
+
+const query = useQuery<PlaidConnection[]>({
+  queryKey: ['plaid', 'connections'],
+  queryFn: async () => {
+    const [statusResult, accountsResult] = await Promise.allSettled([
+      PlaidService.getStatus(),
+      PlaidService.getAccounts(),
+    ])
+    // same mapping logic as current fetchConnections body
+    return buildConnections(statusResult, accountsResult)
+  },
+  enabled: options?.enabled !== false,
+  staleTime: 0,
+})
+```
+
+State mutation helpers convert to `setQueryData` updates (optimistic, same as current logic):
+```ts
+const addConnection = (conn: PlaidConnection) =>
+  queryClient.setQueryData<PlaidConnection[]>(['plaid', 'connections'], old => [...(old ?? []), conn])
+
+const removeConnection = (id: string) =>
+  queryClient.setQueryData<PlaidConnection[]>(['plaid', 'connections'], old => (old ?? []).filter(c => c.id !== id))
+// …same for updateConnectionSyncInfo, setConnectionSyncInProgress
+```
+
+`refresh: () => query.refetch()`
+
+Remove: `useState` for connections/loading/error, `fetchConnections`, `useEffect` on mount.
+
+### 6c — `useTellerLinkFlow` (connections slice only)
+
+**File**: `frontend/src/hooks/useTellerLinkFlow.ts`
+
+The connection-list fetch (`TellerService.getStatus()` + `ProviderCatalog.getAccounts()` in `loadConnections`) is server state. The enrollment/token flow state is UI state — keep it as `useState`.
+
+Add a query for the connections list:
+```ts
+const connectionsQuery = useQuery<PlaidConnection[]>({
+  queryKey: ['teller', 'connections'],
+  queryFn: async () => {
+    const [statusResult, accountsResult] = await Promise.allSettled([
+      TellerService.getStatus(),
+      ProviderCatalog.getAccounts(),
+    ])
+    return buildTellerConnections(statusResult, accountsResult)
+  },
+  enabled: options?.enabled !== false && !!applicationId && isOnline,
+  staleTime: 0,
+})
+```
+
+Replace `loadConnections()` calls at the end of `syncOne`, `syncAll`, and `disconnect` mutations with:
+```ts
+await queryClient.invalidateQueries({ queryKey: ['teller', 'connections'] })
+await queryClient.invalidateQueries({ queryKey: ['accounts'] })
+```
+
+Keep: `loadConnectionsWithRetry` (SDK callback, not cacheable), enrollment/token `useState`, `useTellerConnectSDK` integration.
+
+Remove: `useState` for connections/loading, `loadConnections` callback, retry `useEffect` and refs that tracked whether connections had loaded.
+
+### Acceptance Criteria
+- [x] `npm run build` passes
+- [x] `npm test` passes
+- [x] Accounts tab loads on first visit (connections and provider info display)
+- [x] Switching away and back to Accounts shows cached data instantly - no loading frame
+- [x] Sync / disconnect operations trigger a re-fetch and update the list
+- [x] `useTellerProviderInfo` still works with injected gateway (test compatibility preserved)
+
+### TDD Log
+- Red: added remount and cache-update assertions in `frontend/tests/hooks/usePlaidConnections.test.tsx`, `frontend/tests/hooks/useTellerProviderInfo.test.tsx`, and `frontend/tests/hooks/useTellerLinkFlow.test.tsx` before replacing the manual state paths.
+- Green: moved provider info, Plaid connections, and Teller connection loading to TanStack Query, kept mutation helpers writing through `queryClient.setQueryData`, and invalidated the Teller and account caches after sync and disconnect mutations.
+- Refactor: tightened the hook typing and kept the existing public return shapes stable while using query data as the source of truth.
+- Verify: `npm --prefix frontend run test:serial -- tests/hooks/useTellerProviderInfo.test.tsx tests/hooks/usePlaidConnections.test.tsx tests/hooks/useTellerLinkFlow.test.tsx`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend test`
+- Note: the full frontend suite also surfaced a React Query timing assumption in `frontend/tests/features/budgets/hooks/useBudgets.test.tsx`; that assertion now waits for the optimistic cache update to settle.
+
+---
+
+## Phase 7 — Loading UX Fixes
+
+### 7a — Fix `AppTitleBar` scroll-shrink animation
+
+**File**: `frontend/src/ui/primitives/AppTitleBar.tsx`
+
+**Root cause**: The container `<header>` and its inner `<div>` both have `transition-all duration-200 ease-out` for the `h-16`→`h-14` height change. But all child elements that also resize when `scrolled` flips change via **React re-render with no CSS transition**:
+- `<Image width={scrolled ? 32 : 40} height={scrolled ? 32 : 40} ...>` — JS prop change, no transition
+- Logo text: `scrolled ? 'text-xl' : 'text-3xl'` — immediate class swap, no transition
+- All nav `<Button size={scrolled ? 'xs' : 'titleBarExpanded'}>` — immediate size prop change, no transition
+
+Result: the container smoothly shrinks over 200ms, but every child element jumps to its new size instantly at frame 0. The user sees the content pop to small size before the container finishes shrinking.
+
+**Fix**: Eliminate all per-child size changes on scroll. The 8px height delta (`h-16`→`h-14`) is sufficient to communicate the scroll state without also resizing the logo image, logo text, or buttons. The CSS transition on the container then runs cleanly with no competing layout jumps.
+
+Changes to `AppTitleBar.tsx`:
+- Remove `width={scrolled ? 32 : 40} height={scrolled ? 32 : 40}` — fix `<Image>` at 32×32 always
+- Remove `scrolled ? appTitleBarRecipes.logo.scrolled : appTitleBarRecipes.logo.default` — remove `logo.scrolled` / `logo.default` size variants
+- Remove `const chromeSize = scrolled ? 'xs' : 'titleBarExpanded'` — fix button size at `xs` always
+- Keep the `h-14`/`h-16` height variants and their `transition-all duration-200 ease-out`
+
+### 7b — Fix dashboard scroll jank: IntersectionObserver triggers chart re-renders
+
+**Files**: `frontend/src/views/DashboardPage.tsx`, `frontend/src/features/analytics/components/SpendingByCategoryChart.tsx`, `frontend/src/layouts/AppLayout.tsx`
+
+**Root cause**: DashboardPage has an IntersectionObserver watching the spending overview section with **4 thresholds** (`[0, 0.01, 0.5, 1]`). As the user scrolls, this fires `setShowTimeBar(true/false)` multiple times in rapid succession. Each call re-renders `DashboardPage`, which re-renders every child including the stacked `BarChart`, `PieChart`, and `AreaChart`. Recharts `ResponsiveContainer` + chart components are expensive to re-render — the floating date-range selector appears sluggish because the browser is busy computing SVG layouts.
+
+**Fixes**:
+
+1. **Reduce IntersectionObserver thresholds** (`DashboardPage.tsx`): Replace `[0, 0.01, 0.5, 1]` with a single threshold `[0.1]`.
+
+2. **Isolate `showTimeBar` state**: Lift it into a small wrapper component that renders only the floating selector so its state updates don't re-render the full page tree.
+
+3. **Reduce floating selector fade-in** from `duration-300` to `duration-150`.
+
+4. **Fix `pb-28` bottom padding** (`AppLayout.tsx`): 112px is double the floating selector height. Reduce to `pb-16` to eliminate dead whitespace above the footer at the bottom of the page.
+
+5. **Conditional chart animation** (`SpendingByCategoryChart.tsx` + `DashboardPage.tsx`): The donut chart plays an 800ms animation on every tab switch (component remounts via `key={tab}`). Accept an `animated` prop and track whether the query key has changed:
+   ```ts
+   const animationKeyRef = useRef<string>('')
+   const currentKey = `${range}-${cacheKey}`
+   const shouldAnimate = currentKey !== animationKeyRef.current
+   // commit after render: animationKeyRef.current = currentKey
+   ```
+   Pass `animated={shouldAnimate}` — tab revisit with same filter skips the animation; account or time-range filter change plays it.
+
+### Acceptance Criteria
+- [ ] Scrolling down on the dashboard — title bar shrinks smoothly with no content jump at frame 0
+- [ ] Scrolling back to top — title bar expands smoothly
+- [ ] Switching to Dashboard tab with warm cache — charts appear without replaying the 800ms animation
+- [ ] Account or time-range filter change — donut chart plays entrance animation
+- [ ] Floating date-range selector appears promptly after scroll, not after a 300ms lag
+- [ ] Dashboard: footer visible immediately below last content card with no dead whitespace
+- [ ] `npm run build` and `npm test` pass
+
+### TDD Log
+- For 7a: render test on `AppTitleBar` asserting `scrolled={true}` and `scrolled={false}` produce the same button `size` prop and same `Image` dimensions.
+- For 7b: render test on `SpendingByCategoryChart` with `animated={false}` asserting `animationDuration` is 0; smoke check that DashboardPage passes `animated={false}` on remount with unchanged query key.
+- Verify: `npm --prefix frontend run test:serial -- tests/ui/primitives/AppTitleBar.test.tsx tests/features/analytics/components/SpendingByCategoryChart.test.tsx`, then `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend test`
+
+---
+
+## End-to-End Verification (all phases)
 
 - [ ] `npm run build` — zero TypeScript errors
 - [ ] `npm test` — all existing tests pass
-- [ ] Open Dashboard → data loads (first-load state shows briefly)
-- [ ] Switch to Transactions → **instant render** of cached data, no loading frame
-- [ ] Switch back to Dashboard → **instant render**, silent background refetch only
-- [ ] Change account filter → all tabs refetch with new filter (cache keys change)
-- [ ] DevTools Network — no duplicate API calls on tab switch after first load
+- [ ] Open Accounts tab → connections and provider info load on first visit
+- [ ] Switch away from Accounts → return → **instant render** with cached connections
+- [ ] Sync or disconnect an account → list updates, accounts query invalidates
+- [ ] Scroll down on dashboard → title bar shrinks smoothly with no content jump
+- [ ] Scroll back to top → title bar expands smoothly
+- [ ] Return to Dashboard with warm cache → charts render without 800ms animation replay
+- [ ] Account/time-range filter change → donut chart animates
+- [ ] Dashboard bottom → footer visible below last card, no dead whitespace

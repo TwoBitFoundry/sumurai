@@ -289,7 +289,9 @@ describe('useBudgets', () => {
       await result.current.remove('1');
     });
 
-    expect(result.current.budgets).toHaveLength(0);
+    await waitFor(() => {
+      expect(result.current.budgets).toHaveLength(0);
+    });
   });
 
   it('handles delete budget failure', async () => {
