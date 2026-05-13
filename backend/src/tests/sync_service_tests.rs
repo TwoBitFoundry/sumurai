@@ -152,11 +152,11 @@ mod date_range_calculation_tests {
     use super::*;
 
     #[test]
-    fn given_no_previous_sync_when_calculating_range_then_returns_90_day_default() {
+    fn given_no_previous_sync_when_calculating_range_then_returns_5_year_default() {
         let sync_service = create_test_sync_service();
 
         let (start_date, end_date) = sync_service.calculate_sync_date_range(None);
-        let expected_start = Utc::now().date_naive() - Duration::days(90);
+        let expected_start = Utc::now().date_naive() - Duration::days(1825);
         let expected_end = Utc::now().date_naive();
 
         assert_eq!(start_date, expected_start);
@@ -221,11 +221,11 @@ mod sync_recent_transactions_integration_tests {
     }
 
     #[tokio::test]
-    async fn given_no_last_sync_when_calling_sync_recent_transactions_then_uses_90_day_window() {
+    async fn given_no_last_sync_when_calling_sync_recent_transactions_then_uses_5_year_window() {
         let sync_service = create_test_sync_service_for_integration();
 
         let (start_date, end_date) = sync_service.calculate_sync_date_range(None);
-        let expected_start = Utc::now().date_naive() - Duration::days(90);
+        let expected_start = Utc::now().date_naive() - Duration::days(1825);
         let expected_end = Utc::now().date_naive();
 
         assert_eq!(start_date, expected_start);

@@ -101,7 +101,7 @@ fn given_connection_with_no_cursor_when_calculating_date_ranges_then_uses_defaul
     let sync_service = build_sync_service(plaid_client);
 
     let (start_date, end_date) = sync_service.calculate_sync_date_range(connection.last_sync_at);
-    let expected_start = Utc::now().date_naive() - Duration::days(90);
+    let expected_start = Utc::now().date_naive() - Duration::days(1825);
     let expected_end = Utc::now().date_naive();
 
     assert_eq!(start_date, expected_start);

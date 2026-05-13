@@ -9,7 +9,7 @@ use crate::providers::{FinancialDataProvider, ProviderCredentials, ProviderRegis
 
 const MAX_SYNC_YEARS: i64 = 5;
 const SAFETY_MARGIN_DAYS: i64 = 2;
-const DEFAULT_FIRST_SYNC_DAYS: i64 = 90;
+const DEFAULT_FIRST_SYNC_DAYS: i64 = 1825;
 
 pub struct SyncService {
     providers: Arc<ProviderRegistry>,
