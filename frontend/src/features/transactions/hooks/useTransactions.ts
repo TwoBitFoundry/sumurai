@@ -44,6 +44,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
   const [selectedCategory, setSelectedCategoryState] = useState<string | null>(initialCategory);
   const [dateRange, setDateRangeState] = useState<DateRangeKey>(initialDateRange);
   const [currentPage, setCurrentPage] = useState(1);
+  const loadSequenceRef = useRef(0);
 
   const {
     selectedAccountIds,
@@ -88,6 +89,8 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
 
   const loadTransactions = useCallback(
     async (pageToLoad: number) => {
+      const requestSequence = ++loadSequenceRef.current;
+
       if (accountsLoading) {
         return;
       }
@@ -115,12 +118,20 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
               : undefined,
         })) as unknown as PaginatedTransactionsResponse;
 
+        if (requestSequence !== loadSequenceRef.current) {
+          return;
+        }
+
         setTransactions(result.transactions);
         setTotalItems(result.total);
         if (result.page !== currentPage) {
           setCurrentPage(result.page);
         }
       } catch (error: unknown) {
+        if (requestSequence !== loadSequenceRef.current) {
+          return;
+        }
+
         const status = getStatus(error);
         const message =
           status === 401
@@ -130,7 +141,9 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
         setTransactions([]);
         setTotalItems(0);
       } finally {
-        setIsLoading(false);
+        if (requestSequence === loadSequenceRef.current) {
+          setIsLoading(false);
+        }
       }
     },
     [

@@ -62,6 +62,15 @@ const TestWrapper = ({ children }: { children: ReactNode }) => (
   <AccountFilterProvider>{children}</AccountFilterProvider>
 );
 
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+
+  return { promise, resolve };
+}
+
 describe('useTransactions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -166,6 +175,65 @@ describe('useTransactions', () => {
     expect(result.current.currentPage).toBe(2);
     expect(result.current.transactions).toHaveLength(5);
     expect(result.current.totalPages).toBe(2);
+  });
+
+  it('keeps the latest page when an older request resolves after a newer one', async () => {
+    let accountFilterHook: ReturnType<typeof useAccountFilter>;
+    const firstPage = createDeferred<any>();
+    const secondPage = createDeferred<any>();
+
+    jest.mocked(TransactionService.getTransactions).mockImplementation(async (filters?: any) => {
+      if (filters?.page === 2) {
+        return secondPage.promise;
+      }
+
+      return firstPage.promise;
+    });
+
+    const { result } = renderHook(
+      () => {
+        accountFilterHook = useAccountFilter();
+        return useTransactions({ pageSize: 10 });
+      },
+      { wrapper: TestWrapper }
+    );
+
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2']);
+    });
+
+    await act(async () => {
+      result.current.setCurrentPage(2);
+    });
+
+    await act(async () => {
+      secondPage.resolve({
+        transactions: Array.from({ length: 5 }, (_, i) => asTransaction(`t${i + 11}`)),
+        total: 15,
+        page: 2,
+        page_size: 10,
+      });
+    });
+
+    await waitFor(() => {
+      expect(result.current.currentPage).toBe(2);
+      expect(result.current.transactions[0].id).toBe('t11');
+    });
+
+    await act(async () => {
+      firstPage.resolve({
+        transactions: Array.from({ length: 10 }, (_, i) => asTransaction(`t${i + 1}`)),
+        total: 15,
+        page: 1,
+        page_size: 10,
+      });
+    });
+
+    await waitFor(() => {
+      expect(result.current.currentPage).toBe(2);
+      expect(result.current.transactions[0].id).toBe('t11');
+      expect(result.current.transactions).toHaveLength(5);
+    });
   });
 
   it('refetches from page one when search changes', async () => {
