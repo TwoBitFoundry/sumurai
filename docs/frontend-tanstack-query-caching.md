@@ -412,20 +412,15 @@ Remove: `useState` for connections/loading, `loadConnections` callback, retry `u
 
 **File**: `frontend/src/ui/primitives/AppTitleBar.tsx`
 
-**Root cause**: The container `<header>` and its inner `<div>` both have `transition-all duration-200 ease-out` for the `h-16`→`h-14` height change. But all child elements that also resize when `scrolled` flips change via **React re-render with no CSS transition**:
-- `<Image width={scrolled ? 32 : 40} height={scrolled ? 32 : 40} ...>` — JS prop change, no transition
-- Logo text: `scrolled ? 'text-xl' : 'text-3xl'` — immediate class swap, no transition
-- All nav `<Button size={scrolled ? 'xs' : 'titleBarExpanded'}>` — immediate size prop change, no transition
+**Root cause**: The container `<header>` and its inner `<div>` both change height when `scrolled` flips. Child elements also changed size earlier in the component's history, which made the scroll state feel jumpy.
 
-Result: the container smoothly shrinks over 200ms, but every child element jumps to its new size instantly at frame 0. The user sees the content pop to small size before the container finishes shrinking.
-
-**Fix**: Eliminate all per-child size changes on scroll. The 8px height delta (`h-16`→`h-14`) is sufficient to communicate the scroll state without also resizing the logo image, logo text, or buttons. The CSS transition on the container then runs cleanly with no competing layout jumps.
+**Fix**: Remove the scroll-size animation entirely. Keep the title bar, logo, and buttons at fixed sizes so `scrolled` no longer changes layout. The header now renders at a single height with no transition.
 
 Changes to `AppTitleBar.tsx`:
 - Remove `width={scrolled ? 32 : 40} height={scrolled ? 32 : 40}` — fix `<Image>` at 32×32 always
 - Remove `scrolled ? appTitleBarRecipes.logo.scrolled : appTitleBarRecipes.logo.default` — remove `logo.scrolled` / `logo.default` size variants
 - Remove `const chromeSize = scrolled ? 'xs' : 'titleBarExpanded'` — fix button size at `xs` always
-- Keep the `h-14`/`h-16` height variants and their `transition-all duration-200 ease-out`
+- Keep a single `h-16` title bar height with no scroll transition
 
 ### 7b — Fix dashboard scroll jank: IntersectionObserver triggers chart re-renders
 
@@ -453,8 +448,7 @@ Changes to `AppTitleBar.tsx`:
    Pass `animated={shouldAnimate}` — tab revisit with same filter skips the animation; account or time-range filter change plays it.
 
 ### Acceptance Criteria
-- [x] Scrolling down on the dashboard — title bar shrinks smoothly with no content jump at frame 0
-- [x] Scrolling back to top — title bar expands smoothly
+- [x] Scrolling on the dashboard — title bar stays fixed size with no animation or layout jump
 - [ ] Switching to Dashboard tab with warm cache — charts appear without replaying the 800ms animation
 - [ ] Account or time-range filter change — donut chart plays entrance animation
 - [ ] Floating date-range selector appears promptly after scroll, not after a 300ms lag
@@ -462,7 +456,7 @@ Changes to `AppTitleBar.tsx`:
 - [x] `npm run build` and `npm test` pass
 
 ### TDD Log
-- For 7a: added a render regression test that compares the `Dashboard` button chrome and logo image dimensions before and after `scrolled` flips, then flattened `AppTitleBar` so only the header height changes on scroll.
+- For 7a: added a render regression test that compares the title bar header, `Dashboard` button chrome, and logo image dimensions before and after `scrolled` flips, then flattened `AppTitleBar` so the header stays fixed at `h-16`.
 - Verified for 7a: `npm --prefix frontend run test:serial -- tests/ui/primitives/AppTitleBar.test.tsx`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend test`
 - For 7b: render test on `SpendingByCategoryChart` with `animated={false}` asserting `animationDuration` is 0; smoke check that DashboardPage passes `animated={false}` on remount with unchanged query key.
 

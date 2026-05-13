@@ -46,10 +46,11 @@ describe('AppTitleBar', () => {
     );
   });
 
-  it('keeps the title bar chrome stable when scrolled changes', () => {
+  it('keeps the title bar chrome fixed when scrolled changes', () => {
     const { rerender } = render(<AppTitleBar {...baseProps} isOnline scrolled={false} />);
 
     const initialState = {
+      headerClassName: screen.getByRole('banner').className,
       dashboardButtonClassName: screen.getByRole('button', { name: 'Dashboard' }).className,
       logoWidth: screen.getByAltText('Sumurai Logo').getAttribute('data-width'),
       logoHeight: screen.getByAltText('Sumurai Logo').getAttribute('data-height'),
@@ -58,6 +59,7 @@ describe('AppTitleBar', () => {
     rerender(<AppTitleBar {...baseProps} isOnline scrolled={true} />);
 
     expect({
+      headerClassName: screen.getByRole('banner').className,
       dashboardButtonClassName: screen.getByRole('button', { name: 'Dashboard' }).className,
       logoWidth: screen.getByAltText('Sumurai Logo').getAttribute('data-width'),
       logoHeight: screen.getByAltText('Sumurai Logo').getAttribute('data-height'),

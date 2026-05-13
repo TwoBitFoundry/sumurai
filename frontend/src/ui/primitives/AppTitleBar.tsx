@@ -13,16 +13,12 @@ import { Button } from './Button';
 import { cn } from './utils';
 
 export const appTitleBarRecipes = {
-  base: ['sticky top-0 z-50 border-b backdrop-blur-sm transition-all duration-200 ease-out'],
+  base: ['sticky top-0 z-50 border-b backdrop-blur-sm h-16'],
   shell: [
     ...semanticSurfaces.card,
     ...semanticBorders.divider,
     'dark:bg-[var(--color-surface-solid-panel)]',
   ],
-  height: {
-    scrolled: 'h-14',
-    default: 'h-16',
-  },
   logo: {
     container: ['flex', 'items-center', 'gap-2', semanticTextRecipes.primary],
     wordmark: uiTypographyRecipes.pageTitle,
@@ -52,14 +48,9 @@ const titleBarVariants = cva([...appTitleBarRecipes.base], {
       onboarding: [...appTitleBarRecipes.shell],
       authenticated: [...appTitleBarRecipes.shell],
     },
-    scrolled: {
-      true: appTitleBarRecipes.height.scrolled,
-      false: appTitleBarRecipes.height.default,
-    },
   },
   defaultVariants: {
     state: 'authenticated',
-    scrolled: false,
   },
 });
 
@@ -105,7 +96,6 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
   (
     {
       state,
-      scrolled,
       themeMode,
       isOnline,
       onThemeToggle,
@@ -121,18 +111,9 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
         ref={ref}
         className={titleBarVariants({
           state,
-          scrolled,
         })}
       >
-        <div
-          className={cn(
-            'px-4',
-            `${scrolled ? 'h-14' : 'h-16'}`,
-            'transition-all',
-            'duration-200',
-            'ease-out'
-          )}
-        >
+        <div className={cn('px-4', 'h-full')}>
           <div className={cn('flex', 'items-center', 'justify-between', 'h-full')}>
             <div className={cn('flex', 'items-center', 'gap-6')}>
               <div
