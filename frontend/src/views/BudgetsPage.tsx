@@ -1,5 +1,5 @@
 import { Activity, AlertTriangle, CheckCircle2, Clock, Plus, Target } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button, cn, EmptyState, GlassCard } from '@/ui/primitives';
 import HeroStatCard, { type HeroPill } from '../components/widgets/HeroStatCard';
 import { BudgetCalculator } from '../domain/BudgetCalculator';
@@ -17,7 +17,6 @@ export default function BudgetsPage() {
     transactionsLoading,
     error,
     validationError,
-    load,
     add,
     update,
     remove,
@@ -33,10 +32,6 @@ export default function BudgetsPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<BudgetFormValue>({ category: '', amount: '' });
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   const startAdd = () => {
     setIsAdding(true);
