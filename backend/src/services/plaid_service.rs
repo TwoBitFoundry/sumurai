@@ -32,6 +32,16 @@ impl RealPlaidClient {
         }
     }
 
+    #[cfg(test)]
+    pub fn new_for_test(base_url: String) -> Self {
+        Self {
+            client_id: String::new(),
+            secret: String::new(),
+            base_url,
+            http_client: reqwest::Client::new(),
+        }
+    }
+
     async fn get_institution_name(&self, institution_id: &str) -> Result<String> {
         let request_body = json!({
             "client_id": self.client_id,
@@ -214,105 +224,135 @@ impl RealPlaidClient {
         start_date: NaiveDate,
         end_date: NaiveDate,
     ) -> Result<Vec<Transaction>> {
-        let request_body = json!({
-            "client_id": self.client_id,
-            "secret": self.secret,
-            "access_token": access_token,
-            "start_date": start_date.format("%Y-%m-%d").to_string(),
-            "end_date": end_date.format("%Y-%m-%d").to_string()
-        });
+        let mut transactions = Vec::new();
+        let mut offset = 0usize;
+        let mut total_transactions = None;
 
-        let response = self
-            .http_client
-            .post(format!("{}/transactions/get", self.base_url))
-            .header("Content-Type", "application/json")
-            .json(&request_body)
-            .send()
-            .await?;
+        loop {
+            let request_body = json!({
+                "client_id": self.client_id,
+                "secret": self.secret,
+                "access_token": access_token,
+                "start_date": start_date.format("%Y-%m-%d").to_string(),
+                "end_date": end_date.format("%Y-%m-%d").to_string(),
+                "count": 500,
+                "offset": offset
+            });
 
-        if response.status().is_success() {
-            let data: serde_json::Value = response.json().await?;
-            let mut transactions = Vec::new();
+            let response = self
+                .http_client
+                .post(format!("{}/transactions/get", self.base_url))
+                .header("Content-Type", "application/json")
+                .json(&request_body)
+                .send()
+                .await?;
 
-            if let Some(transactions_array) = data.get("transactions").and_then(|v| v.as_array()) {
-                for t in transactions_array {
-                    let amount = t.get("amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
-
-                    let date = t
-                        .get("date")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("1970-01-01")
-                        .to_string();
-
-                    let provider_transaction_id = t
-                        .get("transaction_id")
-                        .and_then(|v| v.as_str())
-                        .map(|s| s.to_string());
-
-                    let provider_account_id = t
-                        .get("account_id")
-                        .and_then(|v| v.as_str())
-                        .map(|s| s.to_string());
-
-                    // Extract category information from Plaid API personal_finance_category
-                    let category_primary = t
-                        .get("personal_finance_category")
-                        .and_then(|pfc| pfc.get("primary"))
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("OTHER")
-                        .to_string();
-
-                    let category_detailed = t
-                        .get("personal_finance_category")
-                        .and_then(|pfc| pfc.get("detailed"))
-                        .and_then(|v| v.as_str())
-                        .unwrap_or(&category_primary)
-                        .to_string();
-
-                    let category_confidence = t
-                        .get("personal_finance_category")
-                        .and_then(|pfc| pfc.get("confidence_level"))
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("MEDIUM")
-                        .to_string();
-
-                    let payment_channel = t
-                        .get("payment_channel")
-                        .and_then(|v| v.as_str())
-                        .map(|s| s.to_string());
-
-                    let pending = t.get("pending").and_then(|v| v.as_bool()).unwrap_or(false);
-
-                    let transaction = Transaction {
-                        id: Uuid::new_v4(),
-                        account_id: Uuid::nil(),
-                        user_id: None,
-                        provider_account_id,
-                        provider_transaction_id,
-                        amount: Decimal::from_f64(amount).unwrap_or(Decimal::ZERO),
-                        date: chrono::NaiveDate::parse_from_str(&date, "%Y-%m-%d").unwrap_or_else(
-                            |_| chrono::NaiveDate::from_ymd_opt(1970, 1, 1).unwrap(),
-                        ),
-                        merchant_name: Transaction::merchant_name_from_plaid(t),
-                        category_primary,
-                        category_detailed,
-                        category_confidence,
-                        payment_channel,
-                        pending,
-                        created_at: Some(chrono::Utc::now()),
-                    };
-                    transactions.push(transaction);
-                }
+            if !response.status().is_success() {
+                let error_text = response
+                    .text()
+                    .await
+                    .unwrap_or_else(|_| "Unknown error".to_string());
+                return Err(anyhow::anyhow!("Plaid API error: {}", error_text));
             }
 
-            Ok(transactions)
-        } else {
-            let error_text = response
-                .text()
-                .await
-                .unwrap_or_else(|_| "Unknown error".to_string());
-            Err(anyhow::anyhow!("Plaid API error: {}", error_text))
+            let data: serde_json::Value = response.json().await?;
+            let total = data
+                .get("total_transactions")
+                .and_then(|v| v.as_u64())
+                .map(|value| value as usize);
+            if total_transactions.is_none() {
+                total_transactions = total;
+            }
+
+            let Some(transactions_array) = data.get("transactions").and_then(|v| v.as_array())
+            else {
+                break;
+            };
+
+            let batch_len = transactions_array.len();
+
+            for t in transactions_array {
+                let amount = t.get("amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
+
+                let date = t
+                    .get("date")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("1970-01-01")
+                    .to_string();
+
+                let provider_transaction_id = t
+                    .get("transaction_id")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+
+                let provider_account_id = t
+                    .get("account_id")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+
+                let category_primary = t
+                    .get("personal_finance_category")
+                    .and_then(|pfc| pfc.get("primary"))
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("OTHER")
+                    .to_string();
+
+                let category_detailed = t
+                    .get("personal_finance_category")
+                    .and_then(|pfc| pfc.get("detailed"))
+                    .and_then(|v| v.as_str())
+                    .unwrap_or(&category_primary)
+                    .to_string();
+
+                let category_confidence = t
+                    .get("personal_finance_category")
+                    .and_then(|pfc| pfc.get("confidence_level"))
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("MEDIUM")
+                    .to_string();
+
+                let payment_channel = t
+                    .get("payment_channel")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+
+                let pending = t.get("pending").and_then(|v| v.as_bool()).unwrap_or(false);
+
+                transactions.push(Transaction {
+                    id: Uuid::new_v4(),
+                    account_id: Uuid::nil(),
+                    user_id: None,
+                    provider_account_id,
+                    provider_transaction_id,
+                    amount: Decimal::from_f64(amount).unwrap_or(Decimal::ZERO),
+                    date: chrono::NaiveDate::parse_from_str(&date, "%Y-%m-%d")
+                        .unwrap_or_else(|_| chrono::NaiveDate::from_ymd_opt(1970, 1, 1).unwrap()),
+                    merchant_name: Transaction::merchant_name_from_plaid(t),
+                    category_primary,
+                    category_detailed,
+                    category_confidence,
+                    payment_channel,
+                    pending,
+                    created_at: Some(chrono::Utc::now()),
+                });
+            }
+
+            offset += batch_len;
+
+            if batch_len == 0 {
+                break;
+            }
+
+            if let Some(total) = total_transactions {
+                if offset >= total {
+                    break;
+                }
+            } else {
+                break;
+            }
         }
+
+        Ok(transactions)
     }
 
     pub async fn get_item_info(

@@ -132,10 +132,20 @@ loop {
 ```
 
 ### Acceptance Criteria
-- [ ] `cargo test` passes
-- [ ] Plaid: mock returning `total_transactions: 1100` causes exactly 3 HTTP calls (offsets 0, 500, 1000)
-- [ ] Teller: pages of 100 then 40 → 3 calls, all items returned
-- [ ] Teller early-exit: batch entirely before `start_date` → stops after 1 call
+- [x] `cargo test` passes
+- [x] Plaid: mock returning `total_transactions: 1100` causes exactly 3 HTTP calls (offsets 0, 500, 1000)
+- [x] Teller: pages of 100 then 40 → 3 calls, all items returned
+- [x] Teller early-exit: batch entirely before `start_date` → stops after 1 call
+
+### Notes
+- Added pagination loops to Plaid and Teller provider adapters without changing the sync service contract.
+
+### TDD Log
+- `cargo test --manifest-path backend/Cargo.toml --locked plaid_service_tests`
+- `cargo test --manifest-path backend/Cargo.toml --locked teller_provider_tests`
+- `cargo fmt --manifest-path backend/Cargo.toml --all --check`
+- `cargo clippy --manifest-path backend/Cargo.toml --locked --all-targets --no-deps -- -D warnings`
+- `cargo test --manifest-path backend/Cargo.toml --locked`
 
 ---
 
