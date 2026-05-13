@@ -121,11 +121,18 @@ This is the root dependency for every data hook. Migrating it first means all la
    - Map context `loading` to `accountsQuery.isPending`
 
 ### Acceptance Criteria
-- [ ] `npm run build` passes
-- [ ] `npm test` passes
-- [ ] Account filter populates correctly on app load
-- [ ] `ACCOUNTS_CHANGED_EVENT` still triggers a refetch of the account list
-- [ ] No duplicate in-flight requests to the accounts endpoint on mount
+- [x] `npm run build` passes
+- [x] `npm test` passes
+- [x] Account filter populates correctly on app load
+- [x] `ACCOUNTS_CHANGED_EVENT` still triggers a refetch of the account list
+- [x] No duplicate in-flight requests to the accounts endpoint on mount
+
+Note: remove `AccountWithLegacyFields` once the unified accounts API no longer needs legacy field fallbacks.
+
+### TDD Log
+- Red: added `frontend/tests/hooks/useAccountFilter.test.tsx` and `frontend/tests/utils/cacheKeys.test.ts` coverage for cache key output, mount dedupe, and query invalidation.
+- Green: replaced manual account fetching with `useQuery`, added `accountIdsCacheKey`, and wrapped test/story consumers in a query client provider.
+- Verify: `npm run test:serial -- tests/utils/cacheKeys.test.ts tests/hooks/useAccountFilter.test.tsx`, `npm run lint`, `npm run typecheck`, `npm run build`, `npm run test:serial -- tests/features/analytics/hooks/useNetWorthSeries.test.tsx tests/hooks/useBalancesOverview.test.tsx`, `npm run lint`, `npm run typecheck`, `npm run test`.
 
 ---
 

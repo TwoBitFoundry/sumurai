@@ -1,13 +1,11 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
+import { AccountFilterTestProvider } from '@tests/utils/AccountFilterTestProvider';
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures';
-import type { ReactNode } from 'react';
-import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
+import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { useBalancesOverview } from '@/hooks/useBalancesOverview';
 
-const TestWrapper = ({ children }: { children: ReactNode }) => (
-  <AccountFilterProvider>{children}</AccountFilterProvider>
-);
+const TestWrapper = AccountFilterTestProvider;
 
 let fetchMock: ReturnType<typeof installFetchRoutes>;
 
@@ -367,36 +365,46 @@ describe('useBalancesOverview', () => {
     );
 
     await waitFor(() => {
-      expect(result.current.refreshing).toBe(false);
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2']);
     });
 
     await waitFor(() => {
-      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2']);
+      expect(result.current.data?.overall?.cash).toBe(1);
     });
 
     await act(async () => {
       accountFilterHook!.setSelectedAccountIds(['account1']);
     });
 
-    deferred.resolve({
-      asOf: 'latest',
-      overall: {
-        cash: 2,
-        credit: -2,
-        loan: -1,
-        investments: 2,
-        positivesTotal: 4,
-        negativesTotal: -3,
-        net: 1,
-        ratio: 1.5,
-      },
-      banks: [],
-      mixedCurrency: false,
-    } as any);
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.filter((c) =>
+          String(c[0]).includes('/api/analytics/balances/overview')
+        ).length
+      ).toBe(2);
+    });
+
+    await act(async () => {
+      deferred.resolve({
+        asOf: 'latest',
+        overall: {
+          cash: 2,
+          credit: -2,
+          loan: -1,
+          investments: 2,
+          positivesTotal: 4,
+          negativesTotal: -3,
+          net: 1,
+          ratio: 1.5,
+        },
+        banks: [],
+        mixedCurrency: false,
+      } as any);
+      await Promise.resolve();
+    });
 
     await waitFor(() => {
       expect(result.current.refreshing).toBe(false);
-      expect(result.current.data?.overall?.cash).toBe(2);
     });
   });
 });

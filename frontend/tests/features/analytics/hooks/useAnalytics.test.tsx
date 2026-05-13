@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { AccountFilterTestProvider } from '@tests/utils/AccountFilterTestProvider';
 import { useAnalytics } from '@/features/analytics/hooks/useAnalytics';
-import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
+import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { AnalyticsService } from '@/services/AnalyticsService';
 import { PlaidService } from '@/services/PlaidService';
 
@@ -21,9 +21,7 @@ jest.mock('@/services/PlaidService', () => ({
   },
 }));
 
-const TestWrapper = ({ children }: { children: ReactNode }) => (
-  <AccountFilterProvider>{children}</AccountFilterProvider>
-);
+const TestWrapper = AccountFilterTestProvider;
 
 const mockPlaidAccounts = [
   {

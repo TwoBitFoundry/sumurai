@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
-import { AccountFilterProvider } from '@/hooks/useAccountFilter';
+import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import AccountsPage from '@/views/AccountsPage';
 import {
   storyPlaidDisconnect,
@@ -64,11 +64,11 @@ const handlers = [
 
 function AccountsJourney() {
   return (
-    <StoryApiScope handlers={handlers}>
-      <AccountFilterProvider>
+    <AccountFilterStoryProvider>
+      <StoryApiScope handlers={handlers}>
         <AccountsPage />
-      </AccountFilterProvider>
-    </StoryApiScope>
+      </StoryApiScope>
+    </AccountFilterStoryProvider>
   );
 }
 

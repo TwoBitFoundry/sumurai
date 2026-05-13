@@ -1,13 +1,11 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { AccountFilterTestProvider } from '@tests/utils/AccountFilterTestProvider';
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures';
-import type { ReactNode } from 'react';
 import { useBudgets } from '@/features/budgets/hooks/useBudgets';
-import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
+import { useAccountFilter } from '@/hooks/useAccountFilter';
 
-const TestWrapper = ({ children }: { children: ReactNode }) => (
-  <AccountFilterProvider>{children}</AccountFilterProvider>
-);
+const TestWrapper = AccountFilterTestProvider;
 
 let fetchMock: ReturnType<typeof installFetchRoutes>;
 

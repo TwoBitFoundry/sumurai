@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { AccountFilterTestProvider } from '@tests/utils/AccountFilterTestProvider';
 import { useTransactions } from '@/features/transactions/hooks/useTransactions';
-import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
+import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { PlaidService } from '@/services/PlaidService';
 import { TransactionService } from '@/services/TransactionService';
 
@@ -58,9 +58,7 @@ const mockPlaidAccounts = [
   },
 ];
 
-const TestWrapper = ({ children }: { children: ReactNode }) => (
-  <AccountFilterProvider>{children}</AccountFilterProvider>
-);
+const TestWrapper = AccountFilterTestProvider;
 
 function createDeferred<T>() {
   let resolve!: (value: T) => void;
