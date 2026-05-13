@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { cn } from '@/ui/primitives';
 import { LoginScreen, RegisterScreen } from './Auth';
 import { AuthenticatedApp, type TabKey } from './components/AuthenticatedApp';
@@ -21,6 +22,16 @@ AuthService.configure({
 });
 
 const telemetryService = new TelemetryService();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: 1,
+      refetchOnWindowFocus: true,
+    },
+  },
+});
 
 interface AppContentProps {
   initialTab?: TabKey;
@@ -191,13 +202,21 @@ export interface AppProps {
   initialAuthScreen?: 'login' | 'register';
 }
 
+export function AppProviders({ children }: { children: ReactNode }) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <TelemetryProvider service={telemetryService}>{children}</TelemetryProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+}
+
 export function App({ initialTab, initialAuthScreen }: AppProps) {
   return (
-    <ThemeProvider>
-      <TelemetryProvider service={telemetryService}>
-        <AppContent initialTab={initialTab} initialAuthScreen={initialAuthScreen} />
-      </TelemetryProvider>
-    </ThemeProvider>
+    <AppProviders>
+      <AppContent initialTab={initialTab} initialAuthScreen={initialAuthScreen} />
+    </AppProviders>
   );
 }
 

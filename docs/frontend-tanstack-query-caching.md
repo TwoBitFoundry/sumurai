@@ -85,10 +85,15 @@ Used by every data hook to produce a stable, serializable cache key segment.
 3. Wrap the `App` component's return with `<QueryClientProvider client={queryClient}>` as the **outermost** wrapper so `AccountFilterProvider` and all children can call `useQueryClient()`
 
 ### Acceptance Criteria
-- [ ] `npm install` resolves without peer-dep conflicts
-- [ ] `npm run build` passes with no TypeScript errors
-- [ ] `npm test` passes
-- [ ] `useQueryClient()` callable from any component in the tree without error
+- [x] `npm install` resolves without peer-dep conflicts
+- [x] `npm run build` passes with no TypeScript errors
+- [x] `npm test` passes
+- [x] `useQueryClient()` callable from any component in the tree without error
+
+### TDD Log
+- Red: added `frontend/tests/App.test.tsx` to probe `useQueryClient()` through the app provider stack.
+- Green: added module-level `QueryClient`, `QueryClientProvider`, and exported `AppProviders` from `frontend/src/App.tsx`.
+- Verify: `npm run test:serial -- frontend/tests/App.test.tsx`, `npm run lint`, `npm run typecheck`, `npm run build`, `npm run test`.
 
 ---
 

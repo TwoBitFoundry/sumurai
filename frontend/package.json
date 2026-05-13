@@ -55,6 +55,7 @@
     "@radix-ui/react-dialog": "^1.1.15",
     "@serwist/next": "^9.5.11",
     "@tailwindcss/postcss": "^4.2.4",
+    "@tanstack/react-query": "^5.100.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cross-fetch": "^4.1.0",
