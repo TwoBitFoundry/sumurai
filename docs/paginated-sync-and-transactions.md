@@ -347,12 +347,21 @@ Expose `{ transactions, total, totalPages, currentPage, setCurrentPage, categori
 Keep `TransactionsTable` pagination controls unchanged — they already accept `currentPage`, `totalPages`, and navigation callbacks.
 
 ### Acceptance Criteria
-- [ ] DevTools shows only `page_size` items per response (not all records)
-- [ ] Search box triggers server request (not client filter)
-- [ ] Category dropdown refetches from server
-- [ ] Prev/next buttons fire new requests with updated `page`
-- [ ] Category dropdown populated from `/api/transactions/categories` on mount
-- [ ] Users with 3000+ transactions can reach all via pagination (no `LIMIT 1000` cap)
+- [x] DevTools shows only `page_size` items per response (not all records)
+- [x] Search box triggers server request (not client filter)
+- [x] Category dropdown refetches from server
+- [x] Prev/next buttons fire new requests with updated `page`
+- [x] Category dropdown populated from `/api/transactions/categories` on mount
+- [x] Users with 3000+ transactions can reach all via pagination (no `LIMIT 1000` cap)
+
+### Notes
+- Added a paginated transaction fetch path and kept the default service path compatible for callers that still need the full transaction set.
+- Loaded transaction categories from the server and formatted them at render time in the filter chips.
+
+### TDD Log
+- `npm --prefix frontend test -- frontend/tests/services/TransactionService.test.ts frontend/tests/services/TransactionService.integration.test.ts frontend/tests/features/transactions/hooks/useTransactions.test.tsx`
+- `npm --prefix frontend run lint`
+- `npm --prefix frontend run typecheck`
 
 ---
 

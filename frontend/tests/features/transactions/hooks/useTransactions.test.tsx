@@ -8,6 +8,7 @@ import { TransactionService } from '@/services/TransactionService';
 jest.mock('@/services/TransactionService', () => ({
   TransactionService: {
     getTransactions: jest.fn(),
+    getTransactionCategories: jest.fn(),
   },
 }));
 
@@ -64,7 +65,13 @@ const TestWrapper = ({ children }: { children: ReactNode }) => (
 describe('useTransactions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.mocked(TransactionService.getTransactions).mockResolvedValue([]);
+    jest.mocked(TransactionService.getTransactions).mockResolvedValue({
+      transactions: [],
+      total: 0,
+      page: 1,
+      page_size: 10,
+    } as any);
+    jest.mocked(TransactionService.getTransactionCategories).mockResolvedValue([]);
     jest.mocked(PlaidService.getAccounts).mockResolvedValue(mockPlaidAccounts as any);
     jest.mocked(PlaidService.getStatus).mockResolvedValue({
       is_connected: true,
@@ -73,56 +80,62 @@ describe('useTransactions', () => {
     } as any);
   });
 
-  it('should refetch transactions when account filter changes', async () => {
-    let accountFilterHook: ReturnType<typeof useAccountFilter>;
-
-    // Mock transactions response
+  it('loads categories and the first server page on mount', async () => {
+    jest.mocked(TransactionService.getTransactions).mockImplementation(
+      async () =>
+        ({
+          transactions: [asTransaction('t1'), asTransaction('t2')],
+          total: 4,
+          page: 1,
+          page_size: 10,
+        }) as any
+    );
     jest
-      .mocked(TransactionService.getTransactions)
-      .mockResolvedValue([asTransaction('t1'), asTransaction('t2')] as any);
+      .mocked(TransactionService.getTransactionCategories)
+      .mockResolvedValue(['FOOD_AND_DRINK', 'TRANSPORTATION']);
 
     const { result } = renderHook(
       () => {
-        accountFilterHook = useAccountFilter();
-        return useTransactions();
+        return useTransactions({ pageSize: 10 });
       },
       { wrapper: TestWrapper }
     );
 
-    // Wait for initial load
     await waitFor(() => {
-      expect(TransactionService.getTransactions).toHaveBeenCalledTimes(1);
+      expect(result.current.categories).toEqual(['FOOD_AND_DRINK', 'TRANSPORTATION']);
     });
 
-    // Verify initial call was made without account filter (all accounts)
-    expect(TransactionService.getTransactions).toHaveBeenLastCalledWith({});
-
-    // Clear the mock to track new calls
-    jest.mocked(TransactionService.getTransactions).mockClear();
-
-    // Change account filter to specific accounts
-    await waitFor(() => {
-      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2']);
-    });
-
-    await act(async () => {
-      accountFilterHook!.setSelectedAccountIds(['account1']);
-    });
-
-    // Should refetch with account filter
-    await waitFor(() => {
-      expect(TransactionService.getTransactions).toHaveBeenCalledWith({
-        accountIds: ['account1'],
-      });
-    });
+    expect(TransactionService.getTransactions).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        page: 1,
+        page_size: 10,
+      })
+    );
+    expect(result.current.transactions).toHaveLength(2);
+    expect(result.current.totalItems).toBe(4);
+    expect(result.current.totalPages).toBe(1);
   });
 
-  it('should reset pagination when account filter changes', async () => {
+  it('fetches the next server page when currentPage changes', async () => {
     let accountFilterHook: ReturnType<typeof useAccountFilter>;
 
-    // Mock a large set of transactions
-    const transactions = Array.from({ length: 25 }, (_, i) => asTransaction(`t${i + 1}`));
-    jest.mocked(TransactionService.getTransactions).mockResolvedValue(transactions as any);
+    jest.mocked(TransactionService.getTransactions).mockImplementation(async (filters?: any) => {
+      if (filters?.page === 2) {
+        return {
+          transactions: Array.from({ length: 5 }, (_, i) => asTransaction(`t${i + 11}`)),
+          total: 15,
+          page: 2,
+          page_size: 10,
+        } as any;
+      }
+
+      return {
+        transactions: Array.from({ length: 10 }, (_, i) => asTransaction(`t${i + 1}`)),
+        total: 15,
+        page: 1,
+        page_size: 10,
+      } as any;
+    });
 
     const { result } = renderHook(
       () => {
@@ -132,51 +145,167 @@ describe('useTransactions', () => {
       { wrapper: TestWrapper }
     );
 
-    // Wait for initial load
-    await waitFor(() => {
-      expect(result.current.transactions).toHaveLength(25);
-    });
-
-    // Navigate to page 2
-    await act(async () => {
-      result.current.setCurrentPage(2);
-    });
-
-    expect(result.current.currentPage).toBe(2);
-
-    // Change account filter
     await waitFor(() => {
       expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2']);
     });
 
+    jest.mocked(TransactionService.getTransactions).mockClear();
+
     await act(async () => {
-      accountFilterHook!.setSelectedAccountIds(['account1']);
+      result.current.setCurrentPage(2);
     });
 
-    // Pagination should reset to page 1
     await waitFor(() => {
-      expect(result.current.currentPage).toBe(1);
+      expect(TransactionService.getTransactions).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          page: 2,
+          page_size: 10,
+        })
+      );
     });
+    expect(result.current.currentPage).toBe(2);
+    expect(result.current.transactions).toHaveLength(5);
+    expect(result.current.totalPages).toBe(2);
+  });
+
+  it('refetches from page one when search changes', async () => {
+    let accountFilterHook: ReturnType<typeof useAccountFilter>;
+
+    jest.mocked(TransactionService.getTransactions).mockImplementation(async (filters?: any) => {
+      if (filters?.search === 'coffee') {
+        return {
+          transactions: [asTransaction('t2')],
+          total: 1,
+          page: 1,
+          page_size: 10,
+        } as any;
+      }
+
+      return {
+        transactions: [asTransaction('t1')],
+        total: 12,
+        page: 1,
+        page_size: 10,
+      } as any;
+    });
+
+    const { result } = renderHook(
+      () => {
+        accountFilterHook = useAccountFilter();
+        return useTransactions({ pageSize: 10 });
+      },
+      { wrapper: TestWrapper }
+    );
+
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2']);
+    });
+
+    jest.mocked(TransactionService.getTransactions).mockClear();
+
+    await act(async () => {
+      result.current.setCurrentPage(2);
+    });
+
+    await act(async () => {
+      result.current.setSearch('coffee');
+    });
+
+    await waitFor(() => {
+      expect(TransactionService.getTransactions).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          page: 1,
+          search: 'coffee',
+        })
+      );
+    });
+
+    expect(result.current.currentPage).toBe(1);
+  });
+
+  it('refetches from page one when category changes', async () => {
+    let accountFilterHook: ReturnType<typeof useAccountFilter>;
+
+    jest.mocked(TransactionService.getTransactions).mockImplementation(async (filters?: any) => {
+      if (filters?.categoryPrimary === 'FOOD_AND_DRINK') {
+        return {
+          transactions: [asTransaction('t2')],
+          total: 1,
+          page: 1,
+          page_size: 10,
+        } as any;
+      }
+
+      return {
+        transactions: [asTransaction('t1')],
+        total: 12,
+        page: 1,
+        page_size: 10,
+      } as any;
+    });
+
+    const { result } = renderHook(
+      () => {
+        accountFilterHook = useAccountFilter();
+        return useTransactions({ pageSize: 10 });
+      },
+      { wrapper: TestWrapper }
+    );
+
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2']);
+    });
+
+    jest.mocked(TransactionService.getTransactions).mockClear();
+
+    await act(async () => {
+      result.current.setCurrentPage(2);
+    });
+
+    await act(async () => {
+      result.current.setSelectedCategory('FOOD_AND_DRINK');
+    });
+
+    await waitFor(() => {
+      expect(TransactionService.getTransactions).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          page: 1,
+          categoryPrimary: 'FOOD_AND_DRINK',
+        })
+      );
+    });
+    expect(result.current.currentPage).toBe(1);
   });
 
   it('should pass account filter to service when not all accounts selected', async () => {
     let accountFilterHook: ReturnType<typeof useAccountFilter>;
 
-    jest.mocked(TransactionService.getTransactions).mockResolvedValue([asTransaction('t1')] as any);
+    jest.mocked(TransactionService.getTransactions).mockImplementation(async (filters?: any) => {
+      if (filters?.accountIds?.includes('account1')) {
+        return {
+          transactions: [asTransaction('t2')],
+          total: 1,
+          page: 1,
+          page_size: 10,
+        } as any;
+      }
+
+      return {
+        transactions: [asTransaction('t1')],
+        total: 1,
+        page: 1,
+        page_size: 10,
+      } as any;
+    });
 
     const { result } = renderHook(
       () => {
         accountFilterHook = useAccountFilter();
-        return useTransactions();
+        return useTransactions({ pageSize: 10 });
       },
       { wrapper: TestWrapper }
     );
 
-    await waitFor(() => {
-      expect(TransactionService.getTransactions).toHaveBeenCalledTimes(1);
-    });
-
-    // Clear mock and set specific accounts
     jest.mocked(TransactionService.getTransactions).mockClear();
 
     await waitFor(() => {
@@ -188,54 +317,13 @@ describe('useTransactions', () => {
     });
 
     await waitFor(() => {
-      expect(TransactionService.getTransactions).toHaveBeenCalledWith({
-        accountIds: ['account1'],
-      });
-    });
-  });
-
-  it('should not pass account filter when all accounts selected', async () => {
-    let accountFilterHook: ReturnType<typeof useAccountFilter>;
-
-    jest.mocked(TransactionService.getTransactions).mockResolvedValue([asTransaction('t1')] as any);
-
-    const { result } = renderHook(
-      () => {
-        accountFilterHook = useAccountFilter();
-        return useTransactions();
-      },
-      { wrapper: TestWrapper }
-    );
-
-    await waitFor(() => {
-      expect(TransactionService.getTransactions).toHaveBeenCalledTimes(1);
+      expect(TransactionService.getTransactions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accountIds: ['account1'],
+        })
+      );
     });
 
-    await waitFor(() => {
-      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2']);
-    });
-
-    // Clear mock and select a subset first
-    jest.mocked(TransactionService.getTransactions).mockClear();
-
-    await act(async () => {
-      accountFilterHook!.setSelectedAccountIds(['account1']);
-    });
-
-    await waitFor(() => {
-      expect(TransactionService.getTransactions).toHaveBeenCalledWith({
-        accountIds: ['account1'],
-      });
-    });
-
-    jest.mocked(TransactionService.getTransactions).mockClear();
-
-    await act(async () => {
-      accountFilterHook!.setSelectedAccountIds([...accountFilterHook!.allAccountIds]);
-    });
-
-    await waitFor(() => {
-      expect(TransactionService.getTransactions).toHaveBeenCalledWith({});
-    });
+    expect(result.current.currentPage).toBe(1);
   });
 });

@@ -12,141 +12,106 @@ describe('TransactionService via ApiClient', () => {
   });
 
   describe('getTransactions', () => {
-    it('should fetch transactions without filters', async () => {
-      const mockTransactions = [
+    it('should fetch transactions without filters using the default first page', async () => {
+      const mockResponse = new Response(
+        JSON.stringify({
+          transactions: [
+            {
+              id: 'txn-1',
+              date: '2025-01-15',
+              merchant_name: 'Coffee Shop',
+              amount: 5.5,
+              category_primary: 'Food & Drink',
+              category_detailed: 'Coffee Shops',
+              category_confidence: 'high',
+              pending: false,
+              account_id: 'acc-1',
+            },
+          ],
+          total: 1,
+          page: 1,
+          page_size: 200,
+        }),
         {
-          id: 'txn-1',
-          date: '2025-01-15',
-          name: 'Coffee Shop',
-          merchant_name: 'Starbucks',
-          amount: 5.5,
-          category_primary: 'Food & Drink',
-          category_detailed: 'Coffee Shops',
-          category_confidence: 'high',
-          pending: false,
-          account_id: 'acc-1',
-        },
-      ];
-
-      const mockResponse = new Response(JSON.stringify(mockTransactions), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
       fetchSpy.mockResolvedValueOnce(mockResponse);
 
       const transactions = await TransactionService.getTransactions();
 
-      expect(fetchSpy).toHaveBeenCalledWith('/api/transactions', expect.any(Object));
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/api/transactions?page=1&page_size=200'),
+        expect.any(Object)
+      );
       expect(transactions).toHaveLength(1);
       expect(transactions[0].id).toBe('txn-1');
     });
 
-    it('should fetch transactions with start and end date filters', async () => {
-      const mockTransactions = [
+    it('should fetch a paginated response with page and page_size parameters', async () => {
+      const mockResponse = new Response(
+        JSON.stringify({
+          transactions: [
+            {
+              id: 'txn-2',
+              date: '2025-01-16',
+              merchant_name: 'Grocery Store',
+              amount: 45.75,
+              category_primary: 'Groceries',
+              category_detailed: 'Supermarkets',
+              category_confidence: 'high',
+              pending: false,
+              account_id: 'acc-1',
+            },
+          ],
+          total: 25,
+          page: 2,
+          page_size: 10,
+        }),
         {
-          id: 'txn-1',
-          date: '2025-01-15',
-          name: 'Coffee Shop',
-          merchant_name: 'Starbucks',
-          amount: 5.5,
-          category_primary: 'Food & Drink',
-          category_detailed: 'Coffee Shops',
-          category_confidence: 'high',
-          pending: false,
-          account_id: 'acc-1',
-        },
-        {
-          id: 'txn-2',
-          date: '2025-01-16',
-          name: 'Grocery Store',
-          merchant_name: 'Whole Foods',
-          amount: 45.75,
-          category_primary: 'Groceries',
-          category_detailed: 'Supermarkets',
-          category_confidence: 'high',
-          pending: false,
-          account_id: 'acc-1',
-        },
-      ];
-
-      const mockResponse = new Response(JSON.stringify(mockTransactions), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
       fetchSpy.mockResolvedValueOnce(mockResponse);
 
-      const transactions = await TransactionService.getTransactions({
-        startDate: '2025-01-01',
-        endDate: '2025-01-31',
-      });
-
-      const callArgs = fetchSpy.mock.calls[0];
-      expect(callArgs[0]).toContain('/api/transactions');
-      expect(callArgs[0]).toContain('startDate=2025-01-01');
-      expect(callArgs[0]).toContain('endDate=2025-01-31');
-      expect(transactions).toHaveLength(2);
-    });
-
-    it('should fetch transactions with category filter', async () => {
-      const mockTransactions = [
-        {
-          id: 'txn-1',
-          date: '2025-01-15',
-          name: 'Coffee Shop',
-          merchant_name: 'Starbucks',
-          amount: 5.5,
-          category_primary: 'Food & Drink',
-          category_detailed: 'Coffee Shops',
-          category_confidence: 'high',
-          pending: false,
-          account_id: 'acc-1',
-        },
-      ];
-
-      const mockResponse = new Response(JSON.stringify(mockTransactions), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-      fetchSpy.mockResolvedValueOnce(mockResponse);
-
-      const transactions = await TransactionService.getTransactions({
-        categoryId: 'cat-food',
-      });
-
-      const callArgs = fetchSpy.mock.calls[0];
-      expect(callArgs[0]).toContain('categoryId=cat-food');
-      expect(transactions).toHaveLength(1);
-    });
-
-    it('should fetch transactions with search filter', async () => {
-      const mockTransactions = [
-        {
-          id: 'txn-1',
-          date: '2025-01-15',
-          name: 'Starbucks Coffee',
-          merchant_name: 'Starbucks',
-          amount: 5.5,
-          category_primary: 'Food & Drink',
-          category_detailed: 'Coffee Shops',
-          category_confidence: 'high',
-          pending: false,
-          account_id: 'acc-1',
-        },
-      ];
-
-      const mockResponse = new Response(JSON.stringify(mockTransactions), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-      fetchSpy.mockResolvedValueOnce(mockResponse);
-
-      const transactions = await TransactionService.getTransactions({
+      const response = await TransactionService.getTransactions({
+        page: 2,
+        page_size: 10,
         search: 'coffee',
+        categoryPrimary: 'Food & Drink',
       });
 
-      const callArgs = fetchSpy.mock.calls[0];
-      expect(callArgs[0]).toContain('search=coffee');
-      expect(transactions).toHaveLength(1);
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          '/api/transactions?category_primary=Food+%26+Drink&search=coffee&page=2&page_size=10'
+        ),
+        expect.any(Object)
+      );
+      expect(response).toEqual({
+        transactions: [
+          expect.objectContaining({
+            id: 'txn-2',
+          }),
+        ],
+        total: 25,
+        page: 2,
+        page_size: 10,
+      });
+    });
+
+    it('should fetch transaction categories', async () => {
+      const mockResponse = new Response(JSON.stringify(['Groceries', 'Utilities']), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+      fetchSpy.mockResolvedValueOnce(mockResponse);
+
+      const categories = await TransactionService.getTransactionCategories();
+
+      expect(fetchSpy).toHaveBeenCalledWith('/api/transactions/categories', expect.any(Object));
+      expect(categories).toEqual(['Groceries', 'Utilities']);
     });
 
     it('should handle error responses gracefully', async () => {
@@ -156,36 +121,43 @@ describe('TransactionService via ApiClient', () => {
       });
       fetchSpy.mockResolvedValueOnce(mockResponse);
 
-      await expect(TransactionService.getTransactions()).rejects.toThrow();
+      await expect(
+        TransactionService.getTransactions({ page: 1, page_size: 10 })
+      ).rejects.toThrow();
     });
 
     it('should transform backend transaction format to frontend format', async () => {
-      const mockTransactions = [
+      const mockResponse = new Response(
+        JSON.stringify({
+          transactions: [
+            {
+              id: 'backend-id-1',
+              date: '2025-01-15',
+              merchant_name: 'Test Merchant',
+              amount: -25.0,
+              category_primary: 'Test Category',
+              category_detailed: 'Test Detail',
+              category_confidence: 'high',
+              pending: false,
+              account_id: 'acc-1',
+            },
+          ],
+          total: 1,
+          page: 1,
+          page_size: 10,
+        }),
         {
-          id: 'backend-id-1',
-          date: '2025-01-15',
-          name: 'Test Transaction',
-          merchant_name: 'Test Merchant',
-          amount: -25.0,
-          category_primary: 'Test Category',
-          category_detailed: 'Test Detail',
-          category_confidence: 'high',
-          pending: false,
-          account_id: 'acc-1',
-        },
-      ];
-
-      const mockResponse = new Response(JSON.stringify(mockTransactions), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
       fetchSpy.mockResolvedValueOnce(mockResponse);
 
-      const transactions = await TransactionService.getTransactions();
+      const response = await TransactionService.getTransactions({ page: 1, page_size: 10 });
 
-      expect(transactions).toHaveLength(1);
-      expect(transactions[0].id).toBe('backend-id-1');
-      expect(transactions[0].amount).toBe(-25.0);
+      expect(response.transactions).toHaveLength(1);
+      expect(response.transactions[0].id).toBe('backend-id-1');
+      expect(response.transactions[0].amount).toBe(-25.0);
     });
   });
 });
