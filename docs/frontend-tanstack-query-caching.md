@@ -215,12 +215,17 @@ const query = useQuery({
 - Remove manual `load`, `setIsLoading`, `setAll`, `setError` state and effect
 
 ### Acceptance Criteria
-- [ ] `npm run build` passes
-- [ ] `npm test` passes
-- [ ] Transactions tab loads on first visit
-- [ ] Switching away and back shows previous transactions instantly (no loading frame)
-- [ ] Client-side search / filter / pagination still works
-- [ ] Changing account filter triggers a new fetch (cache key changes)
+- [x] `npm run build` passes
+- [x] `npm test` passes
+- [x] Transactions tab loads on first visit (validated via hook test: data and categories after accounts resolve)
+- [x] Switching away and back shows previous transactions instantly (no loading frame) (validated via shared `QueryClient` unmount/remount test: rows restored, `getTransactions` call count unchanged while cache is fresh)
+- [x] Client-side search / filter / pagination still works (existing hook tests: search/category reset page, pagination, race-safe page resolution)
+- [x] Changing account filter triggers a new fetch (cache key changes) (existing test: `getTransactions` called with updated `accountIds`)
+
+### TDD Log
+- Red: extended `frontend/tests/features/transactions/hooks/useTransactions.test.tsx` with remount/cache reuse expectations, first-visit data wait, and error mapping cases before refactoring the hook.
+- Green: moved paginated transaction loading to `useQuery` with key `['transactions', 'list', dateRange, cacheKey, debounced search, category, page, pageSize]`, `staleTime` 2 minutes, `accountIdsCacheKey` for the account segment, and loading mapped to fetching-without-data so cached remounts avoid empty loading frames; kept debounced search, category state, pagination, and filter-driven page reset.
+- Verify: `npm --prefix frontend run test:serial -- tests/features/transactions/hooks/useTransactions.test.tsx`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend test`
 
 ---
 
