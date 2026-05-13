@@ -2,7 +2,7 @@ use crate::models::{account::Account, plaid::ProviderConnection};
 use crate::providers::{PlaidProvider, ProviderRegistry};
 
 use crate::services::{plaid_service::RealPlaidClient, sync_service::SyncService};
-use chrono::{Duration, Utc};
+use chrono::{Duration, Months, Utc};
 use rust_decimal_macros::dec;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -92,6 +92,7 @@ fn given_connection_with_no_cursor_when_calculating_date_ranges_then_uses_defaul
     let mut connection = create_test_bank_connection(user_id);
     connection.sync_cursor = None;
     connection.last_sync_at = None;
+    let now = Utc::now().date_naive();
 
     let plaid_client = Arc::new(RealPlaidClient::new(
         "test_client_id".to_string(),
@@ -100,9 +101,10 @@ fn given_connection_with_no_cursor_when_calculating_date_ranges_then_uses_defaul
     ));
     let sync_service = build_sync_service(plaid_client);
 
-    let (start_date, end_date) = sync_service.calculate_sync_date_range(connection.last_sync_at);
-    let expected_start = Utc::now().date_naive() - Duration::days(1825);
-    let expected_end = Utc::now().date_naive();
+    let (start_date, end_date) =
+        sync_service.calculate_sync_date_range(connection.last_sync_at, None);
+    let expected_start = now.checked_sub_months(Months::new(60)).unwrap();
+    let expected_end = now;
 
     assert_eq!(start_date, expected_start);
     assert_eq!(end_date, expected_end);
@@ -130,7 +132,7 @@ async fn given_bank_connection_when_sync_fails_then_returns_error_without_updati
     };
 
     let result = sync_service
-        .sync_bank_connection_transactions(&credentials, &connection, &accounts)
+        .sync_bank_connection_transactions(&credentials, &connection, &accounts, None)
         .await;
 
     assert!(result.is_err());

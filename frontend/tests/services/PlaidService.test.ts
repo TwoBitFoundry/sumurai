@@ -12,16 +12,21 @@ import type {
 describe('PlaidService', () => {
   let postSpy: jest.SpiedFunction<typeof ApiClient.post>;
   let getSpy: jest.SpiedFunction<typeof ApiClient.get>;
+  let toLocaleDateStringSpy: jest.SpiedFunction<typeof Date.prototype.toLocaleDateString>;
 
   beforeEach(() => {
     jest.clearAllMocks();
     postSpy = jest.spyOn(ApiClient, 'post');
     getSpy = jest.spyOn(ApiClient, 'get');
+    toLocaleDateStringSpy = jest
+      .spyOn(Date.prototype, 'toLocaleDateString')
+      .mockReturnValue('2025-06-15');
   });
 
   afterEach(() => {
     postSpy.mockRestore();
     getSpy.mockRestore();
+    toLocaleDateStringSpy.mockRestore();
   });
 
   describe('getLinkToken', () => {
@@ -140,7 +145,9 @@ describe('PlaidService', () => {
 
       const result = await PlaidService.syncTransactions();
 
-      expect(ApiClient.post).toHaveBeenCalledWith('/providers/sync-transactions', {});
+      expect(ApiClient.post).toHaveBeenCalledWith('/providers/sync-transactions', {
+        client_date: '2025-06-15',
+      });
       expect(result).toEqual(mockResponse);
     });
 
@@ -174,6 +181,7 @@ describe('PlaidService', () => {
 
       expect(ApiClient.post).toHaveBeenCalledWith('/providers/sync-transactions', {
         connection_id: connectionId,
+        client_date: '2025-06-15',
       });
       expect(result).toEqual(mockResponse);
     });

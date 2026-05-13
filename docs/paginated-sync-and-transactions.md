@@ -183,9 +183,22 @@ client_date: new Date().toLocaleDateString('en-CA') // "YYYY-MM-DD" in local tim
 ```
 
 ### Acceptance Criteria
-- [ ] `cargo test` passes — update all existing call sites in tests to pass `None`
-- [ ] New test: `reference_date = 2025-06-15`, `last_sync_at = None` → `start_date == 2020-06-15`
-- [ ] DevTools network tab shows `client_date` in sync request body
+- [x] `cargo test` passes — update all existing call sites in tests to pass `None`
+- [x] New test: `reference_date = 2025-06-15`, `last_sync_at = None` → `start_date == 2020-06-15`
+- [x] DevTools network tab shows `client_date` in sync request body
+
+### Notes
+- Added `client_date` to the sync request model and threaded a parsed `NaiveDate` through the provider sync path.
+- Used calendar-month subtraction for the five-year lookback so the first-sync window anchors to the user's local calendar date.
+- Added shared frontend payload construction so Plaid and Teller sync requests both include `client_date`.
+
+### TDD Log
+- `cargo test --manifest-path backend/Cargo.toml --locked`
+- `cargo fmt --manifest-path backend/Cargo.toml --all --check`
+- `cargo clippy --manifest-path backend/Cargo.toml --locked --all-targets --no-deps -- -D warnings`
+- `npm --prefix frontend test -- frontend/tests/services/PlaidService.test.ts frontend/tests/services/TellerService.test.ts`
+- `npm --prefix frontend run lint`
+- `npm --prefix frontend run typecheck`
 
 ---
 

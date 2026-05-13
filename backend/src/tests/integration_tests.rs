@@ -1020,6 +1020,7 @@ async fn given_connection_id_when_sync_then_uses_get_provider_connection_by_id()
 
     let sync_request = SyncTransactionsRequest {
         connection_id: Some(connection_id.to_string()),
+        client_date: None,
     };
 
     let request = TestFixtures::create_authenticated_post_request(
@@ -1057,6 +1058,7 @@ async fn given_foreign_connection_id_when_sync_then_returns_404() {
 
     let sync_request = SyncTransactionsRequest {
         connection_id: Some(connection_id.to_string()),
+        client_date: None,
     };
 
     let request = TestFixtures::create_authenticated_post_request(

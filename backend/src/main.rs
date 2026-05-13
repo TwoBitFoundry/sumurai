@@ -13,6 +13,7 @@ use axum::{
 };
 use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
 use axum_tracing_opentelemetry::tracing_opentelemetry_instrumentation_sdk as otel_sdk;
+use chrono::NaiveDate;
 use chrono::Utc;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -1220,15 +1221,30 @@ async fn sync_authenticated_provider_transactions(
     req: AuthorizedConnectionRequest<SyncTransactionsRequest>,
 ) -> Result<Json<SyncTransactionsResponse>, StatusCode> {
     let user_id = auth_context.user_id;
+    let AuthorizedConnectionRequest {
+        _body: request_body,
+        connection,
+    } = req;
 
     tracing::info!("Sync transactions requested for user {}", user_id);
 
-    let mut connection = req.connection;
+    let reference_date = request_body
+        .client_date
+        .as_deref()
+        .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
+        .transpose()
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
+    let mut connection = connection;
 
     if connection.item_id.starts_with("teller_") {
         match state
             .connection_service
-            .sync_teller_connection(&user_id, &auth_context.jwt_id, &mut connection)
+            .sync_teller_connection(
+                &user_id,
+                &auth_context.jwt_id,
+                &mut connection,
+                reference_date,
+            )
             .await
         {
             Ok(response) => return Ok(Json(response)),
@@ -1293,7 +1309,12 @@ async fn sync_authenticated_provider_transactions(
 
     match state
         .connection_service
-        .sync_provider_connection(sync_params, state.sync_service.as_ref(), &mut connection)
+        .sync_provider_connection(
+            sync_params,
+            state.sync_service.as_ref(),
+            &mut connection,
+            reference_date,
+        )
         .await
     {
         Ok(response) => Ok(Json(response)),

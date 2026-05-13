@@ -4,7 +4,7 @@ use crate::providers::{PlaidProvider, ProviderRegistry};
 use crate::services::{plaid_service::RealPlaidClient, sync_service::SyncService};
 use crate::test_fixtures::TestFixtures;
 
-use chrono::{Duration, NaiveDate, Utc};
+use chrono::{Duration, Months, NaiveDate, Utc};
 use rust_decimal_macros::dec;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -154,10 +154,11 @@ mod date_range_calculation_tests {
     #[test]
     fn given_no_previous_sync_when_calculating_range_then_returns_5_year_default() {
         let sync_service = create_test_sync_service();
+        let now = Utc::now().date_naive();
 
-        let (start_date, end_date) = sync_service.calculate_sync_date_range(None);
-        let expected_start = Utc::now().date_naive() - Duration::days(1825);
-        let expected_end = Utc::now().date_naive();
+        let (start_date, end_date) = sync_service.calculate_sync_date_range(None, None);
+        let expected_start = now.checked_sub_months(Months::new(60)).unwrap();
+        let expected_end = now;
 
         assert_eq!(start_date, expected_start);
         assert_eq!(end_date, expected_end);
@@ -167,10 +168,11 @@ mod date_range_calculation_tests {
     fn given_recent_last_sync_when_calculating_range_then_returns_incremental_window() {
         let sync_service = create_test_sync_service();
         let last_sync = Utc::now() - Duration::days(7); // 7 days ago
+        let now = Utc::now().date_naive();
 
-        let (start_date, end_date) = sync_service.calculate_sync_date_range(Some(last_sync));
+        let (start_date, end_date) = sync_service.calculate_sync_date_range(Some(last_sync), None);
         let expected_start = (last_sync - Duration::days(2)).date_naive();
-        let expected_end = Utc::now().date_naive();
+        let expected_end = now;
 
         assert_eq!(start_date, expected_start);
         assert_eq!(end_date, expected_end);
@@ -180,10 +182,11 @@ mod date_range_calculation_tests {
     fn given_old_last_sync_over_5_years_when_calculating_range_then_caps_at_5_year_window() {
         let sync_service = create_test_sync_service();
         let last_sync = Utc::now() - Duration::days(365 * 6); // 6 years ago
+        let now = Utc::now().date_naive();
 
-        let (start_date, end_date) = sync_service.calculate_sync_date_range(Some(last_sync));
-        let expected_start = Utc::now().date_naive() - Duration::days(365 * 5);
-        let expected_end = Utc::now().date_naive();
+        let (start_date, end_date) = sync_service.calculate_sync_date_range(Some(last_sync), None);
+        let expected_start = now.checked_sub_months(Months::new(60)).unwrap();
+        let expected_end = now;
 
         assert_eq!(start_date, expected_start);
         assert_eq!(end_date, expected_end);
@@ -193,12 +196,24 @@ mod date_range_calculation_tests {
     fn given_future_last_sync_when_calculating_range_then_handles_gracefully() {
         let sync_service = create_test_sync_service();
         let future_sync = Utc::now() + Duration::days(1);
-
-        let (start_date, end_date) = sync_service.calculate_sync_date_range(Some(future_sync));
         let expected_end = Utc::now().date_naive();
+
+        let (start_date, end_date) =
+            sync_service.calculate_sync_date_range(Some(future_sync), None);
 
         assert!(start_date <= expected_end);
         assert_eq!(end_date, expected_end);
+    }
+
+    #[test]
+    fn given_reference_date_when_calculating_range_then_anchors_to_client_calendar_day() {
+        let reference_date = NaiveDate::from_ymd_opt(2025, 6, 15).unwrap();
+
+        let (start_date, end_date) =
+            SyncService::calculate_sync_date_range_static(None, Some(reference_date));
+
+        assert_eq!(end_date, reference_date);
+        assert_eq!(start_date, NaiveDate::from_ymd_opt(2020, 6, 15).unwrap());
     }
 }
 
@@ -223,10 +238,11 @@ mod sync_recent_transactions_integration_tests {
     #[tokio::test]
     async fn given_no_last_sync_when_calling_sync_recent_transactions_then_uses_5_year_window() {
         let sync_service = create_test_sync_service_for_integration();
+        let now = Utc::now().date_naive();
 
-        let (start_date, end_date) = sync_service.calculate_sync_date_range(None);
-        let expected_start = Utc::now().date_naive() - Duration::days(1825);
-        let expected_end = Utc::now().date_naive();
+        let (start_date, end_date) = sync_service.calculate_sync_date_range(None, None);
+        let expected_start = now.checked_sub_months(Months::new(60)).unwrap();
+        let expected_end = now;
 
         assert_eq!(start_date, expected_start);
         assert_eq!(end_date, expected_end);
@@ -237,9 +253,9 @@ mod sync_recent_transactions_integration_tests {
     ) {
         let last_sync = Utc::now() - Duration::days(3);
         let sync_service = create_test_sync_service_for_integration();
-
-        let (start_date, end_date) = sync_service.calculate_sync_date_range(Some(last_sync));
         let expected_end = Utc::now().date_naive();
+
+        let (start_date, end_date) = sync_service.calculate_sync_date_range(Some(last_sync), None);
         let expected_start = (last_sync - Duration::days(2)).date_naive();
 
         assert_eq!(start_date, expected_start);

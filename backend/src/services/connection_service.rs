@@ -14,6 +14,7 @@ use crate::services::{
     cache_service::CacheService, repository_service::DatabaseRepository, sync_service::SyncService,
 };
 use anyhow::{Error, Result};
+use chrono::NaiveDate;
 use chrono::Utc;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -421,10 +422,11 @@ impl ConnectionService {
         params: SyncConnectionParams<'_>,
         sync_service: &SyncService,
         connection: &mut ProviderConnection,
+        reference_date: Option<NaiveDate>,
     ) -> Result<SyncTransactionsResponse, ProviderSyncError> {
         let sync_timestamp = Utc::now();
         let (sync_start_date, sync_end_date) =
-            sync_service.calculate_sync_date_range(connection.last_sync_at);
+            sync_service.calculate_sync_date_range(connection.last_sync_at, reference_date);
 
         let credentials_record = self
             .db_repository
@@ -472,7 +474,12 @@ impl ConnectionService {
             .map_err(ProviderSyncError::AccountLookup)?;
 
         let (mut transactions, new_cursor) = sync_service
-            .sync_bank_connection_transactions(&provider_credentials, connection, &db_accounts)
+            .sync_bank_connection_transactions(
+                &provider_credentials,
+                connection,
+                &db_accounts,
+                reference_date,
+            )
             .await
             .map_err(ProviderSyncError::SyncFailure)?;
 
@@ -607,10 +614,11 @@ impl ConnectionService {
         user_id: &Uuid,
         jwt_id: &str,
         connection: &mut ProviderConnection,
+        reference_date: Option<NaiveDate>,
     ) -> Result<SyncTransactionsResponse, TellerSyncError> {
         let sync_timestamp = Utc::now();
         let (sync_start_date, sync_end_date) =
-            SyncService::calculate_sync_date_range_static(connection.last_sync_at);
+            SyncService::calculate_sync_date_range_static(connection.last_sync_at, reference_date);
 
         let credentials = self
             .db_repository

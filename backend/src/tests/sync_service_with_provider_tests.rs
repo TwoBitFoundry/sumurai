@@ -131,7 +131,7 @@ async fn given_sync_service_with_provider_when_sync_then_maps_accounts_correctly
     };
 
     let (result_transactions, _cursor) = sync_service
-        .sync_bank_connection_transactions(&credentials, &connection, &accounts)
+        .sync_bank_connection_transactions(&credentials, &connection, &accounts, None)
         .await
         .unwrap();
 

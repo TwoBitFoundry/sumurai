@@ -217,6 +217,7 @@ async fn given_plaid_sync_with_many_transactions_when_persisting_then_batches_wr
             },
             &sync_service,
             &mut connection,
+            None,
         )
         .await;
 

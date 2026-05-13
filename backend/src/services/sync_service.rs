@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use chrono::{DateTime, Duration, NaiveDate, Utc};
+use chrono::{DateTime, Duration, Months, NaiveDate, Utc};
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -9,7 +9,6 @@ use crate::providers::{FinancialDataProvider, ProviderCredentials, ProviderRegis
 
 const MAX_SYNC_YEARS: i64 = 5;
 const SAFETY_MARGIN_DAYS: i64 = 2;
-const DEFAULT_FIRST_SYNC_DAYS: i64 = 1825;
 
 pub struct SyncService {
     providers: Arc<ProviderRegistry>,
@@ -52,8 +51,10 @@ impl SyncService {
         credentials: &ProviderCredentials,
         connection: &ProviderConnection,
         accounts: &[Account],
+        reference_date: Option<NaiveDate>,
     ) -> Result<(Vec<Transaction>, String)> {
-        let (start_date, end_date) = self.calculate_sync_date_range(connection.last_sync_at);
+        let (start_date, end_date) =
+            self.calculate_sync_date_range(connection.last_sync_at, reference_date);
 
         let provider = self.resolve_provider(Some(&credentials.provider))?;
         let transactions = provider
@@ -87,8 +88,9 @@ impl SyncService {
         credentials: &ProviderCredentials,
         existing_transactions: &[Transaction],
         last_sync_at: Option<DateTime<Utc>>,
+        reference_date: Option<NaiveDate>,
     ) -> Result<Vec<Transaction>> {
-        let (start_date, end_date) = self.calculate_sync_date_range(last_sync_at);
+        let (start_date, end_date) = self.calculate_sync_date_range(last_sync_at, reference_date);
 
         let provider = self.resolve_provider(Some(&credentials.provider))?;
         let provider_transactions = provider
@@ -131,15 +133,20 @@ impl SyncService {
     pub fn calculate_sync_date_range(
         &self,
         last_sync_at: Option<DateTime<Utc>>,
+        reference_date: Option<NaiveDate>,
     ) -> (NaiveDate, NaiveDate) {
-        Self::calculate_sync_date_range_static(last_sync_at)
+        Self::calculate_sync_date_range_static(last_sync_at, reference_date)
     }
 
     pub fn calculate_sync_date_range_static(
         last_sync_at: Option<DateTime<Utc>>,
+        reference_date: Option<NaiveDate>,
     ) -> (NaiveDate, NaiveDate) {
-        let end_date = Utc::now().date_naive();
-        let max_lookback = end_date - Duration::days(365 * MAX_SYNC_YEARS);
+        let end_date = reference_date.unwrap_or_else(|| Utc::now().date_naive());
+        let lookback_months = Months::new((MAX_SYNC_YEARS * 12) as u32);
+        let max_lookback = end_date
+            .checked_sub_months(lookback_months)
+            .unwrap_or(end_date);
 
         let start_date = match last_sync_at {
             Some(last_sync) => {
@@ -147,7 +154,9 @@ impl SyncService {
                     (last_sync - Duration::days(SAFETY_MARGIN_DAYS)).date_naive();
                 std::cmp::max(last_sync_with_buffer, max_lookback).min(end_date)
             }
-            None => end_date - Duration::days(DEFAULT_FIRST_SYNC_DAYS),
+            None => end_date
+                .checked_sub_months(lookback_months)
+                .unwrap_or(end_date),
         };
 
         (start_date, end_date)
