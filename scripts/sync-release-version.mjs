@@ -24,8 +24,18 @@ async function updateToml(filePath) {
   await fs.writeFile(filePath, contents);
 }
 
+async function updateCargoLock(filePath, packageName) {
+  let contents = await fs.readFile(filePath, 'utf8');
+  contents = contents.replace(
+    new RegExp(`(name = "${packageName}"\\nversion = )"[^"]*"`),
+    `$1"${version}"`
+  );
+  await fs.writeFile(filePath, contents);
+}
+
 await updateJson(path.join(root, 'package.json'));
 await updateJson(path.join(root, 'package-lock.json'));
 await updateJson(path.join(root, 'frontend', 'package.json'));
 await updateJson(path.join(root, 'frontend', 'package-lock.json'));
 await updateToml(path.join(root, 'backend', 'Cargo.toml'));
+await updateCargoLock(path.join(root, 'backend', 'Cargo.lock'), 'sumurai-backend');

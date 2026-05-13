@@ -42,7 +42,16 @@ jobs:
 
       - name: Run Semantic Release
         id: semantic
-        run: npm run release
+        run: |
+          npm run release
+          tag=$(git tag --points-at HEAD 2>/dev/null | grep -E '^v[0-9]' | head -1)
+          if [ -n "$tag" ]; then
+            echo "new_release_published=true" >> $GITHUB_OUTPUT
+            echo "new_release_version=${tag#v}" >> $GITHUB_OUTPUT
+          else
+            echo "new_release_published=false" >> $GITHUB_OUTPUT
+            echo "new_release_version=" >> $GITHUB_OUTPUT
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.SUMURAI_SEMANTIC_RELEASE }}
 
