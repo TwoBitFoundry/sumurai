@@ -449,16 +449,19 @@ Changes to `AppTitleBar.tsx`:
 
 ### Acceptance Criteria
 - [x] Scrolling on the dashboard — title bar stays fixed size with no animation or layout jump
-- [ ] Switching to Dashboard tab with warm cache — charts appear without replaying the 800ms animation
-- [ ] Account or time-range filter change — donut chart plays entrance animation
-- [ ] Floating date-range selector appears promptly after scroll, not after a 300ms lag
-- [ ] Dashboard: footer visible immediately below last content card with no dead whitespace
+- [x] Switching to Dashboard tab with warm cache — charts appear without replaying the 800ms animation
+- [x] Account or time-range filter change — donut chart plays entrance animation
+- [x] Floating date-range selector appears promptly after scroll, not after a 300ms lag
+- [x] Dashboard: footer visible immediately below last content card with no dead whitespace
 - [x] `npm run build` and `npm test` pass
 
 ### TDD Log
 - For 7a: added a render regression test that compares the title bar header, `Dashboard` button chrome, and logo image dimensions before and after `scrolled` flips, then flattened `AppTitleBar` so the header stays fixed at `h-16`.
 - Verified for 7a: `npm --prefix frontend run test:serial -- tests/ui/primitives/AppTitleBar.test.tsx`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend test`
-- For 7b: render test on `SpendingByCategoryChart` with `animated={false}` asserting `animationDuration` is 0; smoke check that DashboardPage passes `animated={false}` on remount with unchanged query key.
+- For 7b: added a render regression test on `SpendingByCategoryChart` with `animated={false}` asserting `animationDuration` is 0, plus a DashboardPage remount smoke test that checks the chart stops animating when the query key is unchanged.
+- Implemented an isolated floating-selector wrapper so the intersection observer no longer rerenders the dashboard tree, reduced the observer threshold to `0.1`, shortened the fade to `duration-150`, and reduced dashboard bottom padding to `pb-16`.
+- Verified with `npm --prefix frontend run test:serial -- tests/features/analytics/components/SpendingByCategoryChart.test.tsx tests/views/DashboardPage.test.tsx`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, and `npm --prefix frontend run build`.
+- Browser verification: reloaded `http://localhost:3001/`, switched Dashboard -> Transactions -> Dashboard, and confirmed the dashboard remounts cleanly with the cached content visible again.
 
 ---
 

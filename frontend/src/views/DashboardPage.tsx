@@ -62,17 +62,91 @@ const dashboardFloatingRangeShell = [
   'backdrop-saturate-[150%]',
 ] as const;
 
+const dateRangeOptions = [
+  { key: 'current-month', label: 'Current Month' },
+  { key: 'past-2-months', label: '2 Months' },
+  { key: 'past-3-months', label: '3 Months' },
+  { key: 'past-6-months', label: '6 Months' },
+  { key: 'past-year', label: '1 Year' },
+  { key: 'all-time', label: '5 Years' },
+] as const;
+
 const netTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) => {
   const numericValue = Array.isArray(value) ? Number(value[0]) : Number(value);
   return fmtUSD(Number.isFinite(numericValue) ? numericValue : 0);
 };
+
+let lastSpendingByCategoryAnimationKey = '';
+
+function DashboardFloatingDateRangeSelector({
+  dateRange,
+  setDateRange,
+  spendingOverviewRef,
+}: {
+  dateRange: DateRange;
+  setDateRange: (range: DateRange) => void;
+  spendingOverviewRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const [showTimeBar, setShowTimeBar] = useState(false);
+
+  useEffect(() => {
+    const target = spendingOverviewRef.current;
+    if (!target) {
+      setShowTimeBar(false);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setShowTimeBar(entry.isIntersecting);
+      },
+      { threshold: [0.1] }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [spendingOverviewRef]);
+
+  return (
+    <div
+      className={cn(
+        'fixed',
+        'left-0',
+        'right-0',
+        'z-50',
+        'flex',
+        'justify-center',
+        'transition-opacity',
+        'duration-150',
+        'ease-out',
+        showTimeBar ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      )}
+      style={{ bottom: 24 }}
+    >
+      <div className={cn(dashboardFloatingRangeShell)}>
+        {dateRangeOptions.map((option) => (
+          <Button
+            type="button"
+            key={option.key}
+            onClick={() => setDateRange(option.key as DateRange)}
+            variant={dateRange === option.key ? 'tabActive' : 'tab'}
+            size="sm"
+            className="rounded-lg px-3 py-1.5 normal-case transition-all duration-200"
+          >
+            {option.label}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const DashboardPage: React.FC = () => {
   const { colors } = useTheme();
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>('current-month');
   const spendingOverviewRef = useRef<HTMLDivElement | null>(null);
-  const [showTimeBar, setShowTimeBar] = useState(false);
 
   const analytics = useAnalytics(dateRange);
   const analyticsLoading = analytics.loading;
@@ -83,23 +157,13 @@ const DashboardPage: React.FC = () => {
   const netLoading = netWorth.loading;
   const netRefreshing = netWorth.refreshing;
   const netError = netWorth.error;
+  const spendingByCategoryAnimationKey = `${dateRange}-${analytics.cacheKey}`;
+  const shouldAnimateSpendingByCategory =
+    spendingByCategoryAnimationKey !== lastSpendingByCategoryAnimationKey;
 
   useEffect(() => {
-    const target = spendingOverviewRef.current;
-    if (!target) {
-      setShowTimeBar(false);
-      return;
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        setShowTimeBar(entry.isIntersecting);
-      },
-      { threshold: [0, 0.01, 0.5, 1] }
-    );
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, []);
+    lastSpendingByCategoryAnimationKey = spendingByCategoryAnimationKey;
+  }, [spendingByCategoryAnimationKey]);
 
   const monthSpend = analytics.spendingTotal;
 
@@ -159,6 +223,7 @@ const DashboardPage: React.FC = () => {
                 total={monthSpend}
                 hoveredCategory={hoveredCategory}
                 setHoveredCategory={setHoveredCategory}
+                animated={shouldAnimateSpendingByCategory}
               />
               <div className="mt-4">
                 {(() => {
@@ -376,43 +441,11 @@ const DashboardPage: React.FC = () => {
               )}
             </DashboardChartCard>
           </div>
-          <div
-            className={cn(
-              'fixed',
-              'left-0',
-              'right-0',
-              'z-50',
-              'flex',
-              'justify-center',
-              'transition-opacity',
-              'duration-300',
-              'ease-out',
-              showTimeBar ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            )}
-            style={{ bottom: 24 }}
-          >
-            <div className={cn(dashboardFloatingRangeShell)}>
-              {[
-                { key: 'current-month', label: 'Current Month' },
-                { key: 'past-2-months', label: '2 Months' },
-                { key: 'past-3-months', label: '3 Months' },
-                { key: 'past-6-months', label: '6 Months' },
-                { key: 'past-year', label: '1 Year' },
-                { key: 'all-time', label: '5 Years' },
-              ].map((option) => (
-                <Button
-                  type="button"
-                  key={option.key}
-                  onClick={() => setDateRange(option.key as DateRange)}
-                  variant={dateRange === option.key ? 'tabActive' : 'tab'}
-                  size="sm"
-                  className="rounded-lg px-3 py-1.5 normal-case transition-all duration-200"
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </div>
-          </div>
+          <DashboardFloatingDateRangeSelector
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            spendingOverviewRef={spendingOverviewRef}
+          />
         </div>
       </PageLayout>
     </div>

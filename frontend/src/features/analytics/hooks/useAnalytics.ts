@@ -18,6 +18,7 @@ export type UseAnalyticsResult = {
   categories: AnalyticsCategoryResponse[];
   topMerchants: AnalyticsTopMerchantsResponse[];
   monthlyTotals: AnalyticsMonthlyTotalsResponse[];
+  cacheKey: string;
   start?: string;
   end?: string;
 };
@@ -79,6 +80,7 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
     categories: query.data?.categories ?? [],
     topMerchants: query.data?.topMerchants ?? [],
     monthlyTotals: query.data?.monthlyTotals ?? [],
+    cacheKey,
     start,
     end,
   };

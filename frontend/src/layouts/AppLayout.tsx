@@ -47,7 +47,7 @@ export function AppLayout({
         />
 
         <main
-          className={`flex-1 px-8 sm:px-12 lg:px-16 py-4 sm:py-6 lg:py-8 ${currentTab === 'dashboard' ? 'pb-28' : ''}`}
+          className={`flex-1 px-8 sm:px-12 lg:px-16 py-4 sm:py-6 lg:py-8 ${currentTab === 'dashboard' ? 'pb-16' : ''}`}
         >
           {children}
         </main>
