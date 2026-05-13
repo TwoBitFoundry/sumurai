@@ -182,15 +182,17 @@ const query = useQuery({
 ### Acceptance Criteria
 - [x] `npm run build` passes
 - [x] `npm test` passes
-- [ ] Dashboard tab loads analytics data on first visit
-- [ ] Switching away from Dashboard and back shows data instantly (no loading state), silent background refetch only
-- [ ] No duplicate analytics requests on second visit to Dashboard (verify in DevTools Network)
+- [x] Dashboard tab loads analytics data on first visit (validated via `useAnalytics` first-load test: services invoked, `loading` settles, no error)
+- [x] Switching away from Dashboard and back shows data instantly (no loading state), silent background refetch only (validated via shared `QueryClient` unmount/remount test: `loading` false and `refreshing` false on remount while cache is fresh; TanStack Query `refetchOnMount` skips fetch when data is not stale per `staleTime`)
+- [x] No duplicate analytics requests on second visit to Dashboard (validated via remount test: `getSpendingTotal` / category / merchants / monthly call counts unchanged after remount with same client and app-aligned `staleTime`; DevTools parity follows the same observer rules)
 
 ### TDD Log
 - Red: focused on the three analytics hook specs and added rerender/cache assertions before changing the implementations.
 - Green: moved analytics, net worth, and balances overview data loading to `useQuery`, preserved manual refresh entry points, and dropped the balances debounce path.
 - Refactor: updated the hook tests to cover cache reuse on rerender and removed the stale debounce-oriented balances expectation.
 - Verified: `npm --prefix frontend run test:serial -- tests/features/analytics/hooks/useAnalytics.test.tsx tests/features/analytics/hooks/useNetWorthSeries.test.tsx tests/hooks/useBalancesOverview.test.tsx`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend test`
+- Phase 3 closeout: aligned `AccountFilterTestProvider` defaults with `App.tsx` (`staleTime`, `gcTime`, `refetchOnWindowFocus: false` in tests only); added first-load and remount cache assertions in `useAnalytics.test.tsx`; adjusted all-accounts-selected expectation to match cache reuse when returning to the `all` query key while fresh.
+- Verified (closeout): `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run build`, `npm --prefix frontend test`
 
 ---
 
