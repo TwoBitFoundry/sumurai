@@ -20,6 +20,7 @@ describe('TransactionsTable text tokens', () => {
         total={3}
         currentPage={1}
         totalPages={1}
+        pageSize={3}
         onPrev={() => {}}
         onNext={() => {}}
       />
@@ -32,5 +33,21 @@ describe('TransactionsTable text tokens', () => {
     expect(positive?.className).toContain(uiTextRecipes.danger);
     expect(negative?.className).toContain(uiTextRecipes.success);
     expect(zero?.className).toContain(uiTextRecipes.muted);
+  });
+
+  it('pads the table with inert blank rows when the page is short', () => {
+    const { container } = render(
+      <TransactionsTable
+        items={[baseTx(42), baseTx(-42)]}
+        total={2}
+        currentPage={1}
+        totalPages={1}
+        pageSize={4}
+        onPrev={() => {}}
+        onNext={() => {}}
+      />
+    );
+
+    expect(container.querySelectorAll('tbody tr')).toHaveLength(4);
   });
 });

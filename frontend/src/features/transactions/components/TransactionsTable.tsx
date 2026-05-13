@@ -2,6 +2,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Receipt } from 'lucide-react';
 import type React from 'react';
+import { useMemo } from 'react';
 import { cn, EmptyState, PaginationButton, Pill } from '@/ui/primitives';
 import {
   border as uiBorderRecipes,
@@ -19,6 +20,8 @@ interface Props {
   total: number;
   currentPage: number;
   totalPages: number;
+  pageSize: number;
+  isLoading?: boolean;
   onPrev: () => void;
   onNext: () => void;
 }
@@ -50,6 +53,13 @@ export const transactionsRowRecipes = {
     'group relative border-b border-slate-200/70 transition-all duration-150 ease-out hover:-translate-y-[2px] hover:ring-2 hover:ring-sky-400/60',
     'dark:border-slate-700/50 dark:hover:ring-sky-400/50',
   ],
+  placeholder: [
+    'pointer-events-none',
+    'select-none',
+    'border-b',
+    'border-slate-200/70',
+    'dark:border-slate-700/50',
+  ],
   odd: ['bg-slate-100', 'dark:bg-slate-700/20'],
   even: ['bg-white', 'dark:bg-transparent'],
 } as const;
@@ -59,23 +69,33 @@ export const TransactionsTable: React.FC<Props> = ({
   total,
   currentPage,
   totalPages,
+  pageSize,
+  isLoading = false,
   onPrev,
   onNext,
 }) => {
-  const pageSize = items.length > 0 ? Math.ceil(total / totalPages) : 8;
+  const visibleItems = items.slice(0, pageSize);
+  const placeholderCount = Math.max(0, pageSize - visibleItems.length);
+  const placeholderRows = useMemo(
+    () =>
+      Array.from({ length: placeholderCount }, (_, position) => ({
+        id: `placeholder-${currentPage}-${position}`,
+      })),
+    [currentPage, placeholderCount]
+  );
   const from = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const to = Math.min(total, currentPage * pageSize);
   return (
     <div className="overflow-hidden">
-      {total === 0 ? (
+      {total === 0 && !isLoading ? (
         <EmptyState
           icon={Receipt}
           title="No transactions found"
           description="No transaction data available for the selected filters"
         />
       ) : (
-        <>
-          <div className="overflow-x-auto">
+        <div className="relative">
+          <div className={cn('overflow-x-auto')}>
             <table className={cn('min-w-full', 'table-fixed')}>
               <thead className={cn(tableHeader)}>
                 <tr className={cn('border-b', ...uiBorderRecipes.divider)}>
@@ -148,7 +168,7 @@ export const TransactionsTable: React.FC<Props> = ({
                   exit={{ opacity: 0, y: -12 }}
                   transition={{ duration: 0.24, ease: [0.22, 0.61, 0.36, 1] }}
                 >
-                  {items.map((r, i) => {
+                  {visibleItems.map((r, i) => {
                     const catName = resolveCategoryName(r);
                     return (
                       <tr
@@ -246,10 +266,34 @@ export const TransactionsTable: React.FC<Props> = ({
                       </tr>
                     );
                   })}
+                  {placeholderRows.map((row) => (
+                    <tr
+                      key={row.id}
+                      aria-hidden="true"
+                      tabIndex={-1}
+                      className={cn(
+                        transactionsRowRecipes.placeholder,
+                        transactionsRowRecipes.even
+                      )}
+                    >
+                      <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
+                      <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
+                      <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
+                      <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
+                      <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
+                    </tr>
+                  ))}
                 </motion.tbody>
               </AnimatePresence>
             </table>
           </div>
+          {isLoading && (
+            <div className={cn('pointer-events-none', 'absolute', 'inset-0')}>
+              <div className={cn('sr-only')} aria-live="polite">
+                Loading transactions
+              </div>
+            </div>
+          )}
           <div className={cn('flex', 'items-center', 'justify-between', tableFooter)}>
             <div
               className={cn(
@@ -290,7 +334,7 @@ export const TransactionsTable: React.FC<Props> = ({
               </PaginationButton>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

@@ -6,7 +6,6 @@ import TransactionsToolbar from '@/features/transactions/components/Transactions
 import { PageLayout } from '@/layouts/PageLayout';
 import { denseLabelTransaction, transactionsTablePage } from '@/storybook/fixtures/transactions';
 import { cn, GlassCard } from '@/ui/primitives';
-import { text as uiTextRecipes } from '@/ui/recipes';
 import { formatCategoryName } from '@/utils/categories';
 import { fmtUSD } from '@/utils/format';
 
@@ -148,25 +147,16 @@ export function TransactionsScreenSlice(props: {
             selectedCategory="Food"
             onSelectCategory={() => {}}
           />
-          {props.state === 'loading' ? (
-            <div className={cn('flex', 'items-center', 'justify-center', 'py-16')}>
-              <div className="text-center">
-                <div className={cn('text-lg', 'font-medium', uiTextRecipes.muted, 'mb-2')}>
-                  Loading transactions...
-                </div>
-                <div className={cn('text-sm', uiTextRecipes.subtle)}>Fetching data from server</div>
-              </div>
-            </div>
-          ) : (
-            <TransactionsTable
-              items={props.state === 'empty' ? [] : tableModel.items}
-              total={props.state === 'empty' ? 0 : tableModel.total}
-              currentPage={currentPage}
-              totalPages={props.state === 'empty' ? 1 : tableModel.totalPages}
-              onPrev={() => {}}
-              onNext={() => {}}
-            />
-          )}
+          <TransactionsTable
+            items={props.state === 'empty' ? [] : tableModel.items}
+            total={props.state === 'empty' ? 0 : tableModel.total}
+            currentPage={currentPage}
+            totalPages={props.state === 'empty' ? 1 : tableModel.totalPages}
+            pageSize={8}
+            isLoading={props.state === 'loading'}
+            onPrev={() => {}}
+            onNext={() => {}}
+          />
         </GlassCard>
       </PageLayout>
     </div>

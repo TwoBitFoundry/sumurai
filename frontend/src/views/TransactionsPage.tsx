@@ -2,7 +2,6 @@ import { AlertTriangle, ReceiptText, RefreshCcw, TrendingUp } from 'lucide-react
 import type React from 'react';
 import { useMemo } from 'react';
 import { cn, GlassCard } from '@/ui/primitives';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import HeroStatCard from '../components/widgets/HeroStatCard';
 import TransactionsTable from '../features/transactions/components/TransactionsTable';
 import TransactionsToolbar from '../features/transactions/components/TransactionsToolbar';
@@ -156,27 +155,16 @@ const TransactionsPage: React.FC = () => {
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
           />
-          {isLoading ? (
-            <div className={cn('flex', 'items-center', 'justify-center', 'py-16')}>
-              <div className="text-center">
-                <div className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary, 'mb-2')}>
-                  Loading transactions...
-                </div>
-                <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-                  Fetching data from server
-                </div>
-              </div>
-            </div>
-          ) : (
-            <TransactionsTable
-              items={pageItems}
-              total={totalItems}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPrev={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              onNext={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            />
-          )}
+          <TransactionsTable
+            items={pageItems}
+            total={totalItems}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={8}
+            isLoading={isLoading}
+            onPrev={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            onNext={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+          />
         </GlassCard>
       </PageLayout>
     </div>
