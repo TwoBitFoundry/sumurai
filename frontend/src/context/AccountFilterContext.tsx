@@ -5,6 +5,7 @@ export interface ProviderAccount {
   id: string;
   name: string;
   account_type: string;
+  balance_current: number | null;
   balance_ledger: number | null;
   balance_available: number | null;
   mask: string | null;

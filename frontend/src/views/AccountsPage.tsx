@@ -122,7 +122,11 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
             name: account.name,
             mask: account.mask ?? '0000',
             type: toAccountType(account.account_type),
-            balance: account.balance_ledger ?? account.balance_available ?? undefined,
+            balance:
+              account.balance_current ??
+              account.balance_ledger ??
+              account.balance_available ??
+              undefined,
             transactions: account.transaction_count ?? undefined,
           })),
         };

@@ -175,6 +175,22 @@ describe('AccountFilterProvider', () => {
         );
       });
 
+      it('Then it should map balance_current from unified providers accounts', async () => {
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
+          <AccountFilterTestProvider>{children}</AccountFilterTestProvider>
+        );
+
+        const { result } = renderHook(() => useAccountFilter(), { wrapper });
+
+        await waitFor(() => {
+          expect(result.current.accountsByBank['First Platypus Bank']).toHaveLength(2);
+        });
+
+        const firstBank = result.current.accountsByBank['First Platypus Bank'];
+        expect(firstBank?.[0]?.balance_current).toBe(1250.5);
+        expect(firstBank?.[1]?.balance_current).toBe(5000);
+      });
+
       it('Then it should support toggle bank action', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
           <AccountFilterTestProvider>{children}</AccountFilterTestProvider>

@@ -190,9 +190,9 @@ function mapProviderAccounts(
     id: string;
     name: string;
     account_type: string;
+    balance_current?: number | string | null;
     balance_ledger: number | null;
     balance_available?: number | null;
-    balance_current?: number | string | null;
     mask: string | null;
     provider?: ProviderAccount['provider'];
     institution_name?: string | null;
@@ -207,6 +207,7 @@ function mapProviderAccounts(
       id: account.id,
       name: account.name,
       account_type: account.account_type,
+      balance_current: parseBalance(account.balance_current ?? null),
       balance_ledger: parseBalance(account.balance_ledger),
       balance_available: parseBalance(account.balance_available ?? null),
       mask: account.mask ?? null,

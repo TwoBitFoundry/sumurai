@@ -253,4 +253,52 @@ describe('AccountsPage', () => {
 
     expect(screen.getByText('55 items')).toBeVisible();
   });
+
+  it('renders Teller current balances on the accounts page', () => {
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useTellerProviderInfo).mockReturnValue({
+      loading: false,
+      error: null,
+      availableProviders: ['plaid', 'teller'],
+      selectedProvider: 'teller',
+      defaultProvider: 'teller',
+      userProvider: 'teller',
+      tellerApplicationId: 'app_123',
+      tellerEnvironment: 'development',
+      refresh: jest.fn(),
+      chooseProvider: jest.fn(),
+    });
+    jest.mocked(useAccountFilter).mockReturnValue({
+      selectedAccountIds: ['acc_teller_1'],
+      allAccountIds: ['acc_teller_1'],
+      isAllAccountsSelected: true,
+      accountsByBank: {
+        'Demo Bank': [
+          {
+            id: 'acc_teller_1',
+            name: 'Checking',
+            account_type: 'depository',
+            balance_current: 1234.56,
+            balance_ledger: null,
+            balance_available: null,
+            mask: '1234',
+            provider: 'teller',
+            institution_name: 'Demo Bank',
+            connection_id: 'conn_teller',
+            transaction_count: 7,
+          },
+        ],
+      },
+      loading: false,
+      setSelectedAccountIds: jest.fn(),
+      toggleBank: jest.fn(),
+      toggleAccount: jest.fn(),
+      removeAccountsByIds: jest.fn(),
+    });
+
+    renderAccountsPage();
+
+    expect(screen.getByText('$1,234.56')).toBeVisible();
+    expect(screen.queryByText('PLACEHOLDER')).not.toBeInTheDocument();
+  });
 });
