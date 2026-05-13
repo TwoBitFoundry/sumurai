@@ -11,8 +11,28 @@ use aes_gcm::{
 };
 use anyhow::Result;
 use async_trait::async_trait;
+use chrono::NaiveDate;
 use sqlx::PgPool;
 use uuid::Uuid;
+
+type TransactionWithAccountRow = (
+    Uuid,
+    Uuid,
+    Option<Uuid>,
+    Option<String>,
+    rust_decimal::Decimal,
+    NaiveDate,
+    Option<String>,
+    String,
+    String,
+    String,
+    Option<String>,
+    bool,
+    Option<chrono::DateTime<chrono::Utc>>,
+    String,
+    String,
+    Option<String>,
+);
 
 #[async_trait]
 #[cfg_attr(test, mockall::automock)]
@@ -43,11 +63,35 @@ pub trait DatabaseRepository: Send + Sync {
 
     async fn upsert_account(&self, account: &Account) -> Result<()>;
     async fn upsert_transaction(&self, transaction: &Transaction) -> Result<()>;
+    #[allow(clippy::too_many_arguments)]
     async fn upsert_transactions_batch(
         &self,
         transactions: &[Transaction],
         user_id: &Uuid,
     ) -> Result<()>;
+    #[allow(clippy::too_many_arguments)]
+    async fn get_transactions_paginated(
+        &self,
+        user_id: &Uuid,
+        limit: i64,
+        offset: i64,
+        search: Option<&str>,
+        account_ids: Option<&[Uuid]>,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
+        category_primary: Option<&str>,
+    ) -> Result<Vec<TransactionWithAccount>>;
+    #[allow(clippy::too_many_arguments)]
+    async fn count_transactions(
+        &self,
+        user_id: &Uuid,
+        search: Option<&str>,
+        account_ids: Option<&[Uuid]>,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
+        category_primary: Option<&str>,
+    ) -> Result<i64>;
+    async fn get_distinct_transaction_categories(&self, user_id: &Uuid) -> Result<Vec<String>>;
 
     async fn store_provider_credentials_for_user(
         &self,
@@ -174,6 +218,104 @@ impl PostgresRepository {
             created_at,
             updated_at,
             onboarding_completed,
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn append_transaction_filters<'a>(
+        qb: &mut sqlx::QueryBuilder<'a, sqlx::Postgres>,
+        user_id: &'a Uuid,
+        search: Option<&str>,
+        account_ids: Option<&'a [Uuid]>,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
+        category_primary: Option<&'a str>,
+    ) {
+        qb.push(" WHERE t.user_id = ");
+        qb.push_bind(user_id);
+
+        if let Some(search) = search {
+            let search = search.trim();
+            if !search.is_empty() {
+                let search = format!("%{}%", search.to_lowercase());
+                qb.push(" AND (LOWER(COALESCE(t.merchant_name, '')) LIKE ");
+                qb.push_bind(search.clone());
+                qb.push(" OR LOWER(t.category_primary) LIKE ");
+                qb.push_bind(search.clone());
+                qb.push(" OR LOWER(t.category_detailed) LIKE ");
+                qb.push_bind(search.clone());
+                qb.push(" OR LOWER(a.name) LIKE ");
+                qb.push_bind(search);
+                qb.push(")");
+            }
+        }
+
+        if let Some(account_ids) = account_ids.filter(|account_ids| !account_ids.is_empty()) {
+            qb.push(" AND t.account_id IN (");
+            let mut separated = qb.separated(", ");
+            for account_id in account_ids {
+                separated.push_bind(account_id);
+            }
+            qb.push(")");
+        }
+
+        if let Some(start_date) = start_date {
+            qb.push(" AND t.date >= ");
+            qb.push_bind(start_date);
+        }
+
+        if let Some(end_date) = end_date {
+            qb.push(" AND t.date <= ");
+            qb.push_bind(end_date);
+        }
+
+        if let Some(category_primary) = category_primary {
+            let category_primary = category_primary.trim();
+            if !category_primary.is_empty() {
+                qb.push(" AND t.category_primary = ");
+                qb.push_bind(category_primary);
+            }
+        }
+    }
+
+    fn map_transaction_with_account_row(
+        (
+            id,
+            account_id,
+            user_id,
+            provider_transaction_id,
+            amount,
+            date,
+            merchant_name,
+            category_primary,
+            category_detailed,
+            category_confidence,
+            payment_channel,
+            pending,
+            created_at,
+            account_name,
+            account_type,
+            account_mask,
+        ): TransactionWithAccountRow,
+    ) -> TransactionWithAccount {
+        TransactionWithAccount {
+            id,
+            account_id,
+            user_id,
+            provider_account_id: None,
+            provider_transaction_id,
+            amount,
+            date,
+            merchant_name,
+            category_primary,
+            category_detailed,
+            category_confidence,
+            payment_channel,
+            pending,
+            created_at,
+            account_name,
+            account_type,
+            account_mask,
         }
     }
 }
@@ -941,6 +1083,122 @@ impl DatabaseRepository for PostgresRepository {
                 },
             )
             .collect())
+    }
+
+    async fn get_transactions_paginated(
+        &self,
+        user_id: &Uuid,
+        limit: i64,
+        offset: i64,
+        search: Option<&str>,
+        account_ids: Option<&[Uuid]>,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
+        category_primary: Option<&str>,
+    ) -> Result<Vec<TransactionWithAccount>> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let mut qb = sqlx::QueryBuilder::new(
+            r#"
+            SELECT t.id, t.account_id, t.user_id, t.provider_transaction_id, t.amount, t.date,
+                   t.merchant_name, t.category_primary, t.category_detailed,
+                   t.category_confidence, t.payment_channel, t.pending, t.created_at,
+                   a.name as account_name, a.account_type, a.mask as account_mask
+            FROM transactions t
+            INNER JOIN accounts a ON t.account_id = a.id
+            "#,
+        );
+        Self::append_transaction_filters(
+            &mut qb,
+            user_id,
+            search,
+            account_ids,
+            start_date,
+            end_date,
+            category_primary,
+        );
+        qb.push(" ORDER BY t.date DESC, t.created_at DESC LIMIT ");
+        qb.push_bind(limit.max(0));
+        qb.push(" OFFSET ");
+        qb.push_bind(offset.max(0));
+
+        let rows = qb
+            .build_query_as::<TransactionWithAccountRow>()
+            .fetch_all(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+
+        Ok(rows
+            .into_iter()
+            .map(Self::map_transaction_with_account_row)
+            .collect())
+    }
+
+    async fn count_transactions(
+        &self,
+        user_id: &Uuid,
+        search: Option<&str>,
+        account_ids: Option<&[Uuid]>,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
+        category_primary: Option<&str>,
+    ) -> Result<i64> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let mut qb = sqlx::QueryBuilder::new(
+            r#"
+            SELECT COUNT(*)
+            FROM transactions t
+            INNER JOIN accounts a ON t.account_id = a.id
+            "#,
+        );
+        Self::append_transaction_filters(
+            &mut qb,
+            user_id,
+            search,
+            account_ids,
+            start_date,
+            end_date,
+            category_primary,
+        );
+
+        let count = qb.build_query_scalar::<i64>().fetch_one(&mut *tx).await?;
+        tx.commit().await?;
+        Ok(count)
+    }
+
+    async fn get_distinct_transaction_categories(&self, user_id: &Uuid) -> Result<Vec<String>> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let categories = sqlx::query_scalar::<_, String>(
+            r#"
+            SELECT DISTINCT category_primary
+            FROM transactions
+            WHERE user_id = $1
+              AND category_primary IS NOT NULL
+              AND category_primary <> ''
+            ORDER BY category_primary ASC
+            "#,
+        )
+        .bind(user_id)
+        .fetch_all(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(categories)
     }
 
     async fn get_transactions_by_date_range_for_user(

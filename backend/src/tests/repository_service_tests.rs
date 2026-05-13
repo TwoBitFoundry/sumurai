@@ -270,3 +270,165 @@ async fn given_many_transactions_when_batch_upserting_then_writes_all_rows_witho
     assert_eq!(transaction_count_after_reinsert, 600);
     assert_eq!(distinct_provider_transaction_count, 600);
 }
+
+#[tokio::test]
+async fn given_transactions_when_querying_paginated_then_returns_correct_pages_and_total() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+
+    let transactions: Vec<Transaction> = (0..20)
+        .map(|index| {
+            let mut transaction = create_test_transaction(
+                user.id,
+                account.id,
+                format!("page_txn_{index:03}"),
+                -500 - index as i64,
+                NaiveDate::from_ymd_opt(2024, 1, 1)
+                    .unwrap()
+                    .checked_add_days(chrono::Days::new(index as u64))
+                    .unwrap(),
+            );
+            transaction.merchant_name = if index % 2 == 0 {
+                Some("Coffee House".to_string())
+            } else {
+                Some("Gas Station".to_string())
+            };
+            transaction.category_primary = if index % 2 == 0 {
+                "FOOD_AND_DRINK".to_string()
+            } else {
+                "TRANSPORTATION".to_string()
+            };
+            transaction.category_detailed = transaction.category_primary.clone();
+            transaction.created_at = Some(Utc::now() + chrono::Duration::seconds(index as i64));
+            transaction
+        })
+        .collect();
+
+    repo.upsert_transactions_batch(&transactions, &user.id)
+        .await
+        .unwrap();
+
+    let page_one = repo
+        .get_transactions_paginated(&user.id, 10, 0, None, None, None, None, None)
+        .await
+        .unwrap();
+    let page_two = repo
+        .get_transactions_paginated(&user.id, 10, 10, None, None, None, None, None)
+        .await
+        .unwrap();
+    let total = repo
+        .count_transactions(&user.id, None, None, None, None, None)
+        .await
+        .unwrap();
+
+    assert_eq!(total, 20);
+    assert_eq!(page_one.len(), 10);
+    assert_eq!(page_two.len(), 10);
+    assert_eq!(
+        page_one[0].provider_transaction_id.as_deref(),
+        Some("page_txn_019")
+    );
+    assert_eq!(
+        page_one[9].provider_transaction_id.as_deref(),
+        Some("page_txn_010")
+    );
+    assert_eq!(
+        page_two[0].provider_transaction_id.as_deref(),
+        Some("page_txn_009")
+    );
+    assert_eq!(
+        page_two[9].provider_transaction_id.as_deref(),
+        Some("page_txn_000")
+    );
+}
+
+#[tokio::test]
+async fn given_transactions_when_filtering_server_side_then_filters_categories_and_search_terms() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+
+    let transactions: Vec<Transaction> = (0..20)
+        .map(|index| {
+            let mut transaction = create_test_transaction(
+                user.id,
+                account.id,
+                format!("filter_txn_{index:03}"),
+                -700 - index as i64,
+                NaiveDate::from_ymd_opt(2024, 2, 1)
+                    .unwrap()
+                    .checked_add_days(chrono::Days::new(index as u64))
+                    .unwrap(),
+            );
+            transaction.merchant_name = if index % 2 == 0 {
+                Some("Coffee House".to_string())
+            } else {
+                Some("Gas Station".to_string())
+            };
+            transaction.category_primary = if index % 2 == 0 {
+                "FOOD_AND_DRINK".to_string()
+            } else {
+                "TRANSPORTATION".to_string()
+            };
+            transaction.category_detailed = if index % 2 == 0 {
+                "Coffee Shop".to_string()
+            } else {
+                "Fuel".to_string()
+            };
+            transaction.created_at = Some(Utc::now() + chrono::Duration::seconds(index as i64));
+            transaction
+        })
+        .collect();
+
+    repo.upsert_transactions_batch(&transactions, &user.id)
+        .await
+        .unwrap();
+
+    let search_results = repo
+        .get_transactions_paginated(&user.id, 50, 0, Some("coffee"), None, None, None, None)
+        .await
+        .unwrap();
+    let search_count = repo
+        .count_transactions(&user.id, Some("coffee"), None, None, None, None)
+        .await
+        .unwrap();
+    let category_results = repo
+        .get_transactions_paginated(
+            &user.id,
+            50,
+            0,
+            None,
+            None,
+            None,
+            None,
+            Some("TRANSPORTATION"),
+        )
+        .await
+        .unwrap();
+    let category_count = repo
+        .count_transactions(&user.id, None, None, None, None, Some("TRANSPORTATION"))
+        .await
+        .unwrap();
+    let categories = repo
+        .get_distinct_transaction_categories(&user.id)
+        .await
+        .unwrap();
+
+    assert_eq!(search_results.len(), 10);
+    assert_eq!(search_count, 10);
+    assert_eq!(category_results.len(), 10);
+    assert_eq!(category_count, 10);
+    assert_eq!(
+        categories,
+        vec!["FOOD_AND_DRINK".to_string(), "TRANSPORTATION".to_string()]
+    );
+}

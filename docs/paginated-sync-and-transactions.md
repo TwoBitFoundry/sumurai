@@ -289,14 +289,25 @@ GET /api/transactions/categories → Json<Vec<String>>
 ```
 
 ### Acceptance Criteria
-- [ ] `cargo test` passes
-- [ ] Migration runs without table locks
-- [ ] `?page=1&page_size=10` returns 10 items + correct `total`
-- [ ] `?page=2&page_size=10` returns the next 10
-- [ ] `?search=coffee` filters server-side
-- [ ] `?category_primary=FOOD_AND_DRINK` filters server-side
-- [ ] `/categories` returns deduplicated sorted list
-- [ ] `page_size > 200` is clamped, not a 5xx
+- [x] `cargo test` passes
+- [x] Migration runs without table locks
+- [x] `?page=1&page_size=10` returns 10 items + correct `total`
+- [x] `?page=2&page_size=10` returns the next 10
+- [x] `?search=coffee` filters server-side
+- [x] `?category_primary=FOOD_AND_DRINK` filters server-side
+- [x] `/categories` returns deduplicated sorted list
+- [x] `page_size > 200` is clamped, not a 5xx
+
+### Notes
+- No additional migration was needed because the required `user/date` index already exists in `006_performance_indexes.sql`.
+- Added paginated repository methods and switched the transactions API to server-side paging with count queries.
+- Added a dedicated categories endpoint and kept filters and authorization in the request boundary.
+
+### TDD Log
+- `cargo test --manifest-path backend/Cargo.toml --locked --tests`
+- `cargo fmt --manifest-path backend/Cargo.toml --all`
+- `cargo fmt --manifest-path backend/Cargo.toml --all --check`
+- `cargo clippy --manifest-path backend/Cargo.toml --locked --all-targets --no-deps -- -D warnings`
 
 ---
 

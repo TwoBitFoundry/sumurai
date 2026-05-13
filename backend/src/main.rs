@@ -57,7 +57,7 @@ use crate::models::{
         ProviderSelectRequest, ProviderSelectResponse, ProviderStatusResponse,
         SyncTransactionsRequest,
     },
-    transaction::{SyncTransactionsResponse, TransactionsQuery},
+    transaction::{PaginatedTransactionsResponse, SyncTransactionsResponse, TransactionsQuery},
 };
 use crate::models::{
     api_error::ApiErrorResponse,
@@ -65,7 +65,6 @@ use crate::models::{
         ChangePasswordRequest, ChangePasswordResponse, DeleteAccountResponse, LogoutResponse,
         OnboardingCompleteResponse, User,
     },
-    transaction::TransactionWithAccount,
 };
 use crate::utils::encryption_key::parse_encryption_key_hex;
 use auth_middleware::auth_middleware;
@@ -293,6 +292,10 @@ pub fn create_app(state: AppState) -> Router {
         .route(
             "/api/auth/onboarding/complete",
             put(complete_user_onboarding),
+        )
+        .route(
+            "/api/transactions/categories",
+            get(get_authenticated_transaction_categories),
         )
         .route("/api/transactions", get(get_authenticated_transactions))
         .route("/api/providers/info", get(get_authenticated_provider_info))
@@ -950,11 +953,16 @@ async fn complete_user_onboarding(
 #[utoipa::path(
     get,
     path = "/api/transactions",
-    description = "Returns transactions with optional text search and account filtering.",
-    params(("search" = Option<String>, Query, description = "Search transactions by merchant or category"),
-           ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
+    description = "Returns transactions with optional server-side pagination and filtering.",
+    params(("search" = Option<String>, Query, description = "Search transactions by merchant, category, or account"),
+           ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs"),
+           ("page" = Option<i64>, Query, description = "Page number starting at 1"),
+           ("page_size" = Option<i64>, Query, description = "Results per page, clamped to 200"),
+           ("start_date" = Option<String>, Query, description = "Start date in YYYY-MM-DD format"),
+           ("end_date" = Option<String>, Query, description = "End date in YYYY-MM-DD format"),
+           ("category_primary" = Option<String>, Query, description = "Filter by primary category")),
     responses(
-        (status = 200, description = "List of transactions", body = Vec<TransactionWithAccount>),
+        (status = 200, description = "Paginated list of transactions", body = PaginatedTransactionsResponse),
         (status = 400, description = "Invalid account filter"),
         (status = 401, description = "Unauthorized"),
         (status = 403, description = "Account filter references another user"),
@@ -970,58 +978,146 @@ async fn get_authenticated_transactions(
         query,
         authorized_account_ids,
     }: AuthorizedQuery<TransactionsQuery>,
-) -> Result<Json<Vec<TransactionWithAccount>>, StatusCode> {
+) -> Result<Json<PaginatedTransactionsResponse>, StatusCode> {
     let user_id = auth_context.user_id;
 
     let TransactionsQuery {
         search,
-        account_ids,
+        account_ids: _,
+        page,
+        page_size,
+        start_date,
+        end_date,
+        category_primary,
     } = query;
 
     tracing::info!(
-        account_ids = ?account_ids,
         search = ?search,
+        page = ?page,
+        page_size = ?page_size,
         "Transactions query params"
     );
 
+    let page = page.unwrap_or(1).max(1);
+    let page_size = page_size.unwrap_or(50).clamp(1, 200);
+    let offset = (page - 1).saturating_mul(page_size);
+
+    let search = search
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+    let category_primary = category_primary
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+
+    let start_date = match start_date.as_deref() {
+        Some(raw) => {
+            Some(NaiveDate::parse_from_str(raw, "%Y-%m-%d").map_err(|_| StatusCode::BAD_REQUEST)?)
+        }
+        None => None,
+    };
+    let end_date = match end_date.as_deref() {
+        Some(raw) => {
+            Some(NaiveDate::parse_from_str(raw, "%Y-%m-%d").map_err(|_| StatusCode::BAD_REQUEST)?)
+        }
+        None => None,
+    };
+
+    if let (Some(start_date), Some(end_date)) = (start_date, end_date) {
+        if end_date < start_date {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    }
+
+    let account_ids: Option<Vec<Uuid>> = authorized_account_ids
+        .as_ref()
+        .map(|ids| ids.iter().copied().collect());
+    let account_ids_ref = account_ids.as_deref();
+
+    let transactions_future = state.db_repository.get_transactions_paginated(
+        &user_id,
+        page_size,
+        offset,
+        search,
+        account_ids_ref,
+        start_date,
+        end_date,
+        category_primary,
+    );
+    let count_future = state.db_repository.count_transactions(
+        &user_id,
+        search,
+        account_ids_ref,
+        start_date,
+        end_date,
+        category_primary,
+    );
+
+    let (transactions_result, total_result) = tokio::join!(transactions_future, count_future);
+
+    let transactions = match transactions_result {
+        Ok(transactions) => transactions,
+        Err(e) => {
+            tracing::error!(
+                "Failed to fetch paginated transactions for user {}: {}",
+                user_id,
+                e
+            );
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    let total = match total_result {
+        Ok(total) => total,
+        Err(e) => {
+            tracing::error!("Failed to count transactions for user {}: {}", user_id, e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    tracing::info!(
+        record_count = transactions.len(),
+        total,
+        "Data access: transactions"
+    );
+    Ok(Json(PaginatedTransactionsResponse {
+        transactions,
+        total,
+        page,
+        page_size,
+    }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/transactions/categories",
+    description = "Returns the user's transaction categories sorted and deduplicated.",
+    responses(
+        (status = 200, description = "List of categories", body = Vec<String>),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Transactions"
+)]
+async fn get_authenticated_transaction_categories(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<Vec<String>>, StatusCode> {
     match state
         .db_repository
-        .get_transactions_with_account_for_user(&user_id)
+        .get_distinct_transaction_categories(&auth_context.user_id)
         .await
     {
-        Ok(mut transactions) => {
-            if let Some(ref account_id_set) = authorized_account_ids {
-                transactions.retain(|t| account_id_set.contains(&t.account_id));
-            }
-
-            if let Some(search) = search.as_ref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
-                let needle = search.to_lowercase();
-                let filtered: Vec<TransactionWithAccount> = transactions
-                    .into_iter()
-                    .filter(|t| {
-                        let merchant = t.merchant_name.as_deref().unwrap_or("").to_lowercase();
-                        let cat_primary = t.category_primary.to_lowercase();
-                        let cat_detailed = t.category_detailed.to_lowercase();
-                        let account_name = t.account_name.to_lowercase();
-                        merchant.contains(&needle)
-                            || cat_primary.contains(&needle)
-                            || cat_detailed.contains(&needle)
-                            || account_name.contains(&needle)
-                    })
-                    .collect();
-                tracing::info!(record_count = filtered.len(), "Data access: transactions");
-                Ok(Json(filtered))
-            } else {
-                tracing::info!(
-                    record_count = transactions.len(),
-                    "Data access: transactions"
-                );
-                Ok(Json(transactions))
-            }
-        }
-        Err(_) => {
-            tracing::info!(record_count = 0, "Data access: transactions");
-            Ok(Json(vec![]))
+        Ok(categories) => Ok(Json(categories)),
+        Err(e) => {
+            tracing::error!(
+                "Failed to fetch transaction categories for user {}: {}",
+                auth_context.user_id,
+                e
+            );
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
 }
