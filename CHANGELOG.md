@@ -1,5 +1,20 @@
 # Changelog
 
+## [5.7.0](https://github.com/TwoBitFoundry/sumurai/compare/v5.6.0...v5.7.0) (2026-05-13)
+
+
+### Features
+
+* ngrok support ([#103](https://github.com/TwoBitFoundry/sumurai/issues/103)) ([8f65143](https://github.com/TwoBitFoundry/sumurai/commit/8f6514326fa0c77abc4ff4667daf4e77a45d8fe8))
+
+
+### Bug Fixes
+
+* claude attempt at release fix ([aac468f](https://github.com/TwoBitFoundry/sumurai/commit/aac468f651838612d6dbc867bc63d4531aee96a0))
+* **cli:** set release please group pr title pattern ([f85cec7](https://github.com/TwoBitFoundry/sumurai/commit/f85cec7092babb79df47fb58c8fa8812f55eab15))
+* deploy scripts ([b76a613](https://github.com/TwoBitFoundry/sumurai/commit/b76a613ca64b48722300676126c2cdea389f791d))
+* **docs:** use correct env names ([#105](https://github.com/TwoBitFoundry/sumurai/issues/105)) ([106f145](https://github.com/TwoBitFoundry/sumurai/commit/106f145509406e6ccb97d474ab25a722d479f5fd))
+
 ## [5.6.0](https://github.com/TwoBitFoundry/sumurai/compare/v5.5.1...v5.6.0) (2026-05-12)
 
 
