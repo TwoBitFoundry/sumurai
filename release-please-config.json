@@ -3,7 +3,6 @@
   "group-pull-request-title-pattern": "chore${scope}: release ${version}",
   "packages": {
     ".": {
-      "component": "sumurai-root",
       "pull-request-title-pattern": "chore${scope}: release ${version}",
       "release-type": "node",
       "changelog-path": "CHANGELOG.md",
@@ -23,7 +22,6 @@
       ]
     },
     "backend": {
-      "component": "sumurai-backend",
       "pull-request-title-pattern": "chore${scope}: release ${version}",
       "release-type": "rust",
       "changelog-path": "CHANGELOG.md",
@@ -36,7 +34,7 @@
     {
       "type": "linked-versions",
       "groupName": "sumurai",
-      "components": ["sumurai-root", "sumurai-backend"]
+      "components": [".", "backend"]
     }
   ]
 }
