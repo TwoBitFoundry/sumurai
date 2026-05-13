@@ -107,17 +107,36 @@ async fn given_no_auth_token_when_protected_endpoint_then_returns_unauthorized()
 
 #[tokio::test]
 async fn given_authenticated_user_when_get_transactions_no_filter_then_returns_all_transactions() {
+    use crate::models::transaction::PaginatedTransactionsResponse;
     use crate::services::repository_service::MockDatabaseRepository;
+    use axum::body::to_bytes;
 
     let mut mock_db = MockDatabaseRepository::new();
     let (_user, token) = TestFixtures::create_authenticated_user_with_token();
 
-    mock_db
-        .expect_get_transactions_with_account_for_user()
-        .returning(move |_| {
-            let transactions = vec![];
-            Box::pin(async { Ok(transactions) })
-        });
+    mock_db.expect_get_transactions_paginated().returning(
+        move |_, limit, offset, search, account_ids, start_date, end_date, category| {
+            assert_eq!(limit, 50);
+            assert_eq!(offset, 0);
+            assert!(search.is_none());
+            assert!(account_ids.is_none());
+            assert!(start_date.is_none());
+            assert!(end_date.is_none());
+            assert!(category.is_none());
+            Box::pin(async { Ok(vec![]) })
+        },
+    );
+
+    mock_db.expect_count_transactions().returning(
+        move |_, search, account_ids, start_date, end_date, category| {
+            assert!(search.is_none());
+            assert!(account_ids.is_none());
+            assert!(start_date.is_none());
+            assert!(end_date.is_none());
+            assert!(category.is_none());
+            Box::pin(async { Ok(0) })
+        },
+    );
 
     mock_db
         .expect_get_all_provider_connections_by_user()
@@ -138,13 +157,21 @@ async fn given_authenticated_user_when_get_transactions_no_filter_then_returns_a
     let request = TestFixtures::create_authenticated_get_request("/api/transactions", &token);
     let response = app.oneshot(request).await.unwrap();
     assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: PaginatedTransactionsResponse = serde_json::from_slice(&body).unwrap();
+    assert_eq!(payload.transactions.len(), 0);
+    assert_eq!(payload.total, 0);
+    assert_eq!(payload.page, 1);
+    assert_eq!(payload.page_size, 50);
 }
 
 #[tokio::test]
 async fn given_authenticated_user_when_get_transactions_with_account_ids_then_returns_filtered_transactions(
 ) {
-    use crate::models::transaction::TransactionWithAccount;
+    use crate::models::transaction::{PaginatedTransactionsResponse, TransactionWithAccount};
     use crate::services::repository_service::MockDatabaseRepository;
+    use axum::body::to_bytes;
     use chrono::NaiveDate;
     use rust_decimal_macros::dec;
     use uuid::Uuid;
@@ -182,33 +209,52 @@ async fn given_authenticated_user_when_get_transactions_with_account_ids_then_re
                 institution_name: Some("Test Bank".to_string()),
             },
         ];
-        Box::pin(async { Ok(accounts) })
+        Box::pin(async move { Ok(accounts) })
     });
 
-    mock_db
-        .expect_get_transactions_with_account_for_user()
-        .returning(move |_| {
-            let filtered_transactions = vec![TransactionWithAccount {
-                id: Uuid::new_v4(),
-                account_id: account_id_1,
-                user_id: Some(user_id),
-                provider_account_id: None,
-                provider_transaction_id: Some("txn_001".to_string()),
-                amount: dec!(-50.00),
-                date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
-                merchant_name: Some("Test Merchant".to_string()),
-                category_primary: "Food and Drink".to_string(),
-                category_detailed: "Restaurant".to_string(),
-                category_confidence: "HIGH".to_string(),
-                payment_channel: Some("in_store".to_string()),
-                pending: false,
-                created_at: Some(chrono::Utc::now()),
-                account_name: "Test Account 1".to_string(),
-                account_type: "checking".to_string(),
-                account_mask: Some("0001".to_string()),
-            }];
-            Box::pin(async { Ok(filtered_transactions) })
-        });
+    mock_db.expect_get_transactions_paginated().returning(
+        move |_, limit, offset, search, account_ids, start_date, end_date, category| {
+            assert_eq!(limit, 50);
+            assert_eq!(offset, 0);
+            assert!(search.is_none());
+            assert!(start_date.is_none());
+            assert!(end_date.is_none());
+            assert!(category.is_none());
+            assert_eq!(account_ids.map(|ids| ids.len()), Some(1));
+            Box::pin(async move {
+                Ok(vec![TransactionWithAccount {
+                    id: Uuid::new_v4(),
+                    account_id: account_id_1,
+                    user_id: Some(user_id),
+                    provider_account_id: None,
+                    provider_transaction_id: Some("txn_001".to_string()),
+                    amount: dec!(-50.00),
+                    date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+                    merchant_name: Some("Test Merchant".to_string()),
+                    category_primary: "Food and Drink".to_string(),
+                    category_detailed: "Restaurant".to_string(),
+                    category_confidence: "HIGH".to_string(),
+                    payment_channel: Some("in_store".to_string()),
+                    pending: false,
+                    created_at: Some(chrono::Utc::now()),
+                    account_name: "Test Account 1".to_string(),
+                    account_type: "checking".to_string(),
+                    account_mask: Some("0001".to_string()),
+                }])
+            })
+        },
+    );
+
+    mock_db.expect_count_transactions().returning(
+        move |_, search, account_ids, start_date, end_date, category| {
+            assert!(search.is_none());
+            assert!(start_date.is_none());
+            assert!(end_date.is_none());
+            assert!(category.is_none());
+            assert_eq!(account_ids.map(|ids| ids.len()), Some(1));
+            Box::pin(async { Ok(1) })
+        },
+    );
 
     mock_db
         .expect_get_all_provider_connections_by_user()
@@ -233,6 +279,11 @@ async fn given_authenticated_user_when_get_transactions_with_account_ids_then_re
 
     let response = app.oneshot(request).await.unwrap();
     assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: PaginatedTransactionsResponse = serde_json::from_slice(&body).unwrap();
+    assert_eq!(payload.transactions.len(), 1);
+    assert_eq!(payload.total, 1);
 }
 
 #[tokio::test]
@@ -248,10 +299,6 @@ async fn given_authenticated_user_when_get_transactions_with_foreign_account_ids
 
     mock_db
         .expect_get_accounts_for_user()
-        .returning(move |_| Box::pin(async { Ok(vec![]) }));
-
-    mock_db
-        .expect_get_transactions_with_account_for_user()
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
@@ -277,6 +324,195 @@ async fn given_authenticated_user_when_get_transactions_with_foreign_account_ids
 
     let response = app.oneshot(request).await.unwrap();
     assert_eq!(response.status(), 403);
+}
+
+#[tokio::test]
+async fn given_authenticated_user_when_get_transactions_page_two_then_returns_next_page() {
+    use crate::models::transaction::{PaginatedTransactionsResponse, TransactionWithAccount};
+    use crate::services::repository_service::MockDatabaseRepository;
+    use axum::body::to_bytes;
+    use uuid::Uuid;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let user_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+
+    mock_db.expect_get_transactions_paginated().returning(
+        move |_, limit, offset, search, account_ids, start_date, end_date, category| {
+            assert_eq!(limit, 10);
+            assert_eq!(offset, 10);
+            assert!(search.is_none());
+            assert!(account_ids.is_none());
+            assert!(start_date.is_none());
+            assert!(end_date.is_none());
+            assert!(category.is_none());
+            let transactions = (10..20)
+                .map(|index| TransactionWithAccount {
+                    id: Uuid::new_v4(),
+                    account_id: Uuid::new_v4(),
+                    user_id: Some(user_id),
+                    provider_account_id: None,
+                    provider_transaction_id: Some(format!("txn_{index:03}")),
+                    amount: rust_decimal_macros::dec!(-1.00),
+                    date: chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                    merchant_name: Some(format!("Merchant {index}")),
+                    category_primary: "Food and Drink".to_string(),
+                    category_detailed: "Restaurant".to_string(),
+                    category_confidence: "HIGH".to_string(),
+                    payment_channel: Some("in_store".to_string()),
+                    pending: false,
+                    created_at: Some(chrono::Utc::now()),
+                    account_name: "Checking".to_string(),
+                    account_type: "checking".to_string(),
+                    account_mask: Some("0001".to_string()),
+                })
+                .collect();
+            Box::pin(async move { Ok(transactions) })
+        },
+    );
+
+    mock_db.expect_count_transactions().returning(
+        move |_, search, account_ids, start_date, end_date, category| {
+            assert!(search.is_none());
+            assert!(account_ids.is_none());
+            assert!(start_date.is_none());
+            assert!(end_date.is_none());
+            assert!(category.is_none());
+            Box::pin(async { Ok(25) })
+        },
+    );
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_budgets_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_latest_account_balances_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request = TestFixtures::create_authenticated_get_request(
+        "/api/transactions?page=2&page_size=10",
+        &token,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: PaginatedTransactionsResponse = serde_json::from_slice(&body).unwrap();
+    assert_eq!(payload.transactions.len(), 10);
+    assert_eq!(payload.total, 25);
+    assert_eq!(payload.page, 2);
+    assert_eq!(payload.page_size, 10);
+    assert_eq!(
+        payload.transactions[0].provider_transaction_id.as_deref(),
+        Some("txn_010")
+    );
+}
+
+#[tokio::test]
+async fn given_authenticated_user_when_get_transactions_page_size_over_max_then_clamps_to_200() {
+    use crate::models::transaction::PaginatedTransactionsResponse;
+    use crate::services::repository_service::MockDatabaseRepository;
+    use axum::body::to_bytes;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    mock_db.expect_get_transactions_paginated().returning(
+        move |_, limit, offset, search, account_ids, start_date, end_date, category| {
+            assert_eq!(limit, 200);
+            assert_eq!(offset, 0);
+            assert!(search.is_none());
+            assert!(account_ids.is_none());
+            assert!(start_date.is_none());
+            assert!(end_date.is_none());
+            assert!(category.is_none());
+            Box::pin(async { Ok(vec![]) })
+        },
+    );
+
+    mock_db.expect_count_transactions().returning(
+        move |_, search, account_ids, start_date, end_date, category| {
+            assert!(search.is_none());
+            assert!(account_ids.is_none());
+            assert!(start_date.is_none());
+            assert!(end_date.is_none());
+            assert!(category.is_none());
+            Box::pin(async { Ok(0) })
+        },
+    );
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_budgets_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_latest_account_balances_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request =
+        TestFixtures::create_authenticated_get_request("/api/transactions?page_size=999", &token);
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: PaginatedTransactionsResponse = serde_json::from_slice(&body).unwrap();
+    assert_eq!(payload.page_size, 200);
+}
+
+#[tokio::test]
+async fn given_authenticated_user_when_get_transaction_categories_then_returns_sorted_categories() {
+    use crate::services::repository_service::MockDatabaseRepository;
+    use axum::body::to_bytes;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    mock_db
+        .expect_get_distinct_transaction_categories()
+        .returning(move |_| {
+            Box::pin(async {
+                Ok(vec![
+                    "FOOD_AND_DRINK".to_string(),
+                    "TRANSPORTATION".to_string(),
+                ])
+            })
+        });
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request =
+        TestFixtures::create_authenticated_get_request("/api/transactions/categories", &token);
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let categories: Vec<String> = serde_json::from_slice(&body).unwrap();
+    assert_eq!(
+        categories,
+        vec!["FOOD_AND_DRINK".to_string(), "TRANSPORTATION".to_string()]
+    );
 }
 
 #[tokio::test]
@@ -1020,6 +1256,7 @@ async fn given_connection_id_when_sync_then_uses_get_provider_connection_by_id()
 
     let sync_request = SyncTransactionsRequest {
         connection_id: Some(connection_id.to_string()),
+        client_date: None,
     };
 
     let request = TestFixtures::create_authenticated_post_request(
@@ -1057,6 +1294,7 @@ async fn given_foreign_connection_id_when_sync_then_returns_404() {
 
     let sync_request = SyncTransactionsRequest {
         connection_id: Some(connection_id.to_string()),
+        client_date: None,
     };
 
     let request = TestFixtures::create_authenticated_post_request(

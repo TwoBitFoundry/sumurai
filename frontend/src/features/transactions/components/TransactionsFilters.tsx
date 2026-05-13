@@ -7,7 +7,7 @@ import {
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { getTagThemeForCategory } from '../../../utils/categories';
+import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
 
 interface Props {
   search: string;
@@ -92,6 +92,7 @@ export const TransactionsFilters: React.FC<Props> = ({
               {categories.map((name) => {
                 const isSelected = selectedCategory === name;
                 const theme = getTagThemeForCategory(name);
+                const label = formatCategoryName(name);
                 return (
                   <button
                     key={name}
@@ -106,10 +107,10 @@ export const TransactionsFilters: React.FC<Props> = ({
                         : 'hover:-translate-y-[2px] hover:shadow-lg'
                     )}
                     aria-pressed={isSelected}
-                    title={isSelected ? `Remove filter: ${name}` : `Filter by ${name}`}
+                    title={isSelected ? `Remove filter: ${label}` : `Filter by ${label}`}
                   >
                     <span className={cn(pillRecipes.dot, theme.dot)} aria-hidden="true" />
-                    {name}
+                    {label}
                   </button>
                 );
               })}

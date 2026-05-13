@@ -6,6 +6,7 @@ import type {
   PlaidSyncResponse,
   ProviderStatusResponse,
 } from '../types/api';
+import { buildSyncTransactionsRequest } from '../utils/syncTransactionsRequest';
 import { ApiClient } from './ApiClient';
 
 export class PlaidService {
@@ -26,7 +27,7 @@ export class PlaidService {
   static async syncTransactions(connectionId?: string): Promise<PlaidSyncResponse> {
     return ApiClient.post<PlaidSyncResponse>(
       '/providers/sync-transactions',
-      connectionId ? { connection_id: connectionId } : {}
+      buildSyncTransactionsRequest(connectionId)
     );
   }
 

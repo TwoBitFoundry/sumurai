@@ -144,6 +144,47 @@ export const storyTransactions = [...sampleTransactions, ...transactionsTablePag
   (transaction, index) => toBackendTransaction(transaction, index + 1)
 );
 
+export const storyTransactionCategories = Array.from(
+  new Set(storyTransactions.map((transaction) => transaction.category_primary ?? 'other'))
+);
+
+export function getPagedStoryTransactions(request: {
+  page?: number;
+  pageSize?: number;
+  search?: string | null;
+  categoryPrimary?: string | null;
+}): { transactions: typeof storyTransactions; total: number; page: number; page_size: number } {
+  const normalizedPage =
+    Number.isFinite(request.page ?? NaN) && (request.page ?? 0) > 0
+      ? Math.floor(request.page ?? 1)
+      : 1;
+  const normalizedPageSize =
+    Number.isFinite(request.pageSize ?? NaN) && (request.pageSize ?? 0) > 0
+      ? Math.floor(request.pageSize ?? 8)
+      : 8;
+  const search = request.search?.trim().toLowerCase();
+  const categoryPrimary = request.categoryPrimary?.trim().toLowerCase();
+
+  const filtered = storyTransactions.filter((transaction) => {
+    const haystack = `${transaction.merchant_name ?? ''} ${transaction.account_name}`.toLowerCase();
+    const matchesSearch = !search || haystack.includes(search);
+    const matchesCategory =
+      !categoryPrimary || transaction.category_primary?.toLowerCase() === categoryPrimary;
+
+    return matchesSearch && matchesCategory;
+  });
+
+  const start = (normalizedPage - 1) * normalizedPageSize;
+  const end = start + normalizedPageSize;
+
+  return {
+    transactions: filtered.slice(start, end),
+    total: filtered.length,
+    page: normalizedPage,
+    page_size: normalizedPageSize,
+  };
+}
+
 export const storyAnalyticsCategories: AnalyticsCategoryResponse[] = sampleDonutByCategory.map(
   (item, index) => {
     const keys = ['food_and_drink', 'transportation', 'income', 'shopping'] as const;

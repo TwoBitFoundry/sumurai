@@ -28,6 +28,7 @@ describe('dashboard surface components', () => {
         total: 2,
         currentPage: 1,
         totalPages: 1,
+        pageSize: 2,
         onPrev: () => {},
         onNext: () => {},
       })

@@ -8,7 +8,10 @@ use std::str::FromStr;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::models::{account::Account, transaction::Transaction};
+use crate::models::{
+    account::Account,
+    transaction::{ProviderTransactionsResult, Transaction},
+};
 use crate::providers::trait_definition::{
     FinancialDataProvider, InstitutionInfo, ProviderCredentials,
 };
@@ -254,9 +257,11 @@ impl FinancialDataProvider for TellerProvider {
         credentials: &ProviderCredentials,
         start_date: NaiveDate,
         end_date: NaiveDate,
-    ) -> Result<Vec<Transaction>> {
+    ) -> Result<ProviderTransactionsResult> {
         let accounts = self.get_accounts(credentials).await?;
         let mut all_transactions = Vec::new();
+        let page_size = 100usize;
+        let mut page_count = 0i32;
 
         for account in accounts {
             let account_id = account
@@ -264,29 +269,77 @@ impl FinancialDataProvider for TellerProvider {
                 .as_ref()
                 .ok_or_else(|| anyhow::anyhow!("Account missing ID"))?;
 
-            let url = format!("{}/accounts/{}/transactions", self.base_url, account_id);
-            let teller_txns = self
-                .http_client
-                .get_json_array(&url, &credentials.access_token)
-                .await?;
+            let mut from_id: Option<String> = None;
 
-            let transactions = teller_txns
-                .iter()
-                .filter(|t| {
-                    if let Some(date_str) = t["date"].as_str() {
-                        if let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-                            return date >= start_date && date <= end_date;
+            loop {
+                page_count += 1;
+                let mut url = format!(
+                    "{}/accounts/{}/transactions?count={}",
+                    self.base_url, account_id, page_size
+                );
+                if let Some(cursor) = from_id.as_ref() {
+                    url.push_str("&from_id=");
+                    url.push_str(cursor);
+                }
+
+                let teller_txns = self
+                    .http_client
+                    .get_json_array(&url, &credentials.access_token)
+                    .await?;
+
+                if teller_txns.is_empty() {
+                    break;
+                }
+
+                let mut oldest_date: Option<NaiveDate> = None;
+                let mut transactions = Vec::new();
+
+                for t in &teller_txns {
+                    let date = t
+                        .get("date")
+                        .and_then(|v| v.as_str())
+                        .and_then(|date_str| NaiveDate::parse_from_str(date_str, "%Y-%m-%d").ok());
+
+                    if let Some(date) = date {
+                        oldest_date = Some(match oldest_date {
+                            Some(current) => current.min(date),
+                            None => date,
+                        });
+                        if date >= start_date && date <= end_date {
+                            transactions.push(Transaction::from_teller(
+                                t,
+                                &account.id,
+                                Some(account_id),
+                            ));
                         }
                     }
-                    false
-                })
-                .map(|t| Transaction::from_teller(t, &account.id, Some(account_id)))
-                .collect::<Vec<_>>();
+                }
 
-            all_transactions.extend(transactions);
+                let should_stop = teller_txns.len() < page_size
+                    || oldest_date.map(|date| date < start_date).unwrap_or(true);
+
+                all_transactions.extend(transactions);
+
+                if should_stop {
+                    break;
+                }
+
+                from_id = teller_txns
+                    .last()
+                    .and_then(|t| t.get("id"))
+                    .and_then(|v| v.as_str())
+                    .map(String::from);
+
+                if from_id.is_none() {
+                    break;
+                }
+            }
         }
 
-        Ok(all_transactions)
+        Ok(ProviderTransactionsResult {
+            transactions: all_transactions,
+            page_count,
+        })
     }
 
     async fn get_institution_info(

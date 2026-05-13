@@ -14,6 +14,7 @@ use crate::services::{
     cache_service::CacheService, repository_service::DatabaseRepository, sync_service::SyncService,
 };
 use anyhow::{Error, Result};
+use chrono::NaiveDate;
 use chrono::Utc;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -421,10 +422,11 @@ impl ConnectionService {
         params: SyncConnectionParams<'_>,
         sync_service: &SyncService,
         connection: &mut ProviderConnection,
+        reference_date: Option<NaiveDate>,
     ) -> Result<SyncTransactionsResponse, ProviderSyncError> {
         let sync_timestamp = Utc::now();
         let (sync_start_date, sync_end_date) =
-            sync_service.calculate_sync_date_range(connection.last_sync_at);
+            sync_service.calculate_sync_date_range(connection.last_sync_at, reference_date);
 
         let credentials_record = self
             .db_repository
@@ -471,44 +473,62 @@ impl ConnectionService {
             .await
             .map_err(ProviderSyncError::AccountLookup)?;
 
-        let (mut transactions, new_cursor) = sync_service
-            .sync_bank_connection_transactions(&provider_credentials, connection, &db_accounts)
+        let (mut transactions, new_cursor, page_count) = sync_service
+            .sync_bank_connection_transactions(
+                &provider_credentials,
+                connection,
+                &db_accounts,
+                reference_date,
+            )
             .await
             .map_err(ProviderSyncError::SyncFailure)?;
 
-        let existing_transactions = self
+        let existing_provider_transaction_ids = self
             .db_repository
-            .get_transactions_for_user(params.user_id)
+            .get_provider_transaction_ids_for_user(params.user_id)
             .await
             .map_err(ProviderSyncError::TransactionLookup)?;
 
-        transactions =
-            sync_service.filter_duplicate_transactions(&existing_transactions, &transactions);
+        transactions = sync_service.filter_duplicate_transactions_by_provider_ids(
+            &existing_provider_transaction_ids,
+            &transactions,
+        );
 
         for txn in &mut transactions {
             txn.user_id = Some(*params.user_id);
         }
 
-        let mut persisted_transactions = Vec::new();
+        let valid_transactions: Vec<Transaction> = transactions
+            .iter()
+            .filter_map(|transaction| {
+                if transaction.account_id.is_nil() {
+                    tracing::warn!(
+                        "Skipping transaction {:?} for user {} because account mapping is missing",
+                        transaction.provider_transaction_id,
+                        params.user_id
+                    );
+                    None
+                } else {
+                    Some(transaction.clone())
+                }
+            })
+            .collect();
 
-        for transaction in &transactions {
-            if transaction.account_id.is_nil() {
+        for chunk in valid_transactions.chunks(500) {
+            if let Err(e) = self
+                .db_repository
+                .upsert_transactions_batch(chunk, params.user_id)
+                .await
+            {
                 tracing::warn!(
-                    "Skipping transaction {:?} for user {} because account mapping is missing",
-                    transaction.provider_transaction_id,
-                    params.user_id
-                );
-                continue;
-            }
-
-            if let Err(e) = self.db_repository.upsert_transaction(transaction).await {
-                tracing::warn!(
-                    "Failed to persist transaction {:?} for user {}: {}",
-                    transaction.provider_transaction_id,
+                    "Failed to persist transaction batch for user {}: {}",
                     params.user_id,
                     e
                 );
             }
+        }
+
+        for transaction in &valid_transactions {
             if let Err(e) = self
                 .cache_service
                 .add_transaction(params.jwt_id, transaction)
@@ -521,17 +541,15 @@ impl ConnectionService {
                     e
                 );
             }
-
-            persisted_transactions.push(transaction.clone());
         }
 
-        let transactions = persisted_transactions;
+        let transactions = valid_transactions;
 
         let total_transactions = self
             .db_repository
-            .get_transactions_for_user(params.user_id)
+            .count_transactions(params.user_id, None, None, None, None, None)
             .await
-            .map(|txns| txns.len() as i32)
+            .map(|count| count as i32)
             .unwrap_or(0);
         let total_accounts = db_accounts.len() as i32;
 
@@ -573,6 +591,9 @@ impl ConnectionService {
             connection_id = %connection.id,
             transaction_count = total_transactions,
             account_count = total_accounts,
+            page_count = page_count,
+            start_date = %sync_start_date,
+            end_date = %sync_end_date,
             "Transaction sync completed"
         );
 
@@ -598,10 +619,11 @@ impl ConnectionService {
         user_id: &Uuid,
         jwt_id: &str,
         connection: &mut ProviderConnection,
+        reference_date: Option<NaiveDate>,
     ) -> Result<SyncTransactionsResponse, TellerSyncError> {
         let sync_timestamp = Utc::now();
         let (sync_start_date, sync_end_date) =
-            SyncService::calculate_sync_date_range_static(connection.last_sync_at);
+            SyncService::calculate_sync_date_range_static(connection.last_sync_at, reference_date);
 
         let credentials = self
             .db_repository
@@ -665,22 +687,23 @@ impl ConnectionService {
             })
             .collect();
 
-        let mut teller_transactions = provider
+        let crate::models::transaction::ProviderTransactionsResult {
+            transactions: mut teller_transactions,
+            page_count,
+        } = provider
             .as_ref()
             .get_transactions(&provider_credentials, sync_start_date, sync_end_date)
             .await
             .map_err(TellerSyncError::ProviderRequest)?;
 
-        let existing_transactions = self
+        let existing_provider_transaction_ids = self
             .db_repository
-            .get_transactions_for_user(user_id)
+            .get_provider_transaction_ids_for_user(user_id)
             .await
             .map_err(TellerSyncError::TransactionLookup)?;
 
-        let mut existing_ids: HashSet<String> = existing_transactions
-            .iter()
-            .filter_map(|t| t.provider_transaction_id.clone())
-            .collect();
+        let mut existing_ids: HashSet<String> =
+            existing_provider_transaction_ids.into_iter().collect();
 
         teller_transactions.retain(|txn| {
             txn.provider_transaction_id
@@ -715,18 +738,31 @@ impl ConnectionService {
 
             transaction.account_id = internal_account_id;
 
-            if let Err(e) = self.db_repository.upsert_transaction(&transaction).await {
-                tracing::warn!(
-                    "Failed to persist Teller transaction {:?}: {}",
-                    transaction.provider_transaction_id,
-                    e
-                );
-                continue;
+            if let Some(provider_transaction_id) = transaction.provider_transaction_id.clone() {
+                existing_ids.insert(provider_transaction_id);
             }
 
+            synced_transactions.push(transaction);
+        }
+
+        for chunk in synced_transactions.chunks(500) {
+            if let Err(e) = self
+                .db_repository
+                .upsert_transactions_batch(chunk, user_id)
+                .await
+            {
+                tracing::warn!(
+                    "Failed to persist Teller transaction batch for user {}: {}",
+                    user_id,
+                    e
+                );
+            }
+        }
+
+        for transaction in &synced_transactions {
             if let Err(e) = self
                 .cache_service
-                .add_transaction(jwt_id, &transaction)
+                .add_transaction(jwt_id, transaction)
                 .await
             {
                 tracing::warn!(
@@ -735,16 +771,14 @@ impl ConnectionService {
                     e
                 );
             }
-
-            if let Some(provider_transaction_id) = transaction.provider_transaction_id.clone() {
-                existing_ids.insert(provider_transaction_id);
-            }
-
-            synced_transactions.push(transaction);
         }
 
-        let total_transactions = match self.db_repository.get_transactions_for_user(user_id).await {
-            Ok(txns) => txns.len() as i32,
+        let total_transactions = match self
+            .db_repository
+            .count_transactions(user_id, None, None, None, None, None)
+            .await
+        {
+            Ok(count) => count as i32,
             Err(e) => {
                 tracing::warn!(
                     "Failed to load total transaction count for Teller user {}: {}",
@@ -802,6 +836,9 @@ impl ConnectionService {
             connection_id = %connection.id,
             transaction_count = total_transactions,
             account_count = total_accounts,
+            page_count = page_count,
+            start_date = %sync_start_date,
+            end_date = %sync_end_date,
             "Transaction sync completed"
         );
 

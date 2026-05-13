@@ -191,6 +191,14 @@ impl TestFixtures {
             .returning(|_| Box::pin(async { Ok(vec![]) }));
 
         mock_db
+            .expect_get_provider_transaction_ids_for_user()
+            .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+        mock_db
+            .expect_count_transactions()
+            .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
+
+        mock_db
             .expect_get_budgets_for_user()
             .returning(|_| Box::pin(async { Ok(vec![]) }));
 
@@ -285,6 +293,16 @@ impl TestFixtures {
         let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
         let analytics_service = Arc::new(AnalyticsService::new());
 
+        let mut mock_db = mock_db;
+
+        mock_db
+            .expect_get_provider_transaction_ids_for_user()
+            .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+        mock_db
+            .expect_count_transactions()
+            .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
+
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
 
         let mut mock_cache = MockCacheService::new();
@@ -374,6 +392,16 @@ impl TestFixtures {
         )]));
         let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
         let analytics_service = Arc::new(AnalyticsService::new());
+
+        let mut mock_db = mock_db;
+
+        mock_db
+            .expect_get_provider_transaction_ids_for_user()
+            .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+        mock_db
+            .expect_count_transactions()
+            .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
 
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);

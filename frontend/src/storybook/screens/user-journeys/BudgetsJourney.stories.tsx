@@ -2,7 +2,12 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { AccountFilterProvider } from '@/hooks/useAccountFilter';
 import BudgetsPage from '@/views/BudgetsPage';
-import { storyBudgetRecords, storyProviderAccounts, storyTransactions } from './shared';
+import {
+  getPagedStoryTransactions,
+  storyBudgetRecords,
+  storyProviderAccounts,
+  storyTransactionCategories,
+} from './shared';
 import { jsonResponse, route, StoryApiScope } from './storyApi';
 
 const meta = {
@@ -37,7 +42,17 @@ const handlers = [
     });
   }),
   route('DELETE', '/budgets/story-budget-1', () => jsonResponse({}, { status: 204 })),
-  route('GET', '/transactions', () => jsonResponse(storyTransactions)),
+  route('GET', '/transactions/categories', () => jsonResponse(storyTransactionCategories)),
+  route('GET', '/transactions', (request) =>
+    jsonResponse(
+      getPagedStoryTransactions({
+        page: Number(request.query.get('page') ?? '1'),
+        pageSize: Number(request.query.get('page_size') ?? '8'),
+        search: request.query.get('search'),
+        categoryPrimary: request.query.get('category_primary'),
+      })
+    )
+  ),
 ];
 
 function BudgetsJourney() {

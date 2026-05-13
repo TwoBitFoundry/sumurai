@@ -7,6 +7,7 @@ const meta = {
   component: TransactionsTable,
   tags: ['autodocs', 'test'],
   args: {
+    pageSize: 8,
     onPrev: () => {},
     onNext: () => {},
   },
@@ -22,6 +23,7 @@ export const Empty: Story = {
     total: 0,
     currentPage: 1,
     totalPages: 1,
+    pageSize: 8,
   },
 };
 
@@ -31,6 +33,7 @@ export const Populated: Story = {
     total: transactionsTablePage.length,
     currentPage: 1,
     totalPages: 1,
+    pageSize: 8,
   },
 };
 
@@ -40,6 +43,7 @@ export const PaginationFirstPage: Story = {
     total: 80,
     currentPage: 1,
     totalPages: 10,
+    pageSize: 8,
   },
 };
 
@@ -49,6 +53,7 @@ export const PaginationLastPage: Story = {
     total: 80,
     currentPage: 10,
     totalPages: 10,
+    pageSize: 8,
   },
 };
 
@@ -58,5 +63,6 @@ export const DenseMerchantRow: Story = {
     total: 1,
     currentPage: 1,
     totalPages: 1,
+    pageSize: 8,
   },
 };

@@ -1,15 +1,18 @@
 use anyhow::{anyhow, Result};
-use chrono::{DateTime, Duration, NaiveDate, Utc};
+use chrono::{DateTime, Duration, Months, NaiveDate, Utc};
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::models::{account::Account, plaid::ProviderConnection, transaction::Transaction};
+use crate::models::{
+    account::Account,
+    plaid::ProviderConnection,
+    transaction::{ProviderTransactionsResult, Transaction},
+};
 use crate::providers::{FinancialDataProvider, ProviderCredentials, ProviderRegistry};
 
 const MAX_SYNC_YEARS: i64 = 5;
 const SAFETY_MARGIN_DAYS: i64 = 2;
-const DEFAULT_FIRST_SYNC_DAYS: i64 = 90;
 
 pub struct SyncService {
     providers: Arc<ProviderRegistry>,
@@ -52,11 +55,16 @@ impl SyncService {
         credentials: &ProviderCredentials,
         connection: &ProviderConnection,
         accounts: &[Account],
-    ) -> Result<(Vec<Transaction>, String)> {
-        let (start_date, end_date) = self.calculate_sync_date_range(connection.last_sync_at);
+        reference_date: Option<NaiveDate>,
+    ) -> Result<(Vec<Transaction>, String, i32)> {
+        let (start_date, end_date) =
+            self.calculate_sync_date_range(connection.last_sync_at, reference_date);
 
         let provider = self.resolve_provider(Some(&credentials.provider))?;
-        let transactions = provider
+        let ProviderTransactionsResult {
+            transactions,
+            page_count,
+        } = provider
             .get_transactions(credentials, start_date, end_date)
             .await?;
 
@@ -80,15 +88,16 @@ impl SyncService {
             &uuid::Uuid::new_v4().to_string()[..8]
         );
 
-        Ok((mapped_transactions, new_cursor))
+        Ok((mapped_transactions, new_cursor, page_count))
     }
     pub async fn sync_recent_transactions(
         &self,
         credentials: &ProviderCredentials,
         existing_transactions: &[Transaction],
         last_sync_at: Option<DateTime<Utc>>,
+        reference_date: Option<NaiveDate>,
     ) -> Result<Vec<Transaction>> {
-        let (start_date, end_date) = self.calculate_sync_date_range(last_sync_at);
+        let (start_date, end_date) = self.calculate_sync_date_range(last_sync_at, reference_date);
 
         let provider = self.resolve_provider(Some(&credentials.provider))?;
         let provider_transactions = provider
@@ -96,7 +105,7 @@ impl SyncService {
             .await?;
 
         let new_transactions =
-            self.detect_duplicates(existing_transactions, &provider_transactions);
+            self.detect_duplicates(existing_transactions, &provider_transactions.transactions);
 
         Ok(new_transactions)
     }
@@ -128,18 +137,46 @@ impl SyncService {
         self.detect_duplicates(existing, new)
     }
 
+    pub fn filter_duplicate_transactions_by_provider_ids(
+        &self,
+        existing_provider_transaction_ids: &[String],
+        new: &[Transaction],
+    ) -> Vec<Transaction> {
+        let existing_provider_transaction_ids: std::collections::HashSet<&str> =
+            existing_provider_transaction_ids
+                .iter()
+                .map(String::as_str)
+                .collect();
+
+        new.iter()
+            .filter(|t| {
+                if let Some(provider_transaction_id) = &t.provider_transaction_id {
+                    !existing_provider_transaction_ids.contains(provider_transaction_id.as_str())
+                } else {
+                    true
+                }
+            })
+            .cloned()
+            .collect()
+    }
+
     pub fn calculate_sync_date_range(
         &self,
         last_sync_at: Option<DateTime<Utc>>,
+        reference_date: Option<NaiveDate>,
     ) -> (NaiveDate, NaiveDate) {
-        Self::calculate_sync_date_range_static(last_sync_at)
+        Self::calculate_sync_date_range_static(last_sync_at, reference_date)
     }
 
     pub fn calculate_sync_date_range_static(
         last_sync_at: Option<DateTime<Utc>>,
+        reference_date: Option<NaiveDate>,
     ) -> (NaiveDate, NaiveDate) {
-        let end_date = Utc::now().date_naive();
-        let max_lookback = end_date - Duration::days(365 * MAX_SYNC_YEARS);
+        let end_date = reference_date.unwrap_or_else(|| Utc::now().date_naive());
+        let lookback_months = Months::new((MAX_SYNC_YEARS * 12) as u32);
+        let max_lookback = end_date
+            .checked_sub_months(lookback_months)
+            .unwrap_or(end_date);
 
         let start_date = match last_sync_at {
             Some(last_sync) => {
@@ -147,7 +184,9 @@ impl SyncService {
                     (last_sync - Duration::days(SAFETY_MARGIN_DAYS)).date_naive();
                 std::cmp::max(last_sync_with_buffer, max_lookback).min(end_date)
             }
-            None => end_date - Duration::days(DEFAULT_FIRST_SYNC_DAYS),
+            None => end_date
+                .checked_sub_months(lookback_months)
+                .unwrap_or(end_date),
         };
 
         (start_date, end_date)

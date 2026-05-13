@@ -72,6 +72,7 @@ pub struct ProviderConnectRequest {
 #[schema(example = json!({"connection_id": "connection-uuid"}))]
 pub struct SyncTransactionsRequest {
     pub connection_id: Option<String>,
+    pub client_date: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]

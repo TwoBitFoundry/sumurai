@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type FilterCriteria, TransactionFilter } from '../../../domain/TransactionFilter';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
-import { type TransactionFilters, TransactionService } from '../../../services/TransactionService';
-import type { Transaction } from '../../../types/api';
-import { formatCategoryName } from '../../../utils/categories';
+import { TransactionService } from '../../../services/TransactionService';
+import type { PaginatedTransactionsResponse, Transaction } from '../../../types/api';
 
 export type DateRangeKey = string | undefined;
 
@@ -16,6 +14,7 @@ export interface UseTransactionsOptions {
 
 export interface UseTransactionsResult {
   isLoading: boolean;
+  loading: boolean;
   error: string | null;
   transactions: Transaction[];
   categories: string[];
@@ -25,11 +24,11 @@ export interface UseTransactionsResult {
   setSelectedCategory: (c: string | null) => void;
   dateRange: DateRangeKey;
   setDateRange: (r: DateRangeKey) => void;
-  // pagination
   currentPage: number;
   setCurrentPage: (p: number) => void;
   pageItems: Transaction[];
   totalItems: number;
+  total: number;
   totalPages: number;
 }
 
@@ -38,11 +37,14 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [all, setAll] = useState<Transaction[]>([]);
-  const [search, setSearch] = useState(initialSearch);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(initialCategory);
-  const [dateRange, setDateRange] = useState<DateRangeKey>(initialDateRange);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [search, setSearchState] = useState(initialSearch);
+  const [selectedCategory, setSelectedCategoryState] = useState<string | null>(initialCategory);
+  const [dateRange, setDateRangeState] = useState<DateRangeKey>(initialDateRange);
   const [currentPage, setCurrentPage] = useState(1);
+  const loadSequenceRef = useRef(0);
 
   const {
     selectedAccountIds,
@@ -51,97 +53,153 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     loading: accountsLoading,
   } = useAccountFilter();
 
-  const load = useCallback(async () => {
+  const lastFilterKeyRef = useRef<string | null>(null);
+  const debouncedSearch = useDebounce(search, 300);
+
+  const searchKey = debouncedSearch.trim().toLowerCase();
+  const accountKey = selectedAccountIds.join(',');
+  const filterKey = useMemo(() => {
+    return [
+      searchKey,
+      selectedCategory ?? '',
+      dateRange ?? '',
+      accountKey,
+      allAccountIds.join(','),
+      String(pageSize),
+      isAllAccountsSelected ? 'all' : 'subset',
+    ].join('|');
+  }, [
+    accountKey,
+    allAccountIds,
+    dateRange,
+    isAllAccountsSelected,
+    pageSize,
+    searchKey,
+    selectedCategory,
+  ]);
+
+  const loadCategories = useCallback(async () => {
+    try {
+      const serverCategories = await TransactionService.getTransactionCategories();
+      setCategories(serverCategories);
+    } catch {
+      setCategories([]);
+    }
+  }, []);
+
+  const loadTransactions = useCallback(
+    async (pageToLoad: number) => {
+      const requestSequence = ++loadSequenceRef.current;
+
+      if (accountsLoading) {
+        return;
+      }
+
+      if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
+        setTransactions([]);
+        setTotalItems(0);
+        setIsLoading(false);
+        setError(null);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = (await TransactionService.getTransactions({
+          page: pageToLoad,
+          page_size: pageSize,
+          search: searchKey || undefined,
+          categoryPrimary: selectedCategory ?? undefined,
+          accountIds: isAllAccountsSelected
+            ? undefined
+            : selectedAccountIds.length > 0
+              ? selectedAccountIds
+              : undefined,
+        })) as unknown as PaginatedTransactionsResponse;
+
+        if (requestSequence !== loadSequenceRef.current) {
+          return;
+        }
+
+        setTransactions(result.transactions);
+        setTotalItems(result.total);
+        if (result.page !== currentPage) {
+          setCurrentPage(result.page);
+        }
+      } catch (error: unknown) {
+        if (requestSequence !== loadSequenceRef.current) {
+          return;
+        }
+
+        const status = getStatus(error);
+        const message =
+          status === 401
+            ? 'You are not authenticated. Please log in again.'
+            : 'Failed to load transactions.';
+        setError(message);
+        setTransactions([]);
+        setTotalItems(0);
+      } finally {
+        if (requestSequence === loadSequenceRef.current) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [
+      accountsLoading,
+      allAccountIds.length,
+      currentPage,
+      isAllAccountsSelected,
+      pageSize,
+      searchKey,
+      selectedAccountIds,
+      selectedCategory,
+    ]
+  );
+
+  useEffect(() => {
+    void loadCategories();
+  }, [loadCategories]);
+
+  useEffect(() => {
     if (accountsLoading) {
       return;
     }
-    setIsLoading(true);
-    setError(null);
-    try {
-      const filters: TransactionFilters = {};
-      if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
-        setAll([]);
+
+    if (lastFilterKeyRef.current !== filterKey) {
+      lastFilterKeyRef.current = filterKey;
+      if (currentPage !== 1) {
+        setCurrentPage(1);
         return;
       }
-      if (dateRange) filters.dateRange = String(dateRange);
-      if (!isAllAccountsSelected && selectedAccountIds.length > 0) {
-        filters.accountIds = selectedAccountIds;
-      }
-      const txns = await TransactionService.getTransactions(filters);
-      setAll(txns);
-    } catch (error: unknown) {
-      const status = getStatus(error);
-      const msg =
-        status === 401
-          ? 'You are not authenticated. Please log in again.'
-          : 'Failed to load transactions.';
-      setError(msg);
-      setAll([]);
-    } finally {
-      setIsLoading(false);
     }
-  }, [accountsLoading, dateRange, isAllAccountsSelected, selectedAccountIds, allAccountIds]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+    void loadTransactions(currentPage);
+  }, [accountsLoading, currentPage, filterKey, loadTransactions]);
 
-  useEffect(() => {
+  const setSearch = useCallback((value: string) => {
+    setSearchState(value);
     setCurrentPage(1);
   }, []);
 
-  const debouncedSearch = useDebounce(search, 300);
-
-  const resolveCategoryLabel = useCallback((t: Transaction) => {
-    if (!t.category) {
-      return 'Uncategorized';
-    }
-    return formatCategoryName(t.category.primary);
+  const setSelectedCategory = useCallback((value: string | null) => {
+    setSelectedCategoryState(value);
+    setCurrentPage(1);
   }, []);
 
-  const filtered = useMemo(() => {
-    const criteria: FilterCriteria = {
-      search: debouncedSearch.trim(),
-      category: selectedCategory || undefined,
-    };
-    return TransactionFilter.filter(all, criteria);
-  }, [all, debouncedSearch, selectedCategory]);
+  const setDateRange = useCallback((value: DateRangeKey) => {
+    setDateRangeState(value);
+    setCurrentPage(1);
+  }, []);
 
-  const categories = useMemo(() => {
-    const names = new Set<string>();
-    for (const t of filtered) {
-      const name = resolveCategoryLabel(t) || 'Uncategorized';
-      if (name) names.add(name);
-    }
-    return Array.from(names).sort((a, b) => a.localeCompare(b));
-  }, [filtered, resolveCategoryLabel]);
-
-  useEffect(() => {
-    if (selectedCategory && !categories.includes(selectedCategory)) {
-      setSelectedCategory(null);
-    }
-  }, [categories, selectedCategory]);
-
-  const totalItems = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const start = (currentPage - 1) * pageSize;
-  const pageItems = useMemo(() => {
-    return filtered.slice(start, start + pageSize);
-  }, [filtered, start, pageSize]);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: specific filters should reset pagination
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedCategory, debouncedSearch, dateRange, selectedAccountIds]);
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [currentPage, totalPages]);
 
   return {
     isLoading,
+    loading: isLoading,
     error,
-    transactions: filtered,
+    transactions,
     categories,
     search,
     setSearch,
@@ -151,8 +209,9 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     setDateRange,
     currentPage,
     setCurrentPage,
-    pageItems,
+    pageItems: transactions,
     totalItems,
+    total: totalItems,
     totalPages,
   };
 }

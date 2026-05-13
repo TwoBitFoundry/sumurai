@@ -1,4 +1,5 @@
 import type { ProviderStatusResponse } from '../types/api';
+import { buildSyncTransactionsRequest } from '../utils/syncTransactionsRequest';
 import { ApiClient } from './ApiClient';
 
 export interface TellerConnectionStatus {
@@ -33,7 +34,7 @@ export class TellerService {
   static async syncTransactions(connectionId?: string): Promise<void> {
     await ApiClient.post(
       '/providers/sync-transactions',
-      connectionId ? { connection_id: connectionId } : {}
+      buildSyncTransactionsRequest(connectionId)
     );
   }
 

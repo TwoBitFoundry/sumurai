@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use chrono::NaiveDate;
 use uuid::Uuid;
 
-use crate::models::{account::Account, transaction::Transaction};
+use crate::models::{account::Account, transaction::ProviderTransactionsResult};
 
 #[async_trait]
 pub trait FinancialDataProvider: Send + Sync {
@@ -20,7 +20,7 @@ pub trait FinancialDataProvider: Send + Sync {
         credentials: &ProviderCredentials,
         start_date: NaiveDate,
         end_date: NaiveDate,
-    ) -> Result<Vec<Transaction>>;
+    ) -> Result<ProviderTransactionsResult>;
 
     async fn get_institution_info(
         &self,

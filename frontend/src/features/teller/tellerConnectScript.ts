@@ -1,4 +1,5 @@
 import { ApiClient } from '@/services/ApiClient';
+import { buildSyncTransactionsRequest } from '@/utils/syncTransactionsRequest';
 
 export type TellerEnvironment = 'sandbox' | 'development' | 'production';
 
@@ -149,9 +150,10 @@ export const apiGateway: TellerConnectGateway = {
     });
   },
   async syncTransactions(connectionId) {
-    await ApiClient.post('/providers/sync-transactions', {
-      connection_id: connectionId,
-    });
+    await ApiClient.post(
+      '/providers/sync-transactions',
+      buildSyncTransactionsRequest(connectionId)
+    );
   },
 };
 
