@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { AppTitleBar } from '@/ui/primitives/AppTitleBar';
 import { buttonRecipes } from '@/ui/primitives/Button';
-import { status as uiStatusRecipes } from '@/ui/recipes';
 
 const panHandlers: Record<
   string,
@@ -46,23 +45,17 @@ describe('AppTitleBar', () => {
   it('shows the online indicator when connected', () => {
     render(<AppTitleBar {...baseProps} isOnline />);
 
-    expect(screen.getByTitle('Online')).toHaveTextContent('Online');
-    expect(screen.getByTitle('Online')).toHaveClass(
-      ...uiStatusRecipes.success.surface,
-      ...uiStatusRecipes.success.border,
-      ...uiStatusRecipes.success.text
-    );
+    const indicator = screen.getByTitle('Online');
+    expect(indicator).toBeInTheDocument();
+    expect(indicator.querySelector('svg')).not.toBeNull();
   });
 
   it('shows the offline indicator when disconnected', () => {
     render(<AppTitleBar {...baseProps} isOnline={false} />);
 
-    expect(screen.getByTitle('Offline')).toHaveTextContent('Offline');
-    expect(screen.getByTitle('Offline')).toHaveClass(
-      ...uiStatusRecipes.warning.surface,
-      ...uiStatusRecipes.warning.border,
-      ...uiStatusRecipes.warning.text
-    );
+    const indicator = screen.getByTitle('Offline');
+    expect(indicator).toBeInTheDocument();
+    expect(indicator.querySelector('svg')).not.toBeNull();
   });
 
   it('keeps the title bar chrome fixed when scrolled changes', () => {
@@ -158,11 +151,13 @@ describe('AppTitleBar', () => {
       expect(desktopNav.className).toContain('md:flex');
     });
 
-    it('renders a mobile pill nav with "Mobile primary" label', () => {
+    it('renders a mobile pill nav with "Mobile primary" label inside the md:hidden row', () => {
       render(<AppTitleBar {...mobileProps} />);
       const mobileNav = screen.getByRole('navigation', { name: 'Mobile primary' });
       expect(mobileNav).toBeInTheDocument();
-      expect(mobileNav.parentElement?.parentElement?.className).toContain('md:hidden');
+      const row = mobileNav.parentElement?.parentElement;
+      expect(row?.className).toContain('md:hidden');
+      expect(row?.className).toContain('justify-center');
     });
 
     it('mobile nav active tab label is expanded, inactive labels are collapsed', () => {
@@ -180,19 +175,23 @@ describe('AppTitleBar', () => {
       expect(inactiveLabel?.className).toContain('opacity-0');
     });
 
-    it('desktop online pill is hidden on mobile, visible on desktop', () => {
+    it('online connectivity icon is always present (no responsive hiding)', () => {
       render(<AppTitleBar {...mobileProps} />);
-      const onlinePill = screen.getByTitle('Online');
-      expect(onlinePill.className).toContain('hidden');
-      expect(onlinePill.className).toContain('md:inline-flex');
+      const indicator = screen.getByTitle('Online');
+      expect(indicator).toBeInTheDocument();
+      expect(indicator.className).not.toContain('hidden');
     });
 
     it('renders both a desktop logout and a mobile icon-only logout button', () => {
       render(<AppTitleBar {...mobileProps} />);
       const logoutButtons = screen.getAllByRole('button', { name: 'Logout' });
       expect(logoutButtons).toHaveLength(2);
-      const desktopLogout = logoutButtons.find((btn) => btn.className.includes('md:inline-flex'));
-      const mobileLogout = logoutButtons.find((btn) => btn.className.includes('md:hidden'));
+      const desktopLogout = logoutButtons.find((btn) =>
+        btn.parentElement?.className.includes('hidden')
+      );
+      const mobileLogout = logoutButtons.find((btn) =>
+        btn.parentElement?.className.includes('md:hidden')
+      );
       expect(desktopLogout).toBeDefined();
       expect(mobileLogout).toBeDefined();
     });
@@ -210,10 +209,12 @@ describe('AppTitleBar', () => {
         });
       }
 
-      it('swipe container is inside the md:hidden row', () => {
+      it('swipe container is inside the md:hidden centered row', () => {
         render(<AppTitleBar {...mobileProps} onTabChange={onTabChange} />);
         const container = screen.getByTestId('mobile-swipe-container');
-        expect(container.parentElement?.className).toContain('md:hidden');
+        const row = container.parentElement;
+        expect(row?.className).toContain('md:hidden');
+        expect(row?.className).toContain('justify-center');
       });
 
       it('swipe left past threshold advances to the next tab', () => {

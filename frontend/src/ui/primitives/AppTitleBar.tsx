@@ -137,50 +137,11 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
             </div>
 
             <div className={cn('flex', 'items-center', 'gap-2')}>
-              <div
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1',
-                  uiTypographyRecipes.badge,
-                  ...(isOnline
-                    ? [
-                        ...semanticStatus.success.surface,
-                        ...semanticStatus.success.border,
-                        ...semanticStatus.success.text,
-                      ]
-                    : [
-                        ...semanticStatus.warning.surface,
-                        ...semanticStatus.warning.border,
-                        ...semanticStatus.warning.text,
-                      ]),
-                  'hidden md:inline-flex'
-                )}
-                role="status"
-                aria-live="polite"
-                title={isOnline ? 'Online' : 'Offline'}
-              >
-                <span
-                  className={cn(
-                    'h-2 w-2 rounded-full',
-                    isOnline
-                      ? 'bg-[var(--color-status-success-icon)] dark:bg-[var(--color-status-success-icon)]'
-                      : 'bg-[var(--color-status-warning-icon)] dark:bg-[var(--color-status-warning-icon)]'
-                  )}
-                  aria-hidden="true"
-                />
-                <span>{isOnline ? 'Online' : 'Offline'}</span>
-              </div>
-
-              <span className="md:hidden">
+              <span role="status" aria-live="polite" title={isOnline ? 'Online' : 'Offline'}>
                 {isOnline ? (
-                  <Wifi
-                    className={cn('h-4 w-4', ...semanticStatus.success.icon)}
-                    aria-label="Online"
-                  />
+                  <Wifi className={cn('h-4 w-4', ...semanticStatus.success.icon)} />
                 ) : (
-                  <WifiOff
-                    className={cn('h-4 w-4', ...semanticStatus.warning.icon)}
-                    aria-label="Offline"
-                  />
+                  <WifiOff className={cn('h-4 w-4', ...semanticStatus.warning.icon)} />
                 )}
               </span>
 
@@ -203,34 +164,36 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
 
               {(state === 'onboarding' || state === 'authenticated') && onLogout && (
                 <>
-                  <Button
-                    type="button"
-                    onClick={onLogout}
-                    variant="danger"
-                    size="xs"
-                    title="Logout"
-                    className="hidden md:inline-flex"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={onLogout}
-                    variant="danger"
-                    size="xs"
-                    aria-label="Logout"
-                    className="md:hidden"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
+                  <div className="hidden md:block">
+                    <Button
+                      type="button"
+                      onClick={onLogout}
+                      variant="danger"
+                      size="xs"
+                      title="Logout"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Logout</span>
+                    </Button>
+                  </div>
+                  <div className="md:hidden">
+                    <Button
+                      type="button"
+                      onClick={onLogout}
+                      variant="danger"
+                      size="xs"
+                      aria-label="Logout"
+                    >
+                      <LogOut className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </>
               )}
             </div>
           </div>
 
           {state === 'authenticated' && (
-            <div className="md:hidden pb-2">
+            <div className="md:hidden flex justify-center pb-2">
               <motion.div
                 data-testid="mobile-swipe-container"
                 onPanEnd={(_, info) => {
