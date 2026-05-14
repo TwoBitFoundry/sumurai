@@ -197,15 +197,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
 
           {state === 'authenticated' && (
             <div className="md:hidden absolute top-full left-0 right-0 flex justify-center pt-1 pb-2 z-40">
-              <motion.div
-                data-testid="mobile-swipe-container"
-                onPanEnd={(_, info) => {
-                  const idx = TABS.findIndex((t) => t.key === currentTab);
-                  if (info.offset.x < -50 && idx < TABS.length - 1)
-                    onTabChange?.(TABS[idx + 1].key);
-                  if (info.offset.x > 50 && idx > 0) onTabChange?.(TABS[idx - 1].key);
-                }}
-              >
+              <div>
                 <nav
                   className={cn(...appTitleBarRecipes.pillContainer)}
                   aria-label="Mobile primary"
@@ -244,7 +236,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                     </Button>
                   ))}
                 </nav>
-              </motion.div>
+              </div>
             </div>
           )}
         </div>

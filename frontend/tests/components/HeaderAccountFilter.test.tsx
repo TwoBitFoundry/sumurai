@@ -45,44 +45,22 @@ describe('HeaderAccountFilter', () => {
     expect(screen.getByRole('button', { name: 'Filter' }).className).toBe(initialClassName);
   });
 
-  it('renders an icon-only trigger and opens the popover above the trigger', () => {
-    Object.defineProperty(window, 'innerHeight', {
-      configurable: true,
-      value: 900,
-    });
+  it('renders an icon-only trigger and opens the popover above the trigger anchored to the right', () => {
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 900 });
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
 
-    render(
-      <div data-bottom-bar-controls>
-        <HeaderAccountFilter triggerStyle="icon-only" />
-      </div>
-    );
-
-    const bottomBar = document.querySelector('[data-bottom-bar-controls]');
-    if (!bottomBar) {
-      throw new Error('Missing bottom bar wrapper');
-    }
-    bottomBar.getBoundingClientRect = jest.fn(() => ({
-      x: 120,
-      y: 220,
-      width: 320,
-      height: 44,
-      top: 220,
-      right: 440,
-      bottom: 264,
-      left: 120,
-      toJSON: () => undefined,
-    }));
+    render(<HeaderAccountFilter triggerStyle="icon-only" />);
 
     const trigger = screen.getByRole('button', { name: 'Filter accounts' });
     trigger.getBoundingClientRect = jest.fn(() => ({
-      x: 120,
+      x: 984,
       y: 220,
       width: 40,
       height: 40,
       top: 220,
-      right: 160,
+      right: 1024,
       bottom: 260,
-      left: 120,
+      left: 984,
       toJSON: () => undefined,
     }));
 
@@ -91,8 +69,7 @@ describe('HeaderAccountFilter', () => {
     expect(trigger).toHaveTextContent('');
     expect(screen.getByRole('dialog', { name: 'Account filter' })).toHaveStyle({
       bottom: '688px',
-      left: '120px',
-      width: '320px',
+      right: '0px',
     });
   });
 });

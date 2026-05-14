@@ -2,6 +2,25 @@ import { act, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { AuthenticatedApp } from '@/components/AuthenticatedApp';
 
+const pageSwipePanHandlers: Record<
+  string,
+  (e: unknown, info: { offset: { x: number; y: number } }) => void
+> = {};
+
+jest.mock('framer-motion', () => {
+  const R = require('react');
+  return {
+    motion: {
+      div: ({ onPanEnd, children, 'data-testid': testId, style, ...props }: any) => {
+        if (onPanEnd && testId) pageSwipePanHandlers[testId] = onPanEnd;
+        return R.createElement('div', { 'data-testid': testId, style, ...props }, children);
+      },
+      section: ({ children, ...props }: any) => R.createElement('div', props, children),
+    },
+    AnimatePresence: ({ children }: any) => <>{children}</>,
+  };
+});
+
 const appLayoutMock = jest.fn();
 
 jest.mock('@/layouts/AppLayout', () => ({
@@ -45,6 +64,12 @@ jest.mock('@/views/TransactionsPage', () => ({
   default: () => <div>Transactions</div>,
 }));
 
+function swipePage(offsetX: number) {
+  act(() => {
+    pageSwipePanHandlers['page-swipe-container']({}, { offset: { x: offsetX, y: 0 } });
+  });
+}
+
 describe('AuthenticatedApp', () => {
   beforeEach(() => {
     appLayoutMock.mockClear();
@@ -71,5 +96,47 @@ describe('AuthenticatedApp', () => {
       onTabChange('dashboard');
     });
     expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('dashboard');
+  });
+
+  describe('full-page swipe navigation', () => {
+    it('swipe left advances to the next tab', () => {
+      render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
+      swipePage(-100);
+      expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('transactions');
+    });
+
+    it('swipe right goes to the previous tab', () => {
+      render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="transactions" />);
+      swipePage(100);
+      expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('dashboard');
+    });
+
+    it('swipe left on the last tab does nothing', () => {
+      render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="accounts" />);
+      const before = appLayoutMock.mock.lastCall[0].currentTab;
+      swipePage(-100);
+      expect(appLayoutMock.mock.lastCall[0].currentTab).toBe(before);
+    });
+
+    it('swipe right on the first tab does nothing', () => {
+      render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
+      const before = appLayoutMock.mock.lastCall[0].currentTab;
+      swipePage(100);
+      expect(appLayoutMock.mock.lastCall[0].currentTab).toBe(before);
+    });
+
+    it('swipe below 50px threshold does nothing', () => {
+      render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
+      const before = appLayoutMock.mock.lastCall[0].currentTab;
+      swipePage(-30);
+      expect(appLayoutMock.mock.lastCall[0].currentTab).toBe(before);
+    });
+
+    it('swipe is ignored on the settings tab', () => {
+      render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="settings" />);
+      const before = appLayoutMock.mock.lastCall[0].currentTab;
+      swipePage(-100);
+      expect(appLayoutMock.mock.lastCall[0].currentTab).toBe(before);
+    });
   });
 });

@@ -49,39 +49,52 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
   return (
     <ErrorBoundary>
       <GradientShell className={cn(uiTextRecipes.primary, 'transition-colors', 'duration-300')}>
-        <AppLayout
-          currentTab={tab}
-          onTabChange={handleTabChange}
-          onLogout={onLogout}
-          isOnline={isOnline}
-          bottomBarContent={bottomBarContent}
+        <motion.div
+          data-testid="page-swipe-container"
+          style={{ touchAction: 'pan-y' }}
+          onPanEnd={(_, info) => {
+            if (tab === 'settings') return;
+            const idx = TAB_ORDER.indexOf(tab as (typeof TAB_ORDER)[number]);
+            if (idx === -1) return;
+            if (info.offset.x < -50 && idx < TAB_ORDER.length - 1)
+              handleTabChange(TAB_ORDER[idx + 1]);
+            if (info.offset.x > 50 && idx > 0) handleTabChange(TAB_ORDER[idx - 1]);
+          }}
         >
-          {error && (
-            <Alert variant="error" title="Error" className={cn('mb-6')}>
-              {error}
-            </Alert>
-          )}
+          <AppLayout
+            currentTab={tab}
+            onTabChange={handleTabChange}
+            onLogout={onLogout}
+            isOnline={isOnline}
+            bottomBarContent={bottomBarContent}
+          >
+            {error && (
+              <Alert variant="error" title="Error" className={cn('mb-6')}>
+                {error}
+              </Alert>
+            )}
 
-          <AnimatePresence mode="wait" custom={direction}>
-            <motion.section
-              key={tab}
-              custom={direction}
-              variants={pageVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.28, ease: [0.25, 0.1, 0.25, 1] }}
-            >
-              {tab === 'dashboard' && (
-                <DashboardPage dateRange={dateRange} setDateRange={setDateRange} />
-              )}
-              {tab === 'transactions' && <TransactionsPage />}
-              {tab === 'budgets' && <BudgetsPage />}
-              {tab === 'accounts' && <AccountsPage onError={setError} />}
-              {tab === 'settings' && <SettingsPage onLogout={onLogout} />}
-            </motion.section>
-          </AnimatePresence>
-        </AppLayout>
+            <AnimatePresence mode="wait" custom={direction}>
+              <motion.section
+                key={tab}
+                custom={direction}
+                variants={pageVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.28, ease: [0.25, 0.1, 0.25, 1] }}
+              >
+                {tab === 'dashboard' && (
+                  <DashboardPage dateRange={dateRange} setDateRange={setDateRange} />
+                )}
+                {tab === 'transactions' && <TransactionsPage />}
+                {tab === 'budgets' && <BudgetsPage />}
+                {tab === 'accounts' && <AccountsPage onError={setError} />}
+                {tab === 'settings' && <SettingsPage onLogout={onLogout} />}
+              </motion.section>
+            </AnimatePresence>
+          </AppLayout>
+        </motion.div>
       </GradientShell>
     </ErrorBoundary>
   );

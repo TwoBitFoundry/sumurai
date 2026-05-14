@@ -20,8 +20,7 @@ interface HeaderAccountFilterProps {
 
 type PopoverPosition = {
   bottom: number;
-  left: number;
-  width?: number;
+  right: number;
 };
 
 export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountFilterProps) {
@@ -118,15 +117,9 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
         return;
       }
       const triggerRect = trigger.getBoundingClientRect();
-      const bottomBar = document.querySelector('[data-bottom-bar-controls]');
-      const bottomBarRect = bottomBar?.getBoundingClientRect();
       setPopoverPosition({
         bottom: window.innerHeight - triggerRect.top + POPOVER_GAP_PX,
-        left: triggerRect.left,
-        width:
-          triggerStyle === 'icon-only' && bottomBarRect
-            ? bottomBarRect.right - triggerRect.left
-            : undefined,
+        right: window.innerWidth - triggerRect.right,
       });
     };
 
@@ -138,7 +131,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
       window.removeEventListener('scroll', updatePosition, true);
       window.removeEventListener('resize', updatePosition);
     };
-  }, [isOpen, triggerStyle]);
+  }, [isOpen]);
 
   return (
     <div className={cn('relative')}>
@@ -202,12 +195,11 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
                 transition={{ duration: 0.18, ease: [0.22, 0.61, 0.36, 1] }}
                 style={{
                   bottom: popoverPosition.bottom,
-                  left: popoverPosition.left,
-                  width: popoverPosition.width,
+                  right: popoverPosition.right,
                 }}
                 className={cn(
                   'fixed',
-                  popoverPosition.width ? 'max-w-none' : 'w-80',
+                  'w-80',
                   'max-h-96',
                   'flex',
                   'flex-col',
@@ -220,7 +212,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
                   'backdrop-blur-md',
                   'backdrop-saturate-[150%]',
                   'z-50',
-                  'origin-bottom-left'
+                  'origin-bottom-right'
                 )}
               >
                 <div className={cn('p-4', 'border-b', ...uiBorderRecipes.divider)}>
