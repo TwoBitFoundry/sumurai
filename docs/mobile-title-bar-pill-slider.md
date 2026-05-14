@@ -237,13 +237,19 @@ Online status icon colors (mobile): use `status.success.icon` and `status.warnin
 - Add `AuthenticatedMobile` story with `parameters: { viewport: { defaultViewport: 'mobile1' } }` and `state: 'authenticated'`, `currentTab: 'dashboard'`
 
 ### Acceptance Criteria — Phase 3
-- [ ] Mobile (375px): header fits within viewport, zero horizontal overflow
-- [ ] Mobile: two rows render — logo+actions row, then tab pill row
-- [ ] Mobile: active tab shows icon + label; all inactive tabs show icon only
-- [ ] Mobile: active label collapses/expands smoothly when switching tabs
-- [ ] Mobile: right actions show only Wifi icon (no text), Settings icon, Logout icon
-- [ ] Desktop: single-row layout unchanged from Phase 2
-- [ ] `AuthenticatedMobile` Storybook story renders correctly
+- [x] Mobile (375px): header fits within viewport, zero horizontal overflow
+- [x] Mobile: two rows render — logo+actions row, then tab pill row
+- [x] Mobile: active tab shows icon + label; all inactive tabs show icon only
+- [x] Mobile: active label collapses/expands smoothly when switching tabs
+- [x] Mobile: right actions show only Wifi icon (no text), Settings icon, Logout icon
+- [x] Desktop: single-row layout unchanged from Phase 2
+- [x] `AuthenticatedMobile` Storybook story renders correctly
+
+### TDD log
+
+- Added failing tests for mobile header auto-height, responsive desktop nav visibility, mobile pill nav presence, animated label classes, desktop online pill hiding, and dual logout buttons. Updated existing tests to scope nav/button queries to `within(desktopNav)`.
+- Changed `appTitleBarRecipes.base` from `h-16` to `h-auto md:h-16`. Restructured JSX to two-row layout: Row 1 (`h-12 md:h-16`) with logo + hidden-md desktop nav + responsive actions; Row 2 (`md:hidden pb-2`) with mobile pill nav. Added `Wifi`/`WifiOff` icons using `status.success.icon` / `status.warning.icon` recipes. Split logout into `hidden md:inline-flex` desktop button and `md:hidden` mobile icon-only button. Mobile nav uses `layoutId="mobile-pill-active"` and always-rendered labels animated via `max-w`/`opacity`.
+- Verification: `npm --prefix frontend test -- --runTestsByPath tests/ui/primitives/AppTitleBar.test.tsx`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run lint`
 
 ---
 
