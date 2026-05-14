@@ -40,7 +40,13 @@ export function AppLayout({
         />
 
         <main
-          className={`flex-1 overflow-hidden px-8 sm:px-12 lg:px-16 py-4 sm:py-6 lg:py-8 ${currentTab === 'dashboard' ? 'pb-16' : ''}`}
+          className={cn(
+            'flex-1 overflow-hidden',
+            'px-8 sm:px-12 lg:px-16',
+            'pt-16 md:pt-6 lg:pt-8',
+            'pb-4 sm:pb-6 lg:pb-8',
+            currentTab === 'dashboard' ? 'pb-16' : ''
+          )}
         >
           {children}
         </main>

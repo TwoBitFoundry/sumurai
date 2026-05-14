@@ -139,9 +139,9 @@ describe('AppTitleBar', () => {
       onLogout: jest.fn(),
     };
 
-    it('header has h-12 class for single-row mobile height', () => {
+    it('header has safe-area-inset-top padding for notch/camera cutout', () => {
       render(<AppTitleBar {...mobileProps} />);
-      expect(screen.getByRole('banner').className).toContain('h-12');
+      expect(screen.getByRole('banner').className).toContain('pt-[env(safe-area-inset-top)]');
     });
 
     it('desktop nav has hidden md:flex classes for responsive visibility', () => {

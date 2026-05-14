@@ -24,7 +24,10 @@ import { Button, buttonRecipes } from './Button';
 import { cn } from './utils';
 
 export const appTitleBarRecipes = {
-  base: ['sticky top-0 z-50 border-b backdrop-blur-md backdrop-saturate-[150%] h-12 md:h-16'],
+  base: [
+    'sticky top-0 z-50 border-b backdrop-blur-md backdrop-saturate-[150%]',
+    'pt-[env(safe-area-inset-top)]',
+  ],
   shell: [...semanticSurfaces.card, ...semanticBorders.divider, ...semanticEffects.glassShadow],
   logo: {
     container: ['flex', 'items-center', 'gap-2', semanticTextRecipes.primary],
