@@ -55,8 +55,8 @@ export function AppLayout({
           data-bottom-bar-controls
           className={cn('fixed', 'bottom-5', 'right-4', 'z-50', 'flex', 'items-center', 'gap-2')}
         >
-          <HeaderAccountFilter triggerStyle="icon-only" />
           {bottomBarContent}
+          <HeaderAccountFilter triggerStyle="icon-only" />
         </div>
 
         <AppFooter />
