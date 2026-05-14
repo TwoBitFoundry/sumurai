@@ -19,10 +19,19 @@ export function Footer() {
         'to-sky-50/30',
         'dark:from-slate-900/60',
         'dark:to-slate-900/80',
-        'backdrop-blur-md'
+        'backdrop-blur-md',
+        'pb-[env(safe-area-inset-bottom)]'
       )}
     >
-      <div className={cn('max-w-6xl', 'mx-auto', 'px-4', 'sm:px-8', 'py-8')}>
+      <div
+        className={cn(
+          'max-w-6xl',
+          'mx-auto',
+          'pl-[calc(1rem_+_env(safe-area-inset-left))] pr-[calc(1rem_+_env(safe-area-inset-right))]',
+          'sm:pl-[calc(2rem_+_env(safe-area-inset-left))] sm:pr-[calc(2rem_+_env(safe-area-inset-right))]',
+          'py-8'
+        )}
+      >
         <div
           className={cn(
             'flex',

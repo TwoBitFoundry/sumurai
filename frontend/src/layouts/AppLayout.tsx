@@ -42,7 +42,9 @@ export function AppLayout({
         <main
           className={cn(
             'flex-1 overflow-hidden',
-            'px-8 sm:px-12 lg:px-16',
+            'pl-[calc(2rem_+_env(safe-area-inset-left))] pr-[calc(2rem_+_env(safe-area-inset-right))]',
+            'sm:pl-[calc(3rem_+_env(safe-area-inset-left))] sm:pr-[calc(3rem_+_env(safe-area-inset-right))]',
+            'lg:pl-[calc(4rem_+_env(safe-area-inset-left))] lg:pr-[calc(4rem_+_env(safe-area-inset-right))]',
             'pt-16 md:pt-6 lg:pt-8',
             'pb-4 sm:pb-6 lg:pb-8',
             currentTab === 'dashboard' ? 'pb-16' : ''
@@ -53,7 +55,15 @@ export function AppLayout({
 
         <div
           data-bottom-bar-controls
-          className={cn('fixed', 'bottom-5', 'right-4', 'z-50', 'flex', 'items-center', 'gap-2')}
+          className={cn(
+            'fixed',
+            'bottom-[calc(1.25rem_+_env(safe-area-inset-bottom))]',
+            'right-[calc(1rem_+_env(safe-area-inset-right))]',
+            'z-50',
+            'flex',
+            'items-center',
+            'gap-2'
+          )}
         >
           {bottomBarContent}
           <HeaderAccountFilter triggerStyle="icon-only" />
