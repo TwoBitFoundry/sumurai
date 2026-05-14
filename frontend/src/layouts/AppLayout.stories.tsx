@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
+import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import { AppLayout } from './AppLayout';
 
 const meta = {
@@ -20,7 +21,16 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+const withMockAccountFilter = [
+  (Story) => (
+    <AccountFilterStoryProvider>
+      <Story />
+    </AccountFilterStoryProvider>
+  ),
+];
+
 export const Dashboard: Story = {
+  decorators: withMockAccountFilter,
   args: {
     currentTab: 'dashboard',
     isOnline: true,
@@ -40,6 +50,7 @@ export const Dashboard: Story = {
 };
 
 export const TransactionsTab: Story = {
+  decorators: withMockAccountFilter,
   args: {
     currentTab: 'transactions',
     isOnline: true,
