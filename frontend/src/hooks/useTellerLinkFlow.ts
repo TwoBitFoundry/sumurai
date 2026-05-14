@@ -217,7 +217,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
     staleTime: 5 * 60 * 1000,
   });
   const connections = connectionsQuery.data ?? [];
-  const loading = enabled && isOnline && !!applicationId ? connectionsQuery.isPending : false;
+  const loading = enabled && isOnline && applicationId ? connectionsQuery.isPending : false;
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [syncingAll, setSyncingAll] = useState(false);
