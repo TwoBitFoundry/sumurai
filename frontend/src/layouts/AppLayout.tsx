@@ -1,17 +1,12 @@
 import { motion } from 'framer-motion';
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { cn } from '@/ui/primitives';
 import { appTitleBarRecipes, TABS } from '@/ui/primitives/AppTitleBar';
-import { Button, buttonRecipes } from '@/ui/primitives/Button';
+import { Button } from '@/ui/primitives/Button';
 import { HeaderAccountFilter } from '../components/HeaderAccountFilter';
 import { useScrollDetection } from '../hooks/useScrollDetection';
 import { AppFooter, AppTitleBar } from '../ui/primitives';
-import {
-  border as semanticBorders,
-  effect as semanticEffects,
-  surface as semanticSurfaces,
-  text as semanticTextRecipes,
-} from '../ui/recipes';
+import { text as semanticTextRecipes } from '../ui/recipes';
 
 export type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
@@ -35,10 +30,23 @@ export function AppLayout({
   bottomBarContent,
 }: AppLayoutProps) {
   const scrolled = useScrollDetection();
+  const footerRef = useRef<HTMLDivElement>(null);
+  const [floatingVisible, setFloatingVisible] = useState(true);
+
+  useEffect(() => {
+    const el = footerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setFloatingVisible(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className={className}>
-      <div className={cn('relative', 'z-10', 'flex', 'min-h-screen', 'flex-col')}>
+      <div className={cn('relative', 'z-10', 'flex', 'flex-col')}>
         <AppTitleBar
           state="authenticated"
           scrolled={scrolled}
@@ -50,35 +58,50 @@ export function AppLayout({
 
         <main
           className={cn(
-            'flex-1 overflow-hidden',
+            'overflow-hidden',
             'pl-[calc(2rem_+_env(safe-area-inset-left))] pr-[calc(2rem_+_env(safe-area-inset-right))]',
             'sm:pl-[calc(3rem_+_env(safe-area-inset-left))] sm:pr-[calc(3rem_+_env(safe-area-inset-right))]',
             'lg:pl-[calc(4rem_+_env(safe-area-inset-left))] lg:pr-[calc(4rem_+_env(safe-area-inset-right))]',
             'pt-4 sm:pt-6 lg:pt-8',
-            'pb-40 md:pb-6 lg:pb-8'
+            'pb-4 md:pb-6 lg:pb-8'
           )}
         >
           {children}
         </main>
 
+        {/* Desktop bottom controls */}
+        <div
+          className={cn(
+            'fixed bottom-5 left-0 right-0 z-50',
+            'hidden md:flex',
+            'min-h-[2.75rem] items-center justify-center px-4',
+            'transition-opacity duration-200',
+            floatingVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          )}
+        >
+          {bottomBarContent}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+            <HeaderAccountFilter triggerStyle="icon-only" />
+          </div>
+        </div>
+
         {/* Mobile bottom navigation bar */}
         <div
           className={cn(
-            'fixed bottom-0 left-0 right-0',
+            'fixed bottom-4 left-0 right-0',
             'md:hidden',
             'z-50',
             'flex flex-col',
-            ...semanticSurfaces.card,
-            'border-t',
-            ...semanticBorders.divider,
-            ...semanticEffects.glassShadow,
-            'backdrop-blur-md backdrop-saturate-[150%]',
-            'pb-[env(safe-area-inset-bottom)]'
+            'pb-[env(safe-area-inset-bottom)]',
+            'transition-opacity duration-200',
+            floatingVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
           )}
         >
-          <div className={cn('flex items-center justify-end gap-2 px-4 pt-2')}>
+          <div className={cn('relative flex min-h-[3.25rem] items-center justify-center px-4')}>
             {bottomBarContent}
-            <HeaderAccountFilter triggerStyle="icon-only" />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+              <HeaderAccountFilter triggerStyle="icon-only" />
+            </div>
           </div>
 
           <div className={cn('flex justify-center pt-1 pb-2')}>
@@ -120,7 +143,9 @@ export function AppLayout({
           </div>
         </div>
 
-        <AppFooter />
+        <div ref={footerRef}>
+          <AppFooter />
+        </div>
       </div>
     </div>
   );

@@ -41,6 +41,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
     const to = TAB_ORDER.indexOf(next as (typeof TAB_ORDER)[number]);
     setDirection(to >= from || from === -1 ? 1 : -1);
     setTab(next);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
   const bottomBarContent =
     tab === 'dashboard' ? (
