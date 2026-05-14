@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
+import type { DateRangeKey } from '@/utils/dateRanges';
 import DashboardPage from '@/views/DashboardPage';
 import { storyDashboardFixtures, storyProviderAccounts } from './shared';
 import { jsonResponse, route, StoryApiScope } from './storyApi';
@@ -31,10 +32,12 @@ const handlers = [
 ];
 
 function DashboardJourney() {
+  const setDateRange = (_range: DateRangeKey) => {};
+
   return (
     <AccountFilterStoryProvider>
       <StoryApiScope handlers={handlers}>
-        <DashboardPage />
+        <DashboardPage dateRange="current-month" setDateRange={setDateRange} />
       </StoryApiScope>
     </AccountFilterStoryProvider>
   );

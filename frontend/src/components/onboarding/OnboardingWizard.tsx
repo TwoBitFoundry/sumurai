@@ -1,7 +1,6 @@
 import { cva } from 'class-variance-authority';
 import { Check } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useTheme } from '@/context/ThemeContext';
 import { useOnboardingPlaidFlow } from '@/hooks/useOnboardingPlaidFlow';
 import { useOnboardingTellerFlow } from '@/hooks/useOnboardingTellerFlow';
 import { type OnboardingStep, useOnboardingWizard } from '@/hooks/useOnboardingWizard';
@@ -85,7 +84,6 @@ interface OnboardingWizardProps {
 
 export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingWizardProps) {
   const scrolled = useScrollDetection();
-  const { mode, toggle } = useTheme();
   const {
     currentStep,
     stepIndex,
@@ -283,9 +281,7 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
         <AppTitleBar
           state="onboarding"
           scrolled={scrolled}
-          themeMode={mode}
           isOnline={isOnline}
-          onThemeToggle={toggle}
           onLogout={onLogout}
         />
 

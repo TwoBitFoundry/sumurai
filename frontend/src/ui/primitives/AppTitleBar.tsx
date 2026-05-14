@@ -1,5 +1,5 @@
 import { cva } from 'class-variance-authority';
-import { Moon, Settings, Sun } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import Image from 'next/image';
 import React from 'react';
 import {
@@ -32,10 +32,14 @@ export const appTitleBarRecipes = {
   tabHalo:
     'after:absolute after:inset-[-28%] after:rounded-[999px] after:bg-[radial-gradient(circle_at_35%_30%,rgba(14,165,233,0.16),transparent_62%)] after:opacity-0 after:transition-opacity after:duration-300 hover:after:opacity-90 dark:after:bg-[radial-gradient(circle_at_35%_30%,rgba(56,189,248,0.22),transparent_62%)]',
   divider: 'w-px h-6 bg-[var(--color-border-divider)] dark:bg-[var(--color-border-divider)]',
-  themeToggle:
-    'rounded-lg !bg-[color:color-mix(in_srgb,var(--color-brand-amber)_80%,transparent)] dark:!bg-[color:color-mix(in_srgb,var(--color-brand-violet)_80%,transparent)] hover:!bg-[color:color-mix(in_srgb,var(--color-brand-amber)_90%,transparent)] dark:hover:!bg-[color:color-mix(in_srgb,var(--color-brand-violet)_90%,transparent)] !border !border-[color:color-mix(in_srgb,var(--color-brand-amber)_30%,transparent)] dark:!border-[color:color-mix(in_srgb,var(--color-brand-violet)_30%,transparent)] !text-white backdrop-blur-sm transition-colors',
   settingsIdle:
     'border border-[var(--color-border-divider)] dark:border-[var(--color-border-divider)] bg-[var(--color-surface-muted-chip)] dark:bg-[var(--color-surface-muted-chip)] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row)]',
+  pillContainer: [
+    'flex items-center gap-1 rounded-full p-1',
+    ...semanticSurfaces.mutedChip,
+    ...semanticBorders.subtle,
+  ],
+  pillTab: ['relative flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5'],
 } as const;
 
 const titleBarVariants = cva([...appTitleBarRecipes.base], {
@@ -63,13 +67,10 @@ const TABS: Array<{ key: TabKey; label: string }> = [
 export interface AppTitleBarProps {
   state: 'unauthenticated' | 'onboarding' | 'authenticated';
   scrolled: boolean;
-  themeMode: 'light' | 'dark';
   isOnline: boolean;
-  onThemeToggle: () => void;
   onLogout?: () => void;
   currentTab?: TabKey;
   onTabChange?: (tab: TabKey) => void;
-  accountFilterNode?: React.ReactNode;
 }
 
 /**
@@ -90,19 +91,7 @@ export interface AppTitleBarProps {
  * ```
  */
 export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
-  (
-    {
-      state,
-      themeMode,
-      isOnline,
-      onThemeToggle,
-      onLogout,
-      currentTab,
-      onTabChange,
-      accountFilterNode,
-    },
-    ref
-  ) => {
+  ({ state, isOnline, onLogout, currentTab, onTabChange }, ref) => {
     return (
       <header
         ref={ref}
@@ -183,29 +172,6 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                 />
                 <span>{isOnline ? 'Online' : 'Offline'}</span>
               </div>
-
-              {state === 'authenticated' && accountFilterNode && (
-                <>
-                  {accountFilterNode}
-                  <div className={cn('w-px', 'h-6', 'bg-slate-200', 'dark:bg-slate-600')}></div>
-                </>
-              )}
-
-              <Button
-                type="button"
-                onClick={onThemeToggle}
-                variant="secondary"
-                size="xs"
-                className={cn(appTitleBarRecipes.themeToggle)}
-                aria-label="Toggle theme"
-                title="Toggle theme"
-              >
-                {themeMode === 'dark' ? (
-                  <Moon className={cn('h-4', 'w-4')} />
-                ) : (
-                  <Sun className={cn('h-4', 'w-4')} />
-                )}
-              </Button>
 
               {state === 'authenticated' && onTabChange && (
                 <Button

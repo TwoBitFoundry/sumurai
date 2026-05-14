@@ -1,6 +1,7 @@
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Moon, Sun } from 'lucide-react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { PasswordChecker } from '@/components/PasswordChecker';
+import { useTheme } from '@/context/ThemeContext';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { AuthService } from '@/services/authService';
 import { SettingsService } from '@/services/SettingsService';
@@ -15,6 +16,7 @@ interface SettingsPageProps {
 }
 
 export default function SettingsPage({ onLogout }: SettingsPageProps) {
+  const { mode, toggle } = useTheme();
   const postPasswordChangeLogoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -121,6 +123,26 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   return (
     <div className={cn('max-w-2xl', 'mx-auto')}>
       <div className={cn('flex', 'flex-col', 'gap-6')}>
+        <GlassCard variant="default" padding="lg">
+          <div className={cn('flex', 'items-center', 'justify-between', 'gap-4')}>
+            <div className={cn('space-y-2')}>
+              <h2 className={uiTypographyRecipes.sectionTitle}>Appearance</h2>
+              <p className={uiTypographyRecipes.body}>Theme</p>
+              <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
+                Switch between light and dark mode
+              </p>
+            </div>
+            <Button onClick={toggle} variant="secondary" size="xs" aria-label="Toggle theme">
+              {mode === 'dark' ? (
+                <Moon className={cn('h-4', 'w-4')} />
+              ) : (
+                <Sun className={cn('h-4', 'w-4')} />
+              )}
+              <span>{mode === 'dark' ? 'Dark' : 'Light'}</span>
+            </Button>
+          </div>
+        </GlassCard>
+
         <GlassCard variant="default" padding="lg">
           <div className={cn('space-y-5')}>
             <div className={cn('space-y-3')}>

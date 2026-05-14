@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
+import { DateRangePillSlider } from '@/features/analytics/components/DateRangePillSlider';
 import { Alert, cn } from '@/ui/primitives';
 import AccountsPage from '@/views/AccountsPage';
 import BudgetsPage from '@/views/BudgetsPage';
@@ -9,6 +10,7 @@ import TransactionsPage from '@/views/TransactionsPage';
 import { AppLayout } from '../layouts/AppLayout';
 import { GradientShell } from '../ui/primitives';
 import { text as uiTextRecipes } from '../ui/recipes';
+import type { DateRangeKey as DateRange } from '../utils/dateRanges';
 import { ErrorBoundary } from './ErrorBoundary';
 
 export type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
@@ -22,11 +24,22 @@ interface AuthenticatedAppProps {
 export function AuthenticatedApp({ onLogout, initialTab, isOnline }: AuthenticatedAppProps) {
   const [tab, setTab] = useState<TabKey>(initialTab ?? 'dashboard');
   const [error, setError] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange>('current-month');
+  const bottomBarContent =
+    tab === 'dashboard' ? (
+      <DateRangePillSlider dateRange={dateRange} onChange={setDateRange} />
+    ) : null;
 
   return (
     <ErrorBoundary>
       <GradientShell className={cn(uiTextRecipes.primary, 'transition-colors', 'duration-300')}>
-        <AppLayout currentTab={tab} onTabChange={setTab} onLogout={onLogout} isOnline={isOnline}>
+        <AppLayout
+          currentTab={tab}
+          onTabChange={setTab}
+          onLogout={onLogout}
+          isOnline={isOnline}
+          bottomBarContent={bottomBarContent}
+        >
           {error && (
             <Alert variant="error" title="Error" className={cn('mb-6')}>
               {error}
@@ -41,7 +54,9 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.28, ease: [0.25, 0.1, 0.25, 1] }}
             >
-              {tab === 'dashboard' && <DashboardPage />}
+              {tab === 'dashboard' && (
+                <DashboardPage dateRange={dateRange} setDateRange={setDateRange} />
+              )}
               {tab === 'transactions' && <TransactionsPage />}
               {tab === 'budgets' && <BudgetsPage />}
               {tab === 'accounts' && <AccountsPage onError={setError} />}

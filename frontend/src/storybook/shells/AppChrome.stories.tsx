@@ -1,24 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { LoginScreen } from '@/Auth';
-import { useTheme } from '@/context/ThemeContext';
 import { AppLayout } from '@/layouts/AppLayout';
 import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { AppFooter, AppTitleBar, cn, GradientShell } from '@/ui/primitives';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { text as uiTextRecipes } from '@/ui/recipes';
 
 function UnauthenticatedLoginShell() {
-  const { mode, toggle } = useTheme();
-
   return (
     <GradientShell className={cn(uiTextRecipes.primary)}>
       <div className={cn('flex', 'flex-col', 'min-h-screen')}>
-        <AppTitleBar
-          state="unauthenticated"
-          scrolled={false}
-          themeMode={mode}
-          isOnline
-          onThemeToggle={toggle}
-        />
+        <AppTitleBar state="unauthenticated" scrolled={false} isOnline />
         <main className={cn('flex-1', 'flex', 'items-center', 'justify-center')}>
           <LoginScreen onNavigateToRegister={() => {}} />
         </main>
@@ -30,29 +21,7 @@ function UnauthenticatedLoginShell() {
 
 function AuthenticatedDashboardShell() {
   return (
-    <AppLayout
-      currentTab="dashboard"
-      onTabChange={() => {}}
-      onLogout={() => {}}
-      isOnline
-      renderAccountFilter={() => (
-        <span
-          className={cn(
-            'rounded-full',
-            'border',
-            'border-slate-200',
-            'px-3',
-            'py-1',
-            uiTypographyRecipes.caption,
-            'font-medium',
-            'dark:border-slate-600',
-            uiTextRecipes.muted
-          )}
-        >
-          Filter
-        </span>
-      )}
-    >
+    <AppLayout currentTab="dashboard" onTabChange={() => {}} onLogout={() => {}} isOnline>
       <div className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white/50 p-8 dark:border-slate-700 dark:bg-slate-900/35">
         Authenticated tab surface placeholder
       </div>

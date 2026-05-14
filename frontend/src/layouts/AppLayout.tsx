@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/ui/primitives';
 import { HeaderAccountFilter } from '../components/HeaderAccountFilter';
-import { useTheme } from '../context/ThemeContext';
 import { useScrollDetection } from '../hooks/useScrollDetection';
 import { AppFooter, AppTitleBar } from '../ui/primitives';
 
@@ -14,7 +13,7 @@ interface AppLayoutProps {
   onLogout: () => void;
   isOnline: boolean;
   className?: string;
-  renderAccountFilter?: (scrolled: boolean) => ReactNode;
+  bottomBarContent?: ReactNode;
 }
 
 export function AppLayout({
@@ -24,10 +23,9 @@ export function AppLayout({
   onLogout,
   isOnline,
   className,
-  renderAccountFilter,
+  bottomBarContent,
 }: AppLayoutProps) {
   const scrolled = useScrollDetection();
-  const { mode, toggle } = useTheme();
 
   return (
     <div className={className}>
@@ -35,15 +33,10 @@ export function AppLayout({
         <AppTitleBar
           state="authenticated"
           scrolled={scrolled}
-          themeMode={mode}
           isOnline={isOnline}
-          onThemeToggle={toggle}
           onLogout={onLogout}
           currentTab={currentTab}
           onTabChange={onTabChange}
-          accountFilterNode={
-            renderAccountFilter ? renderAccountFilter(scrolled) : <HeaderAccountFilter />
-          }
         />
 
         <main
@@ -51,6 +44,11 @@ export function AppLayout({
         >
           {children}
         </main>
+
+        <div className={cn('fixed', 'bottom-5', 'left-4', 'z-50', 'flex', 'items-center', 'gap-2')}>
+          <HeaderAccountFilter triggerStyle="icon-only" />
+          {bottomBarContent}
+        </div>
 
         <AppFooter />
       </div>

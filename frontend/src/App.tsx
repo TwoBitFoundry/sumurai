@@ -7,7 +7,7 @@ import { LoginScreen, RegisterScreen } from './Auth';
 import { AuthenticatedApp, type TabKey } from './components/AuthenticatedApp';
 import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
 import { ProviderMismatchCheck } from './components/ProviderMismatchCheck';
-import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { AccountFilterProvider } from './hooks/useAccountFilter';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { TelemetryProvider, TelemetryService } from './observability';
@@ -47,7 +47,6 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   const [showProviderMismatch, setShowProviderMismatch] = useState(false);
   const [sessionExpiresAt, setSessionExpiresAt] = useState<string | null>(null);
 
-  const { mode, toggle } = useTheme();
   const isOnline = useOnlineStatus();
 
   useEffect(() => {
@@ -139,13 +138,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     return (
       <GradientShell className={uiTextRecipes.primary}>
         <div className={cn('flex', 'flex-col', 'min-h-screen')}>
-          <AppTitleBar
-            state="unauthenticated"
-            scrolled={false}
-            themeMode={mode}
-            isOnline={isOnline}
-            onThemeToggle={toggle}
-          />
+          <AppTitleBar state="unauthenticated" scrolled={false} isOnline={isOnline} />
           <main className={cn('flex-1', 'flex', 'items-center', 'justify-center')}>
             {authScreen === 'login' ? (
               <LoginScreen

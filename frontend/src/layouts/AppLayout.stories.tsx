@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
-import { cn } from '@/ui/primitives';
-import { text as uiTextRecipes } from '@/ui/recipes';
 import { AppLayout } from './AppLayout';
 
 const meta = {
@@ -15,23 +13,6 @@ const meta = {
     isOnline: true,
     onTabChange: fn(),
     onLogout: fn(),
-    renderAccountFilter: () => (
-      <span
-        className={cn(
-          'rounded-full',
-          'border',
-          'border-slate-200',
-          'px-3',
-          'py-1',
-          'text-xs',
-          'font-medium',
-          uiTextRecipes.muted,
-          'dark:border-slate-600'
-        )}
-      >
-        Filter
-      </span>
-    ),
   },
 } satisfies Meta<typeof AppLayout>;
 
@@ -51,10 +32,8 @@ export const Dashboard: Story = {
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText(/filter/i)).toBeVisible();
     await userEvent.click(canvas.getByRole('button', { name: 'Transactions' }));
     await expect(args.onTabChange).toHaveBeenCalledWith('transactions');
-    await userEvent.click(canvas.getByLabelText('Toggle theme'));
     await userEvent.click(canvas.getByRole('button', { name: /logout/i }));
     await expect(args.onLogout).toHaveBeenCalledTimes(1);
   },

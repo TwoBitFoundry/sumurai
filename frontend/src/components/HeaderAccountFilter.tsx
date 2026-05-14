@@ -14,11 +14,15 @@ import {
 
 const POPOVER_GAP_PX = 8;
 
-export function HeaderAccountFilter() {
+interface HeaderAccountFilterProps {
+  triggerStyle?: 'default' | 'icon-only';
+}
+
+export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [collapsedBanks, setCollapsedBanks] = useState<Set<string>>(new Set());
   const [mounted, setMounted] = useState(false);
-  const [popoverPosition, setPopoverPosition] = useState<{ top: number; right: number } | null>(
+  const [popoverPosition, setPopoverPosition] = useState<{ bottom: number; left: number } | null>(
     null
   );
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -110,11 +114,9 @@ export function HeaderAccountFilter() {
         return;
       }
       const triggerRect = trigger.getBoundingClientRect();
-      const header = trigger.closest('header');
-      const headerBottom = header ? header.getBoundingClientRect().bottom : triggerRect.bottom;
       setPopoverPosition({
-        top: headerBottom + POPOVER_GAP_PX,
-        right: Math.max(0, window.innerWidth - triggerRect.right),
+        bottom: window.innerHeight - triggerRect.top + POPOVER_GAP_PX,
+        left: triggerRect.left,
       });
     };
 
@@ -136,7 +138,7 @@ export function HeaderAccountFilter() {
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
         className={cn(
-          'rounded-xl',
+          triggerStyle === 'icon-only' ? 'rounded-full' : 'rounded-xl',
           'border',
           ...uiBorderRecipes.default,
           ...uiSurfaceRecipes.mutedChip,
@@ -147,25 +149,28 @@ export function HeaderAccountFilter() {
           'duration-200',
           'flex',
           'items-center',
-          'gap-2',
+          triggerStyle === 'icon-only' ? 'gap-0' : 'gap-2',
           uiTextRecipes.body,
           uiTypographyRecipes.captionStrong,
-          'px-3 py-1.5'
+          triggerStyle === 'icon-only' ? 'h-11 w-11 justify-center p-0' : 'px-3 py-1.5'
         )}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
+        aria-label={triggerStyle === 'icon-only' ? 'Filter accounts' : undefined}
       >
         <Building2 className={cn('h-4', 'w-4')} />
-        <span>{displayText}</span>
-        <ChevronDown
-          className={cn(
-            'h-4',
-            'w-4',
-            'transition-transform',
-            'duration-200',
-            isOpen && 'rotate-180'
-          )}
-        />
+        {triggerStyle === 'default' ? <span>{displayText}</span> : null}
+        {triggerStyle === 'default' ? (
+          <ChevronDown
+            className={cn(
+              'h-4',
+              'w-4',
+              'transition-transform',
+              'duration-200',
+              isOpen && 'rotate-180'
+            )}
+          />
+        ) : null}
       </button>
 
       {mounted &&
@@ -180,7 +185,7 @@ export function HeaderAccountFilter() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -6, scale: 0.96 }}
                 transition={{ duration: 0.18, ease: [0.22, 0.61, 0.36, 1] }}
-                style={{ top: popoverPosition.top, right: popoverPosition.right }}
+                style={{ bottom: popoverPosition.bottom, left: popoverPosition.left }}
                 className={cn(
                   'fixed',
                   'w-80',
@@ -196,7 +201,7 @@ export function HeaderAccountFilter() {
                   'backdrop-blur-md',
                   'backdrop-saturate-[150%]',
                   'z-50',
-                  'origin-top'
+                  'origin-bottom-left'
                 )}
               >
                 <div className={cn('p-4', 'border-b', ...uiBorderRecipes.divider)}>

@@ -18,8 +18,6 @@ describe('AppTitleBar', () => {
   const baseProps = {
     state: 'authenticated' as const,
     scrolled: false,
-    themeMode: 'light' as const,
-    onThemeToggle: jest.fn(),
     currentTab: 'dashboard' as const,
     onTabChange: jest.fn(),
   };
@@ -64,5 +62,11 @@ describe('AppTitleBar', () => {
       logoWidth: screen.getByAltText('Sumurai Logo').getAttribute('data-width'),
       logoHeight: screen.getByAltText('Sumurai Logo').getAttribute('data-height'),
     }).toEqual(initialState);
+  });
+
+  it('does not render the theme toggle in the title bar', () => {
+    render(<AppTitleBar {...baseProps} isOnline />);
+
+    expect(screen.queryByRole('button', { name: 'Toggle theme' })).not.toBeInTheDocument();
   });
 });
