@@ -33,6 +33,8 @@ export function DateRangePillSlider({
             onClick={() => onChange(option.key)}
             className={cn(
               ...appTitleBarRecipes.pillTab,
+              'h-full flex-1',
+              isActive ? buttonRecipes.tabActive : buttonRecipes.tab,
               isActive ? uiTextRecipes.inverse : uiTextRecipes.primary,
               uiTypographyRecipes.label
             )}
@@ -41,7 +43,7 @@ export function DateRangePillSlider({
             {isActive ? (
               <motion.div
                 layoutId="time-pill-active"
-                className={cn('absolute inset-0 rounded-full', ...buttonRecipes.tabActive)}
+                className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
                 transition={{ stiffness: 400, damping: 35 }}
               />
             ) : null}

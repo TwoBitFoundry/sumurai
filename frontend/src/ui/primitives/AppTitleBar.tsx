@@ -35,9 +35,10 @@ export const appTitleBarRecipes = {
   settingsIdle:
     'border border-[var(--color-border-divider)] dark:border-[var(--color-border-divider)] bg-[var(--color-surface-muted-chip)] dark:bg-[var(--color-surface-muted-chip)] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row)]',
   pillContainer: [
-    'flex items-center gap-1 rounded-full p-1',
-    ...semanticSurfaces.mutedChip,
-    ...semanticBorders.subtle,
+    'flex h-11 items-center gap-1 rounded-full border p-1 backdrop-blur-md backdrop-saturate-[150%]',
+    ...semanticSurfaces.glassPanel,
+    ...semanticBorders.glass,
+    ...semanticEffects.glassShadow,
   ],
   pillTab: ['relative flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5'],
 } as const;
