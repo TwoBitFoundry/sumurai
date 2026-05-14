@@ -85,11 +85,16 @@ describe('AppTitleBar', () => {
     expect(dashboardButton.querySelector('svg')).not.toBeNull();
     expect(transactionsButton.querySelector('svg')).not.toBeNull();
     expect(dashboardButton.className).toContain('relative');
+    expect(dashboardButton.className).toContain('h-full');
     expect(transactionsButton.className).toContain('relative');
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.queryByText('Transactions')).not.toBeInTheDocument();
+    expect(screen.queryByText('Budgets')).not.toBeInTheDocument();
+    expect(screen.queryByText('Accounts')).not.toBeInTheDocument();
 
     const activeLayer = dashboardButton.querySelector('[data-slot="active-pill"]');
     expect(activeLayer).not.toBeNull();
-    expect(activeLayer).toHaveClass(...buttonRecipes.tabActive);
+    expect(dashboardButton).toHaveClass(...buttonRecipes.tabActive);
     expect(transactionsButton.querySelector('[data-slot="active-pill"]')).toBeNull();
 
     expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();

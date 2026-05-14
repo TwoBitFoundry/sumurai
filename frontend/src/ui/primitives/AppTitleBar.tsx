@@ -30,7 +30,7 @@ export const appTitleBarRecipes = {
     ...semanticBorders.glass,
     ...semanticEffects.glassShadow,
   ],
-  pillTab: ['relative flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5'],
+  pillTab: ['relative flex h-full items-center justify-center gap-1.5 rounded-full px-3 py-1.5'],
 } as const;
 
 const titleBarVariants = cva([...appTitleBarRecipes.base], {
@@ -79,7 +79,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
       >
         <div className={cn('px-4', 'h-full')}>
           <div className={cn('flex', 'items-center', 'justify-between', 'h-full')}>
-            <div className={cn('flex', 'items-center', 'gap-6')}>
+            <div className={cn('flex', 'flex-1', 'items-center')}>
               <div
                 className={cn(
                   ...appTitleBarRecipes.logo.container,
@@ -96,15 +96,17 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                 />
                 <span className={uiTypographyRecipes.pageTitle}>Sumurai</span>
               </div>
+            </div>
 
-              {state === 'authenticated' && (
+            {state === 'authenticated' && (
+              <div className={cn('flex', 'flex-1', 'justify-center')}>
                 <nav className={cn(...appTitleBarRecipes.pillContainer)} aria-label="Primary">
                   {TABS.map(({ key, label, icon: Icon }) => (
                     <Button
                       key={key}
                       type="button"
                       onClick={() => onTabChange?.(key)}
-                      variant="tab"
+                      variant={currentTab === key ? 'tabActive' : 'tab'}
                       size="xs"
                       aria-label={label}
                       aria-current={currentTab === key ? 'page' : undefined}
@@ -117,22 +119,19 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                         <motion.div
                           layoutId="pill-active"
                           data-slot="active-pill"
-                          className={cn(
-                            'absolute inset-0 rounded-[length:inherit]',
-                            ...buttonRecipes.tabActive
-                          )}
+                          className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
                           transition={{ stiffness: 400, damping: 35 }}
                         />
                       ) : null}
                       <Icon className="relative z-10 h-4 w-4" />
-                      <span className="relative z-10">{label}</span>
+                      {currentTab === key ? <span className="relative z-10">{label}</span> : null}
                     </Button>
                   ))}
                 </nav>
-              )}
-            </div>
+              </div>
+            )}
 
-            <div className={cn('flex', 'items-center', 'gap-2')}>
+            <div className={cn('flex', 'flex-1', 'items-center', 'justify-end', 'gap-2')}>
               <div
                 className={cn(
                   'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1',
