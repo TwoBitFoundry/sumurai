@@ -233,7 +233,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                       <span
                         className={cn(
                           'relative z-10 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300',
-                          currentTab === key ? 'max-w-[5rem] opacity-100' : 'max-w-0 opacity-0'
+                          currentTab === key ? 'max-w-[8rem] opacity-100' : 'max-w-0 opacity-0'
                         )}
                       >
                         {label}

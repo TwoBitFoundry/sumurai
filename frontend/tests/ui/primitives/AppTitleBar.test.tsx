@@ -166,7 +166,7 @@ describe('AppTitleBar', () => {
 
       const activeButton = within(mobileNav).getByRole('button', { name: 'Dashboard' });
       const activeLabel = activeButton.querySelector('span.relative');
-      expect(activeLabel?.className).toContain('max-w-[5rem]');
+      expect(activeLabel?.className).toContain('max-w-[8rem]');
       expect(activeLabel?.className).toContain('opacity-100');
 
       const inactiveButton = within(mobileNav).getByRole('button', { name: 'Transactions' });
