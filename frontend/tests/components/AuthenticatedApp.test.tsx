@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { AuthenticatedApp } from '@/components/AuthenticatedApp';
 
@@ -55,5 +55,21 @@ describe('AuthenticatedApp', () => {
 
     expect(screen.getByTestId('bottom-bar')).toHaveTextContent('1M');
     expect(screen.getByText('current-month')).toBeInTheDocument();
+  });
+
+  it('handleTabChange updates currentTab on AppLayout in both directions', () => {
+    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
+
+    const { onTabChange } = appLayoutMock.mock.calls[0][0];
+
+    act(() => {
+      onTabChange('transactions');
+    });
+    expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('transactions');
+
+    act(() => {
+      onTabChange('dashboard');
+    });
+    expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('dashboard');
   });
 });

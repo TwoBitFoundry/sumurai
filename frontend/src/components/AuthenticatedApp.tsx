@@ -15,16 +15,32 @@ import { ErrorBoundary } from './ErrorBoundary';
 
 export type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
+const TAB_ORDER = ['dashboard', 'transactions', 'budgets', 'accounts'] as const;
+
 interface AuthenticatedAppProps {
   onLogout: () => void;
   initialTab?: TabKey;
   isOnline: boolean;
 }
 
+const pageVariants = {
+  enter: (dir: number) => ({ x: `${dir * 60}px`, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: `${dir * -60}px`, opacity: 0 }),
+};
+
 export function AuthenticatedApp({ onLogout, initialTab, isOnline }: AuthenticatedAppProps) {
   const [tab, setTab] = useState<TabKey>(initialTab ?? 'dashboard');
+  const [direction, setDirection] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>('current-month');
+
+  const handleTabChange = (next: TabKey) => {
+    const from = TAB_ORDER.indexOf(tab as (typeof TAB_ORDER)[number]);
+    const to = TAB_ORDER.indexOf(next as (typeof TAB_ORDER)[number]);
+    setDirection(to >= from || from === -1 ? 1 : -1);
+    setTab(next);
+  };
   const bottomBarContent =
     tab === 'dashboard' ? (
       <DateRangePillSlider dateRange={dateRange} onChange={setDateRange} />
@@ -35,7 +51,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
       <GradientShell className={cn(uiTextRecipes.primary, 'transition-colors', 'duration-300')}>
         <AppLayout
           currentTab={tab}
-          onTabChange={setTab}
+          onTabChange={handleTabChange}
           onLogout={onLogout}
           isOnline={isOnline}
           bottomBarContent={bottomBarContent}
@@ -46,12 +62,14 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
             </Alert>
           )}
 
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" custom={direction}>
             <motion.section
               key={tab}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
+              custom={direction}
+              variants={pageVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
               transition={{ duration: 0.28, ease: [0.25, 0.1, 0.25, 1] }}
             >
               {tab === 'dashboard' && (

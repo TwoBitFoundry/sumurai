@@ -1,9 +1,28 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { AppTitleBar } from '@/ui/primitives/AppTitleBar';
 import { buttonRecipes } from '@/ui/primitives/Button';
 import { status as uiStatusRecipes } from '@/ui/recipes';
+
+const panHandlers: Record<
+  string,
+  (e: unknown, info: { offset: { x: number; y: number } }) => void
+> = {};
+
+jest.mock('framer-motion', () => {
+  const R = require('react');
+  return {
+    motion: {
+      div: ({ onPanEnd, layoutId, transition, children, 'data-testid': testId, ...props }: any) => {
+        if (onPanEnd && testId) {
+          panHandlers[testId] = onPanEnd;
+        }
+        return R.createElement('div', { 'data-testid': testId, ...props }, children);
+      },
+    },
+  };
+});
 
 jest.mock('next/image', () => ({
   __esModule: true,
@@ -143,7 +162,7 @@ describe('AppTitleBar', () => {
       render(<AppTitleBar {...mobileProps} />);
       const mobileNav = screen.getByRole('navigation', { name: 'Mobile primary' });
       expect(mobileNav).toBeInTheDocument();
-      expect(mobileNav.parentElement?.className).toContain('md:hidden');
+      expect(mobileNav.parentElement?.parentElement?.className).toContain('md:hidden');
     });
 
     it('mobile nav active tab label is expanded, inactive labels are collapsed', () => {
@@ -176,6 +195,58 @@ describe('AppTitleBar', () => {
       const mobileLogout = logoutButtons.find((btn) => btn.className.includes('md:hidden'));
       expect(desktopLogout).toBeDefined();
       expect(mobileLogout).toBeDefined();
+    });
+
+    describe('swipe gestures', () => {
+      const onTabChange = jest.fn();
+
+      beforeEach(() => {
+        onTabChange.mockClear();
+      });
+
+      function swipe(offsetX: number) {
+        act(() => {
+          panHandlers['mobile-swipe-container']({}, { offset: { x: offsetX, y: 0 } });
+        });
+      }
+
+      it('swipe container is inside the md:hidden row', () => {
+        render(<AppTitleBar {...mobileProps} onTabChange={onTabChange} />);
+        const container = screen.getByTestId('mobile-swipe-container');
+        expect(container.parentElement?.className).toContain('md:hidden');
+      });
+
+      it('swipe left past threshold advances to the next tab', () => {
+        render(<AppTitleBar {...mobileProps} currentTab="dashboard" onTabChange={onTabChange} />);
+        swipe(-100);
+        expect(onTabChange).toHaveBeenCalledWith('transactions');
+      });
+
+      it('swipe right past threshold goes to the previous tab', () => {
+        render(
+          <AppTitleBar {...mobileProps} currentTab="transactions" onTabChange={onTabChange} />
+        );
+        swipe(100);
+        expect(onTabChange).toHaveBeenCalledWith('dashboard');
+      });
+
+      it('swipe left on the last tab does nothing', () => {
+        render(<AppTitleBar {...mobileProps} currentTab="accounts" onTabChange={onTabChange} />);
+        swipe(-100);
+        expect(onTabChange).not.toHaveBeenCalled();
+      });
+
+      it('swipe right on the first tab does nothing', () => {
+        render(<AppTitleBar {...mobileProps} currentTab="dashboard" onTabChange={onTabChange} />);
+        swipe(100);
+        expect(onTabChange).not.toHaveBeenCalled();
+      });
+
+      it('swipe below the 50px threshold does nothing', () => {
+        render(<AppTitleBar {...mobileProps} currentTab="dashboard" onTabChange={onTabChange} />);
+        swipe(-30);
+        expect(onTabChange).not.toHaveBeenCalled();
+      });
     });
   });
 });

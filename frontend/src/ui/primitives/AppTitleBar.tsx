@@ -231,41 +231,54 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
 
           {state === 'authenticated' && (
             <div className="md:hidden pb-2">
-              <nav className={cn(...appTitleBarRecipes.pillContainer)} aria-label="Mobile primary">
-                {TABS.map(({ key, label, icon: Icon }) => (
-                  <Button
-                    key={key}
-                    type="button"
-                    onClick={() => onTabChange?.(key)}
-                    variant={currentTab === key ? 'tabActive' : 'tab'}
-                    size="xs"
-                    aria-label={label}
-                    aria-current={currentTab === key ? 'page' : undefined}
-                    className={cn(
-                      ...appTitleBarRecipes.pillTab,
-                      currentTab === key ? semanticTextRecipes.inverse : semanticTextRecipes.muted
-                    )}
-                  >
-                    {currentTab === key ? (
-                      <motion.div
-                        layoutId="mobile-pill-active"
-                        data-slot="active-pill"
-                        className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
-                        transition={{ stiffness: 400, damping: 35 }}
-                      />
-                    ) : null}
-                    <Icon className="relative z-10 h-4 w-4" />
-                    <span
+              <motion.div
+                data-testid="mobile-swipe-container"
+                onPanEnd={(_, info) => {
+                  const idx = TABS.findIndex((t) => t.key === currentTab);
+                  if (info.offset.x < -50 && idx < TABS.length - 1)
+                    onTabChange?.(TABS[idx + 1].key);
+                  if (info.offset.x > 50 && idx > 0) onTabChange?.(TABS[idx - 1].key);
+                }}
+              >
+                <nav
+                  className={cn(...appTitleBarRecipes.pillContainer)}
+                  aria-label="Mobile primary"
+                >
+                  {TABS.map(({ key, label, icon: Icon }) => (
+                    <Button
+                      key={key}
+                      type="button"
+                      onClick={() => onTabChange?.(key)}
+                      variant={currentTab === key ? 'tabActive' : 'tab'}
+                      size="xs"
+                      aria-label={label}
+                      aria-current={currentTab === key ? 'page' : undefined}
                       className={cn(
-                        'relative z-10 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300',
-                        currentTab === key ? 'max-w-[5rem] opacity-100' : 'max-w-0 opacity-0'
+                        ...appTitleBarRecipes.pillTab,
+                        currentTab === key ? semanticTextRecipes.inverse : semanticTextRecipes.muted
                       )}
                     >
-                      {label}
-                    </span>
-                  </Button>
-                ))}
-              </nav>
+                      {currentTab === key ? (
+                        <motion.div
+                          layoutId="mobile-pill-active"
+                          data-slot="active-pill"
+                          className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
+                          transition={{ stiffness: 400, damping: 35 }}
+                        />
+                      ) : null}
+                      <Icon className="relative z-10 h-4 w-4" />
+                      <span
+                        className={cn(
+                          'relative z-10 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300',
+                          currentTab === key ? 'max-w-[5rem] opacity-100' : 'max-w-0 opacity-0'
+                        )}
+                      >
+                        {label}
+                      </span>
+                    </Button>
+                  ))}
+                </nav>
+              </motion.div>
             </div>
           )}
         </div>
