@@ -42,16 +42,12 @@ export function AppLayout({
           currentTab={currentTab}
           onTabChange={onTabChange}
           accountFilterNode={
-            renderAccountFilter ? (
-              renderAccountFilter(scrolled)
-            ) : (
-              <HeaderAccountFilter scrolled={scrolled} />
-            )
+            renderAccountFilter ? renderAccountFilter(scrolled) : <HeaderAccountFilter />
           }
         />
 
         <main
-          className={`flex-1 px-8 sm:px-12 lg:px-16 py-4 sm:py-6 lg:py-8 ${currentTab === 'dashboard' ? 'pb-28' : ''}`}
+          className={`flex-1 px-8 sm:px-12 lg:px-16 py-4 sm:py-6 lg:py-8 ${currentTab === 'dashboard' ? 'pb-16' : ''}`}
         >
           {children}
         </main>

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { AnalyticsService } from '../../../services/AnalyticsService';
 import type {
@@ -6,6 +7,7 @@ import type {
   AnalyticsMonthlyTotalsResponse,
   AnalyticsTopMerchantsResponse,
 } from '../../../types/api';
+import { accountIdsCacheKey } from '../../../utils/cacheKeys';
 import { computeDateRange, type DateRangeKey } from '../../../utils/dateRanges';
 
 export type UseAnalyticsResult = {
@@ -16,19 +18,19 @@ export type UseAnalyticsResult = {
   categories: AnalyticsCategoryResponse[];
   topMerchants: AnalyticsTopMerchantsResponse[];
   monthlyTotals: AnalyticsMonthlyTotalsResponse[];
+  cacheKey: string;
   start?: string;
   end?: string;
 };
 
-export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [spendingTotal, setSpendingTotal] = useState(0);
-  const [categories, setCategories] = useState<AnalyticsCategoryResponse[]>([]);
-  const [topMerchants, setTopMerchants] = useState<AnalyticsTopMerchantsResponse[]>([]);
-  const [monthlyTotals, setMonthlyTotals] = useState<AnalyticsMonthlyTotalsResponse[]>([]);
+type AnalyticsQueryData = {
+  spendingTotal: number;
+  categories: AnalyticsCategoryResponse[];
+  topMerchants: AnalyticsTopMerchantsResponse[];
+  monthlyTotals: AnalyticsMonthlyTotalsResponse[];
+};
 
+export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
   const {
     selectedAccountIds,
     isAllAccountsSelected,
@@ -36,79 +38,49 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
     loading: accountsLoading,
   } = useAccountFilter();
 
-  const abortRef = useRef<AbortController | null>(null);
-  const hasLoadedRef = useRef(false);
-
   const { start, end } = useMemo(() => computeDateRange(range), [range]);
+  const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
 
-  const load = useCallback(async () => {
-    abortRef.current?.abort();
-    if (accountsLoading) {
-      return;
-    }
-    const ac = new AbortController();
-    abortRef.current = ac;
-    const showBlockingState = !hasLoadedRef.current;
-    if (showBlockingState) {
-      setLoading(true);
-      setRefreshing(false);
-    } else {
-      setRefreshing(true);
-    }
-    setError(null);
-    try {
+  const query = useQuery<AnalyticsQueryData, Error>({
+    queryKey: ['analytics', range, cacheKey],
+    enabled: !accountsLoading,
+    queryFn: async () => {
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
-        setSpendingTotal(0);
-        setCategories([]);
-        setTopMerchants([]);
-        setMonthlyTotals([]);
-        hasLoadedRef.current = true;
-        return;
+        return {
+          spendingTotal: 0,
+          categories: [],
+          topMerchants: [],
+          monthlyTotals: [],
+        };
       }
 
       const accountIds =
         !isAllAccountsSelected && selectedAccountIds.length > 0 ? selectedAccountIds : undefined;
-      const [total, cats, merch, monthly] = await Promise.all([
+      const [total, categories, topMerchants, monthlyTotals] = await Promise.all([
         AnalyticsService.getSpendingTotal(start, end, accountIds),
         AnalyticsService.getCategorySpendingByDateRange(start, end, accountIds),
         AnalyticsService.getTopMerchantsByDateRange(start, end, accountIds),
         AnalyticsService.getMonthlyTotals(6, accountIds),
       ]);
-      if (ac.signal.aborted) return;
-      const totalNum = Number(total) || 0;
-      setSpendingTotal(totalNum);
-      setCategories(Array.isArray(cats) ? cats : []);
-      setTopMerchants(Array.isArray(merch) ? merch : []);
-      setMonthlyTotals(Array.isArray(monthly) ? monthly : []);
-      hasLoadedRef.current = true;
-    } catch (error: unknown) {
-      if (!ac.signal.aborted) {
-        const message = error instanceof Error ? error.message : 'Failed to load analytics';
-        setError(message);
-      }
-    } finally {
-      if (!ac.signal.aborted) {
-        if (showBlockingState) {
-          setLoading(false);
-        }
-        setRefreshing(false);
-      }
-    }
-  }, [start, end, isAllAccountsSelected, selectedAccountIds, allAccountIds, accountsLoading]);
 
-  useEffect(() => {
-    load();
-    return () => abortRef.current?.abort();
-  }, [load]);
+      return {
+        spendingTotal: Number(total) || 0,
+        categories: Array.isArray(categories) ? categories : [],
+        topMerchants: Array.isArray(topMerchants) ? topMerchants : [],
+        monthlyTotals: Array.isArray(monthlyTotals) ? monthlyTotals : [],
+      };
+    },
+  });
 
   return {
-    loading,
-    refreshing,
-    error,
-    spendingTotal,
-    categories,
-    topMerchants,
-    monthlyTotals,
+    loading: accountsLoading || query.isPending,
+    refreshing: query.isFetching && !query.isPending && !accountsLoading,
+    error: query.error?.message ?? null,
+    spendingTotal: query.data?.spendingTotal ?? 0,
+    categories: query.data?.categories ?? [],
+    topMerchants: query.data?.topMerchants ?? [],
+    monthlyTotals: query.data?.monthlyTotals ?? [],
+    cacheKey,
     start,
     end,
   };

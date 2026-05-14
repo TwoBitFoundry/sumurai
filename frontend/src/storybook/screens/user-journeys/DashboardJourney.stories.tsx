@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
-import { AccountFilterProvider } from '@/hooks/useAccountFilter';
+import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import DashboardPage from '@/views/DashboardPage';
 import { storyDashboardFixtures, storyProviderAccounts } from './shared';
 import { jsonResponse, route, StoryApiScope } from './storyApi';
@@ -32,11 +32,11 @@ const handlers = [
 
 function DashboardJourney() {
   return (
-    <StoryApiScope handlers={handlers}>
-      <AccountFilterProvider>
+    <AccountFilterStoryProvider>
+      <StoryApiScope handlers={handlers}>
         <DashboardPage />
-      </AccountFilterProvider>
-    </StoryApiScope>
+      </StoryApiScope>
+    </AccountFilterStoryProvider>
   );
 }
 

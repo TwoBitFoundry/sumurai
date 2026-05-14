@@ -1,7 +1,7 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { AccountFilterTestProvider } from '@tests/utils/AccountFilterTestProvider';
 import { useNetWorthSeries } from '@/features/analytics/hooks/useNetWorthSeries';
-import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
+import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { AnalyticsService } from '@/services/AnalyticsService';
 import { PlaidService } from '@/services/PlaidService';
 import { ProviderCatalog } from '@/services/ProviderCatalog';
@@ -26,9 +26,7 @@ jest.mock('@/services/ProviderCatalog', () => ({
   },
 }));
 
-const TestWrapper = ({ children }: { children: ReactNode }) => (
-  <AccountFilterProvider>{children}</AccountFilterProvider>
-);
+const TestWrapper = AccountFilterTestProvider;
 
 const mockPlaidAccounts = [
   {
@@ -102,6 +100,27 @@ describe('useNetWorthSeries', () => {
     expect(result.current.error).toBeNull();
   });
 
+  it('reuses cached net worth data on rerender with the same inputs', async () => {
+    const { result, rerender } = renderHook(
+      () => useNetWorthSeries('current-month' as DateRangeKey),
+      {
+        wrapper: TestWrapper,
+      }
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const initialCalls = jest.mocked(AnalyticsService.getNetWorthOverTime).mock.calls.length;
+
+    rerender();
+
+    expect(jest.mocked(AnalyticsService.getNetWorthOverTime).mock.calls.length).toBe(initialCalls);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.refreshing).toBe(false);
+  });
+
   it('loads after account filter finishes loading', async () => {
     const accountsDeferred = createDeferred<any[]>();
     jest.mocked(ProviderCatalog.getAccounts).mockReturnValueOnce(accountsDeferred.promise as any);
@@ -122,13 +141,13 @@ describe('useNetWorthSeries', () => {
       expect(result.current.filter.loading).toBe(true);
     });
 
-    jest.mocked(AnalyticsService.getNetWorthOverTime).mockClear();
+    const initialCalls = jest.mocked(AnalyticsService.getNetWorthOverTime).mock.calls.length;
 
     await act(async () => {
       await result.current.netWorth.reload();
     });
 
-    expect(AnalyticsService.getNetWorthOverTime).not.toHaveBeenCalled();
+    expect(jest.mocked(AnalyticsService.getNetWorthOverTime).mock.calls.length).toBe(initialCalls);
 
     await act(async () => {
       accountsDeferred.resolve(mockPlaidAccounts as any);
@@ -155,13 +174,26 @@ describe('useNetWorthSeries', () => {
       .mockReturnValueOnce(second.promise as any)
       .mockResolvedValue(finalSeries as any);
 
-    const { result, rerender } = renderHook(({ range }) => useNetWorthSeries(range), {
-      initialProps: { range: 'past-2-months' as DateRangeKey },
-      wrapper: TestWrapper,
+    let accountFilterHook: ReturnType<typeof useAccountFilter>;
+    const { result, rerender } = renderHook(
+      ({ range }) => {
+        accountFilterHook = useAccountFilter();
+        return useNetWorthSeries(range);
+      },
+      {
+        initialProps: { range: 'past-2-months' as DateRangeKey },
+        wrapper: TestWrapper,
+      }
+    );
+
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2']);
     });
 
     await waitFor(() => {
-      expect(result.current.loading).toBe(true);
+      expect(jest.mocked(AnalyticsService.getNetWorthOverTime).mock.calls.length).toBeGreaterThan(
+        0
+      );
     });
 
     rerender({ range: 'past-3-months' as DateRangeKey });
@@ -192,9 +224,24 @@ describe('useNetWorthSeries', () => {
     const error = Object.assign(new Error('boom'), { status: 500 });
     jest.mocked(AnalyticsService.getNetWorthOverTime).mockRejectedValue(error);
 
-    const { result } = renderHook(({ range }) => useNetWorthSeries(range), {
-      initialProps: { range: 'past-year' as DateRangeKey },
-      wrapper: TestWrapper,
+    let accountFilterHook: ReturnType<typeof useAccountFilter>;
+    const { result } = renderHook(
+      ({ range }) => {
+        accountFilterHook = useAccountFilter();
+        return useNetWorthSeries(range);
+      },
+      {
+        initialProps: { range: 'past-year' as DateRangeKey },
+        wrapper: TestWrapper,
+      }
+    );
+
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2']);
+    });
+
+    await waitFor(() => {
+      expect(accountFilterHook!.selectedAccountIds).toEqual(accountFilterHook!.allAccountIds);
     });
 
     await waitFor(() => {

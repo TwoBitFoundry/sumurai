@@ -1,7 +1,9 @@
+import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { TransactionService } from '../../../services/TransactionService';
 import type { PaginatedTransactionsResponse, Transaction } from '../../../types/api';
+import { accountIdsCacheKey } from '../../../utils/cacheKeys';
 
 export type DateRangeKey = string | undefined;
 
@@ -35,16 +37,10 @@ export interface UseTransactionsResult {
 export function useTransactions(options: UseTransactionsOptions = {}): UseTransactionsResult {
   const { initialSearch = '', initialCategory = null, initialDateRange, pageSize = 10 } = options;
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [totalItems, setTotalItems] = useState(0);
   const [search, setSearchState] = useState(initialSearch);
   const [selectedCategory, setSelectedCategoryState] = useState<string | null>(initialCategory);
   const [dateRange, setDateRangeState] = useState<DateRangeKey>(initialDateRange);
   const [currentPage, setCurrentPage] = useState(1);
-  const loadSequenceRef = useRef(0);
 
   const {
     selectedAccountIds,
@@ -78,89 +74,59 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     selectedCategory,
   ]);
 
-  const loadCategories = useCallback(async () => {
-    try {
-      const serverCategories = await TransactionService.getTransactionCategories();
-      setCategories(serverCategories);
-    } catch {
-      setCategories([]);
-    }
-  }, []);
+  const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
 
-  const loadTransactions = useCallback(
-    async (pageToLoad: number) => {
-      const requestSequence = ++loadSequenceRef.current;
-
-      if (accountsLoading) {
-        return;
-      }
-
+  const query = useQuery({
+    queryKey: [
+      'transactions',
+      'list',
+      dateRange ?? '',
+      cacheKey,
+      searchKey,
+      selectedCategory ?? '',
+      currentPage,
+      pageSize,
+    ],
+    queryFn: async (): Promise<PaginatedTransactionsResponse> => {
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
-        setTransactions([]);
-        setTotalItems(0);
-        setIsLoading(false);
-        setError(null);
-        return;
+        return { transactions: [], total: 0, page: 1, page_size: pageSize };
       }
 
-      setIsLoading(true);
-      setError(null);
+      const result = (await TransactionService.getTransactions({
+        page: currentPage,
+        page_size: pageSize,
+        search: searchKey || undefined,
+        categoryPrimary: selectedCategory ?? undefined,
+        accountIds: isAllAccountsSelected
+          ? undefined
+          : selectedAccountIds.length > 0
+            ? selectedAccountIds
+            : undefined,
+      })) as unknown as PaginatedTransactionsResponse;
+
+      return result;
+    },
+    enabled: !accountsLoading,
+    staleTime: 60 * 1000,
+    gcTime: 60 * 1000,
+  });
+
+  const categoriesQuery = useQuery({
+    queryKey: ['transactions', 'categories'],
+    queryFn: async (): Promise<string[]> => {
       try {
-        const result = (await TransactionService.getTransactions({
-          page: pageToLoad,
-          page_size: pageSize,
-          search: searchKey || undefined,
-          categoryPrimary: selectedCategory ?? undefined,
-          accountIds: isAllAccountsSelected
-            ? undefined
-            : selectedAccountIds.length > 0
-              ? selectedAccountIds
-              : undefined,
-        })) as unknown as PaginatedTransactionsResponse;
-
-        if (requestSequence !== loadSequenceRef.current) {
-          return;
-        }
-
-        setTransactions(result.transactions);
-        setTotalItems(result.total);
-        if (result.page !== currentPage) {
-          setCurrentPage(result.page);
-        }
-      } catch (error: unknown) {
-        if (requestSequence !== loadSequenceRef.current) {
-          return;
-        }
-
-        const status = getStatus(error);
-        const message =
-          status === 401
-            ? 'You are not authenticated. Please log in again.'
-            : 'Failed to load transactions.';
-        setError(message);
-        setTransactions([]);
-        setTotalItems(0);
-      } finally {
-        if (requestSequence === loadSequenceRef.current) {
-          setIsLoading(false);
-        }
+        const serverCategories = await TransactionService.getTransactionCategories();
+        return Array.isArray(serverCategories) ? serverCategories : [];
+      } catch {
+        return [];
       }
     },
-    [
-      accountsLoading,
-      allAccountIds.length,
-      currentPage,
-      isAllAccountsSelected,
-      pageSize,
-      searchKey,
-      selectedAccountIds,
-      selectedCategory,
-    ]
-  );
+    enabled: !accountsLoading,
+    staleTime: 60 * 1000,
+    gcTime: 60 * 1000,
+  });
 
-  useEffect(() => {
-    void loadCategories();
-  }, [loadCategories]);
+  const categories = categoriesQuery.data ?? [];
 
   useEffect(() => {
     if (accountsLoading) {
@@ -171,12 +137,34 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
       lastFilterKeyRef.current = filterKey;
       if (currentPage !== 1) {
         setCurrentPage(1);
-        return;
       }
     }
+  }, [accountsLoading, currentPage, filterKey]);
 
-    void loadTransactions(currentPage);
-  }, [accountsLoading, currentPage, filterKey, loadTransactions]);
+  const paginated = query.data;
+  const transactions = paginated?.transactions ?? [];
+  const totalItems = paginated?.total ?? 0;
+
+  useEffect(() => {
+    const serverPage = paginated?.page;
+    if (serverPage != null && serverPage !== currentPage) {
+      setCurrentPage(serverPage);
+    }
+  }, [paginated?.page, currentPage]);
+
+  const errorMessage = useMemo(() => {
+    const err = query.error;
+    if (!err) {
+      return null;
+    }
+    const status = getStatus(err);
+    return status === 401
+      ? 'You are not authenticated. Please log in again.'
+      : 'Failed to load transactions.';
+  }, [query.error]);
+
+  const isLoading =
+    !accountsLoading && query.fetchStatus === 'fetching' && query.data === undefined;
 
   const setSearch = useCallback((value: string) => {
     setSearchState(value);
@@ -198,7 +186,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
   return {
     isLoading,
     loading: isLoading,
-    error,
+    error: errorMessage,
     transactions,
     categories,
     search,

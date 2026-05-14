@@ -4,6 +4,7 @@ import Image from 'next/image';
 import React from 'react';
 import {
   border as semanticBorders,
+  effect as semanticEffects,
   status as semanticStatus,
   surface as semanticSurfaces,
   text as semanticTextRecipes,
@@ -13,20 +14,10 @@ import { Button } from './Button';
 import { cn } from './utils';
 
 export const appTitleBarRecipes = {
-  base: ['sticky top-0 z-50 border-b backdrop-blur-sm transition-all duration-200 ease-out'],
-  shell: [
-    ...semanticSurfaces.card,
-    ...semanticBorders.divider,
-    'dark:bg-[var(--color-surface-solid-panel)]',
-  ],
-  height: {
-    scrolled: 'h-14',
-    default: 'h-16',
-  },
+  base: ['sticky top-0 z-50 border-b backdrop-blur-md backdrop-saturate-[150%] h-16'],
+  shell: [...semanticSurfaces.card, ...semanticBorders.divider, ...semanticEffects.glassShadow],
   logo: {
     container: ['flex', 'items-center', 'gap-2', semanticTextRecipes.primary],
-    scrolled: 'text-xl',
-    default: 'text-3xl',
     wordmark: uiTypographyRecipes.pageTitle,
     fontFamily: { fontFamily: "'Cal Sans', system-ui, sans-serif" },
   },
@@ -54,14 +45,9 @@ const titleBarVariants = cva([...appTitleBarRecipes.base], {
       onboarding: [...appTitleBarRecipes.shell],
       authenticated: [...appTitleBarRecipes.shell],
     },
-    scrolled: {
-      true: appTitleBarRecipes.height.scrolled,
-      false: appTitleBarRecipes.height.default,
-    },
   },
   defaultVariants: {
     state: 'authenticated',
-    scrolled: false,
   },
 });
 
@@ -99,7 +85,7 @@ export interface AppTitleBarProps {
  *   onLogout={handleLogout}
  *   currentTab={currentTab}
  *   onTabChange={handleTabChange}
- *   accountFilterNode={<HeaderAccountFilter scrolled={scrolled} />}
+ *   accountFilterNode={<HeaderAccountFilter />}
  * />
  * ```
  */
@@ -107,7 +93,6 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
   (
     {
       state,
-      scrolled,
       themeMode,
       isOnline,
       onThemeToggle,
@@ -118,39 +103,27 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
     },
     ref
   ) => {
-    const chromeSize = scrolled ? 'xs' : 'titleBarExpanded';
-
     return (
       <header
         ref={ref}
         className={titleBarVariants({
           state,
-          scrolled,
         })}
       >
-        <div
-          className={cn(
-            'px-4',
-            `${scrolled ? 'h-14' : 'h-16'}`,
-            'transition-all',
-            'duration-200',
-            'ease-out'
-          )}
-        >
+        <div className={cn('px-4', 'h-full')}>
           <div className={cn('flex', 'items-center', 'justify-between', 'h-full')}>
             <div className={cn('flex', 'items-center', 'gap-6')}>
               <div
                 className={cn(
                   ...appTitleBarRecipes.logo.container,
-                  scrolled ? appTitleBarRecipes.logo.scrolled : appTitleBarRecipes.logo.default,
                   appTitleBarRecipes.logo.wordmark
                 )}
               >
                 <Image
                   src="/sumurai-logo.jpeg"
                   alt="Sumurai Logo"
-                  width={scrolled ? 32 : 40}
-                  height={scrolled ? 32 : 40}
+                  width={32}
+                  height={32}
                   className={cn('rounded-md')}
                   unoptimized
                 />
@@ -165,7 +138,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                       type="button"
                       onClick={() => onTabChange?.(key)}
                       variant={currentTab === key ? 'tabActive' : 'tab'}
-                      size={chromeSize}
+                      size="xs"
                       className={cn(
                         appTitleBarRecipes.tabHalo,
                         currentTab !== key ? appTitleBarRecipes.tabIdle : undefined
@@ -222,7 +195,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                 type="button"
                 onClick={onThemeToggle}
                 variant="secondary"
-                size={chromeSize}
+                size="xs"
                 className={cn(appTitleBarRecipes.themeToggle)}
                 aria-label="Toggle theme"
                 title="Toggle theme"
@@ -239,7 +212,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                   type="button"
                   onClick={() => onTabChange('settings')}
                   variant={currentTab === 'settings' ? 'tabActive' : 'ghost'}
-                  size={chromeSize}
+                  size="xs"
                   className={cn(
                     'rounded-xl',
                     currentTab !== 'settings' ? appTitleBarRecipes.settingsIdle : undefined
@@ -252,13 +225,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
               )}
 
               {(state === 'onboarding' || state === 'authenticated') && onLogout && (
-                <Button
-                  type="button"
-                  onClick={onLogout}
-                  variant="danger"
-                  size={chromeSize}
-                  title="Logout"
-                >
+                <Button type="button" onClick={onLogout} variant="danger" size="xs" title="Logout">
                   Logout
                 </Button>
               )}

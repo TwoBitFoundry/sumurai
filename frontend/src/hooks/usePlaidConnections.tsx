@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { AccountNormalizer, type BackendAccount } from '../domain/AccountNormalizer';
 import { PlaidService } from '../services/PlaidService';
 
@@ -102,20 +103,10 @@ export const usePlaidConnections = (
   options: { enabled?: boolean } = {}
 ): UsePlaidConnectionsReturn => {
   const enabled = options.enabled ?? true;
-  const [state, setState] = useState<PlaidConnectionsState>({
-    connections: [],
-    loading: false,
-    error: null,
-  });
-
-  const fetchConnections = useCallback(async (): Promise<PlaidConnection[]> => {
-    if (!enabled) {
-      setState((prev) => ({ ...prev, connections: [], loading: false, error: null }));
-      return [];
-    }
-    try {
-      setState((prev) => ({ ...prev, loading: true, error: null }));
-
+  const queryClient = useQueryClient();
+  const query = useQuery<PlaidConnection[], Error>({
+    queryKey: ['plaid', 'connections'],
+    queryFn: async () => {
       const [statusResult, accountsResult] = await Promise.allSettled([
         PlaidService.getStatus(),
         PlaidService.getAccounts(),
@@ -160,36 +151,13 @@ export const usePlaidConnections = (
             accounts: connectionAccounts,
           };
         });
-      const connections: PlaidConnection[] =
-        statusConnections.length > 0
-          ? statusConnections
-          : buildFallbackConnections(backendAccounts);
-
-      let effectiveConnections: PlaidConnection[] = [];
-      setState((prev) => {
-        effectiveConnections = connections.length > 0 ? connections : prev.connections;
-        return {
-          ...prev,
-          connections: effectiveConnections,
-          loading: false,
-          error: effectiveConnections.length > 0 ? null : 'Failed to load connections',
-        };
-      });
-      return effectiveConnections;
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load connections';
-      let effectiveConnections: PlaidConnection[] = [];
-      setState((prev) => {
-        effectiveConnections = prev.connections;
-        return {
-          ...prev,
-          loading: false,
-          error: prev.connections.length > 0 ? null : message,
-        };
-      });
-      return effectiveConnections;
-    }
-  }, [enabled]);
+      return statusConnections.length > 0
+        ? statusConnections
+        : buildFallbackConnections(backendAccounts);
+    },
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const addConnection = useCallback(
     async (institutionName: string, connectionId: string): Promise<void> => {
@@ -232,21 +200,22 @@ export const usePlaidConnections = (
         accounts: accounts,
       };
 
-      setState((prev) => ({
-        ...prev,
-        connections: [...prev.connections, newConnection],
-        error: null,
-      }));
+      queryClient.setQueryData<PlaidConnection[]>(['plaid', 'connections'], (current = []) => [
+        ...current,
+        newConnection,
+      ]);
     },
-    []
+    [queryClient]
   );
 
-  const removeConnection = useCallback((connectionId: string): void => {
-    setState((prev) => ({
-      ...prev,
-      connections: prev.connections.filter((conn) => conn.connectionId !== connectionId),
-    }));
-  }, []);
+  const removeConnection = useCallback(
+    (connectionId: string): void => {
+      queryClient.setQueryData<PlaidConnection[]>(['plaid', 'connections'], (current = []) =>
+        current.filter((conn) => conn.connectionId !== connectionId)
+      );
+    },
+    [queryClient]
+  );
 
   const updateConnectionSyncInfo = useCallback(
     (
@@ -255,9 +224,8 @@ export const usePlaidConnections = (
       accountCount: number,
       lastSyncAt: string
     ): void => {
-      setState((prev) => ({
-        ...prev,
-        connections: prev.connections.map((conn) =>
+      queryClient.setQueryData<PlaidConnection[]>(['plaid', 'connections'], (current = []) =>
+        current.map((conn) =>
           conn.connectionId === connectionId
             ? {
                 ...conn,
@@ -267,37 +235,39 @@ export const usePlaidConnections = (
                 syncInProgress: false,
               }
             : conn
-        ),
-      }));
+        )
+      );
     },
-    []
+    [queryClient]
   );
 
   const setConnectionSyncInProgress = useCallback(
     (connectionId: string, inProgress: boolean): void => {
-      setState((prev) => ({
-        ...prev,
-        connections: prev.connections.map((conn) =>
+      queryClient.setQueryData<PlaidConnection[]>(['plaid', 'connections'], (current = []) =>
+        current.map((conn) =>
           conn.connectionId === connectionId ? { ...conn, syncInProgress: inProgress } : conn
-        ),
-      }));
+        )
+      );
     },
-    []
+    [queryClient]
   );
 
   const refresh = useCallback(async (): Promise<PlaidConnection[]> => {
-    return await fetchConnections();
-  }, [fetchConnections]);
+    const result = await query.refetch();
+    return result.data ?? [];
+  }, [query]);
 
   const getConnection = useCallback(
     (connectionId: string): PlaidConnection | undefined => {
-      return state.connections.find((conn) => conn.connectionId === connectionId);
+      return (query.data ?? []).find((conn) => conn.connectionId === connectionId);
     },
-    [state.connections]
+    [query.data]
   );
 
   return {
-    ...state,
+    connections: query.data ?? [],
+    loading: enabled ? query.isPending : false,
+    error: query.error?.message ?? null,
     addConnection,
     removeConnection,
     updateConnectionSyncInfo,

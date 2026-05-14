@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useMemo, useState } from 'react';
 import { ApiClient } from '../services/ApiClient';
 import type { FinancialProvider } from '../types/api';
 import type { TellerEnvironment } from './useTellerConnect';
@@ -52,9 +53,14 @@ export function useTellerProviderInfo(
   options: UseTellerProviderInfoOptions = {}
 ): TellerProviderInfoState {
   const gateway = options.gateway ?? apiGateway;
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [catalogue, setCatalogue] = useState<TellerProviderCatalogue | null>(null);
+  const queryClient = useQueryClient();
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const query = useQuery<TellerProviderCatalogue, Error>({
+    queryKey: ['teller', 'provider-info'],
+    queryFn: () => gateway.fetchInfo(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const catalogue = query.data ?? null;
 
   const selectedProvider = useMemo<FinancialProvider | null>(() => {
     if (!catalogue) {
@@ -63,25 +69,12 @@ export function useTellerProviderInfo(
     return catalogue.user_provider ?? catalogue.default_provider ?? null;
   }, [catalogue]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const info = await gateway.fetchInfo();
-      setCatalogue(info);
-    } catch (err) {
-      console.warn('Failed to fetch provider information', err);
-      setError('Unable to load provider information');
-    } finally {
-      setLoading(false);
-    }
-  }, [gateway]);
-
   const chooseProvider = useCallback(
     async (provider: FinancialProvider) => {
       try {
         const result = await gateway.selectProvider(provider);
-        setCatalogue((prev) => {
+        setMutationError(null);
+        queryClient.setQueryData<TellerProviderCatalogue>(['teller', 'provider-info'], (prev) => {
           if (!prev) {
             return {
               available_providers: [result.user_provider],
@@ -96,31 +89,33 @@ export function useTellerProviderInfo(
         });
       } catch (err) {
         console.warn('Failed to select provider', err);
-        setError('Unable to select provider right now');
+        setMutationError('Unable to select provider right now');
         throw err;
       }
     },
-    [gateway]
+    [gateway, queryClient]
   );
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   const environment = catalogue?.teller_environment;
   const tellerEnvironment: TellerEnvironment =
     environment === 'sandbox' || environment === 'production' ? environment : 'development';
+  const refresh = useCallback(async () => {
+    const result = await query.refetch();
+    if (result.error) {
+      throw result.error;
+    }
+  }, [query]);
 
   return {
-    loading,
-    error,
+    loading: query.isPending,
+    error: mutationError ?? query.error?.message ?? null,
     availableProviders: catalogue?.available_providers ?? emptyProviders,
     selectedProvider,
     defaultProvider: catalogue?.default_provider ?? null,
     userProvider: catalogue?.user_provider ?? null,
     tellerApplicationId: catalogue?.teller_application_id ?? null,
     tellerEnvironment,
-    refresh: load,
+    refresh,
     chooseProvider,
   };
 }

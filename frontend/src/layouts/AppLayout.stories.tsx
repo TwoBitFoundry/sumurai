@@ -29,7 +29,7 @@ const meta = {
           'dark:border-slate-600'
         )}
       >
-        All accounts
+        Filter
       </span>
     ),
   },
@@ -51,7 +51,7 @@ export const Dashboard: Story = {
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText(/all accounts/i)).toBeVisible();
+    await expect(canvas.getByText(/filter/i)).toBeVisible();
     await userEvent.click(canvas.getByRole('button', { name: 'Transactions' }));
     await expect(args.onTabChange).toHaveBeenCalledWith('transactions');
     await userEvent.click(canvas.getByLabelText('Toggle theme'));

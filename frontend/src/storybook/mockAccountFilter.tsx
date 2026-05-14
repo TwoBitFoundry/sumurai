@@ -6,11 +6,34 @@ import {
 } from '@/context/AccountFilterContext';
 import type { Account } from '@/types/api';
 
+function parseBalance(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    const isNegativeParenthetical = trimmed.startsWith('(') && trimmed.endsWith(')');
+    const normalized = trimmed.replace(/[^0-9.-]/g, '');
+    if (!normalized) {
+      return null;
+    }
+    const parsed = Number(normalized);
+    if (!Number.isFinite(parsed)) {
+      return null;
+    }
+    return isNegativeParenthetical ? -parsed : parsed;
+  }
+
+  return null;
+}
+
 export function accountToProviderAccount(account: Account): ProviderAccount {
   return {
     id: account.id,
     name: account.name,
     account_type: account.account_type,
+    balance_current: parseBalance(account.balance_current ?? null),
     balance_ledger: account.balance_ledger,
     balance_available: account.balance_available ?? null,
     mask: account.mask,

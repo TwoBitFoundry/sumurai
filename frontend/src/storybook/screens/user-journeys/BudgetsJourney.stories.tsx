@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
-import { AccountFilterProvider } from '@/hooks/useAccountFilter';
+import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import BudgetsPage from '@/views/BudgetsPage';
 import {
   getPagedStoryTransactions,
@@ -22,26 +22,35 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+let storyBudgets = storyBudgetRecords.map((budget) => ({ ...budget }));
+
 const handlers = [
   route('GET', '/providers/accounts', () => jsonResponse(storyProviderAccounts)),
-  route('GET', '/budgets', () => jsonResponse(storyBudgetRecords)),
+  route('GET', '/budgets', () => jsonResponse(storyBudgets)),
   route('POST', '/budgets', ({ body }) => {
     const payload = body as { category?: string; amount?: string };
-    return jsonResponse({
+    const created = {
       id: `story-budget-${storyBudgetRecords.length + 1}`,
       category: payload.category ?? 'other',
-      amount: payload.amount ?? '0',
-    });
+      amount: Number(payload.amount ?? '0'),
+    };
+    storyBudgets = [...storyBudgets, created];
+    return jsonResponse(created);
   }),
   route('PUT', '/budgets/story-budget-1', ({ body }) => {
     const payload = body as { amount?: string };
-    return jsonResponse({
+    const updated = {
       id: 'story-budget-1',
       category: 'food_and_drink',
-      amount: payload.amount ?? '0',
-    });
+      amount: Number(payload.amount ?? '0'),
+    };
+    storyBudgets = storyBudgets.map((budget) => (budget.id === updated.id ? updated : budget));
+    return jsonResponse(updated);
   }),
-  route('DELETE', '/budgets/story-budget-1', () => jsonResponse({}, { status: 204 })),
+  route('DELETE', '/budgets/story-budget-1', () => {
+    storyBudgets = storyBudgets.filter((budget) => budget.id !== 'story-budget-1');
+    return jsonResponse({}, { status: 204 });
+  }),
   route('GET', '/transactions/categories', () => jsonResponse(storyTransactionCategories)),
   route('GET', '/transactions', (request) =>
     jsonResponse(
@@ -56,12 +65,13 @@ const handlers = [
 ];
 
 function BudgetsJourney() {
+  storyBudgets = storyBudgetRecords.map((budget) => ({ ...budget }));
   return (
-    <StoryApiScope handlers={handlers}>
-      <AccountFilterProvider>
+    <AccountFilterStoryProvider>
+      <StoryApiScope handlers={handlers}>
         <BudgetsPage />
-      </AccountFilterProvider>
-    </StoryApiScope>
+      </StoryApiScope>
+    </AccountFilterStoryProvider>
   );
 }
 

@@ -1,7 +1,8 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
+import { AccountFilterTestProvider } from '@tests/utils/AccountFilterTestProvider';
 import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures';
-import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
+import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { ACCOUNTS_CHANGED_EVENT } from '@/utils/events';
 
 describe('AccountFilterProvider', () => {
@@ -76,7 +77,7 @@ describe('AccountFilterProvider', () => {
     describe('When no custom selection is made', () => {
       it('Then it should default to all accounts selected', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
-          <AccountFilterProvider>{children}</AccountFilterProvider>
+          <AccountFilterTestProvider>{children}</AccountFilterTestProvider>
         );
 
         const { result } = renderHook(() => useAccountFilter(), { wrapper });
@@ -88,12 +89,41 @@ describe('AccountFilterProvider', () => {
         expect(result.current.isAllAccountsSelected).toBe(true);
         expect(result.current.selectedAccountIds.sort()).toEqual(['acc_1', 'acc_2', 'acc_3']);
       });
+
+      it('Then it should fetch the accounts endpoint only once on mount', async () => {
+        const pendingResponse = new Promise<Response>(() => {});
+        fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+          const url = typeof input === 'string' ? input : input.toString();
+          if (url.includes('/api/providers/accounts')) {
+            return pendingResponse;
+          }
+
+          return new Response(JSON.stringify({}), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        });
+
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
+          <AccountFilterTestProvider>{children}</AccountFilterTestProvider>
+        );
+
+        renderHook(() => useAccountFilter(), { wrapper });
+
+        await waitFor(() => {
+          expect(
+            fetchMock.mock.calls.filter((call) =>
+              String(call[0]).includes('/api/providers/accounts')
+            ).length
+          ).toBe(1);
+        });
+      });
     });
 
     describe('When checking current selection state', () => {
       it('Then it should expose current selection state', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
-          <AccountFilterProvider>{children}</AccountFilterProvider>
+          <AccountFilterTestProvider>{children}</AccountFilterTestProvider>
         );
 
         const { result } = renderHook(() => useAccountFilter(), { wrapper });
@@ -112,7 +142,7 @@ describe('AccountFilterProvider', () => {
     describe('When account metadata is available', () => {
       it('Then it should expose grouped account metadata by bank', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
-          <AccountFilterProvider>{children}</AccountFilterProvider>
+          <AccountFilterTestProvider>{children}</AccountFilterTestProvider>
         );
 
         const { result } = renderHook(() => useAccountFilter(), { wrapper });
@@ -128,7 +158,7 @@ describe('AccountFilterProvider', () => {
 
       it('Then it should map transaction_count from unified providers accounts (Plaid route)', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
-          <AccountFilterProvider>{children}</AccountFilterProvider>
+          <AccountFilterTestProvider>{children}</AccountFilterTestProvider>
         );
 
         const { result } = renderHook(() => useAccountFilter(), { wrapper });
@@ -145,9 +175,25 @@ describe('AccountFilterProvider', () => {
         );
       });
 
+      it('Then it should map balance_current from unified providers accounts', async () => {
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
+          <AccountFilterTestProvider>{children}</AccountFilterTestProvider>
+        );
+
+        const { result } = renderHook(() => useAccountFilter(), { wrapper });
+
+        await waitFor(() => {
+          expect(result.current.accountsByBank['First Platypus Bank']).toHaveLength(2);
+        });
+
+        const firstBank = result.current.accountsByBank['First Platypus Bank'];
+        expect(firstBank?.[0]?.balance_current).toBe(1250.5);
+        expect(firstBank?.[1]?.balance_current).toBe(5000);
+      });
+
       it('Then it should support toggle bank action', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
-          <AccountFilterProvider>{children}</AccountFilterProvider>
+          <AccountFilterTestProvider>{children}</AccountFilterTestProvider>
         );
 
         const { result } = renderHook(() => useAccountFilter(), { wrapper });
@@ -180,7 +226,7 @@ describe('AccountFilterProvider', () => {
 
       it('Then it should support toggle individual account action', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
-          <AccountFilterProvider>{children}</AccountFilterProvider>
+          <AccountFilterTestProvider>{children}</AccountFilterTestProvider>
         );
 
         const { result } = renderHook(() => useAccountFilter(), { wrapper });
@@ -206,7 +252,7 @@ describe('AccountFilterProvider', () => {
 
       it('Then it should keep the last loaded accounts when refresh fails', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
-          <AccountFilterProvider>{children}</AccountFilterProvider>
+          <AccountFilterTestProvider>{children}</AccountFilterTestProvider>
         );
 
         const { result } = renderHook(() => useAccountFilter(), { wrapper });
@@ -227,6 +273,10 @@ describe('AccountFilterProvider', () => {
           expect(result.current.allAccountIds).toHaveLength(3);
         });
         expect(result.current.selectedAccountIds.sort()).toEqual(['acc_1', 'acc_2', 'acc_3']);
+        expect(
+          fetchMock.mock.calls.filter((call) => String(call[0]).includes('/api/providers/accounts'))
+            .length
+        ).toBe(2);
       });
     });
   });

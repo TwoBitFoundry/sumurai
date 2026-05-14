@@ -1,4 +1,6 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { AccountFilterTestProvider } from '@tests/utils/AccountFilterTestProvider';
 import type { ReactNode } from 'react';
 import { useTransactions } from '@/features/transactions/hooks/useTransactions';
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
@@ -58,9 +60,7 @@ const mockPlaidAccounts = [
   },
 ];
 
-const TestWrapper = ({ children }: { children: ReactNode }) => (
-  <AccountFilterProvider>{children}</AccountFilterProvider>
-);
+const TestWrapper = AccountFilterTestProvider;
 
 function createDeferred<T>() {
   let resolve!: (value: T) => void;
@@ -87,6 +87,105 @@ describe('useTransactions', () => {
       institution_name: 'First Platypus Bank',
       connection_id: 'conn_1',
     } as any);
+  });
+
+  it('remounting serves cached transactions immediately without extra getTransactions while fresh', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 5 * 60 * 1000,
+          gcTime: 10 * 60 * 1000,
+          retry: false,
+          refetchOnWindowFocus: false,
+        },
+      },
+    });
+
+    function RemountWrapper({ children }: { children: ReactNode }) {
+      return (
+        <QueryClientProvider client={queryClient}>
+          <AccountFilterProvider>{children}</AccountFilterProvider>
+        </QueryClientProvider>
+      );
+    }
+
+    jest.mocked(TransactionService.getTransactions).mockImplementation(
+      async () =>
+        ({
+          transactions: [asTransaction('t1'), asTransaction('t2')],
+          total: 4,
+          page: 1,
+          page_size: 10,
+        }) as any
+    );
+    jest
+      .mocked(TransactionService.getTransactionCategories)
+      .mockResolvedValue(['FOOD_AND_DRINK', 'TRANSPORTATION']);
+
+    const { result, unmount } = renderHook(() => useTransactions({ pageSize: 10 }), {
+      wrapper: RemountWrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.transactions).toHaveLength(2);
+    });
+    await waitFor(() => {
+      expect(result.current.categories).toEqual(['FOOD_AND_DRINK', 'TRANSPORTATION']);
+    });
+
+    const callCount = jest.mocked(TransactionService.getTransactions).mock.calls.length;
+    const categoriesCallCount = jest.mocked(TransactionService.getTransactionCategories).mock.calls
+      .length;
+    const txIds = result.current.transactions.map((t) => t.id);
+
+    unmount();
+
+    const { result: next } = renderHook(() => useTransactions({ pageSize: 10 }), {
+      wrapper: RemountWrapper,
+    });
+
+    await waitFor(() => {
+      expect(next.current.isLoading).toBe(false);
+      expect(next.current.transactions.map((t) => t.id)).toEqual(txIds);
+      expect(next.current.categories).toEqual(['FOOD_AND_DRINK', 'TRANSPORTATION']);
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(jest.mocked(TransactionService.getTransactions).mock.calls.length).toBe(callCount);
+      expect(jest.mocked(TransactionService.getTransactionCategories).mock.calls.length).toBe(
+        categoriesCallCount
+      );
+    });
+  });
+
+  it('maps a failed getTransactions to a user-facing error', async () => {
+    jest.mocked(TransactionService.getTransactions).mockRejectedValue(new Error('network'));
+
+    const { result } = renderHook(() => useTransactions({ pageSize: 10 }), {
+      wrapper: TestWrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.error).toBe('Failed to load transactions.');
+    });
+    expect(result.current.transactions).toEqual([]);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('maps 401 from getTransactions to an auth message', async () => {
+    jest.mocked(TransactionService.getTransactions).mockRejectedValue({ status: 401 });
+
+    const { result } = renderHook(() => useTransactions({ pageSize: 10 }), {
+      wrapper: TestWrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.error).toBe('You are not authenticated. Please log in again.');
+    });
   });
 
   it('loads categories and the first server page on mount', async () => {

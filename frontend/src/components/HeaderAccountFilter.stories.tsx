@@ -41,15 +41,12 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const AllAccounts: Story = {
+export const Filter: Story = {
   parameters: {
     mockAccountFilter: buildMockAccountFilterContext({
       accountsByBank: storyBank,
       selectedAccountIds: providerAccounts.map((a) => a.id),
     }),
-  },
-  args: {
-    scrolled: false,
   },
 };
 
@@ -61,9 +58,6 @@ export const PartialSelection: Story = {
       isAllAccountsSelected: false,
     }),
   },
-  args: {
-    scrolled: false,
-  },
 };
 
 export const LoadingNoAccounts: Story = {
@@ -74,20 +68,5 @@ export const LoadingNoAccounts: Story = {
       selectedAccountIds: [],
       loading: true,
     }),
-  },
-  args: {
-    scrolled: false,
-  },
-};
-
-export const ScrolledCompact: Story = {
-  parameters: {
-    mockAccountFilter: buildMockAccountFilterContext({
-      accountsByBank: storyBank,
-      selectedAccountIds: providerAccounts.map((a) => a.id),
-    }),
-  },
-  args: {
-    scrolled: true,
   },
 };

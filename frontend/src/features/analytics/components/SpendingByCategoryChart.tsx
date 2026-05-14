@@ -16,6 +16,7 @@ type Props = {
   total: number;
   hoveredCategory: string | null;
   setHoveredCategory: (name: string | null) => void;
+  animated?: boolean;
 };
 
 type TooltipItem = { payload?: DonutDatum };
@@ -34,6 +35,7 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
   total,
   hoveredCategory,
   setHoveredCategory,
+  animated = true,
 }) => {
   const { mode } = useTheme();
   const colors = getThemeColors(mode);
@@ -63,9 +65,9 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
                 stroke="none"
                 paddingAngle={1}
                 nameKey="name"
-                isAnimationActive={true}
+                isAnimationActive={animated}
                 animationBegin={0}
-                animationDuration={800}
+                animationDuration={animated ? 800 : 0}
               >
                 {data.map((cat, index) => {
                   const palette = chart.series[mode];

@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, renderHook, waitFor } from '@testing-library/react';
 import React from 'react';
 import { resetPlaidScriptStateForTests } from '@/features/plaid/plaidLinkScript';
@@ -22,7 +23,13 @@ function OnboardingPlaidMount({
 
 function renderOnboardingPlaidMounted(options?: Parameters<typeof useOnboardingPlaidFlow>[0]) {
   onboardingPlaidFlowRef.current = null;
-  return render(React.createElement(OnboardingPlaidMount, { options }));
+  return render(
+    React.createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      React.createElement(OnboardingPlaidMount, { options })
+    )
+  );
 }
 
 const plaidOpen = jest.fn();
@@ -30,6 +37,21 @@ const plaidDestroy = jest.fn();
 
 let postSpy: jest.SpiedFunction<typeof ApiClient.post>;
 let getSpy: jest.SpiedFunction<typeof ApiClient.get>;
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+const wrapper = ({ children }: { children: React.ReactNode }) =>
+  React.createElement(QueryClientProvider, { client: queryClient }, children);
+
 describe('useOnboardingPlaidFlow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -58,7 +80,7 @@ describe('useOnboardingPlaidFlow', () => {
   });
 
   it('given onboarding flow when initialized then starts with disconnected state', () => {
-    const { result } = renderHook(() => useOnboardingPlaidFlow());
+    const { result } = renderHook(() => useOnboardingPlaidFlow(), { wrapper });
 
     expect(result.current.isConnected).toBe(false);
     expect(result.current.connectionInProgress).toBe(false);
@@ -66,7 +88,7 @@ describe('useOnboardingPlaidFlow', () => {
   });
 
   it('given onboarding flow when mounted then does not fetch link token', async () => {
-    renderHook(() => useOnboardingPlaidFlow());
+    renderHook(() => useOnboardingPlaidFlow(), { wrapper });
 
     await act(async () => {
       await Promise.resolve();
@@ -76,7 +98,7 @@ describe('useOnboardingPlaidFlow', () => {
   });
 
   it('given offline when connect initiated then does not fetch link token', async () => {
-    const { result } = renderHook(() => useOnboardingPlaidFlow({ isOnline: false }));
+    const { result } = renderHook(() => useOnboardingPlaidFlow({ isOnline: false }), { wrapper });
 
     await act(async () => {
       await result.current.initiateConnection();
@@ -115,7 +137,9 @@ describe('useOnboardingPlaidFlow', () => {
     });
     postSpy.mockResolvedValueOnce({ transactions: [], metadata: {} } as any);
 
-    const { result } = renderHook(() => useOnboardingPlaidFlow({ onConnectionSuccess }));
+    const { result } = renderHook(() => useOnboardingPlaidFlow({ onConnectionSuccess }), {
+      wrapper,
+    });
 
     await act(async () => {
       await result.current.handlePlaidSuccess('test-public-token');
@@ -137,7 +161,9 @@ describe('useOnboardingPlaidFlow', () => {
 
     const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const { result } = renderHook(() => useOnboardingPlaidFlow({ onConnectionSuccess }));
+    const { result } = renderHook(() => useOnboardingPlaidFlow({ onConnectionSuccess }), {
+      wrapper,
+    });
 
     await act(async () => {
       await result.current.handlePlaidSuccess('test-public-token');
@@ -155,7 +181,7 @@ describe('useOnboardingPlaidFlow', () => {
     const mockError = new Error('Connection failed');
     postSpy.mockRejectedValue(mockError);
 
-    const { result } = renderHook(() => useOnboardingPlaidFlow({ onError }));
+    const { result } = renderHook(() => useOnboardingPlaidFlow({ onError }), { wrapper });
 
     await act(async () => {
       await result.current.handlePlaidSuccess('test-public-token');
@@ -228,7 +254,7 @@ describe('useOnboardingPlaidFlow', () => {
   });
 
   it('given onboarding flow when reset then returns to initial state', () => {
-    const { result } = renderHook(() => useOnboardingPlaidFlow());
+    const { result } = renderHook(() => useOnboardingPlaidFlow(), { wrapper });
 
     act(() => {
       result.current.setError('Test error');

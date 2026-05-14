@@ -49,7 +49,7 @@ function AuthenticatedDashboardShell() {
             uiTextRecipes.muted
           )}
         >
-          All accounts
+          Filter
         </span>
       )}
     >

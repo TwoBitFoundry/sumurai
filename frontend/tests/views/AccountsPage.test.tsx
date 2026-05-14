@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, within } from '@testing-library/react';
 import type { UsePlaidLinkFlowResult } from '@/features/plaid/hooks/usePlaidLinkFlow';
 import { usePlaidLinkFlow } from '@/features/plaid/hooks/usePlaidLinkFlow';
@@ -7,6 +8,24 @@ import type { PlaidConnection } from '@/hooks/usePlaidConnections';
 import { type UseTellerLinkFlowResult, useTellerLinkFlow } from '@/hooks/useTellerLinkFlow';
 import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo';
 import AccountsPage from '@/views/AccountsPage';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000,
+    },
+  },
+});
+
+function renderAccountsPage() {
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <AccountsPage />
+    </QueryClientProvider>
+  );
+}
 
 function makePlaidLinkFlowMock(
   overrides: Partial<UsePlaidLinkFlowResult> = {}
@@ -114,7 +133,7 @@ describe('AccountsPage', () => {
   });
 
   it('keeps the Teller accounts page available while offline', () => {
-    render(<AccountsPage />);
+    renderAccountsPage();
 
     expect(screen.getByTestId('accounts-page')).toBeInTheDocument();
     expect(screen.getByText('Link banks and keep balances current')).toBeVisible();
@@ -155,7 +174,7 @@ describe('AccountsPage', () => {
       })
     );
 
-    render(<AccountsPage />);
+    renderAccountsPage();
 
     const heroSection = screen.getByRole('heading', { name: /link banks/i }).closest('section');
     expect(heroSection).toBeTruthy();
@@ -184,7 +203,7 @@ describe('AccountsPage', () => {
       })
     );
 
-    render(<AccountsPage />);
+    renderAccountsPage();
 
     expect(screen.queryByTestId('accounts-flow-error')).not.toBeInTheDocument();
   });
@@ -230,8 +249,56 @@ describe('AccountsPage', () => {
       removeAccountsByIds: jest.fn(),
     });
 
-    render(<AccountsPage />);
+    renderAccountsPage();
 
     expect(screen.getByText('55 items')).toBeVisible();
+  });
+
+  it('renders Teller current balances on the accounts page', () => {
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useTellerProviderInfo).mockReturnValue({
+      loading: false,
+      error: null,
+      availableProviders: ['plaid', 'teller'],
+      selectedProvider: 'teller',
+      defaultProvider: 'teller',
+      userProvider: 'teller',
+      tellerApplicationId: 'app_123',
+      tellerEnvironment: 'development',
+      refresh: jest.fn(),
+      chooseProvider: jest.fn(),
+    });
+    jest.mocked(useAccountFilter).mockReturnValue({
+      selectedAccountIds: ['acc_teller_1'],
+      allAccountIds: ['acc_teller_1'],
+      isAllAccountsSelected: true,
+      accountsByBank: {
+        'Demo Bank': [
+          {
+            id: 'acc_teller_1',
+            name: 'Checking',
+            account_type: 'depository',
+            balance_current: 1234.56,
+            balance_ledger: null,
+            balance_available: null,
+            mask: '1234',
+            provider: 'teller',
+            institution_name: 'Demo Bank',
+            connection_id: 'conn_teller',
+            transaction_count: 7,
+          },
+        ],
+      },
+      loading: false,
+      setSelectedAccountIds: jest.fn(),
+      toggleBank: jest.fn(),
+      toggleAccount: jest.fn(),
+      removeAccountsByIds: jest.fn(),
+    });
+
+    renderAccountsPage();
+
+    expect(screen.getByText('$1,234.56')).toBeVisible();
+    expect(screen.queryByText('PLACEHOLDER')).not.toBeInTheDocument();
   });
 });

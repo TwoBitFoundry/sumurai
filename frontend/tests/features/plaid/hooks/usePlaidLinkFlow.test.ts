@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, renderHook, waitFor } from '@testing-library/react';
 import React from 'react';
 import {
@@ -7,6 +8,20 @@ import {
 import { resetPlaidScriptStateForTests } from '@/features/plaid/plaidLinkScript';
 
 type PlaidFlowOptions = Parameters<typeof usePlaidLinkFlow>[0];
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+const wrapper = ({ children }: { children: React.ReactNode }) =>
+  React.createElement(QueryClientProvider, { client: queryClient }, children);
 
 const plaidLinkFlowRef = { current: null as UsePlaidLinkFlowResult | null };
 
@@ -18,7 +33,13 @@ function PlaidHookMount({ options }: { options?: PlaidFlowOptions }) {
 
 function renderPlaidFlowMounted(options?: PlaidFlowOptions) {
   plaidLinkFlowRef.current = null;
-  return render(React.createElement(PlaidHookMount, { options }));
+  return render(
+    React.createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      React.createElement(PlaidHookMount, { options })
+    )
+  );
 }
 
 const plaidLinkMock = (() => {
@@ -83,14 +104,21 @@ jest.mock('@/services/ApiClient', () => ({
   },
 }));
 
+jest.mock('@/utils/queryInvalidation', () => ({
+  invalidateStaleCacheQueries: jest.fn().mockResolvedValue(undefined),
+}));
+
 const plaidServiceMock = jest.requireMock('@/services/PlaidService').PlaidService as Record<
   string,
   jest.Mock
 >;
 const apiClientMock = jest.requireMock('@/services/ApiClient').ApiClient as { post: jest.Mock };
+const invalidateStaleCacheQueriesMock = jest.requireMock('@/utils/queryInvalidation')
+  .invalidateStaleCacheQueries as jest.Mock;
 
 describe('usePlaidLinkFlow', () => {
   beforeEach(() => {
+    invalidateStaleCacheQueriesMock.mockClear();
     plaidConnectionsMock.connections = [];
     plaidConnectionsMock.loading = false;
     plaidConnectionsMock.error = null;
@@ -142,11 +170,6 @@ describe('usePlaidLinkFlow', () => {
     plaidConnectionsMock.refresh.mockResolvedValue([]);
     apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' });
     plaidServiceMock.exchangeToken.mockResolvedValueOnce({ access_token: 'access' } as any);
-    plaidServiceMock.getStatus.mockResolvedValueOnce({
-      connected: true,
-      institution_name: 'Test Bank',
-      connection_id: 'conn-1',
-    } as any);
 
     renderPlaidFlowMounted({ onError });
 
@@ -164,7 +187,45 @@ describe('usePlaidLinkFlow', () => {
 
     expect(plaidServiceMock.exchangeToken).toHaveBeenCalledWith('public-token');
     expect(plaidConnectionsMock.refresh).toHaveBeenCalled();
+    expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(queryClient, ['plaid']);
     expect(plaidLinkFlowRef.current!.toast).toBe('Bank connected successfully!');
+    expect(onError).toHaveBeenCalled();
+    expect(onError.mock.calls.every((call) => call[0] === null)).toBe(true);
+  });
+
+  it('invalidates accounts after Plaid sync fails following exchange', async () => {
+    const onError = jest.fn();
+    plaidConnectionsMock.refresh.mockResolvedValue([
+      {
+        connectionId: 'conn-1',
+        id: 'conn-1',
+        institutionName: 'Test Bank',
+        lastSyncAt: null,
+        transactionCount: 0,
+        accountCount: 1,
+        syncInProgress: false,
+        isConnected: true,
+        accounts: [],
+      },
+    ]);
+    apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' });
+    plaidServiceMock.exchangeToken.mockResolvedValueOnce({ access_token: 'access' } as any);
+    plaidServiceMock.syncTransactions.mockRejectedValueOnce(new Error('sync failed'));
+
+    renderPlaidFlowMounted({ onError });
+
+    await act(async () => {
+      await plaidLinkFlowRef.current!.connect();
+    });
+
+    const config = plaidLinkMock.getConfig();
+    await act(async () => {
+      await config.onSuccess('public-token');
+    });
+
+    expect(plaidServiceMock.syncTransactions).toHaveBeenCalledWith('conn-1');
+    expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(queryClient, ['plaid']);
+    expect(plaidLinkFlowRef.current!.toast).toBe('Bank connected to Test Bank');
     expect(onError).toHaveBeenCalled();
     expect(onError.mock.calls.every((call) => call[0] === null)).toBe(true);
   });
@@ -195,14 +256,13 @@ describe('usePlaidLinkFlow', () => {
     } as any);
     plaidServiceMock.disconnect.mockResolvedValue({} as any);
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
+    const { result } = renderHook(() => usePlaidLinkFlow({ onError }), { wrapper });
 
     await act(async () => {
       await result.current.syncOne('bank-1');
     });
 
     expect(plaidServiceMock.syncTransactions).toHaveBeenCalledWith('bank-1');
-    expect(plaidConnectionsMock.refresh).toHaveBeenCalled();
     expect(result.current.toast).toContain('Synced 1 new transactions from Bank One');
 
     await act(async () => {
@@ -217,7 +277,6 @@ describe('usePlaidLinkFlow', () => {
     });
 
     expect(plaidServiceMock.disconnect).toHaveBeenCalledWith('bank-1');
-    expect(plaidConnectionsMock.refresh).toHaveBeenCalled();
     expect(result.current.toast).toBe('Bank One disconnected successfully');
     expect(onError).toHaveBeenCalled();
     expect(onError.mock.calls.every((call) => call[0] === null)).toBe(true);
@@ -373,14 +432,14 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
       transactions: [{ id: 't-1' }],
     } as any);
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
+    const { result } = renderHook(() => usePlaidLinkFlow({ onError }), { wrapper });
 
     await act(async () => {
       await result.current.syncOne('bank-1');
     });
 
     expect(plaidServiceMock.syncTransactions).toHaveBeenCalledWith('bank-1');
-    expect(plaidConnectionsMock.refresh).toHaveBeenCalled();
+    expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(queryClient, ['plaid']);
   });
 
   it('should wrap syncAll callback with instrumentation', async () => {
@@ -404,7 +463,7 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
     } as any);
     plaidConnectionsMock.refresh.mockResolvedValue([]);
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
+    const { result } = renderHook(() => usePlaidLinkFlow({ onError }), { wrapper });
 
     await act(async () => {
       await result.current.syncAll();
@@ -432,18 +491,18 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
     plaidServiceMock.disconnect.mockResolvedValue({} as any);
     plaidConnectionsMock.refresh.mockResolvedValue([]);
 
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError }));
+    const { result } = renderHook(() => usePlaidLinkFlow({ onError }), { wrapper });
 
     await act(async () => {
       await result.current.disconnect('bank-1');
     });
 
     expect(plaidServiceMock.disconnect).toHaveBeenCalledWith('bank-1');
-    expect(plaidConnectionsMock.refresh).toHaveBeenCalled();
+    expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(queryClient, ['plaid']);
   });
 
   it('does not request link token until connect runs', async () => {
-    renderHook(() => usePlaidLinkFlow({ onError: jest.fn() }));
+    renderHook(() => usePlaidLinkFlow({ onError: jest.fn() }), { wrapper });
 
     await act(async () => {
       await Promise.resolve();
@@ -453,7 +512,9 @@ describe('usePlaidLinkFlow with OpenTelemetry Instrumentation', () => {
   });
 
   it('given offline when connect runs then skips link token request', async () => {
-    const { result } = renderHook(() => usePlaidLinkFlow({ onError: jest.fn(), isOnline: false }));
+    const { result } = renderHook(() => usePlaidLinkFlow({ onError: jest.fn(), isOnline: false }), {
+      wrapper,
+    });
 
     await act(async () => {
       await result.current.connect();

@@ -1,10 +1,33 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { errJson, installFetchRoutes } from '@tests/utils/fetchRoutes';
+import { type ReactNode, useState } from 'react';
 import { usePlaidConnections } from '@/hooks/usePlaidConnections';
 
 describe('usePlaidConnections', () => {
+  let fetchMock: ReturnType<typeof installFetchRoutes>;
+
+  const createWrapper = () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 5 * 60 * 1000,
+          gcTime: 10 * 60 * 1000,
+          retry: false,
+          refetchOnWindowFocus: false,
+        },
+      },
+    });
+
+    return function Wrapper({ children }: { children: ReactNode }) {
+      const [client] = useState(queryClient);
+
+      return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    };
+  };
+
   beforeEach(() => {
-    installFetchRoutes({
+    fetchMock = installFetchRoutes({
       'GET /api/providers/status': {
         provider: 'plaid',
         connections: [],
@@ -41,8 +64,12 @@ describe('usePlaidConnections', () => {
     jest.clearAllMocks();
   });
 
+  const getFetchCount = (path: string) =>
+    fetchMock.mock.calls.filter(([input]) => String(input).includes(path)).length;
+
   it('rebuilds connections from cached accounts when status has none', async () => {
-    const { result } = renderHook(() => usePlaidConnections());
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => usePlaidConnections(), { wrapper });
 
     await act(async () => {
       await result.current.refresh();
@@ -54,5 +81,34 @@ describe('usePlaidConnections', () => {
     expect(result.current.connections[0].institutionName).toBe('First Platypus Bank');
     expect(result.current.connections[0].accountCount).toBe(2);
     expect(result.current.connections[0].accounts).toHaveLength(2);
+  });
+
+  it('keeps connection updates in the shared query cache across remounts', async () => {
+    const wrapper = createWrapper();
+    const first = renderHook(() => usePlaidConnections(), { wrapper });
+
+    await waitFor(() => {
+      expect(first.result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      first.result.current.removeConnection('conn_1');
+    });
+
+    await waitFor(() => {
+      expect(first.result.current.connections).toHaveLength(0);
+    });
+
+    const statusCallsBefore = getFetchCount('/providers/status');
+    const accountsCallsBefore = getFetchCount('/plaid/accounts');
+
+    first.unmount();
+
+    const second = renderHook(() => usePlaidConnections(), { wrapper });
+
+    expect(second.result.current.loading).toBe(false);
+    expect(second.result.current.connections).toHaveLength(0);
+    expect(getFetchCount('/providers/status')).toBe(statusCallsBefore);
+    expect(getFetchCount('/plaid/accounts')).toBe(accountsCallsBefore);
   });
 });

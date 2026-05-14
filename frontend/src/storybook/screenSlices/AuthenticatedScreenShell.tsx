@@ -24,7 +24,7 @@ export function AuthenticatedScreenShell(props: { currentTab: TabKey; children: 
             uiTextRecipes.muted
           )}
         >
-          All accounts
+          Filter
         </span>
       )}
     >
