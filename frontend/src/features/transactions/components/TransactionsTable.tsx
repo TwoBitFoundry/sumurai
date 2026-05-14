@@ -95,7 +95,7 @@ export const TransactionsTable: React.FC<Props> = ({
         />
       ) : (
         <div className="relative">
-          <div className={cn('overflow-x-auto')}>
+          <div className={cn('overflow-x-auto')} data-no-swipe>
             <table className={cn('min-w-full', 'table-fixed')}>
               <thead className={cn(tableHeader)}>
                 <tr className={cn('border-b', ...uiBorderRecipes.divider)}>

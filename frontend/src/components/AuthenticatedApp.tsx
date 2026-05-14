@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { DateRangePillSlider } from '@/features/analytics/components/DateRangePillSlider';
 import { Alert, cn } from '@/ui/primitives';
 import AccountsPage from '@/views/AccountsPage';
@@ -34,6 +34,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
   const [direction, setDirection] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>('current-month');
+  const swipeBlockedRef = useRef(false);
 
   const handleTabChange = (next: TabKey) => {
     const from = TAB_ORDER.indexOf(tab as (typeof TAB_ORDER)[number]);
@@ -52,7 +53,19 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
         <motion.div
           data-testid="page-swipe-container"
           style={{ touchAction: 'pan-y' }}
+          onPanStart={(e) => {
+            let el = e.target as HTMLElement | null;
+            while (el) {
+              if (el.dataset?.noSwipe !== undefined) {
+                swipeBlockedRef.current = true;
+                return;
+              }
+              el = el.parentElement;
+            }
+            swipeBlockedRef.current = false;
+          }}
           onPanEnd={(_, info) => {
+            if (swipeBlockedRef.current) return;
             if (tab === 'settings') return;
             const idx = TAB_ORDER.indexOf(tab as (typeof TAB_ORDER)[number]);
             if (idx === -1) return;
