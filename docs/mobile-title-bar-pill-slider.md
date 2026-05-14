@@ -304,13 +304,19 @@ Online status icon colors (mobile): use `status.success.icon` and `status.warnin
   Threshold: 50px. Clamped at first/last tab.
 
 ### Acceptance Criteria — Phase 4
-- [ ] Swiping left on mobile tab row advances to the next tab (clamped at Accounts)
-- [ ] Swiping right on mobile tab row goes to the previous tab (clamped at Dashboard)
-- [ ] Page content slides left when advancing (next tab enters from right, current exits left)
-- [ ] Page content slides right when going back (prev tab enters from left, current exits right)
-- [ ] Tapping a tab (no swipe) still animates in the correct direction based on tab order
-- [ ] Swipe on desktop does nothing (gesture only wired to mobile row)
-- [ ] No janky layout shift during animation (`overflow: hidden` on `<main>` if needed)
+- [x] Swiping left on mobile tab row advances to the next tab (clamped at Accounts)
+- [x] Swiping right on mobile tab row goes to the previous tab (clamped at Dashboard)
+- [x] Page content slides left when advancing (next tab enters from right, current exits left)
+- [x] Page content slides right when going back (prev tab enters from left, current exits right)
+- [x] Tapping a tab (no swipe) still animates in the correct direction based on tab order
+- [x] Swipe on desktop does nothing (gesture only wired to mobile row)
+- [x] No janky layout shift during animation (`overflow: hidden` on `<main>` if needed)
+
+### TDD log
+
+- Added failing swipe tests in `AppTitleBar.test.tsx` using a minimal `framer-motion` mock (captures `onPanEnd` from `motion.div` via `data-testid` so it can be called directly in JSDOM — Framer Motion gesture events don't dispatch natively there). Added a regression test for `handleTabChange` in `AuthenticatedApp.test.tsx` that verifies correct tab updates via the AppLayout mock.
+- Wrapped mobile Row 2 nav in `motion.div` with `data-testid="mobile-swipe-container"` and `onPanEnd` (50px threshold, clamped at first/last tab). Replaced `setTab` with `handleTabChange` in `AuthenticatedApp` (adds `direction` state derived from `TAB_ORDER` index diff). Replaced `motion.section` vertical-fade variants with `pageVariants` using `custom={direction}` for directional horizontal slide. Added `overflow-hidden` to `<main>` in `AppLayout.tsx`. Updated the Phase 3 structural test to account for the extra `motion.div` wrapper layer.
+- Verification: `npm --prefix frontend test -- --runTestsByPath tests/ui/primitives/AppTitleBar.test.tsx tests/components/AuthenticatedApp.test.tsx`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run lint`, full suite: 400/400 passed.
 
 ---
 
