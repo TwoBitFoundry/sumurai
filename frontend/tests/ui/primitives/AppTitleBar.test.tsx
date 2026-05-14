@@ -142,30 +142,6 @@ describe('AppTitleBar', () => {
       expect(desktopNav.className).toContain('md:flex');
     });
 
-    it('renders a mobile pill nav with "Mobile primary" label inside the md:hidden row', () => {
-      render(<AppTitleBar {...mobileProps} />);
-      const mobileNav = screen.getByRole('navigation', { name: 'Mobile primary' });
-      expect(mobileNav).toBeInTheDocument();
-      const row = mobileNav.parentElement?.parentElement;
-      expect(row?.className).toContain('md:hidden');
-      expect(row?.className).toContain('justify-center');
-    });
-
-    it('mobile nav active tab label is expanded, inactive labels are collapsed', () => {
-      render(<AppTitleBar {...mobileProps} currentTab="dashboard" />);
-      const mobileNav = screen.getByRole('navigation', { name: 'Mobile primary' });
-
-      const activeButton = within(mobileNav).getByRole('button', { name: 'Dashboard' });
-      const activeLabel = activeButton.querySelector('span.relative');
-      expect(activeLabel?.className).toContain('max-w-[8rem]');
-      expect(activeLabel?.className).toContain('opacity-100');
-
-      const inactiveButton = within(mobileNav).getByRole('button', { name: 'Transactions' });
-      const inactiveLabel = inactiveButton.querySelector('span.relative');
-      expect(inactiveLabel?.className).toContain('max-w-0');
-      expect(inactiveLabel?.className).toContain('opacity-0');
-    });
-
     it('online connectivity icon is always present (no responsive hiding)', () => {
       render(<AppTitleBar {...mobileProps} />);
       const indicator = screen.getByTitle('Online');

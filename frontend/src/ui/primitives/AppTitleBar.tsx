@@ -60,7 +60,7 @@ const titleBarVariants = cva([...appTitleBarRecipes.base], {
 
 type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
-const TABS: Array<{
+export const TABS: Array<{
   key: Exclude<TabKey, 'settings'>;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -83,7 +83,7 @@ export interface AppTitleBarProps {
 export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
   ({ state, isOnline, onLogout, currentTab, onTabChange }, ref) => {
     return (
-      <header ref={ref} className={cn(titleBarVariants({ state }), 'relative')}>
+      <header ref={ref} className={titleBarVariants({ state })}>
         <div className="px-4">
           <div className="flex items-center justify-between h-12 md:h-16">
             <div className={cn('flex', 'items-center', 'gap-6')}>
@@ -194,51 +194,6 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
               )}
             </div>
           </div>
-
-          {state === 'authenticated' && (
-            <div className="md:hidden absolute top-full left-0 right-0 flex justify-center pt-1 pb-2 z-40">
-              <div>
-                <nav
-                  className={cn(...appTitleBarRecipes.pillContainer)}
-                  aria-label="Mobile primary"
-                >
-                  {TABS.map(({ key, label, icon: Icon }) => (
-                    <Button
-                      key={key}
-                      type="button"
-                      onClick={() => onTabChange?.(key)}
-                      variant={currentTab === key ? 'tabActive' : 'tab'}
-                      size="xs"
-                      aria-label={label}
-                      aria-current={currentTab === key ? 'page' : undefined}
-                      className={cn(
-                        ...appTitleBarRecipes.pillTab,
-                        currentTab === key ? semanticTextRecipes.inverse : semanticTextRecipes.muted
-                      )}
-                    >
-                      {currentTab === key ? (
-                        <motion.div
-                          layoutId="mobile-pill-active"
-                          data-slot="active-pill"
-                          className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
-                          transition={{ stiffness: 400, damping: 35 }}
-                        />
-                      ) : null}
-                      <Icon className="relative z-10 h-4 w-4" />
-                      <span
-                        className={cn(
-                          'relative z-10 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300',
-                          currentTab === key ? 'max-w-[8rem] opacity-100' : 'max-w-0 opacity-0'
-                        )}
-                      >
-                        {label}
-                      </span>
-                    </Button>
-                  ))}
-                </nav>
-              </div>
-            </div>
-          )}
         </div>
       </header>
     );
