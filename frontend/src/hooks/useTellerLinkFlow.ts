@@ -264,6 +264,8 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       } catch (err) {
         console.warn('Follow-up Teller sync failed', err);
       }
+    } else if (effectiveConnections.length > 0) {
+      await invalidateTellerCache();
     }
     if (hasPopulatedBalances || retryAttemptsRef.current >= 5) {
       retryAttemptsRef.current = 0;
@@ -276,7 +278,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       retryTimeoutRef.current = null;
       void loadConnectionsWithRetry();
     }, 1500);
-  }, [connectionsQuery, queryClient]);
+  }, [connectionsQuery, queryClient, invalidateTellerCache]);
 
   useEffect(() => {
     return () => {

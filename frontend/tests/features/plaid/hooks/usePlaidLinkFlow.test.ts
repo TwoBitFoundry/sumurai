@@ -170,11 +170,6 @@ describe('usePlaidLinkFlow', () => {
     plaidConnectionsMock.refresh.mockResolvedValue([]);
     apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' });
     plaidServiceMock.exchangeToken.mockResolvedValueOnce({ access_token: 'access' } as any);
-    plaidServiceMock.getStatus.mockResolvedValueOnce({
-      connected: true,
-      institution_name: 'Test Bank',
-      connection_id: 'conn-1',
-    } as any);
 
     renderPlaidFlowMounted({ onError });
 
@@ -192,7 +187,45 @@ describe('usePlaidLinkFlow', () => {
 
     expect(plaidServiceMock.exchangeToken).toHaveBeenCalledWith('public-token');
     expect(plaidConnectionsMock.refresh).toHaveBeenCalled();
+    expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(queryClient, ['plaid']);
     expect(plaidLinkFlowRef.current!.toast).toBe('Bank connected successfully!');
+    expect(onError).toHaveBeenCalled();
+    expect(onError.mock.calls.every((call) => call[0] === null)).toBe(true);
+  });
+
+  it('invalidates accounts after Plaid sync fails following exchange', async () => {
+    const onError = jest.fn();
+    plaidConnectionsMock.refresh.mockResolvedValue([
+      {
+        connectionId: 'conn-1',
+        id: 'conn-1',
+        institutionName: 'Test Bank',
+        lastSyncAt: null,
+        transactionCount: 0,
+        accountCount: 1,
+        syncInProgress: false,
+        isConnected: true,
+        accounts: [],
+      },
+    ]);
+    apiClientMock.post.mockResolvedValueOnce({ link_token: 'token-123' });
+    plaidServiceMock.exchangeToken.mockResolvedValueOnce({ access_token: 'access' } as any);
+    plaidServiceMock.syncTransactions.mockRejectedValueOnce(new Error('sync failed'));
+
+    renderPlaidFlowMounted({ onError });
+
+    await act(async () => {
+      await plaidLinkFlowRef.current!.connect();
+    });
+
+    const config = plaidLinkMock.getConfig();
+    await act(async () => {
+      await config.onSuccess('public-token');
+    });
+
+    expect(plaidServiceMock.syncTransactions).toHaveBeenCalledWith('conn-1');
+    expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(queryClient, ['plaid']);
+    expect(plaidLinkFlowRef.current!.toast).toBe('Bank connected to Test Bank');
     expect(onError).toHaveBeenCalled();
     expect(onError.mock.calls.every((call) => call[0] === null)).toBe(true);
   });

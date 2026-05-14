@@ -90,9 +90,11 @@ export function usePlaidLinkFlow(options: UsePlaidLinkFlowOptions = {}): UsePlai
             await invalidatePlaidCache();
           } catch (syncError: unknown) {
             console.warn('Failed to sync transactions after connection', syncError);
+            await invalidatePlaidCache();
             setToast(`Bank connected to ${syncTarget?.institutionName ?? 'your bank'}`);
           }
         } else {
+          await invalidatePlaidCache();
           setToast('Bank connected successfully!');
         }
       } catch (error: unknown) {

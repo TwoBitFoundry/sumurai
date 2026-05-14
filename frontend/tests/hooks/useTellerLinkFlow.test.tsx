@@ -18,6 +18,13 @@ function TellerLinkMountHost({ props }: { props: TellerLinkFlowOptions }) {
 const setup = jest.fn();
 const openMock = jest.fn();
 
+jest.mock('@/utils/queryInvalidation', () => ({
+  invalidateStaleCacheQueries: jest.fn().mockResolvedValue(undefined),
+}));
+
+const invalidateStaleCacheQueriesMock = jest.requireMock('@/utils/queryInvalidation')
+  .invalidateStaleCacheQueries as jest.Mock;
+
 describe('useTellerLinkFlow', () => {
   let fetchMock: ReturnType<typeof installFetchRoutes>;
 
@@ -43,6 +50,7 @@ describe('useTellerLinkFlow', () => {
   beforeEach(() => {
     resetTellerScriptStateForTests();
     jest.clearAllMocks();
+    invalidateStaleCacheQueriesMock.mockClear();
     openMock.mockReset();
     setup.mockReturnValue({ open: openMock, destroy: jest.fn() });
     Object.assign(window, {
@@ -110,6 +118,86 @@ describe('useTellerLinkFlow', () => {
     expect(result.current.connections[0].institutionName).toBe('First Platypus Bank');
     expect(result.current.connections[0].accountCount).toBe(2);
     expect(result.current.connections[0].accounts).toHaveLength(2);
+  });
+
+  it('invalidates shared caches after Teller load when balances are already populated', async () => {
+    installFetchRoutes({
+      'GET /api/providers/status': {
+        provider: 'teller',
+        connections: [
+          {
+            connection_id: 'conn_1',
+            institution_name: 'First Platypus Bank',
+            is_connected: true,
+            last_sync_at: '2024-01-01T00:00:00Z',
+            transaction_count: 2,
+            account_count: 2,
+            sync_in_progress: false,
+          },
+        ],
+      },
+      'GET /api/providers/accounts': errJson(404, {
+        message: 'not found',
+      }),
+      'GET /api/plaid/accounts': [
+        {
+          id: 'acc_1',
+          name: 'Everyday Checking',
+          account_type: 'depository',
+          balance_current: 1250.5,
+          mask: '0000',
+          provider_connection_id: 'conn_1',
+          institution_name: 'First Platypus Bank',
+        },
+      ],
+      'POST /api/providers/connect': {
+        connection_id: 'conn_1',
+      },
+      'POST /api/providers/sync-transactions': {},
+    });
+
+    tellerLinkFlowRef.current = null;
+    const wrapper = createWrapper();
+    render(
+      React.createElement(TellerLinkMountHost, {
+        props: {
+          applicationId: 'app_123',
+          enabled: true,
+          isOnline: true,
+        },
+      }),
+      { wrapper }
+    );
+
+    await waitFor(() => {
+      expect(tellerLinkFlowRef.current?.loading).toBe(false);
+    });
+
+    await act(async () => {
+      await tellerLinkFlowRef.current!.connect();
+    });
+
+    await waitFor(() => {
+      expect(setup).toHaveBeenCalled();
+    });
+
+    const config = setup.mock.calls[0][0];
+    await act(async () => {
+      await config.onSuccess({
+        accessToken: 'access-token',
+        user: { id: 'user-1' },
+        enrollment: {
+          id: 'enroll-1',
+          institution: {
+            name: 'First Platypus Bank',
+          },
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(invalidateStaleCacheQueriesMock).toHaveBeenCalledWith(expect.anything(), ['teller']);
+    });
   });
 
   it('keeps Teller connections in the shared query cache across remounts', async () => {
