@@ -56,3 +56,16 @@ export const AuthenticatedScrolled: Story = {
     currentTab: 'transactions',
   },
 };
+
+export const AuthenticatedMobile: Story = {
+  args: {
+    state: 'authenticated',
+    isOnline: true,
+    currentTab: 'dashboard',
+    onTabChange: fn(),
+    onLogout: fn(),
+  },
+  parameters: {
+    viewport: { defaultViewport: 'mobile1' },
+  },
+};

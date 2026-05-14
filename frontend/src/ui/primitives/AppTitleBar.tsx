@@ -1,6 +1,15 @@
 import { cva } from 'class-variance-authority';
 import { motion } from 'framer-motion';
-import { ArrowLeftRight, Building2, LayoutDashboard, LogOut, Settings, Target } from 'lucide-react';
+import {
+  ArrowLeftRight,
+  Building2,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Target,
+  Wifi,
+  WifiOff,
+} from 'lucide-react';
 import Image from 'next/image';
 import React from 'react';
 import {
@@ -15,7 +24,7 @@ import { Button, buttonRecipes } from './Button';
 import { cn } from './utils';
 
 export const appTitleBarRecipes = {
-  base: ['sticky top-0 z-50 border-b backdrop-blur-md backdrop-saturate-[150%] h-16'],
+  base: ['sticky top-0 z-50 border-b backdrop-blur-md backdrop-saturate-[150%] h-auto md:h-16'],
   shell: [...semanticSurfaces.card, ...semanticBorders.divider, ...semanticEffects.glassShadow],
   logo: {
     container: ['flex', 'items-center', 'gap-2', semanticTextRecipes.primary],
@@ -71,15 +80,10 @@ export interface AppTitleBarProps {
 export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
   ({ state, isOnline, onLogout, currentTab, onTabChange }, ref) => {
     return (
-      <header
-        ref={ref}
-        className={titleBarVariants({
-          state,
-        })}
-      >
-        <div className={cn('px-4', 'h-full')}>
-          <div className={cn('flex', 'items-center', 'justify-between', 'h-full')}>
-            <div className={cn('flex', 'flex-1', 'items-center')}>
+      <header ref={ref} className={titleBarVariants({ state })}>
+        <div className="px-4">
+          <div className="flex items-center justify-between h-12 md:h-16">
+            <div className={cn('flex', 'items-center', 'gap-6')}>
               <div
                 className={cn(
                   ...appTitleBarRecipes.logo.container,
@@ -96,11 +100,12 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                 />
                 <span className={uiTypographyRecipes.pageTitle}>Sumurai</span>
               </div>
-            </div>
 
-            {state === 'authenticated' && (
-              <div className={cn('flex', 'flex-1', 'justify-center')}>
-                <nav className={cn(...appTitleBarRecipes.pillContainer)} aria-label="Primary">
+              {state === 'authenticated' && (
+                <nav
+                  className={cn(...appTitleBarRecipes.pillContainer, 'hidden md:flex')}
+                  aria-label="Primary"
+                >
                   {TABS.map(({ key, label, icon: Icon }) => (
                     <Button
                       key={key}
@@ -128,10 +133,10 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                     </Button>
                   ))}
                 </nav>
-              </div>
-            )}
+              )}
+            </div>
 
-            <div className={cn('flex', 'flex-1', 'items-center', 'justify-end', 'gap-2')}>
+            <div className={cn('flex', 'items-center', 'gap-2')}>
               <div
                 className={cn(
                   'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1',
@@ -146,7 +151,8 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                         ...semanticStatus.warning.surface,
                         ...semanticStatus.warning.border,
                         ...semanticStatus.warning.text,
-                      ])
+                      ]),
+                  'hidden md:inline-flex'
                 )}
                 role="status"
                 aria-live="polite"
@@ -163,6 +169,20 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                 />
                 <span>{isOnline ? 'Online' : 'Offline'}</span>
               </div>
+
+              <span className="md:hidden">
+                {isOnline ? (
+                  <Wifi
+                    className={cn('h-4 w-4', ...semanticStatus.success.icon)}
+                    aria-label="Online"
+                  />
+                ) : (
+                  <WifiOff
+                    className={cn('h-4 w-4', ...semanticStatus.warning.icon)}
+                    aria-label="Offline"
+                  />
+                )}
+              </span>
 
               {state === 'authenticated' && onTabChange && (
                 <Button
@@ -182,13 +202,72 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
               )}
 
               {(state === 'onboarding' || state === 'authenticated') && onLogout && (
-                <Button type="button" onClick={onLogout} variant="danger" size="xs" title="Logout">
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </Button>
+                <>
+                  <Button
+                    type="button"
+                    onClick={onLogout}
+                    variant="danger"
+                    size="xs"
+                    title="Logout"
+                    className="hidden md:inline-flex"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={onLogout}
+                    variant="danger"
+                    size="xs"
+                    aria-label="Logout"
+                    className="md:hidden"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </>
               )}
             </div>
           </div>
+
+          {state === 'authenticated' && (
+            <div className="md:hidden pb-2">
+              <nav className={cn(...appTitleBarRecipes.pillContainer)} aria-label="Mobile primary">
+                {TABS.map(({ key, label, icon: Icon }) => (
+                  <Button
+                    key={key}
+                    type="button"
+                    onClick={() => onTabChange?.(key)}
+                    variant={currentTab === key ? 'tabActive' : 'tab'}
+                    size="xs"
+                    aria-label={label}
+                    aria-current={currentTab === key ? 'page' : undefined}
+                    className={cn(
+                      ...appTitleBarRecipes.pillTab,
+                      currentTab === key ? semanticTextRecipes.inverse : semanticTextRecipes.muted
+                    )}
+                  >
+                    {currentTab === key ? (
+                      <motion.div
+                        layoutId="mobile-pill-active"
+                        data-slot="active-pill"
+                        className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
+                        transition={{ stiffness: 400, damping: 35 }}
+                      />
+                    ) : null}
+                    <Icon className="relative z-10 h-4 w-4" />
+                    <span
+                      className={cn(
+                        'relative z-10 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300',
+                        currentTab === key ? 'max-w-[5rem] opacity-100' : 'max-w-0 opacity-0'
+                      )}
+                    >
+                      {label}
+                    </span>
+                  </Button>
+                ))}
+              </nav>
+            </div>
+          )}
         </div>
       </header>
     );
