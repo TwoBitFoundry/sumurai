@@ -1,5 +1,6 @@
 import { cva } from 'class-variance-authority';
-import { Settings } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeftRight, Building2, LayoutDashboard, LogOut, Settings, Target } from 'lucide-react';
 import Image from 'next/image';
 import React from 'react';
 import {
@@ -10,7 +11,7 @@ import {
   text as semanticTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { Button } from './Button';
+import { Button, buttonRecipes } from './Button';
 import { cn } from './utils';
 
 export const appTitleBarRecipes = {
@@ -21,17 +22,6 @@ export const appTitleBarRecipes = {
     wordmark: uiTypographyRecipes.pageTitle,
     fontFamily: { fontFamily: "'Cal Sans', system-ui, sans-serif" },
   },
-  tabIdle: [
-    ...semanticBorders.subtle,
-    ...semanticSurfaces.card,
-    semanticTextRecipes.muted,
-    'hover:text-slate-900 dark:hover:text-white',
-    'hover:border-[var(--color-border-hover-accent)] dark:hover:border-[var(--color-border-hover-accent)]',
-    'hover:shadow-[0_14px_32px_-18px_var(--color-effect-accent-hover)]',
-  ].join(' '),
-  tabHalo:
-    'after:absolute after:inset-[-28%] after:rounded-[999px] after:bg-[radial-gradient(circle_at_35%_30%,rgba(14,165,233,0.16),transparent_62%)] after:opacity-0 after:transition-opacity after:duration-300 hover:after:opacity-90 dark:after:bg-[radial-gradient(circle_at_35%_30%,rgba(56,189,248,0.22),transparent_62%)]',
-  divider: 'w-px h-6 bg-[var(--color-border-divider)] dark:bg-[var(--color-border-divider)]',
   settingsIdle:
     'border border-[var(--color-border-divider)] dark:border-[var(--color-border-divider)] bg-[var(--color-surface-muted-chip)] dark:bg-[var(--color-surface-muted-chip)] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row)]',
   pillContainer: [
@@ -58,11 +48,15 @@ const titleBarVariants = cva([...appTitleBarRecipes.base], {
 
 type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
-const TABS: Array<{ key: TabKey; label: string }> = [
-  { key: 'dashboard', label: 'Dashboard' },
-  { key: 'transactions', label: 'Transactions' },
-  { key: 'budgets', label: 'Budgets' },
-  { key: 'accounts', label: 'Accounts' },
+const TABS: Array<{
+  key: Exclude<TabKey, 'settings'>;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}> = [
+  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { key: 'transactions', label: 'Transactions', icon: ArrowLeftRight },
+  { key: 'budgets', label: 'Budgets', icon: Target },
+  { key: 'accounts', label: 'Accounts', icon: Building2 },
 ];
 
 export interface AppTitleBarProps {
@@ -74,23 +68,6 @@ export interface AppTitleBarProps {
   onTabChange?: (tab: TabKey) => void;
 }
 
-/**
- * Unified title bar component that adapts to app state.
- *
- * @example
- * ```tsx
- * <AppTitleBar
- *   state="authenticated"
- *   scrolled={scrolled}
- *   themeMode={mode}
- *   onThemeToggle={toggle}
- *   onLogout={handleLogout}
- *   currentTab={currentTab}
- *   onTabChange={handleTabChange}
- *   accountFilterNode={<HeaderAccountFilter />}
- * />
- * ```
- */
 export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
   ({ state, isOnline, onLogout, currentTab, onTabChange }, ref) => {
     return (
@@ -121,20 +98,34 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
               </div>
 
               {state === 'authenticated' && (
-                <nav className={cn('flex', 'gap-2')} aria-label="Primary">
-                  {TABS.map(({ key, label }) => (
+                <nav className={cn(...appTitleBarRecipes.pillContainer)} aria-label="Primary">
+                  {TABS.map(({ key, label, icon: Icon }) => (
                     <Button
                       key={key}
                       type="button"
                       onClick={() => onTabChange?.(key)}
-                      variant={currentTab === key ? 'tabActive' : 'tab'}
+                      variant="tab"
                       size="xs"
+                      aria-label={label}
+                      aria-current={currentTab === key ? 'page' : undefined}
                       className={cn(
-                        appTitleBarRecipes.tabHalo,
-                        currentTab !== key ? appTitleBarRecipes.tabIdle : undefined
+                        ...appTitleBarRecipes.pillTab,
+                        currentTab === key ? semanticTextRecipes.inverse : semanticTextRecipes.muted
                       )}
                     >
-                      {label}
+                      {currentTab === key ? (
+                        <motion.div
+                          layoutId="pill-active"
+                          data-slot="active-pill"
+                          className={cn(
+                            'absolute inset-0 rounded-[length:inherit]',
+                            ...buttonRecipes.tabActive
+                          )}
+                          transition={{ stiffness: 400, damping: 35 }}
+                        />
+                      ) : null}
+                      <Icon className="relative z-10 h-4 w-4" />
+                      <span className="relative z-10">{label}</span>
                     </Button>
                   ))}
                 </nav>
@@ -193,7 +184,8 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
 
               {(state === 'onboarding' || state === 'authenticated') && onLogout && (
                 <Button type="button" onClick={onLogout} variant="danger" size="xs" title="Logout">
-                  Logout
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
                 </Button>
               )}
             </div>

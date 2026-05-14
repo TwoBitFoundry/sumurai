@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { AppTitleBar } from '@/ui/primitives/AppTitleBar';
+import { buttonRecipes } from '@/ui/primitives/Button';
 import { status as uiStatusRecipes } from '@/ui/recipes';
 
 jest.mock('next/image', () => ({
@@ -68,5 +70,40 @@ describe('AppTitleBar', () => {
     render(<AppTitleBar {...baseProps} isOnline />);
 
     expect(screen.queryByRole('button', { name: 'Toggle theme' })).not.toBeInTheDocument();
+  });
+
+  it('renders authenticated tabs inside a unified pill nav with icons and active styling', () => {
+    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+
+    const nav = screen.getByRole('navigation', { name: 'Primary' });
+    expect(nav.className).toContain('rounded-full');
+    expect(nav.className).toContain('p-1');
+
+    const dashboardButton = screen.getByRole('button', { name: 'Dashboard' });
+    const transactionsButton = screen.getByRole('button', { name: 'Transactions' });
+
+    expect(dashboardButton.querySelector('svg')).not.toBeNull();
+    expect(transactionsButton.querySelector('svg')).not.toBeNull();
+    expect(dashboardButton.className).toContain('relative');
+    expect(transactionsButton.className).toContain('relative');
+
+    const activeLayer = dashboardButton.querySelector('[data-slot="active-pill"]');
+    expect(activeLayer).not.toBeNull();
+    expect(activeLayer).toHaveClass(...buttonRecipes.tabActive);
+    expect(transactionsButton.querySelector('[data-slot="active-pill"]')).toBeNull();
+
+    expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument();
+  });
+
+  it('keeps desktop tab switching wired to the same tab change callback', async () => {
+    const onTabChange = jest.fn();
+    const user = userEvent.setup();
+
+    render(<AppTitleBar {...baseProps} isOnline onTabChange={onTabChange} />);
+
+    await user.click(screen.getByRole('button', { name: 'Transactions' }));
+
+    expect(onTabChange).toHaveBeenCalledWith('transactions');
   });
 });

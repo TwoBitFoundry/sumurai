@@ -165,13 +165,19 @@ Dashboard:  [⊟ filter icon]  [1M  2M  3M  6M  1Y  5Y]
 - Remove `accountFilterNode` from story args
 
 ### Acceptance Criteria — Phase 2
-- [ ] Desktop nav renders as a single pill container (not individual disconnected pills)
-- [ ] Active pill background slides smoothly with spring animation when switching tabs
-- [ ] Tab icons visible left of label text on desktop
-- [ ] Inactive tabs have no background, active tab has sky→violet gradient
-- [ ] Keyboard navigation and focus rings still work (accessible)
-- [ ] Storybook play test passes (`AuthenticatedDashboard`)
-- [ ] No regression: tab switching still routes to correct page content
+- [x] Desktop nav renders as a single pill container (not individual disconnected pills)
+- [x] Active pill background slides smoothly with spring animation when switching tabs
+- [x] Tab icons visible left of label text on desktop
+- [x] Inactive tabs have no background, active tab has sky→violet gradient
+- [x] Keyboard navigation and focus rings still work (accessible)
+- [x] Storybook play test passes (`AuthenticatedDashboard`)
+- [x] No regression: tab switching still routes to correct page content
+
+### TDD log
+
+- Added failing title-bar tests for the unified desktop pill container, icon rendering, active gradient layer, and preserved tab-change callback wiring.
+- Replaced the disconnected desktop tab buttons with a shared pill shell and a Framer Motion `layoutId="pill-active"` background, while keeping settings and logout actions intact.
+- Verification: `npm --prefix frontend test -- --runTestsByPath tests/ui/primitives/AppTitleBar.test.tsx tests/components/AuthenticatedApp.test.tsx`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, `npm --prefix frontend run test:storybook-runtime:run`
 
 ---
 

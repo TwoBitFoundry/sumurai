@@ -56,10 +56,11 @@ describe('primitive typography recipes', () => {
     expect(buttonRecipes.danger.join(' ')).toContain(uiTextRecipes.danger);
   });
 
-  it('uses semantic text recipes for dropdown and title bar chrome', () => {
+  it('keeps title bar layout recipes free of baked-in text colors', () => {
     expect(menuDropdownRecipes.item.join(' ')).toContain(uiTextRecipes.muted);
     expect(appTitleBarRecipes.logo.container.join(' ')).toContain(uiTextRecipes.primary);
-    expect(appTitleBarRecipes.tabIdle).toContain(uiTextRecipes.muted);
+    expect(appTitleBarRecipes.pillTab.join(' ')).not.toContain(uiTextRecipes.muted);
+    expect(appTitleBarRecipes.pillTab.join(' ')).not.toContain(uiTextRecipes.inverse);
   });
 
   it('reserves labeled-control spacing for label stacks that clear focus rings', () => {});
