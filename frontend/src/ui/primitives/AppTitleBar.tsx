@@ -24,7 +24,7 @@ import { Button, buttonRecipes } from './Button';
 import { cn } from './utils';
 
 export const appTitleBarRecipes = {
-  base: ['sticky top-0 z-50 border-b backdrop-blur-md backdrop-saturate-[150%] h-auto md:h-16'],
+  base: ['sticky top-0 z-50 border-b backdrop-blur-md backdrop-saturate-[150%] h-12 md:h-16'],
   shell: [...semanticSurfaces.card, ...semanticBorders.divider, ...semanticEffects.glassShadow],
   logo: {
     container: ['flex', 'items-center', 'gap-2', semanticTextRecipes.primary],
@@ -80,7 +80,7 @@ export interface AppTitleBarProps {
 export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
   ({ state, isOnline, onLogout, currentTab, onTabChange }, ref) => {
     return (
-      <header ref={ref} className={titleBarVariants({ state })}>
+      <header ref={ref} className={cn(titleBarVariants({ state }), 'relative')}>
         <div className="px-4">
           <div className="flex items-center justify-between h-12 md:h-16">
             <div className={cn('flex', 'items-center', 'gap-6')}>
@@ -193,7 +193,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
           </div>
 
           {state === 'authenticated' && (
-            <div className="md:hidden flex justify-center pb-2">
+            <div className="md:hidden absolute top-full left-0 right-0 flex justify-center pt-1 pb-2 z-40">
               <motion.div
                 data-testid="mobile-swipe-container"
                 onPanEnd={(_, info) => {

@@ -47,17 +47,7 @@ export function AppLayout({
 
         <div
           data-bottom-bar-controls
-          className={cn(
-            'fixed',
-            'bottom-5',
-            'left-1/2',
-            'z-50',
-            'flex',
-            '-translate-x-1/2',
-            'items-center',
-            'justify-center',
-            'gap-2'
-          )}
+          className={cn('fixed', 'bottom-5', 'right-4', 'z-50', 'flex', 'items-center', 'gap-2')}
         >
           <HeaderAccountFilter triggerStyle="icon-only" />
           {bottomBarContent}
