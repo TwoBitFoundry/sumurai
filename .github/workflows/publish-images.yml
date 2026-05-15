@@ -93,7 +93,7 @@ jobs:
         run: |
           short_sha="${GITHUB_SHA::7}"
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            targets=("${IMAGE}:${GITHUB_REF_NAME}" "${IMAGE}:sha-${short_sha}")
+            targets=("${IMAGE}:latest" "${IMAGE}:${GITHUB_REF_NAME}" "${IMAGE}:sha-${short_sha}")
             source_amd64="${IMAGE}:${GITHUB_REF_NAME}-amd64"
             source_arm64="${IMAGE}:${GITHUB_REF_NAME}-arm64"
           else
@@ -188,7 +188,7 @@ jobs:
         run: |
           short_sha="${GITHUB_SHA::7}"
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            targets=("${IMAGE}:${GITHUB_REF_NAME}" "${IMAGE}:sha-${short_sha}")
+            targets=("${IMAGE}:latest" "${IMAGE}:${GITHUB_REF_NAME}" "${IMAGE}:sha-${short_sha}")
             source_amd64="${IMAGE}:${GITHUB_REF_NAME}-amd64"
             source_arm64="${IMAGE}:${GITHUB_REF_NAME}-arm64"
           else
