@@ -42,7 +42,9 @@ export const appTitleBarRecipes = {
     ...semanticBorders.glass,
     ...semanticEffects.glassShadow,
   ],
-  pillTab: ['relative flex h-full items-center justify-center gap-1.5 rounded-full px-3 py-1.5'],
+  pillTab: [
+    'relative flex h-full items-center justify-center gap-1.5 rounded-[length:var(--radius-medium)] px-3 py-1.5',
+  ],
 } as const;
 
 const titleBarVariants = cva([...appTitleBarRecipes.base], {

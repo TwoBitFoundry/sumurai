@@ -7,8 +7,7 @@ const preview: Preview = {
   decorators: [
     (Story, context) => {
       const raw = context.globals.theme;
-      const initialPreference =
-        raw === 'system' || raw === 'dark' ? raw : ('light' as const);
+      const initialPreference = raw === 'system' || raw === 'dark' ? raw : ('light' as const);
       return (
         <ThemeProvider initialPreference={initialPreference}>
           <Story />
