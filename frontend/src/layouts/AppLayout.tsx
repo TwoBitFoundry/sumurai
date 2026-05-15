@@ -45,8 +45,8 @@ export function AppLayout({
   }, []);
 
   return (
-    <div className={className}>
-      <div className={cn('relative', 'z-10', 'flex', 'flex-col')}>
+    <div className={cn('flex', 'min-h-screen', 'flex-col', className)}>
+      <div className={cn('relative', 'z-10', 'flex', 'flex-1', 'flex-col')}>
         <AppTitleBar
           state="authenticated"
           scrolled={scrolled}
@@ -58,6 +58,7 @@ export function AppLayout({
 
         <main
           className={cn(
+            'flex-1',
             'overflow-hidden',
             'pl-[calc(2rem_+_env(safe-area-inset-left))] pr-[calc(2rem_+_env(safe-area-inset-right))]',
             'sm:pl-[calc(3rem_+_env(safe-area-inset-left))] sm:pr-[calc(3rem_+_env(safe-area-inset-right))]',
