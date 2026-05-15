@@ -17,10 +17,10 @@ describe('SettingsPage', () => {
     render(<SettingsPage />);
 
     const themeBadge = screen.getByText('THEME');
-    const appearanceHeading = screen.getByRole('heading', { name: 'Appearance' });
+    const appearanceLabel = screen.getByText('Appearance');
 
-    expect(appearanceHeading).toBeInTheDocument();
-    expect(themeBadge.compareDocumentPosition(appearanceHeading)).toBe(
+    expect(appearanceLabel).toBeInTheDocument();
+    expect(themeBadge.compareDocumentPosition(appearanceLabel)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
     fireEvent.click(screen.getByRole('button', { name: 'Toggle theme' }));

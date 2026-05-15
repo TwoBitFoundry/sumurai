@@ -123,15 +123,12 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   return (
     <div className={cn('max-w-2xl', 'mx-auto')}>
       <div className={cn('flex', 'flex-col', 'gap-6')}>
-        <GlassCard variant="default" padding="lg">
-          <div className={cn('flex', 'items-center', 'justify-between', 'gap-4')}>
-            <div className={cn('space-y-3')}>
-              <Badge size="md">THEME</Badge>
-              <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+        <GlassCard variant="default" padding="sm">
+          <div className={cn('flex', 'items-center', 'justify-between', 'gap-3')}>
+            <div className={cn('flex', 'min-w-0', 'items-center', 'gap-2')}>
+              <Badge size="sm">THEME</Badge>
+              <p className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>
                 Appearance
-              </h2>
-              <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
-                Switch between light and dark mode
               </p>
             </div>
             <Button onClick={toggle} variant="secondary" size="xs" aria-label="Toggle theme">
