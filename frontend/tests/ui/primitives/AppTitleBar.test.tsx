@@ -83,7 +83,7 @@ describe('AppTitleBar', () => {
     render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
 
     const desktopNav = screen.getByRole('navigation', { name: 'Primary' });
-    expect(desktopNav.className).toContain('rounded-full');
+    expect(desktopNav.className).toContain('rounded-[length:var(--radius-medium)]');
     expect(desktopNav.className).toContain('p-1');
 
     const dashboardButton = within(desktopNav).getByRole('button', { name: 'Dashboard' });

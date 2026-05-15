@@ -37,13 +37,13 @@ export const appTitleBarRecipes = {
   settingsIdle:
     'border border-[var(--color-border-divider)] dark:border-[var(--color-border-divider)] bg-[var(--color-surface-muted-chip)] dark:bg-[var(--color-surface-muted-chip)] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row)]',
   pillContainer: [
-    'flex h-11 items-center gap-1 rounded-full border p-1 backdrop-blur-md backdrop-saturate-[150%]',
+    'flex h-11 items-center gap-1 rounded-[length:var(--radius-medium)] border p-1 backdrop-blur-md backdrop-saturate-[150%]',
     ...semanticSurfaces.glassPanel,
     ...semanticBorders.glass,
     ...semanticEffects.glassShadow,
   ],
   pillTab: [
-    'relative flex h-full items-center justify-center gap-1.5 rounded-[length:var(--radius-medium)] px-3 py-1.5',
+    'relative flex h-full items-center justify-center gap-0 rounded-[length:var(--radius-medium)] px-3 py-1.5',
   ],
 } as const;
 
@@ -87,7 +87,7 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
     return (
       <header ref={ref} className={titleBarVariants({ state })}>
         <div className="px-4">
-          <div className="flex items-center justify-between h-12 md:h-16">
+          <div className="grid h-12 grid-cols-[auto_minmax(0,1fr)_auto] items-center md:h-16">
             <div className={cn('flex', 'items-center', 'gap-6')}>
               <div
                 className={cn(
@@ -105,7 +105,9 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                 />
                 <span className={uiTypographyRecipes.pageTitle}>Sumurai</span>
               </div>
+            </div>
 
+            <div className="flex justify-center">
               {state === 'authenticated' && (
                 <nav
                   className={cn(...appTitleBarRecipes.pillContainer, 'hidden md:flex')}
@@ -133,15 +135,19 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                           transition={{ stiffness: 400, damping: 35 }}
                         />
                       ) : null}
-                      <Icon className="relative z-10 h-4 w-4" />
-                      {currentTab === key ? <span className="relative z-10">{label}</span> : null}
+                      <span className="relative z-10 flex h-4 w-4 shrink-0 items-center justify-center">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      {currentTab === key ? (
+                        <span className="relative z-10 ml-1.5">{label}</span>
+                      ) : null}
                     </Button>
                   ))}
                 </nav>
               )}
             </div>
 
-            <div className={cn('flex', 'items-center', 'gap-2')}>
+            <div className={cn('flex', 'items-center', 'justify-self-end', 'gap-2')}>
               <span role="status" aria-live="polite" title={isOnline ? 'Online' : 'Offline'}>
                 {isOnline ? (
                   <Wifi className={cn('h-4 w-4', ...semanticStatus.success.icon)} />
