@@ -6,6 +6,8 @@ import { createProviderConnection, createProviderStatus } from '@tests/utils/fix
 import type { ReactNode } from 'react';
 import { useBudgets } from '@/features/budgets/hooks/useBudgets';
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
+import { BudgetService } from '@/services/BudgetService';
+import { TransactionService } from '@/services/TransactionService';
 
 const TestWrapper = AccountFilterTestProvider;
 
@@ -205,32 +207,38 @@ describe('useBudgets', () => {
 
   it('updates budget optimistically', async () => {
     const budgetsStore = [asBudget('1', 'groceries', 100)];
-    fetchMock = installFetchRoutes({
-      'GET /api/budgets': () => budgetsStore,
-      'PUT /api/budgets/1': () => {
-        budgetsStore[0] = asBudget('1', 'groceries', 250);
-        return budgetsStore[0];
-      },
-      'GET /api/transactions': [],
-      'GET /api/plaid/accounts': mockPlaidAccounts,
-      'GET /api/providers/status': createConnectedStatus(),
+    const getBudgetsSpy = jest.spyOn(BudgetService, 'getBudgets').mockImplementation(async () => {
+      return [...budgetsStore];
     });
+    const updateBudgetSpy = jest
+      .spyOn(BudgetService, 'updateBudget')
+      .mockImplementation(async (_id, budgetData) => {
+        budgetsStore[0] = asBudget('1', 'groceries', budgetData.amount ?? 100);
+        return budgetsStore[0];
+      });
+    const getTransactionsSpy = jest
+      .spyOn(TransactionService, 'getTransactions')
+      .mockResolvedValue([]);
 
     const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper });
 
-    await act(async () => {
-      await result.current.load();
-    });
+    try {
+      await waitFor(() => {
+        expect(result.current.budgets).toHaveLength(1);
+      });
 
-    await waitFor(() => {
-      expect(result.current.budgets).toHaveLength(1);
-    });
+      await act(async () => {
+        await result.current.update('1', 250);
+      });
 
-    await act(async () => {
-      await result.current.update('1', 250);
-    });
-
-    expect(result.current.budgets[0].amount).toBe(250);
+      await waitFor(() => {
+        expect(result.current.budgets[0].amount).toBe(250);
+      });
+    } finally {
+      getBudgetsSpy.mockRestore();
+      updateBudgetSpy.mockRestore();
+      getTransactionsSpy.mockRestore();
+    }
   });
 
   it('handles update budget failure', async () => {

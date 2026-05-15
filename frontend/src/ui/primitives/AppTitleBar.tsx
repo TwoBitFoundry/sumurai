@@ -1,5 +1,15 @@
 import { cva } from 'class-variance-authority';
-import { Moon, Settings, Sun } from 'lucide-react';
+import { motion } from 'framer-motion';
+import {
+  ArrowLeftRight,
+  Building2,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Target,
+  Wifi,
+  WifiOff,
+} from 'lucide-react';
 import Image from 'next/image';
 import React from 'react';
 import {
@@ -10,32 +20,31 @@ import {
   text as semanticTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { Button } from './Button';
+import { Button, buttonRecipes } from './Button';
 import { cn } from './utils';
 
 export const appTitleBarRecipes = {
-  base: ['sticky top-0 z-50 border-b backdrop-blur-md backdrop-saturate-[150%] h-16'],
+  base: [
+    'sticky top-0 z-50 border-b backdrop-blur-md backdrop-saturate-[150%]',
+    'pt-[env(safe-area-inset-top)]',
+  ],
   shell: [...semanticSurfaces.card, ...semanticBorders.divider, ...semanticEffects.glassShadow],
   logo: {
     container: ['flex', 'items-center', 'gap-2', semanticTextRecipes.primary],
     wordmark: uiTypographyRecipes.pageTitle,
     fontFamily: { fontFamily: "'Cal Sans', system-ui, sans-serif" },
   },
-  tabIdle: [
-    ...semanticBorders.subtle,
-    ...semanticSurfaces.card,
-    semanticTextRecipes.muted,
-    'hover:text-slate-900 dark:hover:text-white',
-    'hover:border-[var(--color-border-hover-accent)] dark:hover:border-[var(--color-border-hover-accent)]',
-    'hover:shadow-[0_14px_32px_-18px_var(--color-effect-accent-hover)]',
-  ].join(' '),
-  tabHalo:
-    'after:absolute after:inset-[-28%] after:rounded-[999px] after:bg-[radial-gradient(circle_at_35%_30%,rgba(14,165,233,0.16),transparent_62%)] after:opacity-0 after:transition-opacity after:duration-300 hover:after:opacity-90 dark:after:bg-[radial-gradient(circle_at_35%_30%,rgba(56,189,248,0.22),transparent_62%)]',
-  divider: 'w-px h-6 bg-[var(--color-border-divider)] dark:bg-[var(--color-border-divider)]',
-  themeToggle:
-    'rounded-lg !bg-[color:color-mix(in_srgb,var(--color-brand-amber)_80%,transparent)] dark:!bg-[color:color-mix(in_srgb,var(--color-brand-violet)_80%,transparent)] hover:!bg-[color:color-mix(in_srgb,var(--color-brand-amber)_90%,transparent)] dark:hover:!bg-[color:color-mix(in_srgb,var(--color-brand-violet)_90%,transparent)] !border !border-[color:color-mix(in_srgb,var(--color-brand-amber)_30%,transparent)] dark:!border-[color:color-mix(in_srgb,var(--color-brand-violet)_30%,transparent)] !text-white backdrop-blur-sm transition-colors',
   settingsIdle:
     'border border-[var(--color-border-divider)] dark:border-[var(--color-border-divider)] bg-[var(--color-surface-muted-chip)] dark:bg-[var(--color-surface-muted-chip)] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row)]',
+  pillContainer: [
+    'flex h-11 items-center gap-1 rounded-[length:var(--radius-medium)] border p-1 backdrop-blur-md backdrop-saturate-[150%]',
+    ...semanticSurfaces.glassPanel,
+    ...semanticBorders.glass,
+    ...semanticEffects.glassShadow,
+  ],
+  pillTab: [
+    'relative flex h-full items-center justify-center gap-0 rounded-[length:var(--radius-medium)] px-3 py-1.5',
+  ],
 } as const;
 
 const titleBarVariants = cva([...appTitleBarRecipes.base], {
@@ -53,65 +62,32 @@ const titleBarVariants = cva([...appTitleBarRecipes.base], {
 
 type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
-const TABS: Array<{ key: TabKey; label: string }> = [
-  { key: 'dashboard', label: 'Dashboard' },
-  { key: 'transactions', label: 'Transactions' },
-  { key: 'budgets', label: 'Budgets' },
-  { key: 'accounts', label: 'Accounts' },
+export const TABS: Array<{
+  key: Exclude<TabKey, 'settings'>;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}> = [
+  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { key: 'transactions', label: 'Transactions', icon: ArrowLeftRight },
+  { key: 'budgets', label: 'Budgets', icon: Target },
+  { key: 'accounts', label: 'Accounts', icon: Building2 },
 ];
 
 export interface AppTitleBarProps {
   state: 'unauthenticated' | 'onboarding' | 'authenticated';
   scrolled: boolean;
-  themeMode: 'light' | 'dark';
   isOnline: boolean;
-  onThemeToggle: () => void;
   onLogout?: () => void;
   currentTab?: TabKey;
   onTabChange?: (tab: TabKey) => void;
-  accountFilterNode?: React.ReactNode;
 }
 
-/**
- * Unified title bar component that adapts to app state.
- *
- * @example
- * ```tsx
- * <AppTitleBar
- *   state="authenticated"
- *   scrolled={scrolled}
- *   themeMode={mode}
- *   onThemeToggle={toggle}
- *   onLogout={handleLogout}
- *   currentTab={currentTab}
- *   onTabChange={handleTabChange}
- *   accountFilterNode={<HeaderAccountFilter />}
- * />
- * ```
- */
 export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
-  (
-    {
-      state,
-      themeMode,
-      isOnline,
-      onThemeToggle,
-      onLogout,
-      currentTab,
-      onTabChange,
-      accountFilterNode,
-    },
-    ref
-  ) => {
+  ({ state, isOnline, onLogout, currentTab, onTabChange }, ref) => {
     return (
-      <header
-        ref={ref}
-        className={titleBarVariants({
-          state,
-        })}
-      >
-        <div className={cn('px-4', 'h-full')}>
-          <div className={cn('flex', 'items-center', 'justify-between', 'h-full')}>
+      <header ref={ref} className={titleBarVariants({ state })}>
+        <div className="px-4">
+          <div className="grid h-12 grid-cols-[auto_minmax(0,1fr)_auto] items-center md:h-16">
             <div className={cn('flex', 'items-center', 'gap-6')}>
               <div
                 className={cn(
@@ -129,83 +105,56 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                 />
                 <span className={uiTypographyRecipes.pageTitle}>Sumurai</span>
               </div>
+            </div>
 
+            <div className="flex justify-center">
               {state === 'authenticated' && (
-                <nav className={cn('flex', 'gap-2')} aria-label="Primary">
-                  {TABS.map(({ key, label }) => (
+                <nav
+                  className={cn(...appTitleBarRecipes.pillContainer, 'hidden md:flex')}
+                  aria-label="Primary"
+                >
+                  {TABS.map(({ key, label, icon: Icon }) => (
                     <Button
                       key={key}
                       type="button"
                       onClick={() => onTabChange?.(key)}
                       variant={currentTab === key ? 'tabActive' : 'tab'}
                       size="xs"
+                      aria-label={label}
+                      aria-current={currentTab === key ? 'page' : undefined}
                       className={cn(
-                        appTitleBarRecipes.tabHalo,
-                        currentTab !== key ? appTitleBarRecipes.tabIdle : undefined
+                        ...appTitleBarRecipes.pillTab,
+                        currentTab === key ? semanticTextRecipes.inverse : semanticTextRecipes.muted
                       )}
                     >
-                      {label}
+                      {currentTab === key ? (
+                        <motion.div
+                          layoutId="pill-active"
+                          data-slot="active-pill"
+                          className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
+                          transition={{ stiffness: 400, damping: 35 }}
+                        />
+                      ) : null}
+                      <span className="relative z-10 flex h-4 w-4 shrink-0 items-center justify-center">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      {currentTab === key ? (
+                        <span className="relative z-10 ml-1.5">{label}</span>
+                      ) : null}
                     </Button>
                   ))}
                 </nav>
               )}
             </div>
 
-            <div className={cn('flex', 'items-center', 'gap-2')}>
-              <div
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1',
-                  uiTypographyRecipes.badge,
-                  ...(isOnline
-                    ? [
-                        ...semanticStatus.success.surface,
-                        ...semanticStatus.success.border,
-                        ...semanticStatus.success.text,
-                      ]
-                    : [
-                        ...semanticStatus.warning.surface,
-                        ...semanticStatus.warning.border,
-                        ...semanticStatus.warning.text,
-                      ])
-                )}
-                role="status"
-                aria-live="polite"
-                title={isOnline ? 'Online' : 'Offline'}
-              >
-                <span
-                  className={cn(
-                    'h-2 w-2 rounded-full',
-                    isOnline
-                      ? 'bg-[var(--color-status-success-icon)] dark:bg-[var(--color-status-success-icon)]'
-                      : 'bg-[var(--color-status-warning-icon)] dark:bg-[var(--color-status-warning-icon)]'
-                  )}
-                  aria-hidden="true"
-                />
-                <span>{isOnline ? 'Online' : 'Offline'}</span>
-              </div>
-
-              {state === 'authenticated' && accountFilterNode && (
-                <>
-                  {accountFilterNode}
-                  <div className={cn('w-px', 'h-6', 'bg-slate-200', 'dark:bg-slate-600')}></div>
-                </>
-              )}
-
-              <Button
-                type="button"
-                onClick={onThemeToggle}
-                variant="secondary"
-                size="xs"
-                className={cn(appTitleBarRecipes.themeToggle)}
-                aria-label="Toggle theme"
-                title="Toggle theme"
-              >
-                {themeMode === 'dark' ? (
-                  <Moon className={cn('h-4', 'w-4')} />
+            <div className={cn('flex', 'items-center', 'justify-self-end', 'gap-2')}>
+              <span role="status" aria-live="polite" title={isOnline ? 'Online' : 'Offline'}>
+                {isOnline ? (
+                  <Wifi className={cn('h-4 w-4', ...semanticStatus.success.icon)} />
                 ) : (
-                  <Sun className={cn('h-4', 'w-4')} />
+                  <WifiOff className={cn('h-4 w-4', ...semanticStatus.warning.icon)} />
                 )}
-              </Button>
+              </span>
 
               {state === 'authenticated' && onTabChange && (
                 <Button
@@ -225,9 +174,31 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
               )}
 
               {(state === 'onboarding' || state === 'authenticated') && onLogout && (
-                <Button type="button" onClick={onLogout} variant="danger" size="xs" title="Logout">
-                  Logout
-                </Button>
+                <>
+                  <div className="hidden md:block">
+                    <Button
+                      type="button"
+                      onClick={onLogout}
+                      variant="danger"
+                      size="xs"
+                      title="Logout"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Logout</span>
+                    </Button>
+                  </div>
+                  <div className="md:hidden">
+                    <Button
+                      type="button"
+                      onClick={onLogout}
+                      variant="danger"
+                      size="xs"
+                      aria-label="Logout"
+                    >
+                      <LogOut className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
               )}
             </div>
           </div>

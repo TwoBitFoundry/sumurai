@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
-import { cn } from '@/ui/primitives';
-import { text as uiTextRecipes } from '@/ui/recipes';
 import { AppTitleBar } from './AppTitleBar';
 
 const meta = {
@@ -10,9 +8,7 @@ const meta = {
   tags: ['autodocs', 'test'],
   args: {
     scrolled: false,
-    themeMode: 'light' as const,
     isOnline: true,
-    onThemeToggle: fn(),
   },
 } satisfies Meta<typeof AppTitleBar>;
 
@@ -37,20 +33,13 @@ export const Onboarding: Story = {
 export const AuthenticatedDashboard: Story = {
   args: {
     state: 'authenticated',
-    themeMode: 'dark',
     isOnline: true,
     currentTab: 'dashboard',
     onTabChange: fn(),
     onLogout: fn(),
-    accountFilterNode: (
-      <span className={cn('text-xs', 'font-medium', uiTextRecipes.muted)}>Filter</span>
-    ),
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-
-    await userEvent.click(canvas.getByLabelText('Toggle theme'));
-    await expect(args.onThemeToggle).toHaveBeenCalledTimes(1);
 
     await userEvent.click(canvas.getByRole('button', { name: 'Transactions' }));
     await expect(args.onTabChange).toHaveBeenCalledWith('transactions');
@@ -65,5 +54,18 @@ export const AuthenticatedScrolled: Story = {
     ...AuthenticatedDashboard.args,
     scrolled: true,
     currentTab: 'transactions',
+  },
+};
+
+export const AuthenticatedMobile: Story = {
+  args: {
+    state: 'authenticated',
+    isOnline: true,
+    currentTab: 'dashboard',
+    onTabChange: fn(),
+    onLogout: fn(),
+  },
+  parameters: {
+    viewport: { defaultViewport: 'mobile1' },
   },
 };

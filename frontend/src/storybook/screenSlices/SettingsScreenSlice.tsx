@@ -1,5 +1,6 @@
 import { AlertTriangle } from 'lucide-react';
 import { PasswordChecker } from '@/components/PasswordChecker';
+import { ThemeModeSelector } from '@/components/ThemeModeSelector';
 import type { PasswordValidation } from '@/hooks/usePasswordValidation';
 import { Alert, Badge, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
@@ -111,6 +112,27 @@ export function SettingsScreenSlice(props: {
   return (
     <div className={cn('max-w-2xl', 'mx-auto')} data-testid="settings-screen-slice">
       <div className={cn('flex', 'flex-col', 'gap-6')}>
+        <GlassCard variant="default" padding="sm">
+          <div
+            className={cn(
+              'flex',
+              'flex-col',
+              'gap-3',
+              'sm:flex-row',
+              'sm:items-center',
+              'sm:justify-between'
+            )}
+          >
+            <div className={cn('flex', 'min-w-0', 'items-center', 'gap-2')}>
+              <Badge size="sm">THEME</Badge>
+              <p className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>
+                Appearance
+              </p>
+            </div>
+            <ThemeModeSelector value="dark" onChange={() => {}} />
+          </div>
+        </GlassCard>
+
         <GlassCard variant="default" padding="lg">
           <div className={cn('space-y-5')}>
             <div className={cn('space-y-3')}>

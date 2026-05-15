@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { HeaderAccountFilter } from '@/components/HeaderAccountFilter';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
 
@@ -43,5 +43,33 @@ describe('HeaderAccountFilter', () => {
     rerender(<HeaderAccountFilter />);
 
     expect(screen.getByRole('button', { name: 'Filter' }).className).toBe(initialClassName);
+  });
+
+  it('renders an icon-only trigger and opens the popover above the trigger anchored to the right', () => {
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 900 });
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
+
+    render(<HeaderAccountFilter triggerStyle="icon-only" />);
+
+    const trigger = screen.getByRole('button', { name: 'Filter accounts' });
+    trigger.getBoundingClientRect = jest.fn(() => ({
+      x: 984,
+      y: 220,
+      width: 40,
+      height: 40,
+      top: 220,
+      right: 1024,
+      bottom: 260,
+      left: 984,
+      toJSON: () => undefined,
+    }));
+
+    fireEvent.click(trigger);
+
+    expect(trigger).toHaveTextContent('');
+    expect(screen.getByRole('dialog', { name: 'Account filter' })).toHaveStyle({
+      bottom: '688px',
+      right: '0px',
+    });
   });
 });

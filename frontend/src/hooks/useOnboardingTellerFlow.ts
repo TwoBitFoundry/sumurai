@@ -4,7 +4,7 @@ import {
   TellerConnectSdk,
   type TellerConnectSdkHandle,
 } from '@/features/teller/components/TellerConnectSdk';
-import { type TellerEnvironment } from '@/features/teller/tellerConnectScript';
+import type { TellerEnvironment } from '@/features/teller/tellerConnectScript';
 import { TellerService } from '@/services/TellerService';
 import {
   POPUP_BLOCKED_MESSAGE,

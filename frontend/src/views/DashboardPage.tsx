@@ -1,6 +1,6 @@
 import { TrendingUp } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { TooltipProps } from 'recharts';
 import {
   Area,
@@ -12,7 +12,7 @@ import {
   YAxis,
 } from 'recharts';
 import type { DotItemDotProps } from 'recharts/types/util/types';
-import { Button, cn, EmptyState } from '@/ui/primitives';
+import { cn, EmptyState } from '@/ui/primitives';
 import {
   border as semanticBorders,
   effect as semanticEffects,
@@ -53,24 +53,6 @@ const dashboardLoadingCard = [
   ...semanticSurfaces.mutedChip,
 ] as const;
 
-const dashboardFloatingRangeShell = [
-  'flex gap-2 rounded-2xl border px-3 py-2',
-  ...semanticBorders.glass,
-  ...semanticSurfaces.card,
-  ...semanticEffects.glassShadow,
-  'backdrop-blur-md',
-  'backdrop-saturate-[150%]',
-] as const;
-
-const dateRangeOptions = [
-  { key: 'current-month', label: 'Current Month' },
-  { key: 'past-2-months', label: '2 Months' },
-  { key: 'past-3-months', label: '3 Months' },
-  { key: 'past-6-months', label: '6 Months' },
-  { key: 'past-year', label: '1 Year' },
-  { key: 'all-time', label: '5 Years' },
-] as const;
-
 const netTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) => {
   const numericValue = Array.isArray(value) ? Number(value[0]) : Number(value);
   return fmtUSD(Number.isFinite(numericValue) ? numericValue : 0);
@@ -78,75 +60,12 @@ const netTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) =
 
 let lastSpendingByCategoryAnimationKey = '';
 
-function DashboardFloatingDateRangeSelector({
-  dateRange,
-  setDateRange,
-  spendingOverviewRef,
-}: {
+const DashboardPage: React.FC<{
   dateRange: DateRange;
   setDateRange: (range: DateRange) => void;
-  spendingOverviewRef: React.RefObject<HTMLDivElement | null>;
-}) {
-  const [showTimeBar, setShowTimeBar] = useState(false);
-
-  useEffect(() => {
-    const target = spendingOverviewRef.current;
-    if (!target) {
-      setShowTimeBar(false);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        setShowTimeBar(entry.isIntersecting);
-      },
-      { threshold: [0.1] }
-    );
-
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [spendingOverviewRef]);
-
-  return (
-    <div
-      className={cn(
-        'fixed',
-        'left-0',
-        'right-0',
-        'z-50',
-        'flex',
-        'justify-center',
-        'transition-opacity',
-        'duration-150',
-        'ease-out',
-        showTimeBar ? 'opacity-100' : 'opacity-0 pointer-events-none'
-      )}
-      style={{ bottom: 24 }}
-    >
-      <div className={cn(dashboardFloatingRangeShell)}>
-        {dateRangeOptions.map((option) => (
-          <Button
-            type="button"
-            key={option.key}
-            onClick={() => setDateRange(option.key as DateRange)}
-            variant={dateRange === option.key ? 'tabActive' : 'tab'}
-            size="sm"
-            className="rounded-lg px-3 py-1.5 normal-case transition-all duration-200"
-          >
-            {option.label}
-          </Button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-const DashboardPage: React.FC = () => {
+}> = ({ dateRange }) => {
   const { colors } = useTheme();
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<DateRange>('current-month');
-  const spendingOverviewRef = useRef<HTMLDivElement | null>(null);
 
   const analytics = useAnalytics(dateRange);
   const analyticsLoading = analytics.loading;
@@ -197,7 +116,6 @@ const DashboardPage: React.FC = () => {
       >
         <div className={cn('space-y-8')}>
           <div
-            ref={spendingOverviewRef}
             className={cn(
               'grid',
               'grid-cols-1',
@@ -441,11 +359,6 @@ const DashboardPage: React.FC = () => {
               )}
             </DashboardChartCard>
           </div>
-          <DashboardFloatingDateRangeSelector
-            dateRange={dateRange}
-            setDateRange={setDateRange}
-            spendingOverviewRef={spendingOverviewRef}
-          />
         </div>
       </PageLayout>
     </div>

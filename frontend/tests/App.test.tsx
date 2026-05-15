@@ -53,9 +53,11 @@ jest.mock('@/hooks/useOnlineStatus', () => ({
 jest.mock('@/context/ThemeContext', () => ({
   ThemeProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
   useTheme: () => ({
+    preference: 'dark',
     mode: 'dark',
     toggle: jest.fn(),
     setMode: jest.fn(),
+    setPreference: jest.fn(),
     colors: {},
   }),
 }));

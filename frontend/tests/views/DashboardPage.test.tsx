@@ -33,7 +33,11 @@ jest.mock('@/features/analytics/components/SpendingByCategoryChart', () => ({
 describe('DashboardPage', () => {
   beforeEach(() => {
     jest.mocked(useTheme).mockReturnValue({
+      preference: 'light',
       mode: 'light',
+      setPreference: jest.fn(),
+      setMode: jest.fn(),
+      toggle: jest.fn(),
       colors: getThemeColors('light'),
     } as any);
 
@@ -60,14 +64,15 @@ describe('DashboardPage', () => {
 
   it('keeps the spending chart animation off on remount when the query key is unchanged', () => {
     const chartMock = jest.mocked(SpendingByCategoryChart);
-    const { unmount } = render(<DashboardPage />);
+    const noop = jest.fn();
+    const { unmount } = render(<DashboardPage dateRange="current-month" setDateRange={noop} />);
 
     expect(chartMock).toHaveBeenCalledTimes(1);
     expect(chartMock.mock.calls[0][0].animated).toBe(true);
 
     unmount();
 
-    render(<DashboardPage />);
+    render(<DashboardPage dateRange="current-month" setDateRange={noop} />);
 
     expect(chartMock).toHaveBeenCalledTimes(2);
     expect(chartMock.mock.calls[1][0].animated).toBe(false);

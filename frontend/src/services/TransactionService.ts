@@ -46,7 +46,7 @@ export class TransactionService {
       return toPaginatedTransactionsResponse(response, page, pageSize);
     }
 
-    return this.getAllTransactions(filters);
+    return TransactionService.getAllTransactions(filters);
   }
 
   static async getTransactionCategories(): Promise<string[]> {
