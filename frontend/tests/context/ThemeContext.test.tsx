@@ -50,7 +50,9 @@ describe('ThemeProvider', () => {
 
     act(() => {
       mediaQueryList.matches = false;
-      listeners.forEach((listener) => listener({ matches: false } as MediaQueryListEvent));
+      listeners.forEach((listener) => {
+        listener({ matches: false } as MediaQueryListEvent);
+      });
     });
 
     await waitFor(() => {

@@ -1,7 +1,7 @@
 import { type ThemePreference } from '@/context/ThemeContext';
+import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { Button } from '@/ui/primitives/Button';
 import { cn } from '@/ui/primitives/utils';
-import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import {
   border as semanticBorders,
   effect as semanticEffects,

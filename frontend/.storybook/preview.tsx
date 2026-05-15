@@ -7,9 +7,10 @@ const preview: Preview = {
   decorators: [
     (Story, context) => {
       const raw = context.globals.theme;
-      const mode = raw === 'dark' ? 'dark' : 'light';
+      const initialPreference =
+        raw === 'system' || raw === 'dark' ? raw : ('light' as const);
       return (
-        <ThemeProvider initialMode={mode}>
+        <ThemeProvider initialPreference={initialPreference}>
           <Story />
         </ThemeProvider>
       );
@@ -18,11 +19,12 @@ const preview: Preview = {
   globalTypes: {
     theme: {
       description: 'Color scheme for stories',
-      defaultValue: 'light',
+      defaultValue: 'system',
       toolbar: {
         title: 'Theme',
         icon: 'circlehollow',
         items: [
+          { value: 'system', title: 'System' },
           { value: 'light', title: 'Light' },
           { value: 'dark', title: 'Dark' },
         ],

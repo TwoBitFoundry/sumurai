@@ -102,13 +102,10 @@ export function ThemeProvider({ children, initialPreference }: ThemeProviderProp
     setSystemMode(newPreference === 'system' ? getSystemTheme() : newPreference);
   }, []);
 
-  const setMode = useCallback(
-    (mode: ThemeMode) => {
-      setPreferenceState(mode);
-      setSystemMode(mode);
-    },
-    []
-  );
+  const setMode = useCallback((mode: ThemeMode) => {
+    setPreferenceState(mode);
+    setSystemMode(mode);
+  }, []);
 
   const toggle = useCallback(() => {
     setPreferenceState((currentPreference) => {
