@@ -125,10 +125,12 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       <div className={cn('flex', 'flex-col', 'gap-6')}>
         <GlassCard variant="default" padding="lg">
           <div className={cn('flex', 'items-center', 'justify-between', 'gap-4')}>
-            <div className={cn('space-y-2')}>
-              <h2 className={uiTypographyRecipes.sectionTitle}>Appearance</h2>
-              <p className={uiTypographyRecipes.body}>Theme</p>
-              <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
+            <div className={cn('space-y-3')}>
+              <Badge size="md">THEME</Badge>
+              <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+                Appearance
+              </h2>
+              <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
                 Switch between light and dark mode
               </p>
             </div>

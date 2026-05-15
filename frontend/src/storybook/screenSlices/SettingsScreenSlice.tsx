@@ -112,6 +112,23 @@ export function SettingsScreenSlice(props: {
     <div className={cn('max-w-2xl', 'mx-auto')} data-testid="settings-screen-slice">
       <div className={cn('flex', 'flex-col', 'gap-6')}>
         <GlassCard variant="default" padding="lg">
+          <div className={cn('flex', 'items-center', 'justify-between', 'gap-4')}>
+            <div className={cn('space-y-3')}>
+              <Badge size="md">THEME</Badge>
+              <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+                Appearance
+              </h2>
+              <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
+                Switch between light and dark mode
+              </p>
+            </div>
+            <Button type="button" variant="secondary" size="xs" aria-label="Toggle theme">
+              <span>Dark</span>
+            </Button>
+          </div>
+        </GlassCard>
+
+        <GlassCard variant="default" padding="lg">
           <div className={cn('space-y-5')}>
             <div className={cn('space-y-3')}>
               <Badge size="md">ACCOUNT SETTINGS</Badge>

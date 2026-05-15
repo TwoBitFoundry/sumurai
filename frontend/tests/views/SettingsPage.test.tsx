@@ -16,7 +16,13 @@ describe('SettingsPage', () => {
 
     render(<SettingsPage />);
 
-    expect(screen.getByRole('heading', { name: 'Appearance' })).toBeInTheDocument();
+    const themeBadge = screen.getByText('THEME');
+    const appearanceHeading = screen.getByRole('heading', { name: 'Appearance' });
+
+    expect(appearanceHeading).toBeInTheDocument();
+    expect(themeBadge.compareDocumentPosition(appearanceHeading)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Toggle theme' }));
     expect(toggle).toHaveBeenCalledTimes(1);
   });
