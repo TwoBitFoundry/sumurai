@@ -33,7 +33,11 @@ jest.mock('@/features/analytics/components/SpendingByCategoryChart', () => ({
 describe('DashboardPage', () => {
   beforeEach(() => {
     jest.mocked(useTheme).mockReturnValue({
+      preference: 'light',
       mode: 'light',
+      setPreference: jest.fn(),
+      setMode: jest.fn(),
+      toggle: jest.fn(),
       colors: getThemeColors('light'),
     } as any);
 

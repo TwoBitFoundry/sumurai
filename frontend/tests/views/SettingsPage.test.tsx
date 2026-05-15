@@ -7,11 +7,15 @@ jest.mock('@/context/ThemeContext', () => ({
 }));
 
 describe('SettingsPage', () => {
-  it('renders the appearance section and toggles theme from settings', () => {
-    const toggle = jest.fn();
+  it('renders the appearance section and updates theme preference from settings', () => {
+    const setPreference = jest.fn();
     jest.mocked(useTheme).mockReturnValue({
+      preference: 'system',
       mode: 'dark',
-      toggle,
+      setPreference,
+      setMode: jest.fn(),
+      toggle: jest.fn(),
+      colors: {} as any,
     } as any);
 
     render(<SettingsPage />);
@@ -23,7 +27,7 @@ describe('SettingsPage', () => {
     expect(themeBadge.compareDocumentPosition(appearanceLabel)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle theme' }));
-    expect(toggle).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('radio', { name: 'Light' }));
+    expect(setPreference).toHaveBeenCalledWith('light');
   });
 });

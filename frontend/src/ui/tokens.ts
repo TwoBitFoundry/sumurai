@@ -1,6 +1,7 @@
 import generatedTokens from './generated/tokens';
 
 export type ThemeMode = 'light' | 'dark';
+export type ThemePreference = 'system' | ThemeMode;
 export type HeroAccent = 'slate' | 'emerald' | 'sky' | 'violet' | 'amber' | 'rose';
 export type SemanticTone = 'success' | 'info' | 'warning' | 'danger';
 

@@ -1,95 +1,128 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
-import type { ThemeColors, ThemeMode } from '@/ui/tokens';
+import type { ThemeColors, ThemeMode, ThemePreference } from '@/ui/tokens';
 import { getThemeColors } from '@/ui/tokens';
 
+export type { ThemePreference } from '@/ui/tokens';
+
 interface ThemeContextType {
+  preference: ThemePreference;
   mode: ThemeMode;
   toggle: () => void;
   setMode: (mode: ThemeMode) => void;
+  setPreference: (preference: ThemePreference) => void;
   colors: ThemeColors;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const getInitialTheme = (): ThemeMode => {
-  if (typeof window === 'undefined') return 'dark';
+const THEME_STORAGE_KEY = 'theme';
 
-  const stored = localStorage.getItem('theme');
-  if (stored === 'light' || stored === 'dark') {
+const getSystemTheme = (): ThemeMode => {
+  if (typeof window === 'undefined') return 'dark';
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
+
+const getInitialPreference = (): ThemePreference => {
+  if (typeof window === 'undefined') return 'system';
+
+  const stored = localStorage.getItem(THEME_STORAGE_KEY);
+  if (stored === 'light' || stored === 'dark' || stored === 'system') {
     return stored;
   }
 
-  if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
-  }
-
-  return 'dark';
+  return 'system';
 };
 
-const applyTheme = (mode: ThemeMode) => {
+const resolveThemeMode = (preference: ThemePreference, systemMode: ThemeMode): ThemeMode => {
+  return preference === 'system' ? systemMode : preference;
+};
+
+const applyTheme = (resolvedMode: ThemeMode) => {
   if (typeof window === 'undefined') return;
 
-  if (mode === 'dark') {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
+  document.documentElement.classList.toggle('dark', resolvedMode === 'dark');
+  document.documentElement.style.colorScheme = resolvedMode;
 };
 
 interface ThemeProviderProps {
   children: ReactNode;
-  initialMode?: ThemeMode;
+  initialPreference?: ThemePreference;
 }
 
-export function ThemeProvider({ children, initialMode }: ThemeProviderProps) {
-  const [mode, setModeState] = useState<ThemeMode>(() =>
-    initialMode !== undefined ? initialMode : getInitialTheme()
+export function ThemeProvider({ children, initialPreference }: ThemeProviderProps) {
+  const [preference, setPreferenceState] = useState<ThemePreference>(() =>
+    initialPreference !== undefined ? initialPreference : getInitialPreference()
   );
+  const [systemMode, setSystemMode] = useState<ThemeMode>(() => getSystemTheme());
 
   useEffect(() => {
-    if (initialMode !== undefined) {
-      setModeState(initialMode);
+    if (initialPreference !== undefined) {
+      setPreferenceState(initialPreference);
+      if (initialPreference === 'system') {
+        setSystemMode(getSystemTheme());
+      }
     }
-  }, [initialMode]);
+  }, [initialPreference]);
 
   useEffect(() => {
-    applyTheme(mode);
-    localStorage.setItem('theme', mode);
-  }, [mode]);
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(THEME_STORAGE_KEY, preference);
+  }, [preference]);
 
   useEffect(() => {
-    if (initialMode !== undefined) {
+    if (preference !== 'system') {
       return;
     }
+
     if (typeof window === 'undefined' || !window.matchMedia) return;
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-    const handleChange = (e: MediaQueryListEvent) => {
-      const stored = localStorage.getItem('theme');
-      if (!stored) {
-        setModeState(e.matches ? 'dark' : 'light');
-      }
+    const syncSystemMode = () => {
+      setSystemMode(mediaQuery.matches ? 'dark' : 'light');
     };
 
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    }
-  }, [initialMode]);
+    syncSystemMode();
 
-  const setMode = useCallback((newMode: ThemeMode) => {
-    setModeState(newMode);
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', syncSystemMode);
+      return () => mediaQuery.removeEventListener('change', syncSystemMode);
+    }
+
+    return undefined;
+  }, [preference]);
+
+  const resolvedMode = resolveThemeMode(preference, systemMode);
+
+  useEffect(() => {
+    applyTheme(resolvedMode);
+  }, [resolvedMode]);
+
+  const setPreference = useCallback((newPreference: ThemePreference) => {
+    setPreferenceState(newPreference);
+    setSystemMode(newPreference === 'system' ? getSystemTheme() : newPreference);
   }, []);
+
+  const setMode = useCallback(
+    (mode: ThemeMode) => {
+      setPreferenceState(mode);
+      setSystemMode(mode);
+    },
+    []
+  );
 
   const toggle = useCallback(() => {
-    setModeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
-  }, []);
+    setPreferenceState((currentPreference) => {
+      const currentMode = resolveThemeMode(currentPreference, systemMode);
+      return currentMode === 'dark' ? 'light' : 'dark';
+    });
+  }, [systemMode]);
 
-  const colors = getThemeColors(mode);
+  const colors = getThemeColors(resolvedMode);
 
   return (
-    <ThemeContext.Provider value={{ mode, toggle, setMode, colors }}>
+    <ThemeContext.Provider
+      value={{ preference, mode: resolvedMode, toggle, setMode, setPreference, colors }}
+    >
       {children}
     </ThemeContext.Provider>
   );

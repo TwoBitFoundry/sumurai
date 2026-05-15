@@ -1,6 +1,7 @@
-import { AlertTriangle, Moon, Sun } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { PasswordChecker } from '@/components/PasswordChecker';
+import { ThemeModeSelector } from '@/components/ThemeModeSelector';
 import { useTheme } from '@/context/ThemeContext';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { AuthService } from '@/services/authService';
@@ -16,7 +17,7 @@ interface SettingsPageProps {
 }
 
 export default function SettingsPage({ onLogout }: SettingsPageProps) {
-  const { mode, toggle } = useTheme();
+  const { preference, setPreference } = useTheme();
   const postPasswordChangeLogoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -124,21 +125,23 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     <div className={cn('max-w-2xl', 'mx-auto')}>
       <div className={cn('flex', 'flex-col', 'gap-6')}>
         <GlassCard variant="default" padding="sm">
-          <div className={cn('flex', 'items-center', 'justify-between', 'gap-3')}>
+          <div
+            className={cn(
+              'flex',
+              'flex-col',
+              'gap-3',
+              'sm:flex-row',
+              'sm:items-center',
+              'sm:justify-between'
+            )}
+          >
             <div className={cn('flex', 'min-w-0', 'items-center', 'gap-2')}>
               <Badge size="sm">THEME</Badge>
               <p className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>
                 Appearance
               </p>
             </div>
-            <Button onClick={toggle} variant="secondary" size="xs" aria-label="Toggle theme">
-              {mode === 'dark' ? (
-                <Moon className={cn('h-4', 'w-4')} />
-              ) : (
-                <Sun className={cn('h-4', 'w-4')} />
-              )}
-              <span>{mode === 'dark' ? 'Dark' : 'Light'}</span>
-            </Button>
+            <ThemeModeSelector value={preference} onChange={setPreference} />
           </div>
         </GlassCard>
 
