@@ -3,6 +3,8 @@ import { Calendar as CalendarIcon, Loader2, Plus } from 'lucide-react';
 import { Button, cn, PaginationButton } from '@/ui/primitives';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
+const budgetActionButtonClasses = cn('shrink-0', 'whitespace-nowrap', 'h-10', 'px-4', 'py-2');
+
 interface BudgetToolbarProps {
   monthLabel: string;
   loading: boolean;
@@ -26,15 +28,7 @@ export const BudgetToolbar = ({
 }: BudgetToolbarProps) => {
   return (
     <div
-      className={cn(
-        'flex',
-        'flex-wrap',
-        'items-center',
-        'justify-between',
-        'gap-3',
-        'px-6',
-        'py-4'
-      )}
+      className={cn('flex', 'flex-wrap', 'items-start', 'justify-between', 'gap-3', 'px-6', 'py-4')}
       data-testid="budget-toolbar"
     >
       <div className={cn('flex', 'items-center', 'gap-3')}>
@@ -67,7 +61,9 @@ export const BudgetToolbar = ({
           {monthLabel}
         </div>
       </div>
-      <div className={cn('flex', 'items-center', 'gap-3')}>
+      <div
+        className={cn('flex', 'items-center', 'gap-3', 'flex-nowrap', 'overflow-x-auto', 'pb-1')}
+      >
         <div
           className={cn(
             'inline-flex',
@@ -91,14 +87,20 @@ export const BudgetToolbar = ({
           onClick={onCurrentMonth}
           variant="ghost"
           size="md"
-          className={cn('px-4')}
+          className={budgetActionButtonClasses}
           title="Jump to current month"
         >
           <CalendarIcon className={cn('h-4', 'w-4')} />
           This Month
         </Button>
         {showAddButton && !isAdding ? (
-          <Button type="button" onClick={onAddBudget} variant="primary" size="lg">
+          <Button
+            type="button"
+            onClick={onAddBudget}
+            variant="primary"
+            size="md"
+            className={budgetActionButtonClasses}
+          >
             <Plus className={cn('h-4', 'w-4')} />
             Add budget
           </Button>

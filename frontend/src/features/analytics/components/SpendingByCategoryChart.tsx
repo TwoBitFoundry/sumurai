@@ -46,22 +46,32 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
         'relative',
         'flex',
         'flex-col',
-        'items-center',
+        'items-stretch',
         'justify-center',
-        'min-h-[260px]'
+        'min-h-[280px]'
       )}
     >
       {data.length > 0 ? (
-        <div className={cn('relative', 'h-[260px]', 'w-[260px]', 'min-w-0', 'shrink-0')}>
-          <ResponsiveContainer width={260} height={260}>
+        <div
+          className={cn(
+            'relative',
+            'aspect-square',
+            'w-full',
+            'max-w-[420px]',
+            'sm:max-w-[260px]',
+            'min-w-0',
+            'shrink-0'
+          )}
+        >
+          <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 dataKey="value"
                 data={data}
                 cx="50%"
                 cy="50%"
-                outerRadius={120}
-                innerRadius={70}
+                outerRadius="80%"
+                innerRadius="48%"
                 stroke="none"
                 paddingAngle={1}
                 nameKey="name"

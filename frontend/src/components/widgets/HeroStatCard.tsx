@@ -40,7 +40,7 @@ const heroFooterPillRecipes = {
 } as const;
 
 export const heroStatCardRecipes = {
-  base: 'hero-stat-card group relative rounded-2xl transition-colors duration-300',
+  base: 'hero-stat-card group relative min-w-0 rounded-2xl transition-colors duration-300',
   shell:
     'relative h-full w-full overflow-hidden rounded-2xl border-2 bg-white/80 p-4 transform-gpu origin-center will-change-transform transition-transform duration-200 dark:bg-[#111a2f]/70',
   title: `${uiTypographyRecipes.label} ${semanticTextRecipes.label} transition-colors duration-500`,
@@ -50,9 +50,9 @@ export const heroStatCardRecipes = {
     'pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100',
   ring: 'pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] opacity-70',
   ringLine: 'absolute inset-0 rounded-[calc(1rem-2px)] ring-2',
-  footer: 'relative',
+  footer: 'relative min-w-0 w-full max-w-full',
   footerInner:
-    'scrollbar-hide flex items-center gap-1.5 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+    'scrollbar-hide flex w-full min-w-0 items-center gap-1.5 overflow-x-auto overflow-y-hidden whitespace-nowrap max-w-full [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
   semantic: heroStatSemanticThemes,
 } as const;
 
@@ -103,7 +103,9 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
     return () => window.removeEventListener('resize', checkScroll);
   }, [checkScroll]);
 
-  const hasFooter = Boolean(subtext) || Boolean(pills && pills.length > 0);
+  const hasPills = Boolean(pills && pills.length > 0);
+  const hasInlineSubtext = Boolean(subtext) && !hasPills;
+  const hasFooter = hasPills;
   const ringColorStyle = {
     '--tw-ring-color': `${styles.ringHex}66`,
   } as CSSProperties;
@@ -151,12 +153,23 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
             {icon ? <span className={cn('h-4 w-4', styles.icon)}>{icon}</span> : null}
             <div className={cn(heroStatCardRecipes.title)}>{title}</div>
           </div>
-          <div className="flex items-baseline gap-2">
+          <div className={cn('flex', 'flex-wrap', 'items-baseline', 'gap-2')}>
             <div className={cn(heroStatCardRecipes.value)}>{value}</div>
             {suffix ? <div className={cn(heroStatCardRecipes.suffix)}>{suffix}</div> : null}
           </div>
-          {subtext || (pills && pills.length > 0) ? (
-            <div className="relative">
+          {hasInlineSubtext ? (
+            <div className="flex">
+              <span className={cn(heroFooterPillRecipes.base, styles.defaultPill)}>
+                <span
+                  className={cn(heroFooterPillRecipes.dot, styles.defaultDot)}
+                  aria-hidden="true"
+                />
+                <span className="whitespace-nowrap">{subtext}</span>
+              </span>
+            </div>
+          ) : null}
+          {hasFooter ? (
+            <div className="relative min-w-0 w-full max-w-full overflow-hidden">
               <div
                 ref={pillsRef}
                 onScroll={checkScroll}

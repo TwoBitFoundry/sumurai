@@ -56,8 +56,8 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
           'dark:via-[var(--color-surface-card)]/20'
         )}
       />
-      <div className={cn('relative', 'z-10', 'flex', 'items-center', 'justify-between', 'gap-4')}>
-        <div>
+      <div className={cn('relative', 'z-10', 'flex', 'flex-wrap', 'items-start', 'gap-4')}>
+        <div className={cn('min-w-[10rem]', 'flex-1')}>
           <div
             className={cn(
               uiTypographyRecipes.label,
@@ -81,7 +81,7 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
             {fmtUSD(totalBudgeted)}
           </div>
         </div>
-        <div className="text-right">
+        <div className={cn('min-w-[10rem]', 'flex-1', 'text-left', 'sm:text-right')}>
           <div
             className={cn(
               uiTypographyRecipes.label,

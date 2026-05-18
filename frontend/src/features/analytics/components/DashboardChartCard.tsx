@@ -23,8 +23,8 @@ export const DashboardChartCard = ({
   children,
 }: DashboardChartCardProps) => {
   return (
-    <GlassCard className={cn('p-6', 'h-full', 'flex', 'flex-col', className)}>
-      <div className={cn('mb-4', 'flex', 'items-center', 'justify-between')}>
+    <GlassCard className={cn('h-full', 'flex', 'flex-col', 'p-4', 'sm:p-6', className)}>
+      <div className={cn('mb-3', 'sm:mb-4', 'flex', 'items-center', 'justify-between')}>
         <div>
           <h3 className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>{title}</h3>
           <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>{description}</p>

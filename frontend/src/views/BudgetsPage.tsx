@@ -174,7 +174,7 @@ export default function BudgetsPage() {
           title="Days remaining"
           icon={<Clock className={cn('h-4', 'w-4')} />}
           value={stats.daysRemaining}
-          suffix={`out of`}
+          suffix={`of ${stats.totalDays}`}
           subtext={`${stats.totalDays} total days`}
         />
         <HeroStatCard

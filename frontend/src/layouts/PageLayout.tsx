@@ -17,14 +17,15 @@ export const pageLayoutRecipes = {
     'border',
     ...semanticBorders.glass,
     ...semanticSurfaces.glassPanel,
-    'p-8',
+    'p-4',
     ...semanticEffects.glassShadow,
     'backdrop-blur-[28px]',
     'backdrop-saturate-[150%]',
     'transition-colors',
     'duration-500',
     'ease-out',
-    'sm:p-12',
+    'sm:p-8',
+    'lg:p-12',
   ],
   innerRing: [
     'absolute',
@@ -84,7 +85,7 @@ export function PageLayout({
   className,
 }: PageLayoutProps) {
   return (
-    <div className={cn('space-y-8', className)}>
+    <div className={cn('space-y-6', 'sm:space-y-8', className)}>
       <section className={cn(...pageLayoutRecipes.shell)}>
         <div className={cn('pointer-events-none', 'absolute', 'inset-0')}>
           <div className={cn(pageLayoutRecipes.innerRing)} />

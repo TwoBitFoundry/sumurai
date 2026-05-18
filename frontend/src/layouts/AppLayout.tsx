@@ -60,11 +60,11 @@ export function AppLayout({
           className={cn(
             'flex-1',
             'overflow-hidden',
-            'pl-[calc(2rem_+_env(safe-area-inset-left))] pr-[calc(2rem_+_env(safe-area-inset-right))]',
+            'pl-[calc(1rem_+_env(safe-area-inset-left))] pr-[calc(1rem_+_env(safe-area-inset-right))]',
             'sm:pl-[calc(3rem_+_env(safe-area-inset-left))] sm:pr-[calc(3rem_+_env(safe-area-inset-right))]',
             'lg:pl-[calc(4rem_+_env(safe-area-inset-left))] lg:pr-[calc(4rem_+_env(safe-area-inset-right))]',
-            'pt-4 sm:pt-6 lg:pt-8',
-            'pb-4 md:pb-6 lg:pb-8'
+            'pt-3 sm:pt-6 lg:pt-8',
+            'pb-[calc(5.75rem_+_env(safe-area-inset-bottom))] md:pb-6 lg:pb-8'
           )}
         >
           {children}
@@ -129,14 +129,16 @@ export function AppLayout({
                       transition={{ stiffness: 400, damping: 35 }}
                     />
                   ) : null}
-                  <Icon className="relative z-10 h-4 w-4" />
+                  <span className="relative z-10 flex h-4 w-4 items-center justify-center shrink-0">
+                    <Icon className="h-4 w-4" />
+                  </span>
                   <span
                     className={cn(
                       'relative z-10 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300',
                       currentTab === key ? 'max-w-[8rem] opacity-100' : 'max-w-0 opacity-0'
                     )}
                   >
-                    {label}
+                    <span className={cn(currentTab === key && 'ml-1.5')}>{label}</span>
                   </span>
                 </Button>
               ))}
