@@ -13,7 +13,7 @@ export type BudgetsScreenSliceState = 'loaded' | 'empty' | 'error' | 'adding';
 export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
   const heroStatsLoaded = (
     <div className="space-y-3">
-      <div className={cn('grid', 'gap-3', 'sm:grid-cols-2', 'lg:grid-cols-4')}>
+      <div className={cn('grid', 'gap-3', 'md:grid-cols-2', 'lg:grid-cols-4')}>
         <HeroStatCard
           index={1}
           title="Active budgets"
@@ -53,7 +53,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
 
   const heroStatsEmpty = (
     <div className="space-y-3">
-      <div className={cn('grid', 'gap-3', 'sm:grid-cols-2', 'lg:grid-cols-4')}>
+      <div className={cn('grid', 'gap-3', 'md:grid-cols-2', 'lg:grid-cols-4')}>
         <HeroStatCard
           index={1}
           title="Active budgets"

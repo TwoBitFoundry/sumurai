@@ -185,10 +185,15 @@ Goal: keep visual references aligned with the new responsive contract.
 - Keep storybook slices aligned to the same design-system primitives and recipes used by production code.
 
 ### Acceptance Criteria
-- [ ] Storybook reference slices reflect the same three-tier system as the app.
-- [ ] No storybook slice relies on `sm:`, `xl:`, or `2xl:` screen prefixes.
-- [ ] The visual reference environment no longer teaches a different breakpoint model than production.
-- [ ] Storybook examples still reinforce, rather than bypass, the `DESIGN.md` source of truth.
+- [x] Storybook reference slices reflect the same three-tier system as the app.
+- [x] No storybook slice relies on `sm:`, `xl:`, or `2xl:` screen prefixes.
+- [x] The visual reference environment no longer teaches a different breakpoint model than production.
+- [x] Storybook examples still reinforce, rather than bypass, the `DESIGN.md` source of truth.
+
+### TDD log
+- Added a storybook slice responsive-contract test for the transactions, budgets, and settings reference screens.
+- Ran `npm --prefix frontend test -- --runTestsByPath tests/storybook/screenSlices/responsiveContract.test.tsx`.
+- Reconfirmed `frontend/src/storybook/screenSlices` has no layout `sm`, `xl`, or `2xl` screen prefixes.
 
 ## Phase 7: Narrow Tailwind Screens And Verify
 Goal: make the config enforce the new breakpoint policy once the code is clean.

@@ -88,7 +88,7 @@ export function TransactionsScreenSlice(props: {
           props.state === 'error' ? (props.errorMessage ?? 'Failed to load transactions.') : null
         }
         stats={
-          <div className={cn('grid', 'gap-3', 'sm:grid-cols-2', 'lg:grid-cols-4')}>
+          <div className={cn('grid', 'gap-3', 'md:grid-cols-2', 'lg:grid-cols-4')}>
             <HeroStatCard
               index={1}
               title="Total shown"
