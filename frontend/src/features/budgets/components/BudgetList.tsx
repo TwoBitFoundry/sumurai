@@ -65,8 +65,7 @@ export function BudgetList({
         'p-6',
         'md:px-10',
         'md:grid-cols-2',
-        'xl:grid-cols-3',
-        '2xl:grid-cols-4'
+        'lg:grid-cols-3'
       )}
     >
       {items.map((b) => {

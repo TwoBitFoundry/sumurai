@@ -206,7 +206,7 @@ export function ConnectAccountStep({
       className={cn(
         'grid items-stretch gap-8',
         'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]',
-        'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]'
+        'md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]'
       )}
     >
       <div className={cn('flex flex-col gap-8')}>
@@ -291,7 +291,7 @@ export function ConnectAccountStep({
 
         <div className={cn('flex flex-col gap-4')}>
           <div className={cn(onboardingEyebrowCaps)}>{content.highlightLabel}</div>
-          <div className={cn('grid gap-3 sm:grid-cols-3')}>
+          <div className={cn('grid gap-3 md:grid-cols-3')}>
             {content.features.map((feature) => (
               <FeatureCard key={feature.title} {...feature} />
             ))}
@@ -302,7 +302,7 @@ export function ConnectAccountStep({
       <div className={cn('flex flex-col gap-5 self-start mt-[52px]')}>
         <div className={cn(onboardingEyebrowCaps)}>{content.highlightMeta}</div>
         <div className={cn('flex flex-col gap-4')}>
-          <div className={cn('grid auto-rows-fr gap-3 sm:grid-cols-2')}>
+          <div className={cn('grid auto-rows-fr gap-3 md:grid-cols-2')}>
             {content.highlights.map((highlight) => (
               <HighlightCard key={highlight.title} {...highlight} />
             ))}

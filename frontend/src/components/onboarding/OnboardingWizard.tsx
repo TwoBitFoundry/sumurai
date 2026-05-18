@@ -336,7 +336,7 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
               <div
                 className={cn(
                   'flex flex-col items-start justify-between gap-3',
-                  'sm:flex-row sm:items-center',
+                  'md:flex-row md:items-center',
                   'animate-[fadeSlideUp_400ms_ease-out_200ms_backwards]'
                 )}
               >

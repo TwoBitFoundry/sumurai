@@ -158,11 +158,16 @@ Goal: eliminate wider-desktop-only branches and settle on one desktop compositio
 - Preserve the existing component visual language; only the breakpoint branching should change.
 
 ### Acceptance Criteria
-- [ ] No `xl:` or `2xl:` Tailwind screen prefixes remain in app code.
-- [ ] Desktop compositions still read well at large widths without extra breakpoint tiers.
-- [ ] Budget list does not exceed 3 columns.
-- [ ] Onboarding remains visually balanced on desktop with a single `lg` split rule.
-- [ ] Removing wider-desktop tiers does not require changes to tokens, recipes, or documented design roles.
+- [x] No `xl:` or `2xl:` Tailwind screen prefixes remain in app code.
+- [x] Desktop compositions still read well at large widths without extra breakpoint tiers.
+- [x] Budget list does not exceed 3 columns.
+- [x] Onboarding remains visually balanced on desktop with a single `lg` split rule.
+- [x] Removing wider-desktop tiers does not require changes to tokens, recipes, or documented design roles.
+
+### TDD log
+- Added onboarding and budget list layout assertions for the desktop split and grid tiers.
+- Ran `npm --prefix frontend test -- --runTestsByPath tests/components/onboarding/ConnectAccountStep.test.tsx tests/components/onboarding/WelcomeStep.test.tsx tests/features/budgets/components/BudgetList.test.tsx`.
+- Confirmed there are no remaining `xl:` or `2xl:` layout prefixes in `frontend/src/components/onboarding`, `frontend/src/features/budgets/components/BudgetList.tsx`, or `frontend/src/components/onboarding/OnboardingWizard.tsx`.
 
 ## Phase 6: Update Storybook Screen Slices
 Goal: keep visual references aligned with the new responsive contract.

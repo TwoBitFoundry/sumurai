@@ -4,7 +4,7 @@ import { CONNECT_ACCOUNT_PROVIDER_CONTENT } from '@/utils/providerCards';
 
 describe('ConnectAccountStep', () => {
   it('disables the primary action and explains offline availability', () => {
-    render(
+    const { container } = render(
       <ConnectAccountStep
         content={CONNECT_ACCOUNT_PROVIDER_CONTENT.plaid}
         providerLoading={false}
@@ -27,6 +27,11 @@ describe('ConnectAccountStep', () => {
       )
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /connect with plaid/i })).toBeDisabled();
+    expect(container.querySelector('div.grid.items-stretch.gap-8')).toHaveClass(
+      'md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]'
+    );
+    expect(container.querySelectorAll('div.grid.gap-3')[0]).toHaveClass('md:grid-cols-3');
+    expect(container.querySelectorAll('div.grid.gap-3')[1]).toHaveClass('md:grid-cols-2');
   });
 
   it('renders the Plaid connect action without extra guidance', () => {

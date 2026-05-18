@@ -67,7 +67,7 @@ const onboardingPreviewFrame = [
   'relative aspect-[16/10] overflow-hidden rounded-2xl',
   ...semanticBorders.subtle,
   'bg-[var(--color-surface-overlay)]',
-  'shadow-lg sm:aspect-[18/10]',
+  'shadow-lg md:aspect-[18/10]',
 ] as const;
 
 const welcomeFeatures: WelcomeFeature[] = [
@@ -123,7 +123,7 @@ export function WelcomeStep() {
       className={cn(
         'grid items-start gap-8',
         'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]',
-        'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]'
+        'md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]'
       )}
     >
       <div className={cn('flex flex-col gap-8')}>
@@ -170,7 +170,7 @@ export function WelcomeStep() {
 
         <div className={cn('flex flex-col gap-4')}>
           <div className={cn(onboardingEyebrowCaps)}>What you'll see</div>
-          <div className={cn('grid gap-3 sm:grid-cols-3')}>
+          <div className={cn('grid gap-3 md:grid-cols-3')}>
             {welcomeFeatures.map((feature) => (
               <FeatureCard key={feature.title} {...feature} />
             ))}
@@ -181,7 +181,7 @@ export function WelcomeStep() {
       <div className={cn('relative flex flex-col self-start')}>
         <div
           className={cn(
-            'mb-3 mt-[52px] flex items-center justify-between sm:mb-4',
+            'mb-3 mt-[52px] flex items-center justify-between md:mb-4',
             onboardingEyebrowCaps
           )}
         >
