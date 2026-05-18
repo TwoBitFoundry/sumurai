@@ -92,7 +92,7 @@ export const ProviderSelectionPanel = ({
             className={cn(
               uiTypographyRecipes.pageTitle,
               uiTextRecipes.primary,
-              'sm:text-[2.25rem]'
+              'md:text-[2.25rem]'
             )}
           >
             Choose how you connect accounts

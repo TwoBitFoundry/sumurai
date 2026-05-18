@@ -63,7 +63,7 @@ export function BudgetList({
         'grid-cols-1',
         'gap-6',
         'p-6',
-        'sm:px-10',
+        'md:px-10',
         'md:grid-cols-2',
         'xl:grid-cols-3',
         '2xl:grid-cols-4'
@@ -161,8 +161,8 @@ export function BudgetList({
                     'grid',
                     'grid-cols-1',
                     'gap-4',
-                    'sm:grid-cols-[1fr_auto]',
-                    'sm:items-end'
+                    'md:grid-cols-[1fr_auto]',
+                    'md:items-end'
                   )}
                 >
                   <div className="space-y-2">

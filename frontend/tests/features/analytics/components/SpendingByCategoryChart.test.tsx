@@ -46,7 +46,7 @@ describe('SpendingByCategoryChart', () => {
   });
 
   it('disables pie animation when animated is false', () => {
-    render(
+    const { container } = render(
       <SpendingByCategoryChart
         data={[{ name: 'Food', value: 10 }]}
         total={10}
@@ -56,6 +56,7 @@ describe('SpendingByCategoryChart', () => {
       />
     );
 
+    expect(container.querySelector('.aspect-square')).toHaveClass('md:max-w-[260px]');
     expect(screen.getByTestId('Pie')).toHaveAttribute('data-animation-duration', '0');
     expect(screen.getByTestId('Pie')).toHaveAttribute('data-is-animation-active', 'false');
   });

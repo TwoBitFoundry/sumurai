@@ -49,7 +49,7 @@ export const TransactionsFilters: React.FC<Props> = ({
   return (
     <>
       {showSearch && (
-        <div className={cn('relative', 'w-full', 'sm:w-64')}>
+        <div className={cn('relative', 'w-full', 'md:w-64')}>
           <Input
             value={search}
             onChange={(e) => onSearch(e.target.value)}

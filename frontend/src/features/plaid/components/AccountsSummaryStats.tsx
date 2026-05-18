@@ -27,11 +27,11 @@ export const AccountsSummaryStats = ({
   const hasConnections = summary.institutions > 0;
 
   return (
-    <div className={cn('grid', 'gap-3', 'sm:grid-cols-3')}>
+    <div className={cn('grid', 'gap-3', 'md:grid-cols-3')}>
       {flowError && (
         <div
           className={cn(
-            'sm:col-span-3',
+            'md:col-span-3',
             'rounded-2xl',
             'border',
             'border-red-200/70',

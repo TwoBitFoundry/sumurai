@@ -65,7 +65,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center gap-4 px-6 py-20 text-center sm:px-12',
+        'flex flex-col items-center justify-center gap-4 px-6 py-20 text-center md:px-12',
         className
       )}
       {...props}

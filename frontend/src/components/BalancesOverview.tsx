@@ -105,7 +105,7 @@ function BalancesLegend({ payload, ratio }: BalancesLegendProps) {
         })}
       </div>
       {ratio != null && (
-        <div className="flex w-full justify-end sm:w-auto">
+        <div className="flex w-full md:w-auto justify-end">
           <RatioPill ratio={ratio} />
         </div>
       )}
@@ -265,7 +265,7 @@ export function BalancesOverview() {
           'items-center',
           'justify-start',
           'gap-3',
-          'sm:justify-end'
+          'md:justify-end'
         )}
       >
         {!loading && refreshing && (
@@ -279,7 +279,7 @@ export function BalancesOverview() {
       {loading && (
         <div
           data-testid="balances-loading"
-          className={cn('grid', 'gap-3', 'sm:grid-cols-2', 'lg:grid-cols-5')}
+          className={cn('grid', 'gap-3', 'md:grid-cols-2', 'lg:grid-cols-5')}
         >
           {[1, 2, 3, 4, 5].map((id) => {
             return <div key={id} className={cn(dashboardSummaryShellLoading)} />;

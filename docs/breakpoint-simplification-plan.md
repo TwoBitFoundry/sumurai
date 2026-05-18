@@ -94,11 +94,17 @@ Goal: remove breakpoint ambiguity from reusable UI components before touching pa
 - Do not modify `DESIGN.md` unless the migration exposes a real mismatch between documented design intent and the current design-system primitives.
 
 ### Acceptance Criteria
-- [ ] Reusable components no longer depend on `sm:` for layout behavior.
-- [ ] Component behavior is consistent across pages after migration.
-- [ ] No component API is changed unless required for layout correctness.
-- [ ] Shared responsive behavior is expressed through existing primitives or recipes where appropriate, not duplicated ad hoc.
-- [ ] `DESIGN.md` remains unchanged unless a genuine design-contract mismatch is identified.
+- [x] Reusable components no longer depend on `sm:` for layout behavior.
+- [x] Component behavior is consistent across pages after migration.
+- [x] No component API is changed unless required for layout correctness.
+- [x] Shared responsive behavior is expressed through existing primitives or recipes where appropriate, not duplicated ad hoc.
+- [x] `DESIGN.md` remains unchanged unless a genuine design-contract mismatch is identified.
+
+### TDD log
+- Added shared layout assertions for dashboard chart cards, empty states, transaction filters, account summary stats, budget summaries, provider selection, and budget lists.
+- Extended `SpendingByCategoryChart` coverage to verify the chart wrapper now uses the `md` width cap.
+- Ran `npm --prefix frontend test -- --runTestsByPath tests/components/sharedResponsiveLayout.test.tsx tests/features/analytics/components/SpendingByCategoryChart.test.tsx`.
+- Reconfirmed the shared component sources no longer contain `sm:` screen prefixes with `rg -n "\\b(sm|xl|2xl):" frontend/src/components frontend/src/features frontend/src/ui/primitives`.
 
 ## Phase 4: Migrate Page And Feature Layouts
 Goal: convert page-specific composition to the new 3-tier model.

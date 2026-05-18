@@ -58,7 +58,7 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
             'aspect-square',
             'w-full',
             'max-w-[420px]',
-            'sm:max-w-[260px]',
+            'md:max-w-[260px]',
             'min-w-0',
             'shrink-0'
           )}

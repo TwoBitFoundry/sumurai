@@ -81,7 +81,7 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
             {fmtUSD(totalBudgeted)}
           </div>
         </div>
-        <div className={cn('min-w-[10rem]', 'flex-1', 'text-left', 'sm:text-right')}>
+        <div className={cn('min-w-[10rem]', 'flex-1', 'text-left', 'md:text-right')}>
           <div
             className={cn(
               uiTypographyRecipes.label,
