@@ -28,7 +28,7 @@ export function Footer() {
           'max-w-6xl',
           'mx-auto',
           'pl-[calc(1rem_+_env(safe-area-inset-left))] pr-[calc(1rem_+_env(safe-area-inset-right))]',
-          'sm:pl-[calc(2rem_+_env(safe-area-inset-left))] sm:pr-[calc(2rem_+_env(safe-area-inset-right))]',
+          'md:pl-[calc(2rem_+_env(safe-area-inset-left))] md:pr-[calc(2rem_+_env(safe-area-inset-right))]',
           'py-8'
         )}
       >
@@ -151,9 +151,9 @@ export function Footer() {
           className={cn(
             'flex',
             'flex-col',
-            'sm:flex-row',
-            'sm:items-center',
-            'sm:justify-between',
+            'md:flex-row',
+            'md:items-center',
+            'md:justify-between',
             'gap-4',
             'pt-5',
             'border-t',
@@ -163,7 +163,7 @@ export function Footer() {
           <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.subtle)}>
             © {new Date().getFullYear()} Two Bit Foundry • Source available
           </p>
-          <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-4', 'sm:gap-6')}>
+          <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-4', 'md:gap-6')}>
             <a
               href="mailto:contact@twobitfoundry.com"
               className={cn(

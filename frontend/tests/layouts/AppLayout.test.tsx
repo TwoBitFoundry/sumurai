@@ -37,5 +37,9 @@ describe('AppLayout', () => {
     expect(root).toHaveClass('flex');
     expect(root).toHaveClass('flex-col');
     expect(main).toHaveClass('flex-1');
+    expect(main).toHaveClass('md:pl-[calc(3rem_+_env(safe-area-inset-left))]');
+    expect(main).toHaveClass('md:pt-6');
+    expect(main).toHaveClass('lg:pl-[calc(4rem_+_env(safe-area-inset-left))]');
+    expect(main).not.toHaveClass('sm:pl-[calc(3rem_+_env(safe-area-inset-left))]', 'sm:pt-6');
   });
 });

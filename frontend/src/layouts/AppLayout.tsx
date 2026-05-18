@@ -61,9 +61,9 @@ export function AppLayout({
             'flex-1',
             'overflow-hidden',
             'pl-[calc(1rem_+_env(safe-area-inset-left))] pr-[calc(1rem_+_env(safe-area-inset-right))]',
-            'sm:pl-[calc(3rem_+_env(safe-area-inset-left))] sm:pr-[calc(3rem_+_env(safe-area-inset-right))]',
+            'md:pl-[calc(3rem_+_env(safe-area-inset-left))] md:pr-[calc(3rem_+_env(safe-area-inset-right))]',
             'lg:pl-[calc(4rem_+_env(safe-area-inset-left))] lg:pr-[calc(4rem_+_env(safe-area-inset-right))]',
-            'pt-3 sm:pt-6 lg:pt-8',
+            'pt-3 md:pt-6 lg:pt-8',
             'pb-[calc(5.75rem_+_env(safe-area-inset-bottom))] md:pb-6 lg:pb-8'
           )}
         >
