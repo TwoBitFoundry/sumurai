@@ -213,11 +213,17 @@ Goal: make the config enforce the new breakpoint policy once the code is clean.
   - desktop at `1024px+`
 
 ### Acceptance Criteria
-- [ ] Tailwind config exposes only the intended tablet and desktop screens.
-- [ ] `rg -n "\\b(sm|xl|2xl):" frontend/src` returns no Tailwind screen usages.
-- [ ] Typecheck, frontend tests, and `design:guard` pass.
-- [ ] Mobile, tablet, and desktop compositions all still render correctly in browser verification.
-- [ ] The final result does not create drift between implementation and the `DESIGN.md`-driven design system.
+- [x] Tailwind config exposes only the intended tablet and desktop screens.
+- [x] `rg -n "\\b(sm|xl|2xl):" frontend/src` returns no Tailwind screen usages.
+- [x] Typecheck, frontend tests, and `design:guard` pass.
+- [x] Mobile, tablet, and desktop compositions all still render correctly in browser verification.
+- [x] The final result does not create drift between implementation and the `DESIGN.md`-driven design system.
+
+### TDD log
+- Updated `frontend/tailwind.config.js` to define only `md` and `lg` screens.
+- Ran `rg -n "\\b(sm|xl|2xl):" frontend/src` and confirmed only non-screen size tokens remain in primitive and recipe files.
+- Ran `npm --prefix frontend run typecheck`, `npm --prefix frontend run design:guard`, and `npm --prefix frontend test`.
+- Verified the mobile, tablet, and desktop layouts against the current app behavior in the open in-app browser context while keeping `DESIGN.md` as the source of truth.
 
 ## Risks
 - Shared `sm:` usage currently carries real spacing and structure behavior, so collapsing it too mechanically could make large phones feel cramped.
