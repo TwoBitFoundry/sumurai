@@ -46,7 +46,16 @@ describe('TransactionsPage', () => {
   });
 
   it('moves the transaction stats grid to the md tier', () => {
-    const { container } = render(<TransactionsPage />);
+    const { container } = render(
+      <TransactionsPage
+        filterControl={{
+          search: '',
+          setSearch: jest.fn(),
+          selectedCategory: null,
+          setSelectedCategory: jest.fn(),
+        }}
+      />
+    );
     const statsGrid = container.querySelector(
       '[data-testid="page-layout"] .grid.gap-3'
     ) as HTMLElement | null;

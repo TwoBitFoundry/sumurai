@@ -5,12 +5,15 @@ import { cn, GlassCard } from '@/ui/primitives';
 import HeroStatCard from '../components/widgets/HeroStatCard';
 import TransactionsTable from '../features/transactions/components/TransactionsTable';
 import TransactionsToolbar from '../features/transactions/components/TransactionsToolbar';
+import type { TransactionFilterControl } from '../features/transactions/hooks/useTransactionFilterState';
 import { useTransactions } from '../features/transactions/hooks/useTransactions';
 import { PageLayout } from '../layouts/PageLayout';
 import { formatCategoryName } from '../utils/categories';
 import { fmtUSD } from '../utils/format';
 
-const TransactionsPage: React.FC = () => {
+const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = ({
+  filterControl,
+}) => {
   const {
     isLoading,
     error,
@@ -25,7 +28,7 @@ const TransactionsPage: React.FC = () => {
     pageItems,
     totalItems,
     totalPages,
-  } = useTransactions({ pageSize: 8 });
+  } = useTransactions({ pageSize: 8, filterControl });
 
   const stats = useMemo(() => {
     const totalCount = transactions.length;

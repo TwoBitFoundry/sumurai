@@ -50,4 +50,21 @@ describe('TransactionsTable text tokens', () => {
 
     expect(container.querySelectorAll('tbody tr')).toHaveLength(4);
   });
+
+  it('renders eight placeholder rows when no transactions match', () => {
+    const { container } = render(
+      <TransactionsTable
+        items={[]}
+        total={0}
+        currentPage={1}
+        totalPages={1}
+        pageSize={8}
+        onPrev={() => {}}
+        onNext={() => {}}
+      />
+    );
+
+    expect(container.querySelectorAll('tbody tr')).toHaveLength(8);
+    expect(screen.getByText('No transactions found')).toBeInTheDocument();
+  });
 });

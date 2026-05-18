@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn, Input } from '@/ui/primitives';
-import { pillRecipes } from '@/ui/primitives/Pill';
+import { pillRecipes, pillScrollFadeRecipes } from '@/ui/primitives/Pill';
 import {
   placeholder as uiPlaceholderRecipes,
   text as uiTextRecipes,
@@ -17,6 +17,8 @@ interface Props {
   onSelectCategory: (c: string | null) => void;
   showSearch?: boolean;
   showCategories?: boolean;
+  showFilterLabel?: boolean;
+  scrollFadeSurface?: keyof typeof pillScrollFadeRecipes;
 }
 
 export const TransactionsFilters: React.FC<Props> = ({
@@ -27,7 +29,10 @@ export const TransactionsFilters: React.FC<Props> = ({
   onSelectCategory,
   showSearch = true,
   showCategories = true,
+  showFilterLabel = true,
+  scrollFadeSurface = 'card',
 }) => {
+  const scrollFade = pillScrollFadeRecipes[scrollFadeSurface];
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftFade, setShowLeftFade] = useState(false);
   const [showRightFade, setShowRightFade] = useState(false);
@@ -42,9 +47,33 @@ export const TransactionsFilters: React.FC<Props> = ({
 
   useEffect(() => {
     checkScroll();
+
+    const el = scrollContainerRef.current;
+    if (!el) {
+      return;
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      checkScroll();
+    });
+    resizeObserver.observe(el);
+
     window.addEventListener('resize', checkScroll);
-    return () => window.removeEventListener('resize', checkScroll);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', checkScroll);
+    };
   }, [checkScroll]);
+
+  useEffect(() => {
+    if (!showCategories) return;
+    const frame = requestAnimationFrame(() => {
+      if (categories.length >= 0) {
+        checkScroll();
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [categories.length, showCategories, checkScroll]);
 
   return (
     <>
@@ -62,18 +91,20 @@ export const TransactionsFilters: React.FC<Props> = ({
       )}
       {showCategories && (
         <div className={cn('flex', 'w-full', 'items-center', 'gap-3')}>
-          <span
-            className={cn(
-              'flex-shrink-0',
-              uiTypographyRecipes.label,
-              uiTextRecipes.label,
-              'transition-colors',
-              'duration-500'
-            )}
-          >
-            Filter
-          </span>
-          <div className={cn('relative', 'min-w-0', 'flex-1')}>
+          {showFilterLabel ? (
+            <span
+              className={cn(
+                'flex-shrink-0',
+                uiTypographyRecipes.label,
+                uiTextRecipes.label,
+                'transition-colors',
+                'duration-500'
+              )}
+            >
+              Filter
+            </span>
+          ) : null}
+          <div className={cn('relative', 'min-w-0', 'flex-1', 'overflow-hidden')}>
             <div
               ref={scrollContainerRef}
               onScroll={checkScroll}
@@ -115,8 +146,8 @@ export const TransactionsFilters: React.FC<Props> = ({
                 );
               })}
             </div>
-            {showLeftFade && <div className={cn(pillRecipes.fadeLeft, 'w-8')} />}
-            {showRightFade && <div className={cn(pillRecipes.fadeRight, 'w-8')} />}
+            {showLeftFade ? <div className={scrollFade.left} /> : null}
+            {showRightFade ? <div className={scrollFade.right} /> : null}
           </div>
         </div>
       )}

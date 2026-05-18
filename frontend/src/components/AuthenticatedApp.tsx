@@ -3,6 +3,8 @@ import { useRef, useState } from 'react';
 import { DateRangePillSlider } from '@/features/analytics/components/DateRangePillSlider';
 import { BudgetMonthPillSlider } from '@/features/budgets/components/BudgetMonthPillSlider';
 import { useBudgetMonth } from '@/features/budgets/hooks/useBudgetMonth';
+import { TransactionsSearchBar } from '@/features/transactions/components/TransactionsSearchBar';
+import { useTransactionFilterState } from '@/features/transactions/hooks/useTransactionFilterState';
 import { Alert, cn } from '@/ui/primitives';
 import AccountsPage from '@/views/AccountsPage';
 import BudgetsPage from '@/views/BudgetsPage';
@@ -37,6 +39,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>('current-month');
   const budgetMonth = useBudgetMonth();
+  const transactionFilters = useTransactionFilterState();
   const swipeBlockedRef = useRef(false);
 
   const handleTabChange = (next: TabKey) => {
@@ -49,6 +52,13 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
   const bottomBarContent =
     tab === 'dashboard' ? (
       <DateRangePillSlider dateRange={dateRange} onChange={setDateRange} />
+    ) : tab === 'transactions' ? (
+      <div className={cn('w-full', 'max-w-full', 'lg:hidden')}>
+        <TransactionsSearchBar
+          search={transactionFilters.search}
+          onSearch={transactionFilters.setSearch}
+        />
+      </div>
     ) : tab === 'budgets' ? (
       <BudgetMonthPillSlider
         monthLabel={budgetMonth.monthLabel}
@@ -57,7 +67,8 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
         onCurrentMonth={budgetMonth.goToCurrentMonth}
       />
     ) : null;
-  const bottomBarAboveTabsUntil = tab === 'budgets' ? 'lg' : 'md';
+  const bottomBarAboveTabsUntil =
+    tab === 'dashboard' ? 'md' : tab === 'budgets' || tab === 'transactions' ? 'lg' : 'md';
 
   return (
     <ErrorBoundary>
@@ -113,7 +124,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
                 {tab === 'dashboard' && (
                   <DashboardPage dateRange={dateRange} setDateRange={setDateRange} />
                 )}
-                {tab === 'transactions' && <TransactionsPage />}
+                {tab === 'transactions' && <TransactionsPage filterControl={transactionFilters} />}
                 {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}
                 {tab === 'accounts' && <AccountsPage onError={setError} />}
                 {tab === 'settings' && (

@@ -53,6 +53,32 @@ export function AppLayout({
     return () => observer.disconnect();
   }, []);
 
+  const showBottomAccountFilter = currentTab !== 'accounts';
+
+  const bottomBarRow = (
+    <div
+      className={cn(
+        'grid w-full items-center gap-2',
+        showBottomAccountFilter ? 'grid-cols-[1fr_auto_1fr]' : 'grid-cols-1 justify-items-center'
+      )}
+    >
+      {showBottomAccountFilter ? <div aria-hidden className={cn('min-w-0')} /> : null}
+      <div
+        className={cn(
+          'flex min-w-0 max-w-full justify-center',
+          showBottomAccountFilter && 'justify-self-center'
+        )}
+      >
+        {bottomBarContent}
+      </div>
+      {showBottomAccountFilter ? (
+        <div className={cn('flex min-w-0 items-center justify-end')}>
+          <HeaderAccountFilter triggerStyle="icon-only" />
+        </div>
+      ) : null}
+    </div>
+  );
+
   return (
     <div className={cn('flex', 'min-h-screen', 'flex-col', className)}>
       <div className={cn('relative', 'z-10', 'flex', 'flex-1', 'flex-col')}>
@@ -84,15 +110,12 @@ export function AppLayout({
           className={cn(
             'fixed bottom-5 left-0 right-0 z-50',
             floatingBottomBarVisibility,
-            'min-h-[2.75rem] items-center justify-center px-4',
+            'min-h-[2.75rem] px-4',
             'transition-opacity duration-200',
             floatingVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
           )}
         >
-          {bottomBarContent}
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-            <HeaderAccountFilter triggerStyle="icon-only" />
-          </div>
+          {bottomBarRow}
         </div>
 
         {/* Mobile bottom navigation bar */}
@@ -107,12 +130,7 @@ export function AppLayout({
             floatingVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
           )}
         >
-          <div className={cn('relative flex min-h-[3.25rem] items-center justify-center px-4')}>
-            {bottomBarContent}
-            <div className="absolute right-4 top-1/2 -translate-y-1/2">
-              <HeaderAccountFilter triggerStyle="icon-only" />
-            </div>
-          </div>
+          <div className={cn('min-h-[3.25rem] px-4')}>{bottomBarRow}</div>
 
           <div className={cn('flex justify-center pt-1 pb-2')}>
             <nav className={cn(...appTitleBarRecipes.pillContainer)} aria-label="Mobile primary">

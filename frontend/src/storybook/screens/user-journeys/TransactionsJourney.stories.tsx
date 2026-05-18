@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { useTransactionFilterState } from '@/features/transactions/hooks/useTransactionFilterState';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import TransactionsPage from '@/views/TransactionsPage';
 import {
@@ -39,10 +40,11 @@ const handlers = [
 ];
 
 function TransactionsJourney() {
+  const filterControl = useTransactionFilterState();
   return (
     <AccountFilterStoryProvider>
       <StoryApiScope handlers={handlers}>
-        <TransactionsPage />
+        <TransactionsPage filterControl={filterControl} />
       </StoryApiScope>
     </AccountFilterStoryProvider>
   );
