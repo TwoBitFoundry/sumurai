@@ -114,7 +114,7 @@ const DashboardPage: React.FC<{
         subtitle="Track your assets and liabilities across all connected accounts with real-time balance updates."
         stats={<BalancesOverview />}
       >
-        <div className={cn('space-y-6', 'sm:space-y-8')}>
+        <div className={cn('space-y-6', 'md:space-y-8')}>
           <div
             className={cn(
               'grid',
@@ -122,7 +122,7 @@ const DashboardPage: React.FC<{
               'md:grid-cols-2',
               'lg:grid-cols-3',
               'gap-4',
-              'sm:gap-6',
+              'md:gap-6',
               'items-stretch'
             )}
           >

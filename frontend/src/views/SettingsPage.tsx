@@ -130,9 +130,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
               'flex',
               'flex-col',
               'gap-3',
-              'sm:flex-row',
-              'sm:items-center',
-              'sm:justify-between'
+              'md:flex-row',
+              'md:items-center',
+              'md:justify-between'
             )}
           >
             <div className={cn('flex', 'min-w-0', 'items-center', 'gap-2')}>

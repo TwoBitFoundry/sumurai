@@ -18,15 +18,19 @@ describe('SettingsPage', () => {
       colors: {} as any,
     } as any);
 
-    render(<SettingsPage />);
+    const { container } = render(<SettingsPage />);
 
     const themeBadge = screen.getByText('THEME');
     const appearanceLabel = screen.getByText('Appearance');
+    const appearanceRow = container.querySelector('div.flex.flex-col.gap-3');
 
     expect(appearanceLabel).toBeInTheDocument();
     expect(themeBadge.compareDocumentPosition(appearanceLabel)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
+    expect(appearanceRow).toHaveClass('md:flex-row');
+    expect(appearanceRow).toHaveClass('md:items-center');
+    expect(appearanceRow).toHaveClass('md:justify-between');
     fireEvent.click(screen.getByRole('radio', { name: 'Light' }));
     expect(setPreference).toHaveBeenCalledWith('light');
   });

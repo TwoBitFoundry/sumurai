@@ -139,7 +139,7 @@ export default function BudgetsPage() {
 
   const heroStats = (
     <div className="space-y-3">
-      <div className={cn('grid', 'gap-3', 'sm:grid-cols-2', 'lg:grid-cols-4')}>
+      <div className={cn('grid', 'gap-3', 'md:grid-cols-2', 'lg:grid-cols-4')}>
         <HeroStatCard
           index={1}
           title="Active budgets"

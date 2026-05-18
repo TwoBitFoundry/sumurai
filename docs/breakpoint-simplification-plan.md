@@ -130,11 +130,17 @@ Goal: convert page-specific composition to the new 3-tier model.
 - Preserve existing recipe, token, and primitive composition.
 
 ### Acceptance Criteria
-- [ ] Dashboard, budgets, transactions, settings, and auth all use only base, `md`, and `lg` for screen breakpoints.
-- [ ] Mobile remains single-column or stacked where appropriate.
-- [ ] Tablet picks up the first structural reflow at `768px`.
-- [ ] No page regresses into horizontal overflow on mobile.
-- [ ] Page-level fixes do not introduce styling that conflicts with `DESIGN.md` patterns or existing primitives.
+- [x] Dashboard, budgets, transactions, settings, and auth all use only base, `md`, and `lg` for screen breakpoints.
+- [x] Mobile remains single-column or stacked where appropriate.
+- [x] Tablet picks up the first structural reflow at `768px`.
+- [x] No page regresses into horizontal overflow on mobile.
+- [x] Page-level fixes do not introduce styling that conflicts with `DESIGN.md` patterns or existing primitives.
+
+### TDD log
+- Added page-level responsive assertions for dashboard, transactions, budgets, settings, and auth shells.
+- Reran `Auth.tsx` through Jest by replacing the test-only `import.meta` logging guard with a `NODE_ENV` check.
+- Ran `npm --prefix frontend test -- --runTestsByPath tests/views/DashboardPage.test.tsx tests/views/SettingsPage.test.tsx tests/views/TransactionsPage.test.tsx tests/views/BudgetsPage.test.tsx tests/Auth.test.tsx`.
+- Confirmed the page-level sources no longer contain `sm:` screen prefixes with `rg -n "\\b(sm|xl|2xl):" frontend/src/views/DashboardPage.tsx frontend/src/views/TransactionsPage.tsx frontend/src/views/BudgetsPage.tsx frontend/src/views/SettingsPage.tsx frontend/src/Auth.tsx`.
 
 ## Phase 5: Collapse xl And 2xl Into Desktop
 Goal: eliminate wider-desktop-only branches and settle on one desktop composition.

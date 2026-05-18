@@ -41,7 +41,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
       const errorMessage =
         error instanceof Error ? error.message : 'Login failed. Please check your credentials.';
       setError(errorMessage);
-      if (!import.meta.env?.VITEST) {
+      if (process.env.NODE_ENV !== 'test') {
         console.error('Login failed:', error);
       }
     } finally {
@@ -59,7 +59,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
         'justify-center',
         'px-4',
         'py-12',
-        'sm:px-6'
+        'md:px-6'
       )}
     >
       <div
@@ -215,7 +215,7 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
         'justify-center',
         'px-4',
         'py-12',
-        'sm:px-6'
+        'md:px-6'
       )}
     >
       <div

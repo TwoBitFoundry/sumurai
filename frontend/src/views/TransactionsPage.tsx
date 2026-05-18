@@ -93,7 +93,7 @@ const TransactionsPage: React.FC = () => {
         subtitle="Search and filter transactions across all connected accounts."
         error={error}
         stats={
-          <div className={cn('grid', 'gap-3', 'sm:grid-cols-2', 'lg:grid-cols-4')}>
+          <div className={cn('grid', 'gap-3', 'md:grid-cols-2', 'lg:grid-cols-4')}>
             <HeroStatCard
               index={1}
               title="Total shown"
