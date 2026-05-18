@@ -1,6 +1,10 @@
 import { Building2, Clock, CreditCard } from 'lucide-react';
 import { cn } from '@/ui/primitives';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import {
+  radius as uiRadiusRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import HeroStatCard from '../../../components/widgets/HeroStatCard';
 
 interface AccountsSummaryStatsProps {
@@ -32,7 +36,7 @@ export const AccountsSummaryStats = ({
         <div
           className={cn(
             'md:col-span-3',
-            'rounded-2xl',
+            uiRadiusRecipes.standard,
             'border',
             'border-red-200/70',
             'bg-red-50/80',

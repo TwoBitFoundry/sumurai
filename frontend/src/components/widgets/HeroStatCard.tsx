@@ -1,6 +1,10 @@
 import React, { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/ui/primitives';
-import { text as semanticTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import {
+  text as semanticTextRecipes,
+  radius as uiRadiusRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import { getHeroAccentTheme, heroAccents } from '@/ui/tokens';
 import { getTagThemeForCategory } from '../../utils/categories';
 import { heroStatSemanticThemes } from './heroStatSemanticThemes';
@@ -40,16 +44,14 @@ const heroFooterPillRecipes = {
 } as const;
 
 export const heroStatCardRecipes = {
-  base: 'hero-stat-card group relative min-w-0 rounded-2xl transition-colors duration-300',
-  shell:
-    'relative h-full w-full overflow-hidden rounded-2xl border-2 bg-white/80 p-4 transform-gpu origin-center will-change-transform transition-transform duration-200 dark:bg-[#111a2f]/70',
+  base: `hero-stat-card group relative min-w-0 ${uiRadiusRecipes.standard} transition-colors duration-300`,
+  shell: `relative h-full w-full overflow-hidden ${uiRadiusRecipes.standard} border-2 bg-white/80 p-4 pt-5 transform-gpu origin-center will-change-transform transition-transform duration-200 md:p-4 dark:bg-[#111a2f]/70`,
   title: `${uiTypographyRecipes.label} ${semanticTextRecipes.label} transition-colors duration-500`,
   value: `${uiTypographyRecipes.cardTitle} ${semanticTextRecipes.primary} transition-colors duration-500`,
   suffix: `${uiTypographyRecipes.captionStrong} ${semanticTextRecipes.body} transition-colors duration-500`,
-  overlay:
-    'pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100',
-  ring: 'pointer-events-none absolute inset-[2px] rounded-[calc(1rem-2px)] opacity-70',
-  ringLine: 'absolute inset-0 rounded-[calc(1rem-2px)] ring-2',
+  overlay: `pointer-events-none absolute inset-0 ${uiRadiusRecipes.standard} opacity-0 transition-opacity duration-300 group-hover:opacity-100`,
+  ring: 'pointer-events-none absolute inset-[2px] rounded-[calc(var(--radius-standard)-2px)] opacity-70',
+  ringLine: 'absolute inset-0 rounded-[calc(var(--radius-standard)-2px)] ring-2',
   footer: 'relative min-w-0 w-full max-w-full',
   footerInner:
     'scrollbar-hide flex w-full min-w-0 items-center gap-1.5 overflow-x-auto overflow-y-hidden whitespace-nowrap max-w-full [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
@@ -129,7 +131,7 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
             'pointer-events-none',
             'absolute',
             'inset-0',
-            'rounded-2xl',
+            uiRadiusRecipes.standard,
             'opacity-0',
             'transition-opacity',
             'duration-300',

@@ -61,7 +61,14 @@ jest.mock('@/views/DashboardPage', () => ({
 
 jest.mock('@/views/SettingsPage', () => ({
   __esModule: true,
-  default: () => <div>Settings</div>,
+  default: ({ onBack }: { onBack?: () => void }) => (
+    <div>
+      <button type="button" onClick={onBack}>
+        Back to Dashboard
+      </button>
+      <div>Settings</div>
+    </div>
+  ),
 }));
 
 jest.mock('@/views/TransactionsPage', () => ({
@@ -101,6 +108,16 @@ describe('AuthenticatedApp', () => {
     act(() => {
       onTabChange('dashboard');
     });
+    expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('dashboard');
+  });
+
+  it('returns to dashboard from settings via the page back action', () => {
+    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="settings" />);
+
+    act(() => {
+      screen.getByRole('button', { name: 'Back to Dashboard' }).click();
+    });
+
     expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('dashboard');
   });
 

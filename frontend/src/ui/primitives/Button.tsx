@@ -7,6 +7,7 @@ import {
   status as semanticStatus,
   surface as semanticSurfaces,
   text as semanticTextRecipes,
+  radius as uiRadiusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { cn } from './utils';
@@ -30,6 +31,7 @@ export const connectButtonRecipes = {
     'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none',
   ],
   secondary: [
+    'border',
     ...semanticBorders.subtle,
     ...semanticSurfaces.card,
     semanticTextRecipes.muted,
@@ -43,6 +45,7 @@ export const connectButtonRecipes = {
 export const buttonRecipes = {
   base: [
     'inline-flex items-center justify-center gap-2',
+    'uppercase',
     'transition-all duration-200 ease-out',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-slate-900',
     'disabled:cursor-not-allowed disabled:opacity-60',
@@ -55,6 +58,7 @@ export const buttonRecipes = {
     'disabled:hover:translate-y-0',
   ],
   secondary: [
+    'border',
     ...semanticBorders.subtle,
     ...semanticSurfaces.card,
     semanticTextRecipes.muted,
@@ -139,9 +143,9 @@ const buttonVariants = cva([...buttonRecipes.base], {
       xs: `${buttonTypographySizes.xs} ${chrome.xs}`,
       sm: `${buttonTypographySizes.sm} ${chrome.sm}`,
       titleBarExpanded: `${titleBarChromeExpandedTypography} ${chrome.sm}`,
-      md: `${buttonTypographySizes.md} px-4 py-2 rounded-full`,
-      lg: `${buttonTypographySizes.lg} px-5 py-2.5 rounded-full`,
-      icon: 'h-10 w-10 rounded-full',
+      md: `${buttonTypographySizes.md} px-4 py-2 ${uiRadiusRecipes.standard}`,
+      lg: `${buttonTypographySizes.lg} px-5 py-2.5 ${uiRadiusRecipes.standard}`,
+      icon: `h-10 w-10 ${uiRadiusRecipes.standard}`,
     },
   },
   defaultVariants: {

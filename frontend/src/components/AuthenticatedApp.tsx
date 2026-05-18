@@ -104,7 +104,9 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
                 {tab === 'transactions' && <TransactionsPage />}
                 {tab === 'budgets' && <BudgetsPage />}
                 {tab === 'accounts' && <AccountsPage onError={setError} />}
-                {tab === 'settings' && <SettingsPage onLogout={onLogout} />}
+                {tab === 'settings' && (
+                  <SettingsPage onLogout={onLogout} onBack={() => handleTabChange('dashboard')} />
+                )}
               </motion.section>
             </AnimatePresence>
           </AppLayout>

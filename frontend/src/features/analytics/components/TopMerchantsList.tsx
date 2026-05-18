@@ -4,6 +4,7 @@ import { cn, EmptyState } from '@/ui/primitives';
 import {
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
+  radius as uiRadiusRecipes,
   surface as uiSurfaceRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
@@ -18,7 +19,7 @@ type Props = {
 };
 
 const merchantRow = [
-  'flex items-center justify-between rounded-lg border p-3 transition-all duration-300 hover:-translate-y-[2px]',
+  `flex items-center justify-between ${uiRadiusRecipes.standard} border p-3 transition-all duration-300 hover:-translate-y-[2px]`,
   ...uiBorderRecipes.subtle,
   ...uiSurfaceRecipes.card,
   ...uiEffectRecipes.accentHover,

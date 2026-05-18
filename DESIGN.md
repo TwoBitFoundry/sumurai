@@ -201,11 +201,12 @@ typography:
     lineHeight: 1
     letterSpacing: 0.14em
 rounded:
-  panel: 2.25rem
-  large: 1.5rem
+  panel: 0.75rem
+  large: 0.75rem
+  standard: 0.75rem
   pill: 9999px
   medium: 0.75rem
-  small: 0.5rem
+  small: 0.75rem
 spacing:
   page-x: 16px
   page-y: 16px

@@ -6,7 +6,7 @@ describe('PageLayout', () => {
 
     expect(shell).toContain('p-4');
     expect(shell).toContain('md:p-8');
-    expect(shell).toContain('lg:p-12');
+    expect(shell).toContain('lg:p-8');
     expect(shell).not.toContain('sm:p-8');
     expect(shell).not.toContain('xl:');
     expect(shell).not.toContain('2xl:');

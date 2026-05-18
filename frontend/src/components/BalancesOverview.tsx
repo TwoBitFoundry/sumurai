@@ -26,6 +26,7 @@ import {
   effect as semanticEffects,
   surface as semanticSurfaces,
   border as uiBorderRecipes,
+  radius as uiRadiusRecipes,
   status as uiStatusRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
@@ -34,13 +35,13 @@ import { Amount, fmtUSD } from './Amount';
 import HeroStatCard from './widgets/HeroStatCard';
 
 const dashboardSummaryShellLoading = [
-  'h-16 rounded-xl border',
+  `h-16 ${uiRadiusRecipes.standard} border`,
   ...uiBorderRecipes.subtle,
   ...semanticSurfaces.mutedChip,
 ] as const;
 
 const dashboardHoverInfoShell = [
-  'flex flex-wrap items-center gap-3 rounded-lg border p-3',
+  `flex flex-wrap items-center gap-3 ${uiRadiusRecipes.standard} border p-3`,
   ...uiBorderRecipes.subtle,
   ...semanticSurfaces.card,
   ...semanticEffects.glassShadow,

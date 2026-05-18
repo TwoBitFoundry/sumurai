@@ -29,7 +29,16 @@ jest.mock('recharts', () => {
     PieChart: mockComponent('PieChart'),
     Pie: mockComponent('Pie'),
     Cell: mockComponent('Cell'),
-    Tooltip: mockComponent('Tooltip'),
+    Tooltip: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) =>
+      React.createElement(
+        'div',
+        {
+          'data-testid': 'Tooltip',
+          'data-border-radius': (props.contentStyle as { borderRadius?: string } | undefined)
+            ?.borderRadius,
+        },
+        children
+      ),
   };
 });
 
@@ -57,7 +66,12 @@ describe('SpendingByCategoryChart', () => {
     );
 
     expect(container.querySelector('.aspect-square')).toHaveClass('md:max-w-[260px]');
+    expect(container.querySelector('.aspect-square')).toHaveClass('self-center');
     expect(screen.getByTestId('Pie')).toHaveAttribute('data-animation-duration', '0');
     expect(screen.getByTestId('Pie')).toHaveAttribute('data-is-animation-active', 'false');
+    expect(screen.getByTestId('Tooltip')).toHaveAttribute(
+      'data-border-radius',
+      'var(--radius-standard)'
+    );
   });
 });

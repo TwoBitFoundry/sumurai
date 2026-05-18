@@ -201,7 +201,11 @@ export default function BudgetsPage() {
         error={errorMessage}
         stats={heroStats}
       >
-        <GlassCard className="p-0">
+        <GlassCard
+          padding="none"
+          containerClassName={cn('p-4', 'pt-5', 'md:p-8', 'lg:p-8')}
+          className="p-0"
+        >
           {hasBudgets ? (
             <>
               <BudgetToolbar

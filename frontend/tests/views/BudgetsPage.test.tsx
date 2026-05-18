@@ -42,8 +42,13 @@ describe('BudgetsPage', () => {
     const statsGrid = container.querySelector(
       '[data-testid="page-layout"] .grid.gap-3'
     ) as HTMLElement | null;
+    const budgetShell = container.querySelector('[data-testid="page-children"] > div');
 
     expect(statsGrid).toHaveClass('md:grid-cols-2');
     expect(statsGrid).not.toHaveClass('sm:grid-cols-2');
+    expect(budgetShell).toHaveClass('p-4');
+    expect(budgetShell).toHaveClass('pt-5');
+    expect(budgetShell).toHaveClass('md:p-8');
+    expect(budgetShell).toHaveClass('lg:p-8');
   });
 });

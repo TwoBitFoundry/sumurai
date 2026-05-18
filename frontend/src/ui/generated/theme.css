@@ -93,11 +93,12 @@
   --spacing-section-gap: 20px;
   --spacing-button-chrome-inset-sm-x: 12px;
   --spacing-button-chrome-inset-sm-y: 6px;
-  --radius-panel: 2.25rem;
-  --radius-large: 1.5rem;
+  --radius-panel: 0.75rem;
+  --radius-large: 0.75rem;
+  --radius-standard: 0.75rem;
   --radius-pill: 9999px;
   --radius-medium: 0.75rem;
-  --radius-small: 0.5rem;
+  --radius-small: 0.75rem;
   --font-display: 'Cal Sans', system-ui, sans-serif;
   --text-display: 3rem;
   --font-weight-display: 700;

@@ -128,7 +128,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
   return (
     <GlassCard
       variant="accent"
-      rounded="xl"
+      rounded="lg"
       padding="none"
       withInnerEffects={false}
       containerClassName={cardContainerClasses}

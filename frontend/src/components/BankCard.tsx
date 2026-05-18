@@ -127,7 +127,7 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect, 
   return (
     <GlassCard
       variant="accent"
-      rounded="xl"
+      rounded="lg"
       padding="lg"
       withInnerEffects={false}
       className={cn('space-y-6')}

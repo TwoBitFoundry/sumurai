@@ -30,33 +30,34 @@ import {
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
+  radius as uiRadiusRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { fmtUSD } from '@/utils/format';
 
 const dashboardCardShell = [
-  'rounded-lg border transition-all duration-300',
+  `${uiRadiusRecipes.standard} border transition-all duration-300`,
   ...semanticBorders.subtle,
   ...semanticSurfaces.card,
   ...semanticEffects.glassShadow,
 ] as const;
 
 const dashboardCardShellActive = [
-  'rounded-lg border transition-all duration-300 -translate-y-[2px]',
+  `${uiRadiusRecipes.standard} border transition-all duration-300 -translate-y-[2px]`,
   ...semanticBorders.default,
   ...semanticSurfaces.hoverRow,
   ...semanticEffects.glassShadow,
 ] as const;
 
 const dashboardLoadingCard = [
-  'min-h-[220px] rounded-xl border animate-pulse',
+  `min-h-[220px] ${uiRadiusRecipes.standard} border animate-pulse`,
   ...semanticBorders.subtle,
   ...semanticSurfaces.mutedChip,
 ] as const;
 
 const dashboardFloatingRangeShell = [
-  'flex gap-2 rounded-2xl border px-3 py-2',
+  `flex gap-2 ${uiRadiusRecipes.standard} border px-3 py-2`,
   ...semanticBorders.glass,
   ...semanticSurfaces.card,
   ...semanticEffects.glassShadow,
@@ -162,224 +163,232 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
         subtitle="Track your assets and liabilities across all connected accounts with real-time balance updates."
         stats={balancesOverview}
       >
-        <div className={cn('space-y-8')}>
-          <div
-            className={cn(
-              'grid',
-              'grid-cols-1',
-              'md:grid-cols-2',
-              'lg:grid-cols-3',
-              'gap-6',
-              'items-stretch'
-            )}
+        <div
+          className={cn(
+            'grid',
+            'w-full',
+            'min-w-0',
+            'max-w-full',
+            'grid-cols-1',
+            'md:grid-cols-2',
+            'lg:grid-cols-3',
+            'gap-4',
+            'md:gap-6',
+            'items-stretch'
+          )}
+        >
+          <DashboardChartCard
+            className="min-w-0"
+            title="Spending Over Time"
+            description="Breakdown by category"
+            refreshingLabel="Refreshing analytics"
+            isRefreshing={false}
           >
-            <DashboardChartCard
-              title="Spending Over Time"
-              description="Breakdown by category"
-              refreshingLabel="Refreshing analytics"
-              isRefreshing={false}
-            >
-              {analyticsLoading && (
-                <div className={cn('mb-2', uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-                  Loading analytics...
-                </div>
-              )}
-              <SpendingByCategoryChart
-                data={byCat}
-                total={monthSpend}
-                hoveredCategory={hoveredCategory}
-                setHoveredCategory={setHoveredCategory}
-              />
-              {!analyticsLoading && byCat.length > 0 ? (
-                <div className="mt-4">
-                  <div
-                    className={cn(
-                      uiTypographyRecipes.caption,
-                      uiTextRecipes.label,
-                      'mb-2',
-                      'font-medium'
-                    )}
-                  >
-                    Top Categories
-                  </div>
-                  <div className={cn('grid', 'grid-cols-2', 'gap-2')}>
-                    {byCat.slice(0, 4).map((cat, idx) => {
-                      const categorySum = byCat.reduce(
-                        (sum, c) => sum + (Number.isFinite(c.value) ? c.value : 0),
-                        0
-                      );
-                      const percentage =
-                        categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0';
-                      const color = colors.chart.primary[idx % colors.chart.primary.length];
-                      const isHovered = hoveredCategory === cat.name;
-                      return (
-                        // biome-ignore lint/a11y/noStaticElementInteractions: mirrors dashboard hover sync with donut
-                        <div
-                          key={`topcard-${cat.name}`}
-                          className={cn(
-                            'p-2',
-                            isHovered ? dashboardCardShellActive : dashboardCardShell
-                          )}
-                          style={isHovered ? { borderColor: colors.chart.primary[0] } : undefined}
-                          onMouseEnter={() => setHoveredCategory(cat.name)}
-                          onMouseLeave={() => setHoveredCategory(null)}
-                        >
-                          <div className={cn('flex', 'items-center', 'gap-2', 'min-w-0', 'mb-1')}>
-                            <div
-                              className={cn('w-2.5', 'h-2.5', 'rounded-full', 'flex-shrink-0')}
-                              style={{ backgroundColor: color }}
-                            />
-                            <span
-                              className={cn(
-                                uiTypographyRecipes.caption,
-                                'font-medium',
-                                uiTextRecipes.body,
-                                'truncate'
-                              )}
-                            >
-                              {cat.name}
-                            </span>
-                          </div>
-                          <div className={cn('flex', 'items-baseline', 'justify-between')}>
-                            <div
-                              className={cn(
-                                uiTypographyRecipes.caption,
-                                'font-semibold',
-                                uiTextRecipes.primary
-                              )}
-                            >
-                              {fmtUSD(cat.value)}
-                            </div>
-                            <div className={cn('text-[10px]', uiTextRecipes.muted)}>
-                              {percentage}%
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : null}
-            </DashboardChartCard>
-
-            <DashboardChartCard
-              title="Top Merchants Over Time"
-              description="Highest spending locations"
-              refreshingLabel="Refreshing analytics"
-              isRefreshing={false}
-              bodyClassName={cn('overflow-hidden')}
-            >
-              <div className={cn('h-full', 'overflow-hidden')}>
-                <TopMerchantsList
-                  merchants={sampleTopMerchants}
-                  className={cn('h-full', 'overflow-y-auto', 'pr-1')}
-                />
+            {analyticsLoading && (
+              <div className={cn('mb-2', uiTypographyRecipes.caption, uiTextRecipes.muted)}>
+                Loading analytics...
               </div>
-            </DashboardChartCard>
-
-            <DashboardChartCard
-              title="Net Worth Over Time"
-              description="Historical asset growth"
-              refreshingLabel="Refreshing net worth"
-              isRefreshing={false}
-            >
-              {netLoading ? (
-                <div className={cn('flex-1', dashboardLoadingCard)} />
-              ) : netError ? (
+            )}
+            <SpendingByCategoryChart
+              data={byCat}
+              total={monthSpend}
+              hoveredCategory={hoveredCategory}
+              setHoveredCategory={setHoveredCategory}
+            />
+            {!analyticsLoading && byCat.length > 0 ? (
+              <div className="mt-4">
                 <div
                   className={cn(
-                    'flex-1',
-                    'min-h-[220px]',
-                    uiTypographyRecipes.body,
-                    uiTextRecipes.danger
+                    uiTypographyRecipes.caption,
+                    uiTextRecipes.label,
+                    'mb-2',
+                    'font-medium'
                   )}
                 >
-                  {netError}
+                  Top Categories
                 </div>
-              ) : (
-                <div className={cn('h-[240px]', 'w-full', 'min-w-0', 'overflow-hidden')}>
-                  <ResponsiveContainer width="100%" height={240}>
-                    <AreaChart data={netSeries} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="netGradientStory" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={colors.semantic.cash} stopOpacity={0.4} />
-                          <stop offset="95%" stopColor={colors.semantic.cash} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fill: colors.chart.axis, fontSize: 12 }}
-                        axisLine={false}
-                        tickLine={false}
-                        interval="preserveStartEnd"
-                        minTickGap={24}
-                        tickFormatter={(value: string) => {
-                          const d = new Date(value);
-                          if (!Number.isFinite(d.getTime())) return value;
-                          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                        }}
-                      />
-                      <YAxis
-                        tick={{ fill: colors.chart.axis, fontSize: 12 }}
-                        axisLine={false}
-                        tickLine={false}
-                        domain={netYAxisDomain ?? ['auto', 'auto']}
-                        tickFormatter={(v) => {
-                          const n = Math.abs(Number(v));
-                          const sign = Number(v) < 0 ? '-' : '';
-                          if (n >= 1e6) return `${sign}$${(n / 1e6).toFixed(0)}m`;
-                          if (n >= 1e3) return `${sign}$${(n / 1e3).toFixed(0)}k`;
-                          return `${sign}$${Number(n).toFixed(0)}`;
-                        }}
-                      />
-                      <Tooltip
-                        formatter={netTooltipFormatter}
-                        contentStyle={{ background: colors.chart.tooltipBg }}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        stroke={colors.semantic.cash}
-                        strokeWidth={2}
-                        fillOpacity={1}
-                        fill="url(#netGradientStory)"
-                        dot={netDotRenderer}
-                        activeDot={{ r: 6 }}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                <div className={cn('grid', 'grid-cols-2', 'gap-2')}>
+                  {byCat.slice(0, 4).map((cat, idx) => {
+                    const categorySum = byCat.reduce(
+                      (sum, c) => sum + (Number.isFinite(c.value) ? c.value : 0),
+                      0
+                    );
+                    const percentage =
+                      categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0';
+                    const color = colors.chart.primary[idx % colors.chart.primary.length];
+                    const isHovered = hoveredCategory === cat.name;
+                    return (
+                      // biome-ignore lint/a11y/noStaticElementInteractions: mirrors dashboard hover sync with donut
+                      <div
+                        key={`topcard-${cat.name}`}
+                        className={cn(
+                          'p-2',
+                          isHovered ? dashboardCardShellActive : dashboardCardShell
+                        )}
+                        style={isHovered ? { borderColor: colors.chart.primary[0] } : undefined}
+                        onMouseEnter={() => setHoveredCategory(cat.name)}
+                        onMouseLeave={() => setHoveredCategory(null)}
+                      >
+                        <div className={cn('flex', 'items-center', 'gap-2', 'min-w-0', 'mb-1')}>
+                          <div
+                            className={cn('w-2.5', 'h-2.5', 'rounded-full', 'flex-shrink-0')}
+                            style={{ backgroundColor: color }}
+                          />
+                          <span
+                            className={cn(
+                              uiTypographyRecipes.caption,
+                              'font-medium',
+                              uiTextRecipes.body,
+                              'truncate'
+                            )}
+                          >
+                            {cat.name}
+                          </span>
+                        </div>
+                        <div className={cn('flex', 'items-baseline', 'justify-between')}>
+                          <div
+                            className={cn(
+                              uiTypographyRecipes.caption,
+                              'font-semibold',
+                              uiTextRecipes.primary
+                            )}
+                          >
+                            {fmtUSD(cat.value)}
+                          </div>
+                          <div className={cn('text-[10px]', uiTextRecipes.muted)}>
+                            {percentage}%
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-            </DashboardChartCard>
-          </div>
+              </div>
+            ) : null}
+          </DashboardChartCard>
 
-          <div
-            className={cn(
-              'fixed',
-              'left-0',
-              'right-0',
-              'z-50',
-              'flex',
-              'justify-center',
-              'pointer-events-none',
-              'opacity-100'
-            )}
-            style={{ bottom: 24 }}
+          <DashboardChartCard
+            className="min-w-0"
+            title="Top Merchants Over Time"
+            description="Highest spending locations"
+            refreshingLabel="Refreshing analytics"
+            isRefreshing={false}
+            bodyClassName={cn('overflow-hidden')}
           >
-            <div className={cn('pointer-events-auto', dashboardFloatingRangeShell)}>
-              {DATE_RANGE_OPTIONS.map((option) => (
-                <Button
-                  type="button"
-                  key={option.key}
-                  onClick={() => setDateRange(option.key)}
-                  variant={dateRange === option.key ? 'tabActive' : 'tab'}
-                  className="rounded-lg px-3 py-1.5 text-sm font-medium normal-case transition-all duration-200"
-                >
-                  {option.label}
-                </Button>
-              ))}
+            <div className={cn('h-full', 'overflow-hidden')}>
+              <TopMerchantsList
+                merchants={sampleTopMerchants}
+                className={cn('h-full', 'overflow-y-auto', 'pr-1')}
+              />
             </div>
+          </DashboardChartCard>
+
+          <DashboardChartCard
+            className="min-w-0"
+            title="Net Worth Over Time"
+            description="Historical asset growth"
+            refreshingLabel="Refreshing net worth"
+            isRefreshing={false}
+          >
+            {netLoading ? (
+              <div className={cn('flex-1', dashboardLoadingCard)} />
+            ) : netError ? (
+              <div
+                className={cn(
+                  'flex-1',
+                  'min-h-[220px]',
+                  uiTypographyRecipes.body,
+                  uiTextRecipes.danger
+                )}
+              >
+                {netError}
+              </div>
+            ) : (
+              <div className={cn('h-[240px]', 'w-full', 'min-w-0', 'overflow-hidden')}>
+                <ResponsiveContainer width="100%" height={240}>
+                  <AreaChart data={netSeries} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="netGradientStory" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={colors.semantic.cash} stopOpacity={0.4} />
+                        <stop offset="95%" stopColor={colors.semantic.cash} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fill: colors.chart.axis, fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval="preserveStartEnd"
+                      minTickGap={24}
+                      tickFormatter={(value: string) => {
+                        const d = new Date(value);
+                        if (!Number.isFinite(d.getTime())) return value;
+                        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      }}
+                    />
+                    <YAxis
+                      tick={{ fill: colors.chart.axis, fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                      domain={netYAxisDomain ?? ['auto', 'auto']}
+                      tickFormatter={(v) => {
+                        const n = Math.abs(Number(v));
+                        const sign = Number(v) < 0 ? '-' : '';
+                        if (n >= 1e6) return `${sign}$${(n / 1e6).toFixed(0)}m`;
+                        if (n >= 1e3) return `${sign}$${(n / 1e3).toFixed(0)}k`;
+                        return `${sign}$${Number(n).toFixed(0)}`;
+                      }}
+                    />
+                    <Tooltip
+                      formatter={netTooltipFormatter}
+                      contentStyle={{ background: colors.chart.tooltipBg }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      stroke={colors.semantic.cash}
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#netGradientStory)"
+                      dot={netDotRenderer}
+                      activeDot={{ r: 6 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </DashboardChartCard>
+        </div>
+
+        <div
+          className={cn(
+            'fixed',
+            'left-0',
+            'right-0',
+            'z-50',
+            'flex',
+            'justify-center',
+            'pointer-events-none',
+            'opacity-100'
+          )}
+          style={{ bottom: 24 }}
+        >
+          <div className={cn('pointer-events-auto', dashboardFloatingRangeShell)}>
+            {DATE_RANGE_OPTIONS.map((option) => (
+              <Button
+                type="button"
+                key={option.key}
+                onClick={() => setDateRange(option.key)}
+                variant={dateRange === option.key ? 'tabActive' : 'tab'}
+                className={cn(
+                  uiRadiusRecipes.standard,
+                  'px-3 py-1.5 text-sm font-medium normal-case transition-all duration-200'
+                )}
+              >
+                {option.label}
+              </Button>
+            ))}
           </div>
         </div>
       </PageLayout>

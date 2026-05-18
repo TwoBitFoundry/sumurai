@@ -1,5 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { Target } from 'lucide-react';
+import { AccountRow } from '@/components/AccountRow';
+import { BankCard } from '@/components/BankCard';
+import { HeroStatCard } from '@/components/widgets/HeroStatCard';
 import { DashboardChartCard } from '@/features/analytics/components/DashboardChartCard';
 import { BudgetList } from '@/features/budgets/components/BudgetList';
 import { BudgetSummaryCard } from '@/features/budgets/components/BudgetSummaryCard';
@@ -7,9 +10,10 @@ import { AccountsSummaryStats } from '@/features/plaid/components/AccountsSummar
 import { ProviderSelectionPanel } from '@/features/plaid/components/ProviderSelectionPanel';
 import { TransactionsFilters } from '@/features/transactions/components/TransactionsFilters';
 import { EmptyState } from '@/ui/primitives';
+import { radius as uiRadiusRecipes } from '@/ui/recipes';
 
 describe('shared responsive layout surfaces', () => {
-  it('uses md shell spacing in dashboard chart cards', () => {
+  it('matches hero card padding in dashboard chart cards', () => {
     const { container } = render(
       <DashboardChartCard
         title="Spending"
@@ -23,12 +27,29 @@ describe('shared responsive layout surfaces', () => {
 
     const root = container.firstElementChild;
     const header = container.querySelector('div.mb-3');
-    const content = container.querySelector('div.p-4');
+    const content = container.querySelector('div.h-full.flex.flex-col');
 
-    expect(root).toHaveClass('p-6');
-    expect(content).toHaveClass('md:p-6');
+    expect(root).toHaveClass('p-4');
+    expect(root).toHaveClass('pt-5');
+    expect(root).toHaveClass('md:p-8');
+    expect(root).toHaveClass('lg:p-8');
+    expect(root).toHaveClass('h-full');
+    expect(root).not.toHaveClass('p-6');
+    expect(container.querySelector('div.min-h-\\[240px\\]')).toBeTruthy();
     expect(header).toHaveClass('md:mb-4');
-    expect(content).not.toHaveClass('sm:p-6');
+    expect(content).toBeTruthy();
+  });
+
+  it('adds top padding to hero cards on mobile without changing md padding', () => {
+    const { container } = render(
+      <HeroStatCard title="Net Worth" value="$10,000" subtext="Cached" />
+    );
+
+    const shell = container.querySelector('div.p-4.pt-5');
+
+    expect(shell).toHaveClass('p-4');
+    expect(shell).toHaveClass('pt-5');
+    expect(shell).toHaveClass('md:p-4');
   });
 
   it('keeps empty state padding on the md tier', () => {
@@ -74,6 +95,43 @@ describe('shared responsive layout surfaces', () => {
 
     expect(container.firstElementChild).toHaveClass('md:grid-cols-3');
     expect(container.firstElementChild).not.toHaveClass('sm:grid-cols-3');
+  });
+
+  it('matches hero card radius in account rows', () => {
+    const { container } = render(
+      <AccountRow
+        account={{
+          id: 'acct-1',
+          name: 'Essential Savings',
+          mask: '8677',
+          type: 'checking',
+          balance: 52011.88,
+          transactions: 108,
+        }}
+      />
+    );
+
+    expect(container.firstElementChild).toHaveClass(uiRadiusRecipes.standard);
+  });
+
+  it('matches hero card radius in bank cards', () => {
+    const { container } = render(
+      <BankCard
+        bank={{
+          id: 'bank-1',
+          name: 'Chase',
+          short: 'C',
+          status: 'connected',
+          lastSync: null,
+          accounts: [],
+        }}
+        onSync={jest.fn(async () => undefined)}
+        onDisconnect={jest.fn(async () => undefined)}
+        isOnline
+      />
+    );
+
+    expect(container.firstElementChild).toHaveClass(uiRadiusRecipes.standard);
   });
 
   it('keeps budget summary totals aligned on the md tier', () => {
@@ -126,8 +184,7 @@ describe('shared responsive layout surfaces', () => {
     const list = container.querySelector('ul');
     const editGrid = container.querySelector('div.grid.grid-cols-1.gap-4');
 
-    expect(list).toHaveClass('md:px-10');
-    expect(list).not.toHaveClass('sm:px-10');
+    expect(list).not.toHaveClass('md:px-10');
     expect(editGrid).toHaveClass('md:grid-cols-[1fr_auto]');
     expect(editGrid).toHaveClass('md:items-end');
   });

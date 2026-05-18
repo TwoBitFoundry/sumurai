@@ -7,6 +7,7 @@ import { cn } from '@/ui/primitives';
 import {
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
+  radius as uiRadiusRecipes,
   surface as uiSurfaceRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
@@ -141,7 +142,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
         className={cn(
-          triggerStyle === 'icon-only' ? 'rounded-full' : 'rounded-xl',
+          uiRadiusRecipes.standard,
           'border',
           triggerStyle === 'icon-only' ? uiBorderRecipes.glass : uiBorderRecipes.default,
           ...(triggerStyle === 'icon-only'
@@ -204,7 +205,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
                   'flex',
                   'flex-col',
                   'overflow-hidden',
-                  'rounded-xl',
+                  uiRadiusRecipes.standard,
                   'border',
                   ...uiBorderRecipes.glass,
                   ...uiSurfaceRecipes.card,
@@ -257,7 +258,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
                                   'p-1',
                                   'hover:bg-[var(--color-surface-hover-row)]',
                                   'dark:hover:bg-[var(--color-surface-hover-row)]',
-                                  'rounded',
+                                  uiRadiusRecipes.standard,
                                   'transition-colors'
                                 )}
                                 aria-label={

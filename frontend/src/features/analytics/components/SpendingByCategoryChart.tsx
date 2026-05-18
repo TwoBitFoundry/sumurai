@@ -60,7 +60,9 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
             'max-w-[420px]',
             'md:max-w-[260px]',
             'min-w-0',
-            'shrink-0'
+            'shrink-0',
+            'self-center',
+            'mx-auto'
           )}
         >
           <ResponsiveContainer width="100%" height="100%">
@@ -105,7 +107,7 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
                   background: colors.chart.tooltipBg,
                   border: `1px solid ${colors.chart.tooltipBorder}`,
                   color: colors.chart.tooltipText,
-                  borderRadius: '8px',
+                  borderRadius: 'var(--radius-standard)',
                   boxShadow:
                     mode === 'dark'
                       ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)'

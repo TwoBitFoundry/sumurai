@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Button } from '@/ui/primitives';
+import { radius as uiRadiusRecipes } from '@/ui/recipes';
 import { PageLayout } from './PageLayout';
 
 const meta = {
@@ -23,7 +24,7 @@ export const Default: Story = {
       </Button>
     ),
     children: (
-      <div className="rounded-xl border border-slate-200 p-6 dark:border-slate-700">
+      <div className={`border p-6 dark:border-slate-700 ${uiRadiusRecipes.standard}`}>
         Primary surface content
       </div>
     ),

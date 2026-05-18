@@ -1,4 +1,4 @@
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ChevronLeft } from 'lucide-react';
 import { PasswordChecker } from '@/components/PasswordChecker';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
 import type { PasswordValidation } from '@/hooks/usePasswordValidation';
@@ -110,40 +110,44 @@ export function SettingsScreenSlice(props: {
   const confirmInputVariant = confirmText && confirmText !== 'DELETE' ? 'invalid' : 'default';
 
   return (
-    <div className={cn('max-w-2xl', 'mx-auto')} data-testid="settings-screen-slice">
+    <div
+      className={cn('mx-auto', 'w-full', 'md:px-8', 'lg:px-8')}
+      data-testid="settings-screen-slice"
+    >
       <div className={cn('flex', 'flex-col', 'gap-6')}>
-        <GlassCard variant="default" padding="sm">
-          <div
-            className={cn(
-              'flex',
-              'flex-col',
-              'gap-3',
-              'md:flex-row',
-              'md:items-center',
-              'md:justify-between'
-            )}
-          >
-            <div className={cn('flex', 'min-w-0', 'items-center', 'gap-2')}>
-              <Badge size="sm">THEME</Badge>
-              <p className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>
-                Appearance
-              </p>
-            </div>
-            <ThemeModeSelector value="dark" onChange={() => {}} />
-          </div>
-        </GlassCard>
-
         <GlassCard variant="default" padding="lg">
           <div className={cn('space-y-5')}>
+            <div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="md"
+                className={cn('inline-flex', 'lg:hidden', 'w-fit')}
+              >
+                <ChevronLeft className={cn('h-4', 'w-4')} />
+                <span>Back to Dashboard</span>
+              </Button>
+            </div>
+
             <div className={cn('space-y-3')}>
               <Badge size="md">ACCOUNT SETTINGS</Badge>
+            </div>
+
+            <section className={cn('space-y-3')}>
+              <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+                Appearance
+              </h2>
+              <ThemeModeSelector value="dark" onChange={() => {}} />
+            </section>
+
+            <section className={cn('space-y-3')}>
               <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
                 Change Password
               </h2>
               <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
-                Update your password to keep your account secure
+                Update your password to keep your account secure.
               </p>
-            </div>
+            </section>
 
             <form
               onSubmit={(e) => {
@@ -215,7 +219,7 @@ export function SettingsScreenSlice(props: {
                 validation={props.scenario === 'default' ? validationEmpty : newPasswordValidation}
               />
 
-              <Button type="submit" variant="primary" size="lg" className={cn('w-full')}>
+              <Button type="submit" variant="primary" size="md" className={cn('w-full')}>
                 Change Password
               </Button>
             </form>

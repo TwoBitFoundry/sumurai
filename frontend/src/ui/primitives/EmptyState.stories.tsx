@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Target } from 'lucide-react';
+import { radius as uiRadiusRecipes } from '@/ui/recipes';
 import { Button } from './Button';
 import { EmptyState } from './EmptyState';
 
@@ -29,7 +30,7 @@ export const WithAction: Story = {
 export const Dark: Story = {
   decorators: [
     (StoryEl) => (
-      <div className="dark min-h-[220px] rounded-3xl bg-slate-950 p-10">
+      <div className={`dark min-h-[220px] bg-slate-950 p-10 ${uiRadiusRecipes.standard}`}>
         <StoryEl />
       </div>
     ),

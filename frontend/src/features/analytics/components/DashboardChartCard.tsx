@@ -23,7 +23,11 @@ export const DashboardChartCard = ({
   children,
 }: DashboardChartCardProps) => {
   return (
-    <GlassCard className={cn('h-full', 'flex', 'flex-col', 'p-4', 'md:p-6', className)}>
+    <GlassCard
+      padding="none"
+      containerClassName={cn('h-full', 'p-4', 'pt-5', 'md:p-8', 'lg:p-8', className)}
+      className={cn('flex', 'h-full', 'min-h-0', 'flex-col')}
+    >
       <div className={cn('mb-3', 'md:mb-4', 'flex', 'items-center', 'justify-between')}>
         <div>
           <h3 className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>{title}</h3>
@@ -36,7 +40,9 @@ export const DashboardChartCard = ({
           />
         )}
       </div>
-      <div className={cn('flex-1', 'min-h-0', 'min-w-0', bodyClassName)}>{children}</div>
+      <div className={cn('flex', 'min-h-[240px]', 'flex-1', 'flex-col', 'min-w-0', bodyClassName)}>
+        {children}
+      </div>
     </GlassCard>
   );
 };

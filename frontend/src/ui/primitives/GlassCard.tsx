@@ -4,6 +4,7 @@ import {
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
+  radius as uiRadiusRecipes,
 } from '@/ui/recipes';
 import { cn } from './utils';
 
@@ -32,9 +33,9 @@ export const glassCardRecipes = {
     'backdrop-blur-sm',
   ],
   rounded: {
-    default: 'rounded-[2.25rem]',
-    lg: 'rounded-2xl',
-    xl: 'rounded-3xl',
+    default: uiRadiusRecipes.standard,
+    lg: uiRadiusRecipes.standard,
+    xl: uiRadiusRecipes.standard,
   },
   padding: {
     none: 'p-0',
@@ -112,8 +113,7 @@ export function GlassCard({
   beforeContent,
   ...props
 }: GlassCardProps) {
-  const roundedClass =
-    rounded === 'default' ? 'rounded-[2.25rem]' : rounded === 'lg' ? 'rounded-2xl' : 'rounded-3xl';
+  const roundedClass = uiRadiusRecipes.standard;
 
   return (
     <div

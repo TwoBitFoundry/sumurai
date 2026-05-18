@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { cn } from '@/ui/primitives/utils';
-import { text as uiTextRecipes } from '@/ui/recipes';
+import { radius as uiRadiusRecipes, text as uiTextRecipes } from '@/ui/recipes';
 import { DashboardChartCard } from './DashboardChartCard';
 
 const meta = {
@@ -15,7 +15,7 @@ const meta = {
     children: (
       <div
         className={cn(
-          'flex h-48 items-center justify-center rounded-xl border border-dashed border-slate-300 text-sm dark:border-slate-600',
+          `flex h-48 items-center justify-center ${uiRadiusRecipes.standard} border border-dashed border-slate-300 text-sm dark:border-slate-600`,
           uiTextRecipes.muted
         )}
       >

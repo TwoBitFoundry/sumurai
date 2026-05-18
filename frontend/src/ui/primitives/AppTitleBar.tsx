@@ -18,6 +18,7 @@ import {
   status as semanticStatus,
   surface as semanticSurfaces,
   text as semanticTextRecipes,
+  radius as uiRadiusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { Button, buttonRecipes } from './Button';
@@ -37,13 +38,13 @@ export const appTitleBarRecipes = {
   settingsIdle:
     'border border-[var(--color-border-divider)] dark:border-[var(--color-border-divider)] bg-[var(--color-surface-muted-chip)] dark:bg-[var(--color-surface-muted-chip)] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row)]',
   pillContainer: [
-    'flex h-11 items-center gap-1 rounded-[length:var(--radius-medium)] border p-1 backdrop-blur-md backdrop-saturate-[150%]',
+    `flex h-11 items-center gap-1 ${uiRadiusRecipes.standard} border p-1 backdrop-blur-md backdrop-saturate-[150%]`,
     ...semanticSurfaces.glassPanel,
     ...semanticBorders.glass,
     ...semanticEffects.glassShadow,
   ],
   pillTab: [
-    'relative flex h-full items-center justify-center gap-0 rounded-[length:var(--radius-medium)] px-3 py-1.5',
+    `relative flex h-full items-center justify-center gap-0 ${uiRadiusRecipes.standard} px-3 py-1.5`,
   ],
 } as const;
 
@@ -95,14 +96,24 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                   appTitleBarRecipes.logo.wordmark
                 )}
               >
-                <Image
-                  src="/sumurai-logo.jpeg"
-                  alt="Sumurai Logo"
-                  width={32}
-                  height={32}
-                  className={cn('rounded-md')}
-                  unoptimized
-                />
+                <div
+                  className={cn(
+                    'relative',
+                    'h-8',
+                    'w-8',
+                    'overflow-hidden',
+                    uiRadiusRecipes.standard
+                  )}
+                >
+                  <Image
+                    src="/sumurai-logo.jpeg"
+                    alt="Sumurai Logo"
+                    fill
+                    sizes="32px"
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
                 <span className={uiTypographyRecipes.pageTitle}>Sumurai</span>
               </div>
             </div>
@@ -163,7 +174,6 @@ export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
                   variant={currentTab === 'settings' ? 'tabActive' : 'ghost'}
                   size="xs"
                   className={cn(
-                    'rounded-xl',
                     currentTab !== 'settings' ? appTitleBarRecipes.settingsIdle : undefined
                   )}
                   aria-label="Settings"

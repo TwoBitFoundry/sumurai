@@ -197,9 +197,13 @@ export const font = {
   badge: 'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]',
 } as const;
 
+export const radius = {
+  standard: 'rounded-[length:var(--radius-standard)]',
+} as const;
+
 export const chrome = {
-  xs: 'px-[length:var(--spacing-button-chrome-inset-sm-x)] py-[length:var(--spacing-button-chrome-inset-sm-y)] rounded-[length:var(--radius-medium)]',
-  sm: 'px-[length:var(--spacing-button-chrome-inset-sm-x)] py-[length:var(--spacing-button-chrome-inset-sm-y)] rounded-[length:var(--radius-medium)]',
+  xs: `px-[length:var(--spacing-button-chrome-inset-sm-x)] py-[length:var(--spacing-button-chrome-inset-sm-y)] ${radius.standard}`,
+  sm: `px-[length:var(--spacing-button-chrome-inset-sm-x)] py-[length:var(--spacing-button-chrome-inset-sm-y)] ${radius.standard}`,
 } as const;
 
 export const semanticTextRecipes = text;

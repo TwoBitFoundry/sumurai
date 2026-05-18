@@ -1,4 +1,4 @@
-import { type ThemePreference } from '@/context/ThemeContext';
+import type { ThemePreference } from '@/context/ThemeContext';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { Button } from '@/ui/primitives/Button';
 import { cn } from '@/ui/primitives/utils';
@@ -6,6 +6,7 @@ import {
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
+  radius as uiRadiusRecipes,
   text as uiTextRecipes,
 } from '@/ui/recipes';
 
@@ -24,7 +25,7 @@ export function ThemeModeSelector({ value, onChange }: ThemeModeSelectorProps) {
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1 rounded-full border p-1',
+        `grid w-full grid-cols-3 items-stretch gap-1 ${uiRadiusRecipes.standard} border p-1`,
         ...semanticSurfaces.glassPanel,
         ...semanticBorders.glass,
         ...semanticEffects.glassShadow
@@ -45,6 +46,8 @@ export function ThemeModeSelector({ value, onChange }: ThemeModeSelectorProps) {
             role="radio"
             aria-checked={active}
             className={cn(
+              'w-full',
+              'min-w-0',
               ...appTitleBarRecipes.pillTab,
               active ? uiTextRecipes.inverse : uiTextRecipes.muted
             )}

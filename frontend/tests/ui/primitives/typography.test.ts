@@ -51,7 +51,7 @@ describe('primitive typography recipes', () => {
 
   it('drops the old subheading typography from button base recipes', () => {
     expect(buttonRecipes.base.join(' ')).not.toContain('font-subheading');
-    expect(buttonRecipes.base.join(' ')).not.toContain('uppercase');
+    expect(buttonRecipes.base.join(' ')).toContain('uppercase');
     expect(buttonRecipes.secondary.join(' ')).toContain(uiTextRecipes.muted);
     expect(buttonRecipes.danger.join(' ')).toContain(uiTextRecipes.danger);
   });
@@ -61,6 +61,9 @@ describe('primitive typography recipes', () => {
     expect(appTitleBarRecipes.logo.container.join(' ')).toContain(uiTextRecipes.primary);
     expect(appTitleBarRecipes.pillTab.join(' ')).not.toContain(uiTextRecipes.muted);
     expect(appTitleBarRecipes.pillTab.join(' ')).not.toContain(uiTextRecipes.inverse);
+    expect(appTitleBarRecipes.pillTab.join(' ')).toContain(
+      'rounded-[length:var(--radius-standard)]'
+    );
   });
 
   it('reserves labeled-control spacing for label stacks that clear focus rings', () => {});

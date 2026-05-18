@@ -1,10 +1,17 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
-import { status as uiStatusRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import {
+  radius as uiRadiusRecipes,
+  status as uiStatusRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import { cn } from './utils';
 
 const alertVariants = cva(
-  ['relative flex gap-3 rounded-2xl border px-4 py-3 shadow-sm', 'transition-colors duration-300'],
+  [
+    `relative flex gap-3 ${uiRadiusRecipes.standard} border px-4 py-3 shadow-sm`,
+    'transition-colors duration-300',
+  ],
   {
     variants: {
       variant: {

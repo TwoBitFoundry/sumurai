@@ -5,6 +5,7 @@ import {
   effect as semanticEffects,
   surface as semanticSurfaces,
   effect as uiEffectRecipes,
+  radius as uiRadiusRecipes,
   status as uiStatusRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
@@ -42,7 +43,7 @@ const statusVariantMap: Record<StatusTone, 'info' | 'warning' | 'error'> = {
 };
 
 const onboardingStepCard = [
-  'group relative overflow-hidden rounded-2xl p-4',
+  `group relative overflow-hidden ${uiRadiusRecipes.standard} p-4`,
   ...semanticBorders.subtle,
   ...semanticSurfaces.card,
   ...semanticEffects.glassShadow,
@@ -56,8 +57,7 @@ const onboardingIconWell = [
   'ring-1 ring-inset',
 ] as const;
 
-const onboardingHoverOverlay =
-  'pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20';
+const onboardingHoverOverlay = `pointer-events-none absolute inset-0 ${uiRadiusRecipes.standard} bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20`;
 
 const onboardingIconGlow =
   'absolute inset-[20%] rounded-full bg-[var(--color-effect-accent-hover)] opacity-20 blur-[6px] dark:bg-[var(--color-effect-accent-hover)] dark:opacity-[0.18]';
@@ -80,10 +80,9 @@ const onboardingProviderRow = [
   ...semanticEffects.glassShadow,
   'transition-all duration-300 ease-out hover:-translate-y-[2px]',
   ...semanticEffects.accentHover,
-  'flex h-full items-start gap-4 rounded-2xl p-4 text-[13px]',
+  `flex h-full items-start gap-4 ${uiRadiusRecipes.standard} p-4 text-[13px]`,
 ] as const;
-const onboardingProviderHoverOverlay =
-  'pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20';
+const onboardingProviderHoverOverlay = `pointer-events-none absolute inset-0 ${uiRadiusRecipes.standard} bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20`;
 const onboardingProviderIconGlow =
   'absolute inset-[18%] rounded-full bg-[var(--color-effect-accent-hover)] opacity-[0.22] blur-[6px] dark:bg-[var(--color-effect-accent-hover)] dark:opacity-[0.18]';
 
@@ -255,7 +254,7 @@ export function ConnectAccountStep({
               <Alert
                 key={`${status.tone}-${status.text}`}
                 variant={statusVariantMap[status.tone]}
-                className={cn('flex flex-col gap-2 rounded-2xl')}
+                className={cn('flex flex-col gap-2', uiRadiusRecipes.standard)}
               >
                 <p className={cn(uiTypographyRecipes.bodyStrong)}>{status.text}</p>
                 {status.action && status.actionLabel && (

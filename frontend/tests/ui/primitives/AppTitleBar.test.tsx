@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { AppTitleBar } from '@/ui/primitives/AppTitleBar';
 import { buttonRecipes } from '@/ui/primitives/Button';
+import { radius as uiRadiusRecipes } from '@/ui/recipes';
 
 jest.mock('framer-motion', () => {
   const R = require('react');
@@ -83,7 +84,7 @@ describe('AppTitleBar', () => {
     render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
 
     const desktopNav = screen.getByRole('navigation', { name: 'Primary' });
-    expect(desktopNav.className).toContain('rounded-[length:var(--radius-medium)]');
+    expect(desktopNav.className).toContain(uiRadiusRecipes.standard);
     expect(desktopNav.className).toContain('p-1');
 
     const dashboardButton = within(desktopNav).getByRole('button', { name: 'Dashboard' });
@@ -93,6 +94,7 @@ describe('AppTitleBar', () => {
     expect(transactionsButton.querySelector('svg')).not.toBeNull();
     expect(dashboardButton.className).toContain('relative');
     expect(dashboardButton.className).toContain('h-full');
+    expect(dashboardButton.className).toContain(uiRadiusRecipes.standard);
     expect(transactionsButton.className).toContain('relative');
     expect(within(desktopNav).getByText('Dashboard')).toBeInTheDocument();
     expect(within(desktopNav).queryByText('Transactions')).not.toBeInTheDocument();

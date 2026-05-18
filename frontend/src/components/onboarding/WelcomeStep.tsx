@@ -5,6 +5,7 @@ import {
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
+  radius as uiRadiusRecipes,
   status as uiStatusRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
@@ -29,7 +30,7 @@ type WelcomeFeature = {
 };
 
 const onboardingStepCard = [
-  'group relative overflow-hidden rounded-2xl p-4',
+  `group relative overflow-hidden ${uiRadiusRecipes.standard} p-4`,
   ...semanticBorders.subtle,
   ...semanticSurfaces.card,
   ...semanticEffects.glassShadow,
@@ -43,8 +44,7 @@ const onboardingIconWell = [
   'ring-1 ring-inset',
 ] as const;
 
-const onboardingHoverOverlay =
-  'pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20';
+const onboardingHoverOverlay = `pointer-events-none absolute inset-0 ${uiRadiusRecipes.standard} bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20`;
 
 const onboardingIconGlow =
   'absolute inset-[20%] rounded-full bg-[var(--color-effect-accent-hover)] opacity-20 blur-[6px] dark:bg-[var(--color-effect-accent-hover)] dark:opacity-[0.18]';
@@ -64,7 +64,7 @@ const onboardingEyebrowCaps = [
   'uppercase transition-colors duration-300 ease-out',
 ] as const;
 const onboardingPreviewFrame = [
-  'relative aspect-[16/10] overflow-hidden rounded-2xl',
+  `relative aspect-[16/10] overflow-hidden ${uiRadiusRecipes.standard}`,
   ...semanticBorders.subtle,
   'bg-[var(--color-surface-overlay)]',
   'shadow-lg md:aspect-[18/10]',

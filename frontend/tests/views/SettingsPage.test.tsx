@@ -7,8 +7,9 @@ jest.mock('@/context/ThemeContext', () => ({
 }));
 
 describe('SettingsPage', () => {
-  it('renders the appearance section and updates theme preference from settings', () => {
+  it('renders appearance inside account settings and updates theme preference', () => {
     const setPreference = jest.fn();
+    const onBack = jest.fn();
     jest.mocked(useTheme).mockReturnValue({
       preference: 'system',
       mode: 'dark',
@@ -18,19 +19,38 @@ describe('SettingsPage', () => {
       colors: {} as any,
     } as any);
 
-    const { container } = render(<SettingsPage />);
+    const { container } = render(<SettingsPage onBack={onBack} />);
 
-    const themeBadge = screen.getByText('THEME');
+    const pageContainer = container.firstElementChild as HTMLElement;
+    const accountSettingsBadge = screen.getByText('ACCOUNT SETTINGS');
     const appearanceLabel = screen.getByText('Appearance');
-    const appearanceRow = container.querySelector('div.flex.flex-col.gap-3');
+    const changePasswordHeading = screen.getByRole('heading', { name: 'Change Password' });
+    const accountSettingsCard = accountSettingsBadge.closest('[class*="space-y-5"]');
+    const backButton = screen.getByRole('button', { name: 'Back to Dashboard' });
+    const themeSelector = screen.getByRole('radiogroup', { name: 'Theme' });
 
-    expect(appearanceLabel).toBeInTheDocument();
-    expect(themeBadge.compareDocumentPosition(appearanceLabel)).toBe(
+    expect(pageContainer).toHaveClass('w-full');
+    expect(pageContainer).toHaveClass('md:px-8');
+    expect(pageContainer).not.toHaveClass('max-w-2xl');
+    expect(backButton.compareDocumentPosition(accountSettingsBadge)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
-    expect(appearanceRow).toHaveClass('md:flex-row');
-    expect(appearanceRow).toHaveClass('md:items-center');
-    expect(appearanceRow).toHaveClass('md:justify-between');
+    expect(backButton).toHaveClass('lg:hidden');
+    expect(backButton).toHaveClass('border');
+    expect(backButton.className).toContain('border-[var(--color-border-subtle)]');
+    expect(appearanceLabel).toBeInTheDocument();
+    expect(accountSettingsBadge.compareDocumentPosition(appearanceLabel)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(appearanceLabel.compareDocumentPosition(changePasswordHeading)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(accountSettingsCard).toContainElement(themeSelector);
+    expect(themeSelector).toHaveClass('grid');
+    expect(themeSelector).toHaveClass('w-full');
+    expect(container).toHaveTextContent('Update your password to keep your account secure.');
+    fireEvent.click(backButton);
+    expect(onBack).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole('radio', { name: 'Light' }));
     expect(setPreference).toHaveBeenCalledWith('light');
   });

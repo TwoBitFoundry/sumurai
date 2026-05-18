@@ -1687,13 +1687,19 @@ export const generatedTokens = {
     "$type": "dimension",
     "panel": {
       "$value": {
-        "value": 2.25,
+        "value": 0.75,
         "unit": "rem"
       }
     },
     "large": {
       "$value": {
-        "value": 1.5,
+        "value": 0.75,
+        "unit": "rem"
+      }
+    },
+    "standard": {
+      "$value": {
+        "value": 0.75,
         "unit": "rem"
       }
     },
@@ -1711,7 +1717,7 @@ export const generatedTokens = {
     },
     "small": {
       "$value": {
-        "value": 0.5,
+        "value": 0.75,
         "unit": "rem"
       }
     }

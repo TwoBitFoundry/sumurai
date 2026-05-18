@@ -3,6 +3,7 @@ import { cn, GlassCard } from '@/ui/primitives';
 import {
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
+  radius as uiRadiusRecipes,
   status as uiStatusRecipes,
   surface as uiSurfaceRecipes,
   text as uiTextRecipes,
@@ -25,7 +26,7 @@ interface ProviderSelectionPanelProps {
 const panelClasses = cn(
   'relative',
   'overflow-hidden',
-  'rounded-[2.25rem]',
+  uiRadiusRecipes.standard,
   'border',
   ...uiBorderRecipes.glass,
   ...uiSurfaceRecipes.glassPanel,
@@ -60,7 +61,7 @@ export const ProviderSelectionPanel = ({
         className={cn(
           'relative',
           'overflow-hidden',
-          'rounded-[2.25rem]',
+          uiRadiusRecipes.standard,
           'border',
           ...uiStatusRecipes.danger.border,
           ...uiStatusRecipes.danger.surface,
@@ -194,7 +195,7 @@ export const ProviderSelectionPanel = ({
                         'inline-flex',
                         'items-center',
                         'justify-center',
-                        'rounded-full',
+                        uiRadiusRecipes.standard,
                         'bg-[var(--color-brand-sky)]',
                         'px-4',
                         'py-2',

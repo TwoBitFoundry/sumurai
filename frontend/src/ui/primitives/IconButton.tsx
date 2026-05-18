@@ -5,12 +5,13 @@ import {
   effect as semanticEffects,
   status as semanticStatus,
   surface as semanticSurfaces,
+  radius as uiRadiusRecipes,
 } from '@/ui/recipes';
 import { cn } from './utils';
 
 export const iconButtonRecipes = {
   ghost: [
-    'inline-flex items-center justify-center rounded-full p-2',
+    `inline-flex items-center justify-center ${uiRadiusRecipes.standard} p-2`,
     ...semanticBorders.glass,
     ...semanticSurfaces.card,
     'text-slate-600 dark:text-slate-200',
@@ -19,14 +20,14 @@ export const iconButtonRecipes = {
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]',
   ],
   success: [
-    'inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[var(--color-brand-emerald)] via-[var(--color-brand-emerald)] to-[var(--color-brand-sky)] p-2 text-white',
+    `inline-flex items-center justify-center ${uiRadiusRecipes.standard} bg-gradient-to-r from-[var(--color-brand-emerald)] via-[var(--color-brand-emerald)] to-[var(--color-brand-sky)] p-2 text-white`,
     ...semanticEffects.successGlow,
     'transition-transform duration-200 hover:-translate-y-[2px]',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
     'dark:focus-visible:ring-offset-[#0f172a]',
   ],
   danger: [
-    'inline-flex items-center justify-center rounded-full border p-2',
+    `inline-flex items-center justify-center ${uiRadiusRecipes.standard} border p-2`,
     ...semanticStatus.danger.border,
     ...semanticStatus.danger.surface,
     ...semanticStatus.danger.text,

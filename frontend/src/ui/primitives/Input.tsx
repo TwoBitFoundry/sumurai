@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
-import { text as semanticTextRecipes } from '@/ui/recipes';
+import { text as semanticTextRecipes, radius as uiRadiusRecipes } from '@/ui/recipes';
 import { cn } from './utils';
 
 export const inputControl = {
@@ -45,9 +45,9 @@ export const inputControl = {
     'dark:focus:ring-offset-[#0f172a]',
   ],
   size: {
-    sm: 'py-1.5 text-xs rounded-lg',
-    md: 'py-2.5 text-sm rounded-xl',
-    lg: 'py-3 text-base rounded-xl',
+    sm: `py-1.5 text-xs ${uiRadiusRecipes.standard}`,
+    md: `py-2.5 text-sm ${uiRadiusRecipes.standard}`,
+    lg: `py-3 text-base ${uiRadiusRecipes.standard}`,
   },
 } as const;
 

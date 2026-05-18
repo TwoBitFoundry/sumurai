@@ -6,13 +6,14 @@ import {
   effect as semanticEffects,
   surface as semanticSurfaces,
   text as semanticTextRecipes,
+  radius as uiRadiusRecipes,
 } from '@/ui/recipes';
 import { cn } from './utils';
 
 export const menuDropdownRecipes = {
   content: [
     'absolute right-0 z-20 mt-3 w-48',
-    'overflow-hidden rounded-2xl',
+    `overflow-hidden ${uiRadiusRecipes.standard}`,
     ...semanticBorders.glass,
     ...semanticSurfaces.solidPanel,
     'p-2',
@@ -22,7 +23,7 @@ export const menuDropdownRecipes = {
   ],
   item: [
     'flex w-full items-center gap-2',
-    'rounded-xl px-3 py-2',
+    `px-3 py-2 ${uiRadiusRecipes.standard}`,
     `text-left ${semanticTextRecipes.muted}`,
     'transition-all duration-200 ease-out',
     ...semanticSurfaces.hoverRow,

@@ -28,7 +28,7 @@ export const BudgetToolbar = ({
 }: BudgetToolbarProps) => {
   return (
     <div
-      className={cn('flex', 'flex-wrap', 'items-start', 'justify-between', 'gap-3', 'px-6', 'py-4')}
+      className={cn('flex', 'flex-wrap', 'items-start', 'justify-between', 'gap-3')}
       data-testid="budget-toolbar"
     >
       <div className={cn('flex', 'items-center', 'gap-3')}>

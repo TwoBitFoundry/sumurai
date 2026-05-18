@@ -8,6 +8,7 @@ import {
   effect as semanticEffects,
   surface as semanticSurfaces,
   focus as uiFocusRecipes,
+  radius as uiRadiusRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
@@ -19,7 +20,7 @@ import BudgetProgress from './BudgetProgress';
 export type BudgetWithProgress = BudgetProgressEntry;
 
 const budgetCardShell = [
-  'group relative overflow-hidden rounded-[1.75rem] p-6',
+  `group relative overflow-hidden ${uiRadiusRecipes.standard} p-4 pt-5`,
   ...semanticBorders.subtle,
   ...semanticSurfaces.card,
   ...semanticEffects.glassShadow,
@@ -57,17 +58,7 @@ export function BudgetList({
   }
 
   return (
-    <ul
-      className={cn(
-        'grid',
-        'grid-cols-1',
-        'gap-6',
-        'p-6',
-        'md:px-10',
-        'md:grid-cols-2',
-        'lg:grid-cols-3'
-      )}
-    >
+    <ul className={cn('mt-4', 'grid', 'grid-cols-1', 'gap-6', 'md:grid-cols-2', 'lg:grid-cols-3')}>
       {items.map((b) => {
         const isOver = b.spent > b.amount;
         const displayName = formatCategoryName(b.category);
@@ -101,17 +92,16 @@ export function BudgetList({
                 'dark:via-white/20'
               )}
             />
-            <div className={cn('flex', 'items-start', 'justify-between', 'gap-3')}>
-              <Pill
-                variant="category"
-                categoryName={displayName}
+            <div className={cn('space-y-2')}>
+              <div
                 className={cn(
-                  'transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10'
+                  'flex',
+                  'items-center',
+                  'justify-end',
+                  'gap-1.5',
+                  uiTypographyRecipes.label
                 )}
               >
-                {displayName}
-              </Pill>
-              <div className={cn('flex', 'items-center', 'gap-2', uiTypographyRecipes.label)}>
                 {isEditing ? (
                   <>
                     <IconButton
@@ -152,8 +142,18 @@ export function BudgetList({
                   </>
                 )}
               </div>
+              <div className={cn('h-px', 'bg-white/10', 'dark:bg-white/5')} />
+              <Pill
+                variant="category"
+                categoryName={displayName}
+                className={cn(
+                  'transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10'
+                )}
+              >
+                {displayName}
+              </Pill>
             </div>
-            <div className={cn('mt-6', 'space-y-5')}>
+            <div className={cn('mt-2', 'space-y-4')}>
               {isEditing ? (
                 <div
                   className={cn(
