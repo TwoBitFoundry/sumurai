@@ -3,7 +3,8 @@ import { ChevronDown, ChevronRight, Filter } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
-import { cn } from '@/ui/primitives';
+import { Button, cn } from '@/ui/primitives';
+import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import {
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
@@ -136,40 +137,67 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
 
   return (
     <div className={cn('relative')}>
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={handleKeyDown}
-        className={cn(
-          uiRadiusRecipes.standard,
-          'border',
-          triggerStyle === 'icon-only' ? uiBorderRecipes.glass : uiBorderRecipes.default,
-          ...(triggerStyle === 'icon-only'
-            ? uiSurfaceRecipes.glassPanel
-            : uiSurfaceRecipes.mutedChip),
-          ...(triggerStyle === 'icon-only' ? uiEffectRecipes.glassShadow : []),
-          triggerStyle === 'icon-only'
-            ? 'backdrop-blur-md backdrop-saturate-[150%]'
-            : 'backdrop-blur-sm',
-          'hover:bg-[var(--color-surface-hover-row)]',
-          'dark:hover:bg-[var(--color-surface-hover-row)]',
-          'transition-all',
-          'duration-200',
-          'flex',
-          'items-center',
-          triggerStyle === 'icon-only' ? 'gap-0' : 'gap-2',
-          uiTextRecipes.body,
-          uiTypographyRecipes.captionStrong,
-          triggerStyle === 'icon-only' ? 'h-11 w-11 justify-center p-0' : 'px-3 py-1.5'
-        )}
-        aria-haspopup="dialog"
-        aria-expanded={isOpen}
-        aria-label={triggerStyle === 'icon-only' ? 'Filter accounts' : undefined}
-      >
-        <Filter className={cn('h-4', 'w-4')} />
-        {triggerStyle === 'default' ? <span>{displayText}</span> : null}
-        {triggerStyle === 'default' ? (
+      {triggerStyle === 'icon-only' ? (
+        <nav className={cn(...appTitleBarRecipes.pillContainer)} aria-label="Account filter menu">
+          <Button
+            ref={triggerRef}
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            onKeyDown={handleKeyDown}
+            variant={isOpen ? 'tabActive' : 'tab'}
+            size="xs"
+            className={cn(
+              ...appTitleBarRecipes.pillTab,
+              'h-full',
+              isOpen ? uiTextRecipes.inverse : uiTextRecipes.muted
+            )}
+            aria-haspopup="dialog"
+            aria-expanded={isOpen}
+            aria-label="Filter accounts"
+          >
+            <span
+              className={cn(
+                'relative',
+                'z-10',
+                'flex',
+                'h-4',
+                'w-4',
+                'items-center',
+                'justify-center'
+              )}
+            >
+              <Filter className={cn('h-4', 'w-4')} />
+            </span>
+          </Button>
+        </nav>
+      ) : (
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          onKeyDown={handleKeyDown}
+          className={cn(
+            uiRadiusRecipes.standard,
+            'border',
+            uiBorderRecipes.default,
+            ...uiSurfaceRecipes.mutedChip,
+            'backdrop-blur-sm',
+            'hover:bg-[var(--color-surface-hover-row)]',
+            'dark:hover:bg-[var(--color-surface-hover-row)]',
+            'transition-all',
+            'duration-200',
+            'flex',
+            'items-center',
+            'gap-2',
+            uiTextRecipes.body,
+            uiTypographyRecipes.captionStrong,
+            'px-3 py-1.5'
+          )}
+          aria-haspopup="dialog"
+          aria-expanded={isOpen}
+        >
+          <Filter className={cn('h-4', 'w-4')} />
+          <span>{displayText}</span>
           <ChevronDown
             className={cn(
               'h-4',
@@ -179,8 +207,8 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
               isOpen && 'rotate-180'
             )}
           />
-        ) : null}
-      </button>
+        </button>
+      )}
 
       {mounted &&
         createPortal(

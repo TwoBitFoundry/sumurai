@@ -1,5 +1,5 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { Calendar as CalendarIcon, Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
 import { Button, cn, PaginationButton } from '@/ui/primitives';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
@@ -28,10 +28,27 @@ export const BudgetToolbar = ({
 }: BudgetToolbarProps) => {
   return (
     <div
-      className={cn('flex', 'flex-wrap', 'items-start', 'justify-between', 'gap-3')}
+      className={cn(
+        'flex',
+        'flex-wrap',
+        'items-start',
+        'justify-end',
+        'gap-3',
+        'lg:justify-between'
+      )}
       data-testid="budget-toolbar"
     >
-      <div className={cn('flex', 'items-center', 'gap-3')}>
+      <div className={cn('hidden', 'lg:flex', 'items-center', 'gap-3')}>
+        <Button
+          type="button"
+          onClick={onCurrentMonth}
+          variant="ghost"
+          size="md"
+          className={budgetActionButtonClasses}
+          title="Jump to current month"
+        >
+          Now
+        </Button>
         <div className={cn('flex', 'items-center', 'gap-2')}>
           <PaginationButton
             type="button"
@@ -62,7 +79,17 @@ export const BudgetToolbar = ({
         </div>
       </div>
       <div
-        className={cn('flex', 'items-center', 'gap-3', 'flex-nowrap', 'overflow-x-auto', 'pb-1')}
+        className={cn(
+          'flex',
+          'w-full',
+          'items-center',
+          'justify-end',
+          'gap-3',
+          'flex-nowrap',
+          'overflow-x-auto',
+          'pb-1',
+          'lg:w-auto'
+        )}
       >
         <div
           className={cn(
@@ -82,17 +109,6 @@ export const BudgetToolbar = ({
             </>
           )}
         </div>
-        <Button
-          type="button"
-          onClick={onCurrentMonth}
-          variant="ghost"
-          size="md"
-          className={budgetActionButtonClasses}
-          title="Jump to current month"
-        >
-          <CalendarIcon className={cn('h-4', 'w-4')} />
-          This Month
-        </Button>
         {showAddButton && !isAdding ? (
           <Button
             type="button"

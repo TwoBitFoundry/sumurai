@@ -20,7 +20,7 @@ import BudgetProgress from './BudgetProgress';
 export type BudgetWithProgress = BudgetProgressEntry;
 
 const budgetCardShell = [
-  `group relative overflow-hidden ${uiRadiusRecipes.standard} p-4 pt-5`,
+  `group relative flex h-full flex-col overflow-hidden ${uiRadiusRecipes.standard} p-4 pt-5`,
   ...semanticBorders.subtle,
   ...semanticSurfaces.card,
   ...semanticEffects.glassShadow,
@@ -92,68 +92,16 @@ export function BudgetList({
                 'dark:via-white/20'
               )}
             />
-            <div className={cn('space-y-2')}>
-              <div
-                className={cn(
-                  'flex',
-                  'items-center',
-                  'justify-end',
-                  'gap-1.5',
-                  uiTypographyRecipes.label
-                )}
-              >
-                {isEditing ? (
-                  <>
-                    <IconButton
-                      variant="success"
-                      onClick={() => onSaveEdit(b.id, Number(draft))}
-                      title="Save"
-                      aria-label="Save budget"
-                    >
-                      <CheckIcon className={cn('h-4', 'w-4')} />
-                    </IconButton>
-                    <IconButton
-                      variant="ghost"
-                      onClick={onCancelEdit}
-                      title="Cancel"
-                      aria-label="Cancel edit"
-                    >
-                      <XMarkIcon className={cn('h-4', 'w-4')} />
-                    </IconButton>
-                  </>
-                ) : (
-                  <>
-                    <IconButton
-                      variant="ghost"
-                      onClick={() => onStartEdit(b)}
-                      title="Edit budget"
-                      aria-label="Edit budget"
-                    >
-                      <PencilSquareIcon className={cn('h-4', 'w-4')} />
-                    </IconButton>
-                    <IconButton
-                      variant="danger"
-                      onClick={() => onDelete(b.id)}
-                      title="Delete budget"
-                      aria-label="Delete budget"
-                    >
-                      <TrashSolidIcon className={cn('h-4', 'w-4')} />
-                    </IconButton>
-                  </>
-                )}
-              </div>
-              <div className={cn('h-px', 'bg-white/10', 'dark:bg-white/5')} />
-              <Pill
-                variant="category"
-                categoryName={displayName}
-                className={cn(
-                  'transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10'
-                )}
-              >
-                {displayName}
-              </Pill>
-            </div>
-            <div className={cn('mt-2', 'space-y-4')}>
+            <Pill
+              variant="category"
+              categoryName={displayName}
+              className={cn(
+                'transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10'
+              )}
+            >
+              {displayName}
+            </Pill>
+            <div className={cn('mt-2', 'flex-1', 'space-y-4')}>
               {isEditing ? (
                 <div
                   className={cn(
@@ -282,6 +230,58 @@ export function BudgetList({
                 </div>
               )}
               <BudgetProgress amount={b.amount} spent={b.spent} />
+            </div>
+            <div className={cn('mt-4', 'space-y-2')}>
+              <div className={cn('h-px', 'bg-white/10', 'dark:bg-white/5')} />
+              <div
+                className={cn(
+                  'flex',
+                  'items-center',
+                  'justify-end',
+                  'gap-1.5',
+                  uiTypographyRecipes.label
+                )}
+              >
+                {isEditing ? (
+                  <>
+                    <IconButton
+                      variant="success"
+                      onClick={() => onSaveEdit(b.id, Number(draft))}
+                      title="Save"
+                      aria-label="Save budget"
+                    >
+                      <CheckIcon className={cn('h-4', 'w-4')} />
+                    </IconButton>
+                    <IconButton
+                      variant="ghost"
+                      onClick={onCancelEdit}
+                      title="Cancel"
+                      aria-label="Cancel edit"
+                    >
+                      <XMarkIcon className={cn('h-4', 'w-4')} />
+                    </IconButton>
+                  </>
+                ) : (
+                  <>
+                    <IconButton
+                      variant="ghost"
+                      onClick={() => onStartEdit(b)}
+                      title="Edit budget"
+                      aria-label="Edit budget"
+                    >
+                      <PencilSquareIcon className={cn('h-4', 'w-4')} />
+                    </IconButton>
+                    <IconButton
+                      variant="danger"
+                      onClick={() => onDelete(b.id)}
+                      title="Delete budget"
+                      aria-label="Delete budget"
+                    >
+                      <TrashSolidIcon className={cn('h-4', 'w-4')} />
+                    </IconButton>
+                  </>
+                )}
+              </div>
             </div>
           </li>
         );

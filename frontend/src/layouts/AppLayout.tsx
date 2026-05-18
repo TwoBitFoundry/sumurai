@@ -18,6 +18,7 @@ interface AppLayoutProps {
   isOnline: boolean;
   className?: string;
   bottomBarContent?: ReactNode;
+  bottomBarAboveTabsUntil?: 'md' | 'lg';
 }
 
 export function AppLayout({
@@ -28,7 +29,15 @@ export function AppLayout({
   isOnline,
   className,
   bottomBarContent,
+  bottomBarAboveTabsUntil = 'md',
 }: AppLayoutProps) {
+  const stackedBottomBarVisibility = bottomBarAboveTabsUntil === 'lg' ? 'lg:hidden' : 'md:hidden';
+  const floatingBottomBarVisibility =
+    bottomBarAboveTabsUntil === 'lg' ? 'hidden lg:flex' : 'hidden md:flex';
+  const mainBottomPadding =
+    bottomBarAboveTabsUntil === 'lg'
+      ? 'pb-[calc(5.75rem_+_env(safe-area-inset-bottom))] lg:pb-8'
+      : 'pb-[calc(5.75rem_+_env(safe-area-inset-bottom))] md:pb-6 lg:pb-8';
   const scrolled = useScrollDetection();
   const footerRef = useRef<HTMLDivElement>(null);
   const [floatingVisible, setFloatingVisible] = useState(true);
@@ -64,7 +73,7 @@ export function AppLayout({
             'md:pl-[calc(3rem_+_env(safe-area-inset-left))] md:pr-[calc(3rem_+_env(safe-area-inset-right))]',
             'lg:pl-[calc(4rem_+_env(safe-area-inset-left))] lg:pr-[calc(4rem_+_env(safe-area-inset-right))]',
             'pt-3 md:pt-6 lg:pt-8',
-            'pb-[calc(5.75rem_+_env(safe-area-inset-bottom))] md:pb-6 lg:pb-8'
+            mainBottomPadding
           )}
         >
           {children}
@@ -74,7 +83,7 @@ export function AppLayout({
         <div
           className={cn(
             'fixed bottom-5 left-0 right-0 z-50',
-            'hidden md:flex',
+            floatingBottomBarVisibility,
             'min-h-[2.75rem] items-center justify-center px-4',
             'transition-opacity duration-200',
             floatingVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -90,7 +99,7 @@ export function AppLayout({
         <div
           className={cn(
             'fixed bottom-4 left-0 right-0',
-            'md:hidden',
+            stackedBottomBarVisibility,
             'z-50',
             'flex flex-col',
             'pb-[env(safe-area-inset-bottom)]',

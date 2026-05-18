@@ -7,11 +7,12 @@ import { BudgetForm, type BudgetFormValue } from '../features/budgets/components
 import { BudgetList, type BudgetWithProgress } from '../features/budgets/components/BudgetList';
 import BudgetSummaryCard from '../features/budgets/components/BudgetSummaryCard';
 import BudgetToolbar from '../features/budgets/components/BudgetToolbar';
+import type { BudgetMonthControl } from '../features/budgets/hooks/useBudgetMonth';
 import { useBudgets } from '../features/budgets/hooks/useBudgets';
 import { PageLayout } from '../layouts/PageLayout';
 import { formatCategoryName } from '../utils/categories';
 
-export default function BudgetsPage() {
+export default function BudgetsPage({ monthControl }: { monthControl: BudgetMonthControl }) {
   const {
     isLoading,
     transactionsLoading,
@@ -28,7 +29,7 @@ export default function BudgetsPage() {
     goToPreviousMonth,
     goToNextMonth,
     goToCurrentMonth,
-  } = useBudgets();
+  } = useBudgets(monthControl);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<BudgetFormValue>({ category: '', amount: '' });

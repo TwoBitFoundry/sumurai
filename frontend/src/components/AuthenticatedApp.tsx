@@ -1,6 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRef, useState } from 'react';
 import { DateRangePillSlider } from '@/features/analytics/components/DateRangePillSlider';
+import { BudgetMonthPillSlider } from '@/features/budgets/components/BudgetMonthPillSlider';
+import { useBudgetMonth } from '@/features/budgets/hooks/useBudgetMonth';
 import { Alert, cn } from '@/ui/primitives';
 import AccountsPage from '@/views/AccountsPage';
 import BudgetsPage from '@/views/BudgetsPage';
@@ -34,6 +36,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
   const [direction, setDirection] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>('current-month');
+  const budgetMonth = useBudgetMonth();
   const swipeBlockedRef = useRef(false);
 
   const handleTabChange = (next: TabKey) => {
@@ -46,7 +49,15 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
   const bottomBarContent =
     tab === 'dashboard' ? (
       <DateRangePillSlider dateRange={dateRange} onChange={setDateRange} />
+    ) : tab === 'budgets' ? (
+      <BudgetMonthPillSlider
+        monthLabel={budgetMonth.monthLabel}
+        onPreviousMonth={budgetMonth.goToPreviousMonth}
+        onNextMonth={budgetMonth.goToNextMonth}
+        onCurrentMonth={budgetMonth.goToCurrentMonth}
+      />
     ) : null;
+  const bottomBarAboveTabsUntil = tab === 'budgets' ? 'lg' : 'md';
 
   return (
     <ErrorBoundary>
@@ -81,6 +92,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
             onLogout={onLogout}
             isOnline={isOnline}
             bottomBarContent={bottomBarContent}
+            bottomBarAboveTabsUntil={bottomBarAboveTabsUntil}
           >
             {error && (
               <Alert variant="error" title="Error" className={cn('mb-6')}>
@@ -102,7 +114,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
                   <DashboardPage dateRange={dateRange} setDateRange={setDateRange} />
                 )}
                 {tab === 'transactions' && <TransactionsPage />}
-                {tab === 'budgets' && <BudgetsPage />}
+                {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}
                 {tab === 'accounts' && <AccountsPage onError={setError} />}
                 {tab === 'settings' && (
                   <SettingsPage onLogout={onLogout} onBack={() => handleTabChange('dashboard')} />

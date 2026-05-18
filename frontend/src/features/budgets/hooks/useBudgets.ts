@@ -6,6 +6,7 @@ import { BudgetService } from '../../../services/BudgetService';
 import { TransactionService } from '../../../services/TransactionService';
 import type { Budget, Transaction } from '../../../types/api';
 import { accountIdsCacheKey } from '../../../utils/cacheKeys';
+import { type BudgetMonthControl, useBudgetMonth } from './useBudgetMonth';
 
 export interface BudgetProgressEntry extends Budget {
   spent: number;
@@ -35,10 +36,12 @@ export interface UseBudgetsResult {
   goToCurrentMonth: () => void;
 }
 
-export function useBudgets(): UseBudgetsResult {
+export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
-  const [month, setMonthState] = useState(() => normalizeMonth(new Date()));
+  const internalMonth = useBudgetMonth();
+  const { month, monthLabel, range, setMonth, goToPreviousMonth, goToNextMonth, goToCurrentMonth } =
+    monthControl ?? internalMonth;
 
   const queryClient = useQueryClient();
   const {
@@ -47,14 +50,6 @@ export function useBudgets(): UseBudgetsResult {
     allAccountIds,
     loading: accountsLoading,
   } = useAccountFilter();
-
-  const monthFormatter = useMemo(
-    () => new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }),
-    []
-  );
-
-  const range = useMemo(() => getMonthRange(month), [month]);
-  const monthLabel = useMemo(() => monthFormatter.format(month), [month, monthFormatter]);
   const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
 
   const budgetsQuery = useQuery({
@@ -196,22 +191,6 @@ export function useBudgets(): UseBudgetsResult {
     });
   }, [budgets, range.end, range.start, transactions]);
 
-  const setMonth = useCallback((value: Date) => {
-    setMonthState(normalizeMonth(value));
-  }, []);
-
-  const goToPreviousMonth = useCallback(() => {
-    setMonthState((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-  }, []);
-
-  const goToNextMonth = useCallback(() => {
-    setMonthState((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-  }, []);
-
-  const goToCurrentMonth = useCallback(() => {
-    setMonthState(normalizeMonth(new Date()));
-  }, []);
-
   const add = useCallback(
     async (category: string, amount: number) => {
       setValidationError(null);
@@ -298,17 +277,6 @@ export function useBudgets(): UseBudgetsResult {
     goToNextMonth,
     goToCurrentMonth,
   };
-}
-
-function normalizeMonth(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function getMonthRange(date: Date): { start: string; end: string } {
-  const start = new Date(date.getFullYear(), date.getMonth(), 1);
-  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
-  return { start: fmt(start), end: fmt(end) };
 }
 
 function generateId(): string {

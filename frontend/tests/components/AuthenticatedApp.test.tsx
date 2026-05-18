@@ -29,7 +29,12 @@ jest.mock('framer-motion', () => {
 const appLayoutMock = jest.fn();
 
 jest.mock('@/layouts/AppLayout', () => ({
-  AppLayout: (props: { children: ReactNode; bottomBarContent?: ReactNode; currentTab: string }) => {
+  AppLayout: (props: {
+    children: ReactNode;
+    bottomBarContent?: ReactNode;
+    bottomBarAboveTabsUntil?: 'md' | 'lg';
+    currentTab: string;
+  }) => {
     appLayoutMock(props);
     return (
       <div>
@@ -93,6 +98,15 @@ describe('AuthenticatedApp', () => {
 
     expect(screen.getByTestId('bottom-bar')).toHaveTextContent('1M');
     expect(screen.getByText('current-month')).toBeInTheDocument();
+    expect(appLayoutMock.mock.calls[0][0].bottomBarAboveTabsUntil).toBe('md');
+  });
+
+  it('renders the budget month control in the bottom bar for the budgets tab', () => {
+    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="budgets" />);
+
+    expect(screen.getByTestId('budget-month-pill-slider')).toBeInTheDocument();
+    expect(screen.getByText('Budgets')).toBeInTheDocument();
+    expect(appLayoutMock.mock.lastCall[0].bottomBarAboveTabsUntil).toBe('lg');
   });
 
   it('handleTabChange updates currentTab on AppLayout in both directions', () => {

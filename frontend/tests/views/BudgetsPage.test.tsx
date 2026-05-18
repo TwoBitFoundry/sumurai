@@ -38,7 +38,19 @@ describe('BudgetsPage', () => {
   });
 
   it('moves the budget stats grid to the md tier', () => {
-    const { container } = render(<BudgetsPage />);
+    const { container } = render(
+      <BudgetsPage
+        monthControl={{
+          month: new Date('2026-05-01'),
+          monthLabel: 'May 2026',
+          range: { start: '2026-05-01', end: '2026-05-31' },
+          setMonth: jest.fn(),
+          goToPreviousMonth: jest.fn(),
+          goToNextMonth: jest.fn(),
+          goToCurrentMonth: jest.fn(),
+        }}
+      />
+    );
     const statsGrid = container.querySelector(
       '[data-testid="page-layout"] .grid.gap-3'
     ) as HTMLElement | null;

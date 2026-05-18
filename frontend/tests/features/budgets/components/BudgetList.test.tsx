@@ -34,7 +34,7 @@ describe('BudgetList', () => {
     expect(card).toHaveClass(uiRadiusRecipes.standard);
   });
 
-  it('places budget actions above the category pill', () => {
+  it('places the divider and budget actions at the bottom of the card', () => {
     const { container } = render(
       <BudgetList
         items={[
@@ -55,16 +55,14 @@ describe('BudgetList', () => {
     );
 
     const card = container.querySelector('li');
-    const headerStack = card?.querySelector('div.space-y-2');
-    const actionRow = headerStack?.firstElementChild;
-    const divider = headerStack?.children[1];
-    const metricsStack = card?.querySelector('div.mt-2');
+    const footer = card?.lastElementChild;
+    const divider = footer?.firstElementChild;
+    const actionRow = footer?.lastElementChild;
 
-    expect(headerStack).toBeTruthy();
-    expect(actionRow?.querySelector('[aria-label="Edit budget"]')).toBeTruthy();
+    expect(card?.textContent).toContain('Food and drink');
+    expect(footer).toHaveClass('mt-4');
+    expect(footer).toHaveClass('space-y-2');
     expect(divider).toHaveClass('h-px');
-    expect(headerStack?.lastElementChild).toHaveTextContent('Food and drink');
-    expect(headerStack).toHaveClass('space-y-2');
-    expect(metricsStack).not.toHaveClass('md:mt-4');
+    expect(actionRow?.querySelector('[aria-label="Edit budget"]')).toBeTruthy();
   });
 });
