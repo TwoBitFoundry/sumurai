@@ -55,7 +55,10 @@ fn given_teller_transaction_json_when_from_teller_then_maps_fields_correctly() {
     assert_eq!(transaction.date.to_string(), "2024-01-15");
     assert_eq!(transaction.merchant_name, Some("Starbucks".to_string()));
     assert_eq!(transaction.category_primary, "GENERAL_MERCHANDISE");
-    assert_eq!(transaction.category_detailed, "");
+    assert_eq!(
+        transaction.category_detailed,
+        "GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE"
+    );
     assert_eq!(transaction.category_confidence, "");
     assert!(!transaction.pending);
 }
@@ -80,6 +83,10 @@ fn given_teller_transaction_with_service_category_when_from_teller_then_normaliz
     let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
     assert_eq!(transaction.category_primary, "GENERAL_SERVICES");
+    assert_eq!(
+        transaction.category_detailed,
+        "GENERAL_SERVICES_OTHER_GENERAL_SERVICES"
+    );
 }
 
 #[test]
@@ -91,6 +98,185 @@ fn given_teller_transaction_with_unknown_category_when_from_teller_then_normaliz
     let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
     assert_eq!(transaction.category_primary, "OTHER");
+    assert_eq!(transaction.category_detailed, "OTHER");
+}
+
+#[test]
+fn given_teller_transaction_with_dining_category_when_from_teller_then_maps_to_food_and_drink() {
+    let account_id = Uuid::new_v4();
+    let teller_json = serde_json::json!({
+        "id": "txn_dining",
+        "date": "2024-01-15",
+        "amount": "-42.10",
+        "description": "Dinner",
+        "status": "posted",
+        "details": {
+            "category": "dining",
+            "counterparty": {
+                "type": "merchant",
+                "name": "Restaurant"
+            }
+        }
+    });
+
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
+
+    assert_eq!(transaction.category_primary, "FOOD_AND_DRINK");
+    assert_eq!(transaction.category_detailed, "FOOD_AND_DRINK_RESTAURANT");
+}
+
+#[test]
+fn given_teller_transaction_with_fuel_category_when_from_teller_then_maps_to_transportation() {
+    let account_id = Uuid::new_v4();
+    let teller_json = serde_json::json!({
+        "id": "txn_fuel",
+        "date": "2024-01-16",
+        "amount": "-55.00",
+        "description": "Gas",
+        "status": "posted",
+        "details": {
+            "category": "fuel",
+            "counterparty": {
+                "type": "merchant",
+                "name": "Gas Station"
+            }
+        }
+    });
+
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
+
+    assert_eq!(transaction.category_primary, "TRANSPORTATION");
+    assert_eq!(transaction.category_detailed, "TRANSPORTATION_GAS");
+}
+
+#[test]
+fn given_teller_transaction_with_income_category_when_from_teller_then_maps_to_income() {
+    let account_id = Uuid::new_v4();
+    let teller_json = serde_json::json!({
+        "id": "txn_income",
+        "date": "2024-01-17",
+        "amount": "1500.00",
+        "description": "Paycheck",
+        "status": "posted",
+        "details": {
+            "category": "income",
+            "counterparty": {
+                "type": "organization",
+                "name": "Employer"
+            }
+        }
+    });
+
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
+
+    assert_eq!(transaction.category_primary, "INCOME");
+    assert_eq!(transaction.category_detailed, "INCOME_WAGES");
+}
+
+#[test]
+fn given_teller_transaction_with_investment_inflow_when_from_teller_then_maps_to_transfer_in() {
+    let account_id = Uuid::new_v4();
+    let teller_json = serde_json::json!({
+        "id": "txn_investment_in",
+        "date": "2024-01-18",
+        "amount": "5000.00",
+        "description": "Investment contribution",
+        "status": "posted",
+        "details": {
+            "category": "investment",
+            "counterparty": {
+                "type": "organization",
+                "name": "Brokerage"
+            }
+        }
+    });
+
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
+
+    assert_eq!(transaction.category_primary, "TRANSFER_IN");
+    assert_eq!(
+        transaction.category_detailed,
+        "TRANSFER_IN_INVESTMENT_AND_RETIREMENT_FUNDS"
+    );
+}
+
+#[test]
+fn given_teller_transaction_with_investment_outflow_when_from_teller_then_maps_to_transfer_out() {
+    let account_id = Uuid::new_v4();
+    let teller_json = serde_json::json!({
+        "id": "txn_investment_out",
+        "date": "2024-01-19",
+        "amount": "-5000.00",
+        "description": "Investment withdrawal",
+        "status": "posted",
+        "details": {
+            "category": "investment",
+            "counterparty": {
+                "type": "organization",
+                "name": "Brokerage"
+            }
+        }
+    });
+
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
+
+    assert_eq!(transaction.category_primary, "TRANSFER_OUT");
+    assert_eq!(
+        transaction.category_detailed,
+        "TRANSFER_OUT_INVESTMENT_AND_RETIREMENT_FUNDS"
+    );
+}
+
+#[test]
+fn given_teller_transaction_with_utilities_category_when_from_teller_then_maps_to_rent_and_utilities(
+) {
+    let account_id = Uuid::new_v4();
+    let teller_json = serde_json::json!({
+        "id": "txn_utilities",
+        "date": "2024-01-20",
+        "amount": "-120.00",
+        "description": "Utilities",
+        "status": "posted",
+        "details": {
+            "category": "utilities",
+            "counterparty": {
+                "type": "merchant",
+                "name": "Utility Company"
+            }
+        }
+    });
+
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
+
+    assert_eq!(transaction.category_primary, "RENT_AND_UTILITIES");
+    assert_eq!(
+        transaction.category_detailed,
+        "RENT_AND_UTILITIES_GAS_AND_ELECTRICITY"
+    );
+}
+
+#[test]
+fn given_teller_transaction_with_null_category_when_from_teller_then_maps_to_other() {
+    let account_id = Uuid::new_v4();
+    let teller_json = serde_json::json!({
+        "id": "txn_null_category",
+        "date": "2024-01-21",
+        "amount": "-12.34",
+        "description": "Unknown",
+        "status": "posted",
+        "details": {
+            "category": null,
+            "counterparty": {
+                "type": "merchant",
+                "name": "Merchant"
+            }
+        }
+    });
+
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
+
+    assert_eq!(transaction.category_primary, "OTHER");
+    assert_eq!(transaction.category_detailed, "OTHER");
 }
 
 #[test]
