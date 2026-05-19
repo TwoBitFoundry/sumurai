@@ -1,6 +1,6 @@
 import { CircleDollarSign, RefreshCcw } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { useTheme } from '../context/ThemeContext';
 import { ACCOUNT_GROUP_LABELS } from '../domain/accountCategories';
 import { BalancesChartXAxisTick } from '../features/analytics/components/BalancesChartXAxisTick';
@@ -111,28 +111,108 @@ export function BalancesOverview() {
     [debouncedBanks]
   );
 
-  const [hoverInfo, setHoverInfo] = useState<{
-    bank: string;
-    cash?: number | null;
-    investments?: number | null;
-    credit?: number | null;
-    loan?: number | null;
-  } | null>(null);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [isTouchPrimary, setIsTouchPrimary] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      window.matchMedia('(hover: none) and (pointer: coarse)').matches
+  );
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const hoverClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleBarHover = (entry?: { payload?: BankBarDatum | null }) => {
-    const payload = entry?.payload;
-    if (!payload) {
-      setHoverInfo(null);
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(hover: none) and (pointer: coarse)');
+    const syncTouchPrimary = () => setIsTouchPrimary(mediaQuery.matches);
+    syncTouchPrimary();
+    mediaQuery.addEventListener('change', syncTouchPrimary);
+    return () => mediaQuery.removeEventListener('change', syncTouchPrimary);
+  }, []);
+
+  useEffect(() => {
+    if (!isTouchPrimary || selectedIndex === null) {
       return;
     }
-    setHoverInfo({
+    const handlePointerDown = (event: PointerEvent) => {
+      const chartEl = chartContainerRef.current;
+      if (chartEl && event.target instanceof Node && chartEl.contains(event.target)) {
+        return;
+      }
+      setSelectedIndex(null);
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [isTouchPrimary, selectedIndex]);
+
+  const highlightIndex = isTouchPrimary ? selectedIndex : (hoverIndex ?? selectedIndex);
+  const menuIndex = isTouchPrimary ? selectedIndex : hoverIndex;
+
+  const hoverInfo = useMemo(() => {
+    if (menuIndex == null || !chartData[menuIndex]) {
+      return null;
+    }
+    const payload = chartData[menuIndex];
+    return {
       bank: payload.bank,
       cash: payload.cash,
       investments: payload.investments,
       credit: payload.credit,
       loan: payload.loan,
-    });
+    };
+  }, [chartData, menuIndex]);
+
+  const cancelHoverClear = useCallback(() => {
+    if (hoverClearTimeoutRef.current) {
+      clearTimeout(hoverClearTimeoutRef.current);
+      hoverClearTimeoutRef.current = null;
+    }
+  }, []);
+
+  const institutionCellProps = (index: number) => {
+    const isActive = highlightIndex === index;
+    return {
+      fillOpacity: highlightIndex === null || isActive ? 1 : 0.35,
+      style: { cursor: 'pointer' } as const,
+    };
   };
+
+  const handleBarMouseEnter = useCallback(
+    (_: unknown, index: number) => {
+      if (isTouchPrimary) {
+        return;
+      }
+      cancelHoverClear();
+      setHoverIndex(index);
+    },
+    [cancelHoverClear, isTouchPrimary]
+  );
+
+  const handleBarMouseLeave = useCallback(() => {
+    if (isTouchPrimary) {
+      return;
+    }
+    cancelHoverClear();
+    hoverClearTimeoutRef.current = setTimeout(() => {
+      setHoverIndex(null);
+      hoverClearTimeoutRef.current = null;
+    }, 50);
+  }, [cancelHoverClear, isTouchPrimary]);
+
+  const handleChartMouseLeave = useCallback(() => {
+    cancelHoverClear();
+    setHoverIndex(null);
+  }, [cancelHoverClear]);
+
+  const handleBarClick = useCallback(
+    (_: unknown, index: number) => {
+      if (!chartData[index]) {
+        return;
+      }
+      setHoverIndex(null);
+      setSelectedIndex((prev) => (prev === index ? null : index));
+    },
+    [chartData]
+  );
 
   const overviewCards = useMemo(
     () => [
@@ -255,7 +335,22 @@ export function BalancesOverview() {
         </div>
 
         <div
-          className={cn('relative', 'mt-4', 'w-full', 'min-w-0')}
+          ref={chartContainerRef}
+          className={cn(
+            'relative',
+            'mt-4',
+            'w-full',
+            'min-w-0',
+            'outline-none',
+            '[&_.recharts-wrapper]:outline-none',
+            '[&_.recharts-surface]:outline-none',
+            '[&_.recharts-wrapper:focus]:outline-none',
+            '[&_.recharts-wrapper:focus-visible]:outline-none',
+            '[&_.recharts-surface]:outline-none',
+            '[&_.recharts-surface:focus]:outline-none',
+            '[&_.recharts-surface:focus-visible]:outline-none',
+            '[&_.recharts-tooltip-cursor]:hidden'
+          )}
           style={{ height: 224 + chartLayout.xAxisHeight }}
         >
           {hoverInfo ? (
@@ -309,8 +404,10 @@ export function BalancesOverview() {
             <BarChart
               data={chartData}
               stackOffset="sign"
+              accessibilityLayer={false}
               margin={{ top: 8, right: 16, left: 16, bottom: chartLayout.xAxisHeight }}
-              onMouseLeave={() => setHoverInfo(null)}
+              onMouseDown={(_state, event) => event.preventDefault()}
+              onMouseLeave={handleChartMouseLeave}
             >
               <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
               <XAxis
@@ -333,55 +430,62 @@ export function BalancesOverview() {
                 width={chartLayout.yAxisWidth}
                 tickMargin={6}
               />
-              <Tooltip
-                wrapperStyle={{ display: 'none' }}
-                cursor={
-                  hoverInfo
-                    ? {
-                        fill: 'transparent',
-                        stroke: colors.chart.primary[0],
-                        strokeWidth: 2,
-                        radius: 4,
-                      }
-                    : false
-                }
-              />
               <Bar
                 dataKey="cash"
                 name={ACCOUNT_GROUP_LABELS.cash}
                 stackId="pos"
                 fill={colors.semantic.cash}
                 legendType="circle"
-                onMouseEnter={(entry) => handleBarHover(entry)}
-                onMouseLeave={() => setHoverInfo(null)}
-              />
+                onMouseEnter={handleBarMouseEnter}
+                onMouseLeave={handleBarMouseLeave}
+                onClick={handleBarClick}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cash-${entry.bank}`} {...institutionCellProps(index)} />
+                ))}
+              </Bar>
               <Bar
                 dataKey="investments"
                 name={ACCOUNT_GROUP_LABELS.investments}
                 stackId="pos"
                 fill={colors.semantic.investments}
                 legendType="circle"
-                onMouseEnter={(entry) => handleBarHover(entry)}
-                onMouseLeave={() => setHoverInfo(null)}
-              />
+                onMouseEnter={handleBarMouseEnter}
+                onMouseLeave={handleBarMouseLeave}
+                onClick={handleBarClick}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`investments-${entry.bank}`} {...institutionCellProps(index)} />
+                ))}
+              </Bar>
               <Bar
                 dataKey="credit"
                 name={ACCOUNT_GROUP_LABELS.credit}
                 stackId="neg"
                 fill={colors.semantic.credit}
                 legendType="circle"
-                onMouseEnter={(entry) => handleBarHover(entry)}
-                onMouseLeave={() => setHoverInfo(null)}
-              />
+                onMouseEnter={handleBarMouseEnter}
+                onMouseLeave={handleBarMouseLeave}
+                onClick={handleBarClick}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`credit-${entry.bank}`} {...institutionCellProps(index)} />
+                ))}
+              </Bar>
               <Bar
                 dataKey="loan"
                 name={ACCOUNT_GROUP_LABELS.loans}
                 stackId="neg"
                 fill={colors.semantic.loan}
                 legendType="circle"
-                onMouseEnter={(entry) => handleBarHover(entry)}
-                onMouseLeave={() => setHoverInfo(null)}
-              />
+                onMouseEnter={handleBarMouseEnter}
+                onMouseLeave={handleBarMouseLeave}
+                onClick={handleBarClick}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`loan-${entry.bank}`} {...institutionCellProps(index)} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
