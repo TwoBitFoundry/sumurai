@@ -586,8 +586,36 @@ impl TestFixtures {
         r#"{"id":"txn_zero","date":"2024-01-15","amount":"0.00","description":"Fee Reversal","status":"posted","details":{"category":"general"}}"#
     }
 
+    pub fn teller_transaction_dining() -> &'static str {
+        r#"{"id":"txn_dining","date":"2024-01-15","amount":"-42.10","description":"Dinner","status":"posted","details":{"category":"dining","counterparty":{"type":"merchant","name":"Restaurant"}}}"#
+    }
+
+    pub fn teller_transaction_fuel() -> &'static str {
+        r#"{"id":"txn_fuel","date":"2024-01-16","amount":"-55.00","description":"Gas","status":"posted","details":{"category":"fuel","counterparty":{"type":"merchant","name":"Gas Station"}}}"#
+    }
+
+    pub fn teller_transaction_income() -> &'static str {
+        r#"{"id":"txn_income","date":"2024-01-17","amount":"1500.00","description":"Paycheck","status":"posted","details":{"category":"income","counterparty":{"type":"organization","name":"Employer"}}}"#
+    }
+
+    pub fn teller_transaction_investment_inflow() -> &'static str {
+        r#"{"id":"txn_investment_in","date":"2024-01-18","amount":"5000.00","description":"Investment contribution","status":"posted","details":{"category":"investment","counterparty":{"type":"organization","name":"Brokerage"}}}"#
+    }
+
+    pub fn teller_transaction_investment_outflow() -> &'static str {
+        r#"{"id":"txn_investment_out","date":"2024-01-19","amount":"-5000.00","description":"Investment withdrawal","status":"posted","details":{"category":"investment","counterparty":{"type":"organization","name":"Brokerage"}}}"#
+    }
+
+    pub fn teller_transaction_utilities() -> &'static str {
+        r#"{"id":"txn_utilities","date":"2024-01-20","amount":"-120.00","description":"Utilities","status":"posted","details":{"category":"utilities","counterparty":{"type":"merchant","name":"Utility Company"}}}"#
+    }
+
+    pub fn teller_transaction_null_category() -> &'static str {
+        r#"{"id":"txn_null_category","date":"2024-01-21","amount":"-12.34","description":"Unknown","status":"posted","details":{"category":null,"counterparty":{"type":"merchant","name":"Merchant"}}}"#
+    }
+
     pub fn plaid_transaction_with_category_json() -> &'static str {
-        r#"{"transaction_id":"test_txn_123","account_id":"test_acc_456","amount":15.5,"date":"2025-09-10","name":"Starbucks Coffee","personal_finance_category":{"primary":"FOOD_AND_DRINK","detailed":"FOOD_AND_DRINK_RESTAURANTS","confidence_level":"VERY_HIGH"},"payment_channel":"in_store","pending":false}"#
+        r#"{"transaction_id":"test_txn_123","account_id":"test_acc_456","amount":15.5,"date":"2025-09-10","name":"Starbucks Coffee","personal_finance_category":{"primary":"FOOD_AND_DRINK","detailed":"FOOD_AND_DRINK_RESTAURANT","confidence_level":"VERY_HIGH"},"payment_channel":"in_store","pending":false}"#
     }
 
     pub fn plaid_transaction_minimal_json() -> &'static str {

@@ -316,16 +316,17 @@ impl Transaction {
         provider_account_id: Option<&str>,
     ) -> Self {
         let amount_str = teller_txn["amount"].as_str().unwrap_or("0");
-        let amount = Decimal::from_str(amount_str).unwrap_or(Decimal::ZERO).abs();
+        let raw_amount = Decimal::from_str(amount_str).unwrap_or(Decimal::ZERO);
 
         let date = teller_txn["date"]
             .as_str()
             .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok())
             .unwrap_or_else(|| chrono::Utc::now().date_naive());
 
-        let category = teller_txn["details"]["category"]
-            .as_str()
-            .unwrap_or("general");
+        let category = teller_txn["details"]["category"].as_str().unwrap_or("");
+        let (category_primary, category_detailed) =
+            Self::normalize_teller_category(category, &raw_amount);
+        let amount = raw_amount.abs();
 
         let merchant_name = Self::merchant_name_from_teller(teller_txn);
 
@@ -338,8 +339,8 @@ impl Transaction {
             amount,
             date,
             merchant_name,
-            category_primary: Self::normalize_teller_category(category),
-            category_detailed: String::new(),
+            category_primary,
+            category_detailed,
             category_confidence: String::new(),
             payment_channel: None,
             pending: teller_txn["status"].as_str() != Some("posted"),
@@ -379,17 +380,17 @@ impl Transaction {
             .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok())
             .unwrap_or_else(|| chrono::Utc::now().date_naive());
 
-        let categories = plaid_txn["category"].as_array();
-        let category_primary = categories
-            .and_then(|arr| arr.first())
+        let pfc = plaid_txn.get("personal_finance_category");
+        let category_primary = pfc
+            .and_then(|p| p.get("primary"))
             .and_then(|v| v.as_str())
             .unwrap_or("OTHER")
             .to_string();
 
-        let category_detailed = categories
-            .and_then(|arr| arr.get(1))
+        let category_detailed = pfc
+            .and_then(|p| p.get("detailed"))
             .and_then(|v| v.as_str())
-            .unwrap_or("")
+            .unwrap_or(&category_primary)
             .to_string();
 
         Self {
@@ -403,9 +404,10 @@ impl Transaction {
             merchant_name: Self::merchant_name_from_plaid(plaid_txn),
             category_primary,
             category_detailed,
-            category_confidence: plaid_txn["personal_finance_category"]["confidence_level"]
-                .as_str()
-                .unwrap_or("")
+            category_confidence: pfc
+                .and_then(|p| p.get("confidence_level"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("MEDIUM")
                 .to_string(),
             payment_channel: plaid_txn["payment_channel"].as_str().map(String::from),
             pending: plaid_txn["pending"].as_bool().unwrap_or(false),
@@ -413,12 +415,72 @@ impl Transaction {
         }
     }
 
-    fn normalize_teller_category(teller_cat: &str) -> String {
-        match teller_cat {
-            "general" => "GENERAL_MERCHANDISE",
-            "service" => "GENERAL_SERVICES",
-            _ => "OTHER",
-        }
-        .to_string()
+    fn normalize_teller_category(teller_cat: &str, amount: &Decimal) -> (String, String) {
+        let (primary, detailed) = match teller_cat {
+            "accommodation" => ("TRAVEL", "TRAVEL_LODGING"),
+            "advertising" => ("GENERAL_SERVICES", "GENERAL_SERVICES_CONSULTING_AND_LEGAL"),
+            "bar" => ("ENTERTAINMENT", "ENTERTAINMENT_OTHER_ENTERTAINMENT"),
+            "charity" => (
+                "GOVERNMENT_AND_NON_PROFIT",
+                "GOVERNMENT_AND_NON_PROFIT_DONATIONS",
+            ),
+            "clothing" => (
+                "GENERAL_MERCHANDISE",
+                "GENERAL_MERCHANDISE_CLOTHING_AND_ACCESSORIES",
+            ),
+            "dining" => ("FOOD_AND_DRINK", "FOOD_AND_DRINK_RESTAURANT"),
+            "education" => ("GENERAL_SERVICES", "GENERAL_SERVICES_EDUCATION"),
+            "electronics" => ("GENERAL_MERCHANDISE", "GENERAL_MERCHANDISE_ELECTRONICS"),
+            "entertainment" => ("ENTERTAINMENT", "ENTERTAINMENT_OTHER_ENTERTAINMENT"),
+            "fuel" => ("TRANSPORTATION", "TRANSPORTATION_GAS"),
+            "general" => (
+                "GENERAL_MERCHANDISE",
+                "GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE",
+            ),
+            "groceries" => ("FOOD_AND_DRINK", "FOOD_AND_DRINK_GROCERIES"),
+            "health" => ("MEDICAL", "MEDICAL_OTHER_MEDICAL"),
+            "home" => (
+                "HOME_IMPROVEMENT",
+                "HOME_IMPROVEMENT_OTHER_HOME_IMPROVEMENT",
+            ),
+            "income" => ("INCOME", "INCOME_WAGES"),
+            "insurance" => ("GENERAL_SERVICES", "GENERAL_SERVICES_INSURANCE"),
+            "investment" if !amount.is_sign_negative() => {
+                ("TRANSFER_IN", "TRANSFER_IN_INVESTMENT_AND_RETIREMENT_FUNDS")
+            }
+            "investment" => (
+                "TRANSFER_OUT",
+                "TRANSFER_OUT_INVESTMENT_AND_RETIREMENT_FUNDS",
+            ),
+            "loan" => ("LOAN_PAYMENTS", "LOAN_PAYMENTS_OTHER_PAYMENT"),
+            "office" => ("GENERAL_MERCHANDISE", "GENERAL_MERCHANDISE_OFFICE_SUPPLIES"),
+            "phone" => ("RENT_AND_UTILITIES", "RENT_AND_UTILITIES_TELEPHONE"),
+            "service" => (
+                "GENERAL_SERVICES",
+                "GENERAL_SERVICES_OTHER_GENERAL_SERVICES",
+            ),
+            "shopping" => (
+                "GENERAL_MERCHANDISE",
+                "GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE",
+            ),
+            "software" => (
+                "GENERAL_MERCHANDISE",
+                "GENERAL_MERCHANDISE_ONLINE_MARKETPLACES",
+            ),
+            "sport" => ("PERSONAL_CARE", "PERSONAL_CARE_GYMS_AND_FITNESS_CENTERS"),
+            "tax" => (
+                "GOVERNMENT_AND_NON_PROFIT",
+                "GOVERNMENT_AND_NON_PROFIT_TAX_PAYMENT",
+            ),
+            "transport" | "transportation" => {
+                ("TRANSPORTATION", "TRANSPORTATION_OTHER_TRANSPORTATION")
+            }
+            "utilities" => (
+                "RENT_AND_UTILITIES",
+                "RENT_AND_UTILITIES_GAS_AND_ELECTRICITY",
+            ),
+            _ => ("OTHER", "OTHER"),
+        };
+        (primary.to_string(), detailed.to_string())
     }
 }

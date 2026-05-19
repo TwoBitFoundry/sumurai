@@ -34,6 +34,9 @@ type TransactionWithAccountRow = (
     Option<String>,
 );
 
+pub const EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES: [&str; 4] =
+    ["INCOME", "LOAN_PAYMENTS", "TRANSFER_IN", "TRANSFER_OUT"];
+
 #[async_trait]
 #[cfg_attr(test, mockall::automock)]
 #[allow(dead_code)]
@@ -45,11 +48,18 @@ pub trait DatabaseRepository: Send + Sync {
     async fn update_user_provider(&self, user_id: &Uuid, provider: &str) -> Result<()>;
 
     async fn get_transactions_for_user(&self, user_id: &Uuid) -> Result<Vec<Transaction>>;
+    async fn get_spending_transactions_for_user(&self, user_id: &Uuid) -> Result<Vec<Transaction>>;
     async fn get_transactions_with_account_for_user(
         &self,
         user_id: &Uuid,
     ) -> Result<Vec<TransactionWithAccount>>;
     async fn get_transactions_by_date_range_for_user(
+        &self,
+        user_id: &Uuid,
+        start_date: chrono::NaiveDate,
+        end_date: chrono::NaiveDate,
+    ) -> Result<Vec<Transaction>>;
+    async fn get_spending_transactions_by_date_range_for_user(
         &self,
         user_id: &Uuid,
         start_date: chrono::NaiveDate,
@@ -318,6 +328,18 @@ impl PostgresRepository {
             account_type,
             account_mask,
         }
+    }
+
+    fn append_category_exclusion<'a>(
+        qb: &mut sqlx::QueryBuilder<'a, sqlx::Postgres>,
+        categories: &'a [&'a str],
+    ) {
+        qb.push(" AND category_primary NOT IN (");
+        let mut separated = qb.separated(", ");
+        for category in categories {
+            separated.push_bind(category);
+        }
+        qb.push(")");
     }
 }
 
@@ -995,6 +1017,79 @@ impl DatabaseRepository for PostgresRepository {
             .collect())
     }
 
+    async fn get_spending_transactions_for_user(&self, user_id: &Uuid) -> Result<Vec<Transaction>> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let mut qb = sqlx::QueryBuilder::<sqlx::Postgres>::new(
+            "SELECT id, account_id, user_id, provider_transaction_id, amount, date, merchant_name, category_primary, category_detailed, category_confidence, payment_channel, pending, created_at FROM transactions WHERE user_id = ",
+        );
+        qb.push_bind(user_id);
+        Self::append_category_exclusion(&mut qb, &EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES);
+        qb.push(" ORDER BY date DESC, created_at DESC LIMIT 1000");
+
+        let rows = qb
+            .build_query_as::<(
+                Uuid,
+                Uuid,
+                Option<Uuid>,
+                Option<String>,
+                rust_decimal::Decimal,
+                chrono::NaiveDate,
+                Option<String>,
+                String,
+                String,
+                String,
+                Option<String>,
+                bool,
+                Option<chrono::DateTime<chrono::Utc>>,
+            )>()
+            .fetch_all(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+
+        Ok(rows
+            .into_iter()
+            .map(
+                |(
+                    id,
+                    account_id,
+                    user_id,
+                    provider_transaction_id,
+                    amount,
+                    date,
+                    merchant_name,
+                    category_primary,
+                    category_detailed,
+                    category_confidence,
+                    payment_channel,
+                    pending,
+                    created_at,
+                )| Transaction {
+                    id,
+                    account_id,
+                    user_id,
+                    provider_account_id: None,
+                    provider_transaction_id,
+                    amount,
+                    date,
+                    merchant_name,
+                    category_primary,
+                    category_detailed,
+                    category_confidence,
+                    payment_channel,
+                    pending,
+                    created_at,
+                },
+            )
+            .collect())
+    }
+
     async fn get_transactions_with_account_for_user(
         &self,
         user_id: &Uuid,
@@ -1248,6 +1343,88 @@ impl DatabaseRepository for PostgresRepository {
         .bind(end_date)
         .fetch_all(&mut *tx)
         .await?;
+
+        tx.commit().await?;
+
+        Ok(rows
+            .into_iter()
+            .map(
+                |(
+                    id,
+                    account_id,
+                    user_id,
+                    provider_transaction_id,
+                    amount,
+                    date,
+                    merchant_name,
+                    category_primary,
+                    category_detailed,
+                    category_confidence,
+                    payment_channel,
+                    pending,
+                    created_at,
+                )| Transaction {
+                    id,
+                    account_id,
+                    user_id,
+                    provider_account_id: None,
+                    provider_transaction_id,
+                    amount,
+                    date,
+                    merchant_name,
+                    category_primary,
+                    category_detailed,
+                    category_confidence,
+                    payment_channel,
+                    pending,
+                    created_at,
+                },
+            )
+            .collect())
+    }
+
+    async fn get_spending_transactions_by_date_range_for_user(
+        &self,
+        user_id: &Uuid,
+        start_date: chrono::NaiveDate,
+        end_date: chrono::NaiveDate,
+    ) -> Result<Vec<Transaction>> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let mut qb = sqlx::QueryBuilder::<sqlx::Postgres>::new(
+            "SELECT id, account_id, user_id, provider_transaction_id, amount, date, merchant_name, category_primary, category_detailed, category_confidence, payment_channel, pending, created_at FROM transactions WHERE user_id = ",
+        );
+        qb.push_bind(user_id);
+        qb.push(" AND date >= ");
+        qb.push_bind(start_date);
+        qb.push(" AND date <= ");
+        qb.push_bind(end_date);
+        Self::append_category_exclusion(&mut qb, &EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES);
+        qb.push(" ORDER BY date DESC, created_at DESC LIMIT 1000");
+
+        let rows = qb
+            .build_query_as::<(
+                Uuid,
+                Uuid,
+                Option<Uuid>,
+                Option<String>,
+                rust_decimal::Decimal,
+                chrono::NaiveDate,
+                Option<String>,
+                String,
+                String,
+                String,
+                Option<String>,
+                bool,
+                Option<chrono::DateTime<chrono::Utc>>,
+            )>()
+            .fetch_all(&mut *tx)
+            .await?;
 
         tx.commit().await?;
 

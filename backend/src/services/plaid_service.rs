@@ -279,69 +279,7 @@ impl RealPlaidClient {
             let batch_len = transactions_array.len();
 
             for t in transactions_array {
-                let amount = t.get("amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
-
-                let date = t
-                    .get("date")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("1970-01-01")
-                    .to_string();
-
-                let provider_transaction_id = t
-                    .get("transaction_id")
-                    .and_then(|v| v.as_str())
-                    .map(|s| s.to_string());
-
-                let provider_account_id = t
-                    .get("account_id")
-                    .and_then(|v| v.as_str())
-                    .map(|s| s.to_string());
-
-                let category_primary = t
-                    .get("personal_finance_category")
-                    .and_then(|pfc| pfc.get("primary"))
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("OTHER")
-                    .to_string();
-
-                let category_detailed = t
-                    .get("personal_finance_category")
-                    .and_then(|pfc| pfc.get("detailed"))
-                    .and_then(|v| v.as_str())
-                    .unwrap_or(&category_primary)
-                    .to_string();
-
-                let category_confidence = t
-                    .get("personal_finance_category")
-                    .and_then(|pfc| pfc.get("confidence_level"))
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("MEDIUM")
-                    .to_string();
-
-                let payment_channel = t
-                    .get("payment_channel")
-                    .and_then(|v| v.as_str())
-                    .map(|s| s.to_string());
-
-                let pending = t.get("pending").and_then(|v| v.as_bool()).unwrap_or(false);
-
-                transactions.push(Transaction {
-                    id: Uuid::new_v4(),
-                    account_id: Uuid::nil(),
-                    user_id: None,
-                    provider_account_id,
-                    provider_transaction_id,
-                    amount: Decimal::from_f64(amount).unwrap_or(Decimal::ZERO),
-                    date: chrono::NaiveDate::parse_from_str(&date, "%Y-%m-%d")
-                        .unwrap_or_else(|_| chrono::NaiveDate::from_ymd_opt(1970, 1, 1).unwrap()),
-                    merchant_name: Transaction::merchant_name_from_plaid(t),
-                    category_primary,
-                    category_detailed,
-                    category_confidence,
-                    payment_channel,
-                    pending,
-                    created_at: Some(chrono::Utc::now()),
-                });
+                transactions.push(Transaction::from_plaid(t, &Uuid::nil()));
             }
 
             offset += batch_len;

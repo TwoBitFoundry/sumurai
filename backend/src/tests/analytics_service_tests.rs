@@ -1,10 +1,12 @@
 use crate::models::analytics::CategorySpending;
 use crate::models::transaction::Transaction;
 use crate::services::analytics_service::AnalyticsService;
+use crate::services::repository_service::MockDatabaseRepository;
 use chrono::{Datelike, NaiveDate};
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use std::collections::HashMap;
+use uuid::Uuid;
 
 fn create_test_transaction(
     amount: Decimal,
@@ -171,6 +173,66 @@ fn calculate_daily_spending(
             ((i + 1) as u32, spend, cumulative)
         })
         .collect()
+}
+
+#[tokio::test]
+async fn given_date_range_when_loading_spending_transactions_then_uses_date_range_repository_call()
+{
+    let analytics = AnalyticsService::new();
+    let mut repository = MockDatabaseRepository::new();
+    let user_id = Uuid::new_v4();
+    let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+    let end_date = NaiveDate::from_ymd_opt(2024, 1, 31).unwrap();
+    let transactions = vec![create_test_transaction(dec!(10.00), start_date, "Food")];
+
+    repository
+        .expect_get_spending_transactions_by_date_range_for_user()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq(start_date),
+            mockall::predicate::eq(end_date),
+        )
+        .returning(move |_, _, _| {
+            let transactions = transactions.clone();
+            Box::pin(async move { Ok(transactions) })
+        });
+
+    let result = analytics
+        .load_spending_transactions(&repository, &user_id, Some(start_date), Some(end_date))
+        .await
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert_eq!(result[0].amount, dec!(10.00));
+}
+
+#[tokio::test]
+async fn given_missing_date_range_when_loading_spending_transactions_then_uses_base_repository_call(
+) {
+    let analytics = AnalyticsService::new();
+    let mut repository = MockDatabaseRepository::new();
+    let user_id = Uuid::new_v4();
+    let transactions = vec![create_test_transaction(
+        dec!(12.00),
+        NaiveDate::from_ymd_opt(2024, 2, 1).unwrap(),
+        "Food",
+    )];
+
+    repository
+        .expect_get_spending_transactions_for_user()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let transactions = transactions.clone();
+            Box::pin(async move { Ok(transactions) })
+        });
+
+    let result = analytics
+        .load_spending_transactions(&repository, &user_id, None, None)
+        .await
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert_eq!(result[0].amount, dec!(12.00));
 }
 
 #[test]

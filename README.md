@@ -31,6 +31,27 @@ Sumurai exists because there are not a lot of free, simple, and modern budgeting
 <img width="1476" height="871" alt="image" src="https://github.com/user-attachments/assets/18721bc8-1191-4edb-8679-01129b65a98e" />
 <img width="1476" height="871" alt="image" src="https://github.com/user-attachments/assets/1e7bf41f-7cd4-4857-9add-f925b2d62ce5" />
 
+## Supported Transaction Categories
+
+Sumurai normalizes transactions into these primary category buckets:
+
+- `ENTERTAINMENT`
+- `FOOD AND DRINK`
+- `GENERAL MERCHANDISE`
+- `GENERAL SERVICES`
+- `GOVERNMENT AND NON PROFIT`
+- `HOME IMPROVEMENT`
+- `INCOME`
+- `LOAN PAYMENTS`
+- `MEDICAL`
+- `OTHER`
+- `PERSONAL CARE`
+- `RENT AND UTILITIES`
+- `TRANSFER IN`
+- `TRANSFER OUT`
+- `TRANSPORTATION`
+- `TRAVEL`
+
 ## Quick Start
 
 Set the required secrets in [`.env.example`](.env.example), then choose one provider path.

@@ -1496,23 +1496,28 @@ async fn get_authenticated_current_month_spending(
     _headers: HeaderMap,
 ) -> Result<Json<rust_decimal::Decimal>, StatusCode> {
     let user_id = auth_context.user_id;
-
-    match state
-        .db_repository
-        .get_transactions_for_user(&user_id)
+    let (start_date, end_date) = state.analytics_service.current_month_date_range();
+    let transactions = state
+        .analytics_service
+        .load_spending_transactions(
+            state.db_repository.as_ref(),
+            &user_id,
+            Some(start_date),
+            Some(end_date),
+        )
         .await
-    {
-        Ok(transactions) => {
-            let total = state
-                .analytics_service
-                .calculate_current_month_spending(&transactions);
-            Ok(Json(total))
-        }
-        Err(e) => {
-            tracing::error!("Failed to get transactions for user {}: {}", user_id, e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to get spending transactions for user {}: {}",
+                user_id,
+                e
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+    let total = state
+        .analytics_service
+        .calculate_current_month_spending(&transactions);
+    Ok(Json(total))
 }
 
 #[utoipa::path(
@@ -1555,23 +1560,32 @@ async fn get_authenticated_daily_spending(
         (now.year(), now.month())
     };
 
-    match state
-        .db_repository
-        .get_transactions_for_user(&user_id)
+    let (start_date, end_date) = state
+        .analytics_service
+        .month_date_range(year, month)
+        .ok_or(StatusCode::BAD_REQUEST)?;
+    let transactions = state
+        .analytics_service
+        .load_spending_transactions(
+            state.db_repository.as_ref(),
+            &user_id,
+            Some(start_date),
+            Some(end_date),
+        )
         .await
-    {
-        Ok(transactions) => {
-            let daily_spending =
-                state
-                    .analytics_service
-                    .calculate_daily_spending(&transactions, year, month);
-            Ok(Json(daily_spending))
-        }
-        Err(e) => {
-            tracing::error!("Failed to get transactions for user {}: {}", user_id, e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to get spending transactions for user {}: {}",
+                user_id,
+                e
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+    let daily_spending =
+        state
+            .analytics_service
+            .calculate_daily_spending(&transactions, year, month);
+    Ok(Json(daily_spending))
 }
 
 #[utoipa::path(
@@ -1642,31 +1656,27 @@ async fn get_authenticated_spending_by_date_range(
         .as_deref()
         .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
 
-    match state
-        .db_repository
-        .get_transactions_for_user(&user_id)
+    let mut transactions = state
+        .analytics_service
+        .load_spending_transactions(state.db_repository.as_ref(), &user_id, start, end)
         .await
-    {
-        Ok(mut transactions) => {
-            if let Some(ref account_id_set) = authorized_account_ids {
-                transactions.retain(|t| account_id_set.contains(&t.account_id));
-            }
-
-            let filtered = state
-                .analytics_service
-                .filter_by_date_range(&transactions, start, end);
-            let total: rust_decimal::Decimal = filtered
-                .into_iter()
-                .filter(|t| t.amount > rust_decimal::Decimal::ZERO)
-                .map(|t| t.amount)
-                .sum();
-            Ok(Json(total))
-        }
-        Err(e) => {
-            tracing::error!("Failed to get transactions for user {}: {}", user_id, e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to get spending transactions for user {}: {}",
+                user_id,
+                e
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+    if let Some(ref account_id_set) = authorized_account_ids {
+        transactions.retain(|t| account_id_set.contains(&t.account_id));
     }
+    let total: rust_decimal::Decimal = transactions
+        .into_iter()
+        .filter(|t| t.amount > rust_decimal::Decimal::ZERO)
+        .map(|t| t.amount)
+        .sum();
+    Ok(Json(total))
 }
 
 #[utoipa::path(
@@ -1703,28 +1713,27 @@ async fn get_authenticated_category_spending(
         .as_ref()
         .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
 
-    match state
-        .db_repository
-        .get_transactions_for_user(&user_id)
+    let mut transactions = state
+        .analytics_service
+        .load_spending_transactions(state.db_repository.as_ref(), &user_id, start_date, end_date)
         .await
-    {
-        Ok(mut transactions) => {
-            if let Some(ref account_id_set) = authorized_account_ids {
-                transactions.retain(|t| account_id_set.contains(&t.account_id));
-            }
-
-            let categories = state.analytics_service.group_by_category_with_date_range(
-                &transactions,
-                start_date,
-                end_date,
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to get spending transactions for user {}: {}",
+                user_id,
+                e
             );
-            Ok(Json(categories))
-        }
-        Err(e) => {
-            tracing::error!("Failed to get transactions for user {}: {}", user_id, e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+    if let Some(ref account_id_set) = authorized_account_ids {
+        transactions.retain(|t| account_id_set.contains(&t.account_id));
     }
+    let categories = state.analytics_service.group_by_category_with_date_range(
+        &transactions,
+        start_date,
+        end_date,
+    );
+    Ok(Json(categories))
 }
 
 #[utoipa::path(
@@ -1752,30 +1761,30 @@ async fn get_authenticated_monthly_totals(
     let user_id = auth_context.user_id;
     let months = query.months.unwrap_or(6);
 
-    match state
-        .db_repository
-        .get_transactions_for_user(&user_id)
+    let transactions = state
+        .analytics_service
+        .load_spending_transactions(state.db_repository.as_ref(), &user_id, None, None)
         .await
-    {
-        Ok(transactions) => {
-            let transactions = if let Some(ref allowed_ids) = authorized_account_ids {
-                transactions
-                    .into_iter()
-                    .filter(|t| allowed_ids.contains(&t.account_id))
-                    .collect()
-            } else {
-                transactions
-            };
-            let monthly_totals = state
-                .analytics_service
-                .calculate_monthly_totals(&transactions, months);
-            Ok(Json(monthly_totals))
-        }
-        Err(e) => {
-            tracing::error!("Failed to get transactions for user {}: {}", user_id, e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to get spending transactions for user {}: {}",
+                user_id,
+                e
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+    let transactions = if let Some(ref allowed_ids) = authorized_account_ids {
+        transactions
+            .into_iter()
+            .filter(|t| allowed_ids.contains(&t.account_id))
+            .collect()
+    } else {
+        transactions
+    };
+    let monthly_totals = state
+        .analytics_service
+        .calculate_monthly_totals(&transactions, months);
+    Ok(Json(monthly_totals))
 }
 
 #[utoipa::path(
@@ -1813,33 +1822,30 @@ async fn get_authenticated_top_merchants(
         .as_ref()
         .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
 
-    match state
-        .db_repository
-        .get_transactions_for_user(&user_id)
+    let transactions = state
+        .analytics_service
+        .load_spending_transactions(state.db_repository.as_ref(), &user_id, start_date, end_date)
         .await
-    {
-        Ok(transactions) => {
-            let transactions = if let Some(ref allowed_ids) = authorized_account_ids {
-                transactions
-                    .into_iter()
-                    .filter(|t| allowed_ids.contains(&t.account_id))
-                    .collect()
-            } else {
-                transactions
-            };
-            let top_merchants = state.analytics_service.get_top_merchants_with_date_range(
-                &transactions,
-                start_date,
-                end_date,
-                limit,
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to get spending transactions for user {}: {}",
+                user_id,
+                e
             );
-            Ok(Json(top_merchants))
-        }
-        Err(e) => {
-            tracing::error!("Failed to get transactions for user {}: {}", user_id, e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+    let transactions = if let Some(ref allowed_ids) = authorized_account_ids {
+        transactions
+            .into_iter()
+            .filter(|t| allowed_ids.contains(&t.account_id))
+            .collect()
+    } else {
+        transactions
+    };
+    let top_merchants = state
+        .analytics_service
+        .get_top_merchants(&transactions, limit);
+    Ok(Json(top_merchants))
 }
 
 async fn load_connection_statuses(

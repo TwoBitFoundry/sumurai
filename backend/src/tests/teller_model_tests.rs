@@ -55,7 +55,10 @@ fn given_teller_transaction_json_when_from_teller_then_maps_fields_correctly() {
     assert_eq!(transaction.date.to_string(), "2024-01-15");
     assert_eq!(transaction.merchant_name, Some("Starbucks".to_string()));
     assert_eq!(transaction.category_primary, "GENERAL_MERCHANDISE");
-    assert_eq!(transaction.category_detailed, "");
+    assert_eq!(
+        transaction.category_detailed,
+        "GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE"
+    );
     assert_eq!(transaction.category_confidence, "");
     assert!(!transaction.pending);
 }
@@ -80,6 +83,10 @@ fn given_teller_transaction_with_service_category_when_from_teller_then_normaliz
     let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
     assert_eq!(transaction.category_primary, "GENERAL_SERVICES");
+    assert_eq!(
+        transaction.category_detailed,
+        "GENERAL_SERVICES_OTHER_GENERAL_SERVICES"
+    );
 }
 
 #[test]
@@ -91,6 +98,97 @@ fn given_teller_transaction_with_unknown_category_when_from_teller_then_normaliz
     let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
     assert_eq!(transaction.category_primary, "OTHER");
+    assert_eq!(transaction.category_detailed, "OTHER");
+}
+
+#[test]
+fn given_teller_transaction_with_dining_category_when_from_teller_then_maps_to_food_and_drink() {
+    let account_id = Uuid::new_v4();
+    let teller_json = serde_json::from_str(TestFixtures::teller_transaction_dining()).unwrap();
+
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
+
+    assert_eq!(transaction.category_primary, "FOOD_AND_DRINK");
+    assert_eq!(transaction.category_detailed, "FOOD_AND_DRINK_RESTAURANT");
+}
+
+#[test]
+fn given_teller_transaction_with_fuel_category_when_from_teller_then_maps_to_transportation() {
+    let account_id = Uuid::new_v4();
+    let teller_json = serde_json::from_str(TestFixtures::teller_transaction_fuel()).unwrap();
+
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
+
+    assert_eq!(transaction.category_primary, "TRANSPORTATION");
+    assert_eq!(transaction.category_detailed, "TRANSPORTATION_GAS");
+}
+
+#[test]
+fn given_teller_transaction_with_income_category_when_from_teller_then_maps_to_income() {
+    let account_id = Uuid::new_v4();
+    let teller_json = serde_json::from_str(TestFixtures::teller_transaction_income()).unwrap();
+
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
+
+    assert_eq!(transaction.category_primary, "INCOME");
+    assert_eq!(transaction.category_detailed, "INCOME_WAGES");
+}
+
+#[test]
+fn given_teller_transaction_with_investment_inflow_when_from_teller_then_maps_to_transfer_in() {
+    let account_id = Uuid::new_v4();
+    let teller_json =
+        serde_json::from_str(TestFixtures::teller_transaction_investment_inflow()).unwrap();
+
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
+
+    assert_eq!(transaction.category_primary, "TRANSFER_IN");
+    assert_eq!(
+        transaction.category_detailed,
+        "TRANSFER_IN_INVESTMENT_AND_RETIREMENT_FUNDS"
+    );
+}
+
+#[test]
+fn given_teller_transaction_with_investment_outflow_when_from_teller_then_maps_to_transfer_out() {
+    let account_id = Uuid::new_v4();
+    let teller_json =
+        serde_json::from_str(TestFixtures::teller_transaction_investment_outflow()).unwrap();
+
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
+
+    assert_eq!(transaction.category_primary, "TRANSFER_OUT");
+    assert_eq!(
+        transaction.category_detailed,
+        "TRANSFER_OUT_INVESTMENT_AND_RETIREMENT_FUNDS"
+    );
+}
+
+#[test]
+fn given_teller_transaction_with_utilities_category_when_from_teller_then_maps_to_rent_and_utilities(
+) {
+    let account_id = Uuid::new_v4();
+    let teller_json = serde_json::from_str(TestFixtures::teller_transaction_utilities()).unwrap();
+
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
+
+    assert_eq!(transaction.category_primary, "RENT_AND_UTILITIES");
+    assert_eq!(
+        transaction.category_detailed,
+        "RENT_AND_UTILITIES_GAS_AND_ELECTRICITY"
+    );
+}
+
+#[test]
+fn given_teller_transaction_with_null_category_when_from_teller_then_maps_to_other() {
+    let account_id = Uuid::new_v4();
+    let teller_json =
+        serde_json::from_str(TestFixtures::teller_transaction_null_category()).unwrap();
+
+    let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
+
+    assert_eq!(transaction.category_primary, "OTHER");
+    assert_eq!(transaction.category_detailed, "OTHER");
 }
 
 #[test]

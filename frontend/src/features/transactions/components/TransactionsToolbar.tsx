@@ -22,7 +22,7 @@ export const TransactionsToolbar = ({
   return (
     <div className={cn(toolbarShell)} data-testid="transactions-toolbar">
       <div className={cn('flex', 'items-center', 'gap-4')}>
-        <div className={cn('min-w-0', 'flex-1', 'lg:flex-none')}>
+        <div className={cn('min-w-0', 'flex-1', 'lg:flex-1')}>
           <TransactionsFilters
             search={search}
             onSearch={onSearch}
