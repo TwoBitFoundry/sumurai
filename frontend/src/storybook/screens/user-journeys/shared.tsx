@@ -231,8 +231,50 @@ export const storyDashboardAnalyticsSpending = storyAnalyticsCategories.reduce(
   0
 );
 
+export const storyBalancesOverview = {
+  asOf: 'latest',
+  overall: {
+    cash: 31260.73,
+    credit: -842.4,
+    loan: 0,
+    investments: 0,
+    positivesTotal: 31260.73,
+    negativesTotal: -842.4,
+    net: 30418.33,
+    ratio: null,
+  },
+  banks: [
+    {
+      bankId: 'story-plaid-conn-1',
+      bankName: 'Story Federal Credit Union',
+      cash: 31260.73,
+      credit: 0,
+      loan: 0,
+      investments: 0,
+      positivesTotal: 31260.73,
+      negativesTotal: 0,
+      net: 31260.73,
+      ratio: null,
+    },
+    {
+      bankId: 'story-plaid-conn-2',
+      bankName: 'Metro Digital Bank',
+      cash: 0,
+      credit: -842.4,
+      loan: 0,
+      investments: 0,
+      positivesTotal: 0,
+      negativesTotal: -842.4,
+      net: -842.4,
+      ratio: null,
+    },
+  ],
+  mixedCurrency: false,
+};
+
 export const storyDashboardFixtures = {
   accounts: storyProviderAccounts,
+  balancesOverview: storyBalancesOverview,
   spendingTotal: storyDashboardAnalyticsSpending,
   categories: storyAnalyticsCategories,
   topMerchants: storyAnalyticsTopMerchants,

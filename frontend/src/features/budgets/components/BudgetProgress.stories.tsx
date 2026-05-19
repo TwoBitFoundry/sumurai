@@ -31,7 +31,7 @@ export const OverBudget: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText(/130% used/i)).toBeVisible();
+    await expect(canvas.getByText(/100% used/i)).toBeVisible();
     await expect(canvas.getByText(/-\$120\.00 over/i)).toBeVisible();
   },
 };
