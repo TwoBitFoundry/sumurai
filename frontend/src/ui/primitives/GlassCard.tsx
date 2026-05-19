@@ -27,10 +27,9 @@ export const glassCardRecipes = {
     'dark:shadow-[0_40px_120px_-58px_var(--color-effect-glass-shadow)]',
   ],
   accent: [
-    ...semanticBorders.glass,
-    'bg-[color:color-mix(in_srgb,var(--color-surface-solid-panel)_85%,transparent)]',
-    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-solid-panel)_75%,transparent)]',
-    'backdrop-blur-sm',
+    ...semanticBorders.elevatedGlass,
+    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_36%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
   ],
   rounded: {
     default: uiRadiusRecipes.standard,

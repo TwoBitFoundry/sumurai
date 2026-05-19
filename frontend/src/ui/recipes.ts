@@ -35,6 +35,10 @@ export const surface = {
     'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_18%,transparent)]',
     'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
   ],
+  floatingChromePanel: [
+    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_26%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
+  ],
   solidPanel: [
     'bg-[var(--color-surface-solid-panel)]',
     'dark:bg-[var(--color-surface-solid-panel)]',
@@ -58,6 +62,14 @@ export const border = {
   subtle: ['border-[var(--color-border-subtle)]', 'dark:border-[var(--color-border-subtle)]'],
   glass: [
     'border-[color:color-mix(in_srgb,var(--color-border-glass)_35%,transparent)]',
+    'dark:border-[color:color-mix(in_srgb,var(--color-border-glass)_12%,transparent)]',
+  ],
+  floatingChrome: [
+    'border-[var(--color-border-control)]',
+    'dark:border-[color:color-mix(in_srgb,var(--color-border-glass)_12%,transparent)]',
+  ],
+  elevatedGlass: [
+    'border-[var(--color-border-subtle)]',
     'dark:border-[color:color-mix(in_srgb,var(--color-border-glass)_12%,transparent)]',
   ],
   control: ['border-[var(--color-border-control)]', 'dark:border-[var(--color-border-control)]'],
@@ -195,6 +207,59 @@ export const font = {
   captionStrong: 'font-caption text-[0.875rem] font-semibold leading-[1.5] tracking-normal',
   label: 'font-label text-[0.75rem] font-semibold uppercase leading-none tracking-[0.14em]',
   badge: 'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]',
+} as const;
+
+export const budgetProgress = {
+  track: [
+    'relative',
+    'h-2.5',
+    'w-full',
+    'overflow-hidden',
+    'rounded-full',
+    'border',
+    'border-[var(--color-border-subtle)]',
+    'bg-[var(--color-surface-inset-well)]',
+    'dark:bg-[var(--color-surface-inset-well)]',
+  ],
+  fillBase: [
+    'absolute',
+    'inset-y-0',
+    'left-0',
+    'h-full',
+    'rounded-full',
+    'transition-all',
+    'duration-500',
+    'ease-out',
+  ],
+  fillWithin: [
+    'bg-gradient-to-r',
+    'from-[var(--color-brand-sky)]',
+    'via-[var(--color-brand-cyan)]',
+    'to-[var(--color-brand-violet)]',
+    'shadow-[0_0_12px_var(--color-effect-success-glow)]',
+    'dark:shadow-[0_0_12px_var(--color-effect-success-glow)]',
+  ],
+  fillOver: [
+    'bg-gradient-to-r',
+    'from-[var(--color-brand-rose)]',
+    'via-[var(--color-brand-rose)]',
+    'to-[var(--color-text-danger)]',
+    'shadow-[0_0_12px_var(--color-effect-danger-glow)]',
+    'dark:shadow-[0_0_12px_var(--color-effect-danger-glow)]',
+  ],
+  captionRow: [
+    'flex',
+    'items-center',
+    'justify-between',
+    'text-[0.75rem]',
+    'text-slate-600',
+    'dark:text-slate-400',
+    'transition-colors',
+    'duration-300',
+  ],
+  captionPercent: ['font-medium', 'tracking-wide'],
+  captionWithin: ['font-semibold', 'text-slate-700', 'dark:text-slate-300'],
+  captionOver: ['font-semibold', 'text-red-600', 'dark:text-red-300'],
 } as const;
 
 export const radius = {

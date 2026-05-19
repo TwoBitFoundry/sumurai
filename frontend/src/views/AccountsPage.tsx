@@ -7,6 +7,7 @@ import {
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
+  radius as uiRadiusRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
@@ -27,7 +28,8 @@ import { TellerService } from '../services/TellerService';
 import { invalidateStaleCacheQueries, type SyncProvider } from '../utils/queryInvalidation';
 
 const syncButtonClasses = cn(
-  'inline-flex items-center gap-2 rounded-full px-5 py-2',
+  'inline-flex items-center gap-2 px-5 py-2',
+  uiRadiusRecipes.standard,
   ...semanticBorders.control,
   ...semanticSurfaces.card,
   uiTypographyRecipes.bodyStrong,

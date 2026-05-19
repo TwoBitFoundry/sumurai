@@ -7,7 +7,7 @@ jest.mock('@/components/HeaderAccountFilter', () => ({
 
 describe('BottomContextualBar', () => {
   it('renders the account filter before contextual content', () => {
-    const { container } = render(
+    render(
       <BottomContextualBar>
         <div data-testid="contextual-menu">Menu</div>
       </BottomContextualBar>
@@ -18,6 +18,6 @@ describe('BottomContextualBar', () => {
 
     expect(children[0]).toContainElement(screen.getByTestId('header-account-filter'));
     expect(children[1]).toContainElement(screen.getByTestId('contextual-menu'));
-    expect(container.querySelector('.overflow-hidden')).toBeTruthy();
+    expect(children[1]).toHaveClass('min-w-0', 'flex-1');
   });
 });

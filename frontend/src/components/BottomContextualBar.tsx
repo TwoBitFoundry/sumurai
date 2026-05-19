@@ -9,7 +9,7 @@ export function BottomContextualBar({ children }: { children: ReactNode }) {
       data-testid="bottom-contextual-bar"
     >
       <HeaderAccountFilter triggerStyle="icon-only" />
-      <div className={cn('min-w-0', 'flex-1', 'overflow-hidden')}>{children}</div>
+      <div className={cn('min-w-0', 'flex-1')}>{children}</div>
     </div>
   );
 }

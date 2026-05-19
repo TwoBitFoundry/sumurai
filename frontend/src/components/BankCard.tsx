@@ -195,7 +195,7 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect, 
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className={cn('space-y-6', 'border-t', ...uiBorderRecipes.glass, 'pt-4')}
+            className={cn('space-y-6', 'border-t', ...uiBorderRecipes.elevatedGlass, 'pt-4')}
           >
             {(() => {
               const sortedAccounts = bank.accounts.slice().sort((a, b) => {

@@ -1,6 +1,12 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
-import { text as semanticTextRecipes, radius as uiRadiusRecipes } from '@/ui/recipes';
+import {
+  border as semanticBorders,
+  effect as semanticEffects,
+  surface as semanticSurfaces,
+  text as semanticTextRecipes,
+  radius as uiRadiusRecipes,
+} from '@/ui/recipes';
 import { cn } from './utils';
 
 export const inputControl = {
@@ -40,9 +46,20 @@ export const inputControl = {
     'shadow-[0_18px_45px_-32px_rgba(15,23,42,0.5)]',
     'focus:ring-2 focus:ring-sky-400/80',
     'focus:ring-offset-2 focus:ring-offset-white',
-    `dark:bg-[#111a2f]/80 ${semanticTextRecipes.inverse}`,
+    'dark:bg-[#111a2f]/80 dark:text-slate-100',
     'dark:border-white/12',
     'dark:focus:ring-offset-[#0f172a]',
+  ],
+  floatingChrome: [
+    ...semanticSurfaces.floatingChromePanel,
+    ...semanticBorders.floatingChrome,
+    ...semanticEffects.glassShadow,
+    semanticTextRecipes.primary,
+    'shadow-none',
+    'focus-visible:outline-none',
+    'focus-visible:ring-2',
+    'focus-visible:ring-inset',
+    'focus-visible:ring-[var(--color-border-focus-active)]',
   ],
   size: {
     sm: `py-1.5 text-xs ${uiRadiusRecipes.standard}`,
@@ -57,6 +74,7 @@ const inputVariants = cva([...inputControl.base], {
       default: [...inputControl.default],
       invalid: [...inputControl.invalid],
       glass: [...inputControl.glass],
+      floatingChrome: [...inputControl.floatingChrome],
     },
     inputSize: {
       sm: inputControl.size.sm,

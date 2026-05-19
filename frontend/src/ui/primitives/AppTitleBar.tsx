@@ -38,8 +38,8 @@ export const appTitleBarRecipes = {
     'border border-[var(--color-border-divider)] dark:border-[var(--color-border-divider)] bg-[var(--color-surface-muted-chip)] dark:bg-[var(--color-surface-muted-chip)] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row)]',
   pillContainer: [
     `flex h-11 items-center gap-1 ${uiRadiusRecipes.standard} border p-1 backdrop-blur-md backdrop-saturate-[150%]`,
-    ...semanticSurfaces.glassPanel,
-    ...semanticBorders.glass,
+    ...semanticSurfaces.floatingChromePanel,
+    ...semanticBorders.floatingChrome,
     ...semanticEffects.glassShadow,
   ],
   pillTab: [

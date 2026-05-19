@@ -45,6 +45,7 @@ export const connectButtonRecipes = {
 export const buttonRecipes = {
   base: [
     'inline-flex items-center justify-center gap-2',
+    'cursor-pointer',
     'uppercase',
     'transition-all duration-200 ease-out',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-slate-900',
