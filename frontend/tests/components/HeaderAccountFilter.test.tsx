@@ -45,7 +45,7 @@ describe('HeaderAccountFilter', () => {
     expect(screen.getByRole('button', { name: 'Filter' }).className).toBe(initialClassName);
   });
 
-  it('renders an icon-only trigger and opens the popover above the trigger anchored to the right', () => {
+  it('renders an icon-only trigger and opens the popover above the trigger opening to the right', () => {
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: 900 });
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
 
@@ -53,14 +53,14 @@ describe('HeaderAccountFilter', () => {
 
     const trigger = screen.getByRole('button', { name: 'Filter accounts' });
     trigger.getBoundingClientRect = jest.fn(() => ({
-      x: 984,
+      x: 24,
       y: 220,
       width: 40,
       height: 40,
       top: 220,
-      right: 1024,
+      right: 64,
       bottom: 260,
-      left: 984,
+      left: 24,
       toJSON: () => undefined,
     }));
 
@@ -69,7 +69,7 @@ describe('HeaderAccountFilter', () => {
     expect(trigger).toHaveTextContent('');
     expect(screen.getByRole('dialog', { name: 'Account filter' })).toHaveStyle({
       bottom: '688px',
-      right: '0px',
+      left: '24px',
     });
   });
 });

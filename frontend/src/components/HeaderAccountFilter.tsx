@@ -22,7 +22,7 @@ interface HeaderAccountFilterProps {
 
 type PopoverPosition = {
   bottom: number;
-  right: number;
+  left: number;
 };
 
 export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountFilterProps) {
@@ -121,7 +121,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
       const triggerRect = trigger.getBoundingClientRect();
       setPopoverPosition({
         bottom: window.innerHeight - triggerRect.top + POPOVER_GAP_PX,
-        right: window.innerWidth - triggerRect.right,
+        left: triggerRect.left,
       });
     };
 
@@ -224,7 +224,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
                 transition={{ duration: 0.18, ease: [0.22, 0.61, 0.36, 1] }}
                 style={{
                   bottom: popoverPosition.bottom,
-                  right: popoverPosition.right,
+                  left: popoverPosition.left,
                 }}
                 className={cn(
                   'fixed',
@@ -241,7 +241,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
                   'backdrop-blur-md',
                   'backdrop-saturate-[150%]',
                   'z-50',
-                  'origin-bottom-right'
+                  'origin-bottom-left'
                 )}
               >
                 <div className={cn('p-4', 'border-b', ...uiBorderRecipes.divider)}>
