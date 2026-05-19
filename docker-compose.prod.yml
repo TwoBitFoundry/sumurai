@@ -5,7 +5,7 @@ services:
     image: ${SUMURAI_GHCR_PREFIX:-ghcr.io/twobitfoundry/sumurai}-frontend:${SUMURAI_IMAGE_TAG:-latest}
     pull_policy: always
     environment:
-      DEFAULT_PROVIDER: plaid
+      DEFAULT_PROVIDER: ${DEFAULT_PROVIDER:-plaid}
       NEXT_PUBLIC_OTEL_ENABLED: "true"
       NEXT_PUBLIC_OTEL_SERVICE_NAME: sumurai-frontend
       NEXT_PUBLIC_OTEL_SERVICE_VERSION: "1.0.0"
@@ -34,7 +34,7 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_STARTUP_TEST_SPAN: "0"
 
-      DEFAULT_PROVIDER: plaid
+      DEFAULT_PROVIDER: ${DEFAULT_PROVIDER:-plaid}
 
       TELLER_APPLICATION_ID: ${TELLER_APPLICATION_ID}
       TELLER_CERT_PATH: /etc/teller/certificate.pem

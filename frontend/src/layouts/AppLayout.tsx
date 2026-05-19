@@ -1,7 +1,9 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+import { type ReactNode } from 'react';
 import { cn } from '@/ui/primitives';
 import { appTitleBarRecipes, TABS } from '@/ui/primitives/AppTitleBar';
 import { Button } from '@/ui/primitives/Button';
+import { useFloatingChromeFooterVisibility } from '../hooks/useFloatingChromeFooterVisibility';
 import { useScrollDetection } from '../hooks/useScrollDetection';
 import { AppFooter, AppTitleBar } from '../ui/primitives';
 import { text as semanticTextRecipes } from '../ui/recipes';
@@ -31,24 +33,10 @@ export function AppLayout({
     ? 'pb-[calc(8.75rem_+_env(safe-area-inset-bottom))]'
     : 'pb-[calc(5.75rem_+_env(safe-area-inset-bottom))]';
   const scrolled = useScrollDetection();
-  const footerRef = useRef<HTMLDivElement>(null);
-  const [floatingVisible, setFloatingVisible] = useState(true);
   const showFooter = currentTab === 'dashboard';
   const showBottomChromeRow = Boolean(bottomBarContent);
-
-  useEffect(() => {
-    const el = footerRef.current;
-    if (!el) {
-      setFloatingVisible(true);
-      return;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => setFloatingVisible(!entry.isIntersecting),
-      { threshold: 0 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  const { floatingVisible, floatingChromeRef, footerSentinelRef } =
+    useFloatingChromeFooterVisibility(showFooter);
 
   const bottomBarRow = <div className={cn('flex w-full justify-center')}>{bottomBarContent}</div>;
 
@@ -79,6 +67,7 @@ export function AppLayout({
         </main>
 
         <div
+          ref={floatingChromeRef}
           className={cn(
             'fixed',
             'bottom-4',
@@ -113,6 +102,14 @@ export function AppLayout({
                     currentTab === key ? semanticTextRecipes.inverse : semanticTextRecipes.muted
                   )}
                 >
+                  {currentTab === key ? (
+                    <motion.div
+                      layoutId="pill-active"
+                      data-slot="active-pill"
+                      className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
+                      transition={{ stiffness: 400, damping: 35 }}
+                    />
+                  ) : null}
                   <span className="relative z-10 flex h-4 w-4 items-center justify-center shrink-0">
                     <Icon className="h-4 w-4" />
                   </span>
@@ -131,7 +128,13 @@ export function AppLayout({
         </div>
 
         {showFooter ? (
-          <div ref={footerRef}>
+          <div>
+            <span
+              ref={footerSentinelRef}
+              className={cn('pointer-events-none', 'block', 'h-px', 'w-full')}
+              aria-hidden
+              data-testid="footer-intersection-sentinel"
+            />
             <AppFooter />
           </div>
         ) : null}

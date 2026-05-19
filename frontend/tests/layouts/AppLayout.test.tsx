@@ -53,6 +53,7 @@ describe('AppLayout', () => {
     );
 
     expect(queryByTestId('app-footer')).toBeInTheDocument();
+    expect(queryByTestId('footer-intersection-sentinel')).toBeInTheDocument();
 
     rerender(
       <AppLayout currentTab="transactions" onTabChange={jest.fn()} onLogout={jest.fn()} isOnline>
@@ -61,6 +62,7 @@ describe('AppLayout', () => {
     );
 
     expect(queryByTestId('app-footer')).not.toBeInTheDocument();
+    expect(queryByTestId('footer-intersection-sentinel')).not.toBeInTheDocument();
   });
 
   it('uses stacked bottom padding when contextual content is present', () => {
