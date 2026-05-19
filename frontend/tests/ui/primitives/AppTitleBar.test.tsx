@@ -1,9 +1,7 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { AppTitleBar } from '@/ui/primitives/AppTitleBar';
-import { buttonRecipes } from '@/ui/primitives/Button';
-import { radius as uiRadiusRecipes } from '@/ui/recipes';
 
 jest.mock('framer-motion', () => {
   const R = require('react');
@@ -53,22 +51,16 @@ describe('AppTitleBar', () => {
   it('keeps the title bar chrome fixed when scrolled changes', () => {
     const { rerender } = render(<AppTitleBar {...baseProps} isOnline scrolled={false} />);
 
-    const desktopNav = screen.getByRole('navigation', { name: 'Primary' });
     const initialState = {
       headerClassName: screen.getByRole('banner').className,
-      dashboardButtonClassName: within(desktopNav).getByRole('button', { name: 'Dashboard' })
-        .className,
       logoWidth: screen.getByAltText('Sumurai Logo').getAttribute('data-width'),
       logoHeight: screen.getByAltText('Sumurai Logo').getAttribute('data-height'),
     };
 
     rerender(<AppTitleBar {...baseProps} isOnline scrolled={true} />);
 
-    const desktopNavAfter = screen.getByRole('navigation', { name: 'Primary' });
     expect({
       headerClassName: screen.getByRole('banner').className,
-      dashboardButtonClassName: within(desktopNavAfter).getByRole('button', { name: 'Dashboard' })
-        .className,
       logoWidth: screen.getByAltText('Sumurai Logo').getAttribute('data-width'),
       logoHeight: screen.getByAltText('Sumurai Logo').getAttribute('data-height'),
     }).toEqual(initialState);
@@ -80,46 +72,24 @@ describe('AppTitleBar', () => {
     expect(screen.queryByRole('button', { name: 'Toggle theme' })).not.toBeInTheDocument();
   });
 
-  it('renders authenticated tabs inside a unified pill nav with icons and active styling', () => {
+  it('does not render primary tab navigation in the title bar', () => {
     render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
 
-    const desktopNav = screen.getByRole('navigation', { name: 'Primary' });
-    expect(desktopNav.className).toContain(uiRadiusRecipes.standard);
-    expect(desktopNav.className).toContain('p-1');
-
-    const dashboardButton = within(desktopNav).getByRole('button', { name: 'Dashboard' });
-    const transactionsButton = within(desktopNav).getByRole('button', { name: 'Transactions' });
-
-    expect(dashboardButton.querySelector('svg')).not.toBeNull();
-    expect(transactionsButton.querySelector('svg')).not.toBeNull();
-    expect(dashboardButton.className).toContain('relative');
-    expect(dashboardButton.className).toContain('h-full');
-    expect(dashboardButton.className).toContain(uiRadiusRecipes.standard);
-    expect(transactionsButton.className).toContain('relative');
-    expect(within(desktopNav).getByText('Dashboard')).toBeInTheDocument();
-    expect(within(desktopNav).queryByText('Transactions')).not.toBeInTheDocument();
-    expect(within(desktopNav).queryByText('Budgets')).not.toBeInTheDocument();
-    expect(within(desktopNav).queryByText('Accounts')).not.toBeInTheDocument();
-
-    const activeLayer = dashboardButton.querySelector('[data-slot="active-pill"]');
-    expect(activeLayer).not.toBeNull();
-    expect(dashboardButton).toHaveClass(...buttonRecipes.tabActive);
-    expect(transactionsButton.querySelector('[data-slot="active-pill"]')).toBeNull();
-
-    expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Logout' })).toHaveLength(2);
+    expect(screen.queryByRole('navigation', { name: 'Primary' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Transactions' })).not.toBeInTheDocument();
   });
 
-  it('keeps desktop tab switching wired to the same tab change callback', async () => {
+  it('renders settings and logout actions for authenticated users', async () => {
     const onTabChange = jest.fn();
     const user = userEvent.setup();
 
-    render(<AppTitleBar {...baseProps} isOnline onTabChange={onTabChange} />);
+    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} onTabChange={onTabChange} />);
 
-    const desktopNav = screen.getByRole('navigation', { name: 'Primary' });
-    await user.click(within(desktopNav).getByRole('button', { name: 'Transactions' }));
+    expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Logout' })).toHaveLength(2);
 
-    expect(onTabChange).toHaveBeenCalledWith('transactions');
+    await user.click(screen.getByRole('button', { name: 'Settings' }));
+    expect(onTabChange).toHaveBeenCalledWith('settings');
   });
 
   describe('mobile layout', () => {
@@ -135,13 +105,6 @@ describe('AppTitleBar', () => {
     it('header has safe-area-inset-top padding for notch/camera cutout', () => {
       render(<AppTitleBar {...mobileProps} />);
       expect(screen.getByRole('banner').className).toContain('pt-[env(safe-area-inset-top)]');
-    });
-
-    it('desktop nav has hidden md:flex classes for responsive visibility', () => {
-      render(<AppTitleBar {...mobileProps} />);
-      const desktopNav = screen.getByRole('navigation', { name: 'Primary' });
-      expect(desktopNav.className).toContain('hidden');
-      expect(desktopNav.className).toContain('md:flex');
     });
 
     it('online connectivity icon is always present (no responsive hiding)', () => {

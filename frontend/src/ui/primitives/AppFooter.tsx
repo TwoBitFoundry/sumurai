@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Footer } from '@/components/Footer';
 
 /**
@@ -12,13 +12,16 @@ import { Footer } from '@/components/Footer';
  * <AppFooter />
  * ```
  */
-export const AppFooter = React.forwardRef<HTMLDivElement, Record<string, never>>((_props, ref) => {
+export const AppFooter = ({
+  ref,
+  ..._props
+}: Record<string, never> & { ref?: React.RefObject<HTMLDivElement | null> }) => {
   return (
     <div ref={ref} className="w-full">
       <Footer />
     </div>
   );
-});
+};
 
 AppFooter.displayName = 'AppFooter';
 

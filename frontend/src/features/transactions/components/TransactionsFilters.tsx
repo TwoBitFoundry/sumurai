@@ -1,3 +1,4 @@
+import { Search } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn, Input } from '@/ui/primitives';
@@ -79,13 +80,27 @@ export const TransactionsFilters: React.FC<Props> = ({
     <>
       {showSearch && (
         <div className={cn('relative', 'w-full', 'md:w-64')}>
+          <Search
+            className={cn(
+              'pointer-events-none',
+              'absolute',
+              'left-3',
+              'top-1/2',
+              'z-10',
+              'h-4',
+              'w-4',
+              '-translate-y-1/2',
+              uiTextRecipes.subtle
+            )}
+            aria-hidden
+          />
           <Input
             value={search}
             onChange={(e) => onSearch(e.target.value)}
-            placeholder="Search transactions..."
+            placeholder="Search transactions"
             variant="default"
             inputSize="md"
-            className={cn(uiPlaceholderRecipes.muted)}
+            className={cn('pl-10', uiPlaceholderRecipes.muted)}
           />
         </div>
       )}

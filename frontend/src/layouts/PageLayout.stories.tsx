@@ -16,7 +16,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     badge: 'Example',
-    title: 'Overview of Balances',
+    title: 'Balances',
     subtitle: 'Supporting hero copy that mirrors production page framing.',
     actions: (
       <Button type="button" variant="secondary" size="sm">

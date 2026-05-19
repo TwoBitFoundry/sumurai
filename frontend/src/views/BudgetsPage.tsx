@@ -140,7 +140,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
 
   const heroStats = (
     <div className="space-y-3">
-      <div className={cn('grid', 'gap-3', 'md:grid-cols-2', 'lg:grid-cols-4')}>
+      <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-4')}>
         <HeroStatCard
           index={1}
           title="Active budgets"
@@ -196,7 +196,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
   return (
     <div data-testid="budgets-page">
       <PageLayout
-        badge="Monthly Budgets"
+        badge="Budgets"
         title="Budgets at a glance"
         subtitle="Shape your spending plan, watch commitments, and stay ahead before the month runs away."
         error={errorMessage}

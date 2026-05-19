@@ -193,7 +193,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       }
 
       const bank = banks.find((entry) => entry.id === bankId);
-      if (!bank || !bank.connectionId) {
+      if (!bank?.connectionId) {
         return;
       }
 
@@ -243,7 +243,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const disconnect = useCallback(
     async (bankId: string) => {
       const bank = banks.find((entry) => entry.id === bankId);
-      if (!bank || !bank.connectionId) {
+      if (!bank?.connectionId) {
         return;
       }
 
@@ -330,8 +330,9 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           onClick={connect}
           disabled={connectDisabled}
           title={!isOnline ? 'Unavailable while offline' : undefined}
+          leadingImageSrc={primaryProvider === 'teller' ? '/teller.webp' : '/plaid.webp'}
         >
-          {primaryProvider === 'teller' ? 'Launch Teller Connect' : 'Add account'}
+          {primaryProvider === 'teller' ? 'Teller' : 'Add account'}
         </ConnectButton>
       </div>
       {!isOnline && (
@@ -360,7 +361,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       {primaryProvider === 'teller' ? tellerFlow.tellerConnectMount : null}
       <PageLayout
         badge={`${providerLabel} Accounts`}
-        title="Link banks and keep balances current"
+        title="Link accounts and keep balances current"
         subtitle="View cached balances and sync when you need fresh data."
         actions={actions}
         stats={statsGrid}
@@ -372,9 +373,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           onDisconnect={disconnect}
           isOnline={isOnline}
           providerName={providerLabel === 'Teller' ? 'Teller accounts' : 'Plaid accounts'}
-          connectLabel={
-            primaryProvider === 'teller' ? 'Launch Teller Connect' : 'Connect with Plaid'
-          }
+          connectLabel={primaryProvider === 'teller' ? 'Teller' : 'Connect with Plaid'}
+          connectLogoSrc={primaryProvider === 'teller' ? '/teller.webp' : '/plaid.webp'}
         />
 
         <AnimatePresence>

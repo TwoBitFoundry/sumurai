@@ -7,7 +7,6 @@ import {
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { accountTypeDot } from '@/ui/tokens';
 
 interface Account {
   id: string;
@@ -93,15 +92,6 @@ const formatMoney = (amount?: number) => {
   return amount.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
 };
 
-const AccountTypeDot: React.FC<{ type: Account['type'] }> = ({ type }) => {
-  return (
-    <span
-      className={cn('inline-block', 'h-2.5', 'w-2.5', 'rounded-full')}
-      style={{ backgroundColor: accountTypeDot[type] }}
-    />
-  );
-};
-
 export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
   const isDebtAccount = account.type === 'credit' || account.type === 'loan';
   const isOtherAccount = account.type === 'other';
@@ -152,8 +142,6 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
           </div>
           <div className={cn('flex', 'items-center', 'justify-between')}>
             <div className={accountMetaClasses}>
-              <AccountTypeDot type={account.type} />
-              <span>{account.type}</span>
               <span className={accountMaskClasses}>••{account.mask}</span>
             </div>
             <RequirementPill className={transactionsPillClasses} status="pending">

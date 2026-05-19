@@ -5,7 +5,7 @@ import {
   radius as uiRadiusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { getHeroAccentTheme, heroAccents } from '@/ui/tokens';
+import { getHeroAccentTheme, type HeroAccentTheme, heroAccents } from '@/ui/tokens';
 import { getTagThemeForCategory } from '../../utils/categories';
 import { heroStatSemanticThemes } from './heroStatSemanticThemes';
 
@@ -35,8 +35,9 @@ export type HeroStatCardProps = {
 export { heroStatSemanticThemes };
 
 const heroFooterPillRecipes = {
-  base: `inline-flex w-fit max-w-full flex-shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 ${uiTypographyRecipes.badge}`,
-  dot: 'h-2 w-2 rounded-full shadow-[0_0_0_1px_var(--color-border-glass)] dark:shadow-[0_0_0_1px_var(--color-effect-glass-shadow)]',
+  base: `inline-flex w-max max-w-none flex-shrink-0 flex-nowrap items-center gap-1.5 rounded-full px-2 py-0.5 ${uiTypographyRecipes.badge}`,
+  label: 'whitespace-nowrap',
+  dot: 'h-2 w-2 shrink-0 rounded-full shadow-[0_0_0_1px_var(--color-border-glass)] dark:shadow-[0_0_0_1px_var(--color-effect-glass-shadow)]',
   fadeLeft:
     'pointer-events-none absolute bottom-0 left-0 top-0 w-6 bg-gradient-to-r from-[var(--color-surface-card)] to-transparent transition-opacity duration-200 dark:from-[var(--color-surface-card)]',
   fadeRight:
@@ -45,15 +46,15 @@ const heroFooterPillRecipes = {
 
 export const heroStatCardRecipes = {
   base: `hero-stat-card group relative min-w-0 ${uiRadiusRecipes.standard} transition-colors duration-300`,
-  shell: `relative h-full w-full overflow-hidden ${uiRadiusRecipes.standard} border-2 bg-white/80 p-4 pt-5 transform-gpu origin-center will-change-transform transition-transform duration-200 md:p-4 dark:bg-[#111a2f]/70`,
+  shell: `relative h-full w-full overflow-hidden ${uiRadiusRecipes.standard} border-2 bg-white/80 p-3 pt-4 transform-gpu origin-center will-change-transform transition-transform duration-200 lg:p-4 lg:pt-5 dark:bg-[#111a2f]/70`,
   title: `${uiTypographyRecipes.label} ${semanticTextRecipes.label} transition-colors duration-500`,
   value: `${uiTypographyRecipes.cardTitle} ${semanticTextRecipes.primary} transition-colors duration-500`,
   suffix: `${uiTypographyRecipes.captionStrong} ${semanticTextRecipes.body} transition-colors duration-500`,
   overlay: `pointer-events-none absolute inset-0 ${uiRadiusRecipes.standard} opacity-0 transition-opacity duration-300 group-hover:opacity-100`,
   ring: 'pointer-events-none absolute inset-[2px] rounded-[calc(var(--radius-standard)-2px)] opacity-70',
   ringLine: 'absolute inset-0 rounded-[calc(var(--radius-standard)-2px)] ring-2',
-  footer: 'relative min-w-0 w-full max-w-full',
-  footerInner:
+  footer: 'relative min-w-0 w-full max-w-full overflow-hidden',
+  footerScroll:
     'scrollbar-hide flex w-full min-w-0 items-center gap-1.5 overflow-x-auto overflow-y-hidden whitespace-nowrap max-w-full [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
   semantic: heroStatSemanticThemes,
 } as const;
@@ -74,6 +75,116 @@ function accentFromIndex(index?: number): Accent {
   }
 }
 
+function HeroStatCardFooterPill({
+  label,
+  wrapperClass,
+  dotClass,
+}: {
+  label: React.ReactNode;
+  wrapperClass: string;
+  dotClass: string;
+}) {
+  return (
+    <span className={cn(heroFooterPillRecipes.base, wrapperClass)}>
+      <span className={cn(heroFooterPillRecipes.dot, dotClass)} aria-hidden="true" />
+      <span className={cn(heroFooterPillRecipes.label)}>{label}</span>
+    </span>
+  );
+}
+
+function HeroStatCardScrollFooter({
+  subtext,
+  pills,
+  styles,
+}: {
+  subtext?: React.ReactNode;
+  pills: HeroPill[];
+  styles: HeroAccentTheme;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showLeftFade, setShowLeftFade] = useState(false);
+  const [showRightFade, setShowRightFade] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setShowLeftFade(el.scrollLeft > 0);
+    setShowRightFade(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    checkScroll();
+
+    const el = scrollRef.current;
+    if (!el) {
+      return;
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      checkScroll();
+    });
+    resizeObserver.observe(el);
+
+    window.addEventListener('resize', checkScroll);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [checkScroll]);
+
+  return (
+    <div className={cn(heroStatCardRecipes.footer)} data-testid="hero-stat-card-footer">
+      <div
+        ref={scrollRef}
+        onScroll={checkScroll}
+        className={cn(heroStatCardRecipes.footerScroll)}
+        data-testid="hero-stat-card-footer-scroll"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {subtext ? (
+          <HeroStatCardFooterPill
+            label={subtext}
+            wrapperClass={styles.defaultPill}
+            dotClass={styles.defaultDot}
+          />
+        ) : null}
+        {pills.map((pill) => {
+          if (pill.type === 'category') {
+            const theme = getTagThemeForCategory(pill.categoryName || pill.label);
+            return (
+              <HeroStatCardFooterPill
+                key={`category-${pill.categoryName || pill.label}`}
+                label={pill.label}
+                wrapperClass={theme.tag}
+                dotClass={theme.dot}
+              />
+            );
+          }
+
+          let wrapperClass = styles.defaultPill;
+          let dotClass = styles.defaultDot;
+          if (pill.type === 'semantic' && pill.tone) {
+            const semantic = heroStatCardRecipes.semantic[pill.tone];
+            wrapperClass = semantic.wrapper;
+            dotClass = semantic.dot;
+          }
+
+          return (
+            <HeroStatCardFooterPill
+              key={`${pill.type ?? 'default'}-${pill.label}`}
+              label={pill.label}
+              wrapperClass={wrapperClass}
+              dotClass={dotClass}
+            />
+          );
+        })}
+      </div>
+      {showLeftFade ? <div className={cn(heroFooterPillRecipes.fadeLeft)} /> : null}
+      {showRightFade ? <div className={cn(heroFooterPillRecipes.fadeRight)} /> : null}
+    </div>
+  );
+}
+
 export const HeroStatCard: React.FC<HeroStatCardProps> = ({
   title,
   icon,
@@ -88,32 +199,14 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
 }) => {
   const accent = accentProp ?? accentFromIndex(index);
   const styles = heroAccents[accent] ?? getHeroAccentTheme(accent);
-  const pillsRef = useRef<HTMLDivElement>(null);
-  const [showLeftFade, setShowLeftFade] = useState(false);
-  const [showRightFade, setShowRightFade] = useState(false);
-
-  const checkScroll = useCallback(() => {
-    const el = pillsRef.current;
-    if (!el) return;
-    setShowLeftFade(el.scrollLeft > 0);
-    setShowRightFade(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
-  }, []);
-
-  useEffect(() => {
-    checkScroll();
-    window.addEventListener('resize', checkScroll);
-    return () => window.removeEventListener('resize', checkScroll);
-  }, [checkScroll]);
-
-  const hasPills = Boolean(pills && pills.length > 0);
-  const hasInlineSubtext = Boolean(subtext) && !hasPills;
-  const hasFooter = hasPills;
+  const footerPills = pills?.length ? pills : [];
+  const hasFooter = Boolean(subtext) || footerPills.length > 0;
   const ringColorStyle = {
     '--tw-ring-color': `${styles.ringHex}66`,
   } as CSSProperties;
 
   return (
-    <div className={cn(heroStatCardRecipes.base, className)}>
+    <div className={cn(heroStatCardRecipes.base, className)} data-testid="hero-stat-card">
       <div
         className={cn(
           heroStatCardRecipes.shell,
@@ -151,85 +244,16 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
             hasFooter ? 'justify-between' : 'justify-start'
           )}
         >
-          <div className="flex items-center gap-2">
-            {icon ? <span className={cn('h-4 w-4', styles.icon)}>{icon}</span> : null}
-            <div className={cn(heroStatCardRecipes.title)}>{title}</div>
+          <div className="flex min-w-0 items-center gap-2">
+            {icon ? <span className={cn('h-4 w-4 shrink-0', styles.icon)}>{icon}</span> : null}
+            <div className={cn('min-w-0', heroStatCardRecipes.title)}>{title}</div>
           </div>
           <div className={cn('flex', 'flex-wrap', 'items-baseline', 'gap-2')}>
             <div className={cn(heroStatCardRecipes.value)}>{value}</div>
             {suffix ? <div className={cn(heroStatCardRecipes.suffix)}>{suffix}</div> : null}
           </div>
-          {hasInlineSubtext ? (
-            <div className="flex">
-              <span className={cn(heroFooterPillRecipes.base, styles.defaultPill)}>
-                <span
-                  className={cn(heroFooterPillRecipes.dot, styles.defaultDot)}
-                  aria-hidden="true"
-                />
-                <span className="whitespace-nowrap">{subtext}</span>
-              </span>
-            </div>
-          ) : null}
           {hasFooter ? (
-            <div className="relative min-w-0 w-full max-w-full overflow-hidden">
-              <div
-                ref={pillsRef}
-                onScroll={checkScroll}
-                className={cn(heroStatCardRecipes.footerInner)}
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
-                {subtext ? (
-                  <span className={cn(heroFooterPillRecipes.base, styles.defaultPill)}>
-                    <span
-                      className={cn(heroFooterPillRecipes.dot, styles.defaultDot)}
-                      aria-hidden="true"
-                    />
-                    <span className="whitespace-nowrap">{subtext}</span>
-                  </span>
-                ) : null}
-
-                {pills?.map((p, _idx) => {
-                  if (p.type === 'category') {
-                    const theme = getTagThemeForCategory(p.categoryName || p.label);
-                    return (
-                      <span
-                        key={`${p.type}-${p.categoryName || p.label}`}
-                        className={cn(heroFooterPillRecipes.base, theme.tag)}
-                      >
-                        <span
-                          className={cn(heroFooterPillRecipes.dot, theme.dot)}
-                          aria-hidden="true"
-                        />
-                        <span className="whitespace-nowrap">{p.label}</span>
-                      </span>
-                    );
-                  }
-
-                  let wrapperClass = styles.defaultPill;
-                  let dotClass = styles.defaultDot;
-                  if (p.type === 'semantic' && p.tone) {
-                    const semantic = heroStatCardRecipes.semantic[p.tone];
-                    wrapperClass = semantic.wrapper;
-                    dotClass = semantic.dot;
-                  }
-
-                  return (
-                    <span
-                      key={`${p.type}-${p.label}`}
-                      className={cn(heroFooterPillRecipes.base, wrapperClass)}
-                    >
-                      <span
-                        className={cn(heroFooterPillRecipes.dot, dotClass)}
-                        aria-hidden="true"
-                      />
-                      <span className="whitespace-nowrap">{p.label}</span>
-                    </span>
-                  );
-                })}
-              </div>
-              {showLeftFade ? <div className={cn(heroFooterPillRecipes.fadeLeft)} /> : null}
-              {showRightFade ? <div className={cn(heroFooterPillRecipes.fadeRight)} /> : null}
-            </div>
+            <HeroStatCardScrollFooter subtext={subtext} pills={footerPills} styles={styles} />
           ) : null}
         </div>
       </div>

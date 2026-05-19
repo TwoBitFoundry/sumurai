@@ -65,6 +65,7 @@ describe('SpendingByCategoryChart', () => {
       />
     );
 
+    expect(container.querySelector('.aspect-square')).toHaveClass('max-w-[315px]');
     expect(container.querySelector('.aspect-square')).toHaveClass('md:max-w-[260px]');
     expect(container.querySelector('.aspect-square')).toHaveClass('self-center');
     expect(screen.getByTestId('Pie')).toHaveAttribute('data-animation-duration', '0');

@@ -31,7 +31,7 @@ services:
 
       OTEL_TRACES_EXPORTER: none
 
-      DEFAULT_PROVIDER: teller
+      DEFAULT_PROVIDER: plaid
 
       TELLER_APPLICATION_ID: ${TELLER_APPLICATION_ID}
       TELLER_CERT_PATH: /etc/teller/certificate.pem

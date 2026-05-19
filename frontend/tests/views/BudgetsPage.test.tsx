@@ -37,7 +37,7 @@ describe('BudgetsPage', () => {
     } as any);
   });
 
-  it('moves the budget stats grid to the md tier', () => {
+  it('keeps the budget stats grid in two columns on mobile', () => {
     const { container } = render(
       <BudgetsPage
         monthControl={{
@@ -56,8 +56,8 @@ describe('BudgetsPage', () => {
     ) as HTMLElement | null;
     const budgetShell = container.querySelector('[data-testid="page-children"] > div');
 
-    expect(statsGrid).toHaveClass('md:grid-cols-2');
-    expect(statsGrid).not.toHaveClass('sm:grid-cols-2');
+    expect(statsGrid).toHaveClass('grid-cols-2');
+    expect(statsGrid).toHaveClass('lg:grid-cols-4');
     expect(budgetShell).toHaveClass('p-4');
     expect(budgetShell).toHaveClass('pt-5');
     expect(budgetShell).toHaveClass('md:p-8');

@@ -6,7 +6,7 @@ describe('ConnectAccountStep', () => {
   it('disables the primary action and explains offline availability', () => {
     const { container } = render(
       <ConnectAccountStep
-        content={CONNECT_ACCOUNT_PROVIDER_CONTENT.plaid}
+        content={CONNECT_ACCOUNT_PROVIDER_CONTENT.teller}
         providerLoading={false}
         providerError={null}
         onRetryProvider={jest.fn()}
@@ -26,12 +26,30 @@ describe('ConnectAccountStep', () => {
         'Unavailable while offline. Connect and sync are disabled until you are back online.'
       )
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /connect with plaid/i })).toBeDisabled();
-    expect(container.querySelector('div.grid.items-stretch.gap-8')).toHaveClass(
-      'md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]'
+    expect(screen.getByAltText('Teller logo')).toHaveAttribute('src', '/teller.webp');
+    expect(screen.getByRole('button', { name: /teller/i })).toBeDisabled();
+  });
+
+  it('renders the Teller logo on the primary action button', () => {
+    render(
+      <ConnectAccountStep
+        content={CONNECT_ACCOUNT_PROVIDER_CONTENT.teller}
+        providerLoading={false}
+        providerError={null}
+        onRetryProvider={jest.fn()}
+        tellerApplicationId="app-123"
+        isOnline={true}
+        isConnected={false}
+        connectionInProgress={false}
+        institutionName={null}
+        error={null}
+        onConnect={jest.fn()}
+        onRetry={jest.fn()}
+      />
     );
-    expect(container.querySelectorAll('div.grid.gap-3')[0]).toHaveClass('md:grid-cols-3');
-    expect(container.querySelectorAll('div.grid.gap-3')[1]).toHaveClass('md:grid-cols-2');
+
+    expect(screen.getByAltText('Teller logo')).toHaveAttribute('src', '/teller.webp');
+    expect(screen.getByRole('button', { name: /teller/i })).toBeEnabled();
   });
 
   it('renders the Plaid connect action without extra guidance', () => {
@@ -58,5 +76,6 @@ describe('ConnectAccountStep', () => {
         'If this provider does not open, disable your ad blocker or privacy extension for this site, then try again.'
       )
     ).toBeNull();
+    expect(screen.getByAltText('Plaid logo')).toHaveAttribute('src', '/plaid.webp');
   });
 });

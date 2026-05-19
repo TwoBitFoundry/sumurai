@@ -91,12 +91,12 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
   return (
     <div data-testid="transactions-page">
       <PageLayout
-        badge="Transaction History"
+        badge="Transactions"
         title="Review every dollar across accounts"
         subtitle="Search and filter transactions across all connected accounts."
         error={error}
         stats={
-          <div className={cn('grid', 'gap-3', 'md:grid-cols-2', 'lg:grid-cols-4')}>
+          <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-4')}>
             <HeroStatCard
               index={1}
               title="Total shown"

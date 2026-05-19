@@ -75,7 +75,7 @@ export const Journey: Story = {
       },
       { timeout: storyInteractionTimeoutMs }
     );
-    const search = canvas.getByPlaceholderText('Search transactions...');
+    const search = canvas.getByPlaceholderText('Search transactions');
     await userEvent.type(search, 'Coffee');
     await waitFor(
       () => {

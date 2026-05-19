@@ -3,7 +3,6 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { cn } from '@/ui/primitives';
 import { appTitleBarRecipes, TABS } from '@/ui/primitives/AppTitleBar';
 import { Button } from '@/ui/primitives/Button';
-import { HeaderAccountFilter } from '../components/HeaderAccountFilter';
 import { useScrollDetection } from '../hooks/useScrollDetection';
 import { AppFooter, AppTitleBar } from '../ui/primitives';
 import { text as semanticTextRecipes } from '../ui/recipes';
@@ -18,7 +17,6 @@ interface AppLayoutProps {
   isOnline: boolean;
   className?: string;
   bottomBarContent?: ReactNode;
-  bottomBarAboveTabsUntil?: 'md' | 'lg';
 }
 
 export function AppLayout({
@@ -29,22 +27,22 @@ export function AppLayout({
   isOnline,
   className,
   bottomBarContent,
-  bottomBarAboveTabsUntil = 'md',
 }: AppLayoutProps) {
-  const stackedBottomBarVisibility = bottomBarAboveTabsUntil === 'lg' ? 'lg:hidden' : 'md:hidden';
-  const floatingBottomBarVisibility =
-    bottomBarAboveTabsUntil === 'lg' ? 'hidden lg:flex' : 'hidden md:flex';
-  const mainBottomPadding =
-    bottomBarAboveTabsUntil === 'lg'
-      ? 'pb-[calc(5.75rem_+_env(safe-area-inset-bottom))] lg:pb-8'
-      : 'pb-[calc(5.75rem_+_env(safe-area-inset-bottom))] md:pb-6 lg:pb-8';
+  const mainBottomPadding = bottomBarContent
+    ? 'pb-[calc(8.75rem_+_env(safe-area-inset-bottom))]'
+    : 'pb-[calc(5.75rem_+_env(safe-area-inset-bottom))]';
   const scrolled = useScrollDetection();
   const footerRef = useRef<HTMLDivElement>(null);
   const [floatingVisible, setFloatingVisible] = useState(true);
+  const showFooter = currentTab === 'dashboard';
+  const showBottomChromeRow = Boolean(bottomBarContent);
 
   useEffect(() => {
     const el = footerRef.current;
-    if (!el) return;
+    if (!el) {
+      setFloatingVisible(true);
+      return;
+    }
     const observer = new IntersectionObserver(
       ([entry]) => setFloatingVisible(!entry.isIntersecting),
       { threshold: 0 }
@@ -53,31 +51,7 @@ export function AppLayout({
     return () => observer.disconnect();
   }, []);
 
-  const showBottomAccountFilter = currentTab !== 'accounts';
-
-  const bottomBarRow = (
-    <div
-      className={cn(
-        'grid w-full items-center gap-2',
-        showBottomAccountFilter ? 'grid-cols-[1fr_auto_1fr]' : 'grid-cols-1 justify-items-center'
-      )}
-    >
-      {showBottomAccountFilter ? <div aria-hidden className={cn('min-w-0')} /> : null}
-      <div
-        className={cn(
-          'flex min-w-0 max-w-full justify-center',
-          showBottomAccountFilter && 'justify-self-center'
-        )}
-      >
-        {bottomBarContent}
-      </div>
-      {showBottomAccountFilter ? (
-        <div className={cn('flex min-w-0 items-center justify-end')}>
-          <HeaderAccountFilter triggerStyle="icon-only" />
-        </div>
-      ) : null}
-    </div>
-  );
+  const bottomBarRow = <div className={cn('flex w-full justify-center')}>{bottomBarContent}</div>;
 
   return (
     <div className={cn('flex', 'min-h-screen', 'flex-col', className)}>
@@ -105,35 +79,27 @@ export function AppLayout({
           {children}
         </main>
 
-        {/* Desktop bottom controls */}
         <div
           className={cn(
-            'fixed bottom-5 left-0 right-0 z-50',
-            floatingBottomBarVisibility,
-            'min-h-[2.75rem] px-4',
-            'transition-opacity duration-200',
-            floatingVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          )}
-        >
-          {bottomBarRow}
-        </div>
-
-        {/* Mobile bottom navigation bar */}
-        <div
-          className={cn(
-            'fixed bottom-4 left-0 right-0',
-            stackedBottomBarVisibility,
+            'fixed',
+            'bottom-4',
+            'left-0',
+            'right-0',
             'z-50',
-            'flex flex-col',
+            'flex',
+            'flex-col',
             'pb-[env(safe-area-inset-bottom)]',
-            'transition-opacity duration-200',
+            'transition-opacity',
+            'duration-200',
             floatingVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
           )}
         >
-          <div className={cn('min-h-[3.25rem] px-4')}>{bottomBarRow}</div>
+          {showBottomChromeRow ? (
+            <div className={cn('min-h-[3.25rem]', 'px-4')}>{bottomBarRow}</div>
+          ) : null}
 
-          <div className={cn('flex justify-center pt-1 pb-2')}>
-            <nav className={cn(...appTitleBarRecipes.pillContainer)} aria-label="Mobile primary">
+          <div className={cn('flex', 'justify-center', 'px-4', 'pt-1', 'pb-2')}>
+            <nav className={cn(...appTitleBarRecipes.pillContainer)} aria-label="Primary">
               {TABS.map(({ key, label, icon: Icon }) => (
                 <Button
                   key={key}
@@ -150,7 +116,7 @@ export function AppLayout({
                 >
                   {currentTab === key ? (
                     <motion.div
-                      layoutId="mobile-pill-active"
+                      layoutId="pill-active"
                       data-slot="active-pill"
                       className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
                       transition={{ stiffness: 400, damping: 35 }}
@@ -173,9 +139,11 @@ export function AppLayout({
           </div>
         </div>
 
-        <div ref={footerRef}>
-          <AppFooter />
-        </div>
+        {showFooter ? (
+          <div ref={footerRef}>
+            <AppFooter />
+          </div>
+        ) : null}
       </div>
     </div>
   );

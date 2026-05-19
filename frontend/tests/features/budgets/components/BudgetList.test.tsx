@@ -26,6 +26,7 @@ describe('BudgetList', () => {
     const list = container.querySelector('ul');
     const card = container.querySelector('li');
 
+    expect(list).toHaveClass('grid-cols-1');
     expect(list).toHaveClass('md:grid-cols-2');
     expect(list).toHaveClass('lg:grid-cols-3');
     expect(list).not.toHaveClass('xl:grid-cols-3');

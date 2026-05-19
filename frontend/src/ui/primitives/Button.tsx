@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import React from 'react';
+import type React from 'react';
 import {
   chrome,
   border as semanticBorders,
@@ -86,7 +86,14 @@ export const buttonRecipes = {
     'dark:text-slate-400',
     'dark:hover:border-[var(--color-border-hover-accent)] dark:hover:text-white',
   ],
-  tab: ['group relative', 'overflow-hidden', 'backdrop-blur-sm'],
+  tab: [
+    'group',
+    'relative',
+    'overflow-hidden',
+    'border-transparent',
+    'bg-transparent',
+    'shadow-none',
+  ],
   tabActive: [
     'group relative',
     'overflow-hidden',
@@ -173,20 +180,27 @@ export interface ButtonProps
  *
  * @see {@link ../README.md} for detailed variant documentation
  */
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant, size, loading, disabled, className, children, ...props }, ref) => {
-    return (
-      <button
-        ref={ref}
-        disabled={disabled || loading}
-        className={cn(buttonVariants({ variant, size }), className)}
-        {...props}
-      >
-        {children}
-      </button>
-    );
-  }
-);
+export const Button = ({
+  variant,
+  size,
+  loading,
+  disabled,
+  className,
+  children,
+  ref,
+  ...props
+}: ButtonProps & { ref?: React.RefObject<HTMLButtonElement | null> }) => {
+  return (
+    <button
+      ref={ref}
+      disabled={disabled || loading}
+      className={cn(buttonVariants({ variant, size }), className)}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
 
 Button.displayName = 'Button';
 

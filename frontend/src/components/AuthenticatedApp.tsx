@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRef, useState } from 'react';
+import { BottomContextualBar } from '@/components/BottomContextualBar';
 import { DateRangePillSlider } from '@/features/analytics/components/DateRangePillSlider';
 import { BudgetMonthPillSlider } from '@/features/budgets/components/BudgetMonthPillSlider';
 import { useBudgetMonth } from '@/features/budgets/hooks/useBudgetMonth';
@@ -51,25 +52,28 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
   };
   const bottomBarContent =
     tab === 'dashboard' ? (
-      <DateRangePillSlider dateRange={dateRange} onChange={setDateRange} />
+      <BottomContextualBar>
+        <DateRangePillSlider dateRange={dateRange} onChange={setDateRange} />
+      </BottomContextualBar>
     ) : tab === 'transactions' ? (
-      <div className={cn('w-full', 'max-w-full', 'lg:hidden')}>
-        <TransactionsSearchBar
-          search={transactionFilters.search}
-          onSearch={transactionFilters.setSearch}
-        />
-      </div>
+      <BottomContextualBar>
+        <div className={cn('w-full', 'max-w-full', 'lg:hidden')}>
+          <TransactionsSearchBar
+            search={transactionFilters.search}
+            onSearch={transactionFilters.setSearch}
+          />
+        </div>
+      </BottomContextualBar>
     ) : tab === 'budgets' ? (
-      <BudgetMonthPillSlider
-        monthLabel={budgetMonth.monthLabel}
-        onPreviousMonth={budgetMonth.goToPreviousMonth}
-        onNextMonth={budgetMonth.goToNextMonth}
-        onCurrentMonth={budgetMonth.goToCurrentMonth}
-      />
+      <BottomContextualBar>
+        <BudgetMonthPillSlider
+          monthLabel={budgetMonth.monthLabel}
+          onPreviousMonth={budgetMonth.goToPreviousMonth}
+          onNextMonth={budgetMonth.goToNextMonth}
+          onCurrentMonth={budgetMonth.goToCurrentMonth}
+        />
+      </BottomContextualBar>
     ) : null;
-  const bottomBarAboveTabsUntil =
-    tab === 'dashboard' ? 'md' : tab === 'budgets' || tab === 'transactions' ? 'lg' : 'md';
-
   return (
     <ErrorBoundary>
       <GradientShell className={cn(uiTextRecipes.primary, 'transition-colors', 'duration-300')}>
@@ -103,7 +107,6 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
             onLogout={onLogout}
             isOnline={isOnline}
             bottomBarContent={bottomBarContent}
-            bottomBarAboveTabsUntil={bottomBarAboveTabsUntil}
           >
             {error && (
               <Alert variant="error" title="Error" className={cn('mb-6')}>
@@ -127,9 +130,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
                 {tab === 'transactions' && <TransactionsPage filterControl={transactionFilters} />}
                 {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}
                 {tab === 'accounts' && <AccountsPage onError={setError} />}
-                {tab === 'settings' && (
-                  <SettingsPage onLogout={onLogout} onBack={() => handleTabChange('dashboard')} />
-                )}
+                {tab === 'settings' && <SettingsPage onLogout={onLogout} />}
               </motion.section>
             </AnimatePresence>
           </AppLayout>

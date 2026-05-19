@@ -1,5 +1,4 @@
 import { cva } from 'class-variance-authority';
-import { motion } from 'framer-motion';
 import {
   ArrowLeftRight,
   Building2,
@@ -11,7 +10,7 @@ import {
   WifiOff,
 } from 'lucide-react';
 import Image from 'next/image';
-import React from 'react';
+import type React from 'react';
 import {
   border as semanticBorders,
   effect as semanticEffects,
@@ -21,7 +20,7 @@ import {
   radius as uiRadiusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { Button, buttonRecipes } from './Button';
+import { Button } from './Button';
 import { cn } from './utils';
 
 export const appTitleBarRecipes = {
@@ -83,140 +82,102 @@ export interface AppTitleBarProps {
   onTabChange?: (tab: TabKey) => void;
 }
 
-export const AppTitleBar = React.forwardRef<HTMLElement, AppTitleBarProps>(
-  ({ state, isOnline, onLogout, currentTab, onTabChange }, ref) => {
-    return (
-      <header ref={ref} className={titleBarVariants({ state })}>
-        <div className="px-4">
-          <div className="grid h-12 grid-cols-[auto_minmax(0,1fr)_auto] items-center md:h-16">
-            <div className={cn('flex', 'items-center', 'gap-6')}>
+export const AppTitleBar = ({
+  state,
+  isOnline,
+  onLogout,
+  currentTab,
+  onTabChange,
+  ref,
+}: AppTitleBarProps & { ref?: React.RefObject<HTMLElement | null> }) => {
+  return (
+    <header ref={ref} className={titleBarVariants({ state })}>
+      <div className="px-4">
+        <div className="flex h-12 items-center justify-between md:h-16">
+          <div className={cn('flex', 'items-center', 'gap-6')}>
+            <div
+              className={cn(...appTitleBarRecipes.logo.container, appTitleBarRecipes.logo.wordmark)}
+            >
               <div
                 className={cn(
-                  ...appTitleBarRecipes.logo.container,
-                  appTitleBarRecipes.logo.wordmark
+                  'relative',
+                  'h-8',
+                  'w-8',
+                  'overflow-hidden',
+                  uiRadiusRecipes.standard
                 )}
               >
-                <div
-                  className={cn(
-                    'relative',
-                    'h-8',
-                    'w-8',
-                    'overflow-hidden',
-                    uiRadiusRecipes.standard
-                  )}
-                >
-                  <Image
-                    src="/sumurai-logo.jpeg"
-                    alt="Sumurai Logo"
-                    fill
-                    sizes="32px"
-                    className="object-cover"
-                    unoptimized
-                  />
-                </div>
-                <span className={uiTypographyRecipes.pageTitle}>Sumurai</span>
+                <Image
+                  src="/sumurai-logo.jpeg"
+                  alt="Sumurai Logo"
+                  fill
+                  sizes="32px"
+                  className="object-cover"
+                  unoptimized
+                />
               </div>
-            </div>
-
-            <div className="flex justify-center">
-              {state === 'authenticated' && (
-                <nav
-                  className={cn(...appTitleBarRecipes.pillContainer, 'hidden md:flex')}
-                  aria-label="Primary"
-                >
-                  {TABS.map(({ key, label, icon: Icon }) => (
-                    <Button
-                      key={key}
-                      type="button"
-                      onClick={() => onTabChange?.(key)}
-                      variant={currentTab === key ? 'tabActive' : 'tab'}
-                      size="xs"
-                      aria-label={label}
-                      aria-current={currentTab === key ? 'page' : undefined}
-                      className={cn(
-                        ...appTitleBarRecipes.pillTab,
-                        currentTab === key ? semanticTextRecipes.inverse : semanticTextRecipes.muted
-                      )}
-                    >
-                      {currentTab === key ? (
-                        <motion.div
-                          layoutId="pill-active"
-                          data-slot="active-pill"
-                          className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
-                          transition={{ stiffness: 400, damping: 35 }}
-                        />
-                      ) : null}
-                      <span className="relative z-10 flex h-4 w-4 shrink-0 items-center justify-center">
-                        <Icon className="h-4 w-4" />
-                      </span>
-                      {currentTab === key ? (
-                        <span className="relative z-10 ml-1.5">{label}</span>
-                      ) : null}
-                    </Button>
-                  ))}
-                </nav>
-              )}
-            </div>
-
-            <div className={cn('flex', 'items-center', 'justify-self-end', 'gap-2')}>
-              <span role="status" aria-live="polite" title={isOnline ? 'Online' : 'Offline'}>
-                {isOnline ? (
-                  <Wifi className={cn('h-4 w-4', ...semanticStatus.success.icon)} />
-                ) : (
-                  <WifiOff className={cn('h-4 w-4', ...semanticStatus.warning.icon)} />
-                )}
-              </span>
-
-              {state === 'authenticated' && onTabChange && (
-                <Button
-                  type="button"
-                  onClick={() => onTabChange('settings')}
-                  variant={currentTab === 'settings' ? 'tabActive' : 'ghost'}
-                  size="xs"
-                  className={cn(
-                    currentTab !== 'settings' ? appTitleBarRecipes.settingsIdle : undefined
-                  )}
-                  aria-label="Settings"
-                  title="Settings"
-                >
-                  <Settings className={cn('h-4', 'w-4')} />
-                </Button>
-              )}
-
-              {(state === 'onboarding' || state === 'authenticated') && onLogout && (
-                <>
-                  <div className="hidden md:block">
-                    <Button
-                      type="button"
-                      onClick={onLogout}
-                      variant="danger"
-                      size="xs"
-                      title="Logout"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      <span>Logout</span>
-                    </Button>
-                  </div>
-                  <div className="md:hidden">
-                    <Button
-                      type="button"
-                      onClick={onLogout}
-                      variant="danger"
-                      size="xs"
-                      aria-label="Logout"
-                    >
-                      <LogOut className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </>
-              )}
+              <span className={uiTypographyRecipes.pageTitle}>Sumurai</span>
             </div>
           </div>
+
+          <div className={cn('flex', 'items-center', 'gap-2')}>
+            <span role="status" aria-live="polite" title={isOnline ? 'Online' : 'Offline'}>
+              {isOnline ? (
+                <Wifi className={cn('h-4 w-4', ...semanticStatus.success.icon)} />
+              ) : (
+                <WifiOff className={cn('h-4 w-4', ...semanticStatus.warning.icon)} />
+              )}
+            </span>
+
+            {state === 'authenticated' && onTabChange && (
+              <Button
+                type="button"
+                onClick={() => onTabChange('settings')}
+                variant={currentTab === 'settings' ? 'tabActive' : 'ghost'}
+                size="xs"
+                className={cn(
+                  currentTab !== 'settings' ? appTitleBarRecipes.settingsIdle : undefined
+                )}
+                aria-label="Settings"
+                title="Settings"
+              >
+                <Settings className={cn('h-4', 'w-4')} />
+              </Button>
+            )}
+
+            {(state === 'onboarding' || state === 'authenticated') && onLogout && (
+              <>
+                <div className="hidden md:block">
+                  <Button
+                    type="button"
+                    onClick={onLogout}
+                    variant="danger"
+                    size="xs"
+                    title="Logout"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
+                  </Button>
+                </div>
+                <div className="md:hidden">
+                  <Button
+                    type="button"
+                    onClick={onLogout}
+                    variant="danger"
+                    size="xs"
+                    aria-label="Logout"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
-      </header>
-    );
-  }
-);
+      </div>
+    </header>
+  );
+};
 
 AppTitleBar.displayName = 'AppTitleBar';
 

@@ -29,6 +29,7 @@ import DashboardChartCard from '../features/analytics/components/DashboardChartC
 import { SpendingByCategoryChart } from '../features/analytics/components/SpendingByCategoryChart';
 import { TopMerchantsList } from '../features/analytics/components/TopMerchantsList';
 import { useAnalytics } from '../features/analytics/hooks/useAnalytics';
+import { useDebouncedChartRecalc } from '../features/analytics/hooks/useDebouncedChartRecalc';
 import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries';
 import { PageLayout } from '../layouts/PageLayout';
 import type { DateRangeKey as DateRange } from '../utils/dateRanges';
@@ -74,6 +75,7 @@ const DashboardPage: React.FC<{
   const byCat = useMemo(() => categoriesToDonut(analytics.categories), [analytics.categories]);
   const netWorth = useNetWorthSeries(dateRange);
   const netSeries = netWorth.series;
+  const debouncedNetSeries = useDebouncedChartRecalc(netSeries);
   const netLoading = netWorth.loading;
   const netRefreshing = netWorth.refreshing;
   const netError = netWorth.error;
@@ -88,11 +90,11 @@ const DashboardPage: React.FC<{
   const monthSpend = analytics.spendingTotal;
 
   const netDotRenderer = useMemo<((props: DotItemDotProps) => React.ReactNode) | undefined>(() => {
-    const n = netSeries?.length || 0;
+    const n = debouncedNetSeries?.length || 0;
     const fill = colors.chart.dotFill;
     const stroke = colors.semantic.cash;
     if (!n) return undefined;
-    const selected = DashboardCalculator.calculateNetDotIndices(netSeries);
+    const selected = DashboardCalculator.calculateNetDotIndices(debouncedNetSeries);
     return ({ index, cx, cy }: DotItemDotProps) => {
       if (index == null || cx == null || cy == null) return null;
       if (!selected.has(index)) return null;
@@ -100,19 +102,19 @@ const DashboardPage: React.FC<{
         <circle cx={cx} cy={cy} r={3} stroke={stroke} strokeWidth={1} fill={fill} />
       ) as React.ReactElement<SVGCircleElement>;
     };
-  }, [netSeries, colors.chart.dotFill, colors.semantic.cash]);
+  }, [debouncedNetSeries, colors.chart.dotFill, colors.semantic.cash]);
 
   const netYAxisDomain = useMemo(
-    () => DashboardCalculator.calculateNetYAxisDomain(netSeries),
-    [netSeries]
+    () => DashboardCalculator.calculateNetYAxisDomain(debouncedNetSeries),
+    [debouncedNetSeries]
   );
 
   return (
     <div data-testid="dashboard-page">
       <PageLayout
         badge="Dashboard"
-        title="Overview of Balances"
-        subtitle="Track your assets and liabilities across all connected accounts with real-time balance updates."
+        title="Balances"
+        subtitle="View balances, spending, top merchants, and net worth across linked accounts."
         stats={<BalancesOverview />}
       >
         <div
@@ -274,7 +276,10 @@ const DashboardPage: React.FC<{
             ) : (
               <div className={cn('flex-1', 'h-full', 'w-full', 'min-w-0', 'overflow-hidden')}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={netSeries} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                  <AreaChart
+                    data={debouncedNetSeries}
+                    margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
+                  >
                     <defs>
                       <linearGradient id="netGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={colors.semantic.cash} stopOpacity={0.4} />
@@ -292,8 +297,8 @@ const DashboardPage: React.FC<{
                       tickFormatter={(value: string) => {
                         try {
                           if (!value) return '';
-                          const first = netSeries[0]?.date;
-                          const last = netSeries[netSeries.length - 1]?.date;
+                          const first = debouncedNetSeries[0]?.date;
+                          const last = debouncedNetSeries[debouncedNetSeries.length - 1]?.date;
                           const d = new Date(value);
                           const spanDays =
                             first && last

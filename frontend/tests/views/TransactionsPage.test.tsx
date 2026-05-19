@@ -45,7 +45,7 @@ describe('TransactionsPage', () => {
     } as any);
   });
 
-  it('moves the transaction stats grid to the md tier', () => {
+  it('keeps the transaction stats grid in two columns on mobile', () => {
     const { container } = render(
       <TransactionsPage
         filterControl={{
@@ -60,7 +60,7 @@ describe('TransactionsPage', () => {
       '[data-testid="page-layout"] .grid.gap-3'
     ) as HTMLElement | null;
 
-    expect(statsGrid).toHaveClass('md:grid-cols-2');
-    expect(statsGrid).not.toHaveClass('sm:grid-cols-2');
+    expect(statsGrid).toHaveClass('grid-cols-2');
+    expect(statsGrid).toHaveClass('lg:grid-cols-4');
   });
 });

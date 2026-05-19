@@ -22,7 +22,7 @@ export function DateRangePillSlider({
   onChange: (r: DateRange) => void;
 }) {
   return (
-    <div className={cn(...appTitleBarRecipes.pillContainer)}>
+    <div className={cn(...appTitleBarRecipes.pillContainer, 'min-w-0', 'max-w-full')}>
       {options.map((option) => {
         const isActive = option.key === dateRange;
 
@@ -33,7 +33,7 @@ export function DateRangePillSlider({
             onClick={() => onChange(option.key)}
             className={cn(
               ...appTitleBarRecipes.pillTab,
-              'h-full flex-1',
+              'h-full flex-1 min-w-0',
               isActive ? buttonRecipes.tabActive : buttonRecipes.tab,
               isActive ? uiTextRecipes.inverse : uiTextRecipes.primary,
               uiTypographyRecipes.label

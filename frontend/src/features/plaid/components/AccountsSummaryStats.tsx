@@ -31,11 +31,12 @@ export const AccountsSummaryStats = ({
   const hasConnections = summary.institutions > 0;
 
   return (
-    <div className={cn('grid', 'gap-3', 'md:grid-cols-3')}>
+    <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-3')}>
       {flowError && (
         <div
           className={cn(
-            'md:col-span-3',
+            'col-span-2',
+            'lg:col-span-3',
             uiRadiusRecipes.standard,
             'border',
             'border-red-200/70',

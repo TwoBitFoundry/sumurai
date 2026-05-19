@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import React from 'react';
+import type React from 'react';
 import { text as semanticTextRecipes, radius as uiRadiusRecipes } from '@/ui/recipes';
 import { cn } from './utils';
 
@@ -90,17 +90,17 @@ export interface InputProps
  *
  * @see {@link ../README.md} for detailed variant documentation
  */
-export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ variant, inputSize, className, ...props }, ref) => {
-    return (
-      <input
-        ref={ref}
-        className={cn(inputVariants({ variant, inputSize }), className)}
-        {...props}
-      />
-    );
-  }
-);
+export const Input = ({
+  variant,
+  inputSize,
+  className,
+  ref,
+  ...props
+}: InputProps & { ref?: React.RefObject<HTMLInputElement | null> }) => {
+  return (
+    <input ref={ref} className={cn(inputVariants({ variant, inputSize }), className)} {...props} />
+  );
+};
 
 Input.displayName = 'Input';
 

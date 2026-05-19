@@ -40,16 +40,17 @@ describe('shared responsive layout surfaces', () => {
     expect(content).toBeTruthy();
   });
 
-  it('adds top padding to hero cards on mobile without changing md padding', () => {
+  it('uses compact hero card padding below the lg tier', () => {
     const { container } = render(
       <HeroStatCard title="Net Worth" value="$10,000" subtext="Cached" />
     );
 
-    const shell = container.querySelector('div.p-4.pt-5');
+    const shell = container.querySelector('div.p-3.pt-4');
 
-    expect(shell).toHaveClass('p-4');
-    expect(shell).toHaveClass('pt-5');
-    expect(shell).toHaveClass('md:p-4');
+    expect(shell).toHaveClass('p-3');
+    expect(shell).toHaveClass('pt-4');
+    expect(shell).toHaveClass('lg:p-4');
+    expect(shell).toHaveClass('lg:pt-5');
   });
 
   it('keeps empty state padding on the md tier', () => {
@@ -77,7 +78,7 @@ describe('shared responsive layout surfaces', () => {
     expect(searchWrapper).not.toHaveClass('sm:w-64');
   });
 
-  it('keeps account summary stats on the md tier', () => {
+  it('keeps account summary stats in two columns until the lg tier', () => {
     const { container } = render(
       <AccountsSummaryStats
         flowError={null}
@@ -93,8 +94,9 @@ describe('shared responsive layout surfaces', () => {
       />
     );
 
-    expect(container.firstElementChild).toHaveClass('md:grid-cols-3');
-    expect(container.firstElementChild).not.toHaveClass('sm:grid-cols-3');
+    expect(container.firstElementChild).toHaveClass('grid-cols-2');
+    expect(container.firstElementChild).toHaveClass('lg:grid-cols-3');
+    expect(container.firstElementChild).not.toHaveClass('md:grid-cols-3');
   });
 
   it('matches hero card radius in account rows', () => {
@@ -147,7 +149,7 @@ describe('shared responsive layout surfaces', () => {
         loading={false}
         error={null}
         selectedProvider={null}
-        availableProviders={['plaid']}
+        availableProviders={['plaid', 'teller']}
         selectingProvider={null}
         onSelectProvider={jest.fn()}
       />
@@ -156,6 +158,7 @@ describe('shared responsive layout surfaces', () => {
     expect(screen.getByRole('heading', { name: 'Choose how you connect accounts' })).toHaveClass(
       'md:text-[2.25rem]'
     );
+    expect(screen.getByAltText('Plaid logo')).toHaveAttribute('src', '/plaid.webp');
     expect(container.firstElementChild).toBeTruthy();
   });
 

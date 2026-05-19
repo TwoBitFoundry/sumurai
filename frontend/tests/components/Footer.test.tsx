@@ -10,11 +10,16 @@ describe('Footer', () => {
 
     expect(footer).toBeTruthy();
     expect(shell).toHaveClass('md:pl-[calc(2rem_+_env(safe-area-inset-left))]');
-    expect(bottomRow).toHaveClass('md:flex-row');
-    expect(bottomRow).toHaveClass('md:items-center');
-    expect(bottomRow).toHaveClass('md:justify-between');
-    expect(bottomRow).not.toHaveClass('sm:flex-row', 'sm:items-center', 'sm:justify-between');
+    expect(bottomRow).toHaveClass('flex-row');
+    expect(bottomRow).toHaveClass('items-center');
+    expect(bottomRow).toHaveClass('justify-between');
     expect(getByText('Built in the open with the community')).toBeTruthy();
     expect(getByRole('link', { name: 'Contact' })).toBeTruthy();
+
+    const actionButtons = getByRole('link', { name: /forge with us/i }).parentElement;
+    expect(actionButtons).toHaveClass('flex-row');
+    expect(actionButtons).toHaveClass('flex-nowrap');
+    expect(actionButtons).not.toHaveClass('flex-col');
+    expect(getByRole('link', { name: /^github$/i })).toBeTruthy();
   });
 });

@@ -7,7 +7,7 @@ import { type OnboardingStep, useOnboardingWizard } from '@/hooks/useOnboardingW
 import { useScrollDetection } from '@/hooks/useScrollDetection';
 import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo';
 import type { FinancialProvider } from '@/types/api';
-import { AppFooter, AppTitleBar, Button, GlassCard, GradientShell } from '@/ui/primitives';
+import { AppTitleBar, Button, GlassCard, GradientShell } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
 import {
   border as uiBorderRecipes,
@@ -384,8 +384,6 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
             </div>
           </GlassCard>
         </div>
-
-        <AppFooter />
       </div>
     </GradientShell>
   );

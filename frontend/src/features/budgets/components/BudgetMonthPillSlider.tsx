@@ -32,21 +32,6 @@ export function BudgetMonthPillSlider({
     >
       <Button
         type="button"
-        onClick={onCurrentMonth}
-        variant="tab"
-        size="xs"
-        aria-label="This month"
-        title="Jump to current month"
-        className={pillControlClassName}
-      >
-        <span
-          className={cn('relative', 'z-10', 'flex', 'h-4', 'w-4', 'items-center', 'justify-center')}
-        >
-          <CalendarIcon className={cn('h-4', 'w-4')} />
-        </span>
-      </Button>
-      <Button
-        type="button"
         onClick={onPreviousMonth}
         variant="tab"
         size="xs"
@@ -58,6 +43,21 @@ export function BudgetMonthPillSlider({
           className={cn('relative', 'z-10', 'flex', 'h-4', 'w-4', 'items-center', 'justify-center')}
         >
           <ChevronLeftIcon className={cn('h-4', 'w-4')} />
+        </span>
+      </Button>
+      <Button
+        type="button"
+        onClick={onCurrentMonth}
+        variant="tab"
+        size="xs"
+        aria-label="This month"
+        title="Jump to current month"
+        className={pillControlClassName}
+      >
+        <span
+          className={cn('relative', 'z-10', 'flex', 'h-4', 'w-4', 'items-center', 'justify-center')}
+        >
+          <CalendarIcon className={cn('h-4', 'w-4')} />
         </span>
       </Button>
       <Button

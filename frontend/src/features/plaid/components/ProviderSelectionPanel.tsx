@@ -153,8 +153,10 @@ export const ProviderSelectionPanel = ({
                 >
                   <div className={cn('flex', 'h-full', 'flex-col', 'gap-4')}>
                     <div className={cn('flex', 'items-center', 'justify-between')}>
-                      <div className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>
-                        {details.title}
+                      <div className={cn('flex', 'items-center', 'gap-3')}>
+                        <div className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>
+                          {details.title}
+                        </div>
                       </div>
                       <span
                         className={cn(
@@ -195,6 +197,7 @@ export const ProviderSelectionPanel = ({
                         'inline-flex',
                         'items-center',
                         'justify-center',
+                        'gap-2',
                         uiRadiusRecipes.standard,
                         'bg-[var(--color-brand-sky)]',
                         'px-4',
@@ -204,6 +207,13 @@ export const ProviderSelectionPanel = ({
                         'shadow-[0_18px_48px_-32px_rgba(14,165,233,0.65)]'
                       )}
                     >
+                      {details.logoSrc ? (
+                        <img
+                          src={details.logoSrc}
+                          alt={`${details.title} logo`}
+                          className={cn('h-5', 'w-5', 'rounded-full', 'object-cover')}
+                        />
+                      ) : null}
                       {selectingProvider === provider ? 'Selecting…' : `Use ${details.title}`}
                     </div>
                   </div>

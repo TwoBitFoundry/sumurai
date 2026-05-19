@@ -29,12 +29,7 @@ jest.mock('framer-motion', () => {
 const appLayoutMock = jest.fn();
 
 jest.mock('@/layouts/AppLayout', () => ({
-  AppLayout: (props: {
-    children: ReactNode;
-    bottomBarContent?: ReactNode;
-    bottomBarAboveTabsUntil?: 'md' | 'lg';
-    currentTab: string;
-  }) => {
+  AppLayout: (props: { children: ReactNode; bottomBarContent?: ReactNode; currentTab: string }) => {
     appLayoutMock(props);
     return (
       <div>
@@ -47,6 +42,10 @@ jest.mock('@/layouts/AppLayout', () => ({
 
 jest.mock('@/components/ErrorBoundary', () => ({
   ErrorBoundary: ({ children }: { children: ReactNode }) => <>{children}</>,
+}));
+
+jest.mock('@/components/HeaderAccountFilter', () => ({
+  HeaderAccountFilter: () => <div data-testid="header-account-filter" />,
 }));
 
 jest.mock('@/views/AccountsPage', () => ({
@@ -66,14 +65,7 @@ jest.mock('@/views/DashboardPage', () => ({
 
 jest.mock('@/views/SettingsPage', () => ({
   __esModule: true,
-  default: ({ onBack }: { onBack?: () => void }) => (
-    <div>
-      <button type="button" onClick={onBack}>
-        Back to Dashboard
-      </button>
-      <div>Settings</div>
-    </div>
-  ),
+  default: () => <div>Settings</div>,
 }));
 
 jest.mock('@/views/TransactionsPage', () => ({
@@ -114,7 +106,6 @@ describe('AuthenticatedApp', () => {
 
     expect(screen.getByTestId('bottom-bar')).toHaveTextContent('1M');
     expect(screen.getByText('current-month')).toBeInTheDocument();
-    expect(appLayoutMock.mock.calls[0][0].bottomBarAboveTabsUntil).toBe('md');
   });
 
   it('renders the budget month control in the bottom bar for the budgets tab', () => {
@@ -122,7 +113,6 @@ describe('AuthenticatedApp', () => {
 
     expect(screen.getByTestId('budget-month-pill-slider')).toBeInTheDocument();
     expect(screen.getByText('Budgets')).toBeInTheDocument();
-    expect(appLayoutMock.mock.lastCall[0].bottomBarAboveTabsUntil).toBe('lg');
   });
 
   it('renders transaction category filters in the bottom bar for the transactions tab', () => {
@@ -130,7 +120,6 @@ describe('AuthenticatedApp', () => {
 
     expect(screen.getByTestId('transactions-search-bar')).toBeInTheDocument();
     expect(screen.getByText('Transactions')).toBeInTheDocument();
-    expect(appLayoutMock.mock.lastCall[0].bottomBarAboveTabsUntil).toBe('lg');
   });
 
   it('handleTabChange updates currentTab on AppLayout in both directions', () => {
@@ -146,16 +135,6 @@ describe('AuthenticatedApp', () => {
     act(() => {
       onTabChange('dashboard');
     });
-    expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('dashboard');
-  });
-
-  it('returns to dashboard from settings via the page back action', () => {
-    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="settings" />);
-
-    act(() => {
-      screen.getByRole('button', { name: 'Back to Dashboard' }).click();
-    });
-
     expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('dashboard');
   });
 

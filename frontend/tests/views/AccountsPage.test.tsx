@@ -136,9 +136,11 @@ describe('AccountsPage', () => {
     renderAccountsPage();
 
     expect(screen.getByTestId('accounts-page')).toBeInTheDocument();
-    expect(screen.getByText('Link banks and keep balances current')).toBeVisible();
+    expect(screen.getByText('Link accounts and keep balances current')).toBeVisible();
     expect(screen.getByText('Unavailable while offline')).toBeVisible();
-    expect(screen.getAllByRole('button', { name: /launch teller connect/i })[0]).toBeDisabled();
+    const tellerButton = screen.getAllByRole('button', { name: /^teller$/i })[0];
+    expect(tellerButton).toBeDisabled();
+    expect(tellerButton.querySelector('img')).toHaveAttribute('src', '/teller.webp');
   });
 
   it('shows Offline on sync when offline with linked institutions', () => {
@@ -176,7 +178,9 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    const heroSection = screen.getByRole('heading', { name: /link banks/i }).closest('section');
+    const heroSection = screen
+      .getByRole('heading', { name: /link accounts and keep balances current/i })
+      .closest('section');
     expect(heroSection).toBeTruthy();
     expect(
       within(heroSection as HTMLElement).getByRole('button', { name: /^offline$/i })
@@ -252,6 +256,27 @@ describe('AccountsPage', () => {
     renderAccountsPage();
 
     expect(screen.getByText('55 items')).toBeVisible();
+  });
+
+  it('renders the Plaid accounts button with the Plaid logo', () => {
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useTellerProviderInfo).mockReturnValue({
+      loading: false,
+      error: null,
+      availableProviders: ['plaid', 'teller'],
+      selectedProvider: 'plaid',
+      defaultProvider: 'plaid',
+      userProvider: 'plaid',
+      tellerApplicationId: null,
+      tellerEnvironment: 'development',
+      refresh: jest.fn(),
+      chooseProvider: jest.fn(),
+    });
+
+    renderAccountsPage();
+
+    const plaidButton = screen.getByRole('button', { name: /^add account$/i });
+    expect(plaidButton.querySelector('img')).toHaveAttribute('src', '/plaid.webp');
   });
 
   it('renders Teller current balances on the accounts page', () => {

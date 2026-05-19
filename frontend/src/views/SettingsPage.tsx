@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronLeft } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { PasswordChecker } from '@/components/PasswordChecker';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
@@ -8,16 +8,19 @@ import { AuthService } from '@/services/authService';
 import { SettingsService } from '@/services/SettingsService';
 import { Alert, Badge, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import {
+  border as uiBorderRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 
 export const settingsConfirmationCodeTypography = 'font-mono font-bold';
 
 interface SettingsPageProps {
   onLogout?: () => void;
-  onBack?: () => void;
 }
 
-export default function SettingsPage({ onLogout, onBack }: SettingsPageProps) {
+export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const { preference, setPreference } = useTheme();
   const postPasswordChangeLogoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -127,21 +130,6 @@ export default function SettingsPage({ onLogout, onBack }: SettingsPageProps) {
       <div className={cn('flex', 'flex-col', 'gap-6')}>
         <GlassCard variant="default" padding="lg">
           <div className={cn('space-y-5')}>
-            {onBack ? (
-              <div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="md"
-                  onClick={onBack}
-                  className={cn('inline-flex', 'lg:hidden', 'w-fit')}
-                >
-                  <ChevronLeft className={cn('h-4', 'w-4')} />
-                  <span>Back to Dashboard</span>
-                </Button>
-              </div>
-            ) : null}
-
             <div className={cn('space-y-3')}>
               <Badge size="md">ACCOUNT SETTINGS</Badge>
             </div>
@@ -153,7 +141,7 @@ export default function SettingsPage({ onLogout, onBack }: SettingsPageProps) {
               <ThemeModeSelector value={preference} onChange={setPreference} />
             </section>
 
-            <section className={cn('space-y-3')}>
+            <section className={cn('space-y-3', 'border-t', 'pt-5', ...uiBorderRecipes.divider)}>
               <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
                 Change Password
               </h2>

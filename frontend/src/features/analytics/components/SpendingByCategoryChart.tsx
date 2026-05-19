@@ -3,6 +3,7 @@ import type React from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { cn, EmptyState } from '@/ui/primitives';
 import { text as uiTextRecipes } from '@/ui/recipes';
+import { useDebouncedChartRecalc } from '../hooks/useDebouncedChartRecalc';
 
 const donutCenterTotalTypography = 'font-display text-2xl font-bold tracking-tight';
 
@@ -39,6 +40,8 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
 }) => {
   const { mode } = useTheme();
   const colors = getThemeColors(mode);
+  const debouncedData = useDebouncedChartRecalc(data);
+  const debouncedTotal = useDebouncedChartRecalc(total);
   return (
     <div
       className={cn(
@@ -48,16 +51,17 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
         'flex-col',
         'items-stretch',
         'justify-center',
-        'min-h-[280px]'
+        'min-h-[210px]',
+        'md:min-h-[280px]'
       )}
     >
-      {data.length > 0 ? (
+      {debouncedData.length > 0 ? (
         <div
           className={cn(
             'relative',
             'aspect-square',
             'w-full',
-            'max-w-[420px]',
+            'max-w-[315px]',
             'md:max-w-[260px]',
             'min-w-0',
             'shrink-0',
@@ -69,7 +73,7 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
             <PieChart>
               <Pie
                 dataKey="value"
-                data={data}
+                data={debouncedData}
                 cx="50%"
                 cy="50%"
                 outerRadius="80%"
@@ -81,7 +85,7 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
                 animationBegin={0}
                 animationDuration={animated ? 800 : 0}
               >
-                {data.map((cat, index) => {
+                {debouncedData.map((cat, index) => {
                   const palette = chart.series[mode];
                   const color = palette[index % palette.length];
                   const isHovered = hoveredCategory === cat.name;
@@ -132,7 +136,7 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
             )}
           >
             <div className={cn(donutCenterTotalTypography, uiTextRecipes.primary)}>
-              {fmtUSD(total)}
+              {fmtUSD(debouncedTotal)}
             </div>
           </div>
         </div>

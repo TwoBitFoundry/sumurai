@@ -98,7 +98,7 @@ export function AccountsConnectedScreenSlice(props: {
     <div data-testid="accounts-page">
       <PageLayout
         badge="Plaid Accounts"
-        title="Link banks and keep balances current"
+        title="Link accounts and keep balances current"
         subtitle="Securely connect institutions with Plaid. Your credentials never touch Sumurai and you can revoke access at any time."
         actions={actions}
         stats={statsGrid}

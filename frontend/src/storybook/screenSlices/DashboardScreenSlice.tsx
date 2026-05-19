@@ -117,9 +117,7 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
   }, [colors.chart.dotFill, colors.semantic.cash, netLoading, netError]);
 
   const balancesOverview = (
-    <div
-      className={cn('grid', 'gap-3', '[grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]')}
-    >
+    <div className={cn('grid', 'grid-cols-2', 'gap-3', 'lg:grid-cols-4')}>
       <HeroStatCard
         index={1}
         title="Cash"
@@ -159,8 +157,8 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
     <div data-testid="dashboard-page">
       <PageLayout
         badge="Dashboard"
-        title="Overview of Balances"
-        subtitle="Track your assets and liabilities across all connected accounts with real-time balance updates."
+        title="Balances"
+        subtitle="View balances, spending, top merchants, and net worth across linked accounts."
         stats={balancesOverview}
       >
         <div
