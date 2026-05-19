@@ -380,17 +380,17 @@ impl Transaction {
             .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok())
             .unwrap_or_else(|| chrono::Utc::now().date_naive());
 
-        let categories = plaid_txn["category"].as_array();
-        let category_primary = categories
-            .and_then(|arr| arr.first())
+        let pfc = plaid_txn.get("personal_finance_category");
+        let category_primary = pfc
+            .and_then(|p| p.get("primary"))
             .and_then(|v| v.as_str())
             .unwrap_or("OTHER")
             .to_string();
 
-        let category_detailed = categories
-            .and_then(|arr| arr.get(1))
+        let category_detailed = pfc
+            .and_then(|p| p.get("detailed"))
             .and_then(|v| v.as_str())
-            .unwrap_or("")
+            .unwrap_or(&category_primary)
             .to_string();
 
         Self {
@@ -404,9 +404,10 @@ impl Transaction {
             merchant_name: Self::merchant_name_from_plaid(plaid_txn),
             category_primary,
             category_detailed,
-            category_confidence: plaid_txn["personal_finance_category"]["confidence_level"]
-                .as_str()
-                .unwrap_or("")
+            category_confidence: pfc
+                .and_then(|p| p.get("confidence_level"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("MEDIUM")
                 .to_string(),
             payment_channel: plaid_txn["payment_channel"].as_str().map(String::from),
             pending: plaid_txn["pending"].as_bool().unwrap_or(false),

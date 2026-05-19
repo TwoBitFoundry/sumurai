@@ -171,13 +171,18 @@ category_confidence: pfc
 
 ### Acceptance criteria
 
-- [ ] `from_plaid` reads `category_primary` from `personal_finance_category.primary` (not `category[0]`)
-- [ ] `from_plaid` reads `category_detailed` from `personal_finance_category.detailed` (not `category[1]`)
-- [ ] When `personal_finance_category` is missing entirely: `category_primary = "OTHER"`, `category_detailed = "OTHER"`, `category_confidence = "MEDIUM"`
-- [ ] When `detailed` is missing but `primary` present: `category_detailed` falls back to `category_primary` value
-- [ ] When `confidence_level` is missing: defaults to `"MEDIUM"`
-- [ ] No remaining references to `plaid_txn["category"].as_array()` in the function
-- [ ] `cargo build` succeeds
+- [x] `from_plaid` reads `category_primary` from `personal_finance_category.primary` (not `category[0]`)
+- [x] `from_plaid` reads `category_detailed` from `personal_finance_category.detailed` (not `category[1]`)
+- [x] When `personal_finance_category` is missing entirely: `category_primary = "OTHER"`, `category_detailed = "OTHER"`, `category_confidence = "MEDIUM"`
+- [x] When `detailed` is missing but `primary` present: `category_detailed` falls back to `category_primary` value
+- [x] When `confidence_level` is missing: defaults to `"MEDIUM"`
+- [x] No remaining references to `plaid_txn["category"].as_array()` in the function
+- [x] `cargo build` succeeds
+
+### TDD log
+
+- `cargo test --manifest-path backend/Cargo.toml plaid_service_tests -- --nocapture` failed before the implementation change, then passed after the Plaid mapper update.
+- `cargo build --manifest-path backend/Cargo.toml` passed after the model update.
 
 ---
 
