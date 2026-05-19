@@ -216,11 +216,16 @@ The `Uuid::nil()` for `account_id` matches the current behavior — the sync ser
 
 ### Acceptance criteria
 
-- [ ] The `for t in transactions_array` loop body is reduced to a single `Transaction::from_plaid()` call
-- [ ] No more inline field extraction (amount, date, category, etc.) in plaid_service.rs
-- [ ] The `Uuid::nil()` account_id pattern is preserved (sync service reassigns later)
-- [ ] Pagination logic (`offset`, `batch_len`, break conditions) is NOT changed — only the inner loop body
-- [ ] `cargo build` succeeds
+- [x] The `for t in transactions_array` loop body is reduced to a single `Transaction::from_plaid()` call
+- [x] No more inline field extraction (amount, date, category, etc.) in plaid_service.rs
+- [x] The `Uuid::nil()` account_id pattern is preserved (sync service reassigns later)
+- [x] Pagination logic (`offset`, `batch_len`, break conditions) is NOT changed — only the inner loop body
+- [x] `cargo build` succeeds
+
+### TDD log
+
+- `cargo test --manifest-path backend/Cargo.toml plaid_service_tests -- --nocapture` passed after the loop refactor.
+- `cargo build --manifest-path backend/Cargo.toml` passed after the service refactor.
 
 ---
 
