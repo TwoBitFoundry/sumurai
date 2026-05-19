@@ -1,4 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
+import { dispatchAccountsChanged } from './events';
 
 export type SyncProvider = 'plaid' | 'teller';
 
@@ -18,5 +19,8 @@ export async function invalidateStaleCacheQueries(
   );
   const queryKeys = [...BASE_QUERY_KEYS, ...providerKeys];
 
-  await Promise.all(queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
+  dispatchAccountsChanged();
+  await Promise.all(
+    queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey, refetchType: 'all' }))
+  );
 }

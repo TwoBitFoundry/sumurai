@@ -113,7 +113,7 @@ const DashboardPage: React.FC<{
     <div data-testid="dashboard-page">
       <PageLayout
         badge="Dashboard"
-        title="Balances"
+        title="Balances Overview"
         subtitle="View balances, spending, top merchants, and net worth across linked accounts."
         stats={<BalancesOverview />}
       >

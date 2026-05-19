@@ -861,14 +861,14 @@ impl ConnectionService {
         }
 
         // Only invalidate balances overview (user-scoped, needs refresh after disconnect)
-        let balances_key = format!("{}_balances_overview", jwt_id);
+        let balances_pattern = format!("{}_balances_overview*", jwt_id);
         if self
             .cache_service
-            .invalidate_pattern(&balances_key)
+            .invalidate_pattern(&balances_pattern)
             .await
             .is_ok()
         {
-            cleared_keys.push(balances_key);
+            cleared_keys.push(balances_pattern);
         }
 
         let net_worth_pattern = format!("{}_net_worth_over_time_*", jwt_id);
@@ -893,7 +893,7 @@ impl ConnectionService {
     ) -> Result<()> {
         let _ = self
             .cache_service
-            .invalidate_pattern(&format!("{}_balances_overview", jwt_id))
+            .invalidate_pattern(&format!("{}_balances_overview*", jwt_id))
             .await;
 
         let cached_connection = CachedBankConnection {

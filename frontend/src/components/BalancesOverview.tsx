@@ -3,7 +3,13 @@ import { useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useTheme } from '../context/ThemeContext';
 import { ACCOUNT_GROUP_LABELS } from '../domain/accountCategories';
+import { BalancesChartXAxisTick } from '../features/analytics/components/BalancesChartXAxisTick';
 import { useDebouncedChartRecalc } from '../features/analytics/hooks/useDebouncedChartRecalc';
+import {
+  INSTITUTION_LABEL_LINE_HEIGHT,
+  institutionLabelLineCount,
+  maxCharsPerInstitutionSlot,
+} from '../features/analytics/utils/wrapInstitutionLabel';
 import { useBalancesOverview } from '../hooks/useBalancesOverview';
 import { Alert, Button, cn, GlassCard } from '../ui/primitives';
 import {
@@ -79,7 +85,18 @@ export function BalancesOverview() {
     if (maxLabelLen >= 18) yTickFontSize = 9;
     const approxCharWidth = yTickFontSize * 0.62;
     const yAxisWidth = Math.min(120, Math.ceil(maxLabelLen * approxCharWidth) + 12);
-    return { yTickFontSize, yAxisWidth };
+    const maxCharsPerLine = maxCharsPerInstitutionSlot(debouncedBanks.length);
+    const maxLabelLines =
+      debouncedBanks.length > 0
+        ? Math.max(
+            1,
+            ...debouncedBanks.map((bank) =>
+              institutionLabelLineCount(bank.bankName, maxCharsPerLine)
+            )
+          )
+        : 1;
+    const xAxisHeight = maxLabelLines * INSTITUTION_LABEL_LINE_HEIGHT + 8;
+    return { yTickFontSize, yAxisWidth, maxCharsPerLine, xAxisHeight };
   }, [debouncedBanks]);
 
   const chartData = useMemo<BankBarDatum[]>(
@@ -237,7 +254,10 @@ export function BalancesOverview() {
           ))}
         </div>
 
-        <div className={cn('relative', 'mt-4', 'h-64', 'w-full', 'min-w-0')}>
+        <div
+          className={cn('relative', 'mt-4', 'w-full', 'min-w-0')}
+          style={{ height: 224 + chartLayout.xAxisHeight }}
+        >
           {hoverInfo ? (
             <div
               className={cn(
@@ -285,15 +305,28 @@ export function BalancesOverview() {
               </GlassCard>
             </div>
           ) : null}
-          <ResponsiveContainer width="100%" height={256}>
+          <ResponsiveContainer width="100%" height={224 + chartLayout.xAxisHeight}>
             <BarChart
               data={chartData}
               stackOffset="sign"
-              margin={{ top: 8, right: 16, left: 16, bottom: 8 }}
+              margin={{ top: 8, right: 16, left: 16, bottom: chartLayout.xAxisHeight }}
               onMouseLeave={() => setHoverInfo(null)}
             >
               <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
-              <XAxis dataKey="bank" tick={{ fill: colors.chart.axis, fontSize: 12 }} />
+              <XAxis
+                dataKey="bank"
+                interval={0}
+                tickLine={false}
+                axisLine={{ stroke: colors.chart.grid }}
+                height={chartLayout.xAxisHeight}
+                tick={(props) => (
+                  <BalancesChartXAxisTick
+                    {...props}
+                    fill={colors.chart.axis}
+                    maxCharsPerLine={chartLayout.maxCharsPerLine}
+                  />
+                )}
+              />
               <YAxis
                 tickFormatter={(value) => formatAxisValue(value as number)}
                 tick={{ fill: colors.chart.axis, fontSize: chartLayout.yTickFontSize }}

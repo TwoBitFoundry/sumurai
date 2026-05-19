@@ -4,6 +4,7 @@ import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { useBalancesOverview } from '@/hooks/useBalancesOverview';
+import { dispatchAccountsChanged } from '@/utils/events';
 
 const TestWrapper = AccountFilterTestProvider;
 
@@ -112,6 +113,66 @@ describe('useBalancesOverview', () => {
     expect(result.current.refreshing).toBe(false);
     expect(result.current.error).toBeNull();
     expect(result.current.data).toEqual(mock);
+  });
+
+  it('refetches balances when the linked account roster grows', async () => {
+    let accounts = mockPlaidAccounts;
+    const overview = {
+      asOf: 'latest',
+      overall: {
+        cash: 100,
+        credit: -50,
+        loan: -25,
+        investments: 200,
+        positivesTotal: 300,
+        negativesTotal: -75,
+        net: 225,
+        ratio: 4,
+      },
+      banks: [],
+      mixedCurrency: false,
+    };
+
+    fetchMock = installFetchRoutes({
+      'GET /api/analytics/balances/overview': overview,
+      'GET /api/providers/status': connectedStatus,
+      'GET /api/providers/accounts': () => accounts,
+      'GET /api/plaid/accounts': () => accounts,
+    });
+
+    const { result } = renderHook(() => useBalancesOverview(), { wrapper: TestWrapper });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const initialOverviewCalls = fetchMock.mock.calls.filter((c) =>
+      String(c[0]).includes('/api/analytics/balances/overview')
+    ).length;
+
+    accounts = [
+      ...mockPlaidAccounts,
+      {
+        id: 'account3',
+        name: 'Mock Credit',
+        account_type: 'credit',
+        balance_current: -400,
+        mask: '3333',
+        plaid_connection_id: 'conn_2',
+        institution_name: 'Second Mock Bank',
+      },
+    ];
+
+    await act(async () => {
+      dispatchAccountsChanged();
+    });
+
+    await waitFor(() => {
+      const overviewCalls = fetchMock.mock.calls.filter((c) =>
+        String(c[0]).includes('/api/analytics/balances/overview')
+      ).length;
+      expect(overviewCalls).toBeGreaterThan(initialOverviewCalls);
+    });
   });
 
   it('reuses cached overview data on rerender with the same inputs', async () => {

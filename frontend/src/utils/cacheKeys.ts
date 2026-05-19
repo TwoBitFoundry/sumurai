@@ -17,3 +17,11 @@ export function accountIdsCacheKey(
 
   return [...selectedAccountIds].sort().join(',');
 }
+
+export function accountRosterCacheKey(allAccountIds: string[]): string {
+  if (allAccountIds.length === 0) {
+    return 'roster:none';
+  }
+
+  return `roster:${[...allAccountIds].sort().join(',')}`;
+}
