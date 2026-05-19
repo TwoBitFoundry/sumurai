@@ -44,6 +44,10 @@ jest.mock('@/components/ErrorBoundary', () => ({
   ErrorBoundary: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 
+jest.mock('@/components/HeaderAccountFilter', () => ({
+  HeaderAccountFilter: () => <div data-testid="header-account-filter" />,
+}));
+
 jest.mock('@/views/AccountsPage', () => ({
   __esModule: true,
   default: () => <div>Accounts</div>,
@@ -69,6 +73,22 @@ jest.mock('@/views/TransactionsPage', () => ({
   default: () => <div>Transactions</div>,
 }));
 
+jest.mock('@/features/transactions/hooks/useTransactionFilterState', () => ({
+  useTransactionFilterState: () => ({
+    search: '',
+    setSearch: jest.fn(),
+    selectedCategory: null,
+    setSelectedCategory: jest.fn(),
+  }),
+}));
+
+jest.mock('@/features/transactions/hooks/useTransactionCategories', () => ({
+  useTransactionCategories: () => ({
+    categories: ['food_and_drink'],
+    loading: false,
+  }),
+}));
+
 function swipePage(offsetX: number, target: EventTarget | null = null) {
   act(() => {
     pageSwipeHandlers['page-swipe-container'].onPanStart?.({ target });
@@ -86,6 +106,20 @@ describe('AuthenticatedApp', () => {
 
     expect(screen.getByTestId('bottom-bar')).toHaveTextContent('1M');
     expect(screen.getByText('current-month')).toBeInTheDocument();
+  });
+
+  it('renders the budget month control in the bottom bar for the budgets tab', () => {
+    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="budgets" />);
+
+    expect(screen.getByTestId('budget-month-pill-slider')).toBeInTheDocument();
+    expect(screen.getByText('Budgets')).toBeInTheDocument();
+  });
+
+  it('renders transaction category filters in the bottom bar for the transactions tab', () => {
+    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="transactions" />);
+
+    expect(screen.getByTestId('transactions-search-bar')).toBeInTheDocument();
+    expect(screen.getByText('Transactions')).toBeInTheDocument();
   });
 
   it('handleTabChange updates currentTab on AppLayout in both directions', () => {

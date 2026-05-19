@@ -3,6 +3,7 @@ import { cn, GlassCard } from '@/ui/primitives';
 import {
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
+  radius as uiRadiusRecipes,
   status as uiStatusRecipes,
   surface as uiSurfaceRecipes,
   text as uiTextRecipes,
@@ -25,7 +26,7 @@ interface ProviderSelectionPanelProps {
 const panelClasses = cn(
   'relative',
   'overflow-hidden',
-  'rounded-[2.25rem]',
+  uiRadiusRecipes.standard,
   'border',
   ...uiBorderRecipes.glass,
   ...uiSurfaceRecipes.glassPanel,
@@ -60,7 +61,7 @@ export const ProviderSelectionPanel = ({
         className={cn(
           'relative',
           'overflow-hidden',
-          'rounded-[2.25rem]',
+          uiRadiusRecipes.standard,
           'border',
           ...uiStatusRecipes.danger.border,
           ...uiStatusRecipes.danger.surface,
@@ -92,7 +93,7 @@ export const ProviderSelectionPanel = ({
             className={cn(
               uiTypographyRecipes.pageTitle,
               uiTextRecipes.primary,
-              'sm:text-[2.25rem]'
+              'md:text-[2.25rem]'
             )}
           >
             Choose how you connect accounts
@@ -120,9 +121,12 @@ export const ProviderSelectionPanel = ({
                   'w-full',
                   'h-full',
                   'text-left',
-                  'transition-transform',
+                  'transition-all',
                   'duration-200',
+                  'ease-out',
                   'hover:-translate-y-[2px]',
+                  'active:scale-[0.98]',
+                  'disabled:active:scale-100',
                   'focus:outline-none',
                   'focus-visible:ring-2',
                   'focus-visible:ring-sky-400/80',
@@ -152,8 +156,10 @@ export const ProviderSelectionPanel = ({
                 >
                   <div className={cn('flex', 'h-full', 'flex-col', 'gap-4')}>
                     <div className={cn('flex', 'items-center', 'justify-between')}>
-                      <div className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>
-                        {details.title}
+                      <div className={cn('flex', 'items-center', 'gap-3')}>
+                        <div className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>
+                          {details.title}
+                        </div>
                       </div>
                       <span
                         className={cn(
@@ -194,7 +200,8 @@ export const ProviderSelectionPanel = ({
                         'inline-flex',
                         'items-center',
                         'justify-center',
-                        'rounded-full',
+                        'gap-2',
+                        uiRadiusRecipes.standard,
                         'bg-[var(--color-brand-sky)]',
                         'px-4',
                         'py-2',
@@ -203,6 +210,13 @@ export const ProviderSelectionPanel = ({
                         'shadow-[0_18px_48px_-32px_rgba(14,165,233,0.65)]'
                       )}
                     >
+                      {details.logoSrc ? (
+                        <img
+                          src={details.logoSrc}
+                          alt={`${details.title} logo`}
+                          className={cn('h-5', 'w-5', 'rounded-full', 'object-cover')}
+                        />
+                      ) : null}
                       {selectingProvider === provider ? 'Selecting…' : `Use ${details.title}`}
                     </div>
                   </div>

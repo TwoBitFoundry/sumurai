@@ -5,6 +5,7 @@ import {
   status as semanticStatus,
   surface as semanticSurfaces,
   text as semanticTextRecipes,
+  radius as uiRadiusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { cn } from './utils';
@@ -26,8 +27,8 @@ export const badgeRecipes = {
 } as const;
 
 export const badgeSizeStyles = {
-  xs: 'px-2 py-0.5 rounded-md',
-  sm: 'px-2.5 py-1 rounded-lg',
+  xs: `px-2 py-0.5 ${uiRadiusRecipes.standard}`,
+  sm: `px-2.5 py-1 ${uiRadiusRecipes.standard}`,
   md: 'px-3 py-1 rounded-full',
   lg: 'px-3.5 py-1.5 rounded-full',
 } as const;

@@ -31,7 +31,7 @@ export const gradientShellRecipes = {
     'bg-[radial-gradient(120%_120%_at_50%_55%,transparent_60%,rgba(15,23,42,0.1)_100%)] transition-opacity duration-700 ease-out dark:bg-[radial-gradient(120%_120%_at_50%_54%,transparent_58%,rgba(2,6,23,0.38)_100%)]',
   centerGlow:
     'rounded-full blur-3xl h-[72rem] w-[72rem] opacity-[0.28] animate-[rotateAura_95s_linear_infinite] bg-[conic-gradient(from_90deg,#93c5fd,#34d399,#fbbf24,#a78bfa,#fb7185,#93c5fd)] transition-opacity duration-500 dark:opacity-[0.4] dark:bg-[conic-gradient(from_110deg,#38bdf8,#34d399,#a78bfa,#fbbf24,#f87171,#38bdf8)]',
-  contentCentered: 'flex min-h-screen items-center justify-center px-4 py-12 sm:px-6',
+  contentCentered: 'flex min-h-screen items-center justify-center px-4 py-12 md:px-6',
 } as const;
 
 export interface GradientShellProps {

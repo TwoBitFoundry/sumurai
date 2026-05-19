@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { type RefObject, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { PlaidLinkOnExit, PlaidLinkOnSuccess } from 'react-plaid-link';
 import {
@@ -21,10 +21,13 @@ export type PlaidLinkSdkProps = {
   onScriptLoadFailed: () => void;
 };
 
-export const PlaidLinkSdk = forwardRef<PlaidLinkSdkHandle, PlaidLinkSdkProps>(function PlaidLinkSdk(
-  { token, onSuccess, onExit, onScriptLoadFailed },
-  ref
-) {
+export const PlaidLinkSdk = function PlaidLinkSdk({
+  token,
+  onSuccess,
+  onExit,
+  onScriptLoadFailed,
+  ref,
+}: PlaidLinkSdkProps & { ref?: RefObject<PlaidLinkSdkHandle | null> }) {
   const [handler, setHandler] = useState<PlaidLinkHandler | null>(null);
   const onSuccessRef = useRef(onSuccess);
   const onExitRef = useRef(onExit);
@@ -106,4 +109,4 @@ export const PlaidLinkSdk = forwardRef<PlaidLinkSdkHandle, PlaidLinkSdkProps>(fu
   }, [token]);
 
   return null;
-});
+};

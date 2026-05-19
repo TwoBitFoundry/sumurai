@@ -15,8 +15,7 @@ export const emptyStateRecipes = {
     'rounded-full',
     ...semanticSurfaces.card,
     semanticTextRecipes.muted,
-    'transition-all duration-300 ease-out',
-    'hover:scale-110 hover:-translate-y-1',
+    'transition-colors duration-300 ease-out',
     'hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
     'dark:text-slate-300',
     'dark:hover:shadow-[0_0_30px_var(--color-effect-accent-hover),0_0_60px_var(--color-effect-accent-hover)]',
@@ -65,7 +64,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center gap-4 px-6 py-20 text-center sm:px-12',
+        'flex flex-col items-center justify-center gap-4 px-6 py-20 text-center md:px-12',
         className
       )}
       {...props}

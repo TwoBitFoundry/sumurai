@@ -83,8 +83,9 @@ const filterProps = (props: Record<string, unknown>) => {
   return safe;
 };
 
-const createRechartsComponent = (name: string) =>
-  React.forwardRef<any, Record<string, unknown>>(({ children, ...rest }, ref) =>
+const createRechartsComponent =
+  (name: string) =>
+  ({ children, ref, ...rest }: Record<string, unknown> & { ref?: React.RefObject<any | null> }) =>
     React.createElement(
       'div',
       {
@@ -93,8 +94,7 @@ const createRechartsComponent = (name: string) =>
         ...filterProps(rest as Record<string, unknown>),
       },
       children as React.ReactNode
-    )
-  );
+    );
 
 jest.mock('recharts', () => {
   const ResponsiveContainer = ({

@@ -1,18 +1,18 @@
-import { AnimatePresence, motion } from 'framer-motion';
 import type React from 'react';
-import { cloneElement, isValidElement, useState } from 'react';
+import { Children, cloneElement, isValidElement, useState } from 'react';
 import {
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
   text as semanticTextRecipes,
+  radius as uiRadiusRecipes,
 } from '@/ui/recipes';
 import { cn } from './utils';
 
 export const menuDropdownRecipes = {
   content: [
     'absolute right-0 z-20 mt-3 w-48',
-    'overflow-hidden rounded-2xl',
+    `overflow-hidden ${uiRadiusRecipes.standard}`,
     ...semanticBorders.glass,
     ...semanticSurfaces.solidPanel,
     'p-2',
@@ -22,9 +22,9 @@ export const menuDropdownRecipes = {
   ],
   item: [
     'flex w-full items-center gap-2',
-    'rounded-xl px-3 py-2',
+    `px-3 py-2 ${uiRadiusRecipes.standard}`,
     `text-left ${semanticTextRecipes.muted}`,
-    'transition-all duration-200 ease-out',
+    'transition-all duration-200 ease-out active:scale-[0.98] disabled:active:scale-100',
     ...semanticSurfaces.hoverRow,
     'dark:text-slate-300',
     'dark:hover:bg-[var(--color-surface-hover-row)]',
@@ -39,7 +39,7 @@ export interface MenuDropdownProps {
 }
 
 /**
- * Dropdown menu with animated open/close transitions.
+ * Dropdown menu for action lists.
  *
  * @example
  * ```tsx
@@ -79,22 +79,27 @@ export function MenuDropdown({
     </button>
   );
 
+  const menuChildren = Children.map(children, (child) => {
+    if (!isValidElement<{ onClick?: React.MouseEventHandler }>(child)) {
+      return child;
+    }
+    const childOnClick = child.props.onClick;
+    return cloneElement(child, {
+      onClick: (event: React.MouseEvent) => {
+        childOnClick?.(event);
+        setOpen(false);
+      },
+    });
+  });
+
   return (
     <div className={cn('relative', className)}>
       {triggerNode}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            className={cn(menuDropdownRecipes.content, contentClassName)}
-            onClick={() => setOpen(false)}
-          >
-            {children}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {open ? (
+        <div className={cn(menuDropdownRecipes.content, contentClassName)} role="menu">
+          {menuChildren}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import type React from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { cn, EmptyState } from '@/ui/primitives';
 import { text as uiTextRecipes } from '@/ui/recipes';
+import { useDebouncedChartRecalc } from '../hooks/useDebouncedChartRecalc';
 
 const donutCenterTotalTypography = 'font-display text-2xl font-bold tracking-tight';
 
@@ -10,6 +11,7 @@ import { chart, getThemeColors } from '@/ui/tokens';
 import { useTheme } from '../../../context/ThemeContext';
 import { fmtUSD } from '../../../utils/format';
 import type { DonutDatum } from '../adapters/chartData';
+import { ChartGlassTooltip, chartTooltipRechartsProps } from './ChartGlassTooltip';
 
 type Props = {
   data: DonutDatum[];
@@ -39,6 +41,8 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
 }) => {
   const { mode } = useTheme();
   const colors = getThemeColors(mode);
+  const debouncedData = useDebouncedChartRecalc(data);
+  const debouncedTotal = useDebouncedChartRecalc(total);
   return (
     <div
       className={cn(
@@ -46,22 +50,35 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
         'relative',
         'flex',
         'flex-col',
-        'items-center',
+        'items-stretch',
         'justify-center',
-        'min-h-[260px]'
+        'min-h-[210px]',
+        'md:min-h-[280px]'
       )}
     >
-      {data.length > 0 ? (
-        <div className={cn('relative', 'h-[260px]', 'w-[260px]', 'min-w-0', 'shrink-0')}>
-          <ResponsiveContainer width={260} height={260}>
+      {debouncedData.length > 0 ? (
+        <div
+          className={cn(
+            'relative',
+            'aspect-square',
+            'w-full',
+            'max-w-[315px]',
+            'md:max-w-[260px]',
+            'min-w-0',
+            'shrink-0',
+            'self-center',
+            'mx-auto'
+          )}
+        >
+          <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 dataKey="value"
-                data={data}
+                data={debouncedData}
                 cx="50%"
                 cy="50%"
-                outerRadius={120}
-                innerRadius={70}
+                outerRadius="80%"
+                innerRadius="48%"
                 stroke="none"
                 paddingAngle={1}
                 nameKey="name"
@@ -69,7 +86,7 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
                 animationBegin={0}
                 animationDuration={animated ? 800 : 0}
               >
-                {data.map((cat, index) => {
+                {debouncedData.map((cat, index) => {
                   const palette = chart.series[mode];
                   const color = palette[index % palette.length];
                   const isHovered = hoveredCategory === cat.name;
@@ -77,7 +94,13 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
                     <Cell
                       key={`cell-${cat.name}`}
                       fill={color}
-                      stroke={isHovered ? colors.chart.tooltipText : 'none'}
+                      stroke={
+                        isHovered
+                          ? mode === 'light'
+                            ? colors.chart.dotFill
+                            : colors.chart.tooltipText
+                          : 'none'
+                      }
                       strokeWidth={isHovered ? 3 : 0}
                       onMouseEnter={() => setHoveredCategory(cat.name)}
                       onMouseLeave={() => setHoveredCategory(null)}
@@ -91,21 +114,10 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
                 })}
               </Pie>
               <Tooltip
-                contentStyle={{
-                  background: colors.chart.tooltipBg,
-                  border: `1px solid ${colors.chart.tooltipBorder}`,
-                  color: colors.chart.tooltipText,
-                  borderRadius: '8px',
-                  boxShadow:
-                    mode === 'dark'
-                      ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)'
-                      : '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                }}
-                itemStyle={{ color: colors.chart.tooltipText }}
-                labelStyle={{ color: colors.chart.tooltipText }}
-                formatter={tooltipFormatter}
+                content={(tooltipProps) => (
+                  <ChartGlassTooltip {...tooltipProps} formatter={tooltipFormatter} />
+                )}
+                {...chartTooltipRechartsProps}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -120,7 +132,7 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
             )}
           >
             <div className={cn(donutCenterTotalTypography, uiTextRecipes.primary)}>
-              {fmtUSD(total)}
+              {fmtUSD(debouncedTotal)}
             </div>
           </div>
         </div>

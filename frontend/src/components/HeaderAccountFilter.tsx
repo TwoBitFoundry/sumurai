@@ -1,12 +1,13 @@
-import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ChevronRight, Filter } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
-import { cn } from '@/ui/primitives';
+import { Button, cn } from '@/ui/primitives';
+import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import {
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
+  radius as uiRadiusRecipes,
   surface as uiSurfaceRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
@@ -20,7 +21,7 @@ interface HeaderAccountFilterProps {
 
 type PopoverPosition = {
   bottom: number;
-  right: number;
+  left: number;
 };
 
 export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountFilterProps) {
@@ -119,7 +120,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
       const triggerRect = trigger.getBoundingClientRect();
       setPopoverPosition({
         bottom: window.innerHeight - triggerRect.top + POPOVER_GAP_PX,
-        right: window.innerWidth - triggerRect.right,
+        left: triggerRect.left,
       });
     };
 
@@ -135,40 +136,69 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
 
   return (
     <div className={cn('relative')}>
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={handleKeyDown}
-        className={cn(
-          triggerStyle === 'icon-only' ? 'rounded-full' : 'rounded-xl',
-          'border',
-          triggerStyle === 'icon-only' ? uiBorderRecipes.glass : uiBorderRecipes.default,
-          ...(triggerStyle === 'icon-only'
-            ? uiSurfaceRecipes.glassPanel
-            : uiSurfaceRecipes.mutedChip),
-          ...(triggerStyle === 'icon-only' ? uiEffectRecipes.glassShadow : []),
-          triggerStyle === 'icon-only'
-            ? 'backdrop-blur-md backdrop-saturate-[150%]'
-            : 'backdrop-blur-sm',
-          'hover:bg-[var(--color-surface-hover-row)]',
-          'dark:hover:bg-[var(--color-surface-hover-row)]',
-          'transition-all',
-          'duration-200',
-          'flex',
-          'items-center',
-          triggerStyle === 'icon-only' ? 'gap-0' : 'gap-2',
-          uiTextRecipes.body,
-          uiTypographyRecipes.captionStrong,
-          triggerStyle === 'icon-only' ? 'h-11 w-11 justify-center p-0' : 'px-3 py-1.5'
-        )}
-        aria-haspopup="dialog"
-        aria-expanded={isOpen}
-        aria-label={triggerStyle === 'icon-only' ? 'Filter accounts' : undefined}
-      >
-        <Filter className={cn('h-4', 'w-4')} />
-        {triggerStyle === 'default' ? <span>{displayText}</span> : null}
-        {triggerStyle === 'default' ? (
+      {triggerStyle === 'icon-only' ? (
+        <nav className={cn(...appTitleBarRecipes.pillContainer)} aria-label="Account filter menu">
+          <Button
+            ref={triggerRef}
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            onKeyDown={handleKeyDown}
+            variant={isOpen ? 'tabActive' : 'tab'}
+            size="xs"
+            className={cn(
+              ...appTitleBarRecipes.pillTab,
+              'h-full',
+              isOpen ? uiTextRecipes.inverse : uiTextRecipes.muted
+            )}
+            aria-haspopup="dialog"
+            aria-expanded={isOpen}
+            aria-label="Filter accounts"
+          >
+            <span
+              className={cn(
+                'relative',
+                'z-10',
+                'flex',
+                'h-4',
+                'w-4',
+                'items-center',
+                'justify-center'
+              )}
+            >
+              <Filter className={cn('h-4', 'w-4')} />
+            </span>
+          </Button>
+        </nav>
+      ) : (
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          onKeyDown={handleKeyDown}
+          className={cn(
+            uiRadiusRecipes.standard,
+            'border',
+            uiBorderRecipes.default,
+            ...uiSurfaceRecipes.mutedChip,
+            'backdrop-blur-sm',
+            'hover:bg-[var(--color-surface-hover-row)]',
+            'dark:hover:bg-[var(--color-surface-hover-row)]',
+            'transition-all',
+            'duration-200',
+            'ease-out',
+            'active:scale-[0.98]',
+            'flex',
+            'items-center',
+            'gap-2',
+            uiTextRecipes.body,
+            uiTypographyRecipes.captionStrong,
+            'px-3 py-1.5'
+          )}
+          aria-haspopup="dialog"
+          aria-expanded={isOpen}
+        >
+          <Filter className={cn('h-4', 'w-4')} />
+          <span>{displayText}</span>
           <ChevronDown
             className={cn(
               'h-4',
@@ -178,188 +208,175 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
               isOpen && 'rotate-180'
             )}
           />
-        ) : null}
-      </button>
+        </button>
+      )}
 
       {mounted &&
         createPortal(
-          <AnimatePresence>
-            {isOpen && popoverPosition && (
-              <motion.div
-                role="dialog"
-                aria-label="Account filter"
-                onKeyDown={(e) => e.key === 'Escape' && closePopover()}
-                initial={{ opacity: 0, y: -6, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -6, scale: 0.96 }}
-                transition={{ duration: 0.18, ease: [0.22, 0.61, 0.36, 1] }}
-                style={{
-                  bottom: popoverPosition.bottom,
-                  right: popoverPosition.right,
-                }}
-                className={cn(
-                  'fixed',
-                  'w-80',
-                  'max-h-96',
-                  'flex',
-                  'flex-col',
-                  'overflow-hidden',
-                  'rounded-xl',
-                  'border',
-                  ...uiBorderRecipes.glass,
-                  ...uiSurfaceRecipes.card,
-                  ...uiEffectRecipes.glassShadow,
-                  'backdrop-blur-md',
-                  'backdrop-saturate-[150%]',
-                  'z-50',
-                  'origin-bottom-right'
-                )}
-              >
-                <div className={cn('p-4', 'border-b', ...uiBorderRecipes.divider)}>
-                  <div className={cn(uiTypographyRecipes.captionStrong, uiTextRecipes.primary)}>
-                    Filter by account
-                  </div>
+          isOpen && popoverPosition ? (
+            <div
+              role="dialog"
+              aria-label="Account filter"
+              onKeyDown={(e) => e.key === 'Escape' && closePopover()}
+              style={{
+                bottom: popoverPosition.bottom,
+                left: popoverPosition.left,
+              }}
+              className={cn(
+                'fixed',
+                'w-80',
+                'max-h-96',
+                'flex',
+                'flex-col',
+                'overflow-hidden',
+                uiRadiusRecipes.standard,
+                'border',
+                ...uiBorderRecipes.floatingChrome,
+                ...uiSurfaceRecipes.floatingChromePanel,
+                ...uiEffectRecipes.glassShadow,
+                'backdrop-blur-md',
+                'backdrop-saturate-[150%]',
+                'z-50'
+              )}
+            >
+              <div className={cn('p-4', 'border-b', ...uiBorderRecipes.divider)}>
+                <div className={cn(uiTypographyRecipes.captionStrong, uiTextRecipes.primary)}>
+                  Filter by account
                 </div>
+              </div>
 
-                <div className={cn('overflow-y-auto', 'flex-1', 'p-4')}>
-                  {loading ? (
-                    <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-                      Loading accounts...
-                    </div>
-                  ) : (
-                    <div className={cn('space-y-2')}>
-                      {Object.entries(accountsByBank).map(([bankName, accounts]) => {
-                        const bankAccountIds = accounts.map((account) => account.id);
-                        const allBankAccountsSelected = bankAccountIds.every((id) =>
-                          selectedAccountIds.includes(id)
-                        );
-                        const someBankAccountsSelected = bankAccountIds.some((id) =>
-                          selectedAccountIds.includes(id)
-                        );
-                        const isCollapsed = collapsedBanks.has(bankName);
+              <div className={cn('overflow-y-auto', 'flex-1', 'p-4')}>
+                {loading ? (
+                  <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
+                    Loading accounts...
+                  </div>
+                ) : (
+                  <div className={cn('space-y-2')}>
+                    {Object.entries(accountsByBank).map(([bankName, accounts]) => {
+                      const bankAccountIds = accounts.map((account) => account.id);
+                      const allBankAccountsSelected = bankAccountIds.every((id) =>
+                        selectedAccountIds.includes(id)
+                      );
+                      const someBankAccountsSelected = bankAccountIds.some((id) =>
+                        selectedAccountIds.includes(id)
+                      );
+                      const isCollapsed = collapsedBanks.has(bankName);
 
-                        return (
-                          <div
-                            key={bankName}
-                            className={cn(
-                              'border-t',
-                              ...uiBorderRecipes.divider,
-                              'pt-2',
-                              'first:border-t-0',
-                              'first:pt-0'
-                            )}
-                          >
-                            <div className={cn('flex', 'items-center', 'gap-2')}>
-                              <button
-                                type="button"
-                                onClick={() => toggleBankCollapse(bankName)}
+                      return (
+                        <div
+                          key={bankName}
+                          className={cn(
+                            'border-t',
+                            ...uiBorderRecipes.divider,
+                            'pt-2',
+                            'first:border-t-0',
+                            'first:pt-0'
+                          )}
+                        >
+                          <div className={cn('flex', 'items-center', 'gap-2')}>
+                            <button
+                              type="button"
+                              onClick={() => toggleBankCollapse(bankName)}
+                              className={cn(
+                                'p-1',
+                                'hover:bg-[var(--color-surface-hover-row)]',
+                                'dark:hover:bg-[var(--color-surface-hover-row)]',
+                                uiRadiusRecipes.standard,
+                                'transition-all',
+                                'duration-200',
+                                'ease-out',
+                                'active:scale-[0.98]'
+                              )}
+                              aria-label={
+                                isCollapsed ? `Expand ${bankName}` : `Collapse ${bankName}`
+                              }
+                            >
+                              <ChevronRight
                                 className={cn(
-                                  'p-1',
-                                  'hover:bg-[var(--color-surface-hover-row)]',
-                                  'dark:hover:bg-[var(--color-surface-hover-row)]',
-                                  'rounded',
-                                  'transition-colors'
-                                )}
-                                aria-label={
-                                  isCollapsed ? `Expand ${bankName}` : `Collapse ${bankName}`
-                                }
-                              >
-                                <ChevronRight
-                                  className={cn(
-                                    'h-4',
-                                    'w-4',
-                                    uiTextRecipes.muted,
-                                    'transition-transform',
-                                    !isCollapsed && 'rotate-90'
-                                  )}
-                                />
-                              </button>
-                              <input
-                                type="checkbox"
-                                id={`bank-${bankName}`}
-                                checked={allBankAccountsSelected}
-                                ref={(input) => {
-                                  if (input)
-                                    input.indeterminate =
-                                      someBankAccountsSelected && !allBankAccountsSelected;
-                                }}
-                                onChange={() => toggleBank(bankName)}
-                                className={cn(
-                                  'rounded',
-                                  ...uiBorderRecipes.control,
-                                  'text-primary-600',
-                                  'focus:ring-primary-500'
+                                  'h-4',
+                                  'w-4',
+                                  uiTextRecipes.muted,
+                                  'transition-transform',
+                                  !isCollapsed && 'rotate-90'
                                 )}
                               />
-                              <label
-                                htmlFor={`bank-${bankName}`}
-                                className={cn(
-                                  uiTypographyRecipes.captionStrong,
-                                  uiTextRecipes.primary,
-                                  'flex-1',
-                                  'cursor-pointer'
-                                )}
-                              >
-                                {bankName}
-                              </label>
-                            </div>
-
-                            <AnimatePresence initial={false}>
-                              {!isCollapsed && (
-                                <motion.div
-                                  key="accounts"
-                                  initial={{ opacity: 0, height: 0 }}
-                                  animate={{ opacity: 1, height: 'auto' }}
-                                  exit={{ opacity: 0, height: 0 }}
-                                  transition={{ duration: 0.18, ease: 'easeOut' }}
-                                  className={cn('ml-11', 'mt-2', 'space-y-2', 'overflow-hidden')}
-                                >
-                                  {accounts.map((account) => (
-                                    <div
-                                      key={account.id}
-                                      className={cn('flex', 'items-center', 'gap-2')}
-                                    >
-                                      <input
-                                        type="checkbox"
-                                        id={`account-${account.id}`}
-                                        checked={selectedAccountIds.includes(account.id)}
-                                        onChange={() => toggleAccount(account.id)}
-                                        className={cn(
-                                          'rounded',
-                                          ...uiBorderRecipes.control,
-                                          'text-primary-600',
-                                          'focus:ring-primary-500'
-                                        )}
-                                      />
-                                      <label
-                                        htmlFor={`account-${account.id}`}
-                                        className={cn(
-                                          uiTypographyRecipes.caption,
-                                          uiTextRecipes.muted,
-                                          'cursor-pointer'
-                                        )}
-                                      >
-                                        {account.name}
-                                      </label>
-                                    </div>
-                                  ))}
-                                </motion.div>
+                            </button>
+                            <input
+                              type="checkbox"
+                              id={`bank-${bankName}`}
+                              checked={allBankAccountsSelected}
+                              ref={(input) => {
+                                if (input)
+                                  input.indeterminate =
+                                    someBankAccountsSelected && !allBankAccountsSelected;
+                              }}
+                              onChange={() => toggleBank(bankName)}
+                              className={cn(
+                                'rounded',
+                                ...uiBorderRecipes.control,
+                                'text-primary-600',
+                                'focus:ring-primary-500'
                               )}
-                            </AnimatePresence>
+                            />
+                            <label
+                              htmlFor={`bank-${bankName}`}
+                              className={cn(
+                                uiTypographyRecipes.captionStrong,
+                                uiTextRecipes.primary,
+                                'flex-1',
+                                'cursor-pointer'
+                              )}
+                            >
+                              {bankName}
+                            </label>
                           </div>
-                        );
-                      })}
-                      {Object.keys(accountsByBank).length === 0 && !loading && (
-                        <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-                          No accounts available.
+
+                          {!isCollapsed ? (
+                            <div className={cn('ml-11', 'mt-2', 'space-y-2')}>
+                              {accounts.map((account) => (
+                                <div
+                                  key={account.id}
+                                  className={cn('flex', 'items-center', 'gap-2')}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    id={`account-${account.id}`}
+                                    checked={selectedAccountIds.includes(account.id)}
+                                    onChange={() => toggleAccount(account.id)}
+                                    className={cn(
+                                      'rounded',
+                                      ...uiBorderRecipes.control,
+                                      'text-primary-600',
+                                      'focus:ring-primary-500'
+                                    )}
+                                  />
+                                  <label
+                                    htmlFor={`account-${account.id}`}
+                                    className={cn(
+                                      uiTypographyRecipes.caption,
+                                      uiTextRecipes.muted,
+                                      'cursor-pointer'
+                                    )}
+                                  >
+                                    {account.name}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>,
+                      );
+                    })}
+                    {Object.keys(accountsByBank).length === 0 && !loading && (
+                      <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
+                        No accounts available.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null,
           document.body
         )}
     </div>

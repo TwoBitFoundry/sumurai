@@ -20,6 +20,9 @@ type Story = StoryObj<typeof meta>;
 
 const handlers = [
   route('GET', '/providers/accounts', () => jsonResponse(storyProviderAccounts)),
+  route('GET', '/analytics/balances/overview', () =>
+    jsonResponse(storyDashboardFixtures.balancesOverview)
+  ),
   route('GET', '/analytics/spending', () => jsonResponse(storyDashboardFixtures.spendingTotal)),
   route('GET', '/analytics/categories', () => jsonResponse(storyDashboardFixtures.categories)),
   route('GET', '/analytics/top-merchants', () => jsonResponse(storyDashboardFixtures.topMerchants)),
@@ -48,7 +51,7 @@ export const Journey: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await waitFor(() => {
-      expect(canvas.getByText(/overview of balances/i)).toBeVisible();
+      expect(canvas.getByRole('heading', { name: /balances overview/i })).toBeVisible();
     });
     await waitFor(() => {
       expect(canvas.getByText('Food And Drink')).toBeVisible();
@@ -61,6 +64,8 @@ export const Journey: Story = {
     }
 
     await userEvent.hover(foodLabel);
-    await expect(foodCard).toHaveClass('-translate-y-[2px]');
+    await waitFor(() => {
+      expect(foodCard.getAttribute('style')).toMatch(/border-color/i);
+    });
   },
 };

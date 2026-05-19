@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { cn } from '@/ui/primitives';
-import { text as uiTextRecipes } from '@/ui/recipes';
+import { radius as uiRadiusRecipes, text as uiTextRecipes } from '@/ui/recipes';
 import { GradientShell } from './GradientShell';
 
 const meta = {
@@ -11,7 +11,7 @@ const meta = {
     children: (
       <div
         className={cn(
-          'rounded-2xl',
+          uiRadiusRecipes.standard,
           'border',
           'border-white/10',
           'bg-white/60',

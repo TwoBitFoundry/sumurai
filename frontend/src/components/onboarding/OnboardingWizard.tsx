@@ -7,7 +7,7 @@ import { type OnboardingStep, useOnboardingWizard } from '@/hooks/useOnboardingW
 import { useScrollDetection } from '@/hooks/useScrollDetection';
 import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo';
 import type { FinancialProvider } from '@/types/api';
-import { AppFooter, AppTitleBar, Button, GlassCard, GradientShell } from '@/ui/primitives';
+import { AppTitleBar, Button, GlassCard, GradientShell } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
 import {
   border as uiBorderRecipes,
@@ -17,28 +17,6 @@ import {
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { CONNECT_ACCOUNT_PROVIDER_CONTENT } from '@/utils/providerCards';
-
-const wizardInsetRing = [
-  'absolute inset-0 rounded-[inherit]',
-  'ring-1 ring-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-1px_0_rgba(15,23,42,0.12)]',
-  'transition-colors duration-500 ease-out',
-  'dark:ring-white/10',
-  'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(2,6,23,0.45)]',
-] as const;
-const wizardSoftWash = [
-  'absolute inset-0 rounded-[inherit]',
-  'bg-[radial-gradient(120%_120%_at_14%_-8%,rgba(255,255,255,0.38)_0%,rgba(255,255,255,0.12)_42%,transparent_68%)]',
-  'opacity-80',
-  'transition-opacity duration-500 ease-out',
-  'dark:bg-[radial-gradient(120%_120%_at_16%_-10%,rgba(148,163,184,0.16)_0%,rgba(15,23,42,0.2)_38%,transparent_66%)]',
-] as const;
-const wizardBrandWash = [
-  'absolute inset-0 rounded-[inherit]',
-  'bg-[radial-gradient(132%_160%_at_82%_118%,rgba(14,165,233,0.22)_0%,rgba(56,189,248,0.18)_28%,rgba(167,139,250,0.22)_56%,rgba(251,191,36,0.2)_76%,transparent_88%)]',
-  'opacity-75',
-  'transition-opacity duration-500 ease-out',
-  'dark:bg-[radial-gradient(136%_160%_at_86%_122%,rgba(56,189,248,0.35)_0%,rgba(167,139,250,0.32)_48%,rgba(248,113,113,0.28)_68%,transparent_88%)]',
-] as const;
 
 import { ConnectAccountStep } from './ConnectAccountStep';
 import { WelcomeStep } from './WelcomeStep';
@@ -151,7 +129,25 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
   const connectionFlow = activeProvider === 'teller' ? tellerFlow : plaidFlow;
 
   const stepContainerRef = useRef<HTMLDivElement>(null);
+  const stepHeightsRef = useRef<Partial<Record<OnboardingStep, number>>>({});
   const [baselineHeight, setBaselineHeight] = useState<number | null>(null);
+
+  const measureStepBaseline = useCallback(() => {
+    const element = stepContainerRef.current;
+    if (!element) return;
+
+    const currentMinHeight = element.style.minHeight;
+    element.style.minHeight = '';
+    const naturalHeight = element.getBoundingClientRect().height;
+    element.style.minHeight = currentMinHeight;
+
+    if (naturalHeight <= 0) return;
+
+    const nextHeight = Math.ceil(naturalHeight);
+    stepHeightsRef.current[currentStep] = nextHeight;
+    const heights = Object.values(stepHeightsRef.current);
+    setBaselineHeight(heights.length > 0 ? Math.max(...heights) : nextHeight);
+  }, [currentStep]);
 
   useEffect(() => {
     if (isComplete) {
@@ -162,40 +158,40 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const element = stepContainerRef.current;
-    if (!element) return;
+    const frame = requestAnimationFrame(() => {
+      measureStepBaseline();
+    });
 
-    const measureNaturalHeight = () => {
-      const currentMinHeight = element.style.minHeight;
-      element.style.minHeight = '';
-      const naturalHeight = element.getBoundingClientRect().height;
-      element.style.minHeight = currentMinHeight;
-      return naturalHeight;
+    const element = stepContainerRef.current;
+    if (!element) {
+      return () => cancelAnimationFrame(frame);
+    }
+
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => {
+            measureStepBaseline();
+          })
+        : null;
+
+    resizeObserver?.observe(element);
+
+    const handleViewportChange = () => {
+      stepHeightsRef.current = {};
+      setBaselineHeight(null);
+      requestAnimationFrame(() => {
+        measureStepBaseline();
+      });
     };
 
-    const naturalHeight = measureNaturalHeight();
-    if (naturalHeight > 0) {
-      const nextHeight = Math.ceil(naturalHeight);
-      setBaselineHeight((prev) => (prev === null ? nextHeight : Math.max(prev, nextHeight)));
-    }
+    window.addEventListener('resize', handleViewportChange);
 
-    if (typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver(() => {
-        const naturalHeight = measureNaturalHeight();
-        if (naturalHeight > 0) {
-          const nextHeight = Math.ceil(naturalHeight);
-          setBaselineHeight((prev) => {
-            if (prev === null) return nextHeight;
-            if (nextHeight > prev) return nextHeight;
-            return prev;
-          });
-        }
-      });
-
-      observer.observe(element);
-      return () => observer.disconnect();
-    }
-  }, []);
+    return () => {
+      cancelAnimationFrame(frame);
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', handleViewportChange);
+    };
+  }, [measureStepBaseline]);
 
   const handleNext = async () => {
     if (isLastStep && currentStep === 'connectAccount' && connectionFlow.isConnected) {
@@ -261,8 +257,9 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
           {index < steps.length - 1 && (
             <span
               className={cn(
-                'h-px w-8',
-                ...uiBorderRecipes.divider,
+                'block h-px w-10 shrink-0',
+                'bg-[var(--color-border-divider)]',
+                index < stepIndex && 'bg-[var(--color-status-success-border)]',
                 'transition-colors duration-300 ease-out'
               )}
               aria-hidden="true"
@@ -287,7 +284,7 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
 
         <div className={cn('flex-1', 'flex', 'items-center', 'justify-center', 'px-4', 'py-8')}>
           <GlassCard
-            variant="auth"
+            variant="default"
             rounded="default"
             padding="lg"
             withInnerEffects={false}
@@ -296,29 +293,6 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
               'animate-[fadeSlideUp_400ms_ease-out]'
             )}
             className={cn('flex flex-col gap-8 lg:gap-10')}
-            beforeContent={
-              <div
-                className={cn(
-                  'pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] z-0'
-                )}
-              >
-                <div className={cn(wizardInsetRing)} />
-                <div className={cn(wizardSoftWash)} />
-                <div className={cn(wizardBrandWash)} />
-                <div
-                  className={cn(
-                    'absolute -left-24 top-16 h-60 w-60 rounded-full bg-sky-200/25 blur-3xl',
-                    'dark:bg-sky-500/25'
-                  )}
-                />
-                <div
-                  className={cn(
-                    'absolute -right-28 bottom-12 h-56 w-56 rounded-full bg-violet-200/25 blur-3xl',
-                    'dark:bg-violet-500/30'
-                  )}
-                />
-              </div>
-            }
           >
             <div className={cn('relative z-10 flex flex-col gap-8 lg:gap-10')}>
               <ol className={cn('flex items-center gap-3')} aria-label="Onboarding steps">
@@ -328,7 +302,7 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
               <div
                 ref={stepContainerRef}
                 style={baselineHeight ? { minHeight: baselineHeight } : undefined}
-                className={cn('flex-1', 'transition-[min-height] duration-500 ease-out')}
+                className={cn('transition-[min-height] duration-500 ease-out')}
               >
                 {renderCurrentStep()}
               </div>
@@ -336,7 +310,7 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
               <div
                 className={cn(
                   'flex flex-col items-start justify-between gap-3',
-                  'sm:flex-row sm:items-center',
+                  'md:flex-row md:items-center',
                   'animate-[fadeSlideUp_400ms_ease-out_200ms_backwards]'
                 )}
               >
@@ -352,7 +326,12 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
                   {providerContent.securityNote}
                 </p>
 
-                <div className={cn('flex flex-wrap items-center gap-3')}>
+                <div
+                  className={cn(
+                    'flex w-full flex-wrap items-center justify-end gap-3',
+                    'md:ml-auto md:w-auto'
+                  )}
+                >
                   {canGoBack && (
                     <Button variant="ghost" size="md" onClick={goToPrevious} className={cn('px-5')}>
                       Back
@@ -360,22 +339,17 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
                   )}
 
                   {currentStep === 'connectAccount' && (
-                    <Button
-                      variant="secondary"
-                      size="md"
-                      onClick={handleSkip}
-                      className={cn('px-5')}
-                    >
+                    <Button variant="ghost" size="md" onClick={handleSkip} className={cn('px-5')}>
                       Skip for now
                     </Button>
                   )}
 
                   <Button
-                    variant={connectionFlow.isConnected && isLastStep ? 'success' : 'connect'}
-                    size="lg"
+                    variant="connect"
+                    size="md"
                     onClick={handleNext}
                     disabled={!canProceed()}
-                    className={cn('px-6')}
+                    className={cn('px-5')}
                   >
                     {isLastStep && connectionFlow.isConnected ? 'Get started' : 'Continue'}
                   </Button>
@@ -384,8 +358,6 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
             </div>
           </GlassCard>
         </div>
-
-        <AppFooter />
       </div>
     </GradientShell>
   );

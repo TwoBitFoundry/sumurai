@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
+import { radius as uiRadiusRecipes } from '@/ui/recipes';
 import { AppLayout } from './AppLayout';
 
 const meta = {
@@ -35,7 +36,9 @@ export const Dashboard: Story = {
     currentTab: 'dashboard',
     isOnline: true,
     children: (
-      <div className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white/60 p-8 dark:border-slate-700 dark:bg-slate-900/40">
+      <div
+        className={`mx-auto max-w-5xl ${uiRadiusRecipes.standard} border border-slate-200 bg-white/60 p-8 dark:border-slate-700 dark:bg-slate-900/40`}
+      >
         Dashboard body placeholder
       </div>
     ),
@@ -55,7 +58,9 @@ export const TransactionsTab: Story = {
     currentTab: 'transactions',
     isOnline: true,
     children: (
-      <div className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white/60 p-8 dark:border-slate-700 dark:bg-slate-900/40">
+      <div
+        className={`mx-auto max-w-5xl ${uiRadiusRecipes.standard} border border-slate-200 bg-white/60 p-8 dark:border-slate-700 dark:bg-slate-900/40`}
+      >
         Transactions body placeholder
       </div>
     ),

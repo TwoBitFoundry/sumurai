@@ -29,6 +29,7 @@ interface ConnectionsListProps {
   isOnline: boolean;
   providerName?: string;
   connectLabel?: string;
+  connectLogoSrc?: string;
 }
 
 const ConnectionsList = ({
@@ -39,6 +40,7 @@ const ConnectionsList = ({
   isOnline,
   providerName,
   connectLabel,
+  connectLogoSrc,
 }: ConnectionsListProps) => {
   const headingProviderName = providerName ?? 'accounts';
   const connectButtonLabel = connectLabel ?? 'Add account';
@@ -54,6 +56,7 @@ const ConnectionsList = ({
             onClick={onConnect}
             disabled={!isOnline}
             title={!isOnline ? 'Unavailable while offline' : undefined}
+            leadingImageSrc={connectLogoSrc}
           >
             {connectButtonLabel}
           </ConnectButton>

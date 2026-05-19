@@ -1,5 +1,6 @@
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { Button, cn, Input, Select } from '@/ui/primitives';
+import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { formatCategoryName } from '../../../utils/categories';
 
 export interface BudgetFormValue {
@@ -23,14 +24,14 @@ export function BudgetForm({
   onCancel: () => void;
 }) {
   return (
-    <div className={cn('flex', 'w-full', 'flex-wrap', 'items-center', 'gap-2')}>
+    <div className={cn('flex', 'w-full', 'flex-col', 'gap-2')}>
       <Select
         data-testid="budget-category-select"
         value={value.category}
         onChange={(e) => onChange({ ...value, category: e.target.value })}
         variant="glass"
         selectSize="md"
-        className={cn('min-w-[180px]', 'flex-1')}
+        className={cn('w-full')}
       >
         <option value="" disabled>
           Select category
@@ -51,16 +52,23 @@ export function BudgetForm({
         value={value.amount}
         onChange={(e) => onChange({ ...value, amount: e.target.value })}
         variant="glass"
-        className={cn('min-w-[140px]', 'rounded-full')}
+        className={cn('w-full', 'rounded-full')}
       />
-      <Button data-testid="budget-save" onClick={onSave} variant="success">
-        <CheckIcon className={cn('h-4', 'w-4')} />
-        Save
-      </Button>
-      <Button onClick={onCancel} variant="ghost">
-        <XMarkIcon className={cn('h-4', 'w-4')} />
-        Cancel
-      </Button>
+      <div className={cn('flex', 'w-full', 'justify-end', 'gap-2')}>
+        <Button
+          onClick={onCancel}
+          variant="ghost"
+          size="md"
+          className={cn(appTitleBarRecipes.settingsIdle, 'normal-case')}
+        >
+          <XMarkIcon className={cn('h-4', 'w-4')} />
+          Cancel
+        </Button>
+        <Button data-testid="budget-save" onClick={onSave} variant="primary">
+          <CheckIcon className={cn('h-4', 'w-4')} />
+          Save
+        </Button>
+      </div>
     </div>
   );
 }

@@ -1,9 +1,7 @@
-import { motion } from 'framer-motion';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { cn } from '@/ui/primitives';
 import { appTitleBarRecipes, TABS } from '@/ui/primitives/AppTitleBar';
 import { Button } from '@/ui/primitives/Button';
-import { HeaderAccountFilter } from '../components/HeaderAccountFilter';
 import { useScrollDetection } from '../hooks/useScrollDetection';
 import { AppFooter, AppTitleBar } from '../ui/primitives';
 import { text as semanticTextRecipes } from '../ui/recipes';
@@ -29,13 +27,21 @@ export function AppLayout({
   className,
   bottomBarContent,
 }: AppLayoutProps) {
+  const mainBottomPadding = bottomBarContent
+    ? 'pb-[calc(8.75rem_+_env(safe-area-inset-bottom))]'
+    : 'pb-[calc(5.75rem_+_env(safe-area-inset-bottom))]';
   const scrolled = useScrollDetection();
   const footerRef = useRef<HTMLDivElement>(null);
   const [floatingVisible, setFloatingVisible] = useState(true);
+  const showFooter = currentTab === 'dashboard';
+  const showBottomChromeRow = Boolean(bottomBarContent);
 
   useEffect(() => {
     const el = footerRef.current;
-    if (!el) return;
+    if (!el) {
+      setFloatingVisible(true);
+      return;
+    }
     const observer = new IntersectionObserver(
       ([entry]) => setFloatingVisible(!entry.isIntersecting),
       { threshold: 0 }
@@ -43,6 +49,8 @@ export function AppLayout({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  const bottomBarRow = <div className={cn('flex w-full justify-center')}>{bottomBarContent}</div>;
 
   return (
     <div className={cn('flex', 'min-h-screen', 'flex-col', className)}>
@@ -60,53 +68,37 @@ export function AppLayout({
           className={cn(
             'flex-1',
             'overflow-hidden',
-            'pl-[calc(2rem_+_env(safe-area-inset-left))] pr-[calc(2rem_+_env(safe-area-inset-right))]',
-            'sm:pl-[calc(3rem_+_env(safe-area-inset-left))] sm:pr-[calc(3rem_+_env(safe-area-inset-right))]',
+            'pl-[calc(1rem_+_env(safe-area-inset-left))] pr-[calc(1rem_+_env(safe-area-inset-right))]',
+            'md:pl-[calc(3rem_+_env(safe-area-inset-left))] md:pr-[calc(3rem_+_env(safe-area-inset-right))]',
             'lg:pl-[calc(4rem_+_env(safe-area-inset-left))] lg:pr-[calc(4rem_+_env(safe-area-inset-right))]',
-            'pt-4 sm:pt-6 lg:pt-8',
-            'pb-4 md:pb-6 lg:pb-8'
+            'pt-3 md:pt-6 lg:pt-8',
+            mainBottomPadding
           )}
         >
           {children}
         </main>
 
-        {/* Desktop bottom controls */}
         <div
           className={cn(
-            'fixed bottom-5 left-0 right-0 z-50',
-            'hidden md:flex',
-            'min-h-[2.75rem] items-center justify-center px-4',
-            'transition-opacity duration-200',
-            floatingVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          )}
-        >
-          {bottomBarContent}
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-            <HeaderAccountFilter triggerStyle="icon-only" />
-          </div>
-        </div>
-
-        {/* Mobile bottom navigation bar */}
-        <div
-          className={cn(
-            'fixed bottom-4 left-0 right-0',
-            'md:hidden',
+            'fixed',
+            'bottom-4',
+            'left-0',
+            'right-0',
             'z-50',
-            'flex flex-col',
+            'flex',
+            'flex-col',
             'pb-[env(safe-area-inset-bottom)]',
-            'transition-opacity duration-200',
+            'transition-opacity',
+            'duration-200',
             floatingVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
           )}
         >
-          <div className={cn('relative flex min-h-[3.25rem] items-center justify-center px-4')}>
-            {bottomBarContent}
-            <div className="absolute right-4 top-1/2 -translate-y-1/2">
-              <HeaderAccountFilter triggerStyle="icon-only" />
-            </div>
-          </div>
+          {showBottomChromeRow ? (
+            <div className={cn('min-h-[3.25rem]', 'px-4')}>{bottomBarRow}</div>
+          ) : null}
 
-          <div className={cn('flex justify-center pt-1 pb-2')}>
-            <nav className={cn(...appTitleBarRecipes.pillContainer)} aria-label="Mobile primary">
+          <div className={cn('flex', 'justify-center', 'px-4', 'pt-1', 'pb-2')}>
+            <nav className={cn(...appTitleBarRecipes.pillContainer)} aria-label="Primary">
               {TABS.map(({ key, label, icon: Icon }) => (
                 <Button
                   key={key}
@@ -121,22 +113,16 @@ export function AppLayout({
                     currentTab === key ? semanticTextRecipes.inverse : semanticTextRecipes.muted
                   )}
                 >
-                  {currentTab === key ? (
-                    <motion.div
-                      layoutId="mobile-pill-active"
-                      data-slot="active-pill"
-                      className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
-                      transition={{ stiffness: 400, damping: 35 }}
-                    />
-                  ) : null}
-                  <Icon className="relative z-10 h-4 w-4" />
+                  <span className="relative z-10 flex h-4 w-4 items-center justify-center shrink-0">
+                    <Icon className="h-4 w-4" />
+                  </span>
                   <span
                     className={cn(
                       'relative z-10 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300',
                       currentTab === key ? 'max-w-[8rem] opacity-100' : 'max-w-0 opacity-0'
                     )}
                   >
-                    {label}
+                    <span className={cn(currentTab === key && 'ml-1.5')}>{label}</span>
                   </span>
                 </Button>
               ))}
@@ -144,9 +130,11 @@ export function AppLayout({
           </div>
         </div>
 
-        <div ref={footerRef}>
-          <AppFooter />
-        </div>
+        {showFooter ? (
+          <div ref={footerRef}>
+            <AppFooter />
+          </div>
+        ) : null}
       </div>
     </div>
   );

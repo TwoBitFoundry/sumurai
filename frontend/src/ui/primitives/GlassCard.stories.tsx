@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { cn } from '@/ui/primitives';
-import { text as uiTextRecipes } from '@/ui/recipes';
+import { radius as uiRadiusRecipes, text as uiTextRecipes } from '@/ui/recipes';
 import { GlassCard } from './GlassCard';
 
 const meta = {
@@ -58,7 +58,7 @@ export const Overflow: Story = {
 export const DarkCanvas: Story = {
   decorators: [
     (StoryEl) => (
-      <div className="dark min-h-[200px] rounded-3xl bg-slate-950 p-8">
+      <div className={`dark min-h-[200px] bg-slate-950 p-8 ${uiRadiusRecipes.standard}`}>
         <StoryEl />
       </div>
     ),

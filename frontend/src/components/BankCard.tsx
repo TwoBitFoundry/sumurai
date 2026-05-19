@@ -1,14 +1,21 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, MoreVertical, RefreshCw, Unlink } from 'lucide-react';
+import { ChevronDown, RefreshCw, Unlink } from 'lucide-react';
 import type React from 'react';
-import { useMemo, useState } from 'react';
-import { Button, cn, GlassCard, MenuDropdown, MenuItem } from '../ui/primitives';
+import { useState } from 'react';
+import {
+  ACCOUNT_GROUP_LABELS,
+  type AccountGroupKey,
+  accountTypeSortOrder,
+} from '../domain/accountCategories';
+import { getConnectionStatusCaption } from '../domain/connectionStatus';
+import { Button, cn, GlassCard } from '../ui/primitives';
+import { appTitleBarRecipes } from '../ui/primitives/AppTitleBar';
 import {
   border as uiBorderRecipes,
   status as uiStatusRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '../ui/recipes';
+import { AccountGroupIcon } from './AccountGroupIcon';
 import { AccountRow } from './AccountRow';
 import { DisconnectModal } from './DisconnectModal';
 import { StatusPill } from './StatusPill';
@@ -25,9 +32,9 @@ interface Account {
 interface BankConnection {
   id: string;
   name: string;
-  short: string; // initials for avatar
+  short: string;
   status: 'connected' | 'needs_reauth' | 'error';
-  lastSync?: string; // ISO date string
+  lastSync?: string;
   accounts: Account[];
 }
 
@@ -38,59 +45,14 @@ interface BankCardProps {
   isOnline: boolean;
 }
 
-const relativeTime = (iso?: string) => {
-  if (!iso) return 'just now';
-  const d = new Date(iso);
-  const diff = Date.now() - d.getTime();
-  const mins = Math.round(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.round(hrs / 24);
-  return `${days}d ago`;
-};
-
-const CardMenu: React.FC<{
-  onDisconnect: () => void;
-}> = ({ onDisconnect }) => {
-  return (
-    <MenuDropdown
-      trigger={
-        <Button variant="icon" size="icon" aria-label="more">
-          <MoreVertical className={cn('h-5', 'w-5')} />
-        </Button>
-      }
-    >
-      <MenuItem icon={<Unlink className={cn('h-4', 'w-4')} />} onClick={onDisconnect}>
-        Disconnect
-      </MenuItem>
-    </MenuDropdown>
-  );
-};
-
 export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect, isOnline }) => {
   const sectionBadgeClass = cn(uiTypographyRecipes.label, uiTextRecipes.muted);
+  const statusCaption = getConnectionStatusCaption(bank.status);
 
   const [expanded, setExpanded] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [disconnectLoading, setDisconnectLoading] = useState(false);
-
-  const Avatar = useMemo(
-    () => (
-      <GlassCard
-        variant="accent"
-        rounded="lg"
-        padding="sm"
-        withInnerEffects={false}
-        className={cn('grid', 'h-12', 'w-12', 'place-items-center', ...uiStatusRecipes.info.icon)}
-      >
-        <span className={cn(uiTypographyRecipes.bodyStrong)}>{bank.short}</span>
-      </GlassCard>
-    ),
-    [bank.short]
-  );
 
   const handleSync = async () => {
     setLoading(true);
@@ -113,9 +75,12 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect, 
     setShowDisconnectModal(false);
   };
 
-  const renderGroup = (title: string, accounts: Account[]) => (
-    <div key={title} className={cn('space-y-3')}>
-      <span className={sectionBadgeClass}>{title}</span>
+  const renderGroup = (group: AccountGroupKey, accounts: Account[]) => (
+    <div key={group} className={cn('space-y-3')}>
+      <span className={cn(sectionBadgeClass, 'inline-flex items-center gap-2')}>
+        <AccountGroupIcon group={group} />
+        {ACCOUNT_GROUP_LABELS[group]}
+      </span>
       <div className={cn('grid', 'grid-cols-1', 'gap-3', 'md:grid-cols-2')}>
         {accounts.map((account) => (
           <AccountRow account={account} key={account.id} />
@@ -127,93 +92,137 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect, 
   return (
     <GlassCard
       variant="accent"
-      rounded="xl"
-      padding="lg"
+      rounded="lg"
+      padding="none"
       withInnerEffects={false}
+      containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
       className={cn('space-y-6')}
     >
-      <div className={cn('flex', 'flex-col', 'gap-4', 'md:flex-row', 'md:gap-6')}>
-        <div className={cn('flex-1', 'space-y-3')}>
-          <div className={cn('flex', 'items-center', 'gap-3')}>
-            {Avatar}
-            <div className={cn('min-w-0', 'flex-1', 'space-y-1')}>
-              <h3 className={cn('truncate', uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>
-                {bank.name}
-              </h3>
-              <div className={cn('flex', 'items-center', 'gap-2', uiTypographyRecipes.caption)}>
-                <StatusPill status={bank.status} />
-                <span className={cn(uiTextRecipes.muted)}>
-                  {(() => {
-                    const label = relativeTime(bank.lastSync);
-                    const phrase =
-                      label === 'just now' || label.includes('ago') ? label : `${label} ago`;
-                    return `Last sync ${phrase}`;
-                  })()}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className={cn('flex', 'items-center', 'gap-2')}>
-          <Button
-            onClick={handleSync}
-            disabled={loading || !isOnline}
-            variant="secondary"
-            title={!isOnline ? 'Unavailable while offline' : undefined}
-          >
-            <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
-            {isOnline ? 'Sync now' : 'Offline'}
-          </Button>
-          <Button onClick={() => setExpanded((v) => !v)} variant="secondary">
-            <ChevronDown className={cn('h-4 w-4', expanded && 'rotate-180')} />
-            {expanded ? 'Hide' : 'Show'}
-          </Button>
-          <CardMenu onDisconnect={handleDisconnectClick} />
-        </div>
-      </div>
-
-      <AnimatePresence initial={false}>
-        {expanded && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className={cn('space-y-6', 'border-t', ...uiBorderRecipes.glass, 'pt-4')}
-          >
-            {(() => {
-              const sortedAccounts = bank.accounts.slice().sort((a, b) => {
-                const typeOrder = { checking: 1, savings: 1, credit: 2, loan: 3, other: 4 };
-                const aOrder = typeOrder[a.type] || 4;
-                const bOrder = typeOrder[b.type] || 4;
-
-                if (aOrder !== bOrder) {
-                  return aOrder - bOrder;
-                }
-
-                const aBalance = a.balance || 0;
-                const bBalance = b.balance || 0;
-                return bBalance - aBalance;
-              });
-
-              const cashAccounts = sortedAccounts.filter(
-                (a) => a.type === 'checking' || a.type === 'savings'
-              );
-              const debtAccounts = sortedAccounts.filter(
-                (a) => a.type === 'credit' || a.type === 'loan'
-              );
-              const investmentAccounts = sortedAccounts.filter((a) => a.type === 'other');
-
-              return (
-                <>
-                  {cashAccounts.length > 0 && renderGroup('Cash', cashAccounts)}
-                  {debtAccounts.length > 0 && renderGroup('Debt', debtAccounts)}
-                  {investmentAccounts.length > 0 && renderGroup('Investments', investmentAccounts)}
-                </>
-              );
-            })()}
-          </motion.div>
+      <div
+        className={cn(
+          'grid',
+          'min-w-0',
+          'grid-cols-[auto_minmax(0,1fr)_auto]',
+          'grid-rows-[auto_auto]',
+          'items-start',
+          'gap-x-3',
+          'gap-y-2'
         )}
-      </AnimatePresence>
+      >
+        <Button
+          type="button"
+          onClick={handleSync}
+          disabled={loading || !isOnline}
+          variant="ghost"
+          size="icon"
+          aria-label="Sync now"
+          title={!isOnline ? 'Unavailable while offline' : undefined}
+          className={cn(appTitleBarRecipes.settingsIdle, 'col-start-1', 'row-start-1', 'shrink-0')}
+        >
+          <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
+        </Button>
+        <Button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          variant="ghost"
+          size="icon"
+          aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
+          className={cn(appTitleBarRecipes.settingsIdle, 'col-start-1', 'row-start-2', 'shrink-0')}
+        >
+          <ChevronDown className={cn('h-4 w-4', expanded && 'rotate-180')} />
+        </Button>
+        <div
+          className={cn(
+            'col-start-2',
+            'row-span-2',
+            'row-start-1',
+            'grid',
+            'min-w-0',
+            'grid-cols-[auto_minmax(0,1fr)]',
+            'grid-rows-[2.5rem_auto]',
+            'gap-x-2',
+            'self-start'
+          )}
+        >
+          <div className={cn('col-start-1', 'row-start-1', 'flex', 'h-10', 'items-center')}>
+            <StatusPill status={bank.status} className={cn('shrink-0')} />
+          </div>
+          <h3
+            title={bank.name}
+            className={cn(
+              'col-start-2',
+              'row-start-1',
+              'row-span-2',
+              'min-w-0',
+              'line-clamp-2',
+              'break-words',
+              'pt-[calc((2.5rem-1.5rem*1.25)/2)]',
+              uiTypographyRecipes.sectionTitle,
+              uiTextRecipes.primary
+            )}
+          >
+            {bank.name}
+          </h3>
+        </div>
+        <Button
+          type="button"
+          onClick={handleDisconnectClick}
+          variant="danger"
+          size="icon"
+          aria-label="Disconnect"
+          className={cn('col-start-3', 'row-start-1', 'shrink-0')}
+        >
+          <Unlink className={cn('h-4 w-4')} />
+        </Button>
+        {statusCaption ? (
+          <p
+            className={cn(
+              'col-span-3',
+              'row-start-3',
+              uiTypographyRecipes.caption,
+              ...(bank.status === 'needs_reauth'
+                ? uiStatusRecipes.warning.text
+                : uiStatusRecipes.danger.text)
+            )}
+          >
+            {statusCaption}
+          </p>
+        ) : null}
+      </div>
+      {expanded ? (
+        <div className={cn('space-y-6', 'border-t', ...uiBorderRecipes.elevatedGlass, 'pt-4')}>
+          {(() => {
+            const sortedAccounts = bank.accounts.slice().sort((a, b) => {
+              const aOrder = accountTypeSortOrder[a.type] ?? 4;
+              const bOrder = accountTypeSortOrder[b.type] ?? 4;
+
+              if (aOrder !== bOrder) {
+                return aOrder - bOrder;
+              }
+
+              const aBalance = a.balance || 0;
+              const bBalance = b.balance || 0;
+              return bBalance - aBalance;
+            });
+
+            const cashAccounts = sortedAccounts.filter(
+              (a) => a.type === 'checking' || a.type === 'savings'
+            );
+            const creditAccounts = sortedAccounts.filter((a) => a.type === 'credit');
+            const investmentAccounts = sortedAccounts.filter((a) => a.type === 'other');
+            const loanAccounts = sortedAccounts.filter((a) => a.type === 'loan');
+
+            return (
+              <>
+                {cashAccounts.length > 0 && renderGroup('cash', cashAccounts)}
+                {creditAccounts.length > 0 && renderGroup('credit', creditAccounts)}
+                {investmentAccounts.length > 0 && renderGroup('investments', investmentAccounts)}
+                {loanAccounts.length > 0 && renderGroup('loans', loanAccounts)}
+              </>
+            );
+          })()}
+        </div>
+      ) : null}
 
       <DisconnectModal
         isOpen={showDisconnectModal}

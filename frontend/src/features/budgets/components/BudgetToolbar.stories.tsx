@@ -27,7 +27,7 @@ export const Default: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: /previous month/i }));
     await userEvent.click(canvas.getByRole('button', { name: /next month/i }));
-    await userEvent.click(canvas.getByRole('button', { name: /this month/i }));
+    await userEvent.click(canvas.getByRole('button', { name: /^now$/i }));
     await userEvent.click(canvas.getByRole('button', { name: /add budget/i }));
 
     await expect(args.onPreviousMonth).toHaveBeenCalledTimes(1);

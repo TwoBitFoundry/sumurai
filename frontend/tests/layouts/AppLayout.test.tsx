@@ -1,14 +1,16 @@
 import { render } from '@testing-library/react';
 import { AppLayout } from '@/layouts/AppLayout';
 
-jest.mock('@/ui/primitives/AppTitleBar', () => ({
-  AppTitleBar: () => <header data-testid="app-title-bar" />,
-  TABS: [],
-  appTitleBarRecipes: {
-    pillContainer: [],
-    pillTab: [],
-  },
-}));
+jest.mock('@/ui/primitives/AppTitleBar', () => {
+  const actual = jest.requireActual<typeof import('@/ui/primitives/AppTitleBar')>(
+    '@/ui/primitives/AppTitleBar'
+  );
+  return {
+    AppTitleBar: () => <header data-testid="app-title-bar" />,
+    TABS: actual.TABS,
+    appTitleBarRecipes: actual.appTitleBarRecipes,
+  };
+});
 
 jest.mock('@/ui/primitives/AppFooter', () => ({
   AppFooter: () => <footer data-testid="app-footer" />,
@@ -37,5 +39,84 @@ describe('AppLayout', () => {
     expect(root).toHaveClass('flex');
     expect(root).toHaveClass('flex-col');
     expect(main).toHaveClass('flex-1');
+    expect(main).toHaveClass('md:pl-[calc(3rem_+_env(safe-area-inset-left))]');
+    expect(main).toHaveClass('md:pt-6');
+    expect(main).toHaveClass('lg:pl-[calc(4rem_+_env(safe-area-inset-left))]');
+    expect(main).not.toHaveClass('sm:pl-[calc(3rem_+_env(safe-area-inset-left))]', 'sm:pt-6');
+  });
+
+  it('shows the footer on the dashboard tab only', () => {
+    const { rerender, queryByTestId } = render(
+      <AppLayout currentTab="dashboard" onTabChange={jest.fn()} onLogout={jest.fn()} isOnline>
+        <div>Content</div>
+      </AppLayout>
+    );
+
+    expect(queryByTestId('app-footer')).toBeInTheDocument();
+
+    rerender(
+      <AppLayout currentTab="transactions" onTabChange={jest.fn()} onLogout={jest.fn()} isOnline>
+        <div>Content</div>
+      </AppLayout>
+    );
+
+    expect(queryByTestId('app-footer')).not.toBeInTheDocument();
+  });
+
+  it('uses stacked bottom padding when contextual content is present', () => {
+    const { container } = render(
+      <AppLayout
+        currentTab="budgets"
+        onTabChange={jest.fn()}
+        onLogout={jest.fn()}
+        isOnline
+        bottomBarContent={<div>Controls</div>}
+      >
+        <div>Content</div>
+      </AppLayout>
+    );
+
+    expect(container.querySelector('main')).toHaveClass(
+      'pb-[calc(8.75rem_+_env(safe-area-inset-bottom))]'
+    );
+  });
+
+  it('always renders the floating primary tab bar', () => {
+    const { container } = render(
+      <AppLayout currentTab="dashboard" onTabChange={jest.fn()} onLogout={jest.fn()} isOnline>
+        <div>Content</div>
+      </AppLayout>
+    );
+
+    expect(container.querySelector('nav[aria-label="Primary"]')).toBeTruthy();
+    expect(container.querySelector('.fixed.bottom-4')).toBeTruthy();
+  });
+
+  it('centers bottom contextual content', () => {
+    const { container } = render(
+      <AppLayout
+        currentTab="dashboard"
+        onTabChange={jest.fn()}
+        onLogout={jest.fn()}
+        isOnline
+        bottomBarContent={<div data-testid="contextual-menu">Menu</div>}
+      >
+        <div>Content</div>
+      </AppLayout>
+    );
+
+    expect(container.querySelector('.min-h-\\[3\\.25rem\\] > .flex.justify-center')).toBeTruthy();
+    expect(container.querySelector('[data-testid="contextual-menu"]')).toBeInTheDocument();
+  });
+
+  it('omits stacked bottom chrome row on accounts when there is no contextual content', () => {
+    const { container, queryByTestId } = render(
+      <AppLayout currentTab="accounts" onTabChange={jest.fn()} onLogout={jest.fn()} isOnline>
+        <div>Content</div>
+      </AppLayout>
+    );
+
+    expect(queryByTestId('header-account-filter')).not.toBeInTheDocument();
+    expect(container.querySelector('.min-h-\\[3\\.25rem\\]')).not.toBeInTheDocument();
   });
 });

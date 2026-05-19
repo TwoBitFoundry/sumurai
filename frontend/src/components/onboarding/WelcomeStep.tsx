@@ -5,6 +5,7 @@ import {
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
+  radius as uiRadiusRecipes,
   status as uiStatusRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
@@ -29,12 +30,10 @@ type WelcomeFeature = {
 };
 
 const onboardingStepCard = [
-  'group relative overflow-hidden rounded-2xl p-4',
+  `relative overflow-hidden ${uiRadiusRecipes.standard} p-4`,
   ...semanticBorders.subtle,
   ...semanticSurfaces.card,
   ...semanticEffects.glassShadow,
-  'transition-all duration-300 ease-out hover:-translate-y-[2px]',
-  ...semanticEffects.accentHover,
 ] as const;
 
 const onboardingIconWell = [
@@ -42,9 +41,6 @@ const onboardingIconWell = [
   ...semanticSurfaces.insetWell,
   'ring-1 ring-inset',
 ] as const;
-
-const onboardingHoverOverlay =
-  'pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20';
 
 const onboardingIconGlow =
   'absolute inset-[20%] rounded-full bg-[var(--color-effect-accent-hover)] opacity-20 blur-[6px] dark:bg-[var(--color-effect-accent-hover)] dark:opacity-[0.18]';
@@ -64,10 +60,10 @@ const onboardingEyebrowCaps = [
   'uppercase transition-colors duration-300 ease-out',
 ] as const;
 const onboardingPreviewFrame = [
-  'relative aspect-[16/10] overflow-hidden rounded-2xl',
+  `relative aspect-[16/10] overflow-hidden ${uiRadiusRecipes.standard}`,
   ...semanticBorders.subtle,
   'bg-[var(--color-surface-overlay)]',
-  'shadow-lg sm:aspect-[18/10]',
+  'shadow-lg md:aspect-[18/10]',
 ] as const;
 
 const welcomeFeatures: WelcomeFeature[] = [
@@ -94,16 +90,7 @@ const welcomeFeatures: WelcomeFeature[] = [
 function FeatureCard({ icon: Icon, title, copy, palette }: WelcomeFeature) {
   return (
     <div className={cn(onboardingStepCard)}>
-      <div className={cn(onboardingHoverOverlay)} />
-      <span
-        className={cn(
-          onboardingIconWell,
-          palette.ring,
-          palette.glow,
-          'transition-all duration-200 ease-out group-hover:scale-105'
-        )}
-        aria-hidden="true"
-      >
+      <span className={cn(onboardingIconWell, palette.ring, palette.glow)} aria-hidden="true">
         <span className={cn('absolute inset-0 bg-gradient-to-br', palette.gradient)} />
         <span className={cn(onboardingIconGlow)} />
         <Icon
@@ -123,7 +110,7 @@ export function WelcomeStep() {
       className={cn(
         'grid items-start gap-8',
         'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]',
-        'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]'
+        'md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]'
       )}
     >
       <div className={cn('flex flex-col gap-8')}>
@@ -170,7 +157,7 @@ export function WelcomeStep() {
 
         <div className={cn('flex flex-col gap-4')}>
           <div className={cn(onboardingEyebrowCaps)}>What you'll see</div>
-          <div className={cn('grid gap-3 sm:grid-cols-3')}>
+          <div className={cn('grid gap-3 md:grid-cols-3')}>
             {welcomeFeatures.map((feature) => (
               <FeatureCard key={feature.title} {...feature} />
             ))}
@@ -181,7 +168,7 @@ export function WelcomeStep() {
       <div className={cn('relative flex flex-col self-start')}>
         <div
           className={cn(
-            'mb-3 mt-[52px] flex items-center justify-between sm:mb-4',
+            'mb-3 mt-[52px] flex items-center justify-between md:mb-4',
             onboardingEyebrowCaps
           )}
         >

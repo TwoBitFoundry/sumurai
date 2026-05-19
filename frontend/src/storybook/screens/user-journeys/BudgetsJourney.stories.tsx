@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { useBudgetMonth } from '@/features/budgets/hooks/useBudgetMonth';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import BudgetsPage from '@/views/BudgetsPage';
 import {
@@ -65,11 +66,12 @@ const handlers = [
 ];
 
 function BudgetsJourney() {
+  const monthControl = useBudgetMonth();
   storyBudgets = storyBudgetRecords.map((budget) => ({ ...budget }));
   return (
     <AccountFilterStoryProvider>
       <StoryApiScope handlers={handlers}>
-        <BudgetsPage />
+        <BudgetsPage monthControl={monthControl} />
       </StoryApiScope>
     </AccountFilterStoryProvider>
   );

@@ -4,6 +4,8 @@ import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { TransactionService } from '../../../services/TransactionService';
 import type { PaginatedTransactionsResponse, Transaction } from '../../../types/api';
 import { accountIdsCacheKey } from '../../../utils/cacheKeys';
+import { useTransactionCategories } from './useTransactionCategories';
+import type { TransactionFilterControl } from './useTransactionFilterState';
 
 export type DateRangeKey = string | undefined;
 
@@ -12,6 +14,7 @@ export interface UseTransactionsOptions {
   initialCategory?: string | null;
   initialDateRange?: DateRangeKey;
   pageSize?: number;
+  filterControl?: TransactionFilterControl;
 }
 
 export interface UseTransactionsResult {
@@ -35,10 +38,20 @@ export interface UseTransactionsResult {
 }
 
 export function useTransactions(options: UseTransactionsOptions = {}): UseTransactionsResult {
-  const { initialSearch = '', initialCategory = null, initialDateRange, pageSize = 10 } = options;
+  const {
+    initialSearch = '',
+    initialCategory = null,
+    initialDateRange,
+    pageSize = 10,
+    filterControl,
+  } = options;
 
-  const [search, setSearchState] = useState(initialSearch);
-  const [selectedCategory, setSelectedCategoryState] = useState<string | null>(initialCategory);
+  const [internalSearch, setSearchState] = useState(initialSearch);
+  const [internalSelectedCategory, setSelectedCategoryState] = useState<string | null>(
+    initialCategory
+  );
+  const search = filterControl?.search ?? internalSearch;
+  const selectedCategory = filterControl?.selectedCategory ?? internalSelectedCategory;
   const [dateRange, setDateRangeState] = useState<DateRangeKey>(initialDateRange);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -111,22 +124,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     gcTime: 60 * 1000,
   });
 
-  const categoriesQuery = useQuery({
-    queryKey: ['transactions', 'categories'],
-    queryFn: async (): Promise<string[]> => {
-      try {
-        const serverCategories = await TransactionService.getTransactionCategories();
-        return Array.isArray(serverCategories) ? serverCategories : [];
-      } catch {
-        return [];
-      }
-    },
-    enabled: !accountsLoading,
-    staleTime: 60 * 1000,
-    gcTime: 60 * 1000,
-  });
-
-  const categories = categoriesQuery.data ?? [];
+  const { categories } = useTransactionCategories();
 
   useEffect(() => {
     if (accountsLoading) {
@@ -166,15 +164,29 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
   const isLoading =
     !accountsLoading && query.fetchStatus === 'fetching' && query.data === undefined;
 
-  const setSearch = useCallback((value: string) => {
-    setSearchState(value);
-    setCurrentPage(1);
-  }, []);
+  const setSearch = useCallback(
+    (value: string) => {
+      if (filterControl) {
+        filterControl.setSearch(value);
+      } else {
+        setSearchState(value);
+      }
+      setCurrentPage(1);
+    },
+    [filterControl]
+  );
 
-  const setSelectedCategory = useCallback((value: string | null) => {
-    setSelectedCategoryState(value);
-    setCurrentPage(1);
-  }, []);
+  const setSelectedCategory = useCallback(
+    (value: string | null) => {
+      if (filterControl) {
+        filterControl.setSelectedCategory(value);
+      } else {
+        setSelectedCategoryState(value);
+      }
+      setCurrentPage(1);
+    },
+    [filterControl]
+  );
 
   const setDateRange = useCallback((value: DateRangeKey) => {
     setDateRangeState(value);

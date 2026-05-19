@@ -9,12 +9,30 @@ describe('invalidateStaleCacheQueries', () => {
 
     await invalidateStaleCacheQueries(queryClient, ['plaid', 'teller', 'plaid']);
 
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['accounts'] });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['transactions'] });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['analytics'] });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['budgets'] });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['plaid', 'connections'] });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['teller', 'connections'] });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['accounts'],
+      refetchType: 'all',
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['transactions'],
+      refetchType: 'all',
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['analytics'],
+      refetchType: 'all',
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['budgets'],
+      refetchType: 'all',
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['plaid', 'connections'],
+      refetchType: 'all',
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['teller', 'connections'],
+      refetchType: 'all',
+    });
     expect(invalidateQueries).toHaveBeenCalledTimes(6);
   });
 });

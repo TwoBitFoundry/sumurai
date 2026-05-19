@@ -23,8 +23,20 @@ export const DashboardChartCard = ({
   children,
 }: DashboardChartCardProps) => {
   return (
-    <GlassCard className={cn('p-6', 'h-full', 'flex', 'flex-col', className)}>
-      <div className={cn('mb-4', 'flex', 'items-center', 'justify-between')}>
+    <GlassCard
+      padding="none"
+      containerClassName={cn(
+        'h-full',
+        'overflow-visible',
+        'p-4',
+        'pt-5',
+        'md:p-8',
+        'lg:p-8',
+        className
+      )}
+      className={cn('flex', 'h-full', 'min-h-0', 'flex-col', 'overflow-visible')}
+    >
+      <div className={cn('mb-3', 'md:mb-4', 'flex', 'items-center', 'justify-between')}>
         <div>
           <h3 className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>{title}</h3>
           <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>{description}</p>
@@ -36,7 +48,19 @@ export const DashboardChartCard = ({
           />
         )}
       </div>
-      <div className={cn('flex-1', 'min-h-0', 'min-w-0', bodyClassName)}>{children}</div>
+      <div
+        className={cn(
+          'flex',
+          'min-h-[240px]',
+          'flex-1',
+          'flex-col',
+          'min-w-0',
+          'overflow-visible',
+          bodyClassName
+        )}
+      >
+        {children}
+      </div>
     </GlassCard>
   );
 };

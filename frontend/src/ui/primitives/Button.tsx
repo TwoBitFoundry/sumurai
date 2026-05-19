@@ -1,12 +1,15 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import React from 'react';
+import type React from 'react';
 import {
+  buttonChrome,
+  buttonCta,
   chrome,
   border as semanticBorders,
   effect as semanticEffects,
   status as semanticStatus,
   surface as semanticSurfaces,
   text as semanticTextRecipes,
+  radius as uiRadiusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { cn } from './utils';
@@ -30,20 +33,24 @@ export const connectButtonRecipes = {
     'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none',
   ],
   secondary: [
-    ...semanticBorders.subtle,
+    ...buttonChrome.secondary,
     ...semanticSurfaces.card,
     semanticTextRecipes.muted,
     ...semanticEffects.glassShadow,
-    'hover:border-[var(--color-border-hover-accent)] hover:text-[var(--color-text-primary)]',
+    'hover:border-[var(--color-border-default)] hover:text-[var(--color-text-primary)]',
     'dark:text-[#cbd5e1]',
-    'dark:hover:border-[var(--color-border-hover-accent)] dark:hover:text-white',
+    'dark:hover:border-[var(--color-border-default)] dark:hover:text-white',
   ],
 } as const;
 
 export const buttonRecipes = {
   base: [
     'inline-flex items-center justify-center gap-2',
+    'cursor-pointer',
+    'uppercase',
     'transition-all duration-200 ease-out',
+    'active:scale-[0.98]',
+    'disabled:active:scale-100',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-slate-900',
     'disabled:cursor-not-allowed disabled:opacity-60',
   ],
@@ -55,34 +62,45 @@ export const buttonRecipes = {
     'disabled:hover:translate-y-0',
   ],
   secondary: [
-    ...semanticBorders.subtle,
+    ...buttonChrome.secondary,
     ...semanticSurfaces.card,
     semanticTextRecipes.muted,
     ...semanticEffects.glassShadow,
-    'hover:border-[var(--color-border-hover-accent)] hover:text-slate-900',
+    'hover:border-[var(--color-border-default)] hover:text-slate-900',
     'hover:shadow-[0_14px_32px_-18px_var(--color-effect-accent-hover)]',
     'dark:text-slate-300',
-    'dark:hover:border-[var(--color-border-hover-accent)] dark:hover:text-white',
+    'dark:hover:border-[var(--color-border-default)] dark:hover:text-white',
   ],
   ghost: [
-    ...semanticBorders.glass,
+    ...buttonChrome.ghost,
     ...semanticSurfaces.glassPanel,
     semanticTextRecipes.primary,
     'hover:-translate-y-0.5',
+    'hover:border-[var(--color-border-control)]',
+    'dark:hover:border-[color:color-mix(in_srgb,var(--color-border-glass)_20%,transparent)]',
     ...semanticEffects.glassShadow,
     'dark:text-slate-200',
   ],
   icon: [
-    'border border-transparent',
+    ...buttonChrome.muted,
     ...semanticSurfaces.mutedChip,
     semanticTextRecipes.muted,
     ...semanticEffects.glassShadow,
-    'hover:-translate-y-[1px] hover:border-[var(--color-border-hover-accent)]',
+    'hover:-translate-y-[1px] hover:border-[var(--color-border-default)]',
     'hover:text-slate-900',
     'dark:text-slate-400',
-    'dark:hover:border-[var(--color-border-hover-accent)] dark:hover:text-white',
+    'dark:hover:border-[var(--color-border-default)] dark:hover:text-white',
   ],
-  tab: ['group relative', 'overflow-hidden', 'backdrop-blur-sm'],
+  tab: [
+    'group',
+    'relative',
+    'overflow-hidden',
+    'border-transparent',
+    'bg-transparent',
+    'shadow-none',
+    'hover:-translate-y-0.5',
+    'disabled:hover:translate-y-0',
+  ],
   tabActive: [
     'group relative',
     'overflow-hidden',
@@ -98,27 +116,27 @@ export const buttonRecipes = {
     'dark:shadow-[0_16px_38px_-18px_rgba(56,189,248,0.55)]',
   ],
   danger: [
-    ...semanticBorders.danger,
+    'border',
+    ...semanticStatus.danger.border,
     ...semanticStatus.danger.surface,
-    semanticTextRecipes.danger,
+    ...semanticStatus.danger.text,
+    ...semanticEffects.glassShadow,
+    'hover:-translate-y-0.5',
     'hover:bg-[var(--color-status-danger-strong-surface)]',
+    'disabled:hover:translate-y-0',
     'dark:hover:bg-[color:color-mix(in_srgb,var(--color-status-danger-strong-surface)_46%,transparent)]',
   ],
   success: [
-    'bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400',
+    ...buttonCta.gradient,
     semanticTextRecipes.inverse,
-    'shadow-[0_20px_55px_-28px_rgba(16,185,129,0.65)]',
-    'hover:-translate-y-[3px]',
-    'disabled:hover:translate-y-0',
+    ...buttonCta.shadow,
+    ...buttonCta.hover,
   ],
   connect: [
-    'bg-gradient-to-r from-[#0ea5e9] via-[#38bdf8] to-[#a78bfa]',
+    ...buttonCta.gradient,
     semanticTextRecipes.inverse,
-    'shadow-[0_22px_60px_-32px_rgba(14,165,233,0.78)]',
-    'hover:-translate-y-[1px]',
-    'hover:shadow-[0_28px_70px_-35px_rgba(14,165,233,0.85)]',
-    'active:scale-[0.98]',
-    'dark:shadow-[0_22px_60px_-32px_rgba(56,189,248,0.65)]',
+    ...buttonCta.shadow,
+    ...buttonCta.hover,
   ],
 } as const;
 
@@ -139,9 +157,9 @@ const buttonVariants = cva([...buttonRecipes.base], {
       xs: `${buttonTypographySizes.xs} ${chrome.xs}`,
       sm: `${buttonTypographySizes.sm} ${chrome.sm}`,
       titleBarExpanded: `${titleBarChromeExpandedTypography} ${chrome.sm}`,
-      md: `${buttonTypographySizes.md} px-4 py-2 rounded-full`,
-      lg: `${buttonTypographySizes.lg} px-5 py-2.5 rounded-full`,
-      icon: 'h-10 w-10 rounded-full',
+      md: `${buttonTypographySizes.md} px-4 py-2 ${uiRadiusRecipes.standard}`,
+      lg: `${buttonTypographySizes.lg} px-5 py-2.5 ${uiRadiusRecipes.standard}`,
+      icon: `h-10 w-10 ${uiRadiusRecipes.standard}`,
     },
   },
   defaultVariants: {
@@ -169,20 +187,27 @@ export interface ButtonProps
  *
  * @see {@link ../README.md} for detailed variant documentation
  */
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant, size, loading, disabled, className, children, ...props }, ref) => {
-    return (
-      <button
-        ref={ref}
-        disabled={disabled || loading}
-        className={cn(buttonVariants({ variant, size }), className)}
-        {...props}
-      >
-        {children}
-      </button>
-    );
-  }
-);
+export const Button = ({
+  variant,
+  size,
+  loading,
+  disabled,
+  className,
+  children,
+  ref,
+  ...props
+}: ButtonProps & { ref?: React.RefObject<HTMLButtonElement | null> }) => {
+  return (
+    <button
+      ref={ref}
+      disabled={disabled || loading}
+      className={cn(buttonVariants({ variant, size }), className)}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
 
 Button.displayName = 'Button';
 

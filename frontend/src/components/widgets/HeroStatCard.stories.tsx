@@ -32,3 +32,20 @@ export const LastSync: Story = {
     subtext: 'Balances refreshed automatically',
   },
 };
+
+export const LongFooter: Story = {
+  args: {
+    index: 2,
+    title: 'Accounts tracked',
+    value: 3,
+    suffix: 'accounts',
+    subtext: 'Balances stay in sync automatically',
+  },
+  decorators: [
+    (Story) => (
+      <div className="max-w-[11rem]">
+        <Story />
+      </div>
+    ),
+  ],
+};

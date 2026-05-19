@@ -1,6 +1,12 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import React from 'react';
-import { text as semanticTextRecipes } from '@/ui/recipes';
+import type React from 'react';
+import {
+  border as semanticBorders,
+  effect as semanticEffects,
+  surface as semanticSurfaces,
+  text as semanticTextRecipes,
+  radius as uiRadiusRecipes,
+} from '@/ui/recipes';
 import { cn } from './utils';
 
 export const inputControl = {
@@ -40,14 +46,25 @@ export const inputControl = {
     'shadow-[0_18px_45px_-32px_rgba(15,23,42,0.5)]',
     'focus:ring-2 focus:ring-sky-400/80',
     'focus:ring-offset-2 focus:ring-offset-white',
-    `dark:bg-[#111a2f]/80 ${semanticTextRecipes.inverse}`,
+    'dark:bg-[#111a2f]/80 dark:text-slate-100',
     'dark:border-white/12',
     'dark:focus:ring-offset-[#0f172a]',
   ],
+  floatingChrome: [
+    ...semanticSurfaces.floatingChromePanel,
+    ...semanticBorders.floatingChrome,
+    ...semanticEffects.glassShadow,
+    semanticTextRecipes.primary,
+    'shadow-none',
+    'focus-visible:outline-none',
+    'focus-visible:ring-2',
+    'focus-visible:ring-inset',
+    'focus-visible:ring-[var(--color-border-focus-active)]',
+  ],
   size: {
-    sm: 'py-1.5 text-xs rounded-lg',
-    md: 'py-2.5 text-sm rounded-xl',
-    lg: 'py-3 text-base rounded-xl',
+    sm: `py-1.5 text-xs ${uiRadiusRecipes.standard}`,
+    md: `py-2.5 text-sm ${uiRadiusRecipes.standard}`,
+    lg: `py-3 text-base ${uiRadiusRecipes.standard}`,
   },
 } as const;
 
@@ -57,6 +74,7 @@ const inputVariants = cva([...inputControl.base], {
       default: [...inputControl.default],
       invalid: [...inputControl.invalid],
       glass: [...inputControl.glass],
+      floatingChrome: [...inputControl.floatingChrome],
     },
     inputSize: {
       sm: inputControl.size.sm,
@@ -90,17 +108,17 @@ export interface InputProps
  *
  * @see {@link ../README.md} for detailed variant documentation
  */
-export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ variant, inputSize, className, ...props }, ref) => {
-    return (
-      <input
-        ref={ref}
-        className={cn(inputVariants({ variant, inputSize }), className)}
-        {...props}
-      />
-    );
-  }
-);
+export const Input = ({
+  variant,
+  inputSize,
+  className,
+  ref,
+  ...props
+}: InputProps & { ref?: React.RefObject<HTMLInputElement | null> }) => {
+  return (
+    <input ref={ref} className={cn(inputVariants({ variant, inputSize }), className)} {...props} />
+  );
+};
 
 Input.displayName = 'Input';
 

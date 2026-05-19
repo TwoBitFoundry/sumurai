@@ -81,14 +81,14 @@ export function TransactionsScreenSlice(props: {
   return (
     <div data-testid="transactions-page">
       <PageLayout
-        badge="Transaction History"
+        badge="Transactions"
         title="Review every dollar across accounts"
         subtitle="Search and filter transactions across all connected accounts."
         error={
           props.state === 'error' ? (props.errorMessage ?? 'Failed to load transactions.') : null
         }
         stats={
-          <div className={cn('grid', 'gap-3', 'sm:grid-cols-2', 'lg:grid-cols-4')}>
+          <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-4')}>
             <HeroStatCard
               index={1}
               title="Total shown"
@@ -135,9 +135,10 @@ export function TransactionsScreenSlice(props: {
         }
       >
         <GlassCard
-          variant="default"
-          rounded="default"
+          variant="accent"
+          rounded="lg"
           padding="none"
+          withInnerEffects={false}
           className={cn('relative', 'z-10')}
         >
           <TransactionsToolbar

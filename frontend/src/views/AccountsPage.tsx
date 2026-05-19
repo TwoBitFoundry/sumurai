@@ -1,15 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { AnimatePresence } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
-import { cn } from '@/ui/primitives';
-import {
-  border as semanticBorders,
-  effect as semanticEffects,
-  surface as semanticSurfaces,
-  text as uiTextRecipes,
-  font as uiTypographyRecipes,
-} from '@/ui/recipes';
+import { Button, cn } from '@/ui/primitives';
+import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { Toast } from '../components/Toast';
 import AccountsSummaryStats from '../features/plaid/components/AccountsSummaryStats';
 import ConnectButton from '../features/plaid/components/ConnectButton';
@@ -25,20 +19,6 @@ import { PageLayout } from '../layouts/PageLayout';
 import { PlaidService } from '../services/PlaidService';
 import { TellerService } from '../services/TellerService';
 import { invalidateStaleCacheQueries, type SyncProvider } from '../utils/queryInvalidation';
-
-const syncButtonClasses = cn(
-  'inline-flex items-center gap-2 rounded-full px-5 py-2',
-  ...semanticBorders.control,
-  ...semanticSurfaces.card,
-  uiTypographyRecipes.bodyStrong,
-  uiTextRecipes.body,
-  ...semanticEffects.glassShadow,
-  'transition-all duration-200 hover:-translate-y-[1px]',
-  ...semanticBorders.hoverAccent,
-  'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
-  'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none',
-  'dark:focus-visible:ring-offset-slate-900'
-);
 
 const formatRelativeTime = (iso: string): string => {
   const timestamp = Date.parse(iso);
@@ -193,7 +173,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       }
 
       const bank = banks.find((entry) => entry.id === bankId);
-      if (!bank || !bank.connectionId) {
+      if (!bank?.connectionId) {
         return;
       }
 
@@ -243,7 +223,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const disconnect = useCallback(
     async (bankId: string) => {
       const bank = banks.find((entry) => entry.id === bankId);
-      if (!bank || !bank.connectionId) {
+      if (!bank?.connectionId) {
         return;
       }
 
@@ -315,23 +295,31 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     <div className="inline-flex max-w-full flex-col items-center gap-2">
       <div className="flex flex-wrap items-center justify-center gap-3">
         {summary.institutions > 0 && (
-          <button
+          <Button
             type="button"
             onClick={syncAll}
             disabled={syncingAll || !isOnline}
-            className={syncButtonClasses}
+            variant="ghost"
+            size="md"
+            className={cn(
+              appTitleBarRecipes.settingsIdle,
+              'normal-case',
+              uiTypographyRecipes.bodyStrong,
+              'px-5'
+            )}
             title={!isOnline ? 'Unavailable while offline' : undefined}
           >
-            <RefreshCw className={`h-4 w-4 ${syncingAll ? 'animate-spin' : ''}`} />
+            <RefreshCw className={cn('h-4 w-4', syncingAll && 'animate-spin')} />
             {syncingAll ? 'Syncing...' : !isOnline ? 'Offline' : 'Sync all'}
-          </button>
+          </Button>
         )}
         <ConnectButton
           onClick={connect}
           disabled={connectDisabled}
           title={!isOnline ? 'Unavailable while offline' : undefined}
+          leadingImageSrc={primaryProvider === 'teller' ? '/teller.webp' : '/plaid.webp'}
         >
-          {primaryProvider === 'teller' ? 'Launch Teller Connect' : 'Add account'}
+          {primaryProvider === 'teller' ? 'Teller' : 'Add account'}
         </ConnectButton>
       </div>
       {!isOnline && (
@@ -360,7 +348,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       {primaryProvider === 'teller' ? tellerFlow.tellerConnectMount : null}
       <PageLayout
         badge={`${providerLabel} Accounts`}
-        title="Link banks and keep balances current"
+        title="Link accounts and keep balances current"
         subtitle="View cached balances and sync when you need fresh data."
         actions={actions}
         stats={statsGrid}
@@ -372,14 +360,11 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           onDisconnect={disconnect}
           isOnline={isOnline}
           providerName={providerLabel === 'Teller' ? 'Teller accounts' : 'Plaid accounts'}
-          connectLabel={
-            primaryProvider === 'teller' ? 'Launch Teller Connect' : 'Connect with Plaid'
-          }
+          connectLabel={primaryProvider === 'teller' ? 'Teller' : 'Connect with Plaid'}
+          connectLogoSrc={primaryProvider === 'teller' ? '/teller.webp' : '/plaid.webp'}
         />
 
-        <AnimatePresence>
-          {toast && <Toast message={toast} onClose={() => setToast(null)} />}
-        </AnimatePresence>
+        {toast ? <Toast message={toast} onClose={() => setToast(null)} /> : null}
       </PageLayout>
     </div>
   );

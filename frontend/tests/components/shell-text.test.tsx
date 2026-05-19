@@ -52,6 +52,16 @@ describe('shared shell text surfaces', () => {
     expect(screen.getByText('Saved successfully')).toHaveClass(uiTextRecipes.primary);
   });
 
+  it('renders toast above mobile chrome in a body portal', () => {
+    render(<Toast message="Saved successfully" onClose={jest.fn()} />);
+
+    const toast = screen.getByRole('status');
+    expect(toast.parentElement).toBe(document.body);
+    expect(toast).toHaveClass('z-[60]');
+    expect(toast).toHaveClass('bottom-[calc(5.75rem+env(safe-area-inset-bottom))]');
+    expect(toast).toHaveClass('md:bottom-6');
+  });
+
   it('uses semantic text roles in the footer copy and links', () => {
     render(<Footer />);
 

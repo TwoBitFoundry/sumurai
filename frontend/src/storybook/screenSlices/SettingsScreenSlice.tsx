@@ -3,8 +3,13 @@ import { PasswordChecker } from '@/components/PasswordChecker';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
 import type { PasswordValidation } from '@/hooks/usePasswordValidation';
 import { Alert, Badge, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
+import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { cn } from '@/ui/primitives/utils';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import {
+  border as uiBorderRecipes,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import { settingsConfirmationCodeTypography } from '@/views/SettingsPage';
 
 const validationEmpty: PasswordValidation = {
@@ -110,40 +115,32 @@ export function SettingsScreenSlice(props: {
   const confirmInputVariant = confirmText && confirmText !== 'DELETE' ? 'invalid' : 'default';
 
   return (
-    <div className={cn('max-w-2xl', 'mx-auto')} data-testid="settings-screen-slice">
+    <div
+      className={cn('mx-auto', 'w-full', 'md:px-8', 'lg:px-8')}
+      data-testid="settings-screen-slice"
+    >
       <div className={cn('flex', 'flex-col', 'gap-6')}>
-        <GlassCard variant="default" padding="sm">
-          <div
-            className={cn(
-              'flex',
-              'flex-col',
-              'gap-3',
-              'sm:flex-row',
-              'sm:items-center',
-              'sm:justify-between'
-            )}
-          >
-            <div className={cn('flex', 'min-w-0', 'items-center', 'gap-2')}>
-              <Badge size="sm">THEME</Badge>
-              <p className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>
-                Appearance
-              </p>
-            </div>
-            <ThemeModeSelector value="dark" onChange={() => {}} />
-          </div>
-        </GlassCard>
-
         <GlassCard variant="default" padding="lg">
           <div className={cn('space-y-5')}>
             <div className={cn('space-y-3')}>
               <Badge size="md">ACCOUNT SETTINGS</Badge>
+            </div>
+
+            <section className={cn('space-y-3')}>
+              <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+                Appearance
+              </h2>
+              <ThemeModeSelector value="dark" onChange={() => {}} />
+            </section>
+
+            <section className={cn('space-y-3', 'border-t', 'pt-5', ...uiBorderRecipes.divider)}>
               <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
                 Change Password
               </h2>
               <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
-                Update your password to keep your account secure
+                Update your password to keep your account secure.
               </p>
-            </div>
+            </section>
 
             <form
               onSubmit={(e) => {
@@ -215,7 +212,7 @@ export function SettingsScreenSlice(props: {
                 validation={props.scenario === 'default' ? validationEmpty : newPasswordValidation}
               />
 
-              <Button type="submit" variant="primary" size="lg" className={cn('w-full')}>
+              <Button type="submit" variant="primary" size="md" className={cn('w-full')}>
                 Change Password
               </Button>
             </form>
@@ -231,7 +228,7 @@ export function SettingsScreenSlice(props: {
             Once you delete your account, there is no going back. This action cannot be undone.
           </Alert>
 
-          <Button type="button" variant="danger" className={cn('w-full')}>
+          <Button type="button" variant="danger" size="md" className={cn('w-full')}>
             Delete Account
           </Button>
         </GlassCard>
@@ -286,12 +283,17 @@ export function SettingsScreenSlice(props: {
           </div>
 
           <div className={cn('flex', 'gap-3')}>
-            <Button type="button" variant="ghost" className={cn('flex-1')}>
+            <Button
+              type="button"
+              variant="ghost"
+              className={cn(appTitleBarRecipes.settingsIdle, 'flex-1', 'normal-case')}
+            >
               Cancel
             </Button>
             <Button
               type="button"
               variant="danger"
+              size="md"
               disabled={confirmText !== 'DELETE'}
               className={cn('flex-1')}
             >

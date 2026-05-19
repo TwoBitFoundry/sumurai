@@ -10,6 +10,7 @@ export type ProviderCardConfig = {
   badge: string;
   description: string;
   bullets: string[];
+  logoSrc?: string;
 };
 
 export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig> = {
@@ -17,6 +18,7 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
     title: 'Plaid',
     badge: 'Premium',
     description: 'Enterprise-grade data enrichment with the broadest institution coverage.',
+    logoSrc: '/plaid.webp',
     bullets: [
       'Enhanced categorization with confidence scores',
       '12,000+ supported institutions',
@@ -28,6 +30,7 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
     title: 'Teller',
     badge: 'Self-hosted friendly',
     description: 'Bring your own Teller credentials for lightweight, developer-first access.',
+    logoSrc: '/teller.webp',
     bullets: [
       'Unlimited sandbox with 100 free live connections',
       'Direct connections with running balances',
@@ -71,6 +74,7 @@ type ProviderFeature = {
 
 export interface ConnectAccountProviderContent {
   displayName: string;
+  logoSrc?: string;
   eyebrow: {
     text: string;
     backgroundClassName: string;
@@ -93,6 +97,7 @@ export interface ConnectAccountProviderContent {
 
 const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
   displayName: 'Plaid',
+  logoSrc: '/plaid.webp',
   eyebrow: {
     text: 'Plaid Secure Link',
     backgroundClassName: cn(uiStatusRecipes.success.surface),
@@ -159,6 +164,7 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
 
 const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
   displayName: 'Teller',
+  logoSrc: '/teller.webp',
   eyebrow: {
     text: 'Teller Connect',
     backgroundClassName: cn(uiStatusRecipes.info.surface),
@@ -166,7 +172,7 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
   },
   heroTitle: 'Connect your accounts',
   heroDescription:
-    'Launch Teller Connect using your own API keys to sync accounts without handing off long-lived credentials. Keep full control while budgets stay real-time.',
+    'Teller uses your own API keys to sync accounts without handing off long-lived credentials. Keep full control while budgets stay real-time.',
   highlightLabel: "What you'll connect",
   highlightMeta: 'Read-only access',
   features: [
@@ -216,7 +222,7 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
     },
   ],
   cta: {
-    defaultLabel: 'Launch Teller Connect',
+    defaultLabel: 'Teller',
     badge: 'mTLS',
   },
   securityNote: '🔒 Industry-grade security standards and connections. Disconnect anytime.',

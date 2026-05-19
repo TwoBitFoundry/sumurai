@@ -23,6 +23,16 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Cal Sans', system-ui, sans-serif;
   }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 }
 
 @keyframes rotateAura {

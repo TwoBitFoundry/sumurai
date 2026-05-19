@@ -6,6 +6,7 @@ import {
   status as semanticStatus,
   surface as semanticSurfaces,
   text as semanticTextRecipes,
+  radius as uiRadiusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 
@@ -13,23 +14,24 @@ export const pageLayoutRecipes = {
   shell: [
     'relative',
     'overflow-hidden',
-    'rounded-[2.25rem]',
+    uiRadiusRecipes.standard,
     'border',
     ...semanticBorders.glass,
     ...semanticSurfaces.glassPanel,
-    'p-8',
+    'p-4',
     ...semanticEffects.glassShadow,
     'backdrop-blur-[28px]',
     'backdrop-saturate-[150%]',
     'transition-colors',
     'duration-500',
     'ease-out',
-    'sm:p-12',
+    'md:p-8',
+    'lg:p-8',
   ],
   innerRing: [
     'absolute',
     'inset-[1px]',
-    'rounded-[2.2rem]',
+    uiRadiusRecipes.standard,
     'ring-1',
     'ring-white/45',
     ...semanticEffects.pageShellInsetRing,
@@ -38,7 +40,7 @@ export const pageLayoutRecipes = {
   innerGradient: [
     'absolute',
     'inset-0',
-    'rounded-[2.2rem]',
+    uiRadiusRecipes.standard,
     'bg-gradient-to-b',
     'from-white/72',
     'via-white/28',
@@ -53,7 +55,7 @@ export const pageLayoutRecipes = {
   title: `${uiTypographyRecipes.pageTitle} ${semanticTextRecipes.primary} transition-colors duration-300 ease-out`,
   subtitle: `${uiTypographyRecipes.body} ${semanticTextRecipes.body} transition-colors duration-300 ease-out`,
   error: [
-    'rounded-2xl',
+    uiRadiusRecipes.standard,
     ...semanticBorders.danger,
     ...semanticStatus.danger.surface,
     'px-5 py-3',
@@ -84,7 +86,7 @@ export function PageLayout({
   className,
 }: PageLayoutProps) {
   return (
-    <div className={cn('space-y-8', className)}>
+    <div className={cn('space-y-6', 'md:space-y-8', className)}>
       <section className={cn(...pageLayoutRecipes.shell)}>
         <div className={cn('pointer-events-none', 'absolute', 'inset-0')}>
           <div className={cn(pageLayoutRecipes.innerRing)} />
@@ -127,7 +129,7 @@ export function PageLayout({
         </div>
       </section>
 
-      {children}
+      {children ? <div className={cn('w-full', 'min-w-0', 'max-w-full')}>{children}</div> : null}
     </div>
   );
 }

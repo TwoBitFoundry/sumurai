@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Button } from '@/ui/primitives';
+import { radius as uiRadiusRecipes } from '@/ui/recipes';
 import { PageLayout } from './PageLayout';
 
 const meta = {
@@ -15,7 +16,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     badge: 'Example',
-    title: 'Overview of Balances',
+    title: 'Balances',
     subtitle: 'Supporting hero copy that mirrors production page framing.',
     actions: (
       <Button type="button" variant="secondary" size="sm">
@@ -23,7 +24,7 @@ export const Default: Story = {
       </Button>
     ),
     children: (
-      <div className="rounded-xl border border-slate-200 p-6 dark:border-slate-700">
+      <div className={`border p-6 dark:border-slate-700 ${uiRadiusRecipes.standard}`}>
         Primary surface content
       </div>
     ),

@@ -5,12 +5,15 @@ import { cn, GlassCard } from '@/ui/primitives';
 import HeroStatCard from '../components/widgets/HeroStatCard';
 import TransactionsTable from '../features/transactions/components/TransactionsTable';
 import TransactionsToolbar from '../features/transactions/components/TransactionsToolbar';
+import type { TransactionFilterControl } from '../features/transactions/hooks/useTransactionFilterState';
 import { useTransactions } from '../features/transactions/hooks/useTransactions';
 import { PageLayout } from '../layouts/PageLayout';
 import { formatCategoryName } from '../utils/categories';
 import { fmtUSD } from '../utils/format';
 
-const TransactionsPage: React.FC = () => {
+const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = ({
+  filterControl,
+}) => {
   const {
     isLoading,
     error,
@@ -25,7 +28,7 @@ const TransactionsPage: React.FC = () => {
     pageItems,
     totalItems,
     totalPages,
-  } = useTransactions({ pageSize: 8 });
+  } = useTransactions({ pageSize: 8, filterControl });
 
   const stats = useMemo(() => {
     const totalCount = transactions.length;
@@ -88,12 +91,12 @@ const TransactionsPage: React.FC = () => {
   return (
     <div data-testid="transactions-page">
       <PageLayout
-        badge="Transaction History"
+        badge="Transactions"
         title="Review every dollar across accounts"
         subtitle="Search and filter transactions across all connected accounts."
         error={error}
         stats={
-          <div className={cn('grid', 'gap-3', 'sm:grid-cols-2', 'lg:grid-cols-4')}>
+          <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-4')}>
             <HeroStatCard
               index={1}
               title="Total shown"
@@ -143,9 +146,10 @@ const TransactionsPage: React.FC = () => {
         }
       >
         <GlassCard
-          variant="default"
-          rounded="default"
+          variant="accent"
+          rounded="lg"
           padding="none"
+          withInnerEffects={false}
           className={cn('relative', 'z-10')}
         >
           <TransactionsToolbar

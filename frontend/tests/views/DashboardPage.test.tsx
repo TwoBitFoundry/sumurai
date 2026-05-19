@@ -65,10 +65,20 @@ describe('DashboardPage', () => {
   it('keeps the spending chart animation off on remount when the query key is unchanged', () => {
     const chartMock = jest.mocked(SpendingByCategoryChart);
     const noop = jest.fn();
-    const { unmount } = render(<DashboardPage dateRange="current-month" setDateRange={noop} />);
+    const { container, unmount } = render(
+      <DashboardPage dateRange="current-month" setDateRange={noop} />
+    );
 
     expect(chartMock).toHaveBeenCalledTimes(1);
     expect(chartMock.mock.calls[0][0].animated).toBe(true);
+    expect(container.querySelector('[data-testid="dashboard-page"] .space-y-6')).toHaveClass(
+      'md:space-y-8'
+    );
+    expect(
+      container.querySelector(
+        '[data-testid="dashboard-page"] .grid.grid-cols-1.gap-4.items-stretch'
+      )
+    ).toHaveClass('md:gap-6');
 
     unmount();
 

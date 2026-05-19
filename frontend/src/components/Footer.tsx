@@ -2,10 +2,38 @@ import { Handshake, Star } from 'lucide-react';
 import { cn } from '@/ui/primitives';
 import {
   border as uiBorderRecipes,
+  radius as uiRadiusRecipes,
   surface as uiSurfaceRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
+
+const footerActionTypography = [
+  uiTypographyRecipes.caption,
+  'lg:font-label',
+  'lg:text-[0.75rem]',
+  'lg:font-semibold',
+  'lg:uppercase',
+  'lg:leading-none',
+  'lg:tracking-[0.14em]',
+] as const;
+
+const footerActionLink = [
+  'shrink-0',
+  'px-2',
+  'py-1.5',
+  'lg:px-4',
+  'lg:py-2',
+  ...footerActionTypography,
+  uiRadiusRecipes.standard,
+  'flex',
+  'items-center',
+  'justify-center',
+  'gap-1',
+  'lg:gap-2',
+  'whitespace-nowrap',
+  'transition-colors',
+] as const;
 
 export function Footer() {
   return (
@@ -28,7 +56,7 @@ export function Footer() {
           'max-w-6xl',
           'mx-auto',
           'pl-[calc(1rem_+_env(safe-area-inset-left))] pr-[calc(1rem_+_env(safe-area-inset-right))]',
-          'sm:pl-[calc(2rem_+_env(safe-area-inset-left))] sm:pr-[calc(2rem_+_env(safe-area-inset-right))]',
+          'md:pl-[calc(2rem_+_env(safe-area-inset-left))] md:pr-[calc(2rem_+_env(safe-area-inset-right))]',
           'py-8'
         )}
       >
@@ -53,12 +81,14 @@ export function Footer() {
           <div
             className={cn(
               'flex',
-              'flex-col',
-              'md:flex-row',
-              'w-full',
-              'md:w-auto',
+              'min-w-0',
+              'max-w-full',
+              'flex-row',
+              'flex-nowrap',
               'gap-2',
-              'md:gap-3'
+              'overflow-x-auto',
+              'md:w-auto',
+              'lg:gap-3'
             )}
           >
             <a
@@ -66,28 +96,19 @@ export function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                'px-4',
-                'py-2',
-                uiTypographyRecipes.label,
+                footerActionLink,
                 uiTextRecipes.inverse,
-                'rounded-lg',
                 'bg-sky-500/80',
                 'backdrop-blur-sm',
                 'hover:bg-sky-600/80',
                 'dark:bg-sky-600/80',
                 'dark:hover:bg-sky-700/80',
-                'flex',
-                'items-center',
-                'justify-center',
-                'gap-2',
-                'transition-colors',
                 'border',
                 'border-sky-400/30',
-                'dark:border-sky-500/30',
-                'whitespace-nowrap'
+                'dark:border-sky-500/30'
               )}
             >
-              <Handshake className={cn('h-4', 'w-4')} />
+              <Handshake className={cn('h-3.5', 'w-3.5', 'lg:h-4', 'lg:w-4')} />
               Forge with us
             </a>
             <a
@@ -95,54 +116,41 @@ export function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                'px-4',
-                'py-2',
-                uiTypographyRecipes.label,
+                footerActionLink,
                 uiTextRecipes.inverse,
-                'rounded-lg',
                 'bg-amber-500/80',
                 'backdrop-blur-sm',
                 'hover:bg-amber-600/80',
                 'dark:bg-amber-600/80',
                 'dark:hover:bg-amber-700/80',
-                'flex',
-                'items-center',
-                'justify-center',
-                'gap-2',
-                'transition-colors',
                 'border',
                 'border-amber-400/30',
-                'dark:border-amber-500/30',
-                'whitespace-nowrap'
+                'dark:border-amber-500/30'
               )}
             >
-              <img src="/bmc-new-btn-logo.svg" alt="Buy me a coffee" className={cn('h-5', 'w-5')} />
-              <span>Buy us a coffee</span>
+              <img
+                src="/bmc-new-btn-logo.svg"
+                alt=""
+                className={cn('h-4', 'w-4', 'lg:h-5', 'lg:w-5')}
+              />
+              Buy us a coffee
             </a>
             <a
               href="https://github.com/TwoBitFoundry/sumurai"
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                'px-4',
-                'py-2',
-                uiTypographyRecipes.label,
+                footerActionLink,
                 uiTextRecipes.body,
-                'rounded-lg',
                 'border',
                 ...uiBorderRecipes.default,
                 ...uiSurfaceRecipes.card,
                 'hover:bg-[var(--color-surface-hover-row)]',
-                'dark:hover:bg-[var(--color-surface-hover-row)]',
-                'flex',
-                'items-center',
-                'justify-center',
-                'gap-2',
-                'whitespace-nowrap'
+                'dark:hover:bg-[var(--color-surface-hover-row)]'
               )}
             >
-              <Star className={cn('h-4', 'w-4')} />
-              <span>Star us on GitHub</span>
+              <Star className={cn('h-3.5', 'w-3.5', 'lg:h-4', 'lg:w-4')} />
+              GitHub
             </a>
           </div>
         </div>
@@ -150,20 +158,38 @@ export function Footer() {
         <div
           className={cn(
             'flex',
-            'flex-col',
-            'sm:flex-row',
-            'sm:items-center',
-            'sm:justify-between',
+            'flex-row',
+            'items-center',
+            'justify-between',
             'gap-4',
             'pt-5',
             'border-t',
             ...uiBorderRecipes.divider
           )}
         >
-          <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.subtle)}>
-            © {new Date().getFullYear()} Two Bit Foundry • Source available
+          <p className={cn('min-w-0', uiTypographyRecipes.caption, uiTextRecipes.subtle)}>
+            © {new Date().getFullYear()}{' '}
+            <a
+              href="https://twobitfoundry.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(uiTextRecipes.accent, 'transition-opacity', 'hover:opacity-80')}
+            >
+              Two Bit Foundry
+            </a>{' '}
+            •{' '}
+            <a
+              href="https://github.com/TwoBitFoundry/sumurai/blob/main/LICENSE"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(uiTextRecipes.accent, 'transition-opacity', 'hover:opacity-80')}
+            >
+              License
+            </a>
           </p>
-          <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-4', 'sm:gap-6')}>
+          <div
+            className={cn('flex', 'shrink-0', 'items-center', 'justify-end', 'gap-4', 'md:gap-6')}
+          >
             <a
               href="mailto:contact@twobitfoundry.com"
               className={cn(

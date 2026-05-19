@@ -41,8 +41,8 @@ export const AuthenticatedDashboard: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
 
-    await userEvent.click(canvas.getByRole('button', { name: 'Transactions' }));
-    await expect(args.onTabChange).toHaveBeenCalledWith('transactions');
+    await userEvent.click(canvas.getByRole('button', { name: 'Settings' }));
+    await expect(args.onTabChange).toHaveBeenCalledWith('settings');
 
     await userEvent.click(canvas.getByRole('button', { name: /logout/i }));
     await expect(args.onLogout).toHaveBeenCalledTimes(1);

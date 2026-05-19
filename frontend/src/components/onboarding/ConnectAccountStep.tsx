@@ -5,6 +5,7 @@ import {
   effect as semanticEffects,
   surface as semanticSurfaces,
   effect as uiEffectRecipes,
+  radius as uiRadiusRecipes,
   status as uiStatusRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
@@ -42,12 +43,10 @@ const statusVariantMap: Record<StatusTone, 'info' | 'warning' | 'error'> = {
 };
 
 const onboardingStepCard = [
-  'group relative overflow-hidden rounded-2xl p-4',
+  `relative overflow-hidden ${uiRadiusRecipes.standard} p-4`,
   ...semanticBorders.subtle,
   ...semanticSurfaces.card,
   ...semanticEffects.glassShadow,
-  'transition-all duration-300 ease-out hover:-translate-y-[2px]',
-  ...semanticEffects.accentHover,
 ] as const;
 
 const onboardingIconWell = [
@@ -55,9 +54,6 @@ const onboardingIconWell = [
   ...semanticSurfaces.insetWell,
   'ring-1 ring-inset',
 ] as const;
-
-const onboardingHoverOverlay =
-  'pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20';
 
 const onboardingIconGlow =
   'absolute inset-[20%] rounded-full bg-[var(--color-effect-accent-hover)] opacity-20 blur-[6px] dark:bg-[var(--color-effect-accent-hover)] dark:opacity-[0.18]';
@@ -74,16 +70,12 @@ const onboardingEyebrowCaps = [
   'uppercase transition-colors duration-300 ease-out',
 ] as const;
 const onboardingProviderRow = [
-  'group relative overflow-hidden',
+  'relative overflow-hidden',
   ...semanticBorders.subtle,
   ...semanticSurfaces.card,
   ...semanticEffects.glassShadow,
-  'transition-all duration-300 ease-out hover:-translate-y-[2px]',
-  ...semanticEffects.accentHover,
-  'flex h-full items-start gap-4 rounded-2xl p-4 text-[13px]',
+  `flex h-full items-start gap-4 ${uiRadiusRecipes.standard} p-4 text-[13px]`,
 ] as const;
-const onboardingProviderHoverOverlay =
-  'pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20';
 const onboardingProviderIconGlow =
   'absolute inset-[18%] rounded-full bg-[var(--color-effect-accent-hover)] opacity-[0.22] blur-[6px] dark:bg-[var(--color-effect-accent-hover)] dark:opacity-[0.18]';
 
@@ -94,16 +86,7 @@ function FeatureCard({
 }: ConnectAccountProviderContent['features'][number]) {
   return (
     <div className={cn(onboardingStepCard)}>
-      <div className={cn(onboardingHoverOverlay)} />
-      <span
-        className={cn(
-          onboardingIconWell,
-          palette.ring,
-          palette.glow,
-          'transition-all duration-200 ease-out group-hover:scale-105'
-        )}
-        aria-hidden="true"
-      >
+      <span className={cn(onboardingIconWell, palette.ring, palette.glow)} aria-hidden="true">
         <span className={cn('absolute inset-0 bg-gradient-to-br', palette.gradient)} />
         <span className={cn(onboardingIconGlow)} />
         <Icon className={cn('relative h-5 w-5', palette.icon)} strokeWidth={1.7} />
@@ -121,15 +104,13 @@ function HighlightCard({
 }: ConnectAccountProviderContent['highlights'][number]) {
   return (
     <div className={cn(onboardingProviderRow)}>
-      <div className={cn(onboardingProviderHoverOverlay)} />
       <span
         className={cn(
           'relative z-10 inline-flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full',
           ...semanticSurfaces.insetWell,
           'ring-1 ring-inset',
           palette.ring,
-          palette.glow,
-          'transition-all duration-200 ease-out group-hover:scale-105'
+          palette.glow
         )}
         aria-hidden="true"
       >
@@ -206,7 +187,7 @@ export function ConnectAccountStep({
       className={cn(
         'grid items-stretch gap-8',
         'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]',
-        'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]'
+        'md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]'
       )}
     >
       <div className={cn('flex flex-col gap-8')}>
@@ -255,7 +236,7 @@ export function ConnectAccountStep({
               <Alert
                 key={`${status.tone}-${status.text}`}
                 variant={statusVariantMap[status.tone]}
-                className={cn('flex flex-col gap-2 rounded-2xl')}
+                className={cn('flex flex-col gap-2', uiRadiusRecipes.standard)}
               >
                 <p className={cn(uiTypographyRecipes.bodyStrong)}>{status.text}</p>
                 {status.action && status.actionLabel && (
@@ -291,7 +272,7 @@ export function ConnectAccountStep({
 
         <div className={cn('flex flex-col gap-4')}>
           <div className={cn(onboardingEyebrowCaps)}>{content.highlightLabel}</div>
-          <div className={cn('grid gap-3 sm:grid-cols-3')}>
+          <div className={cn('grid gap-3 md:grid-cols-3')}>
             {content.features.map((feature) => (
               <FeatureCard key={feature.title} {...feature} />
             ))}
@@ -302,7 +283,7 @@ export function ConnectAccountStep({
       <div className={cn('flex flex-col gap-5 self-start mt-[52px]')}>
         <div className={cn(onboardingEyebrowCaps)}>{content.highlightMeta}</div>
         <div className={cn('flex flex-col gap-4')}>
-          <div className={cn('grid auto-rows-fr gap-3 sm:grid-cols-2')}>
+          <div className={cn('grid auto-rows-fr gap-3 md:grid-cols-2')}>
             {content.highlights.map((highlight) => (
               <HighlightCard key={highlight.title} {...highlight} />
             ))}
@@ -335,6 +316,13 @@ export function ConnectAccountStep({
               'Try again'
             ) : (
               <span className={cn('flex items-center gap-2', uiTypographyRecipes.bodyStrong)}>
+                {content.logoSrc ? (
+                  <img
+                    src={content.logoSrc}
+                    alt={`${content.displayName} logo`}
+                    className={cn('h-5', 'w-5', 'rounded-full', 'object-cover')}
+                  />
+                ) : null}
                 <span>{content.cta.defaultLabel}</span>
                 {content.cta.badge && (
                   <Badge variant="default" size="xs" className="tracking-[0.2em]">

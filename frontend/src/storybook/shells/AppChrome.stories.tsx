@@ -4,7 +4,7 @@ import { AppLayout } from '@/layouts/AppLayout';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { AppFooter, AppTitleBar, cn, GradientShell } from '@/ui/primitives';
-import { text as uiTextRecipes } from '@/ui/recipes';
+import { radius as uiRadiusRecipes, text as uiTextRecipes } from '@/ui/recipes';
 
 function UnauthenticatedLoginShell() {
   return (
@@ -24,7 +24,9 @@ function AuthenticatedDashboardShell() {
   return (
     <AccountFilterStoryProvider>
       <AppLayout currentTab="dashboard" onTabChange={() => {}} onLogout={() => {}} isOnline>
-        <div className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white/50 p-8 dark:border-slate-700 dark:bg-slate-900/35">
+        <div
+          className={`mx-auto max-w-5xl ${uiRadiusRecipes.standard} border border-slate-200 bg-white/50 p-8 dark:border-slate-700 dark:bg-slate-900/35`}
+        >
           Authenticated tab surface placeholder
         </div>
       </AppLayout>

@@ -1,0 +1,25 @@
+import { useCallback, useState } from 'react';
+
+export function useTransactionFilterState(initial?: { search?: string; category?: string | null }) {
+  const [search, setSearchState] = useState(initial?.search ?? '');
+  const [selectedCategory, setSelectedCategoryState] = useState<string | null>(
+    initial?.category ?? null
+  );
+
+  const setSearch = useCallback((value: string) => {
+    setSearchState(value);
+  }, []);
+
+  const setSelectedCategory = useCallback((value: string | null) => {
+    setSelectedCategoryState(value);
+  }, []);
+
+  return {
+    search,
+    setSearch,
+    selectedCategory,
+    setSelectedCategory,
+  };
+}
+
+export type TransactionFilterControl = ReturnType<typeof useTransactionFilterState>;

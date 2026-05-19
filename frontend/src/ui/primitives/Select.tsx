@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import React from 'react';
+import type React from 'react';
 import { inputControl } from './Input';
 import { cn } from './utils';
 
@@ -28,17 +28,21 @@ export interface SelectProps
   extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'>,
     VariantProps<typeof selectVariants> {}
 
-export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ variant, selectSize, className, ...props }, ref) => {
-    return (
-      <select
-        ref={ref}
-        className={cn(selectVariants({ variant, selectSize }), className)}
-        {...props}
-      />
-    );
-  }
-);
+export const Select = ({
+  variant,
+  selectSize,
+  className,
+  ref,
+  ...props
+}: SelectProps & { ref?: React.RefObject<HTMLSelectElement | null> }) => {
+  return (
+    <select
+      ref={ref}
+      className={cn(selectVariants({ variant, selectSize }), className)}
+      {...props}
+    />
+  );
+};
 
 Select.displayName = 'Select';
 

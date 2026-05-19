@@ -1,45 +1,56 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 import {
-  border as semanticBorders,
+  buttonChrome,
   effect as semanticEffects,
   status as semanticStatus,
   surface as semanticSurfaces,
+  radius as uiRadiusRecipes,
 } from '@/ui/recipes';
 import { cn } from './utils';
 
 export const iconButtonRecipes = {
   ghost: [
-    'inline-flex items-center justify-center rounded-full p-2',
-    ...semanticBorders.glass,
+    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} p-2 disabled:cursor-not-allowed`,
+    ...buttonChrome.muted,
     ...semanticSurfaces.card,
     'text-slate-600 dark:text-slate-200',
     ...semanticEffects.glassShadow,
-    'transition-transform duration-200 hover:-translate-y-[2px] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row)]',
+    'transition-all duration-200 ease-out hover:-translate-y-[2px] hover:bg-[var(--color-surface-hover-row)] active:scale-[0.98] disabled:active:scale-100 dark:hover:bg-[var(--color-surface-hover-row)]',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]',
   ],
+  primary: [
+    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} bg-gradient-to-r from-sky-500 via-sky-400 to-violet-500 p-2 text-white disabled:cursor-not-allowed`,
+    'shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)]',
+    'transition-all duration-200 ease-out hover:-translate-y-[2px] active:scale-[0.98] disabled:active:scale-100 disabled:hover:translate-y-0',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-[#0f172a]',
+  ],
   success: [
-    'inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[var(--color-brand-emerald)] via-[var(--color-brand-emerald)] to-[var(--color-brand-sky)] p-2 text-white',
+    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} bg-gradient-to-r from-[var(--color-brand-emerald)] via-[var(--color-brand-emerald)] to-[var(--color-brand-sky)] p-2 text-white disabled:cursor-not-allowed`,
     ...semanticEffects.successGlow,
-    'transition-transform duration-200 hover:-translate-y-[2px]',
+    'transition-all duration-200 ease-out hover:-translate-y-[2px] active:scale-[0.98] disabled:active:scale-100',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
     'dark:focus-visible:ring-offset-[#0f172a]',
   ],
   danger: [
-    'inline-flex items-center justify-center rounded-full border p-2',
+    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} p-2 disabled:cursor-not-allowed`,
+    'border',
     ...semanticStatus.danger.border,
     ...semanticStatus.danger.surface,
     ...semanticStatus.danger.text,
-    'shadow-sm',
-    'transition-transform duration-200 hover:-translate-y-[2px] hover:bg-[var(--color-status-danger-strong-surface)] dark:hover:bg-[var(--color-status-danger-strong-surface)]',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-danger)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-[var(--color-border-danger)] dark:focus-visible:ring-offset-[#0f172a]',
+    ...semanticEffects.glassShadow,
+    'transition-all duration-200 ease-out hover:-translate-y-0.5 active:scale-[0.98] disabled:active:scale-100 disabled:hover:translate-y-0',
+    'hover:bg-[var(--color-status-danger-strong-surface)]',
+    'dark:hover:bg-[color:color-mix(in_srgb,var(--color-status-danger-strong-surface)_46%,transparent)]',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-status-danger-border)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-[var(--color-status-danger-border)] dark:focus-visible:ring-offset-slate-900',
   ],
 } as const;
 
-const iconButtonVariants = cva(iconButtonRecipes.ghost.join(' '), {
+const iconButtonVariants = cva('', {
   variants: {
     variant: {
       ghost: iconButtonRecipes.ghost.join(' '),
+      primary: iconButtonRecipes.primary.join(' '),
       success: iconButtonRecipes.success.join(' '),
       danger: iconButtonRecipes.danger.join(' '),
     },

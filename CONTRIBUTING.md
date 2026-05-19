@@ -190,7 +190,7 @@ Login and register under `/api/auth/` are rate limited in the Axum backend with 
 1. Create a Teller developer account at [https://teller.io](https://teller.io).
 2. Download the mTLS certificate and private key.
 3. Set `TELLER_APPLICATION_ID`.
-4. Launch Teller Connect from the UI to link accounts.
+4. Open Teller from the UI to link accounts.
 
 ## Sandbox Credentials
 

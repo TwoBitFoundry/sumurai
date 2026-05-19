@@ -37,7 +37,7 @@ export const Default: Story = {
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    const search = canvas.getByPlaceholderText('Search transactions...');
+    const search = canvas.getByPlaceholderText('Search transactions');
 
     await userEvent.type(search, 'coffee');
     await expect(args.onSearch).toHaveBeenLastCalledWith('coffee');

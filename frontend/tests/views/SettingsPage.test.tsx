@@ -7,7 +7,7 @@ jest.mock('@/context/ThemeContext', () => ({
 }));
 
 describe('SettingsPage', () => {
-  it('renders the appearance section and updates theme preference from settings', () => {
+  it('renders appearance inside account settings and updates theme preference', () => {
     const setPreference = jest.fn();
     jest.mocked(useTheme).mockReturnValue({
       preference: 'system',
@@ -18,15 +18,30 @@ describe('SettingsPage', () => {
       colors: {} as any,
     } as any);
 
-    render(<SettingsPage />);
+    const { container } = render(<SettingsPage />);
 
-    const themeBadge = screen.getByText('THEME');
+    const pageContainer = container.firstElementChild as HTMLElement;
+    const accountSettingsBadge = screen.getByText('ACCOUNT SETTINGS');
     const appearanceLabel = screen.getByText('Appearance');
+    const changePasswordHeading = screen.getByRole('heading', { name: 'Change Password' });
+    const accountSettingsCard = accountSettingsBadge.closest('[class*="space-y-5"]');
+    const themeSelector = screen.getByRole('radiogroup', { name: 'Theme' });
 
+    expect(pageContainer).toHaveClass('w-full');
+    expect(pageContainer).toHaveClass('md:px-8');
+    expect(pageContainer).not.toHaveClass('max-w-2xl');
+    expect(screen.queryByRole('button', { name: 'Back to Dashboard' })).not.toBeInTheDocument();
     expect(appearanceLabel).toBeInTheDocument();
-    expect(themeBadge.compareDocumentPosition(appearanceLabel)).toBe(
+    expect(accountSettingsBadge.compareDocumentPosition(appearanceLabel)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
+    expect(appearanceLabel.compareDocumentPosition(changePasswordHeading)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(accountSettingsCard).toContainElement(themeSelector);
+    expect(themeSelector).toHaveClass('grid');
+    expect(themeSelector).toHaveClass('w-full');
+    expect(container).toHaveTextContent('Update your password to keep your account secure.');
     fireEvent.click(screen.getByRole('radio', { name: 'Light' }));
     expect(setPreference).toHaveBeenCalledWith('light');
   });

@@ -7,11 +7,12 @@ import { BudgetForm, type BudgetFormValue } from '../features/budgets/components
 import { BudgetList, type BudgetWithProgress } from '../features/budgets/components/BudgetList';
 import BudgetSummaryCard from '../features/budgets/components/BudgetSummaryCard';
 import BudgetToolbar from '../features/budgets/components/BudgetToolbar';
+import type { BudgetMonthControl } from '../features/budgets/hooks/useBudgetMonth';
 import { useBudgets } from '../features/budgets/hooks/useBudgets';
 import { PageLayout } from '../layouts/PageLayout';
 import { formatCategoryName } from '../utils/categories';
 
-export default function BudgetsPage() {
+export default function BudgetsPage({ monthControl }: { monthControl: BudgetMonthControl }) {
   const {
     isLoading,
     transactionsLoading,
@@ -28,7 +29,7 @@ export default function BudgetsPage() {
     goToPreviousMonth,
     goToNextMonth,
     goToCurrentMonth,
-  } = useBudgets();
+  } = useBudgets(monthControl);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<BudgetFormValue>({ category: '', amount: '' });
@@ -139,7 +140,7 @@ export default function BudgetsPage() {
 
   const heroStats = (
     <div className="space-y-3">
-      <div className={cn('grid', 'gap-3', 'sm:grid-cols-2', 'lg:grid-cols-4')}>
+      <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-4')}>
         <HeroStatCard
           index={1}
           title="Active budgets"
@@ -174,7 +175,7 @@ export default function BudgetsPage() {
           title="Days remaining"
           icon={<Clock className={cn('h-4', 'w-4')} />}
           value={stats.daysRemaining}
-          suffix={`out of`}
+          suffix={`of ${stats.totalDays}`}
           subtext={`${stats.totalDays} total days`}
         />
         <HeroStatCard
@@ -195,81 +196,90 @@ export default function BudgetsPage() {
   return (
     <div data-testid="budgets-page">
       <PageLayout
-        badge="Monthly Budgets"
+        badge="Budgets"
         title="Budgets at a glance"
         subtitle="Shape your spending plan, watch commitments, and stay ahead before the month runs away."
         error={errorMessage}
         stats={heroStats}
       >
-        <GlassCard className="p-0">
-          {hasBudgets ? (
-            <>
-              <BudgetToolbar
-                monthLabel={monthLabel}
-                loading={budgetsLoading}
-                isAdding={isAdding}
-                showAddButton={hasBudgets}
-                onPreviousMonth={goToPreviousMonth}
-                onNextMonth={goToNextMonth}
-                onCurrentMonth={goToCurrentMonth}
-                onAddBudget={startAdd}
-              />
-              {isAdding && (
-                <div className={cn('px-6', 'pb-6', 'flex', 'justify-center')}>
-                  <div className="w-full max-w-md">
-                    <BudgetForm
-                      categories={categoryOptions}
-                      usedCategories={usedCategories}
-                      value={form}
-                      onChange={setForm}
-                      onSave={onSaveAdd}
-                      onCancel={cancel}
-                    />
+        <div className={cn('w-full', 'min-w-0', 'max-w-full')}>
+          <GlassCard
+            variant="accent"
+            rounded="lg"
+            padding="none"
+            withInnerEffects={false}
+            containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
+            className={cn('space-y-6')}
+          >
+            {hasBudgets ? (
+              <>
+                <BudgetToolbar
+                  monthLabel={monthLabel}
+                  loading={budgetsLoading}
+                  isAdding={isAdding}
+                  showAddButton={hasBudgets}
+                  onPreviousMonth={goToPreviousMonth}
+                  onNextMonth={goToNextMonth}
+                  onCurrentMonth={goToCurrentMonth}
+                  onAddBudget={startAdd}
+                />
+                {isAdding && (
+                  <div className={cn('flex', 'justify-center')}>
+                    <div className="w-full max-w-md">
+                      <BudgetForm
+                        categories={categoryOptions}
+                        usedCategories={usedCategories}
+                        value={form}
+                        onChange={setForm}
+                        onSave={onSaveAdd}
+                        onCancel={cancel}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
-              <BudgetList
-                items={computedBudgets}
-                editingId={editingId}
-                onStartEdit={onStartEdit}
-                onCancelEdit={cancel}
-                onSaveEdit={onSaveEdit}
-                onDelete={onDelete}
-              />
-            </>
-          ) : (
-            <>
-              <EmptyState
-                icon={Target}
-                title="No budgets found"
-                description="Create your first category plan to watch spending settle into rhythm."
-                action={
-                  !isAdding ? (
-                    <Button type="button" onClick={startAdd} variant="primary" size="md">
-                      <Plus className={cn('h-4', 'w-4')} />
-                      Add budget
-                    </Button>
-                  ) : null
-                }
-                data-testid="budgets-empty-state"
-              />
-              {isAdding && (
-                <div className={cn('px-6', 'pb-6', 'flex', 'justify-center')}>
-                  <div className="w-full max-w-md">
-                    <BudgetForm
-                      categories={categoryOptions}
-                      usedCategories={usedCategories}
-                      value={form}
-                      onChange={setForm}
-                      onSave={onSaveAdd}
-                      onCancel={cancel}
-                    />
+                )}
+                <BudgetList
+                  items={computedBudgets}
+                  editingId={editingId}
+                  onStartEdit={onStartEdit}
+                  onCancelEdit={cancel}
+                  onSaveEdit={onSaveEdit}
+                  onDelete={onDelete}
+                />
+              </>
+            ) : (
+              <>
+                <EmptyState
+                  icon={Target}
+                  title="No budgets found"
+                  description="Create your first category plan to watch spending settle into rhythm."
+                  action={
+                    !isAdding ? (
+                      <Button type="button" onClick={startAdd} variant="primary" size="md">
+                        <Plus className={cn('h-4', 'w-4')} />
+                        Add budget
+                      </Button>
+                    ) : null
+                  }
+                  data-testid="budgets-empty-state"
+                />
+                {isAdding && (
+                  <div className={cn('flex', 'justify-center')}>
+                    <div className="w-full max-w-md">
+                      <BudgetForm
+                        categories={categoryOptions}
+                        usedCategories={usedCategories}
+                        value={form}
+                        onChange={setForm}
+                        onSave={onSaveAdd}
+                        onCancel={cancel}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
-            </>
-          )}
-        </GlassCard>
+                )}
+              </>
+            )}
+          </GlassCard>
+        </div>
       </PageLayout>
     </div>
   );
