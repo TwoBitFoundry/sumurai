@@ -62,9 +62,9 @@ export const inputControl = {
     'focus-visible:ring-[var(--color-border-focus-active)]',
   ],
   size: {
-    sm: `py-1.5 text-xs ${uiRadiusRecipes.standard}`,
-    md: `py-2.5 text-sm ${uiRadiusRecipes.standard}`,
-    lg: `py-3 text-base ${uiRadiusRecipes.standard}`,
+    sm: `py-1.5 text-base md:text-sm ${uiRadiusRecipes.standard}`,
+    md: `py-2.5 text-base ${uiRadiusRecipes.standard}`,
+    lg: `py-3 text-lg ${uiRadiusRecipes.standard}`,
   },
 } as const;
 

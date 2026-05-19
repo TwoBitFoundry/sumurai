@@ -1,4 +1,5 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Receipt } from 'lucide-react';
 import type React from 'react';
 import { useMemo } from 'react';
@@ -143,120 +144,128 @@ export const TransactionsTable: React.FC<Props> = ({
                 </th>
               </tr>
             </thead>
-            <tbody key={currentPage}>
-              {visibleItems.map((r, i) => {
-                const catName = resolveCategoryName(r);
-                return (
-                  <tr
-                    key={r.id}
-                    className={cn(
-                      transactionsRowRecipes.shell,
-                      i % 2 ? transactionsRowRecipes.odd : transactionsRowRecipes.even
-                    )}
-                  >
-                    <td
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.tbody
+                key={currentPage}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.24, ease: [0.22, 0.61, 0.36, 1] }}
+              >
+                {visibleItems.map((r, i) => {
+                  const catName = resolveCategoryName(r);
+                  return (
+                    <tr
+                      key={r.id}
                       className={cn(
-                        'relative',
-                        'whitespace-nowrap',
-                        'px-4',
-                        'py-3',
-                        'align-middle',
-                        uiTypographyRecipes.body,
-                        uiTextRecipes.primary,
-                        'transition-colors',
-                        'duration-500'
+                        transactionsRowRecipes.shell,
+                        i % 2 ? transactionsRowRecipes.odd : transactionsRowRecipes.even
                       )}
                     >
-                      {new Date(r.date).toLocaleDateString()}
-                    </td>
-                    <td
-                      className={cn('truncate', 'px-4', 'py-3', 'align-middle')}
-                      title={r.name || r.merchant || '-'}
-                    >
-                      <span
+                      <td
                         className={cn(
-                          'block',
-                          'truncate',
+                          'relative',
+                          'whitespace-nowrap',
+                          'px-4',
+                          'py-3',
+                          'align-middle',
                           uiTypographyRecipes.body,
                           uiTextRecipes.primary,
                           'transition-colors',
                           'duration-500'
                         )}
                       >
-                        {r.name || r.merchant || '-'}
-                      </span>
-                    </td>
-                    <td
-                      className={cn(
-                        'whitespace-nowrap',
-                        'px-4',
-                        'py-3',
-                        'text-right',
-                        'align-middle',
-                        'tabular-nums',
-                        uiTypographyRecipes.body,
-                        'transition-colors',
-                        'duration-500',
-                        r.amount > 0
-                          ? uiTextRecipes.danger
-                          : r.amount < 0
-                            ? uiTextRecipes.success
-                            : uiTextRecipes.muted
-                      )}
-                    >
-                      {fmtUSD(r.amount)}
-                    </td>
-                    <td className={cn('whitespace-nowrap', 'px-4', 'py-3', 'align-middle')}>
-                      <span
+                        {new Date(r.date).toLocaleDateString()}
+                      </td>
+                      <td
+                        className={cn('truncate', 'px-4', 'py-3', 'align-middle')}
+                        title={r.name || r.merchant || '-'}
+                      >
+                        <span
+                          className={cn(
+                            'block',
+                            'truncate',
+                            uiTypographyRecipes.body,
+                            uiTextRecipes.primary,
+                            'transition-colors',
+                            'duration-500'
+                          )}
+                        >
+                          {r.name || r.merchant || '-'}
+                        </span>
+                      </td>
+                      <td
                         className={cn(
+                          'whitespace-nowrap',
+                          'px-4',
+                          'py-3',
+                          'text-right',
+                          'align-middle',
+                          'tabular-nums',
                           uiTypographyRecipes.body,
-                          uiTextRecipes.muted,
                           'transition-colors',
-                          'duration-500'
+                          'duration-500',
+                          r.amount > 0
+                            ? uiTextRecipes.danger
+                            : r.amount < 0
+                              ? uiTextRecipes.success
+                              : uiTextRecipes.muted
                         )}
                       >
-                        {r.account_name}
-                        {r.account_mask && (
-                          <span
-                            className={cn(
-                              'ml-1',
-                              uiTextRecipes.subtle,
-                              'transition-colors',
-                              'duration-500'
-                            )}
-                          >
-                            ••••{r.account_mask}
-                          </span>
-                        )}
-                      </span>
-                    </td>
-                    <td className={cn('whitespace-nowrap', 'px-4', 'py-3', 'align-middle')}>
-                      <Pill
-                        variant="category"
-                        categoryName={catName}
-                        className="transition-all duration-200 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10"
-                      >
-                        {catName}
-                      </Pill>
-                    </td>
+                        {fmtUSD(r.amount)}
+                      </td>
+                      <td className={cn('whitespace-nowrap', 'px-4', 'py-3', 'align-middle')}>
+                        <span
+                          className={cn(
+                            uiTypographyRecipes.body,
+                            uiTextRecipes.muted,
+                            'transition-colors',
+                            'duration-500'
+                          )}
+                        >
+                          {r.account_name}
+                          {r.account_mask && (
+                            <span
+                              className={cn(
+                                'ml-1',
+                                uiTextRecipes.subtle,
+                                'transition-colors',
+                                'duration-500'
+                              )}
+                            >
+                              ••••{r.account_mask}
+                            </span>
+                          )}
+                        </span>
+                      </td>
+                      <td className={cn('whitespace-nowrap', 'px-4', 'py-3', 'align-middle')}>
+                        <Pill
+                          variant="category"
+                          categoryName={catName}
+                          className="transition-all duration-200 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10"
+                        >
+                          {catName}
+                        </Pill>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {placeholderRows.map((row) => (
+                  <tr
+                    key={row.id}
+                    aria-hidden="true"
+                    tabIndex={-1}
+                    className={cn(transactionsRowRecipes.placeholder, transactionsRowRecipes.even)}
+                  >
+                    <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
+                    <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
+                    <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
+                    <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
+                    <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
                   </tr>
-                );
-              })}
-              {placeholderRows.map((row) => (
-                <tr
-                  key={row.id}
-                  aria-hidden="true"
-                  tabIndex={-1}
-                  className={cn(transactionsRowRecipes.placeholder, transactionsRowRecipes.even)}
-                >
-                  <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
-                  <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
-                  <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
-                  <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
-                  <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
-                </tr>
-              ))}
-            </tbody>
+                ))}
+              </motion.tbody>
+            </AnimatePresence>
           </table>
           {showEmpty ? (
             <div className={cn('absolute inset-0 flex items-center justify-center')}>

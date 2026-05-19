@@ -33,7 +33,9 @@ export const TransactionsToolbar = ({
             showCategories
           />
         </div>
-        <div className={cn('hidden', 'min-w-0', 'flex-1', 'lg:block', 'lg:max-w-xs')}>
+        <div
+          className={cn('hidden', 'min-w-0', 'shrink-0', 'lg:ml-auto', 'lg:block', 'lg:max-w-xs')}
+        >
           <TransactionsFilters
             search={search}
             onSearch={onSearch}
