@@ -24,7 +24,7 @@ fn plaid_transaction_page(offset: usize) -> Vec<Value> {
                 "merchant_name": format!("Merchant {absolute_index}"),
                 "personal_finance_category": {
                     "primary": "FOOD_AND_DRINK",
-                    "detailed": "FOOD_AND_DRINK_RESTAURANTS",
+                    "detailed": "FOOD_AND_DRINK_RESTAURANT",
                     "confidence_level": "VERY_HIGH"
                 },
                 "payment_channel": "in_store",
@@ -68,7 +68,7 @@ fn test_category_parsing_logic_extracts_correct_values() {
     let transaction = Transaction::from_plaid(&plaid_transaction, &Uuid::nil());
 
     assert_eq!(transaction.category_primary, "FOOD_AND_DRINK");
-    assert_eq!(transaction.category_detailed, "FOOD_AND_DRINK_RESTAURANTS");
+    assert_eq!(transaction.category_detailed, "FOOD_AND_DRINK_RESTAURANT");
     assert_eq!(transaction.category_confidence, "VERY_HIGH");
     assert_eq!(transaction.payment_channel, Some("in_store".to_string()));
     assert!(!transaction.pending);

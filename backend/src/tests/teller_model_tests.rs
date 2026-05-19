@@ -104,20 +104,7 @@ fn given_teller_transaction_with_unknown_category_when_from_teller_then_normaliz
 #[test]
 fn given_teller_transaction_with_dining_category_when_from_teller_then_maps_to_food_and_drink() {
     let account_id = Uuid::new_v4();
-    let teller_json = serde_json::json!({
-        "id": "txn_dining",
-        "date": "2024-01-15",
-        "amount": "-42.10",
-        "description": "Dinner",
-        "status": "posted",
-        "details": {
-            "category": "dining",
-            "counterparty": {
-                "type": "merchant",
-                "name": "Restaurant"
-            }
-        }
-    });
+    let teller_json = serde_json::from_str(TestFixtures::teller_transaction_dining()).unwrap();
 
     let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
@@ -128,20 +115,7 @@ fn given_teller_transaction_with_dining_category_when_from_teller_then_maps_to_f
 #[test]
 fn given_teller_transaction_with_fuel_category_when_from_teller_then_maps_to_transportation() {
     let account_id = Uuid::new_v4();
-    let teller_json = serde_json::json!({
-        "id": "txn_fuel",
-        "date": "2024-01-16",
-        "amount": "-55.00",
-        "description": "Gas",
-        "status": "posted",
-        "details": {
-            "category": "fuel",
-            "counterparty": {
-                "type": "merchant",
-                "name": "Gas Station"
-            }
-        }
-    });
+    let teller_json = serde_json::from_str(TestFixtures::teller_transaction_fuel()).unwrap();
 
     let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
@@ -152,20 +126,7 @@ fn given_teller_transaction_with_fuel_category_when_from_teller_then_maps_to_tra
 #[test]
 fn given_teller_transaction_with_income_category_when_from_teller_then_maps_to_income() {
     let account_id = Uuid::new_v4();
-    let teller_json = serde_json::json!({
-        "id": "txn_income",
-        "date": "2024-01-17",
-        "amount": "1500.00",
-        "description": "Paycheck",
-        "status": "posted",
-        "details": {
-            "category": "income",
-            "counterparty": {
-                "type": "organization",
-                "name": "Employer"
-            }
-        }
-    });
+    let teller_json = serde_json::from_str(TestFixtures::teller_transaction_income()).unwrap();
 
     let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
@@ -176,20 +137,8 @@ fn given_teller_transaction_with_income_category_when_from_teller_then_maps_to_i
 #[test]
 fn given_teller_transaction_with_investment_inflow_when_from_teller_then_maps_to_transfer_in() {
     let account_id = Uuid::new_v4();
-    let teller_json = serde_json::json!({
-        "id": "txn_investment_in",
-        "date": "2024-01-18",
-        "amount": "5000.00",
-        "description": "Investment contribution",
-        "status": "posted",
-        "details": {
-            "category": "investment",
-            "counterparty": {
-                "type": "organization",
-                "name": "Brokerage"
-            }
-        }
-    });
+    let teller_json =
+        serde_json::from_str(TestFixtures::teller_transaction_investment_inflow()).unwrap();
 
     let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
@@ -203,20 +152,8 @@ fn given_teller_transaction_with_investment_inflow_when_from_teller_then_maps_to
 #[test]
 fn given_teller_transaction_with_investment_outflow_when_from_teller_then_maps_to_transfer_out() {
     let account_id = Uuid::new_v4();
-    let teller_json = serde_json::json!({
-        "id": "txn_investment_out",
-        "date": "2024-01-19",
-        "amount": "-5000.00",
-        "description": "Investment withdrawal",
-        "status": "posted",
-        "details": {
-            "category": "investment",
-            "counterparty": {
-                "type": "organization",
-                "name": "Brokerage"
-            }
-        }
-    });
+    let teller_json =
+        serde_json::from_str(TestFixtures::teller_transaction_investment_outflow()).unwrap();
 
     let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
@@ -231,20 +168,7 @@ fn given_teller_transaction_with_investment_outflow_when_from_teller_then_maps_t
 fn given_teller_transaction_with_utilities_category_when_from_teller_then_maps_to_rent_and_utilities(
 ) {
     let account_id = Uuid::new_v4();
-    let teller_json = serde_json::json!({
-        "id": "txn_utilities",
-        "date": "2024-01-20",
-        "amount": "-120.00",
-        "description": "Utilities",
-        "status": "posted",
-        "details": {
-            "category": "utilities",
-            "counterparty": {
-                "type": "merchant",
-                "name": "Utility Company"
-            }
-        }
-    });
+    let teller_json = serde_json::from_str(TestFixtures::teller_transaction_utilities()).unwrap();
 
     let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
@@ -258,20 +182,8 @@ fn given_teller_transaction_with_utilities_category_when_from_teller_then_maps_t
 #[test]
 fn given_teller_transaction_with_null_category_when_from_teller_then_maps_to_other() {
     let account_id = Uuid::new_v4();
-    let teller_json = serde_json::json!({
-        "id": "txn_null_category",
-        "date": "2024-01-21",
-        "amount": "-12.34",
-        "description": "Unknown",
-        "status": "posted",
-        "details": {
-            "category": null,
-            "counterparty": {
-                "type": "merchant",
-                "name": "Merchant"
-            }
-        }
-    });
+    let teller_json =
+        serde_json::from_str(TestFixtures::teller_transaction_null_category()).unwrap();
 
     let transaction = Transaction::from_teller(&teller_json, &account_id, Some("acc_test_123"));
 
