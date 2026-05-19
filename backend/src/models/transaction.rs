@@ -5,7 +5,10 @@ use std::str::FromStr;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+use crate::models::import::CsvColumnMapping;
 use crate::utils::merchant_name::normalize_merchant_display_case;
+use csv::StringRecord;
+use sha2::{Digest, Sha256};
 
 #[allow(unused_imports)]
 use serde_json::json;
@@ -291,6 +294,173 @@ pub struct SyncMetadata {
 }
 
 impl Transaction {
+    #[allow(clippy::too_many_arguments)]
+    pub fn from_ofx(
+        fitid: &str,
+        date: NaiveDate,
+        amount: Decimal,
+        merchant_name: &str,
+        trntype: Option<&str>,
+        account_id: &Uuid,
+    ) -> Self {
+        let normalized_merchant_name = normalize_merchant_display_case(merchant_name.trim());
+        let payment_channel = trntype
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(|value| value.to_ascii_lowercase());
+
+        Self {
+            id: Uuid::new_v4(),
+            account_id: *account_id,
+            user_id: None,
+            provider_account_id: None,
+            provider_transaction_id: Some(fitid.trim().to_string()),
+            amount: amount.abs(),
+            date,
+            merchant_name: if normalized_merchant_name.is_empty() {
+                None
+            } else {
+                Some(normalized_merchant_name)
+            },
+            category_primary: "OTHER".to_string(),
+            category_detailed: "OTHER".to_string(),
+            category_confidence: String::new(),
+            payment_channel,
+            pending: false,
+            created_at: Some(chrono::Utc::now()),
+        }
+    }
+
+    pub fn from_csv_row(
+        headers: &StringRecord,
+        row: &StringRecord,
+        mapping: &CsvColumnMapping,
+        account_id: &Uuid,
+    ) -> Result<Self, String> {
+        let date_raw = Self::csv_value(row, headers, mapping.date_column.as_deref(), "date")?;
+        let date = Self::parse_csv_date(date_raw)
+            .ok_or_else(|| format!("Unable to parse date value '{}'", date_raw))?;
+
+        let description_raw = Self::csv_value(
+            row,
+            headers,
+            mapping.description_column.as_deref(),
+            "description",
+        )?;
+        let description = description_raw.trim();
+        if description.is_empty() {
+            return Err("Description is required".to_string());
+        }
+
+        let amount = if let Some(column) = mapping.amount_column.as_deref() {
+            let value = Self::csv_value(row, headers, Some(column), "amount")?;
+            Self::parse_csv_decimal(value)?
+        } else {
+            let debit = mapping
+                .debit_column
+                .as_deref()
+                .and_then(|column| Self::csv_optional_value(row, headers, Some(column)));
+            let credit = mapping
+                .credit_column
+                .as_deref()
+                .and_then(|column| Self::csv_optional_value(row, headers, Some(column)));
+
+            match (debit, credit) {
+                (Some(debit), Some(credit))
+                    if !debit.trim().is_empty() && !credit.trim().is_empty() =>
+                {
+                    return Err("Debit and credit columns both contain values".to_string());
+                }
+                (Some(debit), _) if !debit.trim().is_empty() => Self::parse_csv_decimal(debit)?,
+                (_, Some(credit)) if !credit.trim().is_empty() => Self::parse_csv_decimal(credit)?,
+                _ => {
+                    return Err("A debit, credit, or amount column must contain a value".to_string())
+                }
+            }
+        };
+
+        let provider_transaction_id =
+            Self::csv_provider_transaction_id(account_id, date, &amount, description);
+
+        Ok(Self {
+            id: Uuid::new_v4(),
+            account_id: *account_id,
+            user_id: None,
+            provider_account_id: None,
+            provider_transaction_id: Some(provider_transaction_id),
+            amount: amount.abs(),
+            date,
+            merchant_name: Some(normalize_merchant_display_case(description)),
+            category_primary: "OTHER".to_string(),
+            category_detailed: "OTHER".to_string(),
+            category_confidence: String::new(),
+            payment_channel: None,
+            pending: false,
+            created_at: Some(chrono::Utc::now()),
+        })
+    }
+
+    fn csv_value<'a>(
+        row: &'a StringRecord,
+        headers: &StringRecord,
+        column: Option<&str>,
+        field_name: &str,
+    ) -> Result<&'a str, String> {
+        let column = column.ok_or_else(|| format!("{} column is required", field_name))?;
+        let index = headers
+            .iter()
+            .position(|header| header.trim().eq_ignore_ascii_case(column.trim()))
+            .ok_or_else(|| format!("{} column '{}' was not found", field_name, column))?;
+        row.get(index)
+            .ok_or_else(|| format!("{} column '{}' is missing in row", field_name, column))
+    }
+
+    fn csv_optional_value<'a>(
+        row: &'a StringRecord,
+        headers: &StringRecord,
+        column: Option<&str>,
+    ) -> Option<&'a str> {
+        let column = column?;
+        let index = headers
+            .iter()
+            .position(|header| header.trim().eq_ignore_ascii_case(column.trim()))?;
+        row.get(index)
+    }
+
+    fn parse_csv_date(raw: &str) -> Option<NaiveDate> {
+        let value = raw.trim();
+        ["%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%Y/%m/%d", "%m-%d-%Y"]
+            .iter()
+            .find_map(|format| NaiveDate::parse_from_str(value, format).ok())
+    }
+
+    fn parse_csv_decimal(raw: &str) -> Result<Decimal, String> {
+        let cleaned = raw
+            .trim()
+            .replace(['$', ','], "")
+            .replace('(', "-")
+            .replace(')', "");
+
+        Decimal::from_str(&cleaned).map_err(|_| format!("Unable to parse amount value '{}'", raw))
+    }
+
+    fn csv_provider_transaction_id(
+        account_id: &Uuid,
+        date: NaiveDate,
+        amount: &Decimal,
+        description: &str,
+    ) -> String {
+        let mut hasher = Sha256::new();
+        hasher.update(account_id.to_string().as_bytes());
+        hasher.update(b"|");
+        hasher.update(date.to_string().as_bytes());
+        hasher.update(b"|");
+        hasher.update(amount.normalize().to_string().as_bytes());
+        hasher.update(b"|");
+        hasher.update(description.trim().as_bytes());
+        hex::encode(hasher.finalize())
+    }
+
     pub fn merchant_name_from_teller(teller_txn: &serde_json::Value) -> Option<String> {
         let raw = teller_txn["details"]["counterparty"]["name"]
             .as_str()
