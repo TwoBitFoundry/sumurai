@@ -2,8 +2,11 @@ use crate::models::analytics::{
     BalanceCategory, CategorySpending, DailySpending, MonthlySpending, TopMerchant,
 };
 use crate::models::transaction::Transaction;
+use crate::services::repository_service::DatabaseRepository;
+use anyhow::Result;
 use chrono::Datelike;
 use rust_decimal::Decimal;
+use uuid::Uuid;
 
 pub struct AnalyticsService;
 
@@ -61,6 +64,37 @@ impl AnalyticsService {
 
     pub fn new() -> Self {
         Self
+    }
+
+    pub async fn load_spending_transactions(
+        &self,
+        repository: &dyn DatabaseRepository,
+        user_id: &Uuid,
+        start_date: Option<chrono::NaiveDate>,
+        end_date: Option<chrono::NaiveDate>,
+    ) -> Result<Vec<Transaction>> {
+        match (start_date, end_date) {
+            (Some(start_date), Some(end_date)) => {
+                repository
+                    .get_spending_transactions_by_date_range_for_user(user_id, start_date, end_date)
+                    .await
+            }
+            _ => repository.get_spending_transactions_for_user(user_id).await,
+        }
+    }
+
+    pub fn current_month_date_range(&self) -> (chrono::NaiveDate, chrono::NaiveDate) {
+        let now = chrono::Utc::now().naive_utc().date();
+        Self::get_month_range_static(now.year(), now.month())
+    }
+
+    pub fn month_date_range(
+        &self,
+        year: i32,
+        month: u32,
+    ) -> Option<(chrono::NaiveDate, chrono::NaiveDate)> {
+        chrono::NaiveDate::from_ymd_opt(year, month, 1)
+            .map(|_| Self::get_month_range_static(year, month))
     }
 
     fn get_previous_month_info(year: i32, month: u32) -> (i32, u32) {

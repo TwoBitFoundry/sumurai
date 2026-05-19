@@ -576,7 +576,7 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
     });
 
     mock_db
-        .expect_get_transactions_for_user()
+        .expect_get_spending_transactions_for_user()
         .returning(move |_| {
             let transactions = vec![
                 Transaction {
@@ -585,10 +585,10 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
                     user_id: Some(user_id),
                     provider_account_id: Some("plaid_acc_1".to_string()),
                     provider_transaction_id: Some("txn_001".to_string()),
-                    amount: dec!(-50.00),
+                    amount: dec!(50.00),
                     date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
                     merchant_name: Some("Test Merchant 1".to_string()),
-                    category_primary: "Food and Drink".to_string(),
+                    category_primary: "FOOD_AND_DRINK".to_string(),
                     category_detailed: "Restaurant".to_string(),
                     category_confidence: "HIGH".to_string(),
                     payment_channel: Some("in_store".to_string()),
@@ -597,14 +597,14 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
                 },
                 Transaction {
                     id: Uuid::new_v4(),
-                    account_id: account_id_2,
+                    account_id: account_id_1,
                     user_id: Some(user_id),
-                    provider_account_id: Some("plaid_acc_2".to_string()),
+                    provider_account_id: Some("plaid_acc_1".to_string()),
                     provider_transaction_id: Some("txn_002".to_string()),
-                    amount: dec!(-25.00),
+                    amount: dec!(25.00),
                     date: NaiveDate::from_ymd_opt(2024, 1, 16).unwrap(),
                     merchant_name: Some("Test Merchant 2".to_string()),
-                    category_primary: "Food and Drink".to_string(),
+                    category_primary: "FOOD_AND_DRINK".to_string(),
                     category_detailed: "Restaurant".to_string(),
                     category_confidence: "HIGH".to_string(),
                     payment_channel: Some("in_store".to_string()),
@@ -638,6 +638,11 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
 
     let response = app.oneshot(request).await.unwrap();
     assert_eq!(response.status(), 200);
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let total: rust_decimal::Decimal = serde_json::from_slice(&body).unwrap();
+    assert_eq!(total, dec!(75.00));
 }
 
 #[tokio::test]
@@ -655,7 +660,7 @@ async fn given_authenticated_user_when_get_spending_with_foreign_account_ids_the
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
-        .expect_get_transactions_for_user()
+        .expect_get_spending_transactions_for_user()
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
@@ -729,7 +734,7 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
     });
 
     mock_db
-        .expect_get_transactions_for_user()
+        .expect_get_spending_transactions_for_user()
         .returning(move |_| {
             let transactions = vec![
                 Transaction {
@@ -794,6 +799,96 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
 }
 
 #[tokio::test]
+async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_ranking() {
+    use crate::models::analytics::TopMerchant;
+    use crate::models::transaction::Transaction;
+    use crate::services::repository_service::MockDatabaseRepository;
+    use axum::body::to_bytes;
+    use chrono::NaiveDate;
+    use rust_decimal_macros::dec;
+    use uuid::Uuid;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let user_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+
+    mock_db
+        .expect_get_spending_transactions_for_user()
+        .returning(move |_| {
+            let transactions = vec![
+                Transaction {
+                    id: Uuid::new_v4(),
+                    account_id: Uuid::new_v4(),
+                    user_id: Some(user_id),
+                    provider_account_id: Some("plaid_acc_1".to_string()),
+                    provider_transaction_id: Some("txn_001".to_string()),
+                    amount: dec!(50.00),
+                    date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+                    merchant_name: Some("Coffee Shop".to_string()),
+                    category_primary: "FOOD_AND_DRINK".to_string(),
+                    category_detailed: "Coffee Shop".to_string(),
+                    category_confidence: "HIGH".to_string(),
+                    payment_channel: Some("in_store".to_string()),
+                    pending: false,
+                    created_at: Some(chrono::Utc::now()),
+                },
+                Transaction {
+                    id: Uuid::new_v4(),
+                    account_id: Uuid::new_v4(),
+                    user_id: Some(user_id),
+                    provider_account_id: Some("plaid_acc_2".to_string()),
+                    provider_transaction_id: Some("txn_002".to_string()),
+                    amount: dec!(100.00),
+                    date: NaiveDate::from_ymd_opt(2024, 1, 16).unwrap(),
+                    merchant_name: Some("Grocery Store".to_string()),
+                    category_primary: "FOOD_AND_DRINK".to_string(),
+                    category_detailed: "Groceries".to_string(),
+                    category_confidence: "HIGH".to_string(),
+                    payment_channel: Some("in_store".to_string()),
+                    pending: false,
+                    created_at: Some(chrono::Utc::now()),
+                },
+            ];
+            Box::pin(async { Ok(transactions) })
+        });
+
+    mock_db
+        .expect_get_accounts_for_user()
+        .returning(move |_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_budgets_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_latest_account_balances_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request =
+        TestFixtures::create_authenticated_get_request("/api/analytics/top-merchants", &token);
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let merchants: Vec<TopMerchant> = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(merchants.len(), 2);
+    assert_eq!(merchants[0].name, "Grocery Store");
+    assert_eq!(merchants[0].amount, dec!(100.00));
+    assert_eq!(merchants[1].name, "Coffee Shop");
+    assert_eq!(merchants[1].amount, dec!(50.00));
+}
+
+#[tokio::test]
 async fn given_authenticated_user_when_get_categories_with_foreign_account_ids_then_returns_403() {
     use crate::services::repository_service::MockDatabaseRepository;
     use uuid::Uuid;
@@ -808,7 +903,7 @@ async fn given_authenticated_user_when_get_categories_with_foreign_account_ids_t
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db
-        .expect_get_transactions_for_user()
+        .expect_get_spending_transactions_for_user()
         .returning(move |_| Box::pin(async { Ok(vec![]) }));
 
     mock_db

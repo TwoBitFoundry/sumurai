@@ -322,6 +322,80 @@ async fn given_more_than_thousand_transactions_when_fetching_counts_then_ids_and
 }
 
 #[tokio::test]
+async fn given_spending_only_query_when_fetching_transactions_then_excludes_non_spending_categories(
+) {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+
+    let mut food = create_test_transaction(
+        user.id,
+        account.id,
+        "spend_txn_001".to_string(),
+        5000,
+        NaiveDate::from_ymd_opt(2024, 2, 1).unwrap(),
+    );
+    food.category_primary = "FOOD_AND_DRINK".to_string();
+
+    let mut income = create_test_transaction(
+        user.id,
+        account.id,
+        "spend_txn_002".to_string(),
+        10000,
+        NaiveDate::from_ymd_opt(2024, 2, 2).unwrap(),
+    );
+    income.category_primary = "INCOME".to_string();
+
+    let mut loan_payment = create_test_transaction(
+        user.id,
+        account.id,
+        "spend_txn_003".to_string(),
+        7500,
+        NaiveDate::from_ymd_opt(2024, 2, 3).unwrap(),
+    );
+    loan_payment.category_primary = "LOAN_PAYMENTS".to_string();
+
+    let mut transfer_out = create_test_transaction(
+        user.id,
+        account.id,
+        "spend_txn_004".to_string(),
+        2500,
+        NaiveDate::from_ymd_opt(2024, 2, 4).unwrap(),
+    );
+    transfer_out.category_primary = "TRANSFER_OUT".to_string();
+
+    repo.upsert_transactions_batch(
+        &[
+            food.clone(),
+            income.clone(),
+            loan_payment.clone(),
+            transfer_out.clone(),
+        ],
+        &user.id,
+    )
+    .await
+    .unwrap();
+
+    let all_transactions = repo.get_transactions_for_user(&user.id).await.unwrap();
+    let spending_transactions = repo
+        .get_spending_transactions_for_user(&user.id)
+        .await
+        .unwrap();
+
+    assert_eq!(all_transactions.len(), 4);
+    assert_eq!(spending_transactions.len(), 1);
+    assert_eq!(spending_transactions[0].category_primary, "FOOD_AND_DRINK");
+    assert_eq!(
+        spending_transactions[0].provider_transaction_id.as_deref(),
+        Some("spend_txn_001")
+    );
+}
+
+#[tokio::test]
 async fn given_transactions_when_querying_paginated_then_returns_correct_pages_and_total() {
     let Some(pool) = connect_pool().await else {
         return;
