@@ -11,6 +11,7 @@ import { ProviderSelectionPanel } from '@/features/plaid/components/ProviderSele
 import { TransactionsFilters } from '@/features/transactions/components/TransactionsFilters';
 import { EmptyState } from '@/ui/primitives';
 import { radius as uiRadiusRecipes } from '@/ui/recipes';
+import { ThemeTestProvider } from '../utils/ThemeTestProvider';
 
 describe('shared responsive layout surfaces', () => {
   it('matches hero card padding in dashboard chart cards', () => {
@@ -101,16 +102,18 @@ describe('shared responsive layout surfaces', () => {
 
   it('matches hero card radius in account rows', () => {
     const { container } = render(
-      <AccountRow
-        account={{
-          id: 'acct-1',
-          name: 'Essential Savings',
-          mask: '8677',
-          type: 'checking',
-          balance: 52011.88,
-          transactions: 108,
-        }}
-      />
+      <ThemeTestProvider>
+        <AccountRow
+          account={{
+            id: 'acct-1',
+            name: 'Essential Savings',
+            mask: '8677',
+            type: 'checking',
+            balance: 52011.88,
+            transactions: 108,
+          }}
+        />
+      </ThemeTestProvider>
     );
 
     expect(container.firstElementChild).toHaveClass(uiRadiusRecipes.standard);

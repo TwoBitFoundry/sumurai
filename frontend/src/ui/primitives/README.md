@@ -148,7 +148,7 @@ function ProfileCard() {
 
 ### Modal
 
-Accessible overlay container with backdrop handling and framer-motion transitions.
+Accessible overlay container with backdrop handling.
 
 **Use Cases:**
 - Confirmation dialogs

@@ -103,59 +103,68 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         error={errorMessage}
         stats={heroStats}
       >
-        <GlassCard className="p-0">
-          {props.state === 'loaded' || props.state === 'adding' ? (
-            <>
-              <BudgetToolbar
-                monthLabel="May 2026"
-                loading={false}
-                isAdding={props.state === 'adding'}
-                showAddButton
-                onPreviousMonth={() => {}}
-                onNextMonth={() => {}}
-                onCurrentMonth={() => {}}
-                onAddBudget={() => {}}
-              />
-              {props.state === 'adding' ? (
-                <div className={cn('px-6', 'pb-6', 'flex', 'justify-center')}>
-                  <div className="w-full max-w-md">
-                    <BudgetForm
-                      categories={['food_and_drink', 'transportation', 'entertainment']}
-                      usedCategories={new Set(['entertainment'])}
-                      value={{ category: '', amount: '' }}
-                      onChange={() => {}}
-                      onSave={() => {}}
-                      onCancel={() => {}}
-                    />
+        <div className={cn('w-full', 'min-w-0', 'max-w-full')}>
+          <GlassCard
+            variant="accent"
+            rounded="lg"
+            padding="none"
+            withInnerEffects={false}
+            containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
+            className={cn('space-y-6')}
+          >
+            {props.state === 'loaded' || props.state === 'adding' ? (
+              <>
+                <BudgetToolbar
+                  monthLabel="May 2026"
+                  loading={false}
+                  isAdding={props.state === 'adding'}
+                  showAddButton
+                  onPreviousMonth={() => {}}
+                  onNextMonth={() => {}}
+                  onCurrentMonth={() => {}}
+                  onAddBudget={() => {}}
+                />
+                {props.state === 'adding' ? (
+                  <div className={cn('flex', 'justify-center')}>
+                    <div className="w-full max-w-md">
+                      <BudgetForm
+                        categories={['food_and_drink', 'transportation', 'entertainment']}
+                        usedCategories={new Set(['entertainment'])}
+                        value={{ category: '', amount: '' }}
+                        onChange={() => {}}
+                        onSave={() => {}}
+                        onCancel={() => {}}
+                      />
+                    </div>
                   </div>
-                </div>
-              ) : null}
-              <BudgetList
-                items={sampleBudgetProgressEntries}
-                editingId={null}
-                onStartEdit={() => {}}
-                onCancelEdit={() => {}}
-                onSaveEdit={() => {}}
-                onDelete={() => {}}
-              />
-            </>
-          ) : null}
+                ) : null}
+                <BudgetList
+                  items={sampleBudgetProgressEntries}
+                  editingId={null}
+                  onStartEdit={() => {}}
+                  onCancelEdit={() => {}}
+                  onSaveEdit={() => {}}
+                  onDelete={() => {}}
+                />
+              </>
+            ) : null}
 
-          {props.state === 'empty' ? (
-            <EmptyState
-              icon={Target}
-              title="No budgets found"
-              description="Create your first category plan to watch spending settle into rhythm."
-              action={
-                <Button type="button" onClick={() => {}} variant="primary" size="md">
-                  <Plus className={cn('h-4', 'w-4')} />
-                  Add budget
-                </Button>
-              }
-              data-testid="budgets-empty-state"
-            />
-          ) : null}
-        </GlassCard>
+            {props.state === 'empty' ? (
+              <EmptyState
+                icon={Target}
+                title="No budgets found"
+                description="Create your first category plan to watch spending settle into rhythm."
+                action={
+                  <Button type="button" onClick={() => {}} variant="primary" size="md">
+                    <Plus className={cn('h-4', 'w-4')} />
+                    Add budget
+                  </Button>
+                }
+                data-testid="budgets-empty-state"
+              />
+            ) : null}
+          </GlassCard>
+        </div>
       </PageLayout>
     </div>
   );

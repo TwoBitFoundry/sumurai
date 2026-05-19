@@ -1,4 +1,3 @@
-import { AnimatePresence } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { Toast } from '@/components/Toast';
 import AccountsSummaryStats from '@/features/plaid/components/AccountsSummaryStats';
@@ -7,30 +6,9 @@ import ConnectionsList from '@/features/plaid/components/ConnectionsList';
 import ProviderSelectionPanel from '@/features/plaid/components/ProviderSelectionPanel';
 import { PageLayout } from '@/layouts/PageLayout';
 import { sampleBankConnections } from '@/storybook/fixtures/plaid';
-import { cn } from '@/ui/primitives';
-import {
-  border as semanticBorders,
-  effect as semanticEffects,
-  surface as semanticSurfaces,
-  radius as uiRadiusRecipes,
-  text as uiTextRecipes,
-  font as uiTypographyRecipes,
-} from '@/ui/recipes';
-
-const syncButtonClasses = cn(
-  'inline-flex items-center gap-2 px-5 py-2',
-  uiRadiusRecipes.standard,
-  ...semanticBorders.control,
-  ...semanticSurfaces.card,
-  uiTypographyRecipes.bodyStrong,
-  uiTextRecipes.body,
-  ...semanticEffects.glassShadow,
-  'transition-all duration-200 hover:-translate-y-[1px]',
-  ...semanticBorders.hoverAccent,
-  'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
-  'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none',
-  'dark:focus-visible:ring-offset-slate-900'
-);
+import { Button, cn } from '@/ui/primitives';
+import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
+import { font as uiTypographyRecipes } from '@/ui/recipes';
 
 export function AccountsProviderPickerSlice() {
   return (
@@ -75,10 +53,20 @@ export function AccountsConnectedScreenSlice(props: {
   const actions = (
     <>
       {!props.connectionsEmpty ? (
-        <button type="button" className={syncButtonClasses}>
-          <RefreshCw className={`h-4 w-4 ${props.syncingAll ? 'animate-spin' : ''}`} />
+        <Button
+          type="button"
+          variant="ghost"
+          size="md"
+          className={cn(
+            appTitleBarRecipes.settingsIdle,
+            'normal-case',
+            uiTypographyRecipes.bodyStrong,
+            'px-5'
+          )}
+        >
+          <RefreshCw className={cn('h-4 w-4', props.syncingAll && 'animate-spin')} />
           {props.syncingAll ? 'Syncing...' : 'Sync all'}
-        </button>
+        </Button>
       ) : null}
       <ConnectButton onClick={() => {}} disabled={false}>
         Add account
@@ -112,9 +100,7 @@ export function AccountsConnectedScreenSlice(props: {
           onDisconnect={async () => {}}
           isOnline
         />
-        <AnimatePresence>
-          {props.toastMessage ? <Toast message={props.toastMessage} onClose={() => {}} /> : null}
-        </AnimatePresence>
+        {props.toastMessage ? <Toast message={props.toastMessage} onClose={() => {}} /> : null}
       </PageLayout>
     </div>
   );

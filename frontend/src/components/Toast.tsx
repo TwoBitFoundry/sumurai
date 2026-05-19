@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -24,12 +23,9 @@ export const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
   }
 
   return createPortal(
-    <motion.div
+    <div
       role="status"
       aria-live="polite"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
       className={cn(
         'fixed',
         'z-[60]',
@@ -60,7 +56,7 @@ export const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
           Close
         </Button>
       </GlassCard>
-    </motion.div>,
+    </div>,
     document.body
   );
 };

@@ -135,9 +135,10 @@ export function TransactionsScreenSlice(props: {
         }
       >
         <GlassCard
-          variant="default"
-          rounded="default"
+          variant="accent"
+          rounded="lg"
           padding="none"
+          withInnerEffects={false}
           className={cn('relative', 'z-10')}
         >
           <TransactionsToolbar

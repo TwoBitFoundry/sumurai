@@ -1,12 +1,15 @@
 import type React from 'react';
+import type { CSSProperties } from 'react';
 import { cn, GlassCard, RequirementPill } from '@/ui/primitives';
 import {
+  dashboardCategoryCard,
   border as uiBorderRecipes,
   status as uiStatusRecipes,
   surface as uiSurfaceRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
+import { useTheme } from '../context/ThemeContext';
 
 interface Account {
   id: string;
@@ -25,29 +28,7 @@ const cardContainerClasses = cn(
   'group',
   'relative',
   'overflow-hidden',
-  'transition-transform',
-  'duration-200',
-  'ease-out',
-  'hover:-translate-y-[1px]'
-);
-
-const hoverOverlayClasses = cn(
-  'pointer-events-none',
-  'absolute',
-  'inset-0',
-  'rounded-[inherit]',
-  'opacity-0',
-  'transition-opacity',
-  'duration-200',
-  'ease-out',
-  'bg-gradient-to-br',
-  'from-sky-400/12',
-  'via-transparent',
-  'to-violet-500/14',
-  'group-hover:opacity-100',
-  'dark:from-sky-400/18',
-  'dark:via-transparent',
-  'dark:to-violet-500/18'
+  ...dashboardCategoryCard.chartHoverBorder
 );
 
 const accountMetaClasses = cn(
@@ -93,6 +74,10 @@ const formatMoney = (amount?: number) => {
 };
 
 export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
+  const { colors } = useTheme();
+  const hoverBorderStyle = {
+    '--dashboard-category-card-hover-border': colors.chart.primary[0],
+  } as CSSProperties;
   const isDebtAccount = account.type === 'credit' || account.type === 'loan';
   const isOtherAccount = account.type === 'other';
 
@@ -122,9 +107,9 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
       padding="none"
       withInnerEffects={false}
       containerClassName={cardContainerClasses}
+      style={hoverBorderStyle}
     >
       <div className={cn('relative', 'p-6')}>
-        <div className={hoverOverlayClasses} aria-hidden />
         <div className={cn('relative', 'z-10', 'space-y-3')}>
           <div className={cn('flex', 'items-center', 'justify-between')}>
             <div

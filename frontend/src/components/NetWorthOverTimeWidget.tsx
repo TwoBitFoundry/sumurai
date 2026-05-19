@@ -8,6 +8,10 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import {
+  ChartGlassTooltip,
+  chartTooltipRechartsProps,
+} from '@/features/analytics/components/ChartGlassTooltip';
 import { cn } from '@/ui/primitives';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { chart, getThemeColors } from '@/ui/tokens';
@@ -34,11 +38,10 @@ export const NetWorthOverTimeWidget: React.FC = () => {
             <XAxis dataKey="date" tick={{ fill: chart.axis[mode] }} />
             <YAxis tick={{ fill: chart.axis[mode] }} />
             <Tooltip
-              contentStyle={{
-                background: chart.tooltip[mode].background,
-                borderColor: chart.tooltip[mode].border,
-                color: chart.tooltip[mode].text,
-              }}
+              content={(tooltipProps) => (
+                <ChartGlassTooltip {...tooltipProps} valueClassName={uiTextRecipes.success} />
+              )}
+              {...chartTooltipRechartsProps}
             />
             <Line type="monotone" dataKey="netWorth" stroke={colors.semantic.netWorth} />
           </LineChart>

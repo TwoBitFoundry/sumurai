@@ -1,15 +1,14 @@
 import { MapPin } from 'lucide-react';
 import type React from 'react';
+import type { CSSProperties } from 'react';
 import { cn, EmptyState } from '@/ui/primitives';
 import {
-  border as uiBorderRecipes,
-  effect as uiEffectRecipes,
-  radius as uiRadiusRecipes,
-  surface as uiSurfaceRecipes,
+  dashboardCategoryCard,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { categoryAccents, chart } from '@/ui/tokens';
+import { useTheme } from '../../../context/ThemeContext';
 import type { AnalyticsTopMerchantsResponse } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
 
@@ -19,21 +18,23 @@ type Props = {
 };
 
 const merchantRow = [
-  `flex items-center justify-between ${uiRadiusRecipes.standard} border p-3 transition-all duration-300 hover:-translate-y-[2px]`,
-  ...uiBorderRecipes.subtle,
-  ...uiSurfaceRecipes.card,
-  ...uiEffectRecipes.accentHover,
+  'flex items-center justify-between p-3',
+  ...dashboardCategoryCard.shellInteractive,
 ] as const;
 
 export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' }) => {
+  const { colors } = useTheme();
   const merchantsToShow = merchants.slice(0, 6);
+  const hoverBorderStyle = {
+    '--dashboard-category-card-hover-border': colors.chart.primary[0],
+  } as CSSProperties;
 
   return (
     <div className={cn('h-full', 'flex', 'flex-col', className)}>
       {merchantsToShow.length > 0 ? (
         <div className={cn('space-y-3')}>
           {merchantsToShow.map((merchant, index) => (
-            <div key={merchant.name} className={cn(merchantRow)}>
+            <div key={merchant.name} className={cn(merchantRow)} style={hoverBorderStyle}>
               <div className={cn('flex', 'items-center', 'gap-3', 'min-w-0', 'flex-1')}>
                 <div
                   className={cn(

@@ -202,79 +202,84 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
         error={errorMessage}
         stats={heroStats}
       >
-        <GlassCard
-          padding="none"
-          containerClassName={cn('p-4', 'pt-5', 'md:p-8', 'lg:p-8')}
-          className="p-0"
-        >
-          {hasBudgets ? (
-            <>
-              <BudgetToolbar
-                monthLabel={monthLabel}
-                loading={budgetsLoading}
-                isAdding={isAdding}
-                showAddButton={hasBudgets}
-                onPreviousMonth={goToPreviousMonth}
-                onNextMonth={goToNextMonth}
-                onCurrentMonth={goToCurrentMonth}
-                onAddBudget={startAdd}
-              />
-              {isAdding && (
-                <div className={cn('px-6', 'pb-6', 'flex', 'justify-center')}>
-                  <div className="w-full max-w-md">
-                    <BudgetForm
-                      categories={categoryOptions}
-                      usedCategories={usedCategories}
-                      value={form}
-                      onChange={setForm}
-                      onSave={onSaveAdd}
-                      onCancel={cancel}
-                    />
+        <div className={cn('w-full', 'min-w-0', 'max-w-full')}>
+          <GlassCard
+            variant="accent"
+            rounded="lg"
+            padding="none"
+            withInnerEffects={false}
+            containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
+            className={cn('space-y-6')}
+          >
+            {hasBudgets ? (
+              <>
+                <BudgetToolbar
+                  monthLabel={monthLabel}
+                  loading={budgetsLoading}
+                  isAdding={isAdding}
+                  showAddButton={hasBudgets}
+                  onPreviousMonth={goToPreviousMonth}
+                  onNextMonth={goToNextMonth}
+                  onCurrentMonth={goToCurrentMonth}
+                  onAddBudget={startAdd}
+                />
+                {isAdding && (
+                  <div className={cn('flex', 'justify-center')}>
+                    <div className="w-full max-w-md">
+                      <BudgetForm
+                        categories={categoryOptions}
+                        usedCategories={usedCategories}
+                        value={form}
+                        onChange={setForm}
+                        onSave={onSaveAdd}
+                        onCancel={cancel}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
-              <BudgetList
-                items={computedBudgets}
-                editingId={editingId}
-                onStartEdit={onStartEdit}
-                onCancelEdit={cancel}
-                onSaveEdit={onSaveEdit}
-                onDelete={onDelete}
-              />
-            </>
-          ) : (
-            <>
-              <EmptyState
-                icon={Target}
-                title="No budgets found"
-                description="Create your first category plan to watch spending settle into rhythm."
-                action={
-                  !isAdding ? (
-                    <Button type="button" onClick={startAdd} variant="primary" size="md">
-                      <Plus className={cn('h-4', 'w-4')} />
-                      Add budget
-                    </Button>
-                  ) : null
-                }
-                data-testid="budgets-empty-state"
-              />
-              {isAdding && (
-                <div className={cn('px-6', 'pb-6', 'flex', 'justify-center')}>
-                  <div className="w-full max-w-md">
-                    <BudgetForm
-                      categories={categoryOptions}
-                      usedCategories={usedCategories}
-                      value={form}
-                      onChange={setForm}
-                      onSave={onSaveAdd}
-                      onCancel={cancel}
-                    />
+                )}
+                <BudgetList
+                  items={computedBudgets}
+                  editingId={editingId}
+                  onStartEdit={onStartEdit}
+                  onCancelEdit={cancel}
+                  onSaveEdit={onSaveEdit}
+                  onDelete={onDelete}
+                />
+              </>
+            ) : (
+              <>
+                <EmptyState
+                  icon={Target}
+                  title="No budgets found"
+                  description="Create your first category plan to watch spending settle into rhythm."
+                  action={
+                    !isAdding ? (
+                      <Button type="button" onClick={startAdd} variant="primary" size="md">
+                        <Plus className={cn('h-4', 'w-4')} />
+                        Add budget
+                      </Button>
+                    ) : null
+                  }
+                  data-testid="budgets-empty-state"
+                />
+                {isAdding && (
+                  <div className={cn('flex', 'justify-center')}>
+                    <div className="w-full max-w-md">
+                      <BudgetForm
+                        categories={categoryOptions}
+                        usedCategories={usedCategories}
+                        value={form}
+                        onChange={setForm}
+                        onSave={onSaveAdd}
+                        onCancel={cancel}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
-            </>
-          )}
-        </GlassCard>
+                )}
+              </>
+            )}
+          </GlassCard>
+        </div>
       </PageLayout>
     </div>
   );

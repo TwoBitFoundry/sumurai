@@ -3,6 +3,7 @@ import { PasswordChecker } from '@/components/PasswordChecker';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
 import type { PasswordValidation } from '@/hooks/usePasswordValidation';
 import { Alert, Badge, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
+import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { cn } from '@/ui/primitives/utils';
 import {
   border as uiBorderRecipes,
@@ -227,7 +228,7 @@ export function SettingsScreenSlice(props: {
             Once you delete your account, there is no going back. This action cannot be undone.
           </Alert>
 
-          <Button type="button" variant="danger" className={cn('w-full')}>
+          <Button type="button" variant="danger" size="md" className={cn('w-full')}>
             Delete Account
           </Button>
         </GlassCard>
@@ -282,12 +283,17 @@ export function SettingsScreenSlice(props: {
           </div>
 
           <div className={cn('flex', 'gap-3')}>
-            <Button type="button" variant="ghost" className={cn('flex-1')}>
+            <Button
+              type="button"
+              variant="ghost"
+              className={cn(appTitleBarRecipes.settingsIdle, 'flex-1', 'normal-case')}
+            >
               Cancel
             </Button>
             <Button
               type="button"
               variant="danger"
+              size="md"
               disabled={confirmText !== 'DELETE'}
               className={cn('flex-1')}
             >

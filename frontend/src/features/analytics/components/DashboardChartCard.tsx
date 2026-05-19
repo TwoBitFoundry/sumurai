@@ -25,8 +25,16 @@ export const DashboardChartCard = ({
   return (
     <GlassCard
       padding="none"
-      containerClassName={cn('h-full', 'p-4', 'pt-5', 'md:p-8', 'lg:p-8', className)}
-      className={cn('flex', 'h-full', 'min-h-0', 'flex-col')}
+      containerClassName={cn(
+        'h-full',
+        'overflow-visible',
+        'p-4',
+        'pt-5',
+        'md:p-8',
+        'lg:p-8',
+        className
+      )}
+      className={cn('flex', 'h-full', 'min-h-0', 'flex-col', 'overflow-visible')}
     >
       <div className={cn('mb-3', 'md:mb-4', 'flex', 'items-center', 'justify-between')}>
         <div>
@@ -40,7 +48,17 @@ export const DashboardChartCard = ({
           />
         )}
       </div>
-      <div className={cn('flex', 'min-h-[240px]', 'flex-1', 'flex-col', 'min-w-0', bodyClassName)}>
+      <div
+        className={cn(
+          'flex',
+          'min-h-[240px]',
+          'flex-1',
+          'flex-col',
+          'min-w-0',
+          'overflow-visible',
+          bodyClassName
+        )}
+      >
         {children}
       </div>
     </GlassCard>

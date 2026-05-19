@@ -1,32 +1,19 @@
 import { CheckIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { TrashIcon as TrashSolidIcon } from '@heroicons/react/24/solid';
 import { Target } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import React from 'react';
+import { heroStatCardRecipes } from '@/components/widgets/HeroStatCard';
 import { cn, EmptyState, IconButton, Input, Pill } from '@/ui/primitives';
-import {
-  border as semanticBorders,
-  effect as semanticEffects,
-  surface as semanticSurfaces,
-  focus as uiFocusRecipes,
-  radius as uiRadiusRecipes,
-  text as uiTextRecipes,
-  font as uiTypographyRecipes,
-} from '@/ui/recipes';
+import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { getHeroAccentForCategoryKey, getHeroAccentTheme } from '@/ui/tokens';
 import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
 import type { BudgetProgressEntry } from '../hooks/useBudgets';
 import BudgetProgress from './BudgetProgress';
 
 export type BudgetWithProgress = BudgetProgressEntry;
-
-const budgetCardShell = [
-  `group relative flex h-full flex-col overflow-hidden ${uiRadiusRecipes.standard} p-4 pt-5`,
-  ...semanticBorders.subtle,
-  ...semanticSurfaces.card,
-  ...semanticEffects.glassShadow,
-  'transition-all duration-300 hover:-translate-y-1',
-  ...semanticEffects.accentHover,
-] as const;
 
 export function BudgetList({
   items,
@@ -58,229 +45,240 @@ export function BudgetList({
   }
 
   return (
-    <ul className={cn('mt-4', 'grid', 'grid-cols-1', 'gap-6', 'md:grid-cols-2', 'lg:grid-cols-3')}>
+    <ul className={cn('grid', 'grid-cols-1', 'gap-6', 'md:grid-cols-2', 'lg:grid-cols-3')}>
       {items.map((b) => {
         const isOver = b.spent > b.amount;
         const displayName = formatCategoryName(b.category);
         const tagTheme = getTagThemeForCategory(displayName);
+        const heroStyles = getHeroAccentTheme(getHeroAccentForCategoryKey(tagTheme.key));
+        const ringColorStyle = {
+          '--tw-ring-color': `${heroStyles.ringHex}66`,
+        } as CSSProperties;
         const isEditing = editingId === b.id;
         const draft = amountDrafts[b.id] ?? String(b.amount);
         return (
-          <li
-            key={b.id}
-            className={cn(
-              budgetCardShell,
-              tagTheme.ring,
-              'ring-1 ring-offset-1',
-              uiFocusRecipes.ringOffsetLightOnDark
-            )}
-          >
+          <li key={b.id} className={cn(heroStatCardRecipes.base, 'h-full')}>
             <div
               className={cn(
-                'absolute',
-                'inset-x-6',
-                'top-0',
-                'h-px',
-                'bg-gradient-to-r',
-                'from-transparent',
-                'via-white/60',
-                'to-transparent',
-                'opacity-0',
-                'transition-opacity',
-                'duration-300',
-                'group-hover:opacity-100',
-                'dark:via-white/20'
-              )}
-            />
-            <Pill
-              variant="category"
-              categoryName={displayName}
-              className={cn(
-                'transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10'
+                heroStatCardRecipes.shell,
+                heroStyles.border,
+                heroStyles.borderDark,
+                heroStyles.hoverBorder,
+                heroStyles.hoverBorderDark,
+                'flex h-full flex-col p-4 pt-5'
               )}
             >
-              {displayName}
-            </Pill>
-            <div className={cn('mt-2', 'flex-1', 'space-y-4')}>
-              {isEditing ? (
-                <div
-                  className={cn(
-                    'grid',
-                    'grid-cols-1',
-                    'gap-4',
-                    'md:grid-cols-[1fr_auto]',
-                    'md:items-end'
-                  )}
-                >
-                  <div className="space-y-2">
-                    <label
-                      htmlFor={`budget-amount-${b.id}`}
+              <div
+                className={cn(
+                  'hero-stat-card__gradient',
+                  'pointer-events-none',
+                  'absolute',
+                  'inset-0',
+                  'rounded-[length:inherit]',
+                  'opacity-0',
+                  'transition-opacity',
+                  'duration-300',
+                  'group-hover:opacity-100'
+                )}
+                style={{
+                  backgroundImage: `linear-gradient(135deg, ${heroStyles.gradFrom}33, ${heroStyles.gradVia}1f, transparent 70%)`,
+                }}
+              />
+              <div className={cn(heroStatCardRecipes.ring)}>
+                <div className={cn(heroStatCardRecipes.ringLine)} style={ringColorStyle} />
+              </div>
+              <Pill
+                variant="category"
+                categoryName={displayName}
+                className={cn(
+                  'relative z-10 transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10'
+                )}
+              >
+                {displayName}
+              </Pill>
+              <div className={cn('relative z-10 mt-2 flex-1 space-y-4')}>
+                {isEditing ? (
+                  <div
+                    className={cn(
+                      'grid',
+                      'grid-cols-1',
+                      'gap-4',
+                      'md:grid-cols-[1fr_auto]',
+                      'md:items-end'
+                    )}
+                  >
+                    <div className="space-y-2">
+                      <label
+                        htmlFor={`budget-amount-${b.id}`}
+                        className={cn(
+                          'block',
+                          uiTypographyRecipes.label,
+                          uiTextRecipes.subtle,
+                          'transition-colors',
+                          'duration-300'
+                        )}
+                      >
+                        Planned amount
+                      </label>
+                      <Input
+                        id={`budget-amount-${b.id}`}
+                        data-testid="budget-amount-input"
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={draft}
+                        onChange={(e) => setAmountDrafts((d) => ({ ...d, [b.id]: e.target.value }))}
+                        variant="glass"
+                        inputSize="lg"
+                      />
+                    </div>
+                    <div
                       className={cn(
-                        'block',
-                        uiTypographyRecipes.label,
+                        'text-right',
+                        uiTypographyRecipes.caption,
                         uiTextRecipes.subtle,
                         'transition-colors',
                         'duration-300'
                       )}
                     >
-                      Planned amount
-                    </label>
-                    <Input
-                      id={`budget-amount-${b.id}`}
-                      data-testid="budget-amount-input"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={draft}
-                      onChange={(e) => setAmountDrafts((d) => ({ ...d, [b.id]: e.target.value }))}
-                      variant="glass"
-                      inputSize="lg"
-                    />
+                      <span
+                        className={cn(
+                          'block',
+                          uiTypographyRecipes.label,
+                          uiTextRecipes.subtle,
+                          'transition-colors',
+                          'duration-300'
+                        )}
+                      >
+                        Spent
+                      </span>
+                      <span
+                        className={cn(
+                          uiTypographyRecipes.bodyStrong,
+                          uiTextRecipes.body,
+                          'transition-colors',
+                          'duration-300'
+                        )}
+                      >
+                        {fmtUSD(b.spent)}
+                      </span>
+                    </div>
                   </div>
+                ) : (
                   <div
                     className={cn(
-                      'text-right',
+                      'grid',
+                      'grid-cols-2',
+                      'gap-4',
                       uiTypographyRecipes.caption,
                       uiTextRecipes.subtle,
                       'transition-colors',
                       'duration-300'
                     )}
                   >
-                    <span
-                      className={cn(
-                        'block',
-                        uiTypographyRecipes.label,
-                        uiTextRecipes.subtle,
-                        'transition-colors',
-                        'duration-300'
-                      )}
-                    >
-                      Spent
-                    </span>
-                    <span
-                      className={cn(
-                        uiTypographyRecipes.bodyStrong,
-                        uiTextRecipes.body,
-                        'transition-colors',
-                        'duration-300'
-                      )}
-                    >
-                      {fmtUSD(b.spent)}
-                    </span>
+                    <div>
+                      <span
+                        className={cn(
+                          uiTypographyRecipes.label,
+                          uiTextRecipes.subtle,
+                          'transition-colors',
+                          'duration-300'
+                        )}
+                      >
+                        Planned
+                      </span>
+                      <div
+                        className={cn(
+                          'mt-1',
+                          uiTypographyRecipes.cardTitle,
+                          uiTextRecipes.primary,
+                          'transition-colors',
+                          'duration-300'
+                        )}
+                      >
+                        {fmtUSD(b.amount)}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span
+                        className={cn(
+                          uiTypographyRecipes.label,
+                          uiTextRecipes.subtle,
+                          'transition-colors',
+                          'duration-300'
+                        )}
+                      >
+                        Spent
+                      </span>
+                      <div
+                        className={cn(
+                          'mt-1',
+                          uiTypographyRecipes.cardTitle,
+                          'transition-colors',
+                          'duration-300',
+                          isOver ? uiTextRecipes.danger : uiTextRecipes.body
+                        )}
+                      >
+                        {fmtUSD(b.spent)}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ) : (
+                )}
+                <BudgetProgress amount={b.amount} spent={b.spent} />
+              </div>
+              <div className={cn('relative z-10 mt-4 space-y-2')}>
+                <div className={cn('h-px', 'bg-white/10', 'dark:bg-white/5')} />
                 <div
                   className={cn(
-                    'grid',
-                    'grid-cols-2',
-                    'gap-4',
-                    uiTypographyRecipes.caption,
-                    uiTextRecipes.subtle,
-                    'transition-colors',
-                    'duration-300'
+                    'flex',
+                    'items-center',
+                    'justify-end',
+                    'gap-1.5',
+                    uiTypographyRecipes.label
                   )}
                 >
-                  <div>
-                    <span
-                      className={cn(
-                        uiTypographyRecipes.label,
-                        uiTextRecipes.subtle,
-                        'transition-colors',
-                        'duration-300'
-                      )}
-                    >
-                      Planned
-                    </span>
-                    <div
-                      className={cn(
-                        'mt-1',
-                        uiTypographyRecipes.cardTitle,
-                        uiTextRecipes.primary,
-                        'transition-colors',
-                        'duration-300'
-                      )}
-                    >
-                      {fmtUSD(b.amount)}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span
-                      className={cn(
-                        uiTypographyRecipes.label,
-                        uiTextRecipes.subtle,
-                        'transition-colors',
-                        'duration-300'
-                      )}
-                    >
-                      Spent
-                    </span>
-                    <div
-                      className={cn(
-                        'mt-1',
-                        uiTypographyRecipes.cardTitle,
-                        'transition-colors',
-                        'duration-300',
-                        isOver ? uiTextRecipes.danger : uiTextRecipes.body
-                      )}
-                    >
-                      {fmtUSD(b.spent)}
-                    </div>
-                  </div>
+                  {isEditing ? (
+                    <>
+                      <IconButton
+                        variant="primary"
+                        onClick={() => onSaveEdit(b.id, Number(draft))}
+                        title="Save"
+                        aria-label="Save budget"
+                      >
+                        <CheckIcon className={cn('h-4', 'w-4')} />
+                      </IconButton>
+                      <IconButton
+                        variant="ghost"
+                        className={cn(appTitleBarRecipes.settingsIdle)}
+                        onClick={onCancelEdit}
+                        title="Cancel"
+                        aria-label="Cancel edit"
+                      >
+                        <XMarkIcon className={cn('h-4', 'w-4')} />
+                      </IconButton>
+                    </>
+                  ) : (
+                    <>
+                      <IconButton
+                        variant="ghost"
+                        className={cn(appTitleBarRecipes.settingsIdle)}
+                        onClick={() => onStartEdit(b)}
+                        title="Edit budget"
+                        aria-label="Edit budget"
+                      >
+                        <PencilSquareIcon className={cn('h-4', 'w-4')} />
+                      </IconButton>
+                      <IconButton
+                        variant="danger"
+                        onClick={() => onDelete(b.id)}
+                        title="Delete budget"
+                        aria-label="Delete budget"
+                      >
+                        <TrashSolidIcon className={cn('h-4', 'w-4')} />
+                      </IconButton>
+                    </>
+                  )}
                 </div>
-              )}
-              <BudgetProgress amount={b.amount} spent={b.spent} />
-            </div>
-            <div className={cn('mt-4', 'space-y-2')}>
-              <div className={cn('h-px', 'bg-white/10', 'dark:bg-white/5')} />
-              <div
-                className={cn(
-                  'flex',
-                  'items-center',
-                  'justify-end',
-                  'gap-1.5',
-                  uiTypographyRecipes.label
-                )}
-              >
-                {isEditing ? (
-                  <>
-                    <IconButton
-                      variant="success"
-                      onClick={() => onSaveEdit(b.id, Number(draft))}
-                      title="Save"
-                      aria-label="Save budget"
-                    >
-                      <CheckIcon className={cn('h-4', 'w-4')} />
-                    </IconButton>
-                    <IconButton
-                      variant="ghost"
-                      onClick={onCancelEdit}
-                      title="Cancel"
-                      aria-label="Cancel edit"
-                    >
-                      <XMarkIcon className={cn('h-4', 'w-4')} />
-                    </IconButton>
-                  </>
-                ) : (
-                  <>
-                    <IconButton
-                      variant="ghost"
-                      onClick={() => onStartEdit(b)}
-                      title="Edit budget"
-                      aria-label="Edit budget"
-                    >
-                      <PencilSquareIcon className={cn('h-4', 'w-4')} />
-                    </IconButton>
-                    <IconButton
-                      variant="danger"
-                      onClick={() => onDelete(b.id)}
-                      title="Delete budget"
-                      aria-label="Delete budget"
-                    >
-                      <TrashSolidIcon className={cn('h-4', 'w-4')} />
-                    </IconButton>
-                  </>
-                )}
               </div>
             </div>
           </li>

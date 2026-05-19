@@ -146,7 +146,7 @@ export const TransactionsFilters: React.FC<Props> = ({
                     onClick={() => onSelectCategory(isSelected ? null : name)}
                     className={cn(
                       pillRecipes.base,
-                      'whitespace-nowrap transition-all duration-150 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
+                      'whitespace-nowrap transition-all duration-200 ease-out active:scale-[0.98] backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
                       theme.tag,
                       isSelected
                         ? ['ring-2', theme.ring]

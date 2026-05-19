@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, RefreshCw, Unlink } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
@@ -9,6 +8,7 @@ import {
 } from '../domain/accountCategories';
 import { getConnectionStatusCaption } from '../domain/connectionStatus';
 import { Button, cn, GlassCard } from '../ui/primitives';
+import { appTitleBarRecipes } from '../ui/primitives/AppTitleBar';
 import {
   border as uiBorderRecipes,
   status as uiStatusRecipes,
@@ -113,21 +113,21 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect, 
           type="button"
           onClick={handleSync}
           disabled={loading || !isOnline}
-          variant="icon"
+          variant="ghost"
           size="icon"
           aria-label="Sync now"
           title={!isOnline ? 'Unavailable while offline' : undefined}
-          className={cn('col-start-1', 'row-start-1', 'shrink-0')}
+          className={cn(appTitleBarRecipes.settingsIdle, 'col-start-1', 'row-start-1', 'shrink-0')}
         >
           <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
         </Button>
         <Button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          variant="icon"
+          variant="ghost"
           size="icon"
           aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
-          className={cn('col-start-1', 'row-start-2', 'shrink-0')}
+          className={cn(appTitleBarRecipes.settingsIdle, 'col-start-1', 'row-start-2', 'shrink-0')}
         >
           <ChevronDown className={cn('h-4 w-4', expanded && 'rotate-180')} />
         </Button>
@@ -189,47 +189,40 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect, 
           </p>
         ) : null}
       </div>
-      <AnimatePresence initial={false}>
-        {expanded && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className={cn('space-y-6', 'border-t', ...uiBorderRecipes.elevatedGlass, 'pt-4')}
-          >
-            {(() => {
-              const sortedAccounts = bank.accounts.slice().sort((a, b) => {
-                const aOrder = accountTypeSortOrder[a.type] ?? 4;
-                const bOrder = accountTypeSortOrder[b.type] ?? 4;
+      {expanded ? (
+        <div className={cn('space-y-6', 'border-t', ...uiBorderRecipes.elevatedGlass, 'pt-4')}>
+          {(() => {
+            const sortedAccounts = bank.accounts.slice().sort((a, b) => {
+              const aOrder = accountTypeSortOrder[a.type] ?? 4;
+              const bOrder = accountTypeSortOrder[b.type] ?? 4;
 
-                if (aOrder !== bOrder) {
-                  return aOrder - bOrder;
-                }
+              if (aOrder !== bOrder) {
+                return aOrder - bOrder;
+              }
 
-                const aBalance = a.balance || 0;
-                const bBalance = b.balance || 0;
-                return bBalance - aBalance;
-              });
+              const aBalance = a.balance || 0;
+              const bBalance = b.balance || 0;
+              return bBalance - aBalance;
+            });
 
-              const cashAccounts = sortedAccounts.filter(
-                (a) => a.type === 'checking' || a.type === 'savings'
-              );
-              const creditAccounts = sortedAccounts.filter((a) => a.type === 'credit');
-              const investmentAccounts = sortedAccounts.filter((a) => a.type === 'other');
-              const loanAccounts = sortedAccounts.filter((a) => a.type === 'loan');
+            const cashAccounts = sortedAccounts.filter(
+              (a) => a.type === 'checking' || a.type === 'savings'
+            );
+            const creditAccounts = sortedAccounts.filter((a) => a.type === 'credit');
+            const investmentAccounts = sortedAccounts.filter((a) => a.type === 'other');
+            const loanAccounts = sortedAccounts.filter((a) => a.type === 'loan');
 
-              return (
-                <>
-                  {cashAccounts.length > 0 && renderGroup('cash', cashAccounts)}
-                  {creditAccounts.length > 0 && renderGroup('credit', creditAccounts)}
-                  {investmentAccounts.length > 0 && renderGroup('investments', investmentAccounts)}
-                  {loanAccounts.length > 0 && renderGroup('loans', loanAccounts)}
-                </>
-              );
-            })()}
-          </motion.div>
-        )}
-      </AnimatePresence>
+            return (
+              <>
+                {cashAccounts.length > 0 && renderGroup('cash', cashAccounts)}
+                {creditAccounts.length > 0 && renderGroup('credit', creditAccounts)}
+                {investmentAccounts.length > 0 && renderGroup('investments', investmentAccounts)}
+                {loanAccounts.length > 0 && renderGroup('loans', loanAccounts)}
+              </>
+            );
+          })()}
+        </div>
+      ) : null}
 
       <DisconnectModal
         isOpen={showDisconnectModal}

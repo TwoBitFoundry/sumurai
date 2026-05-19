@@ -424,6 +424,22 @@ export function getCategoryAccent(name?: string | null): CategoryTheme {
   return categoryAccents[hashString(key) % categoryAccents.length];
 }
 
+export function getHeroAccentForCategoryKey(categoryKey: string): HeroAccent {
+  const map: Record<string, HeroAccent> = {
+    sky: 'sky',
+    emerald: 'emerald',
+    cyan: 'sky',
+    violet: 'violet',
+    amber: 'amber',
+    rose: 'rose',
+    indigo: 'violet',
+    fuchsia: 'violet',
+    teal: 'emerald',
+    lime: 'emerald',
+  };
+  return map[categoryKey] ?? 'emerald';
+}
+
 export function getHeroAccentTheme(accent: HeroAccent): HeroAccentTheme {
   return heroAccents[accent];
 }

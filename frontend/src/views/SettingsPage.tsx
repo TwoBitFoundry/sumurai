@@ -7,6 +7,7 @@ import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { AuthService } from '@/services/authService';
 import { SettingsService } from '@/services/SettingsService';
 import { Alert, Badge, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
+import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { cn } from '@/ui/primitives/utils';
 import {
   border as uiBorderRecipes,
@@ -253,6 +254,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           <Button
             type="button"
             variant="danger"
+            size="md"
             onClick={() => setShowDeleteModal(true)}
             className={cn('w-full')}
           >
@@ -317,13 +319,14 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
               variant="ghost"
               onClick={closeDeleteModal}
               disabled={isDeleting}
-              className={cn('flex-1')}
+              className={cn(appTitleBarRecipes.settingsIdle, 'flex-1', 'normal-case')}
             >
               Cancel
             </Button>
             <Button
               type="button"
               variant="danger"
+              size="md"
               onClick={handleDeleteAccount}
               disabled={confirmText !== 'DELETE' || isDeleting}
               className={cn('flex-1')}

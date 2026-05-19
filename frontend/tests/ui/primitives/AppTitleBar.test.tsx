@@ -92,6 +92,24 @@ describe('AppTitleBar', () => {
     expect(onTabChange).toHaveBeenCalledWith('settings');
   });
 
+  it('navigates to dashboard when the logo is clicked', async () => {
+    const onTabChange = jest.fn();
+    const user = userEvent.setup();
+
+    render(
+      <AppTitleBar
+        {...baseProps}
+        isOnline
+        currentTab="settings"
+        onTabChange={onTabChange}
+        onLogout={jest.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Go to dashboard' }));
+    expect(onTabChange).toHaveBeenCalledWith('dashboard');
+  });
+
   describe('mobile layout', () => {
     const mobileProps = {
       state: 'authenticated' as const,

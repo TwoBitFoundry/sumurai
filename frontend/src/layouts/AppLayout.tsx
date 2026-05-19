@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { cn } from '@/ui/primitives';
 import { appTitleBarRecipes, TABS } from '@/ui/primitives/AppTitleBar';
@@ -114,14 +113,6 @@ export function AppLayout({
                     currentTab === key ? semanticTextRecipes.inverse : semanticTextRecipes.muted
                   )}
                 >
-                  {currentTab === key ? (
-                    <motion.div
-                      layoutId="pill-active"
-                      data-slot="active-pill"
-                      className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
-                      transition={{ stiffness: 400, damping: 35 }}
-                    />
-                  ) : null}
                   <span className="relative z-10 flex h-4 w-4 items-center justify-center shrink-0">
                     <Icon className="h-4 w-4" />
                   </span>

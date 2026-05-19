@@ -4,14 +4,19 @@ import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, XAxis, YAxis }
 import { useTheme } from '../context/ThemeContext';
 import { ACCOUNT_GROUP_LABELS } from '../domain/accountCategories';
 import { BalancesChartXAxisTick } from '../features/analytics/components/BalancesChartXAxisTick';
+import {
+  ChartTooltipFadeHost,
+  ChartTooltipShell,
+} from '../features/analytics/components/ChartGlassTooltip';
 import { useDebouncedChartRecalc } from '../features/analytics/hooks/useDebouncedChartRecalc';
 import {
+  INSTITUTION_LABEL_AXIS_GAP,
   INSTITUTION_LABEL_LINE_HEIGHT,
   institutionLabelLineCount,
   maxCharsPerInstitutionSlot,
 } from '../features/analytics/utils/wrapInstitutionLabel';
 import { useBalancesOverview } from '../hooks/useBalancesOverview';
-import { Alert, Button, cn, GlassCard } from '../ui/primitives';
+import { Alert, Button, cn } from '../ui/primitives';
 import {
   surface as semanticSurfaces,
   border as uiBorderRecipes,
@@ -29,8 +34,6 @@ const dashboardSummaryShellLoading = [
   ...uiBorderRecipes.subtle,
   ...semanticSurfaces.mutedChip,
 ] as const;
-
-const dashboardHoverInfoLayout = 'flex flex-wrap items-center gap-x-4 gap-y-2';
 
 type BankBarDatum = {
   bank: string;
@@ -95,7 +98,8 @@ export function BalancesOverview() {
             )
           )
         : 1;
-    const xAxisHeight = maxLabelLines * INSTITUTION_LABEL_LINE_HEIGHT + 8;
+    const xAxisHeight =
+      maxLabelLines * INSTITUTION_LABEL_LINE_HEIGHT + INSTITUTION_LABEL_AXIS_GAP + 8;
     return { yTickFontSize, yAxisWidth, maxCharsPerLine, xAxisHeight };
   }, [debouncedBanks]);
 
@@ -353,53 +357,55 @@ export function BalancesOverview() {
           )}
           style={{ height: 224 + chartLayout.xAxisHeight }}
         >
-          {hoverInfo ? (
-            <div
-              className={cn(
-                'pointer-events-none',
-                'absolute',
-                'bottom-full',
-                'left-0',
-                'right-0',
-                'z-10',
-                'mb-4',
-                '-translate-y-1',
-                'flex',
-                'justify-center',
-                'px-2'
-              )}
-            >
-              <GlassCard
-                variant="accent"
-                rounded="lg"
-                padding="sm"
-                withInnerEffects={false}
+          <ChartTooltipFadeHost
+            active={hoverInfo}
+            presence={{ showDelayMs: 60, hideDelayMs: 80, fadeDurationMs: 200 }}
+            wrapperClassName={cn(
+              'pointer-events-none',
+              'absolute',
+              'bottom-full',
+              'left-0',
+              'right-0',
+              'z-10',
+              'mb-4',
+              '-translate-y-1',
+              'flex',
+              'justify-center',
+              'px-2'
+            )}
+          >
+            {(info) => (
+              <ChartTooltipShell
                 className={cn(
-                  dashboardHoverInfoLayout,
+                  'flex flex-col gap-2',
                   uiTypographyRecipes.caption,
                   uiTextRecipes.body
                 )}
               >
-                <span className={cn(uiTypographyRecipes.captionStrong)}>{hoverInfo.bank}</span>
-                <span className={cn('flex', 'items-center', 'gap-1', uiStatusRecipes.success.text)}>
-                  <span className={cn('h-2', 'w-2', 'rounded-full', 'bg-emerald-500')} />
-                  {ACCOUNT_GROUP_LABELS.cash}: {fmtUSD(hoverInfo.cash ?? 0)}
-                </span>
-                <span className={cn('flex', 'items-center', 'gap-1', uiStatusRecipes.info.text)}>
-                  <span className={cn('h-2', 'w-2', 'rounded-full', 'bg-cyan-500')} />
-                  {ACCOUNT_GROUP_LABELS.investments}: {fmtUSD(hoverInfo.investments ?? 0)}
-                </span>
-                <span className={cn('flex', 'items-center', 'gap-1', uiStatusRecipes.danger.text)}>
-                  <span className={cn('h-2', 'w-2', 'rounded-full', 'bg-rose-500')} />
-                  {ACCOUNT_GROUP_LABELS.credit}: {fmtUSD(hoverInfo.credit ?? 0)}
-                </span>
-                <span className={cn('flex', 'items-center', 'gap-1', uiStatusRecipes.warning.text)}>
-                  <span className={cn('h-2', 'w-2', 'rounded-full', 'bg-amber-500')} />
-                  {ACCOUNT_GROUP_LABELS.loans}: {fmtUSD(hoverInfo.loan ?? 0)}
-                </span>
-              </GlassCard>
-            </div>
-          ) : null}
+                <p className={cn(uiTypographyRecipes.captionStrong, uiTextRecipes.primary)}>
+                  {info.bank}
+                </p>
+                <div className={cn('grid grid-cols-2 gap-x-4 gap-y-2')}>
+                  <span className={cn('flex items-center gap-1', uiStatusRecipes.success.text)}>
+                    <span className={cn('h-2 w-2 shrink-0 rounded-full bg-emerald-500')} />
+                    {ACCOUNT_GROUP_LABELS.cash}: {fmtUSD(info.cash ?? 0)}
+                  </span>
+                  <span className={cn('flex items-center gap-1', uiStatusRecipes.info.text)}>
+                    <span className={cn('h-2 w-2 shrink-0 rounded-full bg-cyan-500')} />
+                    {ACCOUNT_GROUP_LABELS.investments}: {fmtUSD(info.investments ?? 0)}
+                  </span>
+                  <span className={cn('flex items-center gap-1', uiStatusRecipes.danger.text)}>
+                    <span className={cn('h-2 w-2 shrink-0 rounded-full bg-rose-500')} />
+                    {ACCOUNT_GROUP_LABELS.credit}: {fmtUSD(info.credit ?? 0)}
+                  </span>
+                  <span className={cn('flex items-center gap-1', uiStatusRecipes.warning.text)}>
+                    <span className={cn('h-2 w-2 shrink-0 rounded-full bg-amber-500')} />
+                    {ACCOUNT_GROUP_LABELS.loans}: {fmtUSD(info.loan ?? 0)}
+                  </span>
+                </div>
+              </ChartTooltipShell>
+            )}
+          </ChartTooltipFadeHost>
           <ResponsiveContainer width="100%" height={224 + chartLayout.xAxisHeight}>
             <BarChart
               data={chartData}

@@ -3,9 +3,7 @@ import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { Button } from '@/ui/primitives/Button';
 import { cn } from '@/ui/primitives/utils';
 import {
-  border as semanticBorders,
-  effect as semanticEffects,
-  surface as semanticSurfaces,
+  floatingChromeGlass,
   radius as uiRadiusRecipes,
   text as uiTextRecipes,
 } from '@/ui/recipes';
@@ -26,9 +24,7 @@ export function ThemeModeSelector({ value, onChange }: ThemeModeSelectorProps) {
     <div
       className={cn(
         `grid w-full grid-cols-3 items-stretch gap-1 ${uiRadiusRecipes.standard} border p-1`,
-        ...semanticSurfaces.glassPanel,
-        ...semanticBorders.glass,
-        ...semanticEffects.glassShadow
+        ...floatingChromeGlass.shell
       )}
       role="radiogroup"
       aria-label="Theme"

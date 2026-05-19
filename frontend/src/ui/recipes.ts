@@ -78,6 +78,10 @@ export const border = {
     'border-[var(--color-border-hover-accent)]',
     'dark:border-[var(--color-border-hover-accent)]',
   ],
+  focusActive: [
+    'border-[var(--color-border-focus-active)]',
+    'dark:border-[var(--color-border-focus-active)]',
+  ],
   danger: ['border-[var(--color-border-danger)]', 'dark:border-[var(--color-border-danger)]'],
 } as const;
 
@@ -101,6 +105,24 @@ export const effect = {
   pageShellInsetRing: [
     'shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(15,23,42,0.18)]',
     'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(2,6,23,0.48)]',
+  ],
+} as const;
+
+export const buttonCta = {
+  gradient: [
+    'bg-gradient-to-r',
+    'from-[var(--color-brand-sky)]',
+    'via-[var(--color-brand-cyan)]',
+    'to-[var(--color-brand-violet)]',
+  ],
+  shadow: [
+    'shadow-[0_22px_60px_-32px_rgba(14,165,233,0.78)]',
+    'dark:shadow-[0_22px_60px_-32px_rgba(56,189,248,0.65)]',
+  ],
+  hover: [
+    'hover:-translate-y-0.5',
+    'hover:shadow-[0_28px_70px_-35px_rgba(14,165,233,0.85)]',
+    'disabled:hover:translate-y-0',
   ],
 } as const;
 
@@ -264,6 +286,82 @@ export const budgetProgress = {
 
 export const radius = {
   standard: 'rounded-[length:var(--radius-standard)]',
+} as const;
+
+export const dashboardCategoryCard = {
+  shell: [
+    `${radius.standard} border transition-all duration-300`,
+    ...border.subtle,
+    ...surface.card,
+    ...effect.glassShadow,
+  ],
+  shellActive: [
+    `${radius.standard} border transition-all duration-300`,
+    ...surface.card,
+    ...effect.glassShadow,
+    '!border-[var(--dashboard-category-card-hover-border)]',
+  ],
+  shellInteractive: [
+    `${radius.standard} border transition-all duration-300`,
+    ...border.subtle,
+    ...surface.card,
+    ...effect.glassShadow,
+    'hover:border-[var(--dashboard-category-card-hover-border)]',
+  ],
+  chartHoverBorder: [
+    'transition-all duration-300',
+    'hover:!border-[var(--dashboard-category-card-hover-border)]',
+  ],
+} as const;
+
+export const floatingChromeGlass = {
+  backdrop: ['backdrop-blur-md', 'backdrop-saturate-[150%]'],
+  shell: [...surface.floatingChromePanel, ...border.floatingChrome, ...effect.glassShadow],
+} as const;
+
+export const chartTooltip = {
+  shell: [
+    radius.standard,
+    'border',
+    'px-3',
+    'py-2',
+    'isolate',
+    'backdrop-blur-2xl backdrop-saturate-[150%]',
+    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_58%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
+    ...border.floatingChrome,
+    ...effect.glassShadow,
+  ],
+  fade: ['transition-opacity', 'ease-out', 'duration-200'],
+  label: [font.caption, text.muted],
+  row: [font.captionStrong, text.body],
+} as const;
+
+export const transactionsTable = {
+  chromeBar: [...surface.glassPanel, 'backdrop-blur-md backdrop-saturate-[150%]'],
+  footer: [
+    'border-t px-4 py-4 transition-colors duration-500',
+    ...border.subtle,
+    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_12%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
+    'backdrop-blur-md backdrop-saturate-[150%]',
+  ],
+} as const;
+
+export const buttonChrome = {
+  ghost: ['border', ...border.floatingChrome],
+  secondary: ['border', ...border.elevatedGlass],
+  muted: ['border', ...border.control],
+  settingsIdle: [
+    'border',
+    ...border.control,
+    'dark:border-[var(--color-border-divider)]',
+    ...surface.mutedChip,
+    'hover:border-[var(--color-border-default)]',
+    'hover:bg-[var(--color-surface-hover-row)]',
+    'dark:hover:border-[var(--color-border-divider)]',
+    'dark:hover:bg-[var(--color-surface-hover-row)]',
+  ],
 } as const;
 
 export const chrome = {

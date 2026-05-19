@@ -30,12 +30,10 @@ type WelcomeFeature = {
 };
 
 const onboardingStepCard = [
-  `group relative overflow-hidden ${uiRadiusRecipes.standard} p-4`,
+  `relative overflow-hidden ${uiRadiusRecipes.standard} p-4`,
   ...semanticBorders.subtle,
   ...semanticSurfaces.card,
   ...semanticEffects.glassShadow,
-  'transition-all duration-300 ease-out hover:-translate-y-[2px]',
-  ...semanticEffects.accentHover,
 ] as const;
 
 const onboardingIconWell = [
@@ -43,8 +41,6 @@ const onboardingIconWell = [
   ...semanticSurfaces.insetWell,
   'ring-1 ring-inset',
 ] as const;
-
-const onboardingHoverOverlay = `pointer-events-none absolute inset-0 ${uiRadiusRecipes.standard} bg-gradient-to-br from-slate-200/60 via-slate-100/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-slate-700/40 dark:via-slate-800/20`;
 
 const onboardingIconGlow =
   'absolute inset-[20%] rounded-full bg-[var(--color-effect-accent-hover)] opacity-20 blur-[6px] dark:bg-[var(--color-effect-accent-hover)] dark:opacity-[0.18]';
@@ -94,16 +90,7 @@ const welcomeFeatures: WelcomeFeature[] = [
 function FeatureCard({ icon: Icon, title, copy, palette }: WelcomeFeature) {
   return (
     <div className={cn(onboardingStepCard)}>
-      <div className={cn(onboardingHoverOverlay)} />
-      <span
-        className={cn(
-          onboardingIconWell,
-          palette.ring,
-          palette.glow,
-          'transition-all duration-200 ease-out group-hover:scale-105'
-        )}
-        aria-hidden="true"
-      >
+      <span className={cn(onboardingIconWell, palette.ring, palette.glow)} aria-hidden="true">
         <span className={cn('absolute inset-0 bg-gradient-to-br', palette.gradient)} />
         <span className={cn(onboardingIconGlow)} />
         <Icon

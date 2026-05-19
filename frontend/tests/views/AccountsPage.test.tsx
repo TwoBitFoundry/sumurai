@@ -8,6 +8,7 @@ import type { PlaidConnection } from '@/hooks/usePlaidConnections';
 import { type UseTellerLinkFlowResult, useTellerLinkFlow } from '@/hooks/useTellerLinkFlow';
 import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo';
 import AccountsPage from '@/views/AccountsPage';
+import { ThemeTestProvider } from '../utils/ThemeTestProvider';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,9 +22,11 @@ const queryClient = new QueryClient({
 
 function renderAccountsPage() {
   return render(
-    <QueryClientProvider client={queryClient}>
-      <AccountsPage />
-    </QueryClientProvider>
+    <ThemeTestProvider>
+      <QueryClientProvider client={queryClient}>
+        <AccountsPage />
+      </QueryClientProvider>
+    </ThemeTestProvider>
   );
 }
 

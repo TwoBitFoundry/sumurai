@@ -61,6 +61,6 @@ export const Journey: Story = {
     }
 
     await userEvent.hover(foodLabel);
-    await expect(foodCard).toHaveClass('-translate-y-[2px]');
+    await expect(foodCard).toHaveClass('border-[var(--color-border-default)]');
   },
 };

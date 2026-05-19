@@ -11,6 +11,7 @@ import { chart, getThemeColors } from '@/ui/tokens';
 import { useTheme } from '../../../context/ThemeContext';
 import { fmtUSD } from '../../../utils/format';
 import type { DonutDatum } from '../adapters/chartData';
+import { ChartGlassTooltip, chartTooltipRechartsProps } from './ChartGlassTooltip';
 
 type Props = {
   data: DonutDatum[];
@@ -93,7 +94,13 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
                     <Cell
                       key={`cell-${cat.name}`}
                       fill={color}
-                      stroke={isHovered ? colors.chart.tooltipText : 'none'}
+                      stroke={
+                        isHovered
+                          ? mode === 'light'
+                            ? colors.chart.dotFill
+                            : colors.chart.tooltipText
+                          : 'none'
+                      }
                       strokeWidth={isHovered ? 3 : 0}
                       onMouseEnter={() => setHoveredCategory(cat.name)}
                       onMouseLeave={() => setHoveredCategory(null)}
@@ -107,21 +114,10 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
                 })}
               </Pie>
               <Tooltip
-                contentStyle={{
-                  background: colors.chart.tooltipBg,
-                  border: `1px solid ${colors.chart.tooltipBorder}`,
-                  color: colors.chart.tooltipText,
-                  borderRadius: 'var(--radius-standard)',
-                  boxShadow:
-                    mode === 'dark'
-                      ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)'
-                      : '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                }}
-                itemStyle={{ color: colors.chart.tooltipText }}
-                labelStyle={{ color: colors.chart.tooltipText }}
-                formatter={tooltipFormatter}
+                content={(tooltipProps) => (
+                  <ChartGlassTooltip {...tooltipProps} formatter={tooltipFormatter} />
+                )}
+                {...chartTooltipRechartsProps}
               />
             </PieChart>
           </ResponsiveContainer>

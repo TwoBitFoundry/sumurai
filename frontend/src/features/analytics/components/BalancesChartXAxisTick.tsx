@@ -1,4 +1,5 @@
 import {
+  INSTITUTION_LABEL_AXIS_GAP,
   INSTITUTION_LABEL_FONT_SIZE,
   INSTITUTION_LABEL_LINE_HEIGHT,
   wrapInstitutionLabel,
@@ -25,7 +26,7 @@ export function BalancesChartXAxisTick({
   const tickY = typeof y === 'number' ? y : Number(y);
 
   return (
-    <g transform={`translate(${tickX},${tickY})`}>
+    <g transform={`translate(${tickX},${tickY + INSTITUTION_LABEL_AXIS_GAP})`}>
       <text textAnchor="middle" fill={fill} fontSize={INSTITUTION_LABEL_FONT_SIZE}>
         {lines.map((line, index) => (
           <tspan

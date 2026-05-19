@@ -12,6 +12,8 @@ import {
 import Image from 'next/image';
 import type React from 'react';
 import {
+  buttonChrome,
+  floatingChromeGlass,
   border as semanticBorders,
   effect as semanticEffects,
   status as semanticStatus,
@@ -34,13 +36,11 @@ export const appTitleBarRecipes = {
     wordmark: uiTypographyRecipes.pageTitle,
     fontFamily: { fontFamily: "'Cal Sans', system-ui, sans-serif" },
   },
-  settingsIdle:
-    'border border-[var(--color-border-divider)] dark:border-[var(--color-border-divider)] bg-[var(--color-surface-muted-chip)] dark:bg-[var(--color-surface-muted-chip)] hover:bg-[var(--color-surface-hover-row)] dark:hover:bg-[var(--color-surface-hover-row)]',
+  settingsIdle: buttonChrome.settingsIdle.join(' '),
   pillContainer: [
-    `flex h-11 items-center gap-1 ${uiRadiusRecipes.standard} border p-1 backdrop-blur-md backdrop-saturate-[150%]`,
-    ...semanticSurfaces.floatingChromePanel,
-    ...semanticBorders.floatingChrome,
-    ...semanticEffects.glassShadow,
+    `flex h-11 items-center gap-1 ${uiRadiusRecipes.standard} border p-1`,
+    ...floatingChromeGlass.backdrop,
+    ...floatingChromeGlass.shell,
   ],
   pillTab: [
     `relative flex h-full items-center justify-center gap-0 ${uiRadiusRecipes.standard} px-3 py-1.5`,
@@ -90,34 +90,60 @@ export const AppTitleBar = ({
   onTabChange,
   ref,
 }: AppTitleBarProps & { ref?: React.RefObject<HTMLElement | null> }) => {
+  const canGoToDashboard = state === 'authenticated' && onTabChange != null;
+
+  const logoMark = (
+    <>
+      <div className={cn('relative', 'h-8', 'w-8', 'overflow-hidden', uiRadiusRecipes.standard)}>
+        <Image
+          src="/sumurai-logo.jpeg"
+          alt="Sumurai Logo"
+          fill
+          sizes="32px"
+          className="object-cover"
+          unoptimized
+        />
+      </div>
+      <span className={uiTypographyRecipes.pageTitle}>Sumurai</span>
+    </>
+  );
+
+  const logoClassName = cn(...appTitleBarRecipes.logo.container, appTitleBarRecipes.logo.wordmark);
+
   return (
     <header ref={ref} className={titleBarVariants({ state })}>
       <div className="px-4">
         <div className="flex h-12 items-center justify-between md:h-16">
           <div className={cn('flex', 'items-center', 'gap-6')}>
-            <div
-              className={cn(...appTitleBarRecipes.logo.container, appTitleBarRecipes.logo.wordmark)}
-            >
-              <div
+            {canGoToDashboard ? (
+              <button
+                type="button"
+                onClick={() => onTabChange('dashboard')}
                 className={cn(
-                  'relative',
-                  'h-8',
-                  'w-8',
-                  'overflow-hidden',
-                  uiRadiusRecipes.standard
+                  logoClassName,
+                  'cursor-pointer',
+                  'rounded-[length:var(--radius-standard)]',
+                  'border-0',
+                  'bg-transparent',
+                  'p-0',
+                  'transition-opacity',
+                  'duration-200',
+                  'hover:opacity-90',
+                  'focus-visible:outline-none',
+                  'focus-visible:ring-2',
+                  'focus-visible:ring-sky-400',
+                  'focus-visible:ring-offset-2',
+                  'focus-visible:ring-offset-white',
+                  'dark:focus-visible:ring-sky-400/80',
+                  'dark:focus-visible:ring-offset-slate-900'
                 )}
+                aria-label="Go to dashboard"
               >
-                <Image
-                  src="/sumurai-logo.jpeg"
-                  alt="Sumurai Logo"
-                  fill
-                  sizes="32px"
-                  className="object-cover"
-                  unoptimized
-                />
-              </div>
-              <span className={uiTypographyRecipes.pageTitle}>Sumurai</span>
-            </div>
+                {logoMark}
+              </button>
+            ) : (
+              <div className={logoClassName}>{logoMark}</div>
+            )}
           </div>
 
           <div className={cn('flex', 'items-center', 'gap-2')}>

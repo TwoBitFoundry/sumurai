@@ -15,6 +15,10 @@ import type { DotItemDotProps } from 'recharts/types/util/types';
 import HeroStatCard from '@/components/widgets/HeroStatCard';
 import { useTheme } from '@/context/ThemeContext';
 import { DashboardCalculator } from '@/domain/DashboardCalculator';
+import {
+  ChartGlassTooltip,
+  chartTooltipRechartsProps,
+} from '@/features/analytics/components/ChartGlassTooltip';
 import DashboardChartCard from '@/features/analytics/components/DashboardChartCard';
 import { SpendingByCategoryChart } from '@/features/analytics/components/SpendingByCategoryChart';
 import { TopMerchantsList } from '@/features/analytics/components/TopMerchantsList';
@@ -27,6 +31,7 @@ import {
 import { sampleNetWorthSeries } from '@/storybook/fixtures/netWorth';
 import { Button, cn } from '@/ui/primitives';
 import {
+  dashboardCategoryCard,
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
@@ -35,20 +40,6 @@ import {
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { fmtUSD } from '@/utils/format';
-
-const dashboardCardShell = [
-  `${uiRadiusRecipes.standard} border transition-all duration-300`,
-  ...semanticBorders.subtle,
-  ...semanticSurfaces.card,
-  ...semanticEffects.glassShadow,
-] as const;
-
-const dashboardCardShellActive = [
-  `${uiRadiusRecipes.standard} border transition-all duration-300 -translate-y-[2px]`,
-  ...semanticBorders.default,
-  ...semanticSurfaces.hoverRow,
-  ...semanticEffects.glassShadow,
-] as const;
 
 const dashboardLoadingCard = [
   `min-h-[220px] ${uiRadiusRecipes.standard} border animate-pulse`,
@@ -219,10 +210,7 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
                       // biome-ignore lint/a11y/noStaticElementInteractions: mirrors dashboard hover sync with donut
                       <div
                         key={`topcard-${cat.name}`}
-                        className={cn(
-                          'p-2',
-                          isHovered ? dashboardCardShellActive : dashboardCardShell
-                        )}
+                        className={cn('p-2', dashboardCategoryCard.shell)}
                         style={isHovered ? { borderColor: colors.chart.primary[0] } : undefined}
                         onMouseEnter={() => setHoveredCategory(cat.name)}
                         onMouseLeave={() => setHoveredCategory(null)}
@@ -302,7 +290,7 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
                 {netError}
               </div>
             ) : (
-              <div className={cn('h-[240px]', 'w-full', 'min-w-0', 'overflow-hidden')}>
+              <div className={cn('h-[240px]', 'w-full', 'min-w-0', 'overflow-visible')}>
                 <ResponsiveContainer width="100%" height={240}>
                   <AreaChart data={netSeries} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
                     <defs>
@@ -339,8 +327,14 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
                       }}
                     />
                     <Tooltip
-                      formatter={netTooltipFormatter}
-                      contentStyle={{ background: colors.chart.tooltipBg }}
+                      content={(tooltipProps) => (
+                        <ChartGlassTooltip
+                          {...tooltipProps}
+                          formatter={netTooltipFormatter}
+                          valueClassName={uiTextRecipes.success}
+                        />
+                      )}
+                      {...chartTooltipRechartsProps}
                     />
                     <Area
                       type="monotone"

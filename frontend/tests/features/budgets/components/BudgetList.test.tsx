@@ -31,7 +31,6 @@ describe('BudgetList', () => {
     expect(list).toHaveClass('lg:grid-cols-3');
     expect(list).not.toHaveClass('xl:grid-cols-3');
     expect(list).not.toHaveClass('2xl:grid-cols-4');
-    expect(list).toHaveClass('mt-4');
     expect(card).toHaveClass(uiRadiusRecipes.standard);
   });
 
@@ -56,7 +55,7 @@ describe('BudgetList', () => {
     );
 
     const card = container.querySelector('li');
-    const footer = card?.lastElementChild;
+    const footer = card?.querySelector('.mt-4.space-y-2');
     const divider = footer?.firstElementChild;
     const actionRow = footer?.lastElementChild;
 

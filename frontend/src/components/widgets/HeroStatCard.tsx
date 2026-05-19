@@ -46,7 +46,7 @@ const heroFooterPillRecipes = {
 
 export const heroStatCardRecipes = {
   base: `hero-stat-card group relative min-w-0 ${uiRadiusRecipes.standard} transition-colors duration-300`,
-  shell: `relative h-full w-full overflow-hidden ${uiRadiusRecipes.standard} border-2 bg-white/80 p-3 pt-4 transform-gpu origin-center will-change-transform transition-transform duration-200 lg:p-4 lg:pt-5 dark:bg-[#111a2f]/70`,
+  shell: `relative h-full w-full overflow-hidden ${uiRadiusRecipes.standard} border-2 bg-white/80 p-3 pt-4 transition-colors duration-200 lg:p-4 lg:pt-5 dark:bg-[#111a2f]/70`,
   title: `${uiTypographyRecipes.label} ${semanticTextRecipes.label} transition-colors duration-500`,
   value: `${uiTypographyRecipes.cardTitle} ${semanticTextRecipes.primary} transition-colors duration-500`,
   suffix: `${uiTypographyRecipes.captionStrong} ${semanticTextRecipes.body} transition-colors duration-500`,
@@ -214,7 +214,6 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
           styles.borderDark,
           styles.hoverBorder,
           styles.hoverBorderDark,
-          'group-hover:-translate-y-[2px] group-hover:scale-[1.01]',
           minHeightClassName
         )}
       >

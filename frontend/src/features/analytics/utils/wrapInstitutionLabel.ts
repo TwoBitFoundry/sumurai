@@ -1,5 +1,6 @@
 export const INSTITUTION_LABEL_FONT_SIZE = 12;
 export const INSTITUTION_LABEL_LINE_HEIGHT = 14;
+export const INSTITUTION_LABEL_AXIS_GAP = 10;
 
 export function maxCharsPerInstitutionSlot(barCount: number): number {
   if (barCount <= 1) return 18;

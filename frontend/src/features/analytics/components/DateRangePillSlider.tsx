@@ -1,8 +1,6 @@
-import { motion } from 'framer-motion';
+import { Button, cn } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import { buttonRecipes } from '@/ui/primitives/Button';
-import { cn } from '@/ui/primitives/utils';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { text as uiTextRecipes } from '@/ui/recipes';
 import type { DateRangeKey as DateRange } from '@/utils/dateRanges';
 
 const options: Array<{ key: DateRange; label: string }> = [
@@ -27,28 +25,21 @@ export function DateRangePillSlider({
         const isActive = option.key === dateRange;
 
         return (
-          <button
+          <Button
             key={option.key}
             type="button"
             onClick={() => onChange(option.key)}
+            variant={isActive ? 'tabActive' : 'tab'}
+            size="xs"
             className={cn(
               ...appTitleBarRecipes.pillTab,
               'h-full flex-1 min-w-0',
-              isActive ? buttonRecipes.tabActive : buttonRecipes.tab,
-              isActive ? uiTextRecipes.inverse : uiTextRecipes.primary,
-              uiTypographyRecipes.label
+              isActive ? uiTextRecipes.inverse : uiTextRecipes.primary
             )}
             aria-pressed={isActive}
           >
-            {isActive ? (
-              <motion.div
-                layoutId="time-pill-active"
-                className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
-                transition={{ stiffness: 400, damping: 35 }}
-              />
-            ) : null}
             <span className={cn('relative z-10')}>{option.label}</span>
-          </button>
+          </Button>
         );
       })}
     </div>

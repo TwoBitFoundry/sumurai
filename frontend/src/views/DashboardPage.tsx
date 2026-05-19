@@ -14,8 +14,8 @@ import {
 import type { DotItemDotProps } from 'recharts/types/util/types';
 import { cn, EmptyState } from '@/ui/primitives';
 import {
+  dashboardCategoryCard,
   border as semanticBorders,
-  effect as semanticEffects,
   surface as semanticSurfaces,
   radius as uiRadiusRecipes,
   text as uiTextRecipes,
@@ -25,6 +25,10 @@ import BalancesOverview from '../components/BalancesOverview';
 import { useTheme } from '../context/ThemeContext';
 import { DashboardCalculator } from '../domain/DashboardCalculator';
 import { categoriesToDonut } from '../features/analytics/adapters/chartData';
+import {
+  ChartGlassTooltip,
+  chartTooltipRechartsProps,
+} from '../features/analytics/components/ChartGlassTooltip';
 import DashboardChartCard from '../features/analytics/components/DashboardChartCard';
 import { SpendingByCategoryChart } from '../features/analytics/components/SpendingByCategoryChart';
 import { TopMerchantsList } from '../features/analytics/components/TopMerchantsList';
@@ -34,20 +38,6 @@ import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries
 import { PageLayout } from '../layouts/PageLayout';
 import type { DateRangeKey as DateRange } from '../utils/dateRanges';
 import { fmtUSD } from '../utils/format';
-
-const dashboardCardShell = [
-  `${uiRadiusRecipes.standard} border transition-all duration-300`,
-  ...semanticBorders.subtle,
-  ...semanticSurfaces.card,
-  ...semanticEffects.glassShadow,
-] as const;
-
-const dashboardCardShellActive = [
-  `${uiRadiusRecipes.standard} border transition-all duration-300 -translate-y-[2px]`,
-  ...semanticBorders.default,
-  ...semanticSurfaces.hoverRow,
-  ...semanticEffects.glassShadow,
-] as const;
 
 const dashboardLoadingCard = [
   `min-h-[220px] ${uiRadiusRecipes.standard} border animate-pulse`,
@@ -181,10 +171,7 @@ const DashboardPage: React.FC<{
                           // biome-ignore lint/a11y/noStaticElementInteractions: visual hover only
                           <div
                             key={`topcard-${cat.name}`}
-                            className={cn(
-                              'p-2',
-                              isHovered ? dashboardCardShellActive : dashboardCardShell
-                            )}
+                            className={cn('p-2', dashboardCategoryCard.shell)}
                             style={isHovered ? { borderColor: colors.chart.primary[0] } : undefined}
                             onMouseEnter={() => setHoveredCategory(cat.name)}
                             onMouseLeave={() => setHoveredCategory(null)}
@@ -274,7 +261,7 @@ const DashboardPage: React.FC<{
                 />
               </div>
             ) : (
-              <div className={cn('flex-1', 'h-full', 'w-full', 'min-w-0', 'overflow-hidden')}>
+              <div className={cn('flex-1', 'h-full', 'w-full', 'min-w-0', 'overflow-visible')}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart
                     data={debouncedNetSeries}
@@ -340,8 +327,14 @@ const DashboardPage: React.FC<{
                       }}
                     />
                     <Tooltip
-                      formatter={netTooltipFormatter}
-                      contentStyle={{ background: colors.chart.tooltipBg }}
+                      content={(tooltipProps) => (
+                        <ChartGlassTooltip
+                          {...tooltipProps}
+                          formatter={netTooltipFormatter}
+                          valueClassName={uiTextRecipes.success}
+                        />
+                      )}
+                      {...chartTooltipRechartsProps}
                     />
                     <Area
                       type="monotone"
