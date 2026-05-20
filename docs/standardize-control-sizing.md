@@ -173,13 +173,18 @@ Replace Input's bespoke size scale with the shared `control.*` mapping. Visual h
 3. **Refactor**: verify the `inputSize` React prop name remains (avoids HTML `size` collision); only the internal class mapping changes.
 
 ### Acceptance criteria
-- [ ] All three `inputSize` variants produce classnames composed from `control.*`.
-- [ ] Input tests pass.
-- [ ] `<Button size="md">` and `<Input inputSize="md">` rendered together share identical height classes.
+- [x] All three `inputSize` variants produce classnames composed from `control.*`.
+- [x] Input tests pass.
+- [x] `<Button size="md">` and `<Input inputSize="md">` rendered together share identical height classes.
 
 ### Files
 - [frontend/src/ui/primitives/Input.tsx](frontend/src/ui/primitives/Input.tsx)
 - [frontend/tests/ui/primitives/Input.test.tsx](frontend/tests/ui/primitives/Input.test.tsx)
+
+### TDD log
+- Red: added a focused Input spec for all three control tiers and the shared Button height.
+- Green: refactored Input to consume `control.height`, `control.paddingX`, and `control.label` while removing the old `px-4` base padding.
+- Verify: `npm --prefix frontend test -- ui/primitives/Input`, `npm --prefix frontend run lint`, and `npm --prefix frontend run build` all passed.
 
 ---
 
