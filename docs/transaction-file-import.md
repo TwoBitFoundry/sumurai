@@ -214,13 +214,21 @@ Create a reusable hook that manages the validate, preview, import, retry, and re
 
 ### Acceptance Criteria
 
-- [ ] Valid file selection transitions from idle to validating to preview.
-- [ ] Validation failure transitions to validation-error with a useful error message.
-- [ ] Import starts from preview, transitions through importing, and ends in success.
-- [ ] Import failure preserves the validated file and mapping so the user can retry from preview.
-- [ ] Reset clears selected file, validation result, import result, mapping, and error state.
-- [ ] Successful import invalidates the relevant Plaid/Teller frontend cache queries.
-- [ ] Hook tests cover success, validation failure, import failure, reset, and cache invalidation.
+- [x] Valid file selection transitions from idle to validating to preview.
+- [x] Validation failure transitions to validation-error with a useful error message.
+- [x] Import starts from preview, transitions through importing, and ends in success.
+- [x] Import failure preserves the validated file and mapping so the user can retry from preview.
+- [x] Reset clears selected file, validation result, import result, mapping, and error state.
+- [x] Successful import invalidates the relevant Plaid/Teller frontend cache queries.
+- [x] Hook tests cover success, validation failure, import failure, reset, and cache invalidation.
+
+### TDD Log
+
+- Added hook tests for validation success, validation failure, import success, import failure retry context, reset, and provider cache invalidation.
+- Added `useImportTransactions` with explicit workflow state, selected file, validation result, import result, CSV mapping, and user-facing error state.
+- Verified with `npm --prefix frontend test -- useImportTransactions.test.tsx`.
+- Verified with `npm --prefix frontend run typecheck`.
+- Verified with `npm --prefix frontend run lint`.
 
 ## Phase 5: Frontend Account Integration
 
