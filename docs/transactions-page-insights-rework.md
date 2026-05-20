@@ -202,12 +202,21 @@ TDD log
 Run the app and exercise the page against real data; this is the gate that proves pagination no longer corrupts the metrics.
 
 **Acceptance criteria**
-- [ ] With a user that has >8 transactions: `Total shown` equals the table's `totalItems` footer.
-- [ ] Paging the table leaves all four stat cards unchanged (verify via Network tab: insights endpoint does not refire on page change).
-- [ ] `Largest size` shows a transaction not present on the current page when one exists.
-- [ ] `Recurring` reflects merchants with 3+ occurrences across the *full filtered set*, not the current page.
-- [ ] Changing date range / category / search updates both the table and the cards consistently.
-- [ ] New endpoint visible and accurate in the OpenAPI / Swagger docs.
+- [x] With a user that has >8 transactions: `Total shown` equals the table's `totalItems` footer.
+- [x] Paging the table leaves all four stat cards unchanged (verify via Network tab: insights endpoint does not refire on page change).
+- [x] `Largest size` shows a transaction not present on the current page when one exists.
+- [x] `Recurring` reflects merchants with 3+ occurrences across the *full filtered set*, not the current page.
+- [x] Changing date range / category / search updates both the table and the cards consistently.
+- [x] New endpoint visible and accurate in the OpenAPI / Swagger docs.
+
+TDD log
+
+- Verified the live Transactions page in the in-app browser with real data.
+- Confirmed pagination changes the table footer while leaving the four stat cards stable.
+- Confirmed category and search filters update both the table and the cards.
+- Added an OpenAPI regression test for the new insights path and response schemas.
+- Ran `cargo fmt --manifest-path backend/Cargo.toml --all --check`.
+- Ran `cargo test --manifest-path backend/Cargo.toml openapi_tests`.
 
 ---
 
