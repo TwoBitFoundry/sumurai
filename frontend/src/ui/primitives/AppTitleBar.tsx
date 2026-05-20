@@ -157,7 +157,7 @@ export const AppTitleBar = ({
             type="button"
             onClick={() => onTabChange(key)}
             variant={currentTab === key ? 'tabActive' : 'tab'}
-            size="xs"
+            size="sm"
             aria-label={label}
             aria-current={currentTab === key ? 'page' : undefined}
             className={cn(
@@ -244,7 +244,7 @@ export const AppTitleBar = ({
                 type="button"
                 onClick={() => onTabChange('settings')}
                 variant={currentTab === 'settings' ? 'tabActive' : 'ghost'}
-                size="xs"
+                size="sm"
                 className={cn(
                   currentTab !== 'settings' ? appTitleBarRecipes.settingsIdle : undefined
                 )}
@@ -262,7 +262,7 @@ export const AppTitleBar = ({
                     type="button"
                     onClick={onLogout}
                     variant="danger"
-                    size="xs"
+                    size="sm"
                     title="Logout"
                   >
                     <LogOut className="h-6 w-6" />
@@ -274,7 +274,7 @@ export const AppTitleBar = ({
                     type="button"
                     onClick={onLogout}
                     variant="danger"
-                    size="xs"
+                    size="sm"
                     aria-label="Logout"
                   >
                     <LogOut className="h-6 w-6" />

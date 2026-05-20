@@ -8,7 +8,7 @@ import {
   accountTypeSortOrder,
 } from '../domain/accountCategories';
 import { getConnectionStatusCaption } from '../domain/connectionStatus';
-import { Button, cn, GlassCard } from '../ui/primitives';
+import { cn, GlassCard, IconButton } from '../ui/primitives';
 import { appTitleBarRecipes } from '../ui/primitives/AppTitleBar';
 import {
   border as uiBorderRecipes,
@@ -122,23 +122,21 @@ export const BankCard: React.FC<BankCardProps> = ({
           'gap-y-2'
         )}
       >
-        <Button
+        <IconButton
           type="button"
           onClick={handleSync}
           disabled={loading || !isOnline}
           variant="ghost"
-          size="icon"
           aria-label="Sync now"
           title={!isOnline ? 'Unavailable while offline' : undefined}
           className={cn(appTitleBarRecipes.settingsIdle, 'col-start-1', 'row-start-1', 'shrink-0')}
         >
           <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
-        </Button>
-        <Button
+        </IconButton>
+        <IconButton
           type="button"
           onClick={() => setExpanded((v) => !v)}
           variant="ghost"
-          size="icon"
           aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
           className={cn(appTitleBarRecipes.settingsIdle, 'col-start-1', 'row-start-2', 'shrink-0')}
         >
@@ -150,7 +148,7 @@ export const BankCard: React.FC<BankCardProps> = ({
               expanded && 'rotate-180'
             )}
           />
-        </Button>
+        </IconButton>
         <div
           className={cn(
             'col-start-2',
@@ -184,16 +182,15 @@ export const BankCard: React.FC<BankCardProps> = ({
             {bank.name}
           </h3>
         </div>
-        <Button
+        <IconButton
           type="button"
           onClick={handleDisconnectClick}
           variant="danger"
-          size="icon"
           aria-label="Disconnect"
           className={cn('col-start-3', 'row-start-1', 'shrink-0')}
         >
           <Unlink className={cn('h-4 w-4')} />
-        </Button>
+        </IconButton>
         {statusCaption ? (
           <p
             className={cn(

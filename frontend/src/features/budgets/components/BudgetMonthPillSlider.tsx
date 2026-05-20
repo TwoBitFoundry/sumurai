@@ -39,7 +39,7 @@ export function BudgetMonthPillSlider({
         type="button"
         onClick={onPreviousMonth}
         variant="tab"
-        size="xs"
+        size="sm"
         aria-label="Previous month"
         title="Previous month"
         className={pillControlClassName}
@@ -54,7 +54,7 @@ export function BudgetMonthPillSlider({
         type="button"
         onClick={onCurrentMonth}
         variant="tab"
-        size="xs"
+        size="sm"
         aria-label="This month"
         title="Jump to current month"
         className={pillControlClassName}
@@ -69,7 +69,7 @@ export function BudgetMonthPillSlider({
         type="button"
         onClick={onNextMonth}
         variant="tab"
-        size="xs"
+        size="sm"
         aria-label="Next month"
         title="Next month"
         className={pillControlClassName}

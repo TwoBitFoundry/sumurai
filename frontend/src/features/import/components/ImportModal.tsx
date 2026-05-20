@@ -18,7 +18,17 @@ import {
   isCsvImportFormat,
   type PreviewTransaction,
 } from '@/models/import';
-import { Alert, Button, cn, FormLabel, GlassCard, Modal, Pill, Select } from '@/ui/primitives';
+import {
+  Alert,
+  Button,
+  cn,
+  FormLabel,
+  GlassCard,
+  IconButton,
+  Modal,
+  Pill,
+  Select,
+} from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import {
   border as uiBorderRecipes,
@@ -238,16 +248,15 @@ export const ImportModalView: React.FC<ImportModalViewProps> = ({
               </div>
             </div>
             {canClose ? (
-              <Button
+              <IconButton
                 type="button"
-                variant="icon"
-                size="icon"
+                variant="ghost"
                 aria-label="Close import modal"
                 onClick={handleClose}
                 className={cn('-mr-1', '-mt-0.5', 'shrink-0')}
               >
                 <X className={cn('h-4', 'w-4')} aria-hidden="true" />
-              </Button>
+              </IconButton>
             ) : null}
           </div>
         </header>
@@ -653,10 +662,9 @@ function MappingPanel({
     >
       <ImportPanelHeading
         leading={
-          <Button
+          <IconButton
             type="button"
             variant="ghost"
-            size="icon"
             aria-expanded={expanded}
             aria-label={expanded ? 'Collapse column mapping' : 'Expand column mapping'}
             onClick={onToggle}
@@ -672,7 +680,7 @@ function MappingPanel({
               )}
               aria-hidden="true"
             />
-          </Button>
+          </IconButton>
         }
       >
         Column mapping

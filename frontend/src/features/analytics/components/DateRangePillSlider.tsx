@@ -37,7 +37,7 @@ export function DateRangePillSlider({
             type="button"
             onClick={() => onChange(option.key)}
             variant={isActive ? 'tabActive' : 'tab'}
-            size="xs"
+            size="sm"
             className={cn(
               ...appTitleBarRecipes.pillTab,
               ...appTitleBarRecipes.pillTabSize,

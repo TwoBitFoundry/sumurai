@@ -28,9 +28,8 @@ describe('primitive typography recipes', () => {
 
   it('keeps button sizes on the semantic scale', () => {
     expect(buttonTypographySizes).toEqual({
-      xs: uiTypographyRecipes.captionStrong,
       sm: uiTypographyRecipes.captionStrong,
-      md: uiTypographyRecipes.captionStrong,
+      md: uiTypographyRecipes.bodyStrong,
       lg: uiTypographyRecipes.bodyStrong,
     });
     expect(connectButtonRecipes.base.join(' ')).toContain(uiTypographyRecipes.captionStrong);

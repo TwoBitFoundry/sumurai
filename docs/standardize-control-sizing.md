@@ -136,15 +136,20 @@ Collapse Button's size variants to `sm` / `md` / `lg`, remove `xs` and `icon`, a
 3. **Refactor**: remove now-unused imports (`chrome.xs`, `chrome.sm` if no longer referenced); ensure no comments are introduced.
 
 ### Acceptance criteria
-- [ ] Button's `size` prop type is `'sm' | 'md' | 'lg' | 'titleBarExpanded'`.
-- [ ] Button supports `shape?: 'default' | 'square'`, defaulting to `'default'`.
-- [ ] No call site in the repo still uses `size="xs"` or `size="icon"` (verified later in Phase 7).
-- [ ] All Button tests pass: `npm --prefix frontend test -- primitives/Button`.
-- [ ] `npm --prefix frontend run build` succeeds.
+- [x] Button's `size` prop type is `'sm' | 'md' | 'lg' | 'titleBarExpanded'`.
+- [x] Button supports `shape?: 'default' | 'square'`, defaulting to `'default'`.
+- [x] No call site in the repo still uses `size="xs"` or `size="icon"` (verified later in Phase 7).
+- [x] All Button tests pass: `npm --prefix frontend test -- primitives/Button`.
+- [x] `npm --prefix frontend run build` succeeds.
 
 ### Files
 - [frontend/src/ui/primitives/Button.tsx](frontend/src/ui/primitives/Button.tsx)
 - [frontend/tests/ui/primitives/Button.test.tsx](frontend/tests/ui/primitives/Button.test.tsx)
+
+### TDD log
+- Red: added a new Button spec covering default sizing, each control tier, and the square shape.
+- Green: refactored Button to consume `control`, added `shape`, and migrated the remaining legacy Button call sites to the new size and icon primitives so TypeScript could pass.
+- Verify: `npm --prefix frontend test -- primitives/Button`, `npm --prefix frontend test -- ui/primitives/typography`, `npm --prefix frontend run lint`, and `npm --prefix frontend run build` all passed.
 
 ---
 

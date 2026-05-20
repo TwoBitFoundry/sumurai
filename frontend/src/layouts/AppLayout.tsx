@@ -105,7 +105,7 @@ export function AppLayout({
                   type="button"
                   onClick={() => onTabChange(key)}
                   variant={currentTab === key ? 'tabActive' : 'tab'}
-                  size="xs"
+                  size="sm"
                   aria-label={label}
                   aria-current={currentTab === key ? 'page' : undefined}
                   className={cn(

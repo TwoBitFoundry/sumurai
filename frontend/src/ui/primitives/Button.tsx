@@ -4,6 +4,7 @@ import {
   buttonChrome,
   buttonCta,
   chrome,
+  control,
   border as semanticBorders,
   effect as semanticEffects,
   status as semanticStatus,
@@ -15,10 +16,9 @@ import {
 import { cn } from './utils';
 
 export const buttonTypographySizes = {
-  xs: uiTypographyRecipes.captionStrong,
-  sm: uiTypographyRecipes.captionStrong,
-  md: uiTypographyRecipes.captionStrong,
-  lg: uiTypographyRecipes.bodyStrong,
+  sm: control.label.sm,
+  md: control.label.md,
+  lg: control.label.lg,
 } as const;
 
 const titleBarChromeExpandedTypography =
@@ -156,18 +156,38 @@ const buttonVariants = cva([...buttonRecipes.base], {
       connect: [...buttonRecipes.connect],
     },
     size: {
-      xs: `${buttonTypographySizes.xs} ${chrome.xs}`,
-      sm: `${buttonTypographySizes.sm} ${chrome.sm}`,
+      sm: `${control.height.sm} ${control.paddingX.sm} ${control.label.sm} ${uiRadiusRecipes.standard}`,
+      md: `${control.height.md} ${control.paddingX.md} ${control.label.md} ${uiRadiusRecipes.standard}`,
+      lg: `${control.height.lg} ${control.paddingX.lg} ${control.label.lg} ${uiRadiusRecipes.standard}`,
       titleBarExpanded: `${titleBarChromeExpandedTypography} ${chrome.sm}`,
-      md: `${buttonTypographySizes.md} px-4 py-2 ${uiRadiusRecipes.standard}`,
-      lg: `${buttonTypographySizes.lg} px-5 py-2.5 ${uiRadiusRecipes.standard}`,
-      icon: `h-10 w-10 ${uiRadiusRecipes.standard}`,
+    },
+    shape: {
+      default: '',
+      square: '',
     },
   },
   defaultVariants: {
     variant: 'primary',
     size: 'md',
+    shape: 'default',
   },
+  compoundVariants: [
+    {
+      shape: 'square',
+      size: 'sm',
+      class: control.square.sm,
+    },
+    {
+      shape: 'square',
+      size: 'md',
+      class: control.square.md,
+    },
+    {
+      shape: 'square',
+      size: 'lg',
+      class: control.square.lg,
+    },
+  ],
 });
 
 export interface ButtonProps
@@ -177,21 +197,10 @@ export interface ButtonProps
   children?: React.ReactNode;
 }
 
-/**
- * Interactive button component with multiple visual styles.
- *
- * @example
- * ```tsx
- * <Button variant="primary" size="lg">Submit</Button>
- * <Button variant="secondary" size="md">Cancel</Button>
- * <Button variant="icon" size="icon"><CloseIcon /></Button>
- * ```
- *
- * @see {@link ../README.md} for detailed variant documentation
- */
 export const Button = ({
   variant,
   size,
+  shape,
   loading,
   disabled,
   className,
@@ -203,7 +212,7 @@ export const Button = ({
     <button
       ref={ref}
       disabled={disabled || loading}
-      className={cn(buttonVariants({ variant, size }), className)}
+      className={cn(buttonVariants({ variant, size, shape }), className)}
       {...props}
     >
       {children}

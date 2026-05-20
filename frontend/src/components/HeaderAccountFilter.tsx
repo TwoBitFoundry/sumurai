@@ -150,7 +150,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
             onClick={() => setIsOpen(!isOpen)}
             onKeyDown={handleKeyDown}
             variant={isOpen ? 'tabActive' : 'tab'}
-            size="xs"
+            size="sm"
             className={cn(
               ...appTitleBarRecipes.pillTab,
               ...appTitleBarRecipes.pillTabSize,

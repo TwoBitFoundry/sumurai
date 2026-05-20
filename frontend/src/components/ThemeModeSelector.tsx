@@ -38,7 +38,7 @@ export function ThemeModeSelector({ value, onChange }: ThemeModeSelectorProps) {
             type="button"
             onClick={() => onChange(option)}
             variant={active ? 'tabActive' : 'tab'}
-            size="xs"
+            size="sm"
             role="radio"
             aria-checked={active}
             className={cn(
