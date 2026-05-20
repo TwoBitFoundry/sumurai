@@ -16,6 +16,7 @@ const FIVE_YEAR_DAY_WINDOW: i64 = 365 * 5 + 2;
 const CSV_HEADER_REQUIRED_ERROR: &str =
     "CSV files must include a header row with column names (for example Date, Description, Amount).";
 const CSV_HEADER_ROW_LOOKS_LIKE_DATA_ERROR: &str = "CSV files must include a header row with column names. The first row looks like transaction data instead.";
+const CSV_NO_TRANSACTION_ROWS_ERROR: &str = "No transaction rows were found in the CSV file.";
 
 #[derive(Debug, Clone, Default)]
 pub struct ParseOutcome {
@@ -249,7 +250,15 @@ impl ImportService {
                 let preview_rows = preview_transactions(&outcome.transactions);
                 let transaction_count = outcome.transactions.len() as i64;
                 let date_range = date_range_for_transactions(&outcome.transactions);
-                let valid = !outcome.transactions.is_empty() || outcome.errors.is_empty();
+                let mut errors = outcome.errors;
+                let valid = if outcome.transactions.is_empty() {
+                    if errors.is_empty() {
+                        errors.push(CSV_NO_TRANSACTION_ROWS_ERROR.to_string());
+                    }
+                    false
+                } else {
+                    true
+                };
 
                 ValidateResponse {
                     valid,
@@ -261,7 +270,7 @@ impl ImportService {
                     suggested_csv_mapping: Some(suggested_csv_mapping),
                     csv_headers: display_csv_headers(&csv_headers),
                     sample_csv_rows,
-                    errors: outcome.errors,
+                    errors,
                 }
             }
         }

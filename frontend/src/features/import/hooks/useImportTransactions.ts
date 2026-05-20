@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
-import { normalizeCsvMapping } from '@/features/import/csvMapping';
+import { canCorrectCsvMapping, normalizeCsvMapping } from '@/features/import/csvMapping';
 import type { CsvColumnMapping, ImportResponse, ValidateResponse } from '@/models/import';
 import { ImportService } from '@/services/ImportService';
 import { invalidateStaleCacheQueries } from '@/utils/queryInvalidation';
@@ -73,6 +73,12 @@ export function useImportTransactions(accountId: string): UseImportTransactionsR
         );
 
         if (!result.valid) {
+          if (canCorrectCsvMapping(result)) {
+            setError(errorMessageFromValidation(result));
+            setStatus('preview');
+            return result;
+          }
+
           setError(errorMessageFromValidation(result));
           setStatus('validation-error');
           return result;
@@ -133,7 +139,11 @@ export function useImportTransactions(accountId: string): UseImportTransactionsR
   }, [applySelectedFile, setCsvMapping]);
 
   const backToPreview = useCallback(() => {
-    if (selectedFileRef.current && validationResult?.valid) {
+    if (
+      selectedFileRef.current &&
+      validationResult &&
+      (validationResult.valid || canCorrectCsvMapping(validationResult))
+    ) {
       setImportResult(null);
       setError(null);
       setStatus('preview');
