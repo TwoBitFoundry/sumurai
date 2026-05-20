@@ -106,8 +106,12 @@ describe('AppTitleBar', () => {
   it('uses 24px icons for the settings and logout controls', () => {
     render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
 
-    expect(screen.getByRole('button', { name: 'Settings' }).querySelector('.h-6.w-6')).not.toBeNull();
-    expect(screen.getAllByRole('button', { name: 'Logout' })[0].querySelector('.h-6.w-6')).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Settings' }).querySelector('.h-6.w-6')
+    ).not.toBeNull();
+    expect(
+      screen.getAllByRole('button', { name: 'Logout' })[0].querySelector('.h-6.w-6')
+    ).not.toBeNull();
   });
 
   it('renders settings and logout actions for authenticated users', async () => {

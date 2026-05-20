@@ -17,6 +17,8 @@ describe('DateRangePillSlider', () => {
   it('uses stronger body text for the range labels', () => {
     render(<DateRangePillSlider dateRange="current-month" onChange={jest.fn()} />);
 
-    expect(screen.getByRole('button', { name: '1M' }).querySelector('.font-body-strong')).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '1M' }).querySelector('.font-body-strong')
+    ).not.toBeNull();
   });
 });

@@ -45,7 +45,7 @@ export function DateRangePillSlider({
               isActive ? uiTextRecipes.inverse : uiTextRecipes.primary
             )}
             aria-pressed={isActive}
-            >
+          >
             <span className={cn('relative z-10', uiTypographyRecipes.bodyStrong)}>
               {option.label}
             </span>

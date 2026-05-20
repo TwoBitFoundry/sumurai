@@ -81,7 +81,7 @@ export function AppLayout({
             'duration-200',
             floatingVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
           )}
-          >
+        >
           {showBottomChromeRow ? (
             <div className={cn('min-h-[3.25rem]', 'px-4')}>{bottomBarRow}</div>
           ) : null}
@@ -125,13 +125,13 @@ export function AppLayout({
                   <span className="relative z-10 flex h-6 w-6 items-center justify-center shrink-0">
                     <Icon className="h-6 w-6" />
                   </span>
-                    <span
-                      className={cn(
-                        'relative z-10 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300',
-                        uiTypographyRecipes.bodyStrong,
-                        currentTab === key ? 'max-w-[8rem] opacity-100' : 'max-w-0 opacity-0'
-                      )}
-                    >
+                  <span
+                    className={cn(
+                      'relative z-10 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300',
+                      uiTypographyRecipes.bodyStrong,
+                      currentTab === key ? 'max-w-[8rem] opacity-100' : 'max-w-0 opacity-0'
+                    )}
+                  >
                     <span className={cn(currentTab === key && 'ml-1.5')}>{label}</span>
                   </span>
                 </Button>
