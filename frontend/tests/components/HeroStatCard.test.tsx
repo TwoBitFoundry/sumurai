@@ -32,7 +32,7 @@ describe('HeroStatCard', () => {
     expect(screen.getByText('Travel')).toBeInTheDocument();
   });
 
-  it('caps the footer slider width on desktop', () => {
+  it('keeps the footer slider full width on desktop', () => {
     render(
       <HeroStatCard
         title="Recurring"
@@ -41,7 +41,8 @@ describe('HeroStatCard', () => {
       />
     );
 
-    expect(screen.getByTestId('hero-stat-card-footer-scroll')).toHaveClass('lg:max-w-[15rem]');
+    expect(screen.getByTestId('hero-stat-card-footer-scroll')).toHaveClass('w-full');
+    expect(screen.getByTestId('hero-stat-card-footer-scroll')).not.toHaveClass('lg:max-w-[15rem]');
   });
 
   it('omits the scroll footer when there is no subtext or pills', () => {
