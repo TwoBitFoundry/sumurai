@@ -9,6 +9,7 @@ import {
 } from '@/hooks/useFinancialConnection';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useProviderCatalog } from '@/hooks/useProviderCatalog';
+import { isProviderConnectable } from '@/utils/providerCapabilities';
 import AccountsPage from '@/views/AccountsPage';
 import { ThemeTestProvider } from '../utils/ThemeTestProvider';
 
@@ -292,6 +293,33 @@ describe('AccountsPage', () => {
 
     expect(screen.getByText('$1,234.56')).toBeVisible();
     expect(screen.queryByText('PLACEHOLDER')).not.toBeInTheDocument();
+  });
+
+  it('enables plaid connect when provider catalog is unavailable', () => {
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock(
+        {
+          available_providers: ['plaid', 'teller'],
+          default_provider: 'plaid',
+          user_provider: 'plaid',
+        },
+        {
+          error: 'Unable to load provider configuration',
+          availableProviders: [],
+          selectedProvider: 'plaid',
+          defaultProvider: 'plaid',
+          userProvider: 'plaid',
+          canConnectWith: (provider) => isProviderConnectable(provider, null),
+          getConnectBlockedReason: () => null,
+          resolveConnectProvider: (preferred) => preferred,
+        }
+      )
+    );
+
+    renderAccountsPage();
+
+    expect(screen.getByRole('button', { name: /^add account$/i })).toBeEnabled();
   });
 
   it('falls back to plaid connect when teller is selected but not configured', () => {

@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { Button, cn } from '@/ui/primitives';
@@ -13,6 +13,7 @@ import ConnectionsList, {
 import { useAccountFilter } from '../hooks/useAccountFilter';
 import { useFinancialConnection } from '../hooks/useFinancialConnection';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { usePlaidConnections } from '../hooks/usePlaidConnections';
 import { useProviderCatalog } from '../hooks/useProviderCatalog';
 import { PageLayout } from '../layouts/PageLayout';
 import { PlaidService } from '../services/PlaidService';
@@ -128,6 +129,45 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   );
   const providerLabel = primaryProvider === 'teller' ? 'Teller' : 'Plaid';
 
+  const providersForSync = useMemo(() => {
+    const providers = new Set<SyncProvider>([primaryProvider]);
+    for (const bank of banks) {
+      providers.add(bank.provider);
+    }
+    return providers;
+  }, [banks, primaryProvider]);
+
+  const plaidConnections = usePlaidConnections({
+    enabled: providersForSync.has('plaid'),
+  });
+  const tellerStatusQuery = useQuery({
+    queryKey: ['teller', 'connections'],
+    queryFn: () => TellerService.getStatus(),
+    enabled: providersForSync.has('teller'),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const banksWithSync = useMemo(() => {
+    const syncByConnectionId = new Map<string, string | null>();
+    for (const connection of plaidConnections.connections) {
+      syncByConnectionId.set(connection.connectionId, connection.lastSyncAt);
+    }
+    for (const status of tellerStatusQuery.data ?? []) {
+      syncByConnectionId.set(status.connection_id, status.last_sync_at);
+    }
+    return banks.map((bank) => {
+      const connectionId = bank.connectionId;
+      if (!connectionId) {
+        return bank;
+      }
+      const fromStatus = syncByConnectionId.get(connectionId);
+      return {
+        ...bank,
+        lastSync: fromStatus ?? bank.lastSync ?? null,
+      };
+    });
+  }, [banks, plaidConnections.connections, tellerStatusQuery.data]);
+
   const connectionFlow = useFinancialConnection({
     provider: primaryProvider,
     onError: (message) => onError?.(message),
@@ -237,7 +277,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     let latestSyncIso: string | null = null;
     let latestSyncTime = 0;
 
-    for (const bank of banks) {
+    for (const bank of banksWithSync) {
       if (bank.status === 'connected') connectedInstitutions += 1;
       totalAccounts += bank.accounts.length;
 
@@ -251,12 +291,12 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     }
 
     return {
-      institutions: banks.length,
+      institutions: banksWithSync.length,
       connectedInstitutions,
       accounts: totalAccounts,
       latestSync: latestSyncIso,
     };
-  }, [banks]);
+  }, [banksWithSync]);
 
   const catalogLoading = providerCatalog.loading || accountFilter.loading;
 
@@ -341,7 +381,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         stats={statsGrid}
       >
         <ConnectionsList
-          banks={banks}
+          banks={banksWithSync}
           onConnect={() => void connectionFlow.initiateConnection()}
           onSync={syncBank}
           onDisconnect={disconnect}

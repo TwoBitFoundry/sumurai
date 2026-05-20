@@ -15,8 +15,12 @@ export function isProviderListed(
 
 export function isProviderConnectable(
   provider: FinancialProvider,
-  catalogue: ProviderCatalogue
+  catalogue: ProviderCatalogue | null
 ): boolean {
+  if (!catalogue) {
+    return provider === 'plaid';
+  }
+
   if (!isProviderListed(provider, catalogue)) {
     return false;
   }

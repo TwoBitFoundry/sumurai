@@ -23,6 +23,11 @@ const tellerReadyCatalogue: ProviderCatalogue = {
 };
 
 describe('providerCapabilities', () => {
+  it('given missing catalogue when checked then plaid is connectable and teller is not', () => {
+    expect(isProviderConnectable('plaid', null)).toBe(true);
+    expect(isProviderConnectable('teller', null)).toBe(false);
+  });
+
   it('given provider not in catalogue when checked then is not listed or connectable', () => {
     expect(isProviderListed('teller', plaidOnlyCatalogue)).toBe(false);
     expect(isProviderConnectable('teller', plaidOnlyCatalogue)).toBe(false);

@@ -113,8 +113,7 @@ export function useProviderCatalog(options: UseProviderCatalogOptions = {}): Pro
   );
 
   const canConnectWith = useCallback(
-    (provider: FinancialProvider) =>
-      catalogue ? isProviderConnectable(provider, catalogue) : false,
+    (provider: FinancialProvider) => isProviderConnectable(provider, catalogue),
     [catalogue]
   );
 
