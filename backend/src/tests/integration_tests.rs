@@ -531,6 +531,251 @@ async fn given_authenticated_user_when_get_transactions_with_invalid_account_ids
 }
 
 #[tokio::test]
+async fn given_authenticated_user_when_get_transaction_insights_then_returns_aggregates() {
+    use crate::models::transaction::{LargestTransaction, TransactionsInsightsResponse};
+    use crate::services::repository_service::MockDatabaseRepository;
+    use axum::body::to_bytes;
+    use chrono::NaiveDate;
+    use uuid::Uuid;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let account_id_1 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440001").unwrap();
+    let account_id_2 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440002").unwrap();
+    let user_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+
+    mock_db.expect_get_accounts_for_user().returning(move |_| {
+        use crate::models::account::Account;
+        let accounts = vec![
+            Account {
+                id: account_id_1,
+                user_id: Some(user_id),
+                provider_account_id: Some("plaid_acc_1".to_string()),
+                provider_connection_id: Some(Uuid::new_v4()),
+                name: "Test Account 1".to_string(),
+                account_type: "checking".to_string(),
+                balance_current: Some(rust_decimal_macros::dec!(1000.00)),
+                mask: Some("0001".to_string()),
+                institution_name: Some("Test Bank".to_string()),
+            },
+            Account {
+                id: account_id_2,
+                user_id: Some(user_id),
+                provider_account_id: Some("plaid_acc_2".to_string()),
+                provider_connection_id: Some(Uuid::new_v4()),
+                name: "Test Account 2".to_string(),
+                account_type: "savings".to_string(),
+                balance_current: Some(rust_decimal_macros::dec!(5000.00)),
+                mask: Some("0002".to_string()),
+                institution_name: Some("Test Bank".to_string()),
+            },
+        ];
+        Box::pin(async { Ok(accounts) })
+    });
+
+    mock_db.expect_get_transactions_insights().returning(
+        move |_, search, account_ids, start_date, end_date, category| {
+            assert_eq!(search, Some("coffee"));
+            assert_eq!(account_ids.map(|ids| ids.len()), Some(1));
+            assert_eq!(
+                account_ids.and_then(|ids| ids.first().copied()),
+                Some(account_id_1)
+            );
+            assert_eq!(
+                start_date,
+                Some(NaiveDate::from_ymd_opt(2024, 3, 1).unwrap())
+            );
+            assert_eq!(
+                end_date,
+                Some(NaiveDate::from_ymd_opt(2024, 3, 31).unwrap())
+            );
+            assert_eq!(category, Some("FOOD_AND_DRINK"));
+            Box::pin(async move {
+                Ok(TransactionsInsightsResponse {
+                    total_count: 3,
+                    total_spent: 60.0,
+                    average_amount: 20.0,
+                    largest: Some(LargestTransaction {
+                        amount: 30.0,
+                        merchant: "Coffee Collective".to_string(),
+                    }),
+                    recurring_count: 1,
+                    recurring_merchants: vec!["Coffee Collective".to_string()],
+                    top_categories: vec!["FOOD_AND_DRINK".to_string()],
+                })
+            })
+        },
+    );
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request = TestFixtures::create_authenticated_get_request(
+        &format!(
+            "/api/transactions/insights?search=%20coffee%20&account_ids={}&start_date=2024-03-01&end_date=2024-03-31&category_primary=FOOD_AND_DRINK",
+            account_id_1
+        ),
+        &token,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: TransactionsInsightsResponse = serde_json::from_slice(&body).unwrap();
+    assert_eq!(payload.total_count, 3);
+    assert_eq!(payload.total_spent, 60.0);
+    assert_eq!(payload.average_amount, 20.0);
+    assert_eq!(
+        payload.largest,
+        Some(LargestTransaction {
+            amount: 30.0,
+            merchant: "Coffee Collective".to_string(),
+        })
+    );
+    assert_eq!(payload.recurring_count, 1);
+    assert_eq!(
+        payload.recurring_merchants,
+        vec!["Coffee Collective".to_string()]
+    );
+    assert_eq!(payload.top_categories, vec!["FOOD_AND_DRINK".to_string()]);
+}
+
+#[tokio::test]
+async fn given_authenticated_user_when_get_transaction_insights_with_empty_result_then_returns_zero_values(
+) {
+    use crate::models::transaction::{LargestTransaction, TransactionsInsightsResponse};
+    use crate::services::repository_service::MockDatabaseRepository;
+    use axum::body::to_bytes;
+    use chrono::NaiveDate;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    mock_db.expect_get_transactions_insights().returning(
+        move |_, search, account_ids, start_date, end_date, category| {
+            assert!(search.is_none());
+            assert!(account_ids.is_none());
+            assert_eq!(
+                start_date,
+                Some(NaiveDate::from_ymd_opt(2025, 1, 1).unwrap())
+            );
+            assert_eq!(
+                end_date,
+                Some(NaiveDate::from_ymd_opt(2025, 1, 31).unwrap())
+            );
+            assert!(category.is_none());
+            Box::pin(async move {
+                Ok(TransactionsInsightsResponse {
+                    total_count: 0,
+                    total_spent: 0.0,
+                    average_amount: 0.0,
+                    largest: None::<LargestTransaction>,
+                    recurring_count: 0,
+                    recurring_merchants: vec![],
+                    top_categories: vec![],
+                })
+            })
+        },
+    );
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request = TestFixtures::create_authenticated_get_request(
+        "/api/transactions/insights?start_date=2025-01-01&end_date=2025-01-31",
+        &token,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: TransactionsInsightsResponse = serde_json::from_slice(&body).unwrap();
+    assert_eq!(payload.total_count, 0);
+    assert_eq!(payload.total_spent, 0.0);
+    assert_eq!(payload.average_amount, 0.0);
+    assert_eq!(payload.largest, None);
+    assert_eq!(payload.recurring_count, 0);
+    assert!(payload.recurring_merchants.is_empty());
+    assert!(payload.top_categories.is_empty());
+}
+
+#[tokio::test]
+async fn given_unauthenticated_request_when_get_transaction_insights_then_returns_401() {
+    let app = TestFixtures::create_test_app().await.unwrap();
+
+    let request = TestFixtures::create_get_request("/api/transactions/insights");
+    let response = app.oneshot(request).await.unwrap();
+
+    assert_eq!(response.status(), 401);
+}
+
+#[tokio::test]
+async fn given_authenticated_user_when_get_transaction_insights_with_foreign_account_ids_then_returns_403(
+) {
+    use crate::services::repository_service::MockDatabaseRepository;
+    use uuid::Uuid;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let owned_account_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440001").unwrap();
+    let foreign_account_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440999").unwrap();
+    let user_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+
+    mock_db.expect_get_accounts_for_user().returning(move |_| {
+        use crate::models::account::Account;
+        let accounts = vec![Account {
+            id: owned_account_id,
+            user_id: Some(user_id),
+            provider_account_id: Some("plaid_acc_1".to_string()),
+            provider_connection_id: Some(Uuid::new_v4()),
+            name: "Test Account 1".to_string(),
+            account_type: "checking".to_string(),
+            balance_current: Some(rust_decimal_macros::dec!(1000.00)),
+            mask: Some("0001".to_string()),
+            institution_name: Some("Test Bank".to_string()),
+        }];
+        Box::pin(async { Ok(accounts) })
+    });
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let request = TestFixtures::create_authenticated_get_request(
+        &format!("/api/transactions/insights?account_ids={foreign_account_id}"),
+        &token,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 403);
+}
+
+#[tokio::test]
+async fn given_authenticated_user_when_get_transaction_insights_with_invalid_date_range_then_returns_400(
+) {
+    let app = TestFixtures::create_test_app_with_db(
+        crate::services::repository_service::MockDatabaseRepository::new(),
+    )
+    .await
+    .unwrap();
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let request = TestFixtures::create_authenticated_get_request(
+        "/api/transactions/insights?start_date=2024-03-31&end_date=2024-03-01",
+        &token,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 400);
+}
+
+#[tokio::test]
 async fn given_authenticated_user_when_get_spending_with_account_ids_then_returns_filtered_spending(
 ) {
     use crate::models::transaction::Transaction;

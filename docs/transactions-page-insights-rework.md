@@ -165,11 +165,17 @@ TDD log
 Add the handler in `main.rs` modeled on `get_authenticated_transactions`, wire the route, and register it in the utoipa OpenAPI macro. Use the same `AuthorizedQuery<TransactionsQuery>` extractor (page/page_size fields ignored). Add boundary tests per the `sumurai-testing-policy` skill — test through the HTTP/handler boundary, not by calling the service directly.
 
 **Acceptance criteria**
-- [ ] `GET /api/transactions/insights` returns 200 with the documented shape for an authenticated user.
-- [ ] Same auth/account-scoping behavior as the list endpoint (401 unauth, 403 cross-user account filter, 400 invalid date range).
-- [ ] Tests cover: mixed positive/negative amounts produce correct totals; recurring threshold of `>= 3` works at the boundary (a merchant with exactly 2 is excluded, exactly 3 is included); another user's transactions are excluded; date/category/account filters pass through; empty result returns zeros and null largest.
-- [ ] OpenAPI schema includes the new endpoint and types.
-- [ ] `cargo test` passes.
+- [x] `GET /api/transactions/insights` returns 200 with the documented shape for an authenticated user.
+- [x] Same auth/account-scoping behavior as the list endpoint (401 unauth, 403 cross-user account filter, 400 invalid date range).
+- [x] Tests cover: mixed positive/negative amounts produce correct totals; recurring threshold of `>= 3` works at the boundary (a merchant with exactly 2 is excluded, exactly 3 is included); another user's transactions are excluded; date/category/account filters pass through; empty result returns zeros and null largest.
+- [x] OpenAPI schema includes the new endpoint and types.
+- [x] `cargo test` passes.
+
+TDD log
+
+- Added handler-level integration coverage for success, empty result, 401, 403, and invalid date range cases.
+- Ran `cargo test --manifest-path backend/Cargo.toml integration_tests`.
+- Ran `cargo check --manifest-path backend/Cargo.toml`.
 
 ## Phase 3 — Frontend: hook + page wiring
 
