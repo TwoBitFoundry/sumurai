@@ -1,3 +1,7 @@
+/**
+ * Loads and caches Plaid connection metadata.
+ */
+
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { AccountNormalizer, type BackendAccount } from '../domain/AccountNormalizer';

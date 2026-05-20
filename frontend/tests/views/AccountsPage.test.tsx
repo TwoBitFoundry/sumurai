@@ -1,13 +1,15 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { UsePlaidLinkFlowResult } from '@/features/plaid/hooks/usePlaidLinkFlow';
-import { usePlaidLinkFlow } from '@/features/plaid/hooks/usePlaidLinkFlow';
+import { makeProviderCatalogMock } from '@tests/utils/providerCatalogMocks';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
+import {
+  type UseFinancialConnectionReturn,
+  useFinancialConnection,
+} from '@/hooks/useFinancialConnection';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
-import type { PlaidConnection } from '@/hooks/usePlaidConnections';
-import { type UseTellerLinkFlowResult, useTellerLinkFlow } from '@/hooks/useTellerLinkFlow';
-import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo';
+import { useProviderCatalog } from '@/hooks/useProviderCatalog';
+import { isProviderConnectable } from '@/utils/providerCapabilities';
 import AccountsPage from '@/views/AccountsPage';
 import { ThemeTestProvider } from '../utils/ThemeTestProvider';
 
@@ -31,58 +33,21 @@ function renderAccountsPage() {
   );
 }
 
-function makePlaidLinkFlowMock(
-  overrides: Partial<UsePlaidLinkFlowResult> = {}
-): UsePlaidLinkFlowResult {
-  const base: UsePlaidLinkFlowResult = {
-    connections: [],
-    loading: false,
-    error: null,
-    toast: null,
-    setToast: jest.fn(),
-    connect: jest.fn(),
-    syncOne: jest.fn(),
-    syncAll: jest.fn(),
-    disconnect: jest.fn(),
-    syncingAll: false,
-    plaidLinkMount: null,
-  };
-  return { ...base, ...overrides };
-}
-
-function makeTellerLinkFlowMock(
-  overrides: Partial<UseTellerLinkFlowResult> = {}
-): UseTellerLinkFlowResult {
-  const base: UseTellerLinkFlowResult = {
-    connections: [],
-    loading: false,
-    error: null,
-    toast: null,
-    setToast: jest.fn(),
-    connect: jest.fn(),
-    syncOne: jest.fn(),
-    syncAll: jest.fn(),
-    disconnect: jest.fn(),
-    syncingAll: false,
-    tellerConnectMount: null,
-  };
-  return { ...base, ...overrides };
-}
-
-function minimalConnection(
-  partial: Pick<PlaidConnection, 'connectionId'> & Partial<Omit<PlaidConnection, 'connectionId'>>
-): PlaidConnection {
-  const id = partial.id ?? partial.connectionId;
+function makeFinancialConnectionMock(
+  overrides: Partial<UseFinancialConnectionReturn> = {}
+): UseFinancialConnectionReturn {
   return {
-    id,
-    connectionId: partial.connectionId,
-    institutionName: partial.institutionName ?? 'Demo Bank',
-    lastSyncAt: partial.lastSyncAt ?? null,
-    transactionCount: partial.transactionCount ?? 0,
-    accountCount: partial.accountCount ?? 0,
-    syncInProgress: partial.syncInProgress ?? false,
-    isConnected: partial.isConnected ?? true,
-    accounts: partial.accounts ?? [],
+    isConnected: false,
+    connectionInProgress: false,
+    isSyncing: false,
+    institutionName: null,
+    error: null,
+    initiateConnection: jest.fn(),
+    retryConnection: jest.fn(),
+    reset: jest.fn(),
+    setError: jest.fn(),
+    connectionMount: null,
+    ...overrides,
   };
 }
 
@@ -90,20 +55,16 @@ jest.mock('@/hooks/useOnlineStatus', () => ({
   useOnlineStatus: jest.fn(),
 }));
 
-jest.mock('@/hooks/useTellerProviderInfo', () => ({
-  useTellerProviderInfo: jest.fn(),
+jest.mock('@/hooks/useProviderCatalog', () => ({
+  useProviderCatalog: jest.fn(),
+}));
+
+jest.mock('@/hooks/useFinancialConnection', () => ({
+  useFinancialConnection: jest.fn(),
 }));
 
 jest.mock('@/hooks/useAccountFilter', () => ({
   useAccountFilter: jest.fn(),
-}));
-
-jest.mock('@/features/plaid/hooks/usePlaidLinkFlow', () => ({
-  usePlaidLinkFlow: jest.fn(),
-}));
-
-jest.mock('@/hooks/useTellerLinkFlow', () => ({
-  useTellerLinkFlow: jest.fn(),
 }));
 
 jest.mock('@/features/import/components/ImportModal', () => ({
@@ -136,18 +97,14 @@ jest.mock('@/features/import/components/ImportModal', () => ({
 describe('AccountsPage', () => {
   beforeEach(() => {
     jest.mocked(useOnlineStatus).mockReturnValue(false);
-    jest.mocked(useTellerProviderInfo).mockReturnValue({
-      loading: false,
-      error: null,
-      availableProviders: ['plaid', 'teller'],
-      selectedProvider: 'teller',
-      defaultProvider: 'teller',
-      userProvider: 'teller',
-      tellerApplicationId: 'app_123',
-      tellerEnvironment: 'development',
-      refresh: jest.fn(),
-      chooseProvider: jest.fn(),
-    });
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid', 'teller'],
+        default_provider: 'teller',
+        user_provider: 'teller',
+        teller_application_id: 'app_123',
+      })
+    );
     jest.mocked(useAccountFilter).mockReturnValue({
       selectedAccountIds: [],
       allAccountIds: [],
@@ -159,8 +116,7 @@ describe('AccountsPage', () => {
       toggleAccount: jest.fn(),
       removeAccountsByIds: jest.fn(),
     });
-    jest.mocked(usePlaidLinkFlow).mockReturnValue(makePlaidLinkFlowMock());
-    jest.mocked(useTellerLinkFlow).mockReturnValue(makeTellerLinkFlowMock());
+    jest.mocked(useFinancialConnection).mockReturnValue(makeFinancialConnectionMock());
   });
 
   it('keeps the Teller accounts page available while offline', () => {
@@ -201,11 +157,6 @@ describe('AccountsPage', () => {
       toggleAccount: jest.fn(),
       removeAccountsByIds: jest.fn(),
     });
-    jest.mocked(useTellerLinkFlow).mockReturnValue(
-      makeTellerLinkFlowMock({
-        connections: [minimalConnection({ connectionId: 'conn_1', lastSyncAt: null })],
-      })
-    );
 
     renderAccountsPage();
 
@@ -232,8 +183,8 @@ describe('AccountsPage', () => {
       removeAccountsByIds: jest.fn(),
     });
 
-    jest.mocked(useTellerLinkFlow).mockReturnValueOnce(
-      makeTellerLinkFlowMock({
+    jest.mocked(useFinancialConnection).mockReturnValueOnce(
+      makeFinancialConnectionMock({
         error: 'Failed to load connections',
       })
     );
@@ -245,18 +196,13 @@ describe('AccountsPage', () => {
 
   it('shows per-account transaction counts from the filter for Plaid', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
-    jest.mocked(useTellerProviderInfo).mockReturnValue({
-      loading: false,
-      error: null,
-      availableProviders: ['plaid', 'teller'],
-      selectedProvider: 'plaid',
-      defaultProvider: 'plaid',
-      userProvider: 'plaid',
-      tellerApplicationId: null,
-      tellerEnvironment: 'development',
-      refresh: jest.fn(),
-      chooseProvider: jest.fn(),
-    });
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid', 'teller'],
+        default_provider: 'plaid',
+        user_provider: 'plaid',
+      })
+    );
     jest.mocked(useAccountFilter).mockReturnValue({
       selectedAccountIds: ['acc_plaid_1'],
       allAccountIds: ['acc_plaid_1'],
@@ -291,18 +237,13 @@ describe('AccountsPage', () => {
 
   it('renders the Plaid accounts button with the Plaid logo', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
-    jest.mocked(useTellerProviderInfo).mockReturnValue({
-      loading: false,
-      error: null,
-      availableProviders: ['plaid', 'teller'],
-      selectedProvider: 'plaid',
-      defaultProvider: 'plaid',
-      userProvider: 'plaid',
-      tellerApplicationId: null,
-      tellerEnvironment: 'development',
-      refresh: jest.fn(),
-      chooseProvider: jest.fn(),
-    });
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid', 'teller'],
+        default_provider: 'plaid',
+        user_provider: 'plaid',
+      })
+    );
 
     renderAccountsPage();
 
@@ -312,18 +253,14 @@ describe('AccountsPage', () => {
 
   it('renders Teller current balances on the accounts page', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
-    jest.mocked(useTellerProviderInfo).mockReturnValue({
-      loading: false,
-      error: null,
-      availableProviders: ['plaid', 'teller'],
-      selectedProvider: 'teller',
-      defaultProvider: 'teller',
-      userProvider: 'teller',
-      tellerApplicationId: 'app_123',
-      tellerEnvironment: 'development',
-      refresh: jest.fn(),
-      chooseProvider: jest.fn(),
-    });
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid', 'teller'],
+        default_provider: 'teller',
+        user_provider: 'teller',
+        teller_application_id: 'app_123',
+      })
+    );
     jest.mocked(useAccountFilter).mockReturnValue({
       selectedAccountIds: ['acc_teller_1'],
       allAccountIds: ['acc_teller_1'],
@@ -358,22 +295,60 @@ describe('AccountsPage', () => {
     expect(screen.queryByText('PLACEHOLDER')).not.toBeInTheDocument();
   });
 
+  it('enables plaid connect when provider catalog is unavailable', () => {
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock(
+        {
+          available_providers: ['plaid', 'teller'],
+          default_provider: 'plaid',
+          user_provider: 'plaid',
+        },
+        {
+          error: 'Unable to load provider configuration',
+          availableProviders: [],
+          selectedProvider: 'plaid',
+          defaultProvider: 'plaid',
+          userProvider: 'plaid',
+          canConnectWith: (provider) => isProviderConnectable(provider, null),
+          getConnectBlockedReason: () => null,
+          resolveConnectProvider: (preferred) => preferred,
+        }
+      )
+    );
+
+    renderAccountsPage();
+
+    expect(screen.getByRole('button', { name: /^add account$/i })).toBeEnabled();
+  });
+
+  it('falls back to plaid connect when teller is selected but not configured', () => {
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid', 'teller'],
+        default_provider: 'teller',
+        user_provider: 'teller',
+      })
+    );
+
+    renderAccountsPage();
+
+    expect(screen.getByRole('button', { name: /^add account$/i })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /^teller$/i })).not.toBeInTheDocument();
+  });
+
   it('shows an import success toast with the account mask', async () => {
     const user = userEvent.setup();
 
     jest.mocked(useOnlineStatus).mockReturnValue(true);
-    jest.mocked(useTellerProviderInfo).mockReturnValue({
-      loading: false,
-      error: null,
-      availableProviders: ['plaid', 'teller'],
-      selectedProvider: 'plaid',
-      defaultProvider: 'plaid',
-      userProvider: 'plaid',
-      tellerApplicationId: null,
-      tellerEnvironment: 'development',
-      refresh: jest.fn(),
-      chooseProvider: jest.fn(),
-    });
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid', 'teller'],
+        default_provider: 'plaid',
+        user_provider: 'plaid',
+      })
+    );
     jest.mocked(useAccountFilter).mockReturnValue({
       selectedAccountIds: ['acc_plaid_1'],
       allAccountIds: ['acc_plaid_1'],

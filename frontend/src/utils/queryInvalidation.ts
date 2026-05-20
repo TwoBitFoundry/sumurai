@@ -1,3 +1,7 @@
+/**
+ * Invalidates shared client caches after financial data changes.
+ */
+
 import type { QueryClient } from '@tanstack/react-query';
 import { dispatchAccountsChanged } from './events';
 

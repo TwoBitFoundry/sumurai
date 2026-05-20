@@ -1,3 +1,5 @@
+//! Authorization checks for authenticated API access.
+
 use crate::models::{budget::Budget, plaid::ProviderConnection};
 use crate::services::repository_service::DatabaseRepository;
 use axum::http::StatusCode;

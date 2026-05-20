@@ -1,3 +1,7 @@
+/**
+ * Typed errors raised by the HTTP client layer.
+ */
+
 export class ApiError extends Error {
   constructor(
     public status: number,

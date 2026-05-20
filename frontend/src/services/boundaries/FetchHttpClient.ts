@@ -1,3 +1,7 @@
+/**
+ * Fetch implementation of the HTTP transport contract.
+ */
+
 import {
   ApiError,
   AuthenticationError,

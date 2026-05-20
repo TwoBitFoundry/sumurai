@@ -1,3 +1,7 @@
+/**
+ * Loads Teller Connect and persists enrollments through the API.
+ */
+
 import { ApiClient } from '@/services/ApiClient';
 import { buildSyncTransactionsRequest } from '@/utils/syncTransactionsRequest';
 

@@ -1,3 +1,7 @@
+/**
+ * Browser storage implementation for auth material.
+ */
+
 import type { IStorageAdapter } from './IStorageAdapter';
 
 export class BrowserStorageAdapter implements IStorageAdapter {

@@ -1,3 +1,7 @@
+/**
+ * Drives transaction import upload and result handling.
+ */
+
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 import { canCorrectCsvMapping, normalizeCsvMapping } from '@/features/import/csvMapping';

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useTellerProviderInfo } from '../hooks/useTellerProviderInfo';
+import { useProviderCatalog } from '../hooks/useProviderCatalog';
 import { ProviderMismatchModal } from './ProviderMismatchModal';
 
 interface ProviderMismatchCheckProps {
@@ -13,35 +13,35 @@ export const ProviderMismatchCheck = ({
   onShowMismatch,
   onConfirm,
 }: ProviderMismatchCheckProps) => {
-  const providerInfo = useTellerProviderInfo();
+  const providerCatalog = useProviderCatalog();
 
   useEffect(() => {
-    if (providerInfo.loading) {
+    if (providerCatalog.loading) {
       return;
     }
 
-    if (!providerInfo.userProvider || !providerInfo.defaultProvider) {
+    if (!providerCatalog.userProvider || !providerCatalog.defaultProvider) {
       return;
     }
 
-    if (providerInfo.userProvider !== providerInfo.defaultProvider) {
+    if (providerCatalog.userProvider !== providerCatalog.defaultProvider) {
       onShowMismatch(true);
     }
   }, [
-    providerInfo.loading,
-    providerInfo.userProvider,
-    providerInfo.defaultProvider,
+    providerCatalog.loading,
+    providerCatalog.userProvider,
+    providerCatalog.defaultProvider,
     onShowMismatch,
   ]);
 
-  if (!showMismatch || !providerInfo.userProvider || !providerInfo.defaultProvider) {
+  if (!showMismatch || !providerCatalog.userProvider || !providerCatalog.defaultProvider) {
     return null;
   }
 
   return (
     <ProviderMismatchModal
-      userProvider={providerInfo.userProvider}
-      defaultProvider={providerInfo.defaultProvider}
+      userProvider={providerCatalog.userProvider}
+      defaultProvider={providerCatalog.defaultProvider}
       onConfirm={onConfirm}
     />
   );

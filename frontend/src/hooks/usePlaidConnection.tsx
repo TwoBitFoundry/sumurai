@@ -1,3 +1,7 @@
+/**
+ * Plaid connection status for legacy account flows.
+ */
+
 import { useCallback, useEffect, useState } from 'react';
 import { PlaidService } from '../services/PlaidService';
 import type { ProviderConnectionStatus } from '../types/api';

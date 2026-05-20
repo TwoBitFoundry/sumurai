@@ -1,3 +1,7 @@
+/**
+ * Helpers for working with transaction categories.
+ */
+
 import { getCategoryAccent } from '@/ui/tokens';
 
 export function formatCategoryName(categoryPrimary: string | undefined | null): string {

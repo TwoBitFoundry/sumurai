@@ -1,3 +1,5 @@
+//! Coordinates bank connections, sync completion, and session cache refresh after financial data changes.
+
 use crate::models::{
     account::Account,
     cache::{BankConnectionSyncStatus, CachedBankAccounts, CachedBankConnection},
@@ -269,12 +271,7 @@ impl ConnectionService {
             }
 
             if let Err(e) = self
-                .complete_sync_with_jwt_cache_update(
-                    user_id,
-                    jwt_id,
-                    &connection,
-                    &persisted_accounts,
-                )
+                .complete_sync_with_jwt_cache_update(jwt_id, &connection, &persisted_accounts)
                 .await
             {
                 tracing::warn!(
@@ -571,12 +568,7 @@ impl ConnectionService {
         }
 
         if let Err(e) = self
-            .complete_sync_with_jwt_cache_update(
-                params.user_id,
-                params.jwt_id,
-                connection,
-                &db_accounts,
-            )
+            .complete_sync_with_jwt_cache_update(params.jwt_id, connection, &db_accounts)
             .await
         {
             tracing::warn!(
@@ -807,12 +799,7 @@ impl ConnectionService {
             .map_err(TellerSyncError::ConnectionPersistence)?;
 
         if let Err(e) = self
-            .complete_sync_with_jwt_cache_update(
-                user_id,
-                jwt_id,
-                connection,
-                &accounts_for_connection,
-            )
+            .complete_sync_with_jwt_cache_update(jwt_id, connection, &accounts_for_connection)
             .await
         {
             tracing::warn!(
@@ -884,17 +871,50 @@ impl ConnectionService {
         Ok(cleared_keys)
     }
 
+    fn warn_post_sync_cache_failure(&self, operation: &str, jwt_id: &str, result: Result<()>) {
+        if let Err(error) = result {
+            tracing::warn!(
+                operation = operation,
+                jwt_id = jwt_id,
+                error = %error,
+                "Post-sync session cache update failed; responses may be stale until the next sync or refresh"
+            );
+        }
+    }
+
     pub async fn complete_sync_with_jwt_cache_update(
         &self,
-        _user_id: &Uuid,
         jwt_id: &str,
         connection: &ProviderConnection,
         accounts: &[Account],
     ) -> Result<()> {
-        let _ = self
-            .cache_service
-            .invalidate_pattern(&format!("{}_balances_overview*", jwt_id))
-            .await;
+        self.warn_post_sync_cache_failure(
+            "invalidate_balances_overview",
+            jwt_id,
+            self.cache_service
+                .invalidate_pattern(&format!("{}_balances_overview*", jwt_id))
+                .await,
+        );
+
+        self.warn_post_sync_cache_failure(
+            "invalidate_net_worth_over_time",
+            jwt_id,
+            self.cache_service
+                .invalidate_pattern(&format!("{}_net_worth_over_time_*", jwt_id))
+                .await,
+        );
+
+        self.warn_post_sync_cache_failure(
+            "clear_transactions",
+            jwt_id,
+            self.cache_service.clear_transactions(jwt_id).await,
+        );
+
+        self.warn_post_sync_cache_failure(
+            "clear_budgets",
+            jwt_id,
+            self.cache_service.clear_budgets(jwt_id).await,
+        );
 
         let cached_connection = CachedBankConnection {
             connection: connection.clone(),

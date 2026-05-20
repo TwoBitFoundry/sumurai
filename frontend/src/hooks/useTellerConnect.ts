@@ -1,3 +1,7 @@
+/**
+ * Utilities for loading the Teller Connect browser SDK.
+ */
+
 export type {
   TellerConnectGateway,
   TellerEnvironment,

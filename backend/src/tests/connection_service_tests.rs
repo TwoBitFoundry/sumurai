@@ -208,6 +208,16 @@ async fn given_plaid_sync_with_many_transactions_when_persisting_then_batches_wr
 
     mock_cache
         .expect_invalidate_pattern()
+        .times(2)
+        .returning(|_| Box::pin(async { Ok(()) }));
+
+    mock_cache
+        .expect_clear_transactions()
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(()) }));
+
+    mock_cache
+        .expect_clear_budgets()
         .times(1)
         .returning(|_| Box::pin(async { Ok(()) }));
 

@@ -1,3 +1,7 @@
+/**
+ * Preset date ranges used by analytics filters.
+ */
+
 export type DateRangeKey =
   | 'current-month'
   | 'past-2-months'

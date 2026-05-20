@@ -1,3 +1,7 @@
+/**
+ * Tracks the active budget month selection.
+ */
+
 import { useCallback, useMemo, useState } from 'react';
 
 export const LONGEST_BUDGET_MONTH_LABEL = 'September 9999';

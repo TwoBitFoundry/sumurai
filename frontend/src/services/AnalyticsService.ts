@@ -1,3 +1,7 @@
+/**
+ * API access for analytics and dashboard metrics.
+ */
+
 import type { BalancesOverview } from '../types/analytics';
 import type {
   AnalyticsCategoryResponse,

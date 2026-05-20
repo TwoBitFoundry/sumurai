@@ -1,3 +1,7 @@
+/**
+ * Factories for React Query cache keys.
+ */
+
 export function accountIdsCacheKey(
   allAccountIds: string[],
   selectedAccountIds: string[],

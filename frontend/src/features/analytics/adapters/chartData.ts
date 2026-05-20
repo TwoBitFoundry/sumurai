@@ -1,3 +1,7 @@
+/**
+ * Transforms analytics API results into chart-ready series.
+ */
+
 import type { AnalyticsTopMerchantsResponse } from '../../../types/api';
 import { formatCategoryName } from '../../../utils/categories';
 

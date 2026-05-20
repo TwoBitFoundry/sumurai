@@ -1,3 +1,7 @@
+/**
+ * Loads and pages transaction lists.
+ */
+
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';

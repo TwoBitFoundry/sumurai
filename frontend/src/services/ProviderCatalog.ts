@@ -1,3 +1,7 @@
+/**
+ * Loads linked accounts from the active financial provider.
+ */
+
 import type { Account } from '../types/api';
 import { ApiClient, ApiError } from './ApiClient';
 

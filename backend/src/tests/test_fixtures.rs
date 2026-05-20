@@ -230,6 +230,18 @@ impl TestFixtures {
             .returning(|_| Box::pin(async { Ok(()) }));
 
         mock_cache
+            .expect_get_budgets()
+            .returning(|_| Box::pin(async { Ok(None) }));
+
+        mock_cache
+            .expect_set_budgets()
+            .returning(|_, _| Box::pin(async { Ok(()) }));
+
+        mock_cache
+            .expect_clear_budgets()
+            .returning(|_| Box::pin(async { Ok(()) }));
+
+        mock_cache
             .expect_is_auth_ip_banned()
             .times(0..)
             .returning(|_| Box::pin(async { Ok(false) }));
@@ -325,6 +337,18 @@ impl TestFixtures {
 
         mock_cache
             .expect_invalidate_pattern()
+            .returning(|_| Box::pin(async { Ok(()) }));
+
+        mock_cache
+            .expect_get_budgets()
+            .returning(|_| Box::pin(async { Ok(None) }));
+
+        mock_cache
+            .expect_set_budgets()
+            .returning(|_, _| Box::pin(async { Ok(()) }));
+
+        mock_cache
+            .expect_clear_budgets()
             .returning(|_| Box::pin(async { Ok(()) }));
 
         mock_cache

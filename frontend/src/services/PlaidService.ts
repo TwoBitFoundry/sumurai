@@ -1,3 +1,7 @@
+/**
+ * API access for Plaid linking and connection operations.
+ */
+
 import type {
   Account,
   PlaidDisconnectResponse,

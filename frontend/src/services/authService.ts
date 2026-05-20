@@ -1,3 +1,7 @@
+/**
+ * Client authentication state and token refresh.
+ */
+
 import { SpanStatusCode, trace } from '@opentelemetry/api';
 import { ApiClient, AuthenticationError } from './ApiClient';
 import type { IStorageAdapter } from './boundaries';

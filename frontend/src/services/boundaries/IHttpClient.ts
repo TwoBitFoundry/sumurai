@@ -1,3 +1,7 @@
+/**
+ * HTTP transport contract for service clients.
+ */
+
 export interface RequestOptions {
   headers?: Record<string, string>;
 }

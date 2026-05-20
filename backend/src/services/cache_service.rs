@@ -1,3 +1,5 @@
+//! Redis cache for session-scoped API and connection data.
+
 use crate::models::{
     cache::{CachedBankAccounts, CachedBankConnection, CachedTransaction},
     ip_ban::AuthIpBanPolicy,
@@ -14,11 +16,13 @@ const SESSION_TOKEN_SUFFIX: &str = "_session_token";
 const BANK_CONNECTION_SUFFIX: &str = "_bank_connection_";
 const BANK_ACCOUNTS_SUFFIX: &str = "_bank_accounts_";
 const SESSION_VALID_SUFFIX: &str = "_session_valid";
+const BUDGETS_SUFFIX: &str = "_budgets";
 
 const ACCESS_TOKEN_TTL: u64 = 3600;
 const TRANSACTIONS_TTL: u64 = 1800;
 const BANK_CONNECTION_TTL: u64 = 7200;
 const BANK_ACCOUNTS_TTL: u64 = 7200;
+const BUDGETS_TTL: u64 = 300;
 
 pub fn synced_transactions_key(jwt_id: &str) -> String {
     format!("{}{}", jwt_id, SYNCED_TRANSACTIONS_SUFFIX)
@@ -69,6 +73,10 @@ pub trait CacheService: Send + Sync {
     async fn is_auth_ip_banned(&self, ip: &str) -> Result<bool>;
 
     async fn record_auth_rate_limit_exceeded(&self, ip: &str) -> Result<()>;
+
+    async fn get_budgets(&self, jwt_id: &str) -> Result<Option<String>>;
+    async fn set_budgets(&self, jwt_id: &str, budgets_json: &str) -> Result<()>;
+    async fn clear_budgets(&self, jwt_id: &str) -> Result<()>;
 }
 
 pub struct RedisCache {
@@ -108,6 +116,10 @@ impl RedisCache {
 
     fn jwt_scoped_bank_accounts_key(&self, jwt_id: &str, connection_id: Uuid) -> String {
         format!("{}{}{}", jwt_id, BANK_ACCOUNTS_SUFFIX, connection_id)
+    }
+
+    fn budgets_key(&self, jwt_id: &str) -> String {
+        format!("{}{}", jwt_id, BUDGETS_SUFFIX)
     }
 
     pub async fn cache_jwt_scoped_bank_connection(
@@ -322,6 +334,21 @@ impl RedisCache {
 
         Ok(())
     }
+
+    pub async fn get_budgets(&self, jwt_id: &str) -> Result<Option<String>> {
+        self.get_string(&self.budgets_key(jwt_id)).await
+    }
+
+    pub async fn set_budgets(&self, jwt_id: &str, budgets_json: &str) -> Result<()> {
+        self.set_with_ttl(&self.budgets_key(jwt_id), budgets_json, BUDGETS_TTL)
+            .await
+    }
+
+    pub async fn clear_budgets(&self, jwt_id: &str) -> Result<()> {
+        let mut conn = self.connection_manager.clone();
+        conn.del::<_, ()>(self.budgets_key(jwt_id)).await?;
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -421,5 +448,17 @@ impl CacheService for RedisCache {
 
     async fn record_auth_rate_limit_exceeded(&self, ip: &str) -> Result<()> {
         self.record_auth_rate_limit_exceeded(ip).await
+    }
+
+    async fn get_budgets(&self, jwt_id: &str) -> Result<Option<String>> {
+        self.get_budgets(jwt_id).await
+    }
+
+    async fn set_budgets(&self, jwt_id: &str, budgets_json: &str) -> Result<()> {
+        self.set_budgets(jwt_id, budgets_json).await
+    }
+
+    async fn clear_budgets(&self, jwt_id: &str) -> Result<()> {
+        self.clear_budgets(jwt_id).await
     }
 }

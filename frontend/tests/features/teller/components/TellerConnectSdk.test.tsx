@@ -60,10 +60,18 @@ describe('TellerConnectSdk', () => {
     expect(destroy).toHaveBeenCalledTimes(1);
   });
 
-  it('stores enrollment and triggers sync on success', async () => {
+  it('stores enrollment and notifies caller on success', async () => {
     const gateway = createGateway();
+    const onConnected = jest.fn();
     const ref = createRef<TellerConnectSdkHandle>();
-    render(<TellerConnectSdk ref={ref} applicationId="app-123" gateway={gateway} />);
+    render(
+      <TellerConnectSdk
+        ref={ref}
+        applicationId="app-123"
+        gateway={gateway}
+        onConnected={onConnected}
+      />
+    );
 
     await waitFor(() => expect(setup).toHaveBeenCalled());
 
@@ -84,7 +92,11 @@ describe('TellerConnectSdk', () => {
       enrollment_id: 'enroll-1',
       institution_name: 'Sample Bank',
     });
-    expect(gateway.syncTransactions).toHaveBeenCalledWith('conn-1');
+    expect(gateway.syncTransactions).not.toHaveBeenCalled();
+    expect(onConnected).toHaveBeenCalledWith({
+      connectionId: 'conn-1',
+      institutionName: 'Sample Bank',
+    });
   });
 
   it('injects Teller SDK script without crossorigin so execution does not require ACAO', async () => {

@@ -1,3 +1,7 @@
+/**
+ * Onboarding step progression and completion handling.
+ */
+
 import { useCallback, useState } from 'react';
 import { AuthService } from '../services/authService';
 

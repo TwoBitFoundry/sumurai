@@ -1,3 +1,7 @@
+/**
+ * Maps imported CSV columns into transaction fields.
+ */
+
 import { type CsvColumnMapping, isCsvImportFormat, type ValidateResponse } from '@/models/import';
 
 export const CSV_NO_TRANSACTION_ROWS_ERROR = 'No transaction rows were found in the CSV file';

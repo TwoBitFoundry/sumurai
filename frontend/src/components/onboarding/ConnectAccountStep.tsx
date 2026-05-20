@@ -26,7 +26,7 @@ interface ConnectAccountStepProps {
   providerLoading: boolean;
   providerError: string | null;
   onRetryProvider?: () => Promise<void> | void;
-  tellerApplicationId?: string | null;
+  connectBlockedReason?: string | null;
   isOnline: boolean;
   isConnected: boolean;
   connectionInProgress: boolean;
@@ -134,7 +134,7 @@ export function ConnectAccountStep({
   providerLoading,
   providerError,
   onRetryProvider,
-  tellerApplicationId,
+  connectBlockedReason,
   isOnline,
   isConnected,
   connectionInProgress,
@@ -161,15 +161,10 @@ export function ConnectAccountStep({
     });
   }
 
-  const requiresApplicationId = Boolean(content.requiresApplicationId);
-  const missingApplicationId = requiresApplicationId && !tellerApplicationId;
-
-  if (missingApplicationId) {
+  if (connectBlockedReason) {
     statusMessages.push({
       tone: 'warning',
-      text:
-        content.applicationIdMissingCopy ??
-        'Add your Teller application ID in provider settings to continue.',
+      text: connectBlockedReason,
     });
   }
 
@@ -180,7 +175,7 @@ export function ConnectAccountStep({
     });
   }
 
-  const disablePrimaryAction = providerLoading || missingApplicationId || !isOnline;
+  const disablePrimaryAction = providerLoading || Boolean(connectBlockedReason) || !isOnline;
 
   return (
     <div

@@ -2316,8 +2316,7 @@ async fn get_authenticated_budgets(
 ) -> Result<Json<Vec<crate::models::budget::Budget>>, (StatusCode, Json<ApiErrorResponse>)> {
     let user_id = auth_context.user_id;
 
-    let cache_key = format!("budgets:user:{}", user_id);
-    if let Ok(Some(serialized)) = state.cache_service.get_string(&cache_key).await {
+    if let Ok(Some(serialized)) = state.cache_service.get_budgets(&auth_context.jwt_id).await {
         if let Ok(cached) = serde_json::from_str::<Vec<crate::models::budget::Budget>>(&serialized)
         {
             return Ok(Json(cached));
@@ -2333,7 +2332,7 @@ async fn get_authenticated_budgets(
             if let Ok(serialized) = serde_json::to_string(&budgets) {
                 let _ = state
                     .cache_service
-                    .set_with_ttl(&cache_key, &serialized, 300)
+                    .set_budgets(&auth_context.jwt_id, &serialized)
                     .await;
             }
             Ok(Json(budgets))
@@ -2376,7 +2375,7 @@ async fn create_authenticated_budget(
         Ok(created_budget) => {
             let _ = state
                 .cache_service
-                .invalidate_pattern(&format!("budgets:user:{}", user_id))
+                .clear_budgets(&auth_context.jwt_id)
                 .await;
             Ok(Json(created_budget))
         }
@@ -2441,7 +2440,7 @@ async fn update_authenticated_budget(
         Ok(updated_budget) => {
             let _ = state
                 .cache_service
-                .invalidate_pattern(&format!("budgets:user:{}", user_id))
+                .clear_budgets(&auth_context.jwt_id)
                 .await;
             Ok(Json(updated_budget))
         }
@@ -2498,7 +2497,7 @@ async fn delete_authenticated_budget(
         Ok(_) => {
             let _ = state
                 .cache_service
-                .invalidate_pattern(&format!("budgets:user:{}", user_id))
+                .clear_budgets(&auth_context.jwt_id)
                 .await;
             Ok(Json(DeleteBudgetResponse {
                 deleted: true,

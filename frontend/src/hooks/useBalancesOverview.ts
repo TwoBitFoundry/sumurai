@@ -1,3 +1,7 @@
+/**
+ * Loads balances overview data for dashboard summaries.
+ */
+
 import { useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { AnalyticsService } from '../services/AnalyticsService';

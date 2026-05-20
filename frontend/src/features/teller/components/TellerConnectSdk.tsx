@@ -16,12 +16,17 @@ export type TellerConnectSdkHandle = {
   getReady: () => boolean;
 };
 
+export type TellerEnrollmentConnectedPayload = {
+  connectionId: string;
+  institutionName: string;
+};
+
 export type TellerConnectSdkProps = {
   applicationId: string;
   environment?: TellerEnvironment;
   retryKey?: number;
   gateway?: TellerConnectGateway;
-  onConnected?: () => Promise<void> | void;
+  onConnected?: (payload: TellerEnrollmentConnectedPayload) => Promise<void> | void;
   onExit?: () => Promise<void> | void;
   onEnrollmentError?: (error: unknown) => Promise<void> | void;
   onScriptLoadFailed?: () => void;
@@ -108,8 +113,10 @@ export const TellerConnectSdk = function TellerConnectSdk({
                 enrollment_id: enrollment.enrollment.id,
                 institution_name: enrollment.enrollment.institution.name,
               });
-              await gateway.syncTransactions(result.connection_id);
-              await onConnectedRef.current?.();
+              await onConnectedRef.current?.({
+                connectionId: result.connection_id,
+                institutionName: result.institution_name,
+              });
             } catch (err) {
               console.warn('Failed to persist Teller enrollment', err);
               await onEnrollmentErrorRef.current?.(err);

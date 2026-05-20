@@ -1,3 +1,7 @@
+/**
+ * Loads net-worth time series for analytics charts.
+ */
+
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
