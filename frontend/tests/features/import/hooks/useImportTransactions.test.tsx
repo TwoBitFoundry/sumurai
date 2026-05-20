@@ -119,11 +119,14 @@ describe('useImportTransactions', () => {
     expect(result.current.error).toBeNull();
   });
 
-  it('moves validation failures into validation-error with a useful message', async () => {
+  it('moves non-remappable validation failures into validation-error with a useful message', async () => {
     const file = makeFile();
     jest.mocked(ImportService.validate).mockResolvedValue({
       ...validateResponse,
       valid: false,
+      format: null,
+      csv_headers: [],
+      sample_csv_rows: [],
       errors: ['Unsupported file format'],
     });
     const { wrapper } = setup();
@@ -138,6 +141,66 @@ describe('useImportTransactions', () => {
     expect(result.current.error).toBe('Unsupported file format');
     expect(result.current.selectedFile).toBe(file);
     expect(result.current.validationResult?.valid).toBe(false);
+  });
+
+  it('opens preview when csv auto-detect fails but headers are available to remap', async () => {
+    const file = makeFile('posted-on.csv');
+    jest.mocked(ImportService.validate).mockResolvedValue({
+      ...validateResponse,
+      valid: false,
+      transaction_count: 0,
+      preview_rows: [],
+      date_range: null,
+      suggested_csv_mapping: {
+        date_column: null,
+        amount_column: null,
+        debit_column: 'Debit',
+        credit_column: 'Credit',
+        description_column: 'Description',
+      },
+      csv_headers: ['Posted On', 'Description', 'Debit', 'Credit'],
+      sample_csv_rows: [['Posted On', 'Description', 'Debit', 'Credit']],
+      errors: ['Unable to detect a CSV date column'],
+    });
+    const { wrapper } = setup();
+
+    const { result } = renderHook(() => useImportTransactions('account-1'), { wrapper });
+
+    await act(async () => {
+      await result.current.validateFile(file);
+    });
+
+    expect(result.current.status).toBe('preview');
+    expect(result.current.error).toBe('Unable to detect a CSV date column');
+    expect(result.current.csvMapping).toEqual({
+      date_column: null,
+      amount_column: null,
+      debit_column: 'Debit',
+      credit_column: 'Credit',
+      description_column: 'Description',
+    });
+  });
+
+  it('keeps header-only csv validation failures in validation-error', async () => {
+    const file = makeFile('headers-only.csv');
+    jest.mocked(ImportService.validate).mockResolvedValue({
+      ...validateResponse,
+      valid: false,
+      transaction_count: 0,
+      preview_rows: [],
+      date_range: null,
+      errors: ['No transaction rows were found in the CSV file.'],
+    });
+    const { wrapper } = setup();
+
+    const { result } = renderHook(() => useImportTransactions('account-1'), { wrapper });
+
+    await act(async () => {
+      await result.current.validateFile(file);
+    });
+
+    expect(result.current.status).toBe('validation-error');
+    expect(result.current.error).toBe('No transaction rows were found in the CSV file.');
   });
 
   it('imports from preview, records success, and invalidates provider caches', async () => {

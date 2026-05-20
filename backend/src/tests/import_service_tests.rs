@@ -255,6 +255,38 @@ fn given_csv_file_when_validating_then_sample_rows_start_with_headers() {
 }
 
 #[test]
+fn given_header_only_csv_when_validating_then_marks_invalid_with_no_rows_error() {
+    let account_id = Uuid::new_v4();
+    let csv = "Date,Description,Amount\n";
+    let validate = ImportService::validate_file(csv, "transactions.csv", &account_id);
+
+    assert_eq!(validate.format, Some(ImportFileFormat::Csv));
+    assert!(!validate.valid);
+    assert_eq!(validate.transaction_count, 0);
+    assert!(validate
+        .errors
+        .iter()
+        .any(|error| error.contains("No transaction rows were found")));
+}
+
+#[test]
+fn given_uncommon_csv_headers_when_validating_then_returns_mapping_context_without_valid_flag() {
+    let account_id = Uuid::new_v4();
+    let csv = "Posted On,Memo,Debit Amount,Credit Amount\n01/15/2024,Coffee Shop,12.34,\n";
+    let validate = ImportService::validate_file(csv, "transactions.csv", &account_id);
+
+    assert_eq!(validate.format, Some(ImportFileFormat::Csv));
+    assert!(!validate.valid);
+    assert!(!validate.csv_headers.is_empty());
+    assert!(!validate.sample_csv_rows.is_empty());
+    assert!(validate.suggested_csv_mapping.is_some());
+    assert!(validate
+        .errors
+        .iter()
+        .any(|error| error.contains("Unable to detect a CSV date column")));
+}
+
+#[test]
 fn given_headerless_csv_when_validating_then_returns_header_required_error() {
     let account_id = Uuid::new_v4();
     let csv = "05/12/2026,Coffee Shop,DEP,186.80\n05/01/2026,Refund,,-116.05\n";

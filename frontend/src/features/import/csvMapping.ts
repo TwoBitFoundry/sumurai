@@ -1,4 +1,6 @@
-import type { CsvColumnMapping } from '@/models/import';
+import { type CsvColumnMapping, isCsvImportFormat, type ValidateResponse } from '@/models/import';
+
+export const CSV_NO_TRANSACTION_ROWS_ERROR = 'No transaction rows were found in the CSV file';
 
 export function resolveMappedHeader(headers: string[], value: string | null): string | null {
   if (!value) {
@@ -32,6 +34,26 @@ export function mappingUsesSplitAmount(mapping: CsvColumnMapping): boolean {
     (hasMappedColumn(mapping.debit_column) || hasMappedColumn(mapping.credit_column)) &&
     !hasMappedColumn(mapping.amount_column)
   );
+}
+
+export function isHeaderOnlyCsvValidation(result: ValidateResponse): boolean {
+  return (
+    result.transaction_count === 0 &&
+    result.errors.some((message) => message.includes(CSV_NO_TRANSACTION_ROWS_ERROR))
+  );
+}
+
+export function canCorrectCsvMapping(result: ValidateResponse): boolean {
+  if (!isCsvImportFormat(result.format)) {
+    return false;
+  }
+
+  const hasHeaders = result.csv_headers.length > 0 || (result.sample_csv_rows[0]?.length ?? 0) > 0;
+  if (!hasHeaders || isHeaderOnlyCsvValidation(result)) {
+    return false;
+  }
+
+  return true;
 }
 
 export function isMappingComplete(mapping: CsvColumnMapping): boolean {
