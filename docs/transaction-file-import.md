@@ -372,17 +372,29 @@ Build a polished import modal that feels native to Sumurai, handles CSV complexi
 
 ### Acceptance Criteria
 
-- [ ] Modal uses the specified Sumurai primitives and no new design tokens.
-- [ ] Upload state is clear, tappable, and supports file selection and drag/drop.
-- [ ] Validating and importing states cannot be dismissed through backdrop or Escape.
-- [ ] Validation errors and import errors are visually distinct and actionable.
-- [ ] Preview state shows transaction count, date range, format, account mask, readiness message, and preview table.
-- [ ] CSV mapping is collapsed by default when auto-detection is complete and expanded automatically when user action is required.
-- [ ] CSV mapping rules are enforced in the UI without making users manually confirm correct auto-detected columns.
-- [ ] Success state shows imported, skipped, truncated, and row-error counts.
-- [ ] Mobile `<768px`, tablet `768-1023px`, and desktop `>=1024px` layouts all remain usable.
-- [ ] Installed PWA safe-area and `dvh` constraints are handled.
-- [ ] Storybook stories cover upload, validating, OFX preview, CSV preview, importing, success, validation error, import error, mobile, tablet, desktop, and constrained PWA layouts.
+- [x] Modal uses the specified Sumurai primitives and no new design tokens.
+- [x] Upload state is clear, tappable, and supports file selection and drag/drop.
+- [x] Validating and importing states cannot be dismissed through backdrop or Escape.
+- [x] Validation errors and import errors are visually distinct and actionable.
+- [x] Preview state shows transaction count, date range, format, account mask, readiness message, and preview table.
+- [x] CSV mapping is collapsed by default when auto-detection is complete and expanded automatically when user action is required.
+- [x] CSV mapping rules are enforced in the UI without making users manually confirm correct auto-detected columns.
+- [x] Success state shows imported, skipped, truncated, and row-error counts.
+- [x] Mobile `<768px`, tablet `768-1023px`, and desktop `>=1024px` layouts all remain usable.
+- [x] Installed PWA safe-area and `dvh` constraints are handled.
+- [x] Storybook stories cover upload, validating, OFX preview, CSV preview, importing, success, validation error, import error, mobile, tablet, desktop, and constrained PWA layouts.
+
+### TDD Log
+
+- Added modal component tests for upload selection and drag/drop, busy-state dismissal locking, preview metadata and table rendering, CSV mapping defaults and required-field rules, actionable error states, and success receipt counts.
+- Replaced the minimal modal with a Sumurai primitive-based shell, full state layouts, CSV mapping controls, preview table, success receipt, and responsive safe-area/dvh constraints.
+- Added Storybook coverage for upload, validating, OFX preview, CSV preview, importing, success, validation error, import error, mobile, tablet, desktop, and constrained PWA layouts.
+- Verified with `npm --prefix frontend test -- ImportModal.test.tsx`.
+- Verified with `npm --prefix frontend test -- ImportModal.test.tsx BankCard.test.tsx AccountsPage.test.tsx sharedResponsiveLayout.test.tsx useImportTransactions.test.tsx`.
+- Verified with `npm --prefix frontend run typecheck`.
+- Verified with `npm --prefix frontend run lint`.
+- Verified with `npm --prefix frontend run design:guard`.
+- Verified with `npm --prefix frontend run test:storybook`.
 
 ## Phase 7: Testing And Verification
 
