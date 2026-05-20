@@ -102,6 +102,20 @@ function makeFile(name: string): File {
   return new File(['content'], name);
 }
 
+function firstVisibleText(container: ReturnType<typeof within>, text: string | RegExp) {
+  const matches = container.getAllByText(text);
+  const visible = matches.find((node) => {
+    const style = window.getComputedStyle(node);
+    return (
+      style.display !== 'none' && style.visibility !== 'hidden' && node.getClientRects().length > 0
+    );
+  });
+  if (!visible) {
+    throw new Error(`No visible match for text: ${String(text)}`);
+  }
+  return visible;
+}
+
 function StoryShell({ workflow, width }: ImportModalStoryArgs) {
   return (
     <div style={{ minHeight: 760, width, maxWidth: '100%' }}>
@@ -170,7 +184,7 @@ export const OfxPreview: Story = {
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body);
     await expect(body.getByText('QBO')).toBeVisible();
-    await expect(body.getByText('Bookstore')).toBeVisible();
+    await expect(firstVisibleText(body, 'Bookstore')).toBeVisible();
     await expect(body.getByRole('button', { name: /^import$/i })).toBeEnabled();
   },
 };
