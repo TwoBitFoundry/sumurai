@@ -55,7 +55,7 @@ export const heroStatCardRecipes = {
   ringLine: 'absolute inset-0 rounded-[calc(var(--radius-standard)-2px)] ring-2',
   footer: 'relative min-w-0 w-full max-w-full overflow-hidden',
   footerScroll:
-    'scrollbar-hide flex w-full min-w-0 items-center gap-1.5 overflow-x-auto overflow-y-hidden whitespace-nowrap max-w-full [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+    'scrollbar-hide flex w-full min-w-0 items-center gap-1.5 overflow-x-auto overflow-y-hidden whitespace-nowrap max-w-full lg:max-w-[15rem] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
   semantic: heroStatSemanticThemes,
 } as const;
 
