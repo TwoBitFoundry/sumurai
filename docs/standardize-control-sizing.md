@@ -230,13 +230,18 @@ IconButton gains `size: 'sm' | 'md' | 'lg'` (default `md`), uses `control.square
 3. **Refactor**: remove the now-redundant `p-2` literals; ensure the four variant recipes (`ghost`, `primary`, `success`, `danger`) all keep their colour/shadow chrome.
 
 ### Acceptance criteria
-- [ ] `IconButton` accepts `size?: 'sm' | 'md' | 'lg'`, defaults to `'md'`.
-- [ ] Default IconButton is ≥ 44 × 44 px on mobile viewport (passes Apple HIG touch target).
-- [ ] IconButton tests pass.
+- [x] `IconButton` accepts `size?: 'sm' | 'md' | 'lg'`, defaults to `'md'`.
+- [x] Default IconButton is ≥ 44 × 44 px on mobile viewport (passes Apple HIG touch target).
+- [x] IconButton tests pass.
 
 ### Files
 - [frontend/src/ui/primitives/IconButton.tsx](frontend/src/ui/primitives/IconButton.tsx)
 - [frontend/tests/ui/primitives/IconButton.test.tsx](frontend/tests/ui/primitives/IconButton.test.tsx)
+
+### TDD log
+- Red: added a focused IconButton spec for the default shell, all three sizes, and glyph wrapping.
+- Green: refactored IconButton to consume `control.square` for the shell and `control.glyph` for the wrapped child content.
+- Verify: `npm --prefix frontend test -- ui/primitives/IconButton`, `npm --prefix frontend run lint`, and `npm --prefix frontend run build` all passed.
 
 ---
 
