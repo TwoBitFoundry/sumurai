@@ -30,6 +30,7 @@ export type HeroStatCardProps = {
   accent?: Accent;
   className?: string;
   minHeightClassName?: string;
+  footerScrollClassName?: string;
 };
 
 export { heroStatSemanticThemes };
@@ -96,10 +97,12 @@ function HeroStatCardScrollFooter({
   subtext,
   pills,
   styles,
+  className,
 }: {
   subtext?: React.ReactNode;
   pills: HeroPill[];
   styles: HeroAccentTheme;
+  className?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeftFade, setShowLeftFade] = useState(false);
@@ -137,7 +140,7 @@ function HeroStatCardScrollFooter({
       <div
         ref={scrollRef}
         onScroll={checkScroll}
-        className={cn(heroStatCardRecipes.footerScroll)}
+        className={cn(heroStatCardRecipes.footerScroll, className)}
         data-testid="hero-stat-card-footer-scroll"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
@@ -196,6 +199,7 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
   accent: accentProp,
   className,
   minHeightClassName = 'min-h-[120px]',
+  footerScrollClassName,
 }) => {
   const accent = accentProp ?? accentFromIndex(index);
   const styles = heroAccents[accent] ?? getHeroAccentTheme(accent);
@@ -252,7 +256,12 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
             {suffix ? <div className={cn(heroStatCardRecipes.suffix)}>{suffix}</div> : null}
           </div>
           {hasFooter ? (
-            <HeroStatCardScrollFooter subtext={subtext} pills={footerPills} styles={styles} />
+            <HeroStatCardScrollFooter
+              subtext={subtext}
+              pills={footerPills}
+              styles={styles}
+              className={footerScrollClassName}
+            />
           ) : null}
         </div>
       </div>

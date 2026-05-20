@@ -62,4 +62,26 @@ describe('BudgetsPage', () => {
     expect(statsGrid).toHaveClass('lg:grid-cols-4');
     expect(budgetListCard).toBeTruthy();
   });
+
+  it('uses the desktop footer rail override on budget insight cards', () => {
+    const { container } = render(
+      <BudgetsPage
+        monthControl={{
+          month: new Date('2026-05-01'),
+          monthLabel: 'May 2026',
+          range: { start: '2026-05-01', end: '2026-05-31' },
+          setMonth: jest.fn(),
+          goToPreviousMonth: jest.fn(),
+          goToNextMonth: jest.fn(),
+          goToCurrentMonth: jest.fn(),
+        }}
+      />
+    );
+    const footerScrolls = container.querySelectorAll('[data-testid="hero-stat-card-footer-scroll"]');
+
+    expect(footerScrolls.length).toBeGreaterThan(0);
+    footerScrolls.forEach((footerScroll) => {
+      expect(footerScroll).toHaveClass('lg:max-w-[10rem]');
+    });
+  });
 });

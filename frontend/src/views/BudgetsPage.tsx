@@ -148,6 +148,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
           value={`${computedBudgets.length}`}
           suffix={`out of ${categoryOptions.length}`}
           pills={activeBudgetPills}
+          footerScrollClassName="lg:max-w-[10rem]"
         />
         <HeroStatCard
           index={2}
@@ -167,8 +168,9 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
                     : zone === 'Overextended'
                       ? 'warning'
                       : 'danger',
-            },
+              },
           ]}
+          footerScrollClassName="lg:max-w-[10rem]"
         />
         <HeroStatCard
           index={3}
@@ -177,6 +179,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
           value={stats.daysRemaining}
           suffix={`of ${stats.totalDays}`}
           subtext={`${stats.totalDays} total days`}
+          footerScrollClassName="lg:max-w-[10rem]"
         />
         <HeroStatCard
           index={4}
@@ -185,6 +188,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
           value={stats.overBudgetCount}
           suffix="over budget"
           pills={overBudgetPills}
+          footerScrollClassName="lg:max-w-[10rem]"
         />
       </div>
       <BudgetSummaryCard totalBudgeted={stats.totalBudgeted} totalSpent={stats.totalSpent} />
