@@ -1,3 +1,7 @@
+/**
+ * Builds request bodies for transaction sync calls.
+ */
+
 export function buildSyncTransactionsRequest(connectionId?: string) {
   return {
     ...(connectionId ? { connection_id: connectionId } : {}),

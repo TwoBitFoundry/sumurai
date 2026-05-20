@@ -1,3 +1,7 @@
+/**
+ * Plaid link flow used by the accounts experience.
+ */
+
 import { useQueryClient } from '@tanstack/react-query';
 import { createElement, useCallback, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';

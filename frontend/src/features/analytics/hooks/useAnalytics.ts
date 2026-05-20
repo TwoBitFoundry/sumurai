@@ -1,3 +1,7 @@
+/**
+ * Loads analytics aggregates for dashboard charts.
+ */
+
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';

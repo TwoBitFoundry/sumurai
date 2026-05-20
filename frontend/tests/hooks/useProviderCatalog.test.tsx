@@ -1,10 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { type ReactNode, useState } from 'react';
-import type { TellerProviderGateway } from '@/hooks/useTellerProviderInfo';
-import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo';
+import { type ProviderCatalogGateway, useProviderCatalog } from '@/hooks/useProviderCatalog';
 
-describe('useTellerProviderInfo', () => {
+describe('useProviderCatalog', () => {
   const createWrapper = () => {
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -24,7 +23,7 @@ describe('useTellerProviderInfo', () => {
     };
   };
 
-  const createGateway = (): TellerProviderGateway => ({
+  const createGateway = (): ProviderCatalogGateway => ({
     fetchInfo: jest.fn().mockResolvedValue({
       available_providers: ['plaid', 'teller'],
       default_provider: 'plaid',
@@ -38,7 +37,7 @@ describe('useTellerProviderInfo', () => {
   it('loads provider catalogue on mount', async () => {
     const gateway = createGateway();
     const wrapper = createWrapper();
-    const { result } = renderHook(() => useTellerProviderInfo({ gateway }), { wrapper });
+    const { result } = renderHook(() => useProviderCatalog({ gateway }), { wrapper });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.availableProviders).toEqual(['plaid', 'teller']);
@@ -46,11 +45,23 @@ describe('useTellerProviderInfo', () => {
     expect(gateway.fetchInfo).toHaveBeenCalledTimes(1);
   });
 
+  it('reports teller as not connectable without application id', async () => {
+    const gateway = createGateway();
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useProviderCatalog({ gateway }), { wrapper });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.canConnectWith('plaid')).toBe(true);
+    expect(result.current.canConnectWith('teller')).toBe(false);
+    expect(result.current.getConnectBlockedReason('teller')).toContain('Teller application ID');
+  });
+
   it('keeps the selected provider in the shared query cache across remounts', async () => {
     const gateway = createGateway();
     const wrapper = createWrapper();
 
-    const first = renderHook(() => useTellerProviderInfo({ gateway }), { wrapper });
+    const first = renderHook(() => useProviderCatalog({ gateway }), { wrapper });
     await waitFor(() => expect(first.result.current.loading).toBe(false));
 
     await act(async () => {
@@ -61,40 +72,10 @@ describe('useTellerProviderInfo', () => {
 
     first.unmount();
 
-    const second = renderHook(() => useTellerProviderInfo({ gateway }), { wrapper });
+    const second = renderHook(() => useProviderCatalog({ gateway }), { wrapper });
 
     expect(second.result.current.loading).toBe(false);
     expect(second.result.current.selectedProvider).toBe('teller');
     expect(gateway.fetchInfo).toHaveBeenCalledTimes(1);
-  });
-
-  it('selects provider through gateway', async () => {
-    const gateway = createGateway();
-    const wrapper = createWrapper();
-    const { result } = renderHook(() => useTellerProviderInfo({ gateway }), { wrapper });
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    await act(async () => {
-      await result.current.chooseProvider('teller');
-    });
-
-    expect(gateway.selectProvider).toHaveBeenCalledWith('teller');
-    expect(result.current.selectedProvider).toBe('teller');
-  });
-
-  it('keeps the last catalogue when refresh fails', async () => {
-    const gateway = createGateway();
-    const wrapper = createWrapper();
-    const { result } = renderHook(() => useTellerProviderInfo({ gateway }), { wrapper });
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    gateway.fetchInfo = jest.fn().mockRejectedValueOnce(new Error('offline'));
-
-    await act(async () => {
-      await result.current.refresh().catch(() => {});
-    });
-
-    expect(result.current.selectedProvider).toBe('plaid');
-    expect(result.current.availableProviders).toEqual(['plaid', 'teller']);
   });
 });

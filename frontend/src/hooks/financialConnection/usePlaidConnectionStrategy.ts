@@ -1,6 +1,11 @@
+/**
+ * Plaid-specific link, exchange, sync, and cache refresh behavior.
+ */
+
 import { createElement, useCallback, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { PlaidLinkSdk, type PlaidLinkSdkHandle } from '@/features/plaid/components/PlaidLinkSdk';
+import { connectionActions } from '@/hooks/financialConnection/connectionState';
 import { recordHandledIssue } from '@/observability';
 import { PlaidService } from '@/services/PlaidService';
 import { PLAID_LINK_LOAD_FAILED_MESSAGE, POPUP_BLOCKED_MESSAGE } from '@/utils/popupBlockedMessage';
@@ -15,12 +20,8 @@ export function usePlaidConnectionStrategy(
     isOnline,
     sdkNonce,
     sdkFailedRef,
+    dispatch,
     handleError,
-    setConnectionInProgress,
-    setIsConnected,
-    setInstitutionName,
-    setIsSyncing,
-    setError,
     onConnectionSuccess,
     invalidateCache,
   } = context;
@@ -30,16 +31,18 @@ export function usePlaidConnectionStrategy(
 
   const handleSuccess = useCallback(
     async (publicToken: string) => {
-      setConnectionInProgress(true);
-      setError(null);
+      dispatch(connectionActions.patch({ connectionInProgress: true, error: null }));
 
       try {
         const exchange = await PlaidService.exchangeToken(publicToken);
 
-        setIsConnected(true);
-        const name = exchange.institution_name ?? DEFAULT_INSTITUTION_NAME;
-        setInstitutionName(name);
-        onConnectionSuccess?.(name);
+        dispatch(
+          connectionActions.patch({
+            isConnected: true,
+            institutionName: exchange.institution_name ?? DEFAULT_INSTITUTION_NAME,
+          })
+        );
+        onConnectionSuccess?.(exchange.institution_name ?? DEFAULT_INSTITUTION_NAME);
 
         let connectionId: string | null = exchange.connection_id ?? null;
         try {
@@ -47,7 +50,11 @@ export function usePlaidConnectionStrategy(
           const connections = Array.isArray(status?.connections) ? status.connections : [];
           const latestConnection = connections.find((conn) => conn.is_connected) ?? connections[0];
           if (latestConnection) {
-            setInstitutionName(latestConnection.institution_name || DEFAULT_INSTITUTION_NAME);
+            dispatch(
+              connectionActions.patch({
+                institutionName: latestConnection.institution_name || DEFAULT_INSTITUTION_NAME,
+              })
+            );
             connectionId = connectionId ?? latestConnection.connection_id;
           }
         } catch (statusError) {
@@ -60,7 +67,7 @@ export function usePlaidConnectionStrategy(
         }
 
         if (connectionId) {
-          setIsSyncing(true);
+          dispatch(connectionActions.patch({ isSyncing: true }));
           try {
             await PlaidService.syncTransactions(connectionId);
             await invalidateCache();
@@ -73,7 +80,7 @@ export function usePlaidConnectionStrategy(
             );
             await invalidateCache();
           } finally {
-            setIsSyncing(false);
+            dispatch(connectionActions.patch({ isSyncing: false }));
           }
         } else {
           await invalidateCache();
@@ -82,19 +89,10 @@ export function usePlaidConnectionStrategy(
         const errorMessage = err instanceof Error ? err.message : 'Connection failed';
         handleError(errorMessage);
       } finally {
-        setConnectionInProgress(false);
+        dispatch(connectionActions.patch({ connectionInProgress: false }));
       }
     },
-    [
-      handleError,
-      invalidateCache,
-      onConnectionSuccess,
-      setConnectionInProgress,
-      setError,
-      setInstitutionName,
-      setIsConnected,
-      setIsSyncing,
-    ]
+    [dispatch, handleError, invalidateCache, onConnectionSuccess]
   );
 
   const onScriptLoadFailed = useCallback(() => {
@@ -113,10 +111,10 @@ export function usePlaidConnectionStrategy(
       throw new Error('Unavailable while offline');
     }
 
-    setError(null);
+    dispatch(connectionActions.patch({ error: null }));
     const response = await PlaidService.getLinkToken();
     return response.link_token;
-  }, [isOnline, setError]);
+  }, [dispatch, isOnline]);
 
   return useMemo(
     () => ({
@@ -138,7 +136,7 @@ export function usePlaidConnectionStrategy(
               token: linkToken,
               onSuccess: handleSuccess,
               onExit: (err) => {
-                setConnectionInProgress(false);
+                dispatch(connectionActions.patch({ connectionInProgress: false }));
                 if (err) {
                   handleError(POPUP_BLOCKED_MESSAGE);
                 }
@@ -147,14 +145,6 @@ export function usePlaidConnectionStrategy(
             })
           : null,
     }),
-    [
-      getLinkToken,
-      handleError,
-      handleSuccess,
-      linkToken,
-      onScriptLoadFailed,
-      sdkNonce,
-      setConnectionInProgress,
-    ]
+    [dispatch, getLinkToken, handleError, handleSuccess, linkToken, onScriptLoadFailed, sdkNonce]
   );
 }

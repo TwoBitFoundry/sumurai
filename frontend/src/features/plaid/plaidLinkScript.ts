@@ -1,3 +1,7 @@
+/**
+ * Loads and initializes the Plaid Link browser SDK.
+ */
+
 import type {
   PlaidLinkOnExit,
   PlaidLinkOnSuccess,

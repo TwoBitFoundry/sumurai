@@ -1,3 +1,5 @@
+//! Budget persistence and summary logic.
+
 use crate::models::budget::Budget;
 use crate::services::repository_service::DatabaseRepository;
 use rust_decimal::Decimal;

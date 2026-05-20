@@ -1,3 +1,7 @@
+/**
+ * Activates the connection strategy for the current provider.
+ */
+
 import { connectionProviders } from '@/hooks/financialConnection/connectionProviders';
 import type {
   FinancialConnectionStrategy,

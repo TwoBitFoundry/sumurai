@@ -15,7 +15,7 @@ const meta = {
     providerLoading: false,
     providerError: null,
     onRetryProvider: fn(),
-    tellerApplicationId: null,
+    connectBlockedReason: null,
     isOnline: true,
     isConnected: false,
     connectionInProgress: false,
@@ -87,7 +87,8 @@ export const ConnectionFlowError: Story = {
 export const TellerMissingApplicationId: Story = {
   args: {
     content: teller,
-    tellerApplicationId: null,
+    connectBlockedReason:
+      'Teller onboarding requires a Teller application ID. Add it in provider settings before connecting.',
     isOnline: true,
   },
 };

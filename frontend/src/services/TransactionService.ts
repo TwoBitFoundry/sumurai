@@ -1,3 +1,7 @@
+/**
+ * API access for transaction queries and updates.
+ */
+
 import { type BackendTransaction, TransactionTransformer } from '../domain/TransactionTransformer';
 import type { PaginatedTransactionsResponse, Transaction } from '../types/api';
 import { appendAccountQueryParams } from '../utils/queryParams';

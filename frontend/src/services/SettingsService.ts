@@ -1,3 +1,7 @@
+/**
+ * API access for user and application settings.
+ */
+
 import { ApiClient } from './ApiClient';
 
 interface ChangePasswordRequest {

@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, renderHook, waitFor } from '@testing-library/react';
-import React from 'react';
+import React, { useState } from 'react';
 import { resetPlaidScriptStateForTests } from '@/features/plaid/plaidLinkScript';
 import { resetTellerScriptStateForTests } from '@/features/teller/tellerConnectScript';
 import {
@@ -9,6 +9,7 @@ import {
   useFinancialConnection,
 } from '@/hooks/useFinancialConnection';
 import { ApiClient } from '@/services/ApiClient';
+import type { SyncProvider } from '@/utils/queryInvalidation';
 
 const connectionFlowRef = { current: null as UseFinancialConnectionReturn | null };
 
@@ -25,9 +26,48 @@ const plaidOpen = jest.fn();
 const plaidDestroy = jest.fn();
 const tellerSetup = jest.fn();
 const tellerOpen = jest.fn();
+const plaidLinkMock = (() => {
+  let config: { onSuccess: (token: string) => Promise<void> } | null = null;
+  return {
+    open: plaidOpen,
+    destroy: plaidDestroy,
+    getConfig: () => config,
+    setConfig: (next: { onSuccess: (token: string) => Promise<void> }) => {
+      config = next;
+    },
+    reset: () => {
+      config = null;
+      plaidOpen.mockReset();
+      plaidDestroy.mockReset();
+    },
+  };
+})();
+
+function SwitchableFinancialConnectionMount() {
+  const [provider, setProvider] = useState<SyncProvider>('plaid');
+  const flow = useFinancialConnection({
+    provider,
+    isOnline: true,
+  });
+  connectionFlowRef.current = flow;
+  return React.createElement(
+    React.Fragment,
+    null,
+    flow.connectionMount,
+    React.createElement(
+      'button',
+      {
+        type: 'button',
+        onClick: () => setProvider('teller'),
+      },
+      'switch-provider'
+    )
+  );
+}
 
 let postSpy: jest.SpiedFunction<typeof ApiClient.post>;
 let getSpy: jest.SpiedFunction<typeof ApiClient.get>;
+let invalidateQueriesSpy: jest.SpiedFunction<QueryClient['invalidateQueries']>;
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +86,10 @@ const wrapper = ({ children }: { children: React.ReactNode }) =>
 describe('useFinancialConnection', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    invalidateQueriesSpy = jest
+      .spyOn(queryClient, 'invalidateQueries')
+      .mockResolvedValue(undefined as never);
+    plaidLinkMock.reset();
     resetPlaidScriptStateForTests();
     resetTellerScriptStateForTests();
     postSpy = jest.spyOn(ApiClient, 'post');
@@ -70,13 +114,16 @@ describe('useFinancialConnection', () => {
 
     Object.assign(window, {
       Plaid: {
-        create: () => ({
-          open: plaidOpen,
-          destroy: plaidDestroy,
-          exit: (_options?: unknown, callback?: () => void) => {
-            callback?.();
-          },
-        }),
+        create: (opts: { onSuccess: (token: string) => Promise<void> }) => {
+          plaidLinkMock.setConfig(opts);
+          return {
+            open: plaidLinkMock.open,
+            destroy: plaidLinkMock.destroy,
+            exit: (_options?: unknown, callback?: () => void) => {
+              callback?.();
+            },
+          };
+        },
       },
       TellerConnect: {
         setup: tellerSetup,
@@ -87,6 +134,7 @@ describe('useFinancialConnection', () => {
   afterEach(() => {
     postSpy.mockRestore();
     getSpy.mockRestore();
+    invalidateQueriesSpy.mockRestore();
     delete window.Plaid;
     delete window.TellerConnect;
   });
@@ -187,5 +235,209 @@ describe('useFinancialConnection', () => {
     expect(result.current.isConnected).toBe(false);
     expect(result.current.connectionInProgress).toBe(false);
     expect(result.current.error).toBe(null);
+  });
+
+  it('given plaid success when exchange completes then invalidates plaid cache', async () => {
+    postSpy.mockImplementation((url) => {
+      if (url === '/plaid/link-token') {
+        return Promise.resolve({ link_token: 'link-token-123' } as never);
+      }
+      if (url === '/plaid/exchange-token') {
+        return Promise.resolve({
+          connection_id: 'conn-1',
+          institution_name: 'Test Bank',
+        } as never);
+      }
+      if (url === '/providers/sync-transactions') {
+        return Promise.resolve({} as never);
+      }
+      return Promise.resolve({} as never);
+    });
+    getSpy.mockImplementation((url) => {
+      if (url === '/providers/status') {
+        return Promise.resolve({
+          provider: 'plaid',
+          connections: [
+            {
+              connection_id: 'conn-1',
+              institution_name: 'Test Bank',
+              is_connected: true,
+              last_sync_at: null,
+              transaction_count: 0,
+              account_count: 1,
+              sync_in_progress: false,
+            },
+          ],
+        } as never);
+      }
+      return Promise.resolve({} as never);
+    });
+
+    render(
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        React.createElement(FinancialConnectionMount, { provider: 'plaid' })
+      )
+    );
+
+    await act(async () => {
+      await connectionFlowRef.current?.initiateConnection();
+    });
+
+    await waitFor(() => {
+      expect(plaidLinkMock.getConfig()).not.toBeNull();
+    });
+
+    await act(async () => {
+      await plaidLinkMock.getConfig()?.onSuccess('public-token', {} as never);
+    });
+
+    await waitFor(() => {
+      expect(postSpy).toHaveBeenCalledWith('/plaid/exchange-token', {
+        public_token: 'public-token',
+      });
+    });
+
+    await waitFor(() => {
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: ['plaid', 'connections'] })
+      );
+    });
+  });
+
+  it('given teller success when enrollment completes then invalidates teller cache', async () => {
+    getSpy.mockImplementation((url) => {
+      if (url === '/providers/info') {
+        return Promise.resolve({
+          available_providers: ['plaid', 'teller'],
+          default_provider: 'plaid',
+          teller_application_id: 'app-123',
+          teller_environment: 'development',
+        } as never);
+      }
+      if (url === '/providers/status') {
+        return Promise.resolve({
+          provider: 'teller',
+          connections: [
+            {
+              connection_id: 'conn-teller',
+              institution_name: 'Teller Bank',
+              is_connected: true,
+              last_sync_at: null,
+              transaction_count: 0,
+              account_count: 1,
+              sync_in_progress: false,
+            },
+          ],
+        } as never);
+      }
+      return Promise.resolve({} as never);
+    });
+    postSpy.mockImplementation((url) => {
+      if (url === '/providers/connect') {
+        return Promise.resolve({ connection_id: 'conn-teller' } as never);
+      }
+      if (url === '/providers/sync-transactions') {
+        return Promise.resolve({} as never);
+      }
+      return Promise.resolve({} as never);
+    });
+
+    render(
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        React.createElement(FinancialConnectionMount, { provider: 'teller' })
+      )
+    );
+
+    await act(async () => {
+      await connectionFlowRef.current?.initiateConnection();
+    });
+
+    await waitFor(() => {
+      expect(tellerSetup).toHaveBeenCalled();
+    });
+
+    const config = tellerSetup.mock.calls[0][0];
+    await act(async () => {
+      await config.onSuccess({
+        accessToken: 'access-token',
+        user: { id: 'user-1' },
+        enrollment: {
+          id: 'enroll-1',
+          institution: { name: 'Teller Bank' },
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: ['teller', 'connections'] })
+      );
+    });
+  });
+
+  it('given plaid connection when retry is called then fetches a new link token', async () => {
+    postSpy.mockResolvedValue({ link_token: 'link-token-123' });
+
+    render(
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        React.createElement(FinancialConnectionMount, { provider: 'plaid' })
+      )
+    );
+
+    await act(async () => {
+      await connectionFlowRef.current?.initiateConnection();
+    });
+
+    await waitFor(() => {
+      expect(postSpy).toHaveBeenCalledWith('/plaid/link-token', {});
+    });
+
+    await act(async () => {
+      await connectionFlowRef.current?.retryConnection();
+    });
+
+    await waitFor(() => {
+      expect(postSpy.mock.calls.filter(([url]) => url === '/plaid/link-token')).toHaveLength(2);
+    });
+  });
+
+  it('given provider switch when teller connect runs then uses teller strategy only', async () => {
+    postSpy.mockResolvedValue({ link_token: 'link-token-123' });
+
+    const { getByRole } = render(
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        React.createElement(SwitchableFinancialConnectionMount)
+      )
+    );
+
+    await act(async () => {
+      await connectionFlowRef.current?.initiateConnection();
+    });
+
+    await waitFor(() => {
+      expect(postSpy).toHaveBeenCalledWith('/plaid/link-token', {});
+    });
+    expect(tellerSetup).not.toHaveBeenCalled();
+
+    await act(async () => {
+      getByRole('button', { name: 'switch-provider' }).click();
+    });
+
+    await act(async () => {
+      await connectionFlowRef.current?.initiateConnection();
+    });
+
+    await waitFor(() => {
+      expect(tellerSetup).toHaveBeenCalled();
+    });
+    expect(postSpy.mock.calls.filter(([url]) => url === '/plaid/link-token')).toHaveLength(1);
   });
 });

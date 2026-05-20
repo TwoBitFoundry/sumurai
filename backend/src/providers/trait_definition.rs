@@ -1,3 +1,5 @@
+//! Contract implemented by financial provider adapters.
+
 use anyhow::Result;
 use async_trait::async_trait;
 use chrono::NaiveDate;

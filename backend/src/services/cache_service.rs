@@ -1,3 +1,5 @@
+//! Redis cache for session-scoped API and connection data.
+
 use crate::models::{
     cache::{CachedBankAccounts, CachedBankConnection, CachedTransaction},
     ip_ban::AuthIpBanPolicy,

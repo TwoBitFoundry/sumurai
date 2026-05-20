@@ -1,3 +1,7 @@
+/**
+ * Records handled non-fatal issues as OpenTelemetry spans.
+ */
+
 import { type Attributes, SpanStatusCode, trace } from '@opentelemetry/api';
 
 const TRACER_NAME = 'sumurai-frontend';
@@ -19,6 +23,7 @@ export function recordHandledIssue(
   const span = tracer.startSpan(spanName, {
     attributes: {
       ...attributes,
+      'issue.handled': true,
       'issue.message': message,
     },
   });
@@ -28,6 +33,6 @@ export function recordHandledIssue(
   }
 
   span.addEvent(message);
-  span.setStatus({ code: SpanStatusCode.OK, message });
+  span.setStatus({ code: SpanStatusCode.ERROR, message });
   span.end();
 }

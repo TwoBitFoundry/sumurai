@@ -1,3 +1,7 @@
+/**
+ * Helpers for optimistic UI updates around mutations.
+ */
+
 export type SetList<T> = React.Dispatch<React.SetStateAction<T[]>>;
 
 // Generic optimistic create helper: push temp, call create, reconcile by id; rollback on error

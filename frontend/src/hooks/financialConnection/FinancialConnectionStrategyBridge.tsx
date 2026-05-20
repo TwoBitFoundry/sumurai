@@ -1,3 +1,7 @@
+/**
+ * Mounts the active provider strategy and publishes it to the orchestrator.
+ */
+
 import { type MutableRefObject, useLayoutEffect } from 'react';
 import type {
   FinancialConnectionStrategy,

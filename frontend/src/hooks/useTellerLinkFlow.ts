@@ -1,3 +1,7 @@
+/**
+ * Teller link flow for managing connections outside onboarding.
+ */
+
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createElement, useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
@@ -280,6 +284,18 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
     }, 1500);
   }, [connectionsQuery, queryClient, invalidateTellerCache]);
 
+  const onEnrollmentConnected = useCallback(
+    async ({ connectionId }: { connectionId: string }) => {
+      try {
+        await TellerService.syncTransactions(connectionId);
+      } catch (err) {
+        console.warn('Initial Teller sync failed after enrollment', err);
+      }
+      await loadConnectionsWithRetry();
+    },
+    [loadConnectionsWithRetry]
+  );
+
   useEffect(() => {
     return () => {
       if (retryTimeoutRef.current) {
@@ -330,7 +346,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
         applicationId: tellerApplicationIdForSdk,
         environment,
         retryKey: tellerConnectNonce,
-        onConnected: enabled && isOnline ? loadConnectionsWithRetry : undefined,
+        onConnected: enabled && isOnline ? onEnrollmentConnected : undefined,
         onEnrollmentError,
         onScriptLoadFailed,
       })

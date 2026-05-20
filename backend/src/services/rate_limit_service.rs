@@ -1,3 +1,5 @@
+//! Rate limiting for sensitive API endpoints.
+
 use std::sync::{Arc, Once, OnceLock};
 use std::time::Duration;
 

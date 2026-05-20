@@ -1,3 +1,5 @@
+//! Aggregated analytics queries for dashboards.
+
 use crate::models::analytics::{
     BalanceCategory, CategorySpending, DailySpending, MonthlySpending, TopMerchant,
 };

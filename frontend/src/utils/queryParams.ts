@@ -1,3 +1,7 @@
+/**
+ * Parses and builds URL query parameters.
+ */
+
 export function buildAccountQueryParams(accountIds?: string[]): URLSearchParams {
   const params = new URLSearchParams();
 

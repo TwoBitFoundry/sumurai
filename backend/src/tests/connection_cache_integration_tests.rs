@@ -116,20 +116,18 @@ async fn given_bank_sync_operation_when_completing_then_updates_jwt_scoped_cache
         ConnectionService::new(Arc::new(mock_db), Arc::new(mock_cache), provider_registry);
 
     let result =
-        complete_sync_with_jwt_cache_update(&service, &user_id, jwt_id, &connection, &accounts)
-            .await;
+        complete_sync_with_jwt_cache_update(&service, jwt_id, &connection, &accounts).await;
 
     assert!(result.is_ok());
 }
 
 async fn complete_sync_with_jwt_cache_update(
     service: &ConnectionService,
-    user_id: &Uuid,
     jwt_id: &str,
     connection: &ProviderConnection,
     accounts: &[Account],
 ) -> anyhow::Result<()> {
     service
-        .complete_sync_with_jwt_cache_update(user_id, jwt_id, connection, accounts)
+        .complete_sync_with_jwt_cache_update(jwt_id, connection, accounts)
         .await
 }

@@ -1,3 +1,5 @@
+//! CSV transaction import parsing and persistence.
+
 #![allow(dead_code)]
 
 use chrono::{Datelike, NaiveDate, Utc};

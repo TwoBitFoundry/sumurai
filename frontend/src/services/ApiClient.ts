@@ -1,3 +1,7 @@
+/**
+ * Authenticated HTTP client for the backend API.
+ */
+
 import { AuthService } from './authService';
 import type { IHttpClient } from './boundaries';
 import {

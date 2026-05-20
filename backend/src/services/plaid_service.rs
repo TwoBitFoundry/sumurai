@@ -1,3 +1,5 @@
+//! Plaid API helpers used by the Plaid provider adapter.
+
 use anyhow::Result;
 use chrono::NaiveDate;
 use rust_decimal::prelude::FromPrimitive;

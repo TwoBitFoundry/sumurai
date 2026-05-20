@@ -1,3 +1,7 @@
+/**
+ * API access for budget operations.
+ */
+
 import type { Budget } from '../types/api';
 import { ApiClient } from './ApiClient';
 

@@ -1,3 +1,7 @@
+/**
+ * Tracing wrappers for async client operations.
+ */
+
 import { type Span, type SpanOptions, SpanStatusCode, type Tracer } from '@opentelemetry/api';
 import { type DependencyList, useCallback, useContext, useEffect, useRef } from 'react';
 import { TelemetryContext } from './TelemetryProvider';

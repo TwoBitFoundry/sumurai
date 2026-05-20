@@ -1,3 +1,7 @@
+/**
+ * API access for transaction import uploads.
+ */
+
 import type { CsvColumnMapping, ImportResponse, ValidateResponse } from '@/models/import';
 import { ApiClient } from './ApiClient';
 

@@ -1,3 +1,7 @@
+/**
+ * Account selection and per-institution grouping for filtered views.
+ */
+
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ReactNode,

@@ -1,3 +1,7 @@
+/**
+ * Loads transaction category options.
+ */
+
 import { useQuery } from '@tanstack/react-query';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { TransactionService } from '@/services/TransactionService';

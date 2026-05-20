@@ -1,3 +1,7 @@
+/**
+ * Validation rules for password strength input.
+ */
+
 import { useMemo } from 'react';
 
 export interface PasswordValidation {

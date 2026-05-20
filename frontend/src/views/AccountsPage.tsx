@@ -10,11 +10,10 @@ import ConnectButton from '../features/plaid/components/ConnectButton';
 import ConnectionsList, {
   type BankConnectionViewModel,
 } from '../features/plaid/components/ConnectionsList';
-import { usePlaidLinkFlow } from '../features/plaid/hooks/usePlaidLinkFlow';
 import { useAccountFilter } from '../hooks/useAccountFilter';
+import { useFinancialConnection } from '../hooks/useFinancialConnection';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { useTellerLinkFlow } from '../hooks/useTellerLinkFlow';
-import { useTellerProviderInfo } from '../hooks/useTellerProviderInfo';
+import { useProviderCatalog } from '../hooks/useProviderCatalog';
 import { PageLayout } from '../layouts/PageLayout';
 import { PlaidService } from '../services/PlaidService';
 import { TellerService } from '../services/TellerService';
@@ -76,7 +75,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const queryClient = useQueryClient();
   const isOnline = useOnlineStatus();
   const accountFilter = useAccountFilter();
-  const providerInfo = useTellerProviderInfo();
+  const providerCatalog = useProviderCatalog();
   const banks = useMemo(
     () =>
       Object.entries(accountFilter.accountsByBank).map(([bankName, accounts]) => {
@@ -113,46 +112,31 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       }),
     [accountFilter.accountsByBank]
   );
-  const primaryProvider =
-    providerInfo.selectedProvider ??
-    providerInfo.defaultProvider ??
-    (banks.length > 0 ? banks[0].provider : 'plaid');
+  const primaryProvider = useMemo(
+    () =>
+      providerCatalog.resolveConnectProvider(
+        providerCatalog.selectedProvider ??
+          providerCatalog.defaultProvider ??
+          (banks.length > 0 ? banks[0].provider : 'plaid')
+      ),
+    [
+      banks,
+      providerCatalog.defaultProvider,
+      providerCatalog.resolveConnectProvider,
+      providerCatalog.selectedProvider,
+    ]
+  );
   const providerLabel = primaryProvider === 'teller' ? 'Teller' : 'Plaid';
 
-  const plaidFlow = usePlaidLinkFlow({
-    onError,
-    enabled: primaryProvider === 'plaid',
+  const connectionFlow = useFinancialConnection({
+    provider: primaryProvider,
+    onError: (message) => onError?.(message),
     isOnline,
   });
-  const tellerFlow = useTellerLinkFlow({
-    applicationId: providerInfo.tellerApplicationId,
-    environment: providerInfo.tellerEnvironment,
-    onError,
-    enabled: primaryProvider === 'teller',
-    isOnline,
-  });
-
-  const banksWithSync = useMemo(() => {
-    const flowConnections =
-      primaryProvider === 'teller' ? tellerFlow.connections : plaidFlow.connections;
-    const syncByConnectionId = new Map(
-      flowConnections.map((c) => [c.connectionId, c.lastSyncAt] as const)
-    );
-    return banks.map((bank) => {
-      const cid = bank.connectionId;
-      if (!cid) {
-        return bank;
-      }
-      const fromFlow = syncByConnectionId.get(cid);
-      const lastSync = fromFlow ?? bank.lastSync ?? null;
-      return { ...bank, lastSync };
-    });
-  }, [banks, primaryProvider, tellerFlow.connections, plaidFlow.connections]);
 
   const [toast, setToast] = useState<string | null>(null);
   const [syncingAll, setSyncingAll] = useState(false);
-  const flowError =
-    banks.length > 0 ? (primaryProvider === 'teller' ? tellerFlow.error : plaidFlow.error) : null;
+  const flowError = banks.length > 0 ? connectionFlow.error : null;
   const invalidateBankCache = useCallback(
     async (provider: SyncProvider) => {
       await invalidateStaleCacheQueries(queryClient, [provider]);
@@ -253,7 +237,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     let latestSyncIso: string | null = null;
     let latestSyncTime = 0;
 
-    for (const bank of banksWithSync) {
+    for (const bank of banks) {
       if (bank.status === 'connected') connectedInstitutions += 1;
       totalAccounts += bank.accounts.length;
 
@@ -267,24 +251,24 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     }
 
     return {
-      institutions: banksWithSync.length,
+      institutions: banks.length,
       connectedInstitutions,
       accounts: totalAccounts,
       latestSync: latestSyncIso,
     };
-  }, [banksWithSync]);
+  }, [banks]);
 
-  const activeFlowLoading = primaryProvider === 'teller' ? tellerFlow.loading : plaidFlow.loading;
+  const catalogLoading = providerCatalog.loading || accountFilter.loading;
 
   const connectDisabled =
-    (primaryProvider === 'teller' ? tellerFlow.loading : plaidFlow.loading) ||
+    catalogLoading ||
+    connectionFlow.connectionInProgress ||
     !isOnline ||
-    (primaryProvider === 'teller' && !providerInfo.tellerApplicationId);
-  const connect = primaryProvider === 'teller' ? tellerFlow.connect : plaidFlow.connect;
+    !providerCatalog.canConnectWith(primaryProvider);
 
   const lastSyncValue = syncingAll
     ? 'Syncing...'
-    : summary.institutions === 0 && activeFlowLoading
+    : summary.institutions === 0 && catalogLoading
       ? 'Loading...'
       : summary.latestSync
         ? formatRelativeTime(summary.latestSync)
@@ -318,7 +302,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           </Button>
         )}
         <ConnectButton
-          onClick={connect}
+          onClick={() => void connectionFlow.initiateConnection()}
           disabled={connectDisabled}
           title={!isOnline ? 'Unavailable while offline' : undefined}
           leadingImageSrc={primaryProvider === 'teller' ? '/teller.webp' : '/plaid.webp'}
@@ -348,8 +332,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
   return (
     <div data-testid="accounts-page">
-      {primaryProvider === 'plaid' ? plaidFlow.plaidLinkMount : null}
-      {primaryProvider === 'teller' ? tellerFlow.tellerConnectMount : null}
+      {connectionFlow.connectionMount}
       <PageLayout
         badge={`${providerLabel} Accounts`}
         title="Link accounts and keep balances current"
@@ -358,8 +341,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         stats={statsGrid}
       >
         <ConnectionsList
-          banks={banksWithSync}
-          onConnect={connect}
+          banks={banks}
+          onConnect={() => void connectionFlow.initiateConnection()}
           onSync={syncBank}
           onDisconnect={disconnect}
           isOnline={isOnline}

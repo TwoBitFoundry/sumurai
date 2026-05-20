@@ -1,13 +1,23 @@
+/**
+ * Orchestrates the bank-linking flow for whichever provider is active.
+ */
+
 import { useQueryClient } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
-import { createElement, useCallback, useMemo, useRef, useState } from 'react';
+import { createElement, useCallback, useMemo, useReducer, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
+import {
+  connectionActions,
+  financialConnectionReducer,
+  initialFinancialConnectionState,
+} from '@/hooks/financialConnection/connectionState';
 import { FinancialConnectionStrategyBridge } from '@/hooks/financialConnection/FinancialConnectionStrategyBridge';
 import {
   type FinancialConnectionStrategy,
   type FinancialConnectionStrategyContext,
   PENDING_CONNECTION_STRATEGY,
 } from '@/hooks/financialConnection/types';
+import { useProviderCatalog } from '@/hooks/useProviderCatalog';
 import { recordHandledIssue } from '@/observability';
 import { POPUP_BLOCKED_MESSAGE } from '@/utils/popupBlockedMessage';
 import { invalidateStaleCacheQueries, type SyncProvider } from '@/utils/queryInvalidation';
@@ -37,24 +47,24 @@ export function useFinancialConnection(
 ): UseFinancialConnectionReturn {
   const { provider, onConnectionSuccess, onError, isOnline = true } = options;
   const queryClient = useQueryClient();
+  const providerCatalog = useProviderCatalog();
 
-  const [isConnected, setIsConnected] = useState(false);
-  const [connectionInProgress, setConnectionInProgress] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [institutionName, setInstitutionName] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(financialConnectionReducer, initialFinancialConnectionState);
   const [sdkNonce, setSdkNonce] = useState(0);
   const sdkFailedRef = useRef(false);
   const strategyRef = useRef<FinancialConnectionStrategy>(PENDING_CONNECTION_STRATEGY);
 
   const handleError = useCallback(
     (message: string) => {
-      setError(message);
-      setConnectionInProgress(false);
+      dispatch(connectionActions.patch({ error: message, connectionInProgress: false }));
       onError?.(message);
     },
     [onError]
   );
+
+  const setError = useCallback((error: string | null) => {
+    dispatch(connectionActions.patch({ error }));
+  }, []);
 
   const invalidateCache = useCallback(async () => {
     await invalidateStaleCacheQueries(queryClient, [provider]);
@@ -66,16 +76,24 @@ export function useFinancialConnection(
       sdkNonce,
       setSdkNonce,
       sdkFailedRef,
+      state,
+      dispatch,
       handleError,
-      setConnectionInProgress,
-      setIsConnected,
-      setInstitutionName,
-      setIsSyncing,
-      setError,
       onConnectionSuccess,
       invalidateCache,
+      tellerApplicationId: providerCatalog.tellerApplicationId,
+      tellerEnvironment: providerCatalog.tellerEnvironment,
     }),
-    [handleError, invalidateCache, isOnline, onConnectionSuccess, sdkNonce]
+    [
+      handleError,
+      invalidateCache,
+      isOnline,
+      onConnectionSuccess,
+      providerCatalog.tellerApplicationId,
+      providerCatalog.tellerEnvironment,
+      sdkNonce,
+      state,
+    ]
   );
 
   const connectionMount = useMemo(
@@ -114,8 +132,7 @@ export function useFinancialConnection(
       return;
     }
 
-    setError(null);
-    setConnectionInProgress(true);
+    dispatch(connectionActions.patch({ error: null, connectionInProgress: true }));
     sdkFailedRef.current = false;
 
     try {
@@ -151,26 +168,22 @@ export function useFinancialConnection(
     if (!isOnline) {
       return;
     }
-    setError(null);
+    dispatch(connectionActions.patch({ error: null }));
     await initiateConnection();
   }, [initiateConnection, isOnline]);
 
   const reset = useCallback(() => {
-    setIsConnected(false);
-    setConnectionInProgress(false);
-    setIsSyncing(false);
-    setInstitutionName(null);
-    setError(null);
+    dispatch(connectionActions.reset());
     setSdkNonce(0);
     strategyRef.current.reset();
   }, []);
 
   return {
-    isConnected,
-    connectionInProgress,
-    isSyncing,
-    institutionName,
-    error,
+    isConnected: state.isConnected,
+    connectionInProgress: state.connectionInProgress,
+    isSyncing: state.isSyncing,
+    institutionName: state.institutionName,
+    error: state.error,
     initiateConnection,
     retryConnection,
     reset,

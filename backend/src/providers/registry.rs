@@ -1,3 +1,5 @@
+//! Resolves the active provider adapter at runtime.
+
 use std::collections::HashMap;
 use std::sync::Arc;
 

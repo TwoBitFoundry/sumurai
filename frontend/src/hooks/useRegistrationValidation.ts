@@ -1,3 +1,7 @@
+/**
+ * Validation rules for user registration input.
+ */
+
 import { useMemo, useState } from 'react';
 import { type PasswordValidation, usePasswordValidation } from './usePasswordValidation';
 

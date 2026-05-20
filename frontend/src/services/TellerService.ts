@@ -1,3 +1,7 @@
+/**
+ * API access for Teller connection status and sync.
+ */
+
 import type { ProviderStatusResponse } from '../types/api';
 import { buildSyncTransactionsRequest } from '../utils/syncTransactionsRequest';
 import { ApiClient } from './ApiClient';

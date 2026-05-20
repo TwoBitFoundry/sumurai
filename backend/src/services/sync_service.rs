@@ -1,3 +1,5 @@
+//! Orchestrates transaction sync through provider adapters.
+
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Duration, Months, NaiveDate, Utc};
 use std::collections::HashMap;

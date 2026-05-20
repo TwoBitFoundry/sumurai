@@ -3,8 +3,8 @@ import { Check } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFinancialConnection } from '@/hooks/useFinancialConnection';
 import { type OnboardingStep, useOnboardingWizard } from '@/hooks/useOnboardingWizard';
+import { useProviderCatalog } from '@/hooks/useProviderCatalog';
 import { useScrollDetection } from '@/hooks/useScrollDetection';
-import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo';
 import { recordHandledIssue } from '@/observability';
 import type { FinancialProvider } from '@/types/api';
 import { AppTitleBar, Button, GlassCard, GradientShell } from '@/ui/primitives';
@@ -75,14 +75,14 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
     completeWizard,
   } = useOnboardingWizard();
 
-  const providerInfo = useTellerProviderInfo();
-  const resolvedDefaultProvider = (providerInfo.defaultProvider ?? 'plaid') as FinancialProvider;
-  const activeProvider = (providerInfo.userProvider ??
+  const providerCatalog = useProviderCatalog();
+  const resolvedDefaultProvider = (providerCatalog.defaultProvider ?? 'plaid') as FinancialProvider;
+  const activeProvider = (providerCatalog.userProvider ??
     resolvedDefaultProvider) as FinancialProvider;
   const providerContent = CONNECT_ACCOUNT_PROVIDER_CONTENT[activeProvider];
   const providerDisplayName = providerContent.displayName;
   const providerLoading =
-    providerInfo.loading && !providerInfo.userProvider && !providerInfo.defaultProvider;
+    providerCatalog.loading && !providerCatalog.userProvider && !providerCatalog.defaultProvider;
 
   const steps = useMemo(() => {
     const details: Record<OnboardingStep, { label: string; description: string }> = {
@@ -208,9 +208,9 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
           <ConnectAccountStep
             content={providerContent}
             providerLoading={providerLoading}
-            providerError={providerInfo.error}
-            onRetryProvider={providerInfo.refresh}
-            tellerApplicationId={providerInfo.tellerApplicationId ?? null}
+            providerError={providerCatalog.error}
+            onRetryProvider={providerCatalog.refresh}
+            connectBlockedReason={providerCatalog.getConnectBlockedReason(activeProvider)}
             isOnline={isOnline}
             isConnected={connectionFlow.isConnected}
             connectionInProgress={connectionFlow.connectionInProgress}

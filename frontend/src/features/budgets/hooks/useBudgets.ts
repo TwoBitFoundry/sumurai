@@ -1,3 +1,7 @@
+/**
+ * Loads and mutates budget data for the budgets feature.
+ */
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
 import { BudgetCalculator } from '../../../domain/BudgetCalculator';

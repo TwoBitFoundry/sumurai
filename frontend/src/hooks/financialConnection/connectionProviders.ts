@@ -1,3 +1,6 @@
+/**
+ * Registry mapping each provider to its connection strategy.
+ */
 import type {
   FinancialConnectionStrategy,
   FinancialConnectionStrategyContext,

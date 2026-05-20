@@ -1,3 +1,5 @@
+//! PostgreSQL access for users, connections, accounts, and transactions.
+
 use crate::models::{
     account::Account,
     auth::User,

@@ -1,3 +1,7 @@
+/**
+ * Owns transaction list filter state.
+ */
+
 import { useCallback, useState } from 'react';
 
 export function useTransactionFilterState(initial?: { search?: string; category?: string | null }) {
