@@ -51,7 +51,7 @@ fn given_teller_transaction_json_when_from_teller_then_maps_fields_correctly() {
         transaction.provider_account_id,
         Some(provider_account_id.to_string())
     );
-    assert_eq!(transaction.amount, Decimal::from_str("89.40").unwrap());
+    assert_eq!(transaction.amount, Decimal::from_str("-89.40").unwrap());
     assert_eq!(transaction.date.to_string(), "2024-01-15");
     assert_eq!(transaction.merchant_name, Some("Starbucks".to_string()));
     assert_eq!(transaction.category_primary, "GENERAL_MERCHANDISE");
@@ -64,7 +64,7 @@ fn given_teller_transaction_json_when_from_teller_then_maps_fields_correctly() {
 }
 
 #[test]
-fn given_teller_transaction_with_positive_amount_when_from_teller_then_converts_to_absolute() {
+fn given_teller_transaction_with_positive_amount_when_from_teller_then_preserves_sign() {
     let account_id = Uuid::new_v4();
     let teller_json = serde_json::from_str(TestFixtures::teller_transaction_deposit()).unwrap();
 

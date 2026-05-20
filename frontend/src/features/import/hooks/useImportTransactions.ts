@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
+import { normalizeCsvMapping } from '@/features/import/csvMapping';
 import type { CsvColumnMapping, ImportResponse, ValidateResponse } from '@/models/import';
 import { ImportService } from '@/services/ImportService';
 import { invalidateStaleCacheQueries } from '@/utils/queryInvalidation';
@@ -62,7 +63,14 @@ export function useImportTransactions(accountId: string): UseImportTransactionsR
       try {
         const result = await ImportService.validate(file, accountId);
         setValidationResult(result);
-        setCsvMapping(result.suggested_csv_mapping);
+        const headers = result.csv_headers.length
+          ? result.csv_headers
+          : (result.sample_csv_rows[0] ?? []);
+        setCsvMapping(
+          result.suggested_csv_mapping
+            ? normalizeCsvMapping(result.suggested_csv_mapping, headers)
+            : null
+        );
 
         if (!result.valid) {
           setError(errorMessageFromValidation(result));

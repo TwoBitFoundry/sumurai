@@ -9,6 +9,22 @@ use crate::models::transaction::Transaction;
 use crate::services::import_service::ImportService;
 
 #[test]
+fn given_same_fitid_when_from_ofx_for_different_accounts_then_provider_ids_differ() {
+    let account_a = Uuid::new_v4();
+    let account_b = Uuid::new_v4();
+    let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
+    let amount = Decimal::from_str("-12.34").unwrap();
+
+    let first = Transaction::from_ofx("fitid-1", date, amount, "Coffee", None, &account_a);
+    let second = Transaction::from_ofx("fitid-1", date, amount, "Coffee", None, &account_b);
+
+    assert_ne!(
+        first.provider_transaction_id,
+        second.provider_transaction_id
+    );
+}
+
+#[test]
 fn given_ofx_fields_when_from_ofx_then_maps_expected_values() {
     let account_id = Uuid::new_v4();
     let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
@@ -25,10 +41,13 @@ fn given_ofx_fields_when_from_ofx_then_maps_expected_values() {
     assert_eq!(transaction.account_id, account_id);
     assert_eq!(
         transaction.provider_transaction_id,
-        Some("FITID-123".to_string())
+        Some(Transaction::import_provider_transaction_id(
+            &account_id,
+            "FITID-123"
+        ))
     );
     assert_eq!(transaction.provider_account_id, None);
-    assert_eq!(transaction.amount, Decimal::from_str("12.34").unwrap());
+    assert_eq!(transaction.amount, Decimal::from_str("-12.34").unwrap());
     assert_eq!(transaction.date, date);
     assert_eq!(transaction.merchant_name, Some("Coffee Shop".to_string()));
     assert_eq!(transaction.category_primary, "OTHER");
@@ -55,7 +74,7 @@ fn given_split_csv_columns_when_from_csv_row_then_uses_debit_or_credit_column() 
 
     assert_eq!(
         debit_transaction.amount,
-        Decimal::from_str("12.34").unwrap()
+        Decimal::from_str("-12.34").unwrap()
     );
     assert_eq!(
         debit_transaction.merchant_name,
@@ -75,7 +94,7 @@ fn given_split_csv_columns_when_from_csv_row_then_uses_debit_or_credit_column() 
 }
 
 #[test]
-fn given_signed_amount_csv_when_from_csv_row_then_uses_absolute_amount() {
+fn given_signed_amount_csv_when_from_csv_row_then_preserves_amount_sign() {
     let account_id = Uuid::new_v4();
     let headers = StringRecord::from(vec!["Date", "Description", "Amount"]);
     let mapping = CsvColumnMapping {
@@ -89,11 +108,20 @@ fn given_signed_amount_csv_when_from_csv_row_then_uses_absolute_amount() {
 
     let transaction = Transaction::from_csv_row(&headers, &row, &mapping, &account_id).unwrap();
 
-    assert_eq!(transaction.amount, Decimal::from_str("18.50").unwrap());
+    assert_eq!(transaction.amount, Decimal::from_str("-18.50").unwrap());
     assert!(transaction
         .provider_transaction_id
         .as_ref()
         .is_some_and(|value| !value.is_empty()));
+
+    let credit_row = StringRecord::from(vec!["2024-01-16", "Payroll", "2500.00"]);
+    let credit_transaction =
+        Transaction::from_csv_row(&headers, &credit_row, &mapping, &account_id).unwrap();
+
+    assert_eq!(
+        credit_transaction.amount,
+        Decimal::from_str("2500.00").unwrap()
+    );
 }
 
 #[test]
@@ -169,7 +197,7 @@ fn given_valid_and_invalid_files_when_validating_then_returns_preview_and_errors
     let ofx = "<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKTRANLIST><STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20240115000000<TRNAMT>-12.34<FITID>fitid-1<NAME>COFFEE SHOP</STMTTRN><STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20240116000000<TRNAMT>18.50<FITID>fitid-2<NAME>REFUND</STMTTRN></BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>";
     let validate = ImportService::validate_file(ofx, "transactions.qfx", &account_id);
 
-    assert_eq!(validate.format, Some(ImportFileFormat::Ofx));
+    assert_eq!(validate.format, Some(ImportFileFormat::Qfx));
     assert!(validate.valid);
     assert_eq!(validate.transaction_count, 2);
     assert_eq!(validate.preview_rows.len(), 2);
@@ -187,4 +215,55 @@ fn given_valid_and_invalid_files_when_validating_then_returns_preview_and_errors
     assert!(!invalid.valid);
     assert!(!invalid.errors.is_empty());
     assert_eq!(invalid.format, Some(ImportFileFormat::Ofx));
+
+    let qbo_validate = ImportService::validate_file(ofx, "transactions.qbo", &account_id);
+    assert_eq!(qbo_validate.format, Some(ImportFileFormat::Qbo));
+}
+
+#[test]
+fn given_csv_file_when_validating_then_sample_rows_start_with_headers() {
+    let account_id = Uuid::new_v4();
+    let csv = "Date,Description,Amount\n01/15/2024,Coffee Shop,12.34\n01/16/2024,Refund,18.50\n";
+    let validate = ImportService::validate_file(csv, "transactions.csv", &account_id);
+
+    assert_eq!(validate.format, Some(ImportFileFormat::Csv));
+    assert!(validate.valid);
+    assert_eq!(
+        validate.sample_csv_rows.first(),
+        Some(&vec![
+            "Date".to_string(),
+            "Description".to_string(),
+            "Amount".to_string()
+        ])
+    );
+    assert_eq!(
+        validate.sample_csv_rows.get(1),
+        Some(&vec![
+            "01/15/2024".to_string(),
+            "Coffee Shop".to_string(),
+            "12.34".to_string()
+        ])
+    );
+    assert_eq!(
+        validate.csv_headers,
+        vec![
+            "Date".to_string(),
+            "Description".to_string(),
+            "Amount".to_string()
+        ]
+    );
+}
+
+#[test]
+fn given_headerless_csv_when_validating_then_returns_header_required_error() {
+    let account_id = Uuid::new_v4();
+    let csv = "05/12/2026,Coffee Shop,DEP,186.80\n05/01/2026,Refund,,-116.05\n";
+    let validate = ImportService::validate_file(csv, "transactions.csv", &account_id);
+
+    assert_eq!(validate.format, Some(ImportFileFormat::Csv));
+    assert!(!validate.valid);
+    assert!(validate
+        .errors
+        .iter()
+        .any(|error| error.contains("header row")));
 }

@@ -41,7 +41,7 @@ export class BudgetCalculator {
         const dateString = new Date(t.date).toISOString().slice(0, 10);
         return dateString >= start && dateString <= end;
       })
-      .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+      .reduce((sum, t) => sum + (Number(t.amount) < 0 ? Math.abs(Number(t.amount || 0)) : 0), 0);
   }
 
   static calculateRemaining(budget: number, spent: number): number {

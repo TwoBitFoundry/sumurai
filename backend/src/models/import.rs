@@ -10,8 +10,11 @@ use serde_json::json;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, ToSchema)]
 pub enum ImportFileFormat {
-    Ofx,
     Csv,
+    Ofx,
+    Qfx,
+    Qbo,
+    Qbx,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq, ToSchema)]
@@ -46,6 +49,7 @@ pub struct ValidateResponse {
     pub date_range: Option<ImportDateRange>,
     pub preview_rows: Vec<PreviewTransaction>,
     pub suggested_csv_mapping: Option<CsvColumnMapping>,
+    pub csv_headers: Vec<String>,
     pub sample_csv_rows: Vec<Vec<String>>,
     pub errors: Vec<String>,
 }

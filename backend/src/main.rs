@@ -15,6 +15,7 @@ use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer}
 use axum_tracing_opentelemetry::tracing_opentelemetry_instrumentation_sdk as otel_sdk;
 use chrono::NaiveDate;
 use chrono::Utc;
+use csv::StringRecord;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tower::ServiceBuilder;
@@ -1172,7 +1173,7 @@ async fn validate_authenticated_transaction_import(
     let content = String::from_utf8(file_bytes)
         .map_err(|_| api_bad_request("Uploaded file must be valid UTF-8"))?;
 
-    if detect_import_format(&file_name).is_none() {
+    if crate::services::import_service::detect_import_format(&file_name).is_none() {
         return Err(api_bad_request(format!(
             "Unsupported file extension for '{}'",
             file_name
@@ -1217,12 +1218,16 @@ async fn import_authenticated_transactions(
 
     let content = String::from_utf8(file_bytes)
         .map_err(|_| api_bad_request("Uploaded file must be valid UTF-8"))?;
-    let format = detect_import_format(&file_name).ok_or_else(|| {
-        api_bad_request(format!("Unsupported file extension for '{}'", file_name))
-    })?;
+    let format =
+        crate::services::import_service::detect_import_format(&file_name).ok_or_else(|| {
+            api_bad_request(format!("Unsupported file extension for '{}'", file_name))
+        })?;
 
     let mut parsed = match format {
-        ImportFileFormat::Ofx => ImportService::parse_ofx(&content, &account_id),
+        ImportFileFormat::Ofx
+        | ImportFileFormat::Qfx
+        | ImportFileFormat::Qbo
+        | ImportFileFormat::Qbx => ImportService::parse_ofx(&content, &account_id),
         ImportFileFormat::Csv => {
             let mapping = match csv_mapping {
                 Some(mapping) => mapping,
@@ -1386,31 +1391,14 @@ async fn ensure_import_account_owned(
         })
 }
 
-fn detect_import_format(filename: &str) -> Option<ImportFileFormat> {
-    let lower = filename.to_ascii_lowercase();
-    if lower.ends_with(".csv") {
-        Some(ImportFileFormat::Csv)
-    } else if lower.ends_with(".ofx") || lower.ends_with(".qfx") || lower.ends_with(".qbo") {
-        Some(ImportFileFormat::Ofx)
-    } else {
-        None
-    }
-}
-
 fn detect_csv_mapping_from_content(
     content: &str,
 ) -> Result<CsvColumnMapping, (StatusCode, Json<ApiErrorResponse>)> {
-    let mut reader = csv::ReaderBuilder::new()
-        .has_headers(true)
-        .flexible(true)
-        .trim(csv::Trim::All)
-        .from_reader(content.as_bytes());
-    let headers = reader
-        .headers()
-        .map_err(|_| api_bad_request("Unable to read CSV headers"))?
-        .clone();
-
-    Ok(ImportService::detect_csv_mapping(&headers))
+    let headers =
+        crate::services::import_service::read_csv_headers(content).map_err(api_bad_request)?;
+    Ok(ImportService::detect_csv_mapping(&StringRecord::from(
+        headers,
+    )))
 }
 
 fn csv_mapping_errors(mapping: &CsvColumnMapping) -> Vec<String> {
@@ -1996,8 +1984,8 @@ async fn get_authenticated_spending_by_date_range(
     }
     let total: rust_decimal::Decimal = transactions
         .into_iter()
-        .filter(|t| t.amount > rust_decimal::Decimal::ZERO)
-        .map(|t| t.amount)
+        .filter(|t| t.amount < rust_decimal::Decimal::ZERO)
+        .map(|t| -t.amount)
         .sum();
     Ok(Json(total))
 }

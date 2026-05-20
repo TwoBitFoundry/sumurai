@@ -20,6 +20,7 @@ describe('ImportService', () => {
       date_range: null,
       preview_rows: [],
       suggested_csv_mapping: null,
+      csv_headers: [],
       sample_csv_rows: [],
       errors: [],
     };

@@ -40,6 +40,7 @@ const validateResponse: ValidateResponse = {
     credit_column: 'Credit',
     description_column: 'Description',
   },
+  csv_headers: ['Date', 'Description', 'Debit', 'Credit'],
   sample_csv_rows: [['Date', 'Description', 'Debit', 'Credit']],
   errors: [],
 };

@@ -1,7 +1,9 @@
 use crate::models::transaction::Transaction;
 use crate::test_fixtures::TestFixtures;
 use axum::{extract::Json, routing::post, Router};
+use rust_decimal::Decimal;
 use serde_json::Value;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
 use uuid::Uuid;
@@ -67,6 +69,7 @@ fn test_category_parsing_logic_extracts_correct_values() {
 
     let transaction = Transaction::from_plaid(&plaid_transaction, &Uuid::nil());
 
+    assert_eq!(transaction.amount, Decimal::from_str("-15.5").unwrap());
     assert_eq!(transaction.category_primary, "FOOD_AND_DRINK");
     assert_eq!(transaction.category_detailed, "FOOD_AND_DRINK_RESTAURANT");
     assert_eq!(transaction.category_confidence, "VERY_HIGH");
@@ -81,6 +84,7 @@ fn test_category_parsing_handles_missing_fields() {
 
     let transaction = Transaction::from_plaid(&plaid_transaction, &Uuid::nil());
 
+    assert_eq!(transaction.amount, Decimal::from_str("-25").unwrap());
     assert_eq!(transaction.category_primary, "OTHER");
     assert_eq!(transaction.category_detailed, "OTHER");
     assert_eq!(transaction.category_confidence, "MEDIUM");
@@ -105,6 +109,7 @@ fn test_category_parsing_falls_back_to_primary_when_detailed_missing() {
 
     let transaction = Transaction::from_plaid(&plaid_transaction, &Uuid::nil());
 
+    assert_eq!(transaction.amount, Decimal::from_str("-15.5").unwrap());
     assert_eq!(transaction.category_primary, "FOOD_AND_DRINK");
     assert_eq!(transaction.category_detailed, "FOOD_AND_DRINK");
     assert_eq!(transaction.category_confidence, "MEDIUM");

@@ -213,11 +213,11 @@ impl AnalyticsService {
         let mut category_map = std::collections::HashMap::new();
 
         for transaction in transactions {
-            if transaction.amount <= Decimal::ZERO {
+            if transaction.amount >= Decimal::ZERO {
                 continue;
             }
             let category_name = Self::get_category_name(transaction);
-            *category_map.entry(category_name).or_insert(Decimal::ZERO) += transaction.amount;
+            *category_map.entry(category_name).or_insert(Decimal::ZERO) += -transaction.amount;
         }
 
         category_map
@@ -246,12 +246,15 @@ impl AnalyticsService {
         let mut monthly_totals = std::collections::HashMap::new();
 
         for transaction in transactions {
+            if transaction.amount >= Decimal::ZERO {
+                continue;
+            }
             let month_key = format!(
                 "{}-{:02}",
                 transaction.date.year(),
                 transaction.date.month()
             );
-            *monthly_totals.entry(month_key).or_insert(Decimal::ZERO) += transaction.amount;
+            *monthly_totals.entry(month_key).or_insert(Decimal::ZERO) += -transaction.amount;
         }
 
         let mut result: Vec<MonthlySpending> = monthly_totals
@@ -278,7 +281,7 @@ impl AnalyticsService {
         let mut merchant_map: HashMap<String, (Decimal, u32)> = HashMap::new();
 
         for transaction in transactions {
-            if transaction.amount <= Decimal::ZERO {
+            if transaction.amount >= Decimal::ZERO {
                 continue;
             }
             let merchant_name = transaction
@@ -289,14 +292,14 @@ impl AnalyticsService {
             let entry = merchant_map
                 .entry(merchant_name)
                 .or_insert((Decimal::ZERO, 0));
-            entry.0 += transaction.amount;
+            entry.0 += -transaction.amount;
             entry.1 += 1;
         }
 
         let total_spend: Decimal = transactions
             .iter()
-            .filter(|t| t.amount > Decimal::ZERO)
-            .map(|t| t.amount)
+            .filter(|t| t.amount < Decimal::ZERO)
+            .map(|t| -t.amount)
             .sum();
 
         let mut merchants: Vec<TopMerchant> = merchant_map
@@ -342,8 +345,8 @@ impl AnalyticsService {
         let (start, end) = self.get_month_range(now.year(), now.month());
         transactions
             .iter()
-            .filter(|t| t.date >= start && t.date <= end)
-            .map(|t| t.amount)
+            .filter(|t| t.date >= start && t.date <= end && t.amount < Decimal::ZERO)
+            .map(|t| -t.amount)
             .sum()
     }
 
@@ -360,9 +363,9 @@ impl AnalyticsService {
             .day();
         let mut totals = vec![Decimal::ZERO; days_in_month as usize];
         for t in transactions {
-            if t.date.year() == year && t.date.month() == month {
+            if t.date.year() == year && t.date.month() == month && t.amount < Decimal::ZERO {
                 let idx = (t.date.day() - 1) as usize;
-                totals[idx] += t.amount;
+                totals[idx] += -t.amount;
             }
         }
         let mut cumulative = Decimal::ZERO;

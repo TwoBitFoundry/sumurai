@@ -15,6 +15,7 @@ use crate::{
         account::Account,
         api_error::ApiErrorResponse,
         import::{ImportFileFormat, ImportResponse, ValidateResponse},
+        transaction::Transaction,
     },
     services::{cache_service::MockCacheService, repository_service::MockDatabaseRepository},
     test_fixtures::TestFixtures,
@@ -189,7 +190,7 @@ async fn given_valid_qfx_when_validating_import_then_returns_preview_rows() {
 
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let validate: ValidateResponse = serde_json::from_slice(&body).unwrap();
-    assert_eq!(validate.format, Some(ImportFileFormat::Ofx));
+    assert_eq!(validate.format, Some(ImportFileFormat::Qfx));
     assert!(validate.valid);
     assert_eq!(validate.transaction_count, 2);
     assert!(validate.preview_rows.len() <= 5);
@@ -379,7 +380,10 @@ async fn given_valid_qfx_when_importing_then_writes_transactions_and_sets_user()
             assert_eq!(txn.category_primary, "OTHER");
             assert_eq!(txn.category_detailed, "OTHER");
             assert!(!txn.pending);
-            assert_eq!(txn.provider_transaction_id.as_deref(), Some("fitid-1"));
+            assert_eq!(
+                txn.provider_transaction_id.as_deref(),
+                Some(Transaction::import_provider_transaction_id(&account_id, "fitid-1").as_str())
+            );
             Box::pin(async { Ok(()) })
         });
 
@@ -546,7 +550,7 @@ async fn given_csv_mapping_when_importing_then_creates_expected_transactions() {
             let txn = &transactions[0];
             assert_eq!(txn.user_id, Some(user.id));
             assert_eq!(txn.merchant_name.as_deref(), Some("Coffee Shop"));
-            assert_eq!(txn.amount.to_string(), "12.34");
+            assert_eq!(txn.amount.to_string(), "-12.34");
             Box::pin(async { Ok(()) })
         });
 

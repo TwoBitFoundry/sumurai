@@ -41,6 +41,7 @@ const csvValidation: ValidateResponse = {
     { date: '2026-01-03', description: 'Neighborhood Grocery', amount: '-72.41' },
   ],
   suggested_csv_mapping: completeMapping,
+  csv_headers: ['Date', 'Description', 'Debit Amount', 'Credit Amount'],
   sample_csv_rows: [
     ['Date', 'Description', 'Debit Amount', 'Credit Amount'],
     ['2026-01-01', 'Coffee Shop', '4.75', ''],
@@ -48,10 +49,11 @@ const csvValidation: ValidateResponse = {
   errors: [],
 };
 
-const ofxValidation: ValidateResponse = {
+const qboValidation: ValidateResponse = {
   ...csvValidation,
-  format: 'Ofx',
+  format: 'Qbo',
   suggested_csv_mapping: null,
+  csv_headers: [],
   sample_csv_rows: [],
   transaction_count: 4,
   truncated_count: 0,
@@ -133,7 +135,13 @@ export const Upload: Story = {
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body);
     await expect(body.getByText(/choose file or drop it here/i)).toBeVisible();
-    await expect(body.getByText(/csv, qbo, and qfx/i)).toBeVisible();
+    await expect(body.getByText('CSV')).toBeVisible();
+    await expect(body.getByText('OFX')).toBeVisible();
+    await expect(body.getByText('QBO')).toBeVisible();
+    await expect(body.getByText('QFX')).toBeVisible();
+    await expect(body.getByText('QBX')).toBeVisible();
+    await expect(body.getByText(/csv must include a header row/i)).toBeVisible();
+    await expect(body.getByText(/up to 10 mb per file/i)).toBeVisible();
   },
 };
 
@@ -156,14 +164,14 @@ export const OfxPreview: Story = {
     workflow: makeWorkflow({
       status: 'preview',
       selectedFile: makeFile('statement.qbo'),
-      validationResult: ofxValidation,
+      validationResult: qboValidation,
     }),
   },
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body);
-    await expect(body.getAllByText('Ofx')[0]).toBeVisible();
+    await expect(body.getByText('QBO')).toBeVisible();
     await expect(body.getByText('Bookstore')).toBeVisible();
-    await expect(body.getByRole('button', { name: /^import transactions$/i })).toBeEnabled();
+    await expect(body.getByRole('button', { name: /^import$/i })).toBeEnabled();
   },
 };
 
@@ -178,8 +186,7 @@ export const CsvPreview: Story = {
   },
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body);
-    await expect(body.getByText('Ready to import')).toBeVisible();
-    await expect(body.getByRole('button', { name: /review column mapping/i })).toHaveAttribute(
+    await expect(body.getByRole('button', { name: /expand column mapping/i })).toHaveAttribute(
       'aria-expanded',
       'false'
     );
@@ -197,8 +204,7 @@ export const CsvNeedsMapping: Story = {
   },
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body);
-    await expect(body.getByText('Choose columns to continue')).toBeVisible();
-    await expect(body.getByRole('button', { name: /^import transactions$/i })).toBeDisabled();
+    await expect(body.getByRole('button', { name: /^import$/i })).toBeDisabled();
   },
 };
 

@@ -1,7 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type * as React from 'react';
-import { surface as uiSurfaceRecipes } from '@/ui/recipes';
+import { floatingChromeGlass, surface as uiSurfaceRecipes } from '@/ui/recipes';
 import { cn } from './utils';
 
 const contentVariants = cva('relative w-full', {
@@ -28,6 +28,7 @@ export interface ModalProps
   preventCloseOnBackdrop?: boolean;
   backdropClassName?: string;
   containerClassName?: string;
+  gridClassName?: string;
 }
 
 export function Modal({
@@ -41,6 +42,7 @@ export function Modal({
   className,
   backdropClassName,
   containerClassName,
+  gridClassName,
   ...props
 }: ModalProps) {
   return (
@@ -57,7 +59,8 @@ export function Modal({
           <Dialog.Overlay
             data-testid="modal-backdrop"
             className={cn(
-              'absolute inset-0 backdrop-blur-sm',
+              'absolute inset-0',
+              ...floatingChromeGlass.backdrop,
               ...uiSurfaceRecipes.overlay,
               backdropClassName
             )}
@@ -67,7 +70,7 @@ export function Modal({
               }
             }}
           />
-          <div className={cn('grid', 'h-full', 'place-items-center', 'p-4')}>
+          <div className={cn('grid', 'h-full', 'place-items-center', gridClassName ?? 'p-4')}>
             <Dialog.Content
               aria-labelledby={labelledBy}
               aria-describedby={description}

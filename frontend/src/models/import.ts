@@ -1,4 +1,22 @@
-export type ImportFileFormat = 'Ofx' | 'Csv';
+export type ImportFileFormat = 'Csv' | 'Ofx' | 'Qfx' | 'Qbo' | 'Qbx';
+
+const importFormatLabels: Record<ImportFileFormat, string> = {
+  Csv: 'CSV',
+  Ofx: 'OFX',
+  Qfx: 'QFX',
+  Qbo: 'QBO',
+  Qbx: 'QBX',
+};
+
+export function importFormatLabel(format: ImportFileFormat): string {
+  return importFormatLabels[format];
+}
+
+export const importSupportedFileFormats: ImportFileFormat[] = ['Csv', 'Ofx', 'Qbo', 'Qfx', 'Qbx'];
+
+export function isCsvImportFormat(format: ImportFileFormat | null | undefined): boolean {
+  return format === 'Csv';
+}
 
 export interface CsvColumnMapping {
   date_column: string | null;
@@ -27,6 +45,7 @@ export interface ValidateResponse {
   date_range: ImportDateRange | null;
   preview_rows: PreviewTransaction[];
   suggested_csv_mapping: CsvColumnMapping | null;
+  csv_headers: string[];
   sample_csv_rows: string[][];
   errors: string[];
 }

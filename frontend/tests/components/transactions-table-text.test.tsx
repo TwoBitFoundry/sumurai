@@ -30,8 +30,8 @@ describe('TransactionsTable text tokens', () => {
     const negative = screen.getByText('-$42.00').closest('td');
     const zero = screen.getByText('$0.00').closest('td');
 
-    expect(positive?.className).toContain(uiTextRecipes.danger);
-    expect(negative?.className).toContain(uiTextRecipes.success);
+    expect(positive?.className).toContain(uiTextRecipes.success);
+    expect(negative?.className).toContain(uiTextRecipes.danger);
     expect(zero?.className).toContain(uiTextRecipes.muted);
   });
 

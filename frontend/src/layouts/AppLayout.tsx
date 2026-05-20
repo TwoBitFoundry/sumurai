@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { cn } from '@/ui/primitives';
 import { appTitleBarRecipes, TABS } from '@/ui/primitives/AppTitleBar';
 import { Button } from '@/ui/primitives/Button';

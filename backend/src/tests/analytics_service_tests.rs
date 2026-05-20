@@ -102,6 +102,9 @@ fn filter_by_period<'a>(transactions: &'a [Transaction], period: &str) -> Vec<&'
 fn group_transactions_by_category(transactions: Vec<&Transaction>) -> Vec<CategorySpending> {
     let mut category_map: HashMap<String, rust_decimal::Decimal> = HashMap::new();
     for t in transactions {
+        if t.amount >= rust_decimal::Decimal::ZERO {
+            continue;
+        }
         let key = if t.category_primary.is_empty() {
             "Uncategorized".to_string()
         } else {
@@ -109,7 +112,7 @@ fn group_transactions_by_category(transactions: Vec<&Transaction>) -> Vec<Catego
         };
         *category_map
             .entry(key)
-            .or_insert(rust_decimal::Decimal::ZERO) += t.amount;
+            .or_insert(rust_decimal::Decimal::ZERO) += -t.amount;
     }
     category_map
         .into_iter()
@@ -141,8 +144,8 @@ fn calculate_current_month_spending(transactions: &[Transaction]) -> rust_decima
     let (start, end) = get_month_range(now.year(), now.month());
     transactions
         .iter()
-        .filter(|t| t.date >= start && t.date <= end)
-        .map(|t| t.amount)
+        .filter(|t| t.date >= start && t.date <= end && t.amount < rust_decimal::Decimal::ZERO)
+        .map(|t| -t.amount)
         .sum()
 }
 
@@ -159,9 +162,12 @@ fn calculate_daily_spending(
         .day();
     let mut totals = vec![rust_decimal::Decimal::ZERO; days_in_month as usize];
     for t in transactions {
-        if t.date.year() == year && t.date.month() == month {
+        if t.date.year() == year
+            && t.date.month() == month
+            && t.amount < rust_decimal::Decimal::ZERO
+        {
             let idx = (t.date.day() - 1) as usize;
-            totals[idx] += t.amount;
+            totals[idx] += -t.amount;
         }
     }
     let mut cumulative = rust_decimal::Decimal::ZERO;
@@ -243,17 +249,17 @@ fn given_current_month_transactions_when_calculating_spending_then_sums_correctl
 
     let txns = vec![
         create_test_transaction(
-            dec!(50.00),
+            dec!(-50.00),
             NaiveDate::from_ymd_opt(y, m, 10).unwrap(),
             "Food",
         ),
         create_test_transaction(
-            dec!(25.50),
+            dec!(-25.50),
             NaiveDate::from_ymd_opt(y, m, 12).unwrap(),
             "Transport",
         ),
         create_test_transaction(
-            dec!(100.00),
+            dec!(-100.00),
             NaiveDate::from_ymd_opt(y, if m == 1 { 12 } else { m - 1 }, 15).unwrap(),
             "Food",
         ),
@@ -268,17 +274,17 @@ fn given_transactions_with_categories_when_grouping_all_time_then_sums_by_catego
     let _analytics = AnalyticsService::new();
     let txns = vec![
         create_test_transaction(
-            dec!(50.00),
+            dec!(-50.00),
             NaiveDate::from_ymd_opt(2024, 3, 10).unwrap(),
             "Food",
         ),
         create_test_transaction(
-            dec!(25.50),
+            dec!(-25.50),
             NaiveDate::from_ymd_opt(2024, 3, 12).unwrap(),
             "Food",
         ),
         create_test_transaction(
-            dec!(30.00),
+            dec!(-30.00),
             NaiveDate::from_ymd_opt(2024, 3, 5).unwrap(),
             "Transport",
         ),
@@ -297,22 +303,22 @@ fn given_transactions_in_month_when_calculating_daily_spending_then_groups_by_da
     let _analytics = AnalyticsService::new();
     let txns = vec![
         create_test_transaction(
-            dec!(25.50),
+            dec!(-25.50),
             NaiveDate::from_ymd_opt(2024, 3, 5).unwrap(),
             "Food",
         ),
         create_test_transaction(
-            dec!(30.00),
+            dec!(-30.00),
             NaiveDate::from_ymd_opt(2024, 3, 5).unwrap(),
             "Transport",
         ),
         create_test_transaction(
-            dec!(50.00),
+            dec!(-50.00),
             NaiveDate::from_ymd_opt(2024, 3, 10).unwrap(),
             "Food",
         ),
         create_test_transaction(
-            dec!(15.00),
+            dec!(-15.00),
             NaiveDate::from_ymd_opt(2024, 2, 10).unwrap(),
             "Food",
         ),
@@ -333,22 +339,22 @@ fn given_transactions_across_months_when_calculating_monthly_totals_then_groups_
     let analytics = AnalyticsService::new();
     let txns = vec![
         create_test_transaction(
-            dec!(100.00),
+            dec!(-100.00),
             NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
             "Food",
         ),
         create_test_transaction(
-            dec!(75.50),
+            dec!(-75.50),
             NaiveDate::from_ymd_opt(2024, 2, 10).unwrap(),
             "Transport",
         ),
         create_test_transaction(
-            dec!(25.00),
+            dec!(-25.00),
             NaiveDate::from_ymd_opt(2024, 2, 20).unwrap(),
             "Food",
         ),
         create_test_transaction(
-            dec!(50.00),
+            dec!(-50.00),
             NaiveDate::from_ymd_opt(2024, 3, 5).unwrap(),
             "Food",
         ),
@@ -368,17 +374,17 @@ fn given_transactions_when_grouping_by_category_with_frontend_logic_then_handles
     let _analytics = AnalyticsService::new();
     let txns = [
         create_test_transaction(
-            dec!(50.00),
+            dec!(-50.00),
             NaiveDate::from_ymd_opt(2024, 3, 10).unwrap(),
             "Food",
         ),
         create_test_transaction(
-            dec!(25.50),
+            dec!(-25.50),
             NaiveDate::from_ymd_opt(2024, 3, 12).unwrap(),
             "Food",
         ),
         create_test_transaction(
-            dec!(30.00),
+            dec!(-30.00),
             NaiveDate::from_ymd_opt(2024, 3, 5).unwrap(),
             "",
         ),
@@ -458,27 +464,27 @@ fn given_transactions_when_grouping_by_category_with_date_range_then_filters_and
     let analytics = AnalyticsService::new();
     let txns = vec![
         create_test_transaction(
-            dec!(50.00),
+            dec!(-50.00),
             NaiveDate::from_ymd_opt(2024, 3, 5).unwrap(),
             "Food",
         ),
         create_test_transaction(
-            dec!(25.50),
+            dec!(-25.50),
             NaiveDate::from_ymd_opt(2024, 3, 12).unwrap(),
             "Food",
         ),
         create_test_transaction(
-            dec!(30.00),
+            dec!(-30.00),
             NaiveDate::from_ymd_opt(2024, 3, 15).unwrap(),
             "Transport",
         ),
         create_test_transaction(
-            dec!(100.00),
+            dec!(-100.00),
             NaiveDate::from_ymd_opt(2024, 2, 10).unwrap(),
             "Food",
         ),
         create_test_transaction(
-            dec!(75.00),
+            dec!(-75.00),
             NaiveDate::from_ymd_opt(2024, 4, 5).unwrap(),
             "Transport",
         ),
@@ -504,27 +510,27 @@ fn given_transactions_when_getting_top_merchants_with_date_range_then_filters_an
     let analytics = AnalyticsService::new();
     let txns = vec![
         create_test_transaction(
-            dec!(150.00),
+            dec!(-150.00),
             NaiveDate::from_ymd_opt(2024, 3, 5).unwrap(),
             "Food",
         ),
         create_test_transaction(
-            dec!(100.00),
+            dec!(-100.00),
             NaiveDate::from_ymd_opt(2024, 3, 12).unwrap(),
             "Food",
         ),
         create_test_transaction(
-            dec!(75.00),
+            dec!(-75.00),
             NaiveDate::from_ymd_opt(2024, 3, 15).unwrap(),
             "Transport",
         ),
         create_test_transaction(
-            dec!(200.00),
+            dec!(-200.00),
             NaiveDate::from_ymd_opt(2024, 2, 10).unwrap(),
             "Food",
         ),
         create_test_transaction(
-            dec!(50.00),
+            dec!(-50.00),
             NaiveDate::from_ymd_opt(2024, 4, 5).unwrap(),
             "Transport",
         ),

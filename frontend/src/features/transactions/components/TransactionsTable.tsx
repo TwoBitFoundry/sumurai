@@ -205,9 +205,9 @@ export const TransactionsTable: React.FC<Props> = ({
                           uiTypographyRecipes.body,
                           'transition-colors',
                           'duration-500',
-                          r.amount > 0
+                          r.amount < 0
                             ? uiTextRecipes.danger
-                            : r.amount < 0
+                            : r.amount > 0
                               ? uiTextRecipes.success
                               : uiTextRecipes.muted
                         )}

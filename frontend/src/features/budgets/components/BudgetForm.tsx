@@ -52,7 +52,7 @@ export function BudgetForm({
         value={value.amount}
         onChange={(e) => onChange({ ...value, amount: e.target.value })}
         variant="glass"
-        className={cn('w-full', 'rounded-full')}
+        className={cn('w-full')}
       />
       <div className={cn('flex', 'w-full', 'justify-end', 'gap-2')}>
         <Button

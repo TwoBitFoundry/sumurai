@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { expect, within } from 'storybook/test';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { expect, userEvent, within } from 'storybook/test';
 import { AccountRow } from './AccountRow';
 
 const meta = {
@@ -59,5 +60,38 @@ export const MissingBalance: Story = {
     await expect(canvas.getByText(/manual account/i)).toBeVisible();
     await expect(canvas.getByText(/placeholder/i)).toBeVisible();
     await expect(canvas.getByText(/0 items/i)).toBeVisible();
+  },
+};
+
+export const ImportTrigger: Story = {
+  decorators: [
+    (StoryComponent) => {
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      });
+      return (
+        <QueryClientProvider client={queryClient}>
+          <StoryComponent />
+        </QueryClientProvider>
+      );
+    },
+  ],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Import transactions' }));
+    const body = within(canvasElement.ownerDocument.body);
+    const dialog = within(body.getByRole('dialog', { name: /import transactions/i }));
+    await expect(dialog.getByText(/everyday checking/i)).toBeVisible();
+    await expect(dialog.getByText(/••4821/i)).toBeVisible();
+  },
+};
+
+export const OfflineImportTrigger: Story = {
+  args: {
+    isOnline: false,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('button', { name: 'Import transactions' })).toBeDisabled();
   },
 };

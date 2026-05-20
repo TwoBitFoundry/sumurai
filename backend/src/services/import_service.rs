@@ -13,6 +13,9 @@ use crate::models::transaction::Transaction;
 
 const MAX_PREVIEW_ROWS: usize = 5;
 const FIVE_YEAR_DAY_WINDOW: i64 = 365 * 5 + 2;
+const CSV_HEADER_REQUIRED_ERROR: &str =
+    "CSV files must include a header row with column names (for example Date, Description, Amount).";
+const CSV_HEADER_ROW_LOOKS_LIKE_DATA_ERROR: &str = "CSV files must include a header row with column names. The first row looks like transaction data instead.";
 
 #[derive(Debug, Clone, Default)]
 pub struct ParseOutcome {
@@ -115,6 +118,14 @@ impl ImportService {
     }
 
     pub fn parse_csv(content: &str, mapping: &CsvColumnMapping, account_id: &Uuid) -> ParseOutcome {
+        if let Err(message) = read_csv_headers(content) {
+            return ParseOutcome {
+                transactions: Vec::new(),
+                truncated_count: 0,
+                errors: vec![message],
+            };
+        }
+
         let today = Utc::now().date_naive();
         let cutoff = five_year_cutoff(today);
         let mut reader = csv_reader(content);
@@ -158,29 +169,47 @@ impl ImportService {
     }
 
     pub fn validate_file(content: &str, filename: &str, account_id: &Uuid) -> ValidateResponse {
-        match detect_format(filename) {
-            Some(ImportFileFormat::Ofx) => {
+        let Some(file_format) = detect_format(filename) else {
+            return ValidateResponse {
+                valid: false,
+                format: None,
+                transaction_count: 0,
+                truncated_count: 0,
+                date_range: None,
+                preview_rows: Vec::new(),
+                suggested_csv_mapping: None,
+                csv_headers: Vec::new(),
+                sample_csv_rows: Vec::new(),
+                errors: vec![format!("Unsupported file extension for '{}'", filename)],
+            };
+        };
+
+        match file_format {
+            ImportFileFormat::Ofx
+            | ImportFileFormat::Qfx
+            | ImportFileFormat::Qbo
+            | ImportFileFormat::Qbx => {
                 let outcome = Self::parse_ofx(content, account_id);
                 let preview_rows = preview_transactions(&outcome.transactions);
                 let transaction_count = outcome.transactions.len() as i64;
                 let date_range = date_range_for_transactions(&outcome.transactions);
                 ValidateResponse {
                     valid: !outcome.transactions.is_empty() || outcome.errors.is_empty(),
-                    format: Some(ImportFileFormat::Ofx),
+                    format: Some(file_format),
                     transaction_count,
                     truncated_count: outcome.truncated_count as i64,
                     date_range,
                     preview_rows,
                     suggested_csv_mapping: None,
+                    csv_headers: Vec::new(),
                     sample_csv_rows: Vec::new(),
                     errors: outcome.errors,
                 }
             }
-            Some(ImportFileFormat::Csv) => {
-                let mut reader = csv_reader(content);
-                let headers = match reader.headers() {
-                    Ok(headers) => headers.clone(),
-                    Err(err) => {
+            ImportFileFormat::Csv => {
+                let csv_headers = match read_csv_headers(content) {
+                    Ok(headers) => headers,
+                    Err(message) => {
                         return ValidateResponse {
                             valid: false,
                             format: Some(ImportFileFormat::Csv),
@@ -189,14 +218,16 @@ impl ImportService {
                             date_range: None,
                             preview_rows: Vec::new(),
                             suggested_csv_mapping: None,
+                            csv_headers: Vec::new(),
                             sample_csv_rows: Vec::new(),
-                            errors: vec![format!("Unable to read CSV headers: {}", err)],
+                            errors: vec![message],
                         };
                     }
                 };
 
-                let suggested_csv_mapping = Self::detect_csv_mapping(&headers);
-                let sample_csv_rows = collect_csv_samples(content);
+                let header_record = StringRecord::from(csv_headers.clone());
+                let suggested_csv_mapping = Self::detect_csv_mapping(&header_record);
+                let sample_csv_rows = collect_csv_samples(content, &csv_headers);
                 let mapping_errors = csv_mapping_errors(&suggested_csv_mapping);
 
                 if !mapping_errors.is_empty() {
@@ -208,6 +239,7 @@ impl ImportService {
                         date_range: None,
                         preview_rows: Vec::new(),
                         suggested_csv_mapping: Some(suggested_csv_mapping),
+                        csv_headers: display_csv_headers(&csv_headers),
                         sample_csv_rows,
                         errors: mapping_errors,
                     };
@@ -227,23 +259,35 @@ impl ImportService {
                     date_range,
                     preview_rows,
                     suggested_csv_mapping: Some(suggested_csv_mapping),
+                    csv_headers: display_csv_headers(&csv_headers),
                     sample_csv_rows,
                     errors: outcome.errors,
                 }
             }
-            None => ValidateResponse {
-                valid: false,
-                format: None,
-                transaction_count: 0,
-                truncated_count: 0,
-                date_range: None,
-                preview_rows: Vec::new(),
-                suggested_csv_mapping: None,
-                sample_csv_rows: Vec::new(),
-                errors: vec![format!("Unsupported file extension for '{}'", filename)],
-            },
         }
     }
+}
+
+pub fn detect_import_format(filename: &str) -> Option<ImportFileFormat> {
+    detect_format(filename)
+}
+
+pub fn read_csv_headers(content: &str) -> Result<Vec<String>, String> {
+    let mut reader = csv_reader(content);
+    let headers = reader
+        .headers()
+        .map_err(|err| format!("Unable to read CSV headers: {}", err))?;
+    let raw_headers: Vec<String> = headers.iter().map(|value| value.to_string()).collect();
+
+    if raw_headers.is_empty() || raw_headers.iter().all(|header| header.trim().is_empty()) {
+        return Err(CSV_HEADER_REQUIRED_ERROR.to_string());
+    }
+
+    if row_looks_like_data(&raw_headers) {
+        return Err(CSV_HEADER_ROW_LOOKS_LIKE_DATA_ERROR.to_string());
+    }
+
+    Ok(raw_headers)
 }
 
 fn csv_reader(content: &str) -> csv::Reader<&[u8]> {
@@ -254,18 +298,98 @@ fn csv_reader(content: &str) -> csv::Reader<&[u8]> {
         .from_reader(content.as_bytes())
 }
 
-fn collect_csv_samples(content: &str) -> Vec<Vec<String>> {
+fn collect_csv_samples(content: &str, csv_headers: &[String]) -> Vec<Vec<String>> {
     let mut reader = csv_reader(content);
     if reader.headers().is_err() {
         return Vec::new();
     }
 
-    reader
-        .records()
-        .take(MAX_PREVIEW_ROWS)
-        .filter_map(|record| record.ok())
-        .map(|row| row.iter().map(|value| value.to_string()).collect())
+    let mut rows = vec![display_csv_headers(csv_headers)];
+    rows.extend(
+        reader
+            .records()
+            .take(MAX_PREVIEW_ROWS)
+            .filter_map(|record| record.ok())
+            .map(|row| row.iter().map(|value| value.to_string()).collect()),
+    );
+    rows
+}
+
+fn display_csv_headers(headers: &[String]) -> Vec<String> {
+    headers
+        .iter()
+        .enumerate()
+        .map(|(index, header)| {
+            if header.trim().is_empty() {
+                format!("Column {}", index + 1)
+            } else {
+                header.trim().to_string()
+            }
+        })
         .collect()
+}
+
+fn row_looks_like_data(cells: &[String]) -> bool {
+    if row_contains_header_keywords(cells) {
+        return false;
+    }
+
+    let mut data_like = 0;
+    let mut non_empty = 0;
+    for cell in cells {
+        let value = cell.trim();
+        if value.is_empty() {
+            continue;
+        }
+        non_empty += 1;
+        if looks_like_date(value) || looks_like_amount(value) {
+            data_like += 1;
+        }
+    }
+
+    non_empty > 0 && data_like * 2 >= non_empty
+}
+
+fn row_contains_header_keywords(cells: &[String]) -> bool {
+    const KEYWORDS: &[&str] = &[
+        "date",
+        "description",
+        "amount",
+        "debit",
+        "credit",
+        "memo",
+        "merchant",
+        "name",
+        "posted",
+        "balance",
+        "type",
+        "category",
+        "payee",
+        "details",
+    ];
+
+    cells.iter().any(|cell| {
+        let normalized = cell.trim().to_ascii_lowercase();
+        KEYWORDS.iter().any(|keyword| normalized.contains(keyword))
+    })
+}
+
+fn looks_like_date(value: &str) -> bool {
+    ["%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%Y/%m/%d", "%m-%d-%Y"]
+        .iter()
+        .any(|format| NaiveDate::parse_from_str(value.trim(), format).is_ok())
+}
+
+fn looks_like_amount(value: &str) -> bool {
+    let cleaned = value
+        .trim()
+        .replace(['$', ','], "")
+        .replace('(', "-")
+        .replace(')', "");
+    if cleaned.is_empty() {
+        return false;
+    }
+    Decimal::from_str(&cleaned).is_ok()
 }
 
 fn csv_mapping_errors(mapping: &CsvColumnMapping) -> Vec<String> {
@@ -319,7 +443,13 @@ fn detect_format(filename: &str) -> Option<ImportFileFormat> {
     let lower = filename.to_ascii_lowercase();
     if lower.ends_with(".csv") {
         Some(ImportFileFormat::Csv)
-    } else if lower.ends_with(".ofx") || lower.ends_with(".qfx") || lower.ends_with(".qbo") {
+    } else if lower.ends_with(".qfx") {
+        Some(ImportFileFormat::Qfx)
+    } else if lower.ends_with(".qbo") {
+        Some(ImportFileFormat::Qbo)
+    } else if lower.ends_with(".qbx") {
+        Some(ImportFileFormat::Qbx)
+    } else if lower.ends_with(".ofx") {
         Some(ImportFileFormat::Ofx)
     } else {
         None

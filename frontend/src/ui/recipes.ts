@@ -54,7 +54,10 @@ export const surface = {
   hoverRow: ['bg-[var(--color-surface-hover-row)]', 'dark:bg-[var(--color-surface-hover-row)]'],
   mutedChip: ['bg-[var(--color-surface-muted-chip)]', 'dark:bg-[var(--color-surface-muted-chip)]'],
   insetWell: ['bg-[var(--color-surface-inset-well)]', 'dark:bg-[var(--color-surface-inset-well)]'],
-  overlay: ['bg-[var(--color-surface-overlay)]', 'dark:bg-[var(--color-surface-overlay)]'],
+  overlay: [
+    'bg-[color:color-mix(in_srgb,var(--color-surface-overlay)_20%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-overlay)_36%,transparent)]',
+  ],
 } as const;
 
 export const border = {
@@ -362,6 +365,43 @@ export const buttonChrome = {
     'dark:hover:border-[var(--color-border-divider)]',
     'dark:hover:bg-[var(--color-surface-hover-row)]',
   ],
+} as const;
+
+export const checkboxControl = {
+  field: ['peer', 'sr-only'],
+  box: [
+    'pointer-events-none',
+    'absolute',
+    'inset-0',
+    'flex',
+    'items-center',
+    'justify-center',
+    'rounded',
+    'border',
+    'transition-colors',
+    ...border.control,
+    ...surface.insetWell,
+    'peer-focus-visible:outline-none',
+    'peer-focus-visible:ring-2',
+    'peer-focus-visible:ring-[var(--color-border-hover-accent)]',
+    'peer-checked:border-[var(--color-brand-sky)]',
+    'peer-checked:bg-[var(--color-brand-sky)]',
+    'dark:peer-checked:border-[var(--color-brand-sky)]',
+    'dark:peer-checked:bg-[var(--color-brand-sky)]',
+  ],
+  icon: [
+    'pointer-events-none',
+    'absolute',
+    'inset-0',
+    'm-auto',
+    'h-3',
+    'w-3',
+    'text-white',
+    'opacity-0',
+    'transition-opacity',
+    'peer-checked:opacity-100',
+  ],
+  shell: ['relative', 'inline-flex', 'h-4', 'w-4', 'shrink-0'],
 } as const;
 
 export const chrome = {

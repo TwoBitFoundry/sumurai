@@ -314,8 +314,8 @@ impl Transaction {
             account_id: *account_id,
             user_id: None,
             provider_account_id: None,
-            provider_transaction_id: Some(fitid.trim().to_string()),
-            amount: amount.abs(),
+            provider_transaction_id: Some(Self::import_provider_transaction_id(account_id, fitid)),
+            amount,
             date,
             merchant_name: if normalized_merchant_name.is_empty() {
                 None
@@ -371,8 +371,12 @@ impl Transaction {
                 {
                     return Err("Debit and credit columns both contain values".to_string());
                 }
-                (Some(debit), _) if !debit.trim().is_empty() => Self::parse_csv_decimal(debit)?,
-                (_, Some(credit)) if !credit.trim().is_empty() => Self::parse_csv_decimal(credit)?,
+                (Some(debit), _) if !debit.trim().is_empty() => {
+                    -Self::parse_csv_decimal(debit)?.abs()
+                }
+                (_, Some(credit)) if !credit.trim().is_empty() => {
+                    Self::parse_csv_decimal(credit)?.abs()
+                }
                 _ => {
                     return Err("A debit, credit, or amount column must contain a value".to_string())
                 }
@@ -388,7 +392,7 @@ impl Transaction {
             user_id: None,
             provider_account_id: None,
             provider_transaction_id: Some(provider_transaction_id),
-            amount: amount.abs(),
+            amount,
             date,
             merchant_name: Some(normalize_merchant_display_case(description)),
             category_primary: "OTHER".to_string(),
@@ -444,6 +448,10 @@ impl Transaction {
         Decimal::from_str(&cleaned).map_err(|_| format!("Unable to parse amount value '{}'", raw))
     }
 
+    pub fn import_provider_transaction_id(account_id: &Uuid, external_id: &str) -> String {
+        format!("import:{account_id}:{}", external_id.trim())
+    }
+
     fn csv_provider_transaction_id(
         account_id: &Uuid,
         date: NaiveDate,
@@ -496,7 +504,7 @@ impl Transaction {
         let category = teller_txn["details"]["category"].as_str().unwrap_or("");
         let (category_primary, category_detailed) =
             Self::normalize_teller_category(category, &raw_amount);
-        let amount = raw_amount.abs();
+        let amount = raw_amount;
 
         let merchant_name = Self::merchant_name_from_teller(teller_txn);
 
@@ -542,8 +550,8 @@ impl Transaction {
         let amount = plaid_txn["amount"]
             .as_f64()
             .and_then(Decimal::from_f64_retain)
-            .unwrap_or(Decimal::ZERO)
-            .abs();
+            .map(|value| -value)
+            .unwrap_or(Decimal::ZERO);
 
         let date = plaid_txn["date"]
             .as_str()

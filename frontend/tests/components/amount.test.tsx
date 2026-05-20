@@ -6,7 +6,7 @@ describe('Amount', () => {
   it('uses semantic text roles for positive amounts', () => {
     render(<Amount value={1250.5} />);
 
-    expect(screen.getByText('$1,250.50')).toHaveClass(uiTextRecipes.primary);
+    expect(screen.getByText('$1,250.50')).toHaveClass(uiTextRecipes.success);
   });
 
   it('uses semantic text roles for negative amounts', () => {

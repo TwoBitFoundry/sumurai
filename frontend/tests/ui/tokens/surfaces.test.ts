@@ -61,8 +61,8 @@ describe('design token surface recipes', () => {
       'dark:bg-[color:color-mix(in_srgb,var(--color-surface-card)_55%,transparent)]',
     ]);
     expect(uiSurfaceRecipes.overlay).toEqual([
-      'bg-[var(--color-surface-overlay)]',
-      'dark:bg-[var(--color-surface-overlay)]',
+      'bg-[color:color-mix(in_srgb,var(--color-surface-overlay)_20%,transparent)]',
+      'dark:bg-[color:color-mix(in_srgb,var(--color-surface-overlay)_36%,transparent)]',
     ]);
     expect(uiSurfaceRecipes.mutedChip).toEqual([
       'bg-[var(--color-surface-muted-chip)]',
