@@ -261,12 +261,21 @@ Expose file import from each account row and thread success handling back to the
 
 ### Acceptance Criteria
 
-- [ ] Each account row shows an accessible import icon button next to the transaction count.
-- [ ] The import button is disabled while offline.
-- [ ] Clicking the import button opens the modal for the correct account.
-- [ ] `onImportSuccess` is threaded from Accounts page to the modal.
-- [ ] Successful import closes the modal and shows the success toast with the account mask.
-- [ ] Existing sync, disconnect, collapse, and account display behavior still works.
+- [x] Each account row shows an accessible import icon button next to the transaction count.
+- [x] The import button is disabled while offline.
+- [x] Clicking the import button opens the modal for the correct account.
+- [x] `onImportSuccess` is threaded from Accounts page to the modal.
+- [x] Successful import closes the modal and shows the success toast with the account mask.
+- [x] Existing sync, disconnect, collapse, and account display behavior still works.
+
+### TDD Log
+
+- Added account card tests for the import button placement, offline disabled behavior, selected-account modal opening, success callback threading, and existing sync/disconnect/collapse/account display behavior.
+- Added an Accounts page test proving import success closes the modal and shows the account-mask success toast.
+- Added the typed import modal boundary and threaded import success handling through the Accounts page, connections list, bank card, and account row.
+- Verified with `npm --prefix frontend test -- BankCard.test.tsx AccountsPage.test.tsx`.
+- Verified with `npm --prefix frontend run typecheck`.
+- Verified with `npm --prefix frontend run lint`.
 
 ## Phase 6: Import Modal UX And PWA Layout
 

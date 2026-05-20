@@ -44,9 +44,16 @@ interface BankCardProps {
   onSync: (id: string) => Promise<void>;
   onDisconnect: (id: string) => Promise<void>;
   isOnline: boolean;
+  onImportSuccess?: (count: number, mask: string) => void;
 }
 
-export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect, isOnline }) => {
+export const BankCard: React.FC<BankCardProps> = ({
+  bank,
+  onSync,
+  onDisconnect,
+  isOnline,
+  onImportSuccess,
+}) => {
   const sectionBadgeClass = cn(uiTypographyRecipes.label, uiTextRecipes.muted);
   const statusCaption = getConnectionStatusCaption(bank.status);
 
@@ -84,7 +91,12 @@ export const BankCard: React.FC<BankCardProps> = ({ bank, onSync, onDisconnect, 
       </span>
       <div className={cn('grid', 'grid-cols-1', 'gap-3', 'md:grid-cols-2')}>
         {accounts.map((account) => (
-          <AccountRow account={account} key={account.id} />
+          <AccountRow
+            account={account}
+            key={account.id}
+            isOnline={isOnline}
+            onImportSuccess={onImportSuccess}
+          />
         ))}
       </div>
     </div>

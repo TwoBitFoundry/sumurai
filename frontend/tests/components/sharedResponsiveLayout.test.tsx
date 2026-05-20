@@ -112,6 +112,7 @@ describe('shared responsive layout surfaces', () => {
             balance: 52011.88,
             transactions: 108,
           }}
+          isOnline
         />
       </ThemeTestProvider>
     );

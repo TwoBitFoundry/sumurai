@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { UsePlaidLinkFlowResult } from '@/features/plaid/hooks/usePlaidLinkFlow';
 import { usePlaidLinkFlow } from '@/features/plaid/hooks/usePlaidLinkFlow';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
@@ -103,6 +104,33 @@ jest.mock('@/features/plaid/hooks/usePlaidLinkFlow', () => ({
 
 jest.mock('@/hooks/useTellerLinkFlow', () => ({
   useTellerLinkFlow: jest.fn(),
+}));
+
+jest.mock('@/features/import/components/ImportModal', () => ({
+  ImportModal: ({
+    account,
+    isOpen,
+    onClose,
+    onImportSuccess,
+  }: {
+    account: { mask: string };
+    isOpen: boolean;
+    onClose: () => void;
+    onImportSuccess?: (count: number, mask: string) => void;
+  }) =>
+    isOpen ? (
+      <div role="dialog" aria-label="Import transactions">
+        <button
+          type="button"
+          onClick={() => {
+            onImportSuccess?.(5, account.mask);
+            onClose();
+          }}
+        >
+          Finish mocked import
+        </button>
+      </div>
+    ) : null,
 }));
 
 describe('AccountsPage', () => {
@@ -328,5 +356,57 @@ describe('AccountsPage', () => {
 
     expect(screen.getByText('$1,234.56')).toBeVisible();
     expect(screen.queryByText('PLACEHOLDER')).not.toBeInTheDocument();
+  });
+
+  it('shows an import success toast with the account mask', async () => {
+    const user = userEvent.setup();
+
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useTellerProviderInfo).mockReturnValue({
+      loading: false,
+      error: null,
+      availableProviders: ['plaid', 'teller'],
+      selectedProvider: 'plaid',
+      defaultProvider: 'plaid',
+      userProvider: 'plaid',
+      tellerApplicationId: null,
+      tellerEnvironment: 'development',
+      refresh: jest.fn(),
+      chooseProvider: jest.fn(),
+    });
+    jest.mocked(useAccountFilter).mockReturnValue({
+      selectedAccountIds: ['acc_plaid_1'],
+      allAccountIds: ['acc_plaid_1'],
+      isAllAccountsSelected: true,
+      accountsByBank: {
+        'Demo Bank': [
+          {
+            id: 'acc_plaid_1',
+            name: 'Checking',
+            account_type: 'depository',
+            balance_ledger: 100,
+            balance_available: 100,
+            mask: '1234',
+            provider: 'plaid',
+            institution_name: 'Demo Bank',
+            connection_id: 'conn_plaid',
+            transaction_count: 55,
+          },
+        ],
+      },
+      loading: false,
+      setSelectedAccountIds: jest.fn(),
+      toggleBank: jest.fn(),
+      toggleAccount: jest.fn(),
+      removeAccountsByIds: jest.fn(),
+    });
+
+    renderAccountsPage();
+
+    await user.click(screen.getByRole('button', { name: 'Import transactions' }));
+    await user.click(screen.getByRole('button', { name: 'Finish mocked import' }));
+
+    expect(screen.queryByRole('dialog', { name: 'Import transactions' })).not.toBeInTheDocument();
+    expect(screen.getByText('Imported 5 transactions for ••1234')).toBeVisible();
   });
 });

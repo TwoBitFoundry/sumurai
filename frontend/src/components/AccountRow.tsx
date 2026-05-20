@@ -1,6 +1,9 @@
+import { Upload } from 'lucide-react';
 import type React from 'react';
 import type { CSSProperties } from 'react';
-import { cn, GlassCard, RequirementPill } from '@/ui/primitives';
+import { useState } from 'react';
+import { ImportModal } from '@/features/import/components/ImportModal';
+import { Button, cn, GlassCard, RequirementPill } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
   border as uiBorderRecipes,
@@ -22,6 +25,8 @@ interface Account {
 
 interface AccountRowProps {
   account: Account;
+  isOnline: boolean;
+  onImportSuccess?: (count: number, mask: string) => void;
 }
 
 const cardContainerClasses = cn(
@@ -73,7 +78,8 @@ const formatMoney = (amount?: number) => {
   return amount.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
 };
 
-export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
+export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImportSuccess }) => {
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const { colors } = useTheme();
   const hoverBorderStyle = {
     '--dashboard-category-card-hover-border': colors.chart.primary[0],
@@ -101,40 +107,64 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
   );
 
   return (
-    <GlassCard
-      variant="accent"
-      rounded="lg"
-      padding="none"
-      withInnerEffects={false}
-      containerClassName={cardContainerClasses}
-      style={hoverBorderStyle}
-    >
-      <div className={cn('relative', 'p-6')}>
-        <div className={cn('relative', 'z-10', 'space-y-3')}>
-          <div className={cn('flex', 'items-center', 'justify-between')}>
-            <div
-              className={cn(
-                uiTypographyRecipes.bodyStrong,
-                uiTextRecipes.primary,
-                'transition-colors',
-                'duration-300',
-                'ease-out'
-              )}
-            >
-              {account.name}
+    <>
+      <GlassCard
+        variant="accent"
+        rounded="lg"
+        padding="none"
+        withInnerEffects={false}
+        containerClassName={cardContainerClasses}
+        style={hoverBorderStyle}
+      >
+        <div className={cn('relative', 'p-6')}>
+          <div className={cn('relative', 'z-10', 'space-y-3')}>
+            <div className={cn('flex', 'items-center', 'justify-between')}>
+              <div
+                className={cn(
+                  uiTypographyRecipes.bodyStrong,
+                  uiTextRecipes.primary,
+                  'transition-colors',
+                  'duration-300',
+                  'ease-out'
+                )}
+              >
+                {account.name}
+              </div>
+              <div className={balanceColor}>{balanceText}</div>
             </div>
-            <div className={balanceColor}>{balanceText}</div>
-          </div>
-          <div className={cn('flex', 'items-center', 'justify-between')}>
-            <div className={accountMetaClasses}>
-              <span className={accountMaskClasses}>••{account.mask}</span>
+            <div className={cn('flex', 'items-center', 'justify-between', 'gap-3')}>
+              <div className={accountMetaClasses}>
+                <span className={accountMaskClasses}>••{account.mask}</span>
+              </div>
+              <div className={cn('flex', 'items-center', 'gap-2')}>
+                <RequirementPill className={transactionsPillClasses} status="pending">
+                  {account.transactions ?? 0} items
+                </RequirementPill>
+                <Button
+                  type="button"
+                  variant="icon"
+                  size="icon"
+                  aria-label="Import transactions"
+                  title="Import transactions"
+                  disabled={!isOnline}
+                  onClick={() => setIsImportOpen(true)}
+                  className={cn('h-9', 'w-9', !isOnline && 'opacity-45')}
+                >
+                  <Upload className={cn('h-4', 'w-4')} />
+                </Button>
+              </div>
             </div>
-            <RequirementPill className={transactionsPillClasses} status="pending">
-              {account.transactions ?? 0} items
-            </RequirementPill>
           </div>
         </div>
-      </div>
-    </GlassCard>
+      </GlassCard>
+      {isImportOpen ? (
+        <ImportModal
+          account={account}
+          isOpen={isImportOpen}
+          onClose={() => setIsImportOpen(false)}
+          onImportSuccess={onImportSuccess}
+        />
+      ) : null}
+    </>
   );
 };

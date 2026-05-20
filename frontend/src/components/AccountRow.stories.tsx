@@ -15,6 +15,7 @@ const meta = {
       balance: 2450.12,
       transactions: 42,
     },
+    isOnline: true,
   },
 } satisfies Meta<typeof AccountRow>;
 

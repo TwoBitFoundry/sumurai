@@ -27,6 +27,7 @@ interface ConnectionsListProps {
   onSync: (id: string) => Promise<void>;
   onDisconnect: (id: string) => Promise<void>;
   isOnline: boolean;
+  onImportSuccess?: (count: number, mask: string) => void;
   providerName?: string;
   connectLabel?: string;
   connectLogoSrc?: string;
@@ -38,6 +39,7 @@ const ConnectionsList = ({
   onSync,
   onDisconnect,
   isOnline,
+  onImportSuccess,
   providerName,
   connectLabel,
   connectLogoSrc,
@@ -74,6 +76,7 @@ const ConnectionsList = ({
           onSync={onSync}
           onDisconnect={onDisconnect}
           isOnline={isOnline}
+          onImportSuccess={onImportSuccess}
         />
       ))}
     </div>

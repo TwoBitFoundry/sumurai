@@ -243,6 +243,10 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     [banks, invalidateBankCache, onError]
   );
 
+  const handleImportSuccess = useCallback((count: number, mask: string) => {
+    setToast(`Imported ${count} transactions for ••${mask}`);
+  }, []);
+
   const summary = useMemo(() => {
     let connectedInstitutions = 0;
     let totalAccounts = 0;
@@ -362,6 +366,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           providerName={providerLabel === 'Teller' ? 'Teller accounts' : 'Plaid accounts'}
           connectLabel={primaryProvider === 'teller' ? 'Teller' : 'Connect with Plaid'}
           connectLogoSrc={primaryProvider === 'teller' ? '/teller.webp' : '/plaid.webp'}
+          onImportSuccess={handleImportSuccess}
         />
 
         {toast ? <Toast message={toast} onClose={() => setToast(null)} /> : null}
