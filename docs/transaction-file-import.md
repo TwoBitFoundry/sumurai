@@ -116,17 +116,24 @@ Expose authenticated multipart endpoints that validate files, enforce account ow
 
 ### Acceptance Criteria
 
-- [ ] `POST /api/transactions/import/validate` returns 401 without auth.
-- [ ] `POST /api/transactions/import/validate` returns 403 for an account owned by another user.
-- [ ] Valid QBO/QFX validation returns a valid OFX response with five preview transactions or fewer.
-- [ ] Valid CSV validation returns a valid CSV response with suggested mapping and sample rows.
-- [ ] Unsupported extensions return a clear 400 response.
-- [ ] Garbled content returns a validation response with `valid = false` and useful errors.
-- [ ] Valid QBO/QFX import writes transactions with `user_id` set and default category values.
-- [ ] Re-importing the same OFX file reports skipped duplicates based on FITID deduplication.
-- [ ] CSV import with a custom mapping creates the expected transactions.
-- [ ] Files over 10 MB are rejected before parsing.
-- [ ] `cargo check --manifest-path backend/Cargo.toml --locked --all-targets` and relevant backend tests pass.
+- [x] `POST /api/transactions/import/validate` returns 401 without auth.
+- [x] `POST /api/transactions/import/validate` returns 403 for an account owned by another user.
+- [x] Valid QBO/QFX validation returns a valid OFX response with five preview transactions or fewer.
+- [x] Valid CSV validation returns a valid CSV response with suggested mapping and sample rows.
+- [x] Unsupported extensions return a clear 400 response.
+- [x] Garbled content returns a validation response with `valid = false` and useful errors.
+- [x] Valid QBO/QFX import writes transactions with `user_id` set and default category values.
+- [x] Re-importing the same OFX file reports skipped duplicates based on FITID deduplication.
+- [x] CSV import with a custom mapping creates the expected transactions.
+- [x] Files over 10 MB are rejected before parsing.
+- [x] `cargo check --manifest-path backend/Cargo.toml --locked --all-targets` and relevant backend tests pass.
+
+### TDD Log
+
+- Added backend multipart route tests for auth, ownership, validation, unsupported extensions, garbled files, oversized payload rejection, OFX import, duplicate OFX import, and CSV import with custom mapping.
+- Verified with `cargo test --manifest-path backend/Cargo.toml --locked transaction_import_api_tests -- --nocapture`.
+- Verified with `cargo check --manifest-path backend/Cargo.toml --locked --all-targets`.
+- Verified with `cargo test --manifest-path backend/Cargo.toml --locked`.
 
 ## Phase 3: Frontend Multipart Client And Import Service
 

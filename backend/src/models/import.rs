@@ -58,3 +58,10 @@ pub struct ImportResponse {
     pub total_parsed: i64,
     pub errors: Vec<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+pub struct ImportMultipartRequest {
+    pub file: String,
+    pub account_id: String,
+    pub csv_mapping: Option<String>,
+}
