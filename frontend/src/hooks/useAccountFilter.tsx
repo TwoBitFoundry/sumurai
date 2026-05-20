@@ -69,6 +69,8 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
     allAccountIds.length > 0 && selectedAccountIds.length === allAccountIds.length;
 
   useEffect(() => {
+    const previousAllAccountIds = previousAllAccountIdsRef.current;
+
     setSelectedAccountIds((prev) => {
       if (allAccountIds.length === 0) {
         return prev.length === 0 ? prev : [];
@@ -78,24 +80,17 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
         return allAccountIds;
       }
 
-      const newIdSet = new Set(allAccountIds);
-      const filteredSelection = prev.filter((id) => newIdSet.has(id));
+      const prevIdSet = new Set(prev);
+      const previousAllIdSet = new Set(previousAllAccountIds);
+      const nextSelection = allAccountIds.filter(
+        (id) => prevIdSet.has(id) || !previousAllIdSet.has(id)
+      );
 
-      const prevAllIds = previousAllAccountIdsRef.current;
-      const previouslyHadAllSelected =
-        prevAllIds.length > 0 &&
-        prev.length === prevAllIds.length &&
-        prevAllIds.every((id) => prev.includes(id));
-
-      if (previouslyHadAllSelected) {
-        return allAccountIds;
-      }
-
-      if (arraysEqual(prev, filteredSelection)) {
+      if (arraysEqual(prev, nextSelection)) {
         return prev;
       }
 
-      return filteredSelection;
+      return nextSelection;
     });
 
     previousAllAccountIdsRef.current = allAccountIds;
