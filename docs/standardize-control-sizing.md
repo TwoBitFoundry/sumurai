@@ -199,12 +199,17 @@ Apply the same `control.*` mapping to Select so form fields align.
 3. **Refactor**: deduplicate any size logic that now exists identically in Input and Select — if both consume `control.*` directly, no shared helper is needed.
 
 ### Acceptance criteria
-- [ ] Select tests pass.
-- [ ] `<Select size="md">` height matches `<Input inputSize="md">` and `<Button size="md">`.
+- [x] Select tests pass.
+- [x] `<Select size="md">` height matches `<Input inputSize="md">` and `<Button size="md">`.
 
 ### Files
 - [frontend/src/ui/primitives/Select.tsx](frontend/src/ui/primitives/Select.tsx)
 - [frontend/tests/ui/primitives/Select.test.tsx](frontend/tests/ui/primitives/Select.test.tsx)
+
+### TDD log
+- Red: added a Select spec for all control tiers and the shared Button height.
+- Green: refactored Select to consume `control.height`, `control.paddingX`, and `control.label` directly instead of delegating to Input's recipe object.
+- Verify: `npm --prefix frontend test -- ui/primitives/Select`, `npm --prefix frontend run lint`, and `npm --prefix frontend run build` all passed.
 
 ---
 
