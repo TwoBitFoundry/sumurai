@@ -135,6 +135,14 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
     return 'Critical';
   };
   const zone = getUtilizationZone(utilizationPercent);
+  const zoneTone =
+    zone === 'Healthy'
+      ? 'success'
+      : zone === 'On Track'
+        ? 'info'
+        : zone === 'Overextended'
+          ? 'warning'
+          : 'danger';
   const budgetsLoading = isLoading || transactionsLoading;
   const hasBudgets = computedBudgets.length > 0;
 
@@ -159,14 +167,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
             {
               label: zone,
               type: 'semantic',
-              tone:
-                zone === 'Healthy'
-                  ? 'success'
-                  : zone === 'On Track'
-                    ? 'info'
-                    : zone === 'Overextended'
-                      ? 'warning'
-              : 'danger',
+              tone: zoneTone,
             },
           ]}
         />
