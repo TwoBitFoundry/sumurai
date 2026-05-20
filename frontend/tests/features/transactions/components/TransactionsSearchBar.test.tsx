@@ -9,6 +9,6 @@ describe('TransactionsSearchBar', () => {
     const bar = screen.getByTestId('transactions-search-bar');
     expect(bar.querySelector('svg')?.getAttribute('class')).toContain('h-4');
     expect(bar.querySelector('svg')?.getAttribute('class')).toContain('w-4');
-    expect(screen.getByPlaceholderText('Search transactions').className).toContain('pl-11');
+    expect(screen.getByPlaceholderText('Search transactions').className).toContain('!pl-11');
   });
 });

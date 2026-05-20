@@ -38,7 +38,7 @@ export function TransactionsSearchBar({ search, onSearch }: TransactionsSearchBa
           'backdrop-blur-md backdrop-saturate-[150%]',
           'w-full',
           'min-w-0',
-          'pl-11',
+          '!pl-11',
           uiPlaceholderRecipes.muted
         )}
       />
