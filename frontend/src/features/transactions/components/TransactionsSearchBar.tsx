@@ -18,11 +18,11 @@ export function TransactionsSearchBar({ search, onSearch }: TransactionsSearchBa
         className={cn(
           'pointer-events-none',
           'absolute',
-          'left-3',
+          'left-3.5',
           'top-1/2',
           'z-10',
-          'h-6',
-          'w-6',
+          'h-4',
+          'w-4',
           '-translate-y-1/2',
           uiTextRecipes.subtle
         )}
@@ -38,7 +38,7 @@ export function TransactionsSearchBar({ search, onSearch }: TransactionsSearchBa
           'backdrop-blur-md backdrop-saturate-[150%]',
           'w-full',
           'min-w-0',
-          'pl-10',
+          'pl-11',
           uiPlaceholderRecipes.muted
         )}
       />

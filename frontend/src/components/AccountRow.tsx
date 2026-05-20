@@ -147,7 +147,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
                   title="Import transactions"
                   disabled={!isOnline}
                   onClick={() => setIsImportOpen(true)}
-                  className={cn('h-9', 'w-9', !isOnline && 'opacity-45')}
+                  className={cn(!isOnline && 'opacity-45')}
                 >
                   <Upload className={cn('h-4', 'w-4')} />
                 </IconButton>

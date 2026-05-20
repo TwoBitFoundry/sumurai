@@ -3,7 +3,7 @@ import { Loader2, Plus } from 'lucide-react';
 import { Button, cn, PaginationButton } from '@/ui/primitives';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
-const budgetActionButtonClasses = cn('shrink-0', 'whitespace-nowrap', 'h-10', 'px-4', 'py-2');
+const budgetActionButtonClasses = cn('shrink-0', 'whitespace-nowrap');
 
 interface BudgetToolbarProps {
   monthLabel: string;
@@ -43,7 +43,7 @@ export const BudgetToolbar = ({
           type="button"
           onClick={onCurrentMonth}
           variant="ghost"
-          size="md"
+          size="lg"
           className={budgetActionButtonClasses}
           title="Jump to current month"
         >
@@ -114,7 +114,7 @@ export const BudgetToolbar = ({
             type="button"
             onClick={onAddBudget}
             variant="primary"
-            size="md"
+            size="lg"
             className={budgetActionButtonClasses}
           >
             <Plus className={cn('h-4', 'w-4')} />

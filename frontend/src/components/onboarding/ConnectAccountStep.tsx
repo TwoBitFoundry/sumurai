@@ -320,7 +320,7 @@ export function ConnectAccountStep({
                 ) : null}
                 <span>{content.cta.defaultLabel}</span>
                 {content.cta.badge && (
-                  <Badge variant="default" size="xs" className="tracking-[0.2em]">
+                  <Badge variant="default" size="sm" className="tracking-[0.2em]">
                     {content.cta.badge}
                   </Badge>
                 )}
