@@ -164,15 +164,23 @@ Add frontend API support for multipart form uploads and create a typed import se
 
 ### Acceptance Criteria
 
-- [ ] `IHttpClient` exposes `postFormData<T>`.
-- [ ] `FetchHttpClient.postFormData` sends `FormData` as the body without manually setting `Content-Type`.
-- [ ] Multipart requests include credentials.
-- [ ] Multipart errors map to the existing `ApiError` subclasses.
-- [ ] `ApiClient.postFormData` retries transient failures consistently with existing API calls.
-- [ ] `ImportService.validate` sends the expected FormData fields.
-- [ ] `ImportService.importFile` includes `csv_mapping` only when supplied.
-- [ ] Frontend import types match the backend JSON shapes.
-- [ ] Focused service/API client tests pass.
+- [x] `IHttpClient` exposes `postFormData<T>`.
+- [x] `FetchHttpClient.postFormData` sends `FormData` as the body without manually setting `Content-Type`.
+- [x] Multipart requests include credentials.
+- [x] Multipart errors map to the existing `ApiError` subclasses.
+- [x] `ApiClient.postFormData` retries transient failures consistently with existing API calls.
+- [x] `ImportService.validate` sends the expected FormData fields.
+- [x] `ImportService.importFile` includes `csv_mapping` only when supplied.
+- [x] Frontend import types match the backend JSON shapes.
+- [x] Focused service/API client tests pass.
+
+### TDD Log
+
+- Added `postFormData` to the HTTP client boundary, fetch adapter, and API client retry path.
+- Added typed frontend import models plus an import service for validate/import multipart requests.
+- Added service and boundary tests for multipart form submission, retry behavior, auth integration, and response mapping.
+- Verified with `npm --prefix frontend test -- ApiClient.test.ts ImportService.test.ts FetchHttpClient.test.ts AuthService.integration.test.ts`.
+- Verified with `npm --prefix frontend run typecheck`.
 
 ## Phase 4: Frontend Import State Hook
 

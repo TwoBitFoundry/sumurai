@@ -5,6 +5,7 @@ export interface RequestOptions {
 export interface IHttpClient {
   get<T>(endpoint: string, options?: RequestOptions): Promise<T>;
   post<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T>;
+  postFormData<T>(endpoint: string, data: FormData, options?: RequestOptions): Promise<T>;
   put<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T>;
   delete<T>(endpoint: string, options?: RequestOptions): Promise<T>;
   healthCheck(): Promise<string>;

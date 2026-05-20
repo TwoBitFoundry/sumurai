@@ -102,8 +102,9 @@ export class ApiClient {
     attempt: number
   ): Promise<T> {
     try {
+      const isFormData = options.body instanceof FormData;
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       };
 
       if (options.headers) {
@@ -170,8 +171,8 @@ export class ApiClient {
 
   private static async makeRawRequest<T>(endpoint: string, options: RequestInit): Promise<T> {
     const method = (options.method || 'GET').toUpperCase();
-    const body = options.body ? JSON.parse(options.body as string) : undefined;
     const requestOptions = { headers: options.headers as Record<string, string> };
+    const body = options.body;
 
     try {
       const result = await (async () => {
@@ -179,9 +180,20 @@ export class ApiClient {
           case 'GET':
             return ApiClient.httpClient.get<T>(endpoint, requestOptions);
           case 'POST':
-            return ApiClient.httpClient.post<T>(endpoint, body, requestOptions);
+            if (body instanceof FormData) {
+              return ApiClient.httpClient.postFormData<T>(endpoint, body, requestOptions);
+            }
+            return ApiClient.httpClient.post<T>(
+              endpoint,
+              body ? JSON.parse(body as string) : undefined,
+              requestOptions
+            );
           case 'PUT':
-            return ApiClient.httpClient.put<T>(endpoint, body, requestOptions);
+            return ApiClient.httpClient.put<T>(
+              endpoint,
+              body ? JSON.parse(body as string) : undefined,
+              requestOptions
+            );
           case 'DELETE':
             return ApiClient.httpClient.delete<T>(endpoint, requestOptions);
           default:
@@ -231,6 +243,13 @@ export class ApiClient {
     return ApiClient.makeRequest<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  static async postFormData<T>(endpoint: string, data: FormData): Promise<T> {
+    return ApiClient.makeRequest<T>(endpoint, {
+      method: 'POST',
+      body: data,
     });
   }
 

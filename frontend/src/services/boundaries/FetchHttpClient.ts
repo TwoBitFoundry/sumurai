@@ -97,6 +97,17 @@ export class FetchHttpClient implements IHttpClient {
     return this.handleResponse<T>(response);
   }
 
+  async postFormData<T>(endpoint: string, data: FormData, options?: RequestOptions): Promise<T> {
+    const url = buildUrl(this.baseUrl, endpoint);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: options?.headers,
+      body: data,
+      credentials: apiFetchCredentials,
+    });
+    return this.handleResponse<T>(response);
+  }
+
   async put<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
     const url = buildUrl(this.baseUrl, endpoint);
     const headers: Record<string, string> = {

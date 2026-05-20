@@ -6,6 +6,7 @@ import type { IStorageAdapter } from '@/services/boundaries/IStorageAdapter';
 class MockHttpClient implements IHttpClient {
   get = jest.fn();
   post = jest.fn();
+  postFormData = jest.fn();
   put = jest.fn();
   delete = jest.fn();
   healthCheck = jest.fn();

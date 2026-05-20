@@ -55,6 +55,21 @@ describe('ApiClient with Injected IHttpClient', () => {
       expect(mockHttp.post).toHaveBeenCalledWith('/test', { data: 'test' }, expect.any(Object));
     });
 
+    it('should make multipart POST requests successfully', async () => {
+      mockHttp.postFormData.mockResolvedValueOnce({ imported: true });
+      const formData = new FormData();
+      formData.append('account_id', 'account-123');
+
+      const result = await ApiClient.postFormData('/transactions/import', formData);
+
+      expect(result).toEqual({ imported: true });
+      expect(mockHttp.postFormData).toHaveBeenCalledWith(
+        '/transactions/import',
+        formData,
+        expect.any(Object)
+      );
+    });
+
     it('should make PUT requests successfully', async () => {
       mockHttp.put.mockResolvedValueOnce({ updated: true });
 
@@ -261,6 +276,18 @@ describe('ApiClient with Injected IHttpClient', () => {
 
       expect(result).toEqual({ success: true });
       expect(mockHttp.post).toHaveBeenCalledTimes(2);
+    });
+
+    it('should retry multipart POST requests on transient errors', async () => {
+      const formData = new FormData();
+      mockHttp.postFormData
+        .mockRejectedValueOnce(new Error('Request timeout'))
+        .mockResolvedValueOnce({ success: true });
+
+      const result = await ApiClient.postFormData('/transactions/import', formData);
+
+      expect(result).toEqual({ success: true });
+      expect(mockHttp.postFormData).toHaveBeenCalledTimes(2);
     });
 
     it('should throw NetworkError after exhausting retries', async () => {
