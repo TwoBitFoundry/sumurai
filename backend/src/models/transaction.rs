@@ -121,6 +121,39 @@ pub struct PaginatedTransactionsResponse {
     pub page_size: i64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+#[schema(example = json!({
+    "amount": 42.75,
+    "merchant": "Coffee Collective"
+}))]
+pub struct LargestTransaction {
+    pub amount: f64,
+    pub merchant: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+#[schema(example = json!({
+    "total_count": 12,
+    "total_spent": 184.25,
+    "average_amount": 15.35,
+    "largest": {
+        "amount": 42.75,
+        "merchant": "Coffee Collective"
+    },
+    "recurring_count": 2,
+    "recurring_merchants": ["Coffee Collective", "Gas Station"],
+    "top_categories": ["FOOD_AND_DRINK", "TRANSPORTATION"]
+}))]
+pub struct TransactionsInsightsResponse {
+    pub total_count: i64,
+    pub total_spent: f64,
+    pub average_amount: f64,
+    pub largest: Option<LargestTransaction>,
+    pub recurring_count: i64,
+    pub recurring_merchants: Vec<String>,
+    pub top_categories: Vec<String>,
+}
+
 pub struct TransactionsQuery {
     pub search: Option<String>,
     pub account_ids: Vec<String>,

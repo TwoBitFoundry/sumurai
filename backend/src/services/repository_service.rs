@@ -5,7 +5,9 @@ use crate::models::{
     auth::User,
     budget::Budget,
     plaid::{LatestAccountBalance, PlaidCredentials, ProviderConnection},
-    transaction::{Transaction, TransactionWithAccount},
+    transaction::{
+        LargestTransaction, Transaction, TransactionWithAccount, TransactionsInsightsResponse,
+    },
 };
 use aes_gcm::{
     aead::{Aead, KeyInit},
@@ -34,6 +36,17 @@ type TransactionWithAccountRow = (
     String,
     String,
     Option<String>,
+);
+
+type TransactionsInsightsRow = (
+    i64,
+    f64,
+    f64,
+    Option<f64>,
+    Option<String>,
+    i64,
+    Vec<String>,
+    Vec<String>,
 );
 
 pub const EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES: [&str; 4] =
@@ -104,6 +117,16 @@ pub trait DatabaseRepository: Send + Sync {
         end_date: Option<NaiveDate>,
         category_primary: Option<&str>,
     ) -> Result<i64>;
+    #[allow(clippy::too_many_arguments)]
+    async fn get_transactions_insights(
+        &self,
+        user_id: &Uuid,
+        search: Option<&str>,
+        account_ids: Option<&[Uuid]>,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
+        category_primary: Option<&str>,
+    ) -> Result<TransactionsInsightsResponse>;
     async fn get_distinct_transaction_categories(&self, user_id: &Uuid) -> Result<Vec<String>>;
 
     async fn store_provider_credentials_for_user(
@@ -329,6 +352,33 @@ impl PostgresRepository {
             account_name,
             account_type,
             account_mask,
+        }
+    }
+
+    fn map_transaction_insights_row(
+        (
+            total_count,
+            total_spent,
+            average_amount,
+            largest_amount,
+            largest_merchant,
+            recurring_count,
+            recurring_merchants,
+            top_categories,
+        ): TransactionsInsightsRow,
+    ) -> TransactionsInsightsResponse {
+        let largest = largest_amount
+            .zip(largest_merchant)
+            .map(|(amount, merchant)| LargestTransaction { amount, merchant });
+
+        TransactionsInsightsResponse {
+            total_count,
+            total_spent,
+            average_amount,
+            largest,
+            recurring_count,
+            recurring_merchants,
+            top_categories,
         }
     }
 
@@ -1272,6 +1322,110 @@ impl DatabaseRepository for PostgresRepository {
         let count = qb.build_query_scalar::<i64>().fetch_one(&mut *tx).await?;
         tx.commit().await?;
         Ok(count)
+    }
+
+    async fn get_transactions_insights(
+        &self,
+        user_id: &Uuid,
+        search: Option<&str>,
+        account_ids: Option<&[Uuid]>,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
+        category_primary: Option<&str>,
+    ) -> Result<TransactionsInsightsResponse> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let mut qb = sqlx::QueryBuilder::new(
+            r#"
+            WITH filtered AS (
+                SELECT
+                    t.amount,
+                    NULLIF(TRIM(t.merchant_name), '') AS merchant,
+                    t.category_primary
+                FROM transactions t
+                INNER JOIN accounts a ON t.account_id = a.id
+            "#,
+        );
+        Self::append_transaction_filters(
+            &mut qb,
+            user_id,
+            search,
+            account_ids,
+            start_date,
+            end_date,
+            category_primary,
+        );
+        qb.push(
+            r#"
+            ),
+            aggregates AS (
+                SELECT
+                    COUNT(*) AS total_count,
+                    COALESCE(SUM(ABS(amount)), 0)::float8 AS total_spent,
+                    COALESCE(AVG(ABS(amount)), 0)::float8 AS average_amount
+                FROM filtered
+            ),
+            largest AS (
+                SELECT amount::float8 AS amount, merchant
+                FROM filtered
+                WHERE merchant IS NOT NULL
+                ORDER BY ABS(amount) DESC, merchant ASC
+                LIMIT 1
+            ),
+            merchant_counts AS (
+                SELECT merchant, COUNT(*) AS c
+                FROM filtered
+                WHERE merchant IS NOT NULL
+                GROUP BY merchant
+                HAVING COUNT(*) >= 3
+            ),
+            recurring AS (
+                SELECT
+                    COUNT(*)::bigint AS recurring_count,
+                    COALESCE(
+                        (ARRAY_AGG(merchant ORDER BY c DESC, merchant))[1:3],
+                        ARRAY[]::text[]
+                    ) AS recurring_merchants
+                FROM merchant_counts
+            ),
+            top_categories AS (
+                SELECT COALESCE(ARRAY_AGG(category_primary ORDER BY c DESC, category_primary), ARRAY[]::text[]) AS categories
+                FROM (
+                    SELECT category_primary, COUNT(*) AS c
+                    FROM filtered
+                    WHERE category_primary IS NOT NULL
+                    GROUP BY category_primary
+                    ORDER BY c DESC, category_primary
+                    LIMIT 2
+                ) tc
+            )
+            SELECT
+                a.total_count,
+                a.total_spent,
+                a.average_amount,
+                l.amount AS largest_amount,
+                l.merchant AS largest_merchant,
+                r.recurring_count,
+                r.recurring_merchants,
+                tc.categories AS top_categories
+            FROM aggregates a
+            LEFT JOIN largest l ON true
+            LEFT JOIN recurring r ON true
+            LEFT JOIN top_categories tc ON true
+            "#,
+        );
+
+        let row = qb
+            .build_query_as::<TransactionsInsightsRow>()
+            .fetch_one(&mut *tx)
+            .await?;
+        tx.commit().await?;
+
+        Ok(Self::map_transaction_insights_row(row))
     }
 
     async fn get_distinct_transaction_categories(&self, user_id: &Uuid) -> Result<Vec<String>> {
