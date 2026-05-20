@@ -1,11 +1,11 @@
 import { cva } from 'class-variance-authority';
 import { Check } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useOnboardingPlaidFlow } from '@/hooks/useOnboardingPlaidFlow';
-import { useOnboardingTellerFlow } from '@/hooks/useOnboardingTellerFlow';
+import { useFinancialConnection } from '@/hooks/useFinancialConnection';
 import { type OnboardingStep, useOnboardingWizard } from '@/hooks/useOnboardingWizard';
 import { useScrollDetection } from '@/hooks/useScrollDetection';
 import { useTellerProviderInfo } from '@/hooks/useTellerProviderInfo';
+import { recordHandledIssue } from '@/observability';
 import type { FinancialProvider } from '@/types/api';
 import { AppTitleBar, Button, GlassCard, GradientShell } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
@@ -107,26 +107,19 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
     // Don't complete wizard here - wait for user to click Continue after sync
   }, []);
 
-  const plaidFlow = useOnboardingPlaidFlow({
-    isOnline,
+  const connectionFlow = useFinancialConnection({
+    provider: activeProvider,
     onConnectionSuccess: handleConnectionSuccess,
     onError: (error) => {
-      console.error('Plaid connection error:', error);
+      recordHandledIssue(
+        'financial-connection.onboarding-error',
+        `${activeProvider} connection error`,
+        error,
+        { provider: activeProvider }
+      );
     },
-  });
-
-  const tellerFlow = useOnboardingTellerFlow({
-    applicationId: providerInfo.tellerApplicationId ?? null,
-    environment: providerInfo.tellerEnvironment,
-    enabled: activeProvider === 'teller',
     isOnline,
-    onConnectionSuccess: handleConnectionSuccess,
-    onError: (error) => {
-      console.error('Teller connection error:', error);
-    },
   });
-
-  const connectionFlow = activeProvider === 'teller' ? tellerFlow : plaidFlow;
 
   const stepContainerRef = useRef<HTMLDivElement>(null);
   const stepHeightsRef = useRef<Partial<Record<OnboardingStep, number>>>({});
@@ -272,8 +265,7 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
 
   return (
     <GradientShell>
-      {activeProvider === 'plaid' ? plaidFlow.plaidLinkMount : null}
-      {activeProvider === 'teller' ? tellerFlow.tellerConnectMount : null}
+      {connectionFlow.connectionMount}
       <div className={cn('flex', 'flex-col', 'min-h-screen')}>
         <AppTitleBar
           state="onboarding"

@@ -896,6 +896,15 @@ impl ConnectionService {
             .invalidate_pattern(&format!("{}_balances_overview*", jwt_id))
             .await;
 
+        let _ = self
+            .cache_service
+            .invalidate_pattern(&format!("{}_net_worth_over_time_*", jwt_id))
+            .await;
+
+        let _ = self.cache_service.clear_transactions(jwt_id).await;
+
+        let _ = self.cache_service.clear_budgets(jwt_id).await;
+
         let cached_connection = CachedBankConnection {
             connection: connection.clone(),
             sync_status: BankConnectionSyncStatus {

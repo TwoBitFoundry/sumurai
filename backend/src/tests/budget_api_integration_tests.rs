@@ -311,8 +311,7 @@ async fn given_cache_hit_when_get_budgets_then_skips_db() {
     let user_id = Uuid::new_v4();
     let budgets = vec![Budget::new(user_id, "Groceries".to_string(), dec!(100))];
     let serialized = serde_json::to_string(&budgets).unwrap();
-    mock_cache.expect_get_string().returning(move |key| {
-        let _ = key; // ignore
+    mock_cache.expect_get_budgets().returning(move |_| {
         let serialized = serialized.clone();
         Box::pin(async move { Ok(Some(serialized)) })
     });
@@ -351,14 +350,14 @@ async fn given_create_budget_when_success_then_invalidate_cache() {
         .expect_is_session_valid()
         .returning(|_| Box::pin(async { Ok(true) }));
     mock_cache
-        .expect_get_string()
+        .expect_get_budgets()
         .returning(|_| Box::pin(async { Ok(None) }));
     mock_cache
-        .expect_set_with_ttl()
-        .returning(|_, _, _| Box::pin(async { Ok(()) }));
+        .expect_set_budgets()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
 
     mock_cache
-        .expect_invalidate_pattern()
+        .expect_clear_budgets()
         .returning(|_| Box::pin(async { Ok(()) }));
 
     let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
