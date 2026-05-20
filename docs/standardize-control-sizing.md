@@ -256,14 +256,19 @@ Migrate any interactive primitive that bypassed the new scale.
 3. **Audit**: read [frontend/src/ui/primitives/Pill.tsx](frontend/src/ui/primitives/Pill.tsx). If Pill is purely decorative (no `onClick`, not focusable), document "no change" in the commit message. If interactive, migrate to `control.height.sm` + `control.paddingX.sm`.
 
 ### Acceptance criteria
-- [ ] PaginationButton consumes `control.square.sm`.
-- [ ] Pill is either confirmed decorative (no change) or migrated.
-- [ ] Tests pass.
+- [x] PaginationButton consumes `control.square.sm`.
+- [x] Pill is either confirmed decorative (no change) or migrated.
+- [x] Tests pass.
 
 ### Files
 - [frontend/src/ui/primitives/PaginationButton.tsx](frontend/src/ui/primitives/PaginationButton.tsx)
 - [frontend/src/ui/primitives/Pill.tsx](frontend/src/ui/primitives/Pill.tsx) *(read; edit only if interactive)*
 - [frontend/tests/ui/primitives/PaginationButton.test.tsx](frontend/tests/ui/primitives/PaginationButton.test.tsx)
+
+### TDD log
+- Red: added a focused PaginationButton spec for the shared small square shell.
+- Green: pinned PaginationButton to `control.square.sm` via `IconButton` and confirmed `Pill` remains decorative.
+- Verify: `npm --prefix frontend test -- ui/primitives/PaginationButton`, `npm --prefix frontend run lint`, and `npm --prefix frontend run build` all passed.
 
 ---
 
