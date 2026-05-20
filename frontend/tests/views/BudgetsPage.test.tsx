@@ -63,7 +63,7 @@ describe('BudgetsPage', () => {
     expect(budgetListCard).toBeTruthy();
   });
 
-  it('uses the desktop footer rail override on budget insight cards', () => {
+  it('keeps the budget insight rails edge to edge on desktop', () => {
     const { container } = render(
       <BudgetsPage
         monthControl={{
@@ -77,11 +77,14 @@ describe('BudgetsPage', () => {
         }}
       />
     );
-    const footerScrolls = container.querySelectorAll('[data-testid="hero-stat-card-footer-scroll"]');
+    const footerScrolls = container.querySelectorAll(
+      '[data-testid="hero-stat-card-footer-scroll"]'
+    );
 
     expect(footerScrolls.length).toBeGreaterThan(0);
     footerScrolls.forEach((footerScroll) => {
-      expect(footerScroll).toHaveClass('lg:max-w-[10rem]');
+      expect(footerScroll).toHaveClass('w-full');
+      expect(footerScroll).not.toHaveClass('lg:max-w-[10rem]');
     });
   });
 });
