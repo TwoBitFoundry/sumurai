@@ -235,7 +235,7 @@ Interactive button with multiple visual styles.
 
 | Size | Padding | Text Size | Border Radius | Use Case |
 |------|---------|-----------|---------------|----------|
-| `xs` | 2.5/1 | xs | xl | Tight spaces, tags |
+| `xs` | 2.5/1 | captionStrong | xl | Tight spaces, tags |
 | `sm` | 3/1.5 | sm | xl | Inline actions |
 | `md` | 4/2 | sm | full | Standard buttons |
 | `lg` | 5/2.5 | base | full | Primary CTAs |

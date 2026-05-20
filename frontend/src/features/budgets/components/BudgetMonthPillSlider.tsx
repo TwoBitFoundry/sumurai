@@ -13,6 +13,7 @@ interface BudgetMonthPillSliderProps {
 
 const pillControlClassName = cn(
   ...appTitleBarRecipes.pillTab,
+  ...appTitleBarRecipes.pillTabSize,
   'h-full',
   'shrink-0',
   uiTextRecipes.muted
@@ -26,7 +27,11 @@ export function BudgetMonthPillSlider({
 }: BudgetMonthPillSliderProps) {
   return (
     <div
-      className={cn(...appTitleBarRecipes.pillContainer, 'w-fit')}
+      className={cn(
+        ...appTitleBarRecipes.pillContainer,
+        ...appTitleBarRecipes.pillContainerSize,
+        'w-fit'
+      )}
       data-no-swipe
       data-testid="budget-month-pill-slider"
     >
@@ -40,9 +45,9 @@ export function BudgetMonthPillSlider({
         className={pillControlClassName}
       >
         <span
-          className={cn('relative', 'z-10', 'flex', 'h-4', 'w-4', 'items-center', 'justify-center')}
+          className={cn('relative', 'z-10', 'flex', 'h-6', 'w-6', 'items-center', 'justify-center')}
         >
-          <ChevronLeftIcon className={cn('h-4', 'w-4')} />
+          <ChevronLeftIcon className={cn('h-6', 'w-6')} />
         </span>
       </Button>
       <Button
@@ -55,9 +60,9 @@ export function BudgetMonthPillSlider({
         className={pillControlClassName}
       >
         <span
-          className={cn('relative', 'z-10', 'flex', 'h-4', 'w-4', 'items-center', 'justify-center')}
+          className={cn('relative', 'z-10', 'flex', 'h-6', 'w-6', 'items-center', 'justify-center')}
         >
-          <CalendarIcon className={cn('h-4', 'w-4')} />
+          <CalendarIcon className={cn('h-6', 'w-6')} />
         </span>
       </Button>
       <Button
@@ -70,9 +75,9 @@ export function BudgetMonthPillSlider({
         className={pillControlClassName}
       >
         <span
-          className={cn('relative', 'z-10', 'flex', 'h-4', 'w-4', 'items-center', 'justify-center')}
+          className={cn('relative', 'z-10', 'flex', 'h-6', 'w-6', 'items-center', 'justify-center')}
         >
-          <ChevronRightIcon className={cn('h-4', 'w-4')} />
+          <ChevronRightIcon className={cn('h-6', 'w-6')} />
         </span>
       </Button>
       <span
@@ -82,7 +87,7 @@ export function BudgetMonthPillSlider({
           'shrink-0',
           'items-center',
           'px-2',
-          uiTypographyRecipes.label,
+          uiTypographyRecipes.bodyStrong,
           uiTextRecipes.primary
         )}
       >

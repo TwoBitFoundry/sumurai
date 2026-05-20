@@ -15,7 +15,7 @@ import {
 import { cn } from './utils';
 
 export const buttonTypographySizes = {
-  xs: uiTypographyRecipes.label,
+  xs: uiTypographyRecipes.captionStrong,
   sm: uiTypographyRecipes.captionStrong,
   md: uiTypographyRecipes.captionStrong,
   lg: uiTypographyRecipes.bodyStrong,

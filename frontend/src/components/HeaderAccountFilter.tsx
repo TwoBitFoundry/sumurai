@@ -137,7 +137,13 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
   return (
     <div className={cn('relative')}>
       {triggerStyle === 'icon-only' ? (
-        <nav className={cn(...appTitleBarRecipes.pillContainer)} aria-label="Account filter menu">
+        <nav
+          className={cn(
+            ...appTitleBarRecipes.pillContainer,
+            ...appTitleBarRecipes.pillContainerSize
+          )}
+          aria-label="Account filter menu"
+        >
           <Button
             ref={triggerRef}
             type="button"
@@ -147,6 +153,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
             size="xs"
             className={cn(
               ...appTitleBarRecipes.pillTab,
+              ...appTitleBarRecipes.pillTabSize,
               'h-full',
               isOpen ? uiTextRecipes.inverse : uiTextRecipes.muted
             )}
@@ -159,13 +166,13 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
                 'relative',
                 'z-10',
                 'flex',
-                'h-4',
-                'w-4',
+                'h-6',
+                'w-6',
                 'items-center',
                 'justify-center'
               )}
             >
-              <Filter className={cn('h-4', 'w-4')} />
+              <Filter className={cn('h-6', 'w-6')} />
             </span>
           </Button>
         </nav>
@@ -197,12 +204,12 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
           aria-haspopup="dialog"
           aria-expanded={isOpen}
         >
-          <Filter className={cn('h-4', 'w-4')} />
+          <Filter className={cn('h-6', 'w-6')} />
           <span>{displayText}</span>
           <ChevronDown
             className={cn(
-              'h-4',
-              'w-4',
+              'h-6',
+              'w-6',
               'transition-transform',
               'duration-200',
               isOpen && 'rotate-180'

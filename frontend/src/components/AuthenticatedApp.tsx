@@ -47,12 +47,10 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
       </BottomContextualBar>
     ) : tab === 'transactions' ? (
       <BottomContextualBar>
-        <div className={cn('w-full', 'max-w-full', 'lg:hidden')}>
-          <TransactionsSearchBar
-            search={transactionFilters.search}
-            onSearch={transactionFilters.setSearch}
-          />
-        </div>
+        <TransactionsSearchBar
+          search={transactionFilters.search}
+          onSearch={transactionFilters.setSearch}
+        />
       </BottomContextualBar>
     ) : tab === 'budgets' ? (
       <BottomContextualBar>

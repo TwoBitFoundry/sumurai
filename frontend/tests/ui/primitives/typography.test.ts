@@ -28,7 +28,7 @@ describe('primitive typography recipes', () => {
 
   it('keeps button sizes on the semantic scale', () => {
     expect(buttonTypographySizes).toEqual({
-      xs: uiTypographyRecipes.label,
+      xs: uiTypographyRecipes.captionStrong,
       sm: uiTypographyRecipes.captionStrong,
       md: uiTypographyRecipes.captionStrong,
       lg: uiTypographyRecipes.bodyStrong,
@@ -64,6 +64,10 @@ describe('primitive typography recipes', () => {
     expect(appTitleBarRecipes.pillTab.join(' ')).toContain(
       'rounded-[length:var(--radius-standard)]'
     );
+    expect(appTitleBarRecipes.titleBarGrid.join(' ')).toContain('md:h-14');
+    expect(appTitleBarRecipes.pillTabSize.join(' ')).toContain('px-3.5');
+    expect(appTitleBarRecipes.pillContainerSize.join(' ')).toContain('h-12');
+    expect(uiTypographyRecipes.bodyStrong).toContain('font-body-strong');
   });
 
   it('reserves labeled-control spacing for label stacks that clear focus rings', () => {});

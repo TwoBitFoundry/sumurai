@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { cva } from 'class-variance-authority';
 import {
   ArrowLeftRight,
@@ -37,13 +38,48 @@ export const appTitleBarRecipes = {
     fontFamily: { fontFamily: "'Cal Sans', system-ui, sans-serif" },
   },
   settingsIdle: buttonChrome.settingsIdle.join(' '),
+  titleBarGrid: [
+    'grid',
+    'grid-cols-[minmax(0,1fr)_auto]',
+    'grid-rows-[auto_auto]',
+    'items-center',
+    'gap-x-3',
+    'gap-y-2',
+    'h-12',
+    'md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]',
+    'md:grid-rows-1',
+    'md:gap-4',
+    'md:h-14',
+  ],
   pillContainer: [
-    `flex h-11 items-center gap-1 ${uiRadiusRecipes.standard} border p-1`,
+    `flex items-center gap-1 ${uiRadiusRecipes.standard} border p-1`,
     ...floatingChromeGlass.backdrop,
     ...floatingChromeGlass.shell,
   ],
-  pillTab: [
-    `relative flex h-full items-center justify-center gap-0 ${uiRadiusRecipes.standard} px-3 py-1.5`,
+  pillContainerSize: ['h-12'],
+  pillTab: [`relative flex items-center justify-center gap-0 ${uiRadiusRecipes.standard}`],
+  pillTabSize: ['h-full px-3.5 py-1.5'],
+  pillNav: [
+    'hidden',
+    'md:flex',
+    'col-span-2',
+    'row-start-2',
+    'flex',
+    'justify-center',
+    'md:col-span-1',
+    'md:col-start-2',
+    'md:row-start-1',
+    'md:justify-self-center',
+  ],
+  actions: [
+    'col-start-2',
+    'row-start-1',
+    'flex',
+    'items-center',
+    'justify-end',
+    'gap-2',
+    'md:col-start-3',
+    'md:justify-self-end',
   ],
 } as const;
 
@@ -110,11 +146,60 @@ export const AppTitleBar = ({
 
   const logoClassName = cn(...appTitleBarRecipes.logo.container, appTitleBarRecipes.logo.wordmark);
 
+  const primaryTabs = canGoToDashboard ? (
+    <nav className={cn(...appTitleBarRecipes.pillNav)} aria-label="Primary">
+      <div
+        className={cn(
+          ...appTitleBarRecipes.pillContainer,
+          ...appTitleBarRecipes.pillContainerSize
+        )}
+      >
+        {TABS.map(({ key, label, icon: Icon }) => (
+          <Button
+            key={key}
+            type="button"
+            onClick={() => onTabChange(key)}
+            variant={currentTab === key ? 'tabActive' : 'tab'}
+            size="xs"
+            aria-label={label}
+            aria-current={currentTab === key ? 'page' : undefined}
+            className={cn(
+              ...appTitleBarRecipes.pillTab,
+              ...appTitleBarRecipes.pillTabSize,
+              currentTab === key ? semanticTextRecipes.inverse : semanticTextRecipes.muted
+            )}
+          >
+            {currentTab === key ? (
+              <motion.div
+                layoutId="pill-active"
+                data-slot="active-pill"
+                className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
+                transition={{ stiffness: 400, damping: 35 }}
+              />
+            ) : null}
+            <span className="relative z-10 flex h-6 w-6 items-center justify-center shrink-0">
+              <Icon className="h-6 w-6" />
+            </span>
+                    <span
+                      className={cn(
+                        'relative z-10 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300',
+                        uiTypographyRecipes.bodyStrong,
+                        currentTab === key ? 'max-w-[8rem] opacity-100' : 'max-w-0 opacity-0'
+                      )}
+                    >
+              <span className={cn(currentTab === key && 'ml-1.5')}>{label}</span>
+            </span>
+          </Button>
+        ))}
+      </div>
+    </nav>
+  ) : null;
+
   return (
     <header ref={ref} className={titleBarVariants({ state })}>
       <div className="px-4">
-        <div className="flex h-12 items-center justify-between md:h-16">
-          <div className={cn('flex', 'items-center', 'gap-6')}>
+        <div className={cn(...appTitleBarRecipes.titleBarGrid)}>
+          <div className={cn('col-start-1', 'row-start-1', 'flex', 'items-center', 'gap-6')}>
             {canGoToDashboard ? (
               <button
                 type="button"
@@ -146,12 +231,14 @@ export const AppTitleBar = ({
             )}
           </div>
 
-          <div className={cn('flex', 'items-center', 'gap-2')}>
+          {primaryTabs}
+
+          <div className={cn(...appTitleBarRecipes.actions)}>
             <span role="status" aria-live="polite" title={isOnline ? 'Online' : 'Offline'}>
               {isOnline ? (
-                <Wifi className={cn('h-4 w-4', ...semanticStatus.success.icon)} />
+                <Wifi className={cn('h-6 w-6', ...semanticStatus.success.icon)} />
               ) : (
-                <WifiOff className={cn('h-4 w-4', ...semanticStatus.warning.icon)} />
+                <WifiOff className={cn('h-6 w-6', ...semanticStatus.warning.icon)} />
               )}
             </span>
 
@@ -167,7 +254,7 @@ export const AppTitleBar = ({
                 aria-label="Settings"
                 title="Settings"
               >
-                <Settings className={cn('h-4', 'w-4')} />
+                <Settings className={cn('h-6', 'w-6')} />
               </Button>
             )}
 
@@ -181,7 +268,7 @@ export const AppTitleBar = ({
                     size="xs"
                     title="Logout"
                   >
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className="h-6 w-6" />
                     <span>Logout</span>
                   </Button>
                 </div>
@@ -193,7 +280,7 @@ export const AppTitleBar = ({
                     size="xs"
                     aria-label="Logout"
                   >
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className="h-6 w-6" />
                   </Button>
                 </div>
               </>

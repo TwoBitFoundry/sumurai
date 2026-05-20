@@ -1370,7 +1370,7 @@ impl DatabaseRepository for PostgresRepository {
                 FROM filtered
             ),
             largest AS (
-                SELECT amount::float8 AS amount, merchant
+                SELECT ABS(amount)::float8 AS amount, merchant
                 FROM filtered
                 WHERE merchant IS NOT NULL
                 ORDER BY ABS(amount) DESC, merchant ASC

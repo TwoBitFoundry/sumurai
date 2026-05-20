@@ -21,8 +21,8 @@ export function TransactionsSearchBar({ search, onSearch }: TransactionsSearchBa
           'left-3',
           'top-1/2',
           'z-10',
-          'h-4',
-          'w-4',
+          'h-6',
+          'w-6',
           '-translate-y-1/2',
           uiTextRecipes.subtle
         )}

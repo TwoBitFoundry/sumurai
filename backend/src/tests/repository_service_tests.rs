@@ -721,6 +721,57 @@ async fn given_transactions_when_aggregating_insights_then_respects_filters_and_
 }
 
 #[tokio::test]
+async fn given_transactions_when_aggregating_insights_then_returns_largest_magnitude() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+
+    let mut debit = create_test_transaction(
+        user.id,
+        account.id,
+        "insights_largest_debit".to_string(),
+        -7500,
+        NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
+    );
+    debit.merchant_name = Some("Largest Debit".to_string());
+    debit.category_primary = "FOOD_AND_DRINK".to_string();
+
+    let mut credit = create_test_transaction(
+        user.id,
+        account.id,
+        "insights_largest_credit".to_string(),
+        2500,
+        NaiveDate::from_ymd_opt(2024, 3, 2).unwrap(),
+    );
+    credit.merchant_name = Some("Small Credit".to_string());
+    credit.category_primary = "FOOD_AND_DRINK".to_string();
+
+    repo.upsert_transactions_batch(&[debit.clone(), credit.clone()], &user.id)
+        .await
+        .unwrap();
+
+    let insights = repo
+        .get_transactions_insights(&user.id, None, None, None, None, None)
+        .await
+        .unwrap();
+
+    assert_eq!(insights.total_count, 2);
+    assert!((insights.total_spent - 100.0).abs() < 0.0001);
+    assert!((insights.average_amount - 50.0).abs() < 0.0001);
+    assert_eq!(
+        insights.largest,
+        Some(crate::models::transaction::LargestTransaction {
+            amount: 75.0,
+            merchant: "Largest Debit".to_string(),
+        })
+    );
+}
+
+#[tokio::test]
 async fn given_transactions_when_aggregating_insights_for_empty_set_then_returns_zero_values() {
     let Some(pool) = connect_pool().await else {
         return;

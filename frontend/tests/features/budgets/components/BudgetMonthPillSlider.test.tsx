@@ -25,4 +25,17 @@ describe('BudgetMonthPillSlider', () => {
     expect(onNextMonth).toHaveBeenCalledTimes(1);
     expect(onCurrentMonth).toHaveBeenCalledTimes(1);
   });
+
+  it('uses stronger body text for the month label', () => {
+    render(
+      <BudgetMonthPillSlider
+        monthLabel="May 2026"
+        onPreviousMonth={jest.fn()}
+        onNextMonth={jest.fn()}
+        onCurrentMonth={jest.fn()}
+      />
+    );
+
+    expect(screen.getByText('May 2026').parentElement).toHaveClass('font-body-strong');
+  });
 });

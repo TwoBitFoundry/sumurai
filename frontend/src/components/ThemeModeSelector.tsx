@@ -45,6 +45,7 @@ export function ThemeModeSelector({ value, onChange }: ThemeModeSelectorProps) {
               'w-full',
               'min-w-0',
               ...appTitleBarRecipes.pillTab,
+              ...appTitleBarRecipes.pillTabSize,
               active ? uiTextRecipes.inverse : uiTextRecipes.muted
             )}
           >

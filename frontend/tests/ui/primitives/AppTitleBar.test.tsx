@@ -72,11 +72,42 @@ describe('AppTitleBar', () => {
     expect(screen.queryByRole('button', { name: 'Toggle theme' })).not.toBeInTheDocument();
   });
 
-  it('does not render primary tab navigation in the title bar', () => {
+  it('renders primary tab navigation in the title bar for tablet and desktop', () => {
     render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
 
-    expect(screen.queryByRole('navigation', { name: 'Primary' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Transactions' })).not.toBeInTheDocument();
+    const primaryNav = screen.getByRole('navigation', { name: 'Primary' });
+    expect(primaryNav).toBeInTheDocument();
+    expect(primaryNav.className).toContain('hidden');
+    expect(primaryNav.className).toContain('md:flex');
+  });
+
+  it('anchors the action cluster to the right on tablet and desktop', () => {
+    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+
+    const actions = screen.getByTitle('Online').closest('div');
+    expect(actions?.className).toContain('md:col-start-3');
+    expect(actions?.className).toContain('md:justify-self-end');
+  });
+
+  it('uses 24px icons for the primary tab switcher', () => {
+    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+
+    const primaryNav = screen.getByRole('navigation', { name: 'Primary' });
+    expect(primaryNav.querySelector('.h-6.w-6')).not.toBeNull();
+  });
+
+  it('uses stronger body text for the primary tab labels', () => {
+    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+
+    const primaryNav = screen.getByRole('navigation', { name: 'Primary' });
+    expect(primaryNav.querySelector('.font-body-strong')).not.toBeNull();
+  });
+
+  it('uses 24px icons for the settings and logout controls', () => {
+    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+
+    expect(screen.getByRole('button', { name: 'Settings' }).querySelector('.h-6.w-6')).not.toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Logout' })[0].querySelector('.h-6.w-6')).not.toBeNull();
   });
 
   it('renders settings and logout actions for authenticated users', async () => {
