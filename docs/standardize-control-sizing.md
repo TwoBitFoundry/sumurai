@@ -293,14 +293,19 @@ Remove every legacy usage so the new scale is the only path.
 4. **Refactor**: re-run the guard test; it must pass.
 
 ### Acceptance criteria
-- [ ] `rg 'size="xs"|variant="icon"' frontend/src` returns zero results.
-- [ ] Guard test passes.
-- [ ] Full frontend suite passes: `npm --prefix frontend test`.
-- [ ] Storybook smoke passes: `npm --prefix frontend run storybook:test`.
+- [x] `rg 'size="xs"|variant="icon"' frontend/src` returns zero results.
+- [x] Guard test passes.
+- [x] Full frontend suite passes: `npm --prefix frontend test`.
+- [x] Storybook smoke passes: `npm --prefix frontend run test:storybook-runtime`.
 
 ### Files
 - All matched call sites under `frontend/src/**`
 - [frontend/tests/ui/no-legacy-sizes.test.ts](frontend/tests/ui/no-legacy-sizes.test.ts) *(new)*
+
+### TDD log
+- Red: added a repo-level guard test to catch legacy Button sizing patterns in source.
+- Green: migrated the remaining interactive call sites, including the transactions search bar spacing polish for desktop and tablet.
+- Verify: `npm --prefix frontend test -- ui/no-legacy-sizes`, `npm --prefix frontend test -- features/transactions/components/TransactionsSearchBar`, `npm --prefix frontend test`, and `npm --prefix frontend run test:storybook-runtime` all passed.
 
 ---
 
@@ -320,12 +325,17 @@ Codify the rules so future contributors don't re-introduce drift.
 2. Cross-link from the README to [frontend/src/ui/recipes.ts](frontend/src/ui/recipes.ts) `control` export.
 
 ### Acceptance criteria
-- [ ] README documents the scale table and the three rules.
-- [ ] README references `control` in `recipes.ts` as the implementation source.
-- [ ] No code changes in this phase.
+- [x] README documents the scale table and the three rules.
+- [x] README references `control` in `recipes.ts` as the implementation source.
+- [x] No code changes in this phase.
 
 ### Files
 - [frontend/src/ui/primitives/README.md](frontend/src/ui/primitives/README.md)
+
+### TDD log
+- Red: reviewed the primitives README to identify the stale Button sizing guidance and missing control-scale guidance.
+- Green: added the shared control-scale reference, rules, and Button API updates.
+- Verify: documentation-only update; no additional test command required.
 
 ---
 

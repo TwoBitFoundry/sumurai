@@ -16,6 +16,23 @@ All primitives use:
 - **clsx** for conditional class composition
 - Consistent theme mode support via `dark:` variants
 
+## Control Scale
+
+The shared control scale lives in [`frontend/src/ui/recipes.ts`](../recipes.ts) as `control`.
+
+| Size | Height | Glyph | Padding | Label |
+|------|--------|-------|---------|-------|
+| `sm` | 36px mobile, 32px tablet, 28px desktop | 16px mobile/tablet, 14px desktop | 12px mobile, 10px tablet/desktop | `font.captionStrong` |
+| `md` | 44px mobile, 36px tablet, 32px desktop | 20px mobile, 18px tablet, 16px desktop | 16px mobile, 14px tablet, 12px desktop | `font.bodyStrong` |
+| `lg` | 52px mobile, 44px tablet, 40px desktop | 24px mobile, 22px tablet, 20px desktop | 20px mobile, 18px tablet, 16px desktop | `font.bodyStrong` |
+
+Rules:
+1. Always pick a control `size` (`sm`, `md`, or `lg`). Never hand-style heights, glyph sizes, or label typography.
+2. Pair label and glyph automatically by setting `size` on the primitive; do not override `text-*` or icon `h-*` classes downstream.
+3. Default to `md`. Use `sm` only for dense toolbars and tables. Use `lg` only for hero CTAs.
+
+The `md` control size is anchored to the iOS 44pt minimum touch target, which drives the 44px mobile height.
+
 ## Available Primitives
 
 ### GradientShell
@@ -224,7 +241,6 @@ Interactive button with multiple visual styles.
 | `primary` | Sky-violet gradient with shadow | Primary CTAs, submit buttons |
 | `secondary` | White/slate with border | Secondary actions, cancel buttons |
 | `ghost` | Subtle glassmorphism | Tertiary actions, less emphasis |
-| `icon` | Circular icon container | Icon-only buttons (menus, close) |
 | `tab` | Tab navigation inactive state | Tab bars |
 | `tabActive` | Tab navigation active state | Selected tab |
 | `danger` | Red tones for destructive actions | Delete, disconnect actions |
@@ -233,19 +249,18 @@ Interactive button with multiple visual styles.
 
 **Sizes:**
 
-| Size | Padding | Text Size | Border Radius | Use Case |
-|------|---------|-----------|---------------|----------|
-| `xs` | 2.5/1 | captionStrong | xl | Tight spaces, tags |
-| `sm` | 3/1.5 | sm | xl | Inline actions |
-| `md` | 4/2 | sm | full | Standard buttons |
-| `lg` | 5/2.5 | base | full | Primary CTAs |
-| `icon` | - | - | full (10x10) | Icon buttons |
+| Size | Height | Glyph | Padding | Label | Use Case |
+|------|--------|-------|---------|-------|----------|
+| `sm` | 36px mobile, 32px tablet, 28px desktop | 16px mobile, 16px tablet, 14px desktop | 12px mobile, 10px tablet/desktop | captionStrong | Dense controls |
+| `md` | 44px mobile, 36px tablet, 32px desktop | 20px mobile, 18px tablet, 16px desktop | 16px mobile, 14px tablet, 12px desktop | bodyStrong | Standard buttons |
+| `lg` | 52px mobile, 44px tablet, 40px desktop | 24px mobile, 22px tablet, 20px desktop | 20px mobile, 18px tablet, 16px desktop | bodyStrong | Prominent CTAs |
 
 **Props:**
 ```typescript
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'icon' | 'tab' | 'tabActive' | 'danger' | 'success' | 'connect'
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'icon'
+  variant?: 'primary' | 'secondary' | 'ghost' | 'tab' | 'tabActive' | 'danger' | 'success' | 'connect'
+  size?: 'sm' | 'md' | 'lg' | 'titleBarExpanded'
+  shape?: 'default' | 'square'
   loading?: boolean  // Shows loading state (disables interaction)
   children?: React.ReactNode
 }
