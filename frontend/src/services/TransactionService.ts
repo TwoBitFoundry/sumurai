@@ -3,7 +3,11 @@
  */
 
 import { type BackendTransaction, TransactionTransformer } from '../domain/TransactionTransformer';
-import type { PaginatedTransactionsResponse, Transaction } from '../types/api';
+import type {
+  PaginatedTransactionsResponse,
+  Transaction,
+  TransactionsInsightsResponse,
+} from '../types/api';
 import { appendAccountQueryParams } from '../utils/queryParams';
 import { ApiClient } from './ApiClient';
 
@@ -56,6 +60,12 @@ export class TransactionService {
   static async getTransactionCategories(): Promise<string[]> {
     const categories = await ApiClient.get<string[]>('/transactions/categories');
     return Array.isArray(categories) ? categories : [];
+  }
+
+  static async getTransactionsInsights(
+    filters: TransactionFilters = {}
+  ): Promise<TransactionsInsightsResponse> {
+    return ApiClient.get<TransactionsInsightsResponse>(buildTransactionsInsightsEndpoint(filters));
   }
 
   private static async getAllTransactions(filters: TransactionFilters): Promise<Transaction[]> {
@@ -111,6 +121,21 @@ function buildTransactionsEndpoint(
   page: number,
   pageSize: number
 ): string {
+  const params = buildTransactionFiltersParams(filters);
+  params.append('page', String(page));
+  params.append('page_size', String(pageSize));
+
+  const queryString = params.toString();
+  return queryString ? `/transactions?${queryString}` : '/transactions';
+}
+
+function buildTransactionsInsightsEndpoint(filters: TransactionFilters): string {
+  const params = buildTransactionFiltersParams(filters);
+  const queryString = params.toString();
+  return queryString ? `/transactions/insights?${queryString}` : '/transactions/insights';
+}
+
+function buildTransactionFiltersParams(filters: TransactionFilters): URLSearchParams {
   const params = new URLSearchParams();
 
   if (filters.startDate) params.append('start_date', filters.startDate);
@@ -120,11 +145,8 @@ function buildTransactionsEndpoint(
   if (filters.search) params.append('search', filters.search);
   if (filters.searchTerm) params.append('search', filters.searchTerm);
   appendAccountQueryParams(params, filters.accountIds);
-  params.append('page', String(page));
-  params.append('page_size', String(pageSize));
 
-  const queryString = params.toString();
-  return queryString ? `/transactions?${queryString}` : '/transactions';
+  return params;
 }
 
 function toPaginatedTransactionsResponse(

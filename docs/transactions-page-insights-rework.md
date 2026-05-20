@@ -182,11 +182,20 @@ TDD log
 Add the response type, a service method, a React Query hook (`useTransactionsInsights`) keyed by the same filter inputs as `useTransactions` but without `currentPage` / `pageSize`, and swap the `useMemo` in `TransactionsPage.tsx` for the hook. Keep card markup and formatters as-is.
 
 **Acceptance criteria**
-- [ ] The four HeroStatCards render from the new endpoint's response; the `useMemo` block is deleted.
-- [ ] Insights and the transactions list are independent React Query queries — paging the table does not refetch insights, and changing a filter refetches both.
-- [ ] The hook's query key includes every filter input that affects results (search, selected category, account IDs, date range) and excludes pagination state.
-- [ ] Cards show a loading state independently of the table; an insights error does not break table rendering.
-- [ ] Type checking + frontend test suite pass.
+- [x] The four HeroStatCards render from the new endpoint's response; the `useMemo` block is deleted.
+- [x] Insights and the transactions list are independent React Query queries — paging the table does not refetch insights, and changing a filter refetches both.
+- [x] The hook's query key includes every filter input that affects results (search, selected category, account IDs, date range) and excludes pagination state.
+- [x] Cards show a loading state independently of the table; an insights error does not break table rendering.
+- [x] Type checking + frontend test suite pass.
+
+TDD log
+
+- Added `useTransactionsInsights` hook coverage for filter propagation and pagination independence.
+- Added `TransactionService` coverage for the insights endpoint URL and payload shape.
+- Added `TransactionsPage` coverage for the insights loading state.
+- Ran `npm --prefix frontend test -- --runTestsByPath tests/services/TransactionService.test.ts tests/views/TransactionsPage.test.tsx tests/features/transactions/hooks/useTransactionsInsights.test.tsx`.
+- Ran `npm --prefix frontend run typecheck`.
+- Ran `npm --prefix frontend test`.
 
 ## Phase 4 — End-to-end verification
 
