@@ -75,6 +75,8 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
   } = useAccountFilter();
 
   const lastFilterKeyRef = useRef<string | null>(null);
+  const accountsReady =
+    !accountsLoading && (allAccountIds.length === 0 || selectedAccountIds.length > 0);
   const debouncedSearch = useDebounce(search, 300);
 
   const searchKey = debouncedSearch.trim().toLowerCase();
@@ -139,7 +141,12 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
   const { categories } = useTransactionCategories();
 
   useEffect(() => {
-    if (accountsLoading) {
+    if (!accountsReady) {
+      return;
+    }
+
+    if (lastFilterKeyRef.current === null) {
+      lastFilterKeyRef.current = filterKey;
       return;
     }
 
@@ -149,7 +156,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
         setCurrentPage(1);
       }
     }
-  }, [accountsLoading, currentPage, filterKey, setCurrentPage]);
+  }, [accountsReady, currentPage, filterKey, setCurrentPage]);
 
   const paginated = query.data;
   const transactions = paginated?.transactions ?? [];

@@ -242,7 +242,9 @@ describe('AccountsPage', () => {
     renderAccountsPage();
     await expandInstitutionAccounts(user);
 
-    expect(screen.getByText('55 items')).toBeVisible();
+    await waitFor(() => {
+      expect(screen.getByText('55 items')).toBeVisible();
+    });
   });
 
   it('renders the Plaid accounts button with the Plaid logo', () => {
