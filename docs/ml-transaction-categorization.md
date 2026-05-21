@@ -95,9 +95,14 @@ Container destination: `/app/assets/models/all-MiniLM-L6-v2/` (already used as t
 4. Re-export `categorization` module from `backend/src/services/mod.rs`.
 
 **Acceptance criteria.**
-- [ ] `cargo check --manifest-path backend/Cargo.toml --locked` passes.
-- [ ] `PFC_CATEGORY_DESCRIPTORS` contains every category string that `normalize_teller_category` in [backend/src/models/transaction.rs:629](backend/src/models/transaction.rs) currently returns, plus the Plaid PFC primaries that appear elsewhere. (Cross-checked by a unit test in `backend/src/tests/category_descriptor_coverage.rs` that asserts a hardcoded expected set matches the descriptor keys.)
-- [ ] `Confidence::as_str()` returns exactly `"HIGH" | "MEDIUM" | "LOW"`.
+- [x] `cargo check --manifest-path backend/Cargo.toml --locked` passes.
+- [x] `PFC_CATEGORY_DESCRIPTORS` contains every category string that `normalize_teller_category` in [backend/src/models/transaction.rs:629](backend/src/models/transaction.rs) currently returns, plus the Plaid PFC primaries that appear elsewhere. (Cross-checked by a unit test in `backend/src/tests/category_descriptor_coverage.rs` that asserts a hardcoded expected set matches the descriptor keys.)
+- [x] `Confidence::as_str()` returns exactly `"HIGH" | "MEDIUM" | "LOW"`.
+
+**TDD log.**
+- Red: `cargo test --manifest-path backend/Cargo.toml --locked category_descriptor_coverage` failed until the new model and service modules existed.
+- Green: added `backend/src/models/predicted_category.rs`, `backend/src/services/categorization/mod.rs`, and `backend/src/services/categorization/category_descriptors.rs`, then reran `cargo test --manifest-path backend/Cargo.toml --locked category_descriptor_coverage`.
+- Refactor/verify: `cargo check --manifest-path backend/Cargo.toml --locked` passed after silencing placeholder dead-code warnings.
 
 ---
 
