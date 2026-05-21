@@ -444,5 +444,12 @@ export const control = {
   },
 } as const;
 
+export const floatingChromeSearch = {
+  height: 'h-[52px] md:h-12 lg:h-12',
+  glyph: chromeBar.glyph,
+  paddingX: 'px-4 md:px-3.5',
+  label: control.label.md,
+} as const;
+
 export const semanticTextRecipes = text;
 export const semanticPlaceholderTextRecipes = placeholder;

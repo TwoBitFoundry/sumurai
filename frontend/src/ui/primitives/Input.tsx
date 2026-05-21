@@ -2,6 +2,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 import {
   control,
+  floatingChromeSearch,
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
@@ -65,6 +66,7 @@ export const inputControl = {
     sm: `${control.height.sm} ${control.paddingX.sm} ${control.label.sm} ${uiRadiusRecipes.standard}`,
     md: `${control.height.md} ${control.paddingX.md} ${control.label.md} ${uiRadiusRecipes.standard}`,
     lg: `${control.height.lg} ${control.paddingX.lg} ${control.label.lg} ${uiRadiusRecipes.standard}`,
+    chromeBar: `${floatingChromeSearch.height} ${floatingChromeSearch.paddingX} ${floatingChromeSearch.label} ${uiRadiusRecipes.standard}`,
   },
 } as const;
 
@@ -80,6 +82,7 @@ const inputVariants = cva([...inputControl.base], {
       sm: inputControl.size.sm,
       md: inputControl.size.md,
       lg: inputControl.size.lg,
+      chromeBar: inputControl.size.chromeBar,
     },
   },
   defaultVariants: {

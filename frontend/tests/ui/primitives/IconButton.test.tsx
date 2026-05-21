@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { IconButton } from '@/ui/primitives/IconButton';
-import { control } from '@/ui/recipes';
+import { chromeBar, control } from '@/ui/recipes';
 
 describe('IconButton', () => {
   it('defaults to the md control square', () => {
@@ -29,6 +29,23 @@ describe('IconButton', () => {
 
     const button = screen.getByRole('button', { name: 'Action' });
     expect(button.className).toContain(shell);
-    expect(button.querySelector('span')?.className).toContain(glyph);
+    const glyphShell = button.querySelector('span');
+    expect(glyphShell?.className).toContain(glyph);
+    expect(glyphShell?.className).toContain('inline-flex');
+    expect(glyphShell?.className).toContain('items-center');
+    expect(glyphShell?.className).toContain('[&_svg]:h-full');
+  });
+
+  it('renders the chrome bar size for title bar icon actions', () => {
+    render(
+      <IconButton aria-label="Settings" size="bar">
+        <span aria-hidden="true">S</span>
+      </IconButton>
+    );
+
+    const button = screen.getByRole('button', { name: 'Settings' });
+    expect(button.className).toContain(chromeBar.square);
+    expect(button.querySelector('span')?.className).toContain('h-6');
+    expect(button.querySelector('span')?.className).toContain('w-6');
   });
 });

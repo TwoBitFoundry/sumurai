@@ -1,8 +1,10 @@
 import {
   border,
   chrome,
+  chromeBar,
   control,
   effect,
+  floatingChromeSearch,
   focus,
   font,
   placeholder,
@@ -58,6 +60,27 @@ describe('shared UI recipes', () => {
       'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]'
     );
     expect(chrome.sm).toContain('px-[length:var(--spacing-button-chrome-inset-sm-x)]');
+  });
+
+  it('exposes the chrome bar exception recipes', () => {
+    expect(chromeBar.height).toBe('h-12');
+    expect(chromeBar.square).toBe('h-12 w-12');
+    expect(chromeBar.glyph).toBe('h-6 w-6');
+    expect(chromeBar.glyphWell).toEqual([
+      'inline-flex',
+      'h-6',
+      'w-6',
+      'shrink-0',
+      'items-center',
+      'justify-center',
+    ]);
+  });
+
+  it('exposes the floating chrome search recipes', () => {
+    expect(floatingChromeSearch.height).toBe('h-[52px] md:h-12 lg:h-12');
+    expect(floatingChromeSearch.glyph).toBe(chromeBar.glyph);
+    expect(floatingChromeSearch.paddingX).toBe('px-4 md:px-3.5');
+    expect(floatingChromeSearch.label).toBe(control.label.md);
   });
 
   it('exposes the shared control recipes', () => {

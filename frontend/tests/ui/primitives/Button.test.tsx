@@ -26,6 +26,20 @@ describe('Button', () => {
     expect(button.className).toContain(label);
   });
 
+  it('renders filter chip pills with shared button affordances', () => {
+    render(
+      <Button variant="filterChip" size="sm" shape="pill">
+        Food
+      </Button>
+    );
+
+    const button = screen.getByRole('button', { name: 'Food' });
+    expect(button.className).toContain('rounded-full');
+    expect(button.className).toContain('cursor-pointer');
+    expect(button.className).toContain('focus-visible:ring-2');
+    expect(button.className).toContain('active:scale-[0.98]');
+  });
+
   it('renders square controls with the shared square recipe', () => {
     render(
       <Button size="md" shape="square">
@@ -35,5 +49,8 @@ describe('Button', () => {
 
     const button = screen.getByRole('button', { name: 'Edit' });
     expect(button.className).toContain(control.square.md);
+    expect(button.className).toContain('p-0');
+    expect(button.className).not.toContain(control.paddingX.md);
+    expect(button.querySelector('span')?.className).toContain(control.glyph.md);
   });
 });
