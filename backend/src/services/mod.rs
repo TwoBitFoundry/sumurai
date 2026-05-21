@@ -16,6 +16,9 @@ pub use auth_service::AuthService;
 pub use authorization_service::AuthorizationService;
 pub use budget_service::BudgetService;
 pub use cache_service::{CacheService, RedisCache};
+#[cfg(not(test))]
+#[allow(unused_imports)]
+pub use categorization::categorization_service::{CategorizationService, Categorizer};
 pub use connection_service::{
     ConnectionService, ExchangeTokenError, LinkTokenError, ProviderSyncError, SyncConnectionParams,
     TellerConnectError, TellerSyncError,
