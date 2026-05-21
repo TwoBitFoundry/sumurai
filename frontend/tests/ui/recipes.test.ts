@@ -3,6 +3,7 @@ import {
   chrome,
   chromeBar,
   control,
+  controlIconWell,
   effect,
   floatingChromeSearch,
   focus,
@@ -74,6 +75,12 @@ describe('shared UI recipes', () => {
       'items-center',
       'justify-center',
     ]);
+  });
+
+  it('exposes the control icon well recipes', () => {
+    expect(controlIconWell.sm).toContain(control.glyph.sm);
+    expect(controlIconWell.md).toContain(control.glyph.md);
+    expect(controlIconWell.lg).toContain(control.glyph.lg);
   });
 
   it('exposes the floating chrome search recipes', () => {

@@ -1,7 +1,19 @@
 import { render, screen } from '@testing-library/react';
+import { Building2 } from 'lucide-react';
 import { HeroStatCard } from '@/components/widgets/HeroStatCard';
+import { control } from '@/ui/recipes';
 
 describe('HeroStatCard', () => {
+  it('sizes stat icons with the shared control glyph scale', () => {
+    const { container } = render(
+      <HeroStatCard title="Active institutions" icon={<Building2 />} value={2} />
+    );
+
+    const svg = container.querySelector('[data-testid="hero-stat-card"] svg');
+    expect(svg?.parentElement?.className).toContain(control.glyph.lg);
+    expect(svg?.getAttribute('class') ?? '').not.toContain('h-4');
+  });
+
   it('renders the shared scroll footer for subtext', () => {
     render(
       <HeroStatCard

@@ -7,7 +7,7 @@ describe('ThemeProvider', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
-    localStorage.clear();
+    window.sessionStorage.clear();
     Object.defineProperty(window, 'matchMedia', {
       value: originalMatchMedia,
       writable: true,
