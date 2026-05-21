@@ -75,21 +75,11 @@ describe('shared shell text surfaces', () => {
   it('uses semantic text roles in the budget toolbar and net worth widget', () => {
     render(
       <ThemeProvider>
-        <BudgetToolbar
-          monthLabel="May 2026"
-          loading
-          isAdding={false}
-          showAddButton={false}
-          onPreviousMonth={jest.fn()}
-          onNextMonth={jest.fn()}
-          onCurrentMonth={jest.fn()}
-          onAddBudget={jest.fn()}
-        />
+        <BudgetToolbar loading isAdding={false} showAddButton={false} onAddBudget={jest.fn()} />
         <NetWorthOverTimeWidget />
       </ThemeProvider>
     );
 
-    expect(screen.getByText('May 2026')).toHaveClass(uiTextRecipes.muted);
     expect(screen.getByText('Updating')).toHaveClass(uiTextRecipes.subtle);
     expect(screen.getByText('Net Worth Over Time')).toHaveClass(uiTextRecipes.muted);
   });

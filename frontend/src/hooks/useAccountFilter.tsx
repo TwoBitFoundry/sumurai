@@ -20,6 +20,7 @@ import {
 } from '@/context/AccountFilterContext';
 import { ProviderCatalog } from '@/services/ProviderCatalog';
 import { ACCOUNTS_CHANGED_EVENT } from '@/utils/events';
+import { getSessionAccountFilterIds, setSessionAccountFilterIds } from '@/utils/sessionPreferences';
 
 const EMPTY_PROVIDER_ACCOUNTS: ProviderAccount[] = [];
 
@@ -39,6 +40,7 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
   const queryClient = useQueryClient();
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const previousAllAccountIdsRef = useRef<string[]>([]);
+  const restoredSelectionRef = useRef(false);
   const accountsQuery = useQuery({
     queryKey: ['accounts'],
     queryFn: async () => mapProviderAccounts(await ProviderCatalog.getAccounts()),
@@ -69,37 +71,50 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
     allAccountIds.length > 0 && selectedAccountIds.length === allAccountIds.length;
 
   useEffect(() => {
+    const previousAllAccountIds = previousAllAccountIdsRef.current;
+
     setSelectedAccountIds((prev) => {
       if (allAccountIds.length === 0) {
         return prev.length === 0 ? prev : [];
+      }
+
+      if (!restoredSelectionRef.current) {
+        restoredSelectionRef.current = true;
+        const stored = getSessionAccountFilterIds();
+        if (stored && stored.length > 0) {
+          const valid = stored.filter((id) => allAccountIds.includes(id));
+          if (valid.length > 0) {
+            return valid;
+          }
+        }
       }
 
       if (prev.length === 0) {
         return allAccountIds;
       }
 
-      const newIdSet = new Set(allAccountIds);
-      const filteredSelection = prev.filter((id) => newIdSet.has(id));
+      const prevIdSet = new Set(prev);
+      const previousAllIdSet = new Set(previousAllAccountIds);
+      const nextSelection = allAccountIds.filter(
+        (id) => prevIdSet.has(id) || !previousAllIdSet.has(id)
+      );
 
-      const prevAllIds = previousAllAccountIdsRef.current;
-      const previouslyHadAllSelected =
-        prevAllIds.length > 0 &&
-        prev.length === prevAllIds.length &&
-        prevAllIds.every((id) => prev.includes(id));
-
-      if (previouslyHadAllSelected) {
-        return allAccountIds;
-      }
-
-      if (arraysEqual(prev, filteredSelection)) {
+      if (arraysEqual(prev, nextSelection)) {
         return prev;
       }
 
-      return filteredSelection;
+      return nextSelection;
     });
 
     previousAllAccountIdsRef.current = allAccountIds;
   }, [allAccountIds]);
+
+  useEffect(() => {
+    if (allAccountIds.length === 0) {
+      return;
+    }
+    setSessionAccountFilterIds(selectedAccountIds);
+  }, [allAccountIds.length, selectedAccountIds]);
 
   useEffect(() => {
     const handleAccountsChanged = () => {

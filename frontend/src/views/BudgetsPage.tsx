@@ -25,10 +25,6 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
     categoryOptions,
     usedCategories,
     month,
-    monthLabel,
-    goToPreviousMonth,
-    goToNextMonth,
-    goToCurrentMonth,
   } = useBudgets(monthControl);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -135,6 +131,14 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
     return 'Critical';
   };
   const zone = getUtilizationZone(utilizationPercent);
+  const zoneTone =
+    zone === 'Healthy'
+      ? 'success'
+      : zone === 'On Track'
+        ? 'info'
+        : zone === 'Overextended'
+          ? 'warning'
+          : 'danger';
   const budgetsLoading = isLoading || transactionsLoading;
   const hasBudgets = computedBudgets.length > 0;
 
@@ -144,7 +148,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
         <HeroStatCard
           index={1}
           title="Active budgets"
-          icon={<CheckCircle2 className={cn('h-4', 'w-4')} />}
+          icon={<CheckCircle2 />}
           value={`${computedBudgets.length}`}
           suffix={`out of ${categoryOptions.length}`}
           pills={activeBudgetPills}
@@ -152,28 +156,21 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
         <HeroStatCard
           index={2}
           title="Monitor"
-          icon={<Activity className={cn('h-4', 'w-4')} />}
+          icon={<Activity />}
           value={utilizationValue}
           suffix={utilizationSuffix}
           pills={[
             {
               label: zone,
               type: 'semantic',
-              tone:
-                zone === 'Healthy'
-                  ? 'success'
-                  : zone === 'On Track'
-                    ? 'info'
-                    : zone === 'Overextended'
-                      ? 'warning'
-                      : 'danger',
+              tone: zoneTone,
             },
           ]}
         />
         <HeroStatCard
           index={3}
           title="Days remaining"
-          icon={<Clock className={cn('h-4', 'w-4')} />}
+          icon={<Clock />}
           value={stats.daysRemaining}
           suffix={`of ${stats.totalDays}`}
           subtext={`${stats.totalDays} total days`}
@@ -181,7 +178,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
         <HeroStatCard
           index={4}
           title="Overages"
-          icon={<AlertTriangle className={cn('h-4', 'w-4')} />}
+          icon={<AlertTriangle />}
           value={stats.overBudgetCount}
           suffix="over budget"
           pills={overBudgetPills}
@@ -214,13 +211,9 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
             {hasBudgets ? (
               <>
                 <BudgetToolbar
-                  monthLabel={monthLabel}
                   loading={budgetsLoading}
                   isAdding={isAdding}
                   showAddButton={hasBudgets}
-                  onPreviousMonth={goToPreviousMonth}
-                  onNextMonth={goToNextMonth}
-                  onCurrentMonth={goToCurrentMonth}
                   onAddBudget={startAdd}
                 />
                 {isAdding && (
@@ -255,7 +248,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
                   action={
                     !isAdding ? (
                       <Button type="button" onClick={startAdd} variant="primary" size="md">
-                        <Plus className={cn('h-4', 'w-4')} />
+                        <Plus />
                         Add budget
                       </Button>
                     ) : null

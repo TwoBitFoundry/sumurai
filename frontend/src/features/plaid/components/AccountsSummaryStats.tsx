@@ -59,7 +59,7 @@ export const AccountsSummaryStats = ({
       <HeroStatCard
         index={1}
         title="Active institutions"
-        icon={<Building2 className={cn('h-4', 'w-4')} />}
+        icon={<Building2 />}
         value={hasConnections ? summary.connectedInstitutions : 0}
         suffix={`out of ${summary.institutions}`}
         subtext={
@@ -74,7 +74,7 @@ export const AccountsSummaryStats = ({
       <HeroStatCard
         index={2}
         title="Accounts tracked"
-        icon={<CreditCard className={cn('h-4', 'w-4')} />}
+        icon={<CreditCard />}
         value={summary.accounts}
         suffix={summary.accounts === 1 ? 'account' : 'accounts'}
         subtext={
@@ -85,7 +85,7 @@ export const AccountsSummaryStats = ({
       <HeroStatCard
         index={3}
         title="Last sync"
-        icon={<Clock className={cn('h-4', 'w-4')} />}
+        icon={<Clock />}
         value={lastSyncValue}
         subtext={syncingAll ? 'Sync in progress' : lastSyncDetail}
       />

@@ -24,15 +24,15 @@ describe('storybook screen slices responsive contract', () => {
     expect(statsGrid).toHaveClass('lg:grid-cols-4');
   });
 
-  it('keeps the settings slice aligned to the dashboard content width on the md tier', () => {
+  it('keeps the settings slice centered with a desktop max width', () => {
     const { container } = render(<SettingsScreenSlice scenario="default" />);
     const settingsShell = container.querySelector(
       '[data-testid="settings-screen-slice"]'
     ) as HTMLElement | null;
 
     expect(settingsShell).toHaveClass('w-full');
+    expect(settingsShell).toHaveClass('max-w-5xl');
     expect(settingsShell).toHaveClass('md:px-8');
     expect(settingsShell).toHaveClass('lg:px-8');
-    expect(settingsShell).not.toHaveClass('max-w-2xl');
   });
 });

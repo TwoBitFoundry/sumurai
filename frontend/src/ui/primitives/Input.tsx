@@ -1,6 +1,8 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 import {
+  control,
+  floatingChromeSearch,
   border as semanticBorders,
   effect as semanticEffects,
   surface as semanticSurfaces,
@@ -12,7 +14,6 @@ import { cn } from './utils';
 export const inputControl = {
   base: [
     'w-full',
-    'px-4',
     'border',
     'font-medium',
     'shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)]',
@@ -62,9 +63,10 @@ export const inputControl = {
     'focus-visible:ring-[var(--color-border-focus-active)]',
   ],
   size: {
-    sm: `py-1.5 text-base md:text-sm ${uiRadiusRecipes.standard}`,
-    md: `py-2.5 text-base ${uiRadiusRecipes.standard}`,
-    lg: `py-3 text-lg ${uiRadiusRecipes.standard}`,
+    sm: `${control.height.sm} ${control.paddingX.sm} ${control.label.sm} ${uiRadiusRecipes.standard}`,
+    md: `${control.height.md} ${control.paddingX.md} ${control.label.md} ${uiRadiusRecipes.standard}`,
+    lg: `${control.height.lg} ${control.paddingX.lg} ${control.label.lg} ${uiRadiusRecipes.standard}`,
+    chromeBar: `${floatingChromeSearch.height} ${floatingChromeSearch.paddingX} ${floatingChromeSearch.label} ${uiRadiusRecipes.standard}`,
   },
 } as const;
 
@@ -80,6 +82,7 @@ const inputVariants = cva([...inputControl.base], {
       sm: inputControl.size.sm,
       md: inputControl.size.md,
       lg: inputControl.size.lg,
+      chromeBar: inputControl.size.chromeBar,
     },
   },
   defaultVariants: {

@@ -1,9 +1,10 @@
 import { Search } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { cn, Input } from '@/ui/primitives';
+import { Button, cn, Input } from '@/ui/primitives';
 import { pillRecipes, pillScrollFadeRecipes } from '@/ui/primitives/Pill';
 import {
+  control,
   placeholder as uiPlaceholderRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
@@ -87,8 +88,7 @@ export const TransactionsFilters: React.FC<Props> = ({
               'left-3',
               'top-1/2',
               'z-10',
-              'h-4',
-              'w-4',
+              control.glyph.md,
               '-translate-y-1/2',
               uiTextRecipes.subtle
             )}
@@ -110,7 +110,7 @@ export const TransactionsFilters: React.FC<Props> = ({
             <span
               className={cn(
                 'flex-shrink-0',
-                uiTypographyRecipes.label,
+                uiTypographyRecipes.badge,
                 uiTextRecipes.label,
                 'transition-colors',
                 'duration-500'
@@ -140,24 +140,26 @@ export const TransactionsFilters: React.FC<Props> = ({
                 const theme = getTagThemeForCategory(name);
                 const label = formatCategoryName(name);
                 return (
-                  <button
+                  <Button
                     key={name}
                     type="button"
+                    variant="filterChip"
+                    size="sm"
+                    shape="pill"
                     onClick={() => onSelectCategory(isSelected ? null : name)}
                     className={cn(
-                      pillRecipes.base,
-                      'whitespace-nowrap transition-all duration-200 ease-out active:scale-[0.98] backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
+                      'whitespace-nowrap',
                       theme.tag,
                       isSelected
                         ? ['ring-2', theme.ring]
-                        : 'hover:-translate-y-[2px] hover:shadow-lg'
+                        : 'ring-1 ring-white/60 dark:ring-white/10'
                     )}
                     aria-pressed={isSelected}
                     title={isSelected ? `Remove filter: ${label}` : `Filter by ${label}`}
                   >
                     <span className={cn(pillRecipes.dot, theme.dot)} aria-hidden="true" />
                     {label}
-                  </button>
+                  </Button>
                 );
               })}
             </div>

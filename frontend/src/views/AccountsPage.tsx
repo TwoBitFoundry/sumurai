@@ -3,7 +3,7 @@ import { RefreshCw } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { Button, cn } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { control, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { Toast } from '../components/Toast';
 import AccountsSummaryStats from '../features/plaid/components/AccountsSummaryStats';
 import ConnectButton from '../features/plaid/components/ConnectButton';
@@ -329,15 +329,10 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
             disabled={syncingAll || !isOnline}
             variant="ghost"
             size="md"
-            className={cn(
-              appTitleBarRecipes.settingsIdle,
-              'normal-case',
-              uiTypographyRecipes.bodyStrong,
-              'px-5'
-            )}
+            className={cn(appTitleBarRecipes.settingsIdle, 'normal-case')}
             title={!isOnline ? 'Unavailable while offline' : undefined}
           >
-            <RefreshCw className={cn('h-4 w-4', syncingAll && 'animate-spin')} />
+            <RefreshCw className={cn(control.glyph.md, syncingAll && 'animate-spin')} />
             {syncingAll ? 'Syncing...' : !isOnline ? 'Offline' : 'Sync all'}
           </Button>
         )}

@@ -2,7 +2,7 @@ import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/reac
 import { LONGEST_BUDGET_MONTH_LABEL } from '@/features/budgets/hooks/useBudgetMonth';
 import { Button, cn } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { chromeBar, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
 interface BudgetMonthPillSliderProps {
   monthLabel: string;
@@ -13,6 +13,7 @@ interface BudgetMonthPillSliderProps {
 
 const pillControlClassName = cn(
   ...appTitleBarRecipes.pillTab,
+  ...appTitleBarRecipes.pillTabSize,
   'h-full',
   'shrink-0',
   uiTextRecipes.muted
@@ -26,7 +27,12 @@ export function BudgetMonthPillSlider({
 }: BudgetMonthPillSliderProps) {
   return (
     <div
-      className={cn(...appTitleBarRecipes.pillContainer, 'w-fit')}
+      className={cn(
+        ...appTitleBarRecipes.pillContainer,
+        ...appTitleBarRecipes.pillInset,
+        ...appTitleBarRecipes.pillContainerSize,
+        'w-fit'
+      )}
       data-no-swipe
       data-testid="budget-month-pill-slider"
     >
@@ -34,45 +40,39 @@ export function BudgetMonthPillSlider({
         type="button"
         onClick={onPreviousMonth}
         variant="tab"
-        size="xs"
+        size="sm"
         aria-label="Previous month"
         title="Previous month"
         className={pillControlClassName}
       >
-        <span
-          className={cn('relative', 'z-10', 'flex', 'h-4', 'w-4', 'items-center', 'justify-center')}
-        >
-          <ChevronLeftIcon className={cn('h-4', 'w-4')} />
+        <span className={cn('relative', 'z-10', ...chromeBar.glyphWell)}>
+          <ChevronLeftIcon className={chromeBar.glyph} />
         </span>
       </Button>
       <Button
         type="button"
         onClick={onCurrentMonth}
         variant="tab"
-        size="xs"
+        size="sm"
         aria-label="This month"
         title="Jump to current month"
         className={pillControlClassName}
       >
-        <span
-          className={cn('relative', 'z-10', 'flex', 'h-4', 'w-4', 'items-center', 'justify-center')}
-        >
-          <CalendarIcon className={cn('h-4', 'w-4')} />
+        <span className={cn('relative', 'z-10', ...chromeBar.glyphWell)}>
+          <CalendarIcon className={chromeBar.glyph} />
         </span>
       </Button>
       <Button
         type="button"
         onClick={onNextMonth}
         variant="tab"
-        size="xs"
+        size="sm"
         aria-label="Next month"
         title="Next month"
         className={pillControlClassName}
       >
-        <span
-          className={cn('relative', 'z-10', 'flex', 'h-4', 'w-4', 'items-center', 'justify-center')}
-        >
-          <ChevronRightIcon className={cn('h-4', 'w-4')} />
+        <span className={cn('relative', 'z-10', ...chromeBar.glyphWell)}>
+          <ChevronRightIcon className={chromeBar.glyph} />
         </span>
       </Button>
       <span
@@ -82,7 +82,7 @@ export function BudgetMonthPillSlider({
           'shrink-0',
           'items-center',
           'px-2',
-          uiTypographyRecipes.label,
+          uiTypographyRecipes.bodyStrong,
           uiTextRecipes.primary
         )}
       >

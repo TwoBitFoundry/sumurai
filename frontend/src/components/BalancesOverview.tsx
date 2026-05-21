@@ -18,6 +18,7 @@ import {
 import { useBalancesOverview } from '../hooks/useBalancesOverview';
 import { Alert, Button, cn } from '../ui/primitives';
 import {
+  control,
   surface as semanticSurfaces,
   border as uiBorderRecipes,
   radius as uiRadiusRecipes,
@@ -224,7 +225,7 @@ export function BalancesOverview() {
         key: 'net',
         title: 'Net',
         accent: 'violet' as const,
-        icon: <CircleDollarSign className={cn('h-4', 'w-4')} />,
+        icon: <CircleDollarSign />,
         value: (
           <span data-testid="overall-net">
             <Amount
@@ -288,7 +289,7 @@ export function BalancesOverview() {
         <div className={cn('flex', 'items-center', 'justify-end')}>
           <RefreshCcw
             aria-label="Refreshing balances"
-            className={cn('h-4', 'w-4', uiTextRecipes.subtle, 'animate-spin')}
+            className={cn(control.glyph.md, uiTextRecipes.subtle, 'animate-spin')}
           />
         </div>
       ) : null}

@@ -1,16 +1,18 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, RefreshCw, Unlink } from 'lucide-react';
 import type React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getSessionBankExpanded, setSessionBankExpanded } from '@/utils/sessionPreferences';
 import {
   ACCOUNT_GROUP_LABELS,
   type AccountGroupKey,
   accountTypeSortOrder,
 } from '../domain/accountCategories';
 import { getConnectionStatusCaption } from '../domain/connectionStatus';
-import { Button, cn, GlassCard } from '../ui/primitives';
+import { cn, GlassCard, IconButton } from '../ui/primitives';
 import { appTitleBarRecipes } from '../ui/primitives/AppTitleBar';
 import {
+  controlIconWell,
   border as uiBorderRecipes,
   status as uiStatusRecipes,
   text as uiTextRecipes,
@@ -57,7 +59,11 @@ export const BankCard: React.FC<BankCardProps> = ({
   const sectionBadgeClass = cn(uiTypographyRecipes.label, uiTextRecipes.muted);
   const statusCaption = getConnectionStatusCaption(bank.status);
 
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(() => getSessionBankExpanded(bank.id));
+
+  useEffect(() => {
+    setSessionBankExpanded(bank.id, expanded);
+  }, [bank.id, expanded]);
   const [loading, setLoading] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [disconnectLoading, setDisconnectLoading] = useState(false);
@@ -86,7 +92,9 @@ export const BankCard: React.FC<BankCardProps> = ({
   const renderGroup = (group: AccountGroupKey, accounts: Account[]) => (
     <div key={group} className={cn('space-y-3')}>
       <span className={cn(sectionBadgeClass, 'inline-flex items-center gap-2')}>
-        <AccountGroupIcon group={group} />
+        <span className={cn(...controlIconWell.lg)}>
+          <AccountGroupIcon group={group} />
+        </span>
         {ACCOUNT_GROUP_LABELS[group]}
       </span>
       <div className={cn('grid', 'grid-cols-1', 'gap-3', 'md:grid-cols-2')}>
@@ -116,67 +124,56 @@ export const BankCard: React.FC<BankCardProps> = ({
           'grid',
           'min-w-0',
           'grid-cols-[auto_minmax(0,1fr)_auto]',
-          'grid-rows-[auto_auto]',
-          'items-start',
           'gap-x-3',
-          'gap-y-2'
+          'gap-y-2',
+          statusCaption ? 'grid-rows-[auto_auto_auto]' : 'grid-rows-[auto_auto]'
         )}
       >
-        <Button
-          type="button"
-          onClick={handleSync}
-          disabled={loading || !isOnline}
-          variant="ghost"
-          size="icon"
-          aria-label="Sync now"
-          title={!isOnline ? 'Unavailable while offline' : undefined}
-          className={cn(appTitleBarRecipes.settingsIdle, 'col-start-1', 'row-start-1', 'shrink-0')}
-        >
-          <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
-        </Button>
-        <Button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          variant="ghost"
-          size="icon"
-          aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
-          className={cn(appTitleBarRecipes.settingsIdle, 'col-start-1', 'row-start-2', 'shrink-0')}
-        >
-          <ChevronDown
-            className={cn(
-              'h-4 w-4',
-              'transition-transform',
-              'duration-200',
-              expanded && 'rotate-180'
-            )}
-          />
-        </Button>
+        <div className={cn('col-start-1', 'row-start-1', 'flex', 'flex-col', 'gap-2')}>
+          <IconButton
+            type="button"
+            size="md"
+            onClick={handleSync}
+            disabled={loading || !isOnline}
+            variant="ghost"
+            aria-label="Sync now"
+            title={!isOnline ? 'Unavailable while offline' : undefined}
+            className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
+          >
+            <RefreshCw className={cn(loading && 'animate-spin')} />
+          </IconButton>
+          <IconButton
+            type="button"
+            size="md"
+            onClick={() => setExpanded((v) => !v)}
+            variant="ghost"
+            aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
+            className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
+          >
+            <ChevronDown
+              className={cn('transition-transform', 'duration-200', expanded && 'rotate-180')}
+            />
+          </IconButton>
+        </div>
         <div
           className={cn(
             'col-start-2',
-            'row-span-2',
             'row-start-1',
-            'grid',
+            'row-span-2',
+            'flex',
             'min-w-0',
-            'grid-cols-[auto_minmax(0,1fr)]',
-            'grid-rows-[2.5rem_auto]',
-            'gap-x-2',
-            'self-start'
+            'items-center',
+            'gap-2',
+            'self-center'
           )}
         >
-          <div className={cn('col-start-1', 'row-start-1', 'flex', 'h-10', 'items-center')}>
-            <StatusPill status={bank.status} className={cn('shrink-0')} />
-          </div>
+          <StatusPill status={bank.status} className={cn('shrink-0')} />
           <h3
             title={bank.name}
             className={cn(
-              'col-start-2',
-              'row-start-1',
-              'row-span-2',
               'min-w-0',
               'line-clamp-2',
               'break-words',
-              'pt-[calc((2.5rem-1.5rem*1.25)/2)]',
               uiTypographyRecipes.sectionTitle,
               uiTextRecipes.primary
             )}
@@ -184,16 +181,16 @@ export const BankCard: React.FC<BankCardProps> = ({
             {bank.name}
           </h3>
         </div>
-        <Button
+        <IconButton
           type="button"
+          size="md"
           onClick={handleDisconnectClick}
           variant="danger"
-          size="icon"
           aria-label="Disconnect"
-          className={cn('col-start-3', 'row-start-1', 'shrink-0')}
+          className={cn('col-start-3', 'row-start-1', 'shrink-0', 'self-center')}
         >
-          <Unlink className={cn('h-4 w-4')} />
-        </Button>
+          <Unlink />
+        </IconButton>
         {statusCaption ? (
           <p
             className={cn(

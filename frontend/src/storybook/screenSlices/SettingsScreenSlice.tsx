@@ -2,6 +2,7 @@ import { AlertTriangle } from 'lucide-react';
 import { PasswordChecker } from '@/components/PasswordChecker';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
 import type { PasswordValidation } from '@/hooks/usePasswordValidation';
+import { pageLayoutRecipes } from '@/layouts/PageLayout';
 import { Alert, Badge, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { cn } from '@/ui/primitives/utils';
@@ -115,10 +116,7 @@ export function SettingsScreenSlice(props: {
   const confirmInputVariant = confirmText && confirmText !== 'DELETE' ? 'invalid' : 'default';
 
   return (
-    <div
-      className={cn('mx-auto', 'w-full', 'md:px-8', 'lg:px-8')}
-      data-testid="settings-screen-slice"
-    >
+    <div className={cn(...pageLayoutRecipes.settingsShell)} data-testid="settings-screen-slice">
       <div className={cn('flex', 'flex-col', 'gap-6')}>
         <GlassCard variant="default" padding="lg">
           <div className={cn('space-y-5')}>

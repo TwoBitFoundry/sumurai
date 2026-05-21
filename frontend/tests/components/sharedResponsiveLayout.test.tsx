@@ -140,11 +140,10 @@ describe('shared responsive layout surfaces', () => {
     expect(container.firstElementChild).toHaveClass(uiRadiusRecipes.standard);
   });
 
-  it('keeps budget summary totals aligned on the md tier', () => {
+  it('keeps total spent right aligned at every breakpoint', () => {
     render(<BudgetSummaryCard totalBudgeted={1000} totalSpent={250} />);
 
-    expect(screen.getByText('Total Spent').parentElement).toHaveClass('md:text-right');
-    expect(screen.getByText('Total Spent').parentElement).not.toHaveClass('sm:text-right');
+    expect(screen.getByText('Total Spent').parentElement).toHaveClass('text-right');
   });
 
   it('keeps the provider selection title on the md tier', () => {

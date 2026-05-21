@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeProviderCatalogMock } from '@tests/utils/providerCatalogMocks';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
@@ -94,8 +94,16 @@ jest.mock('@/features/import/components/ImportModal', () => ({
     ) : null,
 }));
 
+async function expandInstitutionAccounts(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Show accounts' }));
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Hide accounts' })).toBeVisible();
+  });
+}
+
 describe('AccountsPage', () => {
   beforeEach(() => {
+    window.sessionStorage.clear();
     jest.mocked(useOnlineStatus).mockReturnValue(false);
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
@@ -194,7 +202,8 @@ describe('AccountsPage', () => {
     expect(screen.queryByTestId('accounts-flow-error')).not.toBeInTheDocument();
   });
 
-  it('shows per-account transaction counts from the filter for Plaid', () => {
+  it('shows per-account transaction counts from the filter for Plaid', async () => {
+    const user = userEvent.setup();
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
@@ -231,8 +240,11 @@ describe('AccountsPage', () => {
     });
 
     renderAccountsPage();
+    await expandInstitutionAccounts(user);
 
-    expect(screen.getByText('55 items')).toBeVisible();
+    await waitFor(() => {
+      expect(screen.getByText('55 items')).toBeVisible();
+    });
   });
 
   it('renders the Plaid accounts button with the Plaid logo', () => {
@@ -251,7 +263,8 @@ describe('AccountsPage', () => {
     expect(plaidButton.querySelector('img')).toHaveAttribute('src', '/plaid.webp');
   });
 
-  it('renders Teller current balances on the accounts page', () => {
+  it('renders Teller current balances on the accounts page', async () => {
+    const user = userEvent.setup();
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
@@ -290,8 +303,11 @@ describe('AccountsPage', () => {
     });
 
     renderAccountsPage();
+    await expandInstitutionAccounts(user);
 
-    expect(screen.getByText('$1,234.56')).toBeVisible();
+    await waitFor(() => {
+      expect(screen.getByText('$1,234.56')).toBeVisible();
+    });
     expect(screen.queryByText('PLACEHOLDER')).not.toBeInTheDocument();
   });
 
@@ -377,6 +393,7 @@ describe('AccountsPage', () => {
     });
 
     renderAccountsPage();
+    await expandInstitutionAccounts(user);
 
     await user.click(screen.getByRole('button', { name: 'Import transactions' }));
     await user.click(screen.getByRole('button', { name: 'Finish mocked import' }));

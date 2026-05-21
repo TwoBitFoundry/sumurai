@@ -1,6 +1,10 @@
 import { Search } from 'lucide-react';
 import { cn, Input } from '@/ui/primitives';
-import { placeholder as uiPlaceholderRecipes, text as uiTextRecipes } from '@/ui/recipes';
+import {
+  floatingChromeSearch,
+  placeholder as uiPlaceholderRecipes,
+  text as uiTextRecipes,
+} from '@/ui/recipes';
 
 interface TransactionsSearchBarProps {
   search: string;
@@ -18,11 +22,10 @@ export function TransactionsSearchBar({ search, onSearch }: TransactionsSearchBa
         className={cn(
           'pointer-events-none',
           'absolute',
-          'left-3',
+          'left-3.5',
           'top-1/2',
           'z-10',
-          'h-4',
-          'w-4',
+          floatingChromeSearch.glyph,
           '-translate-y-1/2',
           uiTextRecipes.subtle
         )}
@@ -33,12 +36,12 @@ export function TransactionsSearchBar({ search, onSearch }: TransactionsSearchBa
         onChange={(e) => onSearch(e.target.value)}
         placeholder="Search transactions"
         variant="floatingChrome"
-        inputSize="md"
+        inputSize="chromeBar"
         className={cn(
           'backdrop-blur-md backdrop-saturate-[150%]',
           'w-full',
           'min-w-0',
-          'pl-10',
+          '!pl-11',
           uiPlaceholderRecipes.muted
         )}
       />

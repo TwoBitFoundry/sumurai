@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { BottomContextualBar } from '@/components/BottomContextualBar';
+import { TransactionsSearchBar } from '@/features/transactions/components/TransactionsSearchBar';
 import { useTransactionFilterState } from '@/features/transactions/hooks/useTransactionFilterState';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import TransactionsPage from '@/views/TransactionsPage';
@@ -45,6 +47,9 @@ function TransactionsJourney() {
     <AccountFilterStoryProvider>
       <StoryApiScope handlers={handlers}>
         <TransactionsPage filterControl={filterControl} />
+        <BottomContextualBar>
+          <TransactionsSearchBar search={filterControl.search} onSearch={filterControl.setSearch} />
+        </BottomContextualBar>
       </StoryApiScope>
     </AccountFilterStoryProvider>
   );

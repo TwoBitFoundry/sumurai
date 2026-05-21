@@ -1,10 +1,15 @@
 import { render } from '@testing-library/react';
 import type React from 'react';
 import { useTransactions } from '@/features/transactions/hooks/useTransactions';
+import { useTransactionsInsights } from '@/features/transactions/hooks/useTransactionsInsights';
 import TransactionsPage from '@/views/TransactionsPage';
 
 jest.mock('@/features/transactions/hooks/useTransactions', () => ({
   useTransactions: jest.fn(),
+}));
+
+jest.mock('@/features/transactions/hooks/useTransactionsInsights', () => ({
+  useTransactionsInsights: jest.fn(),
 }));
 
 jest.mock('@/layouts/PageLayout', () => ({
@@ -43,6 +48,20 @@ describe('TransactionsPage', () => {
       totalItems: 0,
       totalPages: 1,
     } as any);
+    jest.mocked(useTransactionsInsights).mockReturnValue({
+      insights: {
+        total_count: 0,
+        total_spent: 0,
+        average_amount: 0,
+        largest: null,
+        recurring_count: 0,
+        recurring_merchants: [],
+        top_categories: [],
+      },
+      isLoading: false,
+      loading: false,
+      error: null,
+    } as any);
   });
 
   it('keeps the transaction stats grid in two columns on mobile', () => {
@@ -62,5 +81,27 @@ describe('TransactionsPage', () => {
 
     expect(statsGrid).toHaveClass('grid-cols-2');
     expect(statsGrid).toHaveClass('lg:grid-cols-4');
+  });
+
+  it('shows the insights loading state independently from the table', () => {
+    jest.mocked(useTransactionsInsights).mockReturnValue({
+      insights: null,
+      isLoading: true,
+      loading: true,
+      error: null,
+    } as any);
+
+    const { getAllByText } = render(
+      <TransactionsPage
+        filterControl={{
+          search: '',
+          setSearch: jest.fn(),
+          selectedCategory: null,
+          setSelectedCategory: jest.fn(),
+        }}
+      />
+    );
+
+    expect(getAllByText('Loading...')).toHaveLength(4);
   });
 });

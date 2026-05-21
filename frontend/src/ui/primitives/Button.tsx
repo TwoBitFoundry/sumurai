@@ -4,6 +4,7 @@ import {
   buttonChrome,
   buttonCta,
   chrome,
+  control,
   border as semanticBorders,
   effect as semanticEffects,
   status as semanticStatus,
@@ -15,10 +16,9 @@ import {
 import { cn } from './utils';
 
 export const buttonTypographySizes = {
-  xs: uiTypographyRecipes.label,
-  sm: uiTypographyRecipes.captionStrong,
-  md: uiTypographyRecipes.captionStrong,
-  lg: uiTypographyRecipes.bodyStrong,
+  sm: control.label.sm,
+  md: control.label.md,
+  lg: control.label.lg,
 } as const;
 
 const titleBarChromeExpandedTypography =
@@ -93,6 +93,17 @@ export const buttonRecipes = {
     'dark:text-slate-400',
     'dark:hover:border-[var(--color-border-default)] dark:hover:text-white',
   ],
+  filterChip: [
+    'border',
+    'border-transparent',
+    'bg-transparent',
+    'shadow-none',
+    'backdrop-blur-sm',
+    'hover:-translate-y-[2px]',
+    'hover:shadow-lg',
+    'disabled:hover:translate-y-0',
+    'disabled:hover:shadow-none',
+  ],
   tab: [
     'group',
     'relative',
@@ -149,6 +160,7 @@ const buttonVariants = cva([...buttonRecipes.base], {
       secondary: [...buttonRecipes.secondary],
       ghost: [...buttonRecipes.ghost],
       icon: [...buttonRecipes.icon],
+      filterChip: [...buttonRecipes.filterChip],
       tab: [...buttonRecipes.tab],
       tabActive: [...buttonRecipes.tabActive],
       danger: [...buttonRecipes.danger],
@@ -156,18 +168,70 @@ const buttonVariants = cva([...buttonRecipes.base], {
       connect: [...buttonRecipes.connect],
     },
     size: {
-      xs: `${buttonTypographySizes.xs} ${chrome.xs}`,
-      sm: `${buttonTypographySizes.sm} ${chrome.sm}`,
-      titleBarExpanded: `${titleBarChromeExpandedTypography} ${chrome.sm}`,
-      md: `${buttonTypographySizes.md} px-4 py-2 ${uiRadiusRecipes.standard}`,
-      lg: `${buttonTypographySizes.lg} px-5 py-2.5 ${uiRadiusRecipes.standard}`,
-      icon: `h-10 w-10 ${uiRadiusRecipes.standard}`,
+      sm: '',
+      md: '',
+      lg: '',
+      inherit: '',
+      titleBarExpanded: '',
+    },
+    shape: {
+      default: '',
+      square: '',
+      pill: '',
     },
   },
   defaultVariants: {
     variant: 'primary',
     size: 'md',
+    shape: 'default',
   },
+  compoundVariants: [
+    {
+      shape: 'default',
+      size: 'sm',
+      class: `${control.height.sm} ${control.paddingX.sm} ${control.label.sm} ${uiRadiusRecipes.standard}`,
+    },
+    {
+      shape: 'default',
+      size: 'md',
+      class: `${control.height.md} ${control.paddingX.md} ${control.label.md} ${uiRadiusRecipes.standard}`,
+    },
+    {
+      shape: 'default',
+      size: 'lg',
+      class: `${control.height.lg} ${control.paddingX.lg} ${control.label.lg} ${uiRadiusRecipes.standard}`,
+    },
+    {
+      shape: 'default',
+      size: 'titleBarExpanded',
+      class: `${titleBarChromeExpandedTypography} ${chrome.sm}`,
+    },
+    {
+      shape: 'square',
+      size: 'sm',
+      class: `${control.square.sm} p-0 ${uiRadiusRecipes.standard}`,
+    },
+    {
+      shape: 'square',
+      size: 'md',
+      class: `${control.square.md} p-0 ${uiRadiusRecipes.standard}`,
+    },
+    {
+      shape: 'square',
+      size: 'lg',
+      class: `${control.square.lg} p-0 ${uiRadiusRecipes.standard}`,
+    },
+    {
+      shape: 'pill',
+      size: 'sm',
+      class: `max-w-full shrink-0 gap-1.5 rounded-full px-2.5 py-1 ${control.height.sm} ${uiTypographyRecipes.badge}`,
+    },
+    {
+      shape: 'pill',
+      size: 'md',
+      class: `max-w-full shrink-0 gap-1.5 rounded-full px-3 py-1 ${control.height.md} ${uiTypographyRecipes.badge}`,
+    },
+  ],
 });
 
 export interface ButtonProps
@@ -177,21 +241,10 @@ export interface ButtonProps
   children?: React.ReactNode;
 }
 
-/**
- * Interactive button component with multiple visual styles.
- *
- * @example
- * ```tsx
- * <Button variant="primary" size="lg">Submit</Button>
- * <Button variant="secondary" size="md">Cancel</Button>
- * <Button variant="icon" size="icon"><CloseIcon /></Button>
- * ```
- *
- * @see {@link ../README.md} for detailed variant documentation
- */
 export const Button = ({
   variant,
   size,
+  shape,
   loading,
   disabled,
   className,
@@ -199,14 +252,36 @@ export const Button = ({
   ref,
   ...props
 }: ButtonProps & { ref?: React.RefObject<HTMLButtonElement | null> }) => {
+  const resolvedSize = size ?? 'md';
+  const isSquare = shape === 'square';
+  const glyphSize =
+    resolvedSize === 'sm' || resolvedSize === 'md' || resolvedSize === 'lg' ? resolvedSize : 'md';
+
   return (
     <button
       ref={ref}
       disabled={disabled || loading}
-      className={cn(buttonVariants({ variant, size }), className)}
+      className={cn(buttonVariants({ variant, size, shape }), className)}
       {...props}
     >
-      {children}
+      {isSquare ? (
+        <span
+          className={cn(
+            'inline-flex',
+            'shrink-0',
+            'items-center',
+            'justify-center',
+            control.glyph[glyphSize],
+            '[&_svg]:block',
+            '[&_svg]:h-full',
+            '[&_svg]:w-full'
+          )}
+        >
+          {children}
+        </span>
+      ) : (
+        children
+      )}
     </button>
   );
 };

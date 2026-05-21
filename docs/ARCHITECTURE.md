@@ -49,7 +49,7 @@ flowchart LR
 - `DEFAULT_PROVIDER` determines the default provider shown by the app.
 - The backend registers both Teller and Plaid implementations in a shared provider registry.
 - The frontend uses provider-specific services and connect flows for Teller and Plaid.
-- `/api/providers/info`, `/api/providers/status`, `/api/providers/accounts`, and `/api/providers/sync-transactions` support the provider management UX.
+- `/api/providers/info`, `/api/providers/select`, `/api/providers/connect`, `/api/providers/status`, `/api/providers/accounts`, `/api/providers/sync-transactions`, and `/api/providers/disconnect` support the provider management UX.
 - Provider credentials are encrypted before persistence and invalidated through cache cleanup when a connection is removed.
 
 ## Frontend
@@ -85,6 +85,7 @@ Current cache lifetimes in code:
 - Provider access tokens: 1 hour
 - Account and bank connection metadata: 2 hours
 - Recent transaction sync cache: 30 minutes
+- Budgets cache: 5 minutes
 
 Cache keys are namespaced by session, connection, and account identifiers so provider data stays isolated per user and connection.
 

@@ -62,6 +62,7 @@ export const pageLayoutRecipes = {
     'shadow-sm',
   ].join(' '),
   errorText: `${uiTypographyRecipes.captionStrong} ${semanticTextRecipes.danger}`,
+  settingsShell: ['mx-auto', 'w-full', 'max-w-5xl', 'md:px-8', 'lg:px-8'],
 } as const;
 
 interface PageLayoutProps {

@@ -2,6 +2,8 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 import {
   buttonChrome,
+  chromeBar,
+  control,
   effect as semanticEffects,
   status as semanticStatus,
   surface as semanticSurfaces,
@@ -11,7 +13,7 @@ import { cn } from './utils';
 
 export const iconButtonRecipes = {
   ghost: [
-    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} p-2 disabled:cursor-not-allowed`,
+    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} disabled:cursor-not-allowed`,
     ...buttonChrome.muted,
     ...semanticSurfaces.card,
     'text-slate-600 dark:text-slate-200',
@@ -20,20 +22,20 @@ export const iconButtonRecipes = {
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#0f172a]',
   ],
   primary: [
-    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} bg-gradient-to-r from-sky-500 via-sky-400 to-violet-500 p-2 text-white disabled:cursor-not-allowed`,
+    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} bg-gradient-to-r from-sky-500 via-sky-400 to-violet-500 text-white disabled:cursor-not-allowed`,
     'shadow-[0_22px_60px_-32px_rgba(14,165,233,0.85)]',
     'transition-all duration-200 ease-out hover:-translate-y-[2px] active:scale-[0.98] disabled:active:scale-100 disabled:hover:translate-y-0',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-sky-400/80 dark:focus-visible:ring-offset-[#0f172a]',
   ],
   success: [
-    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} bg-gradient-to-r from-[var(--color-brand-emerald)] via-[var(--color-brand-emerald)] to-[var(--color-brand-sky)] p-2 text-white disabled:cursor-not-allowed`,
+    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} bg-gradient-to-r from-[var(--color-brand-emerald)] via-[var(--color-brand-emerald)] to-[var(--color-brand-sky)] text-white disabled:cursor-not-allowed`,
     ...semanticEffects.successGlow,
     'transition-all duration-200 ease-out hover:-translate-y-[2px] active:scale-[0.98] disabled:active:scale-100',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus-active)] focus-visible:ring-offset-2 focus-visible:ring-offset-white',
     'dark:focus-visible:ring-offset-[#0f172a]',
   ],
   danger: [
-    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} p-2 disabled:cursor-not-allowed`,
+    `inline-flex cursor-pointer items-center justify-center ${uiRadiusRecipes.standard} disabled:cursor-not-allowed`,
     'border',
     ...semanticStatus.danger.border,
     ...semanticStatus.danger.surface,
@@ -54,9 +56,16 @@ const iconButtonVariants = cva('', {
       success: iconButtonRecipes.success.join(' '),
       danger: iconButtonRecipes.danger.join(' '),
     },
+    size: {
+      sm: control.square.sm,
+      md: control.square.md,
+      lg: control.square.lg,
+      bar: `${chromeBar.square} p-0`,
+    },
   },
   defaultVariants: {
     variant: 'ghost',
+    size: 'md',
   },
 });
 
@@ -66,10 +75,37 @@ export interface IconButtonProps
   children: React.ReactNode;
 }
 
-export function IconButton({ variant, className, children, ...props }: IconButtonProps) {
+export function IconButton({
+  variant,
+  size,
+  className,
+  children,
+  ref,
+  ...props
+}: IconButtonProps & { ref?: React.RefObject<HTMLButtonElement | null> }) {
+  const resolvedSize = size ?? 'md';
+  const glyphShellClass =
+    resolvedSize === 'bar'
+      ? cn(chromeBar.glyphWell, '[&_svg]:block', '[&_svg]:h-full', '[&_svg]:w-full')
+      : cn(
+          'inline-flex',
+          'shrink-0',
+          'items-center',
+          'justify-center',
+          control.glyph[resolvedSize],
+          '[&_svg]:block',
+          '[&_svg]:h-full',
+          '[&_svg]:w-full'
+        );
+
   return (
-    <button type="button" className={cn(iconButtonVariants({ variant }), className)} {...props}>
-      {children}
+    <button
+      ref={ref}
+      type="button"
+      className={cn(iconButtonVariants({ variant, size }), className)}
+      {...props}
+    >
+      <span className={glyphShellClass}>{children}</span>
     </button>
   );
 }

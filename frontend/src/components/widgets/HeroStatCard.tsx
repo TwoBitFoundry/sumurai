@@ -1,6 +1,7 @@
 import React, { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/ui/primitives';
 import {
+  controlIconWell,
   text as semanticTextRecipes,
   radius as uiRadiusRecipes,
   font as uiTypographyRecipes,
@@ -30,6 +31,7 @@ export type HeroStatCardProps = {
   accent?: Accent;
   className?: string;
   minHeightClassName?: string;
+  footerScrollClassName?: string;
 };
 
 export { heroStatSemanticThemes };
@@ -56,6 +58,7 @@ export const heroStatCardRecipes = {
   footer: 'relative min-w-0 w-full max-w-full overflow-hidden',
   footerScroll:
     'scrollbar-hide flex w-full min-w-0 items-center gap-1.5 overflow-x-auto overflow-y-hidden whitespace-nowrap max-w-full [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+  iconWell: [...controlIconWell.lg, '[&_svg]:stroke-[2.25]'],
   semantic: heroStatSemanticThemes,
 } as const;
 
@@ -96,10 +99,12 @@ function HeroStatCardScrollFooter({
   subtext,
   pills,
   styles,
+  className,
 }: {
   subtext?: React.ReactNode;
   pills: HeroPill[];
   styles: HeroAccentTheme;
+  className?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeftFade, setShowLeftFade] = useState(false);
@@ -137,7 +142,7 @@ function HeroStatCardScrollFooter({
       <div
         ref={scrollRef}
         onScroll={checkScroll}
-        className={cn(heroStatCardRecipes.footerScroll)}
+        className={cn(heroStatCardRecipes.footerScroll, className)}
         data-testid="hero-stat-card-footer-scroll"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
@@ -196,6 +201,7 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
   accent: accentProp,
   className,
   minHeightClassName = 'min-h-[120px]',
+  footerScrollClassName,
 }) => {
   const accent = accentProp ?? accentFromIndex(index);
   const styles = heroAccents[accent] ?? getHeroAccentTheme(accent);
@@ -244,7 +250,9 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
           )}
         >
           <div className="flex min-w-0 items-center gap-2">
-            {icon ? <span className={cn('h-4 w-4 shrink-0', styles.icon)}>{icon}</span> : null}
+            {icon ? (
+              <span className={cn(...heroStatCardRecipes.iconWell, styles.icon)}>{icon}</span>
+            ) : null}
             <div className={cn('min-w-0', heroStatCardRecipes.title)}>{title}</div>
           </div>
           <div className={cn('flex', 'flex-wrap', 'items-baseline', 'gap-2')}>
@@ -252,7 +260,12 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
             {suffix ? <div className={cn(heroStatCardRecipes.suffix)}>{suffix}</div> : null}
           </div>
           {hasFooter ? (
-            <HeroStatCardScrollFooter subtext={subtext} pills={footerPills} styles={styles} />
+            <HeroStatCardScrollFooter
+              subtext={subtext}
+              pills={footerPills}
+              styles={styles}
+              className={footerScrollClassName}
+            />
           ) : null}
         </div>
       </div>

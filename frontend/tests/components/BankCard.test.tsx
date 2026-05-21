@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type React from 'react';
 import { BankCard } from '@/components/BankCard';
+import { control } from '@/ui/recipes';
 import { ThemeTestProvider } from '../utils/ThemeTestProvider';
 
 jest.mock('@/features/import/components/ImportModal', () => ({
@@ -54,6 +55,59 @@ describe('BankCard', () => {
 
     expect(screen.getByRole('button', { name: 'Sync now' })).toBeDisabled();
     expect(screen.getByTitle('Unavailable while offline')).toBeDisabled();
+  });
+
+  it('sizes institution card glyphs with the shared control scale', async () => {
+    const user = userEvent.setup();
+
+    renderWithTheme(
+      <BankCard
+        bank={{
+          id: 'bank-1',
+          name: 'Chase',
+          short: 'CH',
+          status: 'connected',
+          accounts: [{ id: 'acc-1', name: 'Checking', mask: '1234', type: 'checking' }],
+        }}
+        onSync={jest.fn()}
+        onDisconnect={jest.fn()}
+        isOnline
+      />
+    );
+
+    const statusIcon = screen.getByRole('status', { name: 'Connected' }).querySelector('svg');
+    expect(statusIcon?.parentElement?.className).toContain(control.glyph.lg);
+
+    const syncIcon = screen.getByRole('button', { name: 'Sync now' }).querySelector('svg');
+    expect(syncIcon?.parentElement?.className).toContain(control.glyph.md);
+
+    await user.click(screen.getByRole('button', { name: 'Show accounts' }));
+
+    const groupIcon = (
+      await screen.findByText('Cash', { exact: true })
+    ).parentElement?.querySelector('svg');
+    expect(groupIcon?.parentElement?.className).toContain(control.glyph.lg);
+  });
+
+  it('vertically centers the bank name and status icon with the action buttons', () => {
+    render(
+      <BankCard
+        bank={{
+          id: 'bank-1',
+          name: 'Chase',
+          short: 'CH',
+          status: 'connected',
+          accounts: [],
+        }}
+        onSync={jest.fn()}
+        onDisconnect={jest.fn()}
+        isOnline
+      />
+    );
+
+    const heading = screen.getByRole('heading', { name: 'Chase' });
+    expect(heading.parentElement).toHaveClass('items-center');
+    expect(heading.className).not.toContain('pt-[calc');
   });
 
   it('shows connection status before the bank name', () => {
@@ -146,17 +200,28 @@ describe('BankCard', () => {
       />
     );
 
-    expect(screen.getByText('Checking')).toBeVisible();
-    expect(screen.getByText('••1234')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Show accounts' })).toBeVisible();
+    expect(screen.queryByText('Checking')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Show accounts' }));
+    await waitFor(() => {
+      expect(screen.getByText('Checking')).toBeVisible();
+      expect(screen.getByText('••1234')).toBeVisible();
+    });
 
     await user.click(screen.getByRole('button', { name: 'Sync now' }));
     expect(onSync).toHaveBeenCalledWith('bank-1');
 
     await user.click(screen.getByRole('button', { name: 'Hide accounts' }));
     expect(screen.getByRole('button', { name: 'Show accounts' })).toBeVisible();
+    await waitFor(() => {
+      expect(screen.queryByText('Checking')).not.toBeInTheDocument();
+    });
 
     await user.click(screen.getByRole('button', { name: 'Show accounts' }));
-    expect(screen.getByText('Checking')).toBeVisible();
+    await waitFor(() => {
+      expect(screen.getByText('Checking')).toBeVisible();
+    });
 
     await user.click(screen.getByRole('button', { name: 'Disconnect' }));
     expect(screen.getByRole('dialog', { name: /Disconnect Chase/ })).toBeVisible();
@@ -165,7 +230,9 @@ describe('BankCard', () => {
     expect(onDisconnect).toHaveBeenCalledWith('bank-1');
   });
 
-  it('shows an accessible import button next to each account transaction count', () => {
+  it('shows an accessible import button next to each account transaction count', async () => {
+    const user = userEvent.setup();
+
     renderWithTheme(
       <BankCard
         bank={{
@@ -189,7 +256,9 @@ describe('BankCard', () => {
       />
     );
 
-    const count = screen.getByText('7 items');
+    await user.click(screen.getByRole('button', { name: 'Show accounts' }));
+
+    const count = await screen.findByText('7 items');
     const actions = count.parentElement;
 
     expect(actions).toContainElement(screen.getByRole('button', { name: 'Import transactions' }));
@@ -199,7 +268,9 @@ describe('BankCard', () => {
     );
   });
 
-  it('disables account import buttons while offline', () => {
+  it('disables account import buttons while offline', async () => {
+    const user = userEvent.setup();
+
     renderWithTheme(
       <BankCard
         bank={{
@@ -223,7 +294,9 @@ describe('BankCard', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: 'Import transactions' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Show accounts' }));
+
+    expect(await screen.findByRole('button', { name: 'Import transactions' })).toBeDisabled();
   });
 
   it('opens the import modal for the selected account', async () => {
@@ -259,9 +332,11 @@ describe('BankCard', () => {
       />
     );
 
+    await user.click(screen.getByRole('button', { name: 'Show accounts' }));
+    await screen.findByText('Savings');
     await user.click(screen.getAllByRole('button', { name: 'Import transactions' })[1]);
 
-    expect(screen.getByRole('dialog', { name: 'Import modal for acc-2' })).toBeVisible();
+    expect(await screen.findByRole('dialog', { name: 'Import modal for acc-2' })).toBeVisible();
     expect(screen.getByText('5678')).toBeVisible();
   });
 
@@ -293,6 +368,8 @@ describe('BankCard', () => {
       />
     );
 
+    await user.click(screen.getByRole('button', { name: 'Show accounts' }));
+    await screen.findByText('Checking');
     await user.click(screen.getByRole('button', { name: 'Import transactions' }));
     await user.click(screen.getByRole('button', { name: 'Complete import' }));
 

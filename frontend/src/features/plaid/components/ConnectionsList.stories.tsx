@@ -7,6 +7,12 @@ const meta = {
   title: 'Features/Plaid/ConnectionsList',
   component: ConnectionsList,
   tags: ['autodocs', 'test'],
+  decorators: [
+    (Story) => {
+      window.sessionStorage.removeItem('sumurai.ui.accountsBankExpanded');
+      return <Story />;
+    },
+  ],
   args: {
     banks: sampleBankConnections,
     onConnect: fn(),
@@ -28,8 +34,9 @@ export const BankOperations: Story = {
     await expect(canvas.getByText(/story federal credit union/i)).toBeVisible();
     await userEvent.click(canvas.getAllByRole('button', { name: /sync now/i })[0]);
     await expect(args.onSync).toHaveBeenCalledWith(sampleBankConnections[0].id);
-    await userEvent.click(canvas.getAllByRole('button', { name: /hide/i })[0]);
-    await expect(canvas.getAllByRole('button', { name: /show/i })[0]).toBeVisible();
+    await userEvent.click(canvas.getAllByRole('button', { name: /show accounts/i })[0]);
+    await userEvent.click(canvas.getAllByRole('button', { name: /hide accounts/i })[0]);
+    await expect(canvas.getAllByRole('button', { name: /show accounts/i })[0]).toBeVisible();
   },
 };
 

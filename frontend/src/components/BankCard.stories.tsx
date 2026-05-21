@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { sampleBankConnections } from '@/storybook/fixtures/plaid';
 import { BankCard } from './BankCard';
 
@@ -17,6 +17,12 @@ const meta = {
   title: 'Components/BankCard',
   component: BankCard,
   tags: ['autodocs', 'test'],
+  decorators: [
+    (Story) => {
+      window.sessionStorage.removeItem('sumurai.ui.accountsBankExpanded');
+      return <Story />;
+    },
+  ],
   args: {
     bank: storyBank,
     onSync: fn(async () => {}),
@@ -33,7 +39,10 @@ export const Connected: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText(/story federal credit union/i)).toBeVisible();
-    await expect(canvas.getByText(/premium rewards checking/i)).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: /show accounts/i }));
+    await waitFor(() => {
+      expect(canvas.getByText(/premium rewards checking/i)).toBeVisible();
+    });
     await userEvent.click(canvas.getByRole('button', { name: /sync now/i }));
     await expect(args.onSync).toHaveBeenCalledWith(storyBank.id);
   },
@@ -42,10 +51,19 @@ export const Connected: Story = {
 export const CollapseAccounts: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: /hide/i }));
-    await expect(canvas.getByRole('button', { name: /show/i })).toBeVisible();
-    await userEvent.click(canvas.getByRole('button', { name: /show/i }));
-    await expect(canvas.getByText(/premium rewards checking/i)).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: /show accounts/i }));
+    await waitFor(() => {
+      expect(canvas.getByText(/premium rewards checking/i)).toBeVisible();
+    });
+    await userEvent.click(canvas.getByRole('button', { name: /hide accounts/i }));
+    await waitFor(() => {
+      expect(canvas.getByRole('button', { name: /show accounts/i })).toBeVisible();
+      expect(canvas.queryByText(/premium rewards checking/i)).not.toBeInTheDocument();
+    });
+    await userEvent.click(canvas.getByRole('button', { name: /show accounts/i }));
+    await waitFor(() => {
+      expect(canvas.getByText(/premium rewards checking/i)).toBeVisible();
+    });
   },
 };
 

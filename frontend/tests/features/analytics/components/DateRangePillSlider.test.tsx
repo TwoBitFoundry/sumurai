@@ -13,4 +13,22 @@ describe('DateRangePillSlider', () => {
     expect(screen.getByRole('button', { name: '5Y' })).toBeInTheDocument();
     expect(onChange).toHaveBeenCalledWith('past-year');
   });
+
+  it('uses stronger body text for the range labels', () => {
+    render(<DateRangePillSlider dateRange="current-month" onChange={jest.fn()} />);
+
+    expect(
+      screen.getByRole('button', { name: '1M' }).querySelector('.font-body-strong')
+    ).not.toBeNull();
+  });
+
+  it('renders compact context pill tabs with a smaller corner radius', () => {
+    render(<DateRangePillSlider dateRange="current-month" onChange={jest.fn()} />);
+
+    const activeButton = screen.getByRole('button', { name: '1M' });
+    expect(activeButton.className).toContain('rounded-lg');
+    expect(activeButton.className).not.toContain('flex-1');
+    expect(activeButton.className).not.toContain('aspect-square');
+    expect(activeButton.className).not.toContain('radius-standard');
+  });
 });

@@ -1,14 +1,19 @@
 import type React from 'react';
-import { Button, type ButtonProps } from './Button';
+import { IconButton, type IconButtonProps } from './IconButton';
 import { cn } from './utils';
 
-export type PaginationButtonProps = Omit<ButtonProps, 'variant' | 'size'>;
+export type PaginationButtonProps = Omit<IconButtonProps, 'variant'>;
 
-export function PaginationButton({ className, children, ...props }: PaginationButtonProps) {
+export function PaginationButton({
+  className,
+  children,
+  size = 'md',
+  ...props
+}: PaginationButtonProps) {
   return (
-    <Button variant="icon" size="icon" className={cn(className)} {...props}>
+    <IconButton variant="ghost" size={size} className={cn(className)} {...props}>
       {children}
-    </Button>
+    </IconButton>
   );
 }
 

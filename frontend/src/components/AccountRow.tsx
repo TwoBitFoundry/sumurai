@@ -3,7 +3,7 @@ import type React from 'react';
 import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import { ImportModal } from '@/features/import/components/ImportModal';
-import { Button, cn, GlassCard, RequirementPill } from '@/ui/primitives';
+import { cn, GlassCard, IconButton, RequirementPill } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
   border as uiBorderRecipes,
@@ -140,18 +140,17 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
                 <RequirementPill className={transactionsPillClasses} status="pending">
                   {account.transactions ?? 0} items
                 </RequirementPill>
-                <Button
+                <IconButton
                   type="button"
-                  variant="icon"
-                  size="icon"
+                  variant="ghost"
                   aria-label="Import transactions"
                   title="Import transactions"
                   disabled={!isOnline}
                   onClick={() => setIsImportOpen(true)}
-                  className={cn('h-9', 'w-9', !isOnline && 'opacity-45')}
+                  className={cn(!isOnline && 'opacity-45')}
                 >
-                  <Upload className={cn('h-4', 'w-4')} />
-                </Button>
+                  <Upload />
+                </IconButton>
               </div>
             </div>
           </div>

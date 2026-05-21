@@ -28,9 +28,8 @@ describe('primitive typography recipes', () => {
 
   it('keeps button sizes on the semantic scale', () => {
     expect(buttonTypographySizes).toEqual({
-      xs: uiTypographyRecipes.label,
       sm: uiTypographyRecipes.captionStrong,
-      md: uiTypographyRecipes.captionStrong,
+      md: uiTypographyRecipes.bodyStrong,
       lg: uiTypographyRecipes.bodyStrong,
     });
     expect(connectButtonRecipes.base.join(' ')).toContain(uiTypographyRecipes.captionStrong);
@@ -64,6 +63,21 @@ describe('primitive typography recipes', () => {
     expect(appTitleBarRecipes.pillTab.join(' ')).toContain(
       'rounded-[length:var(--radius-standard)]'
     );
+    expect(appTitleBarRecipes.titleBarGrid.join(' ')).toContain('grid-rows-1');
+    expect(appTitleBarRecipes.titleBarGrid.join(' ')).not.toContain('grid-rows-[auto_auto]');
+    expect(appTitleBarRecipes.titleBarGrid.join(' ')).not.toContain('gap-y-2');
+    expect(appTitleBarRecipes.titleBarGrid.join(' ')).toContain('h-14');
+    expect(appTitleBarRecipes.logo.image.join(' ')).toContain('h-12');
+    expect(appTitleBarRecipes.logo.image.join(' ')).toContain('w-12');
+    expect(appTitleBarRecipes.logo.image.join(' ')).not.toContain('lg:h-8');
+    expect(appTitleBarRecipes.logo.wordmark.join(' ')).toContain('leading-none');
+    expect(appTitleBarRecipes.pillTabSize.join(' ')).toContain('px-3.5');
+    expect(appTitleBarRecipes.pillInset.join(' ')).toContain('md:p-3');
+    expect(appTitleBarRecipes.contextPillInset.join(' ')).toContain('md:py-2');
+    expect(appTitleBarRecipes.contextPillTab.join(' ')).toContain('rounded-lg');
+    expect(appTitleBarRecipes.floatingChromeGutter.join(' ')).toContain('md:px-6');
+    expect(appTitleBarRecipes.pillContainerSize.join(' ')).toContain('h-12');
+    expect(uiTypographyRecipes.bodyStrong).toContain('font-body-strong');
   });
 
   it('reserves labeled-control spacing for label stacks that clear focus rings', () => {});

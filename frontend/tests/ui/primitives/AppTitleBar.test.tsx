@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { AppTitleBar } from '@/ui/primitives/AppTitleBar';
+import { chromeBar, control } from '@/ui/recipes';
 
 jest.mock('framer-motion', () => {
   const R = require('react');
@@ -72,11 +73,72 @@ describe('AppTitleBar', () => {
     expect(screen.queryByRole('button', { name: 'Toggle theme' })).not.toBeInTheDocument();
   });
 
-  it('does not render primary tab navigation in the title bar', () => {
+  it('renders primary tab navigation in the title bar for tablet and desktop', () => {
     render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
 
-    expect(screen.queryByRole('navigation', { name: 'Primary' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Transactions' })).not.toBeInTheDocument();
+    const primaryNav = screen.getByRole('navigation', { name: 'Primary' });
+    expect(primaryNav).toBeInTheDocument();
+    expect(primaryNav.className).toContain('hidden');
+    expect(primaryNav.className).toContain('md:flex');
+  });
+
+  it('anchors the action cluster to the right on tablet and desktop', () => {
+    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+
+    const actions = screen.getByTitle('Online').closest('div');
+    expect(actions?.className).toContain('md:col-start-3');
+    expect(actions?.className).toContain('md:justify-self-end');
+  });
+
+  it('uses a single-row title bar grid on tablet and desktop', () => {
+    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+
+    const grid = screen.getByRole('banner').querySelector('.grid');
+    expect(grid?.className).toContain('grid-rows-1');
+    expect(grid?.className).not.toContain('grid-rows-[auto_auto]');
+    expect(grid?.className).not.toContain('gap-y-2');
+  });
+
+  it('sizes the logo to fill the title bar chrome on each breakpoint', () => {
+    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+
+    const logoFrame = screen.getByAltText('Sumurai Logo').parentElement;
+    expect(logoFrame?.className).toContain('h-12');
+    expect(logoFrame?.className).toContain('w-12');
+    expect(logoFrame?.className).not.toContain('lg:h-8');
+  });
+
+  it('uses context pill tabs for the desktop tab switcher', () => {
+    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+
+    const primaryNav = screen.getByRole('navigation', { name: 'Primary' });
+    const settingsTab = screen.getByRole('button', { name: 'Dashboard' });
+    expect(settingsTab.className).toContain('rounded-lg');
+    expect(settingsTab.className).not.toContain('flex-1');
+
+    const pillContainer = primaryNav.firstElementChild;
+    expect(pillContainer?.className).toContain('h-12');
+    expect(pillContainer?.className).toContain('md:py-2');
+    expect(pillContainer?.className).not.toContain('lg:h-8');
+  });
+
+  it('uses stronger body text for the primary tab labels', () => {
+    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+
+    const primaryNav = screen.getByRole('navigation', { name: 'Primary' });
+    expect(primaryNav.querySelector('.font-body-strong')).not.toBeNull();
+  });
+
+  it('uses md control sizing for the settings and logout actions', () => {
+    render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} />);
+
+    const settingsButton = screen.getByRole('button', { name: 'Settings' });
+    expect(settingsButton.className).toContain(control.square.md);
+    expect(settingsButton.querySelector('span')?.className).toContain(control.glyph.md);
+
+    const logoutButton = screen.getByRole('button', { name: 'Logout' });
+    expect(logoutButton.className).toContain(control.square.md);
+    expect(logoutButton.querySelector('span')?.className).toContain(control.glyph.md);
   });
 
   it('renders settings and logout actions for authenticated users', async () => {
@@ -86,7 +148,7 @@ describe('AppTitleBar', () => {
     render(<AppTitleBar {...baseProps} isOnline onLogout={jest.fn()} onTabChange={onTabChange} />);
 
     expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Logout' })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: 'Logout' })).toHaveLength(1);
 
     await user.click(screen.getByRole('button', { name: 'Settings' }));
     expect(onTabChange).toHaveBeenCalledWith('settings');
@@ -132,18 +194,31 @@ describe('AppTitleBar', () => {
       expect(indicator.className).not.toContain('hidden');
     });
 
-    it('renders both a desktop logout and a mobile icon-only logout button', () => {
+    it('sizes the connectivity indicator to match action icon buttons', () => {
       render(<AppTitleBar {...mobileProps} />);
-      const logoutButtons = screen.getAllByRole('button', { name: 'Logout' });
-      expect(logoutButtons).toHaveLength(2);
-      const desktopLogout = logoutButtons.find((btn) =>
-        btn.parentElement?.className.includes('hidden')
-      );
-      const mobileLogout = logoutButtons.find((btn) =>
-        btn.parentElement?.className.includes('md:hidden')
-      );
-      expect(desktopLogout).toBeDefined();
-      expect(mobileLogout).toBeDefined();
+
+      const indicator = screen.getByTitle('Online');
+      expect(indicator.className).toContain(control.square.md);
+      expect(indicator.querySelector('span')?.className).toContain(control.glyph.md);
+
+      const settingsButton = screen.getByRole('button', { name: 'Settings' });
+      expect(settingsButton.className).toContain(control.square.md);
+      expect(settingsButton.querySelector('span')?.className).toContain(control.glyph.md);
+    });
+
+    it('uses a single-row title bar grid on mobile', () => {
+      render(<AppTitleBar {...mobileProps} />);
+
+      const grid = screen.getByRole('banner').querySelector('.grid');
+      expect(grid?.className).toContain('grid-rows-1');
+      expect(grid?.className).toContain('content-center');
+    });
+
+    it('renders a single md-sized logout action', () => {
+      render(<AppTitleBar {...mobileProps} />);
+
+      const logoutButton = screen.getByRole('button', { name: 'Logout' });
+      expect(logoutButton.className).toContain(control.square.md);
     });
   });
 });

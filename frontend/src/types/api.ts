@@ -35,6 +35,21 @@ export interface PaginatedTransactionsResponse {
   page_size: number;
 }
 
+export interface LargestTransaction {
+  amount: number;
+  merchant: string;
+}
+
+export interface TransactionsInsightsResponse {
+  total_count: number;
+  total_spent: number;
+  average_amount: number;
+  largest: LargestTransaction | null;
+  recurring_count: number;
+  recurring_merchants: string[];
+  top_categories: string[];
+}
+
 export interface Budget {
   id: string;
   category: string;

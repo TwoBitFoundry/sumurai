@@ -1,11 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { AccountFilterTestProvider } from '@tests/utils/AccountFilterTestProvider';
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
+import { AccountFilterContext } from '@/context/AccountFilterContext';
 import { useTransactions } from '@/features/transactions/hooks/useTransactions';
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
 import { PlaidService } from '@/services/PlaidService';
 import { TransactionService } from '@/services/TransactionService';
+import { setSessionTransactionsPage } from '@/utils/sessionPreferences';
 
 jest.mock('@/services/TransactionService', () => ({
   TransactionService: {
@@ -62,6 +64,42 @@ const mockPlaidAccounts = [
 
 const TestWrapper = AccountFilterTestProvider;
 
+const stableAccountFilterValue = {
+  selectedAccountIds: ['account1', 'account2'],
+  allAccountIds: ['account1', 'account2'],
+  isAllAccountsSelected: true,
+  accountsByBank: {},
+  loading: false,
+  setSelectedAccountIds: jest.fn(),
+  toggleBank: jest.fn(),
+  toggleAccount: jest.fn(),
+  removeAccountsByIds: jest.fn(),
+};
+
+function StableAccountFilterWrapper({ children }: { children: ReactNode }) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 5 * 60 * 1000,
+            gcTime: 10 * 60 * 1000,
+            retry: false,
+            refetchOnWindowFocus: false,
+          },
+        },
+      })
+  );
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AccountFilterContext.Provider value={stableAccountFilterValue}>
+        {children}
+      </AccountFilterContext.Provider>
+    </QueryClientProvider>
+  );
+}
+
 function createDeferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((res) => {
@@ -72,7 +110,25 @@ function createDeferred<T>() {
 }
 
 describe('useTransactions', () => {
+  let sessionStorageData: Record<string, string> = {};
+
   beforeEach(() => {
+    sessionStorageData = {};
+    Object.defineProperty(window, 'sessionStorage', {
+      value: {
+        getItem: (key: string) => sessionStorageData[key] ?? null,
+        setItem: (key: string, value: string) => {
+          sessionStorageData[key] = value;
+        },
+        removeItem: (key: string) => {
+          delete sessionStorageData[key];
+        },
+        clear: () => {
+          sessionStorageData = {};
+        },
+      },
+      writable: true,
+    });
     jest.clearAllMocks();
     jest.mocked(TransactionService.getTransactions).mockResolvedValue({
       transactions: [],
@@ -222,6 +278,34 @@ describe('useTransactions', () => {
     expect(result.current.transactions).toHaveLength(2);
     expect(result.current.totalItems).toBe(4);
     expect(result.current.totalPages).toBe(1);
+  });
+
+  it('restores the saved page on mount without resetting to page one', async () => {
+    setSessionTransactionsPage(3);
+
+    jest.mocked(TransactionService.getTransactions).mockImplementation(async (filters?: any) => {
+      const page = filters?.page ?? 1;
+      return {
+        transactions: [asTransaction(`t${page}`)],
+        total: 25,
+        page,
+        page_size: 10,
+      } as any;
+    });
+
+    const { result } = renderHook(() => useTransactions({ pageSize: 10 }), {
+      wrapper: StableAccountFilterWrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.currentPage).toBe(3);
+      expect(TransactionService.getTransactions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          page: 3,
+          page_size: 10,
+        })
+      );
+    });
   });
 
   it('fetches the next server page when currentPage changes', async () => {

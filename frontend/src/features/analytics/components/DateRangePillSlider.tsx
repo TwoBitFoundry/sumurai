@@ -1,6 +1,6 @@
 import { Button, cn } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import { text as uiTextRecipes } from '@/ui/recipes';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import type { DateRangeKey as DateRange } from '@/utils/dateRanges';
 
 const options: Array<{ key: DateRange; label: string }> = [
@@ -20,7 +20,15 @@ export function DateRangePillSlider({
   onChange: (r: DateRange) => void;
 }) {
   return (
-    <div className={cn(...appTitleBarRecipes.pillContainer, 'min-w-0', 'max-w-full')}>
+    <div
+      className={cn(
+        ...appTitleBarRecipes.pillContainer,
+        ...appTitleBarRecipes.contextPillInset,
+        ...appTitleBarRecipes.pillContainerSize,
+        'min-w-0',
+        'max-w-full'
+      )}
+    >
       {options.map((option) => {
         const isActive = option.key === dateRange;
 
@@ -30,15 +38,18 @@ export function DateRangePillSlider({
             type="button"
             onClick={() => onChange(option.key)}
             variant={isActive ? 'tabActive' : 'tab'}
-            size="xs"
+            size="inherit"
             className={cn(
-              ...appTitleBarRecipes.pillTab,
-              'h-full flex-1 min-w-0',
+              ...appTitleBarRecipes.contextPillTab,
+              ...appTitleBarRecipes.contextPillTabSize,
+              'shrink-0',
               isActive ? uiTextRecipes.inverse : uiTextRecipes.primary
             )}
             aria-pressed={isActive}
           >
-            <span className={cn('relative z-10')}>{option.label}</span>
+            <span className={cn('relative z-10', uiTypographyRecipes.bodyStrong)}>
+              {option.label}
+            </span>
           </Button>
         );
       })}

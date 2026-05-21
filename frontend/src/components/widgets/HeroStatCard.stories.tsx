@@ -9,7 +9,7 @@ const meta = {
   args: {
     index: 1,
     title: 'Active institutions',
-    icon: <Building2 className="h-4 w-4" />,
+    icon: <Building2 />,
     value: 2,
     suffix: 'out of 3',
     subtext: 'One needs attention',
@@ -26,7 +26,7 @@ export const LastSync: Story = {
   args: {
     index: 3,
     title: 'Last sync',
-    icon: <Clock className="h-4 w-4" />,
+    icon: <Clock />,
     value: '8m ago',
     suffix: undefined,
     subtext: 'Balances refreshed automatically',

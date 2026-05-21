@@ -6,7 +6,7 @@ import { Button } from '@/ui/primitives/Button';
 import { useFloatingChromeFooterVisibility } from '../hooks/useFloatingChromeFooterVisibility';
 import { useScrollDetection } from '../hooks/useScrollDetection';
 import { AppFooter, AppTitleBar } from '../ui/primitives';
-import { text as semanticTextRecipes } from '../ui/recipes';
+import { text as semanticTextRecipes, font as uiTypographyRecipes } from '../ui/recipes';
 
 export type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
@@ -31,7 +31,7 @@ export function AppLayout({
 }: AppLayoutProps) {
   const mainBottomPadding = bottomBarContent
     ? 'pb-[calc(8.75rem_+_env(safe-area-inset-bottom))]'
-    : 'pb-[calc(5.75rem_+_env(safe-area-inset-bottom))]';
+    : 'pb-[calc(3.75rem_+_env(safe-area-inset-bottom))]';
   const scrolled = useScrollDetection();
   const showFooter = currentTab === 'dashboard';
   const showBottomChromeRow = Boolean(bottomBarContent);
@@ -83,22 +83,48 @@ export function AppLayout({
           )}
         >
           {showBottomChromeRow ? (
-            <div className={cn('min-h-[3.25rem]', 'px-4')}>{bottomBarRow}</div>
+            <div className={cn('min-h-[3.25rem]', ...appTitleBarRecipes.floatingChromeGutter)}>
+              {bottomBarRow}
+            </div>
           ) : null}
 
-          <div className={cn('flex', 'justify-center', 'px-4', 'pt-1', 'pb-2')}>
-            <nav className={cn(...appTitleBarRecipes.pillContainer)} aria-label="Primary">
+          <div
+            aria-hidden
+            className={cn('hidden', 'md:block', 'h-[4.75rem]', 'pointer-events-none')}
+          />
+
+          <div
+            className={cn(
+              'flex',
+              'justify-center',
+              ...appTitleBarRecipes.floatingChromeGutter,
+              'pt-1',
+              'pb-2',
+              'md:hidden'
+            )}
+          >
+            <nav
+              className={cn(
+                ...appTitleBarRecipes.pillContainer,
+                ...appTitleBarRecipes.contextPillInset,
+                ...appTitleBarRecipes.pillContainerSize
+              )}
+              aria-label="Primary"
+            >
               {TABS.map(({ key, label, icon: Icon }) => (
                 <Button
                   key={key}
                   type="button"
                   onClick={() => onTabChange(key)}
                   variant={currentTab === key ? 'tabActive' : 'tab'}
-                  size="xs"
+                  size="inherit"
                   aria-label={label}
                   aria-current={currentTab === key ? 'page' : undefined}
                   className={cn(
-                    ...appTitleBarRecipes.pillTab,
+                    ...appTitleBarRecipes.contextPillTab,
+                    ...appTitleBarRecipes.contextPillTabSize,
+                    'shrink-0',
+                    'gap-1.5',
                     currentTab === key ? semanticTextRecipes.inverse : semanticTextRecipes.muted
                   )}
                 >
@@ -110,12 +136,20 @@ export function AppLayout({
                       transition={{ stiffness: 400, damping: 35 }}
                     />
                   ) : null}
-                  <span className="relative z-10 flex h-4 w-4 items-center justify-center shrink-0">
-                    <Icon className="h-4 w-4" />
+                  <span
+                    className={cn(
+                      'relative',
+                      'z-10',
+                      'shrink-0',
+                      ...appTitleBarRecipes.pillTabIconWell
+                    )}
+                  >
+                    <Icon className={cn(...appTitleBarRecipes.pillTabIcon)} />
                   </span>
                   <span
                     className={cn(
                       'relative z-10 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300',
+                      uiTypographyRecipes.bodyStrong,
                       currentTab === key ? 'max-w-[8rem] opacity-100' : 'max-w-0 opacity-0'
                     )}
                   >

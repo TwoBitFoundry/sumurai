@@ -111,6 +111,24 @@ describe('AppLayout', () => {
     expect(container.querySelector('[data-testid="contextual-menu"]')).toBeInTheDocument();
   });
 
+  it('reserves the mobile tab stack height on tablet and desktop', () => {
+    const { container } = render(
+      <AppLayout
+        currentTab="dashboard"
+        onTabChange={jest.fn()}
+        onLogout={jest.fn()}
+        isOnline
+        bottomBarContent={<div data-testid="contextual-menu">Menu</div>}
+      >
+        <div>Content</div>
+      </AppLayout>
+    );
+
+    const spacer = container.querySelector('[aria-hidden].hidden.md\\:block');
+    expect(spacer).toBeInTheDocument();
+    expect(spacer).toHaveClass('h-[4.75rem]');
+  });
+
   it('omits stacked bottom chrome row on accounts when there is no contextual content', () => {
     const { container, queryByTestId } = render(
       <AppLayout currentTab="accounts" onTabChange={jest.fn()} onLogout={jest.fn()} isOnline>

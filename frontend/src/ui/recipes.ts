@@ -409,5 +409,80 @@ export const chrome = {
   sm: `px-[length:var(--spacing-button-chrome-inset-sm-x)] py-[length:var(--spacing-button-chrome-inset-sm-y)] ${radius.standard}`,
 } as const;
 
+export const chromeBar = {
+  height: 'h-12',
+  square: 'h-12 w-12',
+  glyph: 'h-6 w-6',
+  glyphWell: ['inline-flex', 'h-6', 'w-6', 'shrink-0', 'items-center', 'justify-center'],
+} as const;
+
+export const control = {
+  height: {
+    sm: 'h-9 md:h-8 lg:h-7',
+    md: 'h-11 md:h-9 lg:h-8',
+    lg: 'h-[52px] md:h-11 lg:h-10',
+  },
+  square: {
+    sm: 'h-9 w-9 md:h-8 md:w-8 lg:h-7 lg:w-7',
+    md: 'h-11 w-11 md:h-9 md:w-9 lg:h-8 lg:w-8',
+    lg: 'h-[52px] w-[52px] md:h-11 md:w-11 lg:h-10 lg:w-10',
+  },
+  glyph: {
+    sm: 'h-4 w-4 lg:h-3.5 lg:w-3.5',
+    md: 'h-5 w-5 md:h-[18px] md:w-[18px] lg:h-4 lg:w-4',
+    lg: 'h-6 w-6 md:h-[22px] md:w-[22px] lg:h-5 lg:w-5',
+  },
+  paddingX: {
+    sm: 'px-3 md:px-2.5 lg:px-2.5',
+    md: 'px-4 md:px-3.5 lg:px-3',
+    lg: 'px-5 md:px-[18px] lg:px-4',
+  },
+  label: {
+    sm: font.captionStrong,
+    md: font.bodyStrong,
+    lg: font.bodyStrong,
+  },
+} as const;
+
+export const floatingChromeSearch = {
+  height: 'h-[52px] md:h-12 lg:h-12',
+  glyph: chromeBar.glyph,
+  paddingX: 'px-4 md:px-3.5',
+  label: control.label.md,
+} as const;
+
+export const controlIconWell = {
+  sm: [
+    'inline-flex',
+    'shrink-0',
+    'items-center',
+    'justify-center',
+    control.glyph.sm,
+    '[&_svg]:block',
+    '[&_svg]:h-full',
+    '[&_svg]:w-full',
+  ],
+  md: [
+    'inline-flex',
+    'shrink-0',
+    'items-center',
+    'justify-center',
+    control.glyph.md,
+    '[&_svg]:block',
+    '[&_svg]:h-full',
+    '[&_svg]:w-full',
+  ],
+  lg: [
+    'inline-flex',
+    'shrink-0',
+    'items-center',
+    'justify-center',
+    control.glyph.lg,
+    '[&_svg]:block',
+    '[&_svg]:h-full',
+    '[&_svg]:w-full',
+  ],
+} as const;
+
 export const semanticTextRecipes = text;
 export const semanticPlaceholderTextRecipes = placeholder;

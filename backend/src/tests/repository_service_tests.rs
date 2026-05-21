@@ -556,3 +556,260 @@ async fn given_transactions_when_filtering_server_side_then_filters_categories_a
         vec!["FOOD_AND_DRINK".to_string(), "TRANSPORTATION".to_string()]
     );
 }
+
+#[tokio::test]
+async fn given_transactions_when_aggregating_insights_then_respects_filters_and_thresholds() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let other_user = create_test_user(&repo).await;
+    let account_one = create_test_account(&repo, user.id).await;
+    let account_two = create_test_account(&repo, user.id).await;
+    let other_account = create_test_account(&repo, other_user.id).await;
+
+    let mut coffee_one = create_test_transaction(
+        user.id,
+        account_one.id,
+        "insights_txn_001".to_string(),
+        -1000,
+        NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
+    );
+    coffee_one.merchant_name = Some("Coffee Collective".to_string());
+    coffee_one.category_primary = "FOOD_AND_DRINK".to_string();
+    coffee_one.category_detailed = "Coffee Shop".to_string();
+
+    let mut coffee_two = create_test_transaction(
+        user.id,
+        account_one.id,
+        "insights_txn_002".to_string(),
+        2000,
+        NaiveDate::from_ymd_opt(2024, 3, 2).unwrap(),
+    );
+    coffee_two.merchant_name = Some("Coffee Collective".to_string());
+    coffee_two.category_primary = "FOOD_AND_DRINK".to_string();
+    coffee_two.category_detailed = "Coffee Shop".to_string();
+
+    let mut coffee_three = create_test_transaction(
+        user.id,
+        account_one.id,
+        "insights_txn_003".to_string(),
+        -3000,
+        NaiveDate::from_ymd_opt(2024, 3, 3).unwrap(),
+    );
+    coffee_three.merchant_name = Some("Coffee Collective".to_string());
+    coffee_three.category_primary = "FOOD_AND_DRINK".to_string();
+    coffee_three.category_detailed = "Coffee Shop".to_string();
+
+    let mut gas_one = create_test_transaction(
+        user.id,
+        account_one.id,
+        "insights_txn_004".to_string(),
+        -4000,
+        NaiveDate::from_ymd_opt(2024, 3, 4).unwrap(),
+    );
+    gas_one.merchant_name = Some("Gas Station".to_string());
+    gas_one.category_primary = "TRANSPORTATION".to_string();
+    gas_one.category_detailed = "Fuel".to_string();
+
+    let mut gas_two = create_test_transaction(
+        user.id,
+        account_one.id,
+        "insights_txn_005".to_string(),
+        -5000,
+        NaiveDate::from_ymd_opt(2024, 3, 5).unwrap(),
+    );
+    gas_two.merchant_name = Some("Gas Station".to_string());
+    gas_two.category_primary = "TRANSPORTATION".to_string();
+    gas_two.category_detailed = "Fuel".to_string();
+
+    let mut bakery = create_test_transaction(
+        user.id,
+        account_two.id,
+        "insights_txn_006".to_string(),
+        -6000,
+        NaiveDate::from_ymd_opt(2024, 4, 1).unwrap(),
+    );
+    bakery.merchant_name = Some("Bakery".to_string());
+    bakery.category_primary = "SHOPPING".to_string();
+    bakery.category_detailed = "Bakery".to_string();
+
+    let mut utilities = create_test_transaction(
+        user.id,
+        account_two.id,
+        "insights_txn_007".to_string(),
+        -7000,
+        NaiveDate::from_ymd_opt(2024, 4, 2).unwrap(),
+    );
+    utilities.merchant_name = Some("Utilities Co".to_string());
+    utilities.category_primary = "HOME".to_string();
+    utilities.category_detailed = "Utilities".to_string();
+
+    let mut other_user_coffee_one = create_test_transaction(
+        other_user.id,
+        other_account.id,
+        "insights_txn_008".to_string(),
+        -8000,
+        NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
+    );
+    other_user_coffee_one.merchant_name = Some("Coffee Collective".to_string());
+    other_user_coffee_one.category_primary = "FOOD_AND_DRINK".to_string();
+    other_user_coffee_one.category_detailed = "Coffee Shop".to_string();
+
+    let mut other_user_coffee_two = create_test_transaction(
+        other_user.id,
+        other_account.id,
+        "insights_txn_009".to_string(),
+        -9000,
+        NaiveDate::from_ymd_opt(2024, 3, 2).unwrap(),
+    );
+    other_user_coffee_two.merchant_name = Some("Coffee Collective".to_string());
+    other_user_coffee_two.category_primary = "FOOD_AND_DRINK".to_string();
+    other_user_coffee_two.category_detailed = "Coffee Shop".to_string();
+
+    repo.upsert_transactions_batch(
+        &[
+            coffee_one.clone(),
+            coffee_two.clone(),
+            coffee_three.clone(),
+            gas_one.clone(),
+            gas_two.clone(),
+            bakery.clone(),
+            utilities.clone(),
+        ],
+        &user.id,
+    )
+    .await
+    .unwrap();
+    repo.upsert_transactions_batch(
+        &[other_user_coffee_one.clone(), other_user_coffee_two.clone()],
+        &other_user.id,
+    )
+    .await
+    .unwrap();
+
+    let insights = repo
+        .get_transactions_insights(
+            &user.id,
+            Some("coffee"),
+            Some(&[account_one.id]),
+            Some(NaiveDate::from_ymd_opt(2024, 3, 1).unwrap()),
+            Some(NaiveDate::from_ymd_opt(2024, 3, 31).unwrap()),
+            Some("FOOD_AND_DRINK"),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(insights.total_count, 3);
+    assert!((insights.total_spent - 60.0).abs() < 0.0001);
+    assert!((insights.average_amount - 20.0).abs() < 0.0001);
+    assert_eq!(
+        insights.largest,
+        Some(crate::models::transaction::LargestTransaction {
+            amount: 30.0,
+            merchant: "Coffee Collective".to_string(),
+        })
+    );
+    assert_eq!(insights.recurring_count, 1);
+    assert_eq!(
+        insights.recurring_merchants,
+        vec!["Coffee Collective".to_string()]
+    );
+    assert_eq!(insights.top_categories, vec!["FOOD_AND_DRINK".to_string()]);
+}
+
+#[tokio::test]
+async fn given_transactions_when_aggregating_insights_then_returns_largest_magnitude() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+
+    let mut debit = create_test_transaction(
+        user.id,
+        account.id,
+        "insights_largest_debit".to_string(),
+        -7500,
+        NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
+    );
+    debit.merchant_name = Some("Largest Debit".to_string());
+    debit.category_primary = "FOOD_AND_DRINK".to_string();
+
+    let mut credit = create_test_transaction(
+        user.id,
+        account.id,
+        "insights_largest_credit".to_string(),
+        2500,
+        NaiveDate::from_ymd_opt(2024, 3, 2).unwrap(),
+    );
+    credit.merchant_name = Some("Small Credit".to_string());
+    credit.category_primary = "FOOD_AND_DRINK".to_string();
+
+    repo.upsert_transactions_batch(&[debit.clone(), credit.clone()], &user.id)
+        .await
+        .unwrap();
+
+    let insights = repo
+        .get_transactions_insights(&user.id, None, None, None, None, None)
+        .await
+        .unwrap();
+
+    assert_eq!(insights.total_count, 2);
+    assert!((insights.total_spent - 100.0).abs() < 0.0001);
+    assert!((insights.average_amount - 50.0).abs() < 0.0001);
+    assert_eq!(
+        insights.largest,
+        Some(crate::models::transaction::LargestTransaction {
+            amount: 75.0,
+            merchant: "Largest Debit".to_string(),
+        })
+    );
+}
+
+#[tokio::test]
+async fn given_transactions_when_aggregating_insights_for_empty_set_then_returns_zero_values() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+
+    let transaction = create_test_transaction(
+        user.id,
+        account.id,
+        "insights_empty_txn_001".to_string(),
+        -1000,
+        NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+    );
+
+    repo.upsert_transactions_batch(&[transaction], &user.id)
+        .await
+        .unwrap();
+
+    let insights = repo
+        .get_transactions_insights(
+            &user.id,
+            None,
+            None,
+            Some(NaiveDate::from_ymd_opt(2025, 1, 1).unwrap()),
+            Some(NaiveDate::from_ymd_opt(2025, 1, 31).unwrap()),
+            None,
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(insights.total_count, 0);
+    assert_eq!(insights.total_spent, 0.0);
+    assert_eq!(insights.average_amount, 0.0);
+    assert_eq!(insights.largest, None);
+    assert_eq!(insights.recurring_count, 0);
+    assert!(insights.recurring_merchants.is_empty());
+    assert!(insights.top_categories.is_empty());
+}

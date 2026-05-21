@@ -1,7 +1,11 @@
 import {
   border,
   chrome,
+  chromeBar,
+  control,
+  controlIconWell,
   effect,
+  floatingChromeSearch,
   focus,
   font,
   placeholder,
@@ -57,6 +61,64 @@ describe('shared UI recipes', () => {
       'font-label text-[0.75rem] font-bold uppercase leading-none tracking-[0.14em]'
     );
     expect(chrome.sm).toContain('px-[length:var(--spacing-button-chrome-inset-sm-x)]');
+  });
+
+  it('exposes the chrome bar exception recipes', () => {
+    expect(chromeBar.height).toBe('h-12');
+    expect(chromeBar.square).toBe('h-12 w-12');
+    expect(chromeBar.glyph).toBe('h-6 w-6');
+    expect(chromeBar.glyphWell).toEqual([
+      'inline-flex',
+      'h-6',
+      'w-6',
+      'shrink-0',
+      'items-center',
+      'justify-center',
+    ]);
+  });
+
+  it('exposes the control icon well recipes', () => {
+    expect(controlIconWell.sm).toContain(control.glyph.sm);
+    expect(controlIconWell.md).toContain(control.glyph.md);
+    expect(controlIconWell.lg).toContain(control.glyph.lg);
+  });
+
+  it('exposes the floating chrome search recipes', () => {
+    expect(floatingChromeSearch.height).toBe('h-[52px] md:h-12 lg:h-12');
+    expect(floatingChromeSearch.glyph).toBe(chromeBar.glyph);
+    expect(floatingChromeSearch.paddingX).toBe('px-4 md:px-3.5');
+    expect(floatingChromeSearch.label).toBe(control.label.md);
+  });
+
+  it('exposes the shared control recipes', () => {
+    expect(Object.keys(control)).toEqual(
+      expect.arrayContaining(['height', 'square', 'glyph', 'paddingX', 'label'])
+    );
+    expect(control.height).toEqual({
+      sm: 'h-9 md:h-8 lg:h-7',
+      md: 'h-11 md:h-9 lg:h-8',
+      lg: 'h-[52px] md:h-11 lg:h-10',
+    });
+    expect(control.square).toEqual({
+      sm: 'h-9 w-9 md:h-8 md:w-8 lg:h-7 lg:w-7',
+      md: 'h-11 w-11 md:h-9 md:w-9 lg:h-8 lg:w-8',
+      lg: 'h-[52px] w-[52px] md:h-11 md:w-11 lg:h-10 lg:w-10',
+    });
+    expect(control.glyph).toEqual({
+      sm: 'h-4 w-4 lg:h-3.5 lg:w-3.5',
+      md: 'h-5 w-5 md:h-[18px] md:w-[18px] lg:h-4 lg:w-4',
+      lg: 'h-6 w-6 md:h-[22px] md:w-[22px] lg:h-5 lg:w-5',
+    });
+    expect(control.paddingX).toEqual({
+      sm: 'px-3 md:px-2.5 lg:px-2.5',
+      md: 'px-4 md:px-3.5 lg:px-3',
+      lg: 'px-5 md:px-[18px] lg:px-4',
+    });
+    expect(control.label).toEqual({
+      sm: font.captionStrong,
+      md: font.bodyStrong,
+      lg: font.bodyStrong,
+    });
   });
 
   it('exposes the shared status recipes', () => {

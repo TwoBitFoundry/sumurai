@@ -19,5 +19,6 @@ describe('BottomContextualBar', () => {
     expect(children[0]).toContainElement(screen.getByTestId('header-account-filter'));
     expect(children[1]).toContainElement(screen.getByTestId('contextual-menu'));
     expect(children[1]).toHaveClass('min-w-0', 'flex-1');
+    expect(bar.className).toContain('gap-2');
   });
 });
