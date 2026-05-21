@@ -17,6 +17,7 @@ use chrono::NaiveDate;
 use chrono::Utc;
 use csv::StringRecord;
 use std::net::SocketAddr;
+use std::path::Path;
 use std::sync::Arc;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
@@ -62,6 +63,7 @@ use crate::models::{
         ProviderSelectRequest, ProviderSelectResponse, ProviderStatusResponse,
         SyncTransactionsRequest,
     },
+    predicted_category::Confidence,
     transaction::{
         PaginatedTransactionsResponse, SyncTransactionsResponse, TransactionsInsightsResponse,
         TransactionsQuery,
@@ -90,9 +92,10 @@ use services::{
         auth_login_governor_layer, auth_register_governor_layer, spawn_auth_rate_limit_cleanup,
         telemetry_public_browser_governor_layer,
     },
-    AuthService, AuthorizationService, BudgetService, CacheService, ConnectionService,
-    ExchangeTokenError, LinkTokenError, PlaidService, ProviderSyncError, RedisCache,
-    SyncConnectionParams, SyncService, TellerConnectError, TellerSyncError,
+    AuthService, AuthorizationService, BudgetService, CacheService, CategorizationService,
+    Categorizer, ConnectionService, ExchangeTokenError, LinkTokenError, PlaidService,
+    ProviderSyncError, RedisCache, SyncConnectionParams, SyncService, TellerConnectError,
+    TellerSyncError,
 };
 use services::{AnalyticsService, RealPlaidClient};
 use sqlx::PgPool;
@@ -226,6 +229,25 @@ async fn main() -> anyhow::Result<()> {
 
     let auth_service = Arc::new(AuthService::new(jwt_secret)?);
 
+    let model_dir = std::env::var("MODEL_DIR")
+        .context("MODEL_DIR environment variable is required to load transaction categorization")?;
+    tracing::info!(
+        "Loading transaction categorization model from {}",
+        model_dir
+    );
+    let categorizer: Arc<dyn Categorizer> =
+        match CategorizationService::new(Path::new(&model_dir)).await {
+            Ok(service) => Arc::new(service),
+            Err(err) => {
+                tracing::error!(
+                    error = %err,
+                    model_dir = %model_dir,
+                    "failed to initialize transaction categorization"
+                );
+                return Err(err);
+            }
+        };
+
     let otlp_traces_relay = Arc::new(OtlpTracesRelay::from_config(&telemetry_config)?);
 
     let state = AppState {
@@ -238,6 +260,7 @@ async fn main() -> anyhow::Result<()> {
         config,
         db_repository,
         cache_service,
+        categorizer,
         connection_service,
         auth_service,
         provider_registry,
@@ -1355,6 +1378,72 @@ async fn import_authenticated_transactions(
     }
 
     let mut transactions = std::mem::take(&mut parsed.transactions);
+    let categorization_trace_id = otel_sdk::find_current_trace_id();
+    let mut categorizable_rows = Vec::new();
+    let mut categorizable_descriptions = Vec::new();
+
+    for (index, transaction) in transactions.iter().enumerate() {
+        if transaction.category_primary == "OTHER" {
+            categorizable_rows.push(index);
+            categorizable_descriptions.push(transaction.merchant_name.clone().unwrap_or_default());
+        }
+    }
+
+    if !categorizable_descriptions.is_empty() {
+        let categorization_started = std::time::Instant::now();
+        let categorization_row_count = categorizable_descriptions.len();
+        match state
+            .categorizer
+            .categorize_batch(categorizable_descriptions)
+            .await
+        {
+            Ok(predictions) => {
+                for (index, prediction) in categorizable_rows.into_iter().zip(predictions) {
+                    if prediction.confidence != Confidence::Low {
+                        if let Some(transaction) = transactions.get_mut(index) {
+                            transaction.category_primary = prediction.primary;
+                            transaction.category_confidence =
+                                prediction.confidence.as_str().to_string();
+                        }
+                    }
+                }
+
+                if let Some(trace_id) = categorization_trace_id.as_deref() {
+                    tracing::info!(
+                        trace_id = %trace_id,
+                        rows = categorization_row_count,
+                        elapsed_ms = categorization_started.elapsed().as_millis(),
+                        "import categorization"
+                    );
+                } else {
+                    tracing::info!(
+                        rows = categorization_row_count,
+                        elapsed_ms = categorization_started.elapsed().as_millis(),
+                        "import categorization"
+                    );
+                }
+            }
+            Err(err) => {
+                if let Some(trace_id) = categorization_trace_id.as_deref() {
+                    tracing::warn!(
+                        trace_id = %trace_id,
+                        rows = categorization_row_count,
+                        elapsed_ms = categorization_started.elapsed().as_millis(),
+                        error = %err,
+                        "import categorization failed"
+                    );
+                } else {
+                    tracing::warn!(
+                        rows = categorization_row_count,
+                        elapsed_ms = categorization_started.elapsed().as_millis(),
+                        error = %err,
+                        "import categorization failed"
+                    );
+                }
+            }
+        }
+    }
+
     for transaction in &mut transactions {
         transaction.user_id = Some(auth_context.user_id);
     }

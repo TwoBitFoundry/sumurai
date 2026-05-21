@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 pub const PFC_CATEGORY_DESCRIPTORS: &[(&str, &str)] = &[
     (
         "TRAVEL",

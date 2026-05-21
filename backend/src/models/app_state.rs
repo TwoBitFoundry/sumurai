@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::config::Config;
 use crate::providers::ProviderRegistry;
+use crate::services::categorization::categorization_service::Categorizer;
 use crate::services::otel_traces_relay::OtlpTracesRelay;
 use crate::services::plaid_service::{PlaidService, RealPlaidClient};
 use crate::services::repository_service::DatabaseRepository;
@@ -21,6 +22,7 @@ pub struct AppState {
     pub(crate) config: Config,
     pub(crate) db_repository: Arc<dyn DatabaseRepository>,
     pub(crate) cache_service: Arc<dyn CacheService>,
+    pub(crate) categorizer: Arc<dyn Categorizer>,
     pub(crate) connection_service: Arc<ConnectionService>,
     pub(crate) auth_service: Arc<AuthService>,
     pub(crate) provider_registry: Arc<ProviderRegistry>,
@@ -39,6 +41,7 @@ impl Clone for AppState {
             config: self.config.clone(),
             db_repository: self.db_repository.clone(),
             cache_service: self.cache_service.clone(),
+            categorizer: self.categorizer.clone(),
             connection_service: self.connection_service.clone(),
             auth_service: self.auth_service.clone(),
             provider_registry: self.provider_registry.clone(),

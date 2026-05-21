@@ -17,6 +17,7 @@ mod category_descriptor_coverage;
 mod config_tests;
 mod connection_cache_integration_tests;
 mod connection_service_tests;
+mod import_handler_categorization_tests;
 mod import_service_tests;
 mod integration_tests;
 mod merchant_name_normalization_tests;

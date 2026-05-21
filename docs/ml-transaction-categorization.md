@@ -184,11 +184,16 @@ Container destination: `/app/assets/models/all-MiniLM-L6-v2/` (already used as t
    - Use the existing test helpers / fixtures for an import multipart request (look in `backend/src/tests/` for the import-related test pattern already in use and reuse it).
 
 **Acceptance criteria.**
-- [ ] `cargo test --manifest-path backend/Cargo.toml --locked import_handler_categorization` passes.
-- [ ] Pre-existing import tests pass: `cargo test --manifest-path backend/Cargo.toml --locked import`.
-- [ ] No edits to `connection_service.rs`, `sync_service.rs`, `providers/`, or any migration files (`grep -L` to confirm in your PR).
-- [ ] No new endpoints, no changes to `frontend/`.
-- [ ] Handler logs categorization timing (e.g., `info!(rows = N, elapsed_ms = …, "import categorization")`) so the verification step can read it.
+- [x] `cargo test --manifest-path backend/Cargo.toml --locked import_handler_categorization` passes.
+- [x] Pre-existing import tests pass: `cargo test --manifest-path backend/Cargo.toml --locked import`.
+- [x] No edits to `connection_service.rs`, `sync_service.rs`, `providers/`, or any migration files (`grep -L` to confirm in your PR).
+- [x] No new endpoints, no changes to `frontend/`.
+- [x] Handler logs categorization timing (e.g., `info!(rows = N, elapsed_ms = …, "import categorization")`) so the verification step can read it.
+
+**TDD log.**
+- Red: added `backend/src/tests/import_handler_categorization_tests.rs` to pin the overlay and error-degrade behavior before wiring the handler.
+- Green: threaded `CategorizationService` through `AppState`, applied predictions only for `Confidence::Medium` and `Confidence::High`, and kept import success on categorizer errors.
+- Refactor/verify: `cargo test --manifest-path backend/Cargo.toml --locked import_handler_categorization`, `cargo test --manifest-path backend/Cargo.toml --locked import`, `cargo fmt --manifest-path backend/Cargo.toml --all`, `cargo check --manifest-path backend/Cargo.toml --locked --all-targets`, `cargo clippy --manifest-path backend/Cargo.toml --locked --all-targets --no-deps -- -D warnings`, and `cargo test --manifest-path backend/Cargo.toml --locked` all passed.
 
 ---
 

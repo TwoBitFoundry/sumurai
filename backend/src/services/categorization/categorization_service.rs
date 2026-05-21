@@ -1,21 +1,18 @@
-#![allow(dead_code)]
-
 use std::cmp::Ordering;
+use std::path::Path;
 
 use crate::models::predicted_category::{Confidence, PredictedCategory};
+use anyhow::Result;
 
 #[cfg(not(test))]
-use std::fs;
+use anyhow::anyhow;
 #[cfg(not(test))]
-use std::path::Path;
+use std::fs;
 #[cfg(not(test))]
 use std::sync::{Arc, Mutex};
 
 #[cfg(not(test))]
 use crate::services::categorization::category_descriptors::PFC_CATEGORY_DESCRIPTORS;
-#[cfg(not(test))]
-use anyhow::{anyhow, Result};
-#[cfg(not(test))]
 use async_trait::async_trait;
 #[cfg(not(test))]
 use ndarray::{Array2, ArrayView3, Ix3};
@@ -43,7 +40,6 @@ pub struct CategorizationService {
     max_seq_len: usize,
 }
 
-#[cfg(not(test))]
 #[async_trait]
 pub trait Categorizer: Send + Sync {
     async fn categorize_batch(&self, descriptions: Vec<String>) -> Result<Vec<PredictedCategory>>;
@@ -72,6 +68,13 @@ impl CategorizationService {
         task::spawn_blocking(move || Self::new_blocking(&model_dir))
             .await
             .map_err(|err| anyhow!("failed to join categorization model load task: {err}"))?
+    }
+
+    #[cfg(test)]
+    pub async fn new(_model_dir: &Path) -> Result<Self> {
+        Err(anyhow::anyhow!(
+            "categorization model is unavailable in test builds"
+        ))
     }
 
     pub(crate) fn categorize_batch_sync(
@@ -270,6 +273,12 @@ impl Categorizer for CategorizationService {
             })?;
         let refs = self.category_refs.clone();
         let max_seq_len = self.max_seq_len;
+        let scoring_service = CategorizationService {
+            session: Some(session.clone()),
+            tokenizer: Some(tokenizer.clone()),
+            category_refs: refs,
+            max_seq_len,
+        };
 
         task::spawn_blocking(move || {
             let mut session = session
@@ -277,15 +286,20 @@ impl Categorizer for CategorizationService {
                 .map_err(|_| anyhow!("categorization session lock was poisoned"))?;
             let embeddings =
                 Self::embed_texts(&mut session, tokenizer.as_ref(), max_seq_len, descriptions)?;
-            Ok::<_, anyhow::Error>(
-                embeddings
-                    .iter()
-                    .map(|embedding| Self::cosine_and_threshold(embedding, &refs))
-                    .collect(),
-            )
+            Ok::<_, anyhow::Error>(scoring_service.categorize_batch_sync(embeddings))
         })
         .await
         .map_err(|err| anyhow!("failed to join categorization inference task: {err}"))?
+    }
+}
+
+#[cfg(test)]
+#[async_trait]
+impl Categorizer for CategorizationService {
+    async fn categorize_batch(&self, _descriptions: Vec<String>) -> Result<Vec<PredictedCategory>> {
+        Err(anyhow::anyhow!(
+            "categorization service is unavailable in test builds"
+        ))
     }
 }
 
