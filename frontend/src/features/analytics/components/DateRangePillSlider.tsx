@@ -23,6 +23,7 @@ export function DateRangePillSlider({
     <div
       className={cn(
         ...appTitleBarRecipes.pillContainer,
+        ...appTitleBarRecipes.contextPillInset,
         ...appTitleBarRecipes.pillContainerSize,
         'min-w-0',
         'max-w-full'
@@ -37,11 +38,11 @@ export function DateRangePillSlider({
             type="button"
             onClick={() => onChange(option.key)}
             variant={isActive ? 'tabActive' : 'tab'}
-            size="sm"
+            size="inherit"
             className={cn(
-              ...appTitleBarRecipes.pillTab,
-              ...appTitleBarRecipes.pillTabSize,
-              'h-full flex-1 min-w-0',
+              ...appTitleBarRecipes.contextPillTab,
+              ...appTitleBarRecipes.contextPillTabSize,
+              'shrink-0',
               isActive ? uiTextRecipes.inverse : uiTextRecipes.primary
             )}
             aria-pressed={isActive}

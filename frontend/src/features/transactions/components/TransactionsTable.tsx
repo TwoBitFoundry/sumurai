@@ -302,7 +302,7 @@ export const TransactionsTable: React.FC<Props> = ({
               disabled={currentPage <= 1}
               aria-label="Previous page"
             >
-              <ChevronLeftIcon className={cn('h-4', 'w-4')} />
+              <ChevronLeftIcon />
             </PaginationButton>
             <div
               className={cn(
@@ -320,7 +320,7 @@ export const TransactionsTable: React.FC<Props> = ({
               disabled={currentPage >= totalPages}
               aria-label="Next page"
             >
-              <ChevronRightIcon className={cn('h-4', 'w-4')} />
+              <ChevronRightIcon />
             </PaginationButton>
           </div>
         </div>

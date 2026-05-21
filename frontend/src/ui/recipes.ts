@@ -409,6 +409,13 @@ export const chrome = {
   sm: `px-[length:var(--spacing-button-chrome-inset-sm-x)] py-[length:var(--spacing-button-chrome-inset-sm-y)] ${radius.standard}`,
 } as const;
 
+export const chromeBar = {
+  height: 'h-12',
+  square: 'h-12 w-12',
+  glyph: 'h-6 w-6',
+  glyphWell: ['inline-flex', 'h-6', 'w-6', 'shrink-0', 'items-center', 'justify-center'],
+} as const;
+
 export const control = {
   height: {
     sm: 'h-9 md:h-8 lg:h-7',

@@ -339,6 +339,36 @@ Codify the rules so future contributors don't re-introduce drift.
 
 ---
 
+## Phase 9 — Chrome bar exception and call-site completion (Option B)
+
+### Goal
+
+Finish migration with full `control.*` adoption everywhere except floating pill chrome. `chromeBar` is the only fixed-size exception (unique glass pill pattern). All other interactives use the Apple HIG-aligned responsive scale at mobile, tablet, and desktop breakpoints.
+
+### Decision
+
+| Surface | Sizing source |
+|---------|----------------|
+| Pill chrome (title bar tabs, bottom sliders, icon-only account filter) | `chromeBar` (`h-12`, `h-6 w-6` glyphs) |
+| Buttons, inputs, selects, icon buttons, pagination | `control.*` (`sm` / `md` / `lg`) |
+
+### Tasks
+
+1. Add `chromeBar` to `recipes.ts` and wire `appTitleBarRecipes.pillContainerSize` to `chromeBar.height`.
+2. Remove `!h-12` and other height overrides from `TransactionsSearchBar`; use `inputSize="lg"` and `control.glyph.lg` only.
+3. Default `PaginationButton` to `size="md"` (44px mobile touch target); pass `size="lg"` when paired with `Button size="lg"` in the same row.
+4. Strip manual `h-* w-*` from `IconButton` children across call sites.
+5. Migrate non-chrome actions (settings, logout, default account filter) to `Button` / `IconButton` with `control.glyph.*`.
+
+### Acceptance criteria
+
+- [x] `chromeBar` exported and tested in `frontend/tests/ui/recipes.test.ts`.
+- [x] No `!h-12` on search inputs outside `chromeBar`.
+- [x] `PaginationButton` defaults to `md`; toolbar pairs use matching `lg` where adjacent buttons are `lg`.
+- [x] README documents `chromeBar` as the sole exception.
+
+---
+
 ## Cross-cutting verification (run after final phase)
 
 1. `npm --prefix frontend test` — full unit suite green.

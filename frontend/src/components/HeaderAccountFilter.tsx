@@ -5,6 +5,8 @@ import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { Button, cn } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import {
+  chromeBar,
+  control,
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
   radius as uiRadiusRecipes,
@@ -140,7 +142,15 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
         <nav
           className={cn(
             ...appTitleBarRecipes.pillContainer,
-            ...appTitleBarRecipes.pillContainerSize
+            ...appTitleBarRecipes.contextPillInset,
+            ...appTitleBarRecipes.pillContainerSize,
+            'flex',
+            'aspect-square',
+            'h-full',
+            'w-auto',
+            'shrink-0',
+            'items-center',
+            'justify-center'
           )}
           aria-label="Account filter menu"
         >
@@ -150,72 +160,55 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
             onClick={() => setIsOpen(!isOpen)}
             onKeyDown={handleKeyDown}
             variant={isOpen ? 'tabActive' : 'tab'}
-            size="sm"
+            size="inherit"
             className={cn(
-              ...appTitleBarRecipes.pillTab,
-              ...appTitleBarRecipes.pillTabSize,
+              ...appTitleBarRecipes.contextPillTab,
+              'aspect-square',
               'h-full',
+              'w-full',
+              'min-h-0',
+              'p-0',
               isOpen ? uiTextRecipes.inverse : uiTextRecipes.muted
             )}
             aria-haspopup="dialog"
             aria-expanded={isOpen}
             aria-label="Filter accounts"
           >
-            <span
-              className={cn(
-                'relative',
-                'z-10',
-                'flex',
-                'h-6',
-                'w-6',
-                'items-center',
-                'justify-center'
-              )}
-            >
-              <Filter className={cn('h-6', 'w-6')} />
+            <span className={cn('relative', 'z-10', ...chromeBar.glyphWell)}>
+              <Filter className={chromeBar.glyph} />
             </span>
           </Button>
         </nav>
       ) : (
-        <button
+        <Button
           ref={triggerRef}
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           onKeyDown={handleKeyDown}
+          variant="ghost"
+          size="md"
           className={cn(
-            uiRadiusRecipes.standard,
-            'border',
             uiBorderRecipes.default,
             ...uiSurfaceRecipes.mutedChip,
             'backdrop-blur-sm',
-            'hover:bg-[var(--color-surface-hover-row)]',
-            'dark:hover:bg-[var(--color-surface-hover-row)]',
-            'transition-all',
-            'duration-200',
-            'ease-out',
-            'active:scale-[0.98]',
-            'flex',
-            'items-center',
-            'gap-2',
+            'shadow-none',
             uiTextRecipes.body,
-            uiTypographyRecipes.captionStrong,
-            'px-3 py-1.5'
+            uiTypographyRecipes.captionStrong
           )}
           aria-haspopup="dialog"
           aria-expanded={isOpen}
         >
-          <Filter className={cn('h-6', 'w-6')} />
+          <Filter className={control.glyph.md} />
           <span>{displayText}</span>
           <ChevronDown
             className={cn(
-              'h-6',
-              'w-6',
+              control.glyph.md,
               'transition-transform',
               'duration-200',
               isOpen && 'rotate-180'
             )}
           />
-        </button>
+        </Button>
       )}
 
       {mounted &&

@@ -2,6 +2,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 import {
   buttonChrome,
+  chromeBar,
   control,
   effect as semanticEffects,
   status as semanticStatus,
@@ -59,6 +60,7 @@ const iconButtonVariants = cva('', {
       sm: control.square.sm,
       md: control.square.md,
       lg: control.square.lg,
+      bar: `${chromeBar.square} p-0`,
     },
   },
   defaultVariants: {
@@ -73,14 +75,37 @@ export interface IconButtonProps
   children: React.ReactNode;
 }
 
-export function IconButton({ variant, size, className, children, ...props }: IconButtonProps) {
+export function IconButton({
+  variant,
+  size,
+  className,
+  children,
+  ref,
+  ...props
+}: IconButtonProps & { ref?: React.RefObject<HTMLButtonElement | null> }) {
+  const resolvedSize = size ?? 'md';
+  const glyphShellClass =
+    resolvedSize === 'bar'
+      ? cn(chromeBar.glyphWell, '[&_svg]:block', '[&_svg]:h-full', '[&_svg]:w-full')
+      : cn(
+          'inline-flex',
+          'shrink-0',
+          'items-center',
+          'justify-center',
+          control.glyph[resolvedSize],
+          '[&_svg]:block',
+          '[&_svg]:h-full',
+          '[&_svg]:w-full'
+        );
+
   return (
     <button
+      ref={ref}
       type="button"
       className={cn(iconButtonVariants({ variant, size }), className)}
       {...props}
     >
-      <span className={control.glyph[size ?? 'md']}>{children}</span>
+      <span className={glyphShellClass}>{children}</span>
     </button>
   );
 }

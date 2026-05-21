@@ -131,7 +131,7 @@ export const BankCard: React.FC<BankCardProps> = ({
           title={!isOnline ? 'Unavailable while offline' : undefined}
           className={cn(appTitleBarRecipes.settingsIdle, 'col-start-1', 'row-start-1', 'shrink-0')}
         >
-          <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
+          <RefreshCw className={cn(loading && 'animate-spin')} />
         </IconButton>
         <IconButton
           type="button"
@@ -141,12 +141,7 @@ export const BankCard: React.FC<BankCardProps> = ({
           className={cn(appTitleBarRecipes.settingsIdle, 'col-start-1', 'row-start-2', 'shrink-0')}
         >
           <ChevronDown
-            className={cn(
-              'h-4 w-4',
-              'transition-transform',
-              'duration-200',
-              expanded && 'rotate-180'
-            )}
+            className={cn('transition-transform', 'duration-200', expanded && 'rotate-180')}
           />
         </IconButton>
         <div
@@ -189,7 +184,7 @@ export const BankCard: React.FC<BankCardProps> = ({
           aria-label="Disconnect"
           className={cn('col-start-3', 'row-start-1', 'shrink-0')}
         >
-          <Unlink className={cn('h-4 w-4')} />
+          <Unlink />
         </IconButton>
         {statusCaption ? (
           <p

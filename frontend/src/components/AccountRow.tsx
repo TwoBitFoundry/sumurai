@@ -149,7 +149,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({ account, isOnline, onImp
                   onClick={() => setIsImportOpen(true)}
                   className={cn(!isOnline && 'opacity-45')}
                 >
-                  <Upload className={cn('h-4', 'w-4')} />
+                  <Upload />
                 </IconButton>
               </div>
             </div>

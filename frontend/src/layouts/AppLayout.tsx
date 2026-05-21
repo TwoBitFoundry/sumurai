@@ -83,7 +83,9 @@ export function AppLayout({
           )}
         >
           {showBottomChromeRow ? (
-            <div className={cn('min-h-[3.25rem]', 'px-4')}>{bottomBarRow}</div>
+            <div className={cn('min-h-[3.25rem]', ...appTitleBarRecipes.floatingChromeGutter)}>
+              {bottomBarRow}
+            </div>
           ) : null}
 
           <div
@@ -91,10 +93,20 @@ export function AppLayout({
             className={cn('hidden', 'md:block', 'h-[4.75rem]', 'pointer-events-none')}
           />
 
-          <div className={cn('flex', 'justify-center', 'px-4', 'pt-1', 'pb-2', 'md:hidden')}>
+          <div
+            className={cn(
+              'flex',
+              'justify-center',
+              ...appTitleBarRecipes.floatingChromeGutter,
+              'pt-1',
+              'pb-2',
+              'md:hidden'
+            )}
+          >
             <nav
               className={cn(
                 ...appTitleBarRecipes.pillContainer,
+                ...appTitleBarRecipes.contextPillInset,
                 ...appTitleBarRecipes.pillContainerSize
               )}
               aria-label="Primary"
@@ -105,12 +117,14 @@ export function AppLayout({
                   type="button"
                   onClick={() => onTabChange(key)}
                   variant={currentTab === key ? 'tabActive' : 'tab'}
-                  size="sm"
+                  size="inherit"
                   aria-label={label}
                   aria-current={currentTab === key ? 'page' : undefined}
                   className={cn(
-                    ...appTitleBarRecipes.pillTab,
-                    ...appTitleBarRecipes.pillTabSize,
+                    ...appTitleBarRecipes.contextPillTab,
+                    ...appTitleBarRecipes.contextPillTabSize,
+                    'shrink-0',
+                    'gap-1.5',
                     currentTab === key ? semanticTextRecipes.inverse : semanticTextRecipes.muted
                   )}
                 >
@@ -122,8 +136,15 @@ export function AppLayout({
                       transition={{ stiffness: 400, damping: 35 }}
                     />
                   ) : null}
-                  <span className="relative z-10 flex h-6 w-6 items-center justify-center shrink-0">
-                    <Icon className="h-6 w-6" />
+                  <span
+                    className={cn(
+                      'relative',
+                      'z-10',
+                      'shrink-0',
+                      ...appTitleBarRecipes.pillTabIconWell
+                    )}
+                  >
+                    <Icon className={cn(...appTitleBarRecipes.pillTabIcon)} />
                   </span>
                   <span
                     className={cn(

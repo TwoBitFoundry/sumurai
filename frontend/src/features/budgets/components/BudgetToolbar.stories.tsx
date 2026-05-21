@@ -7,13 +7,9 @@ const meta = {
   component: BudgetToolbar,
   tags: ['autodocs', 'test'],
   args: {
-    monthLabel: 'May 2026',
     loading: false,
     isAdding: false,
     showAddButton: true,
-    onPreviousMonth: fn(),
-    onNextMonth: fn(),
-    onCurrentMonth: fn(),
     onAddBudget: fn(),
   },
 } satisfies Meta<typeof BudgetToolbar>;
@@ -25,14 +21,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: /previous month/i }));
-    await userEvent.click(canvas.getByRole('button', { name: /next month/i }));
-    await userEvent.click(canvas.getByRole('button', { name: /^now$/i }));
     await userEvent.click(canvas.getByRole('button', { name: /add budget/i }));
-
-    await expect(args.onPreviousMonth).toHaveBeenCalledTimes(1);
-    await expect(args.onNextMonth).toHaveBeenCalledTimes(1);
-    await expect(args.onCurrentMonth).toHaveBeenCalledTimes(1);
     await expect(args.onAddBudget).toHaveBeenCalledTimes(1);
   },
 };

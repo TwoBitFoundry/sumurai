@@ -25,10 +25,6 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
     categoryOptions,
     usedCategories,
     month,
-    monthLabel,
-    goToPreviousMonth,
-    goToNextMonth,
-    goToCurrentMonth,
   } = useBudgets(monthControl);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -215,13 +211,9 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
             {hasBudgets ? (
               <>
                 <BudgetToolbar
-                  monthLabel={monthLabel}
                   loading={budgetsLoading}
                   isAdding={isAdding}
                   showAddButton={hasBudgets}
-                  onPreviousMonth={goToPreviousMonth}
-                  onNextMonth={goToNextMonth}
-                  onCurrentMonth={goToCurrentMonth}
                   onAddBudget={startAdd}
                 />
                 {isAdding && (

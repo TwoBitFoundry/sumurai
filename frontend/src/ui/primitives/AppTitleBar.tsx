@@ -14,6 +14,8 @@ import Image from 'next/image';
 import type React from 'react';
 import {
   buttonChrome,
+  chromeBar,
+  control,
   floatingChromeGlass,
   border as semanticBorders,
   effect as semanticEffects,
@@ -23,7 +25,8 @@ import {
   radius as uiRadiusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { Button } from './Button';
+import { Button, buttonRecipes } from './Button';
+import { IconButton } from './IconButton';
 import { cn } from './utils';
 
 export const appTitleBarRecipes = {
@@ -33,53 +36,95 @@ export const appTitleBarRecipes = {
   ],
   shell: [...semanticSurfaces.card, ...semanticBorders.divider, ...semanticEffects.glassShadow],
   logo: {
-    container: ['flex', 'items-center', 'gap-2', semanticTextRecipes.primary],
-    wordmark: uiTypographyRecipes.pageTitle,
+    container: ['flex', 'h-full', 'min-h-0', 'items-center', 'gap-2', semanticTextRecipes.primary],
+    image: [
+      'relative',
+      'aspect-square',
+      'shrink-0',
+      'overflow-hidden',
+      chromeBar.height,
+      'w-12',
+      uiRadiusRecipes.standard,
+    ],
+    wordmark: [uiTypographyRecipes.pageTitle, 'leading-none'],
     fontFamily: { fontFamily: "'Cal Sans', system-ui, sans-serif" },
   },
   settingsIdle: buttonChrome.settingsIdle.join(' '),
+  actionIcon: ['shrink-0'],
   titleBarGrid: [
     'grid',
     'grid-cols-[minmax(0,1fr)_auto]',
-    'grid-rows-[auto_auto]',
+    'grid-rows-1',
     'items-center',
+    'max-md:content-center',
     'gap-x-3',
-    'gap-y-2',
-    'h-12',
-    'md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]',
-    'md:grid-rows-1',
+    'min-h-14',
+    'h-14',
+    'md:grid-cols-[auto_minmax(0,1fr)_auto]',
     'md:gap-4',
-    'md:h-14',
   ],
+  titleBarRow: ['flex', 'h-full', 'min-h-0', 'items-center'],
   pillContainer: [
-    `flex items-center gap-1 ${uiRadiusRecipes.standard} border p-1`,
+    `flex items-center gap-1 ${uiRadiusRecipes.standard} border`,
     ...floatingChromeGlass.backdrop,
     ...floatingChromeGlass.shell,
   ],
-  pillContainerSize: ['h-12'],
-  pillTab: [`relative flex items-center justify-center gap-0 ${uiRadiusRecipes.standard}`],
-  pillTabSize: ['h-full px-3.5 py-1.5'],
+  pillInset: ['p-2', 'md:p-3'],
+  floatingChromeGutter: ['px-4', 'md:px-6', 'lg:px-8'],
+  pillContainerSize: [chromeBar.height],
+  pillTab: [
+    `relative flex h-full min-h-0 items-center justify-center gap-0 ${uiRadiusRecipes.standard}`,
+  ],
+  pillTabSize: ['px-3.5', 'lg:px-3'],
+  contextPillInset: ['py-1.5', 'px-2', 'md:py-2', 'md:px-2.5'],
+  contextPillTab: [
+    'relative',
+    'flex',
+    'h-full',
+    'min-h-0',
+    'items-center',
+    'justify-center',
+    'rounded-lg',
+  ],
+  contextPillTabSize: ['px-2.5'],
+  settingsPillInset: ['p-1.5', 'px-2', 'md:py-1', 'md:px-1.5'],
+  settingsPillSize: ['h-12', 'md:h-9', 'lg:h-8'],
+  pillTabIconWell: [...chromeBar.glyphWell, 'lg:h-4', 'lg:w-4'],
+  pillTabIcon: [chromeBar.glyph, 'lg:h-4', 'lg:w-4'],
   pillNav: [
     'hidden',
     'md:flex',
-    'col-span-2',
-    'row-start-2',
-    'flex',
-    'justify-center',
-    'md:col-span-1',
     'md:col-start-2',
     'md:row-start-1',
     'md:justify-self-center',
+    'md:items-center',
   ],
   actions: [
     'col-start-2',
     'row-start-1',
     'flex',
+    'h-full',
+    'min-h-0',
+    'min-w-0',
+    'shrink-0',
     'items-center',
     'justify-end',
-    'gap-2',
+    'gap-3',
+    'pl-2',
     'md:col-start-3',
     'md:justify-self-end',
+    'md:pl-4',
+    'lg:gap-3',
+  ],
+  statusFrame: ['inline-flex', 'shrink-0', 'items-center', 'justify-center', control.square.md],
+  statusWell: [
+    'inline-flex',
+    'items-center',
+    'justify-center',
+    control.glyph.md,
+    '[&_svg]:block',
+    '[&_svg]:h-full',
+    '[&_svg]:w-full',
   ],
 } as const;
 
@@ -130,17 +175,17 @@ export const AppTitleBar = ({
 
   const logoMark = (
     <>
-      <div className={cn('relative', 'h-8', 'w-8', 'overflow-hidden', uiRadiusRecipes.standard)}>
+      <div className={cn(...appTitleBarRecipes.logo.image)}>
         <Image
           src="/sumurai-logo.jpeg"
           alt="Sumurai Logo"
           fill
-          sizes="32px"
+          sizes="48px"
           className="object-cover"
           unoptimized
         />
       </div>
-      <span className={uiTypographyRecipes.pageTitle}>Sumurai</span>
+      <span className={cn(...appTitleBarRecipes.logo.wordmark)}>Sumurai</span>
     </>
   );
 
@@ -149,7 +194,13 @@ export const AppTitleBar = ({
   const primaryTabs = canGoToDashboard ? (
     <nav className={cn(...appTitleBarRecipes.pillNav)} aria-label="Primary">
       <div
-        className={cn(...appTitleBarRecipes.pillContainer, ...appTitleBarRecipes.pillContainerSize)}
+        className={cn(
+          ...appTitleBarRecipes.pillContainer,
+          ...appTitleBarRecipes.contextPillInset,
+          ...appTitleBarRecipes.pillContainerSize,
+          'max-w-full',
+          'min-w-0'
+        )}
       >
         {TABS.map(({ key, label, icon: Icon }) => (
           <Button
@@ -157,12 +208,14 @@ export const AppTitleBar = ({
             type="button"
             onClick={() => onTabChange(key)}
             variant={currentTab === key ? 'tabActive' : 'tab'}
-            size="sm"
+            size="inherit"
             aria-label={label}
             aria-current={currentTab === key ? 'page' : undefined}
             className={cn(
-              ...appTitleBarRecipes.pillTab,
-              ...appTitleBarRecipes.pillTabSize,
+              ...appTitleBarRecipes.contextPillTab,
+              ...appTitleBarRecipes.contextPillTabSize,
+              'shrink-0',
+              'gap-1.5',
               currentTab === key ? semanticTextRecipes.inverse : semanticTextRecipes.muted
             )}
           >
@@ -174,14 +227,16 @@ export const AppTitleBar = ({
                 transition={{ stiffness: 400, damping: 35 }}
               />
             ) : null}
-            <span className="relative z-10 flex h-6 w-6 items-center justify-center shrink-0">
-              <Icon className="h-6 w-6" />
+            <span className={cn('relative z-10 shrink-0', ...appTitleBarRecipes.pillTabIconWell)}>
+              <Icon className={cn(...appTitleBarRecipes.pillTabIcon)} />
             </span>
             <span
               className={cn(
                 'relative z-10 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300',
                 uiTypographyRecipes.bodyStrong,
-                currentTab === key ? 'max-w-[8rem] opacity-100' : 'max-w-0 opacity-0'
+                currentTab === key
+                  ? 'max-w-[5rem] opacity-100 md:max-w-[6rem] lg:max-w-[8rem]'
+                  : 'max-w-0 opacity-0'
               )}
             >
               <span className={cn(currentTab === key && 'ml-1.5')}>{label}</span>
@@ -194,9 +249,11 @@ export const AppTitleBar = ({
 
   return (
     <header ref={ref} className={titleBarVariants({ state })}>
-      <div className="px-4">
+      <div className={cn('px-4', 'md:px-6', 'lg:px-8')}>
         <div className={cn(...appTitleBarRecipes.titleBarGrid)}>
-          <div className={cn('col-start-1', 'row-start-1', 'flex', 'items-center', 'gap-6')}>
+          <div
+            className={cn('col-start-1', 'row-start-1', ...appTitleBarRecipes.titleBarRow, 'gap-6')}
+          >
             {canGoToDashboard ? (
               <button
                 type="button"
@@ -231,56 +288,52 @@ export const AppTitleBar = ({
           {primaryTabs}
 
           <div className={cn(...appTitleBarRecipes.actions)}>
-            <span role="status" aria-live="polite" title={isOnline ? 'Online' : 'Offline'}>
-              {isOnline ? (
-                <Wifi className={cn('h-6 w-6', ...semanticStatus.success.icon)} />
-              ) : (
-                <WifiOff className={cn('h-6 w-6', ...semanticStatus.warning.icon)} />
-              )}
+            <span
+              className={cn(...appTitleBarRecipes.statusFrame)}
+              role="status"
+              aria-live="polite"
+              title={isOnline ? 'Online' : 'Offline'}
+            >
+              <span className={cn(...appTitleBarRecipes.statusWell)}>
+                {isOnline ? (
+                  <Wifi className={cn(...semanticStatus.success.icon)} />
+                ) : (
+                  <WifiOff className={cn(...semanticStatus.warning.icon)} />
+                )}
+              </span>
             </span>
 
             {state === 'authenticated' && onTabChange && (
-              <Button
+              <IconButton
                 type="button"
                 onClick={() => onTabChange('settings')}
-                variant={currentTab === 'settings' ? 'tabActive' : 'ghost'}
-                size="sm"
+                variant="ghost"
+                size="md"
                 className={cn(
-                  currentTab !== 'settings' ? appTitleBarRecipes.settingsIdle : undefined
+                  ...appTitleBarRecipes.actionIcon,
+                  currentTab === 'settings'
+                    ? buttonRecipes.tabActive.join(' ')
+                    : appTitleBarRecipes.settingsIdle
                 )}
                 aria-label="Settings"
                 title="Settings"
               >
-                <Settings className={cn('h-6', 'w-6')} />
-              </Button>
+                <Settings />
+              </IconButton>
             )}
 
             {(state === 'onboarding' || state === 'authenticated') && onLogout && (
-              <>
-                <div className="hidden md:block">
-                  <Button
-                    type="button"
-                    onClick={onLogout}
-                    variant="danger"
-                    size="sm"
-                    title="Logout"
-                  >
-                    <LogOut className="h-6 w-6" />
-                    <span>Logout</span>
-                  </Button>
-                </div>
-                <div className="md:hidden">
-                  <Button
-                    type="button"
-                    onClick={onLogout}
-                    variant="danger"
-                    size="sm"
-                    aria-label="Logout"
-                  >
-                    <LogOut className="h-6 w-6" />
-                  </Button>
-                </div>
-              </>
+              <IconButton
+                type="button"
+                onClick={onLogout}
+                variant="danger"
+                size="md"
+                className={cn(...appTitleBarRecipes.actionIcon)}
+                aria-label="Logout"
+                title="Logout"
+              >
+                <LogOut />
+              </IconButton>
             )}
           </div>
         </div>

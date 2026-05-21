@@ -4,6 +4,7 @@ import { PasswordChecker } from '@/components/PasswordChecker';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
 import { useTheme } from '@/context/ThemeContext';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
+import { pageLayoutRecipes } from '@/layouts/PageLayout';
 import { AuthService } from '@/services/authService';
 import { SettingsService } from '@/services/SettingsService';
 import { Alert, Badge, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
@@ -127,7 +128,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   };
 
   return (
-    <div className={cn('mx-auto', 'w-full', 'md:px-8', 'lg:px-8')}>
+    <div className={cn(...pageLayoutRecipes.settingsShell)}>
       <div className={cn('flex', 'flex-col', 'gap-6')}>
         <GlassCard variant="default" padding="lg">
           <div className={cn('space-y-5')}>

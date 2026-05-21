@@ -115,13 +115,9 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
             {props.state === 'loaded' || props.state === 'adding' ? (
               <>
                 <BudgetToolbar
-                  monthLabel="May 2026"
                   loading={false}
                   isAdding={props.state === 'adding'}
                   showAddButton
-                  onPreviousMonth={() => {}}
-                  onNextMonth={() => {}}
-                  onCurrentMonth={() => {}}
                   onAddBudget={() => {}}
                 />
                 {props.state === 'adding' ? (

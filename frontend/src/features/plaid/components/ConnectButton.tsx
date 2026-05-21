@@ -1,6 +1,7 @@
 import { Plus } from 'lucide-react';
 import type { ButtonHTMLAttributes } from 'react';
 import { Button, cn } from '@/ui/primitives';
+import { control } from '@/ui/recipes';
 
 interface ConnectButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary';
@@ -12,20 +13,31 @@ const ConnectButton = ({
   className = '',
   leadingImageSrc,
   children,
+  size = 'md',
   ...props
-}: ConnectButtonProps) => {
+}: ConnectButtonProps & { size?: 'sm' | 'md' | 'lg' }) => {
   const buttonVariant = variant === 'secondary' ? 'secondary' : 'connect';
   return (
-    <Button type="button" variant={buttonVariant} className={cn(className)} {...props}>
+    <Button
+      type="button"
+      variant={buttonVariant}
+      size={size}
+      className={cn('normal-case', className)}
+      {...props}
+    >
       {leadingImageSrc ? (
         <img
           src={leadingImageSrc}
           alt=""
           aria-hidden="true"
-          className={cn('h-5', 'w-5', 'rounded-[length:var(--radius-medium)]', 'object-cover')}
+          className={cn(
+            control.glyph[size],
+            'rounded-[length:var(--radius-medium)]',
+            'object-cover'
+          )}
         />
       ) : (
-        <Plus className={cn('h-4', 'w-4')} />
+        <Plus className={control.glyph[size]} />
       )}
       <span>{children ?? 'Add account'}</span>
     </Button>

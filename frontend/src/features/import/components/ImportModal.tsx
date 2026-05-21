@@ -255,7 +255,7 @@ export const ImportModalView: React.FC<ImportModalViewProps> = ({
                 onClick={handleClose}
                 className={cn('-mr-1', '-mt-0.5', 'shrink-0')}
               >
-                <X className={cn('h-4', 'w-4')} aria-hidden="true" />
+                <X aria-hidden="true" />
               </IconButton>
             ) : null}
           </div>

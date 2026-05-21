@@ -93,6 +93,17 @@ export const buttonRecipes = {
     'dark:text-slate-400',
     'dark:hover:border-[var(--color-border-default)] dark:hover:text-white',
   ],
+  filterChip: [
+    'border',
+    'border-transparent',
+    'bg-transparent',
+    'shadow-none',
+    'backdrop-blur-sm',
+    'hover:-translate-y-[2px]',
+    'hover:shadow-lg',
+    'disabled:hover:translate-y-0',
+    'disabled:hover:shadow-none',
+  ],
   tab: [
     'group',
     'relative',
@@ -149,6 +160,7 @@ const buttonVariants = cva([...buttonRecipes.base], {
       secondary: [...buttonRecipes.secondary],
       ghost: [...buttonRecipes.ghost],
       icon: [...buttonRecipes.icon],
+      filterChip: [...buttonRecipes.filterChip],
       tab: [...buttonRecipes.tab],
       tabActive: [...buttonRecipes.tabActive],
       danger: [...buttonRecipes.danger],
@@ -156,14 +168,16 @@ const buttonVariants = cva([...buttonRecipes.base], {
       connect: [...buttonRecipes.connect],
     },
     size: {
-      sm: `${control.height.sm} ${control.paddingX.sm} ${control.label.sm} ${uiRadiusRecipes.standard}`,
-      md: `${control.height.md} ${control.paddingX.md} ${control.label.md} ${uiRadiusRecipes.standard}`,
-      lg: `${control.height.lg} ${control.paddingX.lg} ${control.label.lg} ${uiRadiusRecipes.standard}`,
-      titleBarExpanded: `${titleBarChromeExpandedTypography} ${chrome.sm}`,
+      sm: '',
+      md: '',
+      lg: '',
+      inherit: '',
+      titleBarExpanded: '',
     },
     shape: {
       default: '',
       square: '',
+      pill: '',
     },
   },
   defaultVariants: {
@@ -173,19 +187,49 @@ const buttonVariants = cva([...buttonRecipes.base], {
   },
   compoundVariants: [
     {
+      shape: 'default',
+      size: 'sm',
+      class: `${control.height.sm} ${control.paddingX.sm} ${control.label.sm} ${uiRadiusRecipes.standard}`,
+    },
+    {
+      shape: 'default',
+      size: 'md',
+      class: `${control.height.md} ${control.paddingX.md} ${control.label.md} ${uiRadiusRecipes.standard}`,
+    },
+    {
+      shape: 'default',
+      size: 'lg',
+      class: `${control.height.lg} ${control.paddingX.lg} ${control.label.lg} ${uiRadiusRecipes.standard}`,
+    },
+    {
+      shape: 'default',
+      size: 'titleBarExpanded',
+      class: `${titleBarChromeExpandedTypography} ${chrome.sm}`,
+    },
+    {
       shape: 'square',
       size: 'sm',
-      class: control.square.sm,
+      class: `${control.square.sm} p-0 ${uiRadiusRecipes.standard}`,
     },
     {
       shape: 'square',
       size: 'md',
-      class: control.square.md,
+      class: `${control.square.md} p-0 ${uiRadiusRecipes.standard}`,
     },
     {
       shape: 'square',
       size: 'lg',
-      class: control.square.lg,
+      class: `${control.square.lg} p-0 ${uiRadiusRecipes.standard}`,
+    },
+    {
+      shape: 'pill',
+      size: 'sm',
+      class: `max-w-full shrink-0 gap-1.5 rounded-full px-2.5 py-1 ${control.height.sm} ${uiTypographyRecipes.badge}`,
+    },
+    {
+      shape: 'pill',
+      size: 'md',
+      class: `max-w-full shrink-0 gap-1.5 rounded-full px-3 py-1 ${control.height.md} ${uiTypographyRecipes.badge}`,
     },
   ],
 });
@@ -208,6 +252,11 @@ export const Button = ({
   ref,
   ...props
 }: ButtonProps & { ref?: React.RefObject<HTMLButtonElement | null> }) => {
+  const resolvedSize = size ?? 'md';
+  const isSquare = shape === 'square';
+  const glyphSize =
+    resolvedSize === 'sm' || resolvedSize === 'md' || resolvedSize === 'lg' ? resolvedSize : 'md';
+
   return (
     <button
       ref={ref}
@@ -215,7 +264,24 @@ export const Button = ({
       className={cn(buttonVariants({ variant, size, shape }), className)}
       {...props}
     >
-      {children}
+      {isSquare ? (
+        <span
+          className={cn(
+            'inline-flex',
+            'shrink-0',
+            'items-center',
+            'justify-center',
+            control.glyph[glyphSize],
+            '[&_svg]:block',
+            '[&_svg]:h-full',
+            '[&_svg]:w-full'
+          )}
+        >
+          {children}
+        </span>
+      ) : (
+        children
+      )}
     </button>
   );
 };

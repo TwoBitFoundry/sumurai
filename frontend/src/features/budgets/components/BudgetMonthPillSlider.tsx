@@ -2,7 +2,7 @@ import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/reac
 import { LONGEST_BUDGET_MONTH_LABEL } from '@/features/budgets/hooks/useBudgetMonth';
 import { Button, cn } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { chromeBar, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
 interface BudgetMonthPillSliderProps {
   monthLabel: string;
@@ -29,6 +29,7 @@ export function BudgetMonthPillSlider({
     <div
       className={cn(
         ...appTitleBarRecipes.pillContainer,
+        ...appTitleBarRecipes.pillInset,
         ...appTitleBarRecipes.pillContainerSize,
         'w-fit'
       )}
@@ -44,10 +45,8 @@ export function BudgetMonthPillSlider({
         title="Previous month"
         className={pillControlClassName}
       >
-        <span
-          className={cn('relative', 'z-10', 'flex', 'h-6', 'w-6', 'items-center', 'justify-center')}
-        >
-          <ChevronLeftIcon className={cn('h-6', 'w-6')} />
+        <span className={cn('relative', 'z-10', ...chromeBar.glyphWell)}>
+          <ChevronLeftIcon className={chromeBar.glyph} />
         </span>
       </Button>
       <Button
@@ -59,10 +58,8 @@ export function BudgetMonthPillSlider({
         title="Jump to current month"
         className={pillControlClassName}
       >
-        <span
-          className={cn('relative', 'z-10', 'flex', 'h-6', 'w-6', 'items-center', 'justify-center')}
-        >
-          <CalendarIcon className={cn('h-6', 'w-6')} />
+        <span className={cn('relative', 'z-10', ...chromeBar.glyphWell)}>
+          <CalendarIcon className={chromeBar.glyph} />
         </span>
       </Button>
       <Button
@@ -74,10 +71,8 @@ export function BudgetMonthPillSlider({
         title="Next month"
         className={pillControlClassName}
       >
-        <span
-          className={cn('relative', 'z-10', 'flex', 'h-6', 'w-6', 'items-center', 'justify-center')}
-        >
-          <ChevronRightIcon className={cn('h-6', 'w-6')} />
+        <span className={cn('relative', 'z-10', ...chromeBar.glyphWell)}>
+          <ChevronRightIcon className={chromeBar.glyph} />
         </span>
       </Button>
       <span

@@ -26,10 +26,14 @@ The shared control scale lives in [`frontend/src/ui/recipes.ts`](../recipes.ts) 
 | `md` | 44px mobile, 36px tablet, 32px desktop | 20px mobile, 18px tablet, 16px desktop | 16px mobile, 14px tablet, 12px desktop | `font.bodyStrong` |
 | `lg` | 52px mobile, 44px tablet, 40px desktop | 24px mobile, 22px tablet, 20px desktop | 20px mobile, 18px tablet, 16px desktop | `font.bodyStrong` |
 
+### Chrome bar (sole exception)
+
+Floating pill chrome (title bar tabs, bottom contextual sliders, account filter icon trigger) uses `chromeBar` in [`frontend/src/ui/recipes.ts`](../recipes.ts): fixed `h-12` shell and `h-6 w-6` glyphs. It does not follow the responsive `control` scale.
+
 Rules:
-1. Always pick a control `size` (`sm`, `md`, or `lg`). Never hand-style heights, glyph sizes, or label typography.
-2. Pair label and glyph automatically by setting `size` on the primitive; do not override `text-*` or icon `h-*` classes downstream.
-3. Default to `md`. Use `sm` only for dense toolbars and tables. Use `lg` only for hero CTAs.
+1. Always pick a control `size` (`sm`, `md`, or `lg`) for buttons, inputs, selects, and icon buttons. Never hand-style heights, glyph sizes, or label typography.
+2. Pair label and glyph automatically by setting `size` on the primitive; do not override `text-*` or icon `h-*` classes downstream. Inside `chromeBar` pills only, use `chromeBar.glyph` and `chromeBar.glyphWell`.
+3. Default to `md`. Use `sm` only for dense toolbars and tables. Use `lg` for prominent footer fields and hero CTAs.
 
 The `md` control size is anchored to the iOS 44pt minimum touch target, which drives the 44px mobile height.
 

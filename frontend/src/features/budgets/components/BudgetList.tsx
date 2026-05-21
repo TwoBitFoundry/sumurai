@@ -245,7 +245,7 @@ export function BudgetList({
                         title="Save"
                         aria-label="Save budget"
                       >
-                        <CheckIcon className={cn('h-4', 'w-4')} />
+                        <CheckIcon />
                       </IconButton>
                       <IconButton
                         variant="ghost"
@@ -254,7 +254,7 @@ export function BudgetList({
                         title="Cancel"
                         aria-label="Cancel edit"
                       >
-                        <XMarkIcon className={cn('h-4', 'w-4')} />
+                        <XMarkIcon />
                       </IconButton>
                     </>
                   ) : (
@@ -266,7 +266,7 @@ export function BudgetList({
                         title="Edit budget"
                         aria-label="Edit budget"
                       >
-                        <PencilSquareIcon className={cn('h-4', 'w-4')} />
+                        <PencilSquareIcon />
                       </IconButton>
                       <IconButton
                         variant="danger"
@@ -274,7 +274,7 @@ export function BudgetList({
                         title="Delete budget"
                         aria-label="Delete budget"
                       >
-                        <TrashSolidIcon className={cn('h-4', 'w-4')} />
+                        <TrashSolidIcon />
                       </IconButton>
                     </>
                   )}
