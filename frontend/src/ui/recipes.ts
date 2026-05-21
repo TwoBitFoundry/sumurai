@@ -451,5 +451,38 @@ export const floatingChromeSearch = {
   label: control.label.md,
 } as const;
 
+export const controlIconWell = {
+  sm: [
+    'inline-flex',
+    'shrink-0',
+    'items-center',
+    'justify-center',
+    control.glyph.sm,
+    '[&_svg]:block',
+    '[&_svg]:h-full',
+    '[&_svg]:w-full',
+  ],
+  md: [
+    'inline-flex',
+    'shrink-0',
+    'items-center',
+    'justify-center',
+    control.glyph.md,
+    '[&_svg]:block',
+    '[&_svg]:h-full',
+    '[&_svg]:w-full',
+  ],
+  lg: [
+    'inline-flex',
+    'shrink-0',
+    'items-center',
+    'justify-center',
+    control.glyph.lg,
+    '[&_svg]:block',
+    '[&_svg]:h-full',
+    '[&_svg]:w-full',
+  ],
+} as const;
+
 export const semanticTextRecipes = text;
 export const semanticPlaceholderTextRecipes = placeholder;

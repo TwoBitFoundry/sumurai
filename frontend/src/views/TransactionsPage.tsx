@@ -70,7 +70,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
             <HeroStatCard
               index={1}
               title="Total shown"
-              icon={<ReceiptText className={cn('h-4', 'w-4')} />}
+              icon={<ReceiptText />}
               value={loadingMessage ?? totalCount}
               suffix={loadingMessage ? undefined : totalCount === 1 ? 'item' : 'items'}
               subtext={loadingMessage ? undefined : fmtUSD(totalSpent)}
@@ -79,7 +79,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
             <HeroStatCard
               index={2}
               title="Average size"
-              icon={<TrendingUp className={cn('h-4', 'w-4')} />}
+              icon={<TrendingUp />}
               value={loadingMessage ?? fmtUSD(avgTransaction)}
               subtext={loadingMessage ? undefined : categoryDriver || undefined}
             />
@@ -87,7 +87,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
             <HeroStatCard
               index={3}
               title="Largest size"
-              icon={<AlertTriangle className={cn('h-4', 'w-4')} />}
+              icon={<AlertTriangle />}
               value={
                 loadingMessage ??
                 (largestTransaction ? fmtUSD(Math.abs(largestTransaction.amount)) : '$0')
@@ -108,7 +108,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
             <HeroStatCard
               index={4}
               title="Recurring"
-              icon={<RefreshCcw className={cn('h-4', 'w-4')} />}
+              icon={<RefreshCcw />}
               value={loadingMessage ?? recurringCount}
               suffix={loadingMessage ? undefined : recurringCount === 1 ? 'merchant' : 'merchants'}
               pills={loadingMessage ? [] : recurringMerchants.map((m) => ({ label: m }))}

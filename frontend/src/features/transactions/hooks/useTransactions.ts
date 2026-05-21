@@ -8,6 +8,10 @@ import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { TransactionService } from '../../../services/TransactionService';
 import type { PaginatedTransactionsResponse, Transaction } from '../../../types/api';
 import { accountIdsCacheKey } from '../../../utils/cacheKeys';
+import {
+  getSessionTransactionsPage,
+  setSessionTransactionsPage,
+} from '../../../utils/sessionPreferences';
 import { useTransactionCategories } from './useTransactionCategories';
 import type { TransactionFilterControl } from './useTransactionFilterState';
 
@@ -57,7 +61,11 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
   const search = filterControl?.search ?? internalSearch;
   const selectedCategory = filterControl?.selectedCategory ?? internalSelectedCategory;
   const [dateRange, setDateRangeState] = useState<DateRangeKey>(initialDateRange);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPageState] = useState(() => getSessionTransactionsPage() ?? 1);
+  const setCurrentPage = useCallback((page: number) => {
+    setCurrentPageState(page);
+    setSessionTransactionsPage(page);
+  }, []);
 
   const {
     selectedAccountIds,
@@ -141,7 +149,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
         setCurrentPage(1);
       }
     }
-  }, [accountsLoading, currentPage, filterKey]);
+  }, [accountsLoading, currentPage, filterKey, setCurrentPage]);
 
   const paginated = query.data;
   const transactions = paginated?.transactions ?? [];
@@ -152,7 +160,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     if (serverPage != null && serverPage !== currentPage) {
       setCurrentPage(serverPage);
     }
-  }, [paginated?.page, currentPage]);
+  }, [paginated?.page, currentPage, setCurrentPage]);
 
   const errorMessage = useMemo(() => {
     const err = query.error;
@@ -177,7 +185,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
       }
       setCurrentPage(1);
     },
-    [filterControl]
+    [filterControl, setCurrentPage]
   );
 
   const setSelectedCategory = useCallback(
@@ -189,13 +197,16 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
       }
       setCurrentPage(1);
     },
-    [filterControl]
+    [filterControl, setCurrentPage]
   );
 
-  const setDateRange = useCallback((value: DateRangeKey) => {
-    setDateRangeState(value);
-    setCurrentPage(1);
-  }, []);
+  const setDateRange = useCallback(
+    (value: DateRangeKey) => {
+      setDateRangeState(value);
+      setCurrentPage(1);
+    },
+    [setCurrentPage]
+  );
 
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 

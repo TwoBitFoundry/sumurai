@@ -1,6 +1,7 @@
 import React, { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/ui/primitives';
 import {
+  controlIconWell,
   text as semanticTextRecipes,
   radius as uiRadiusRecipes,
   font as uiTypographyRecipes,
@@ -57,6 +58,7 @@ export const heroStatCardRecipes = {
   footer: 'relative min-w-0 w-full max-w-full overflow-hidden',
   footerScroll:
     'scrollbar-hide flex w-full min-w-0 items-center gap-1.5 overflow-x-auto overflow-y-hidden whitespace-nowrap max-w-full [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+  iconWell: [...controlIconWell.lg, '[&_svg]:stroke-[2.25]'],
   semantic: heroStatSemanticThemes,
 } as const;
 
@@ -248,7 +250,9 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
           )}
         >
           <div className="flex min-w-0 items-center gap-2">
-            {icon ? <span className={cn('h-4 w-4 shrink-0', styles.icon)}>{icon}</span> : null}
+            {icon ? (
+              <span className={cn(...heroStatCardRecipes.iconWell, styles.icon)}>{icon}</span>
+            ) : null}
             <div className={cn('min-w-0', heroStatCardRecipes.title)}>{title}</div>
           </div>
           <div className={cn('flex', 'flex-wrap', 'items-baseline', 'gap-2')}>

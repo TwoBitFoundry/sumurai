@@ -1,6 +1,7 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import type { ThemeColors, ThemeMode, ThemePreference } from '@/ui/tokens';
 import { getThemeColors } from '@/ui/tokens';
+import { getSessionThemePreference, setSessionThemePreference } from '@/utils/sessionPreferences';
 
 export type { ThemePreference } from '@/ui/tokens';
 
@@ -15,8 +16,6 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const THEME_STORAGE_KEY = 'theme';
-
 const getSystemTheme = (): ThemeMode => {
   if (typeof window === 'undefined') return 'dark';
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -25,12 +24,7 @@ const getSystemTheme = (): ThemeMode => {
 const getInitialPreference = (): ThemePreference => {
   if (typeof window === 'undefined') return 'system';
 
-  const stored = localStorage.getItem(THEME_STORAGE_KEY);
-  if (stored === 'light' || stored === 'dark' || stored === 'system') {
-    return stored;
-  }
-
-  return 'system';
+  return getSessionThemePreference() ?? 'system';
 };
 
 const resolveThemeMode = (preference: ThemePreference, systemMode: ThemeMode): ThemeMode => {
@@ -66,7 +60,7 @@ export function ThemeProvider({ children, initialPreference }: ThemeProviderProp
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(THEME_STORAGE_KEY, preference);
+    setSessionThemePreference(preference);
   }, [preference]);
 
   useEffect(() => {

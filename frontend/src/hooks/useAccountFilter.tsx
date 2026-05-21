@@ -20,6 +20,7 @@ import {
 } from '@/context/AccountFilterContext';
 import { ProviderCatalog } from '@/services/ProviderCatalog';
 import { ACCOUNTS_CHANGED_EVENT } from '@/utils/events';
+import { getSessionAccountFilterIds, setSessionAccountFilterIds } from '@/utils/sessionPreferences';
 
 const EMPTY_PROVIDER_ACCOUNTS: ProviderAccount[] = [];
 
@@ -39,6 +40,7 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
   const queryClient = useQueryClient();
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const previousAllAccountIdsRef = useRef<string[]>([]);
+  const restoredSelectionRef = useRef(false);
   const accountsQuery = useQuery({
     queryKey: ['accounts'],
     queryFn: async () => mapProviderAccounts(await ProviderCatalog.getAccounts()),
@@ -76,6 +78,17 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
         return prev.length === 0 ? prev : [];
       }
 
+      if (!restoredSelectionRef.current) {
+        restoredSelectionRef.current = true;
+        const stored = getSessionAccountFilterIds();
+        if (stored && stored.length > 0) {
+          const valid = stored.filter((id) => allAccountIds.includes(id));
+          if (valid.length > 0) {
+            return valid;
+          }
+        }
+      }
+
       if (prev.length === 0) {
         return allAccountIds;
       }
@@ -95,6 +108,13 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
 
     previousAllAccountIdsRef.current = allAccountIds;
   }, [allAccountIds]);
+
+  useEffect(() => {
+    if (allAccountIds.length === 0) {
+      return;
+    }
+    setSessionAccountFilterIds(selectedAccountIds);
+  }, [allAccountIds.length, selectedAccountIds]);
 
   useEffect(() => {
     const handleAccountsChanged = () => {

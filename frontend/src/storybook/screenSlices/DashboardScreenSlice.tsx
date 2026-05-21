@@ -112,7 +112,7 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
       <HeroStatCard
         index={1}
         title="Cash"
-        icon={<CircleDollarSign className="h-4 w-4" />}
+        icon={<CircleDollarSign />}
         value="$18,420"
         accent="emerald"
         minHeightClassName="min-h-0"
@@ -120,7 +120,7 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
       <HeroStatCard
         index={2}
         title="Credit"
-        icon={<Landmark className="h-4 w-4" />}
+        icon={<Landmark />}
         value="$2,180"
         accent="rose"
         minHeightClassName="min-h-0"
@@ -128,7 +128,7 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
       <HeroStatCard
         index={3}
         title="Investments"
-        icon={<PiggyBank className="h-4 w-4" />}
+        icon={<PiggyBank />}
         value="$41,200"
         accent="sky"
         minHeightClassName="min-h-0"
@@ -136,7 +136,7 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
       <HeroStatCard
         index={4}
         title="Net worth"
-        icon={<TrendingUp className="h-4 w-4" />}
+        icon={<TrendingUp />}
         value="$57,440"
         accent="violet"
         minHeightClassName="min-h-0"

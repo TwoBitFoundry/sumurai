@@ -16,6 +16,10 @@ import { AppLayout } from '../layouts/AppLayout';
 import { GradientShell } from '../ui/primitives';
 import { text as uiTextRecipes } from '../ui/recipes';
 import type { DateRangeKey as DateRange } from '../utils/dateRanges';
+import {
+  getSessionDashboardDateRange,
+  setSessionDashboardDateRange,
+} from '../utils/sessionPreferences';
 import { ErrorBoundary } from './ErrorBoundary';
 
 export type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
@@ -31,7 +35,13 @@ interface AuthenticatedAppProps {
 export function AuthenticatedApp({ onLogout, initialTab, isOnline }: AuthenticatedAppProps) {
   const [tab, setTab] = useState<TabKey>(initialTab ?? 'dashboard');
   const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<DateRange>('current-month');
+  const [dateRange, setDateRangeState] = useState<DateRange>(
+    () => getSessionDashboardDateRange() ?? 'current-month'
+  );
+  const setDateRange = (next: DateRange) => {
+    setDateRangeState(next);
+    setSessionDashboardDateRange(next);
+  };
   const budgetMonth = useBudgetMonth();
   const transactionFilters = useTransactionFilterState();
   const swipeBlockedRef = useRef(false);

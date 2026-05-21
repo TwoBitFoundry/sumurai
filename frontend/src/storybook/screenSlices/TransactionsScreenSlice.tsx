@@ -92,7 +92,7 @@ export function TransactionsScreenSlice(props: {
             <HeroStatCard
               index={1}
               title="Total shown"
-              icon={<ReceiptText className={cn('h-4', 'w-4')} />}
+              icon={<ReceiptText />}
               value={stats.totalCount}
               suffix={stats.totalCount === 1 ? 'item' : 'items'}
               subtext={fmtUSD(stats.totalSpent)}
@@ -100,14 +100,14 @@ export function TransactionsScreenSlice(props: {
             <HeroStatCard
               index={2}
               title="Average size"
-              icon={<TrendingUp className={cn('h-4', 'w-4')} />}
+              icon={<TrendingUp />}
               value={fmtUSD(stats.avgTransaction)}
               subtext={stats.categoryDriver || undefined}
             />
             <HeroStatCard
               index={3}
               title="Largest size"
-              icon={<AlertTriangle className={cn('h-4', 'w-4')} />}
+              icon={<AlertTriangle />}
               value={
                 stats.largestTransaction ? fmtUSD(Math.abs(stats.largestTransaction.amount)) : '$0'
               }
@@ -126,7 +126,7 @@ export function TransactionsScreenSlice(props: {
             <HeroStatCard
               index={4}
               title="Recurring"
-              icon={<RefreshCcw className={cn('h-4', 'w-4')} />}
+              icon={<RefreshCcw />}
               value={stats.recurringCount}
               suffix={stats.recurringCount === 1 ? 'merchant' : 'merchants'}
               pills={stats.recurringMerchants.map((m) => ({ label: m }))}

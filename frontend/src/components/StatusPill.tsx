@@ -1,7 +1,7 @@
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import type React from 'react';
 import { cn } from '@/ui/primitives';
-import { status as uiStatusRecipes } from '@/ui/recipes';
+import { controlIconWell, status as uiStatusRecipes } from '@/ui/recipes';
 
 type ConnectionStatus = 'connected' | 'needs_reauth' | 'error';
 
@@ -35,9 +35,11 @@ export const StatusPill: React.FC<StatusPillProps> = ({ status, className }) => 
     <span
       role="status"
       aria-label={label}
-      className={cn('inline-flex shrink-0 items-center', iconClass, className)}
+      className={cn('inline-flex shrink-0 items-center', className)}
     >
-      <Icon className={cn('h-4 w-4')} aria-hidden />
+      <span className={cn(...controlIconWell.lg, iconClass)}>
+        <Icon strokeWidth={2.25} aria-hidden />
+      </span>
     </span>
   );
 };

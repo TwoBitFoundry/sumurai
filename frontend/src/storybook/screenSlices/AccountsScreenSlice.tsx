@@ -64,7 +64,7 @@ export function AccountsConnectedScreenSlice(props: {
             'px-5'
           )}
         >
-          <RefreshCw className={cn('h-4 w-4', props.syncingAll && 'animate-spin')} />
+          <RefreshCw className={cn(props.syncingAll && 'animate-spin')} />
           {props.syncingAll ? 'Syncing...' : 'Sync all'}
         </Button>
       ) : null}

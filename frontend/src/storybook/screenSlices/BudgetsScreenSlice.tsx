@@ -17,7 +17,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         <HeroStatCard
           index={1}
           title="Active budgets"
-          icon={<CheckCircle2 className={cn('h-4', 'w-4')} />}
+          icon={<CheckCircle2 />}
           value="3"
           suffix="out of 12"
           pills={[{ label: 'Food', type: 'category', categoryName: 'food_and_drink' }]}
@@ -25,7 +25,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         <HeroStatCard
           index={2}
           title="Monitor"
-          icon={<Activity className={cn('h-4', 'w-4')} />}
+          icon={<Activity />}
           value="98%"
           suffix="of budget"
           pills={[{ label: 'On Track', type: 'semantic', tone: 'info' }]}
@@ -33,7 +33,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         <HeroStatCard
           index={3}
           title="Days remaining"
-          icon={<Clock className={cn('h-4', 'w-4')} />}
+          icon={<Clock />}
           value="16"
           suffix="out of"
           subtext="31 total days"
@@ -41,7 +41,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         <HeroStatCard
           index={4}
           title="Overages"
-          icon={<AlertTriangle className={cn('h-4', 'w-4')} />}
+          icon={<AlertTriangle />}
           value="1"
           suffix="over budget"
           pills={[{ label: 'Entertainment', type: 'category', categoryName: 'entertainment' }]}
@@ -57,14 +57,14 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         <HeroStatCard
           index={1}
           title="Active budgets"
-          icon={<CheckCircle2 className={cn('h-4', 'w-4')} />}
+          icon={<CheckCircle2 />}
           value="0"
           suffix="out of 12"
         />
         <HeroStatCard
           index={2}
           title="Monitor"
-          icon={<Activity className={cn('h-4', 'w-4')} />}
+          icon={<Activity />}
           value="0%"
           suffix="of budget"
           pills={[{ label: 'Healthy', type: 'semantic', tone: 'success' }]}
@@ -72,7 +72,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         <HeroStatCard
           index={3}
           title="Days remaining"
-          icon={<Clock className={cn('h-4', 'w-4')} />}
+          icon={<Clock />}
           value="16"
           suffix="out of"
           subtext="31 total days"
@@ -80,7 +80,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
         <HeroStatCard
           index={4}
           title="Overages"
-          icon={<AlertTriangle className={cn('h-4', 'w-4')} />}
+          icon={<AlertTriangle />}
           value="0"
           suffix="over budget"
         />
@@ -152,7 +152,7 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
                 description="Create your first category plan to watch spending settle into rhythm."
                 action={
                   <Button type="button" onClick={() => {}} variant="primary" size="md">
-                    <Plus className={cn('h-4', 'w-4')} />
+                    <Plus />
                     Add budget
                   </Button>
                 }

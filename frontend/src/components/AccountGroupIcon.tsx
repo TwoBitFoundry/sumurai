@@ -18,5 +18,5 @@ type AccountGroupIconProps = {
 export function AccountGroupIcon({ group, className }: AccountGroupIconProps) {
   const Icon = ACCOUNT_GROUP_ICON_MAP[group];
   const iconColorClass = heroAccents[ACCOUNT_GROUP_ACCENT[group]].icon;
-  return <Icon className={cn('h-4 w-4 shrink-0', iconColorClass, className)} aria-hidden />;
+  return <Icon className={cn('shrink-0', iconColorClass, className)} aria-hidden />;
 }

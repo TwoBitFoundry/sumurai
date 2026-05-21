@@ -148,7 +148,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
         <HeroStatCard
           index={1}
           title="Active budgets"
-          icon={<CheckCircle2 className={cn('h-4', 'w-4')} />}
+          icon={<CheckCircle2 />}
           value={`${computedBudgets.length}`}
           suffix={`out of ${categoryOptions.length}`}
           pills={activeBudgetPills}
@@ -156,7 +156,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
         <HeroStatCard
           index={2}
           title="Monitor"
-          icon={<Activity className={cn('h-4', 'w-4')} />}
+          icon={<Activity />}
           value={utilizationValue}
           suffix={utilizationSuffix}
           pills={[
@@ -170,7 +170,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
         <HeroStatCard
           index={3}
           title="Days remaining"
-          icon={<Clock className={cn('h-4', 'w-4')} />}
+          icon={<Clock />}
           value={stats.daysRemaining}
           suffix={`of ${stats.totalDays}`}
           subtext={`${stats.totalDays} total days`}
@@ -178,7 +178,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
         <HeroStatCard
           index={4}
           title="Overages"
-          icon={<AlertTriangle className={cn('h-4', 'w-4')} />}
+          icon={<AlertTriangle />}
           value={stats.overBudgetCount}
           suffix="over budget"
           pills={overBudgetPills}
@@ -248,7 +248,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
                   action={
                     !isAdding ? (
                       <Button type="button" onClick={startAdd} variant="primary" size="md">
-                        <Plus className={cn('h-4', 'w-4')} />
+                        <Plus />
                         Add budget
                       </Button>
                     ) : null
