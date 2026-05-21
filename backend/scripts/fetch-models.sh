@@ -2,12 +2,13 @@
 set -euo pipefail
 
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-model_dir="${MODEL_DIR:-$script_dir/../assets/models/all-MiniLM-L6-v2}"
-revision=751bff37182d3f1213fa05d7196b954e230abad9
-model_quantized_sha256=afdb6f1a0e45b715d0bb9b11772f032c399babd23bfc31fed1c170afc848bdb1
-tokenizer_sha256=da0e79933b9ed51798a3ae27893d3c5fa4a201126cef75586296df9b4d2c62a0
-config_sha256=7135149f7cffa1a573466c6e4d8423ed73b62fd2332c575bf738a0d033f70df7
-base_url="https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/$revision"
+model_dir="${MODEL_DIR:-$script_dir/../assets/models/distilbert-us-transaction-classifier-v2}"
+revision=2bbf6764c314a43449912cdd15480b922a05e140
+model_quantized_sha256=1ab2b64277921566be0303003473fac0bb6b65b21dd7db74548575410eecc5c6
+tokenizer_sha256=d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66
+config_sha256=23cf01ac65701eb3d4603f7c2aac7714e8209db0d72e011a768e2e085ec7f56e
+label_mapping_sha256=39c222d5f9394e8e41e3d545f360236c1ab0757b6a8e50c637529129b867febf
+base_url="https://huggingface.co/DoDataThings/distilbert-us-transaction-classifier-v2/resolve/$revision"
 
 verify_checksum() {
   local sha256=$1
@@ -36,3 +37,4 @@ download() {
 download "$base_url/onnx/model_quantized.onnx" "$model_dir/model_quantized.onnx" "$model_quantized_sha256"
 download "$base_url/tokenizer.json" "$model_dir/tokenizer.json" "$tokenizer_sha256"
 download "$base_url/config.json" "$model_dir/config.json" "$config_sha256"
+download "$base_url/label_mapping.json" "$model_dir/label_mapping.json" "$label_mapping_sha256"

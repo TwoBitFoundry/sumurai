@@ -5,7 +5,7 @@ pub const PFC_CATEGORY_DESCRIPTORS: &[(&str, &str)] = &[
     ),
     (
         "FOOD_AND_DRINK",
-        "Restaurants, cafes, bars, groceries, delivery apps, and dining out.",
+        "Restaurants, cafes, bars, grocery stores, supermarkets, delivery apps, and dining out.",
     ),
     (
         "SHOPPING",
@@ -25,11 +25,11 @@ pub const PFC_CATEGORY_DESCRIPTORS: &[(&str, &str)] = &[
     ),
     (
         "TRANSPORTATION",
-        "Gas, fuel, parking, public transit, ride share, tolls, and car services.",
+        "Gas stations, fuel, parking, public transit, ride share, tolls, and car services.",
     ),
     (
         "RENT_AND_UTILITIES",
-        "Rent, electricity, water, gas, internet, phone, and household utilities.",
+        "Rent, electric bills, water, gas, internet, phone, and household utilities.",
     ),
     (
         "LOAN_PAYMENTS",

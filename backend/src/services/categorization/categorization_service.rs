@@ -1,23 +1,26 @@
-use std::cmp::Ordering;
 use std::path::Path;
 
-use crate::models::predicted_category::{Confidence, PredictedCategory};
+use crate::models::predicted_category::PredictedCategory;
 use anyhow::Result;
 
+#[cfg(test)]
+use crate::models::predicted_category::Confidence;
 #[cfg(not(test))]
 use anyhow::anyhow;
+#[cfg(test)]
+use std::cmp::Ordering;
 #[cfg(not(test))]
 use std::fs;
 #[cfg(not(test))]
 use std::sync::{Arc, Mutex};
 
 #[cfg(not(test))]
-use crate::services::categorization::category_descriptors::PFC_CATEGORY_DESCRIPTORS;
+use crate::services::categorization::classifier_labels::classify_logits;
 use async_trait::async_trait;
 #[cfg(not(test))]
-use ndarray::{Array2, ArrayView3, Ix3};
+use ndarray::{Array2, Ix2};
 #[cfg(not(test))]
-use ort::session::Session;
+use ort::session::{builder::GraphOptimizationLevel, Session};
 #[cfg(not(test))]
 use ort::value::Tensor;
 #[cfg(not(test))]
@@ -30,12 +33,20 @@ use tokenizers::{
 #[cfg(not(test))]
 use tokio::task;
 
+#[cfg(not(test))]
+const INFERENCE_BATCH_SIZE: usize = 128;
+#[cfg(not(test))]
+const MAX_INFERENCE_SEQ_LEN: usize = 128;
+
 pub struct CategorizationService {
     #[cfg(not(test))]
     session: Option<Arc<Mutex<Session>>>,
     #[cfg(not(test))]
     tokenizer: Option<Arc<Tokenizer>>,
+    #[cfg(test)]
     category_refs: Vec<(String, Vec<f32>)>,
+    #[cfg(not(test))]
+    classifier_labels: Vec<String>,
     #[cfg(not(test))]
     max_seq_len: usize,
 }
@@ -58,6 +69,8 @@ impl CategorizationService {
                 .map(|(primary, vector)| (primary, normalize_vector(&vector)))
                 .collect(),
             #[cfg(not(test))]
+            classifier_labels: Vec::new(),
+            #[cfg(not(test))]
             max_seq_len: 128,
         }
     }
@@ -77,6 +90,7 @@ impl CategorizationService {
         ))
     }
 
+    #[cfg(test)]
     pub(crate) fn categorize_batch_sync(
         &self,
         query_vectors: Vec<Vec<f32>>,
@@ -97,11 +111,19 @@ impl CategorizationService {
         let model_path = model_dir.join("model_quantized.onnx");
         let tokenizer_path = model_dir.join("tokenizer.json");
         let config_path = model_dir.join("config.json");
+        let label_mapping_path = model_dir.join("label_mapping.json");
 
+        tracing::info!("creating categorization ONNX session builder");
         let session = Session::builder()
             .map_err(|err| anyhow!("failed to create categorization session builder: {err}"))?
-            .with_intra_threads(1)
+            .with_parallel_execution(false)
+            .map_err(|err| anyhow!("failed to configure categorization execution mode: {err}"))?
+            .with_intra_threads(4)
             .map_err(|err| anyhow!("failed to configure categorization session threads: {err}"))?
+            .with_inter_threads(1)
+            .map_err(|err| anyhow!("failed to configure categorization inter-op threads: {err}"))?
+            .with_optimization_level(GraphOptimizationLevel::Level1)
+            .map_err(|err| anyhow!("failed to configure categorization graph optimization: {err}"))?
             .commit_from_file(&model_path)
             .map_err(|err| {
                 anyhow!(
@@ -109,6 +131,7 @@ impl CategorizationService {
                     model_path.display()
                 )
             })?;
+        tracing::info!("loaded categorization ONNX session");
         let tokenizer =
             Tokenizer::from_file(tokenizer_path.to_string_lossy().as_ref()).map_err(|err| {
                 anyhow!(
@@ -116,60 +139,41 @@ impl CategorizationService {
                     tokenizer_path.display()
                 )
             })?;
-        let max_seq_len = read_max_seq_len(&config_path)?;
+        tracing::info!("loaded categorization tokenizer");
+        let max_seq_len = read_max_seq_len(&config_path)?.min(MAX_INFERENCE_SEQ_LEN);
+        tracing::info!(max_seq_len, "loaded categorization model config");
 
-        let mut session = session;
-        let category_refs = Self::build_category_refs(&mut session, &tokenizer, max_seq_len)?;
+        let classifier_labels = read_classifier_labels(&label_mapping_path)?;
+        tracing::info!(
+            labels = classifier_labels.len(),
+            "loaded categorization classifier labels"
+        );
 
         Ok(Self {
             session: Some(Arc::new(Mutex::new(session))),
             tokenizer: Some(Arc::new(tokenizer)),
-            category_refs,
+            classifier_labels,
             max_seq_len,
         })
     }
 
     #[cfg(not(test))]
-    fn build_category_refs(
+    fn classify_texts(
         session: &mut Session,
         tokenizer: &Tokenizer,
         max_seq_len: usize,
-    ) -> Result<Vec<(String, Vec<f32>)>> {
-        let descriptions = PFC_CATEGORY_DESCRIPTORS
-            .iter()
-            .map(|(_, description)| (*description).to_string())
-            .collect::<Vec<_>>();
-        let embeddings = Self::embed_texts(session, tokenizer, max_seq_len, descriptions)?;
-
-        Ok(PFC_CATEGORY_DESCRIPTORS
-            .iter()
-            .zip(embeddings)
-            .map(|((primary, _), embedding)| ((*primary).to_string(), normalize_vector(&embedding)))
-            .collect())
-    }
-
-    #[cfg(not(test))]
-    fn embed_texts(
-        session: &mut Session,
-        tokenizer: &Tokenizer,
-        max_seq_len: usize,
-        descriptions: Vec<String>,
-    ) -> Result<Vec<Vec<f32>>> {
-        if descriptions.is_empty() {
+        labels: &[String],
+        inputs: Vec<String>,
+    ) -> Result<Vec<PredictedCategory>> {
+        if inputs.is_empty() {
             return Ok(Vec::new());
         }
 
         let mut tokenizer = tokenizer.clone();
         configure_tokenizer(&mut tokenizer, max_seq_len);
         let encodings = tokenizer
-            .encode_batch(
-                descriptions
-                    .iter()
-                    .map(|description| description.as_str())
-                    .collect(),
-                true,
-            )
-            .map_err(|err| anyhow!("failed to tokenize descriptions: {err}"))?;
+            .encode_batch(inputs.iter().map(|input| input.as_str()).collect(), true)
+            .map_err(|err| anyhow!("failed to tokenize classifier inputs: {err}"))?;
         let input_ids = build_tensor(&encodings, |encoding| encoding.get_ids())?;
         let attention_mask = build_tensor(&encodings, |encoding| encoding.get_attention_mask())?;
         let token_type_ids = build_tensor(&encodings, |encoding| encoding.get_type_ids())?;
@@ -179,33 +183,38 @@ impl CategorizationService {
             .map(|outlet| outlet.name().to_string())
             .collect::<Vec<_>>();
 
-        let mut inputs = Vec::new();
+        let mut ort_inputs = Vec::new();
         if input_names.iter().any(|name| name == "input_ids") {
-            inputs.push(("input_ids", Tensor::from_array(input_ids)?));
+            ort_inputs.push(("input_ids", Tensor::from_array(input_ids)?));
         }
         if input_names.iter().any(|name| name == "attention_mask") {
-            inputs.push((
+            ort_inputs.push((
                 "attention_mask",
                 Tensor::from_array(attention_mask.clone())?,
             ));
         }
         if input_names.iter().any(|name| name == "token_type_ids") {
-            inputs.push(("token_type_ids", Tensor::from_array(token_type_ids)?));
+            ort_inputs.push(("token_type_ids", Tensor::from_array(token_type_ids)?));
         }
 
-        let outputs = session.run(inputs)?;
+        let outputs = session.run(ort_inputs)?;
         if outputs.len() == 0 {
             return Err(anyhow!("categorization model returned no outputs"));
         }
 
-        let last_hidden_state = outputs[0]
+        let logits = outputs[0]
             .try_extract_array::<f32>()
-            .map_err(|err| anyhow!("failed to extract categorization embeddings: {err}"))?
-            .into_dimensionality::<Ix3>()
-            .map_err(|err| anyhow!("categorization model output was not 3D: {err}"))?;
-        Ok(mean_pool_embeddings(last_hidden_state, &attention_mask))
+            .map_err(|err| anyhow!("failed to extract categorization logits: {err}"))?
+            .into_dimensionality::<Ix2>()
+            .map_err(|err| anyhow!("categorization model output was not 2D: {err}"))?;
+        Ok(logits
+            .outer_iter()
+            .zip(inputs.iter())
+            .map(|(row, input)| classify_logits(labels, row.as_slice().unwrap_or(&[]), input))
+            .collect())
     }
 
+    #[cfg(test)]
     fn cosine_and_threshold(query: &[f32], refs: &[(String, Vec<f32>)]) -> PredictedCategory {
         if refs.is_empty() {
             return PredictedCategory {
@@ -254,7 +263,6 @@ impl CategorizationService {
 }
 
 #[cfg(not(test))]
-#[cfg(not(test))]
 #[async_trait]
 impl Categorizer for CategorizationService {
     async fn categorize_batch(&self, descriptions: Vec<String>) -> Result<Vec<PredictedCategory>> {
@@ -271,22 +279,24 @@ impl Categorizer for CategorizationService {
             self.tokenizer.as_ref().cloned().ok_or_else(|| {
                 anyhow!("categorization service is not initialized with a tokenizer")
             })?;
-        let refs = self.category_refs.clone();
+        let classifier_labels = self.classifier_labels.clone();
         let max_seq_len = self.max_seq_len;
-        let scoring_service = CategorizationService {
-            session: Some(session.clone()),
-            tokenizer: Some(tokenizer.clone()),
-            category_refs: refs,
-            max_seq_len,
-        };
 
         task::spawn_blocking(move || {
             let mut session = session
                 .lock()
                 .map_err(|_| anyhow!("categorization session lock was poisoned"))?;
-            let embeddings =
-                Self::embed_texts(&mut session, tokenizer.as_ref(), max_seq_len, descriptions)?;
-            Ok::<_, anyhow::Error>(scoring_service.categorize_batch_sync(embeddings))
+            let mut predictions = Vec::with_capacity(descriptions.len());
+            for chunk in descriptions.chunks(INFERENCE_BATCH_SIZE) {
+                predictions.extend(Self::classify_texts(
+                    &mut session,
+                    tokenizer.as_ref(),
+                    max_seq_len,
+                    &classifier_labels,
+                    chunk.to_vec(),
+                )?);
+            }
+            Ok::<_, anyhow::Error>(predictions)
         })
         .await
         .map_err(|err| anyhow!("failed to join categorization inference task: {err}"))?
@@ -342,45 +352,12 @@ where
     Ok(Array2::from_shape_vec((batch, seq_len), values)?)
 }
 
-#[cfg(not(test))]
-fn mean_pool_embeddings(
-    hidden_states: ArrayView3<'_, f32>,
-    attention_mask: &Array2<i64>,
-) -> Vec<Vec<f32>> {
-    let (batch_size, sequence_length, hidden_size) = hidden_states.dim();
-    let mut embeddings = Vec::with_capacity(batch_size);
-
-    for batch_idx in 0..batch_size {
-        let mut pooled = vec![0.0; hidden_size];
-        let mut token_count = 0.0;
-
-        for sequence_idx in 0..sequence_length {
-            if attention_mask[[batch_idx, sequence_idx]] == 0 {
-                continue;
-            }
-
-            token_count += 1.0;
-            for hidden_idx in 0..hidden_size {
-                pooled[hidden_idx] += hidden_states[[batch_idx, sequence_idx, hidden_idx]];
-            }
-        }
-
-        if token_count > 0.0 {
-            for value in &mut pooled {
-                *value /= token_count;
-            }
-        }
-
-        embeddings.push(normalize_vector(&pooled));
-    }
-
-    embeddings
-}
-
+#[cfg(test)]
 fn cosine_similarity(left: &[f32], right: &[f32]) -> f32 {
     left.iter().zip(right.iter()).map(|(a, b)| a * b).sum()
 }
 
+#[cfg(test)]
 fn normalize_vector(values: &[f32]) -> Vec<f32> {
     let norm = values.iter().map(|value| value * value).sum::<f32>().sqrt();
     if norm == 0.0 {
@@ -404,4 +381,39 @@ fn read_max_seq_len(config_path: &Path) -> Result<usize> {
         .or_else(|| value.get("max_seq_length").and_then(Value::as_u64))
         .map(|value| value as usize)
         .unwrap_or(128))
+}
+
+#[cfg(not(test))]
+fn read_classifier_labels(config_path: &Path) -> Result<Vec<String>> {
+    let config = fs::read_to_string(config_path)
+        .map_err(|err| anyhow!("failed to read {}: {err}", config_path.display()))?;
+    let value: Value = serde_json::from_str(&config)
+        .map_err(|err| anyhow!("failed to parse {}: {err}", config_path.display()))?;
+    let id2label = value
+        .get("id2label")
+        .and_then(Value::as_object)
+        .ok_or_else(|| anyhow!("{} does not contain id2label", config_path.display()))?;
+    let mut labels = id2label
+        .iter()
+        .map(|(key, value)| {
+            let index = key.parse::<usize>().map_err(|err| {
+                anyhow!(
+                    "invalid classifier label index '{}' in {}: {err}",
+                    key,
+                    config_path.display()
+                )
+            })?;
+            let label = value.as_str().ok_or_else(|| {
+                anyhow!(
+                    "invalid classifier label value for '{}' in {}",
+                    key,
+                    config_path.display()
+                )
+            })?;
+            Ok((index, label.to_string()))
+        })
+        .collect::<Result<Vec<_>>>()?;
+    labels.sort_by_key(|(index, _)| *index);
+
+    Ok(labels.into_iter().map(|(_, label)| label).collect())
 }

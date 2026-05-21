@@ -1,4 +1,4 @@
 pub mod categorization_service;
+#[cfg(test)]
 pub mod category_descriptors;
-#[allow(unused_imports)]
-pub use categorization_service::{CategorizationService, Categorizer};
+pub mod classifier_labels;

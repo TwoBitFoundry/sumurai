@@ -43,6 +43,7 @@ enum StubMode {
 
 struct StubCategorizer {
     mode: StubMode,
+    expected_descriptions: Option<Vec<&'static str>>,
 }
 
 #[async_trait]
@@ -50,33 +51,39 @@ impl Categorizer for StubCategorizer {
     async fn categorize_batch(&self, descriptions: Vec<String>) -> Result<Vec<PredictedCategory>> {
         match self.mode {
             StubMode::Fail => Err(anyhow::anyhow!("categorizer unavailable")),
-            StubMode::Predict => Ok(descriptions
-                .into_iter()
-                .map(|description| {
-                    let lower = description.to_ascii_lowercase();
-                    if lower.contains("whole foods") {
-                        PredictedCategory {
-                            primary: "FOOD_AND_DRINK".to_string(),
-                            confidence: Confidence::High,
+            StubMode::Predict => {
+                if let Some(expected) = &self.expected_descriptions {
+                    assert_eq!(descriptions, *expected);
+                }
+
+                Ok(descriptions
+                    .into_iter()
+                    .map(|description| {
+                        let lower = description.to_ascii_lowercase();
+                        if lower.contains("whole foods") {
+                            PredictedCategory {
+                                primary: "FOOD_AND_DRINK".to_string(),
+                                confidence: Confidence::High,
+                            }
+                        } else if lower.contains("shell oil") {
+                            PredictedCategory {
+                                primary: "TRANSPORTATION".to_string(),
+                                confidence: Confidence::Medium,
+                            }
+                        } else if lower.contains("netflix") {
+                            PredictedCategory {
+                                primary: "ENTERTAINMENT".to_string(),
+                                confidence: Confidence::Low,
+                            }
+                        } else {
+                            PredictedCategory {
+                                primary: "OTHER".to_string(),
+                                confidence: Confidence::Low,
+                            }
                         }
-                    } else if lower.contains("shell oil") {
-                        PredictedCategory {
-                            primary: "TRANSPORTATION".to_string(),
-                            confidence: Confidence::Medium,
-                        }
-                    } else if lower.contains("netflix") {
-                        PredictedCategory {
-                            primary: "ENTERTAINMENT".to_string(),
-                            confidence: Confidence::Low,
-                        }
-                    } else {
-                        PredictedCategory {
-                            primary: "OTHER".to_string(),
-                            confidence: Confidence::Low,
-                        }
-                    }
-                })
-                .collect()),
+                    })
+                    .collect())
+            }
         }
     }
 }
@@ -149,6 +156,11 @@ async fn given_stub_predictions_when_importing_then_overlays_medium_and_high_cat
         mock_cache,
         Arc::new(StubCategorizer {
             mode: StubMode::Predict,
+            expected_descriptions: Some(vec![
+                "[debit] Whole Foods Market #123",
+                "[debit] Shell Oil 5512",
+                "[debit] Netflix.com",
+            ]),
         }),
     )
     .await
@@ -235,6 +247,7 @@ async fn given_categorizer_error_when_importing_then_preserves_other_categories(
         mock_cache,
         Arc::new(StubCategorizer {
             mode: StubMode::Fail,
+            expected_descriptions: None,
         }),
     )
     .await

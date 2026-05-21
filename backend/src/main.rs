@@ -84,6 +84,7 @@ use middleware::resource_authorization::{
     AuthorizedBudgetId, AuthorizedConnectionRequest, AuthorizedQuery,
 };
 use middleware::telemetry_middleware::{self, request_tracing_middleware, TelemetryConfig};
+use services::categorization::classifier_labels::format_classifier_input;
 use services::import_service::ImportService;
 use services::repository_service::{DatabaseRepository, PostgresRepository};
 use services::{
@@ -1385,7 +1386,10 @@ async fn import_authenticated_transactions(
     for (index, transaction) in transactions.iter().enumerate() {
         if transaction.category_primary == "OTHER" {
             categorizable_rows.push(index);
-            categorizable_descriptions.push(transaction.merchant_name.clone().unwrap_or_default());
+            categorizable_descriptions.push(format_classifier_input(
+                &transaction.amount,
+                transaction.merchant_name.as_deref().unwrap_or_default(),
+            ));
         }
     }
 

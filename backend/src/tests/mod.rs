@@ -12,6 +12,7 @@ mod budget_api_integration_tests;
 mod budget_service_tests;
 mod cache_keys_tests;
 mod cache_service_tests;
+mod categorization_classifier_tests;
 mod categorization_service_threshold_tests;
 mod category_descriptor_coverage;
 mod config_tests;
