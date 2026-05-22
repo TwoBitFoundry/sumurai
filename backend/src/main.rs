@@ -17,7 +17,6 @@ use chrono::NaiveDate;
 use chrono::Utc;
 use csv::StringRecord;
 use std::net::SocketAddr;
-use std::path::Path;
 use std::sync::Arc;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
@@ -230,24 +229,22 @@ async fn main() -> anyhow::Result<()> {
 
     let auth_service = Arc::new(AuthService::new(jwt_secret)?);
 
-    let model_dir = std::env::var("MODEL_DIR")
-        .context("MODEL_DIR environment variable is required to load transaction categorization")?;
+    let model_dir = CategorizationService::model_dir();
     tracing::info!(
-        "Loading transaction categorization model from {}",
-        model_dir
+        model_dir = %model_dir.display(),
+        "loading transaction categorization model"
     );
-    let categorizer: Arc<dyn Categorizer> =
-        match CategorizationService::new(Path::new(&model_dir)).await {
-            Ok(service) => Arc::new(service),
-            Err(err) => {
-                tracing::error!(
-                    error = %err,
-                    model_dir = %model_dir,
-                    "failed to initialize transaction categorization"
-                );
-                return Err(err);
-            }
-        };
+    let categorizer: Arc<dyn Categorizer> = match CategorizationService::new(&model_dir).await {
+        Ok(service) => Arc::new(service),
+        Err(err) => {
+            tracing::error!(
+                error = %err,
+                model_dir = %model_dir.display(),
+                "failed to initialize transaction categorization"
+            );
+            return Err(err);
+        }
+    };
 
     let otlp_traces_relay = Arc::new(OtlpTracesRelay::from_config(&telemetry_config)?);
 

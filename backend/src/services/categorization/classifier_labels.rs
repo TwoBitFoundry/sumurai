@@ -102,13 +102,13 @@ fn deterministic_label(input: &str) -> Option<&'static str> {
             &normalized,
             &[
                 "payroll",
+                "payout",
                 "deposit",
                 "salary",
                 "interest",
                 "refund",
                 "cashback",
                 "benefit",
-                "pay",
                 "directdep",
             ],
         )

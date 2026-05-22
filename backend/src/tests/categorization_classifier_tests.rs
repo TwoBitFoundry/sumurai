@@ -173,7 +173,8 @@ fn given_classifier_logits_below_threshold_when_classifying_then_returns_other()
 fn given_keyword_matches_when_classifying_then_returns_deterministic_prediction() {
     let cases = vec![
         ("[credit] ACME CORP PAYROLL PPD ID 123456", "INCOME"),
-        ("[credit] ACME CORP PAY", "INCOME"),
+        ("[credit] ACME CORP PAYOUT", "INCOME"),
+        ("[credit] Zelle payment from JOHN DOE", "TRANSFER_IN"),
         ("[credit] Zelis Healthcaredirect Dep0725", "INCOME"),
         ("[credit] ACME CORP DIRECT DEP", "INCOME"),
         ("[debit] OVERDRAFT FEE", "BANK_FEES"),
@@ -205,4 +206,5 @@ fn given_keyword_matches_when_classifying_then_returns_deterministic_prediction(
 #[test]
 fn given_no_keyword_match_when_classifying_then_defers_to_model() {
     assert!(deterministic_prediction("[debit] BLUE OAK MARKETPLACE").is_none());
+    assert!(deterministic_prediction("[credit] ACME CORP PAY").is_none());
 }

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-model_dir="${MODEL_DIR:-$script_dir/../assets/models/distilbert-us-transaction-classifier-v2}"
+model_dir="$script_dir/../assets/models/distilbert-us-transaction-classifier-v2"
 revision=2bbf6764c314a43449912cdd15480b922a05e140
 model_quantized_sha256=1ab2b64277921566be0303003473fac0bb6b65b21dd7db74548575410eecc5c6
 tokenizer_sha256=d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66

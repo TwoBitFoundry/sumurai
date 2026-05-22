@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use crate::models::predicted_category::PredictedCategory;
@@ -20,6 +20,10 @@ use tokio::task;
 
 const INFERENCE_BATCH_SIZE: usize = 128;
 const MAX_INFERENCE_SEQ_LEN: usize = 128;
+pub const MODEL_DIR: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/assets/models/distilbert-us-transaction-classifier-v2"
+);
 
 pub struct CategorizationService {
     session: Option<Arc<Mutex<Session>>>,
@@ -34,6 +38,10 @@ pub trait Categorizer: Send + Sync {
 }
 
 impl CategorizationService {
+    pub fn model_dir() -> PathBuf {
+        PathBuf::from(MODEL_DIR)
+    }
+
     pub async fn new(model_dir: &Path) -> Result<Self> {
         let model_dir = model_dir.to_path_buf();
         task::spawn_blocking(move || Self::new_blocking(&model_dir))
