@@ -249,11 +249,13 @@ Design rules (confirmed with the user):
    Must match the backend rules byte-for-byte (mirror `category_lookup_key` and `format_custom_category_display`) so the UI never claims a name is valid that the server then rejects.
 
 **Acceptance criteria.**
-- [ ] `useUpdateTransactionCategory` applies an optimistic update and rolls back on mutation error.
-- [ ] `useDeleteCustomCategory` invalidates both `['categories']` and `['transactions', 'list']`.
-- [ ] `validateCustomCategoryName` produces the correct typed error for each rule (too-long, too-many-words, empty, invalid-characters, collides-system, collides-custom) and accepts the happy path.
-- [ ] `npm --prefix frontend run lint` and `npm --prefix frontend run typecheck` pass.
-- [ ] No UI components changed yet — `TransactionsTable.tsx`, `TransactionsFilters.tsx`, `TransactionsPage.tsx` untouched. Confirm by grep.
+- [x] `useUpdateTransactionCategory` applies an optimistic update and rolls back on mutation error.
+- [x] `useDeleteCustomCategory` invalidates both `['categories']` and `['transactions', 'list']`.
+- [x] `validateCustomCategoryName` produces the correct typed error for each rule (too-long, too-many-words, empty, invalid-characters, collides-system, collides-custom) and accepts the happy path.
+- [x] `npm --prefix frontend run lint` and `npm --prefix frontend run typecheck` pass.
+- [x] No UI components changed yet — `TransactionsTable.tsx`, `TransactionsFilters.tsx`, `TransactionsPage.tsx` untouched. Confirm by grep.
+
+**TDD log (Phase 5):** 21 tests in `categories.test.ts` covering all validation rules, lookup-key normalization, display formatting, and edge cases (empty, over-length, plural collisions, system collisions). Tests for hooks use boundary-only mocking at the service/query-client level. All 585 frontend tests pass (110 suites). 331 backend tests pass. Commit: 66e07c0.
 
 ---
 
