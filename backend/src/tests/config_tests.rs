@@ -31,6 +31,18 @@ fn given_plaid_provider_env_when_from_env_provider_then_returns_plaid() {
 }
 
 #[test]
+fn given_simplefin_provider_env_when_from_env_provider_then_returns_simplefin() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "development");
+    env.set("DEFAULT_PROVIDER", "simplefin");
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+
+    let config = Config::from_env_provider(&env).unwrap();
+
+    assert_eq!(config.get_default_provider(), "simplefin");
+}
+
+#[test]
 fn given_teller_provider_env_when_from_env_provider_then_returns_teller() {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "development");

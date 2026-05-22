@@ -102,7 +102,7 @@ pub struct ProviderSelectResponse {
 
 #[derive(Debug, Serialize, ToSchema)]
 #[schema(example = json!({
-    "available_providers": ["plaid", "teller"],
+    "available_providers": ["plaid", "teller", "simplefin"],
     "default_provider": "teller",
     "user_provider": "teller",
     "teller_application_id": "app-123",

@@ -13,6 +13,20 @@ fn given_cookie_auth_when_generating_openapi_then_documents_auth_cookie_scheme()
 }
 
 #[test]
+fn given_provider_info_when_generating_openapi_then_documents_simplefin_in_example() {
+    let spec = serde_json::to_value(init_openapi()).unwrap();
+    let providers = spec["components"]["schemas"]["ProviderInfoResponse"]["example"]
+        ["available_providers"]
+        .as_array()
+        .expect("available_providers array");
+
+    assert!(
+        providers.iter().any(|provider| provider == "simplefin"),
+        "expected simplefin in ProviderInfoResponse example"
+    );
+}
+
+#[test]
 fn given_transactions_insights_when_generating_openapi_then_documents_endpoint_and_schemas() {
     let spec = serde_json::to_value(init_openapi()).unwrap();
     let path = &spec["paths"]["/api/transactions/insights"]["get"];

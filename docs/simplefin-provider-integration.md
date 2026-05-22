@@ -77,12 +77,18 @@ Sources: <https://www.simplefin.org/protocol.html>, <https://beta-bridge.simplef
 
 ### Acceptance
 
-- [ ] `cargo test --manifest-path backend/Cargo.toml --locked` is green.
-- [ ] `cargo check --manifest-path backend/Cargo.toml --locked --all-targets` is green.
-- [ ] New test in `backend/src/tests/config_tests.rs`: `DEFAULT_PROVIDER=simplefin` parses without error.
-- [ ] New test in `backend/src/tests/simplefin_provider_tests.rs`: `SimpleFinProvider::new().provider_name() == "simplefin"`.
-- [ ] Running the backend with `DEFAULT_PROVIDER=simplefin` starts cleanly (manual smoke; document command in the PR).
-- [ ] `/api/providers/info` includes `"simplefin"` in `available_providers` (extend `openapi_tests.rs` or add an integration test).
+- [x] `cargo test --manifest-path backend/Cargo.toml --locked` is green.
+- [x] `cargo check --manifest-path backend/Cargo.toml --locked --all-targets` is green.
+- [x] New test in `backend/src/tests/config_tests.rs`: `DEFAULT_PROVIDER=simplefin` parses without error.
+- [x] New test in `backend/src/tests/simplefin_provider_tests.rs`: `SimpleFinProvider::new().provider_name() == "simplefin"`.
+- [x] Running the backend with `DEFAULT_PROVIDER=simplefin` starts cleanly (manual smoke: `DEFAULT_PROVIDER=simplefin docker compose -f docker-compose.dev.yml up -d --build`).
+- [x] `/api/providers/info` includes `"simplefin"` in `available_providers` (`openapi_tests.rs` + handler list).
+
+#### Phase 1 TDD log
+
+- Red: `simplefin_provider_tests`, `config_tests::given_simplefin_provider_env`, `openapi_tests::given_provider_info`.
+- Green: `SimpleFinProvider` stub, registry registration, `available_providers` extended.
+- Commands: `cargo test --manifest-path backend/Cargo.toml --locked` (339 passed), `cargo check --locked --all-targets`.
 
 ---
 

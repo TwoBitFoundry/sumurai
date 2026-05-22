@@ -153,6 +153,13 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
+    let simplefin_provider: Arc<dyn providers::FinancialDataProvider> =
+        Arc::new(providers::SimpleFinProvider::new());
+    provider_registry.register("simplefin", simplefin_provider);
+    if default_provider == "simplefin" && provider_registry.get("simplefin").is_none() {
+        anyhow::bail!("DEFAULT_PROVIDER is simplefin but SimpleFIN failed to register");
+    }
+
     let provider_registry = Arc::new(provider_registry);
 
     let plaid_client = if plaid_configured {
@@ -3047,7 +3054,11 @@ async fn get_authenticated_provider_info(
         })?;
 
     let default_provider = state.config.get_default_provider();
-    let available_providers = vec!["plaid".to_string(), "teller".to_string()];
+    let available_providers = vec![
+        "plaid".to_string(),
+        "teller".to_string(),
+        "simplefin".to_string(),
+    ];
 
     let user_provider = if user.onboarding_completed {
         user.provider
