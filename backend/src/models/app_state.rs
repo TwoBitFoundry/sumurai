@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::config::Config;
 use crate::providers::ProviderRegistry;
 use crate::services::categorization::categorization_service::Categorizer;
+use crate::services::category_management::service::CategoryManagementService;
 use crate::services::otel_traces_relay::OtlpTracesRelay;
 use crate::services::plaid_service::{PlaidService, RealPlaidClient};
 use crate::services::repository_service::DatabaseRepository;
@@ -11,7 +12,6 @@ use crate::services::{
     AuthService, AuthorizationService, BudgetService, CacheService, ConnectionService,
 };
 
-// Application state shared across handlers
 pub struct AppState {
     pub(crate) plaid_service: Arc<PlaidService>,
     pub(crate) plaid_client: Arc<RealPlaidClient>,
@@ -27,6 +27,7 @@ pub struct AppState {
     pub(crate) auth_service: Arc<AuthService>,
     pub(crate) provider_registry: Arc<ProviderRegistry>,
     pub(crate) otlp_traces_relay: Arc<OtlpTracesRelay>,
+    pub(crate) category_management_service: Arc<CategoryManagementService>,
 }
 
 impl Clone for AppState {
@@ -46,6 +47,7 @@ impl Clone for AppState {
             auth_service: self.auth_service.clone(),
             provider_registry: self.provider_registry.clone(),
             otlp_traces_relay: self.otlp_traces_relay.clone(),
+            category_management_service: self.category_management_service.clone(),
         }
     }
 }

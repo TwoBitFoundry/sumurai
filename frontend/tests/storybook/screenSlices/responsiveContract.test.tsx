@@ -3,6 +3,11 @@ import { BudgetsScreenSlice } from '@/storybook/screenSlices/BudgetsScreenSlice'
 import { SettingsScreenSlice } from '@/storybook/screenSlices/SettingsScreenSlice';
 import { TransactionsScreenSlice } from '@/storybook/screenSlices/TransactionsScreenSlice';
 
+jest.mock('@/features/transactions/components/InlineCategoryCell', () => ({
+  __esModule: true,
+  default: () => <span data-testid="inline-category-cell" />,
+}));
+
 describe('storybook screen slices responsive contract', () => {
   it('keeps the transactions slice stats grid in two columns on mobile', () => {
     const { container } = render(<TransactionsScreenSlice state="loaded" />);

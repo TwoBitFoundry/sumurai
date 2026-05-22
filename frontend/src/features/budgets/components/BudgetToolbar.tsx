@@ -1,4 +1,5 @@
 import { Loader2, Plus } from 'lucide-react';
+import type { RefObject } from 'react';
 import { Button, cn } from '@/ui/primitives';
 import { control, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 
@@ -6,15 +7,15 @@ const budgetActionButtonClasses = cn('shrink-0', 'whitespace-nowrap');
 
 interface BudgetToolbarProps {
   loading: boolean;
-  isAdding: boolean;
-  showAddButton: boolean;
+  isPickerOpen: boolean;
+  addButtonRef: RefObject<HTMLButtonElement | null>;
   onAddBudget: () => void;
 }
 
 export const BudgetToolbar = ({
   loading,
-  isAdding,
-  showAddButton,
+  isPickerOpen,
+  addButtonRef,
   onAddBudget,
 }: BudgetToolbarProps) => {
   return (
@@ -40,18 +41,19 @@ export const BudgetToolbar = ({
           </>
         )}
       </div>
-      {showAddButton && !isAdding ? (
-        <Button
-          type="button"
-          onClick={onAddBudget}
-          variant="primary"
-          size="md"
-          className={budgetActionButtonClasses}
-        >
-          <Plus className={control.glyph.md} />
-          Add budget
-        </Button>
-      ) : null}
+      <Button
+        ref={addButtonRef}
+        type="button"
+        onClick={onAddBudget}
+        variant="primary"
+        size="md"
+        aria-expanded={isPickerOpen}
+        aria-haspopup="dialog"
+        className={budgetActionButtonClasses}
+      >
+        <Plus className={control.glyph.md} />
+        Add budget
+      </Button>
     </div>
   );
 };

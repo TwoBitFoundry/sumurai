@@ -1,20 +1,25 @@
 import { Search } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
+import type { CustomCategory } from '@/types/api';
 import { Button, cn, Input } from '@/ui/primitives';
-import { pillRecipes, pillScrollFadeRecipes } from '@/ui/primitives/Pill';
+import { pillScrollFadeRecipes } from '@/ui/primitives/Pill';
 import {
   control,
   placeholder as uiPlaceholderRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
+import { formatCategoryName, getTagThemeForCategoryAtIndex } from '../../../utils/categories';
+import DeleteCustomCategoryConfirm from './DeleteCustomCategoryConfirm';
+import { transactionsRowRecipes } from './transactionsRowRecipes';
 
 interface Props {
   search: string;
   onSearch: (s: string) => void;
   categories: string[];
+  customCategories?: CustomCategory[];
   selectedCategory: string | null;
   onSelectCategory: (c: string | null) => void;
   showSearch?: boolean;
@@ -27,6 +32,7 @@ export const TransactionsFilters: React.FC<Props> = ({
   search,
   onSearch,
   categories,
+  customCategories = [],
   selectedCategory,
   onSelectCategory,
   showSearch = true,
@@ -34,8 +40,10 @@ export const TransactionsFilters: React.FC<Props> = ({
   showFilterLabel = true,
   scrollFadeSurface = 'card',
 }) => {
+  const { isMobile } = useViewportBreakpoint();
   const scrollFade = pillScrollFadeRecipes[scrollFadeSurface];
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CustomCategory | null>(null);
   const [showLeftFade, setShowLeftFade] = useState(false);
   const [showRightFade, setShowRightFade] = useState(false);
 
@@ -76,6 +84,13 @@ export const TransactionsFilters: React.FC<Props> = ({
     });
     return () => cancelAnimationFrame(frame);
   }, [categories.length, showCategories, checkScroll]);
+
+  const handleDeleteSuccess = () => {
+    if (deleteTarget && selectedCategory === deleteTarget.display_name) {
+      onSelectCategory(null);
+    }
+    setDeleteTarget(null);
+  };
 
   return (
     <>
@@ -135,31 +150,88 @@ export const TransactionsFilters: React.FC<Props> = ({
               )}
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-              {categories.map((name) => {
+              {categories.map((name, index) => {
                 const isSelected = selectedCategory === name;
-                const theme = getTagThemeForCategory(name);
+                const theme = getTagThemeForCategoryAtIndex(index);
                 const label = formatCategoryName(name);
+                const customCategory = customCategories.find(
+                  (category) => category.display_name === name
+                );
+                const isCustom = Boolean(customCategory);
                 return (
-                  <Button
+                  <span
                     key={name}
-                    type="button"
-                    variant="filterChip"
-                    size="sm"
-                    shape="pill"
-                    onClick={() => onSelectCategory(isSelected ? null : name)}
                     className={cn(
-                      'whitespace-nowrap',
-                      theme.tag,
-                      isSelected
-                        ? ['ring-2', theme.ring]
-                        : 'ring-1 ring-white/60 dark:ring-white/10'
+                      'group relative inline-flex items-center',
+                      isCustom && 'transition-all duration-200 ease-out hover:-translate-y-[2px]'
                     )}
-                    aria-pressed={isSelected}
-                    title={isSelected ? `Remove filter: ${label}` : `Filter by ${label}`}
                   >
-                    <span className={cn(pillRecipes.dot, theme.dot)} aria-hidden="true" />
-                    {label}
-                  </Button>
+                    <Button
+                      type="button"
+                      variant="filterChip"
+                      size="sm"
+                      shape="pill"
+                      onClick={() => onSelectCategory(isSelected ? null : name)}
+                      className={cn(
+                        'whitespace-nowrap',
+                        isMobile && transactionsRowRecipes.categoryPillDense,
+                        isCustom &&
+                          'pr-10 hover:translate-y-0 hover:shadow-none group-hover:shadow-lg',
+                        theme.tag,
+                        isSelected
+                          ? ['ring-2', theme.ring]
+                          : 'ring-1 ring-white/60 dark:ring-white/10'
+                      )}
+                      aria-pressed={isSelected}
+                      title={isSelected ? `Remove filter: ${label}` : `Filter by ${label}`}
+                    >
+                      {label}
+                    </Button>
+                    {isCustom && customCategory ? (
+                      <button
+                        type="button"
+                        aria-label={`Delete ${label}`}
+                        title={`Delete ${label}`}
+                        className={cn(
+                          'absolute',
+                          'right-0.5',
+                          'top-1/2',
+                          '-translate-y-1/2',
+                          'inline-flex',
+                          'h-6',
+                          'w-6',
+                          'items-center',
+                          'justify-center',
+                          'border-0',
+                          'bg-transparent',
+                          'p-0',
+                          'text-slate-500',
+                          'text-sm',
+                          'leading-none',
+                          'shadow-none',
+                          'transition-colors',
+                          'duration-200',
+                          'hover:bg-transparent',
+                          'hover:text-slate-700',
+                          'dark:hover:text-slate-300',
+                          'focus-visible:outline-none',
+                          'focus-visible:ring-2',
+                          'focus-visible:ring-[var(--color-border-focus-active)]',
+                          'focus-visible:ring-offset-2',
+                          'focus-visible:ring-offset-white',
+                          'dark:focus-visible:ring-offset-slate-900'
+                        )}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setDeleteTarget(customCategory);
+                        }}
+                      >
+                        <span aria-hidden="true" className={cn('relative', '-top-px')}>
+                          ×
+                        </span>
+                      </button>
+                    ) : null}
+                  </span>
                 );
               })}
             </div>
@@ -168,6 +240,14 @@ export const TransactionsFilters: React.FC<Props> = ({
           </div>
         </div>
       )}
+      {deleteTarget ? (
+        <DeleteCustomCategoryConfirm
+          open
+          category={deleteTarget}
+          onRequestClose={() => setDeleteTarget(null)}
+          onSuccess={handleDeleteSuccess}
+        />
+      ) : null}
     </>
   );
 };

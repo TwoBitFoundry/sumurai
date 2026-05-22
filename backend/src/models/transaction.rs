@@ -87,6 +87,8 @@ pub struct TransactionWithAccount {
     pub account_name: String,
     pub account_type: String,
     pub account_mask: Option<String>,
+    pub is_custom: bool,
+    pub is_overridden: bool,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]

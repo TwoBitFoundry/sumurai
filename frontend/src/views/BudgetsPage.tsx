@@ -1,14 +1,17 @@
-import { Activity, AlertTriangle, CheckCircle2, Clock, Plus, Target } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { Button, cn, EmptyState, GlassCard } from '@/ui/primitives';
+import { Activity, AlertTriangle, CheckCircle2, Clock, Target } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
+import { cn, EmptyState, GlassCard } from '@/ui/primitives';
 import HeroStatCard, { type HeroPill } from '../components/widgets/HeroStatCard';
 import { BudgetCalculator } from '../domain/BudgetCalculator';
-import { BudgetForm, type BudgetFormValue } from '../features/budgets/components/BudgetForm';
+import AddBudgetPicker, {
+  type BudgetFormValue,
+} from '../features/budgets/components/AddBudgetPicker';
 import { BudgetList, type BudgetWithProgress } from '../features/budgets/components/BudgetList';
 import BudgetSummaryCard from '../features/budgets/components/BudgetSummaryCard';
 import BudgetToolbar from '../features/budgets/components/BudgetToolbar';
 import type { BudgetMonthControl } from '../features/budgets/hooks/useBudgetMonth';
 import { useBudgets } from '../features/budgets/hooks/useBudgets';
+import { useCategories } from '../features/transactions/hooks/useCategories';
 import { PageLayout } from '../layouts/PageLayout';
 import { formatCategoryName } from '../utils/categories';
 
@@ -23,17 +26,23 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
     remove,
     computedBudgets,
     categoryOptions,
-    usedCategories,
+    availableCategoryOptions,
     month,
   } = useBudgets(monthControl);
+  const { accentIndexByName } = useCategories();
+  const addButtonRef = useRef<HTMLButtonElement>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<BudgetFormValue>({ category: '', amount: '' });
 
-  const startAdd = () => {
-    setIsAdding(true);
+  const toggleAddPicker = () => {
+    if (isAdding) {
+      cancel();
+      return;
+    }
     setEditingId(null);
     setForm({ category: '', amount: '' });
+    setIsAdding(true);
   };
   const cancel = () => {
     setIsAdding(false);
@@ -208,28 +217,24 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
             containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
             className={cn('space-y-6')}
           >
+            <BudgetToolbar
+              loading={budgetsLoading}
+              isPickerOpen={isAdding}
+              addButtonRef={addButtonRef}
+              onAddBudget={toggleAddPicker}
+            />
+            <AddBudgetPicker
+              open={isAdding}
+              anchorRef={addButtonRef}
+              categories={availableCategoryOptions}
+              accentIndexByName={accentIndexByName}
+              value={form}
+              onChange={setForm}
+              onSave={onSaveAdd}
+              onRequestClose={cancel}
+            />
             {hasBudgets ? (
               <>
-                <BudgetToolbar
-                  loading={budgetsLoading}
-                  isAdding={isAdding}
-                  showAddButton={hasBudgets}
-                  onAddBudget={startAdd}
-                />
-                {isAdding && (
-                  <div className={cn('flex', 'justify-center')}>
-                    <div className="w-full max-w-md">
-                      <BudgetForm
-                        categories={categoryOptions}
-                        usedCategories={usedCategories}
-                        value={form}
-                        onChange={setForm}
-                        onSave={onSaveAdd}
-                        onCancel={cancel}
-                      />
-                    </div>
-                  </div>
-                )}
                 <BudgetList
                   items={computedBudgets}
                   editingId={editingId}
@@ -245,30 +250,8 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
                   icon={Target}
                   title="No budgets found"
                   description="Create your first category plan to watch spending settle into rhythm."
-                  action={
-                    !isAdding ? (
-                      <Button type="button" onClick={startAdd} variant="primary" size="md">
-                        <Plus />
-                        Add budget
-                      </Button>
-                    ) : null
-                  }
                   data-testid="budgets-empty-state"
                 />
-                {isAdding && (
-                  <div className={cn('flex', 'justify-center')}>
-                    <div className="w-full max-w-md">
-                      <BudgetForm
-                        categories={categoryOptions}
-                        usedCategories={usedCategories}
-                        value={form}
-                        onChange={setForm}
-                        onSave={onSaveAdd}
-                        onCancel={cancel}
-                      />
-                    </div>
-                  </div>
-                )}
               </>
             )}
           </GlassCard>

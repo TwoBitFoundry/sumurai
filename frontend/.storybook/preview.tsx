@@ -1,6 +1,16 @@
 import type { Preview } from '@storybook/nextjs-vite';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '../src/context/ThemeContext';
 import '../src/app/globals.css';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const preview: Preview = {
   tags: ['!test'],
@@ -9,9 +19,11 @@ const preview: Preview = {
       const raw = context.globals.theme;
       const initialPreference = raw === 'system' || raw === 'dark' ? raw : ('light' as const);
       return (
-        <ThemeProvider initialPreference={initialPreference}>
-          <Story />
-        </ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider initialPreference={initialPreference}>
+            <Story />
+          </ThemeProvider>
+        </QueryClientProvider>
       );
     },
   ],

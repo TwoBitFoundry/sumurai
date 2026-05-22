@@ -1,3 +1,4 @@
+import type { CustomCategory } from '@/types/api';
 import { cn } from '@/ui/primitives';
 import { border as semanticBorders } from '@/ui/recipes';
 import TransactionsFilters from './TransactionsFilters';
@@ -6,6 +7,7 @@ interface TransactionsToolbarProps {
   search: string;
   onSearch: (s: string) => void;
   categories: string[];
+  customCategories?: CustomCategory[];
   selectedCategory: string | null;
   onSelectCategory: (c: string | null) => void;
 }
@@ -16,6 +18,7 @@ export const TransactionsToolbar = ({
   search,
   onSearch,
   categories,
+  customCategories = [],
   selectedCategory,
   onSelectCategory,
 }: TransactionsToolbarProps) => {
@@ -27,6 +30,7 @@ export const TransactionsToolbar = ({
             search={search}
             onSearch={onSearch}
             categories={categories}
+            customCategories={customCategories}
             selectedCategory={selectedCategory}
             onSelectCategory={onSelectCategory}
             showSearch={false}

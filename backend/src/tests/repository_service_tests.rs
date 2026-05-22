@@ -272,6 +272,43 @@ async fn given_many_transactions_when_batch_upserting_then_writes_all_rows_witho
 }
 
 #[tokio::test]
+async fn given_stored_transaction_when_getting_by_id_for_user_then_returns_transaction() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+    let transaction = create_test_transaction(
+        user.id,
+        account.id,
+        format!("get_by_id_{}", Uuid::new_v4()),
+        -4250,
+        NaiveDate::from_ymd_opt(2024, 2, 2).unwrap(),
+    );
+
+    repo.upsert_transaction(&transaction).await.unwrap();
+
+    let stored = repo
+        .get_transaction_by_id_for_user(&user.id, &transaction.id)
+        .await
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(stored.id, transaction.id);
+    assert_eq!(stored.account_id, transaction.account_id);
+    assert_eq!(stored.user_id, transaction.user_id);
+    assert_eq!(
+        stored.provider_transaction_id,
+        transaction.provider_transaction_id
+    );
+    assert_eq!(stored.provider_account_id, None);
+    assert_eq!(stored.merchant_name, transaction.merchant_name);
+    assert_eq!(stored.category_primary, transaction.category_primary);
+}
+
+#[tokio::test]
 async fn given_more_than_thousand_transactions_when_fetching_counts_then_ids_and_counts_are_uncapped(
 ) {
     let Some(pool) = connect_pool().await else {

@@ -4,6 +4,7 @@ pub mod authorization_service;
 pub mod budget_service;
 pub mod cache_service;
 pub mod categorization;
+pub mod category_management;
 pub mod connection_service;
 pub mod import_service;
 pub mod otel_traces_relay;

@@ -4,10 +4,12 @@ use crate::models::{
     account::Account,
     auth::User,
     budget::Budget,
+    custom_category::CustomCategory,
     plaid::{LatestAccountBalance, PlaidCredentials, ProviderConnection},
     transaction::{
         LargestTransaction, Transaction, TransactionWithAccount, TransactionsInsightsResponse,
     },
+    transaction_category_override::TransactionCategoryOverride,
 };
 use aes_gcm::{
     aead::{Aead, KeyInit},
@@ -19,24 +21,27 @@ use chrono::NaiveDate;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-type TransactionWithAccountRow = (
-    Uuid,
-    Uuid,
-    Option<Uuid>,
-    Option<String>,
-    rust_decimal::Decimal,
-    NaiveDate,
-    Option<String>,
-    String,
-    String,
-    String,
-    Option<String>,
-    bool,
-    Option<chrono::DateTime<chrono::Utc>>,
-    String,
-    String,
-    Option<String>,
-);
+#[derive(Debug, sqlx::FromRow)]
+struct TransactionWithAccountRow {
+    id: Uuid,
+    account_id: Uuid,
+    user_id: Option<Uuid>,
+    provider_transaction_id: Option<String>,
+    amount: rust_decimal::Decimal,
+    date: NaiveDate,
+    merchant_name: Option<String>,
+    category_primary: String,
+    category_detailed: String,
+    category_confidence: String,
+    payment_channel: Option<String>,
+    pending: bool,
+    created_at: Option<chrono::DateTime<chrono::Utc>>,
+    account_name: String,
+    account_type: String,
+    account_mask: Option<String>,
+    is_overridden: bool,
+    is_custom: bool,
+}
 
 type TransactionsInsightsRow = (
     i64,
@@ -181,6 +186,37 @@ pub trait DatabaseRepository: Send + Sync {
     async fn update_user_password(&self, user_id: &Uuid, new_password_hash: &str) -> Result<()>;
 
     async fn delete_user(&self, user_id: &Uuid) -> Result<()>;
+
+    async fn create_custom_category(
+        &self,
+        user_id: &Uuid,
+        display_name: &str,
+        lookup_key: &str,
+    ) -> Result<CustomCategory>;
+
+    async fn list_custom_categories_for_user(&self, user_id: &Uuid) -> Result<Vec<CustomCategory>>;
+
+    async fn delete_custom_category(&self, user_id: &Uuid, id: &Uuid) -> Result<()>;
+
+    async fn upsert_transaction_category_override(
+        &self,
+        user_id: &Uuid,
+        normalized_merchant: &str,
+        category_name: &str,
+        custom_category_id: Option<Uuid>,
+    ) -> Result<TransactionCategoryOverride>;
+
+    async fn delete_transaction_category_override_by_norm(
+        &self,
+        user_id: &Uuid,
+        normalized_merchant: &str,
+    ) -> Result<()>;
+
+    async fn get_transaction_by_id_for_user(
+        &self,
+        user_id: &Uuid,
+        id: &Uuid,
+    ) -> Result<Option<Transaction>>;
 }
 
 pub struct PostgresRepository {
@@ -308,50 +344,33 @@ impl PostgresRepository {
         if let Some(category_primary) = category_primary {
             let category_primary = category_primary.trim();
             if !category_primary.is_empty() {
-                qb.push(" AND t.category_primary = ");
+                qb.push(" AND COALESCE(o.category_name, t.category_primary) = ");
                 qb.push_bind(category_primary);
             }
         }
     }
 
-    fn map_transaction_with_account_row(
-        (
-            id,
-            account_id,
-            user_id,
-            provider_transaction_id,
-            amount,
-            date,
-            merchant_name,
-            category_primary,
-            category_detailed,
-            category_confidence,
-            payment_channel,
-            pending,
-            created_at,
-            account_name,
-            account_type,
-            account_mask,
-        ): TransactionWithAccountRow,
-    ) -> TransactionWithAccount {
+    fn map_transaction_with_account_row(row: TransactionWithAccountRow) -> TransactionWithAccount {
         TransactionWithAccount {
-            id,
-            account_id,
-            user_id,
+            id: row.id,
+            account_id: row.account_id,
+            user_id: row.user_id,
             provider_account_id: None,
-            provider_transaction_id,
-            amount,
-            date,
-            merchant_name,
-            category_primary,
-            category_detailed,
-            category_confidence,
-            payment_channel,
-            pending,
-            created_at,
-            account_name,
-            account_type,
-            account_mask,
+            provider_transaction_id: row.provider_transaction_id,
+            amount: row.amount,
+            date: row.date,
+            merchant_name: row.merchant_name,
+            category_primary: row.category_primary,
+            category_detailed: row.category_detailed,
+            category_confidence: row.category_confidence,
+            payment_channel: row.payment_channel,
+            pending: row.pending,
+            created_at: row.created_at,
+            account_name: row.account_name,
+            account_type: row.account_type,
+            account_mask: row.account_mask,
+            is_custom: row.is_custom,
+            is_overridden: row.is_overridden,
         }
     }
 
@@ -1152,34 +1171,17 @@ impl DatabaseRepository for PostgresRepository {
             .execute(&mut *tx)
             .await?;
 
-        let rows = sqlx::query_as::<
-            _,
-            (
-                Uuid,
-                Uuid,
-                Option<Uuid>,
-                Option<String>,
-                rust_decimal::Decimal,
-                chrono::NaiveDate,
-                Option<String>,
-                String,
-                String,
-                String,
-                Option<String>,
-                bool,
-                Option<chrono::DateTime<chrono::Utc>>,
-                String,
-                String,
-                Option<String>,
-            ),
-        >(
+        let rows = sqlx::query_as::<_, TransactionWithAccountRow>(
             r#"
             SELECT t.id, t.account_id, t.user_id, t.provider_transaction_id, t.amount, t.date,
-                   t.merchant_name, t.category_primary, t.category_detailed,
+                   t.merchant_name, COALESCE(o.category_name, t.category_primary), t.category_detailed,
                    t.category_confidence, t.payment_channel, t.pending, t.created_at,
-                   a.name as account_name, a.account_type, a.mask as account_mask
+                   a.name as account_name, a.account_type, a.mask as account_mask,
+                   (o.id IS NOT NULL) AS is_overridden,
+                   (o.custom_category_id IS NOT NULL) AS is_custom
             FROM transactions t
             INNER JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN transaction_category_overrides o ON o.user_id = t.user_id AND o.normalized_merchant = t.normalized_merchant
             WHERE t.user_id = $1
             ORDER BY t.date DESC, t.created_at DESC
             LIMIT 1000
@@ -1192,44 +1194,7 @@ impl DatabaseRepository for PostgresRepository {
 
         Ok(rows
             .into_iter()
-            .map(
-                |(
-                    id,
-                    account_id,
-                    user_id,
-                    provider_transaction_id,
-                    amount,
-                    date,
-                    merchant_name,
-                    category_primary,
-                    category_detailed,
-                    category_confidence,
-                    payment_channel,
-                    pending,
-                    created_at,
-                    account_name,
-                    account_type,
-                    account_mask,
-                )| TransactionWithAccount {
-                    id,
-                    account_id,
-                    user_id,
-                    provider_account_id: None,
-                    provider_transaction_id,
-                    amount,
-                    date,
-                    merchant_name,
-                    category_primary,
-                    category_detailed,
-                    category_confidence,
-                    payment_channel,
-                    pending,
-                    created_at,
-                    account_name,
-                    account_type,
-                    account_mask,
-                },
-            )
+            .map(Self::map_transaction_with_account_row)
             .collect())
     }
 
@@ -1253,11 +1218,14 @@ impl DatabaseRepository for PostgresRepository {
         let mut qb = sqlx::QueryBuilder::new(
             r#"
             SELECT t.id, t.account_id, t.user_id, t.provider_transaction_id, t.amount, t.date,
-                   t.merchant_name, t.category_primary, t.category_detailed,
-                   t.category_confidence, t.payment_channel, t.pending, t.created_at,
-                   a.name as account_name, a.account_type, a.mask as account_mask
+                   t.merchant_name, COALESCE(o.category_name, t.category_primary) AS category_primary,
+                   t.category_detailed, t.category_confidence, t.payment_channel, t.pending, t.created_at,
+                   a.name as account_name, a.account_type, a.mask as account_mask,
+                   (o.id IS NOT NULL) AS is_overridden,
+                   (o.custom_category_id IS NOT NULL) AS is_custom
             FROM transactions t
             INNER JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN transaction_category_overrides o ON o.user_id = t.user_id AND o.normalized_merchant = t.normalized_merchant
             "#,
         );
         Self::append_transaction_filters(
@@ -1307,6 +1275,7 @@ impl DatabaseRepository for PostgresRepository {
             SELECT COUNT(*)
             FROM transactions t
             INNER JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN transaction_category_overrides o ON o.user_id = t.user_id AND o.normalized_merchant = t.normalized_merchant
             "#,
         );
         Self::append_transaction_filters(
@@ -1345,9 +1314,10 @@ impl DatabaseRepository for PostgresRepository {
                 SELECT
                     t.amount,
                     NULLIF(TRIM(t.merchant_name), '') AS merchant,
-                    t.category_primary
+                    COALESCE(o.category_name, t.category_primary) AS effective_category
                 FROM transactions t
                 INNER JOIN accounts a ON t.account_id = a.id
+                LEFT JOIN transaction_category_overrides o ON o.user_id = t.user_id AND o.normalized_merchant = t.normalized_merchant
             "#,
         );
         Self::append_transaction_filters(
@@ -1393,13 +1363,13 @@ impl DatabaseRepository for PostgresRepository {
                 FROM merchant_counts
             ),
             top_categories AS (
-                SELECT COALESCE(ARRAY_AGG(category_primary ORDER BY c DESC, category_primary), ARRAY[]::text[]) AS categories
+                SELECT COALESCE(ARRAY_AGG(effective_category ORDER BY c DESC, effective_category), ARRAY[]::text[]) AS categories
                 FROM (
-                    SELECT category_primary, COUNT(*) AS c
+                    SELECT effective_category, COUNT(*) AS c
                     FROM filtered
-                    WHERE category_primary IS NOT NULL
-                    GROUP BY category_primary
-                    ORDER BY c DESC, category_primary
+                    WHERE effective_category IS NOT NULL
+                    GROUP BY effective_category
+                    ORDER BY c DESC, effective_category
                     LIMIT 2
                 ) tc
             )
@@ -1945,5 +1915,219 @@ impl DatabaseRepository for PostgresRepository {
 
         tx.commit().await?;
         Ok(())
+    }
+
+    async fn create_custom_category(
+        &self,
+        user_id: &Uuid,
+        display_name: &str,
+        lookup_key: &str,
+    ) -> Result<CustomCategory> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let row = sqlx::query_as::<_, CustomCategory>(
+            r#"
+            INSERT INTO user_custom_categories (user_id, display_name, lookup_key)
+            VALUES ($1, $2, $3)
+            RETURNING id, user_id, display_name, lookup_key, created_at, updated_at
+            "#,
+        )
+        .bind(user_id)
+        .bind(display_name)
+        .bind(lookup_key)
+        .fetch_one(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(row)
+    }
+
+    async fn list_custom_categories_for_user(&self, user_id: &Uuid) -> Result<Vec<CustomCategory>> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let rows = sqlx::query_as::<_, CustomCategory>(
+            r#"
+            SELECT id, user_id, display_name, lookup_key, created_at, updated_at
+            FROM user_custom_categories
+            WHERE user_id = $1
+            ORDER BY display_name
+            "#,
+        )
+        .bind(user_id)
+        .fetch_all(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(rows)
+    }
+
+    async fn delete_custom_category(&self, user_id: &Uuid, id: &Uuid) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        sqlx::query("DELETE FROM user_custom_categories WHERE id = $1 AND user_id = $2")
+            .bind(id)
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn upsert_transaction_category_override(
+        &self,
+        user_id: &Uuid,
+        normalized_merchant: &str,
+        category_name: &str,
+        custom_category_id: Option<Uuid>,
+    ) -> Result<TransactionCategoryOverride> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let row = sqlx::query_as::<_, TransactionCategoryOverride>(
+            r#"
+            INSERT INTO transaction_category_overrides
+                (user_id, normalized_merchant, category_name, custom_category_id)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (user_id, normalized_merchant)
+            DO UPDATE SET
+                category_name = EXCLUDED.category_name,
+                custom_category_id = EXCLUDED.custom_category_id,
+                updated_at = NOW()
+            RETURNING id, user_id, normalized_merchant, category_name, custom_category_id,
+                      created_at, updated_at
+            "#,
+        )
+        .bind(user_id)
+        .bind(normalized_merchant)
+        .bind(category_name)
+        .bind(custom_category_id)
+        .fetch_one(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(row)
+    }
+
+    async fn delete_transaction_category_override_by_norm(
+        &self,
+        user_id: &Uuid,
+        normalized_merchant: &str,
+    ) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        sqlx::query(
+            "DELETE FROM transaction_category_overrides WHERE user_id = $1 AND normalized_merchant = $2",
+        )
+        .bind(user_id)
+        .bind(normalized_merchant)
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn get_transaction_by_id_for_user(
+        &self,
+        user_id: &Uuid,
+        id: &Uuid,
+    ) -> Result<Option<Transaction>> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let row = sqlx::query_as::<
+            _,
+            (
+                Uuid,
+                Uuid,
+                Option<Uuid>,
+                Option<String>,
+                rust_decimal::Decimal,
+                chrono::NaiveDate,
+                Option<String>,
+                String,
+                String,
+                String,
+                Option<String>,
+                bool,
+                Option<chrono::DateTime<chrono::Utc>>,
+            ),
+        >(
+            r#"
+            SELECT id, account_id, user_id, provider_transaction_id,
+                   amount, date, merchant_name, category_primary, category_detailed,
+                   category_confidence, payment_channel, pending, created_at
+            FROM transactions
+            WHERE id = $1 AND user_id = $2
+            "#,
+        )
+        .bind(id)
+        .bind(user_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(row.map(
+            |(
+                id,
+                account_id,
+                user_id,
+                provider_transaction_id,
+                amount,
+                date,
+                merchant_name,
+                category_primary,
+                category_detailed,
+                category_confidence,
+                payment_channel,
+                pending,
+                created_at,
+            )| Transaction {
+                id,
+                account_id,
+                user_id,
+                provider_account_id: None,
+                provider_transaction_id,
+                amount,
+                date,
+                merchant_name,
+                category_primary,
+                category_detailed,
+                category_confidence,
+                payment_channel,
+                pending,
+                created_at,
+            },
+        ))
     }
 }

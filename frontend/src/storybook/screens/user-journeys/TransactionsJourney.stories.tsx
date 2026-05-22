@@ -5,11 +5,7 @@ import { TransactionsSearchBar } from '@/features/transactions/components/Transa
 import { useTransactionFilterState } from '@/features/transactions/hooks/useTransactionFilterState';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
 import TransactionsPage from '@/views/TransactionsPage';
-import {
-  getPagedStoryTransactions,
-  storyProviderAccounts,
-  storyTransactionCategories,
-} from './shared';
+import { getPagedStoryTransactions, storyCategoryList, storyProviderAccounts } from './shared';
 import { jsonResponse, route, StoryApiScope } from './storyApi';
 
 const meta = {
@@ -28,7 +24,7 @@ const storyInteractionTimeoutMs = 20_000;
 
 const handlers = [
   route('GET', '/providers/accounts', () => jsonResponse(storyProviderAccounts)),
-  route('GET', '/transactions/categories', () => jsonResponse(storyTransactionCategories)),
+  route('GET', '/categories', () => jsonResponse(storyCategoryList)),
   route('GET', '/transactions', (request) =>
     jsonResponse(
       getPagedStoryTransactions({
@@ -92,8 +88,14 @@ export const Journey: Story = {
       { timeout: storyInteractionTimeoutMs }
     );
 
-    const category = page.getByRole('button', { name: /food and drink/i });
+    const toolbar = page.getByTestId('transactions-toolbar');
+    const category = await waitFor(
+      () => within(toolbar).getByRole('button', { name: /food and drink/i }),
+      { timeout: storyInteractionTimeoutMs }
+    );
     await userEvent.click(category);
-    await expect(category).toHaveAttribute('aria-pressed', 'true');
+    await waitFor(() => {
+      expect(category).toHaveAttribute('aria-pressed', 'true');
+    });
   },
 };

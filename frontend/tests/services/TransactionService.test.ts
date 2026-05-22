@@ -5,14 +5,17 @@ import type { Transaction, TransactionsInsightsResponse } from '@/types/api';
 
 describe('TransactionService', () => {
   let getSpy: jest.SpiedFunction<typeof ApiClient.get>;
+  let putSpy: jest.SpiedFunction<typeof ApiClient.put>;
 
   beforeEach(() => {
     jest.clearAllMocks();
     getSpy = jest.spyOn(ApiClient, 'get');
+    putSpy = jest.spyOn(ApiClient, 'put');
   });
 
   afterEach(() => {
     getSpy.mockRestore();
+    putSpy.mockRestore();
   });
 
   describe('getTransactions', () => {
@@ -193,6 +196,17 @@ describe('TransactionService', () => {
       getSpy.mockRejectedValue(new AuthenticationError());
 
       await expect(TransactionService.getTransactions()).rejects.toThrow(AuthenticationError);
+    });
+
+    it('updates a transaction category without duplicating the api base path', async () => {
+      putSpy.mockResolvedValue(undefined as any);
+
+      await TransactionService.updateTransactionCategory('tx-1', 'Coffee', true);
+
+      expect(putSpy).toHaveBeenCalledWith('/transactions/tx-1/category', {
+        category_name: 'Coffee',
+        is_custom: true,
+      });
     });
   });
 });

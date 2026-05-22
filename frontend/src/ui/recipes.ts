@@ -129,6 +129,24 @@ export const buttonCta = {
   ],
 } as const;
 
+export const successCta = {
+  gradient: [
+    'bg-gradient-to-r',
+    'from-[var(--color-brand-emerald)]',
+    'via-[var(--color-brand-emerald)]',
+    'to-[var(--color-brand-sky)]',
+  ],
+  hover: ['hover:-translate-y-[2px]', 'active:scale-[0.98]', 'disabled:active:scale-100'],
+  focus: [
+    'focus-visible:outline-none',
+    'focus-visible:ring-2',
+    'focus-visible:ring-[var(--color-border-focus-active)]',
+    'focus-visible:ring-offset-2',
+    'focus-visible:ring-offset-white',
+    'dark:focus-visible:ring-offset-[#0f172a]',
+  ],
+} as const;
+
 export const status = {
   info: {
     surface: [
@@ -319,7 +337,36 @@ export const dashboardCategoryCard = {
 
 export const floatingChromeGlass = {
   backdrop: ['backdrop-blur-md', 'backdrop-saturate-[150%]'],
-  shell: [...surface.floatingChromePanel, ...border.floatingChrome, ...effect.glassShadow],
+  shell: [
+    'border',
+    ...surface.floatingChromePanel,
+    ...border.floatingChrome,
+    ...effect.glassShadow,
+  ],
+} as const;
+
+export const categoryPickerPopover = {
+  motion: ['category-picker-popover'],
+} as const;
+
+export const modalDrawer = {
+  overlay: ['bg-transparent'],
+  overlayMotion: ['modal-drawer-overlay'],
+  contentMotion: ['modal-drawer-content'],
+  formFooter: [
+    'mt-auto',
+    'border-t',
+    'border-black/10',
+    'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_96%,white)]',
+    'px-5',
+    'pb-[max(1rem,env(safe-area-inset-bottom))]',
+    'pt-4',
+    'dark:border-white/10',
+    'dark:bg-[#0f172a]/98',
+  ],
+  formRow: ['flex', 'items-end', 'gap-2'],
+  formField: ['min-w-0', 'flex-1', 'space-y-1'],
+  submitButton: ['shrink-0'],
 } as const;
 
 export const chartTooltip = {

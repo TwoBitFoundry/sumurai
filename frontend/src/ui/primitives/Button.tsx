@@ -10,6 +10,7 @@ import {
   status as semanticStatus,
   surface as semanticSurfaces,
   text as semanticTextRecipes,
+  successCta,
   radius as uiRadiusRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
@@ -140,10 +141,11 @@ export const buttonRecipes = {
     'dark:hover:bg-[color:color-mix(in_srgb,var(--color-status-danger-strong-surface)_46%,transparent)]',
   ],
   success: [
-    ...buttonCta.gradient,
+    ...successCta.gradient,
     semanticTextRecipes.inverse,
-    ...buttonCta.shadow,
-    ...buttonCta.hover,
+    ...semanticEffects.successGlow,
+    ...successCta.hover,
+    'disabled:hover:translate-y-0',
   ],
   connect: [
     ...buttonCta.gradient,

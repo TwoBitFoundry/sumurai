@@ -148,6 +148,17 @@ export const storyTransactionCategories = Array.from(
   new Set(storyTransactions.map((transaction) => transaction.category_primary ?? 'other'))
 );
 
+export const storyCategoryList = {
+  system: storyTransactionCategories,
+  custom: [
+    {
+      id: 'story-custom-coffee',
+      display_name: 'Coffee',
+      lookup_key: 'coffee',
+    },
+  ],
+};
+
 export function getPagedStoryTransactions(request: {
   page?: number;
   pageSize?: number;

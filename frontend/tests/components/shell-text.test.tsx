@@ -75,7 +75,12 @@ describe('shared shell text surfaces', () => {
   it('uses semantic text roles in the budget toolbar and net worth widget', () => {
     render(
       <ThemeProvider>
-        <BudgetToolbar loading isAdding={false} showAddButton={false} onAddBudget={jest.fn()} />
+        <BudgetToolbar
+          loading
+          isPickerOpen={false}
+          addButtonRef={{ current: null }}
+          onAddBudget={jest.fn()}
+        />
         <NetWorthOverTimeWidget />
       </ThemeProvider>
     );

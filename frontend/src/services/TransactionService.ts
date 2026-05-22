@@ -68,6 +68,17 @@ export class TransactionService {
     return ApiClient.get<TransactionsInsightsResponse>(buildTransactionsInsightsEndpoint(filters));
   }
 
+  static async updateTransactionCategory(
+    id: string,
+    categoryName: string,
+    isCustom: boolean
+  ): Promise<void> {
+    await ApiClient.put(`/transactions/${id}/category`, {
+      category_name: categoryName,
+      is_custom: isCustom,
+    });
+  }
+
   private static async getAllTransactions(filters: TransactionFilters): Promise<Transaction[]> {
     const transactions: Transaction[] = [];
     let page = 1;

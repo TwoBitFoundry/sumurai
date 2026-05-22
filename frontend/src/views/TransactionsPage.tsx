@@ -4,6 +4,7 @@ import { cn, GlassCard } from '@/ui/primitives';
 import HeroStatCard from '../components/widgets/HeroStatCard';
 import TransactionsTable from '../features/transactions/components/TransactionsTable';
 import TransactionsToolbar from '../features/transactions/components/TransactionsToolbar';
+import { useCategories } from '../features/transactions/hooks/useCategories';
 import type { TransactionFilterControl } from '../features/transactions/hooks/useTransactionFilterState';
 import { useTransactions } from '../features/transactions/hooks/useTransactions';
 import { useTransactionsInsights } from '../features/transactions/hooks/useTransactionsInsights';
@@ -17,7 +18,6 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
   const {
     isLoading,
     error,
-    categories,
     search,
     setSearch,
     selectedCategory,
@@ -27,6 +27,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
     pageItems,
     totalItems,
     totalPages,
+    tableAnimationKey,
     dateRange,
   } = useTransactions({ pageSize: 8, filterControl });
   const {
@@ -51,6 +52,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
   const recurringCount = insights?.recurring_count ?? 0;
   const recurringMerchants = insights?.recurring_merchants ?? [];
   const topCategories = insights?.top_categories ?? [];
+  const { all: categories, custom } = useCategories();
   const categoryDriver =
     loadingMessage || topCategories.length === 0
       ? null
@@ -127,6 +129,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
             search={search}
             onSearch={setSearch}
             categories={categories}
+            customCategories={custom}
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
           />
@@ -137,6 +140,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
             totalPages={totalPages}
             pageSize={8}
             isLoading={isLoading}
+            bodyAnimationKey={tableAnimationKey}
             onPrev={() => setCurrentPage(Math.max(1, currentPage - 1))}
             onNext={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
           />

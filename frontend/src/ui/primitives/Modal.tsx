@@ -1,8 +1,11 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type * as React from 'react';
-import { floatingChromeGlass, surface as uiSurfaceRecipes } from '@/ui/recipes';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { floatingChromeGlass, modalDrawer, surface as uiSurfaceRecipes } from '@/ui/recipes';
 import { cn } from './utils';
+
+const DRAWER_EXIT_MS = 280;
 
 const contentVariants = cva('relative w-full', {
   variants: {
@@ -17,6 +20,8 @@ const contentVariants = cva('relative w-full', {
   },
 });
 
+export type ModalPresentation = 'centered' | 'drawer';
+
 export interface ModalProps
   extends Omit<React.ComponentPropsWithoutRef<typeof Dialog.Content>, 'children'>,
     VariantProps<typeof contentVariants> {
@@ -25,6 +30,7 @@ export interface ModalProps
   children: React.ReactNode;
   labelledBy?: string;
   description?: string;
+  presentation?: ModalPresentation;
   preventCloseOnBackdrop?: boolean;
   backdropClassName?: string;
   containerClassName?: string;
@@ -38,6 +44,7 @@ export function Modal({
   size,
   labelledBy,
   description,
+  presentation = 'centered',
   preventCloseOnBackdrop,
   className,
   backdropClassName,
@@ -45,36 +52,147 @@ export function Modal({
   gridClassName,
   ...props
 }: ModalProps) {
-  return (
-    <Dialog.Root
-      open={isOpen}
-      onOpenChange={(open) => {
-        if (!open) {
-          onClose?.();
+  const isDrawer = presentation === 'drawer';
+  const [drawerOpen, setDrawerOpen] = useState(isOpen);
+  const [isExiting, setIsExiting] = useState(false);
+  const drawerContentRef = useRef<HTMLDivElement>(null);
+  const exitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isExitingRef = useRef(false);
+
+  const finishDrawerExit = useCallback(
+    (notifyParent: boolean) => {
+      isExitingRef.current = false;
+      setIsExiting(false);
+      setDrawerOpen(false);
+      if (notifyParent) {
+        onClose?.();
+      }
+    },
+    [onClose]
+  );
+
+  const beginDrawerExit = useCallback(
+    (notifyParent: boolean) => {
+      if (isExitingRef.current) {
+        return;
+      }
+      isExitingRef.current = true;
+      setIsExiting(true);
+
+      const node = drawerContentRef.current;
+      if (!node) {
+        finishDrawerExit(notifyParent);
+        return;
+      }
+
+      let finished = false;
+      const complete = () => {
+        if (finished) {
+          return;
         }
-      }}
-    >
+        finished = true;
+        if (exitTimeoutRef.current) {
+          clearTimeout(exitTimeoutRef.current);
+          exitTimeoutRef.current = null;
+        }
+        node.removeEventListener('animationend', onAnimationEnd);
+        finishDrawerExit(notifyParent);
+      };
+
+      const onAnimationEnd = (event: AnimationEvent) => {
+        if (event.target !== node) {
+          return;
+        }
+        complete();
+      };
+
+      requestAnimationFrame(() => {
+        node.addEventListener('animationend', onAnimationEnd);
+        exitTimeoutRef.current = setTimeout(complete, DRAWER_EXIT_MS);
+      });
+    },
+    [finishDrawerExit]
+  );
+
+  useEffect(() => {
+    if (!isDrawer) {
+      return;
+    }
+    if (isOpen) {
+      if (exitTimeoutRef.current) {
+        clearTimeout(exitTimeoutRef.current);
+        exitTimeoutRef.current = null;
+      }
+      isExitingRef.current = false;
+      setIsExiting(false);
+      setDrawerOpen(true);
+      return;
+    }
+    if (drawerOpen && !isExitingRef.current) {
+      beginDrawerExit(false);
+    }
+  }, [beginDrawerExit, drawerOpen, isDrawer, isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (exitTimeoutRef.current) {
+        clearTimeout(exitTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (isDrawer) {
+      if (nextOpen) {
+        isExitingRef.current = false;
+        setIsExiting(false);
+        setDrawerOpen(true);
+        return;
+      }
+      beginDrawerExit(true);
+      return;
+    }
+    if (!nextOpen) {
+      onClose?.();
+    }
+  };
+
+  const rootOpen = isDrawer ? drawerOpen || isExiting : isOpen;
+  const drawerExitingProps = isExiting ? ({ 'data-exiting': 'true' } as const) : {};
+
+  return (
+    <Dialog.Root open={rootOpen} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
-        <div className={cn('fixed inset-0 z-50', containerClassName)}>
-          <Dialog.Overlay
-            data-testid="modal-backdrop"
-            className={cn(
-              'absolute inset-0',
-              ...floatingChromeGlass.backdrop,
-              ...uiSurfaceRecipes.overlay,
-              backdropClassName
-            )}
-            onPointerDown={(event) => {
-              if (preventCloseOnBackdrop) {
-                event.preventDefault();
-              }
-            }}
-          />
-          <div className={cn('grid', 'h-full', 'place-items-center', gridClassName ?? 'p-4')}>
+        {isDrawer ? (
+          <>
+            <Dialog.Overlay
+              data-testid="modal-backdrop"
+              data-presentation={presentation}
+              {...drawerExitingProps}
+              className={cn(
+                'fixed inset-0 z-50',
+                ...modalDrawer.overlayMotion,
+                ...modalDrawer.overlay,
+                containerClassName,
+                backdropClassName
+              )}
+              onPointerDown={(event) => {
+                if (preventCloseOnBackdrop) {
+                  event.preventDefault();
+                }
+              }}
+            />
             <Dialog.Content
+              ref={drawerContentRef}
               aria-labelledby={labelledBy}
               aria-describedby={description}
-              className={cn(contentVariants({ size }), className)}
+              data-presentation={presentation}
+              {...drawerExitingProps}
+              className={cn(
+                'fixed bottom-0 left-0 right-0 z-50 w-full outline-none',
+                modalDrawer.contentMotion,
+                className
+              )}
               onPointerDownOutside={(event) => {
                 if (preventCloseOnBackdrop) {
                   event.preventDefault();
@@ -86,8 +204,44 @@ export function Modal({
               {description ? <Dialog.Description className="sr-only" aria-hidden="true" /> : null}
               {children}
             </Dialog.Content>
+          </>
+        ) : (
+          <div className={cn('fixed inset-0 z-50', containerClassName)}>
+            <Dialog.Overlay
+              data-testid="modal-backdrop"
+              data-presentation={presentation}
+              className={cn(
+                'absolute inset-0',
+                ...floatingChromeGlass.backdrop,
+                ...uiSurfaceRecipes.overlay,
+                backdropClassName
+              )}
+              onPointerDown={(event) => {
+                if (preventCloseOnBackdrop) {
+                  event.preventDefault();
+                }
+              }}
+            />
+            <div className={cn('grid h-full place-items-center', gridClassName ?? 'p-4')}>
+              <Dialog.Content
+                aria-labelledby={labelledBy}
+                aria-describedby={description}
+                data-presentation={presentation}
+                className={cn('z-50 outline-none', contentVariants({ size }), className)}
+                onPointerDownOutside={(event) => {
+                  if (preventCloseOnBackdrop) {
+                    event.preventDefault();
+                  }
+                }}
+                {...props}
+              >
+                {labelledBy ? <Dialog.Title className="sr-only" aria-hidden="true" /> : null}
+                {description ? <Dialog.Description className="sr-only" aria-hidden="true" /> : null}
+                {children}
+              </Dialog.Content>
+            </div>
           </div>
-        </div>
+        )}
       </Dialog.Portal>
     </Dialog.Root>
   );

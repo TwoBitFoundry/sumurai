@@ -1,6 +1,6 @@
 import { Activity, AlertTriangle, CheckCircle2, Clock, Plus, Target } from 'lucide-react';
 import HeroStatCard from '@/components/widgets/HeroStatCard';
-import { BudgetForm } from '@/features/budgets/components/BudgetForm';
+import AddBudgetPicker from '@/features/budgets/components/AddBudgetPicker';
 import { BudgetList } from '@/features/budgets/components/BudgetList';
 import BudgetSummaryCard from '@/features/budgets/components/BudgetSummaryCard';
 import BudgetToolbar from '@/features/budgets/components/BudgetToolbar';
@@ -116,23 +116,26 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
               <>
                 <BudgetToolbar
                   loading={false}
-                  isAdding={props.state === 'adding'}
-                  showAddButton
+                  isPickerOpen={props.state === 'adding'}
+                  addButtonRef={{ current: null }}
                   onAddBudget={() => {}}
                 />
                 {props.state === 'adding' ? (
-                  <div className={cn('flex', 'justify-center')}>
-                    <div className="w-full max-w-md">
-                      <BudgetForm
-                        categories={['food_and_drink', 'transportation', 'entertainment']}
-                        usedCategories={new Set(['entertainment'])}
-                        value={{ category: '', amount: '' }}
-                        onChange={() => {}}
-                        onSave={() => {}}
-                        onCancel={() => {}}
-                      />
-                    </div>
-                  </div>
+                  <AddBudgetPicker
+                    open
+                    anchorRef={{ current: null }}
+                    categories={['food_and_drink', 'transportation']}
+                    accentIndexByName={
+                      new Map([
+                        ['food_and_drink', 0],
+                        ['transportation', 1],
+                      ])
+                    }
+                    value={{ category: '', amount: '' }}
+                    onChange={() => {}}
+                    onSave={() => {}}
+                    onRequestClose={() => {}}
+                  />
                 ) : null}
                 <BudgetList
                   items={sampleBudgetProgressEntries}

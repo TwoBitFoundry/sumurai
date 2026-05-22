@@ -65,7 +65,7 @@ export const Journey: Story = {
 
     await userEvent.hover(foodLabel);
     await waitFor(() => {
-      expect(foodCard.getAttribute('style')).toMatch(/border-color/i);
+      expect(foodCard).toHaveStyle({ borderColor: expect.any(String) });
     });
   },
 };

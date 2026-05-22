@@ -3,6 +3,15 @@ import { Building2 } from 'lucide-react';
 import { HeroStatCard } from '@/components/widgets/HeroStatCard';
 import { control } from '@/ui/recipes';
 
+jest.mock('@/features/transactions/hooks/useCategories', () => ({
+  useCategories: () => ({
+    accentIndexByName: new Map([
+      ['DINING', 0],
+      ['TRAVEL', 1],
+    ]),
+  }),
+}));
+
 describe('HeroStatCard', () => {
   it('sizes stat icons with the shared control glyph scale', () => {
     const { container } = render(
@@ -35,13 +44,17 @@ describe('HeroStatCard', () => {
         title="Overages"
         value={2}
         suffix="over budget"
-        pills={[{ label: 'Dining' }, { label: 'Travel' }]}
+        pills={[
+          { label: 'Dining', type: 'category', categoryName: 'DINING' },
+          { label: 'Travel', type: 'category', categoryName: 'TRAVEL' },
+        ]}
       />
     );
 
     expect(screen.getByTestId('hero-stat-card-footer-scroll')).toBeInTheDocument();
     expect(screen.getByText('Dining')).toBeInTheDocument();
     expect(screen.getByText('Travel')).toBeInTheDocument();
+    expect(screen.getByTestId('hero-stat-card-footer').querySelector('svg')).toBeNull();
   });
 
   it('keeps the footer slider full width on desktop', () => {
