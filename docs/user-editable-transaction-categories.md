@@ -344,10 +344,14 @@ Design rules (confirmed with the user):
 3. Update [TransactionsPage.tsx](frontend/src/views/TransactionsPage.tsx) to source categories from `useCategories` (replacing `useTransactionCategories`). The merged list flows into `TransactionsToolbar` → `TransactionsFilters` as before.
 
 **Acceptance criteria.**
-- [ ] Custom filter chips render the X; system chips do not.
-- [ ] Clicking the X opens `DeleteCustomCategoryConfirm` and does NOT toggle the chip's filter state.
-- [ ] Confirming the delete invokes `useDeleteCustomCategory`; on success the chip disappears and any rows previously overridden by that custom revert to their `category_primary` (no manual refresh — driven by the Phase 5 invalidation).
-- [ ] `npm --prefix frontend test` (full Jest suite) passes; `lint` and `typecheck` pass.
+- [x] Custom filter chips render the X; system chips do not.
+- [x] Clicking the X opens `DeleteCustomCategoryConfirm` and does NOT toggle the chip's filter state.
+- [x] Confirming the delete invokes `useDeleteCustomCategory`; on success the chip disappears and any rows previously overridden by that custom revert to their `category_primary` (no manual refresh — driven by the Phase 5 invalidation).
+- [x] `npm --prefix frontend test` (full Jest suite) passes; `lint` and `typecheck` pass.
+
+**TDD log.**
+- Added boundary coverage for the delete-confirm modal, the custom-chip X affordance, and the page-level merged category source.
+- Implemented the delete modal, wired `TransactionsFilters` to render custom-chip delete controls, updated `TransactionsPage` to source categories from `useCategories`, and verified with `npm --prefix frontend run test:serial -- --runTestsByPath tests/features/transactions/components/DeleteCustomCategoryConfirm.test.tsx tests/features/transactions/components/TransactionsFilters.test.tsx tests/views/TransactionsPage.test.tsx tests/storybook/screenSlices/responsiveContract.test.tsx`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, and `npm --prefix frontend test`.
 
 ---
 

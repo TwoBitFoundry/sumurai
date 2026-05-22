@@ -1,7 +1,8 @@
 import { Search } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button, cn, Input } from '@/ui/primitives';
+import type { CustomCategory } from '@/types/api';
+import { Button, cn, IconButton, Input } from '@/ui/primitives';
 import { pillRecipes, pillScrollFadeRecipes } from '@/ui/primitives/Pill';
 import {
   control,
@@ -10,11 +11,13 @@ import {
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
+import DeleteCustomCategoryConfirm from './DeleteCustomCategoryConfirm';
 
 interface Props {
   search: string;
   onSearch: (s: string) => void;
   categories: string[];
+  customCategories?: CustomCategory[];
   selectedCategory: string | null;
   onSelectCategory: (c: string | null) => void;
   showSearch?: boolean;
@@ -27,6 +30,7 @@ export const TransactionsFilters: React.FC<Props> = ({
   search,
   onSearch,
   categories,
+  customCategories = [],
   selectedCategory,
   onSelectCategory,
   showSearch = true,
@@ -36,6 +40,7 @@ export const TransactionsFilters: React.FC<Props> = ({
 }) => {
   const scrollFade = pillScrollFadeRecipes[scrollFadeSurface];
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CustomCategory | null>(null);
   const [showLeftFade, setShowLeftFade] = useState(false);
   const [showRightFade, setShowRightFade] = useState(false);
 
@@ -76,6 +81,13 @@ export const TransactionsFilters: React.FC<Props> = ({
     });
     return () => cancelAnimationFrame(frame);
   }, [categories.length, showCategories, checkScroll]);
+
+  const handleDeleteSuccess = () => {
+    if (deleteTarget && selectedCategory === deleteTarget.display_name) {
+      onSelectCategory(null);
+    }
+    setDeleteTarget(null);
+  };
 
   return (
     <>
@@ -139,27 +151,49 @@ export const TransactionsFilters: React.FC<Props> = ({
                 const isSelected = selectedCategory === name;
                 const theme = getTagThemeForCategory(name);
                 const label = formatCategoryName(name);
+                const customCategory = customCategories.find(
+                  (category) => category.display_name === name
+                );
+                const isCustom = Boolean(customCategory);
                 return (
-                  <Button
-                    key={name}
-                    type="button"
-                    variant="filterChip"
-                    size="sm"
-                    shape="pill"
-                    onClick={() => onSelectCategory(isSelected ? null : name)}
-                    className={cn(
-                      'whitespace-nowrap',
-                      theme.tag,
-                      isSelected
-                        ? ['ring-2', theme.ring]
-                        : 'ring-1 ring-white/60 dark:ring-white/10'
-                    )}
-                    aria-pressed={isSelected}
-                    title={isSelected ? `Remove filter: ${label}` : `Filter by ${label}`}
-                  >
-                    <span className={cn(pillRecipes.dot, theme.dot)} aria-hidden="true" />
-                    {label}
-                  </Button>
+                  <span key={name} className={cn('relative', 'inline-flex', 'items-center')}>
+                    <Button
+                      type="button"
+                      variant="filterChip"
+                      size="sm"
+                      shape="pill"
+                      onClick={() => onSelectCategory(isSelected ? null : name)}
+                      className={cn(
+                        'whitespace-nowrap',
+                        isCustom && 'pr-8',
+                        theme.tag,
+                        isSelected
+                          ? ['ring-2', theme.ring]
+                          : 'ring-1 ring-white/60 dark:ring-white/10'
+                      )}
+                      aria-pressed={isSelected}
+                      title={isSelected ? `Remove filter: ${label}` : `Filter by ${label}`}
+                    >
+                      <span className={cn(pillRecipes.dot, theme.dot)} aria-hidden="true" />
+                      {label}
+                    </Button>
+                    {isCustom && customCategory ? (
+                      <IconButton
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        aria-label={`Delete ${label}`}
+                        title={`Delete ${label}`}
+                        className={cn('absolute', 'right-0.5', 'top-1/2', '-translate-y-1/2')}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setDeleteTarget(customCategory);
+                        }}
+                      >
+                        <span aria-hidden="true">×</span>
+                      </IconButton>
+                    ) : null}
+                  </span>
                 );
               })}
             </div>
@@ -168,6 +202,14 @@ export const TransactionsFilters: React.FC<Props> = ({
           </div>
         </div>
       )}
+      {deleteTarget ? (
+        <DeleteCustomCategoryConfirm
+          open
+          category={deleteTarget}
+          onRequestClose={() => setDeleteTarget(null)}
+          onSuccess={handleDeleteSuccess}
+        />
+      ) : null}
     </>
   );
 };

@@ -1,5 +1,6 @@
 import { render } from '@testing-library/react';
 import type React from 'react';
+import { useCategories } from '@/features/transactions/hooks/useCategories';
 import { useTransactions } from '@/features/transactions/hooks/useTransactions';
 import { useTransactionsInsights } from '@/features/transactions/hooks/useTransactionsInsights';
 import TransactionsPage from '@/views/TransactionsPage';
@@ -10,6 +11,10 @@ jest.mock('@/features/transactions/hooks/useTransactions', () => ({
 
 jest.mock('@/features/transactions/hooks/useTransactionsInsights', () => ({
   useTransactionsInsights: jest.fn(),
+}));
+
+jest.mock('@/features/transactions/hooks/useCategories', () => ({
+  useCategories: jest.fn(),
 }));
 
 jest.mock('@/layouts/PageLayout', () => ({
@@ -33,6 +38,13 @@ jest.mock('@/features/transactions/components/TransactionsTable', () => ({
 
 describe('TransactionsPage', () => {
   beforeEach(() => {
+    jest.mocked(useCategories).mockReturnValue({
+      system: ['FOOD_AND_DRINK'],
+      custom: [{ id: 'custom-1', display_name: 'Coffee', lookup_key: 'coffee' }],
+      all: ['FOOD_AND_DRINK', 'Coffee'],
+      isLoading: false,
+      error: null,
+    } as any);
     jest.mocked(useTransactions).mockReturnValue({
       isLoading: false,
       error: null,
