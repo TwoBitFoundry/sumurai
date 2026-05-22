@@ -217,6 +217,13 @@ pub trait DatabaseRepository: Send + Sync {
         user_id: &Uuid,
         id: &Uuid,
     ) -> Result<Option<Transaction>>;
+
+    async fn list_simplefin_hidden_orgs(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<std::collections::HashSet<String>>;
+
+    async fn insert_simplefin_hidden_org(&self, user_id: &Uuid, conn_id: &str) -> Result<()>;
 }
 
 pub struct PostgresRepository {
@@ -2130,5 +2137,48 @@ impl DatabaseRepository for PostgresRepository {
                 created_at,
             },
         ))
+    }
+
+    async fn list_simplefin_hidden_orgs(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<std::collections::HashSet<String>> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let rows = sqlx::query_scalar::<_, String>("SELECT org_conn_id FROM simplefin_hidden_orgs")
+            .fetch_all(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+        Ok(rows.into_iter().collect())
+    }
+
+    async fn insert_simplefin_hidden_org(&self, user_id: &Uuid, conn_id: &str) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        sqlx::query(
+            r#"
+            INSERT INTO simplefin_hidden_orgs (user_id, org_conn_id)
+            VALUES ($1, $2)
+            ON CONFLICT DO NOTHING
+            "#,
+        )
+        .bind(user_id)
+        .bind(conn_id)
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(())
     }
 }

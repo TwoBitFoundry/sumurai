@@ -148,7 +148,7 @@ All new tests in `backend/src/tests/simplefin_provider_tests.rs`, using a `mocka
 
 ### Tasks
 
-1. New migration `backend/migrations/024_simplefin_hidden_orgs.sql`:
+1. New migration `backend/migrations/027_simplefin_hidden_orgs.sql` (plan originally numbered 024; `024` is `user_custom_categories` in this repo):
 
    ```sql
    CREATE TABLE simplefin_hidden_orgs (
@@ -175,10 +175,16 @@ All new tests in `backend/src/tests/simplefin_provider_tests.rs`, using a `mocka
 
 Tests in `backend/src/tests/migration_tests.rs` and `backend/src/tests/repository_service_tests.rs`:
 
-- [ ] Migration applies cleanly to a fresh DB **and** to a DB already migrated through `023_*`.
-- [ ] RLS isolation: user A inserting their `conn_id` is invisible to user B (mirrors existing RLS tests).
-- [ ] `insert_simplefin_hidden_org` is idempotent (calling twice with the same args is a no-op, returns `Ok`).
-- [ ] `list_simplefin_hidden_orgs` returns the inserted set; empty set for a fresh user.
+- [x] Migration applies cleanly to a fresh DB **and** to a DB already migrated through `023_*` (integration tests apply `027` when `DATABASE_URL` is set).
+- [x] RLS isolation: user A inserting their `conn_id` is invisible to user B (mirrors existing RLS tests).
+- [x] `insert_simplefin_hidden_org` is idempotent (calling twice with the same args is a no-op, returns `Ok`).
+- [x] `list_simplefin_hidden_orgs` returns the inserted set; empty set for a fresh user.
+
+#### Phase 3 TDD log
+
+- Red: migration idempotency + repository list/insert/RLS tests (skip without `DATABASE_URL`).
+- Green: `027_simplefin_hidden_orgs.sql`, `list_simplefin_hidden_orgs`, `insert_simplefin_hidden_org`.
+- Commands: `cargo test --manifest-path backend/Cargo.toml --locked` (350 passed).
 
 ---
 
