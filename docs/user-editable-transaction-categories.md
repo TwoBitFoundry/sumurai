@@ -289,13 +289,18 @@ Design rules (confirmed with the user):
 5. **Out of scope for this phase:** the mobile bottom-sheet variant (Phase 9) and the inline-table chevron (Phase 7).
 
 **Acceptance criteria.**
-- [ ] `CategoryPicker` renders as an anchored Popover when `open` is true.
-- [ ] Suggested chips include all system + custom categories from `useCategories`; current category is visibly selected.
-- [ ] Clicking a suggested chip invokes `onSelect` with the correct `{ categoryName, isCustom }` and triggers `onRequestClose`.
-- [ ] Typing surfaces inline validation errors covering every code from `validateCustomCategoryName`; the checkmark disables until valid.
-- [ ] Accepting a new typed name creates the custom category first, then calls `onSelect`.
-- [ ] `npm --prefix frontend run lint` and `npm --prefix frontend run typecheck` pass.
-- [ ] No edits to `TransactionsTable.tsx`, `TransactionsFilters.tsx`, or `TransactionsPage.tsx` yet.
+- [x] `CategoryPicker` renders as an anchored Popover when `open` is true.
+- [x] Suggested chips include all system + custom categories from `useCategories`; current category is visibly selected.
+- [x] Clicking a suggested chip invokes `onSelect` with the correct `{ categoryName, isCustom }` and triggers `onRequestClose`.
+- [x] Typing surfaces inline validation errors covering every code from `validateCustomCategoryName`; the checkmark disables until valid.
+- [x] Accepting a new typed name creates the custom category first, then calls `onSelect`.
+- [x] `npm --prefix frontend run lint` and `npm --prefix frontend run typecheck` pass.
+- [x] No edits to `TransactionsTable.tsx`, `TransactionsFilters.tsx`, or `TransactionsPage.tsx` yet.
+
+**TDD log.**
+- Wrote a focused `CategoryPicker` component spec covering open-state rendering, selection, validation, and the create-then-select flow.
+- Implemented the popover with `@radix-ui/react-popover`, category suggestions, live validation, and the custom-category submit path.
+- Verified with `npm --prefix frontend run test:serial -- --runTestsByPath tests/features/transactions/components/CategoryPicker.test.tsx`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, and `npm --prefix frontend test`.
 
 ---
 
