@@ -120,9 +120,16 @@ export function useTellerConnectionStrategy(
     dispatch(connectionActions.patch({ connectionInProgress: false }));
   }, [dispatch]);
 
-  const onEnrollmentError = useCallback(() => {
-    handleError(POPUP_BLOCKED_MESSAGE);
-  }, [handleError]);
+  const onEnrollmentError = useCallback(
+    (error?: unknown) => {
+      const message =
+        error instanceof Error && error.message.includes('did not finish loading')
+          ? TELLER_CONNECT_LOAD_FAILED_MESSAGE
+          : POPUP_BLOCKED_MESSAGE;
+      handleError(message);
+    },
+    [handleError]
+  );
 
   const onScriptLoadFailed = useCallback(() => {
     sdkFailedRef.current = true;
@@ -144,9 +151,9 @@ export function useTellerConnectionStrategy(
         if (!tellerApplicationId) {
           return null;
         }
-        const applicationIdForSdk = sdkNonce > 0 ? tellerApplicationId : '';
+        const applicationIdForSdk = sdkNonce > 0 && isOnline ? tellerApplicationId : '';
         return createElement(TellerConnectSdk, {
-          key: sdkNonce,
+          key: `${sdkNonce}:${tellerApplicationId}:${tellerEnvironment}`,
           ref: sdkRef,
           applicationId: applicationIdForSdk,
           environment: tellerEnvironment,
@@ -163,6 +170,7 @@ export function useTellerConnectionStrategy(
       onEnrollmentError,
       onExit,
       onScriptLoadFailed,
+      isOnline,
       sdkNonce,
       tellerApplicationId,
       tellerEnvironment,

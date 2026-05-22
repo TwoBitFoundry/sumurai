@@ -26,13 +26,17 @@ const plaidOpen = jest.fn();
 const plaidDestroy = jest.fn();
 const tellerSetup = jest.fn();
 const tellerOpen = jest.fn();
+type PlaidMockConfig = {
+  onSuccess: (token: string, metadata?: unknown) => Promise<void>;
+  onExit?: (...args: unknown[]) => void;
+};
 const plaidLinkMock = (() => {
-  let config: { onSuccess: (token: string) => Promise<void> } | null = null;
+  let config: PlaidMockConfig | null = null;
   return {
     open: plaidOpen,
     destroy: plaidDestroy,
     getConfig: () => config,
-    setConfig: (next: { onSuccess: (token: string) => Promise<void> }) => {
+    setConfig: (next: PlaidMockConfig) => {
       config = next;
     },
     reset: () => {
@@ -114,7 +118,7 @@ describe('useFinancialConnection', () => {
 
     Object.assign(window, {
       Plaid: {
-        create: (opts: { onSuccess: (token: string) => Promise<void> }) => {
+        create: (opts: PlaidMockConfig) => {
           plaidLinkMock.setConfig(opts);
           return {
             open: plaidLinkMock.open,
@@ -176,12 +180,19 @@ describe('useFinancialConnection', () => {
       )
     );
 
+    await waitFor(() => {
+      expect(plaidLinkMock.getConfig()).not.toBeNull();
+    });
+
     await act(async () => {
-      void connectionFlowRef.current?.initiateConnection();
+      await connectionFlowRef.current?.initiateConnection();
     });
 
     await waitFor(() => {
       expect(postSpy).toHaveBeenCalledWith('/plaid/link-token', {});
+    });
+    await waitFor(() => {
+      expect(plaidOpen).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -203,9 +214,38 @@ describe('useFinancialConnection', () => {
         expect.objectContaining({
           applicationId: 'app-123',
           environment: 'development',
+          products: ['balance', 'transactions'],
         })
       );
     });
+    await waitFor(() => {
+      expect(tellerOpen).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('given teller reconnect after prior open when connect is called then reuses ready Teller instance', async () => {
+    render(
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        React.createElement(FinancialConnectionMount, { provider: 'teller' })
+      )
+    );
+
+    await act(async () => {
+      await connectionFlowRef.current?.initiateConnection();
+    });
+
+    await waitFor(() => {
+      expect(tellerSetup).toHaveBeenCalledTimes(1);
+    });
+
+    await act(async () => {
+      await connectionFlowRef.current?.initiateConnection();
+    });
+
+    expect(tellerSetup).toHaveBeenCalledTimes(1);
+    expect(tellerOpen).toHaveBeenCalledTimes(2);
   });
 
   it('given connect before strategy bridge mounts when connect called then reports not ready', async () => {
@@ -282,6 +322,9 @@ describe('useFinancialConnection', () => {
     );
 
     await act(async () => {
+      await waitFor(() => {
+        expect(plaidLinkMock.getConfig()).not.toBeNull();
+      });
       await connectionFlowRef.current?.initiateConnection();
     });
 
@@ -379,7 +422,7 @@ describe('useFinancialConnection', () => {
     });
   });
 
-  it('given plaid connection when retry is called then fetches a new link token', async () => {
+  it('given plaid connection exits when reconnecting then fetches a new link token', async () => {
     postSpy.mockResolvedValue({ link_token: 'link-token-123' });
 
     render(
@@ -390,12 +433,18 @@ describe('useFinancialConnection', () => {
       )
     );
 
+    await waitFor(() => {
+      expect(plaidLinkMock.getConfig()).not.toBeNull();
+    });
+
+    expect(postSpy.mock.calls.filter(([url]) => url === '/plaid/link-token')).toHaveLength(1);
+
     await act(async () => {
-      await connectionFlowRef.current?.initiateConnection();
+      plaidLinkMock.getConfig()?.onExit?.(null);
     });
 
     await waitFor(() => {
-      expect(postSpy).toHaveBeenCalledWith('/plaid/link-token', {});
+      expect(postSpy.mock.calls.filter(([url]) => url === '/plaid/link-token')).toHaveLength(2);
     });
 
     await act(async () => {
@@ -403,7 +452,7 @@ describe('useFinancialConnection', () => {
     });
 
     await waitFor(() => {
-      expect(postSpy.mock.calls.filter(([url]) => url === '/plaid/link-token')).toHaveLength(2);
+      expect(plaidOpen).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -418,14 +467,16 @@ describe('useFinancialConnection', () => {
       )
     );
 
+    await waitFor(() => {
+      expect(plaidLinkMock.getConfig()).not.toBeNull();
+    });
+
     await act(async () => {
       await connectionFlowRef.current?.initiateConnection();
     });
 
-    await waitFor(() => {
-      expect(postSpy).toHaveBeenCalledWith('/plaid/link-token', {});
-    });
     expect(tellerSetup).not.toHaveBeenCalled();
+    expect(plaidOpen).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       getByRole('button', { name: 'switch-provider' }).click();

@@ -1,9 +1,17 @@
 'use client';
 
-import { type RefObject, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import { flushSync } from 'react-dom';
 import {
   apiGateway,
+  cleanupTellerConnectDom,
   ensureTellerScript,
   isTellerScriptOrInitError,
   type TellerConnectGateway,
@@ -37,6 +45,8 @@ type TellerInstance = {
   destroy: () => void;
 };
 
+const TELLER_OPEN_TIMEOUT_MS = 8_000;
+
 export const TellerConnectSdk = function TellerConnectSdk({
   applicationId,
   environment = 'development',
@@ -53,6 +63,25 @@ export const TellerConnectSdk = function TellerConnectSdk({
   const onExitRef = useRef(onExit);
   const onEnrollmentErrorRef = useRef(onEnrollmentError);
   const onScriptLoadFailedRef = useRef(onScriptLoadFailed);
+  const openedRef = useRef(false);
+  const initializedAfterOpenRef = useRef(false);
+  const openTimeoutRef = useRef<number | null>(null);
+
+  const clearOpenTimeout = useCallback(() => {
+    if (openTimeoutRef.current !== null) {
+      window.clearTimeout(openTimeoutRef.current);
+      openTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    cleanupTellerConnectDom();
+
+    return () => {
+      clearOpenTimeout();
+      cleanupTellerConnectDom();
+    };
+  }, [clearOpenTimeout]);
 
   useEffect(() => {
     onConnectedRef.current = onConnected;
@@ -74,11 +103,25 @@ export const TellerConnectSdk = function TellerConnectSdk({
     ref,
     () => ({
       open: () => {
-        instance?.open();
+        if (!instance) {
+          return;
+        }
+
+        openedRef.current = true;
+        initializedAfterOpenRef.current = false;
+        clearOpenTimeout();
+        openTimeoutRef.current = window.setTimeout(() => {
+          if (openedRef.current && !initializedAfterOpenRef.current) {
+            cleanupTellerConnectDom();
+            openedRef.current = false;
+            onEnrollmentErrorRef.current?.(new Error('Teller Connect did not finish loading'));
+          }
+        }, TELLER_OPEN_TIMEOUT_MS);
+        instance.open();
       },
       getReady: () => Boolean(instance),
     }),
-    [instance]
+    [clearOpenTimeout, instance]
   );
 
   useEffect(() => {
@@ -93,6 +136,7 @@ export const TellerConnectSdk = function TellerConnectSdk({
 
     const initialize = async () => {
       try {
+        cleanupTellerConnectDom();
         await ensureTellerScript();
         if (!isActive) {
           return;
@@ -105,8 +149,17 @@ export const TellerConnectSdk = function TellerConnectSdk({
         const tellerInstance = window.TellerConnect.setup({
           applicationId,
           environment,
+          products: ['balance', 'transactions'],
           selectAccount: 'multiple',
+          onInit: () => {
+            if (openedRef.current) {
+              initializedAfterOpenRef.current = true;
+              clearOpenTimeout();
+            }
+          },
           onSuccess: async (enrollment: TellerEnrollment) => {
+            clearOpenTimeout();
+            openedRef.current = false;
             try {
               const result = await gateway.storeEnrollment({
                 access_token: enrollment.accessToken,
@@ -124,7 +177,18 @@ export const TellerConnectSdk = function TellerConnectSdk({
             }
           },
           onExit: () => {
+            clearOpenTimeout();
+            openedRef.current = false;
+            cleanupTellerConnectDom();
             void onExitRef.current?.();
+          },
+          onFailure: (failure) => {
+            clearOpenTimeout();
+            openedRef.current = false;
+            cleanupTellerConnectDom();
+            void onEnrollmentErrorRef.current?.(
+              new Error(failure.message || 'Teller Connect failed')
+            );
           },
         });
 
@@ -149,11 +213,13 @@ export const TellerConnectSdk = function TellerConnectSdk({
 
     return () => {
       isActive = false;
+      clearOpenTimeout();
       if (createdInstance) {
         createdInstance.destroy();
       }
+      cleanupTellerConnectDom();
     };
-  }, [applicationId, environment, gateway, retryKey]);
+  }, [applicationId, clearOpenTimeout, environment, gateway, retryKey]);
 
   return null;
 };

@@ -18,9 +18,12 @@ declare global {
 interface TellerConnectConfig {
   applicationId: string;
   onSuccess: (enrollment: TellerEnrollment) => Promise<void> | void;
+  onInit?: () => void;
   onExit?: () => void;
+  onFailure?: (failure: TellerFailure) => void;
   environment?: TellerEnvironment;
   selectAccount?: 'single' | 'multiple';
+  products?: TellerProduct[];
 }
 
 export interface TellerEnrollment {
@@ -32,6 +35,14 @@ export interface TellerEnrollment {
 interface TellerInstance {
   open: () => void;
   destroy: () => void;
+}
+
+type TellerProduct = 'verify' | 'verify.instant' | 'balance' | 'transactions' | 'identity';
+
+interface TellerFailure {
+  type?: string;
+  code?: string;
+  message?: string;
 }
 
 interface StoreEnrollmentRequest {
@@ -52,6 +63,31 @@ let tellerScriptPromise: Promise<void> | null = null;
 
 export const resetTellerScriptStateForTests = (): void => {
   tellerScriptPromise = null;
+};
+
+export const cleanupTellerConnectDom = (): void => {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  document
+    .querySelectorAll<HTMLIFrameElement>('#teller-connect-window, iframe[src*="teller.io/connect"]')
+    .forEach((iframe) => {
+      const parent = iframe.parentElement;
+      iframe.remove();
+      if (
+        parent &&
+        parent !== document.body &&
+        parent.children.length === 0 &&
+        parent.textContent?.trim().length === 0
+      ) {
+        parent.remove();
+      }
+    });
+
+  if (document.body.style.overflow === 'hidden') {
+    document.body.style.overflow = '';
+  }
 };
 
 const findTellerScript = (): HTMLScriptElement | null =>
@@ -118,7 +154,7 @@ export const ensureTellerScript = (): Promise<void> => {
 
     const script = document.createElement('script');
     script.src = TELLER_SCRIPT_SRC;
-    script.async = true;
+    script.async = false;
     script.setAttribute(TELLER_SCRIPT_ATTR, 'true');
 
     const handleLoad = () => {

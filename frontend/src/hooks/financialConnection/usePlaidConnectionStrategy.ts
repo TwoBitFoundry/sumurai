@@ -2,7 +2,7 @@
  * Plaid-specific link, exchange, sync, and cache refresh behavior.
  */
 
-import { createElement, useCallback, useMemo, useRef, useState } from 'react';
+import { createElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { PlaidLinkSdk, type PlaidLinkSdkHandle } from '@/features/plaid/components/PlaidLinkSdk';
 import { connectionActions } from '@/hooks/financialConnection/connectionState';
@@ -28,6 +28,7 @@ export function usePlaidConnectionStrategy(
 
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const sdkRef = useRef<PlaidLinkSdkHandle>(null);
+  const prefetchInFlightRef = useRef(false);
 
   const handleSuccess = useCallback(
     async (publicToken: string) => {
@@ -85,6 +86,7 @@ export function usePlaidConnectionStrategy(
         } else {
           await invalidateCache();
         }
+        setLinkToken(null);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Connection failed';
         handleError(errorMessage);
@@ -116,6 +118,41 @@ export function usePlaidConnectionStrategy(
     return response.link_token;
   }, [dispatch, isOnline]);
 
+  useEffect(() => {
+    if (!isOnline || linkToken || prefetchInFlightRef.current) {
+      return;
+    }
+
+    let isActive = true;
+    prefetchInFlightRef.current = true;
+
+    const prefetch = async () => {
+      try {
+        const token = await getLinkToken();
+        if (isActive) {
+          flushSync(() => {
+            setLinkToken(token);
+          });
+        }
+      } catch (err) {
+        recordHandledIssue(
+          'financial-connection.plaid.prefetch-link-token',
+          'Failed to prefetch Plaid link token',
+          err,
+          { provider: 'plaid' }
+        );
+      } finally {
+        prefetchInFlightRef.current = false;
+      }
+    };
+
+    void prefetch();
+
+    return () => {
+      isActive = false;
+    };
+  }, [getLinkToken, isOnline, linkToken]);
+
   return useMemo(
     () => ({
       getReady: () => sdkRef.current?.getReady() ?? false,
@@ -136,6 +173,7 @@ export function usePlaidConnectionStrategy(
               token: linkToken,
               onSuccess: handleSuccess,
               onExit: (err) => {
+                setLinkToken(null);
                 dispatch(connectionActions.patch({ connectionInProgress: false }));
                 if (err) {
                   handleError(POPUP_BLOCKED_MESSAGE);
