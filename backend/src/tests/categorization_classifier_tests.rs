@@ -1,6 +1,7 @@
 use crate::models::predicted_category::Confidence;
 use crate::services::categorization::classifier_labels::{
-    classify_logits, format_classifier_input, pfc_primary_for_classifier_label,
+    classify_logits, deterministic_prediction, format_classifier_input,
+    pfc_primary_for_classifier_label,
 };
 use rust_decimal::Decimal;
 
@@ -166,4 +167,42 @@ fn given_classifier_logits_below_threshold_when_classifying_then_returns_other()
 
     assert_eq!(prediction.primary, "OTHER");
     assert_eq!(prediction.confidence, Confidence::Low);
+}
+
+#[test]
+fn given_keyword_matches_when_classifying_then_returns_deterministic_prediction() {
+    let cases = vec![
+        ("[credit] ACME CORP PAYROLL PPD ID 123456", "INCOME"),
+        ("[credit] ACME CORP PAY", "INCOME"),
+        ("[credit] Zelis Healthcaredirect Dep0725", "INCOME"),
+        ("[credit] ACME CORP DIRECT DEP", "INCOME"),
+        ("[debit] OVERDRAFT FEE", "BANK_FEES"),
+        ("[debit] MOBILE CHECK DEPOSIT REVERSAL ATM FEE", "BANK_FEES"),
+        ("[debit] MORTGAGE PAYMENT", "LOAN_PAYMENTS"),
+        ("[debit] APARTMENT RENT", "RENT_AND_UTILITIES"),
+        ("[debit] ELECTRIC BILL AUTOPAY", "RENT_AND_UTILITIES"),
+        ("[debit] PHARMACY RX", "MEDICAL"),
+        ("[debit] BARBER SHOP", "PERSONAL_CARE"),
+        ("[debit] AIRLINE TICKET", "TRAVEL"),
+        ("[debit] GAS STATION FUEL", "TRANSPORTATION"),
+        ("[debit] SUPERMARKET", "FOOD_AND_DRINK"),
+        ("[debit] STREAMING SUBSCRIPTION", "ENTERTAINMENT"),
+        ("[debit] WIRE TRANSFER", "TRANSFER_OUT"),
+        ("[debit] ONLINE XFER TO SAVINGS", "TRANSFER_OUT"),
+        ("[debit] Internet Xfer To Chkg Xxxxx137", "TRANSFER_OUT"),
+        ("[credit] VENMO CASHOUT TRANSFER", "TRANSFER_IN"),
+        ("[credit] ONLINE XFER FROM CHECKING", "TRANSFER_IN"),
+        ("[credit] Internet Xfer From Chkg Xxxxx1", "TRANSFER_IN"),
+    ];
+
+    for (input, expected_primary) in cases {
+        let prediction = deterministic_prediction(input).unwrap();
+        assert_eq!(prediction.primary, expected_primary, "{input}");
+        assert_eq!(prediction.confidence, Confidence::High);
+    }
+}
+
+#[test]
+fn given_no_keyword_match_when_classifying_then_defers_to_model() {
+    assert!(deterministic_prediction("[debit] BLUE OAK MARKETPLACE").is_none());
 }

@@ -15,7 +15,9 @@ use std::fs;
 use std::sync::{Arc, Mutex};
 
 #[cfg(not(test))]
-use crate::services::categorization::classifier_labels::classify_logits;
+use crate::services::categorization::classifier_labels::{
+    classify_logits, deterministic_prediction,
+};
 use async_trait::async_trait;
 #[cfg(not(test))]
 use ndarray::{Array2, Ix2};
@@ -169,10 +171,30 @@ impl CategorizationService {
             return Ok(Vec::new());
         }
 
+        let mut predictions = vec![None; inputs.len()];
+        let mut model_inputs = Vec::new();
+        let mut model_indexes = Vec::new();
+
+        for (index, input) in inputs.iter().enumerate() {
+            if let Some(prediction) = deterministic_prediction(input) {
+                predictions[index] = Some(prediction);
+            } else {
+                model_indexes.push(index);
+                model_inputs.push(input.clone());
+            }
+        }
+
+        if model_inputs.is_empty() {
+            return Ok(predictions.into_iter().flatten().collect());
+        }
+
         let mut tokenizer = tokenizer.clone();
         configure_tokenizer(&mut tokenizer, max_seq_len);
         let encodings = tokenizer
-            .encode_batch(inputs.iter().map(|input| input.as_str()).collect(), true)
+            .encode_batch(
+                model_inputs.iter().map(|input| input.as_str()).collect(),
+                true,
+            )
             .map_err(|err| anyhow!("failed to tokenize classifier inputs: {err}"))?;
         let input_ids = build_tensor(&encodings, |encoding| encoding.get_ids())?;
         let attention_mask = build_tensor(&encodings, |encoding| encoding.get_attention_mask())?;
@@ -207,11 +229,20 @@ impl CategorizationService {
             .map_err(|err| anyhow!("failed to extract categorization logits: {err}"))?
             .into_dimensionality::<Ix2>()
             .map_err(|err| anyhow!("categorization model output was not 2D: {err}"))?;
-        Ok(logits
+
+        for ((row, input), index) in logits
             .outer_iter()
-            .zip(inputs.iter())
-            .map(|(row, input)| classify_logits(labels, row.as_slice().unwrap_or(&[]), input))
-            .collect())
+            .zip(model_inputs.iter())
+            .zip(model_indexes)
+        {
+            predictions[index] = Some(classify_logits(
+                labels,
+                row.as_slice().unwrap_or(&[]),
+                input,
+            ));
+        }
+
+        Ok(predictions.into_iter().flatten().collect())
     }
 
     #[cfg(test)]

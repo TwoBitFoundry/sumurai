@@ -72,6 +72,237 @@ pub fn classify_logits(labels: &[String], logits: &[f32], input: &str) -> Predic
     }
 }
 
+pub fn deterministic_prediction(input: &str) -> Option<PredictedCategory> {
+    let label = deterministic_label(input)?;
+    let primary = pfc_primary_for_classifier_label(label, input)?;
+
+    Some(PredictedCategory {
+        primary: primary.to_string(),
+        confidence: Confidence::High,
+    })
+}
+
+fn deterministic_label(input: &str) -> Option<&'static str> {
+    let normalized = normalized_text(input);
+    let is_credit = input.trim_start().starts_with("[credit]");
+
+    if has_any(
+        &normalized,
+        &["overdraft", "atm", "service", "maintenance", "late", "fee"],
+    ) {
+        return Some("Fees");
+    }
+
+    if has_any(&normalized, &["xfer"]) {
+        return Some("Transfer");
+    }
+
+    if is_credit
+        && has_any(
+            &normalized,
+            &[
+                "payroll",
+                "deposit",
+                "salary",
+                "interest",
+                "refund",
+                "cashback",
+                "benefit",
+                "pay",
+                "directdep",
+            ],
+        )
+    {
+        return Some("Income");
+    }
+
+    if has_any(&normalized, &["mortgage", "loan", "escrow", "principal"]) {
+        return Some("Mortgage");
+    }
+
+    if has_any(&normalized, &["apartment", "rent", "property", "lease"]) {
+        return Some("Rent");
+    }
+
+    if has_any(
+        &normalized,
+        &[
+            "pharmacy",
+            "prescription",
+            "rx",
+            "doctor",
+            "dental",
+            "dentist",
+            "vision",
+            "hospital",
+            "urgent",
+            "medical",
+            "copay",
+        ],
+    ) {
+        return Some("Healthcare");
+    }
+
+    if has_any(
+        &normalized,
+        &["barber", "salon", "spa", "beauty", "nail", "gym", "fitness"],
+    ) {
+        return Some("Personal Care");
+    }
+
+    if has_any(
+        &normalized,
+        &[
+            "airline", "airlines", "hotel", "motel", "lodging", "resort", "rental", "airport",
+            "cruise",
+        ],
+    ) {
+        return Some("Travel");
+    }
+
+    if has_any(
+        &normalized,
+        &[
+            "fuel",
+            "charging",
+            "parking",
+            "toll",
+            "rideshare",
+            "taxi",
+            "transit",
+            "dmv",
+            "gasoline",
+        ],
+    ) {
+        return Some("Transportation");
+    }
+
+    if has_any(
+        &normalized,
+        &[
+            "electric",
+            "utility",
+            "utilities",
+            "water",
+            "gas",
+            "internet",
+            "phone",
+            "trash",
+            "sewer",
+            "solar",
+        ],
+    ) {
+        return Some("Utilities");
+    }
+
+    if has_any(
+        &normalized,
+        &[
+            "grocery",
+            "groceries",
+            "supermarket",
+            "farmers",
+            "warehouse",
+        ],
+    ) {
+        return Some("Groceries");
+    }
+
+    if has_any(
+        &normalized,
+        &[
+            "restaurant",
+            "coffee",
+            "cafe",
+            "pizza",
+            "burger",
+            "taco",
+            "delivery",
+            "food",
+        ],
+    ) {
+        return Some("Restaurants");
+    }
+
+    if has_any(
+        &normalized,
+        &["streaming", "subscription", "monthly", "annual", "saas"],
+    ) {
+        return Some("Subscription");
+    }
+
+    if has_any(
+        &normalized,
+        &[
+            "movie",
+            "theater",
+            "cinema",
+            "concert",
+            "event",
+            "ticket",
+            "gaming",
+            "sportsbook",
+            "casino",
+        ],
+    ) {
+        return Some("Entertainment");
+    }
+
+    if has_any(
+        &normalized,
+        &[
+            "tuition",
+            "student",
+            "course",
+            "certification",
+            "textbook",
+            "tutoring",
+        ],
+    ) {
+        return Some("Education");
+    }
+
+    if has_any(&normalized, &["insurance", "premium", "warranty"]) {
+        return Some("Insurance");
+    }
+
+    if has_any(
+        &normalized,
+        &[
+            "wire",
+            "ach",
+            "transfer",
+            "venmo",
+            "zelle",
+            "cashapp",
+            "xfer",
+            "brokerage",
+            "sweep",
+            "autopay",
+            "cashier",
+        ],
+    ) {
+        return Some("Transfer");
+    }
+
+    if has_any(
+        &normalized,
+        &[
+            "department",
+            "order",
+            "ecommerce",
+            "pet",
+            "liquor",
+            "hardware",
+            "electronics",
+        ],
+    ) {
+        return Some("Shopping");
+    }
+
+    None
+}
+
 fn softmax(logits: &[f32]) -> Vec<f32> {
     let max = logits.iter().copied().fold(f32::NEG_INFINITY, f32::max);
     let exp_values = logits
@@ -84,6 +315,18 @@ fn softmax(logits: &[f32]) -> Vec<f32> {
     }
 
     exp_values.iter().map(|value| value / sum).collect()
+}
+
+fn normalized_text(input: &str) -> String {
+    input
+        .to_ascii_lowercase()
+        .chars()
+        .filter(|value| value.is_ascii_alphanumeric())
+        .collect::<String>()
+}
+
+fn has_any(normalized: &str, keywords: &[&str]) -> bool {
+    keywords.iter().any(|keyword| normalized.contains(keyword))
 }
 
 fn other_prediction() -> PredictedCategory {
