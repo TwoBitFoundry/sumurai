@@ -45,6 +45,9 @@ utoipa = { version = "5.5", features = ["axum_extras", "chrono", "uuid"] }
 utoipa-scalar = "0.3"
 axum-tracing-opentelemetry = "0.33"
 tower_governor = { version = "0.8.0", default-features = false, features = ["axum"] }
+ort = { version = "2.0.0-rc.12", default-features = false, features = ["api-24", "load-dynamic", "ndarray"] }
+tokenizers = { version = "0", default-features = false, features = ["onig"] }
+ndarray = "0.17"
 
 [dev-dependencies]
 mockall = "0.14"

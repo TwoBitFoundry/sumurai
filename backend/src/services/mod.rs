@@ -3,6 +3,7 @@ pub mod auth_service;
 pub mod authorization_service;
 pub mod budget_service;
 pub mod cache_service;
+pub mod categorization;
 pub mod connection_service;
 pub mod import_service;
 pub mod otel_traces_relay;
@@ -15,6 +16,7 @@ pub use auth_service::AuthService;
 pub use authorization_service::AuthorizationService;
 pub use budget_service::BudgetService;
 pub use cache_service::{CacheService, RedisCache};
+pub use categorization::categorization_service::{CategorizationService, Categorizer};
 pub use connection_service::{
     ConnectionService, ExchangeTokenError, LinkTokenError, ProviderSyncError, SyncConnectionParams,
     TellerConnectError, TellerSyncError,

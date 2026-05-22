@@ -322,7 +322,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
   }, [applicationId, clearError, enabled, handleError, isOnline]);
 
   const tellerApplicationIdForSdk =
-    enabled && tellerConnectNonce > 0 && applicationId ? applicationId : '';
+    enabled && isOnline && tellerConnectNonce > 0 && applicationId ? applicationId : '';
 
   const onScriptLoadFailed = useCallback(() => {
     tellerSdkFailedRef.current = true;
@@ -334,14 +334,20 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
       if (!enabled) {
         return;
       }
-      handleError(err instanceof Error ? err.message : 'Failed to complete bank connection');
+      handleError(
+        err instanceof Error && err.message.includes('did not finish loading')
+          ? TELLER_CONNECT_LOAD_FAILED_MESSAGE
+          : err instanceof Error
+            ? err.message
+            : 'Failed to complete bank connection'
+      );
     },
     [enabled, handleError]
   );
 
   const tellerConnectMount = enabled
     ? createElement(TellerConnectSdk, {
-        key: tellerConnectNonce,
+        key: `${tellerConnectNonce}:${applicationId}:${environment}`,
         ref: tellerSdkRef,
         applicationId: tellerApplicationIdForSdk,
         environment,

@@ -22,6 +22,14 @@ cd sumurai
 git checkout -b feat/my-change
 ```
 
+Before the first backend build, fetch the model assets:
+
+```bash
+./backend/scripts/fetch-models.sh
+```
+
+The backend Docker build performs the same fetch automatically, but local `cargo build` expects the assets to be present first.
+
 ## Open source and AI-assisted contributions
 
 This project treats **GitHub Actions as the merge gate**. The default Git hook trades some parity for contributor time.

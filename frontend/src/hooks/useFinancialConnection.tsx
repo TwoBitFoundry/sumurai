@@ -136,6 +136,18 @@ export function useFinancialConnection(
     sdkFailedRef.current = false;
 
     try {
+      if (strategyRef.current.getReady()) {
+        try {
+          strategyRef.current.open();
+        } catch (err) {
+          recordHandledIssue('financial-connection.open', `Failed to open ${provider}`, err, {
+            provider,
+          });
+          handleError(POPUP_BLOCKED_MESSAGE);
+        }
+        return;
+      }
+
       flushSync(() => {
         setSdkNonce((n) => n + 1);
       });

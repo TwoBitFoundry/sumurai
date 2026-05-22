@@ -76,7 +76,7 @@ fn multipart_body(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn authenticated_multipart_request(
+pub(crate) fn authenticated_multipart_request(
     token: &str,
     uri: &str,
     boundary: &str,

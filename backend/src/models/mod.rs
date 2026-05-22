@@ -8,6 +8,7 @@ pub mod cache;
 pub mod import;
 pub mod ip_ban;
 pub mod plaid;
+pub mod predicted_category;
 pub mod query;
 pub mod rate_limit;
 pub mod transaction;

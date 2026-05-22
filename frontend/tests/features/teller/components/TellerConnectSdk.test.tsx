@@ -48,6 +48,7 @@ describe('TellerConnectSdk', () => {
     expect(setup).toHaveBeenCalledWith(
       expect.objectContaining({
         applicationId: 'app-123',
+        products: ['balance', 'transactions'],
       })
     );
 
@@ -113,6 +114,7 @@ describe('TellerConnectSdk', () => {
 
     const script = appendChildSpy.mock.calls[0][0] as HTMLScriptElement;
     expect(script.crossOrigin).toBeNull();
+    expect(script.async).toBe(false);
 
     Object.assign(window, {
       TellerConnect: {
@@ -148,5 +150,64 @@ describe('TellerConnectSdk', () => {
     await waitFor(() => expect(onScriptLoadFailed).toHaveBeenCalled());
     expect(appendChildSpy).not.toHaveBeenCalled();
     expect(staleScript.isConnected).toBe(true);
+  });
+
+  it('removes stale Teller iframe DOM on unmount', async () => {
+    const iframe = document.createElement('iframe');
+    iframe.src = 'https://teller.io/connect/app_123';
+    iframe.id = 'teller-connect-window';
+    document.body.style.overflow = 'hidden';
+    document.body.appendChild(iframe);
+
+    const { unmount } = render(
+      <TellerConnectSdk ref={createRef()} applicationId="app-123" gateway={createGateway()} />
+    );
+
+    await waitFor(() => expect(setup).toHaveBeenCalled());
+
+    unmount();
+
+    expect(document.querySelector('iframe[src*="teller.io/connect"]')).toBeNull();
+    expect(document.querySelector('#teller-connect-window')).toBeNull();
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('cleans up Teller iframe DOM when open never initializes', async () => {
+    jest.useFakeTimers();
+    const onEnrollmentError = jest.fn();
+    open.mockImplementation(() => {
+      const iframe = document.createElement('iframe');
+      iframe.id = 'teller-connect-window';
+      iframe.src = 'https://teller.io/connect/app_123';
+      document.body.style.overflow = 'hidden';
+      document.body.appendChild(iframe);
+    });
+
+    const ref = createRef<TellerConnectSdkHandle>();
+    render(
+      <TellerConnectSdk
+        ref={ref}
+        applicationId="app-123"
+        gateway={createGateway()}
+        onEnrollmentError={onEnrollmentError}
+      />
+    );
+
+    await waitFor(() => expect(ref.current?.getReady()).toBe(true));
+
+    act(() => {
+      ref.current?.open();
+    });
+
+    expect(document.querySelector('#teller-connect-window')).not.toBeNull();
+
+    act(() => {
+      jest.advanceTimersByTime(8000);
+    });
+
+    expect(document.querySelector('#teller-connect-window')).toBeNull();
+    expect(document.body.style.overflow).toBe('');
+    expect(onEnrollmentError).toHaveBeenCalledWith(expect.any(Error));
+    jest.useRealTimers();
   });
 });

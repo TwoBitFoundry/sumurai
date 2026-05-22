@@ -11,27 +11,27 @@ describe('invalidateStaleCacheQueries', () => {
 
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ['accounts'],
-      refetchType: 'all',
+      refetchType: 'active',
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ['transactions'],
-      refetchType: 'all',
+      refetchType: 'active',
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ['analytics'],
-      refetchType: 'all',
+      refetchType: 'active',
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ['budgets'],
-      refetchType: 'all',
+      refetchType: 'active',
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ['plaid', 'connections'],
-      refetchType: 'all',
+      refetchType: 'active',
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ['teller', 'connections'],
-      refetchType: 'all',
+      refetchType: 'active',
     });
     expect(invalidateQueries).toHaveBeenCalledTimes(6);
   });

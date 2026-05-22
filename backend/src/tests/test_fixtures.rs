@@ -1,8 +1,11 @@
+use anyhow::Result;
+use async_trait::async_trait;
 use chrono::{NaiveDate, Utc};
 use rust_decimal_macros::dec;
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::models::predicted_category::PredictedCategory;
 use crate::models::{auth::User, transaction::Transaction};
 use crate::providers::ProviderRegistry;
 
@@ -18,6 +21,7 @@ use crate::services::{
     repository_service::DatabaseRepository,
     repository_service::MockDatabaseRepository,
     sync_service::SyncService,
+    Categorizer,
 };
 
 use crate::config::MockEnvironment;
@@ -32,6 +36,19 @@ use axum::{
 };
 
 pub struct TestFixtures;
+
+struct NoopCategorizer;
+
+#[async_trait]
+impl Categorizer for NoopCategorizer {
+    async fn categorize_batch(&self, _descriptions: Vec<String>) -> Result<Vec<PredictedCategory>> {
+        Ok(Vec::new())
+    }
+}
+
+fn noop_categorizer() -> Arc<dyn Categorizer> {
+    Arc::new(NoopCategorizer)
+}
 
 impl TestFixtures {
     fn create_test_config() -> Config {
@@ -276,6 +293,7 @@ impl TestFixtures {
             config,
             db_repository,
             cache_service,
+            categorizer: noop_categorizer(),
             connection_service,
             auth_service,
             provider_registry,
@@ -387,6 +405,7 @@ impl TestFixtures {
             config,
             db_repository,
             cache_service,
+            categorizer: noop_categorizer(),
             connection_service,
             auth_service,
             provider_registry,
@@ -399,6 +418,15 @@ impl TestFixtures {
     pub async fn create_test_app_with_db_and_cache(
         mock_db: MockDatabaseRepository,
         mock_cache: MockCacheService,
+    ) -> Result<Router, anyhow::Error> {
+        Self::create_test_app_with_db_cache_and_categorizer(mock_db, mock_cache, noop_categorizer())
+            .await
+    }
+
+    pub async fn create_test_app_with_db_cache_and_categorizer(
+        mock_db: MockDatabaseRepository,
+        mock_cache: MockCacheService,
+        categorizer: Arc<dyn Categorizer>,
     ) -> Result<Router, anyhow::Error> {
         let plaid_client = Arc::new(RealPlaidClient::new(
             "test_client_id".to_string(),
@@ -454,6 +482,7 @@ impl TestFixtures {
             config,
             db_repository,
             cache_service,
+            categorizer,
             connection_service,
             auth_service,
             provider_registry,
