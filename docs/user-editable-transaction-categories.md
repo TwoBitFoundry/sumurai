@@ -198,15 +198,17 @@ Design rules (confirmed with the user):
 3. **Do not** modify `upsert_transactions_batch` or any provider-sync write path. The `ON CONFLICT DO UPDATE` at [repository_service.rs:621](backend/src/services/repository_service.rs) already excludes category columns from updates, so historical overrides survive future syncs without code change.
 
 **Acceptance criteria.**
-- [ ] List returns `effective_category` from override when one exists; `category_primary` otherwise.
-- [ ] Filtering by an overridden custom category returns exactly the matching rows.
-- [ ] Filtering by a system category returns rows whose `category_primary` is that slug AND rows overridden TO that slug.
-- [ ] Deleting the underlying custom cascades the override away; subsequent list returns the original `category_primary`.
-- [ ] Two rows with the same `normalized_merchant` (`"STARBUCKS #123"` and `"STARBUCKS 4421"`) both pick up the same override.
-- [ ] Insights aggregation buckets respect the override.
-- [ ] **Pre-existing transaction-related tests still pass** (this phase changes shared read paths): `cargo test --manifest-path backend/Cargo.toml --locked --all-targets`.
-- [ ] `cargo fmt --check`, `cargo check --all-targets`, `cargo clippy ... -D warnings` all pass.
-- [ ] No provider-sync or import handler changes.
+- [x] List returns `effective_category` from override when one exists; `category_primary` otherwise.
+- [x] Filtering by an overridden custom category returns exactly the matching rows.
+- [x] Filtering by a system category returns rows whose `category_primary` is that slug AND rows overridden TO that slug.
+- [x] Deleting the underlying custom cascades the override away; subsequent list returns the original `category_primary`.
+- [x] Two rows with the same `normalized_merchant` (`"STARBUCKS #123"` and `"STARBUCKS 4421"`) both pick up the same override.
+- [x] Insights aggregation buckets respect the override.
+- [x] **Pre-existing transaction-related tests still pass** (this phase changes shared read paths): `cargo test --manifest-path backend/Cargo.toml --locked --all-targets`.
+- [x] `cargo fmt --check`, `cargo check --all-targets`, `cargo clippy ... -D warnings` all pass.
+- [x] No provider-sync or import handler changes.
+
+**TDD log (Phase 4):** 4 tests in `read_path_overlay_tests.rs` covering: effective category returns when override exists, stored category fallback when no override, filtering by overridden category, and insights aggregation by effective category. All 331 backend tests pass (327 pre-existing + 4 new). Commit: ada49c7.
 
 ---
 
