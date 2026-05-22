@@ -12,7 +12,7 @@ import {
   YAxis,
 } from 'recharts';
 import type { DotItemDotProps } from 'recharts/types/util/types';
-import { cn, EmptyState } from '@/ui/primitives';
+import { cn, EmptyState, Pill } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
   border as semanticBorders,
@@ -35,6 +35,7 @@ import { TopMerchantsList } from '../features/analytics/components/TopMerchantsL
 import { useAnalytics } from '../features/analytics/hooks/useAnalytics';
 import { useDebouncedChartRecalc } from '../features/analytics/hooks/useDebouncedChartRecalc';
 import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries';
+import { useCategories } from '../features/transactions/hooks/useCategories';
 import { PageLayout } from '../layouts/PageLayout';
 import type { DateRangeKey as DateRange } from '../utils/dateRanges';
 import { fmtUSD } from '../utils/format';
@@ -57,6 +58,7 @@ const DashboardPage: React.FC<{
   setDateRange: (range: DateRange) => void;
 }> = ({ dateRange }) => {
   const { colors } = useTheme();
+  const { accentIndexByName } = useCategories();
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
   const analytics = useAnalytics(dateRange);
@@ -162,10 +164,9 @@ const DashboardPage: React.FC<{
                       Top Categories
                     </div>
                     <div className={cn('grid', 'grid-cols-2', 'gap-2')}>
-                      {top.map((cat, idx) => {
+                      {top.map((cat) => {
                         const percentage =
                           categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0';
-                        const color = colors.chart.primary[idx % colors.chart.primary.length];
                         const isHovered = hoveredCategory === cat.name;
                         return (
                           // biome-ignore lint/a11y/noStaticElementInteractions: visual hover only
@@ -176,20 +177,14 @@ const DashboardPage: React.FC<{
                             onMouseEnter={() => setHoveredCategory(cat.name)}
                             onMouseLeave={() => setHoveredCategory(null)}
                           >
-                            <div className={cn('flex', 'items-center', 'gap-2', 'min-w-0', 'mb-1')}>
-                              <div
-                                className={cn('w-2.5', 'h-2.5', 'rounded-full', 'flex-shrink-0')}
-                                style={{ backgroundColor: color }}
-                              />
-                              <span
-                                className={cn(
-                                  uiTypographyRecipes.captionStrong,
-                                  uiTextRecipes.primary,
-                                  'truncate'
-                                )}
+                            <div className={cn('mb-1')}>
+                              <Pill
+                                categoryName={cat.name}
+                                accentIndexByName={accentIndexByName}
+                                className={cn('max-w-full')}
                               >
                                 {cat.name}
-                              </span>
+                              </Pill>
                             </div>
                             <div className={cn('flex', 'items-baseline', 'justify-between')}>
                               <div

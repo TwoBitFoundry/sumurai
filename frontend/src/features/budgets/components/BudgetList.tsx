@@ -10,6 +10,7 @@ import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes
 import { getHeroAccentForCategoryKey, getHeroAccentTheme } from '@/ui/tokens';
 import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
+import { useCategories } from '../../transactions/hooks/useCategories';
 import type { BudgetProgressEntry } from '../hooks/useBudgets';
 import BudgetProgress from './BudgetProgress';
 
@@ -30,6 +31,7 @@ export function BudgetList({
   onSaveEdit: (id: string, amount: number) => void;
   onDelete: (id: string) => void;
 }) {
+  const { accentIndexByName } = useCategories();
   const [amountDrafts, setAmountDrafts] = React.useState<Record<string, string>>({});
 
   if (items.length === 0) {
@@ -49,7 +51,7 @@ export function BudgetList({
       {items.map((b) => {
         const isOver = b.spent > b.amount;
         const displayName = formatCategoryName(b.category);
-        const tagTheme = getTagThemeForCategory(displayName);
+        const tagTheme = getTagThemeForCategory(b.category, accentIndexByName);
         const heroStyles = getHeroAccentTheme(getHeroAccentForCategoryKey(tagTheme.key));
         const ringColorStyle = {
           '--tw-ring-color': `${heroStyles.ringHex}66`,
@@ -90,6 +92,7 @@ export function BudgetList({
               <Pill
                 variant="category"
                 categoryName={displayName}
+                accentIndexByName={accentIndexByName}
                 className={cn(
                   'relative z-10 transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10'
                 )}
@@ -240,14 +243,6 @@ export function BudgetList({
                   {isEditing ? (
                     <>
                       <IconButton
-                        variant="primary"
-                        onClick={() => onSaveEdit(b.id, Number(draft))}
-                        title="Save"
-                        aria-label="Save budget"
-                      >
-                        <CheckIcon />
-                      </IconButton>
-                      <IconButton
                         variant="ghost"
                         className={cn(appTitleBarRecipes.settingsIdle)}
                         onClick={onCancelEdit}
@@ -255,6 +250,14 @@ export function BudgetList({
                         aria-label="Cancel edit"
                       >
                         <XMarkIcon />
+                      </IconButton>
+                      <IconButton
+                        variant="success"
+                        onClick={() => onSaveEdit(b.id, Number(draft))}
+                        title="Save"
+                        aria-label="Save budget"
+                      >
+                        <CheckIcon />
                       </IconButton>
                     </>
                   ) : (

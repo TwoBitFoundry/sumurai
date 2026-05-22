@@ -1,6 +1,6 @@
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import type { CustomCategory } from '@/types/api';
-import { Button, cn, Modal } from '@/ui/primitives';
+import { Button, cn, Modal, ModalDrawerHeader } from '@/ui/primitives';
 import { useDeleteCustomCategory } from '../hooks/useDeleteCustomCategory';
 
 interface Props {
@@ -28,6 +28,7 @@ export function DeleteCustomCategoryConfirm({ open, category, onRequestClose, on
     <Modal
       isOpen={open}
       onClose={onRequestClose}
+      presentation={isMobile ? 'drawer' : 'centered'}
       labelledBy="delete-custom-category-title"
       description="Delete custom category confirmation"
       data-testid={isMobile ? 'delete-custom-category-sheet' : 'delete-custom-category-dialog'}
@@ -39,7 +40,6 @@ export function DeleteCustomCategoryConfirm({ open, category, onRequestClose, on
             )
           : undefined
       }
-      gridClassName={isMobile ? cn('items-end', 'p-0') : undefined}
       className={cn(
         isMobile
           ? 'w-full max-w-none rounded-b-none rounded-t-[2rem] px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5'
@@ -54,14 +54,22 @@ export function DeleteCustomCategoryConfirm({ open, category, onRequestClose, on
       )}
     >
       <div className={cn('space-y-5')}>
-        <div className={cn('space-y-2')}>
-          <h2 id="delete-custom-category-title" className={cn('text-lg font-semibold')}>
-            {category ? `Delete '${category.display_name}'?` : 'Delete custom category?'}
-          </h2>
-          <p className={cn('text-sm text-slate-600 dark:text-slate-300')}>
-            Transactions in this category will fall back to their original assigned category.
-          </p>
-        </div>
+        {isMobile ? (
+          <ModalDrawerHeader onClose={onRequestClose} closeLabel="Close delete category dialog">
+            <h2 id="delete-custom-category-title" className={cn('text-lg font-semibold')}>
+              {category ? `Delete '${category.display_name}'?` : 'Delete custom category?'}
+            </h2>
+          </ModalDrawerHeader>
+        ) : (
+          <div className={cn('space-y-2')}>
+            <h2 id="delete-custom-category-title" className={cn('text-lg font-semibold')}>
+              {category ? `Delete '${category.display_name}'?` : 'Delete custom category?'}
+            </h2>
+          </div>
+        )}
+        <p className={cn('text-sm text-slate-600 dark:text-slate-300')}>
+          Transactions in this category will fall back to their original assigned category.
+        </p>
         {error ? (
           <p className={cn('text-sm text-red-600 dark:text-red-300')}>
             {error instanceof Error ? error.message : 'Failed to delete category.'}

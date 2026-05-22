@@ -21,6 +21,7 @@ interface Props {
   totalPages: number;
   pageSize: number;
   isLoading?: boolean;
+  bodyAnimationKey?: string;
   onPrev: () => void;
   onNext: () => void;
 }
@@ -59,9 +60,11 @@ export const TransactionsTable: React.FC<Props> = ({
   totalPages,
   pageSize,
   isLoading = false,
+  bodyAnimationKey,
   onPrev,
   onNext,
 }) => {
+  const tbodyAnimationKey = bodyAnimationKey ?? String(currentPage);
   const visibleItems = items.slice(0, pageSize);
   const placeholderCount = Math.max(0, pageSize - visibleItems.length);
   const placeholderRows = useMemo(
@@ -151,7 +154,7 @@ export const TransactionsTable: React.FC<Props> = ({
             </thead>
             <AnimatePresence mode="wait" initial={false}>
               <motion.tbody
-                key={currentPage}
+                key={tbodyAnimationKey}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}

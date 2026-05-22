@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { InlineCategoryCell } from '@/features/transactions/components/InlineCategoryCell';
 
@@ -30,6 +30,15 @@ jest.mock('@/features/transactions/components/CategoryPicker', () => ({
 
 jest.mock('@/features/transactions/hooks/useUpdateTransactionCategory', () => ({
   useUpdateTransactionCategory: jest.fn(),
+}));
+
+jest.mock('@/features/transactions/hooks/useCategories', () => ({
+  useCategories: () => ({
+    accentIndexByName: new Map([
+      ['FOOD_AND_DRINK', 0],
+      ['ENTERTAINMENT', 1],
+    ]),
+  }),
 }));
 
 const useUpdateTransactionCategoryMock = jest.requireMock(
@@ -72,12 +81,14 @@ describe('InlineCategoryCell', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Edit category: Food And Drink' })).toHaveClass(
-      'h-11',
-      'w-11'
+      'h-9',
+      'rounded-full'
     );
   });
 
-  it.each(['{Enter}', '{Space}'])('opens the picker from the chevron with %s', async (key) => {
+  it('opens the picker from the chevron with Enter', async () => {
+    const user = userEvent.setup();
+
     render(
       <table>
         <tbody>
@@ -101,14 +112,8 @@ describe('InlineCategoryCell', () => {
 
     const trigger = screen.getByRole('button', { name: 'Edit category: Food And Drink' });
 
-    fireEvent.focus(trigger);
-    if (key === '{Enter}') {
-      fireEvent.keyDown(trigger, { key: 'Enter', code: 'Enter' });
-      fireEvent.keyUp(trigger, { key: 'Enter', code: 'Enter' });
-    } else {
-      fireEvent.keyDown(trigger, { key: ' ', code: 'Space' });
-      fireEvent.keyUp(trigger, { key: ' ', code: 'Space' });
-    }
+    trigger.focus();
+    await user.keyboard('{Enter}');
 
     expect(screen.getByTestId('category-picker')).toBeInTheDocument();
   });

@@ -29,7 +29,7 @@ import {
   sampleTopMerchants,
 } from '@/storybook/fixtures/analytics';
 import { sampleNetWorthSeries } from '@/storybook/fixtures/netWorth';
-import { Button, cn } from '@/ui/primitives';
+import { Button, cn, Pill } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
   border as semanticBorders,
@@ -197,14 +197,13 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
                   Top Categories
                 </div>
                 <div className={cn('grid', 'grid-cols-2', 'gap-2')}>
-                  {byCat.slice(0, 4).map((cat, idx) => {
+                  {byCat.slice(0, 4).map((cat) => {
                     const categorySum = byCat.reduce(
                       (sum, c) => sum + (Number.isFinite(c.value) ? c.value : 0),
                       0
                     );
                     const percentage =
                       categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0';
-                    const color = colors.chart.primary[idx % colors.chart.primary.length];
                     const isHovered = hoveredCategory === cat.name;
                     return (
                       // biome-ignore lint/a11y/noStaticElementInteractions: mirrors dashboard hover sync with donut
@@ -215,21 +214,10 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
                         onMouseEnter={() => setHoveredCategory(cat.name)}
                         onMouseLeave={() => setHoveredCategory(null)}
                       >
-                        <div className={cn('flex', 'items-center', 'gap-2', 'min-w-0', 'mb-1')}>
-                          <div
-                            className={cn('w-2.5', 'h-2.5', 'rounded-full', 'flex-shrink-0')}
-                            style={{ backgroundColor: color }}
-                          />
-                          <span
-                            className={cn(
-                              uiTypographyRecipes.caption,
-                              'font-medium',
-                              uiTextRecipes.body,
-                              'truncate'
-                            )}
-                          >
+                        <div className={cn('mb-1')}>
+                          <Pill categoryName={cat.name} className={cn('max-w-full')}>
                             {cat.name}
-                          </span>
+                          </Pill>
                         </div>
                         <div className={cn('flex', 'items-baseline', 'justify-between')}>
                           <div

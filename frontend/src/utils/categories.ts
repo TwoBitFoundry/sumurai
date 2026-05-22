@@ -3,7 +3,7 @@
  */
 
 import type { CustomCategory } from '@/types/api';
-import { getCategoryAccent } from '@/ui/tokens';
+import { getCategoryAccent, getCategoryAccentByIndex } from '@/ui/tokens';
 
 export function formatCategoryName(categoryPrimary: string | undefined | null): string {
   if (!categoryPrimary) return 'Other';
@@ -13,8 +13,31 @@ export function formatCategoryName(categoryPrimary: string | undefined | null): 
     .join(' ');
 }
 
-export function getTagThemeForCategory(name?: string | null) {
+export function sortCategoryNamesAlphabetically(names: string[]): string[] {
+  return [...names].sort((a, b) =>
+    formatCategoryName(a).localeCompare(formatCategoryName(b), undefined, { sensitivity: 'base' })
+  );
+}
+
+export function buildCategoryAccentIndex(names: readonly string[]): ReadonlyMap<string, number> {
+  return new Map(names.map((name, index) => [name, index]));
+}
+
+export function getTagThemeForCategory(
+  name?: string | null,
+  accentIndex?: ReadonlyMap<string, number>
+) {
+  if (accentIndex && name != null) {
+    const index = accentIndex.get(name);
+    if (index !== undefined) {
+      return getCategoryAccentByIndex(index);
+    }
+  }
   return getCategoryAccent(name);
+}
+
+export function getTagThemeForCategoryAtIndex(index: number) {
+  return getCategoryAccentByIndex(index);
 }
 
 export function categoryLookupKey(raw: string): string {

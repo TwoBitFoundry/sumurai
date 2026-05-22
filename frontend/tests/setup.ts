@@ -56,6 +56,17 @@ expect.extend({
   },
 });
 
+jest.mock('@/features/transactions/hooks/useCategories', () => ({
+  useCategories: () => ({
+    system: [],
+    custom: [],
+    all: [],
+    accentIndexByName: new Map<string, number>(),
+    isLoading: false,
+    error: null,
+  }),
+}));
+
 jest.mock('@/observability/TelemetryService', () => ({
   TelemetryService: jest.fn().mockImplementation(() => ({
     initialize: jest.fn().mockImplementation(async () => {}),

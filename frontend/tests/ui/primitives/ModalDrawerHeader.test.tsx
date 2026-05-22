@@ -1,0 +1,20 @@
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { ModalDrawerHeader } from '@/ui/primitives/ModalDrawerHeader';
+
+describe('ModalDrawerHeader', () => {
+  it('renders the label and closes from the header button', async () => {
+    const onClose = jest.fn();
+    const user = userEvent.setup();
+
+    render(
+      <ModalDrawerHeader onClose={onClose} closeLabel="Close drawer">
+        <p>Customize Category</p>
+      </ModalDrawerHeader>
+    );
+
+    expect(screen.getByText('Customize Category')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Close drawer' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});

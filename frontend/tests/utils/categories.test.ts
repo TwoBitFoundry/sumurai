@@ -1,8 +1,43 @@
+import { categoryAccents } from '@/ui/tokens';
 import {
+  buildCategoryAccentIndex,
   categoryLookupKey,
   formatCustomCategoryDisplay,
+  getTagThemeForCategory,
+  getTagThemeForCategoryAtIndex,
+  sortCategoryNamesAlphabetically,
   validateCustomCategoryName,
 } from '@/utils/categories';
+
+describe('category accent index', () => {
+  it('assigns colors by sorted roster index and repeats', () => {
+    const names = sortCategoryNamesAlphabetically(['transportation', 'Coffee', 'food_and_drink']);
+    const accentIndex = buildCategoryAccentIndex(names);
+
+    expect(getTagThemeForCategoryAtIndex(0).key).toBe(categoryAccents[0].key);
+    expect(getTagThemeForCategoryAtIndex(categoryAccents.length).key).toBe(categoryAccents[0].key);
+    expect(getTagThemeForCategory('Coffee', accentIndex).key).toBe(
+      getTagThemeForCategoryAtIndex(0).key
+    );
+    expect(getTagThemeForCategory('food_and_drink', accentIndex).key).toBe(
+      getTagThemeForCategoryAtIndex(1).key
+    );
+  });
+});
+
+describe('sortCategoryNamesAlphabetically', () => {
+  it('sorts system and custom categories by display label', () => {
+    expect(
+      sortCategoryNamesAlphabetically([
+        'transportation',
+        'Coffee',
+        'food_and_drink',
+        'Avocado Toast',
+        'entertainment',
+      ])
+    ).toEqual(['Avocado Toast', 'Coffee', 'entertainment', 'food_and_drink', 'transportation']);
+  });
+});
 
 describe('categoryLookupKey', () => {
   it('lowercases and removes trailing s from each word', () => {

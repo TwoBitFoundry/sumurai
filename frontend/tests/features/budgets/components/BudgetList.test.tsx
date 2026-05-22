@@ -2,6 +2,17 @@ import { render } from '@testing-library/react';
 import { BudgetList } from '@/features/budgets/components/BudgetList';
 import { radius as uiRadiusRecipes } from '@/ui/recipes';
 
+jest.mock('@/features/transactions/hooks/useCategories', () => ({
+  useCategories: () => ({
+    system: [],
+    custom: [],
+    all: [],
+    accentIndexByName: new Map(),
+    isLoading: false,
+    error: null,
+  }),
+}));
+
 describe('BudgetList', () => {
   it('keeps the budget grid on the lg tier without wider desktop escalation', () => {
     const { container } = render(

@@ -27,6 +27,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
     pageItems,
     totalItems,
     totalPages,
+    tableAnimationKey,
     dateRange,
   } = useTransactions({ pageSize: 8, filterControl });
   const {
@@ -139,6 +140,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
             totalPages={totalPages}
             pageSize={8}
             isLoading={isLoading}
+            bodyAnimationKey={tableAnimationKey}
             onPrev={() => setCurrentPage(Math.max(1, currentPage - 1))}
             onNext={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
           />

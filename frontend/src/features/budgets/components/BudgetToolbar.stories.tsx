@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { createRef } from 'react';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { BudgetToolbar } from './BudgetToolbar';
+
+const addButtonRef = createRef<HTMLButtonElement>();
 
 const meta = {
   title: 'Features/Budgets/BudgetToolbar',
@@ -8,8 +11,9 @@ const meta = {
   tags: ['autodocs', 'test'],
   args: {
     loading: false,
-    isAdding: false,
+    isPickerOpen: false,
     showAddButton: true,
+    addButtonRef,
     onAddBudget: fn(),
   },
 } satisfies Meta<typeof BudgetToolbar>;
@@ -29,18 +33,27 @@ export const Default: Story = {
 export const Loading: Story = {
   args: {
     loading: true,
+    isPickerOpen: false,
+    showAddButton: true,
+    addButtonRef,
+    onAddBudget: fn(),
   },
 };
 
-export const AddingMode: Story = {
+export const PickerOpen: Story = {
   args: {
-    isAdding: true,
+    isPickerOpen: true,
     showAddButton: true,
+    addButtonRef,
+    onAddBudget: fn(),
   },
 };
 
 export const AddHidden: Story = {
   args: {
     showAddButton: false,
+    isPickerOpen: false,
+    addButtonRef,
+    onAddBudget: fn(),
   },
 };

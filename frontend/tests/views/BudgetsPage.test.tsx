@@ -7,6 +7,17 @@ jest.mock('@/features/budgets/hooks/useBudgets', () => ({
   useBudgets: jest.fn(),
 }));
 
+jest.mock('@/features/transactions/hooks/useCategories', () => ({
+  useCategories: () => ({
+    system: [],
+    custom: [],
+    all: [],
+    accentIndexByName: new Map(),
+    isLoading: false,
+    error: null,
+  }),
+}));
+
 jest.mock('@/layouts/PageLayout', () => ({
   PageLayout: ({ children, stats }: { children?: React.ReactNode; stats?: React.ReactNode }) => (
     <div data-testid="page-layout">
@@ -28,6 +39,7 @@ describe('BudgetsPage', () => {
       remove: jest.fn(),
       computedBudgets: [],
       categoryOptions: [],
+      availableCategoryOptions: [],
       usedCategories: new Set(),
       month: new Date('2026-05-01'),
       monthLabel: 'May 2026',

@@ -43,6 +43,7 @@ export interface UseTransactionsResult {
   totalItems: number;
   total: number;
   totalPages: number;
+  tableAnimationKey: string;
 }
 
 export function useTransactions(options: UseTransactionsOptions = {}): UseTransactionsResult {
@@ -235,6 +236,7 @@ export function useTransactions(options: UseTransactionsOptions = {}): UseTransa
     totalItems,
     total: totalItems,
     totalPages,
+    tableAnimationKey: `${currentPage}|${filterKey}`,
   };
 }
 

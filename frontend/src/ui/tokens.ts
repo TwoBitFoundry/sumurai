@@ -419,7 +419,16 @@ export function getThemeColors(mode: ThemeMode): ThemeColors {
   return mode === 'dark' ? themeColors.dark : themeColors.light;
 }
 
-export function getCategoryAccent(name?: string | null): CategoryTheme {
+export function getCategoryAccentByIndex(index: number): CategoryTheme {
+  const normalizedIndex =
+    ((index % categoryAccents.length) + categoryAccents.length) % categoryAccents.length;
+  return categoryAccents[normalizedIndex];
+}
+
+export function getCategoryAccent(name?: string | null, index?: number): CategoryTheme {
+  if (index != null) {
+    return getCategoryAccentByIndex(index);
+  }
   const key = (name || 'Uncategorized').toLowerCase();
   return categoryAccents[hashString(key) % categoryAccents.length];
 }

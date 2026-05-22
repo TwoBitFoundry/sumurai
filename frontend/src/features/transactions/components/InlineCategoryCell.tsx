@@ -1,8 +1,10 @@
 import { ChevronDown } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { Transaction } from '@/types/api';
-import { cn, IconButton, Pill } from '@/ui/primitives';
-import { formatCategoryName } from '@/utils/categories';
+import { Button, cn } from '@/ui/primitives';
+import { controlIconWell } from '@/ui/recipes';
+import { formatCategoryName, getTagThemeForCategory } from '@/utils/categories';
+import { useCategories } from '../hooks/useCategories';
 import { useUpdateTransactionCategory } from '../hooks/useUpdateTransactionCategory';
 import CategoryPicker from './CategoryPicker';
 
@@ -13,6 +15,7 @@ interface Props {
 export function InlineCategoryCell({ transaction }: Props) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
+  const { accentIndexByName } = useCategories();
   const { updateTransactionCategory } = useUpdateTransactionCategory();
 
   const category = transaction.category;
@@ -22,35 +25,29 @@ export function InlineCategoryCell({ transaction }: Props) {
 
   return (
     <div className={cn('inline-flex', 'items-center', 'gap-1.5')}>
-      <Pill
-        variant="category"
-        categoryName={categoryName}
-        className={cn(
-          'transition-all duration-200 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10',
-          isCustom &&
-            'ring-2 ring-[color:color-mix(in_srgb,var(--color-border-focus-active)_70%,white)]'
-        )}
-      >
-        {label}
-      </Pill>
-      <IconButton
+      <Button
         ref={anchorRef}
         type="button"
-        variant="ghost"
-        size="md"
+        variant="filterChip"
+        size="sm"
+        shape="pill"
         aria-label={`Edit category: ${label}`}
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            setOpen((value) => !value);
-          }
-        }}
-        className={cn('shrink-0')}
+        className={cn(
+          'shrink-0',
+          'gap-1.5',
+          'whitespace-nowrap',
+          'backdrop-blur-sm',
+          'ring-1 ring-white/60 dark:ring-white/10',
+          themeTagClasses(categoryName, isCustom, accentIndexByName)
+        )}
       >
-        <ChevronDown />
-      </IconButton>
+        <span>{label}</span>
+        <span className={cn(controlIconWell.sm)} aria-hidden="true">
+          <ChevronDown />
+        </span>
+      </Button>
       <CategoryPicker
         open={open}
         anchorRef={anchorRef}
@@ -69,3 +66,15 @@ export function InlineCategoryCell({ transaction }: Props) {
 }
 
 export default InlineCategoryCell;
+
+function themeTagClasses(
+  categoryName: string,
+  isCustom: boolean,
+  accentIndexByName: ReadonlyMap<string, number>
+): string {
+  const theme = getTagThemeForCategory(categoryName, accentIndexByName);
+  return cn(
+    theme.tag,
+    isCustom && 'ring-2 ring-[color:color-mix(in_srgb,var(--color-border-focus-active)_70%,white)]'
+  );
+}

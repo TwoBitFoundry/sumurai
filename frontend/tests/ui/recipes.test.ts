@@ -8,10 +8,12 @@ import {
   floatingChromeSearch,
   focus,
   font,
+  modalDrawer,
   placeholder,
   semanticPlaceholderTextRecipes,
   semanticTextRecipes,
   status,
+  successCta,
   surface,
   text,
 } from '@/ui/recipes';
@@ -81,6 +83,13 @@ describe('shared UI recipes', () => {
     expect(controlIconWell.sm).toContain(control.glyph.sm);
     expect(controlIconWell.md).toContain(control.glyph.md);
     expect(controlIconWell.lg).toContain(control.glyph.lg);
+  });
+
+  it('exposes the success and drawer modal recipes', () => {
+    expect(successCta.gradient).toContain('from-[var(--color-brand-emerald)]');
+    expect(modalDrawer.formRow).toContain('items-end');
+    expect(modalDrawer.contentMotion).toContain('modal-drawer-content');
+    expect(modalDrawer.overlayMotion).toContain('modal-drawer-overlay');
   });
 
   it('exposes the floating chrome search recipes', () => {

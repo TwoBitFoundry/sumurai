@@ -41,7 +41,11 @@ describe('TransactionsPage', () => {
     jest.mocked(useCategories).mockReturnValue({
       system: ['FOOD_AND_DRINK'],
       custom: [{ id: 'custom-1', display_name: 'Coffee', lookup_key: 'coffee' }],
-      all: ['FOOD_AND_DRINK', 'Coffee'],
+      all: ['Coffee', 'FOOD_AND_DRINK'],
+      accentIndexByName: new Map([
+        ['Coffee', 0],
+        ['FOOD_AND_DRINK', 1],
+      ]),
       isLoading: false,
       error: null,
     } as any);

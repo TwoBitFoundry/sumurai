@@ -5,11 +5,32 @@ import { installFetchRoutes } from '@tests/utils/fetchRoutes';
 import { createProviderConnection, createProviderStatus } from '@tests/utils/fixtures';
 import type { ReactNode } from 'react';
 import { useBudgets } from '@/features/budgets/hooks/useBudgets';
+import { useCategories } from '@/features/transactions/hooks/useCategories';
 import { AccountFilterProvider, useAccountFilter } from '@/hooks/useAccountFilter';
 import { BudgetService } from '@/services/BudgetService';
 import { TransactionService } from '@/services/TransactionService';
 
+jest.mock('@/features/transactions/hooks/useCategories', () => ({
+  useCategories: jest.fn(),
+}));
+
+const useCategoriesMock = jest.mocked(useCategories);
+
 const TestWrapper = AccountFilterTestProvider;
+
+const defaultCategoriesMock = {
+  system: ['FOOD_AND_DRINK', 'ENTERTAINMENT', 'TRANSPORTATION'],
+  custom: [{ id: 'custom-1', display_name: 'Coffee', lookup_key: 'coffee' }],
+  all: ['Coffee', 'ENTERTAINMENT', 'FOOD_AND_DRINK', 'TRANSPORTATION'],
+  accentIndexByName: new Map([
+    ['Coffee', 0],
+    ['ENTERTAINMENT', 1],
+    ['FOOD_AND_DRINK', 2],
+    ['TRANSPORTATION', 3],
+  ]),
+  isLoading: false,
+  error: null,
+};
 
 let fetchMock: ReturnType<typeof installFetchRoutes>;
 
@@ -74,11 +95,58 @@ describe('useBudgets', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    useCategoriesMock.mockReturnValue(defaultCategoriesMock);
     fetchMock = installFetchRoutes({
       'GET /api/budgets': [],
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
+    });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('includes system and custom categories in categoryOptions without month transactions', async () => {
+    fetchMock = installFetchRoutes({
+      'GET /api/budgets': [],
+      'GET /api/transactions': [],
+      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/status': createConnectedStatus(),
+    });
+
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper });
+
+    await waitFor(() => {
+      expect(result.current.categoryOptions).toEqual([
+        'Coffee',
+        'ENTERTAINMENT',
+        'FOOD_AND_DRINK',
+        'TRANSPORTATION',
+      ]);
+      expect(result.current.availableCategoryOptions).toEqual([
+        'Coffee',
+        'ENTERTAINMENT',
+        'FOOD_AND_DRINK',
+        'TRANSPORTATION',
+      ]);
+    });
+  });
+
+  it('excludes categories that already have budgets from availableCategoryOptions', async () => {
+    fetchMock = installFetchRoutes({
+      'GET /api/budgets': [asBudget('1', 'FOOD_AND_DRINK', 100)],
+      'GET /api/transactions': [],
+      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/status': createConnectedStatus(),
+    });
+
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper });
+
+    await waitFor(() => {
+      expect(result.current.availableCategoryOptions).not.toContain('FOOD_AND_DRINK');
+      expect(result.current.availableCategoryOptions).toContain('Coffee');
     });
   });
 

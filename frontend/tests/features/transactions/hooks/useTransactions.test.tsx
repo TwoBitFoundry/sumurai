@@ -528,6 +528,33 @@ describe('useTransactions', () => {
     expect(result.current.currentPage).toBe(1);
   });
 
+  it('updates tableAnimationKey when category changes', async () => {
+    let accountFilterHook: ReturnType<typeof useAccountFilter>;
+
+    const { result } = renderHook(
+      () => {
+        accountFilterHook = useAccountFilter();
+        return useTransactions({ pageSize: 10 });
+      },
+      { wrapper: TestWrapper }
+    );
+
+    await waitFor(() => {
+      expect(accountFilterHook!.allAccountIds).toEqual(['account1', 'account2']);
+    });
+
+    const initialKey = result.current.tableAnimationKey;
+
+    await act(async () => {
+      result.current.setSelectedCategory('FOOD_AND_DRINK');
+    });
+
+    await waitFor(() => {
+      expect(result.current.tableAnimationKey).not.toBe(initialKey);
+      expect(result.current.tableAnimationKey).toContain('FOOD_AND_DRINK');
+    });
+  });
+
   it('should pass account filter to service when not all accounts selected', async () => {
     let accountFilterHook: ReturnType<typeof useAccountFilter>;
 

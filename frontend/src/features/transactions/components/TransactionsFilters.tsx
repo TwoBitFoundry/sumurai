@@ -2,15 +2,15 @@ import { Search } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CustomCategory } from '@/types/api';
-import { Button, cn, IconButton, Input } from '@/ui/primitives';
-import { pillRecipes, pillScrollFadeRecipes } from '@/ui/primitives/Pill';
+import { Button, cn, Input } from '@/ui/primitives';
+import { pillScrollFadeRecipes } from '@/ui/primitives/Pill';
 import {
   control,
   placeholder as uiPlaceholderRecipes,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
+import { formatCategoryName, getTagThemeForCategoryAtIndex } from '../../../utils/categories';
 import DeleteCustomCategoryConfirm from './DeleteCustomCategoryConfirm';
 
 interface Props {
@@ -147,16 +147,22 @@ export const TransactionsFilters: React.FC<Props> = ({
               )}
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-              {categories.map((name) => {
+              {categories.map((name, index) => {
                 const isSelected = selectedCategory === name;
-                const theme = getTagThemeForCategory(name);
+                const theme = getTagThemeForCategoryAtIndex(index);
                 const label = formatCategoryName(name);
                 const customCategory = customCategories.find(
                   (category) => category.display_name === name
                 );
                 const isCustom = Boolean(customCategory);
                 return (
-                  <span key={name} className={cn('relative', 'inline-flex', 'items-center')}>
+                  <span
+                    key={name}
+                    className={cn(
+                      'group relative inline-flex items-center',
+                      isCustom && 'transition-all duration-200 ease-out hover:-translate-y-[2px]'
+                    )}
+                  >
                     <Button
                       type="button"
                       variant="filterChip"
@@ -165,7 +171,8 @@ export const TransactionsFilters: React.FC<Props> = ({
                       onClick={() => onSelectCategory(isSelected ? null : name)}
                       className={cn(
                         'whitespace-nowrap',
-                        isCustom && 'pr-8',
+                        isCustom &&
+                          'pr-10 hover:translate-y-0 hover:shadow-none group-hover:shadow-lg',
                         theme.tag,
                         isSelected
                           ? ['ring-2', theme.ring]
@@ -174,24 +181,51 @@ export const TransactionsFilters: React.FC<Props> = ({
                       aria-pressed={isSelected}
                       title={isSelected ? `Remove filter: ${label}` : `Filter by ${label}`}
                     >
-                      <span className={cn(pillRecipes.dot, theme.dot)} aria-hidden="true" />
                       {label}
                     </Button>
                     {isCustom && customCategory ? (
-                      <IconButton
+                      <button
                         type="button"
-                        variant="ghost"
-                        size="sm"
                         aria-label={`Delete ${label}`}
                         title={`Delete ${label}`}
-                        className={cn('absolute', 'right-0.5', 'top-1/2', '-translate-y-1/2')}
+                        className={cn(
+                          'absolute',
+                          'right-0.5',
+                          'top-1/2',
+                          '-translate-y-1/2',
+                          'inline-flex',
+                          'h-6',
+                          'w-6',
+                          'items-center',
+                          'justify-center',
+                          'border-0',
+                          'bg-transparent',
+                          'p-0',
+                          'text-slate-500',
+                          'text-sm',
+                          'leading-none',
+                          'shadow-none',
+                          'transition-colors',
+                          'duration-200',
+                          'hover:bg-transparent',
+                          'hover:text-slate-700',
+                          'dark:hover:text-slate-300',
+                          'focus-visible:outline-none',
+                          'focus-visible:ring-2',
+                          'focus-visible:ring-[var(--color-border-focus-active)]',
+                          'focus-visible:ring-offset-2',
+                          'focus-visible:ring-offset-white',
+                          'dark:focus-visible:ring-offset-slate-900'
+                        )}
                         onClick={(event) => {
                           event.stopPropagation();
                           setDeleteTarget(customCategory);
                         }}
                       >
-                        <span aria-hidden="true">×</span>
-                      </IconButton>
+                        <span aria-hidden="true" className={cn('relative', '-top-px')}>
+                          ×
+                        </span>
+                      </button>
                     ) : null}
                   </span>
                 );

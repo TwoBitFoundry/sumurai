@@ -32,6 +32,7 @@ export interface PillProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: PillVariant;
   tone?: PillTone;
   categoryName?: string;
+  accentIndexByName?: ReadonlyMap<string, number>;
   children: React.ReactNode;
 }
 
@@ -46,18 +47,18 @@ export function Pill({
   variant = 'category',
   tone = 'info',
   categoryName,
+  accentIndexByName,
   className,
   children,
   ...props
 }: PillProps) {
   const base = pillRecipes.base;
-  const dot = pillRecipes.dot;
 
   if (variant === 'status') {
     const theme = statusThemes[tone];
     return (
       <span className={cn(base, theme.wrapper, className)} {...props}>
-        <span className={cn(dot, theme.dot)} aria-hidden="true" />
+        <span className={cn(pillRecipes.dot, theme.dot)} aria-hidden="true" />
         <span className="whitespace-nowrap">{children}</span>
       </span>
     );
@@ -66,16 +67,15 @@ export function Pill({
   if (variant === 'dot') {
     return (
       <span className={cn(base, uiTextRecipes.label, className)} {...props}>
-        <span className={cn(dot)} aria-hidden="true" />
+        <span className={cn(pillRecipes.dot)} aria-hidden="true" />
         <span className="whitespace-nowrap">{children}</span>
       </span>
     );
   }
 
-  const theme = getTagThemeForCategory(categoryName || String(children));
+  const theme = getTagThemeForCategory(categoryName || String(children), accentIndexByName);
   return (
     <span className={cn(base, theme.tag, className)} {...props}>
-      <span className={cn(dot, theme.dot)} aria-hidden="true" />
       <span className="whitespace-nowrap">{children}</span>
     </span>
   );

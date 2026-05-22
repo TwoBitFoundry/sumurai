@@ -10,6 +10,8 @@ import { BudgetService } from '../../../services/BudgetService';
 import { TransactionService } from '../../../services/TransactionService';
 import type { Budget, Transaction } from '../../../types/api';
 import { accountIdsCacheKey } from '../../../utils/cacheKeys';
+import { sortCategoryNamesAlphabetically } from '../../../utils/categories';
+import { useCategories } from '../../transactions/hooks/useCategories';
 import { type BudgetMonthControl, useBudgetMonth } from './useBudgetMonth';
 
 export interface BudgetProgressEntry extends Budget {
@@ -30,6 +32,7 @@ export interface UseBudgetsResult {
   remove: (id: string) => Promise<void>;
   categories: string[];
   categoryOptions: string[];
+  availableCategoryOptions: string[];
   usedCategories: Set<string>;
   month: Date;
   monthLabel: string;
@@ -48,6 +51,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
     monthControl ?? internalMonth;
 
   const queryClient = useQueryClient();
+  const { all: rosterCategories } = useCategories();
   const {
     selectedAccountIds,
     isAllAccountsSelected,
@@ -174,13 +178,18 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
   const usedCategories = useMemo(() => new Set(budgets.map((b) => b.category)), [budgets]);
 
   const categoryOptions = useMemo(() => {
-    const unique = new Set<string>();
+    const unique = new Set<string>(rosterCategories);
     for (const txn of transactions) {
       const primary = txn.category?.primary || 'OTHER';
       unique.add(primary);
     }
-    return Array.from(unique).sort();
-  }, [transactions]);
+    return sortCategoryNamesAlphabetically(Array.from(unique));
+  }, [rosterCategories, transactions]);
+
+  const availableCategoryOptions = useMemo(() => {
+    const usedLower = new Set([...usedCategories].map((category) => category.toLowerCase()));
+    return categoryOptions.filter((category) => !usedLower.has(category.toLowerCase()));
+  }, [categoryOptions, usedCategories]);
 
   const computedBudgets = useMemo(() => {
     return budgets.map<BudgetProgressEntry>((b) => {
@@ -272,6 +281,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
     remove,
     categories,
     categoryOptions,
+    availableCategoryOptions,
     usedCategories,
     month,
     monthLabel,

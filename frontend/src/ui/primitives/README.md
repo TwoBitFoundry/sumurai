@@ -181,6 +181,7 @@ Accessible overlay container with backdrop handling.
 | Prop | Options | Description |
 |------|---------|-------------|
 | `size` | `sm` \| `md` \| `lg` | Sets max width for the dialog content |
+| `presentation` | `centered` \| `drawer` | `centered` blurs the backdrop; `drawer` anchors to the bottom without backdrop blur |
 
 **Props:**
 ```typescript
@@ -189,6 +190,7 @@ interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
   onClose?: () => void
   labelledBy?: string
   description?: string
+  presentation?: 'centered' | 'drawer'
   preventCloseOnBackdrop?: boolean
   backdropClassName?: string
   containerClassName?: string

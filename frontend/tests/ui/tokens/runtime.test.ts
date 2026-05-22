@@ -5,6 +5,7 @@ import {
   featurePalettes,
   finance,
   getCategoryAccent,
+  getCategoryAccentByIndex,
   getHeroAccentTheme,
   getThemeColors,
   heroAccents,
@@ -92,6 +93,8 @@ describe('ui tokens runtime map', () => {
       },
     });
     expect(getCategoryAccent('Groceries')).toEqual(getCategoryAccent('Groceries'));
+    expect(getCategoryAccentByIndex(0)).toEqual(categoryAccents[0]);
+    expect(getCategoryAccentByIndex(categoryAccents.length)).toEqual(categoryAccents[0]);
     expect(getHeroAccentTheme('sky')).toEqual(heroAccents.sky);
   });
 });

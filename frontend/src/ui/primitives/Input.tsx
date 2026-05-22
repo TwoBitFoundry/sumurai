@@ -62,6 +62,18 @@ export const inputControl = {
     'focus-visible:ring-inset',
     'focus-visible:ring-[var(--color-border-focus-active)]',
   ],
+  floatingChromeInvalid: [
+    ...semanticSurfaces.floatingChromePanel,
+    'border-[var(--color-status-danger-border)]',
+    'dark:border-[var(--color-status-danger-border)]',
+    ...semanticEffects.glassShadow,
+    semanticTextRecipes.primary,
+    'shadow-none',
+    'focus-visible:outline-none',
+    'focus-visible:ring-2',
+    'focus-visible:ring-inset',
+    'focus-visible:ring-[var(--color-status-danger-border)]',
+  ],
   size: {
     sm: `${control.height.sm} ${control.paddingX.sm} ${control.label.sm} ${uiRadiusRecipes.standard}`,
     md: `${control.height.md} ${control.paddingX.md} ${control.label.md} ${uiRadiusRecipes.standard}`,
@@ -77,6 +89,7 @@ const inputVariants = cva([...inputControl.base], {
       invalid: [...inputControl.invalid],
       glass: [...inputControl.glass],
       floatingChrome: [...inputControl.floatingChrome],
+      floatingChromeInvalid: [...inputControl.floatingChromeInvalid],
     },
     inputSize: {
       sm: inputControl.size.sm,
