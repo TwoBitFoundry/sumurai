@@ -113,7 +113,11 @@ export function AddBudgetPicker({
           isMobile && 'flex min-h-0 flex-1 flex-col overflow-hidden px-5 pb-4 pt-5'
         )}
       >
-        <ModalDrawerHeader onClose={onRequestClose} closeLabel="Close add budget picker">
+        <ModalDrawerHeader
+          closeWithDialog={isMobile}
+          onClose={onRequestClose}
+          closeLabel="Close add budget picker"
+        >
           <p className={cn(modalDrawerSectionLabelClassName)}>Add Budget Category</p>
         </ModalDrawerHeader>
         <div

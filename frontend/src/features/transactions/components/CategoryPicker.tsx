@@ -159,7 +159,11 @@ export function CategoryPicker({
           isMobile && 'flex min-h-0 flex-1 flex-col overflow-hidden px-5 pb-4 pt-5'
         )}
       >
-        <ModalDrawerHeader onClose={onRequestClose} closeLabel="Close category picker">
+        <ModalDrawerHeader
+          closeWithDialog={isMobile}
+          onClose={onRequestClose}
+          closeLabel="Close category picker"
+        >
           <p className={cn(modalDrawerSectionLabelClassName)}>Customize Category</p>
         </ModalDrawerHeader>
         <div

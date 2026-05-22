@@ -1,8 +1,11 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type * as React from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { floatingChromeGlass, modalDrawer, surface as uiSurfaceRecipes } from '@/ui/recipes';
 import { cn } from './utils';
+
+const DRAWER_EXIT_MS = 280;
 
 const contentVariants = cva('relative w-full', {
   variants: {
@@ -50,22 +53,122 @@ export function Modal({
   ...props
 }: ModalProps) {
   const isDrawer = presentation === 'drawer';
+  const [drawerOpen, setDrawerOpen] = useState(isOpen);
+  const [isExiting, setIsExiting] = useState(false);
+  const drawerContentRef = useRef<HTMLDivElement>(null);
+  const exitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isExitingRef = useRef(false);
+
+  const finishDrawerExit = useCallback(
+    (notifyParent: boolean) => {
+      isExitingRef.current = false;
+      setIsExiting(false);
+      setDrawerOpen(false);
+      if (notifyParent) {
+        onClose?.();
+      }
+    },
+    [onClose]
+  );
+
+  const beginDrawerExit = useCallback(
+    (notifyParent: boolean) => {
+      if (isExitingRef.current) {
+        return;
+      }
+      isExitingRef.current = true;
+      setIsExiting(true);
+
+      const node = drawerContentRef.current;
+      if (!node) {
+        finishDrawerExit(notifyParent);
+        return;
+      }
+
+      let finished = false;
+      const complete = () => {
+        if (finished) {
+          return;
+        }
+        finished = true;
+        if (exitTimeoutRef.current) {
+          clearTimeout(exitTimeoutRef.current);
+          exitTimeoutRef.current = null;
+        }
+        node.removeEventListener('animationend', onAnimationEnd);
+        finishDrawerExit(notifyParent);
+      };
+
+      const onAnimationEnd = (event: AnimationEvent) => {
+        if (event.target !== node) {
+          return;
+        }
+        complete();
+      };
+
+      requestAnimationFrame(() => {
+        node.addEventListener('animationend', onAnimationEnd);
+        exitTimeoutRef.current = setTimeout(complete, DRAWER_EXIT_MS);
+      });
+    },
+    [finishDrawerExit]
+  );
+
+  useEffect(() => {
+    if (!isDrawer) {
+      return;
+    }
+    if (isOpen) {
+      if (exitTimeoutRef.current) {
+        clearTimeout(exitTimeoutRef.current);
+        exitTimeoutRef.current = null;
+      }
+      isExitingRef.current = false;
+      setIsExiting(false);
+      setDrawerOpen(true);
+      return;
+    }
+    if (drawerOpen && !isExitingRef.current) {
+      beginDrawerExit(false);
+    }
+  }, [beginDrawerExit, drawerOpen, isDrawer, isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (exitTimeoutRef.current) {
+        clearTimeout(exitTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (isDrawer) {
+      if (nextOpen) {
+        isExitingRef.current = false;
+        setIsExiting(false);
+        setDrawerOpen(true);
+        return;
+      }
+      beginDrawerExit(true);
+      return;
+    }
+    if (!nextOpen) {
+      onClose?.();
+    }
+  };
+
+  const rootOpen = isDrawer ? drawerOpen || isExiting : isOpen;
+  const drawerExitingProps = isExiting ? ({ 'data-exiting': 'true' } as const) : {};
 
   return (
-    <Dialog.Root
-      open={isOpen}
-      onOpenChange={(open) => {
-        if (!open) {
-          onClose?.();
-        }
-      }}
-    >
+    <Dialog.Root open={rootOpen} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         {isDrawer ? (
           <>
             <Dialog.Overlay
               data-testid="modal-backdrop"
               data-presentation={presentation}
+              {...drawerExitingProps}
               className={cn(
                 'fixed inset-0 z-50',
                 ...modalDrawer.overlayMotion,
@@ -80,9 +183,11 @@ export function Modal({
               }}
             />
             <Dialog.Content
+              ref={drawerContentRef}
               aria-labelledby={labelledBy}
               aria-describedby={description}
               data-presentation={presentation}
+              {...drawerExitingProps}
               className={cn(
                 'fixed bottom-0 left-0 right-0 z-50 w-full outline-none',
                 modalDrawer.contentMotion,

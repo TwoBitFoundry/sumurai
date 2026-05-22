@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createRef, useRef, useState } from 'react';
 import { CategoryPicker } from '@/features/transactions/components/CategoryPicker';
@@ -179,8 +179,9 @@ describe('CategoryPicker', () => {
   });
 
   it('closes the drawer from the header close button', async () => {
+    jest.useFakeTimers();
     const onRequestClose = jest.fn();
-    const user = userEvent.setup();
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     setViewport(375);
 
     render(
@@ -194,8 +195,14 @@ describe('CategoryPicker', () => {
     );
 
     await user.click(screen.getByRole('button', { name: 'Close category picker' }));
+    expect(onRequestClose).not.toHaveBeenCalled();
 
+    await act(async () => {
+      jest.runAllTimers();
+    });
     expect(onRequestClose).toHaveBeenCalledTimes(1);
+
+    jest.useRealTimers();
   });
 
   it('renders the anchored picker surface on tablet', () => {

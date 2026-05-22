@@ -1,4 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { act, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Modal } from '@/ui/primitives/Modal';
 
 describe('Modal', () => {
@@ -44,5 +46,30 @@ describe('Modal', () => {
 
     expect(screen.getByTestId('modal-backdrop').className).toContain('modal-drawer-overlay');
     expect(screen.getByRole('dialog').className).toContain('modal-drawer-content');
+  });
+
+  it('defers drawer onClose until the exit animation finishes', async () => {
+    jest.useFakeTimers();
+    const onClose = jest.fn();
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+    render(
+      <Modal isOpen onClose={onClose} presentation="drawer">
+        <Dialog.Close asChild>
+          <button type="button">Close drawer</button>
+        </Dialog.Close>
+      </Modal>
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Close drawer' }));
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toHaveAttribute('data-exiting', 'true');
+
+    await act(async () => {
+      jest.runAllTimers();
+    });
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    jest.useRealTimers();
   });
 });

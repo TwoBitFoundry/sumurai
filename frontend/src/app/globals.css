@@ -161,11 +161,19 @@
     animation: fadeOut 200ms ease-in forwards;
   }
 
+  .modal-drawer-overlay[data-exiting='true'] {
+    animation: fadeOut 200ms ease-in forwards;
+  }
+
   .modal-drawer-content[data-state='open'] {
     animation: drawerSlideIn 320ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
   }
 
   .modal-drawer-content[data-state='closed'] {
+    animation: drawerSlideOut 240ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  }
+
+  .modal-drawer-content[data-exiting='true'] {
     animation: drawerSlideOut 240ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
   }
 }

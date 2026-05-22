@@ -55,7 +55,11 @@ export function DeleteCustomCategoryConfirm({ open, category, onRequestClose, on
     >
       <div className={cn('space-y-5')}>
         {isMobile ? (
-          <ModalDrawerHeader onClose={onRequestClose} closeLabel="Close delete category dialog">
+          <ModalDrawerHeader
+            closeWithDialog
+            onClose={onRequestClose}
+            closeLabel="Close delete category dialog"
+          >
             <h2 id="delete-custom-category-title" className={cn('text-lg font-semibold')}>
               {category ? `Delete '${category.display_name}'?` : 'Delete custom category?'}
             </h2>
