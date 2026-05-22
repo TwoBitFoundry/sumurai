@@ -7,10 +7,23 @@ export interface TransactionLocation {
   postal_code?: string;
 }
 
+export interface CustomCategory {
+  id: string;
+  display_name: string;
+  lookup_key: string;
+}
+
+export interface CategoryListResponse {
+  system: string[];
+  custom: CustomCategory[];
+}
+
 export interface TransactionCategory {
   primary: string;
   detailed?: string;
   confidence_level?: string;
+  is_custom?: boolean;
+  is_overridden?: boolean;
 }
 
 export interface Transaction {
