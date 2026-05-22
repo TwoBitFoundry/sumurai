@@ -3,6 +3,13 @@ import { TransactionsTable } from '@/features/transactions/components/Transactio
 import type { Transaction } from '@/types/api';
 import { text as uiTextRecipes } from '@/ui/recipes';
 
+jest.mock('@/features/transactions/components/InlineCategoryCell', () => ({
+  __esModule: true,
+  default: ({ transaction }: { transaction: Transaction }) => (
+    <span data-testid="inline-category-cell">{transaction.category?.primary}</span>
+  ),
+}));
+
 const baseTx = (amount: number): Transaction => ({
   id: `id-${amount}`,
   date: '2025-01-15',

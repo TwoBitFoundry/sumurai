@@ -317,11 +317,15 @@ Design rules (confirmed with the user):
 5. **Out of scope:** mobile presentation of the picker (Phase 9), filter-chip delete (Phase 8).
 
 **Acceptance criteria.**
-- [ ] Each table row renders a Pill followed by a chevron-down button; clicking the chevron (not the Pill body) opens `CategoryPicker` anchored to that chevron.
-- [ ] Selecting from the picker invokes `useUpdateTransactionCategory` with `{ category_name, is_custom }` and the row reflects the change optimistically.
-- [ ] Tabbing focus into the row reaches the chevron with a visible focus ring; Enter / Space activates it.
-- [ ] `npm --prefix frontend test` (full Jest suite) passes; `lint` and `typecheck` pass.
-- [ ] No changes to `TransactionsFilters.tsx` or `TransactionsPage.tsx`.
+- [x] Each table row renders a Pill followed by a chevron-down button; clicking the chevron (not the Pill body) opens `CategoryPicker` anchored to that chevron.
+- [x] Selecting from the picker invokes `useUpdateTransactionCategory` with `{ category_name, is_custom }` and the row reflects the change optimistically.
+- [x] Tabbing focus into the row reaches the chevron with a visible focus ring; Enter / Space activates it.
+- [x] `npm --prefix frontend test` (full Jest suite) passes; `lint` and `typecheck` pass.
+- [x] No changes to `TransactionsFilters.tsx` or `TransactionsPage.tsx`.
+
+**TDD log.**
+- Added a focused `InlineCategoryCell` test covering keyboard activation and picker selection, plus boundary mocks for `TransactionsTable` render paths that do not care about the row editor.
+- Wired the category cell into `TransactionsTable`, added a Storybook query client so hook-backed stories keep rendering, and verified with `npm --prefix frontend run test:serial -- --runTestsByPath tests/features/transactions/components/InlineCategoryCell.test.tsx tests/components/transactions-table-text.test.tsx tests/ui/tokens/dashboardRecipes.test.ts`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, and `npm --prefix frontend test`.
 
 ---
 

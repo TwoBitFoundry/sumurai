@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Receipt } from 'lucide-react';
 import type React from 'react';
 import { useMemo } from 'react';
-import { cn, EmptyState, PaginationButton, Pill } from '@/ui/primitives';
+import { cn, EmptyState, PaginationButton } from '@/ui/primitives';
 import {
   border as uiBorderRecipes,
   text as uiTextRecipes,
@@ -11,8 +11,8 @@ import {
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
 import type { Transaction } from '../../../types/api';
-import { formatCategoryName } from '../../../utils/categories';
 import { fmtUSD } from '../../../utils/format';
+import InlineCategoryCell from './InlineCategoryCell';
 
 interface Props {
   items: Transaction[];
@@ -24,13 +24,6 @@ interface Props {
   onPrev: () => void;
   onNext: () => void;
 }
-
-const resolveCategoryName = (transaction: Transaction): string => {
-  if (!transaction.category) {
-    return 'Uncategorized';
-  }
-  return formatCategoryName(transaction.category.primary);
-};
 
 const tableHeader = [
   ...uiTransactionsTableRecipes.chromeBar,
@@ -153,7 +146,6 @@ export const TransactionsTable: React.FC<Props> = ({
                 transition={{ duration: 0.24, ease: [0.22, 0.61, 0.36, 1] }}
               >
                 {visibleItems.map((r, i) => {
-                  const catName = resolveCategoryName(r);
                   return (
                     <tr
                       key={r.id}
@@ -239,13 +231,7 @@ export const TransactionsTable: React.FC<Props> = ({
                         </span>
                       </td>
                       <td className={cn('whitespace-nowrap', 'px-4', 'py-3', 'align-middle')}>
-                        <Pill
-                          variant="category"
-                          categoryName={catName}
-                          className="transition-all duration-200 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10"
-                        >
-                          {catName}
-                        </Pill>
+                        <InlineCategoryCell transaction={r} />
                       </td>
                     </tr>
                   );
