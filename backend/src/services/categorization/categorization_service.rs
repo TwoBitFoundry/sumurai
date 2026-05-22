@@ -1,55 +1,30 @@
-use std::path::Path;
-
-use crate::models::predicted_category::PredictedCategory;
-use anyhow::Result;
-
-#[cfg(test)]
-use crate::models::predicted_category::Confidence;
-#[cfg(not(test))]
-use anyhow::anyhow;
-#[cfg(test)]
-use std::cmp::Ordering;
-#[cfg(not(test))]
 use std::fs;
-#[cfg(not(test))]
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 
-#[cfg(not(test))]
+use crate::models::predicted_category::PredictedCategory;
 use crate::services::categorization::classifier_labels::{
     classify_logits, deterministic_prediction,
 };
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-#[cfg(not(test))]
 use ndarray::{Array2, Ix2};
-#[cfg(not(test))]
 use ort::session::{builder::GraphOptimizationLevel, Session};
-#[cfg(not(test))]
 use ort::value::Tensor;
-#[cfg(not(test))]
 use serde_json::Value;
-#[cfg(not(test))]
 use tokenizers::{
     PaddingDirection, PaddingParams, PaddingStrategy, Tokenizer, TruncationDirection,
     TruncationParams, TruncationStrategy,
 };
-#[cfg(not(test))]
 use tokio::task;
 
-#[cfg(not(test))]
 const INFERENCE_BATCH_SIZE: usize = 128;
-#[cfg(not(test))]
 const MAX_INFERENCE_SEQ_LEN: usize = 128;
 
 pub struct CategorizationService {
-    #[cfg(not(test))]
     session: Option<Arc<Mutex<Session>>>,
-    #[cfg(not(test))]
     tokenizer: Option<Arc<Tokenizer>>,
-    #[cfg(test)]
-    category_refs: Vec<(String, Vec<f32>)>,
-    #[cfg(not(test))]
     classifier_labels: Vec<String>,
-    #[cfg(not(test))]
     max_seq_len: usize,
 }
 
@@ -59,25 +34,6 @@ pub trait Categorizer: Send + Sync {
 }
 
 impl CategorizationService {
-    #[cfg(test)]
-    pub fn from_refs(category_refs: Vec<(String, Vec<f32>)>) -> Self {
-        Self {
-            #[cfg(not(test))]
-            session: None,
-            #[cfg(not(test))]
-            tokenizer: None,
-            category_refs: category_refs
-                .into_iter()
-                .map(|(primary, vector)| (primary, normalize_vector(&vector)))
-                .collect(),
-            #[cfg(not(test))]
-            classifier_labels: Vec::new(),
-            #[cfg(not(test))]
-            max_seq_len: 128,
-        }
-    }
-
-    #[cfg(not(test))]
     pub async fn new(model_dir: &Path) -> Result<Self> {
         let model_dir = model_dir.to_path_buf();
         task::spawn_blocking(move || Self::new_blocking(&model_dir))
@@ -85,30 +41,6 @@ impl CategorizationService {
             .map_err(|err| anyhow!("failed to join categorization model load task: {err}"))?
     }
 
-    #[cfg(test)]
-    pub async fn new(_model_dir: &Path) -> Result<Self> {
-        Err(anyhow::anyhow!(
-            "categorization model is unavailable in test builds"
-        ))
-    }
-
-    #[cfg(test)]
-    pub(crate) fn categorize_batch_sync(
-        &self,
-        query_vectors: Vec<Vec<f32>>,
-    ) -> Vec<PredictedCategory> {
-        query_vectors
-            .iter()
-            .map(|query| Self::cosine_and_threshold(query, &self.category_refs))
-            .collect()
-    }
-
-    #[cfg(test)]
-    pub(crate) fn category_refs(&self) -> &[(String, Vec<f32>)] {
-        &self.category_refs
-    }
-
-    #[cfg(not(test))]
     fn new_blocking(model_dir: &Path) -> Result<Self> {
         let model_path = model_dir.join("model_quantized.onnx");
         let tokenizer_path = model_dir.join("tokenizer.json");
@@ -159,7 +91,6 @@ impl CategorizationService {
         })
     }
 
-    #[cfg(not(test))]
     fn classify_texts(
         session: &mut Session,
         tokenizer: &Tokenizer,
@@ -244,56 +175,8 @@ impl CategorizationService {
 
         Ok(predictions.into_iter().flatten().collect())
     }
-
-    #[cfg(test)]
-    fn cosine_and_threshold(query: &[f32], refs: &[(String, Vec<f32>)]) -> PredictedCategory {
-        if refs.is_empty() {
-            return PredictedCategory {
-                primary: "OTHER".to_string(),
-                confidence: Confidence::Low,
-            };
-        }
-
-        let normalized_query = normalize_vector(query);
-        let mut scored_refs = refs
-            .iter()
-            .map(|(primary, reference)| {
-                (
-                    primary.as_str(),
-                    cosine_similarity(&normalized_query, reference),
-                )
-            })
-            .collect::<Vec<_>>();
-        scored_refs.sort_by(|left, right| right.1.partial_cmp(&left.1).unwrap_or(Ordering::Equal));
-
-        let (best_primary, best_score) = scored_refs[0];
-        let second_score = scored_refs
-            .get(1)
-            .map(|(_, score)| *score)
-            .unwrap_or(f32::NEG_INFINITY);
-        if best_score < 0.30 || best_score - second_score < 0.04 {
-            return PredictedCategory {
-                primary: "OTHER".to_string(),
-                confidence: Confidence::Low,
-            };
-        }
-
-        let confidence = if best_score >= 0.55 {
-            Confidence::High
-        } else if best_score >= 0.40 {
-            Confidence::Medium
-        } else {
-            Confidence::Low
-        };
-
-        PredictedCategory {
-            primary: best_primary.to_string(),
-            confidence,
-        }
-    }
 }
 
-#[cfg(not(test))]
 #[async_trait]
 impl Categorizer for CategorizationService {
     async fn categorize_batch(&self, descriptions: Vec<String>) -> Result<Vec<PredictedCategory>> {
@@ -334,17 +217,6 @@ impl Categorizer for CategorizationService {
     }
 }
 
-#[cfg(test)]
-#[async_trait]
-impl Categorizer for CategorizationService {
-    async fn categorize_batch(&self, _descriptions: Vec<String>) -> Result<Vec<PredictedCategory>> {
-        Err(anyhow::anyhow!(
-            "categorization service is unavailable in test builds"
-        ))
-    }
-}
-
-#[cfg(not(test))]
 fn configure_tokenizer(tokenizer: &mut Tokenizer, max_seq_len: usize) {
     let pad_id = tokenizer.token_to_id("[PAD]").unwrap_or(0);
     tokenizer
@@ -365,7 +237,6 @@ fn configure_tokenizer(tokenizer: &mut Tokenizer, max_seq_len: usize) {
         .expect("tokenizer truncation configuration should be valid");
 }
 
-#[cfg(not(test))]
 fn build_tensor<F>(encodings: &[tokenizers::Encoding], getter: F) -> Result<Array2<i64>>
 where
     F: Fn(&tokenizers::Encoding) -> &[u32],
@@ -383,22 +254,6 @@ where
     Ok(Array2::from_shape_vec((batch, seq_len), values)?)
 }
 
-#[cfg(test)]
-fn cosine_similarity(left: &[f32], right: &[f32]) -> f32 {
-    left.iter().zip(right.iter()).map(|(a, b)| a * b).sum()
-}
-
-#[cfg(test)]
-fn normalize_vector(values: &[f32]) -> Vec<f32> {
-    let norm = values.iter().map(|value| value * value).sum::<f32>().sqrt();
-    if norm == 0.0 {
-        return values.to_vec();
-    }
-
-    values.iter().map(|value| value / norm).collect()
-}
-
-#[cfg(not(test))]
 fn read_max_seq_len(config_path: &Path) -> Result<usize> {
     let config = fs::read_to_string(config_path)
         .map_err(|err| anyhow!("failed to read {}: {err}", config_path.display()))?;
@@ -414,7 +269,6 @@ fn read_max_seq_len(config_path: &Path) -> Result<usize> {
         .unwrap_or(128))
 }
 
-#[cfg(not(test))]
 fn read_classifier_labels(config_path: &Path) -> Result<Vec<String>> {
     let config = fs::read_to_string(config_path)
         .map_err(|err| anyhow!("failed to read {}: {err}", config_path.display()))?;
