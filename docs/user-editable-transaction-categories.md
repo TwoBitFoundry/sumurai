@@ -167,7 +167,7 @@ Design rules (confirmed with the user):
 - [x] OpenAPI schemas and paths registered; JSON regeneratable via `init_openapi()`.
 - [x] No changes to provider modules, sync service, ML categorization, or the import handler.
 
-**TDD log (Phase 3):** 11 boundary tests in `category_handlers_integration_tests.rs`. All happy paths + error codes + auth coverage. Tests mock only at DatabaseRepository level. 327 backend tests pass (includes 316 pre-existing + 11 new). Commit: pending.
+**TDD log (Phase 3):** 11 boundary tests in `category_handlers_integration_tests.rs`. All happy paths + error codes + auth coverage. Tests mock only at DatabaseRepository level. 327 backend tests pass (includes 316 pre-existing + 11 new). 566 frontend tests pass. Commit: 0bd2975.
 
 ---
 
