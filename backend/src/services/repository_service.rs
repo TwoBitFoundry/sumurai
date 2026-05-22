@@ -341,7 +341,7 @@ impl PostgresRepository {
         if let Some(category_primary) = category_primary {
             let category_primary = category_primary.trim();
             if !category_primary.is_empty() {
-                qb.push(" AND t.category_primary = ");
+                qb.push(" AND COALESCE(o.category_name, t.category_primary) = ");
                 qb.push_bind(category_primary);
             }
         }
@@ -385,6 +385,8 @@ impl PostgresRepository {
             account_name,
             account_type,
             account_mask,
+            is_custom: false,
+            is_overridden: false,
         }
     }
 
@@ -1208,11 +1210,12 @@ impl DatabaseRepository for PostgresRepository {
         >(
             r#"
             SELECT t.id, t.account_id, t.user_id, t.provider_transaction_id, t.amount, t.date,
-                   t.merchant_name, t.category_primary, t.category_detailed,
+                   t.merchant_name, COALESCE(o.category_name, t.category_primary), t.category_detailed,
                    t.category_confidence, t.payment_channel, t.pending, t.created_at,
                    a.name as account_name, a.account_type, a.mask as account_mask
             FROM transactions t
             INNER JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN transaction_category_overrides o ON o.user_id = t.user_id AND o.normalized_merchant = t.normalized_merchant
             WHERE t.user_id = $1
             ORDER BY t.date DESC, t.created_at DESC
             LIMIT 1000
@@ -1261,6 +1264,8 @@ impl DatabaseRepository for PostgresRepository {
                     account_name,
                     account_type,
                     account_mask,
+                    is_custom: false,
+                    is_overridden: false,
                 },
             )
             .collect())
@@ -1286,11 +1291,12 @@ impl DatabaseRepository for PostgresRepository {
         let mut qb = sqlx::QueryBuilder::new(
             r#"
             SELECT t.id, t.account_id, t.user_id, t.provider_transaction_id, t.amount, t.date,
-                   t.merchant_name, t.category_primary, t.category_detailed,
-                   t.category_confidence, t.payment_channel, t.pending, t.created_at,
+                   t.merchant_name, COALESCE(o.category_name, t.category_primary) AS effective_category,
+                   t.category_detailed, t.category_confidence, t.payment_channel, t.pending, t.created_at,
                    a.name as account_name, a.account_type, a.mask as account_mask
             FROM transactions t
             INNER JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN transaction_category_overrides o ON o.user_id = t.user_id AND o.normalized_merchant = t.normalized_merchant
             "#,
         );
         Self::append_transaction_filters(
@@ -1340,6 +1346,7 @@ impl DatabaseRepository for PostgresRepository {
             SELECT COUNT(*)
             FROM transactions t
             INNER JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN transaction_category_overrides o ON o.user_id = t.user_id AND o.normalized_merchant = t.normalized_merchant
             "#,
         );
         Self::append_transaction_filters(
@@ -1378,9 +1385,10 @@ impl DatabaseRepository for PostgresRepository {
                 SELECT
                     t.amount,
                     NULLIF(TRIM(t.merchant_name), '') AS merchant,
-                    t.category_primary
+                    COALESCE(o.category_name, t.category_primary) AS effective_category
                 FROM transactions t
                 INNER JOIN accounts a ON t.account_id = a.id
+                LEFT JOIN transaction_category_overrides o ON o.user_id = t.user_id AND o.normalized_merchant = t.normalized_merchant
             "#,
         );
         Self::append_transaction_filters(
@@ -1426,13 +1434,13 @@ impl DatabaseRepository for PostgresRepository {
                 FROM merchant_counts
             ),
             top_categories AS (
-                SELECT COALESCE(ARRAY_AGG(category_primary ORDER BY c DESC, category_primary), ARRAY[]::text[]) AS categories
+                SELECT COALESCE(ARRAY_AGG(effective_category ORDER BY c DESC, effective_category), ARRAY[]::text[]) AS categories
                 FROM (
-                    SELECT category_primary, COUNT(*) AS c
+                    SELECT effective_category, COUNT(*) AS c
                     FROM filtered
-                    WHERE category_primary IS NOT NULL
-                    GROUP BY category_primary
-                    ORDER BY c DESC, category_primary
+                    WHERE effective_category IS NOT NULL
+                    GROUP BY effective_category
+                    ORDER BY c DESC, effective_category
                     LIMIT 2
                 ) tc
             )

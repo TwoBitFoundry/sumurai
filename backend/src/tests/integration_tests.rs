@@ -240,6 +240,8 @@ async fn given_authenticated_user_when_get_transactions_with_account_ids_then_re
                     account_name: "Test Account 1".to_string(),
                     account_type: "checking".to_string(),
                     account_mask: Some("0001".to_string()),
+                    is_custom: false,
+                    is_overridden: false,
                 }])
             })
         },
@@ -365,6 +367,8 @@ async fn given_authenticated_user_when_get_transactions_page_two_then_returns_ne
                     account_name: "Checking".to_string(),
                     account_type: "checking".to_string(),
                     account_mask: Some("0001".to_string()),
+                    is_custom: false,
+                    is_overridden: false,
                 })
                 .collect();
             Box::pin(async move { Ok(transactions) })
