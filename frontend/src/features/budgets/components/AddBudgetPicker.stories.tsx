@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useRef, useState } from 'react';
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { expect, fn, screen, userEvent, within } from 'storybook/test';
 import { Button } from '@/ui/primitives';
 import type { BudgetFormValue } from './AddBudgetPicker';
 import { AddBudgetPicker } from './AddBudgetPicker';
@@ -65,11 +65,12 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 export const SaveInteraction: Story = {
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: 'Entertainment' }));
-    await userEvent.type(canvas.getByTestId('budget-amount-input'), '275');
-    await userEvent.click(canvas.getByRole('button', { name: 'Save budget' }));
+  play: async ({ args }) => {
+    const picker = await screen.findByTestId('add-budget-picker-content');
+    const pickerView = within(picker);
+    await userEvent.click(pickerView.getByRole('button', { name: 'Entertainment' }));
+    await userEvent.type(screen.getByTestId('budget-amount-input'), '275');
+    await userEvent.click(screen.getByRole('button', { name: 'Save budget' }));
     await expect(args.onSave).toHaveBeenCalledTimes(1);
   },
 };

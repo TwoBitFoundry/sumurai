@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { expect, screen, userEvent, waitFor, within } from 'storybook/test';
 import { BottomContextualBar } from '@/components/BottomContextualBar';
 import { BudgetMonthPillSlider } from '@/features/budgets/components/BudgetMonthPillSlider';
 import { useBudgetMonth } from '@/features/budgets/hooks/useBudgetMonth';
@@ -8,8 +8,8 @@ import BudgetsPage from '@/views/BudgetsPage';
 import {
   getPagedStoryTransactions,
   storyBudgetRecords,
+  storyCategoryList,
   storyProviderAccounts,
-  storyTransactionCategories,
 } from './shared';
 import { jsonResponse, route, StoryApiScope } from './storyApi';
 
@@ -54,7 +54,7 @@ const handlers = [
     storyBudgets = storyBudgets.filter((budget) => budget.id !== 'story-budget-1');
     return jsonResponse({}, { status: 204 });
   }),
-  route('GET', '/transactions/categories', () => jsonResponse(storyTransactionCategories)),
+  route('GET', '/categories', () => jsonResponse(storyCategoryList)),
   route('GET', '/transactions', (request) =>
     jsonResponse(
       getPagedStoryTransactions({
@@ -108,12 +108,10 @@ export const Journey: Story = {
 
     const addBudget = canvas.getByRole('button', { name: /add budget/i });
     await userEvent.click(addBudget);
-    await userEvent.selectOptions(
-      canvas.getByTestId('budget-category-select'),
-      'bills_and_utilities'
-    );
-    await userEvent.type(canvas.getByTestId('budget-amount-input'), '275');
-    await userEvent.click(canvas.getByTestId('budget-save'));
+    const picker = await screen.findByTestId('add-budget-picker-content');
+    await userEvent.click(within(picker).getByRole('button', { name: /bills and utilities/i }));
+    await userEvent.type(screen.getByTestId('budget-amount-input'), '275');
+    await userEvent.click(screen.getByRole('button', { name: 'Save budget' }));
     await waitFor(() => {
       expect(canvas.getAllByText(/bills and utilities/i)).toHaveLength(2);
     });
