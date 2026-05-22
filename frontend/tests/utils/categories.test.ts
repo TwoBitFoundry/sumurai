@@ -5,6 +5,8 @@ import {
   formatCustomCategoryDisplay,
   getTagThemeForCategory,
   getTagThemeForCategoryAtIndex,
+  longestFormattedCategoryLabel,
+  mobileCategoryChipWidthRem,
   sortCategoryNamesAlphabetically,
   validateCustomCategoryName,
 } from '@/utils/categories';
@@ -22,6 +24,19 @@ describe('category accent index', () => {
     expect(getTagThemeForCategory('food_and_drink', accentIndex).key).toBe(
       getTagThemeForCategoryAtIndex(1).key
     );
+  });
+});
+
+describe('longestFormattedCategoryLabel', () => {
+  it('returns the longest system category display label', () => {
+    expect(longestFormattedCategoryLabel()).toBe('Government And Non Profit');
+  });
+});
+
+describe('mobileCategoryChipWidthRem', () => {
+  it('sizes the chip from the longest label without oversized ch padding', () => {
+    const longestLabel = longestFormattedCategoryLabel();
+    expect(mobileCategoryChipWidthRem(longestLabel)).toBe('13.65rem');
   });
 });
 

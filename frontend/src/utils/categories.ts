@@ -5,12 +5,48 @@
 import type { CustomCategory } from '@/types/api';
 import { getCategoryAccent, getCategoryAccentByIndex } from '@/ui/tokens';
 
+export const SYSTEM_CATEGORY_SLUGS = [
+  'BANK_FEES',
+  'ENTERTAINMENT',
+  'FOOD_AND_DRINK',
+  'GENERAL_MERCHANDISE',
+  'GENERAL_SERVICES',
+  'GOVERNMENT_AND_NON_PROFIT',
+  'HOME_IMPROVEMENT',
+  'INCOME',
+  'LOAN_PAYMENTS',
+  'MEDICAL',
+  'OTHER',
+  'PERSONAL_CARE',
+  'RENT_AND_UTILITIES',
+  'SHOPPING',
+  'TRANSFER_IN',
+  'TRANSFER_OUT',
+  'TRANSPORTATION',
+  'TRAVEL',
+] as const;
+
 export function formatCategoryName(categoryPrimary: string | undefined | null): string {
   if (!categoryPrimary) return 'Other';
   return categoryPrimary
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
+}
+
+export function longestFormattedCategoryLabel(
+  names: readonly string[] = SYSTEM_CATEGORY_SLUGS
+): string {
+  return names.reduce((longest, name) => {
+    const label = formatCategoryName(name);
+    return label.length > longest.length ? label : longest;
+  }, '');
+}
+
+export function mobileCategoryChipWidthRem(longestLabel: string): string {
+  const contentRem = longestLabel.length * 0.48;
+  const chromeRem = 1.65;
+  return `${(contentRem + chromeRem).toFixed(2)}rem`;
 }
 
 export function sortCategoryNamesAlphabetically(names: string[]): string[] {
