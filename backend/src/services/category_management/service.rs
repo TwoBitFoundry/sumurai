@@ -66,49 +66,58 @@ impl CategoryManagementService {
         repository: &R,
         user_id: &Uuid,
         raw_name: &str,
-    ) -> Result<CustomCategory, CustomCategoryError> {
+    ) -> Result<CustomCategory, CategoryServiceError> {
         let trimmed = raw_name.trim();
 
         if trimmed.is_empty() {
-            return Err(CustomCategoryError::EmptyName);
+            return Err(CategoryServiceError::Validation(
+                CustomCategoryError::EmptyName,
+            ));
         }
 
         if !trimmed
             .chars()
             .all(|c| c.is_ascii_alphabetic() || c.is_ascii_whitespace())
         {
-            return Err(CustomCategoryError::InvalidCharacters);
+            return Err(CategoryServiceError::Validation(
+                CustomCategoryError::InvalidCharacters,
+            ));
         }
 
         let words: Vec<&str> = trimmed.split_whitespace().collect();
         if words.len() > 3 {
-            return Err(CustomCategoryError::TooManyWords);
+            return Err(CategoryServiceError::Validation(
+                CustomCategoryError::TooManyWords,
+            ));
         }
 
         let display = format_custom_category_display(trimmed);
         if display.len() > 30 {
-            return Err(CustomCategoryError::NameTooLong);
+            return Err(CategoryServiceError::Validation(
+                CustomCategoryError::NameTooLong,
+            ));
         }
 
         let key = category_lookup_key(trimmed);
 
         if self.system_lookup_keys.contains(&key) {
-            return Err(CustomCategoryError::CollidesWithSystemCategory);
+            return Err(CategoryServiceError::Validation(
+                CustomCategoryError::CollidesWithSystemCategory,
+            ));
         }
 
-        let existing = repository
-            .list_custom_categories_for_user(user_id)
-            .await
-            .map_err(|_| CustomCategoryError::EmptyName)?;
+        let existing = repository.list_custom_categories_for_user(user_id).await?;
 
         if existing.iter().any(|cat| cat.lookup_key == key) {
-            return Err(CustomCategoryError::CollidesWithExistingCustom);
+            return Err(CategoryServiceError::Validation(
+                CustomCategoryError::CollidesWithExistingCustom,
+            ));
         }
 
         repository
             .create_custom_category(user_id, &display, &key)
             .await
-            .map_err(|_| CustomCategoryError::EmptyName)
+            .map_err(CategoryServiceError::from)
     }
 
     pub async fn delete_custom_category<R: DatabaseRepository + ?Sized>(

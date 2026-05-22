@@ -241,6 +241,28 @@ async fn given_four_word_name_when_create_custom_category_then_returns_400_with_
 }
 
 #[tokio::test]
+async fn given_repository_failure_when_create_custom_category_then_returns_500() {
+    let _user_id = Uuid::new_v4();
+    let mut repo = MockDatabaseRepository::new();
+
+    repo.expect_list_custom_categories_for_user()
+        .times(1)
+        .returning(|_| Box::pin(async { Err(anyhow::anyhow!("db unavailable")) }));
+
+    let app = TestFixtures::create_test_app_with_db(repo).await.unwrap();
+    let (_, token) = TestFixtures::create_authenticated_user_with_token();
+
+    let request = TestFixtures::create_authenticated_post_request(
+        "/api/categories/custom",
+        &token,
+        json!({ "name": "Coffee" }),
+    );
+    let response = app.oneshot(request).await.unwrap();
+
+    assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+}
+
+#[tokio::test]
 async fn given_name_colliding_with_system_when_create_custom_category_then_returns_400_with_error_code(
 ) {
     let _user_id = Uuid::new_v4();

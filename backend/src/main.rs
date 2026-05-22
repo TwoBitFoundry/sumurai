@@ -1324,13 +1324,29 @@ async fn create_custom_category(
     Json<crate::models::custom_category::CustomCategory>,
     (StatusCode, Json<ApiErrorResponse>),
 > {
+    use crate::services::category_management::service::CategoryServiceError;
+
     match state
         .category_management_service
         .create_custom_category(&*state.db_repository, &auth_context.user_id, &req.name)
         .await
     {
         Ok(category) => Ok(Json(category)),
-        Err(e) => {
+        Err(CategoryServiceError::Db(e)) => {
+            tracing::error!(
+                "Failed to create custom category for user {}: {}",
+                auth_context.user_id,
+                e
+            );
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiErrorResponse::new(
+                    "internal_error",
+                    "internal_server_error",
+                )),
+            ))
+        }
+        Err(CategoryServiceError::Validation(e)) => {
             let (message, error_code) = match e {
                 crate::models::custom_category::CustomCategoryError::NameTooLong => {
                     ("Name too long", "name_too_long")
@@ -1363,6 +1379,20 @@ async fn create_custom_category(
                     "validation_error",
                     message,
                     error_code,
+                )),
+            ))
+        }
+        Err(other) => {
+            tracing::error!(
+                "Unexpected error creating custom category for user {}: {:?}",
+                auth_context.user_id,
+                other
+            );
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiErrorResponse::new(
+                    "internal_error",
+                    "internal_server_error",
                 )),
             ))
         }

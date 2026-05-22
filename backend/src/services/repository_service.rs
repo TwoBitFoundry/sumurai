@@ -21,24 +21,27 @@ use chrono::NaiveDate;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-type TransactionWithAccountRow = (
-    Uuid,
-    Uuid,
-    Option<Uuid>,
-    Option<String>,
-    rust_decimal::Decimal,
-    NaiveDate,
-    Option<String>,
-    String,
-    String,
-    String,
-    Option<String>,
-    bool,
-    Option<chrono::DateTime<chrono::Utc>>,
-    String,
-    String,
-    Option<String>,
-);
+#[derive(Debug, sqlx::FromRow)]
+struct TransactionWithAccountRow {
+    id: Uuid,
+    account_id: Uuid,
+    user_id: Option<Uuid>,
+    provider_transaction_id: Option<String>,
+    amount: rust_decimal::Decimal,
+    date: NaiveDate,
+    merchant_name: Option<String>,
+    category_primary: String,
+    category_detailed: String,
+    category_confidence: String,
+    payment_channel: Option<String>,
+    pending: bool,
+    created_at: Option<chrono::DateTime<chrono::Utc>>,
+    account_name: String,
+    account_type: String,
+    account_mask: Option<String>,
+    is_overridden: bool,
+    is_custom: bool,
+}
 
 type TransactionsInsightsRow = (
     i64,
@@ -347,46 +350,27 @@ impl PostgresRepository {
         }
     }
 
-    fn map_transaction_with_account_row(
-        (
-            id,
-            account_id,
-            user_id,
-            provider_transaction_id,
-            amount,
-            date,
-            merchant_name,
-            category_primary,
-            category_detailed,
-            category_confidence,
-            payment_channel,
-            pending,
-            created_at,
-            account_name,
-            account_type,
-            account_mask,
-        ): TransactionWithAccountRow,
-    ) -> TransactionWithAccount {
+    fn map_transaction_with_account_row(row: TransactionWithAccountRow) -> TransactionWithAccount {
         TransactionWithAccount {
-            id,
-            account_id,
-            user_id,
+            id: row.id,
+            account_id: row.account_id,
+            user_id: row.user_id,
             provider_account_id: None,
-            provider_transaction_id,
-            amount,
-            date,
-            merchant_name,
-            category_primary,
-            category_detailed,
-            category_confidence,
-            payment_channel,
-            pending,
-            created_at,
-            account_name,
-            account_type,
-            account_mask,
-            is_custom: false,
-            is_overridden: false,
+            provider_transaction_id: row.provider_transaction_id,
+            amount: row.amount,
+            date: row.date,
+            merchant_name: row.merchant_name,
+            category_primary: row.category_primary,
+            category_detailed: row.category_detailed,
+            category_confidence: row.category_confidence,
+            payment_channel: row.payment_channel,
+            pending: row.pending,
+            created_at: row.created_at,
+            account_name: row.account_name,
+            account_type: row.account_type,
+            account_mask: row.account_mask,
+            is_custom: row.is_custom,
+            is_overridden: row.is_overridden,
         }
     }
 
@@ -1187,32 +1171,14 @@ impl DatabaseRepository for PostgresRepository {
             .execute(&mut *tx)
             .await?;
 
-        let rows = sqlx::query_as::<
-            _,
-            (
-                Uuid,
-                Uuid,
-                Option<Uuid>,
-                Option<String>,
-                rust_decimal::Decimal,
-                chrono::NaiveDate,
-                Option<String>,
-                String,
-                String,
-                String,
-                Option<String>,
-                bool,
-                Option<chrono::DateTime<chrono::Utc>>,
-                String,
-                String,
-                Option<String>,
-            ),
-        >(
+        let rows = sqlx::query_as::<_, TransactionWithAccountRow>(
             r#"
             SELECT t.id, t.account_id, t.user_id, t.provider_transaction_id, t.amount, t.date,
                    t.merchant_name, COALESCE(o.category_name, t.category_primary), t.category_detailed,
                    t.category_confidence, t.payment_channel, t.pending, t.created_at,
-                   a.name as account_name, a.account_type, a.mask as account_mask
+                   a.name as account_name, a.account_type, a.mask as account_mask,
+                   (o.id IS NOT NULL) AS is_overridden,
+                   (o.custom_category_id IS NOT NULL) AS is_custom
             FROM transactions t
             INNER JOIN accounts a ON t.account_id = a.id
             LEFT JOIN transaction_category_overrides o ON o.user_id = t.user_id AND o.normalized_merchant = t.normalized_merchant
@@ -1228,46 +1194,7 @@ impl DatabaseRepository for PostgresRepository {
 
         Ok(rows
             .into_iter()
-            .map(
-                |(
-                    id,
-                    account_id,
-                    user_id,
-                    provider_transaction_id,
-                    amount,
-                    date,
-                    merchant_name,
-                    category_primary,
-                    category_detailed,
-                    category_confidence,
-                    payment_channel,
-                    pending,
-                    created_at,
-                    account_name,
-                    account_type,
-                    account_mask,
-                )| TransactionWithAccount {
-                    id,
-                    account_id,
-                    user_id,
-                    provider_account_id: None,
-                    provider_transaction_id,
-                    amount,
-                    date,
-                    merchant_name,
-                    category_primary,
-                    category_detailed,
-                    category_confidence,
-                    payment_channel,
-                    pending,
-                    created_at,
-                    account_name,
-                    account_type,
-                    account_mask,
-                    is_custom: false,
-                    is_overridden: false,
-                },
-            )
+            .map(Self::map_transaction_with_account_row)
             .collect())
     }
 
@@ -1291,9 +1218,11 @@ impl DatabaseRepository for PostgresRepository {
         let mut qb = sqlx::QueryBuilder::new(
             r#"
             SELECT t.id, t.account_id, t.user_id, t.provider_transaction_id, t.amount, t.date,
-                   t.merchant_name, COALESCE(o.category_name, t.category_primary) AS effective_category,
+                   t.merchant_name, COALESCE(o.category_name, t.category_primary) AS category_primary,
                    t.category_detailed, t.category_confidence, t.payment_channel, t.pending, t.created_at,
-                   a.name as account_name, a.account_type, a.mask as account_mask
+                   a.name as account_name, a.account_type, a.mask as account_mask,
+                   (o.id IS NOT NULL) AS is_overridden,
+                   (o.custom_category_id IS NOT NULL) AS is_custom
             FROM transactions t
             INNER JOIN accounts a ON t.account_id = a.id
             LEFT JOIN transaction_category_overrides o ON o.user_id = t.user_id AND o.normalized_merchant = t.normalized_merchant

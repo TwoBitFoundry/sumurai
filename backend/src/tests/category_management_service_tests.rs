@@ -14,6 +14,13 @@ fn make_service() -> CategoryManagementService {
     CategoryManagementService::new(SYSTEM_CATEGORY_SLUGS)
 }
 
+fn validation_error(result: Result<CustomCategory, CategoryServiceError>) -> CustomCategoryError {
+    match result {
+        Err(CategoryServiceError::Validation(e)) => e,
+        other => panic!("expected validation error, got {:?}", other),
+    }
+}
+
 fn make_custom_category(user_id: Uuid, display_name: &str, lookup_key: &str) -> CustomCategory {
     CustomCategory {
         id: Uuid::new_v4(),
@@ -74,7 +81,7 @@ async fn given_empty_name_when_create_category_then_rejects_with_empty_name_erro
     repo.expect_list_custom_categories_for_user().times(0);
 
     let result = service.create_custom_category(&repo, &user_id, "   ").await;
-    assert_eq!(result.unwrap_err(), CustomCategoryError::EmptyName);
+    assert_eq!(validation_error(result), CustomCategoryError::EmptyName);
 }
 
 #[tokio::test]
@@ -88,7 +95,10 @@ async fn given_name_with_digits_when_create_category_then_rejects_invalid_charac
     let result = service
         .create_custom_category(&repo, &user_id, "Coffee 1")
         .await;
-    assert_eq!(result.unwrap_err(), CustomCategoryError::InvalidCharacters);
+    assert_eq!(
+        validation_error(result),
+        CustomCategoryError::InvalidCharacters
+    );
 }
 
 #[tokio::test]
@@ -102,7 +112,10 @@ async fn given_name_with_hyphen_when_create_category_then_rejects_invalid_charac
     let result = service
         .create_custom_category(&repo, &user_id, "Co-ffee")
         .await;
-    assert_eq!(result.unwrap_err(), CustomCategoryError::InvalidCharacters);
+    assert_eq!(
+        validation_error(result),
+        CustomCategoryError::InvalidCharacters
+    );
 }
 
 #[tokio::test]
@@ -116,7 +129,10 @@ async fn given_name_with_underscore_when_create_category_then_rejects_invalid_ch
     let result = service
         .create_custom_category(&repo, &user_id, "FOOD_AND_DRINK")
         .await;
-    assert_eq!(result.unwrap_err(), CustomCategoryError::InvalidCharacters);
+    assert_eq!(
+        validation_error(result),
+        CustomCategoryError::InvalidCharacters
+    );
 }
 
 #[tokio::test]
@@ -130,7 +146,7 @@ async fn given_four_word_name_when_create_category_then_rejects_too_many_words()
     let result = service
         .create_custom_category(&repo, &user_id, "one two three four")
         .await;
-    assert_eq!(result.unwrap_err(), CustomCategoryError::TooManyWords);
+    assert_eq!(validation_error(result), CustomCategoryError::TooManyWords);
 }
 
 #[tokio::test]
@@ -144,7 +160,7 @@ async fn given_name_over_thirty_chars_when_create_category_then_rejects_too_long
     let result = service
         .create_custom_category(&repo, &user_id, "Averylongcategorynamethatisoverthelimit")
         .await;
-    assert_eq!(result.unwrap_err(), CustomCategoryError::NameTooLong);
+    assert_eq!(validation_error(result), CustomCategoryError::NameTooLong);
 }
 
 #[tokio::test]
@@ -159,7 +175,7 @@ async fn given_name_colliding_with_system_slug_when_create_category_then_rejects
         .create_custom_category(&repo, &user_id, "Food and Drink")
         .await;
     assert_eq!(
-        result.unwrap_err(),
+        validation_error(result),
         CustomCategoryError::CollidesWithSystemCategory
     );
 }
@@ -183,9 +199,49 @@ async fn given_plural_of_existing_custom_when_create_category_then_rejects_colli
         .create_custom_category(&repo, &user_id, "Foods")
         .await;
     assert_eq!(
-        result.unwrap_err(),
+        validation_error(result),
         CustomCategoryError::CollidesWithExistingCustom
     );
+}
+
+#[tokio::test]
+async fn given_list_categories_db_failure_when_create_category_then_returns_db_error() {
+    let service = make_service();
+    let mut repo = MockDatabaseRepository::new();
+    let user_id = Uuid::new_v4();
+
+    repo.expect_list_custom_categories_for_user()
+        .times(1)
+        .returning(|_| Box::pin(async { Err(anyhow::anyhow!("db unavailable")) }));
+
+    repo.expect_create_custom_category().times(0);
+
+    let result = service
+        .create_custom_category(&repo, &user_id, "Coffee")
+        .await;
+
+    assert!(matches!(result.unwrap_err(), CategoryServiceError::Db(_)));
+}
+
+#[tokio::test]
+async fn given_create_category_db_failure_when_create_category_then_returns_db_error() {
+    let service = make_service();
+    let mut repo = MockDatabaseRepository::new();
+    let user_id = Uuid::new_v4();
+
+    repo.expect_list_custom_categories_for_user()
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    repo.expect_create_custom_category()
+        .times(1)
+        .returning(|_, _, _| Box::pin(async { Err(anyhow::anyhow!("db unavailable")) }));
+
+    let result = service
+        .create_custom_category(&repo, &user_id, "Coffee")
+        .await;
+
+    assert!(matches!(result.unwrap_err(), CategoryServiceError::Db(_)));
 }
 
 #[tokio::test]

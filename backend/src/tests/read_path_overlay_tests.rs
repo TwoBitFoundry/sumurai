@@ -55,7 +55,7 @@ async fn setup_test_data(
         provider_transaction_id: Some("txn_001".to_string()),
         amount: dec!(-25.00),
         date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-        merchant_name: Some("Starbucks #123".to_string()),
+        merchant_name: Some("Starbucks".to_string()),
         category_primary: "FOOD_AND_DRINK".to_string(),
         category_detailed: "Coffee".to_string(),
         category_confidence: "HIGH".to_string(),
@@ -91,7 +91,7 @@ async fn setup_test_data(
         provider_transaction_id: Some("txn_002".to_string()),
         amount: dec!(-30.00),
         date: NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
-        merchant_name: Some("Starbucks 4421".to_string()),
+        merchant_name: Some("Starbucks".to_string()),
         category_primary: "FOOD_AND_DRINK".to_string(),
         category_detailed: "Coffee".to_string(),
         category_confidence: "HIGH".to_string(),
@@ -164,6 +164,8 @@ async fn given_override_when_listing_transactions_then_returns_effective_categor
     assert_eq!(result.len(), 2);
     assert_eq!(result[0].category_primary, "Coffee");
     assert_eq!(result[1].category_primary, "Coffee");
+    assert!(result.iter().all(|t| t.is_overridden));
+    assert!(result.iter().all(|t| !t.is_custom));
 }
 
 #[tokio::test]
@@ -194,6 +196,69 @@ async fn given_no_override_when_listing_transactions_then_returns_stored_categor
     assert_eq!(result.len(), 2);
     assert_eq!(result[0].category_primary, txn2.category_primary);
     assert_eq!(result[1].category_primary, txn1.category_primary);
+    assert!(result.iter().all(|t| !t.is_overridden));
+    assert!(result.iter().all(|t| !t.is_custom));
+}
+
+#[tokio::test]
+async fn given_custom_category_override_when_listing_transactions_then_marks_is_custom() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let user_id = Uuid::new_v4();
+
+    sqlx::query("INSERT INTO users (id, email, password_hash, provider) VALUES ($1, $2, $3, $4)")
+        .bind(user_id)
+        .bind(format!("user{}@test.com", user_id))
+        .bind("hash")
+        .bind("plaid")
+        .execute(&pool)
+        .await
+        .unwrap();
+
+    let (_, custom_cat_id, txn1_id, _, _) = setup_test_data(&pool, &user_id).await;
+
+    sqlx::query(
+        "INSERT INTO user_custom_categories (id, user_id, display_name, lookup_key)
+         VALUES ($1, $2, $3, $4)",
+    )
+    .bind(custom_cat_id)
+    .bind(user_id)
+    .bind("Coffee")
+    .bind("coffee")
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        "INSERT INTO transaction_category_overrides (id, user_id, normalized_merchant, category_name, custom_category_id)
+         SELECT $1, $2, t.normalized_merchant, $3, $4
+         FROM transactions t
+         WHERE t.id = $5",
+    )
+    .bind(Uuid::new_v4())
+    .bind(user_id)
+    .bind("Coffee")
+    .bind(custom_cat_id)
+    .bind(txn1_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let repo = open_repository(pool);
+    let result = repo
+        .get_transactions_paginated(&user_id, 100, 0, None, None, None, None, None)
+        .await
+        .unwrap();
+
+    let overridden = result
+        .iter()
+        .find(|t| t.id == txn1_id)
+        .expect("transaction with override");
+    assert_eq!(overridden.category_primary, "Coffee");
+    assert!(overridden.is_overridden);
+    assert!(overridden.is_custom);
 }
 
 #[tokio::test]
