@@ -154,7 +154,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let simplefin_provider: Arc<dyn providers::FinancialDataProvider> =
-        Arc::new(providers::SimpleFinProvider::new());
+        Arc::new(providers::SimpleFinProvider::new()?);
     provider_registry.register("simplefin", simplefin_provider);
     if default_provider == "simplefin" && provider_registry.get("simplefin").is_none() {
         anyhow::bail!("DEFAULT_PROVIDER is simplefin but SimpleFIN failed to register");

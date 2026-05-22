@@ -127,12 +127,18 @@ Sources: <https://www.simplefin.org/protocol.html>, <https://beta-bridge.simplef
 
 All new tests in `backend/src/tests/simplefin_provider_tests.rs`, using a `mockall`-generated `MockSimpleFinHttpClient`:
 
-- [ ] Claim happy path: setup token → access URL → credentials with `provider == "simplefin"`, `access_token` is the access URL, `certificate`/`private_key` are `None`.
-- [ ] Claim `403` (token already consumed) → returns the typed error variant, not a generic anyhow.
-- [ ] `get_accounts` parses the fixture JSON into the right number of accounts with `conn_id` preserved.
-- [ ] `get_transactions` over a 200-day range issues **three** `client.get_accounts` calls with non-overlapping 90/90/20-day windows and merges results.
-- [ ] `get_institution_info` returns the typed `NotApplicableForSimpleFin` error.
-- [ ] No test makes a real network call.
+- [x] Claim happy path: setup token → access URL → credentials with `provider == "simplefin"`, `access_token` is the access URL, `certificate`/`private_key` are `None`.
+- [x] Claim `403` (token already consumed) → returns the typed error variant, not a generic anyhow.
+- [x] `get_accounts` parses the fixture JSON into the right number of accounts with `conn_id` preserved.
+- [x] `get_transactions` over a 200-day range issues **three** `client.get_accounts` calls with non-overlapping 90/90/20-day windows and merges results.
+- [x] `get_institution_info` returns the typed `NotApplicableForSimpleFin` error.
+- [x] No test makes a real network call.
+
+#### Phase 2 TDD log
+
+- Red: claim, get_accounts, get_transactions chunking, get_institution_info tests in `simplefin_provider_tests.rs`.
+- Green: `models/simplefin.rs`, `SimpleFinHttpClient` + `RealSimpleFinHttpClient`, full `FinancialDataProvider` impl; `Account.provider_conn_id` for org grouping.
+- Commands: `cargo test --manifest-path backend/Cargo.toml --locked` (345 passed).
 
 ---
 

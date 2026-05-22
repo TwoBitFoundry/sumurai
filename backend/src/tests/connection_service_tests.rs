@@ -115,6 +115,7 @@ async fn given_plaid_sync_with_many_transactions_when_persisting_then_batches_wr
         balance_current: Some(Decimal::new(10_000, 2)),
         mask: Some("1234".to_string()),
         institution_name: Some("Test Bank".to_string()),
+        provider_conn_id: None,
     }];
 
     let transactions = build_transactions(account_id, user_id);

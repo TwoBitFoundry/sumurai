@@ -27,6 +27,7 @@ fn create_test_accounts_for_bank(connection_id: Uuid, user_id: Uuid) -> Vec<Acco
             balance_current: Some(dec!(1500.00)),
             mask: Some("1234".to_string()),
             institution_name: None,
+            provider_conn_id: None,
         },
         Account {
             id: Uuid::new_v4(),
@@ -38,6 +39,7 @@ fn create_test_accounts_for_bank(connection_id: Uuid, user_id: Uuid) -> Vec<Acco
             balance_current: Some(dec!(5000.00)),
             mask: Some("5678".to_string()),
             institution_name: None,
+            provider_conn_id: None,
         },
         Account {
             id: Uuid::new_v4(),
@@ -49,6 +51,7 @@ fn create_test_accounts_for_bank(connection_id: Uuid, user_id: Uuid) -> Vec<Acco
             balance_current: Some(dec!(-250.00)),
             mask: Some("9012".to_string()),
             institution_name: None,
+            provider_conn_id: None,
         },
     ]
 }
@@ -154,6 +157,7 @@ async fn given_bank_connection_when_upserting_account_then_assigns_connection_id
         balance_current: Some(dec!(1000.00)),
         mask: Some("1234".to_string()),
         institution_name: None,
+        provider_conn_id: None,
     };
 
     account.user_id = Some(user_id);

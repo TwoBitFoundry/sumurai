@@ -59,6 +59,7 @@ async fn create_test_account(repo: &PostgresRepository, user_id: Uuid) -> Accoun
         balance_current: Some(dec!(1000.00)),
         mask: Some("1234".to_string()),
         institution_name: Some("Test Bank".to_string()),
+        provider_conn_id: None,
     };
 
     repo.upsert_account(&account).await.unwrap();

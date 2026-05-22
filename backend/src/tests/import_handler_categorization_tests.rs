@@ -33,6 +33,7 @@ fn owned_account(user_id: Uuid, account_id: Uuid) -> Account {
         balance_current: None,
         mask: Some("1234".to_string()),
         institution_name: Some("Test Bank".to_string()),
+        provider_conn_id: None,
     }
 }
 

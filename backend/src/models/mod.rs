@@ -12,5 +12,6 @@ pub mod plaid;
 pub mod predicted_category;
 pub mod query;
 pub mod rate_limit;
+pub mod simplefin;
 pub mod transaction;
 pub mod transaction_category_override;

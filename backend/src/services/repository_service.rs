@@ -1675,6 +1675,7 @@ impl DatabaseRepository for PostgresRepository {
                     balance_current,
                     mask,
                     institution_name,
+                    provider_conn_id: None,
                 },
             )
             .collect())

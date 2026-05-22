@@ -149,6 +149,7 @@ async fn given_no_snapshots_when_get_balances_overview_then_falls_back_to_accoun
                     balance_current: Some(dec!(500.00)),
                     mask: None,
                     institution_name: None,
+            provider_conn_id: None,
                 },
                 Account {
                     id: Uuid::new_v4(),
@@ -160,6 +161,7 @@ async fn given_no_snapshots_when_get_balances_overview_then_falls_back_to_accoun
                     balance_current: Some(dec!(200.00)),
                     mask: None,
                     institution_name: None,
+            provider_conn_id: None,
                 },
             ])
         })
