@@ -73,7 +73,7 @@ export class TransactionService {
     categoryName: string,
     isCustom: boolean
   ): Promise<void> {
-    await ApiClient.put(`/api/transactions/${id}/category`, {
+    await ApiClient.put(`/transactions/${id}/category`, {
       category_name: categoryName,
       is_custom: isCustom,
     });

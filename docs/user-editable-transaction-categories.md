@@ -372,7 +372,7 @@ Design rules (confirmed with the user):
 5. Audit the existing mobile representation of the transactions table. If [TransactionsTable.tsx](frontend/src/features/transactions/components/TransactionsTable.tsx) already collapses columns below `md`, ensure the chevron rides with the category cell rather than getting hidden. If the category cell is dropped entirely on mobile, expose the chevron in whatever stacked-row representation already exists; do **not** silently strip the editing affordance from mobile users.
 
 **Acceptance criteria.**
-- [ ] Verified at all three breakpoints: desktop (≥1024px) and tablet (768–1023px) render the picker as an anchored Popover; mobile (<768px) renders it as a Modal / bottom-sheet with ≥44px tap targets and the inline edit flow completes end-to-end with the on-screen keyboard open.
+- [x] Verified at all three breakpoints: desktop (≥1024px) and tablet (768–1023px) render the picker as an anchored Popover; mobile (<768px) renders it as a Modal / bottom-sheet with ≥44px tap targets and the inline edit flow completes end-to-end with the on-screen keyboard open.
 - [x] `DeleteCustomCategoryConfirm` renders inside the visible viewport at all three widths.
 - [x] The chevron is visible and tappable on mobile (no silent feature drop).
 - [x] `npm --prefix frontend test` (full Jest suite) passes; `lint` and `typecheck` pass.
@@ -382,7 +382,7 @@ Design rules (confirmed with the user):
 - Added responsive component coverage for the picker and delete confirm, plus a mobile touch-target assertion for the inline chevron trigger.
 - Implemented a shared viewport breakpoint hook, swapped the picker and delete confirm to bottom-sheet `Modal` presentations below `md`, widened the mobile tap targets, and constrained the anchored picker width for tablet/desktop.
 - Verified with `npm --prefix frontend run test:serial -- --runTestsByPath tests/features/transactions/components/CategoryPicker.test.tsx tests/features/transactions/components/DeleteCustomCategoryConfirm.test.tsx tests/features/transactions/components/InlineCategoryCell.test.tsx`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, and `npm --prefix frontend test`.
-- Live browser verification remains pending because the local Docker dev dependency failed to start and the frontend dev server could not be brought up for a manual breakpoint pass in this session.
+- Completed the live browser breakpoint pass on `http://localhost:3001` with the Teller demo account: desktop and tablet rendered anchored popovers, mobile rendered the bottom sheet, the chevron remained visible below `md`, and the mobile sheet kept the confirm button visible while the input was focused.
 
 ---
 
@@ -405,12 +405,19 @@ Design rules (confirmed with the user):
 
 **Acceptance criteria.**
 - [ ] Steps 3–6 succeed as described.
-- [ ] Step 7 inline errors all render before the network call.
-- [ ] Step 8 confirms provider sync is unaffected (Plaid/Teller categories unchanged where no override applies).
-- [ ] Step 9 verifies tanstack invalidation closes the loop.
-- [ ] `cargo test --manifest-path backend/Cargo.toml --locked` (full suite) passes.
-- [ ] `npm --prefix frontend test` (full suite) passes.
-- [ ] `cargo fmt --check`, `cargo check --all-targets`, `cargo clippy ... -D warnings` pass.
+- [x] Step 7 inline errors all render before the network call.
+- [x] Step 8 confirms provider sync is unaffected (Plaid/Teller categories unchanged where no override applies).
+- [x] Step 9 verifies tanstack invalidation closes the loop.
+- [x] `cargo test --manifest-path backend/Cargo.toml --locked` (full suite) passes.
+- [x] `npm --prefix frontend test` (full suite) passes.
+- [x] `cargo fmt --check`, `cargo check --all-targets`, `cargo clippy ... -D warnings` pass.
+
+**TDD log.**
+- Live browser verification on `http://localhost:3001` with `teller@test.com` exercised the repeated-merchant override path on existing Teller data (`Big Bank`): custom-category create-and-apply, revert-to-primary deleting the override row in Postgres, inline validation errors, custom-chip delete invalidation, and responsive desktop/tablet/mobile interactions all completed successfully.
+- Triggering a live category update exposed a backend repository mismatch: `get_transaction_by_id_for_user` still selected `transactions.provider_account_id` even though migration `023` removed that column from the table. The query now matches the schema and a Postgres-backed regression test covers the path.
+- The browser pass also exposed duplicated `/api` prefixes in the frontend category services when running the standalone dev server on `:3001`; the service paths and focused frontend tests were updated so local dev now reaches the same backend routes as the Docker stack.
+- Teller sync was triggered from the Accounts page (`Sync now`), backend logs reported `Transaction sync completed` for provider `teller`, and the unoverridden `Big Bank` rows remained on stored `category_primary = GENERAL_MERCHANDISE` after the sync.
+- Equivalent override propagation and delete/revert behaviors are verified live, but the exact CSV import / re-import script from steps 2–4 was not exercised because the `:3001` transactions surface used for this browser pass did not expose the import flow.
 
 ---
 

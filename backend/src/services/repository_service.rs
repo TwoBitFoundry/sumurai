@@ -2142,7 +2142,6 @@ impl DatabaseRepository for PostgresRepository {
                 Uuid,
                 Option<Uuid>,
                 Option<String>,
-                Option<String>,
                 rust_decimal::Decimal,
                 chrono::NaiveDate,
                 Option<String>,
@@ -2155,7 +2154,7 @@ impl DatabaseRepository for PostgresRepository {
             ),
         >(
             r#"
-            SELECT id, account_id, user_id, provider_account_id, provider_transaction_id,
+            SELECT id, account_id, user_id, provider_transaction_id,
                    amount, date, merchant_name, category_primary, category_detailed,
                    category_confidence, payment_channel, pending, created_at
             FROM transactions
@@ -2174,7 +2173,6 @@ impl DatabaseRepository for PostgresRepository {
                 id,
                 account_id,
                 user_id,
-                provider_account_id,
                 provider_transaction_id,
                 amount,
                 date,
@@ -2189,7 +2187,7 @@ impl DatabaseRepository for PostgresRepository {
                 id,
                 account_id,
                 user_id,
-                provider_account_id,
+                provider_account_id: None,
                 provider_transaction_id,
                 amount,
                 date,

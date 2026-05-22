@@ -84,7 +84,8 @@ export const TransactionsTable: React.FC<Props> = ({
               <tr className={cn('border-b', ...uiBorderRecipes.divider)}>
                 <th
                   className={cn(
-                    'w-[15%]',
+                    'w-[18%]',
+                    'md:w-[15%]',
                     'whitespace-nowrap',
                     'px-4',
                     'py-3',
@@ -95,13 +96,21 @@ export const TransactionsTable: React.FC<Props> = ({
                   Date
                 </th>
                 <th
-                  className={cn('w-[30%]', 'px-4', 'py-3', 'text-left', uiTypographyRecipes.label)}
+                  className={cn(
+                    'w-[34%]',
+                    'md:w-[30%]',
+                    'px-4',
+                    'py-3',
+                    'text-left',
+                    uiTypographyRecipes.label
+                  )}
                 >
                   Merchant
                 </th>
                 <th
                   className={cn(
-                    'w-[15%]',
+                    'w-[18%]',
+                    'md:w-[15%]',
                     'whitespace-nowrap',
                     'px-4',
                     'py-3',
@@ -113,7 +122,9 @@ export const TransactionsTable: React.FC<Props> = ({
                 </th>
                 <th
                   className={cn(
-                    'w-[20%]',
+                    'hidden',
+                    'md:table-cell',
+                    'md:w-[20%]',
                     'whitespace-nowrap',
                     'px-4',
                     'py-3',
@@ -125,7 +136,8 @@ export const TransactionsTable: React.FC<Props> = ({
                 </th>
                 <th
                   className={cn(
-                    'w-[20%]',
+                    'w-[30%]',
+                    'md:w-[20%]',
                     'whitespace-nowrap',
                     'px-4',
                     'py-3',
@@ -206,7 +218,16 @@ export const TransactionsTable: React.FC<Props> = ({
                       >
                         {fmtUSD(r.amount)}
                       </td>
-                      <td className={cn('whitespace-nowrap', 'px-4', 'py-3', 'align-middle')}>
+                      <td
+                        className={cn(
+                          'hidden',
+                          'md:table-cell',
+                          'whitespace-nowrap',
+                          'px-4',
+                          'py-3',
+                          'align-middle'
+                        )}
+                      >
                         <span
                           className={cn(
                             uiTypographyRecipes.body,
@@ -243,7 +264,9 @@ export const TransactionsTable: React.FC<Props> = ({
                     tabIndex={-1}
                     className={cn(transactionsRowRecipes.placeholder, transactionsRowRecipes.even)}
                   >
-                    <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
+                    <td className={cn('hidden', 'md:table-cell', 'px-4', 'py-3', 'align-middle')}>
+                      {'\u00A0'}
+                    </td>
                     <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
                     <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>
                     <td className={cn('px-4', 'py-3', 'align-middle')}>{'\u00A0'}</td>

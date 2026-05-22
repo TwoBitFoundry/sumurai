@@ -74,4 +74,24 @@ describe('TransactionsTable text tokens', () => {
     expect(container.querySelectorAll('tbody tr')).toHaveLength(8);
     expect(screen.getByText('No transactions found')).toBeInTheDocument();
   });
+
+  it('keeps the category column on-screen by hiding the account column below md', () => {
+    render(
+      <TransactionsTable
+        items={[baseTx(42)]}
+        total={1}
+        currentPage={1}
+        totalPages={1}
+        pageSize={1}
+        onPrev={() => {}}
+        onNext={() => {}}
+      />
+    );
+
+    expect(screen.getByText('Account').closest('th')?.className).toContain('hidden');
+    expect(screen.getByText('Account').closest('th')?.className).toContain('md:table-cell');
+    expect(screen.getByText('Category').closest('th')?.className).toContain('w-[30%]');
+    expect(screen.getByText('Checking').closest('td')?.className).toContain('hidden');
+    expect(screen.getByText('Checking').closest('td')?.className).toContain('md:table-cell');
+  });
 });
