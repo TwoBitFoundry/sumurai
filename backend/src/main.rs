@@ -338,8 +338,18 @@ pub fn create_app(state: AppState) -> Router {
             "/api/transactions/categories",
             get(get_authenticated_transaction_categories),
         )
+        .route("/api/categories", get(list_categories))
+        .route("/api/categories/custom", post(create_custom_category))
+        .route(
+            "/api/categories/custom/{id}",
+            delete(delete_custom_category),
+        )
         .nest("/api/transactions/import", transaction_import_routes)
         .route("/api/transactions", get(get_authenticated_transactions))
+        .route(
+            "/api/transactions/{id}/category",
+            put(set_transaction_category),
+        )
         .route(
             "/api/transactions/insights",
             get(get_authenticated_transactions_insights),
@@ -1260,6 +1270,203 @@ async fn get_authenticated_transaction_categories(
             );
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
+    }
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/categories",
+    responses(
+        (status = 200, description = "List of system and custom categories", body = crate::models::custom_category::CategoryListResponse),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Categories"
+)]
+async fn list_categories(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<crate::models::custom_category::CategoryListResponse>, StatusCode> {
+    match state
+        .category_management_service
+        .list_categories_for_user(&*state.db_repository, &auth_context.user_id)
+        .await
+    {
+        Ok(response) => Ok(Json(response)),
+        Err(e) => {
+            tracing::error!(
+                "Failed to fetch categories for user {}: {}",
+                auth_context.user_id,
+                e
+            );
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/categories/custom",
+    request_body = crate::models::custom_category::CreateCustomCategoryRequest,
+    responses(
+        (status = 200, description = "Custom category created", body = crate::models::custom_category::CustomCategory),
+        (status = 400, description = "Validation error with error code"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Categories"
+)]
+async fn create_custom_category(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<crate::models::custom_category::CreateCustomCategoryRequest>,
+) -> Result<
+    Json<crate::models::custom_category::CustomCategory>,
+    (StatusCode, Json<ApiErrorResponse>),
+> {
+    match state
+        .category_management_service
+        .create_custom_category(&*state.db_repository, &auth_context.user_id, &req.name)
+        .await
+    {
+        Ok(category) => Ok(Json(category)),
+        Err(e) => {
+            let (message, error_code) = match e {
+                crate::models::custom_category::CustomCategoryError::NameTooLong => {
+                    ("Name too long", "name_too_long")
+                }
+                crate::models::custom_category::CustomCategoryError::TooManyWords => {
+                    ("Too many words", "too_many_words")
+                }
+                crate::models::custom_category::CustomCategoryError::EmptyName => {
+                    ("Name is empty", "empty_name")
+                }
+                crate::models::custom_category::CustomCategoryError::InvalidCharacters => {
+                    ("Invalid characters", "invalid_characters")
+                }
+                crate::models::custom_category::CustomCategoryError::CollidesWithSystemCategory => {
+                    (
+                        "Collides with system category",
+                        "collides_with_system_category",
+                    )
+                }
+                crate::models::custom_category::CustomCategoryError::CollidesWithExistingCustom => {
+                    (
+                        "Collides with existing custom category",
+                        "collides_with_existing_custom",
+                    )
+                }
+            };
+            Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiErrorResponse::with_code(
+                    "validation_error",
+                    message,
+                    error_code,
+                )),
+            ))
+        }
+    }
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/categories/custom/{id}",
+    params(
+        ("id" = Uuid, Path, description = "Custom category ID"),
+    ),
+    responses(
+        (status = 204, description = "Custom category deleted"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Categories"
+)]
+async fn delete_custom_category(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    axum::extract::Path(id): axum::extract::Path<Uuid>,
+) -> Result<StatusCode, StatusCode> {
+    match state
+        .category_management_service
+        .delete_custom_category(&*state.db_repository, &auth_context.user_id, &id)
+        .await
+    {
+        Ok(_) => Ok(StatusCode::NO_CONTENT),
+        Err(e) => {
+            tracing::error!(
+                "Failed to delete custom category {} for user {}: {}",
+                id,
+                auth_context.user_id,
+                e
+            );
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+#[utoipa::path(
+    put,
+    path = "/api/transactions/{id}/category",
+    request_body = crate::models::transaction_category_override::SetTransactionCategoryRequest,
+    params(
+        ("id" = Uuid, Path, description = "Transaction ID"),
+    ),
+    responses(
+        (status = 200, description = "Category updated"),
+        (status = 400, description = "Validation error"),
+        (status = 404, description = "Transaction not found"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Transactions"
+)]
+async fn set_transaction_category(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    axum::extract::Path(id): axum::extract::Path<Uuid>,
+    Json(req): Json<crate::models::transaction_category_override::SetTransactionCategoryRequest>,
+) -> Result<StatusCode, (StatusCode, Json<ApiErrorResponse>)> {
+    use crate::services::category_management::service::CategoryServiceError;
+
+    match state
+        .category_management_service
+        .set_transaction_category(&*state.db_repository, &auth_context.user_id, &id, req)
+        .await
+    {
+        Ok(_) => Ok(StatusCode::OK),
+        Err(CategoryServiceError::TransactionNotFound) => Err((
+            StatusCode::NOT_FOUND,
+            Json(ApiErrorResponse::new("not_found", "transaction_not_found")),
+        )),
+        Err(CategoryServiceError::CustomCategoryNotFound) => Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiErrorResponse::new(
+                "validation_error",
+                "custom_category_not_found",
+            )),
+        )),
+        Err(CategoryServiceError::Db(e)) => {
+            tracing::error!(
+                "Database error setting category for transaction {}: {}",
+                id,
+                e
+            );
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiErrorResponse::new(
+                    "internal_error",
+                    "internal_server_error",
+                )),
+            ))
+        }
+        Err(CategoryServiceError::Validation(_)) => Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiErrorResponse::new(
+                "validation_error",
+                "validation_error",
+            )),
+        )),
     }
 }
 

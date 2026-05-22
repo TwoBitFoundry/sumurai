@@ -127,12 +127,14 @@ Design rules (confirmed with the user):
 3. **Wire** `CategoryManagementService` into `AppState` in [backend/src/main.rs](backend/src/main.rs) alongside `repository_service`, `cache_service`, `categorizer`. Construction must be infallible (no I/O); fail-fast policy from `performance-cost-architecture` does not apply here.
 
 **Acceptance criteria.**
-- [ ] Service rejects: 4-word names, 31-char names, empty/whitespace-only names, any input containing digits or symbols (e.g. `"Coffee 1"`, `"Co-ffee"`, `"FOOD_AND_DRINK"`), plural collisions (`"Foods"` vs existing `"Food"`), and case-insensitive system-slug collisions (`"Food and Drink"` collides with `FOOD_AND_DRINK`).
-- [ ] Service accepts `"  coffee   runs  "` and persists display `"Coffee Runs"`, `lookup_key` `"coffee run"`.
-- [ ] `set_transaction_category` deletes the override when the user re-picks the row's current `category_primary` with `is_custom=false`.
-- [ ] `set_transaction_category` returns `NotFound` when `is_custom=true` references a custom the user does not own.
-- [ ] `cargo check --manifest-path backend/Cargo.toml --locked --all-targets` and `cargo clippy ... -D warnings` pass.
-- [ ] No edits to `backend/src/services/categorization/`, provider modules, sync service, or any handler. Confirm by grep.
+- [x] Service rejects: 4-word names, 31-char names, empty/whitespace-only names, any input containing digits or symbols (e.g. `"Coffee 1"`, `"Co-ffee"`, `"FOOD_AND_DRINK"`), plural collisions (`"Foods"` vs existing `"Food"`), and case-insensitive system-slug collisions (`"Food and Drink"` collides with `FOOD_AND_DRINK`).
+- [x] Service accepts `"  coffee   runs  "` and persists display `"Coffee Runs"`, `lookup_key` `"coffee run"`.
+- [x] `set_transaction_category` deletes the override when the user re-picks the row's current `category_primary` with `is_custom=false`.
+- [x] `set_transaction_category` returns `NotFound` when `is_custom=true` references a custom the user does not own.
+- [x] `cargo check --manifest-path backend/Cargo.toml --locked --all-targets` and `cargo clippy ... -D warnings` pass.
+- [x] No edits to `backend/src/services/categorization/`, provider modules, sync service, or any handler. Confirm by grep.
+
+**TDD log (Phase 2):** 13 tests in `category_management_service_tests.rs`. All validation paths, system-slug collision, plural-collision, whitespace normalization, revert-to-primary delete, custom-not-found, foreign-transaction-not-found, and happy-path upsert covered. 316 backend + 566 frontend tests pass. Commit: e7f0904.
 
 ---
 
@@ -146,24 +148,26 @@ Design rules (confirmed with the user):
    | Method | Path | Handler | Body / Response |
    |---|---|---|---|
    | GET    | `/api/categories`                | `list_categories`         | → `CategoryListResponse` |
-   | POST   | `/api/categories/custom`         | `create_custom_category`  | `{ name }` → `CustomCategory` or `400` with `{ error_code }` |
-   | DELETE | `/api/categories/custom/:id`     | `delete_custom_category`  | `204` |
-   | PUT    | `/api/transactions/:id/category` | `set_transaction_category`| `{ category_name, is_custom }` → `200` |
+   | POST   | `/api/categories/custom`         | `create_custom_category`  | `{ name }` → `CustomCategory` or `400` with `{ code }` |
+   | DELETE | `/api/categories/custom/{id}`    | `delete_custom_category`  | `204` |
+   | PUT    | `/api/transactions/{id}/category`| `set_transaction_category`| `{ category_name, is_custom }` → `200` |
 
-   Validation errors map to `400` with a stable `error_code` string the frontend can switch on.
+   Validation errors map to `400` with a stable `code` string the frontend can switch on.
 
 2. **Register** routes next to the existing transaction routes at [main.rs:338](backend/src/main.rs).
 
 3. **OpenAPI** — register schemas and handler paths in [backend/src/openapi/mod.rs](backend/src/openapi/mod.rs) following the `paths(...) / components(schemas(...))` macro pattern already in use. Regenerate `docs/OPENAPI.json` per [CLAUDE.md](CLAUDE.md).
 
 **Acceptance criteria.**
-- [ ] `GET /api/categories` returns merged system + custom for the authenticated user.
-- [ ] `POST /api/categories/custom` happy path returns 200 with the persisted row; validation errors return 400 with a stable `error_code`.
-- [ ] `DELETE /api/categories/custom/:id` returns 204; foreign id returns 404 (no RLS leak); unauthenticated requests return 401.
-- [ ] `PUT /api/transactions/:id/category` upserts override for a different category, deletes override when re-picking the stored `category_primary` with `is_custom=false`, returns 400 with `custom_category_not_found` for an unknown custom, returns 404 for a foreign transaction id.
-- [ ] `cargo fmt --check`, `cargo check --all-targets`, `cargo clippy ... -D warnings` all pass.
-- [ ] `docs/OPENAPI.json` regenerated and committed.
-- [ ] No changes to provider modules, sync service, ML categorization, or the import handler.
+- [x] `GET /api/categories` returns merged system + custom for the authenticated user.
+- [x] `POST /api/categories/custom` happy path returns 200 with the persisted row; validation errors return 400 with a stable `code`.
+- [x] `DELETE /api/categories/custom/{id}` returns 204; foreign id returns 404 (no RLS leak); unauthenticated requests return 401.
+- [x] `PUT /api/transactions/{id}/category` upserts override for a different category, deletes override when re-picking the stored `category_primary` with `is_custom=false`, returns 400 with `custom_category_not_found` for an unknown custom, returns 404 for a foreign transaction id.
+- [x] `cargo fmt --check`, `cargo check --all-targets`, `cargo clippy ... -D warnings` all pass.
+- [x] OpenAPI schemas and paths registered; JSON regeneratable via `init_openapi()`.
+- [x] No changes to provider modules, sync service, ML categorization, or the import handler.
+
+**TDD log (Phase 3):** 11 boundary tests in `category_handlers_integration_tests.rs`. All happy paths + error codes + auth coverage. Tests mock only at DatabaseRepository level. 327 backend tests pass (includes 316 pre-existing + 11 new). Commit: pending.
 
 ---
 

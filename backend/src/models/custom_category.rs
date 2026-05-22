@@ -14,7 +14,7 @@ pub struct CustomCategory {
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CategoryListResponse {
     pub system: Vec<String>,
     pub custom: Vec<CustomCategory>,

@@ -13,6 +13,7 @@ mod budget_service_tests;
 mod cache_keys_tests;
 mod cache_service_tests;
 mod categorization_classifier_tests;
+mod category_handlers_integration_tests;
 mod category_management_service_tests;
 mod category_normalization_tests;
 mod config_tests;
