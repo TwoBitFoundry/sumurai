@@ -83,7 +83,9 @@ use middleware::resource_authorization::{
     AuthorizedBudgetId, AuthorizedConnectionRequest, AuthorizedQuery,
 };
 use middleware::telemetry_middleware::{self, request_tracing_middleware, TelemetryConfig};
+use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
 use services::categorization::classifier_labels::format_classifier_input;
+use services::category_management::service::CategoryManagementService;
 use services::import_service::ImportService;
 use services::repository_service::{DatabaseRepository, PostgresRepository};
 use services::{
@@ -248,6 +250,9 @@ async fn main() -> anyhow::Result<()> {
 
     let otlp_traces_relay = Arc::new(OtlpTracesRelay::from_config(&telemetry_config)?);
 
+    let category_management_service =
+        Arc::new(CategoryManagementService::new(SYSTEM_CATEGORY_SLUGS));
+
     let state = AppState {
         plaid_service,
         plaid_client,
@@ -263,6 +268,7 @@ async fn main() -> anyhow::Result<()> {
         auth_service,
         provider_registry,
         otlp_traces_relay,
+        category_management_service,
     };
 
     let app = create_app(state);

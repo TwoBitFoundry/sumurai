@@ -15,6 +15,8 @@ use crate::services::{
     authorization_service::AuthorizationService,
     budget_service::BudgetService,
     cache_service::{CacheService, MockCacheService},
+    categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS,
+    category_management::service::CategoryManagementService,
     connection_service::ConnectionService,
     otel_traces_relay::OtlpTracesRelay,
     plaid_service::{PlaidService, RealPlaidClient},
@@ -298,6 +300,9 @@ impl TestFixtures {
             auth_service,
             provider_registry,
             otlp_traces_relay: Arc::new(OtlpTracesRelay::bogus_for_tests()),
+            category_management_service: Arc::new(CategoryManagementService::new(
+                SYSTEM_CATEGORY_SLUGS,
+            )),
         };
 
         Ok(create_app(state))
@@ -410,6 +415,9 @@ impl TestFixtures {
             auth_service,
             provider_registry,
             otlp_traces_relay: Arc::new(OtlpTracesRelay::bogus_for_tests()),
+            category_management_service: Arc::new(CategoryManagementService::new(
+                SYSTEM_CATEGORY_SLUGS,
+            )),
         };
 
         Ok(create_app(state))
@@ -487,6 +495,9 @@ impl TestFixtures {
             auth_service,
             provider_registry,
             otlp_traces_relay: Arc::new(OtlpTracesRelay::bogus_for_tests()),
+            category_management_service: Arc::new(CategoryManagementService::new(
+                SYSTEM_CATEGORY_SLUGS,
+            )),
         };
 
         Ok(create_app(state))

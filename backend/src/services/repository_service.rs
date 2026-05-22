@@ -4,10 +4,12 @@ use crate::models::{
     account::Account,
     auth::User,
     budget::Budget,
+    custom_category::CustomCategory,
     plaid::{LatestAccountBalance, PlaidCredentials, ProviderConnection},
     transaction::{
         LargestTransaction, Transaction, TransactionWithAccount, TransactionsInsightsResponse,
     },
+    transaction_category_override::TransactionCategoryOverride,
 };
 use aes_gcm::{
     aead::{Aead, KeyInit},
@@ -181,6 +183,37 @@ pub trait DatabaseRepository: Send + Sync {
     async fn update_user_password(&self, user_id: &Uuid, new_password_hash: &str) -> Result<()>;
 
     async fn delete_user(&self, user_id: &Uuid) -> Result<()>;
+
+    async fn create_custom_category(
+        &self,
+        user_id: &Uuid,
+        display_name: &str,
+        lookup_key: &str,
+    ) -> Result<CustomCategory>;
+
+    async fn list_custom_categories_for_user(&self, user_id: &Uuid) -> Result<Vec<CustomCategory>>;
+
+    async fn delete_custom_category(&self, user_id: &Uuid, id: &Uuid) -> Result<()>;
+
+    async fn upsert_transaction_category_override(
+        &self,
+        user_id: &Uuid,
+        normalized_merchant: &str,
+        category_name: &str,
+        custom_category_id: Option<Uuid>,
+    ) -> Result<TransactionCategoryOverride>;
+
+    async fn delete_transaction_category_override_by_norm(
+        &self,
+        user_id: &Uuid,
+        normalized_merchant: &str,
+    ) -> Result<()>;
+
+    async fn get_transaction_by_id_for_user(
+        &self,
+        user_id: &Uuid,
+        id: &Uuid,
+    ) -> Result<Option<Transaction>>;
 }
 
 pub struct PostgresRepository {
@@ -1945,5 +1978,221 @@ impl DatabaseRepository for PostgresRepository {
 
         tx.commit().await?;
         Ok(())
+    }
+
+    async fn create_custom_category(
+        &self,
+        user_id: &Uuid,
+        display_name: &str,
+        lookup_key: &str,
+    ) -> Result<CustomCategory> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let row = sqlx::query_as::<_, CustomCategory>(
+            r#"
+            INSERT INTO user_custom_categories (user_id, display_name, lookup_key)
+            VALUES ($1, $2, $3)
+            RETURNING id, user_id, display_name, lookup_key, created_at, updated_at
+            "#,
+        )
+        .bind(user_id)
+        .bind(display_name)
+        .bind(lookup_key)
+        .fetch_one(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(row)
+    }
+
+    async fn list_custom_categories_for_user(&self, user_id: &Uuid) -> Result<Vec<CustomCategory>> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let rows = sqlx::query_as::<_, CustomCategory>(
+            r#"
+            SELECT id, user_id, display_name, lookup_key, created_at, updated_at
+            FROM user_custom_categories
+            WHERE user_id = $1
+            ORDER BY display_name
+            "#,
+        )
+        .bind(user_id)
+        .fetch_all(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(rows)
+    }
+
+    async fn delete_custom_category(&self, user_id: &Uuid, id: &Uuid) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        sqlx::query("DELETE FROM user_custom_categories WHERE id = $1 AND user_id = $2")
+            .bind(id)
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn upsert_transaction_category_override(
+        &self,
+        user_id: &Uuid,
+        normalized_merchant: &str,
+        category_name: &str,
+        custom_category_id: Option<Uuid>,
+    ) -> Result<TransactionCategoryOverride> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let row = sqlx::query_as::<_, TransactionCategoryOverride>(
+            r#"
+            INSERT INTO transaction_category_overrides
+                (user_id, normalized_merchant, category_name, custom_category_id)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (user_id, normalized_merchant)
+            DO UPDATE SET
+                category_name = EXCLUDED.category_name,
+                custom_category_id = EXCLUDED.custom_category_id,
+                updated_at = NOW()
+            RETURNING id, user_id, normalized_merchant, category_name, custom_category_id,
+                      created_at, updated_at
+            "#,
+        )
+        .bind(user_id)
+        .bind(normalized_merchant)
+        .bind(category_name)
+        .bind(custom_category_id)
+        .fetch_one(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(row)
+    }
+
+    async fn delete_transaction_category_override_by_norm(
+        &self,
+        user_id: &Uuid,
+        normalized_merchant: &str,
+    ) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        sqlx::query(
+            "DELETE FROM transaction_category_overrides WHERE user_id = $1 AND normalized_merchant = $2",
+        )
+        .bind(user_id)
+        .bind(normalized_merchant)
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn get_transaction_by_id_for_user(
+        &self,
+        user_id: &Uuid,
+        id: &Uuid,
+    ) -> Result<Option<Transaction>> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let row = sqlx::query_as::<
+            _,
+            (
+                Uuid,
+                Uuid,
+                Option<Uuid>,
+                Option<String>,
+                Option<String>,
+                rust_decimal::Decimal,
+                chrono::NaiveDate,
+                Option<String>,
+                String,
+                String,
+                String,
+                Option<String>,
+                bool,
+                Option<chrono::DateTime<chrono::Utc>>,
+            ),
+        >(
+            r#"
+            SELECT id, account_id, user_id, provider_account_id, provider_transaction_id,
+                   amount, date, merchant_name, category_primary, category_detailed,
+                   category_confidence, payment_channel, pending, created_at
+            FROM transactions
+            WHERE id = $1 AND user_id = $2
+            "#,
+        )
+        .bind(id)
+        .bind(user_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(row.map(
+            |(
+                id,
+                account_id,
+                user_id,
+                provider_account_id,
+                provider_transaction_id,
+                amount,
+                date,
+                merchant_name,
+                category_primary,
+                category_detailed,
+                category_confidence,
+                payment_channel,
+                pending,
+                created_at,
+            )| Transaction {
+                id,
+                account_id,
+                user_id,
+                provider_account_id,
+                provider_transaction_id,
+                amount,
+                date,
+                merchant_name,
+                category_primary,
+                category_detailed,
+                category_confidence,
+                payment_channel,
+                pending,
+                created_at,
+            },
+        ))
     }
 }
