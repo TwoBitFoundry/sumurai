@@ -153,18 +153,6 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .modal-drawer-overlay[data-state='open'] {
-    animation: fadeIn 200ms ease-out forwards;
-  }
-
-  .modal-drawer-overlay[data-state='closed'] {
-    animation: fadeOut 200ms ease-in forwards;
-  }
-
-  .modal-drawer-overlay[data-exiting='true'] {
-    animation: fadeOut 200ms ease-in forwards;
-  }
-
   .modal-drawer-content[data-state='open'] {
     animation: drawerSlideIn 320ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
   }

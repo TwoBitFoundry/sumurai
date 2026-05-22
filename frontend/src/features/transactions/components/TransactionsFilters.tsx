@@ -1,6 +1,7 @@
 import { Search } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import type { CustomCategory } from '@/types/api';
 import { Button, cn, Input } from '@/ui/primitives';
 import { pillScrollFadeRecipes } from '@/ui/primitives/Pill';
@@ -12,6 +13,7 @@ import {
 } from '@/ui/recipes';
 import { formatCategoryName, getTagThemeForCategoryAtIndex } from '../../../utils/categories';
 import DeleteCustomCategoryConfirm from './DeleteCustomCategoryConfirm';
+import { transactionsRowRecipes } from './transactionsRowRecipes';
 
 interface Props {
   search: string;
@@ -38,6 +40,7 @@ export const TransactionsFilters: React.FC<Props> = ({
   showFilterLabel = true,
   scrollFadeSurface = 'card',
 }) => {
+  const { isMobile } = useViewportBreakpoint();
   const scrollFade = pillScrollFadeRecipes[scrollFadeSurface];
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [deleteTarget, setDeleteTarget] = useState<CustomCategory | null>(null);
@@ -171,6 +174,7 @@ export const TransactionsFilters: React.FC<Props> = ({
                       onClick={() => onSelectCategory(isSelected ? null : name)}
                       className={cn(
                         'whitespace-nowrap',
+                        isMobile && transactionsRowRecipes.categoryPillDense,
                         isCustom &&
                           'pr-10 hover:translate-y-0 hover:shadow-none group-hover:shadow-lg',
                         theme.tag,

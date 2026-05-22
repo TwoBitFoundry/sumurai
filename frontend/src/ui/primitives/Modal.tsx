@@ -172,7 +172,7 @@ export function Modal({
               className={cn(
                 'fixed inset-0 z-50',
                 ...modalDrawer.overlayMotion,
-                ...uiSurfaceRecipes.overlay,
+                ...modalDrawer.overlay,
                 containerClassName,
                 backdropClassName
               )}

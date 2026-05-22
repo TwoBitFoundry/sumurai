@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import type React from 'react';
 import { useMemo } from 'react';
+import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import type { Transaction } from '@/types/api';
 import { cn } from '@/ui/primitives';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
@@ -48,6 +49,7 @@ export const TransactionsMobileList: React.FC<Props> = ({
   pageSize,
   animationKey,
 }) => {
+  const { isMobile } = useViewportBreakpoint();
   const visibleItems = items.slice(0, pageSize);
   const placeholderCount = Math.max(0, pageSize - visibleItems.length);
   const placeholderRows = useMemo(
@@ -142,7 +144,7 @@ export const TransactionsMobileList: React.FC<Props> = ({
                     </>
                   ) : null}
                 </p>
-                <InlineCategoryCell transaction={transaction} dense />
+                <InlineCategoryCell transaction={transaction} dense={isMobile} />
               </div>
             </li>
           );

@@ -1,13 +1,24 @@
 import { render, screen } from '@testing-library/react';
 import { TransactionsMobileList } from '@/features/transactions/components/TransactionsMobileList';
+import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import type { Transaction } from '@/types/api';
+
+jest.mock('@/hooks/useViewportBreakpoint', () => ({
+  useViewportBreakpoint: jest.fn(),
+}));
 
 jest.mock('@/features/transactions/components/InlineCategoryCell', () => ({
   __esModule: true,
-  default: ({ transaction }: { transaction: Transaction }) => (
-    <span data-testid="inline-category-cell">{transaction.category?.primary}</span>
+  default: ({ transaction, dense }: { transaction: Transaction; dense?: boolean }) => (
+    <span data-testid="inline-category-cell" data-dense={dense ? 'true' : 'false'}>
+      {transaction.category?.primary}
+    </span>
   ),
 }));
+
+const mockUseViewportBreakpoint = useViewportBreakpoint as jest.MockedFunction<
+  typeof useViewportBreakpoint
+>;
 
 const transaction: Transaction = {
   id: 'tx-1',
@@ -19,7 +30,23 @@ const transaction: Transaction = {
   account_mask: '6017',
 };
 
+const listProps = {
+  items: [transaction],
+  currentPage: 1,
+  pageSize: 8,
+  animationKey: 'page-1',
+};
+
 describe('TransactionsMobileList', () => {
+  beforeEach(() => {
+    mockUseViewportBreakpoint.mockReturnValue({
+      breakpoint: 'mobile',
+      isMobile: true,
+      isTablet: false,
+      isDesktop: false,
+    });
+  });
+
   it('renders a stacked compact row without a table', () => {
     render(
       <TransactionsMobileList
@@ -37,7 +64,20 @@ describe('TransactionsMobileList', () => {
     expect(screen.getByTitle(/Platinum Card/)).toBeInTheDocument();
     expect(screen.getByText(/Platinum Card/)).toBeInTheDocument();
     expect(screen.getByText(/6017/)).toBeInTheDocument();
-    expect(screen.getByTestId('inline-category-cell')).toBeInTheDocument();
+    expect(screen.getByTestId('inline-category-cell')).toHaveAttribute('data-dense', 'true');
+  });
+
+  it('uses standard inline pills on tablet', () => {
+    mockUseViewportBreakpoint.mockReturnValue({
+      breakpoint: 'tablet',
+      isMobile: false,
+      isTablet: true,
+      isDesktop: false,
+    });
+
+    render(<TransactionsMobileList {...listProps} />);
+
+    expect(screen.getByTestId('inline-category-cell')).toHaveAttribute('data-dense', 'false');
   });
 
   it('applies ellipsis styling to long merchant names', () => {
@@ -63,14 +103,7 @@ describe('TransactionsMobileList', () => {
   });
 
   it('includes the year on the meta line for every transaction', () => {
-    render(
-      <TransactionsMobileList
-        items={[transaction]}
-        currentPage={1}
-        pageSize={8}
-        animationKey="page-1"
-      />
-    );
+    render(<TransactionsMobileList {...listProps} />);
 
     expect(screen.getByTitle(/2026/)).toBeInTheDocument();
   });

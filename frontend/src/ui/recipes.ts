@@ -350,6 +350,7 @@ export const categoryPickerPopover = {
 } as const;
 
 export const modalDrawer = {
+  overlay: ['bg-transparent'],
   overlayMotion: ['modal-drawer-overlay'],
   contentMotion: ['modal-drawer-content'],
   formFooter: [

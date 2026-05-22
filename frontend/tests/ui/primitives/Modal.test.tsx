@@ -15,15 +15,18 @@ describe('Modal', () => {
     expect(screen.getByTestId('modal-backdrop').className).toContain('backdrop-blur-md');
   });
 
-  it('does not blur the backdrop for drawer modals', () => {
+  it('does not blur or dim the backdrop for drawer modals', () => {
     render(
       <Modal isOpen onClose={jest.fn()} presentation="drawer">
         <p>Drawer content</p>
       </Modal>
     );
 
-    expect(screen.getByTestId('modal-backdrop')).toHaveAttribute('data-presentation', 'drawer');
-    expect(screen.getByTestId('modal-backdrop').className).not.toContain('backdrop-blur');
+    const backdrop = screen.getByTestId('modal-backdrop');
+    expect(backdrop).toHaveAttribute('data-presentation', 'drawer');
+    expect(backdrop.className).not.toContain('backdrop-blur');
+    expect(backdrop.className).toContain('bg-transparent');
+    expect(backdrop.className).not.toContain('surface-overlay');
   });
 
   it('centers dialog content in a full-viewport grid', () => {
