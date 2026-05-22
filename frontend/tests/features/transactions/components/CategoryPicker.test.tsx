@@ -20,8 +20,19 @@ const useCreateCustomCategoryMock = jest.requireMock(
 
 describe('CategoryPicker', () => {
   const anchorRef = createRef<HTMLElement>();
+  const originalInnerWidth = window.innerWidth;
+
+  const setViewport = (width: number) => {
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      writable: true,
+      value: width,
+    });
+    window.dispatchEvent(new Event('resize'));
+  };
 
   beforeEach(() => {
+    setViewport(1280);
     const anchor = document.createElement('button');
     anchorRef.current = anchor;
     jest.clearAllMocks();
@@ -45,6 +56,10 @@ describe('CategoryPicker', () => {
       isPending: false,
       error: null,
     });
+  });
+
+  afterAll(() => {
+    setViewport(originalInnerWidth);
   });
 
   it('renders suggestions, keeps the current category selected, and closes on escape', async () => {
@@ -75,6 +90,44 @@ describe('CategoryPicker', () => {
     await user.keyboard('{Escape}');
     expect(onRequestClose).toHaveBeenCalledTimes(1);
     expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    800, 1280,
+  ])('renders the anchored picker surface outside the mobile breakpoint at %ipx', (width) => {
+    setViewport(width);
+
+    render(
+      <CategoryPicker
+        open
+        anchorRef={anchorRef}
+        currentCategory={{ name: 'FOOD_AND_DRINK', isCustom: false }}
+        onSelect={jest.fn()}
+        onRequestClose={jest.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('category-picker-popover')).toBeInTheDocument();
+    expect(screen.queryByTestId('category-picker-sheet')).not.toBeInTheDocument();
+  });
+
+  it('renders a mobile bottom sheet with 44px tap targets below the md breakpoint', () => {
+    setViewport(375);
+
+    render(
+      <CategoryPicker
+        open
+        anchorRef={anchorRef}
+        currentCategory={{ name: 'FOOD_AND_DRINK', isCustom: false }}
+        onSelect={jest.fn()}
+        onRequestClose={jest.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('category-picker-sheet')).toHaveClass('w-full', 'max-w-none');
+    expect(screen.queryByTestId('category-picker-popover')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Food And Drink' })).toHaveClass('min-h-11');
+    expect(screen.getByRole('button', { name: 'Confirm category' })).toHaveClass('h-11', 'w-11');
   });
 
   it('selects a suggested category and closes immediately', async () => {

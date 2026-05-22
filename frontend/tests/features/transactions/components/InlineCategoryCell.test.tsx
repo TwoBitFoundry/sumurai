@@ -49,6 +49,34 @@ describe('InlineCategoryCell', () => {
     });
   });
 
+  it('keeps the mobile chevron trigger visible at the larger touch-target size', () => {
+    render(
+      <table>
+        <tbody>
+          <tr>
+            <td>
+              <InlineCategoryCell
+                transaction={{
+                  id: 'tx-1',
+                  date: '2025-01-15',
+                  name: 'Coffee',
+                  amount: -12.34,
+                  category: { primary: 'FOOD_AND_DRINK' },
+                  account_name: 'Checking',
+                }}
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    );
+
+    expect(screen.getByRole('button', { name: 'Edit category: Food And Drink' })).toHaveClass(
+      'h-11',
+      'w-11'
+    );
+  });
+
   it.each(['{Enter}', '{Space}'])('opens the picker from the chevron with %s', async (key) => {
     render(
       <table>

@@ -373,10 +373,16 @@ Design rules (confirmed with the user):
 
 **Acceptance criteria.**
 - [ ] Verified at all three breakpoints: desktop (≥1024px) and tablet (768–1023px) render the picker as an anchored Popover; mobile (<768px) renders it as a Modal / bottom-sheet with ≥44px tap targets and the inline edit flow completes end-to-end with the on-screen keyboard open.
-- [ ] `DeleteCustomCategoryConfirm` renders inside the visible viewport at all three widths.
-- [ ] The chevron is visible and tappable on mobile (no silent feature drop).
-- [ ] `npm --prefix frontend test` (full Jest suite) passes; `lint` and `typecheck` pass.
-- [ ] Existing snapshots / Storybook stories for `TransactionsTable` and `TransactionsFilters` updated if `sumurai-frontend-design-system` requires.
+- [x] `DeleteCustomCategoryConfirm` renders inside the visible viewport at all three widths.
+- [x] The chevron is visible and tappable on mobile (no silent feature drop).
+- [x] `npm --prefix frontend test` (full Jest suite) passes; `lint` and `typecheck` pass.
+- [x] Existing snapshots / Storybook stories for `TransactionsTable` and `TransactionsFilters` updated if `sumurai-frontend-design-system` requires.
+
+**TDD log.**
+- Added responsive component coverage for the picker and delete confirm, plus a mobile touch-target assertion for the inline chevron trigger.
+- Implemented a shared viewport breakpoint hook, swapped the picker and delete confirm to bottom-sheet `Modal` presentations below `md`, widened the mobile tap targets, and constrained the anchored picker width for tablet/desktop.
+- Verified with `npm --prefix frontend run test:serial -- --runTestsByPath tests/features/transactions/components/CategoryPicker.test.tsx tests/features/transactions/components/DeleteCustomCategoryConfirm.test.tsx tests/features/transactions/components/InlineCategoryCell.test.tsx`, `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`, and `npm --prefix frontend test`.
+- Live browser verification remains pending because the local Docker dev dependency failed to start and the frontend dev server could not be brought up for a manual breakpoint pass in this session.
 
 ---
 

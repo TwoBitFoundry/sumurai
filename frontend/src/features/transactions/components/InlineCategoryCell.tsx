@@ -37,7 +37,7 @@ export function InlineCategoryCell({ transaction }: Props) {
         ref={anchorRef}
         type="button"
         variant="ghost"
-        size="sm"
+        size="md"
         aria-label={`Edit category: ${label}`}
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}

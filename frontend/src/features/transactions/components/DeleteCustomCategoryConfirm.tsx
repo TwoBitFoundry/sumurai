@@ -1,3 +1,4 @@
+import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import type { CustomCategory } from '@/types/api';
 import { Button, cn, Modal } from '@/ui/primitives';
 import { useDeleteCustomCategory } from '../hooks/useDeleteCustomCategory';
@@ -11,6 +12,7 @@ interface Props {
 
 export function DeleteCustomCategoryConfirm({ open, category, onRequestClose, onSuccess }: Props) {
   const { deleteCustomCategoryAsync, isPending, error } = useDeleteCustomCategory();
+  const { isMobile } = useViewportBreakpoint();
 
   const handleDelete = async () => {
     if (!category) {
@@ -28,13 +30,23 @@ export function DeleteCustomCategoryConfirm({ open, category, onRequestClose, on
       onClose={onRequestClose}
       labelledBy="delete-custom-category-title"
       description="Delete custom category confirmation"
+      data-testid={isMobile ? 'delete-custom-category-sheet' : 'delete-custom-category-dialog'}
       size="sm"
+      containerClassName={
+        isMobile
+          ? cn(
+              'p-[env(safe-area-inset-top)_env(safe-area-inset-right)_env(safe-area-inset-bottom)_env(safe-area-inset-left)]'
+            )
+          : undefined
+      }
+      gridClassName={isMobile ? cn('items-end', 'p-0') : undefined}
       className={cn(
-        'rounded-[2rem]',
+        isMobile
+          ? 'w-full max-w-none rounded-b-none rounded-t-[2rem] px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5'
+          : 'rounded-[2rem] p-5',
         'border',
         'border-white/65',
         'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_92%,white)]',
-        'p-5',
         'shadow-[0_24px_60px_-36px_rgba(15,23,42,0.42)]',
         'backdrop-blur-2xl',
         'dark:border-white/10',
@@ -55,7 +67,13 @@ export function DeleteCustomCategoryConfirm({ open, category, onRequestClose, on
             {error instanceof Error ? error.message : 'Failed to delete category.'}
           </p>
         ) : null}
-        <div className={cn('flex', 'items-center', 'justify-end', 'gap-3')}>
+        <div
+          className={cn(
+            'flex',
+            'gap-3',
+            isMobile ? 'flex-col-reverse' : 'items-center justify-end'
+          )}
+        >
           <Button type="button" variant="secondary" onClick={onRequestClose} disabled={isPending}>
             Cancel
           </Button>
