@@ -1,6 +1,6 @@
-import { Activity, AlertTriangle, CheckCircle2, Clock, Plus, Target } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, Clock, Target } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
-import { Button, cn, EmptyState, GlassCard } from '@/ui/primitives';
+import { cn, EmptyState, GlassCard } from '@/ui/primitives';
 import HeroStatCard, { type HeroPill } from '../components/widgets/HeroStatCard';
 import { BudgetCalculator } from '../domain/BudgetCalculator';
 import AddBudgetPicker, {
@@ -30,25 +30,16 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
     month,
   } = useBudgets(monthControl);
   const { accentIndexByName } = useCategories();
-  const toolbarAddRef = useRef<HTMLButtonElement>(null);
-  const emptyAddRef = useRef<HTMLButtonElement>(null);
-  const anchorRef = useRef<HTMLElement | null>(null);
+  const addButtonRef = useRef<HTMLButtonElement>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<BudgetFormValue>({ category: '', amount: '' });
 
-  const openAddPicker = (source: 'toolbar' | 'empty') => {
-    anchorRef.current = source === 'toolbar' ? toolbarAddRef.current : emptyAddRef.current;
-    setEditingId(null);
-    setForm({ category: '', amount: '' });
-    setIsAdding(true);
-  };
   const toggleAddPicker = () => {
     if (isAdding) {
       cancel();
       return;
     }
-    anchorRef.current = toolbarAddRef.current;
     setEditingId(null);
     setForm({ category: '', amount: '' });
     setIsAdding(true);
@@ -229,13 +220,12 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
             <BudgetToolbar
               loading={budgetsLoading}
               isPickerOpen={isAdding}
-              showAddButton={hasBudgets}
-              addButtonRef={toolbarAddRef}
+              addButtonRef={addButtonRef}
               onAddBudget={toggleAddPicker}
             />
             <AddBudgetPicker
               open={isAdding}
-              anchorRef={anchorRef}
+              anchorRef={addButtonRef}
               categories={availableCategoryOptions}
               accentIndexByName={accentIndexByName}
               value={form}
@@ -260,20 +250,6 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
                   icon={Target}
                   title="No budgets found"
                   description="Create your first category plan to watch spending settle into rhythm."
-                  action={
-                    !isAdding ? (
-                      <Button
-                        ref={emptyAddRef}
-                        type="button"
-                        onClick={() => openAddPicker('empty')}
-                        variant="primary"
-                        size="md"
-                      >
-                        <Plus />
-                        Add budget
-                      </Button>
-                    ) : null
-                  }
                   data-testid="budgets-empty-state"
                 />
               </>

@@ -12,7 +12,6 @@ const meta = {
   args: {
     loading: false,
     isPickerOpen: false,
-    showAddButton: true,
     addButtonRef,
     onAddBudget: fn(),
   },
@@ -34,7 +33,6 @@ export const Loading: Story = {
   args: {
     loading: true,
     isPickerOpen: false,
-    showAddButton: true,
     addButtonRef,
     onAddBudget: fn(),
   },
@@ -43,16 +41,6 @@ export const Loading: Story = {
 export const PickerOpen: Story = {
   args: {
     isPickerOpen: true,
-    showAddButton: true,
-    addButtonRef,
-    onAddBudget: fn(),
-  },
-};
-
-export const AddHidden: Story = {
-  args: {
-    showAddButton: false,
-    isPickerOpen: false,
     addButtonRef,
     onAddBudget: fn(),
   },

@@ -11,7 +11,6 @@ describe('BudgetToolbar', () => {
       <BudgetToolbar
         loading={false}
         isPickerOpen={false}
-        showAddButton
         addButtonRef={addButtonRef}
         onAddBudget={jest.fn()}
       />

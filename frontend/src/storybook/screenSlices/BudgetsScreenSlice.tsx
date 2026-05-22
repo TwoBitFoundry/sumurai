@@ -117,7 +117,6 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
                 <BudgetToolbar
                   loading={false}
                   isPickerOpen={props.state === 'adding'}
-                  showAddButton
                   addButtonRef={{ current: null }}
                   onAddBudget={() => {}}
                 />

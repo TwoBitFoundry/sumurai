@@ -8,7 +8,6 @@ const budgetActionButtonClasses = cn('shrink-0', 'whitespace-nowrap');
 interface BudgetToolbarProps {
   loading: boolean;
   isPickerOpen: boolean;
-  showAddButton: boolean;
   addButtonRef: RefObject<HTMLButtonElement | null>;
   onAddBudget: () => void;
 }
@@ -16,7 +15,6 @@ interface BudgetToolbarProps {
 export const BudgetToolbar = ({
   loading,
   isPickerOpen,
-  showAddButton,
   addButtonRef,
   onAddBudget,
 }: BudgetToolbarProps) => {
@@ -43,21 +41,19 @@ export const BudgetToolbar = ({
           </>
         )}
       </div>
-      {showAddButton ? (
-        <Button
-          ref={addButtonRef}
-          type="button"
-          onClick={onAddBudget}
-          variant="primary"
-          size="md"
-          aria-expanded={isPickerOpen}
-          aria-haspopup="dialog"
-          className={budgetActionButtonClasses}
-        >
-          <Plus className={control.glyph.md} />
-          Add budget
-        </Button>
-      ) : null}
+      <Button
+        ref={addButtonRef}
+        type="button"
+        onClick={onAddBudget}
+        variant="primary"
+        size="md"
+        aria-expanded={isPickerOpen}
+        aria-haspopup="dialog"
+        className={budgetActionButtonClasses}
+      >
+        <Plus className={control.glyph.md} />
+        Add budget
+      </Button>
     </div>
   );
 };
