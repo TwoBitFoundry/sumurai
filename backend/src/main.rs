@@ -204,7 +204,7 @@ async fn main() -> anyhow::Result<()> {
 
     if config.is_simplefin_configured() {
         let simplefin_provider: Arc<dyn providers::FinancialDataProvider> =
-            Arc::new(providers::SimpleFinProvider::new()?);
+            Arc::new(providers::SimpleFinProvider::new_with_real_client().await?);
         provider_registry.register("simplefin", simplefin_provider);
     } else if default_provider == "simplefin" {
         anyhow::bail!("DEFAULT_PROVIDER is simplefin but SIMPLEFIN_SETUP_TOKEN is not set");

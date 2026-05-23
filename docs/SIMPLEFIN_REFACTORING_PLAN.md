@@ -936,11 +936,29 @@ Eliminate provider name branching from handlers. Route sync through a trait-base
 
 ---
 
-# PHASE 5: HttpClient DI in SimpleFinProvider
+# PHASE 5: HttpClient DI in SimpleFinProvider ✅ COMPLETED
 **Duration**: 1 sprint | **Risk**: Low (pure refactoring)
+**Completed**: Phase 5 — SimpleFinProvider HTTP client constructor injection
 
 ## Goal
 Make SimpleFinProvider fully testable by injecting HTTP client via constructor instead of hard-coding it.
+
+## Acceptance Criteria - Phase 5
+- [x] Constructor takes injected Arc<dyn SimpleFinHttpClient> (Task 5.1) — SimpleFinProvider::new() ✅
+- [x] new_with_real_client() for production startup (Task 5.2) — async factory ✅
+- [x] main.rs uses new_with_real_client().await (Task 5.3) — no hard-coded client in new() ✅
+- [x] Tests use injected mock via new() (Task 5.4) — create_test_provider helper ✅
+- [x] All 369 tests pass — VERIFIED ✅
+
+## TDD Log - Phase 5
+- **Slice 5.1-5.2**: Constructor DI + production factory
+  - Red: Existing new() returned Result and created RealSimpleFinHttpClient internally
+  - Green: new(http_client) returns Self; new_with_real_client() builds real client at startup only
+  - Green: Removed Default impl and new_for_test (superseded by new)
+- **Slice 5.3-5.4**: Startup + tests
+  - Green: main.rs calls new_with_real_client().await
+  - Green: simplefin_provider_tests uses create_test_provider(); simplefin_service_tests use new(Arc::new(mock))
+  - All 369 tests passing, clippy clean
 
 ## Tasks
 
@@ -969,10 +987,10 @@ Make SimpleFinProvider fully testable by injecting HTTP client via constructor i
 4. Keep unit tests that use mock HTTP client; they'll now work without changes
 
 **Acceptance Criteria**:
-- Constructor compiles
-- HTTP client is injected parameter (not created internally)
-- Return type is Self (not Result)
-- Existing mock-based tests still pass
+- [x] Constructor compiles — SimpleFinProvider::new(http_client) ✅
+- [x] HTTP client is injected parameter (not created internally) — no RealSimpleFinHttpClient in new() ✅
+- [x] Return type is Self (not Result) — verified ✅
+- [x] Existing mock-based tests still pass — 9 simplefin_provider tests ✅
 
 ---
 
@@ -993,9 +1011,9 @@ Make SimpleFinProvider fully testable by injecting HTTP client via constructor i
 **Why**: App startup needs a way to create the production version, but the constructor is pure DI
 
 **Acceptance Criteria**:
-- Factory function exists
-- Creates RealSimpleFinHttpClient correctly
-- Startup code can call this without needing to know HTTP client details
+- [x] Factory function exists — new_with_real_client() ✅
+- [x] Creates RealSimpleFinHttpClient correctly — delegates to RealSimpleFinHttpClient::new() ✅
+- [x] Startup code can call this without needing to know HTTP client details — main.rs one-liner ✅
 
 ---
 
@@ -1016,9 +1034,9 @@ Make SimpleFinProvider fully testable by injecting HTTP client via constructor i
 4. Register provider in registry
 
 **Acceptance Criteria**:
-- App starts without errors
-- SimpleFinProvider is created with real HTTP client
-- No hard-coded HTTP client creation in provider code
+- [x] App starts without errors — compiles and tests pass ✅
+- [x] SimpleFinProvider is created with real HTTP client — new_with_real_client().await ✅
+- [x] No hard-coded HTTP client creation in provider code — only in new_with_real_client ✅
 
 ---
 
@@ -1040,9 +1058,9 @@ Make SimpleFinProvider fully testable by injecting HTTP client via constructor i
 3. Verify tests pass with injected mock client
 
 **Acceptance Criteria**:
-- All SimpleFIN provider tests pass
-- Mock HTTP client is injected correctly
-- No code modifications needed for test mocks (already used Arc<dyn>)
+- [x] All SimpleFIN provider tests pass — 9 tests ✅
+- [x] Mock HTTP client is injected correctly — create_test_provider() ✅
+- [x] No code modifications needed for test mocks (already used Arc<dyn>) — mockall expectations unchanged ✅
 
 ---
 

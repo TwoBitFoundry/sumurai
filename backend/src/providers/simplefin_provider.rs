@@ -186,22 +186,14 @@ pub struct SimpleFinProvider {
     http_client: Arc<dyn SimpleFinHttpClient>,
 }
 
-impl Default for SimpleFinProvider {
-    fn default() -> Self {
-        Self::new().expect("SimpleFIN provider initialization should succeed")
-    }
-}
-
 impl SimpleFinProvider {
-    pub fn new() -> Result<Self> {
-        Ok(Self {
-            http_client: Arc::new(RealSimpleFinHttpClient::new()?),
-        })
+    pub fn new(http_client: Arc<dyn SimpleFinHttpClient>) -> Self {
+        Self { http_client }
     }
 
-    #[cfg(test)]
-    pub fn new_for_test(http_client: Arc<dyn SimpleFinHttpClient>) -> Self {
-        Self { http_client }
+    pub async fn new_with_real_client() -> Result<Self> {
+        let http_client = Arc::new(RealSimpleFinHttpClient::new()?);
+        Ok(Self::new(http_client))
     }
 
     fn decode_setup_token(setup_token: &str) -> Result<String> {

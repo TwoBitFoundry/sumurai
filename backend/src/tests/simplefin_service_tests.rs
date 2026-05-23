@@ -162,7 +162,7 @@ fn build_simplefin_connection_service(
         .returning(move |_, _| Ok(snapshot_for_accounts.clone()));
 
     let simplefin_provider: Arc<dyn FinancialDataProvider> =
-        Arc::new(SimpleFinProvider::new_for_test(Arc::new(mock_client)));
+        Arc::new(SimpleFinProvider::new(Arc::new(mock_client)));
     let provider_registry = Arc::new(ProviderRegistry::from_providers([(
         "simplefin",
         simplefin_provider,
@@ -428,7 +428,7 @@ async fn build_simplefin_handler_app(
         .returning(move |_, _| Ok(snapshot_for_accounts.clone()));
 
     let simplefin_provider: Arc<dyn FinancialDataProvider> =
-        Arc::new(SimpleFinProvider::new_for_test(Arc::new(mock_client)));
+        Arc::new(SimpleFinProvider::new(Arc::new(mock_client)));
     let provider_registry = Arc::new(ProviderRegistry::from_providers([(
         "simplefin",
         simplefin_provider,
@@ -656,7 +656,7 @@ fn build_simplefin_sync_service(
         });
 
     let simplefin_provider: Arc<dyn FinancialDataProvider> =
-        Arc::new(SimpleFinProvider::new_for_test(Arc::new(mock_client)));
+        Arc::new(SimpleFinProvider::new(Arc::new(mock_client)));
     let provider_registry = Arc::new(ProviderRegistry::from_providers([(
         "simplefin",
         Arc::clone(&simplefin_provider),

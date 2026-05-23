@@ -29,6 +29,10 @@ const BETA_DEMO_ACCOUNTS_FIXTURE: &str = r#"{
   ]
 }"#;
 
+fn create_test_provider(mock_client: MockSimpleFinHttpClient) -> SimpleFinProvider {
+    SimpleFinProvider::new(Arc::new(mock_client))
+}
+
 const ACCOUNTS_FIXTURE: &str = r#"{
   "errors": [],
   "connections": [
@@ -84,7 +88,7 @@ fn create_test_credentials(access_url: &str) -> ProviderCredentials {
 #[test]
 fn given_simplefin_provider_when_provider_name_then_returns_simplefin() {
     let mock_client = MockSimpleFinHttpClient::new();
-    let provider = SimpleFinProvider::new_for_test(Arc::new(mock_client));
+    let provider = create_test_provider(mock_client);
 
     assert_eq!(provider.provider_name(), "simplefin");
 }
@@ -102,7 +106,7 @@ async fn given_setup_token_when_exchange_public_token_then_returns_simplefin_cre
         .times(1)
         .returning(move |_| Ok(access_url.to_string()));
 
-    let provider = SimpleFinProvider::new_for_test(Arc::new(mock_client));
+    let provider = create_test_provider(mock_client);
     let result = provider.exchange_public_token(&setup_token).await.unwrap();
 
     assert_eq!(result.provider, "simplefin");
@@ -124,7 +128,7 @@ async fn given_claim_forbidden_when_exchange_public_token_then_returns_setup_tok
         ))
     });
 
-    let provider = SimpleFinProvider::new_for_test(Arc::new(mock_client));
+    let provider = create_test_provider(mock_client);
     let error = provider
         .exchange_public_token(&setup_token)
         .await
@@ -180,7 +184,7 @@ async fn given_accounts_fixture_when_get_accounts_then_maps_accounts_with_conn_i
         .times(1)
         .returning(move |_, _| Ok(fixture.clone()));
 
-    let provider = SimpleFinProvider::new_for_test(Arc::new(mock_client));
+    let provider = create_test_provider(mock_client);
     let accounts = provider
         .get_accounts(&create_test_credentials(access_url))
         .await
@@ -220,7 +224,7 @@ async fn given_two_hundred_day_range_when_get_transactions_then_fetches_three_wi
         }
     });
 
-    let provider = SimpleFinProvider::new_for_test(Arc::new(mock_client));
+    let provider = create_test_provider(mock_client);
     let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
     let end_date = NaiveDate::from_ymd_opt(2024, 7, 18).unwrap();
 
@@ -235,7 +239,7 @@ async fn given_two_hundred_day_range_when_get_transactions_then_fetches_three_wi
 #[tokio::test]
 async fn given_simplefin_provider_when_get_institution_info_then_returns_not_applicable_error() {
     let mock_client = MockSimpleFinHttpClient::new();
-    let provider = SimpleFinProvider::new_for_test(Arc::new(mock_client));
+    let provider = create_test_provider(mock_client);
     let credentials =
         create_test_credentials("https://demo:pass@beta-bridge.simplefin.org/simplefin");
 
