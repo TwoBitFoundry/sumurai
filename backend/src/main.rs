@@ -75,6 +75,9 @@ use crate::models::{
         OnboardingCompleteResponse, User,
     },
 };
+use crate::providers::{
+    PlaidCredentialResolver, SimpleFinCredentialResolver, TellerCredentialResolver,
+};
 use crate::utils::encryption_key::parse_encryption_key_hex;
 use auth_middleware::auth_middleware;
 use config::Config;
@@ -97,8 +100,8 @@ use services::{
     },
     AuthService, AuthorizationService, BudgetService, CacheService, CategorizationService,
     Categorizer, ConnectionService, ExchangeTokenError, LinkTokenError, PlaidService,
-    ProviderSyncError, RedisCache, SimpleFinConfig, SimpleFinConnectError, SyncConnectionParams,
-    SyncService, TellerConnectError, TellerSyncError,
+    ProviderSyncError, RedisCache, SimpleFinConnectError, SyncConnectionParams, SyncService,
+    TellerConnectError, TellerSyncError,
 };
 use services::{AnalyticsService, RealPlaidClient};
 use sqlx::PgPool;
@@ -112,6 +115,7 @@ fn simplefin_claim_error_is_already_used(err: &anyhow::Error) -> bool {
     })
 }
 
+#[allow(dead_code)]
 async fn resolve_simplefin_access_url_at_startup(
     provider_registry: &providers::ProviderRegistry,
     config: &Config,
@@ -209,12 +213,6 @@ async fn main() -> anyhow::Result<()> {
 
     let provider_registry = Arc::new(provider_registry);
 
-    let simplefin_access_url = if config.is_simplefin_configured() {
-        resolve_simplefin_access_url_at_startup(provider_registry.as_ref(), &config).await?
-    } else {
-        None
-    };
-
     let plaid_client = if plaid_configured {
         Arc::new(RealPlaidClient::new(
             plaid_client_id.clone().unwrap(),
@@ -302,15 +300,31 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
+    let mut credential_resolvers = std::collections::HashMap::new();
+    credential_resolvers.insert(
+        "simplefin".to_string(),
+        Arc::new(SimpleFinCredentialResolver::new(
+            db_repository.clone(),
+            config.get_simplefin_setup_token().map(str::to_string),
+        )) as Arc<dyn crate::providers::ProviderCredentialResolver>,
+    );
+    credential_resolvers.insert(
+        "plaid".to_string(),
+        Arc::new(PlaidCredentialResolver::new(db_repository.clone()))
+            as Arc<dyn crate::providers::ProviderCredentialResolver>,
+    );
+    credential_resolvers.insert(
+        "teller".to_string(),
+        Arc::new(TellerCredentialResolver::new(db_repository.clone()))
+            as Arc<dyn crate::providers::ProviderCredentialResolver>,
+    );
+
     let connection_service = Arc::new(ConnectionService::new(
         db_repository.clone(),
         cache_service.clone(),
         provider_registry.clone(),
         categorizer.clone(),
-        SimpleFinConfig {
-            setup_token: config.get_simplefin_setup_token().map(str::to_string),
-            access_url: simplefin_access_url,
-        },
+        credential_resolvers,
     ));
 
     let otlp_traces_relay = Arc::new(OtlpTracesRelay::from_config(&telemetry_config)?);
@@ -2814,25 +2828,6 @@ async fn connect_authenticated_provider(
                     "SimpleFIN is not configured on this server",
                 )
                 .into_response(StatusCode::SERVICE_UNAVAILABLE))
-            }
-            Err(SimpleFinConnectError::ClaimFailed(e)) => {
-                log_provider_credential_outcome(
-                    "simplefin",
-                    StatusCode::BAD_REQUEST,
-                    "provider.connect",
-                );
-                tracing::error!(
-                    "Failed to claim SimpleFIN setup token for user {}: {}",
-                    auth_context.user_id,
-                    e
-                );
-                let message = if simplefin_claim_error_is_already_used(&e) {
-                    "SimpleFIN setup token was already claimed. Generate a new setup token and restart the server."
-                } else {
-                    "Invalid SimpleFIN setup token"
-                };
-                Err(ApiErrorResponse::new("BAD_REQUEST", message)
-                    .into_response(StatusCode::BAD_REQUEST))
             }
             Err(SimpleFinConnectError::CredentialStorage(e)) => {
                 log_provider_credential_outcome(

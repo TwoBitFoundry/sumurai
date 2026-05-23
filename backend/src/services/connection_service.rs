@@ -26,18 +26,13 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use uuid::Uuid;
 
-pub struct SimpleFinConfig {
-    pub setup_token: Option<String>,
-    pub access_url: Option<String>,
-}
-
 pub struct ConnectionService {
     db_repository: Arc<dyn DatabaseRepository>,
     cache_service: Arc<dyn CacheService>,
     provider_registry: Arc<ProviderRegistry>,
     categorizer: Arc<dyn Categorizer>,
-    simplefin_setup_token: Option<String>,
-    simplefin_access_url: Option<String>,
+    credential_resolvers:
+        std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>>,
 }
 
 #[derive(Debug)]
@@ -53,7 +48,6 @@ pub enum SimpleFinConnectError {
     #[allow(dead_code)]
     InvalidProvider(String),
     SetupTokenNotConfigured,
-    ClaimFailed(Error),
     CredentialStorage(Error),
     ConnectionPersistence(Error),
     SnapshotFetch(Error),
@@ -156,63 +150,34 @@ impl ConnectionService {
         cache_service: Arc<dyn CacheService>,
         provider_registry: Arc<ProviderRegistry>,
         categorizer: Arc<dyn Categorizer>,
-        simplefin: SimpleFinConfig,
+        credential_resolvers: std::collections::HashMap<
+            String,
+            Arc<dyn crate::providers::ProviderCredentialResolver>,
+        >,
     ) -> Self {
         Self {
             db_repository,
             cache_service,
             provider_registry,
             categorizer,
-            simplefin_setup_token: simplefin.setup_token,
-            simplefin_access_url: simplefin.access_url,
+            credential_resolvers,
         }
     }
 
     async fn resolve_simplefin_credentials_for_connect(
         &self,
         user_id: &Uuid,
-        provider: &dyn FinancialDataProvider,
+        provider: Arc<dyn FinancialDataProvider>,
     ) -> Result<ProviderCredentials, SimpleFinConnectError> {
-        let root_item_id = format!("simplefin_root_{user_id}");
-
-        if let Some(stored) = self
-            .db_repository
-            .get_provider_credentials_for_user(user_id, &root_item_id)
-            .await
-            .map_err(SimpleFinConnectError::CredentialStorage)?
-        {
-            return Ok(ProviderCredentials {
-                provider: "simplefin".to_string(),
-                access_token: stored.access_token,
-                item_id: root_item_id,
-                certificate: None,
-                private_key: None,
-            });
-        }
-
-        if let Some(access_url) = self.simplefin_access_url.as_ref() {
-            return Ok(ProviderCredentials {
-                provider: "simplefin".to_string(),
-                access_token: access_url.clone(),
-                item_id: root_item_id,
-                certificate: None,
-                private_key: None,
-            });
-        }
-
-        let setup_token = self
-            .simplefin_setup_token
-            .as_deref()
-            .filter(|token| !token.trim().is_empty())
+        let resolver = self
+            .credential_resolvers
+            .get("simplefin")
             .ok_or(SimpleFinConnectError::SetupTokenNotConfigured)?;
 
-        let mut credentials = provider
-            .exchange_public_token(setup_token)
+        resolver
+            .resolve_for_connect(user_id, provider)
             .await
-            .map_err(SimpleFinConnectError::ClaimFailed)?;
-        credentials.item_id = root_item_id;
-        credentials.provider = "simplefin".to_string();
-        Ok(credentials)
+            .map_err(SimpleFinConnectError::CredentialStorage)
     }
 
     fn resolve_provider(&self, provider: &str) -> Option<Arc<dyn FinancialDataProvider>> {
@@ -488,12 +453,11 @@ impl ConnectionService {
             .ok_or_else(|| SimpleFinConnectError::InvalidProvider("simplefin".to_string()))?;
 
         let credentials = self
-            .resolve_simplefin_credentials_for_connect(user_id, provider.as_ref())
+            .resolve_simplefin_credentials_for_connect(user_id, provider.clone())
             .await?;
         let root_item_id = credentials.item_id.clone();
 
         let snapshot = provider
-            .as_ref()
             .fetch_balances_snapshot(&credentials)
             .await
             .map_err(SimpleFinConnectError::SnapshotFetch)?
@@ -553,25 +517,15 @@ impl ConnectionService {
         &self,
         user_id: &Uuid,
     ) -> Result<ProviderCredentials, SimpleFinConnectError> {
-        let item_id = format!("simplefin_root_{user_id}");
-        let stored = self
-            .db_repository
-            .get_provider_credentials_for_user(user_id, &item_id)
-            .await
-            .map_err(SimpleFinConnectError::CredentialStorage)?
-            .ok_or_else(|| {
-                SimpleFinConnectError::CredentialStorage(anyhow::anyhow!(
-                    "SimpleFIN access URL not found for user"
-                ))
-            })?;
+        let resolver = self
+            .credential_resolvers
+            .get("simplefin")
+            .ok_or(SimpleFinConnectError::SetupTokenNotConfigured)?;
 
-        Ok(ProviderCredentials {
-            provider: "simplefin".to_string(),
-            access_token: stored.access_token,
-            item_id,
-            certificate: None,
-            private_key: None,
-        })
+        resolver
+            .resolve_for_sync(user_id)
+            .await
+            .map_err(SimpleFinConnectError::CredentialStorage)
     }
 
     #[allow(clippy::too_many_arguments)]

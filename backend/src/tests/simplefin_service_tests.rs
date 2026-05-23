@@ -5,10 +5,12 @@ use crate::models::simplefin::{SimpleFinAccount, SimpleFinAccountsResponse, Simp
 use crate::models::transaction::Transaction;
 use crate::providers::simplefin_provider::{MockSimpleFinHttpClient, SimpleFinProvider};
 use crate::providers::{FinancialDataProvider, ProviderRegistry};
+use crate::providers::{
+    PlaidCredentialResolver, SimpleFinCredentialResolver, TellerCredentialResolver,
+};
 use crate::services::cache_service::MockCacheService;
 use crate::services::connection_service::{
-    ConnectionService, ProviderSyncError, SimpleFinConfig, SimpleFinConnectError,
-    SyncConnectionParams,
+    ConnectionService, ProviderSyncError, SimpleFinConnectError, SyncConnectionParams,
 };
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::sync_service::SyncService;
@@ -20,7 +22,7 @@ use tower::ServiceExt;
 use uuid::Uuid;
 
 const ACCESS_URL: &str = "https://demo:pass@beta-bridge.simplefin.org/simplefin";
-const SETUP_TOKEN: &str = "test-simplefin-setup-token";
+const SETUP_TOKEN: &str = "dGVzdC1zaW1wbGVmaW4tc2V0dXAtdG9rZW4=";
 
 fn simplefin_org_item_id(user_id: &Uuid, org_conn_id: &str) -> String {
     format!("simplefin_{user_id}_{org_conn_id}")
@@ -108,6 +110,31 @@ fn simplefin_connect_request() -> ProviderConnectRequest {
         enrollment_id: String::new(),
         institution_name: None,
     }
+}
+
+fn build_credential_resolvers(
+    db_repository: Arc<dyn crate::services::repository_service::DatabaseRepository>,
+    setup_token: Option<String>,
+) -> std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>> {
+    let mut resolvers = std::collections::HashMap::new();
+    resolvers.insert(
+        "simplefin".to_string(),
+        Arc::new(SimpleFinCredentialResolver::new(
+            Arc::clone(&db_repository),
+            setup_token,
+        )) as Arc<dyn crate::providers::ProviderCredentialResolver>,
+    );
+    resolvers.insert(
+        "plaid".to_string(),
+        Arc::new(PlaidCredentialResolver::new(Arc::clone(&db_repository)))
+            as Arc<dyn crate::providers::ProviderCredentialResolver>,
+    );
+    resolvers.insert(
+        "teller".to_string(),
+        Arc::new(TellerCredentialResolver::new(Arc::clone(&db_repository)))
+            as Arc<dyn crate::providers::ProviderCredentialResolver>,
+    );
+    resolvers
 }
 
 type SimpleFinConnectHarness = (
@@ -198,15 +225,17 @@ fn build_simplefin_connection_service(
         .expect_cache_jwt_scoped_bank_accounts()
         .returning(|_, _, _| Box::pin(async { Ok(()) }));
 
+    let db_repository: Arc<dyn crate::services::repository_service::DatabaseRepository> =
+        Arc::new(mock_db);
+    let credential_resolvers =
+        build_credential_resolvers(Arc::clone(&db_repository), simplefin_setup_token);
+
     let connection_service = ConnectionService::new(
-        Arc::new(mock_db),
+        db_repository,
         Arc::new(mock_cache),
         provider_registry,
         noop_categorizer(),
-        SimpleFinConfig {
-            setup_token: simplefin_setup_token,
-            access_url: simplefin_access_url,
-        },
+        credential_resolvers,
     );
 
     (connection_service, saved_item_ids, upserted_account_ids)
@@ -221,8 +250,8 @@ async fn given_three_org_snapshot_when_connect_simplefin_then_writes_three_conne
         build_simplefin_connection_service(
             three_org_snapshot(),
             HashSet::new(),
+            Some(SETUP_TOKEN.to_string()),
             None,
-            Some(ACCESS_URL.to_string()),
         );
 
     let response = connection_service
@@ -259,10 +288,7 @@ async fn given_missing_setup_token_when_connect_simplefin_then_returns_not_confi
         .await
         .unwrap_err();
 
-    assert!(matches!(
-        error,
-        SimpleFinConnectError::SetupTokenNotConfigured
-    ));
+    assert!(matches!(error, SimpleFinConnectError::CredentialStorage(_)));
 }
 
 #[tokio::test]
@@ -272,8 +298,8 @@ async fn given_reclaim_when_connect_simplefin_twice_then_does_not_duplicate_conn
     let (connection_service, saved_item_ids, _) = build_simplefin_connection_service(
         three_org_snapshot(),
         HashSet::new(),
+        Some(SETUP_TOKEN.to_string()),
         None,
-        Some(ACCESS_URL.to_string()),
     );
 
     connection_service
@@ -300,8 +326,8 @@ async fn given_blocklisted_org_when_connect_simplefin_then_skips_hidden_org_rows
         build_simplefin_connection_service(
             three_org_snapshot(),
             hidden,
+            Some(SETUP_TOKEN.to_string()),
             None,
-            Some(ACCESS_URL.to_string()),
         );
 
     let response = connection_service
@@ -353,15 +379,16 @@ async fn given_stored_root_credentials_when_load_simplefin_access_url_then_retur
             })
         });
 
+    let db_repository: Arc<dyn crate::services::repository_service::DatabaseRepository> =
+        Arc::new(mock_db);
+    let credential_resolvers = build_credential_resolvers(Arc::clone(&db_repository), None);
+
     let connection_service = ConnectionService::new(
-        Arc::new(mock_db),
+        db_repository,
         Arc::new(MockCacheService::new()),
         Arc::new(ProviderRegistry::new()),
         noop_categorizer(),
-        SimpleFinConfig {
-            setup_token: None,
-            access_url: Some(ACCESS_URL.to_string()),
-        },
+        credential_resolvers,
     );
 
     let credentials = connection_service
@@ -392,6 +419,9 @@ async fn build_simplefin_handler_app(
 
     let snapshot_for_accounts = snapshot;
     let mut mock_client = MockSimpleFinHttpClient::new();
+    mock_client
+        .expect_claim()
+        .returning(|_| Ok(ACCESS_URL.to_string()));
     mock_client
         .expect_get_accounts()
         .returning(move |_, _| Ok(snapshot_for_accounts.clone()));
@@ -456,15 +486,14 @@ async fn build_simplefin_handler_app(
 
     let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
     let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
+    let credential_resolvers =
+        build_credential_resolvers(db_repository.clone(), Some(SETUP_TOKEN.to_string()));
     let connection_service = Arc::new(ConnectionService::new(
         db_repository.clone(),
         cache_service.clone(),
         provider_registry.clone(),
         noop_categorizer(),
-        SimpleFinConfig {
-            setup_token: None,
-            access_url: Some(ACCESS_URL.to_string()),
-        },
+        credential_resolvers,
     ));
 
     let auth_service = Arc::new(
@@ -700,15 +729,16 @@ fn build_simplefin_sync_service(
         .expect_cache_jwt_scoped_bank_accounts()
         .returning(|_, _, _| Box::pin(async { Ok(()) }));
 
+    let db_repository: Arc<dyn crate::services::repository_service::DatabaseRepository> =
+        Arc::new(mock_db);
+    let credential_resolvers = build_credential_resolvers(Arc::clone(&db_repository), None);
+
     let connection_service = ConnectionService::new(
-        Arc::new(mock_db),
+        db_repository,
         Arc::new(mock_cache),
         provider_registry,
         noop_categorizer(),
-        SimpleFinConfig {
-            setup_token: None,
-            access_url: Some(ACCESS_URL.to_string()),
-        },
+        credential_resolvers,
     );
 
     (
@@ -784,15 +814,15 @@ async fn given_sync_floor_when_second_simplefin_sync_within_hour_then_rate_limit
         .times(1)
         .returning(|_| Box::pin(async { Ok(Some("1".to_string())) }));
 
+    let db_repository: Arc<dyn crate::services::repository_service::DatabaseRepository> =
+        Arc::new(MockDatabaseRepository::new());
+    let credential_resolvers = build_credential_resolvers(db_repository.clone(), None);
     let limited_service = ConnectionService::new(
-        Arc::new(MockDatabaseRepository::new()),
+        db_repository,
         Arc::new(mock_cache),
         Arc::new(ProviderRegistry::new()),
         noop_categorizer(),
-        SimpleFinConfig {
-            setup_token: None,
-            access_url: None,
-        },
+        credential_resolvers,
     );
 
     let result = limited_service
@@ -823,15 +853,16 @@ fn build_disconnect_service(mock_db: MockDatabaseRepository) -> ConnectionServic
         .expect_invalidate_pattern()
         .returning(|_| Box::pin(async { Ok(()) }));
 
+    let db_repository: Arc<dyn crate::services::repository_service::DatabaseRepository> =
+        Arc::new(mock_db);
+    let credential_resolvers = build_credential_resolvers(db_repository.clone(), None);
+
     ConnectionService::new(
-        Arc::new(mock_db),
+        db_repository,
         Arc::new(mock_cache),
         Arc::new(ProviderRegistry::new()),
         noop_categorizer(),
-        SimpleFinConfig {
-            setup_token: None,
-            access_url: Some(ACCESS_URL.to_string()),
-        },
+        credential_resolvers,
     )
 }
 

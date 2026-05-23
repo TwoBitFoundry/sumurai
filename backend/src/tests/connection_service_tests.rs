@@ -7,12 +7,10 @@ use crate::providers::{
     FinancialDataProvider, InstitutionInfo, ProviderCredentials, ProviderRegistry,
 };
 use crate::services::cache_service::MockCacheService;
-use crate::services::connection_service::{
-    ConnectionService, SimpleFinConfig, SyncConnectionParams,
-};
+use crate::services::connection_service::{ConnectionService, SyncConnectionParams};
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::sync_service::SyncService;
-use crate::test_fixtures::noop_categorizer;
+use crate::test_fixtures::{build_credential_resolvers, noop_categorizer};
 use anyhow::Result;
 use async_trait::async_trait;
 use chrono::{NaiveDate, Utc};
@@ -235,15 +233,14 @@ async fn given_plaid_sync_with_many_transactions_when_persisting_then_batches_wr
         .times(1)
         .returning(|_, _, _| Box::pin(async { Ok(()) }));
 
+    let db_repository = Arc::new(mock_db);
+    let credential_resolvers = build_credential_resolvers(db_repository.clone(), None);
     let connection_service = ConnectionService::new(
-        Arc::new(mock_db),
+        db_repository,
         Arc::new(mock_cache),
         provider_registry.clone(),
         noop_categorizer(),
-        SimpleFinConfig {
-            setup_token: None,
-            access_url: None,
-        },
+        credential_resolvers,
     );
     let sync_service = SyncService::new(provider_registry, "plaid");
 

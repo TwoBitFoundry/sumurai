@@ -9,6 +9,9 @@ use crate::models::predicted_category::PredictedCategory;
 use crate::models::{auth::User, transaction::Transaction};
 use crate::providers::ProviderRegistry;
 
+use crate::providers::{
+    PlaidCredentialResolver, SimpleFinCredentialResolver, TellerCredentialResolver,
+};
 use crate::services::{
     analytics_service::AnalyticsService,
     auth_service::AuthService,
@@ -17,7 +20,7 @@ use crate::services::{
     cache_service::{CacheService, MockCacheService},
     categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS,
     category_management::service::CategoryManagementService,
-    connection_service::{ConnectionService, SimpleFinConfig},
+    connection_service::ConnectionService,
     otel_traces_relay::OtlpTracesRelay,
     plaid_service::{PlaidService, RealPlaidClient},
     repository_service::DatabaseRepository,
@@ -50,6 +53,31 @@ impl Categorizer for NoopCategorizer {
 
 pub(crate) fn noop_categorizer() -> Arc<dyn Categorizer> {
     Arc::new(NoopCategorizer)
+}
+
+pub(crate) fn build_credential_resolvers(
+    db_repository: Arc<dyn DatabaseRepository>,
+    setup_token: Option<String>,
+) -> std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>> {
+    let mut resolvers = std::collections::HashMap::new();
+    resolvers.insert(
+        "simplefin".to_string(),
+        Arc::new(SimpleFinCredentialResolver::new(
+            Arc::clone(&db_repository),
+            setup_token,
+        )) as Arc<dyn crate::providers::ProviderCredentialResolver>,
+    );
+    resolvers.insert(
+        "plaid".to_string(),
+        Arc::new(PlaidCredentialResolver::new(Arc::clone(&db_repository)))
+            as Arc<dyn crate::providers::ProviderCredentialResolver>,
+    );
+    resolvers.insert(
+        "teller".to_string(),
+        Arc::new(TellerCredentialResolver::new(Arc::clone(&db_repository)))
+            as Arc<dyn crate::providers::ProviderCredentialResolver>,
+    );
+    resolvers
 }
 
 impl TestFixtures {
@@ -272,15 +300,13 @@ impl TestFixtures {
 
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
 
+        let credential_resolvers = build_credential_resolvers(db_repository.clone(), None);
         let connection_service = Arc::new(ConnectionService::new(
             db_repository.clone(),
             cache_service.clone(),
             provider_registry.clone(),
             noop_categorizer(),
-            SimpleFinConfig {
-                setup_token: None,
-                access_url: None,
-            },
+            credential_resolvers,
         ));
 
         let auth_service = Arc::new(
@@ -391,15 +417,13 @@ impl TestFixtures {
 
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
 
+        let credential_resolvers = build_credential_resolvers(db_repository.clone(), None);
         let connection_service = Arc::new(ConnectionService::new(
             db_repository.clone(),
             cache_service.clone(),
             provider_registry.clone(),
             noop_categorizer(),
-            SimpleFinConfig {
-                setup_token: None,
-                access_url: None,
-            },
+            credential_resolvers,
         ));
 
         let auth_service = Arc::new(
@@ -476,15 +500,13 @@ impl TestFixtures {
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
 
+        let credential_resolvers = build_credential_resolvers(db_repository.clone(), None);
         let connection_service = Arc::new(ConnectionService::new(
             db_repository.clone(),
             cache_service.clone(),
             provider_registry.clone(),
             categorizer.clone(),
-            SimpleFinConfig {
-                setup_token: None,
-                access_url: None,
-            },
+            credential_resolvers,
         ));
 
         let auth_service = Arc::new(

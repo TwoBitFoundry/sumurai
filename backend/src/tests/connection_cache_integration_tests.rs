@@ -5,11 +5,10 @@ use crate::models::{
 };
 use crate::providers::ProviderRegistry;
 use crate::services::{
-    cache_service::MockCacheService,
-    connection_service::{ConnectionService, SimpleFinConfig},
+    cache_service::MockCacheService, connection_service::ConnectionService,
     repository_service::MockDatabaseRepository,
 };
-use crate::test_fixtures::noop_categorizer;
+use crate::test_fixtures::{build_credential_resolvers, noop_categorizer};
 use chrono::Utc;
 use rust_decimal::Decimal;
 use std::sync::Arc;
@@ -117,15 +116,14 @@ async fn given_bank_sync_operation_when_completing_then_updates_jwt_scoped_cache
         .returning(|_| Box::pin(async { Ok(()) }));
 
     let provider_registry = Arc::new(ProviderRegistry::new());
+    let db_repository = Arc::new(mock_db);
+    let credential_resolvers = build_credential_resolvers(db_repository.clone(), None);
     let service = ConnectionService::new(
-        Arc::new(mock_db),
+        db_repository,
         Arc::new(mock_cache),
         provider_registry,
         noop_categorizer(),
-        SimpleFinConfig {
-            setup_token: None,
-            access_url: None,
-        },
+        credential_resolvers,
     );
 
     let result =
