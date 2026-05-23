@@ -11,6 +11,7 @@ import ConnectionsList, {
   type BankConnectionViewModel,
 } from '../features/plaid/components/ConnectionsList';
 import { SimpleFinIgnoredInstitutionsPanel } from '../features/simplefin/components/SimpleFinIgnoredInstitutionsPanel';
+import { SimpleFinTokenEntry } from '../features/simplefin/components/SimpleFinTokenEntry';
 import { useAccountFilter } from '../hooks/useAccountFilter';
 import { useFinancialConnection } from '../hooks/useFinancialConnection';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
@@ -208,15 +209,18 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     return () => clearInterval(id);
   }, [syncingAll]);
   const accountsDataLoading = providerCatalog.loading || accountFilter.loading;
-  const showSimpleFinIgnoredList =
+  const simpleFinEmptyStateActive =
     primaryProvider === 'simplefin' && banksWithSync.length === 0 && !accountsDataLoading;
-  const flowError = banks.length > 0 || showSimpleFinIgnoredList ? connectionFlow.error : null;
   const ignoredInstitutionsQuery = useQuery({
     queryKey: ['simplefin', 'ignored-institutions'],
     queryFn: () => SimpleFinService.getIgnoredInstitutions(),
-    enabled: showSimpleFinIgnoredList && isOnline,
+    enabled: simpleFinEmptyStateActive && isOnline,
     staleTime: 60 * 1000,
   });
+  const ignoredInstitutions = ignoredInstitutionsQuery.data ?? [];
+  const showSimpleFinIgnoredList = simpleFinEmptyStateActive && ignoredInstitutions.length > 0;
+  const showSimpleFinTokenEntry = simpleFinEmptyStateActive && ignoredInstitutions.length === 0;
+  const flowError = banks.length > 0 || showSimpleFinIgnoredList ? connectionFlow.error : null;
   const refreshBankData = useCallback(
     async (provider: SyncProvider) => {
       await refreshFinancialDataAfterProviderChange(queryClient, [provider]);
@@ -384,25 +388,41 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   );
 
   const connectionsEmptyState = useMemo(() => {
-    const ignored = ignoredInstitutionsQuery.data ?? [];
-    if (!showSimpleFinIgnoredList || ignored.length === 0) {
+    if (showSimpleFinTokenEntry) {
+      return (
+        <SimpleFinTokenEntry
+          isOnline={isOnline}
+          isSubmitting={connectionFlow.connectionInProgress}
+          error={connectionFlow.error}
+          blockedReason={providerCatalog.getConnectBlockedReason('simplefin')}
+          onSubmit={(setupToken) => connectionFlow.initiateConnection(setupToken)}
+        />
+      );
+    }
+
+    if (!showSimpleFinIgnoredList) {
       return undefined;
     }
 
     return (
       <SimpleFinIgnoredInstitutionsPanel
-        institutions={ignored}
+        institutions={ignoredInstitutions}
         onRestore={restoreIgnoredInstitution}
         restoringOrgConnId={restoringIgnoredOrgConnId}
         isOnline={isOnline}
       />
     );
   }, [
-    ignoredInstitutionsQuery.data,
+    connectionFlow.connectionInProgress,
+    connectionFlow.error,
+    ignoredInstitutions,
     isOnline,
+    providerCatalog,
+    connectionFlow.initiateConnection,
     restoreIgnoredInstitution,
     restoringIgnoredOrgConnId,
     showSimpleFinIgnoredList,
+    showSimpleFinTokenEntry,
   ]);
 
   const summary = useMemo(() => {
@@ -487,14 +507,16 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
                 : 'Sync all'}
           </Button>
         )}
-        <ConnectButton
-          onClick={() => void connectionFlow.initiateConnection()}
-          disabled={connectDisabled}
-          title={!isOnline ? 'Unavailable while offline' : undefined}
-          leadingImageSrc={providerLogoSrc}
-        >
-          {primaryProvider === 'plaid' ? 'Add account' : providerLabel}
-        </ConnectButton>
+        {!showSimpleFinTokenEntry ? (
+          <ConnectButton
+            onClick={() => void connectionFlow.initiateConnection()}
+            disabled={connectDisabled}
+            title={!isOnline ? 'Unavailable while offline' : undefined}
+            leadingImageSrc={providerLogoSrc}
+          >
+            {primaryProvider === 'plaid' ? 'Add account' : providerLabel}
+          </ConnectButton>
+        ) : null}
       </div>
       {!isOnline && (
         <span

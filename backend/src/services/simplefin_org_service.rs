@@ -1,7 +1,6 @@
 use crate::models::plaid::ProviderConnection;
-use crate::models::simplefin::SimpleFinConnection;
+use crate::models::simplefin::{SimpleFinAccountsResponse, SimpleFinConnection};
 use crate::providers::simplefin_provider::SimpleFinProvider;
-use crate::providers::ProviderCredentials;
 use crate::services::cache_service::CacheService;
 use crate::services::repository_service::DatabaseRepository;
 use anyhow::Result;
@@ -54,7 +53,6 @@ impl SimpleFinOrganizationService {
         &self,
         user_id: &Uuid,
         jwt_id: &str,
-        _credentials: &ProviderCredentials,
         org: &SimpleFinConnection,
         snapshot_accounts: &[crate::models::simplefin::SimpleFinAccount],
     ) -> Result<Option<Uuid>> {
@@ -124,6 +122,39 @@ impl SimpleFinOrganizationService {
         Ok(Some(connection.id))
     }
 
+    pub async fn reconcile_snapshot_connections(
+        &self,
+        user_id: &Uuid,
+        jwt_id: &str,
+        hidden_orgs: &HashSet<String>,
+        snapshot: &SimpleFinAccountsResponse,
+    ) -> Result<SimpleFinSnapshotReconciliation> {
+        let mut institution_count = 0;
+        let mut first_connection_id = None;
+
+        for org in snapshot
+            .connections
+            .iter()
+            .filter(|org| !org_is_hidden(hidden_orgs, org))
+        {
+            let persisted = self
+                .persist_org_connection(user_id, jwt_id, org, &snapshot.accounts)
+                .await?;
+
+            if let Some(connection_id) = persisted {
+                institution_count += 1;
+                if first_connection_id.is_none() {
+                    first_connection_id = Some(connection_id);
+                }
+            }
+        }
+
+        Ok(SimpleFinSnapshotReconciliation {
+            institution_count,
+            first_connection_id,
+        })
+    }
+
     async fn complete_sync_with_jwt_cache_update(
         &self,
         jwt_id: &str,
@@ -182,4 +213,10 @@ pub fn conn_id_is_hidden(
     }
 
     org_id.is_some_and(|id| !id.is_empty() && hidden_orgs.contains(id))
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SimpleFinSnapshotReconciliation {
+    pub institution_count: usize,
+    pub first_connection_id: Option<Uuid>,
 }

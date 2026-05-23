@@ -3,6 +3,12 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+use serde_json::json;
+
+pub fn simplefin_connect_request_example() -> serde_json::Value {
+    json!({"simplefin_setup_token": null})
+}
+
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct SimpleFinAccountsResponse {
     #[serde(default, alias = "errlist")]
@@ -171,6 +177,12 @@ pub struct SimpleFinIgnoredInstitutionsResponse {
 #[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct SimpleFinRestoreIgnoredInstitutionRequest {
     pub org_conn_id: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, ToSchema, Default)]
+#[schema(example = json!({"simplefin_setup_token": null}))]
+pub struct SimpleFinConnectRequest {
+    pub simplefin_setup_token: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]

@@ -38,7 +38,7 @@ export interface UseFinancialConnectionReturn {
   isSyncing: boolean;
   institutionName: string | null;
   error: string | null;
-  initiateConnection: () => Promise<void>;
+  initiateConnection: (setupToken?: string) => Promise<void>;
   retryConnection: () => Promise<void>;
   reset: () => void;
   setError: (error: string | null) => void;
@@ -125,33 +125,58 @@ export function useFinancialConnection(
     return false;
   }, []);
 
-  const initiateConnection = useCallback(async () => {
-    if (!isOnline) {
-      return;
-    }
-
-    if (strategyRef.current === PENDING_CONNECTION_STRATEGY) {
-      handleError('Connection is not ready. Please try again.');
-      return;
-    }
-
-    dispatch(connectionActions.patch({ error: null, connectionInProgress: true }));
-    sdkFailedRef.current = false;
-
-    try {
-      const connectConfigured = strategyRef.current.connect;
-      if (connectConfigured) {
-        try {
-          await connectConfigured();
-        } catch (err) {
-          const errorMessage =
-            err instanceof Error ? err.message : `Failed to connect with ${provider}`;
-          handleError(errorMessage);
-        }
+  const initiateConnection = useCallback(
+    async (setupToken?: string) => {
+      if (!isOnline) {
         return;
       }
 
-      if (strategyRef.current.getReady()) {
+      if (strategyRef.current === PENDING_CONNECTION_STRATEGY) {
+        handleError('Connection is not ready. Please try again.');
+        return;
+      }
+
+      dispatch(connectionActions.patch({ error: null, connectionInProgress: true }));
+      sdkFailedRef.current = false;
+
+      try {
+        const connectConfigured = strategyRef.current.connect;
+        if (connectConfigured) {
+          try {
+            await connectConfigured(setupToken);
+          } catch (err) {
+            const errorMessage =
+              err instanceof Error ? err.message : `Failed to connect with ${provider}`;
+            handleError(errorMessage);
+          }
+          return;
+        }
+
+        if (strategyRef.current.getReady()) {
+          try {
+            strategyRef.current.open();
+          } catch (err) {
+            recordHandledIssue('financial-connection.open', `Failed to open ${provider}`, err, {
+              provider,
+            });
+            handleError(POPUP_BLOCKED_MESSAGE);
+          }
+          return;
+        }
+
+        flushSync(() => {
+          setSdkNonce((n) => n + 1);
+        });
+
+        strategyRef.current.reset();
+        await strategyRef.current.load();
+
+        const becameReady = await waitForSdkReady(60_000);
+        if (!becameReady) {
+          handleError(strategyRef.current.loadFailedMessage);
+          return;
+        }
+
         try {
           strategyRef.current.open();
         } catch (err) {
@@ -160,36 +185,14 @@ export function useFinancialConnection(
           });
           handleError(POPUP_BLOCKED_MESSAGE);
         }
-        return;
-      }
-
-      flushSync(() => {
-        setSdkNonce((n) => n + 1);
-      });
-
-      strategyRef.current.reset();
-      await strategyRef.current.load();
-
-      const becameReady = await waitForSdkReady(60_000);
-      if (!becameReady) {
-        handleError(strategyRef.current.loadFailedMessage);
-        return;
-      }
-
-      try {
-        strategyRef.current.open();
       } catch (err) {
-        recordHandledIssue('financial-connection.open', `Failed to open ${provider}`, err, {
-          provider,
-        });
-        handleError(POPUP_BLOCKED_MESSAGE);
+        const errorMessage =
+          err instanceof Error ? err.message : `Failed to connect with ${provider}`;
+        handleError(errorMessage);
       }
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : `Failed to connect with ${provider}`;
-      handleError(errorMessage);
-    }
-  }, [handleError, isOnline, provider, waitForSdkReady]);
+    },
+    [handleError, isOnline, provider, waitForSdkReady]
+  );
 
   const retryConnection = useCallback(async () => {
     if (!isOnline) {

@@ -311,6 +311,27 @@ describe('AccountsPage', () => {
     expect(screen.queryByText('PLACEHOLDER')).not.toBeInTheDocument();
   });
 
+  it('shows the SimpleFIN token entry when there are no connected institutions', () => {
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid', 'simplefin'],
+        default_provider: 'simplefin',
+        user_provider: 'simplefin',
+      })
+    );
+    jest.mocked(useFinancialConnection).mockReturnValue(
+      makeFinancialConnectionMock({
+        initiateConnection: jest.fn(),
+      })
+    );
+
+    renderAccountsPage();
+
+    expect(screen.getByPlaceholderText('Paste your SimpleFIN setup token')).toBeVisible();
+    expect(screen.queryByRole('button', { name: /^simplefin$/i })).not.toBeInTheDocument();
+  });
+
   it('enables plaid connect when provider catalog is unavailable', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(

@@ -63,7 +63,7 @@ use utoipa::OpenApi;
             crate::models::plaid::LinkTokenRequest,
             crate::models::plaid::LinkTokenResponse,
             crate::models::plaid::ExchangeTokenRequest,
-            crate::models::plaid::ProviderConnectRequest,
+            crate::models::provider_connect::ProviderConnectRequest,
             crate::models::plaid::SyncTransactionsRequest,
             crate::models::transaction::SyncTransactionsResponse,
             crate::models::transaction::SyncMetadata,
@@ -145,6 +145,8 @@ use utoipa::OpenApi;
 pub struct ApiDoc;
 
 pub fn init_openapi() -> utoipa::openapi::OpenApi {
+    let _ = crate::models::provider_connect::provider_connect_request_example();
+    let _ = crate::models::simplefin::simplefin_connect_request_example();
     let mut openapi = ApiDoc::openapi();
     tags::add_tags(&mut openapi);
     add_security_scheme(&mut openapi);

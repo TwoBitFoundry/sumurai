@@ -86,25 +86,28 @@ export function useSimpleFinFlow(options: UseSimpleFinFlowOptions = {}): UsePlai
     await invalidateSimpleFinCache();
   }, [connections, enabled, invalidateSimpleFinCache, isOnline]);
 
-  const connect = useCallback(async () => {
-    if (!enabled || !isOnline) {
-      return;
-    }
+  const connect = useCallback(
+    async (setupToken?: string) => {
+      if (!enabled || !isOnline) {
+        return;
+      }
 
-    clearError();
-    setSyncingAll(true);
-    try {
-      await SimpleFinService.connectAndSyncAll();
-      await connectionsQuery.refetch();
-      await invalidateSimpleFinCache();
-      setToast('SimpleFIN institutions connected');
-    } catch (connectError: unknown) {
-      const message = `Failed to connect SimpleFIN: ${connectError instanceof Error ? connectError.message : 'Unknown error'}`;
-      handleError(message);
-    } finally {
-      setSyncingAll(false);
-    }
-  }, [clearError, connectionsQuery, enabled, handleError, invalidateSimpleFinCache, isOnline]);
+      clearError();
+      setSyncingAll(true);
+      try {
+        await SimpleFinService.connectAndSyncAll(setupToken);
+        await connectionsQuery.refetch();
+        await invalidateSimpleFinCache();
+        setToast('SimpleFIN institutions connected');
+      } catch (connectError: unknown) {
+        const message = `Failed to connect SimpleFIN: ${connectError instanceof Error ? connectError.message : 'Unknown error'}`;
+        handleError(message);
+      } finally {
+        setSyncingAll(false);
+      }
+    },
+    [clearError, connectionsQuery, enabled, handleError, invalidateSimpleFinCache, isOnline]
+  );
 
   const syncOne = useCallback(
     async (connectionId: string) => {

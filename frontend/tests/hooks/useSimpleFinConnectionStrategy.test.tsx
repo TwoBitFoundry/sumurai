@@ -182,4 +182,30 @@ describe('useSimpleFinConnectionStrategy', () => {
 
     expect(result.current.getReady()).toBe(true);
   });
+
+  it('passes the provided setup token through to the SimpleFIN connect flow', async () => {
+    simpleFinServiceMock.getStatus.mockResolvedValue([]);
+
+    const { result } = renderHook(() =>
+      useSimpleFinConnectionStrategy({
+        isOnline: true,
+        sdkNonce: 0,
+        setSdkNonce: jest.fn(),
+        sdkFailedRef: { current: false },
+        state: initialFinancialConnectionState,
+        dispatch: jest.fn(),
+        handleError: jest.fn(),
+        onConnectionSuccess: jest.fn(),
+        invalidateCache: jest.fn().mockResolvedValue(undefined),
+        tellerApplicationId: null,
+        tellerEnvironment: 'development',
+      })
+    );
+
+    await act(async () => {
+      await result.current.connect?.('setup-token');
+    });
+
+    expect(simpleFinServiceMock.connectAndSyncAll).toHaveBeenCalledWith('setup-token');
+  });
 });

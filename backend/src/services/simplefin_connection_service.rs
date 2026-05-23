@@ -1,4 +1,5 @@
-use crate::models::plaid::{ProviderConnectRequest, ProviderConnectResponse, ProviderConnection};
+use crate::models::plaid::{ProviderConnectResponse, ProviderConnection};
+use crate::models::provider_connect::ProviderConnectRequest;
 use crate::models::transaction::SyncTransactionsResponse;
 use crate::providers::ProviderCredentials;
 use crate::providers::ProviderRegistry;
@@ -8,9 +9,7 @@ use crate::services::connection_service::{
     ProviderSyncError, SimpleFinConnectError, SyncConnectionParams,
 };
 use crate::services::repository_service::DatabaseRepository;
-use crate::services::simplefin_org_service::{
-    conn_id_is_hidden, org_is_hidden, SimpleFinOrganizationService,
-};
+use crate::services::simplefin_org_service::{conn_id_is_hidden, SimpleFinOrganizationService};
 use crate::services::simplefin_rate_limit_service::SimpleFinRateLimitService;
 use crate::services::sync_service::SyncService;
 use anyhow::Result;
@@ -76,7 +75,7 @@ impl SimpleFinConnectionService {
             .resolve_simplefin_credentials_for_connect(
                 user_id,
                 provider.clone(),
-                request.simplefin_setup_token.as_deref(),
+                request.simplefin.simplefin_setup_token.as_deref(),
             )
             .await?;
 
@@ -96,27 +95,12 @@ impl SimpleFinConnectionService {
             .await
             .map_err(SimpleFinConnectError::ConnectionPersistence)?;
 
-        let mut first_connection_id = None;
-        let mut institution_count = 0;
-
-        for org in &snapshot.connections {
-            if org_is_hidden(&hidden_orgs, org) {
-                continue;
-            }
-
-            let persisted = self
-                .org_service
-                .persist_org_connection(user_id, jwt_id, &credentials, org, &snapshot.accounts)
-                .await
-                .map_err(SimpleFinConnectError::ConnectionPersistence)?;
-
-            if let Some(connection_id) = persisted {
-                institution_count += 1;
-                if first_connection_id.is_none() {
-                    first_connection_id = Some(connection_id);
-                }
-            }
-        }
+        let reconciliation = self
+            .org_service
+            .reconcile_snapshot_connections(user_id, jwt_id, &hidden_orgs, &snapshot)
+            .await
+            .map_err(SimpleFinConnectError::ConnectionPersistence)?;
+        let institution_count = reconciliation.institution_count;
 
         if institution_count == 0 {
             if snapshot.connections.is_empty() {
@@ -125,14 +109,15 @@ impl SimpleFinConnectionService {
             if snapshot
                 .connections
                 .iter()
-                .all(|org| org_is_hidden(&hidden_orgs, org))
+                .all(|org| crate::services::simplefin_org_service::org_is_hidden(&hidden_orgs, org))
             {
                 return Err(SimpleFinConnectError::AllInstitutionsHidden);
             }
             return Err(SimpleFinConnectError::NoInstitutionsLinked);
         }
 
-        let connection_id = first_connection_id
+        let connection_id = reconciliation
+            .first_connection_id
             .expect("institution_count > 0 implies a persisted connection id")
             .to_string();
 
@@ -223,6 +208,12 @@ impl SimpleFinConnectionService {
                     "SimpleFIN balances snapshot unavailable"
                 ))
             })?;
+
+        let _reconciliation = self
+            .org_service
+            .reconcile_snapshot_connections(params.user_id, params.jwt_id, &hidden_orgs, &snapshot)
+            .await
+            .map_err(ProviderSyncError::SyncFailure)?;
 
         let connection_accounts: Vec<crate::models::account::Account> = snapshot
             .accounts

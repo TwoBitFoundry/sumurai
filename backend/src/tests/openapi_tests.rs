@@ -29,11 +29,10 @@ fn given_provider_info_when_generating_openapi_then_documents_simplefin_in_examp
 #[test]
 fn given_provider_connect_when_generating_openapi_then_documents_simplefin_setup_token_field() {
     let spec = serde_json::to_value(init_openapi()).unwrap();
-    let request_schema = &spec["components"]["schemas"]["ProviderConnectRequest"];
+    let simplefin_schema = &spec["components"]["schemas"]["SimpleFinConnectRequest"];
 
-    let simplefin_setup_token = &request_schema["properties"]["simplefin_setup_token"];
     assert_eq!(
-        simplefin_setup_token["type"],
+        simplefin_schema["properties"]["simplefin_setup_token"]["type"],
         serde_json::json!(["string", "null"])
     );
 }

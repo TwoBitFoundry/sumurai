@@ -114,30 +114,36 @@ Make SimpleFIN disconnect behavior align with Plaid and Teller at the institutio
 
 ### Tasks
 
-- [ ] Keep one `provider_connection` per SimpleFIN institution or org.
-- [ ] Preserve existing per-institution disconnect behavior as the user-visible disconnect action for SimpleFIN.
-- [ ] On partial SimpleFIN disconnect:
-  - [ ] delete the institution connection
-  - [ ] delete its accounts
-  - [ ] delete its transactions
-  - [ ] clear its cache entries
-  - [ ] persist the institution or org in `simplefin_hidden_orgs`
-  - [ ] keep the stored SimpleFIN access URL if other SimpleFIN institutions still remain
-- [ ] Keep ignored institutions excluded from connect-time snapshot materialization, sync-time reconciliation, account persistence, and transaction persistence.
-- [ ] Preserve the existing restore flow for ignored institutions so a user can opt an institution back in without a full reconnect.
-- [ ] On last remaining SimpleFIN institution disconnect:
-  - [ ] perform the normal institution disconnect cleanup
-  - [ ] delete the stored SimpleFIN root credential
-  - [ ] clear the SimpleFIN ignore list
-- [ ] Ensure there is no durable “zero institutions but still connected underneath” state for SimpleFIN.
+- [x] Keep one `provider_connection` per SimpleFIN institution or org.
+- [x] Preserve existing per-institution disconnect behavior as the user-visible disconnect action for SimpleFIN.
+- [x] On partial SimpleFIN disconnect:
+  - [x] delete the institution connection
+  - [x] delete its accounts
+  - [x] delete its transactions
+  - [x] clear its cache entries
+  - [x] persist the institution or org in `simplefin_hidden_orgs`
+  - [x] keep the stored SimpleFIN access URL if other SimpleFIN institutions still remain
+- [x] Keep ignored institutions excluded from connect-time snapshot materialization, sync-time reconciliation, account persistence, and transaction persistence.
+- [x] Preserve the existing restore flow for ignored institutions so a user can opt an institution back in without a full reconnect.
+- [x] On last remaining SimpleFIN institution disconnect:
+  - [x] perform the normal institution disconnect cleanup
+  - [x] delete the stored SimpleFIN root credential
+  - [x] clear the SimpleFIN ignore list
+- [x] Ensure there is no durable “zero institutions but still connected underneath” state for SimpleFIN.
 
 ### Acceptance Criteria
 
-- [ ] Disconnecting one of several SimpleFIN institutions removes only that institution’s data and keeps the remaining institutions usable.
-- [ ] A partially disconnected SimpleFIN institution is persisted in `simplefin_hidden_orgs` and is not recreated on later sync.
-- [ ] Restoring an ignored institution removes it from the ignore list and allows it to be re-materialized from the bridge snapshot.
-- [ ] Disconnecting the last remaining SimpleFIN institution also deletes the stored SimpleFIN access URL and clears the ignore list.
-- [ ] After the last SimpleFIN institution is disconnected, there is no residual SimpleFIN credential or ignored-org state left behind.
+- [x] Disconnecting one of several SimpleFIN institutions removes only that institution’s data and keeps the remaining institutions usable.
+- [x] A partially disconnected SimpleFIN institution is persisted in `simplefin_hidden_orgs` and is not recreated on later sync.
+- [x] Restoring an ignored institution removes it from the ignore list and allows it to be re-materialized from the bridge snapshot.
+- [x] Disconnecting the last remaining SimpleFIN institution also deletes the stored SimpleFIN access URL and clears the ignore list.
+- [x] After the last SimpleFIN institution is disconnected, there is no residual SimpleFIN credential or ignored-org state left behind.
+
+### TDD Log
+
+- Red: the disconnect tests did not cover the last-institution cleanup path or the preserved credential path when another SimpleFIN connection remains active.
+- Green: added `clear_simplefin_root_if_last_connection` to the disconnect flow and kept the stored root credential when another active SimpleFIN connection remains.
+- Refactor/verify: `cargo fmt --manifest-path backend/Cargo.toml --all`, `cargo test --manifest-path backend/Cargo.toml simplefin -- --nocapture`.
 
 ## Phase 4: Sync Reconciliation While Active Connections Exist
 
@@ -147,24 +153,30 @@ Allow SimpleFIN to discover newly linked institutions through normal sync behavi
 
 ### Tasks
 
-- [ ] Update SimpleFIN sync to reconcile the latest bridge snapshot before transaction sync.
-- [ ] During reconciliation:
-  - [ ] detect newly linked institutions from the bridge snapshot
-  - [ ] create new `provider_connection` rows for newly visible orgs
-  - [ ] attach and persist accounts under those institution connections
-  - [ ] skip any org listed in `simplefin_hidden_orgs`
-- [ ] Ensure connect-time materialization and sync-time reconciliation use the same hidden-org filtering rules.
-- [ ] Only allow this discovery path while a valid stored SimpleFIN credential still exists.
-- [ ] Because the last institution disconnect clears the root credential, do not support discovery after the user has fully disconnected all SimpleFIN institutions.
-- [ ] Preserve existing transaction sync behavior and hidden-org protections.
+- [x] Update SimpleFIN sync to reconcile the latest bridge snapshot before transaction sync.
+- [x] During reconciliation:
+  - [x] detect newly linked institutions from the bridge snapshot
+  - [x] create new `provider_connection` rows for newly visible orgs
+  - [x] attach and persist accounts under those institution connections
+  - [x] skip any org listed in `simplefin_hidden_orgs`
+- [x] Ensure connect-time materialization and sync-time reconciliation use the same hidden-org filtering rules.
+- [x] Only allow this discovery path while a valid stored SimpleFIN credential still exists.
+- [x] Because the last institution disconnect clears the root credential, do not support discovery after the user has fully disconnected all SimpleFIN institutions.
+- [x] Preserve existing transaction sync behavior and hidden-org protections.
 
 ### Acceptance Criteria
 
-- [ ] A user with at least one active SimpleFIN institution can add another institution in SimpleFIN Bridge and discover it via normal sync.
-- [ ] Newly discovered institutions are added automatically by default.
-- [ ] Ignored institutions are not recreated during connect or sync reconciliation.
-- [ ] Multi-institution SimpleFIN sync still works under one stored bridge credential.
-- [ ] Once all SimpleFIN institutions are disconnected, sync can no longer rediscover institutions until the user reconnects with a new setup token.
+- [x] A user with at least one active SimpleFIN institution can add another institution in SimpleFIN Bridge and discover it via normal sync.
+- [x] Newly discovered institutions are added automatically by default.
+- [x] Ignored institutions are not recreated during connect or sync reconciliation.
+- [x] Multi-institution SimpleFIN sync still works under one stored bridge credential.
+- [x] Once all SimpleFIN institutions are disconnected, sync can no longer rediscover institutions until the user reconnects with a new setup token.
+
+### TDD Log
+
+- Red: added a sync regression covering discovery of a newly linked bridge org and verification that the new provider connection rows are materialized during sync.
+- Green: added snapshot reconciliation to the SimpleFIN org service and wired both sync entrypoints to persist visible institutions before transaction sync.
+- Refactor/verify: `cargo fmt --manifest-path backend/Cargo.toml --all`, `cargo test --manifest-path backend/Cargo.toml simplefin -- --nocapture`, `cargo check --manifest-path backend/Cargo.toml --locked --all-targets`, `cargo clippy --manifest-path backend/Cargo.toml --locked --all-targets --no-deps -- -D warnings`.
 
 ## Phase 5: Frontend Onboarding and Accounts UX
 
@@ -174,29 +186,35 @@ Update onboarding and accounts UI to reflect the new SimpleFIN token flow and th
 
 ### Tasks
 
-- [ ] Build a reusable SimpleFIN token-entry component or hook shared by onboarding and accounts.
-- [ ] On onboarding, when the active or default provider is SimpleFIN:
-  - [ ] render token entry
-  - [ ] require non-empty input
-  - [ ] submit through the updated SimpleFIN connect flow
-  - [ ] show user-safe claim and validation errors
-- [ ] On the accounts page for SimpleFIN:
-  - [ ] if there are no SimpleFIN institution connections, show the token-entry connect UI
-  - [ ] if there are SimpleFIN institution connections, keep the existing institution-based accounts experience
-  - [ ] do not add a separate bridge-level disconnect action
-- [ ] Keep per-institution disconnect actions in the connection list.
-- [ ] Keep `Sync all` available so users with remaining SimpleFIN institutions can discover newly added institutions.
-- [ ] Preserve the ignored-institutions UI and wire it to the existing restore capability.
-- [ ] After the last SimpleFIN institution is disconnected, return the UI to the token-entry connect state.
+- [x] Build a reusable SimpleFIN token-entry component or hook shared by onboarding and accounts.
+- [x] On onboarding, when the active or default provider is SimpleFIN:
+  - [x] render token entry
+  - [x] require non-empty input
+  - [x] submit through the updated SimpleFIN connect flow
+  - [x] show user-safe claim and validation errors
+- [x] On the accounts page for SimpleFIN:
+  - [x] if there are no SimpleFIN institution connections, show the token-entry connect UI
+  - [x] if there are SimpleFIN institution connections, keep the existing institution-based accounts experience
+  - [x] do not add a separate bridge-level disconnect action
+- [x] Keep per-institution disconnect actions in the connection list.
+- [x] Keep `Sync all` available so users with remaining SimpleFIN institutions can discover newly added institutions.
+- [x] Preserve the ignored-institutions UI and wire it to the existing restore capability.
+- [x] After the last SimpleFIN institution is disconnected, return the UI to the token-entry connect state.
 
 ### Acceptance Criteria
 
-- [ ] Onboarding requires a pasted SimpleFIN token when SimpleFIN is the active provider.
-- [ ] Accounts page shows token-entry connect UI when the user has zero SimpleFIN institution connections.
-- [ ] Accounts page does not expose an extra bridge-level disconnect action separate from institution disconnects.
-- [ ] Per-institution disconnect remains the only user-visible SimpleFIN disconnect affordance.
-- [ ] The ignored-institutions restore UX remains available while other SimpleFIN institutions are still active.
-- [ ] After the final SimpleFIN institution is disconnected, the UI returns to a clean reconnect-with-token state.
+- [x] Onboarding requires a pasted SimpleFIN token when SimpleFIN is the active provider.
+- [x] Accounts page shows token-entry connect UI when the user has zero SimpleFIN institution connections.
+- [x] Accounts page does not expose an extra bridge-level disconnect action separate from institution disconnects.
+- [x] Per-institution disconnect remains the only user-visible SimpleFIN disconnect affordance.
+- [x] The ignored-institutions restore UX remains available while other SimpleFIN institutions are still active.
+- [x] After the final SimpleFIN institution is disconnected, the UI returns to a clean reconnect-with-token state.
+
+### TDD Log
+
+- Red: added onboarding and accounts-page coverage for SimpleFIN token entry, zero-connection connect state, and ignored-institution restore UX.
+- Green: added a reusable `SimpleFinTokenEntry` component, wired token submission into onboarding and accounts, and updated the SimpleFIN connect flow to accept the user token.
+- Refactor/verify: `npm --prefix frontend test -- --runTestsByPath tests/services/SimpleFinService.test.ts tests/utils/providerCapabilities.test.ts tests/hooks/useSimpleFinConnectionStrategy.test.tsx tests/components/onboarding/ConnectAccountStep.test.tsx tests/views/AccountsPage.test.tsx tests/features/simplefin/hooks/useSimpleFinFlow.test.tsx tests/features/simplefin/components/SimpleFinIgnoredInstitutionsPanel.test.tsx`, `npm --prefix frontend run typecheck`.
 
 ## Phase 6: Copy, Docs, and Test Coverage
 
@@ -206,41 +224,47 @@ Remove the old shared-token narrative and lock in the new SimpleFIN semantics wi
 
 ### Tasks
 
-- [ ] Replace all frontend SimpleFIN copy that says the token is configured by the server or operator.
-- [ ] Update provider capability logic so SimpleFIN is no longer described as blocked by missing `SIMPLEFIN_SETUP_TOKEN`.
-- [ ] Update architecture and SimpleFIN docs to describe:
-  - [ ] one institution connection per provider connection
-  - [ ] user-submitted setup token
-  - [ ] stored per-user access URL
-  - [ ] persistent ignored institutions via `simplefin_hidden_orgs`
-  - [ ] partial disconnect writing to the ignore list
-  - [ ] last institution disconnect clearing credentials and resetting SimpleFIN fully
-  - [ ] sync discovery working only while at least one SimpleFIN institution remains connected
-- [ ] Remove or rewrite stale config and UI tests tied to env-token behavior.
-- [ ] Add or update backend tests for:
-  - [ ] connect with request token
-  - [ ] stored credential reuse
-  - [ ] partial SimpleFIN disconnect
-  - [ ] ignored-org persistence after disconnect
-  - [ ] restore ignored institution
-  - [ ] last-institution SimpleFIN disconnect deleting the root credential and clearing the ignore list
-  - [ ] sync discovery of newly linked institutions
-  - [ ] hidden-org filtering during connect and sync
-- [ ] Add or update frontend tests for:
-  - [ ] onboarding token entry
-  - [ ] accounts page connect state with zero SimpleFIN institutions
-  - [ ] institution disconnect behavior
-  - [ ] ignored-institutions restore behavior
-  - [ ] return to connect state after last disconnect
-  - [ ] removal of env-token messaging
+- [x] Replace all frontend SimpleFIN copy that says the token is configured by the server or operator.
+- [x] Update provider capability logic so SimpleFIN is no longer described as blocked by missing `SIMPLEFIN_SETUP_TOKEN`.
+- [x] Update architecture and SimpleFIN docs to describe:
+  - [x] one institution connection per provider connection
+  - [x] user-submitted setup token
+  - [x] stored per-user access URL
+  - [x] persistent ignored institutions via `simplefin_hidden_orgs`
+  - [x] partial disconnect writing to the ignore list
+  - [x] last institution disconnect clearing credentials and resetting SimpleFIN fully
+  - [x] sync discovery working only while at least one SimpleFIN institution remains connected
+- [x] Remove or rewrite stale config and UI tests tied to env-token behavior.
+- [x] Add or update backend tests for:
+  - [x] connect with request token
+  - [x] stored credential reuse
+  - [x] partial SimpleFIN disconnect
+  - [x] ignored-org persistence after disconnect
+  - [x] restore ignored institution
+  - [x] last-institution SimpleFIN disconnect deleting the root credential and clearing the ignore list
+  - [x] sync discovery of newly linked institutions
+  - [x] hidden-org filtering during connect and sync
+- [x] Add or update frontend tests for:
+  - [x] onboarding token entry
+  - [x] accounts page connect state with zero SimpleFIN institutions
+  - [x] institution disconnect behavior
+  - [x] ignored-institutions restore behavior
+  - [x] return to connect state after last disconnect
+  - [x] removal of env-token messaging
 
 ### Acceptance Criteria
 
-- [ ] No user-facing copy says SimpleFIN is connected through a deployment-level setup token.
-- [ ] Backend tests cover token claim, reuse, partial disconnect, ignore-list persistence, restore flow, last disconnect cleanup, and sync discovery.
-- [ ] Frontend tests cover onboarding, zero-connection connect state, ignored-institution restore UX, and last-disconnect reset behavior.
-- [ ] Docs describe the final SimpleFIN disconnect and ignore-list invariants accurately.
-- [ ] The implementation can be handed to a student agent without unresolved product decisions.
+- [x] No user-facing copy says SimpleFIN is connected through a deployment-level setup token.
+- [x] Backend tests cover token claim, reuse, partial disconnect, ignore-list persistence, restore flow, last disconnect cleanup, and sync discovery.
+- [x] Frontend tests cover onboarding, zero-connection connect state, ignored-institution restore UX, and last-disconnect reset behavior.
+- [x] Docs describe the final SimpleFIN disconnect and ignore-list invariants accurately.
+- [x] The implementation can be handed to a student agent without unresolved product decisions.
+
+### TDD Log
+
+- Red: updated the frontend copy, provider-capability messaging, and docs while adding coverage for the token-entry flow and ignored-institution restore UX.
+- Green: created the reusable token-entry component, wired token submission through onboarding and accounts, updated provider messaging, and refreshed architecture/SimpleFIN docs.
+- Refactor/verify: `npm --prefix frontend test -- --runTestsByPath tests/services/SimpleFinService.test.ts tests/utils/providerCapabilities.test.ts tests/hooks/useSimpleFinConnectionStrategy.test.tsx tests/components/onboarding/ConnectAccountStep.test.tsx tests/views/AccountsPage.test.tsx tests/features/simplefin/hooks/useSimpleFinFlow.test.tsx tests/features/simplefin/components/SimpleFinIgnoredInstitutionsPanel.test.tsx`, `npm --prefix frontend run typecheck`, `cargo check --manifest-path backend/Cargo.toml --locked --all-targets`, `cargo clippy --manifest-path backend/Cargo.toml --locked --all-targets --no-deps -- -D warnings`.
 
 ## Assumptions
 

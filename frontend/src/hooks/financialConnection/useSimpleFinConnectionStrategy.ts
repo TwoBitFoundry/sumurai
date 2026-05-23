@@ -69,25 +69,30 @@ export function useSimpleFinConnectionStrategy(
     };
   }, [dispatch, refreshStatus]);
 
-  const connect = useCallback(async () => {
-    dispatch(connectionActions.patch({ connectionInProgress: true, error: null, isSyncing: true }));
-    try {
-      const { rateLimited } = await SimpleFinService.connectAndSyncAll();
+  const connect = useCallback(
+    async (setupToken?: string) => {
+      dispatch(
+        connectionActions.patch({ connectionInProgress: true, error: null, isSyncing: true })
+      );
+      try {
+        const { rateLimited } = await SimpleFinService.connectAndSyncAll(setupToken);
 
-      const latest = await refreshStatus();
-      await invalidateCache();
-      if (latest || rateLimited) {
-        dispatch(connectionActions.patch({ error: null }));
-      } else {
-        dispatch(connectionActions.patch({ isConnected: false, institutionName: null }));
+        const latest = await refreshStatus();
+        await invalidateCache();
+        if (latest || rateLimited) {
+          dispatch(connectionActions.patch({ error: null }));
+        } else {
+          dispatch(connectionActions.patch({ isConnected: false, institutionName: null }));
+        }
+      } catch (connectError) {
+        const message = formatUserFacingApiError(connectError, 'Failed to connect with SimpleFIN');
+        handleError(message);
+      } finally {
+        dispatch(connectionActions.patch({ isSyncing: false, connectionInProgress: false }));
       }
-    } catch (connectError) {
-      const message = formatUserFacingApiError(connectError, 'Failed to connect with SimpleFIN');
-      handleError(message);
-    } finally {
-      dispatch(connectionActions.patch({ isSyncing: false, connectionInProgress: false }));
-    }
-  }, [dispatch, handleError, invalidateCache, refreshStatus]);
+    },
+    [dispatch, handleError, invalidateCache, refreshStatus]
+  );
 
   return useMemo(
     () => ({

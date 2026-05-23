@@ -46,11 +46,9 @@ describe('providerCapabilities', () => {
     expect(getConnectBlockedReason('teller', tellerReadyCatalogue)).toBeNull();
   });
 
-  it('given simplefin missing from catalogue when checked then explains setup token env', () => {
+  it('given simplefin missing from catalogue when checked then explains it is not enabled', () => {
     expect(isProviderListed('simplefin', plaidOnlyCatalogue)).toBe(false);
-    expect(getConnectBlockedReason('simplefin', plaidOnlyCatalogue)).toContain(
-      'SIMPLEFIN_SETUP_TOKEN'
-    );
+    expect(getConnectBlockedReason('simplefin', plaidOnlyCatalogue)).toContain('not enabled');
   });
 
   it('given preferred provider is not connectable when resolved then falls back to connectable provider', () => {

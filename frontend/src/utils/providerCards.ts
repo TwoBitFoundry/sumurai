@@ -257,7 +257,7 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
   },
   heroTitle: 'Connect your SimpleFIN bridge',
   heroDescription:
-    'Link every institution you authorize on the SimpleFIN bridge. Your operator configures SIMPLEFIN_SETUP_TOKEN on the server—no token entry in Sumurai.',
+    'Paste a one-time SimpleFIN setup token to connect the institutions you authorize on the bridge.',
   highlightLabel: "What you'll connect",
   highlightMeta: 'Read-only access',
   features: [
@@ -270,7 +270,7 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
     {
       icon: Zap,
       title: 'No embedded link UI',
-      body: 'Sumurai stays out of the way—connect uses server-side bridge credentials.',
+      body: 'Sumurai stays out of the way—connect uses your pasted setup token and stored bridge access.',
       palette: featurePalettes.providerFeature.amber,
     },
     {

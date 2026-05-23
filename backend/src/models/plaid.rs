@@ -56,22 +56,6 @@ pub struct ExchangeTokenRequest {
     pub public_token: String,
 }
 
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
-#[schema(example = json!({
-    "provider": "teller",
-    "access_token": "access-sandbox-xyz",
-    "enrollment_id": "enroll-123",
-    "institution_name": "Teller Demo Bank",
-    "simplefin_setup_token": null
-}))]
-pub struct ProviderConnectRequest {
-    pub provider: String,
-    pub access_token: String,
-    pub enrollment_id: String,
-    pub institution_name: Option<String>,
-    pub simplefin_setup_token: Option<String>,
-}
-
 #[derive(Deserialize, Serialize, ToSchema)]
 #[schema(example = json!({"connection_id": "connection-uuid"}))]
 pub struct SyncTransactionsRequest {

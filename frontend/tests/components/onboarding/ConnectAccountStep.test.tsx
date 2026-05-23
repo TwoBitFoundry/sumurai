@@ -6,6 +6,7 @@ describe('ConnectAccountStep', () => {
   it('disables the primary action and explains offline availability', () => {
     const { container } = render(
       <ConnectAccountStep
+        provider="teller"
         content={CONNECT_ACCOUNT_PROVIDER_CONTENT.teller}
         providerLoading={false}
         providerError={null}
@@ -33,6 +34,7 @@ describe('ConnectAccountStep', () => {
   it('renders the Teller logo on the primary action button', () => {
     render(
       <ConnectAccountStep
+        provider="teller"
         content={CONNECT_ACCOUNT_PROVIDER_CONTENT.teller}
         providerLoading={false}
         providerError={null}
@@ -55,6 +57,7 @@ describe('ConnectAccountStep', () => {
   it('renders the Plaid connect action without extra guidance', () => {
     render(
       <ConnectAccountStep
+        provider="plaid"
         content={CONNECT_ACCOUNT_PROVIDER_CONTENT.plaid}
         providerLoading={false}
         providerError={null}
@@ -79,11 +82,12 @@ describe('ConnectAccountStep', () => {
     expect(screen.getByAltText('Plaid logo')).toHaveAttribute('src', '/plaid.webp');
   });
 
-  it('renders SimpleFIN connect button without setup token field', () => {
+  it('renders the SimpleFIN token entry and submits the pasted token', () => {
     const onConnect = jest.fn();
 
     render(
       <ConnectAccountStep
+        provider="simplefin"
         content={CONNECT_ACCOUNT_PROVIDER_CONTENT.simplefin}
         providerLoading={false}
         providerError={null}
@@ -99,14 +103,17 @@ describe('ConnectAccountStep', () => {
       />
     );
 
-    expect(screen.queryByPlaceholderText('Paste your SimpleFIN setup token')).toBeNull();
+    fireEvent.change(screen.getByPlaceholderText('Paste your SimpleFIN setup token'), {
+      target: { value: 'demo-token' },
+    });
     fireEvent.click(screen.getByRole('button', { name: /connect with simplefin/i }));
-    expect(onConnect).toHaveBeenCalled();
+    expect(onConnect).toHaveBeenCalledWith('demo-token');
   });
 
   it('shows connected badge with institution count label', () => {
     render(
       <ConnectAccountStep
+        provider="simplefin"
         content={CONNECT_ACCOUNT_PROVIDER_CONTENT.simplefin}
         providerLoading={false}
         providerError={null}

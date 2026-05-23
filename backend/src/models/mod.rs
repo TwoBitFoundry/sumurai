@@ -10,6 +10,7 @@ pub mod import;
 pub mod ip_ban;
 pub mod plaid;
 pub mod predicted_category;
+pub mod provider_connect;
 pub mod query;
 pub mod rate_limit;
 pub mod simplefin;

@@ -57,12 +57,12 @@ use crate::models::{
     },
     plaid::{
         ClearSyncedDataResponse, DisconnectRequest, DisconnectResult, ExchangeTokenRequest,
-        ExchangeTokenResponse, LinkTokenRequest, LinkTokenResponse, ProviderConnectRequest,
-        ProviderConnectResponse, ProviderConnectionStatus, ProviderInfoResponse,
-        ProviderSelectRequest, ProviderSelectResponse, ProviderStatusResponse,
-        SyncTransactionsRequest,
+        ExchangeTokenResponse, LinkTokenRequest, LinkTokenResponse, ProviderConnectResponse,
+        ProviderConnectionStatus, ProviderInfoResponse, ProviderSelectRequest,
+        ProviderSelectResponse, ProviderStatusResponse, SyncTransactionsRequest,
     },
     predicted_category::Confidence,
+    provider_connect::ProviderConnectRequest,
     transaction::{
         PaginatedTransactionsResponse, SyncTransactionsResponse, TransactionsInsightsResponse,
         TransactionsQuery,

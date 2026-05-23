@@ -2,7 +2,7 @@
 
 ## Context
 
-Sumurai currently supports two financial-data providers — **Teller** and **Plaid** — behind a `FinancialDataProvider` trait + runtime registry, with `DEFAULT_PROVIDER` selecting the active one. We're adding **SimpleFIN Bridge** as a third option to expand bank coverage with a Bring-Your-Own-Key model that suits the self-hosted ethos.
+Sumurai currently supports three financial-data providers — **Teller**, **Plaid**, and **SimpleFIN Bridge** — behind a `FinancialDataProvider` trait + runtime registry, with `DEFAULT_PROVIDER` selecting the active one. SimpleFIN uses a user-pasted one-time setup token, a stored per-user access URL, and a persistent ignore list for institutions the user disconnects.
 
 SimpleFIN is structurally simpler than the others:
 
@@ -17,6 +17,7 @@ The integration must keep the trait/registry pattern intact so a fourth provider
 
 - Each SimpleFIN org → its own `provider_connections` row (mirrors Teller multi-enrollment).
 - **Data retention rule: only keep what is implicitly allowed.** An org is implicitly allowed from the moment it first appears in `/accounts` until the user disconnects it. After disconnect it is no longer implicitly allowed: even if SimpleFIN keeps returning that org's connections, accounts, and transactions, we **must drop them at the sync boundary** and persist nothing — no row in `provider_connections`, no `accounts`, no `transactions`, no cached metadata. Enforced via a `simplefin_hidden_orgs` blocklist consulted before any write.
+- While at least one SimpleFIN institution remains connected, sync can materialize newly linked institutions from the latest snapshot using the same hidden-org filtering rules as connect.
 
 ### SimpleFIN protocol facts that shape the design
 

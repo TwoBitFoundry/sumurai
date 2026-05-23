@@ -4,9 +4,10 @@ use crate::models::{
     account::Account,
     cache::{BankConnectionSyncStatus, CachedBankAccounts, CachedBankConnection},
     plaid::{
-        DataCleared, DisconnectResult, ExchangeTokenResponse, ProviderConnectRequest,
-        ProviderConnectResponse, ProviderConnection,
+        DataCleared, DisconnectResult, ExchangeTokenResponse, ProviderConnectResponse,
+        ProviderConnection,
     },
+    provider_connect::ProviderConnectRequest,
     simplefin::SimpleFinConnection,
     transaction::{SyncMetadata, SyncTransactionsResponse, Transaction},
 };
@@ -284,9 +285,12 @@ impl ConnectionService {
                 connection_id = %connection.id,
                 org_conn_id = %org_conn_id,
                 transactions_deleted = deleted_transactions,
-                accounts_deleted = deleted_accounts,
-                "SimpleFIN org disconnected"
+                    accounts_deleted = deleted_accounts,
+                    "SimpleFIN org disconnected"
             );
+
+            self.clear_simplefin_root_if_last_connection(user_id)
+                .await?;
 
             return Ok(DisconnectResult {
                 success: true,
@@ -496,6 +500,37 @@ impl ConnectionService {
         Ok(false)
     }
 
+    async fn clear_simplefin_root_if_last_connection(&self, user_id: &Uuid) -> Result<()> {
+        let connections = self
+            .db_repository
+            .get_all_provider_connections_by_user(user_id)
+            .await?;
+
+        let has_simplefin_connections = connections
+            .iter()
+            .any(|connection| connection.provider == "simplefin" && connection.is_connected);
+
+        if has_simplefin_connections {
+            return Ok(());
+        }
+
+        self.db_repository
+            .delete_simplefin_root_credential(user_id)
+            .await?;
+
+        let hidden_orgs = self
+            .db_repository
+            .list_simplefin_hidden_orgs(user_id)
+            .await?;
+        for hidden_org in hidden_orgs {
+            self.db_repository
+                .remove_simplefin_hidden_org(user_id, &hidden_org)
+                .await?;
+        }
+
+        Ok(())
+    }
+
     pub async fn connect_simplefin_provider(
         &self,
         user_id: &Uuid,
@@ -520,7 +555,7 @@ impl ConnectionService {
             .resolve_simplefin_credentials_for_connect(
                 user_id,
                 provider.clone(),
-                request.simplefin_setup_token.as_deref(),
+                request.simplefin.simplefin_setup_token.as_deref(),
             )
             .await?;
 
@@ -549,13 +584,7 @@ impl ConnectionService {
             }
 
             let persisted = self
-                .persist_simplefin_org_connection(
-                    user_id,
-                    jwt_id,
-                    &credentials,
-                    org,
-                    &snapshot.accounts,
-                )
+                .persist_simplefin_org_connection(user_id, jwt_id, org, &snapshot.accounts)
                 .await
                 .map_err(SimpleFinConnectError::ConnectionPersistence)?;
 
@@ -611,7 +640,6 @@ impl ConnectionService {
         &self,
         user_id: &Uuid,
         jwt_id: &str,
-        _credentials: &ProviderCredentials,
         org: &SimpleFinConnection,
         snapshot_accounts: &[crate::models::simplefin::SimpleFinAccount],
     ) -> Result<Option<Uuid>> {
@@ -1111,6 +1139,21 @@ impl ConnectionService {
                     "SimpleFIN balances snapshot unavailable"
                 ))
             })?;
+
+        for org in &snapshot.connections {
+            if crate::services::simplefin_org_service::org_is_hidden(&hidden_orgs, org) {
+                continue;
+            }
+
+            let _ = self
+                .persist_simplefin_org_connection(
+                    params.user_id,
+                    params.jwt_id,
+                    org,
+                    &snapshot.accounts,
+                )
+                .await;
+        }
 
         let connection_accounts: Vec<Account> = snapshot
             .accounts

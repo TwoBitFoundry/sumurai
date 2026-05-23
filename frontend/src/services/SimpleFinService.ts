@@ -38,11 +38,14 @@ const resolveSimpleFinConnectionId = (
 };
 
 export class SimpleFinService {
-  static async connect(): Promise<ProviderConnectResponse> {
+  static async connect(setupToken?: string): Promise<ProviderConnectResponse> {
     return ApiClient.post<ProviderConnectResponse>('/providers/connect', {
       provider: 'simplefin',
       access_token: '',
       enrollment_id: '',
+      simplefin: {
+        simplefin_setup_token: setupToken ?? null,
+      },
     });
   }
 
@@ -75,8 +78,8 @@ export class SimpleFinService {
     return response.restored;
   }
 
-  static async connectAndSyncAll(): Promise<SimpleFinConnectSyncResult> {
-    await SimpleFinService.connect();
+  static async connectAndSyncAll(setupToken?: string): Promise<SimpleFinConnectSyncResult> {
+    await SimpleFinService.connect(setupToken);
     const statuses = await SimpleFinService.getStatus();
     const connectionId = resolveSimpleFinConnectionId(statuses);
 

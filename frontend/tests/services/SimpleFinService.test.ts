@@ -30,12 +30,15 @@ describe('SimpleFinService', () => {
         institution_name: 'SimpleFIN (2 institutions)',
       } as any);
 
-      const result = await SimpleFinService.connect();
+      const result = await SimpleFinService.connect('setup-token');
 
       expect(ApiClient.post).toHaveBeenCalledWith('/providers/connect', {
         provider: 'simplefin',
         access_token: '',
         enrollment_id: '',
+        simplefin: {
+          simplefin_setup_token: 'setup-token',
+        },
       });
       expect(result).toEqual({
         connection_id: 'conn-1',
