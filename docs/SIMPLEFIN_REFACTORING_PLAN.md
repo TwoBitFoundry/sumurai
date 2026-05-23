@@ -483,9 +483,10 @@ Extract SimpleFIN-specific credential logic into trait-based, injectable service
 
 ---
 
-# PHASE 3: SimpleFIN-Specific Service Layer 🚧 IN PROGRESS
+# PHASE 3: SimpleFIN-Specific Service Layer ✅ COMPLETED
 **Duration**: 3-4 sprints | **Risk**: Medium (significant logic extraction)
 **Started**: 101ed6c4 - feat(simplefin): Phase 3 start — SimpleFIN-specific service layer
+**Completed**: (pending commit)
 
 ## Goal
 Extract 200+ lines of SimpleFIN-specific logic from ConnectionService into three focused, testable services: connection, organization, and rate limiting.
@@ -706,8 +707,56 @@ Extract 200+ lines of SimpleFIN-specific logic from ConnectionService into three
 
 ---
 
+## Phase 3 Progress Summary
+**Completed (6 of 6 tasks)**:
+- Task 3.1: SimpleFinOrganizationService ✅
+- Task 3.2: SimpleFinRateLimitService ✅
+- Task 3.3: SimpleFinConnectionService (connect + sync) ✅
+- Task 3.4: Removed deprecated helpers (kept fallback) ✅
+- Task 3.5: Updated ConnectionService sync delegation ✅
+- Task 3.6: Services registered in main.rs ✅
 
+## TDD Log - Phase 3
 
+- **Slice 3.1**: SimpleFinOrganizationService
+  - Red: Test SimpleFinOrganizationService struct existence with db_repository and cache_service
+  - Green: Created service with persist_org_connection(), list_hidden_orgs(), restore_org() methods
+  - Green: Implemented complete_sync_with_jwt_cache_update() for BankConnectionSyncStatus caching
+  - All 367 tests passing
+
+- **Slice 3.2**: SimpleFinRateLimitService
+  - Red: Test SimpleFinRateLimitService with cache_service
+  - Green: Created service with check_sync_floor(), apply_sync_floor() methods
+  - Green: Implemented helper methods sync_floor_key() and sync_floor_ttl_seconds()
+  - All 367 tests passing
+
+- **Slice 3.3**: SimpleFinConnectionService (connect)
+  - Red: Test SimpleFinConnectionService with all dependencies
+  - Green: Created service with connect() method extracting 80+ lines from connection_service.rs
+  - Green: Implemented credential resolution and org persistence delegation
+  - All 367 tests passing
+
+- **Slice 3.3b**: SimpleFinConnectionService (sync) + categorizer
+  - Red: Test SimpleFinConnectionService.sync() method
+  - Green: Extracted 270+ lines of sync logic including rate limiting, org filtering, categorization
+  - Fixed: Added categorizer field to struct, implemented load_simplefin_access_url() helper
+  - Fixed: Made simplefin_conn_id_from_item_id() public for use in new service
+  - Fixed: Removed unused variable assignments (fetched_count, page_count, filter counts)
+  - All 367 tests passing with zero warnings
+
+- **Slice 3.5**: ConnectionService delegation
+  - Red: Test that ConnectionService.sync_simplefin_connection() delegates to SimpleFinConnectionService
+  - Green: Added check at method start: if simplefin_connection_service is Some, delegate and return
+  - Green: Kept fallback implementation for backward compatibility
+  - All 367 tests passing
+
+- **Slice 3.6**: App wiring
+  - Red: Test that main.rs instantiates and wires all SimpleFIN services
+  - Green: Created simplefin_org_service with db_repository and cache_service
+  - Green: Created simplefin_rate_limit_service with cache_service
+  - Green: Created simplefin_connection_service with all 7 dependencies (added categorizer as 7th)
+  - Green: Passed simplefin_connection_service to ConnectionService via builder
+  - All 367 tests passing
 
 ---
 

@@ -340,6 +340,7 @@ async fn main() -> anyhow::Result<()> {
             credential_resolvers.clone(),
             simplefin_org_service,
             simplefin_rate_limit_service,
+            categorizer.clone(),
         ),
     );
 

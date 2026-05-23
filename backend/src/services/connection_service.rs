@@ -135,7 +135,7 @@ fn simplefin_org_conn_id_from_item_id(item_id: &str, user_id: &Uuid) -> Option<S
     since = "5.16.0",
     note = "Use ProviderConnection.provider field instead of item_id pattern matching"
 )]
-fn simplefin_conn_id_from_item_id(item_id: &str, user_id: &Uuid) -> Option<String> {
+pub fn simplefin_conn_id_from_item_id(item_id: &str, user_id: &Uuid) -> Option<String> {
     #[allow(deprecated)]
     simplefin_org_conn_id_from_item_id(item_id, user_id)
 }
@@ -950,6 +950,12 @@ impl ConnectionService {
         connection: &mut ProviderConnection,
         reference_date: Option<NaiveDate>,
     ) -> Result<SyncTransactionsResponse, ProviderSyncError> {
+        if let Some(service) = self.simplefin_connection_service.as_ref() {
+            return service
+                .sync(params, sync_service, connection, reference_date)
+                .await;
+        }
+
         let sync_timestamp = Utc::now();
         let (sync_start_date, sync_end_date) =
             sync_service.calculate_sync_date_range(connection.last_sync_at, reference_date);
