@@ -1,4 +1,5 @@
 use super::credential_resolver::ProviderCredentialResolver;
+use crate::providers::simplefin_provider::{SimpleFinProvider, SimpleFinProviderError};
 use crate::providers::{FinancialDataProvider, ProviderCredentials};
 use crate::services::repository_service::DatabaseRepository;
 use async_trait::async_trait;
@@ -20,6 +21,28 @@ impl SimpleFinCredentialResolver {
 
     fn root_item_id(user_id: &Uuid) -> String {
         format!("simplefin_root_{user_id}")
+    }
+
+    fn demo_user_email() -> String {
+        std::env::var("SIMPLEFIN_DEMO_USER_EMAIL")
+            .unwrap_or_else(|_| "simplefin@test.com".to_string())
+    }
+
+    fn setup_token_already_claimed(err: &anyhow::Error) -> bool {
+        err.chain().any(|source| {
+            source
+                .downcast_ref::<SimpleFinProviderError>()
+                .is_some_and(|error| {
+                    matches!(error, SimpleFinProviderError::SetupTokenAlreadyClaimed)
+                })
+        })
+    }
+
+    async fn is_simplefin_demo_user(&self, user_id: &Uuid) -> anyhow::Result<bool> {
+        let Some(user) = self.db_repository.get_user_by_id(user_id).await? else {
+            return Ok(false);
+        };
+        Ok(user.email.eq_ignore_ascii_case(&Self::demo_user_email()))
     }
 }
 
@@ -50,8 +73,44 @@ impl ProviderCredentialResolver for SimpleFinCredentialResolver {
             .filter(|token| !token.trim().is_empty())
             .ok_or_else(|| anyhow::anyhow!("SimpleFIN setup token not configured"))?;
 
-        let mut credentials = provider.exchange_public_token(setup_token).await?;
-        credentials.item_id = Self::root_item_id(user_id);
+        let is_demo_user = self.is_simplefin_demo_user(user_id).await?;
+        if !is_demo_user && SimpleFinProvider::is_beta_demo_setup_token(setup_token) {
+            return Err(anyhow::anyhow!(
+                "SimpleFIN demo bridge is only available to the demo account ({})",
+                Self::demo_user_email()
+            ));
+        }
+
+        let credentials = match provider.exchange_public_token(setup_token).await {
+            Ok(mut credentials) => {
+                credentials.item_id = Self::root_item_id(user_id);
+                credentials
+            }
+            Err(err) if Self::setup_token_already_claimed(&err) => {
+                if !is_demo_user {
+                    return Err(anyhow::anyhow!(
+                        "SimpleFIN is not linked for this account. The deployment setup token was already claimed; sign in as {} or link SimpleFIN with your own bridge token.",
+                        Self::demo_user_email()
+                    ));
+                }
+                let access_url = SimpleFinProvider::beta_demo_access_url_for_consumed_setup_token(
+                    setup_token,
+                )
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "SimpleFIN setup token was already claimed. Generate a new setup token from your SimpleFIN bridge."
+                    )
+                })?;
+                ProviderCredentials {
+                    provider: "simplefin".to_string(),
+                    access_token: access_url,
+                    item_id: Self::root_item_id(user_id),
+                    certificate: None,
+                    private_key: None,
+                }
+            }
+            Err(err) => return Err(err),
+        };
 
         self.db_repository
             .store_simplefin_root_credential(user_id, &credentials.access_token)

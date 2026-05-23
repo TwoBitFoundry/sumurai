@@ -86,7 +86,6 @@ use middleware::resource_authorization::{
     AuthorizedBudgetId, AuthorizedConnectionRequest, AuthorizedQuery,
 };
 use middleware::telemetry_middleware::{self, request_tracing_middleware, TelemetryConfig};
-use providers::simplefin_provider::SimpleFinProviderError;
 use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
 use services::categorization::classifier_labels::format_classifier_input;
 use services::category_management::service::CategoryManagementService;
@@ -107,50 +106,6 @@ use services::{
 use services::{AnalyticsService, RealPlaidClient};
 use sqlx::PgPool;
 use utils::auth_cookie::{build_auth_cookie, build_clearing_auth_cookie, extract_auth_cookie};
-
-fn simplefin_claim_error_is_already_used(err: &anyhow::Error) -> bool {
-    err.chain().any(|cause| {
-        cause
-            .downcast_ref::<SimpleFinProviderError>()
-            .is_some_and(|e| matches!(e, SimpleFinProviderError::SetupTokenAlreadyClaimed))
-    })
-}
-
-#[allow(dead_code)]
-async fn resolve_simplefin_access_url_at_startup(
-    provider_registry: &providers::ProviderRegistry,
-    config: &Config,
-) -> anyhow::Result<Option<String>> {
-    let Some(token) = config.get_simplefin_setup_token() else {
-        return Ok(None);
-    };
-
-    let Some(provider) = provider_registry.get("simplefin") else {
-        return Ok(None);
-    };
-
-    match provider.exchange_public_token(token).await {
-        Ok(credentials) => {
-            tracing::info!("SimpleFIN setup token claimed at startup");
-            Ok(Some(credentials.access_token))
-        }
-        Err(err) if simplefin_claim_error_is_already_used(&err) => {
-            if let Some(access_url) =
-                providers::SimpleFinProvider::beta_demo_access_url_for_consumed_setup_token(token)
-            {
-                tracing::warn!(
-                    "SimpleFIN beta demo setup token was already claimed; using shared demo access URL"
-                );
-                Ok(Some(access_url))
-            } else {
-                Err(anyhow::anyhow!(
-                    "SIMPLEFIN_SETUP_TOKEN was already claimed. Generate a new setup token from your SimpleFIN bridge."
-                ))
-            }
-        }
-        Err(err) => Err(err),
-    }
-}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

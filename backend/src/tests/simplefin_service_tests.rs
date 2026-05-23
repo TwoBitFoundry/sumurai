@@ -1,4 +1,5 @@
 use crate::models::account::Account;
+use crate::models::auth::User;
 use crate::models::plaid::{ProviderConnectRequest, ProviderConnectResponse, ProviderConnection};
 use crate::models::simplefin::SimpleFinTransaction;
 use crate::models::simplefin::{SimpleFinAccount, SimpleFinAccountsResponse, SimpleFinConnection};
@@ -16,6 +17,7 @@ use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::sync_service::SyncService;
 use crate::test_fixtures::{noop_categorizer, TestFixtures};
 use axum::body::to_bytes;
+use chrono::Utc;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use tower::ServiceExt;
@@ -23,6 +25,24 @@ use uuid::Uuid;
 
 const ACCESS_URL: &str = "https://demo:pass@beta-bridge.simplefin.org/simplefin";
 const SETUP_TOKEN: &str = "dGVzdC1zaW1wbGVmaW4tc2V0dXAtdG9rZW4=";
+
+fn mock_non_demo_user_lookup(mock_db: &mut MockDatabaseRepository) {
+    mock_db
+        .expect_get_user_by_id()
+        .returning(|user_id| {
+            let user = User {
+                id: *user_id,
+                email: format!("test-{user_id}@example.com"),
+                password_hash: "hash".to_string(),
+                provider: "simplefin".to_string(),
+                created_at: Utc::now(),
+                updated_at: Utc::now(),
+                onboarding_completed: false,
+            };
+            Box::pin(async move { Ok(Some(user)) })
+        })
+        .times(0..);
+}
 
 fn simplefin_org_item_id(user_id: &Uuid, org_conn_id: &str) -> String {
     format!("simplefin_{user_id}_{org_conn_id}")
@@ -178,6 +198,10 @@ fn build_simplefin_connection_service(
     mock_db
         .expect_store_simplefin_root_credential()
         .returning(|_, _| Box::pin(async { Ok(()) }));
+
+    if simplefin_setup_token.is_some() {
+        mock_non_demo_user_lookup(&mut mock_db);
+    }
 
     mock_db
         .expect_list_simplefin_hidden_orgs()
@@ -486,6 +510,7 @@ async fn build_simplefin_handler_app(
     mock_db
         .expect_store_simplefin_root_credential()
         .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_non_demo_user_lookup(&mut mock_db);
     mock_db
         .expect_list_simplefin_hidden_orgs()
         .returning(|_| Box::pin(async { Ok(HashSet::new()) }));
