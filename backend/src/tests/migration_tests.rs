@@ -989,3 +989,184 @@ async fn given_simplefin_root_credentials_migration_when_run_twice_then_idempote
         .await
         .unwrap());
 }
+
+async fn apply_remove_simplefin_root_legacy_credentials_migration(
+    pool: &PgPool,
+) -> Result<(), sqlx::Error> {
+    let sql = include_str!("../../migrations/034_remove_simplefin_root_legacy_credentials.sql");
+    for stmt in sql.split(';') {
+        let statement = stmt.trim();
+        if statement.is_empty() {
+            continue;
+        }
+        sqlx::query(&format!("{statement};")).execute(pool).await?;
+    }
+    Ok(())
+}
+
+async fn ensure_simplefin_root_credentials_table(pool: &PgPool) -> Result<(), sqlx::Error> {
+    if !simplefin_root_credentials_table_exists(pool).await? {
+        apply_simplefin_root_credentials_migration(pool).await?;
+    }
+    Ok(())
+}
+
+async fn insert_test_user(pool: &PgPool, user_id: Uuid) -> Result<(), sqlx::Error> {
+    let now = chrono::Utc::now();
+    sqlx::query(
+        r#"
+        INSERT INTO users (id, email, password_hash, provider, created_at, updated_at, onboarding_completed)
+        VALUES ($1, $2, $3, $4, $5, $6, false)
+        ON CONFLICT (id) DO NOTHING
+        "#,
+    )
+    .bind(user_id)
+    .bind(format!("migration_test_{user_id}@example.com"))
+    .bind("test_hash")
+    .bind("simplefin")
+    .bind(now)
+    .bind(now)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_remove_simplefin_root_legacy_migration_when_run_twice_then_idempotent() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    ensure_simplefin_root_credentials_table(&pool)
+        .await
+        .expect("table should exist");
+    apply_remove_simplefin_root_legacy_credentials_migration(&pool)
+        .await
+        .unwrap();
+    apply_remove_simplefin_root_legacy_credentials_migration(&pool)
+        .await
+        .expect("second application should be idempotent");
+}
+
+#[tokio::test]
+async fn given_migrated_root_when_cleanup_migration_then_removes_legacy_plaid_credential_only() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    ensure_simplefin_root_credentials_table(&pool)
+        .await
+        .expect("table should exist");
+
+    let user_id = Uuid::new_v4();
+    let item_id = format!("simplefin_root_{user_id}");
+    insert_test_user(&pool, user_id).await.unwrap();
+
+    sqlx::query(
+        r#"
+        INSERT INTO plaid_credentials (id, user_id, item_id, encrypted_access_token)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (item_id) DO UPDATE SET user_id = EXCLUDED.user_id
+        "#,
+    )
+    .bind(Uuid::new_v4())
+    .bind(user_id)
+    .bind(&item_id)
+    .bind(vec![1_u8, 2, 3])
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"
+        INSERT INTO simplefin_root_credentials (user_id, encrypted_access_url)
+        VALUES ($1, $2)
+        ON CONFLICT (user_id) DO UPDATE SET encrypted_access_url = EXCLUDED.encrypted_access_url
+        "#,
+    )
+    .bind(user_id)
+    .bind(vec![4_u8, 5, 6])
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    apply_remove_simplefin_root_legacy_credentials_migration(&pool)
+        .await
+        .unwrap();
+
+    let legacy_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM plaid_credentials WHERE item_id = $1")
+            .bind(&item_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(legacy_count, 0);
+
+    let root_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM simplefin_root_credentials WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(root_count, 1);
+
+    let _ = sqlx::query("DELETE FROM simplefin_root_credentials WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&pool)
+        .await;
+    let _ = sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(user_id)
+        .execute(&pool)
+        .await;
+}
+
+#[tokio::test]
+async fn given_unmigrated_legacy_root_when_cleanup_migration_then_preserves_plaid_credential() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    ensure_simplefin_root_credentials_table(&pool)
+        .await
+        .expect("table should exist");
+
+    let user_id = Uuid::new_v4();
+    let item_id = format!("simplefin_root_{user_id}");
+    insert_test_user(&pool, user_id).await.unwrap();
+
+    sqlx::query(
+        r#"
+        INSERT INTO plaid_credentials (id, user_id, item_id, encrypted_access_token)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (item_id) DO UPDATE SET user_id = EXCLUDED.user_id
+        "#,
+    )
+    .bind(Uuid::new_v4())
+    .bind(user_id)
+    .bind(&item_id)
+    .bind(vec![1_u8, 2, 3])
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    apply_remove_simplefin_root_legacy_credentials_migration(&pool)
+        .await
+        .unwrap();
+
+    let legacy_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM plaid_credentials WHERE item_id = $1")
+            .bind(&item_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(legacy_count, 1);
+
+    let _ = sqlx::query("DELETE FROM plaid_credentials WHERE item_id = $1")
+        .bind(&item_id)
+        .execute(&pool)
+        .await;
+    let _ = sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(user_id)
+        .execute(&pool)
+        .await;
+}
