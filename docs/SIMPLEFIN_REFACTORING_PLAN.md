@@ -483,8 +483,9 @@ Extract SimpleFIN-specific credential logic into trait-based, injectable service
 
 ---
 
-# PHASE 3: SimpleFIN-Specific Service Layer
+# PHASE 3: SimpleFIN-Specific Service Layer 🚧 IN PROGRESS
 **Duration**: 3-4 sprints | **Risk**: Medium (significant logic extraction)
+**Started**: 101ed6c4 - feat(simplefin): Phase 3 start — SimpleFIN-specific service layer
 
 ## Goal
 Extract 200+ lines of SimpleFIN-specific logic from ConnectionService into three focused, testable services: connection, organization, and rate limiting.

@@ -1,12 +1,17 @@
-use crate::models::plaid::{ProviderConnectRequest, ProviderConnectResponse};
+use crate::models::plaid::{ProviderConnectRequest, ProviderConnectResponse, ProviderConnection};
+use crate::models::transaction::SyncTransactionsResponse;
 use crate::providers::ProviderCredentials;
 use crate::providers::ProviderRegistry;
 use crate::services::cache_service::CacheService;
-use crate::services::connection_service::SimpleFinConnectError;
+use crate::services::connection_service::{
+    ProviderSyncError, SimpleFinConnectError, SyncConnectionParams,
+};
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::simplefin_org_service::SimpleFinOrganizationService;
 use crate::services::simplefin_rate_limit_service::SimpleFinRateLimitService;
+use crate::services::sync_service::SyncService;
 use anyhow::Result;
+use chrono::NaiveDate;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -115,6 +120,21 @@ impl SimpleFinConnectionService {
             connection_id,
             institution_name: format!("SimpleFIN ({institution_count} institutions)"),
         })
+    }
+
+    #[allow(dead_code)]
+    pub async fn sync(
+        &self,
+        _params: SyncConnectionParams<'_>,
+        _sync_service: &SyncService,
+        _connection: &mut ProviderConnection,
+        _reference_date: Option<NaiveDate>,
+    ) -> Result<SyncTransactionsResponse, ProviderSyncError> {
+        // TODO: Extract full sync logic from ConnectionService in Phase 3 slice 3.5
+        // For now, this is a placeholder that will be implemented when sync logic is extracted
+        Err(ProviderSyncError::SyncFailure(anyhow::anyhow!(
+            "SimpleFIN sync not yet migrated to service"
+        )))
     }
 
     async fn resolve_simplefin_credentials_for_connect(
