@@ -367,10 +367,16 @@ Tests in `frontend/tests/features/simplefin/hooks/useSimpleFinFlow.test.tsx`:
 
 ### Acceptance
 
-- [ ] `npm --prefix frontend run test:storybook` renders the four SimpleFIN states without error.
-- [ ] `npm --prefix frontend run design:guard` is green (no raw styling, no new tokens needed).
-- [ ] `npm --prefix frontend run typecheck` and `lint` are green.
+- [x] `npm --prefix frontend run test:storybook` renders the four SimpleFIN states without error.
+- [x] `npm --prefix frontend run design:guard` is green (no raw styling, no new tokens needed).
+- [x] `npm --prefix frontend run typecheck` and `lint` are green.
 - [ ] Manual smoke at <http://localhost:8080> (per `docs/ARCHITECTURE.md`): paste the demo token from <https://beta-bridge.simplefin.org/info/developers> and see the success badge populate with the org count.
+
+#### Phase 9 TDD log
+
+- Red: `ConnectAccountStep` SimpleFIN form/validation tests; `formatSimpleFinInstitutionsLabel` unit test; strategy multi-connection label test.
+- Green: setup-token form in `ConnectAccountStep`, `submitSetupToken` on financial connection + SimpleFIN strategy, provider card copy, four Storybook stories.
+- Commands: Jest (ConnectAccountStep + simplefin utils + strategy), `vitest --project=storybook run src/components/onboarding/ConnectAccountStep.stories.tsx` (11 passed), `design:guard`, `typecheck`, `lint`.
 
 ---
 

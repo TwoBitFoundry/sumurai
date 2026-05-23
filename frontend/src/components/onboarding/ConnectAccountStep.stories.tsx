@@ -5,6 +5,7 @@ import { ConnectAccountStep } from './ConnectAccountStep';
 
 const plaid = CONNECT_ACCOUNT_PROVIDER_CONTENT.plaid;
 const teller = CONNECT_ACCOUNT_PROVIDER_CONTENT.teller;
+const simplefin = CONNECT_ACCOUNT_PROVIDER_CONTENT.simplefin;
 
 const meta = {
   title: 'App/Onboarding/ConnectAccountStep',
@@ -90,5 +91,63 @@ export const TellerMissingApplicationId: Story = {
     connectBlockedReason:
       'Teller onboarding requires a Teller application ID. Add it in provider settings before connecting.',
     isOnline: true,
+  },
+};
+
+export const SimpleFinUnconnected: Story = {
+  args: {
+    content: simplefin,
+    usesSetupToken: true,
+    onSubmitSetupToken: fn(),
+    isOnline: true,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByPlaceholderText('Paste your SimpleFIN setup token')).toBeVisible();
+  },
+};
+
+export const SimpleFinConnecting: Story = {
+  args: {
+    content: simplefin,
+    usesSetupToken: true,
+    onSubmitSetupToken: fn(),
+    connectionInProgress: true,
+    isOnline: true,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('button', { name: /connecting/i })).toBeDisabled();
+    await expect(canvas.getByPlaceholderText('Paste your SimpleFIN setup token')).toBeDisabled();
+  },
+};
+
+export const SimpleFinConnected: Story = {
+  args: {
+    content: simplefin,
+    usesSetupToken: true,
+    isConnected: true,
+    institutionName: '3 institutions connected',
+    isOnline: true,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole('button', { name: /connected to 3 institutions connected/i })
+    ).toBeVisible();
+  },
+};
+
+export const SimpleFinValidationError: Story = {
+  args: {
+    content: simplefin,
+    usesSetupToken: true,
+    onSubmitSetupToken: fn(),
+    error: 'Enter a SimpleFIN setup token.',
+    isOnline: true,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Enter a SimpleFIN setup token.')).toBeVisible();
   },
 };

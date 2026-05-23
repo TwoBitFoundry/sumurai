@@ -40,13 +40,14 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
   },
   simplefin: {
     title: 'SimpleFIN',
-    badge: 'Bridge',
-    description: 'Connect institutions with a SimpleFIN setup token.',
+    badge: 'Bring your own token',
+    description:
+      'Link many banks through your own SimpleFIN bridge—no third-party link UI inside Sumurai.',
     bullets: [
-      'One setup token can link multiple institutions',
-      'Self-hosted friendly bridge access',
+      'Works with many banks from one setup token',
+      'You control access at simplefin.org',
       'Running balances and transaction history',
-      'Disconnect individual institutions without losing others',
+      'Disconnect individual institutions without losing bridge access',
     ],
   },
 };
@@ -251,21 +252,27 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
   },
   heroTitle: 'Connect with a setup token',
   heroDescription:
-    'Paste the setup token from your SimpleFIN bridge to link one or more institutions.',
+    'Paste a setup token from the SimpleFIN bridge to link every institution you authorize—Sumurai never hosts a third-party link flow.',
   highlightLabel: "What you'll connect",
   highlightMeta: 'Read-only access',
   features: [
     {
       icon: Landmark,
-      title: 'Institution balances',
-      body: 'See balances across every institution linked to your setup token.',
+      title: 'Many institutions',
+      body: 'One token can link every bank you enable on the SimpleFIN bridge.',
       palette: featurePalettes.providerFeature.emerald,
     },
     {
       icon: Zap,
-      title: 'Transaction history',
-      body: 'Recent purchases sync into budgets and spending views.',
+      title: 'No embedded link UI',
+      body: 'Sumurai stays out of the way—you paste a token instead of a popup flow.',
       palette: featurePalettes.providerFeature.amber,
+    },
+    {
+      icon: Sparkles,
+      title: 'You hold the keys',
+      body: 'Manage access at simplefin.org; revoke or rotate tokens whenever you need.',
+      palette: featurePalettes.providerFeature.purple,
     },
   ],
   highlights: [
@@ -281,9 +288,21 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
       body: 'Disconnect individual institutions without removing bridge access for the rest.',
       palette: featurePalettes.highlight.violet,
     },
+    {
+      icon: Building2,
+      title: 'Bridge-backed sync',
+      body: 'Balances and transactions flow through your SimpleFIN bridge credentials.',
+      palette: featurePalettes.highlight.amber,
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Transparent access',
+      body: 'Every sync is scoped to institutions you explicitly linked with your token.',
+      palette: featurePalettes.highlight.emerald,
+    },
   ],
   cta: {
-    defaultLabel: 'SimpleFIN',
+    defaultLabel: 'Connect with SimpleFIN',
     badge: 'Token',
   },
   securityNote: 'Disconnect individual institutions anytime without removing your bridge access.',

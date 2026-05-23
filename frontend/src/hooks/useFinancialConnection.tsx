@@ -37,6 +37,7 @@ export interface UseFinancialConnectionReturn {
   error: string | null;
   initiateConnection: () => Promise<void>;
   retryConnection: () => Promise<void>;
+  submitSetupToken: (token: string) => Promise<void>;
   reset: () => void;
   setError: (error: string | null) => void;
   connectionMount: ReactElement | null;
@@ -184,6 +185,30 @@ export function useFinancialConnection(
     await initiateConnection();
   }, [initiateConnection, isOnline]);
 
+  const submitSetupToken = useCallback(
+    async (token: string) => {
+      if (!isOnline) {
+        return;
+      }
+
+      const submit = strategyRef.current.submitSetupToken;
+      if (!submit) {
+        handleError('Setup token connection is not available for this provider.');
+        return;
+      }
+
+      dispatch(connectionActions.patch({ error: null, connectionInProgress: true }));
+      try {
+        await submit(token);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to connect with setup token';
+        handleError(errorMessage);
+      }
+    },
+    [handleError, isOnline]
+  );
+
   const reset = useCallback(() => {
     dispatch(connectionActions.reset());
     setSdkNonce(0);
@@ -198,6 +223,7 @@ export function useFinancialConnection(
     error: state.error,
     initiateConnection,
     retryConnection,
+    submitSetupToken,
     reset,
     setError,
     connectionMount,

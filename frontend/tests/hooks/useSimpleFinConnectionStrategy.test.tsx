@@ -9,6 +9,7 @@ jest.mock('@/services/SimpleFinService', () => ({
   SimpleFinService: {
     getStatus: jest.fn(),
     syncTransactions: jest.fn(),
+    submitSetupToken: jest.fn(),
   },
 }));
 
@@ -60,6 +61,56 @@ describe('useSimpleFinConnectionStrategy', () => {
       );
     });
     expect(onConnectionSuccess).toHaveBeenCalledWith('Bank A');
+  });
+
+  it('uses institution count label when multiple connections are active', async () => {
+    simpleFinServiceMock.getStatus.mockResolvedValue([
+      {
+        is_connected: true,
+        last_sync_at: null,
+        institution_name: 'Bank A',
+        connection_id: 'conn-1',
+        transaction_count: 0,
+        account_count: 1,
+        sync_in_progress: false,
+      },
+      {
+        is_connected: true,
+        last_sync_at: null,
+        institution_name: 'Bank B',
+        connection_id: 'conn-2',
+        transaction_count: 0,
+        account_count: 1,
+        sync_in_progress: false,
+      },
+    ]);
+
+    const dispatch = jest.fn();
+
+    renderHook(() =>
+      useSimpleFinConnectionStrategy({
+        isOnline: true,
+        sdkNonce: 0,
+        setSdkNonce: jest.fn(),
+        sdkFailedRef: { current: false },
+        state: initialFinancialConnectionState,
+        dispatch,
+        handleError: jest.fn(),
+        onConnectionSuccess: jest.fn(),
+        invalidateCache: jest.fn().mockResolvedValue(undefined),
+        tellerApplicationId: null,
+        tellerEnvironment: 'development',
+      })
+    );
+
+    await waitFor(() => {
+      expect(dispatch).toHaveBeenCalledWith(
+        connectionActions.patch({
+          isConnected: true,
+          institutionName: '2 institutions connected',
+        })
+      );
+    });
   });
 
   it('marks disconnected when status has no active connections', async () => {
