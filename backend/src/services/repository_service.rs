@@ -760,13 +760,14 @@ impl DatabaseRepository for PostgresRepository {
         sqlx::query(
             r#"
             INSERT INTO provider_connections (
-                id, user_id, item_id, is_connected, last_sync_at, connected_at,
+                id, user_id, item_id, provider, is_connected, last_sync_at, connected_at,
                 disconnected_at, institution_id, institution_name, transaction_count, account_count,
                 created_at, updated_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
             ON CONFLICT (item_id)
             DO UPDATE SET
+                provider = EXCLUDED.provider,
                 is_connected = EXCLUDED.is_connected,
                 last_sync_at = EXCLUDED.last_sync_at,
                 connected_at = EXCLUDED.connected_at,
@@ -781,6 +782,7 @@ impl DatabaseRepository for PostgresRepository {
         .bind(connection.id)
         .bind(connection.user_id)
         .bind(&connection.item_id)
+        .bind(&connection.provider)
         .bind(connection.is_connected)
         .bind(connection.last_sync_at)
         .bind(connection.connected_at)
@@ -814,6 +816,7 @@ impl DatabaseRepository for PostgresRepository {
                 Uuid,
                 Uuid,
                 String,
+                String,
                 bool,
                 Option<chrono::DateTime<chrono::Utc>>,
                 Option<chrono::DateTime<chrono::Utc>>,
@@ -829,7 +832,7 @@ impl DatabaseRepository for PostgresRepository {
             ),
         >(
             r#"
-            SELECT id, user_id, item_id, is_connected, last_sync_at, connected_at,
+            SELECT id, user_id, item_id, provider, is_connected, last_sync_at, connected_at,
                    disconnected_at, institution_id, institution_name, institution_logo_url,
                    sync_cursor, transaction_count, account_count, created_at, updated_at
             FROM provider_connections
@@ -850,6 +853,7 @@ impl DatabaseRepository for PostgresRepository {
                     id,
                     user_id,
                     item_id,
+                    provider,
                     is_connected,
                     last_sync_at,
                     connected_at,
@@ -866,6 +870,7 @@ impl DatabaseRepository for PostgresRepository {
                     id,
                     user_id,
                     item_id,
+                    provider,
                     is_connected,
                     last_sync_at,
                     connected_at,
@@ -900,6 +905,7 @@ impl DatabaseRepository for PostgresRepository {
                 Uuid,
                 Uuid,
                 String,
+                String,
                 bool,
                 Option<chrono::DateTime<chrono::Utc>>,
                 Option<chrono::DateTime<chrono::Utc>>,
@@ -915,7 +921,7 @@ impl DatabaseRepository for PostgresRepository {
             ),
         >(
             r#"
-            SELECT id, user_id, item_id, is_connected, last_sync_at, connected_at,
+            SELECT id, user_id, item_id, provider, is_connected, last_sync_at, connected_at,
                    disconnected_at, institution_id, institution_name, institution_logo_url,
                    sync_cursor, transaction_count, account_count, created_at, updated_at
             FROM provider_connections
@@ -933,6 +939,7 @@ impl DatabaseRepository for PostgresRepository {
                 id,
                 user_id,
                 item_id,
+                provider,
                 is_connected,
                 last_sync_at,
                 connected_at,
@@ -949,6 +956,7 @@ impl DatabaseRepository for PostgresRepository {
                 id,
                 user_id,
                 item_id,
+                provider,
                 is_connected,
                 last_sync_at,
                 connected_at,

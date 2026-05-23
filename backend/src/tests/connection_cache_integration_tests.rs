@@ -20,6 +20,7 @@ fn create_test_connection(user_id: Uuid) -> ProviderConnection {
         id: Uuid::new_v4(),
         user_id,
         item_id: "test_item_123".to_string(),
+        provider: "plaid".to_string(),
         is_connected: true,
         last_sync_at: Some(Utc::now()),
         connected_at: Some(Utc::now()),

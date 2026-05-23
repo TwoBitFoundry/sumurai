@@ -116,6 +116,7 @@ async fn given_sync_service_with_provider_when_sync_then_maps_accounts_correctly
         id: Uuid::new_v4(),
         user_id: Uuid::new_v4(),
         item_id: "item_123".to_string(),
+        provider: "mock".to_string(),
         is_connected: true,
         last_sync_at: None,
         connected_at: Some(Utc::now()),

@@ -352,6 +352,7 @@ impl ConnectionService {
             .unwrap_or_else(|| "Connected Bank".to_string());
 
         let mut connection = ProviderConnection::new(*user_id, &item_id);
+        connection.provider = "teller".to_string();
         connection.mark_connected(&institution_name);
         connection.institution_id = Some("teller".to_string());
         connection.transaction_count = 0;
@@ -568,6 +569,7 @@ impl ConnectionService {
     ) -> Result<Option<Uuid>> {
         let item_id = simplefin_org_item_id(user_id, &org.conn_id);
         let mut connection = ProviderConnection::new(*user_id, &item_id);
+        connection.provider = "simplefin".to_string();
         connection.mark_connected(&org.name);
         connection.institution_id = Some(org.org_id.clone());
         connection.institution_name = Some(org.name.clone());
@@ -717,6 +719,7 @@ impl ConnectionService {
         }
 
         let mut connection = ProviderConnection::new(*user_id, &credentials.item_id);
+        connection.provider = provider.provider_name().to_string();
         connection.mark_connected(&institution_info.name);
         connection.institution_id = Some(institution_info.institution_id.clone());
         connection.institution_name = Some(institution_info.name.clone());
