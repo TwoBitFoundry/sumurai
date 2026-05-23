@@ -8,6 +8,7 @@ use crate::services::otel_traces_relay::OtlpTracesRelay;
 use crate::services::plaid_service::{PlaidService, RealPlaidClient};
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::sync_service::SyncService;
+use crate::services::sync_service_factory::SyncServiceFactory;
 use crate::services::{
     AuthService, AuthorizationService, BudgetService, CacheService, ConnectionService,
 };
@@ -16,6 +17,7 @@ pub struct AppState {
     pub(crate) plaid_service: Arc<PlaidService>,
     pub(crate) plaid_client: Arc<RealPlaidClient>,
     pub(crate) sync_service: Arc<SyncService>,
+    pub(crate) sync_service_factory: Arc<SyncServiceFactory>,
     pub(crate) analytics_service: Arc<crate::services::AnalyticsService>,
     pub(crate) budget_service: Arc<BudgetService>,
     pub(crate) authorization_service: Arc<AuthorizationService>,
@@ -36,6 +38,7 @@ impl Clone for AppState {
             plaid_service: self.plaid_service.clone(),
             plaid_client: self.plaid_client.clone(),
             sync_service: self.sync_service.clone(),
+            sync_service_factory: self.sync_service_factory.clone(),
             analytics_service: self.analytics_service.clone(),
             budget_service: self.budget_service.clone(),
             authorization_service: self.authorization_service.clone(),

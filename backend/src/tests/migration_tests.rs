@@ -873,3 +873,437 @@ async fn given_post_migration_schema_when_inserting_new_fields_then_succeeds() {
         .execute(&pool)
         .await;
 }
+
+async fn simplefin_hidden_orgs_table_exists(pool: &PgPool) -> Result<bool, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'simplefin_hidden_orgs'
+        )",
+    )
+    .fetch_one(pool)
+    .await
+}
+
+async fn apply_simplefin_hidden_orgs_migration(pool: &PgPool) -> Result<(), sqlx::Error> {
+    let sql = include_str!("../../migrations/027_simplefin_hidden_orgs.sql");
+    for stmt in sql.split(';') {
+        let statement = stmt.trim();
+        if statement.is_empty() {
+            continue;
+        }
+        sqlx::query(&format!("{statement};")).execute(pool).await?;
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_migrated_database_when_simplefin_hidden_orgs_migration_applied_then_table_exists() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    if !simplefin_hidden_orgs_table_exists(&pool).await.unwrap() {
+        apply_simplefin_hidden_orgs_migration(&pool)
+            .await
+            .expect("migration should apply on databases through 026");
+    }
+
+    assert!(simplefin_hidden_orgs_table_exists(&pool).await.unwrap());
+}
+
+#[tokio::test]
+async fn given_simplefin_hidden_orgs_migration_when_run_twice_then_idempotent() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    apply_simplefin_hidden_orgs_migration(&pool).await.unwrap();
+    apply_simplefin_hidden_orgs_migration(&pool)
+        .await
+        .expect("second application should be idempotent");
+
+    assert!(simplefin_hidden_orgs_table_exists(&pool).await.unwrap());
+}
+
+async fn simplefin_root_credentials_table_exists(pool: &PgPool) -> Result<bool, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'simplefin_root_credentials'
+        )",
+    )
+    .fetch_one(pool)
+    .await
+}
+
+async fn apply_simplefin_root_credentials_migration(pool: &PgPool) -> Result<(), sqlx::Error> {
+    let sql = include_str!("../../migrations/032_create_simplefin_root_credentials.sql");
+    for stmt in sql.split(';') {
+        let statement = stmt.trim();
+        if statement.is_empty() {
+            continue;
+        }
+        sqlx::query(&format!("{statement};")).execute(pool).await?;
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_migrated_database_when_simplefin_root_credentials_migration_applied_then_table_exists(
+) {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    if !simplefin_root_credentials_table_exists(&pool)
+        .await
+        .unwrap()
+    {
+        apply_simplefin_root_credentials_migration(&pool)
+            .await
+            .expect("migration should apply");
+    }
+
+    assert!(simplefin_root_credentials_table_exists(&pool)
+        .await
+        .unwrap());
+}
+
+#[tokio::test]
+async fn given_simplefin_root_credentials_migration_when_run_twice_then_idempotent() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    apply_simplefin_root_credentials_migration(&pool)
+        .await
+        .unwrap();
+    apply_simplefin_root_credentials_migration(&pool)
+        .await
+        .expect("second application should be idempotent");
+
+    assert!(simplefin_root_credentials_table_exists(&pool)
+        .await
+        .unwrap());
+}
+
+async fn apply_remove_simplefin_root_legacy_credentials_migration(
+    pool: &PgPool,
+) -> Result<(), sqlx::Error> {
+    let sql = include_str!("../../migrations/034_remove_simplefin_root_legacy_credentials.sql");
+    for stmt in sql.split(';') {
+        let statement = stmt.trim();
+        if statement.is_empty() {
+            continue;
+        }
+        sqlx::query(&format!("{statement};")).execute(pool).await?;
+    }
+    Ok(())
+}
+
+async fn ensure_simplefin_root_credentials_table(pool: &PgPool) -> Result<(), sqlx::Error> {
+    if !simplefin_root_credentials_table_exists(pool).await? {
+        apply_simplefin_root_credentials_migration(pool).await?;
+    }
+    Ok(())
+}
+
+async fn insert_test_user(pool: &PgPool, user_id: Uuid) -> Result<(), sqlx::Error> {
+    let now = chrono::Utc::now();
+    sqlx::query(
+        r#"
+        INSERT INTO users (id, email, password_hash, provider, created_at, updated_at, onboarding_completed)
+        VALUES ($1, $2, $3, $4, $5, $6, false)
+        ON CONFLICT (id) DO NOTHING
+        "#,
+    )
+    .bind(user_id)
+    .bind(format!("migration_test_{user_id}@example.com"))
+    .bind("test_hash")
+    .bind("simplefin")
+    .bind(now)
+    .bind(now)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_remove_simplefin_root_legacy_migration_when_run_twice_then_idempotent() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    ensure_simplefin_root_credentials_table(&pool)
+        .await
+        .expect("table should exist");
+    apply_remove_simplefin_root_legacy_credentials_migration(&pool)
+        .await
+        .unwrap();
+    apply_remove_simplefin_root_legacy_credentials_migration(&pool)
+        .await
+        .expect("second application should be idempotent");
+}
+
+#[tokio::test]
+async fn given_migrated_root_when_cleanup_migration_then_removes_legacy_plaid_credential_only() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    ensure_simplefin_root_credentials_table(&pool)
+        .await
+        .expect("table should exist");
+
+    let user_id = Uuid::new_v4();
+    let item_id = format!("simplefin_root_{user_id}");
+    insert_test_user(&pool, user_id).await.unwrap();
+
+    sqlx::query(
+        r#"
+        INSERT INTO plaid_credentials (id, user_id, item_id, encrypted_access_token)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (item_id) DO UPDATE SET user_id = EXCLUDED.user_id
+        "#,
+    )
+    .bind(Uuid::new_v4())
+    .bind(user_id)
+    .bind(&item_id)
+    .bind(vec![1_u8, 2, 3])
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"
+        INSERT INTO simplefin_root_credentials (user_id, encrypted_access_url)
+        VALUES ($1, $2)
+        ON CONFLICT (user_id) DO UPDATE SET encrypted_access_url = EXCLUDED.encrypted_access_url
+        "#,
+    )
+    .bind(user_id)
+    .bind(vec![4_u8, 5, 6])
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    apply_remove_simplefin_root_legacy_credentials_migration(&pool)
+        .await
+        .unwrap();
+
+    let legacy_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM plaid_credentials WHERE item_id = $1")
+            .bind(&item_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(legacy_count, 0);
+
+    let root_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM simplefin_root_credentials WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(root_count, 1);
+
+    let _ = sqlx::query("DELETE FROM simplefin_root_credentials WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&pool)
+        .await;
+    let _ = sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(user_id)
+        .execute(&pool)
+        .await;
+}
+
+#[tokio::test]
+async fn given_unmigrated_legacy_root_when_cleanup_migration_then_preserves_plaid_credential() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    ensure_simplefin_root_credentials_table(&pool)
+        .await
+        .expect("table should exist");
+
+    let user_id = Uuid::new_v4();
+    let item_id = format!("simplefin_root_{user_id}");
+    insert_test_user(&pool, user_id).await.unwrap();
+
+    sqlx::query(
+        r#"
+        INSERT INTO plaid_credentials (id, user_id, item_id, encrypted_access_token)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (item_id) DO UPDATE SET user_id = EXCLUDED.user_id
+        "#,
+    )
+    .bind(Uuid::new_v4())
+    .bind(user_id)
+    .bind(&item_id)
+    .bind(vec![1_u8, 2, 3])
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    apply_remove_simplefin_root_legacy_credentials_migration(&pool)
+        .await
+        .unwrap();
+
+    let legacy_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM plaid_credentials WHERE item_id = $1")
+            .bind(&item_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(legacy_count, 1);
+
+    let _ = sqlx::query("DELETE FROM plaid_credentials WHERE item_id = $1")
+        .bind(&item_id)
+        .execute(&pool)
+        .await;
+    let _ = sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(user_id)
+        .execute(&pool)
+        .await;
+}
+
+async fn provider_credentials_table_exists(pool: &PgPool) -> Result<bool, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'provider_credentials'
+        )",
+    )
+    .fetch_one(pool)
+    .await
+}
+
+async fn apply_rename_plaid_credentials_migration(pool: &PgPool) -> Result<(), sqlx::Error> {
+    let sql =
+        include_str!("../../migrations/035_rename_plaid_credentials_to_provider_credentials.sql");
+    for stmt in sql.split(';') {
+        let statement = stmt.trim();
+        if statement.is_empty() {
+            continue;
+        }
+        sqlx::query(&format!("{statement};")).execute(pool).await?;
+    }
+    Ok(())
+}
+
+async fn ensure_provider_credentials_table(pool: &PgPool) -> Result<(), sqlx::Error> {
+    if provider_credentials_table_exists(pool).await? {
+        return Ok(());
+    }
+    if sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'plaid_credentials'
+        )",
+    )
+    .fetch_one(pool)
+    .await?
+    {
+        apply_rename_plaid_credentials_migration(pool).await?;
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_migrated_database_when_provider_credentials_rename_applied_then_table_exists() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    if !provider_credentials_table_exists(&pool).await.unwrap() {
+        apply_rename_plaid_credentials_migration(&pool)
+            .await
+            .expect("migration should apply when plaid_credentials exists");
+    }
+
+    assert!(provider_credentials_table_exists(&pool).await.unwrap());
+}
+
+#[tokio::test]
+async fn given_provider_credentials_rename_when_applied_then_plaid_credentials_table_absent() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let plaid_exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'plaid_credentials'
+        )",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    if plaid_exists {
+        apply_rename_plaid_credentials_migration(&pool)
+            .await
+            .expect("rename should apply");
+    }
+
+    assert!(provider_credentials_table_exists(&pool).await.unwrap());
+    let plaid_still_exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'plaid_credentials'
+        )",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(!plaid_still_exists);
+}
+
+#[tokio::test]
+async fn given_provider_credentials_when_store_and_get_then_round_trips() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    ensure_provider_credentials_table(&pool)
+        .await
+        .expect("provider_credentials table should exist");
+
+    let raw = std::env::var("ENCRYPTION_KEY").expect("ENCRYPTION_KEY required for repository test");
+    let key = crate::utils::encryption_key::parse_encryption_key_hex(&raw)
+        .expect("ENCRYPTION_KEY must be 64 hex characters");
+    use crate::services::repository_service::DatabaseRepository;
+
+    let repo = crate::services::repository_service::PostgresRepository::new(pool.clone(), key);
+
+    let user_id = Uuid::new_v4();
+    insert_test_user(&pool, user_id).await.unwrap();
+
+    let item_id = format!("teller_{}", Uuid::new_v4());
+    repo.store_provider_credentials_for_user(&user_id, &item_id, "secret-token")
+        .await
+        .unwrap();
+
+    let stored = repo
+        .get_provider_credentials_for_user(&user_id, &item_id)
+        .await
+        .unwrap()
+        .expect("credential should exist");
+
+    assert_eq!(stored.access_token, "secret-token");
+    assert_eq!(stored.item_id, item_id);
+
+    let _ = repo.delete_provider_credentials(&item_id).await;
+    let _ = sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(user_id)
+        .execute(&pool)
+        .await;
+}

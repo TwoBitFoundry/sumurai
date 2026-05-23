@@ -12,6 +12,7 @@ import {
   ForbiddenError,
   NetworkError,
   NotFoundError,
+  RateLimitError,
   ServerError,
   ValidationError,
 } from './boundaries';
@@ -23,6 +24,7 @@ export {
   ForbiddenError,
   NetworkError,
   NotFoundError,
+  RateLimitError,
   ServerError,
   ValidationError,
 };
@@ -48,7 +50,7 @@ export class ApiClient {
     maxRetries: 3,
     baseDelay: 1000,
     maxDelay: 5000,
-    retryableStatuses: [502, 503, 504, 429],
+    retryableStatuses: [502, 503, 504],
     retryableErrors: [
       'Failed to fetch',
       'Request timeout',

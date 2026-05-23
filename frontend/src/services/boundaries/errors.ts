@@ -59,3 +59,12 @@ export class ForbiddenError extends ApiError {
     super(403, message, 'FORBIDDEN');
   }
 }
+
+export class RateLimitError extends ApiError {
+  readonly retryAfterSeconds?: number;
+
+  constructor(message = 'Too many requests', retryAfterSeconds?: number) {
+    super(429, message, 'RATE_LIMITED');
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}

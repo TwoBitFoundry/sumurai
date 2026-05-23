@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { ConnectAccountStep } from '@/components/onboarding/ConnectAccountStep';
 import { CONNECT_ACCOUNT_PROVIDER_CONTENT } from '@/utils/providerCards';
 
@@ -6,6 +6,7 @@ describe('ConnectAccountStep', () => {
   it('disables the primary action and explains offline availability', () => {
     const { container } = render(
       <ConnectAccountStep
+        provider="teller"
         content={CONNECT_ACCOUNT_PROVIDER_CONTENT.teller}
         providerLoading={false}
         providerError={null}
@@ -33,6 +34,7 @@ describe('ConnectAccountStep', () => {
   it('renders the Teller logo on the primary action button', () => {
     render(
       <ConnectAccountStep
+        provider="teller"
         content={CONNECT_ACCOUNT_PROVIDER_CONTENT.teller}
         providerLoading={false}
         providerError={null}
@@ -55,6 +57,7 @@ describe('ConnectAccountStep', () => {
   it('renders the Plaid connect action without extra guidance', () => {
     render(
       <ConnectAccountStep
+        provider="plaid"
         content={CONNECT_ACCOUNT_PROVIDER_CONTENT.plaid}
         providerLoading={false}
         providerError={null}
@@ -77,5 +80,57 @@ describe('ConnectAccountStep', () => {
       )
     ).toBeNull();
     expect(screen.getByAltText('Plaid logo')).toHaveAttribute('src', '/plaid.webp');
+  });
+
+  it('renders the SimpleFIN token entry and submits the pasted token', () => {
+    const onConnect = jest.fn();
+
+    render(
+      <ConnectAccountStep
+        provider="simplefin"
+        content={CONNECT_ACCOUNT_PROVIDER_CONTENT.simplefin}
+        providerLoading={false}
+        providerError={null}
+        onRetryProvider={jest.fn()}
+        connectBlockedReason={null}
+        isOnline={true}
+        isConnected={false}
+        connectionInProgress={false}
+        institutionName={null}
+        error={null}
+        onConnect={onConnect}
+        onRetry={jest.fn()}
+      />
+    );
+
+    fireEvent.change(screen.getByPlaceholderText('Paste your SimpleFIN setup token'), {
+      target: { value: 'demo-token' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /connect with simplefin/i }));
+    expect(onConnect).toHaveBeenCalledWith('demo-token');
+  });
+
+  it('shows connected badge with institution count label', () => {
+    render(
+      <ConnectAccountStep
+        provider="simplefin"
+        content={CONNECT_ACCOUNT_PROVIDER_CONTENT.simplefin}
+        providerLoading={false}
+        providerError={null}
+        onRetryProvider={jest.fn()}
+        connectBlockedReason={null}
+        isOnline={true}
+        isConnected={true}
+        connectionInProgress={false}
+        institutionName="3 institutions connected"
+        error={null}
+        onConnect={jest.fn()}
+        onRetry={jest.fn()}
+      />
+    );
+
+    expect(
+      screen.getByRole('button', { name: /connected to 3 institutions connected/i })
+    ).toBeDisabled();
   });
 });

@@ -16,6 +16,7 @@ export interface FinancialConnectionStrategy {
   reset: () => void;
   loadFailedMessage: string;
   render: () => ReactElement | null;
+  connect?: (setupToken?: string) => Promise<void>;
 }
 
 export interface FinancialConnectionStrategyContext {

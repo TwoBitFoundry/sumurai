@@ -217,6 +217,40 @@ pub trait DatabaseRepository: Send + Sync {
         user_id: &Uuid,
         id: &Uuid,
     ) -> Result<Option<Transaction>>;
+
+    async fn store_simplefin_root_credential(&self, user_id: &Uuid, access_url: &str)
+        -> Result<()>;
+
+    async fn get_simplefin_root_credential(&self, user_id: &Uuid) -> Result<Option<String>>;
+
+    async fn delete_simplefin_root_credential(&self, user_id: &Uuid) -> Result<bool>;
+
+    async fn list_simplefin_hidden_orgs(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<std::collections::HashSet<String>>;
+
+    async fn list_simplefin_ignored_institutions(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Vec<crate::models::simplefin::SimpleFinIgnoredInstitution>>;
+
+    async fn insert_simplefin_hidden_org(
+        &self,
+        user_id: &Uuid,
+        conn_id: &str,
+        institution_name: Option<&str>,
+    ) -> Result<()>;
+
+    async fn remove_simplefin_hidden_org(&self, user_id: &Uuid, org_conn_id: &str) -> Result<bool>;
+
+    async fn disconnect_simplefin_org(
+        &self,
+        user_id: &Uuid,
+        item_id: &str,
+        org_conn_id: &str,
+        institution_name: Option<&str>,
+    ) -> Result<(i32, i32)>;
 }
 
 pub struct PostgresRepository {
@@ -668,7 +702,7 @@ impl DatabaseRepository for PostgresRepository {
 
         sqlx::query(
             r#"
-            INSERT INTO plaid_credentials (id, user_id, item_id, encrypted_access_token)
+            INSERT INTO provider_credentials (id, user_id, item_id, encrypted_access_token)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (item_id)
             DO UPDATE SET
@@ -700,7 +734,7 @@ impl DatabaseRepository for PostgresRepository {
             .await?;
 
         let row = sqlx::query_as::<_, (Uuid, String, Vec<u8>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
-            "SELECT id, item_id, encrypted_access_token, created_at, updated_at FROM plaid_credentials WHERE item_id = $1"
+            "SELECT id, item_id, encrypted_access_token, created_at, updated_at FROM provider_credentials WHERE item_id = $1"
         )
         .bind(item_id)
         .fetch_optional(&mut *tx)
@@ -733,13 +767,14 @@ impl DatabaseRepository for PostgresRepository {
         sqlx::query(
             r#"
             INSERT INTO provider_connections (
-                id, user_id, item_id, is_connected, last_sync_at, connected_at,
+                id, user_id, item_id, provider, is_connected, last_sync_at, connected_at,
                 disconnected_at, institution_id, institution_name, transaction_count, account_count,
                 created_at, updated_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
             ON CONFLICT (item_id)
             DO UPDATE SET
+                provider = EXCLUDED.provider,
                 is_connected = EXCLUDED.is_connected,
                 last_sync_at = EXCLUDED.last_sync_at,
                 connected_at = EXCLUDED.connected_at,
@@ -754,6 +789,7 @@ impl DatabaseRepository for PostgresRepository {
         .bind(connection.id)
         .bind(connection.user_id)
         .bind(&connection.item_id)
+        .bind(&connection.provider)
         .bind(connection.is_connected)
         .bind(connection.last_sync_at)
         .bind(connection.connected_at)
@@ -787,6 +823,7 @@ impl DatabaseRepository for PostgresRepository {
                 Uuid,
                 Uuid,
                 String,
+                String,
                 bool,
                 Option<chrono::DateTime<chrono::Utc>>,
                 Option<chrono::DateTime<chrono::Utc>>,
@@ -802,7 +839,7 @@ impl DatabaseRepository for PostgresRepository {
             ),
         >(
             r#"
-            SELECT id, user_id, item_id, is_connected, last_sync_at, connected_at,
+            SELECT id, user_id, item_id, provider, is_connected, last_sync_at, connected_at,
                    disconnected_at, institution_id, institution_name, institution_logo_url,
                    sync_cursor, transaction_count, account_count, created_at, updated_at
             FROM provider_connections
@@ -823,6 +860,7 @@ impl DatabaseRepository for PostgresRepository {
                     id,
                     user_id,
                     item_id,
+                    provider,
                     is_connected,
                     last_sync_at,
                     connected_at,
@@ -839,6 +877,7 @@ impl DatabaseRepository for PostgresRepository {
                     id,
                     user_id,
                     item_id,
+                    provider,
                     is_connected,
                     last_sync_at,
                     connected_at,
@@ -873,6 +912,7 @@ impl DatabaseRepository for PostgresRepository {
                 Uuid,
                 Uuid,
                 String,
+                String,
                 bool,
                 Option<chrono::DateTime<chrono::Utc>>,
                 Option<chrono::DateTime<chrono::Utc>>,
@@ -888,7 +928,7 @@ impl DatabaseRepository for PostgresRepository {
             ),
         >(
             r#"
-            SELECT id, user_id, item_id, is_connected, last_sync_at, connected_at,
+            SELECT id, user_id, item_id, provider, is_connected, last_sync_at, connected_at,
                    disconnected_at, institution_id, institution_name, institution_logo_url,
                    sync_cursor, transaction_count, account_count, created_at, updated_at
             FROM provider_connections
@@ -906,6 +946,7 @@ impl DatabaseRepository for PostgresRepository {
                 id,
                 user_id,
                 item_id,
+                provider,
                 is_connected,
                 last_sync_at,
                 connected_at,
@@ -922,6 +963,7 @@ impl DatabaseRepository for PostgresRepository {
                 id,
                 user_id,
                 item_id,
+                provider,
                 is_connected,
                 last_sync_at,
                 connected_at,
@@ -1001,7 +1043,7 @@ impl DatabaseRepository for PostgresRepository {
     }
 
     async fn delete_provider_credentials(&self, item_id: &str) -> Result<()> {
-        sqlx::query("DELETE FROM plaid_credentials WHERE item_id = $1")
+        sqlx::query("DELETE FROM provider_credentials WHERE item_id = $1")
             .bind(item_id)
             .execute(&self.pool)
             .await?;
@@ -1675,6 +1717,7 @@ impl DatabaseRepository for PostgresRepository {
                     balance_current,
                     mask,
                     institution_name,
+                    provider_conn_id: None,
                 },
             )
             .collect())
@@ -2128,6 +2171,254 @@ impl DatabaseRepository for PostgresRepository {
                 pending,
                 created_at,
             },
+        ))
+    }
+
+    async fn store_simplefin_root_credential(
+        &self,
+        user_id: &Uuid,
+        access_url: &str,
+    ) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let encrypted_access_url = self.encrypt_token(access_url)?;
+
+        sqlx::query(
+            r#"
+            INSERT INTO simplefin_root_credentials (user_id, encrypted_access_url, setup_token_used_at, updated_at)
+            VALUES ($1, $2, NOW(), NOW())
+            ON CONFLICT (user_id) DO UPDATE SET
+                encrypted_access_url = EXCLUDED.encrypted_access_url,
+                setup_token_used_at = NOW(),
+                updated_at = NOW()
+            "#,
+        )
+        .bind(user_id)
+        .bind(&encrypted_access_url)
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn get_simplefin_root_credential(&self, user_id: &Uuid) -> Result<Option<String>> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let row = sqlx::query_scalar::<_, Vec<u8>>(
+            "SELECT encrypted_access_url FROM simplefin_root_credentials WHERE user_id = $1",
+        )
+        .bind(user_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        row.map(|encrypted| self.decrypt_token(&encrypted))
+            .transpose()
+    }
+
+    async fn delete_simplefin_root_credential(&self, user_id: &Uuid) -> Result<bool> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let result = sqlx::query("DELETE FROM simplefin_root_credentials WHERE user_id = $1")
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+        Ok(result.rows_affected() > 0)
+    }
+
+    async fn list_simplefin_hidden_orgs(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<std::collections::HashSet<String>> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let rows = sqlx::query_scalar::<_, String>("SELECT org_conn_id FROM simplefin_hidden_orgs")
+            .fetch_all(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+        Ok(rows.into_iter().collect())
+    }
+
+    async fn list_simplefin_ignored_institutions(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Vec<crate::models::simplefin::SimpleFinIgnoredInstitution>> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let rows = sqlx::query_as::<_, (String, Option<String>, chrono::DateTime<chrono::Utc>)>(
+            r#"
+            SELECT org_conn_id, institution_name, hidden_at
+            FROM simplefin_hidden_orgs
+            WHERE user_id = $1
+            ORDER BY hidden_at DESC
+            "#,
+        )
+        .bind(user_id)
+        .fetch_all(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|(org_conn_id, institution_name, hidden_at)| {
+                crate::models::simplefin::SimpleFinIgnoredInstitution {
+                    org_conn_id,
+                    institution_name,
+                    hidden_at: hidden_at.to_rfc3339(),
+                }
+            })
+            .collect())
+    }
+
+    async fn insert_simplefin_hidden_org(
+        &self,
+        user_id: &Uuid,
+        conn_id: &str,
+        institution_name: Option<&str>,
+    ) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        sqlx::query(
+            r#"
+            INSERT INTO simplefin_hidden_orgs (user_id, org_conn_id, institution_name)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (user_id, org_conn_id) DO UPDATE SET
+                institution_name = COALESCE(EXCLUDED.institution_name, simplefin_hidden_orgs.institution_name),
+                hidden_at = NOW()
+            "#,
+        )
+        .bind(user_id)
+        .bind(conn_id)
+        .bind(institution_name)
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn remove_simplefin_hidden_org(&self, user_id: &Uuid, org_conn_id: &str) -> Result<bool> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let result = sqlx::query(
+            "DELETE FROM simplefin_hidden_orgs WHERE user_id = $1 AND org_conn_id = $2",
+        )
+        .bind(user_id)
+        .bind(org_conn_id)
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(result.rows_affected() > 0)
+    }
+
+    async fn disconnect_simplefin_org(
+        &self,
+        user_id: &Uuid,
+        item_id: &str,
+        org_conn_id: &str,
+        institution_name: Option<&str>,
+    ) -> Result<(i32, i32)> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let connection_id: Option<Uuid> = sqlx::query_scalar(
+            "SELECT id FROM provider_connections WHERE user_id = $1 AND item_id = $2",
+        )
+        .bind(user_id)
+        .bind(item_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+
+        let Some(conn_id) = connection_id else {
+            tx.commit().await?;
+            return Ok((0, 0));
+        };
+
+        let deleted_transactions = sqlx::query(
+            r#"
+            DELETE FROM transactions
+            WHERE account_id IN (
+                SELECT id FROM accounts WHERE provider_connection_id = $1
+            )
+            "#,
+        )
+        .bind(conn_id)
+        .execute(&mut *tx)
+        .await?;
+
+        let deleted_accounts =
+            sqlx::query("DELETE FROM accounts WHERE provider_connection_id = $1")
+                .bind(conn_id)
+                .execute(&mut *tx)
+                .await?;
+
+        sqlx::query("DELETE FROM provider_connections WHERE id = $1")
+            .bind(conn_id)
+            .execute(&mut *tx)
+            .await?;
+
+        sqlx::query(
+            r#"
+            INSERT INTO simplefin_hidden_orgs (user_id, org_conn_id, institution_name)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (user_id, org_conn_id) DO UPDATE SET
+                institution_name = COALESCE(EXCLUDED.institution_name, simplefin_hidden_orgs.institution_name),
+                hidden_at = NOW()
+            "#,
+        )
+        .bind(user_id)
+        .bind(org_conn_id)
+        .bind(institution_name)
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok((
+            deleted_transactions.rows_affected() as i32,
+            deleted_accounts.rows_affected() as i32,
         ))
     }
 }

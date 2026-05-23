@@ -84,10 +84,9 @@ describe('AccountFilterProvider', () => {
 
         await waitFor(() => {
           expect(result.current.allAccountIds.sort()).toEqual(['acc_1', 'acc_2', 'acc_3']);
+          expect(result.current.isAllAccountsSelected).toBe(true);
+          expect(result.current.selectedAccountIds.sort()).toEqual(['acc_1', 'acc_2', 'acc_3']);
         });
-
-        expect(result.current.isAllAccountsSelected).toBe(true);
-        expect(result.current.selectedAccountIds.sort()).toEqual(['acc_1', 'acc_2', 'acc_3']);
       });
 
       it('Then it should keep a newly added institution selected after refresh', async () => {

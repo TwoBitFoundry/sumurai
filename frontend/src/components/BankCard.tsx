@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, RefreshCw, Unlink } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getSessionBankExpanded, setSessionBankExpanded } from '@/utils/sessionPreferences';
 import {
   ACCOUNT_GROUP_LABELS,
@@ -38,6 +38,7 @@ interface BankConnection {
   short: string;
   status: 'connected' | 'needs_reauth' | 'error';
   lastSync?: string;
+  provider: string;
   accounts: Account[];
 }
 
@@ -65,8 +66,23 @@ export const BankCard: React.FC<BankCardProps> = ({
     setSessionBankExpanded(bank.id, expanded);
   }, [bank.id, expanded]);
   const [loading, setLoading] = useState(false);
+  const [syncElapsed, setSyncElapsed] = useState(0);
+  const syncStartRef = useRef<number | null>(null);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [disconnectLoading, setDisconnectLoading] = useState(false);
+
+  useEffect(() => {
+    if (!loading) {
+      setSyncElapsed(0);
+      syncStartRef.current = null;
+      return;
+    }
+    syncStartRef.current = Date.now();
+    const id = setInterval(() => {
+      setSyncElapsed(Math.floor((Date.now() - (syncStartRef.current ?? Date.now())) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [loading]);
 
   const handleSync = async () => {
     setLoading(true);
@@ -129,7 +145,9 @@ export const BankCard: React.FC<BankCardProps> = ({
           statusCaption ? 'grid-rows-[auto_auto_auto]' : 'grid-rows-[auto_auto]'
         )}
       >
-        <div className={cn('col-start-1', 'row-start-1', 'flex', 'flex-col', 'gap-2')}>
+        <div
+          className={cn('col-start-1', 'row-start-1', 'flex', 'flex-col', 'items-center', 'gap-1')}
+        >
           <IconButton
             type="button"
             size="md"
@@ -142,6 +160,22 @@ export const BankCard: React.FC<BankCardProps> = ({
           >
             <RefreshCw className={cn(loading && 'animate-spin')} />
           </IconButton>
+          {loading && syncElapsed > 0 && (
+            <span
+              className={cn(
+                uiTypographyRecipes.caption,
+                uiTextRecipes.muted,
+                'tabular-nums',
+                'text-center',
+                'flex',
+                'flex-col',
+                'items-center'
+              )}
+            >
+              {bank.provider === 'simplefin' && <span>Categorizing</span>}
+              <span>{syncElapsed}s</span>
+            </span>
+          )}
           <IconButton
             type="button"
             size="md"

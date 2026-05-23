@@ -59,6 +59,7 @@ async fn create_test_account(repo: &PostgresRepository, user_id: Uuid) -> Accoun
         balance_current: Some(dec!(1000.00)),
         mask: Some("1234".to_string()),
         institution_name: Some("Test Bank".to_string()),
+        provider_conn_id: None,
     };
 
     repo.upsert_account(&account).await.unwrap();
@@ -849,4 +850,128 @@ async fn given_transactions_when_aggregating_insights_for_empty_set_then_returns
     assert_eq!(insights.recurring_count, 0);
     assert!(insights.recurring_merchants.is_empty());
     assert!(insights.top_categories.is_empty());
+}
+
+#[tokio::test]
+async fn given_fresh_user_when_list_simplefin_hidden_orgs_then_returns_empty_set() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+
+    let hidden = repo.list_simplefin_hidden_orgs(&user.id).await.unwrap();
+
+    assert!(hidden.is_empty());
+}
+
+#[tokio::test]
+async fn given_hidden_org_when_insert_twice_then_is_idempotent() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+
+    repo.insert_simplefin_hidden_org(&user.id, "conn-abc", Some("Test Bank"))
+        .await
+        .unwrap();
+    repo.insert_simplefin_hidden_org(&user.id, "conn-abc", None)
+        .await
+        .unwrap();
+
+    let hidden = repo.list_simplefin_hidden_orgs(&user.id).await.unwrap();
+
+    assert_eq!(hidden.len(), 1);
+    assert!(hidden.contains("conn-abc"));
+}
+
+#[tokio::test]
+async fn given_two_users_when_user_a_hides_org_then_user_b_cannot_see_it() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool);
+    let user_a = create_test_user(&repo).await;
+    let user_b = create_test_user(&repo).await;
+
+    repo.insert_simplefin_hidden_org(&user_a.id, "conn-private", Some("Private Bank"))
+        .await
+        .unwrap();
+
+    let hidden_a = repo.list_simplefin_hidden_orgs(&user_a.id).await.unwrap();
+    let hidden_b = repo.list_simplefin_hidden_orgs(&user_b.id).await.unwrap();
+
+    assert!(hidden_a.contains("conn-private"));
+    assert!(!hidden_b.contains("conn-private"));
+}
+
+#[tokio::test]
+async fn given_user_when_store_and_get_simplefin_root_credential_then_round_trips() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let access_url = "https://user:pass@beta-bridge.simplefin.org/simplefin";
+
+    repo.store_simplefin_root_credential(&user.id, access_url)
+        .await
+        .unwrap();
+
+    let stored = repo
+        .get_simplefin_root_credential(&user.id)
+        .await
+        .unwrap()
+        .expect("root credential should exist");
+
+    assert_eq!(stored, access_url);
+}
+
+#[tokio::test]
+async fn given_stored_root_when_delete_simplefin_root_credential_then_returns_true() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+
+    repo.store_simplefin_root_credential(&user.id, "https://example.com/simplefin")
+        .await
+        .unwrap();
+
+    let deleted = repo
+        .delete_simplefin_root_credential(&user.id)
+        .await
+        .unwrap();
+    assert!(deleted);
+
+    let missing = repo.get_simplefin_root_credential(&user.id).await.unwrap();
+    assert!(missing.is_none());
+}
+
+#[tokio::test]
+async fn given_two_users_when_user_a_stores_root_then_user_b_cannot_read_it() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool);
+    let user_a = create_test_user(&repo).await;
+    let user_b = create_test_user(&repo).await;
+
+    repo.store_simplefin_root_credential(&user_a.id, "https://a.example/simplefin")
+        .await
+        .unwrap();
+
+    let for_b = repo
+        .get_simplefin_root_credential(&user_b.id)
+        .await
+        .unwrap();
+    assert!(for_b.is_none());
 }

@@ -4,13 +4,14 @@
 
 import type { QueryClient } from '@tanstack/react-query';
 
-export type SyncProvider = 'plaid' | 'teller';
+export type SyncProvider = 'plaid' | 'teller' | 'simplefin';
 
 const BASE_QUERY_KEYS = [['accounts'], ['transactions'], ['analytics'], ['budgets']] as const;
 
 const CONNECTION_QUERY_KEYS: Record<SyncProvider, readonly [string, string]> = {
   plaid: ['plaid', 'connections'],
   teller: ['teller', 'connections'],
+  simplefin: ['simplefin', 'connections'],
 } as const;
 
 export async function invalidateStaleCacheQueries(
@@ -25,4 +26,12 @@ export async function invalidateStaleCacheQueries(
   await Promise.all(
     queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey, refetchType: 'active' }))
   );
+}
+
+export async function refreshFinancialDataAfterProviderChange(
+  queryClient: QueryClient,
+  providers: SyncProvider[]
+): Promise<void> {
+  await invalidateStaleCacheQueries(queryClient, providers);
+  await queryClient.refetchQueries({ queryKey: ['accounts'], type: 'active' });
 }

@@ -5,12 +5,14 @@ import { ConnectAccountStep } from './ConnectAccountStep';
 
 const plaid = CONNECT_ACCOUNT_PROVIDER_CONTENT.plaid;
 const teller = CONNECT_ACCOUNT_PROVIDER_CONTENT.teller;
+const simplefin = CONNECT_ACCOUNT_PROVIDER_CONTENT.simplefin;
 
 const meta = {
   title: 'App/Onboarding/ConnectAccountStep',
   component: ConnectAccountStep,
   tags: ['autodocs', 'test'],
   args: {
+    provider: 'plaid',
     content: plaid,
     providerLoading: false,
     providerError: null,
@@ -42,6 +44,7 @@ export const PlaidDefault: Story = {
 
 export const ProviderLoading: Story = {
   args: {
+    provider: 'plaid',
     providerLoading: true,
     isOnline: true,
   },
@@ -49,6 +52,7 @@ export const ProviderLoading: Story = {
 
 export const ProviderConfigurationError: Story = {
   args: {
+    provider: 'plaid',
     providerError: 'Unable to load provider configuration.',
     isOnline: true,
   },
@@ -61,6 +65,7 @@ export const ProviderConfigurationError: Story = {
 
 export const ConnectionInProgress: Story = {
   args: {
+    provider: 'plaid',
     connectionInProgress: true,
     content: plaid,
     isOnline: true,
@@ -69,6 +74,7 @@ export const ConnectionInProgress: Story = {
 
 export const Connected: Story = {
   args: {
+    provider: 'plaid',
     isConnected: true,
     institutionName: 'Story Credit Union',
     content: plaid,
@@ -78,6 +84,7 @@ export const Connected: Story = {
 
 export const ConnectionFlowError: Story = {
   args: {
+    provider: 'plaid',
     error: 'Link token expired. Retry to generate a fresh session.',
     content: plaid,
     isOnline: true,
@@ -86,9 +93,80 @@ export const ConnectionFlowError: Story = {
 
 export const TellerMissingApplicationId: Story = {
   args: {
+    provider: 'teller',
     content: teller,
     connectBlockedReason:
       'Teller onboarding requires a Teller application ID. Add it in provider settings before connecting.',
+    isOnline: true,
+  },
+};
+
+export const SimpleFinUnconnected: Story = {
+  args: {
+    provider: 'simplefin',
+    content: simplefin,
+    onConnect: fn(),
+    isOnline: true,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByPlaceholderText('Paste your SimpleFIN setup token')).toBeVisible();
+  },
+};
+
+export const SimpleFinConnecting: Story = {
+  args: {
+    provider: 'simplefin',
+    content: simplefin,
+    onConnect: fn(),
+    connectionInProgress: true,
+    isOnline: true,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('button', { name: /connecting/i })).toBeDisabled();
+  },
+};
+
+export const SimpleFinConnected: Story = {
+  args: {
+    provider: 'simplefin',
+    content: simplefin,
+    isConnected: true,
+    institutionName: '3 institutions connected',
+    isOnline: true,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole('button', { name: /connected to 3 institutions connected/i })
+    ).toBeVisible();
+  },
+};
+
+export const SimpleFinConnectError: Story = {
+  args: {
+    provider: 'simplefin',
+    content: simplefin,
+    onConnect: fn(),
+    onRetry: fn(),
+    error: 'Invalid or already-used SimpleFIN setup token',
+    isOnline: true,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getAllByText('Invalid or already-used SimpleFIN setup token')).toHaveLength(
+      2
+    );
+    await expect(canvas.getByPlaceholderText('Paste your SimpleFIN setup token')).toBeVisible();
+  },
+};
+
+export const SimpleFinNotConfigured: Story = {
+  args: {
+    provider: 'simplefin',
+    content: simplefin,
+    connectBlockedReason: 'SimpleFIN is not enabled for this deployment.',
     isOnline: true,
   },
 };

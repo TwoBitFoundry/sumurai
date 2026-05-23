@@ -38,6 +38,7 @@ fn test_calculate_account_mapping_creates_correct_mapping() {
             balance_current: Some(dec!(100.00)),
             mask: Some("1234".to_string()),
             institution_name: None,
+            provider_conn_id: None,
         },
         Account {
             id: Uuid::new_v4(),
@@ -49,6 +50,7 @@ fn test_calculate_account_mapping_creates_correct_mapping() {
             balance_current: Some(dec!(200.00)),
             mask: Some("5678".to_string()),
             institution_name: None,
+            provider_conn_id: None,
         },
     ];
 
@@ -74,6 +76,7 @@ fn test_calculate_account_mapping_handles_accounts_without_plaid_ids() {
         balance_current: Some(dec!(500.00)),
         mask: None,
         institution_name: None,
+        provider_conn_id: None,
     }];
 
     let mapping = sync_service.calculate_account_mapping(&accounts);

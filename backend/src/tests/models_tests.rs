@@ -71,6 +71,16 @@ fn given_plaid_connection_when_serializing_then_preserves_all_fields() {
 }
 
 #[test]
+fn given_new_provider_connection_then_provider_field_exists() {
+    let user_id = Uuid::new_v4();
+    let connection = ProviderConnection::new(user_id, "test_item");
+
+    let mut connection_mut = connection.clone();
+    connection_mut.provider = "plaid".to_string();
+    assert_eq!(connection_mut.provider, "plaid");
+}
+
+#[test]
 fn given_strike_counts_when_lockout_duration_then_matches_progressive_tiers() {
     assert_eq!(
         AuthIpBanPolicy::lockout_secs_for_strike_count(1),

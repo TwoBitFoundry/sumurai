@@ -206,6 +206,7 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
       case 'connectAccount':
         return (
           <ConnectAccountStep
+            provider={activeProvider}
             content={providerContent}
             providerLoading={providerLoading}
             providerError={providerCatalog.error}

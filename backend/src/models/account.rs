@@ -29,6 +29,7 @@ pub struct Account {
     pub balance_current: Option<Decimal>,
     pub mask: Option<String>,
     pub institution_name: Option<String>,
+    pub provider_conn_id: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -70,6 +71,7 @@ impl Account {
             balance_current: None,
             mask: teller_acc["last_four"].as_str().map(String::from),
             institution_name: teller_acc["institution"]["name"].as_str().map(String::from),
+            provider_conn_id: None,
         }
     }
 
@@ -86,6 +88,7 @@ impl Account {
                 .and_then(Decimal::from_f64_retain),
             mask: plaid_acc["mask"].as_str().map(String::from),
             institution_name: None,
+            provider_conn_id: None,
         }
     }
 }

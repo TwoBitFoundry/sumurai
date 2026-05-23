@@ -5,7 +5,9 @@ use async_trait::async_trait;
 use chrono::NaiveDate;
 use uuid::Uuid;
 
-use crate::models::{account::Account, transaction::ProviderTransactionsResult};
+use crate::models::{
+    account::Account, simplefin::SimpleFinAccountsResponse, transaction::ProviderTransactionsResult,
+};
 
 #[async_trait]
 pub trait FinancialDataProvider: Send + Sync {
@@ -28,6 +30,13 @@ pub trait FinancialDataProvider: Send + Sync {
         &self,
         credentials: &ProviderCredentials,
     ) -> Result<InstitutionInfo>;
+
+    async fn fetch_balances_snapshot(
+        &self,
+        _credentials: &ProviderCredentials,
+    ) -> Result<Option<SimpleFinAccountsResponse>> {
+        Ok(None)
+    }
 }
 
 #[derive(Debug, Clone)]

@@ -1,6 +1,6 @@
 # Sumurai
 
-Personal finance dashboard. Self-hosted. Connects to your bank via Teller or Plaid, syncs transactions, and shows where your money goes.
+Personal finance dashboard. Self-hosted. Connects to your bank via Teller, Plaid, or SimpleFIN, syncs transactions, and shows where your money goes.
 
 <img width="1257" height="931" alt="image" src="https://github.com/user-attachments/assets/50d30e23-224c-4182-9dae-e7d8da8b75c5" />
 
@@ -10,7 +10,7 @@ Sumurai exists because there are not a lot of free, simple, and modern budgeting
 
 ## What It Does
 
-- Connects accounts through Teller or Plaid
+- Connects accounts through Teller, Plaid, or SimpleFIN
 - Syncs and categorizes transactions
 - Tracks budgets by category
 - Charts spending, balances, and net worth over time
@@ -96,10 +96,22 @@ Generate a secret for each of these values:
 openssl rand -hex 32
 ```
 
-### 2. Teller (Recommended)
+### 2. SimpleFIN (Bring your own token)
+
+1. Open the [SimpleFIN Bridge](https://bridge.simplefin.org/) and create a bridge (or use the beta developer bridge for local trials).
+2. Set `SIMPLEFIN_SETUP_TOKEN` (one-time token from [beta-bridge.simplefin.org/info/developers](https://beta-bridge.simplefin.org/info/developers)) and `DEFAULT_PROVIDER=simplefin` in `.env`. The backend claims the token once at startup.
+3. Start the app:
+
+```bash
+docker compose -f docker-compose.dev.yml up -d --build
+```
+
+4. Sign in and use **Connect with SimpleFIN** in onboarding.
+
+### 3. Teller (Recommended)
 
 1. Follow the [Teller Quickstart](https://teller.io/docs/guides/quickstart).
-2. Set `TELLER_APPLICATION_ID`.
+2. Set `TELLER_APPLICATION_ID` and `DEFAULT_PROVIDER=teller` if you are not using another provider.
 3. Download your Teller client certificate and private key from the Teller dashboard, then place them at `.certs/teller/certificate.pem` and `.certs/teller/private_key.pem`.
 4. Start the app:
 
@@ -107,7 +119,7 @@ openssl rand -hex 32
 docker compose up -d --build
 ```
 
-### 3. Plaid (Challenging)
+### 4. Plaid (Challenging)
 
 1. Follow the [Plaid Quickstart](https://plaid.com/docs/quickstart/).
 2. Set `PLAID_CLIENT_ID` and `PLAID_SECRET`.
@@ -133,7 +145,7 @@ The app is a static Next.js export served by Nginx on port 8080, with `/api/*` a
 - Frontend: Next.js 16, React 19, TypeScript, Tailwind, Recharts, Biome, Jest, and browser OpenTelemetry (enabled per compose via `NEXT_PUBLIC_OTEL_*`)
 - Backend: Rust 1.95, Axum, SQLx, Redis, PostgreSQL, JWT auth, provider integrations, and OpenTelemetry tracing (export mode is set per environment; production compose sends OTLP to Seq)
 - Deployment: standalone Docker Compose files—default OSS (`docker-compose.yml`), local dev builds (`docker-compose.dev.yml`), or production with Seq (`docker-compose.prod.yml`); each includes nginx, frontend, backend, Postgres, and Redis
-- Providers: Teller and Plaid through a shared provider registry
+- Providers: Teller, Plaid, and SimpleFIN through a shared provider registry
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the deeper system breakdown.
 

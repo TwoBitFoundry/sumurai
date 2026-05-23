@@ -1,3 +1,5 @@
+import { SimpleFinTokenEntry } from '@/features/simplefin/components/SimpleFinTokenEntry';
+import type { FinancialProvider } from '@/types/api';
 import { Alert, Badge, Button } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
 import {
@@ -22,6 +24,7 @@ interface StatusMessage {
 }
 
 interface ConnectAccountStepProps {
+  provider: FinancialProvider;
   content: ConnectAccountProviderContent;
   providerLoading: boolean;
   providerError: string | null;
@@ -32,7 +35,7 @@ interface ConnectAccountStepProps {
   connectionInProgress: boolean;
   institutionName: string | null;
   error: string | null;
-  onConnect: () => void;
+  onConnect: (setupToken?: string) => void | Promise<void>;
   onRetry: () => void;
 }
 
@@ -130,6 +133,7 @@ function HighlightCard({
 }
 
 export function ConnectAccountStep({
+  provider,
   content,
   providerLoading,
   providerError,
@@ -283,50 +287,60 @@ export function ConnectAccountStep({
               <HighlightCard key={highlight.title} {...highlight} />
             ))}
           </div>
-          <Button
-            variant={isConnected ? 'success' : 'connect'}
-            size="lg"
-            className={cn('w-full px-6 py-3')}
-            onClick={error && isOnline ? onRetry : onConnect}
-            disabled={connectionInProgress || isConnected || disablePrimaryAction}
-          >
-            {isConnected ? (
-              <span className={cn('flex items-center gap-2', uiTypographyRecipes.bodyStrong)}>
-                <span aria-hidden="true">✓</span>
-                {institutionName ? `Connected to ${institutionName}` : 'Connected'}
-              </span>
-            ) : connectionInProgress ? (
-              <span className={cn('flex items-center gap-2', uiTypographyRecipes.bodyStrong)}>
-                <span
-                  className={cn(
-                    'inline-flex h-4 w-4',
-                    'rounded-full border-2',
-                    'border-white border-t-transparent',
-                    'animate-spin'
-                  )}
-                />
-                Connecting…
-              </span>
-            ) : error ? (
-              'Try again'
-            ) : (
-              <span className={cn('flex items-center gap-2', uiTypographyRecipes.bodyStrong)}>
-                {content.logoSrc ? (
-                  <img
-                    src={content.logoSrc}
-                    alt={`${content.displayName} logo`}
-                    className={cn('h-5', 'w-5', 'rounded-full', 'object-cover')}
+          {provider === 'simplefin' && !isConnected ? (
+            <SimpleFinTokenEntry
+              isOnline={isOnline}
+              isSubmitting={connectionInProgress}
+              error={error}
+              blockedReason={connectBlockedReason}
+              onSubmit={onConnect}
+            />
+          ) : (
+            <Button
+              variant={isConnected ? 'success' : 'connect'}
+              size="lg"
+              className={cn('w-full px-6 py-3')}
+              onClick={error && isOnline ? onRetry : () => void onConnect()}
+              disabled={connectionInProgress || isConnected || disablePrimaryAction}
+            >
+              {isConnected ? (
+                <span className={cn('flex items-center gap-2', uiTypographyRecipes.bodyStrong)}>
+                  <span aria-hidden="true">✓</span>
+                  {institutionName ? `Connected to ${institutionName}` : 'Connected'}
+                </span>
+              ) : connectionInProgress ? (
+                <span className={cn('flex items-center gap-2', uiTypographyRecipes.bodyStrong)}>
+                  <span
+                    className={cn(
+                      'inline-flex h-4 w-4',
+                      'rounded-full border-2',
+                      'border-white border-t-transparent',
+                      'animate-spin'
+                    )}
                   />
-                ) : null}
-                <span>{content.cta.defaultLabel}</span>
-                {content.cta.badge && (
-                  <Badge variant="default" size="sm" className="tracking-[0.2em]">
-                    {content.cta.badge}
-                  </Badge>
-                )}
-              </span>
-            )}
-          </Button>
+                  Connecting…
+                </span>
+              ) : error ? (
+                'Try again'
+              ) : (
+                <span className={cn('flex items-center gap-2', uiTypographyRecipes.bodyStrong)}>
+                  {content.logoSrc ? (
+                    <img
+                      src={content.logoSrc}
+                      alt={`${content.displayName} logo`}
+                      className={cn('h-5', 'w-5', 'rounded-full', 'object-cover')}
+                    />
+                  ) : null}
+                  <span>{content.cta.defaultLabel}</span>
+                  {content.cta.badge && (
+                    <Badge variant="default" size="sm" className="tracking-[0.2em]">
+                      {content.cta.badge}
+                    </Badge>
+                  )}
+                </span>
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </div>

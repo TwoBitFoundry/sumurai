@@ -25,7 +25,7 @@ export interface UsePlaidLinkFlowResult {
   error: string | null;
   toast: string | null;
   setToast: (next: string | null) => void;
-  connect: () => Promise<void>;
+  connect: (setupToken?: string) => Promise<void>;
   syncOne: (connectionId: string) => Promise<void>;
   syncAll: () => Promise<void>;
   disconnect: (connectionId: string) => Promise<void>;

@@ -208,6 +208,7 @@ impl RealPlaidClient {
                         balance_current,
                         mask,
                         institution_name: None,
+                        provider_conn_id: None,
                     };
                     accounts.push(account);
                 }

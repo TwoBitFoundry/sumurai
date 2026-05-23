@@ -9,6 +9,9 @@ use crate::models::predicted_category::PredictedCategory;
 use crate::models::{auth::User, transaction::Transaction};
 use crate::providers::ProviderRegistry;
 
+use crate::providers::{
+    PlaidCredentialResolver, SimpleFinCredentialResolver, TellerCredentialResolver,
+};
 use crate::services::{
     analytics_service::AnalyticsService,
     auth_service::AuthService,
@@ -23,6 +26,7 @@ use crate::services::{
     repository_service::DatabaseRepository,
     repository_service::MockDatabaseRepository,
     sync_service::SyncService,
+    sync_service_factory::SyncServiceFactory,
     Categorizer,
 };
 
@@ -48,8 +52,30 @@ impl Categorizer for NoopCategorizer {
     }
 }
 
-fn noop_categorizer() -> Arc<dyn Categorizer> {
+pub(crate) fn noop_categorizer() -> Arc<dyn Categorizer> {
     Arc::new(NoopCategorizer)
+}
+
+pub(crate) fn build_credential_resolvers(
+    db_repository: Arc<dyn DatabaseRepository>,
+) -> std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>> {
+    let mut resolvers = std::collections::HashMap::new();
+    resolvers.insert(
+        "simplefin".to_string(),
+        Arc::new(SimpleFinCredentialResolver::new(Arc::clone(&db_repository)))
+            as Arc<dyn crate::providers::ProviderCredentialResolver>,
+    );
+    resolvers.insert(
+        "plaid".to_string(),
+        Arc::new(PlaidCredentialResolver::new(Arc::clone(&db_repository)))
+            as Arc<dyn crate::providers::ProviderCredentialResolver>,
+    );
+    resolvers.insert(
+        "teller".to_string(),
+        Arc::new(TellerCredentialResolver::new(Arc::clone(&db_repository)))
+            as Arc<dyn crate::providers::ProviderCredentialResolver>,
+    );
+    resolvers
 }
 
 impl TestFixtures {
@@ -272,10 +298,17 @@ impl TestFixtures {
 
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
 
+        let credential_resolvers = build_credential_resolvers(db_repository.clone());
         let connection_service = Arc::new(ConnectionService::new(
             db_repository.clone(),
             cache_service.clone(),
             provider_registry.clone(),
+            noop_categorizer(),
+            credential_resolvers,
+        ));
+        let sync_service_factory = Arc::new(SyncServiceFactory::new(
+            connection_service.clone(),
+            sync_service.clone(),
         ));
 
         let auth_service = Arc::new(
@@ -289,6 +322,7 @@ impl TestFixtures {
             plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
             sync_service,
+            sync_service_factory,
             analytics_service,
             budget_service,
             authorization_service,
@@ -386,10 +420,17 @@ impl TestFixtures {
 
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
 
+        let credential_resolvers = build_credential_resolvers(db_repository.clone());
         let connection_service = Arc::new(ConnectionService::new(
             db_repository.clone(),
             cache_service.clone(),
             provider_registry.clone(),
+            noop_categorizer(),
+            credential_resolvers,
+        ));
+        let sync_service_factory = Arc::new(SyncServiceFactory::new(
+            connection_service.clone(),
+            sync_service.clone(),
         ));
 
         let auth_service = Arc::new(
@@ -404,6 +445,7 @@ impl TestFixtures {
             plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
             sync_service,
+            sync_service_factory,
             analytics_service,
             budget_service,
             authorization_service,
@@ -466,10 +508,17 @@ impl TestFixtures {
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
 
+        let credential_resolvers = build_credential_resolvers(db_repository.clone());
         let connection_service = Arc::new(ConnectionService::new(
             db_repository.clone(),
             cache_service.clone(),
             provider_registry.clone(),
+            categorizer.clone(),
+            credential_resolvers,
+        ));
+        let sync_service_factory = Arc::new(SyncServiceFactory::new(
+            connection_service.clone(),
+            sync_service.clone(),
         ));
 
         let auth_service = Arc::new(
@@ -484,6 +533,7 @@ impl TestFixtures {
             plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
             sync_service,
+            sync_service_factory,
             analytics_service,
             budget_service,
             authorization_service,

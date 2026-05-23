@@ -38,7 +38,7 @@ flowchart LR
 
 1. The browser loads the exported frontend through Nginx.
 2. The frontend validates the session with the backend and keeps auth state synchronized.
-3. When a user connects a provider, the frontend opens the provider-specific flow for Teller or Plaid.
+3. When a user connects a provider, the frontend opens the provider-specific flow for Teller, Plaid, or SimpleFIN.
 4. The backend receives the provider token exchange, encrypts provider secrets, and stores them in PostgreSQL.
 5. Sync services fetch accounts and transactions from the selected provider through the shared provider registry.
 6. The backend normalizes transactions, updates the cache, and persists the latest state.
@@ -47,10 +47,19 @@ flowchart LR
 ## Provider Flow
 
 - `DEFAULT_PROVIDER` determines the default provider shown by the app.
-- The backend registers both Teller and Plaid implementations in a shared provider registry.
-- The frontend uses provider-specific services and connect flows for Teller and Plaid.
+- The backend registers Teller, Plaid, and SimpleFIN implementations in a shared provider registry.
+- The frontend uses provider-specific services and connect flows for each provider.
 - `/api/providers/info`, `/api/providers/select`, `/api/providers/connect`, `/api/providers/status`, `/api/providers/accounts`, `/api/providers/sync-transactions`, and `/api/providers/disconnect` support the provider management UX.
 - Provider credentials are encrypted before persistence and invalidated through cache cleanup when a connection is removed.
+
+### SimpleFIN
+
+- The user pastes a one-time SimpleFIN setup token when connecting. The backend claims it into a per-user stored access URL in `simplefin_root_credentials` (encrypted). A shared beta demo bridge URL is only used when the token was already claimed and the user matches `SIMPLEFIN_DEMO_USER_EMAIL` (default `simplefin@test.com`); other users must have their own stored root credential or a fresh setup token claim.
+- One access URL backs many `provider_connections` rows: each financial institution in the bridge snapshot becomes `simplefin_{org_conn_id}` with its own accounts and transactions.
+- Connect and sync reuse the stored access URL while at least one SimpleFIN institution remains connected. Sync can also materialize newly linked institutions from the latest bridge snapshot.
+- `simplefin_hidden_orgs` records orgs the user disconnected. Sync and connect skip blocklisted `org_conn_id` values so disconnected institutions do not get new rows in `provider_connections`, `accounts`, or `transactions`, and no cache entries are keyed on that org.
+- Disconnecting the last remaining SimpleFIN institution removes the stored access URL and clears the ignore list so the next connect requires a fresh setup token.
+- Manual SimpleFIN sync is rate-limited per user (Redis floor key, one hour) to respect bridge usage expectations.
 
 ## Frontend
 

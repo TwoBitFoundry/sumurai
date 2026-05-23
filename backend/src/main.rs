@@ -57,12 +57,12 @@ use crate::models::{
     },
     plaid::{
         ClearSyncedDataResponse, DisconnectRequest, DisconnectResult, ExchangeTokenRequest,
-        ExchangeTokenResponse, LinkTokenRequest, LinkTokenResponse, ProviderConnectRequest,
-        ProviderConnectResponse, ProviderConnectionStatus, ProviderInfoResponse,
-        ProviderSelectRequest, ProviderSelectResponse, ProviderStatusResponse,
-        SyncTransactionsRequest,
+        ExchangeTokenResponse, LinkTokenRequest, LinkTokenResponse, ProviderConnectResponse,
+        ProviderConnectionStatus, ProviderInfoResponse, ProviderSelectRequest,
+        ProviderSelectResponse, ProviderStatusResponse, SyncTransactionsRequest,
     },
     predicted_category::Confidence,
+    provider_connect::ProviderConnectRequest,
     transaction::{
         PaginatedTransactionsResponse, SyncTransactionsResponse, TransactionsInsightsResponse,
         TransactionsQuery,
@@ -74,6 +74,9 @@ use crate::models::{
         ChangePasswordRequest, ChangePasswordResponse, DeleteAccountResponse, LogoutResponse,
         OnboardingCompleteResponse, User,
     },
+};
+use crate::providers::{
+    PlaidCredentialResolver, SimpleFinCredentialResolver, TellerCredentialResolver,
 };
 use crate::utils::encryption_key::parse_encryption_key_hex;
 use auth_middleware::auth_middleware;
@@ -88,6 +91,7 @@ use services::categorization::classifier_labels::format_classifier_input;
 use services::category_management::service::CategoryManagementService;
 use services::import_service::ImportService;
 use services::repository_service::{DatabaseRepository, PostgresRepository};
+use services::sync_service_dispatcher::provider_sync_error_to_response;
 use services::{
     otel_traces_relay::OtlpTracesRelay,
     rate_limit_service::{
@@ -95,9 +99,9 @@ use services::{
         telemetry_public_browser_governor_layer,
     },
     AuthService, AuthorizationService, BudgetService, CacheService, CategorizationService,
-    Categorizer, ConnectionService, ExchangeTokenError, LinkTokenError, PlaidService,
-    ProviderSyncError, RedisCache, SyncConnectionParams, SyncService, TellerConnectError,
-    TellerSyncError,
+    Categorizer, ConnectionService, ExchangeTokenError, LinkTokenError, PlaidService, RedisCache,
+    SimpleFinConnectError, SyncConnectionParams, SyncService, SyncServiceFactory,
+    TellerConnectError,
 };
 use services::{AnalyticsService, RealPlaidClient};
 use sqlx::PgPool;
@@ -152,6 +156,10 @@ async fn main() -> anyhow::Result<()> {
             tracing::warn!(error = %e, "Teller provider not configured; skipping Teller initialization");
         }
     }
+
+    let simplefin_provider: Arc<dyn providers::FinancialDataProvider> =
+        Arc::new(providers::SimpleFinProvider::new_with_real_client().await?);
+    provider_registry.register("simplefin", simplefin_provider);
 
     let provider_registry = Arc::new(provider_registry);
 
@@ -219,12 +227,6 @@ async fn main() -> anyhow::Result<()> {
         tracing::info!("Cleared all JWT tokens on app startup");
     }
 
-    let connection_service = Arc::new(ConnectionService::new(
-        db_repository.clone(),
-        cache_service.clone(),
-        provider_registry.clone(),
-    ));
-
     let jwt_secret = std::env::var("JWT_SECRET").context(
         "JWT_SECRET environment variable is required. Generate one with `openssl rand -hex 32`.",
     )?;
@@ -248,6 +250,64 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
+    let mut credential_resolvers = std::collections::HashMap::new();
+    credential_resolvers.insert(
+        "simplefin".to_string(),
+        Arc::new(SimpleFinCredentialResolver::new(db_repository.clone()))
+            as Arc<dyn crate::providers::ProviderCredentialResolver>,
+    );
+    credential_resolvers.insert(
+        "plaid".to_string(),
+        Arc::new(PlaidCredentialResolver::new(db_repository.clone()))
+            as Arc<dyn crate::providers::ProviderCredentialResolver>,
+    );
+    credential_resolvers.insert(
+        "teller".to_string(),
+        Arc::new(TellerCredentialResolver::new(db_repository.clone()))
+            as Arc<dyn crate::providers::ProviderCredentialResolver>,
+    );
+
+    let simplefin_org_service = Arc::new(
+        crate::services::simplefin_org_service::SimpleFinOrganizationService::new(
+            db_repository.clone(),
+            cache_service.clone(),
+        ),
+    );
+
+    let simplefin_rate_limit_service = Arc::new(
+        crate::services::simplefin_rate_limit_service::SimpleFinRateLimitService::new(
+            cache_service.clone(),
+        ),
+    );
+
+    let simplefin_connection_service = Arc::new(
+        crate::services::simplefin_connection_service::SimpleFinConnectionService::new(
+            db_repository.clone(),
+            cache_service.clone(),
+            provider_registry.clone(),
+            credential_resolvers.clone(),
+            simplefin_org_service,
+            simplefin_rate_limit_service,
+            categorizer.clone(),
+        ),
+    );
+
+    let connection_service = Arc::new(
+        ConnectionService::new(
+            db_repository.clone(),
+            cache_service.clone(),
+            provider_registry.clone(),
+            categorizer.clone(),
+            credential_resolvers,
+        )
+        .with_simplefin_connection_service(simplefin_connection_service),
+    );
+
+    let sync_service_factory = Arc::new(SyncServiceFactory::new(
+        connection_service.clone(),
+        sync_service.clone(),
+    ));
+
     let otlp_traces_relay = Arc::new(OtlpTracesRelay::from_config(&telemetry_config)?);
 
     let category_management_service =
@@ -257,6 +317,7 @@ async fn main() -> anyhow::Result<()> {
         plaid_service,
         plaid_client,
         sync_service,
+        sync_service_factory,
         analytics_service,
         budget_service,
         authorization_service,
@@ -384,6 +445,11 @@ pub fn create_app(state: AppState) -> Router {
         .route(
             "/api/providers/disconnect",
             post(disconnect_authenticated_connection),
+        )
+        .route(
+            "/api/providers/simplefin/ignored-institutions",
+            get(get_authenticated_simplefin_ignored_institutions)
+                .post(restore_authenticated_simplefin_ignored_institution),
         )
         .route(
             "/api/plaid/clear-synced-data",
@@ -2061,166 +2127,58 @@ async fn sync_authenticated_provider_transactions(
     State(state): State<AppState>,
     auth_context: AuthContext,
     req: AuthorizedConnectionRequest<SyncTransactionsRequest>,
-) -> Result<Json<SyncTransactionsResponse>, StatusCode> {
+) -> Result<Json<SyncTransactionsResponse>, Response> {
     let user_id = auth_context.user_id;
     let AuthorizedConnectionRequest {
         _body: request_body,
         connection,
     } = req;
 
-    tracing::info!("Sync transactions requested for user {}", user_id);
+    tracing::info!(
+        user_id = %user_id,
+        connection_id = %connection.id,
+        item_id = %connection.item_id,
+        "Sync transactions requested"
+    );
 
     let reference_date = request_body
         .client_date
         .as_deref()
         .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
         .transpose()
-        .map_err(|_| StatusCode::BAD_REQUEST)?;
+        .map_err(|_| StatusCode::BAD_REQUEST.into_response())?;
     let mut connection = connection;
 
-    if connection.item_id.starts_with("teller_") {
-        match state
-            .connection_service
-            .sync_teller_connection(
-                &user_id,
-                &auth_context.jwt_id,
-                &mut connection,
-                reference_date,
-            )
-            .await
-        {
-            Ok(response) => return Ok(Json(response)),
-            Err(TellerSyncError::CredentialsMissing) => {
-                tracing::error!(
-                    "No Teller credentials for user {} and item {}",
-                    user_id,
-                    connection.item_id
-                );
-                return Err(StatusCode::NOT_FOUND);
-            }
-            Err(TellerSyncError::CredentialAccess(e)) => {
-                tracing::error!(
-                    "Failed to load Teller credentials for user {} and item {}: {}",
-                    user_id,
-                    connection.item_id,
-                    e
-                );
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-            Err(TellerSyncError::ProviderInitialization(e)) => {
-                tracing::error!("Failed to initialize Teller provider: {}", e);
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-            Err(TellerSyncError::ProviderRequest(e)) => {
-                tracing::error!("Teller provider request failed for user {}: {}", user_id, e);
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-            Err(TellerSyncError::AccountLookup(e)) => {
-                tracing::error!(
-                    "Failed to fetch accounts from database for Teller user {}: {}",
-                    user_id,
-                    e
-                );
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-            Err(TellerSyncError::TransactionLookup(e)) => {
-                tracing::error!(
-                    "Failed to load transactions for Teller user {}: {}",
-                    user_id,
-                    e
-                );
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-            Err(TellerSyncError::ConnectionPersistence(e)) => {
-                tracing::error!(
-                    "Failed to update Teller connection {} for user {}: {}",
-                    connection.id,
-                    user_id,
-                    e
-                );
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-        }
-    }
+    let provider = connection.provider.clone();
 
     let sync_params = SyncConnectionParams {
-        provider: "plaid",
+        provider: provider.as_str(),
         user_id: &user_id,
         jwt_id: &auth_context.jwt_id,
     };
 
-    match state
-        .connection_service
-        .sync_provider_connection(
-            sync_params,
-            state.sync_service.as_ref(),
-            &mut connection,
-            reference_date,
-        )
+    let dispatcher = state
+        .sync_service_factory
+        .get_dispatcher(&provider)
+        .ok_or_else(|| {
+            tracing::error!(
+                "Sync transactions: unsupported provider '{}' for user {}",
+                connection.provider,
+                user_id
+            );
+            StatusCode::BAD_REQUEST.into_response()
+        })?;
+
+    match dispatcher
+        .sync(sync_params, &mut connection, reference_date)
         .await
     {
         Ok(response) => Ok(Json(response)),
-        Err(ProviderSyncError::CredentialsMissing) => {
-            tracing::error!(
-                "Sync transactions: no credentials for user {} and item {}",
-                user_id,
-                connection.item_id
-            );
-            Err(StatusCode::NOT_FOUND)
-        }
-        Err(ProviderSyncError::CredentialAccess(e)) => {
-            tracing::error!(
-                "Sync transactions: failed to access credentials for user {} and item {}: {}",
-                user_id,
-                connection.item_id,
-                e
-            );
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-        Err(ProviderSyncError::ProviderUnavailable(p)) => {
-            tracing::error!(
-                "Sync transactions: provider '{}' unavailable for user {}",
-                p,
-                user_id
-            );
-            Err(StatusCode::BAD_REQUEST)
-        }
-        Err(ProviderSyncError::ProviderRequest(e)) => {
-            tracing::error!(
-                "Provider request failed during sync for user {} and item {}: {}",
-                user_id,
-                connection.item_id,
-                e
-            );
-            Err(StatusCode::BAD_GATEWAY)
-        }
-        Err(ProviderSyncError::AccountLookup(e)) => {
-            tracing::error!(
-                "Failed to load accounts during sync for user {} and item {}: {}",
-                user_id,
-                connection.item_id,
-                e
-            );
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-        Err(ProviderSyncError::TransactionLookup(e)) => {
-            tracing::error!(
-                "Failed to load transactions during sync for user {} and item {}: {}",
-                user_id,
-                connection.item_id,
-                e
-            );
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-        Err(ProviderSyncError::SyncFailure(e)) => {
-            tracing::error!(
-                "Sync service failed for user {} and item {}: {}",
-                user_id,
-                connection.item_id,
-                e
-            );
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
+        Err(err) => Err(provider_sync_error_to_response(
+            err,
+            user_id,
+            &connection.item_id,
+        )),
     }
 }
 
@@ -2615,6 +2573,7 @@ async fn load_connection_statuses(
             last_sync_at: conn.last_sync_at.map(|dt| dt.to_rfc3339()),
             institution_name: conn.institution_name,
             connection_id: Some(conn.id.to_string()),
+            item_id: Some(conn.item_id),
             transaction_count: conn.transaction_count,
             account_count: conn.account_count,
             sync_in_progress: false,
@@ -2625,7 +2584,7 @@ async fn load_connection_statuses(
 #[utoipa::path(
     post,
     path = "/api/providers/connect",
-    description = "Completes Teller Connect enrollment and stores provider credentials for the user.",
+    description = "Completes provider connect enrollment and stores provider credentials for the user.",
     request_body = ProviderConnectRequest,
     responses(
         (status = 200, description = "Provider connected successfully", body = ProviderConnectResponse),
@@ -2641,22 +2600,211 @@ async fn connect_authenticated_provider(
     auth_context: AuthContext,
     Json(req): Json<ProviderConnectRequest>,
 ) -> Result<Json<ProviderConnectResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    if req.provider != "teller" {
-        log_provider_credential_outcome(&req.provider, StatusCode::BAD_REQUEST, "provider.connect");
-        return Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
-            .into_response(StatusCode::BAD_REQUEST));
-    }
-
-    match state
-        .connection_service
-        .connect_teller_provider(&auth_context.user_id, &auth_context.jwt_id, &req)
-        .await
-    {
-        Ok(response) => {
-            log_provider_credential_outcome("teller", StatusCode::OK, "provider.connect");
-            Ok(Json(response))
-        }
-        Err(TellerConnectError::InvalidProvider(_)) => {
+    match req.provider.as_str() {
+        "teller" => match state
+            .connection_service
+            .connect_teller_provider(&auth_context.user_id, &auth_context.jwt_id, &req)
+            .await
+        {
+            Ok(response) => {
+                log_provider_credential_outcome("teller", StatusCode::OK, "provider.connect");
+                Ok(Json(response))
+            }
+            Err(TellerConnectError::InvalidProvider(_)) => {
+                log_provider_credential_outcome(
+                    &req.provider,
+                    StatusCode::BAD_REQUEST,
+                    "provider.connect",
+                );
+                Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
+                    .into_response(StatusCode::BAD_REQUEST))
+            }
+            Err(TellerConnectError::CredentialStorage(e)) => {
+                log_provider_credential_outcome(
+                    "teller",
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "provider.connect",
+                );
+                tracing::error!(
+                    "Failed to store Teller credentials for user {}: {}",
+                    auth_context.user_id,
+                    e
+                );
+                Err(ApiErrorResponse::internal_server_error(
+                    "Failed to store credentials",
+                ))
+            }
+            Err(TellerConnectError::ConnectionPersistence(e)) => {
+                log_provider_credential_outcome(
+                    "teller",
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "provider.connect",
+                );
+                tracing::error!(
+                    "Failed to persist Teller connection for user {}: {}",
+                    auth_context.user_id,
+                    e
+                );
+                Err(ApiErrorResponse::internal_server_error(
+                    "Failed to save connection",
+                ))
+            }
+        },
+        "simplefin" => match state
+            .connection_service
+            .connect_simplefin_provider(&auth_context.user_id, &auth_context.jwt_id, &req)
+            .await
+        {
+            Ok(response) => {
+                log_provider_credential_outcome("simplefin", StatusCode::OK, "provider.connect");
+                Ok(Json(response))
+            }
+            Err(SimpleFinConnectError::InvalidProvider(_)) => {
+                log_provider_credential_outcome(
+                    &req.provider,
+                    StatusCode::BAD_REQUEST,
+                    "provider.connect",
+                );
+                Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
+                    .into_response(StatusCode::BAD_REQUEST))
+            }
+            Err(SimpleFinConnectError::MissingSetupToken) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::BAD_REQUEST,
+                    "provider.connect",
+                );
+                Err(ApiErrorResponse::new(
+                    "BAD_REQUEST",
+                    "Provide a SimpleFIN setup token to connect this account",
+                )
+                .into_response(StatusCode::BAD_REQUEST))
+            }
+            Err(SimpleFinConnectError::MalformedSetupToken) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::BAD_REQUEST,
+                    "provider.connect",
+                );
+                Err(
+                    ApiErrorResponse::new("BAD_REQUEST", "The SimpleFIN setup token is malformed")
+                        .into_response(StatusCode::BAD_REQUEST),
+                )
+            }
+            Err(SimpleFinConnectError::SetupTokenAlreadyClaimed) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "provider.connect",
+                );
+                Err(ApiErrorResponse::new(
+                    "SETUP_TOKEN_ALREADY_CLAIMED",
+                    "This SimpleFIN setup token has already been used",
+                )
+                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
+            }
+            Err(SimpleFinConnectError::ClaimFailed(e)) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "provider.connect",
+                );
+                tracing::error!(
+                    "Failed to claim SimpleFIN access URL for user {}: {}",
+                    auth_context.user_id,
+                    e
+                );
+                Err(ApiErrorResponse::new(
+                    "SETUP_TOKEN_CLAIM_FAILED",
+                    "Could not claim the SimpleFIN setup token",
+                )
+                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
+            }
+            Err(SimpleFinConnectError::CredentialStorage(e)) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "provider.connect",
+                );
+                tracing::error!(
+                    "Failed to store SimpleFIN credentials for user {}: {}",
+                    auth_context.user_id,
+                    e
+                );
+                Err(ApiErrorResponse::internal_server_error(
+                    "Failed to store credentials",
+                ))
+            }
+            Err(SimpleFinConnectError::SnapshotFetch(e)) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "provider.connect",
+                );
+                tracing::error!(
+                    "Failed to fetch SimpleFIN account snapshot for user {}: {}",
+                    auth_context.user_id,
+                    e
+                );
+                Err(ApiErrorResponse::new(
+                    "INTERNAL_SERVER_ERROR",
+                    "Failed to fetch accounts from SimpleFIN bridge",
+                )
+                .into_response(StatusCode::INTERNAL_SERVER_ERROR))
+            }
+            Err(SimpleFinConnectError::ConnectionPersistence(e)) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "provider.connect",
+                );
+                tracing::error!(
+                    "Failed to persist SimpleFIN connection for user {}: {}",
+                    auth_context.user_id,
+                    e
+                );
+                Err(ApiErrorResponse::internal_server_error(
+                    "Failed to save connection",
+                ))
+            }
+            Err(SimpleFinConnectError::NoInstitutionsOnBridge) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "provider.connect",
+                );
+                Err(ApiErrorResponse::new(
+                    "NO_INSTITUTIONS",
+                    "No institutions are available from your SimpleFIN bridge yet",
+                )
+                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
+            }
+            Err(SimpleFinConnectError::AllInstitutionsHidden) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "provider.connect",
+                );
+                Err(ApiErrorResponse::new(
+                    "ALL_INSTITUTIONS_HIDDEN",
+                    "All SimpleFIN institutions are hidden in Sumurai. Restore one to start syncing.",
+                )
+                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
+            }
+            Err(SimpleFinConnectError::NoInstitutionsLinked) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "provider.connect",
+                );
+                Err(ApiErrorResponse::new(
+                    "NO_INSTITUTIONS",
+                    "No SimpleFIN institutions could be linked. Try again or check your bridge setup.",
+                )
+                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
+            }
+        },
+        _ => {
             log_provider_credential_outcome(
                 &req.provider,
                 StatusCode::BAD_REQUEST,
@@ -2664,36 +2812,6 @@ async fn connect_authenticated_provider(
             );
             Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
                 .into_response(StatusCode::BAD_REQUEST))
-        }
-        Err(TellerConnectError::CredentialStorage(e)) => {
-            log_provider_credential_outcome(
-                "teller",
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "provider.connect",
-            );
-            tracing::error!(
-                "Failed to store Teller credentials for user {}: {}",
-                auth_context.user_id,
-                e
-            );
-            Err(ApiErrorResponse::internal_server_error(
-                "Failed to store credentials",
-            ))
-        }
-        Err(TellerConnectError::ConnectionPersistence(e)) => {
-            log_provider_credential_outcome(
-                "teller",
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "provider.connect",
-            );
-            tracing::error!(
-                "Failed to persist Teller connection for user {}: {}",
-                auth_context.user_id,
-                e
-            );
-            Err(ApiErrorResponse::internal_server_error(
-                "Failed to save connection",
-            ))
         }
     }
 }
@@ -2731,6 +2849,83 @@ async fn get_authenticated_provider_status(
         provider,
         connections,
     }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/providers/simplefin/ignored-institutions",
+    description = "Lists SimpleFIN bridge institutions the user has hidden in Sumurai.",
+    responses(
+        (status = 200, description = "Ignored institutions", body = crate::models::simplefin::SimpleFinIgnoredInstitutionsResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Financial Providers"
+)]
+async fn get_authenticated_simplefin_ignored_institutions(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<crate::models::simplefin::SimpleFinIgnoredInstitutionsResponse>, StatusCode> {
+    let institutions = state
+        .connection_service
+        .list_simplefin_ignored_institutions(&auth_context.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to list SimpleFIN ignored institutions for user {}: {}",
+                auth_context.user_id,
+                e
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(Json(
+        crate::models::simplefin::SimpleFinIgnoredInstitutionsResponse { institutions },
+    ))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/providers/simplefin/ignored-institutions",
+    description = "Removes a SimpleFIN institution from the ignore list so connect/sync can import it again. Idempotent: returns 200 even if the institution was not on the ignore list.",
+    request_body = crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionRequest,
+    responses(
+        (status = 200, description = "Institution restored (or was already not ignored)", body = crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionResponse),
+        (status = 400, description = "Invalid request"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Financial Providers"
+)]
+async fn restore_authenticated_simplefin_ignored_institution(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionRequest>,
+) -> Result<Json<crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionResponse>, StatusCode>
+{
+    let org_conn_id = req.org_conn_id.trim();
+    if org_conn_id.is_empty() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    let restored = state
+        .connection_service
+        .restore_simplefin_ignored_institution(&auth_context.user_id, org_conn_id)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to restore SimpleFIN ignored institution for user {}: {}",
+                auth_context.user_id,
+                e
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(Json(
+        crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionResponse { restored },
+    ))
 }
 
 #[utoipa::path(
@@ -3047,7 +3242,12 @@ async fn get_authenticated_provider_info(
         })?;
 
     let default_provider = state.config.get_default_provider();
-    let available_providers = vec!["plaid".to_string(), "teller".to_string()];
+    let mut available_providers = Vec::new();
+    for provider in ["plaid", "teller", "simplefin"] {
+        if state.provider_registry.get(provider).is_some() {
+            available_providers.push(provider.to_string());
+        }
+    }
 
     let user_provider = if user.onboarding_completed {
         user.provider

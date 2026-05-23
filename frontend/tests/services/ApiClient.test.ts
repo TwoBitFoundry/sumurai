@@ -267,6 +267,13 @@ describe('ApiClient with Injected IHttpClient', () => {
       expect(mockHttp.get).toHaveBeenCalledOnce();
     });
 
+    it('should not retry rate-limited responses', async () => {
+      mockHttp.post.mockRejectedValueOnce(new ApiError(429, 'Sync is rate-limited'));
+
+      await expect(ApiClient.post('/providers/sync-transactions', {})).rejects.toThrow(ApiError);
+      expect(mockHttp.post).toHaveBeenCalledOnce();
+    });
+
     it('should retry POST requests on transient errors', async () => {
       mockHttp.post
         .mockRejectedValueOnce(new Error('Request timeout'))

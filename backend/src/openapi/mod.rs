@@ -63,7 +63,7 @@ use utoipa::OpenApi;
             crate::models::plaid::LinkTokenRequest,
             crate::models::plaid::LinkTokenResponse,
             crate::models::plaid::ExchangeTokenRequest,
-            crate::models::plaid::ProviderConnectRequest,
+            crate::models::provider_connect::ProviderConnectRequest,
             crate::models::plaid::SyncTransactionsRequest,
             crate::models::transaction::SyncTransactionsResponse,
             crate::models::transaction::SyncMetadata,
@@ -77,6 +77,10 @@ use utoipa::OpenApi;
             crate::models::plaid::ProviderSelectResponse,
             crate::models::plaid::ProviderInfoResponse,
             crate::models::plaid::ClearSyncedDataResponse,
+            crate::models::simplefin::SimpleFinIgnoredInstitution,
+            crate::models::simplefin::SimpleFinIgnoredInstitutionsResponse,
+            crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionRequest,
+            crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionResponse,
             crate::models::account::AccountResponse,
             crate::models::custom_category::CustomCategory,
             crate::models::custom_category::CategoryListResponse,
@@ -128,6 +132,8 @@ use utoipa::OpenApi;
         crate::select_authenticated_provider,
         crate::connect_authenticated_provider,
         crate::get_authenticated_provider_status,
+        crate::get_authenticated_simplefin_ignored_institutions,
+        crate::restore_authenticated_simplefin_ignored_institution,
         crate::sync_authenticated_provider_transactions,
         crate::disconnect_authenticated_connection,
         crate::create_authenticated_link_token,
@@ -139,6 +145,8 @@ use utoipa::OpenApi;
 pub struct ApiDoc;
 
 pub fn init_openapi() -> utoipa::openapi::OpenApi {
+    let _ = crate::models::provider_connect::provider_connect_request_example();
+    let _ = crate::models::simplefin::simplefin_connect_request_example();
     let mut openapi = ApiDoc::openapi();
     tags::add_tags(&mut openapi);
     add_security_scheme(&mut openapi);
