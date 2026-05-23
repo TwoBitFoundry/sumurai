@@ -726,3 +726,138 @@ async fn given_sync_floor_when_second_simplefin_sync_within_hour_then_rate_limit
 
     assert!(matches!(result, Err(ProviderSyncError::RateLimited)));
 }
+
+fn build_disconnect_service(mock_db: MockDatabaseRepository) -> ConnectionService {
+    let mut mock_cache = MockCacheService::new();
+    mock_cache
+        .expect_clear_jwt_scoped_bank_connection_cache()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_delete_access_token()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_invalidate_pattern()
+        .returning(|_| Box::pin(async { Ok(()) }));
+
+    ConnectionService::new(
+        Arc::new(mock_db),
+        Arc::new(mock_cache),
+        Arc::new(ProviderRegistry::new()),
+    )
+}
+
+#[tokio::test]
+async fn given_simplefin_org_connection_when_disconnect_then_blocklists_org_and_skips_credentials_delete(
+) {
+    let user_id = Uuid::new_v4();
+    let connection = {
+        let mut row = ProviderConnection::new(user_id, "simplefin_org-2");
+        row.mark_connected("Bank B");
+        row
+    };
+
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_disconnect_simplefin_org()
+        .with(
+            mockall::predicate::eq(user_id),
+            mockall::predicate::eq("simplefin_org-2".to_string()),
+            mockall::predicate::eq("org-2".to_string()),
+        )
+        .times(1)
+        .returning(|_, _, _| Box::pin(async { Ok((2, 1)) }));
+    mock_db.expect_delete_provider_credentials().times(0);
+    mock_db.expect_delete_provider_connection().times(0);
+    mock_db.expect_delete_provider_transactions().times(0);
+    mock_db.expect_delete_provider_accounts().times(0);
+    mock_db.expect_insert_simplefin_hidden_org().times(0);
+
+    let service = build_disconnect_service(mock_db);
+    let result = service
+        .disconnect_owned_connection(&connection, &user_id, "jwt_disconnect")
+        .await
+        .unwrap();
+
+    assert!(result.success);
+    assert_eq!(result.data_cleared.transactions, 2);
+    assert_eq!(result.data_cleared.accounts, 1);
+}
+
+#[tokio::test]
+async fn given_simplefin_disconnect_failure_when_atomic_disconnect_fails_then_returns_error() {
+    let user_id = Uuid::new_v4();
+    let connection = ProviderConnection::new(user_id, "simplefin_org-1");
+
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_disconnect_simplefin_org()
+        .returning(|_, _, _| Box::pin(async { Err(anyhow::anyhow!("cascade delete failed")) }));
+    mock_db.expect_insert_simplefin_hidden_org().times(0);
+
+    let service = build_disconnect_service(mock_db);
+    let result = service
+        .disconnect_owned_connection(&connection, &user_id, "jwt_disconnect")
+        .await;
+
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn given_teller_connection_when_disconnect_then_does_not_call_simplefin_disconnect() {
+    let user_id = Uuid::new_v4();
+    let connection = ProviderConnection::new(user_id, "teller_enrollment-1");
+
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db.expect_disconnect_simplefin_org().times(0);
+    mock_db.expect_insert_simplefin_hidden_org().times(0);
+    mock_db
+        .expect_delete_provider_transactions()
+        .returning(|_| Box::pin(async { Ok(0) }));
+    mock_db
+        .expect_delete_provider_accounts()
+        .returning(|_| Box::pin(async { Ok(0) }));
+    mock_db
+        .expect_delete_provider_credentials()
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_delete_provider_connection()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+
+    let service = build_disconnect_service(mock_db);
+    let result = service
+        .disconnect_owned_connection(&connection, &user_id, "jwt_disconnect")
+        .await
+        .unwrap();
+
+    assert!(result.success);
+}
+
+#[tokio::test]
+async fn given_disconnected_org_when_sync_simplefin_then_writes_no_accounts_or_transactions() {
+    let user_id = Uuid::new_v4();
+    let mut connection = ProviderConnection::new(user_id, "simplefin_org-2");
+    connection.mark_connected("Bank B");
+    let mut hidden = HashSet::new();
+    hidden.insert("org-2".to_string());
+
+    let (connection_service, sync_service, _, upsert_accounts, upsert_transactions) =
+        build_simplefin_sync_service(three_org_snapshot(), hidden, vec![]);
+
+    let result = connection_service
+        .sync_provider_connection(
+            SyncConnectionParams {
+                provider: "simplefin",
+                user_id: &user_id,
+                jwt_id: "jwt_sync",
+            },
+            sync_service.as_ref(),
+            &mut connection,
+            None,
+        )
+        .await
+        .unwrap();
+
+    assert!(result.transactions.is_empty());
+    assert_eq!(*upsert_accounts.lock().unwrap(), 0);
+    assert_eq!(*upsert_transactions.lock().unwrap(), 0);
+}

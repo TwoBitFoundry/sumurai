@@ -224,6 +224,13 @@ pub trait DatabaseRepository: Send + Sync {
     ) -> Result<std::collections::HashSet<String>>;
 
     async fn insert_simplefin_hidden_org(&self, user_id: &Uuid, conn_id: &str) -> Result<()>;
+
+    async fn disconnect_simplefin_org(
+        &self,
+        user_id: &Uuid,
+        item_id: &str,
+        org_conn_id: &str,
+    ) -> Result<(i32, i32)>;
 }
 
 pub struct PostgresRepository {
@@ -2180,5 +2187,73 @@ impl DatabaseRepository for PostgresRepository {
 
         tx.commit().await?;
         Ok(())
+    }
+
+    async fn disconnect_simplefin_org(
+        &self,
+        user_id: &Uuid,
+        item_id: &str,
+        org_conn_id: &str,
+    ) -> Result<(i32, i32)> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let connection_id: Option<Uuid> = sqlx::query_scalar(
+            "SELECT id FROM provider_connections WHERE user_id = $1 AND item_id = $2",
+        )
+        .bind(user_id)
+        .bind(item_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+
+        let Some(conn_id) = connection_id else {
+            tx.commit().await?;
+            return Ok((0, 0));
+        };
+
+        let deleted_transactions = sqlx::query(
+            r#"
+            DELETE FROM transactions
+            WHERE account_id IN (
+                SELECT id FROM accounts WHERE provider_connection_id = $1
+            )
+            "#,
+        )
+        .bind(conn_id)
+        .execute(&mut *tx)
+        .await?;
+
+        let deleted_accounts =
+            sqlx::query("DELETE FROM accounts WHERE provider_connection_id = $1")
+                .bind(conn_id)
+                .execute(&mut *tx)
+                .await?;
+
+        sqlx::query("DELETE FROM provider_connections WHERE id = $1")
+            .bind(conn_id)
+            .execute(&mut *tx)
+            .await?;
+
+        sqlx::query(
+            r#"
+            INSERT INTO simplefin_hidden_orgs (user_id, org_conn_id)
+            VALUES ($1, $2)
+            ON CONFLICT DO NOTHING
+            "#,
+        )
+        .bind(user_id)
+        .bind(org_conn_id)
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok((
+            deleted_transactions.rows_affected() as i32,
+            deleted_accounts.rows_affected() as i32,
+        ))
     }
 }

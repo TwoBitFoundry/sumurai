@@ -89,8 +89,19 @@ fn simplefin_sync_floor_key(user_id: &Uuid) -> String {
     format!("simplefin:sync-floor:{user_id}")
 }
 
-fn simplefin_conn_id_from_item_id(item_id: &str) -> Option<String> {
+fn is_simplefin_org_item_id(item_id: &str) -> bool {
+    item_id.starts_with("simplefin_") && !item_id.starts_with("simplefin_root_")
+}
+
+fn simplefin_org_conn_id_from_item_id(item_id: &str) -> Option<String> {
+    if !is_simplefin_org_item_id(item_id) {
+        return None;
+    }
     item_id.strip_prefix("simplefin_").map(str::to_string)
+}
+
+fn simplefin_conn_id_from_item_id(item_id: &str) -> Option<String> {
+    simplefin_org_conn_id_from_item_id(item_id)
 }
 
 pub struct SyncConnectionParams<'a> {
@@ -157,13 +168,42 @@ impl ConnectionService {
             return Err(anyhow::anyhow!("Connection does not belong to user"));
         }
 
-        let cleared_keys = self
-            .clear_all_plaid_cache_data(jwt_id, &connection.item_id)
-            .await?;
-
         self.cache_service
             .clear_jwt_scoped_bank_connection_cache(jwt_id, connection.id)
             .await?;
+
+        let cleared_keys = if is_simplefin_org_item_id(&connection.item_id) {
+            let org_conn_id = simplefin_org_conn_id_from_item_id(&connection.item_id)
+                .ok_or_else(|| anyhow::anyhow!("Invalid SimpleFIN item_id"))?;
+            let overview_keys = self
+                .clear_all_plaid_cache_data(jwt_id, &connection.item_id)
+                .await?;
+            let (deleted_transactions, deleted_accounts) = self
+                .db_repository
+                .disconnect_simplefin_org(user_id, &connection.item_id, &org_conn_id)
+                .await?;
+
+            tracing::info!(
+                connection_id = %connection.id,
+                org_conn_id = %org_conn_id,
+                transactions_deleted = deleted_transactions,
+                accounts_deleted = deleted_accounts,
+                "SimpleFIN org disconnected"
+            );
+
+            return Ok(DisconnectResult {
+                success: true,
+                message: "Successfully disconnected bank connection".to_string(),
+                data_cleared: DataCleared {
+                    transactions: deleted_transactions,
+                    accounts: deleted_accounts,
+                    cache_keys: overview_keys,
+                },
+            });
+        } else {
+            self.clear_all_plaid_cache_data(jwt_id, &connection.item_id)
+                .await?
+        };
 
         let deleted_transactions = self
             .db_repository

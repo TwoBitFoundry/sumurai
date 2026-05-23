@@ -272,10 +272,16 @@ In [backend/src/services/connection_service.rs](backend/src/services/connection_
 
 Tests in `backend/src/tests/simplefin_service_tests.rs`:
 
-- [ ] Disconnect a SimpleFIN row → blocklist contains its `conn_id`; row + accounts + transactions for that `conn_id` are gone; the access URL credential row remains so other orgs still sync.
-- [ ] Disconnect is atomic: if the cascade delete fails, the blocklist insert is rolled back (induce failure with a test hook).
-- [ ] Disconnect a Teller row → no entry written to `simplefin_hidden_orgs` (the new branch is provider-scoped).
-- [ ] After disconnect, the next sync (Phase 5 logic) still writes **zero** rows for the disconnected org — closes the loop.
+- [x] Disconnect a SimpleFIN row → blocklist contains its `conn_id`; row + accounts + transactions for that `conn_id` are gone; the access URL credential row remains so other orgs still sync.
+- [x] Disconnect is atomic: if the cascade delete fails, the blocklist insert is rolled back (induce failure with a test hook).
+- [x] Disconnect a Teller row → no entry written to `simplefin_hidden_orgs` (the new branch is provider-scoped).
+- [x] After disconnect, the next sync (Phase 5 logic) still writes **zero** rows for the disconnected org — closes the loop.
+
+#### Phase 6 TDD log
+
+- Red: disconnect blocklist, atomic failure, teller isolation, post-disconnect sync tests.
+- Green: `disconnect_simplefin_org` repository transaction, `disconnect_owned_connection` SimpleFIN branch skips credential delete.
+- Commands: `cargo test --manifest-path backend/Cargo.toml --locked simplefin_service` (13 passed).
 
 ---
 
