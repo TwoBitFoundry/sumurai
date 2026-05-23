@@ -93,7 +93,7 @@ export function useSimpleFinConnectionStrategy(
         dispatch(connectionActions.patch({ isSyncing: false, connectionInProgress: false }));
       }
     },
-    [dispatch, handleError, invalidateCache, refreshStatus]
+    [dispatch, handleError, invalidateCache, onConnectionSuccess, refreshStatus]
   );
 
   return useMemo(

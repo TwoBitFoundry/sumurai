@@ -155,8 +155,10 @@ export const SimpleFinConnectError: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('Invalid or already-used SimpleFIN setup token')).toBeVisible();
-    await expect(canvas.getByRole('button', { name: /try again/i })).toBeVisible();
+    await expect(
+      canvas.getAllByText('Invalid or already-used SimpleFIN setup token')
+    ).toHaveLength(2);
+    await expect(canvas.getByPlaceholderText('Paste your SimpleFIN setup token')).toBeVisible();
   },
 };
 

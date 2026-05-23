@@ -370,7 +370,9 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    expect(screen.queryByPlaceholderText('Paste your SimpleFIN setup token')).not.toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText('Paste your SimpleFIN setup token')
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^simplefin$/i })).not.toBeInTheDocument();
   });
 
