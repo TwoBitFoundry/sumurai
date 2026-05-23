@@ -1,4 +1,4 @@
-export type FinancialProvider = 'plaid' | 'teller';
+export type FinancialProvider = 'plaid' | 'teller' | 'simplefin';
 
 export interface TransactionLocation {
   address?: string;
@@ -131,6 +131,11 @@ export interface ProviderConnectionStatus {
   transaction_count: number;
   account_count: number;
   sync_in_progress: boolean;
+}
+
+export interface ProviderConnectResponse {
+  connection_id: string;
+  institution_name: string;
 }
 
 export interface ProviderStatusResponse {

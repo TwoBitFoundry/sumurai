@@ -304,10 +304,16 @@ Tests in `backend/src/tests/simplefin_service_tests.rs`:
 
 Tests in `frontend/tests/services/SimpleFinService.test.ts`:
 
-- [ ] Mirror [PlaidService.test.ts](frontend/tests/services/PlaidService.test.ts) using `jest.spyOn(ApiClient, ...)`.
-- [ ] `submitSetupToken('abc')` → `ApiClient.post` called with `'/api/providers/connect'` and `{ provider: 'simplefin', access_token: 'abc', enrollment_id: '' }`.
-- [ ] `getStatus`, `syncTransactions`, `disconnect` each call the expected endpoint with the expected payload.
-- [ ] `npm --prefix frontend run typecheck` is green; exhaustive switches over `FinancialProvider` updated.
+- [x] Mirror [PlaidService.test.ts](frontend/tests/services/PlaidService.test.ts) using `jest.spyOn(ApiClient, ...)`.
+- [x] `submitSetupToken('abc')` → `ApiClient.post` called with `'/providers/connect'` and `{ provider: 'simplefin', access_token: 'abc', enrollment_id: '' }`.
+- [x] `getStatus`, `syncTransactions`, `disconnect` each call the expected endpoint with the expected payload.
+- [x] `npm --prefix frontend run typecheck` is green; exhaustive switches over `FinancialProvider` updated.
+
+#### Phase 7 TDD log
+
+- Red: `SimpleFinService.test.ts` against missing service/types.
+- Green: `SimpleFinService.ts`, `FinancialProvider` + `ProviderConnectResponse`, minimal provider card/connect content, `SyncProvider` + registry stub.
+- Commands: `npm --prefix frontend test -- tests/services/SimpleFinService.test.ts`, `npm --prefix frontend run typecheck`.
 
 ---
 

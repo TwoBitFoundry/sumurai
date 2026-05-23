@@ -5,6 +5,7 @@ import type {
   FinancialConnectionStrategy,
   FinancialConnectionStrategyContext,
 } from '@/hooks/financialConnection/types';
+import { PENDING_CONNECTION_STRATEGY } from '@/hooks/financialConnection/types';
 import { usePlaidConnectionStrategy } from '@/hooks/financialConnection/usePlaidConnectionStrategy';
 import { useTellerConnectionStrategy } from '@/hooks/financialConnection/useTellerConnectionStrategy';
 import type { SyncProvider } from '@/utils/queryInvalidation';
@@ -31,4 +32,5 @@ function defineConnectionProvider<P extends SyncProvider>(
 export const connectionProviders = {
   plaid: defineConnectionProvider('plaid', usePlaidConnectionStrategy),
   teller: defineConnectionProvider('teller', useTellerConnectionStrategy),
+  simplefin: defineConnectionProvider('simplefin', () => PENDING_CONNECTION_STRATEGY),
 } as const satisfies Record<SyncProvider, ConnectionProvider<SyncProvider>>;

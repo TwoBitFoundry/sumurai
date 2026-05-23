@@ -38,6 +38,17 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       'Ideal for self-hosted deployments',
     ],
   },
+  simplefin: {
+    title: 'SimpleFIN',
+    badge: 'Bridge',
+    description: 'Connect institutions with a SimpleFIN setup token.',
+    bullets: [
+      'One setup token can link multiple institutions',
+      'Self-hosted friendly bridge access',
+      'Running balances and transaction history',
+      'Disconnect individual institutions without losing others',
+    ],
+  },
 };
 
 export const getProviderCardConfig = (provider: FinancialProvider): ProviderCardConfig =>
@@ -231,12 +242,60 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
     'Teller onboarding requires a Teller application ID. Add it in provider settings before connecting.',
 };
 
+const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
+  displayName: 'SimpleFIN',
+  eyebrow: {
+    text: 'SimpleFIN Bridge',
+    backgroundClassName: cn(uiStatusRecipes.info.surface),
+    textClassName: cn(uiStatusRecipes.info.text),
+  },
+  heroTitle: 'Connect with a setup token',
+  heroDescription:
+    'Paste the setup token from your SimpleFIN bridge to link one or more institutions.',
+  highlightLabel: "What you'll connect",
+  highlightMeta: 'Read-only access',
+  features: [
+    {
+      icon: Landmark,
+      title: 'Institution balances',
+      body: 'See balances across every institution linked to your setup token.',
+      palette: featurePalettes.providerFeature.emerald,
+    },
+    {
+      icon: Zap,
+      title: 'Transaction history',
+      body: 'Recent purchases sync into budgets and spending views.',
+      palette: featurePalettes.providerFeature.amber,
+    },
+  ],
+  highlights: [
+    {
+      icon: Eye,
+      title: 'Read-only by design',
+      body: "We can't move money or make changes—only view balances and transactions.",
+      palette: featurePalettes.highlight.sky,
+    },
+    {
+      icon: Fingerprint,
+      title: "You're in control",
+      body: 'Disconnect individual institutions without removing bridge access for the rest.',
+      palette: featurePalettes.highlight.violet,
+    },
+  ],
+  cta: {
+    defaultLabel: 'SimpleFIN',
+    badge: 'Token',
+  },
+  securityNote: 'Disconnect individual institutions anytime without removing your bridge access.',
+};
+
 export const CONNECT_ACCOUNT_PROVIDER_CONTENT: Record<
   FinancialProvider,
   ConnectAccountProviderContent
 > = {
   plaid: PLAID_CONNECT_CONTENT,
   teller: TELLER_CONNECT_CONTENT,
+  simplefin: SIMPLEFIN_CONNECT_CONTENT,
 };
 
 export const getConnectAccountProviderContent = (
