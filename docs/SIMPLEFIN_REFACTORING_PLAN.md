@@ -295,8 +295,9 @@ ALTER COLUMN provider SET NOT NULL;
 
 ---
 
-# PHASE 2: Credential Resolution Service
+# PHASE 2: Credential Resolution Service ✅ COMPLETED
 **Duration**: 2-3 sprints | **Risk**: Low (new abstraction doesn't break existing paths)
+**Completed**: a6eb07d5 - feat(simplefin): Phase 2 — credential resolver injection
 
 ## Goal
 Extract SimpleFIN-specific credential logic into trait-based, injectable service. Eliminate SimpleFIN config from ConnectionService instance variables.
