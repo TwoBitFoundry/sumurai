@@ -301,14 +301,24 @@ ALTER COLUMN provider SET NOT NULL;
 ## Goal
 Extract SimpleFIN-specific credential logic into trait-based, injectable service. Eliminate SimpleFIN config from ConnectionService instance variables.
 
-## Acceptance Criteria
-- [x] ProviderCredentialResolver trait compiles (Task 2.1) — verified: cargo check ✅
-- [ ] SimpleFinCredentialResolver implemented (Task 2.2)
-- [ ] PlaidCredentialResolver + TellerCredentialResolver implemented (Task 2.3)
-- [ ] ConnectionService uses resolver HashMap (Task 2.4)
-- [ ] App startup wires resolvers correctly (Task 2.5)
-- [ ] All 367 tests pass
-- [ ] No behavior changes
+## Acceptance Criteria - Phase 2
+- [x] ProviderCredentialResolver trait compiles (Task 2.1) — cargo check ✅
+- [x] SimpleFinCredentialResolver implemented (Task 2.2) — compiles, trait impl complete ✅
+- [x] PlaidCredentialResolver + TellerCredentialResolver impl (Task 2.3) — cargo check ✅
+- [ ] ConnectionService uses resolver HashMap (Task 2.4) — REMAINING
+- [ ] App startup wires resolvers correctly (Task 2.5) — REMAINING
+- [ ] All 367 tests pass — PENDING
+- [ ] No behavior changes — PENDING
+
+## Phase 2 Progress Summary
+**Completed (3 of 5 tasks)**:
+- Task 2.1: Trait definition ✅
+- Task 2.2: SimpleFIN resolver ✅
+- Task 2.3: Plaid + Teller resolvers ✅
+
+**Remaining**:
+- Task 2.4: Update ConnectionService to inject resolver HashMap
+- Task 2.5: Update app startup to create and wire resolvers
 
 ## Tasks
 
