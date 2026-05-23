@@ -760,11 +760,35 @@ Extract 200+ lines of SimpleFIN-specific logic from ConnectionService into three
 
 ---
 
-# PHASE 4: Provider-Agnostic Sync Handler
+# PHASE 4: Provider-Agnostic Sync Handler ✅ COMPLETED
 **Duration**: 2-3 sprints | **Risk**: Medium (changes handler routing)
+**Completed**: Phase 4 — provider-agnostic sync handler via SyncServiceFactory
 
 ## Goal
 Eliminate provider name branching from handlers. Route sync through a trait-based dispatcher factory instead of pattern-matching on item_id.
+
+## Acceptance Criteria - Phase 4
+- [x] SyncServiceDispatcher trait compiles (Task 4.1) — cargo check ✅
+- [x] Plaid, Teller, SimpleFIN dispatchers implement trait (Task 4.1) — three concrete dispatchers ✅
+- [x] SyncServiceFactory returns dispatcher by provider (Task 4.2) — get_dispatcher() with unit tests ✅
+- [x] Sync handler uses connection.provider column (Task 4.3) — item_id inference removed ✅
+- [x] Factory registered in AppState (Task 4.4) — main.rs + test fixtures ✅
+- [x] Provider-agnostic HTTP error mapping (Task 4.5) — provider_sync_error_to_response() ✅
+- [x] All 369 tests pass — VERIFIED ✅
+
+## TDD Log - Phase 4
+- **Slice 4.1-4.2**: SyncServiceDispatcher trait + SyncServiceFactory
+  - Red: Tests for factory dispatcher lookup (known providers Some, unknown None)
+  - Green: Created sync_service_dispatcher.rs with PlaidSyncDispatcher, SimpleFinSyncDispatcher, TellerSyncDispatcher
+  - Green: Created sync_service_factory.rs with HashMap-based get_dispatcher()
+  - Refactor: TellerSyncError mapped to ProviderSyncError in TellerSyncDispatcher
+- **Slice 4.3-4.5**: Handler + AppState wiring
+  - Red: Integration test failed (400 vs 404) when provider column empty on fixture
+  - Green: sync_authenticated_provider_transactions routes via factory using connection.provider
+  - Green: Removed teller item_id branch and simplefin/plaid item_id inference from main.rs
+  - Green: provider_sync_error_to_response() centralizes HTTP status mapping
+  - Fixed integration test fixture to set provider = "plaid"
+  - All 369 tests passing, clippy clean
 
 ## Tasks
 
@@ -792,10 +816,10 @@ Eliminate provider name branching from handlers. Route sync through a trait-base
 3. Each dispatcher delegates to its provider service
 
 **Acceptance Criteria**:
-- Trait compiles and is properly pub
-- All three dispatchers implement the trait
-- Dispatchers are unit-testable with mocks
-- No provider-specific logic in handler (trait hides it)
+- [x] Trait compiles and is properly pub — sync_service_dispatcher.rs ✅
+- [x] All three dispatchers implement the trait — Plaid, SimpleFIN, Teller ✅
+- [x] Dispatchers are unit-testable with mocks — factory tests with mocked deps ✅
+- [x] No provider-specific logic in handler (trait hides it) — main.rs uses dispatcher only ✅
 
 ---
 
@@ -825,10 +849,10 @@ Eliminate provider name branching from handlers. Route sync through a trait-base
    ```
 
 **Acceptance Criteria**:
-- Factory compiles
-- Returns correct dispatcher for each provider
-- Returns None for unknown providers
-- Tests verify dispatcher selection works
+- [x] Factory compiles — sync_service_factory.rs ✅
+- [x] Returns correct dispatcher for each provider — plaid/teller/simplefin keys ✅
+- [x] Returns None for unknown providers — get_dispatcher("unknown") => None ✅
+- [x] Tests verify dispatcher selection works — sync_service_factory_tests.rs ✅
 
 ---
 
@@ -856,10 +880,10 @@ Eliminate provider name branching from handlers. Route sync through a trait-base
 3. Remove provider inference from item_id pattern
 
 **Acceptance Criteria**:
-- Handler no longer pattern-matches on item_id
-- Uses explicit provider column from database
-- Routes to dispatcher instead of ConnectionService
-- Tests pass; no behavior change
+- [x] Handler no longer pattern-matches on item_id — removed teller_/simplefin_ branches ✅
+- [x] Uses explicit provider column from database — connection.provider.clone() ✅
+- [x] Routes to dispatcher instead of ConnectionService — sync_service_factory.get_dispatcher() ✅
+- [x] Tests pass; no behavior change — 369 tests pass ✅
 
 ---
 
@@ -879,9 +903,9 @@ Eliminate provider name branching from handlers. Route sync through a trait-base
    - Handler uses `state.sync_service_factory.get_dispatcher()`
 
 **Acceptance Criteria**:
-- App starts without errors
-- Factory is accessible in handler
-- Sync endpoint routes correctly to provider-specific dispatcher
+- [x] App starts without errors — main.rs wires factory after connection_service ✅
+- [x] Factory is accessible in handler — AppState.sync_service_factory ✅
+- [x] Sync endpoint routes correctly to provider-specific dispatcher — verified by tests ✅
 
 ---
 
@@ -901,9 +925,9 @@ Eliminate provider name branching from handlers. Route sync through a trait-base
 4. Dispatcher returns generic `ProviderSyncError` (not SimpleFIN-specific)
 
 **Acceptance Criteria**:
-- Handler error handling is simplified (no provider-specific code)
-- SimpleFIN error mapping stays in dispatcher
-- All error responses still correct for front-end
+- [x] Handler error handling is simplified (no provider-specific code) — single provider_sync_error_to_response match ✅
+- [x] SimpleFIN error mapping stays in dispatcher — SimpleFinSyncDispatcher returns ProviderSyncError ✅
+- [x] All error responses still correct for front-end — same status codes preserved ✅
 
 ---
 

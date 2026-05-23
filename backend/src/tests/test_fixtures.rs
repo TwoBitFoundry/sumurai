@@ -26,6 +26,7 @@ use crate::services::{
     repository_service::DatabaseRepository,
     repository_service::MockDatabaseRepository,
     sync_service::SyncService,
+    sync_service_factory::SyncServiceFactory,
     Categorizer,
 };
 
@@ -308,6 +309,10 @@ impl TestFixtures {
             noop_categorizer(),
             credential_resolvers,
         ));
+        let sync_service_factory = Arc::new(SyncServiceFactory::new(
+            connection_service.clone(),
+            sync_service.clone(),
+        ));
 
         let auth_service = Arc::new(
             AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap(),
@@ -320,6 +325,7 @@ impl TestFixtures {
             plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
             sync_service,
+            sync_service_factory,
             analytics_service,
             budget_service,
             authorization_service,
@@ -425,6 +431,10 @@ impl TestFixtures {
             noop_categorizer(),
             credential_resolvers,
         ));
+        let sync_service_factory = Arc::new(SyncServiceFactory::new(
+            connection_service.clone(),
+            sync_service.clone(),
+        ));
 
         let auth_service = Arc::new(
             AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap(),
@@ -438,6 +448,7 @@ impl TestFixtures {
             plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
             sync_service,
+            sync_service_factory,
             analytics_service,
             budget_service,
             authorization_service,
@@ -508,6 +519,10 @@ impl TestFixtures {
             categorizer.clone(),
             credential_resolvers,
         ));
+        let sync_service_factory = Arc::new(SyncServiceFactory::new(
+            connection_service.clone(),
+            sync_service.clone(),
+        ));
 
         let auth_service = Arc::new(
             AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap(),
@@ -521,6 +536,7 @@ impl TestFixtures {
             plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
             sync_service,
+            sync_service_factory,
             analytics_service,
             budget_service,
             authorization_service,

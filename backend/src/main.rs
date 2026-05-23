@@ -92,6 +92,7 @@ use services::categorization::classifier_labels::format_classifier_input;
 use services::category_management::service::CategoryManagementService;
 use services::import_service::ImportService;
 use services::repository_service::{DatabaseRepository, PostgresRepository};
+use services::sync_service_dispatcher::provider_sync_error_to_response;
 use services::{
     otel_traces_relay::OtlpTracesRelay,
     rate_limit_service::{
@@ -99,9 +100,9 @@ use services::{
         telemetry_public_browser_governor_layer,
     },
     AuthService, AuthorizationService, BudgetService, CacheService, CategorizationService,
-    Categorizer, ConnectionService, ExchangeTokenError, LinkTokenError, PlaidService,
-    ProviderSyncError, RedisCache, SimpleFinConnectError, SyncConnectionParams, SyncService,
-    TellerConnectError, TellerSyncError,
+    Categorizer, ConnectionService, ExchangeTokenError, LinkTokenError, PlaidService, RedisCache,
+    SimpleFinConnectError, SyncConnectionParams, SyncService, SyncServiceFactory,
+    TellerConnectError,
 };
 use services::{AnalyticsService, RealPlaidClient};
 use sqlx::PgPool;
@@ -355,6 +356,11 @@ async fn main() -> anyhow::Result<()> {
         .with_simplefin_connection_service(simplefin_connection_service),
     );
 
+    let sync_service_factory = Arc::new(SyncServiceFactory::new(
+        connection_service.clone(),
+        sync_service.clone(),
+    ));
+
     let otlp_traces_relay = Arc::new(OtlpTracesRelay::from_config(&telemetry_config)?);
 
     let category_management_service =
@@ -364,6 +370,7 @@ async fn main() -> anyhow::Result<()> {
         plaid_service,
         plaid_client,
         sync_service,
+        sync_service_factory,
         analytics_service,
         budget_service,
         authorization_service,
@@ -2195,167 +2202,36 @@ async fn sync_authenticated_provider_transactions(
         .map_err(|_| StatusCode::BAD_REQUEST.into_response())?;
     let mut connection = connection;
 
-    if connection.item_id.starts_with("teller_") {
-        match state
-            .connection_service
-            .sync_teller_connection(
-                &user_id,
-                &auth_context.jwt_id,
-                &mut connection,
-                reference_date,
-            )
-            .await
-        {
-            Ok(response) => return Ok(Json(response)),
-            Err(TellerSyncError::CredentialsMissing) => {
-                tracing::error!(
-                    "No Teller credentials for user {} and item {}",
-                    user_id,
-                    connection.item_id
-                );
-                return Err(StatusCode::NOT_FOUND.into_response());
-            }
-            Err(TellerSyncError::CredentialAccess(e)) => {
-                tracing::error!(
-                    "Failed to load Teller credentials for user {} and item {}: {}",
-                    user_id,
-                    connection.item_id,
-                    e
-                );
-                return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
-            }
-            Err(TellerSyncError::ProviderInitialization(e)) => {
-                tracing::error!("Failed to initialize Teller provider: {}", e);
-                return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
-            }
-            Err(TellerSyncError::ProviderRequest(e)) => {
-                tracing::error!("Teller provider request failed for user {}: {}", user_id, e);
-                return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
-            }
-            Err(TellerSyncError::AccountLookup(e)) => {
-                tracing::error!(
-                    "Failed to fetch accounts from database for Teller user {}: {}",
-                    user_id,
-                    e
-                );
-                return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
-            }
-            Err(TellerSyncError::TransactionLookup(e)) => {
-                tracing::error!(
-                    "Failed to load transactions for Teller user {}: {}",
-                    user_id,
-                    e
-                );
-                return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
-            }
-            Err(TellerSyncError::ConnectionPersistence(e)) => {
-                tracing::error!(
-                    "Failed to update Teller connection {} for user {}: {}",
-                    connection.id,
-                    user_id,
-                    e
-                );
-                return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
-            }
-        }
-    }
-
-    let provider = if connection.item_id.starts_with("simplefin_") {
-        "simplefin"
-    } else {
-        "plaid"
-    };
+    let provider = connection.provider.clone();
 
     let sync_params = SyncConnectionParams {
-        provider,
+        provider: provider.as_str(),
         user_id: &user_id,
         jwt_id: &auth_context.jwt_id,
     };
 
-    match state
-        .connection_service
-        .sync_provider_connection(
-            sync_params,
-            state.sync_service.as_ref(),
-            &mut connection,
-            reference_date,
-        )
+    let dispatcher = state
+        .sync_service_factory
+        .get_dispatcher(&provider)
+        .ok_or_else(|| {
+            tracing::error!(
+                "Sync transactions: unsupported provider '{}' for user {}",
+                connection.provider,
+                user_id
+            );
+            StatusCode::BAD_REQUEST.into_response()
+        })?;
+
+    match dispatcher
+        .sync(sync_params, &mut connection, reference_date)
         .await
     {
         Ok(response) => Ok(Json(response)),
-        Err(ProviderSyncError::RateLimited) => {
-            tracing::info!(
-                "SimpleFIN sync rate-limited for user {} and item {}",
-                user_id,
-                connection.item_id
-            );
-            Err((
-                StatusCode::TOO_MANY_REQUESTS,
-                [(axum::http::header::RETRY_AFTER, "3600")],
-            )
-                .into_response())
-        }
-        Err(ProviderSyncError::CredentialsMissing) => {
-            tracing::error!(
-                "Sync transactions: no credentials for user {} and item {}",
-                user_id,
-                connection.item_id
-            );
-            Err(StatusCode::NOT_FOUND.into_response())
-        }
-        Err(ProviderSyncError::CredentialAccess(e)) => {
-            tracing::error!(
-                "Sync transactions: failed to access credentials for user {} and item {}: {}",
-                user_id,
-                connection.item_id,
-                e
-            );
-            Err(StatusCode::INTERNAL_SERVER_ERROR.into_response())
-        }
-        Err(ProviderSyncError::ProviderUnavailable(p)) => {
-            tracing::error!(
-                "Sync transactions: provider '{}' unavailable for user {}",
-                p,
-                user_id
-            );
-            Err(StatusCode::BAD_REQUEST.into_response())
-        }
-        Err(ProviderSyncError::ProviderRequest(e)) => {
-            tracing::error!(
-                "Provider request failed during sync for user {} and item {}: {}",
-                user_id,
-                connection.item_id,
-                e
-            );
-            Err(StatusCode::BAD_GATEWAY.into_response())
-        }
-        Err(ProviderSyncError::AccountLookup(e)) => {
-            tracing::error!(
-                "Failed to load accounts during sync for user {} and item {}: {}",
-                user_id,
-                connection.item_id,
-                e
-            );
-            Err(StatusCode::INTERNAL_SERVER_ERROR.into_response())
-        }
-        Err(ProviderSyncError::TransactionLookup(e)) => {
-            tracing::error!(
-                "Failed to load transactions during sync for user {} and item {}: {}",
-                user_id,
-                connection.item_id,
-                e
-            );
-            Err(StatusCode::INTERNAL_SERVER_ERROR.into_response())
-        }
-        Err(ProviderSyncError::SyncFailure(e)) => {
-            tracing::error!(
-                "Sync service failed for user {} and item {}: {}",
-                user_id,
-                connection.item_id,
-                e
-            );
-            Err(StatusCode::INTERNAL_SERVER_ERROR.into_response())
-        }
+        Err(err) => Err(provider_sync_error_to_response(
+            err,
+            user_id,
+            &connection.item_id,
+        )),
     }
 }
 

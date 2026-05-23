@@ -1571,6 +1571,7 @@ async fn given_connection_id_when_sync_then_uses_get_provider_connection_by_id()
     let connection_id = Uuid::new_v4();
     let mut expected_conn = ProviderConnection::new(user_id, "item_123");
     expected_conn.id = connection_id;
+    expected_conn.provider = "plaid".to_string();
     expected_conn.mark_connected("Chase");
 
     mock_db
