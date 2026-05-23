@@ -334,9 +334,15 @@ Tests in `frontend/tests/services/SimpleFinService.test.ts`:
 
 Tests in `frontend/tests/features/simplefin/hooks/useSimpleFinFlow.test.tsx`:
 
-- [ ] `submitSetupToken('abc')` → service called → on success, `syncAll` is called → `connections` state is repopulated.
-- [ ] Error path: service rejection sets `error` and leaves `connections` unchanged.
-- [ ] Hook test for `useSimpleFinConnectionStrategy` mirrors the Teller equivalent.
+- [x] `submitSetupToken('abc')` → service called → on success, `syncAll` is called → `connections` state is repopulated.
+- [x] Error path: service rejection sets `error` and leaves `connections` unchanged.
+- [x] Hook test for `useSimpleFinConnectionStrategy` mirrors the Teller equivalent.
+
+#### Phase 8 TDD log
+
+- Red: `useSimpleFinFlow.test.tsx`, `useSimpleFinConnectionStrategy.test.tsx`.
+- Green: `useSimpleFinFlow`, `useSimpleFinConnectionStrategy`, registry wiring in `connectionProviders`.
+- Commands: `npm --prefix frontend test -- tests/features/simplefin/hooks/useSimpleFinFlow.test.tsx tests/hooks/useSimpleFinConnectionStrategy.test.tsx`, `npm --prefix frontend run typecheck`.
 
 ---
 
