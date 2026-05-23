@@ -319,13 +319,40 @@ async fn main() -> anyhow::Result<()> {
             as Arc<dyn crate::providers::ProviderCredentialResolver>,
     );
 
-    let connection_service = Arc::new(ConnectionService::new(
-        db_repository.clone(),
-        cache_service.clone(),
-        provider_registry.clone(),
-        categorizer.clone(),
-        credential_resolvers,
-    ));
+    let simplefin_org_service = Arc::new(
+        crate::services::simplefin_org_service::SimpleFinOrganizationService::new(
+            db_repository.clone(),
+            cache_service.clone(),
+        ),
+    );
+
+    let simplefin_rate_limit_service = Arc::new(
+        crate::services::simplefin_rate_limit_service::SimpleFinRateLimitService::new(
+            cache_service.clone(),
+        ),
+    );
+
+    let simplefin_connection_service = Arc::new(
+        crate::services::simplefin_connection_service::SimpleFinConnectionService::new(
+            db_repository.clone(),
+            cache_service.clone(),
+            provider_registry.clone(),
+            credential_resolvers.clone(),
+            simplefin_org_service,
+            simplefin_rate_limit_service,
+        ),
+    );
+
+    let connection_service = Arc::new(
+        ConnectionService::new(
+            db_repository.clone(),
+            cache_service.clone(),
+            provider_registry.clone(),
+            categorizer.clone(),
+            credential_resolvers,
+        )
+        .with_simplefin_connection_service(simplefin_connection_service),
+    );
 
     let otlp_traces_relay = Arc::new(OtlpTracesRelay::from_config(&telemetry_config)?);
 

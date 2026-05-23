@@ -33,6 +33,8 @@ pub struct ConnectionService {
     categorizer: Arc<dyn Categorizer>,
     credential_resolvers:
         std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>>,
+    simplefin_connection_service:
+        Option<Arc<crate::services::simplefin_connection_service::SimpleFinConnectionService>>,
 }
 
 #[derive(Debug)]
@@ -161,7 +163,16 @@ impl ConnectionService {
             provider_registry,
             categorizer,
             credential_resolvers,
+            simplefin_connection_service: None,
         }
+    }
+
+    pub fn with_simplefin_connection_service(
+        mut self,
+        service: Arc<crate::services::simplefin_connection_service::SimpleFinConnectionService>,
+    ) -> Self {
+        self.simplefin_connection_service = Some(service);
+        self
     }
 
     async fn resolve_simplefin_credentials_for_connect(
@@ -442,6 +453,10 @@ impl ConnectionService {
         jwt_id: &str,
         request: &ProviderConnectRequest,
     ) -> Result<ProviderConnectResponse, SimpleFinConnectError> {
+        if let Some(service) = self.simplefin_connection_service.as_ref() {
+            return service.connect(user_id, jwt_id, request).await;
+        }
+
         if request.provider.as_str() != "simplefin" {
             return Err(SimpleFinConnectError::InvalidProvider(
                 request.provider.clone(),
