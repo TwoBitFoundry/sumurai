@@ -332,6 +332,48 @@ describe('AccountsPage', () => {
     expect(screen.queryByRole('button', { name: /^simplefin$/i })).not.toBeInTheDocument();
   });
 
+  it('hides the SimpleFIN connect action once an institution is connected', () => {
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid', 'simplefin'],
+        default_provider: 'simplefin',
+        user_provider: 'simplefin',
+      })
+    );
+    jest.mocked(useAccountFilter).mockReturnValue({
+      selectedAccountIds: ['acc_1'],
+      allAccountIds: ['acc_1'],
+      isAllAccountsSelected: true,
+      accountsByBank: {
+        'SimpleFIN Bank': [
+          {
+            id: 'acc_1',
+            name: 'Checking',
+            account_type: 'depository',
+            balance_ledger: 100,
+            balance_available: 100,
+            mask: '1234',
+            provider: 'simplefin',
+            institution_name: 'SimpleFIN Bank',
+            connection_id: 'conn_1',
+            transaction_count: 0,
+          },
+        ],
+      },
+      loading: false,
+      setSelectedAccountIds: jest.fn(),
+      toggleBank: jest.fn(),
+      toggleAccount: jest.fn(),
+      removeAccountsByIds: jest.fn(),
+    });
+
+    renderAccountsPage();
+
+    expect(screen.queryByPlaceholderText('Paste your SimpleFIN setup token')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^simplefin$/i })).not.toBeInTheDocument();
+  });
+
   it('enables plaid connect when provider catalog is unavailable', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(

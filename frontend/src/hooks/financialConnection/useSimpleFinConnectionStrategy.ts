@@ -75,15 +75,17 @@ export function useSimpleFinConnectionStrategy(
         connectionActions.patch({ connectionInProgress: true, error: null, isSyncing: true })
       );
       try {
-        const { rateLimited } = await SimpleFinService.connectAndSyncAll(setupToken);
-
-        const latest = await refreshStatus();
+        await SimpleFinService.connectAndSyncAll(setupToken);
+        dispatch(
+          connectionActions.patch({
+            isConnected: true,
+            institutionName: DEFAULT_INSTITUTION_NAME,
+            error: null,
+          })
+        );
+        onConnectionSuccess?.(DEFAULT_INSTITUTION_NAME);
+        await refreshStatus();
         await invalidateCache();
-        if (latest || rateLimited) {
-          dispatch(connectionActions.patch({ error: null }));
-        } else {
-          dispatch(connectionActions.patch({ isConnected: false, institutionName: null }));
-        }
       } catch (connectError) {
         const message = formatUserFacingApiError(connectError, 'Failed to connect with SimpleFIN');
         handleError(message);

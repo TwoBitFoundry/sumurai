@@ -507,7 +507,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
                 : 'Sync all'}
           </Button>
         )}
-        {!showSimpleFinTokenEntry ? (
+        {!showSimpleFinTokenEntry && primaryProvider !== 'simplefin' ? (
           <ConnectButton
             onClick={() => void connectionFlow.initiateConnection()}
             disabled={connectDisabled}
