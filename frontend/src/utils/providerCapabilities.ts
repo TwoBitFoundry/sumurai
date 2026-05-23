@@ -41,6 +41,10 @@ export function getConnectBlockedReason(
   }
 
   if (!isProviderListed(provider, catalogue)) {
+    if (provider === 'simplefin') {
+      return 'Add SIMPLEFIN_SETUP_TOKEN to your environment to enable SimpleFIN.';
+    }
+
     return `${CONNECT_ACCOUNT_PROVIDER_CONTENT[provider].displayName} is not enabled for this deployment.`;
   }
 

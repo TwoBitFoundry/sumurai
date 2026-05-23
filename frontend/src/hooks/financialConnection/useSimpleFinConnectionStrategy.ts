@@ -68,64 +68,24 @@ export function useSimpleFinConnectionStrategy(
     };
   }, [dispatch, refreshStatus]);
 
-  const submitSetupToken = useCallback(
-    async (token: string) => {
-      dispatch(
-        connectionActions.patch({ connectionInProgress: true, error: null, isSyncing: true })
-      );
-      try {
-        const connectResult = await SimpleFinService.submitSetupToken(token);
-        const connectionId = connectResult.connection_id;
+  const connect = useCallback(async () => {
+    dispatch(connectionActions.patch({ connectionInProgress: true, error: null, isSyncing: true }));
+    try {
+      const { rateLimited } = await SimpleFinService.connectAndSyncAll();
 
-        if (connectionId) {
-          try {
-            await SimpleFinService.syncTransactions(connectionId);
-          } catch (syncError) {
-            recordHandledIssue(
-              'financial-connection.simplefin.sync-transactions',
-              'Failed to sync transactions during connection',
-              syncError,
-              { provider: 'simplefin', connection_id: connectionId }
-            );
-          }
-
-          const statuses = await SimpleFinService.getStatus();
-          const connected = statuses.filter((status) => status.is_connected);
-          for (const status of connected) {
-            if (status.connection_id) {
-              try {
-                await SimpleFinService.syncTransactions(status.connection_id);
-              } catch (syncError) {
-                recordHandledIssue(
-                  'financial-connection.simplefin.sync-transactions',
-                  'Failed to sync SimpleFIN institution during connection',
-                  syncError,
-                  { provider: 'simplefin', connection_id: status.connection_id }
-                );
-              }
-            }
-          }
-        }
-
-        const latest = await refreshStatus();
-        if (!latest) {
-          handleError('Connected institutions not found. Please try again.');
-          dispatch(connectionActions.patch({ isConnected: false }));
-        } else {
-          await invalidateCache();
-        }
-      } catch (connectError) {
-        const message =
-          connectError instanceof Error
-            ? connectError.message
-            : 'Failed to connect with SimpleFIN setup token';
-        handleError(message);
-      } finally {
-        dispatch(connectionActions.patch({ isSyncing: false, connectionInProgress: false }));
+      const latest = await refreshStatus();
+      await invalidateCache();
+      if (!latest && !rateLimited) {
+        dispatch(connectionActions.patch({ isConnected: false, institutionName: null }));
       }
-    },
-    [dispatch, handleError, invalidateCache, refreshStatus]
-  );
+    } catch (connectError) {
+      const message =
+        connectError instanceof Error ? connectError.message : 'Failed to connect with SimpleFIN';
+      handleError(message);
+    } finally {
+      dispatch(connectionActions.patch({ isSyncing: false, connectionInProgress: false }));
+    }
+  }, [dispatch, handleError, invalidateCache, refreshStatus]);
 
   return useMemo(
     () => ({
@@ -135,8 +95,8 @@ export function useSimpleFinConnectionStrategy(
       reset: () => {},
       loadFailedMessage: '',
       render: () => null,
-      submitSetupToken,
+      connect,
     }),
-    [submitSetupToken]
+    [connect]
   );
 }

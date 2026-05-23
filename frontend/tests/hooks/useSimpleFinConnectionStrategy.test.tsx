@@ -8,8 +8,7 @@ import { useSimpleFinConnectionStrategy } from '@/hooks/financialConnection/useS
 jest.mock('@/services/SimpleFinService', () => ({
   SimpleFinService: {
     getStatus: jest.fn(),
-    syncTransactions: jest.fn(),
-    submitSetupToken: jest.fn(),
+    connectAndSyncAll: jest.fn(),
   },
 }));
 
@@ -19,7 +18,10 @@ const simpleFinServiceMock = jest.requireMock('@/services/SimpleFinService')
 describe('useSimpleFinConnectionStrategy', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    simpleFinServiceMock.syncTransactions.mockResolvedValue(undefined);
+    simpleFinServiceMock.connectAndSyncAll.mockResolvedValue({
+      rateLimited: false,
+      transactionCount: 0,
+    });
   });
 
   it('patches connected state when status reports active connections', async () => {

@@ -11,12 +11,20 @@ interface ToastProps {
   onClose: () => void;
 }
 
+const AUTO_DISMISS_MS = 5000;
+
 export const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: message resets the dismiss timer intentionally
+  useEffect(() => {
+    const id = setTimeout(onClose, AUTO_DISMISS_MS);
+    return () => clearTimeout(id);
+  }, [message, onClose]);
 
   if (!mounted) {
     return null;

@@ -178,6 +178,7 @@ pub struct ProviderConnectionStatus {
     pub last_sync_at: Option<String>,
     pub institution_name: Option<String>,
     pub connection_id: Option<String>,
+    pub item_id: Option<String>,
     pub transaction_count: i32,
     pub account_count: i32,
     pub sync_in_progress: bool,

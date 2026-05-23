@@ -19,7 +19,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) =>
 
 jest.mock('@/services/SimpleFinService', () => ({
   SimpleFinService: {
-    submitSetupToken: jest.fn(),
+    connectAndSyncAll: jest.fn(),
     getStatus: jest.fn(),
     syncTransactions: jest.fn(),
     disconnect: jest.fn(),
@@ -27,7 +27,7 @@ jest.mock('@/services/SimpleFinService', () => ({
 }));
 
 jest.mock('@/utils/queryInvalidation', () => ({
-  invalidateStaleCacheQueries: jest.fn().mockResolvedValue(undefined),
+  refreshFinancialDataAfterProviderChange: jest.fn().mockResolvedValue(undefined),
 }));
 
 const simpleFinServiceMock = jest.requireMock('@/services/SimpleFinService')
@@ -41,10 +41,10 @@ describe('useSimpleFinFlow', () => {
     simpleFinServiceMock.syncTransactions.mockResolvedValue({ transactions: [], metadata: {} });
   });
 
-  it('submitSetupToken calls service then syncAll and repopulates connections', async () => {
-    simpleFinServiceMock.submitSetupToken.mockResolvedValue({
-      connection_id: 'conn-1',
-      institution_name: 'SimpleFIN (2 institutions)',
+  it('connect calls service then syncs connections and repopulates state', async () => {
+    simpleFinServiceMock.connectAndSyncAll.mockResolvedValue({
+      rateLimited: false,
+      transactionCount: 0,
     });
     simpleFinServiceMock.getStatus.mockResolvedValueOnce([]).mockResolvedValue([
       {
@@ -76,12 +76,10 @@ describe('useSimpleFinFlow', () => {
     });
 
     await act(async () => {
-      await result.current.submitSetupToken('abc');
+      await result.current.connect();
     });
 
-    expect(simpleFinServiceMock.submitSetupToken).toHaveBeenCalledWith('abc');
-    expect(simpleFinServiceMock.syncTransactions).toHaveBeenCalledWith('conn-1');
-    expect(simpleFinServiceMock.syncTransactions).toHaveBeenCalledWith('conn-2');
+    expect(simpleFinServiceMock.connectAndSyncAll).toHaveBeenCalledTimes(1);
 
     await waitFor(() => {
       expect(result.current.connections).toHaveLength(2);
@@ -89,7 +87,7 @@ describe('useSimpleFinFlow', () => {
     expect(result.current.error).toBeNull();
   });
 
-  it('sets error and leaves connections unchanged when submitSetupToken fails', async () => {
+  it('sets error and leaves connections unchanged when connect fails', async () => {
     simpleFinServiceMock.getStatus.mockResolvedValue([
       {
         is_connected: true,
@@ -101,7 +99,7 @@ describe('useSimpleFinFlow', () => {
         sync_in_progress: false,
       },
     ]);
-    simpleFinServiceMock.submitSetupToken.mockRejectedValue(new Error('claim failed'));
+    simpleFinServiceMock.connectAndSyncAll.mockRejectedValue(new Error('claim failed'));
 
     const { result } = renderHook(() => useSimpleFinFlow({ enabled: true, isOnline: true }), {
       wrapper,
@@ -114,7 +112,7 @@ describe('useSimpleFinFlow', () => {
     const before = result.current.connections;
 
     await act(async () => {
-      await result.current.submitSetupToken('bad-token');
+      await result.current.connect();
     });
 
     expect(result.current.error).toContain('claim failed');
@@ -122,7 +120,7 @@ describe('useSimpleFinFlow', () => {
     expect(simpleFinServiceMock.syncTransactions).not.toHaveBeenCalled();
   });
 
-  it('exposes plaid-shaped result with noop connect and null plaidLinkMount', async () => {
+  it('exposes plaid-shaped result with null plaidLinkMount', async () => {
     const { result } = renderHook(() => useSimpleFinFlow({ enabled: true, isOnline: true }), {
       wrapper,
     });
@@ -131,11 +129,6 @@ describe('useSimpleFinFlow', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    await act(async () => {
-      await result.current.connect();
-    });
-
     expect(result.current.plaidLinkMount).toBeNull();
-    expect(simpleFinServiceMock.submitSetupToken).not.toHaveBeenCalled();
   });
 });

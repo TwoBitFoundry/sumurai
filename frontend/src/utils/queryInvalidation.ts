@@ -27,3 +27,11 @@ export async function invalidateStaleCacheQueries(
     queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey, refetchType: 'active' }))
   );
 }
+
+export async function refreshFinancialDataAfterProviderChange(
+  queryClient: QueryClient,
+  providers: SyncProvider[]
+): Promise<void> {
+  await invalidateStaleCacheQueries(queryClient, providers);
+  await queryClient.refetchQueries({ queryKey: ['accounts'], type: 'active' });
+}

@@ -7,11 +7,12 @@ use crate::providers::simplefin_provider::{MockSimpleFinHttpClient, SimpleFinPro
 use crate::providers::{FinancialDataProvider, ProviderRegistry};
 use crate::services::cache_service::MockCacheService;
 use crate::services::connection_service::{
-    ConnectionService, ProviderSyncError, SyncConnectionParams,
+    ConnectionService, ProviderSyncError, SimpleFinConfig, SimpleFinConnectError,
+    SyncConnectionParams,
 };
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::sync_service::SyncService;
-use crate::test_fixtures::TestFixtures;
+use crate::test_fixtures::{noop_categorizer, TestFixtures};
 use axum::body::to_bytes;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
@@ -19,7 +20,11 @@ use tower::ServiceExt;
 use uuid::Uuid;
 
 const ACCESS_URL: &str = "https://demo:pass@beta-bridge.simplefin.org/simplefin";
-const SETUP_TOKEN: &str = "dG9rZW4=";
+const SETUP_TOKEN: &str = "test-simplefin-setup-token";
+
+fn simplefin_org_item_id(user_id: &Uuid, org_conn_id: &str) -> String {
+    format!("simplefin_{user_id}_{org_conn_id}")
+}
 
 type SimpleFinSyncHarness = (
     ConnectionService,
@@ -59,31 +64,37 @@ fn three_org_snapshot() -> SimpleFinAccountsResponse {
             SimpleFinAccount {
                 id: "acct-1".to_string(),
                 name: "Checking A".to_string(),
-                conn_id: "org-1".to_string(),
+                conn_id: Some("org-1".to_string()),
+                org: None,
                 currency: Some("USD".to_string()),
                 balance: Some("100.00".to_string()),
                 available_balance: None,
                 balance_date: None,
+                holdings: vec![],
                 transactions: vec![],
             },
             SimpleFinAccount {
                 id: "acct-2".to_string(),
                 name: "Checking B".to_string(),
-                conn_id: "org-2".to_string(),
+                conn_id: Some("org-2".to_string()),
+                org: None,
                 currency: Some("USD".to_string()),
                 balance: Some("200.00".to_string()),
                 available_balance: None,
                 balance_date: None,
+                holdings: vec![],
                 transactions: vec![],
             },
             SimpleFinAccount {
                 id: "acct-3".to_string(),
                 name: "Checking C".to_string(),
-                conn_id: "org-3".to_string(),
+                conn_id: Some("org-3".to_string()),
+                org: None,
                 currency: Some("USD".to_string()),
                 balance: Some("300.00".to_string()),
                 available_balance: None,
                 balance_date: None,
+                holdings: vec![],
                 transactions: vec![],
             },
         ],
@@ -108,13 +119,17 @@ type SimpleFinConnectHarness = (
 fn build_simplefin_connection_service(
     snapshot: SimpleFinAccountsResponse,
     hidden_orgs: HashSet<String>,
+    simplefin_setup_token: Option<String>,
+    simplefin_access_url: Option<String>,
 ) -> SimpleFinConnectHarness {
     let snapshot_for_accounts = snapshot;
 
     let mut mock_client = MockSimpleFinHttpClient::new();
-    mock_client
-        .expect_claim()
-        .returning(|_| Ok(ACCESS_URL.to_string()));
+    if simplefin_access_url.is_none() && simplefin_setup_token.is_some() {
+        mock_client
+            .expect_claim()
+            .returning(|_| Ok(ACCESS_URL.to_string()));
+    }
     mock_client
         .expect_get_accounts()
         .returning(move |_, _| Ok(snapshot_for_accounts.clone()));
@@ -130,6 +145,9 @@ fn build_simplefin_connection_service(
     let upserted_account_ids = Arc::new(Mutex::new(HashSet::new()));
 
     let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_provider_credentials_for_user()
+        .returning(|_, _| Box::pin(async { Ok(None) }));
     mock_db
         .expect_store_provider_credentials_for_user()
         .returning(|_, _, _| Box::pin(async { Ok(Uuid::new_v4()) }));
@@ -180,8 +198,16 @@ fn build_simplefin_connection_service(
         .expect_cache_jwt_scoped_bank_accounts()
         .returning(|_, _, _| Box::pin(async { Ok(()) }));
 
-    let connection_service =
-        ConnectionService::new(Arc::new(mock_db), Arc::new(mock_cache), provider_registry);
+    let connection_service = ConnectionService::new(
+        Arc::new(mock_db),
+        Arc::new(mock_cache),
+        provider_registry,
+        noop_categorizer(),
+        SimpleFinConfig {
+            setup_token: simplefin_setup_token,
+            access_url: simplefin_access_url,
+        },
+    );
 
     (connection_service, saved_item_ids, upserted_account_ids)
 }
@@ -192,7 +218,12 @@ async fn given_three_org_snapshot_when_connect_simplefin_then_writes_three_conne
     let user_id = Uuid::new_v4();
     let jwt_id = "jwt_simplefin";
     let (connection_service, saved_item_ids, upserted_account_ids) =
-        build_simplefin_connection_service(three_org_snapshot(), HashSet::new());
+        build_simplefin_connection_service(
+            three_org_snapshot(),
+            HashSet::new(),
+            None,
+            Some(ACCESS_URL.to_string()),
+        );
 
     let response = connection_service
         .connect_simplefin_provider(&user_id, jwt_id, &simplefin_connect_request())
@@ -205,9 +236,9 @@ async fn given_three_org_snapshot_when_connect_simplefin_then_writes_three_conne
     );
     let saved = saved_item_ids.lock().unwrap().clone();
     assert_eq!(saved.len(), 3);
-    assert!(saved.contains("simplefin_org-1"));
-    assert!(saved.contains("simplefin_org-2"));
-    assert!(saved.contains("simplefin_org-3"));
+    assert!(saved.contains(&simplefin_org_item_id(&user_id, "org-1")));
+    assert!(saved.contains(&simplefin_org_item_id(&user_id, "org-2")));
+    assert!(saved.contains(&simplefin_org_item_id(&user_id, "org-3")));
 
     let accounts = upserted_account_ids.lock().unwrap().clone();
     assert_eq!(accounts.len(), 3);
@@ -217,11 +248,33 @@ async fn given_three_org_snapshot_when_connect_simplefin_then_writes_three_conne
 }
 
 #[tokio::test]
+async fn given_missing_setup_token_when_connect_simplefin_then_returns_not_configured() {
+    let user_id = Uuid::new_v4();
+    let jwt_id = "jwt_simplefin";
+    let (connection_service, _, _) =
+        build_simplefin_connection_service(three_org_snapshot(), HashSet::new(), None, None);
+
+    let error = connection_service
+        .connect_simplefin_provider(&user_id, jwt_id, &simplefin_connect_request())
+        .await
+        .unwrap_err();
+
+    assert!(matches!(
+        error,
+        SimpleFinConnectError::SetupTokenNotConfigured
+    ));
+}
+
+#[tokio::test]
 async fn given_reclaim_when_connect_simplefin_twice_then_does_not_duplicate_connection_rows() {
     let user_id = Uuid::new_v4();
     let jwt_id = "jwt_simplefin";
-    let (connection_service, saved_item_ids, _) =
-        build_simplefin_connection_service(three_org_snapshot(), HashSet::new());
+    let (connection_service, saved_item_ids, _) = build_simplefin_connection_service(
+        three_org_snapshot(),
+        HashSet::new(),
+        None,
+        Some(ACCESS_URL.to_string()),
+    );
 
     connection_service
         .connect_simplefin_provider(&user_id, jwt_id, &simplefin_connect_request())
@@ -244,7 +297,12 @@ async fn given_blocklisted_org_when_connect_simplefin_then_skips_hidden_org_rows
     hidden.insert("org-2".to_string());
 
     let (connection_service, saved_item_ids, upserted_account_ids) =
-        build_simplefin_connection_service(three_org_snapshot(), hidden);
+        build_simplefin_connection_service(
+            three_org_snapshot(),
+            hidden,
+            None,
+            Some(ACCESS_URL.to_string()),
+        );
 
     let response = connection_service
         .connect_simplefin_provider(&user_id, jwt_id, &simplefin_connect_request())
@@ -257,7 +315,7 @@ async fn given_blocklisted_org_when_connect_simplefin_then_skips_hidden_org_rows
     );
     let saved = saved_item_ids.lock().unwrap().clone();
     assert_eq!(saved.len(), 2);
-    assert!(!saved.contains("simplefin_org-2"));
+    assert!(!saved.contains(&simplefin_org_item_id(&user_id, "org-2")));
 
     let accounts = upserted_account_ids.lock().unwrap().clone();
     assert_eq!(accounts.len(), 2);
@@ -299,6 +357,11 @@ async fn given_stored_root_credentials_when_load_simplefin_access_url_then_retur
         Arc::new(mock_db),
         Arc::new(MockCacheService::new()),
         Arc::new(ProviderRegistry::new()),
+        noop_categorizer(),
+        SimpleFinConfig {
+            setup_token: None,
+            access_url: Some(ACCESS_URL.to_string()),
+        },
     );
 
     let credentials = connection_service
@@ -330,9 +393,6 @@ async fn build_simplefin_handler_app(
     let snapshot_for_accounts = snapshot;
     let mut mock_client = MockSimpleFinHttpClient::new();
     mock_client
-        .expect_claim()
-        .returning(|_| Ok(ACCESS_URL.to_string()));
-    mock_client
         .expect_get_accounts()
         .returning(move |_, _| Ok(snapshot_for_accounts.clone()));
 
@@ -352,6 +412,9 @@ async fn build_simplefin_handler_app(
     let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
 
     let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_provider_credentials_for_user()
+        .returning(|_, _| Box::pin(async { Ok(None) }));
     mock_db
         .expect_get_provider_transaction_ids_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
@@ -397,7 +460,13 @@ async fn build_simplefin_handler_app(
         db_repository.clone(),
         cache_service.clone(),
         provider_registry.clone(),
+        noop_categorizer(),
+        SimpleFinConfig {
+            setup_token: None,
+            access_url: Some(ACCESS_URL.to_string()),
+        },
     ));
+
     let auth_service = Arc::new(
         AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap(),
     );
@@ -631,8 +700,16 @@ fn build_simplefin_sync_service(
         .expect_cache_jwt_scoped_bank_accounts()
         .returning(|_, _, _| Box::pin(async { Ok(()) }));
 
-    let connection_service =
-        ConnectionService::new(Arc::new(mock_db), Arc::new(mock_cache), provider_registry);
+    let connection_service = ConnectionService::new(
+        Arc::new(mock_db),
+        Arc::new(mock_cache),
+        provider_registry,
+        noop_categorizer(),
+        SimpleFinConfig {
+            setup_token: None,
+            access_url: Some(ACCESS_URL.to_string()),
+        },
+    );
 
     (
         connection_service,
@@ -647,7 +724,8 @@ fn build_simplefin_sync_service(
 async fn given_blocklisted_connection_when_sync_simplefin_then_writes_no_accounts_or_transactions()
 {
     let user_id = Uuid::new_v4();
-    let mut connection = ProviderConnection::new(user_id, "simplefin_org-2");
+    let mut connection =
+        ProviderConnection::new(user_id, &simplefin_org_item_id(&user_id, "org-2"));
     connection.mark_connected("Bank B");
     let mut hidden = HashSet::new();
     hidden.insert("org-2".to_string());
@@ -677,7 +755,8 @@ async fn given_blocklisted_connection_when_sync_simplefin_then_writes_no_account
 #[tokio::test]
 async fn given_sync_floor_when_second_simplefin_sync_within_hour_then_rate_limited() {
     let user_id = Uuid::new_v4();
-    let mut connection = ProviderConnection::new(user_id, "simplefin_org-1");
+    let mut connection =
+        ProviderConnection::new(user_id, &simplefin_org_item_id(&user_id, "org-1"));
     connection.mark_connected("Bank A");
 
     let floor_key = format!("simplefin:sync-floor:{user_id}");
@@ -709,6 +788,11 @@ async fn given_sync_floor_when_second_simplefin_sync_within_hour_then_rate_limit
         Arc::new(MockDatabaseRepository::new()),
         Arc::new(mock_cache),
         Arc::new(ProviderRegistry::new()),
+        noop_categorizer(),
+        SimpleFinConfig {
+            setup_token: None,
+            access_url: None,
+        },
     );
 
     let result = limited_service
@@ -743,6 +827,11 @@ fn build_disconnect_service(mock_db: MockDatabaseRepository) -> ConnectionServic
         Arc::new(mock_db),
         Arc::new(mock_cache),
         Arc::new(ProviderRegistry::new()),
+        noop_categorizer(),
+        SimpleFinConfig {
+            setup_token: None,
+            access_url: Some(ACCESS_URL.to_string()),
+        },
     )
 }
 
@@ -751,7 +840,7 @@ async fn given_simplefin_org_connection_when_disconnect_then_blocklists_org_and_
 ) {
     let user_id = Uuid::new_v4();
     let connection = {
-        let mut row = ProviderConnection::new(user_id, "simplefin_org-2");
+        let mut row = ProviderConnection::new(user_id, &simplefin_org_item_id(&user_id, "org-2"));
         row.mark_connected("Bank B");
         row
     };
@@ -759,13 +848,14 @@ async fn given_simplefin_org_connection_when_disconnect_then_blocklists_org_and_
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
         .expect_disconnect_simplefin_org()
-        .with(
-            mockall::predicate::eq(user_id),
-            mockall::predicate::eq("simplefin_org-2".to_string()),
-            mockall::predicate::eq("org-2".to_string()),
-        )
+        .withf(move |uid, item, org, name| {
+            *uid == user_id
+                && *item == simplefin_org_item_id(&user_id, "org-2")
+                && org == "org-2"
+                && name.as_deref() == Some("Bank B")
+        })
         .times(1)
-        .returning(|_, _, _| Box::pin(async { Ok((2, 1)) }));
+        .returning(|_, _, _, _| Box::pin(async { Ok((2, 1)) }));
     mock_db.expect_delete_provider_credentials().times(0);
     mock_db.expect_delete_provider_connection().times(0);
     mock_db.expect_delete_provider_transactions().times(0);
@@ -786,12 +876,12 @@ async fn given_simplefin_org_connection_when_disconnect_then_blocklists_org_and_
 #[tokio::test]
 async fn given_simplefin_disconnect_failure_when_atomic_disconnect_fails_then_returns_error() {
     let user_id = Uuid::new_v4();
-    let connection = ProviderConnection::new(user_id, "simplefin_org-1");
+    let connection = ProviderConnection::new(user_id, &simplefin_org_item_id(&user_id, "org-1"));
 
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
         .expect_disconnect_simplefin_org()
-        .returning(|_, _, _| Box::pin(async { Err(anyhow::anyhow!("cascade delete failed")) }));
+        .returning(|_, _, _, _| Box::pin(async { Err(anyhow::anyhow!("cascade delete failed")) }));
     mock_db.expect_insert_simplefin_hidden_org().times(0);
 
     let service = build_disconnect_service(mock_db);
@@ -835,7 +925,8 @@ async fn given_teller_connection_when_disconnect_then_does_not_call_simplefin_di
 #[tokio::test]
 async fn given_disconnected_org_when_sync_simplefin_then_writes_no_accounts_or_transactions() {
     let user_id = Uuid::new_v4();
-    let mut connection = ProviderConnection::new(user_id, "simplefin_org-2");
+    let mut connection =
+        ProviderConnection::new(user_id, &simplefin_org_item_id(&user_id, "org-2"));
     connection.mark_connected("Bank B");
     let mut hidden = HashSet::new();
     hidden.insert("org-2".to_string());

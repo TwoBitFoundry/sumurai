@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, cn } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { control, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
@@ -10,6 +10,7 @@ import ConnectButton from '../features/plaid/components/ConnectButton';
 import ConnectionsList, {
   type BankConnectionViewModel,
 } from '../features/plaid/components/ConnectionsList';
+import { SimpleFinIgnoredInstitutionsPanel } from '../features/simplefin/components/SimpleFinIgnoredInstitutionsPanel';
 import { useAccountFilter } from '../hooks/useAccountFilter';
 import { useFinancialConnection } from '../hooks/useFinancialConnection';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
@@ -17,13 +18,18 @@ import { usePlaidConnections } from '../hooks/usePlaidConnections';
 import { useProviderCatalog } from '../hooks/useProviderCatalog';
 import { PageLayout } from '../layouts/PageLayout';
 import { PlaidService } from '../services/PlaidService';
+import { SimpleFinService } from '../services/SimpleFinService';
 import { TellerService } from '../services/TellerService';
+import { dispatchAccountsChanged } from '../utils/events';
 import {
   getConnectAccountProviderContent,
   getProviderCardConfig,
   getProviderLogoSrc,
 } from '../utils/providerCards';
-import { invalidateStaleCacheQueries, type SyncProvider } from '../utils/queryInvalidation';
+import {
+  refreshFinancialDataAfterProviderChange,
+  type SyncProvider,
+} from '../utils/queryInvalidation';
 
 const formatRelativeTime = (iso: string): string => {
   const timestamp = Date.parse(iso);
@@ -184,16 +190,41 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
   const [toast, setToast] = useState<string | null>(null);
   const [syncingAll, setSyncingAll] = useState(false);
+  const [syncElapsed, setSyncElapsed] = useState(0);
+  const syncStartRef = useRef<number | null>(null);
+  const [restoringIgnoredOrgConnId, setRestoringIgnoredOrgConnId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!syncingAll) {
+      setSyncElapsed(0);
+      syncStartRef.current = null;
+      return;
+    }
+    syncStartRef.current = Date.now();
+    const id = setInterval(() => {
+      setSyncElapsed(Math.floor((Date.now() - (syncStartRef.current ?? Date.now())) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [syncingAll]);
   const flowError = banks.length > 0 ? connectionFlow.error : null;
-  const invalidateBankCache = useCallback(
+  const accountsDataLoading = providerCatalog.loading || accountFilter.loading;
+  const showSimpleFinIgnoredList =
+    primaryProvider === 'simplefin' && banksWithSync.length === 0 && !accountsDataLoading;
+  const ignoredInstitutionsQuery = useQuery({
+    queryKey: ['simplefin', 'ignored-institutions'],
+    queryFn: () => SimpleFinService.getIgnoredInstitutions(),
+    enabled: showSimpleFinIgnoredList && isOnline,
+    staleTime: 60 * 1000,
+  });
+  const refreshBankData = useCallback(
     async (provider: SyncProvider) => {
-      await invalidateStaleCacheQueries(queryClient, [provider]);
+      await refreshFinancialDataAfterProviderChange(queryClient, [provider]);
     },
     [queryClient]
   );
-  const invalidateBankCaches = useCallback(
+  const refreshBankDataForProviders = useCallback(
     async (providers: SyncProvider[]) => {
-      await invalidateStaleCacheQueries(queryClient, providers);
+      await refreshFinancialDataAfterProviderChange(queryClient, providers);
     },
     [queryClient]
   );
@@ -210,19 +241,30 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       }
 
       try {
+        setToast(
+          bank.provider === 'simplefin'
+            ? `Syncing ${bank.name} — auto-categorizing transactions…`
+            : `Syncing ${bank.name}…`
+        );
+        let count = 0;
         if (bank.provider === 'teller') {
           await TellerService.syncTransactions(bank.connectionId);
         } else {
-          await PlaidService.syncTransactions(bank.connectionId);
+          const result = await PlaidService.syncTransactions(bank.connectionId);
+          count = result?.metadata?.transaction_count ?? 0;
         }
-        await invalidateBankCache(bank.provider);
-        setToast(`Sync started for ${bank.name}`);
+        await refreshBankData(bank.provider);
+        setToast(
+          count > 0
+            ? `Synced ${count} transaction${count === 1 ? '' : 's'} for ${bank.name}`
+            : `${bank.name} is up to date`
+        );
       } catch (error) {
         console.warn('Failed to sync bank', error);
         onError?.('Failed to sync bank');
       }
     },
-    [banks, invalidateBankCache, isOnline, onError]
+    [banks, isOnline, onError, refreshBankData]
   );
 
   const syncAll = useCallback(async () => {
@@ -231,26 +273,38 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     }
 
     setSyncingAll(true);
+    const hasSimpleFin = banks.some((b) => b.connectionId && b.provider === 'simplefin');
+    setToast(
+      hasSimpleFin
+        ? 'Syncing all accounts — auto-categorizing transactions…'
+        : 'Syncing all accounts…'
+    );
     try {
       const providers = new Set<SyncProvider>();
+      let totalCount = 0;
       for (const bank of banks) {
         if (!bank.connectionId) continue;
         providers.add(bank.provider);
         if (bank.provider === 'teller') {
           await TellerService.syncTransactions(bank.connectionId);
         } else {
-          await PlaidService.syncTransactions(bank.connectionId);
+          const result = await PlaidService.syncTransactions(bank.connectionId);
+          totalCount += result?.metadata?.transaction_count ?? 0;
         }
       }
-      await invalidateBankCaches(Array.from(providers));
-      setToast('Sync started for all banks');
+      await refreshBankDataForProviders(Array.from(providers));
+      setToast(
+        totalCount > 0
+          ? `Synced ${totalCount} transaction${totalCount === 1 ? '' : 's'}`
+          : 'All accounts are up to date'
+      );
     } catch (error) {
       console.warn('Failed to sync all banks', error);
       onError?.('Failed to sync all banks');
     } finally {
       setSyncingAll(false);
     }
-  }, [banks, invalidateBankCaches, isOnline, onError]);
+  }, [banks, isOnline, onError, refreshBankDataForProviders]);
 
   const disconnect = useCallback(
     async (bankId: string) => {
@@ -265,19 +319,97 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         } else {
           await PlaidService.disconnect(bank.connectionId);
         }
-        await invalidateBankCache(bank.provider);
+        await refreshBankData(bank.provider);
         setToast(`${bank.name} disconnected successfully`);
       } catch (error) {
         console.warn('Failed to disconnect bank', error);
         onError?.('Failed to disconnect bank');
       }
     },
-    [banks, invalidateBankCache, onError]
+    [banks, onError, refreshBankData]
   );
 
   const handleImportSuccess = useCallback((count: number, mask: string) => {
     setToast(`Imported ${count} transactions for ••${mask}`);
   }, []);
+
+  const restoreIgnoredInstitution = useCallback(
+    async (orgConnId: string) => {
+      if (!isOnline) {
+        return;
+      }
+
+      setRestoringIgnoredOrgConnId(orgConnId);
+      onError?.(null);
+
+      try {
+        await SimpleFinService.restoreIgnoredInstitution(orgConnId);
+      } catch (error) {
+        console.warn('Failed to restore ignored SimpleFIN institution', error);
+        onError?.('Failed to restore institution');
+        setRestoringIgnoredOrgConnId(null);
+        return;
+      }
+
+      await queryClient.refetchQueries({
+        queryKey: ['simplefin', 'ignored-institutions'],
+        type: 'active',
+      });
+
+      try {
+        await SimpleFinService.connect();
+        await refreshBankData('simplefin');
+        dispatchAccountsChanged();
+      } catch (error) {
+        console.warn('Failed to connect after SimpleFIN institution restore', error);
+        await refreshBankData('simplefin');
+        dispatchAccountsChanged();
+      }
+
+      try {
+        const { rateLimited, transactionCount } = await SimpleFinService.connectAndSyncAll();
+        if (rateLimited) {
+          setToast(
+            'Institution restored. Balances are ready; transaction sync will resume when the rate limit clears.'
+          );
+        } else if (transactionCount > 0) {
+          setToast(
+            `Institution restored — synced ${transactionCount} transaction${transactionCount === 1 ? '' : 's'}`
+          );
+        } else {
+          setToast('Institution restored — accounts are up to date');
+        }
+      } catch (error) {
+        console.warn('Failed to sync after SimpleFIN institution restore', error);
+        setToast('Institution restored.');
+      } finally {
+        setRestoringIgnoredOrgConnId(null);
+      }
+    },
+    [isOnline, onError, queryClient, refreshBankData]
+  );
+
+  const connectionsEmptyState = useMemo(() => {
+    const ignored = ignoredInstitutionsQuery.data ?? [];
+    if (!showSimpleFinIgnoredList || ignored.length === 0) {
+      return undefined;
+    }
+
+    return (
+      <SimpleFinIgnoredInstitutionsPanel
+        institutions={ignored}
+        onRestore={restoreIgnoredInstitution}
+        restoringOrgConnId={restoringIgnoredOrgConnId}
+        isOnline={isOnline}
+      />
+    );
+  }, [
+    ignoredInstitutionsQuery.data,
+    isOnline,
+    restoreIgnoredInstitution,
+    restoringIgnoredOrgConnId,
+    showSimpleFinIgnoredList,
+  ]);
 
   const summary = useMemo(() => {
     let connectedInstitutions = 0;
@@ -314,8 +446,15 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     !isOnline ||
     !providerCatalog.canConnectWith(primaryProvider);
 
+  const syncingWithSimpleFin = syncingAll && providersForSync.has('simplefin');
   const lastSyncValue = syncingAll
-    ? 'Syncing...'
+    ? syncElapsed > 0
+      ? syncingWithSimpleFin
+        ? `Categorizing... ${syncElapsed}s`
+        : `Syncing... ${syncElapsed}s`
+      : syncingWithSimpleFin
+        ? 'Syncing + categorizing...'
+        : 'Syncing...'
     : summary.institutions === 0 && catalogLoading
       ? 'Loading...'
       : summary.latestSync
@@ -341,7 +480,17 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
             title={!isOnline ? 'Unavailable while offline' : undefined}
           >
             <RefreshCw className={cn(control.glyph.md, syncingAll && 'animate-spin')} />
-            {syncingAll ? 'Syncing...' : !isOnline ? 'Offline' : 'Sync all'}
+            {syncingAll
+              ? syncElapsed > 0
+                ? syncingWithSimpleFin
+                  ? `Categorizing... ${syncElapsed}s`
+                  : `Syncing... ${syncElapsed}s`
+                : syncingWithSimpleFin
+                  ? 'Syncing + categorizing...'
+                  : 'Syncing...'
+              : !isOnline
+                ? 'Offline'
+                : 'Sync all'}
           </Button>
         )}
         <ConnectButton
@@ -393,6 +542,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           connectLabel={primaryConnectContent.cta.defaultLabel}
           connectLogoSrc={providerLogoSrc}
           onImportSuccess={handleImportSuccess}
+          emptyState={connectionsEmptyState}
         />
 
         {toast ? <Toast message={toast} onClose={() => setToast(null)} /> : null}

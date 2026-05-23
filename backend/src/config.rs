@@ -47,6 +47,7 @@ pub struct Config {
     default_provider: String,
     teller_application_id: Option<String>,
     teller_environment: Option<String>,
+    simplefin_setup_token: Option<String>,
     auth_cookie_same_site: AuthCookieSameSite,
 }
 
@@ -63,6 +64,9 @@ impl Config {
         let teller_environment = env
             .get_var("TELLER_ENV")
             .or_else(|| env.get_var("TELLER_ENVIRONMENT"));
+        let simplefin_setup_token = env
+            .get_var("SIMPLEFIN_SETUP_TOKEN")
+            .filter(|value| !value.trim().is_empty());
         let auth_cookie_same_site = parse_same_site(
             env.get_var("AUTH_COOKIE_SAME_SITE")
                 .ok_or_else(|| anyhow!("AUTH_COOKIE_SAME_SITE must be set"))?,
@@ -72,6 +76,7 @@ impl Config {
             default_provider,
             teller_application_id,
             teller_environment,
+            simplefin_setup_token,
             auth_cookie_same_site,
         })
     }
@@ -86,6 +91,14 @@ impl Config {
 
     pub fn get_teller_environment(&self) -> &str {
         self.teller_environment.as_deref().unwrap_or("sandbox")
+    }
+
+    pub fn is_simplefin_configured(&self) -> bool {
+        self.simplefin_setup_token.is_some()
+    }
+
+    pub fn get_simplefin_setup_token(&self) -> Option<&str> {
+        self.simplefin_setup_token.as_deref()
     }
 
     pub fn get_auth_cookie_same_site(&self) -> AuthCookieSameSite {

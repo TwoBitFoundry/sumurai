@@ -223,13 +223,26 @@ pub trait DatabaseRepository: Send + Sync {
         user_id: &Uuid,
     ) -> Result<std::collections::HashSet<String>>;
 
-    async fn insert_simplefin_hidden_org(&self, user_id: &Uuid, conn_id: &str) -> Result<()>;
+    async fn list_simplefin_ignored_institutions(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Vec<crate::models::simplefin::SimpleFinIgnoredInstitution>>;
+
+    async fn insert_simplefin_hidden_org(
+        &self,
+        user_id: &Uuid,
+        conn_id: &str,
+        institution_name: Option<&str>,
+    ) -> Result<()>;
+
+    async fn remove_simplefin_hidden_org(&self, user_id: &Uuid, org_conn_id: &str) -> Result<bool>;
 
     async fn disconnect_simplefin_org(
         &self,
         user_id: &Uuid,
         item_id: &str,
         org_conn_id: &str,
+        institution_name: Option<&str>,
     ) -> Result<(i32, i32)>;
 }
 
@@ -2165,7 +2178,49 @@ impl DatabaseRepository for PostgresRepository {
         Ok(rows.into_iter().collect())
     }
 
-    async fn insert_simplefin_hidden_org(&self, user_id: &Uuid, conn_id: &str) -> Result<()> {
+    async fn list_simplefin_ignored_institutions(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Vec<crate::models::simplefin::SimpleFinIgnoredInstitution>> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let rows = sqlx::query_as::<_, (String, Option<String>, chrono::DateTime<chrono::Utc>)>(
+            r#"
+            SELECT org_conn_id, institution_name, hidden_at
+            FROM simplefin_hidden_orgs
+            WHERE user_id = $1
+            ORDER BY hidden_at DESC
+            "#,
+        )
+        .bind(user_id)
+        .fetch_all(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|(org_conn_id, institution_name, hidden_at)| {
+                crate::models::simplefin::SimpleFinIgnoredInstitution {
+                    org_conn_id,
+                    institution_name,
+                    hidden_at: hidden_at.to_rfc3339(),
+                }
+            })
+            .collect())
+    }
+
+    async fn insert_simplefin_hidden_org(
+        &self,
+        user_id: &Uuid,
+        conn_id: &str,
+        institution_name: Option<&str>,
+    ) -> Result<()> {
         let mut tx = self.pool.begin().await?;
 
         sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
@@ -2175,13 +2230,16 @@ impl DatabaseRepository for PostgresRepository {
 
         sqlx::query(
             r#"
-            INSERT INTO simplefin_hidden_orgs (user_id, org_conn_id)
-            VALUES ($1, $2)
-            ON CONFLICT DO NOTHING
+            INSERT INTO simplefin_hidden_orgs (user_id, org_conn_id, institution_name)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (user_id, org_conn_id) DO UPDATE SET
+                institution_name = COALESCE(EXCLUDED.institution_name, simplefin_hidden_orgs.institution_name),
+                hidden_at = NOW()
             "#,
         )
         .bind(user_id)
         .bind(conn_id)
+        .bind(institution_name)
         .execute(&mut *tx)
         .await?;
 
@@ -2189,11 +2247,32 @@ impl DatabaseRepository for PostgresRepository {
         Ok(())
     }
 
+    async fn remove_simplefin_hidden_org(&self, user_id: &Uuid, org_conn_id: &str) -> Result<bool> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let result = sqlx::query(
+            "DELETE FROM simplefin_hidden_orgs WHERE user_id = $1 AND org_conn_id = $2",
+        )
+        .bind(user_id)
+        .bind(org_conn_id)
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(result.rows_affected() > 0)
+    }
+
     async fn disconnect_simplefin_org(
         &self,
         user_id: &Uuid,
         item_id: &str,
         org_conn_id: &str,
+        institution_name: Option<&str>,
     ) -> Result<(i32, i32)> {
         let mut tx = self.pool.begin().await?;
 
@@ -2240,13 +2319,16 @@ impl DatabaseRepository for PostgresRepository {
 
         sqlx::query(
             r#"
-            INSERT INTO simplefin_hidden_orgs (user_id, org_conn_id)
-            VALUES ($1, $2)
-            ON CONFLICT DO NOTHING
+            INSERT INTO simplefin_hidden_orgs (user_id, org_conn_id, institution_name)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (user_id, org_conn_id) DO UPDATE SET
+                institution_name = COALESCE(EXCLUDED.institution_name, simplefin_hidden_orgs.institution_name),
+                hidden_at = NOW()
             "#,
         )
         .bind(user_id)
         .bind(org_conn_id)
+        .bind(institution_name)
         .execute(&mut *tx)
         .await?;
 

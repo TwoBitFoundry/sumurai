@@ -875,10 +875,10 @@ async fn given_hidden_org_when_insert_twice_then_is_idempotent() {
     let repo = open_repository(pool);
     let user = create_test_user(&repo).await;
 
-    repo.insert_simplefin_hidden_org(&user.id, "conn-abc")
+    repo.insert_simplefin_hidden_org(&user.id, "conn-abc", Some("Test Bank"))
         .await
         .unwrap();
-    repo.insert_simplefin_hidden_org(&user.id, "conn-abc")
+    repo.insert_simplefin_hidden_org(&user.id, "conn-abc", None)
         .await
         .unwrap();
 
@@ -898,7 +898,7 @@ async fn given_two_users_when_user_a_hides_org_then_user_b_cannot_see_it() {
     let user_a = create_test_user(&repo).await;
     let user_b = create_test_user(&repo).await;
 
-    repo.insert_simplefin_hidden_org(&user_a.id, "conn-private")
+    repo.insert_simplefin_hidden_org(&user_a.id, "conn-private", Some("Private Bank"))
         .await
         .unwrap();
 

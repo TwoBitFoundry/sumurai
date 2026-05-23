@@ -43,6 +43,22 @@ fn given_simplefin_provider_env_when_from_env_provider_then_returns_simplefin() 
 }
 
 #[test]
+fn given_simplefin_setup_token_when_from_env_provider_then_marks_configured() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "development");
+    env.set("SIMPLEFIN_SETUP_TOKEN", "test-simplefin-setup-token");
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+
+    let config = Config::from_env_provider(&env).unwrap();
+
+    assert!(config.is_simplefin_configured());
+    assert_eq!(
+        config.get_simplefin_setup_token(),
+        Some("test-simplefin-setup-token")
+    );
+}
+
+#[test]
 fn given_teller_provider_env_when_from_env_provider_then_returns_teller() {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "development");
@@ -136,16 +152,21 @@ fn given_invalid_cookie_mode_when_from_env_provider_then_returns_error() {
 
 #[test]
 fn given_nginx_template_when_read_then_includes_provider_csp_allowlists() {
-    let template = include_str!("../../../nginx/nginx.conf.template");
-
-    assert!(template.contains("Content-Security-Policy"));
-    assert!(template.contains("https://cdn.teller.io"));
-    assert!(template.contains("https://cdn.plaid.com"));
-    assert!(template.contains("https://api.teller.io"));
-    assert!(template.contains("https://production.plaid.com"));
-    assert!(template.contains("https://sandbox.plaid.com"));
-    assert!(template.contains("frame-src"));
-    assert!(template.contains("connect-src"));
+    for template in [
+        include_str!("../../../nginx/nginx.conf.template"),
+        include_str!("../../../nginx/nginx.slim.conf.template"),
+    ] {
+        assert!(template.contains("Content-Security-Policy"));
+        assert!(template.contains("https://cdn.teller.io"));
+        assert!(template.contains("https://cdn.plaid.com"));
+        assert!(template.contains("https://api.teller.io"));
+        assert!(template.contains("https://production.plaid.com"));
+        assert!(template.contains("https://sandbox.plaid.com"));
+        assert!(template.contains("https://beta-bridge.simplefin.org"));
+        assert!(template.contains("https://bridge.simplefin.org"));
+        assert!(template.contains("frame-src"));
+        assert!(template.contains("connect-src"));
+    }
 }
 
 #[test]

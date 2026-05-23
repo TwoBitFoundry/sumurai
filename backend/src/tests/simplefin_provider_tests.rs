@@ -6,6 +6,29 @@ use base64::Engine;
 use chrono::NaiveDate;
 use std::sync::Arc;
 
+const BETA_DEMO_ACCOUNTS_FIXTURE: &str = r#"{
+  "errors": [],
+  "accounts": [
+    {
+      "id": "Demo Savings",
+      "name": "SimpleFIN Savings",
+      "currency": "USD",
+      "balance": "114265.51",
+      "available-balance": "114265.51",
+      "balance-date": 1779580800,
+      "transactions": [],
+      "holdings": [],
+      "org": {
+        "domain": "beta-bridge.simplefin.org",
+        "name": "SimpleFIN Demo",
+        "sfin-url": "https://beta-bridge.simplefin.org/simplefin",
+        "url": "https://beta-bridge.simplefin.org",
+        "id": "simplefin.demoorg"
+      }
+    }
+  ]
+}"#;
+
 const ACCOUNTS_FIXTURE: &str = r#"{
   "errors": [],
   "connections": [
@@ -111,6 +134,33 @@ async fn given_claim_forbidden_when_exchange_public_token_then_returns_setup_tok
     assert_eq!(
         error.downcast_ref::<SimpleFinProviderError>(),
         Some(&SimpleFinProviderError::SetupTokenAlreadyClaimed)
+    );
+}
+
+#[test]
+fn given_beta_demo_setup_token_when_checking_demo_marker_then_returns_true() {
+    let claim_url = "https://beta-bridge.simplefin.org/simplefin/claim/DEMO-v2-test-fixture";
+    let setup_token = base64::engine::general_purpose::STANDARD.encode(claim_url.as_bytes());
+
+    assert!(SimpleFinProvider::is_beta_demo_setup_token(&setup_token));
+    assert_eq!(
+        SimpleFinProvider::beta_demo_access_url_for_consumed_setup_token(&setup_token).as_deref(),
+        Some("https://demo:demo@beta-bridge.simplefin.org/simplefin")
+    );
+}
+
+#[test]
+fn given_beta_demo_accounts_fixture_when_normalized_then_builds_connection_from_org() {
+    let mut fixture: crate::models::simplefin::SimpleFinAccountsResponse =
+        serde_json::from_str(BETA_DEMO_ACCOUNTS_FIXTURE).unwrap();
+
+    fixture.normalize();
+
+    assert_eq!(fixture.connections.len(), 1);
+    assert_eq!(fixture.connections[0].conn_id, "simplefin.demoorg");
+    assert_eq!(
+        fixture.accounts[0].org_conn_id().as_deref(),
+        Some("simplefin.demoorg")
     );
 }
 

@@ -3,17 +3,13 @@ import { useCallback, useState } from 'react';
 import type { UsePlaidLinkFlowResult } from '@/features/plaid/hooks/usePlaidLinkFlow';
 import { SimpleFinService } from '@/services/SimpleFinService';
 import type { ProviderConnectionStatus } from '@/types/api';
-import { invalidateStaleCacheQueries } from '@/utils/queryInvalidation';
+import { refreshFinancialDataAfterProviderChange } from '@/utils/queryInvalidation';
 import type { PlaidConnection } from '../../../hooks/usePlaidConnections';
 
 interface UseSimpleFinFlowOptions {
   onError?: (message: string | null) => void;
   enabled?: boolean;
   isOnline?: boolean;
-}
-
-export interface UseSimpleFinFlowResult extends UsePlaidLinkFlowResult {
-  submitSetupToken: (token: string) => Promise<void>;
 }
 
 const mapStatusToConnection = (status: ProviderConnectionStatus): PlaidConnection => {
@@ -37,7 +33,7 @@ const buildSimpleFinConnections = async (): Promise<PlaidConnection[]> => {
   return statuses.filter((status) => status.is_connected).map(mapStatusToConnection);
 };
 
-export function useSimpleFinFlow(options: UseSimpleFinFlowOptions = {}): UseSimpleFinFlowResult {
+export function useSimpleFinFlow(options: UseSimpleFinFlowOptions = {}): UsePlaidLinkFlowResult {
   const { onError, enabled = true, isOnline = true } = options;
   const queryClient = useQueryClient();
   const connectionsQuery = useQuery<PlaidConnection[], Error>({
@@ -70,7 +66,7 @@ export function useSimpleFinFlow(options: UseSimpleFinFlowOptions = {}): UseSimp
   }, [enabled, onError]);
 
   const invalidateSimpleFinCache = useCallback(() => {
-    return invalidateStaleCacheQueries(queryClient, ['simplefin']);
+    return refreshFinancialDataAfterProviderChange(queryClient, ['simplefin']);
   }, [queryClient]);
 
   const syncAll = useCallback(async () => {
@@ -90,39 +86,25 @@ export function useSimpleFinFlow(options: UseSimpleFinFlowOptions = {}): UseSimp
     await invalidateSimpleFinCache();
   }, [connections, enabled, invalidateSimpleFinCache, isOnline]);
 
-  const submitSetupToken = useCallback(
-    async (token: string) => {
-      if (!enabled || !isOnline) {
-        return;
-      }
+  const connect = useCallback(async () => {
+    if (!enabled || !isOnline) {
+      return;
+    }
 
-      clearError();
-      setSyncingAll(true);
-      try {
-        await SimpleFinService.submitSetupToken(token);
-        const refetch = await connectionsQuery.refetch();
-        const refreshed = refetch.data ?? [];
-        const ids = refreshed
-          .map((connection) => connection.connectionId)
-          .filter((id): id is string => Boolean(id));
-
-        if (ids.length > 0) {
-          await Promise.all(ids.map((id) => SimpleFinService.syncTransactions(id)));
-        }
-
-        await invalidateSimpleFinCache();
-        setToast('SimpleFIN institutions connected');
-      } catch (submitError: unknown) {
-        const message = `Failed to connect SimpleFIN: ${submitError instanceof Error ? submitError.message : 'Unknown error'}`;
-        handleError(message);
-      } finally {
-        setSyncingAll(false);
-      }
-    },
-    [clearError, connectionsQuery, enabled, handleError, invalidateSimpleFinCache, isOnline]
-  );
-
-  const connect = useCallback(async () => {}, []);
+    clearError();
+    setSyncingAll(true);
+    try {
+      await SimpleFinService.connectAndSyncAll();
+      await connectionsQuery.refetch();
+      await invalidateSimpleFinCache();
+      setToast('SimpleFIN institutions connected');
+    } catch (connectError: unknown) {
+      const message = `Failed to connect SimpleFIN: ${connectError instanceof Error ? connectError.message : 'Unknown error'}`;
+      handleError(message);
+    } finally {
+      setSyncingAll(false);
+    }
+  }, [clearError, connectionsQuery, enabled, handleError, invalidateSimpleFinCache, isOnline]);
 
   const syncOne = useCallback(
     async (connectionId: string) => {
@@ -175,6 +157,5 @@ export function useSimpleFinFlow(options: UseSimpleFinFlowOptions = {}): UseSimp
     disconnect,
     syncingAll: enabled ? syncingAll : false,
     plaidLinkMount: null,
-    submitSetupToken,
   };
 }

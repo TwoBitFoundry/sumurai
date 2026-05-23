@@ -97,35 +97,31 @@ export const TellerMissingApplicationId: Story = {
 export const SimpleFinUnconnected: Story = {
   args: {
     content: simplefin,
-    usesSetupToken: true,
-    onSubmitSetupToken: fn(),
+    onConnect: fn(),
     isOnline: true,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByPlaceholderText('Paste your SimpleFIN setup token')).toBeVisible();
+    await expect(canvas.getByRole('button', { name: /connect with simplefin/i })).toBeVisible();
   },
 };
 
 export const SimpleFinConnecting: Story = {
   args: {
     content: simplefin,
-    usesSetupToken: true,
-    onSubmitSetupToken: fn(),
+    onConnect: fn(),
     connectionInProgress: true,
     isOnline: true,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('button', { name: /connecting/i })).toBeDisabled();
-    await expect(canvas.getByPlaceholderText('Paste your SimpleFIN setup token')).toBeDisabled();
   },
 };
 
 export const SimpleFinConnected: Story = {
   args: {
     content: simplefin,
-    usesSetupToken: true,
     isConnected: true,
     institutionName: '3 institutions connected',
     isOnline: true,
@@ -138,16 +134,25 @@ export const SimpleFinConnected: Story = {
   },
 };
 
-export const SimpleFinValidationError: Story = {
+export const SimpleFinConnectError: Story = {
   args: {
     content: simplefin,
-    usesSetupToken: true,
-    onSubmitSetupToken: fn(),
-    error: 'Enter a SimpleFIN setup token.',
+    onConnect: fn(),
+    onRetry: fn(),
+    error: 'Invalid or already-used SimpleFIN setup token',
     isOnline: true,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('Enter a SimpleFIN setup token.')).toBeVisible();
+    await expect(canvas.getByText('Invalid or already-used SimpleFIN setup token')).toBeVisible();
+    await expect(canvas.getByRole('button', { name: /try again/i })).toBeVisible();
+  },
+};
+
+export const SimpleFinNotConfigured: Story = {
+  args: {
+    content: simplefin,
+    connectBlockedReason: 'Add SIMPLEFIN_SETUP_TOKEN to your environment to enable SimpleFIN.',
+    isOnline: true,
   },
 };

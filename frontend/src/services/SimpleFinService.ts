@@ -4,15 +4,49 @@ import type {
   ProviderConnectionStatus,
   ProviderConnectResponse,
   ProviderStatusResponse,
+  SimpleFinIgnoredInstitution,
 } from '../types/api';
 import { buildSyncTransactionsRequest } from '../utils/syncTransactionsRequest';
-import { ApiClient } from './ApiClient';
+import { ApiClient, ApiError } from './ApiClient';
+
+export type SimpleFinConnectSyncResult = {
+  rateLimited: boolean;
+  transactionCount: number;
+};
+
+const isSyncRateLimited = (error: unknown): boolean =>
+  error instanceof ApiError && error.status === 429;
+
+const resolveSimpleFinConnectionId = (
+  statuses: ProviderConnectionStatus[],
+  preferredOrgConnId?: string,
+  connectConnectionId?: string
+): string | undefined => {
+  if (preferredOrgConnId) {
+    const scoped = statuses.find(
+      (status) =>
+        status.connection_id &&
+        status.item_id &&
+        (status.item_id.endsWith(`_${preferredOrgConnId}`) ||
+          status.item_id.includes(preferredOrgConnId))
+    )?.connection_id;
+    if (scoped) {
+      return scoped;
+    }
+  }
+
+  if (connectConnectionId) {
+    return connectConnectionId;
+  }
+
+  return statuses.find((status) => status.connection_id)?.connection_id;
+};
 
 export class SimpleFinService {
-  static async submitSetupToken(token: string): Promise<ProviderConnectResponse> {
+  static async connect(): Promise<ProviderConnectResponse> {
     return ApiClient.post<ProviderConnectResponse>('/providers/connect', {
       provider: 'simplefin',
-      access_token: token,
+      access_token: '',
       enrollment_id: '',
     });
   }
@@ -20,11 +54,76 @@ export class SimpleFinService {
   static async getStatus(): Promise<ProviderConnectionStatus[]> {
     const status = await ApiClient.get<ProviderStatusResponse>('/providers/status');
 
-    if (status.provider !== 'simplefin') {
-      return [];
+    return status.connections.filter(
+      (connection) =>
+        connection.is_connected &&
+        (connection.item_id?.startsWith('simplefin_') ?? status.provider === 'simplefin')
+    );
+  }
+
+  static async getIgnoredInstitutions(): Promise<SimpleFinIgnoredInstitution[]> {
+    const response = await ApiClient.get<{ institutions: SimpleFinIgnoredInstitution[] }>(
+      '/providers/simplefin/ignored-institutions'
+    );
+
+    return response.institutions;
+  }
+
+  static async restoreIgnoredInstitution(orgConnId: string): Promise<void> {
+    await ApiClient.post<{ restored: boolean }>('/providers/simplefin/ignored-institutions', {
+      org_conn_id: orgConnId,
+    });
+  }
+
+  static async connectAndSyncAll(): Promise<SimpleFinConnectSyncResult> {
+    const connectResult = await SimpleFinService.connect();
+    const statuses = await SimpleFinService.getStatus();
+    const connectionId = resolveSimpleFinConnectionId(
+      statuses,
+      undefined,
+      connectResult.connection_id
+    );
+
+    if (!connectionId) {
+      return { rateLimited: false, transactionCount: 0 };
     }
 
-    return status.connections;
+    try {
+      const result = await SimpleFinService.syncTransactions(connectionId);
+      return { rateLimited: false, transactionCount: result?.metadata?.transaction_count ?? 0 };
+    } catch (error) {
+      if (isSyncRateLimited(error)) {
+        return { rateLimited: true, transactionCount: 0 };
+      }
+
+      throw error;
+    }
+  }
+
+  static async restoreInstitution(orgConnId: string): Promise<SimpleFinConnectSyncResult> {
+    await SimpleFinService.restoreIgnoredInstitution(orgConnId);
+    const connectResult = await SimpleFinService.connect();
+    const statuses = await SimpleFinService.getStatus();
+    const connectionId = resolveSimpleFinConnectionId(
+      statuses,
+      orgConnId,
+      connectResult.connection_id
+    );
+
+    if (!connectionId) {
+      return { rateLimited: false, transactionCount: 0 };
+    }
+
+    try {
+      const result = await SimpleFinService.syncTransactions(connectionId);
+      return { rateLimited: false, transactionCount: result?.metadata?.transaction_count ?? 0 };
+    } catch (error) {
+      if (isSyncRateLimited(error)) {
+        return { rateLimited: true, transactionCount: 0 };
+      }
+
+      throw error;
+    }
   }
 
   static async syncTransactions(connectionId?: string): Promise<PlaidSyncResponse> {

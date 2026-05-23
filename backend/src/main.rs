@@ -83,6 +83,7 @@ use middleware::resource_authorization::{
     AuthorizedBudgetId, AuthorizedConnectionRequest, AuthorizedQuery,
 };
 use middleware::telemetry_middleware::{self, request_tracing_middleware, TelemetryConfig};
+use providers::simplefin_provider::SimpleFinProviderError;
 use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
 use services::categorization::classifier_labels::format_classifier_input;
 use services::category_management::service::CategoryManagementService;
@@ -96,12 +97,55 @@ use services::{
     },
     AuthService, AuthorizationService, BudgetService, CacheService, CategorizationService,
     Categorizer, ConnectionService, ExchangeTokenError, LinkTokenError, PlaidService,
-    ProviderSyncError, RedisCache, SimpleFinConnectError, SyncConnectionParams, SyncService,
-    TellerConnectError, TellerSyncError,
+    ProviderSyncError, RedisCache, SimpleFinConfig, SimpleFinConnectError, SyncConnectionParams,
+    SyncService, TellerConnectError, TellerSyncError,
 };
 use services::{AnalyticsService, RealPlaidClient};
 use sqlx::PgPool;
 use utils::auth_cookie::{build_auth_cookie, build_clearing_auth_cookie, extract_auth_cookie};
+
+fn simplefin_claim_error_is_already_used(err: &anyhow::Error) -> bool {
+    err.chain().any(|cause| {
+        cause
+            .downcast_ref::<SimpleFinProviderError>()
+            .is_some_and(|e| matches!(e, SimpleFinProviderError::SetupTokenAlreadyClaimed))
+    })
+}
+
+async fn resolve_simplefin_access_url_at_startup(
+    provider_registry: &providers::ProviderRegistry,
+    config: &Config,
+) -> anyhow::Result<Option<String>> {
+    let Some(token) = config.get_simplefin_setup_token() else {
+        return Ok(None);
+    };
+
+    let Some(provider) = provider_registry.get("simplefin") else {
+        return Ok(None);
+    };
+
+    match provider.exchange_public_token(token).await {
+        Ok(credentials) => {
+            tracing::info!("SimpleFIN setup token claimed at startup");
+            Ok(Some(credentials.access_token))
+        }
+        Err(err) if simplefin_claim_error_is_already_used(&err) => {
+            if let Some(access_url) =
+                providers::SimpleFinProvider::beta_demo_access_url_for_consumed_setup_token(token)
+            {
+                tracing::warn!(
+                    "SimpleFIN beta demo setup token was already claimed; using shared demo access URL"
+                );
+                Ok(Some(access_url))
+            } else {
+                Err(anyhow::anyhow!(
+                    "SIMPLEFIN_SETUP_TOKEN was already claimed. Generate a new setup token from your SimpleFIN bridge."
+                ))
+            }
+        }
+        Err(err) => Err(err),
+    }
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -153,14 +197,23 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    let simplefin_provider: Arc<dyn providers::FinancialDataProvider> =
-        Arc::new(providers::SimpleFinProvider::new()?);
-    provider_registry.register("simplefin", simplefin_provider);
-    if default_provider == "simplefin" && provider_registry.get("simplefin").is_none() {
-        anyhow::bail!("DEFAULT_PROVIDER is simplefin but SimpleFIN failed to register");
+    if config.is_simplefin_configured() {
+        let simplefin_provider: Arc<dyn providers::FinancialDataProvider> =
+            Arc::new(providers::SimpleFinProvider::new()?);
+        provider_registry.register("simplefin", simplefin_provider);
+    } else if default_provider == "simplefin" {
+        anyhow::bail!("DEFAULT_PROVIDER is simplefin but SIMPLEFIN_SETUP_TOKEN is not set");
+    } else {
+        tracing::warn!("SimpleFIN provider not configured; skipping SimpleFIN initialization");
     }
 
     let provider_registry = Arc::new(provider_registry);
+
+    let simplefin_access_url = if config.is_simplefin_configured() {
+        resolve_simplefin_access_url_at_startup(provider_registry.as_ref(), &config).await?
+    } else {
+        None
+    };
 
     let plaid_client = if plaid_configured {
         Arc::new(RealPlaidClient::new(
@@ -226,12 +279,6 @@ async fn main() -> anyhow::Result<()> {
         tracing::info!("Cleared all JWT tokens on app startup");
     }
 
-    let connection_service = Arc::new(ConnectionService::new(
-        db_repository.clone(),
-        cache_service.clone(),
-        provider_registry.clone(),
-    ));
-
     let jwt_secret = std::env::var("JWT_SECRET").context(
         "JWT_SECRET environment variable is required. Generate one with `openssl rand -hex 32`.",
     )?;
@@ -254,6 +301,17 @@ async fn main() -> anyhow::Result<()> {
             return Err(err);
         }
     };
+
+    let connection_service = Arc::new(ConnectionService::new(
+        db_repository.clone(),
+        cache_service.clone(),
+        provider_registry.clone(),
+        categorizer.clone(),
+        SimpleFinConfig {
+            setup_token: config.get_simplefin_setup_token().map(str::to_string),
+            access_url: simplefin_access_url,
+        },
+    ));
 
     let otlp_traces_relay = Arc::new(OtlpTracesRelay::from_config(&telemetry_config)?);
 
@@ -391,6 +449,11 @@ pub fn create_app(state: AppState) -> Router {
         .route(
             "/api/providers/disconnect",
             post(disconnect_authenticated_connection),
+        )
+        .route(
+            "/api/providers/simplefin/ignored-institutions",
+            get(get_authenticated_simplefin_ignored_institutions)
+                .post(restore_authenticated_simplefin_ignored_institution),
         )
         .route(
             "/api/plaid/clear-synced-data",
@@ -2075,7 +2138,12 @@ async fn sync_authenticated_provider_transactions(
         connection,
     } = req;
 
-    tracing::info!("Sync transactions requested for user {}", user_id);
+    tracing::info!(
+        user_id = %user_id,
+        connection_id = %connection.id,
+        item_id = %connection.item_id,
+        "Sync transactions requested"
+    );
 
     let reference_date = request_body
         .client_date
@@ -2640,6 +2708,7 @@ async fn load_connection_statuses(
             last_sync_at: conn.last_sync_at.map(|dt| dt.to_rfc3339()),
             institution_name: conn.institution_name,
             connection_id: Some(conn.id.to_string()),
+            item_id: Some(conn.item_id),
             transaction_count: conn.transaction_count,
             account_count: conn.account_count,
             sync_in_progress: false,
@@ -2734,6 +2803,18 @@ async fn connect_authenticated_provider(
                 Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
                     .into_response(StatusCode::BAD_REQUEST))
             }
+            Err(SimpleFinConnectError::SetupTokenNotConfigured) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    "provider.connect",
+                );
+                Err(ApiErrorResponse::new(
+                    "SERVICE_UNAVAILABLE",
+                    "SimpleFIN is not configured on this server",
+                )
+                .into_response(StatusCode::SERVICE_UNAVAILABLE))
+            }
             Err(SimpleFinConnectError::ClaimFailed(e)) => {
                 log_provider_credential_outcome(
                     "simplefin",
@@ -2745,11 +2826,13 @@ async fn connect_authenticated_provider(
                     auth_context.user_id,
                     e
                 );
-                Err(ApiErrorResponse::new(
-                    "BAD_REQUEST",
-                    "Invalid or already-used SimpleFIN setup token",
-                )
-                .into_response(StatusCode::BAD_REQUEST))
+                let message = if simplefin_claim_error_is_already_used(&e) {
+                    "SimpleFIN setup token was already claimed. Generate a new setup token and restart the server."
+                } else {
+                    "Invalid SimpleFIN setup token"
+                };
+                Err(ApiErrorResponse::new("BAD_REQUEST", message)
+                    .into_response(StatusCode::BAD_REQUEST))
             }
             Err(SimpleFinConnectError::CredentialStorage(e)) => {
                 log_provider_credential_outcome(
@@ -2766,10 +2849,24 @@ async fn connect_authenticated_provider(
                     "Failed to store credentials",
                 ))
             }
-            Err(
-                SimpleFinConnectError::ConnectionPersistence(e)
-                | SimpleFinConnectError::SnapshotFetch(e),
-            ) => {
+            Err(SimpleFinConnectError::SnapshotFetch(e)) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "provider.connect",
+                );
+                tracing::error!(
+                    "Failed to fetch SimpleFIN account snapshot for user {}: {}",
+                    auth_context.user_id,
+                    e
+                );
+                Err(ApiErrorResponse::new(
+                    "INTERNAL_SERVER_ERROR",
+                    "Failed to fetch accounts from SimpleFIN bridge",
+                )
+                .into_response(StatusCode::INTERNAL_SERVER_ERROR))
+            }
+            Err(SimpleFinConnectError::ConnectionPersistence(e)) => {
                 log_provider_credential_outcome(
                     "simplefin",
                     StatusCode::INTERNAL_SERVER_ERROR,
@@ -2830,6 +2927,83 @@ async fn get_authenticated_provider_status(
         provider,
         connections,
     }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/providers/simplefin/ignored-institutions",
+    description = "Lists SimpleFIN bridge institutions the user has hidden in Sumurai.",
+    responses(
+        (status = 200, description = "Ignored institutions", body = crate::models::simplefin::SimpleFinIgnoredInstitutionsResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Financial Providers"
+)]
+async fn get_authenticated_simplefin_ignored_institutions(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<crate::models::simplefin::SimpleFinIgnoredInstitutionsResponse>, StatusCode> {
+    let institutions = state
+        .connection_service
+        .list_simplefin_ignored_institutions(&auth_context.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to list SimpleFIN ignored institutions for user {}: {}",
+                auth_context.user_id,
+                e
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(Json(
+        crate::models::simplefin::SimpleFinIgnoredInstitutionsResponse { institutions },
+    ))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/providers/simplefin/ignored-institutions",
+    description = "Removes a SimpleFIN institution from the ignore list so connect/sync can import it again. Idempotent: returns 200 even if the institution was not on the ignore list.",
+    request_body = crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionRequest,
+    responses(
+        (status = 200, description = "Institution restored (or was already not ignored)", body = crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionResponse),
+        (status = 400, description = "Invalid request"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Financial Providers"
+)]
+async fn restore_authenticated_simplefin_ignored_institution(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionRequest>,
+) -> Result<Json<crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionResponse>, StatusCode>
+{
+    let org_conn_id = req.org_conn_id.trim();
+    if org_conn_id.is_empty() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    let restored = state
+        .connection_service
+        .restore_simplefin_ignored_institution(&auth_context.user_id, org_conn_id)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to restore SimpleFIN ignored institution for user {}: {}",
+                auth_context.user_id,
+                e
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(Json(
+        crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionResponse { restored },
+    ))
 }
 
 #[utoipa::path(
@@ -3146,11 +3320,12 @@ async fn get_authenticated_provider_info(
         })?;
 
     let default_provider = state.config.get_default_provider();
-    let available_providers = vec![
-        "plaid".to_string(),
-        "teller".to_string(),
-        "simplefin".to_string(),
-    ];
+    let mut available_providers = Vec::new();
+    for provider in ["plaid", "teller", "simplefin"] {
+        if state.provider_registry.get(provider).is_some() {
+            available_providers.push(provider.to_string());
+        }
+    }
 
     let user_provider = if user.onboarding_completed {
         user.provider

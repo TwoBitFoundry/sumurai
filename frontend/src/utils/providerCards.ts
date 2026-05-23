@@ -45,7 +45,7 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
       'Link many banks through your own SimpleFIN bridge—no third-party link UI inside Sumurai.',
     logoSrc: '/simplefin.webp',
     bullets: [
-      'Works with many banks from one setup token',
+      'Works with many banks from one bridge',
       'You control access at simplefin.org',
       'Running balances and transaction history',
       'Disconnect individual institutions without losing bridge access',
@@ -255,22 +255,22 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
     backgroundClassName: cn(uiStatusRecipes.info.surface),
     textClassName: cn(uiStatusRecipes.info.text),
   },
-  heroTitle: 'Connect with a setup token',
+  heroTitle: 'Connect your SimpleFIN bridge',
   heroDescription:
-    'Paste a setup token from the SimpleFIN bridge to link every institution you authorize—Sumurai never hosts a third-party link flow.',
+    'Link every institution you authorize on the SimpleFIN bridge. Your operator configures SIMPLEFIN_SETUP_TOKEN on the server—no token entry in Sumurai.',
   highlightLabel: "What you'll connect",
   highlightMeta: 'Read-only access',
   features: [
     {
       icon: Landmark,
       title: 'Many institutions',
-      body: 'One token can link every bank you enable on the SimpleFIN bridge.',
+      body: 'One bridge can link every bank you enable on SimpleFIN.',
       palette: featurePalettes.providerFeature.emerald,
     },
     {
       icon: Zap,
       title: 'No embedded link UI',
-      body: 'Sumurai stays out of the way—you paste a token instead of a popup flow.',
+      body: 'Sumurai stays out of the way—connect uses server-side bridge credentials.',
       palette: featurePalettes.providerFeature.amber,
     },
     {
@@ -302,13 +302,13 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
     {
       icon: ShieldCheck,
       title: 'Transparent access',
-      body: 'Every sync is scoped to institutions you explicitly linked with your token.',
+      body: 'Every sync is scoped to institutions you explicitly linked on the bridge.',
       palette: featurePalettes.highlight.emerald,
     },
   ],
   cta: {
     defaultLabel: 'Connect with SimpleFIN',
-    badge: 'Token',
+    badge: 'Bridge',
   },
   securityNote: 'Disconnect individual institutions anytime without removing your bridge access.',
 };

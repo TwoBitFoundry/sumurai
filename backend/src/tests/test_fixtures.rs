@@ -17,7 +17,7 @@ use crate::services::{
     cache_service::{CacheService, MockCacheService},
     categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS,
     category_management::service::CategoryManagementService,
-    connection_service::ConnectionService,
+    connection_service::{ConnectionService, SimpleFinConfig},
     otel_traces_relay::OtlpTracesRelay,
     plaid_service::{PlaidService, RealPlaidClient},
     repository_service::DatabaseRepository,
@@ -276,6 +276,11 @@ impl TestFixtures {
             db_repository.clone(),
             cache_service.clone(),
             provider_registry.clone(),
+            noop_categorizer(),
+            SimpleFinConfig {
+                setup_token: None,
+                access_url: None,
+            },
         ));
 
         let auth_service = Arc::new(
@@ -390,6 +395,11 @@ impl TestFixtures {
             db_repository.clone(),
             cache_service.clone(),
             provider_registry.clone(),
+            noop_categorizer(),
+            SimpleFinConfig {
+                setup_token: None,
+                access_url: None,
+            },
         ));
 
         let auth_service = Arc::new(
@@ -470,6 +480,11 @@ impl TestFixtures {
             db_repository.clone(),
             cache_service.clone(),
             provider_registry.clone(),
+            categorizer.clone(),
+            SimpleFinConfig {
+                setup_token: None,
+                access_url: None,
+            },
         ));
 
         let auth_service = Arc::new(

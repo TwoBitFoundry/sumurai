@@ -99,14 +99,14 @@ openssl rand -hex 32
 ### 2. SimpleFIN (Bring your own token)
 
 1. Open the [SimpleFIN Bridge](https://bridge.simplefin.org/) and create a bridge (or use the beta developer bridge for local trials).
-2. Set `DEFAULT_PROVIDER=simplefin` in `.env`. No SimpleFIN API keys are required in the environment.
+2. Set `SIMPLEFIN_SETUP_TOKEN` (one-time token from [beta-bridge.simplefin.org/info/developers](https://beta-bridge.simplefin.org/info/developers)) and `DEFAULT_PROVIDER=simplefin` in `.env`. The backend claims the token once at startup.
 3. Start the app:
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d --build
 ```
 
-4. In onboarding, paste a setup token from your bridge. For a local demo token, use [beta-bridge.simplefin.org/info/developers](https://beta-bridge.simplefin.org/info/developers).
+4. Sign in and use **Connect with SimpleFIN** in onboarding.
 
 ### 3. Teller (Recommended)
 

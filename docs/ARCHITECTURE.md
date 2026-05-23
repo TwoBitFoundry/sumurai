@@ -54,7 +54,7 @@ flowchart LR
 
 ### SimpleFIN
 
-- A user pastes a one-time setup token in the UI. The backend claims it against the SimpleFIN bridge and stores a single access URL per user under `simplefin_root_{user_id}` in encrypted provider credentials.
+- The operator sets `SIMPLEFIN_SETUP_TOKEN` in the deployment environment. The backend claims it once at server startup, then reuses that bridge credential on connect and stores a per-user copy under `simplefin_root_{user_id}` in encrypted provider credentials.
 - One access URL backs many `provider_connections` rows: each financial institution in the bridge snapshot becomes `simplefin_{org_conn_id}` with its own accounts and transactions.
 - Re-sync and connect reuse the stored access URL; the bridge response may still list institutions the user removed in Sumurai.
 - `simplefin_hidden_orgs` records orgs the user disconnected. Sync and connect skip blocklisted `org_conn_id` values so disconnected institutions do not get new rows in `provider_connections`, `accounts`, or `transactions`, and no cache entries are keyed on that org.

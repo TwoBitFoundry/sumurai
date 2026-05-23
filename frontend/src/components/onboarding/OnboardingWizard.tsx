@@ -218,8 +218,6 @@ export function OnboardingWizard({ onComplete, onLogout, isOnline }: OnboardingW
             error={connectionFlow.error}
             onConnect={connectionFlow.initiateConnection}
             onRetry={connectionFlow.retryConnection}
-            usesSetupToken={activeProvider === 'simplefin'}
-            onSubmitSetupToken={connectionFlow.submitSetupToken}
           />
         );
 

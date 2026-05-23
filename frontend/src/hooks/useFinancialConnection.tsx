@@ -20,7 +20,10 @@ import {
 import { useProviderCatalog } from '@/hooks/useProviderCatalog';
 import { recordHandledIssue } from '@/observability';
 import { POPUP_BLOCKED_MESSAGE } from '@/utils/popupBlockedMessage';
-import { invalidateStaleCacheQueries, type SyncProvider } from '@/utils/queryInvalidation';
+import {
+  refreshFinancialDataAfterProviderChange,
+  type SyncProvider,
+} from '@/utils/queryInvalidation';
 
 export interface UseFinancialConnectionOptions {
   provider: SyncProvider;
@@ -37,7 +40,6 @@ export interface UseFinancialConnectionReturn {
   error: string | null;
   initiateConnection: () => Promise<void>;
   retryConnection: () => Promise<void>;
-  submitSetupToken: (token: string) => Promise<void>;
   reset: () => void;
   setError: (error: string | null) => void;
   connectionMount: ReactElement | null;
@@ -68,7 +70,7 @@ export function useFinancialConnection(
   }, []);
 
   const invalidateCache = useCallback(async () => {
-    await invalidateStaleCacheQueries(queryClient, [provider]);
+    await refreshFinancialDataAfterProviderChange(queryClient, [provider]);
   }, [queryClient, provider]);
 
   const strategyContext = useMemo<FinancialConnectionStrategyContext>(
@@ -137,6 +139,18 @@ export function useFinancialConnection(
     sdkFailedRef.current = false;
 
     try {
+      const connectConfigured = strategyRef.current.connect;
+      if (connectConfigured) {
+        try {
+          await connectConfigured();
+        } catch (err) {
+          const errorMessage =
+            err instanceof Error ? err.message : `Failed to connect with ${provider}`;
+          handleError(errorMessage);
+        }
+        return;
+      }
+
       if (strategyRef.current.getReady()) {
         try {
           strategyRef.current.open();
@@ -185,30 +199,6 @@ export function useFinancialConnection(
     await initiateConnection();
   }, [initiateConnection, isOnline]);
 
-  const submitSetupToken = useCallback(
-    async (token: string) => {
-      if (!isOnline) {
-        return;
-      }
-
-      const submit = strategyRef.current.submitSetupToken;
-      if (!submit) {
-        handleError('Setup token connection is not available for this provider.');
-        return;
-      }
-
-      dispatch(connectionActions.patch({ error: null, connectionInProgress: true }));
-      try {
-        await submit(token);
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Failed to connect with setup token';
-        handleError(errorMessage);
-      }
-    },
-    [handleError, isOnline]
-  );
-
   const reset = useCallback(() => {
     dispatch(connectionActions.reset());
     setSdkNonce(0);
@@ -223,7 +213,6 @@ export function useFinancialConnection(
     error: state.error,
     initiateConnection,
     retryConnection,
-    submitSetupToken,
     reset,
     setError,
     connectionMount,

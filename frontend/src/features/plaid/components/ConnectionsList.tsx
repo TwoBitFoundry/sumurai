@@ -1,4 +1,5 @@
 import { Link2 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { EmptyState } from '@/ui/primitives';
 import { BankCard } from '../../../components/BankCard';
 import ConnectButton from './ConnectButton';
@@ -18,6 +19,7 @@ export interface BankConnectionViewModel {
   short: string;
   status: 'connected' | 'needs_reauth' | 'error';
   lastSync?: string | null;
+  provider: string;
   accounts: BankAccount[];
 }
 
@@ -31,6 +33,7 @@ interface ConnectionsListProps {
   providerName?: string;
   connectLabel?: string;
   connectLogoSrc?: string;
+  emptyState?: ReactNode;
 }
 
 const ConnectionsList = ({
@@ -43,11 +46,16 @@ const ConnectionsList = ({
   providerName,
   connectLabel,
   connectLogoSrc,
+  emptyState,
 }: ConnectionsListProps) => {
   const headingProviderName = providerName ?? 'accounts';
   const connectButtonLabel = connectLabel ?? 'Add account';
 
   if (!banks.length) {
+    if (emptyState) {
+      return emptyState;
+    }
+
     return (
       <EmptyState
         icon={Link2}

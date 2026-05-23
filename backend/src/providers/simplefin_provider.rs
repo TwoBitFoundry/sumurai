@@ -17,6 +17,8 @@ use crate::providers::trait_definition::{
 };
 
 const MAX_TRANSACTION_WINDOW_DAYS: i64 = 90;
+pub(crate) const BETA_DEMO_BRIDGE_ACCESS_URL: &str =
+    "https://demo:demo@beta-bridge.simplefin.org/simplefin";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SimpleFinProviderError {
@@ -71,12 +73,20 @@ impl RealSimpleFinHttpClient {
 }
 
 fn parse_access_url(access_url: &str) -> Result<(Url, String, String)> {
-    let url = Url::parse(access_url).context("invalid SimpleFIN access URL")?;
+    let mut url = Url::parse(access_url.trim()).context("invalid SimpleFIN access URL")?;
     if url.scheme() != "https" {
         bail!("SimpleFIN access URL must use HTTPS");
     }
     let username = url.username().to_string();
     let password = url.password().unwrap_or_default().to_string();
+    if !username.is_empty() {
+        url.set_username("")
+            .map_err(|_| anyhow::anyhow!("invalid SimpleFIN access URL username"))?;
+    }
+    if url.password().is_some() {
+        url.set_password(None)
+            .map_err(|_| anyhow::anyhow!("invalid SimpleFIN access URL password"))?;
+    }
     Ok((url, username, password))
 }
 
@@ -144,13 +154,31 @@ impl SimpleFinHttpClient for RealSimpleFinHttpClient {
             .basic_auth(username, Some(password))
             .send()
             .await?;
-        if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await?;
+        if !status.is_success() {
+            if let Ok(mut parsed) = serde_json::from_str::<SimpleFinAccountsResponse>(&body) {
+                parsed.normalize();
+                let messages = parsed.error_messages();
+                if !messages.is_empty() {
+                    bail!(
+                        "SimpleFIN accounts request failed with status {}: {}",
+                        status.as_u16(),
+                        messages.join("; ")
+                    );
+                }
+            }
             bail!(
-                "SimpleFIN accounts request failed with status {}",
-                response.status().as_u16()
+                "SimpleFIN accounts request failed with status {}: {}",
+                status.as_u16(),
+                body.chars().take(240).collect::<String>()
             );
         }
-        Ok(response.json::<SimpleFinAccountsResponse>().await?)
+
+        let mut parsed: SimpleFinAccountsResponse = serde_json::from_str(&body)
+            .context("SimpleFIN accounts response was not valid JSON")?;
+        parsed.normalize();
+        Ok(parsed)
     }
 }
 
@@ -181,6 +209,24 @@ impl SimpleFinProvider {
             .decode(setup_token.trim())
             .context("setup token is not valid base64")?;
         String::from_utf8(decoded).context("setup token is not valid UTF-8")
+    }
+
+    pub(crate) fn is_beta_demo_setup_token(setup_token: &str) -> bool {
+        Self::decode_setup_token(setup_token)
+            .ok()
+            .is_some_and(|claim_url| {
+                claim_url.contains("beta-bridge.simplefin.org/simplefin/claim/DEMO")
+            })
+    }
+
+    pub(crate) fn beta_demo_access_url_for_consumed_setup_token(
+        setup_token: &str,
+    ) -> Option<String> {
+        if Self::is_beta_demo_setup_token(setup_token) {
+            Some(BETA_DEMO_BRIDGE_ACCESS_URL.to_string())
+        } else {
+            None
+        }
     }
 
     fn date_to_epoch_start(date: NaiveDate) -> i64 {
@@ -223,7 +269,7 @@ impl SimpleFinProvider {
             balance_current: balance,
             mask: None,
             institution_name: None,
-            provider_conn_id: Some(simplefin_account.conn_id.clone()),
+            provider_conn_id: simplefin_account.org_conn_id(),
         }
     }
 
@@ -296,6 +342,12 @@ impl FinancialDataProvider for SimpleFinProvider {
                 },
             )
             .await?;
+
+        let messages = response.error_messages();
+        if !messages.is_empty() {
+            bail!("SimpleFIN bridge returned errors: {}", messages.join("; "));
+        }
+
         Ok(Some(response))
     }
 
@@ -323,6 +375,16 @@ impl FinancialDataProvider for SimpleFinProvider {
                     .map(|provider_account_id| (provider_account_id, account))
             })
             .collect();
+        let known_account_ids: Vec<String> = accounts_by_provider_id.keys().cloned().collect();
+
+        tracing::info!(
+            provider = "simplefin",
+            start_date = %start_date,
+            end_date = %end_date,
+            mapped_account_count = known_account_ids.len(),
+            mapped_account_ids = ?known_account_ids,
+            "SimpleFIN get_transactions started"
+        );
 
         let mut all_transactions = Vec::new();
         let chunks = Self::chunk_date_range(start_date, end_date);
@@ -342,18 +404,66 @@ impl FinancialDataProvider for SimpleFinProvider {
                 )
                 .await?;
 
+            let bridge_errors = response.error_messages();
+            if !bridge_errors.is_empty() {
+                tracing::warn!(
+                    provider = "simplefin",
+                    chunk_start = %chunk_start,
+                    chunk_end = %chunk_end,
+                    bridge_errors = ?bridge_errors,
+                    "SimpleFIN bridge returned errors for transaction chunk"
+                );
+            }
+
+            let mut chunk_mapped = 0usize;
+            let mut chunk_bridge_txns = 0usize;
+            let mut chunk_unmapped_accounts = 0usize;
+
             for simplefin_account in &response.accounts {
+                chunk_bridge_txns += simplefin_account.transactions.len();
                 let Some(account) = accounts_by_provider_id.get(&simplefin_account.id) else {
+                    chunk_unmapped_accounts += 1;
+                    tracing::warn!(
+                        provider = "simplefin",
+                        chunk_start = %chunk_start,
+                        chunk_end = %chunk_end,
+                        bridge_account_id = %simplefin_account.id,
+                        bridge_account_name = %simplefin_account.name,
+                        bridge_txn_count = simplefin_account.transactions.len(),
+                        mapped_account_ids = ?known_account_ids,
+                        "SimpleFIN bridge account not found in mapping table"
+                    );
                     continue;
                 };
                 for simplefin_txn in &simplefin_account.transactions {
                     let transaction = Self::map_transaction(simplefin_txn, account)?;
                     if transaction.date >= start_date && transaction.date <= end_date {
                         all_transactions.push(transaction);
+                        chunk_mapped += 1;
                     }
                 }
             }
+
+            tracing::info!(
+                provider = "simplefin",
+                chunk_start = %chunk_start,
+                chunk_end = %chunk_end,
+                bridge_account_count = response.accounts.len(),
+                bridge_txn_count = chunk_bridge_txns,
+                mapped_txn_count = chunk_mapped,
+                unmapped_bridge_accounts = chunk_unmapped_accounts,
+                "SimpleFIN transaction chunk fetched"
+            );
         }
+
+        tracing::info!(
+            provider = "simplefin",
+            start_date = %start_date,
+            end_date = %end_date,
+            total_mapped_txn_count = all_transactions.len(),
+            chunk_count = page_count,
+            "SimpleFIN get_transactions completed"
+        );
 
         Ok(ProviderTransactionsResult {
             transactions: all_transactions,
