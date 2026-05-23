@@ -1170,3 +1170,140 @@ async fn given_unmigrated_legacy_root_when_cleanup_migration_then_preserves_plai
         .execute(&pool)
         .await;
 }
+
+async fn provider_credentials_table_exists(pool: &PgPool) -> Result<bool, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'provider_credentials'
+        )",
+    )
+    .fetch_one(pool)
+    .await
+}
+
+async fn apply_rename_plaid_credentials_migration(pool: &PgPool) -> Result<(), sqlx::Error> {
+    let sql =
+        include_str!("../../migrations/035_rename_plaid_credentials_to_provider_credentials.sql");
+    for stmt in sql.split(';') {
+        let statement = stmt.trim();
+        if statement.is_empty() {
+            continue;
+        }
+        sqlx::query(&format!("{statement};")).execute(pool).await?;
+    }
+    Ok(())
+}
+
+async fn ensure_provider_credentials_table(pool: &PgPool) -> Result<(), sqlx::Error> {
+    if provider_credentials_table_exists(pool).await? {
+        return Ok(());
+    }
+    if sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'plaid_credentials'
+        )",
+    )
+    .fetch_one(pool)
+    .await?
+    {
+        apply_rename_plaid_credentials_migration(pool).await?;
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_migrated_database_when_provider_credentials_rename_applied_then_table_exists() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    if !provider_credentials_table_exists(&pool).await.unwrap() {
+        apply_rename_plaid_credentials_migration(&pool)
+            .await
+            .expect("migration should apply when plaid_credentials exists");
+    }
+
+    assert!(provider_credentials_table_exists(&pool).await.unwrap());
+}
+
+#[tokio::test]
+async fn given_provider_credentials_rename_when_applied_then_plaid_credentials_table_absent() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let plaid_exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'plaid_credentials'
+        )",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    if plaid_exists {
+        apply_rename_plaid_credentials_migration(&pool)
+            .await
+            .expect("rename should apply");
+    }
+
+    assert!(provider_credentials_table_exists(&pool).await.unwrap());
+    let plaid_still_exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'plaid_credentials'
+        )",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(!plaid_still_exists);
+}
+
+#[tokio::test]
+async fn given_provider_credentials_when_store_and_get_then_round_trips() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    ensure_provider_credentials_table(&pool)
+        .await
+        .expect("provider_credentials table should exist");
+
+    let raw = std::env::var("ENCRYPTION_KEY").expect("ENCRYPTION_KEY required for repository test");
+    let key = crate::utils::encryption_key::parse_encryption_key_hex(&raw)
+        .expect("ENCRYPTION_KEY must be 64 hex characters");
+    use crate::services::repository_service::DatabaseRepository;
+
+    let repo = crate::services::repository_service::PostgresRepository::new(pool.clone(), key);
+
+    let user_id = Uuid::new_v4();
+    insert_test_user(&pool, user_id).await.unwrap();
+
+    let item_id = format!("teller_{}", Uuid::new_v4());
+    repo.store_provider_credentials_for_user(&user_id, &item_id, "secret-token")
+        .await
+        .unwrap();
+
+    let stored = repo
+        .get_provider_credentials_for_user(&user_id, &item_id)
+        .await
+        .unwrap()
+        .expect("credential should exist");
+
+    assert_eq!(stored.access_token, "secret-token");
+    assert_eq!(stored.item_id, item_id);
+
+    let _ = repo.delete_provider_credentials(&item_id).await;
+    let _ = sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(user_id)
+        .execute(&pool)
+        .await;
+}

@@ -216,7 +216,9 @@ where
             )
             .await
             .map_err(|status| match status {
-                StatusCode::NOT_FOUND => not_found("Connection not found"),
+                StatusCode::NOT_FOUND => not_found(
+                    "This institution is not linked to your account. It may have been removed or hidden—link or refresh institutions from Accounts.",
+                ),
                 _ => error_response(status, "INTERNAL_SERVER_ERROR", "Authorization failed"),
             })?;
 

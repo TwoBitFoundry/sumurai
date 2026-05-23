@@ -53,6 +53,9 @@ pub enum SimpleFinConnectError {
     CredentialStorage(Error),
     ConnectionPersistence(Error),
     SnapshotFetch(Error),
+    NoInstitutionsOnBridge,
+    AllInstitutionsHidden,
+    NoInstitutionsLinked,
 }
 
 #[derive(Debug)]
@@ -442,9 +445,37 @@ impl ConnectionService {
         user_id: &Uuid,
         org_conn_id: &str,
     ) -> Result<bool, anyhow::Error> {
-        self.db_repository
+        let restored = self
+            .db_repository
             .remove_simplefin_hidden_org(user_id, org_conn_id)
-            .await
+            .await?;
+
+        if restored {
+            return Ok(true);
+        }
+
+        let hidden_orgs = self
+            .db_repository
+            .list_simplefin_hidden_orgs(user_id)
+            .await?;
+
+        for hidden_id in hidden_orgs {
+            if hidden_id == org_conn_id {
+                continue;
+            }
+
+            if org_conn_id.contains(&hidden_id) || hidden_id.contains(org_conn_id) {
+                let removed = self
+                    .db_repository
+                    .remove_simplefin_hidden_org(user_id, &hidden_id)
+                    .await?;
+                if removed {
+                    return Ok(true);
+                }
+            }
+        }
+
+        Ok(false)
     }
 
     pub async fn connect_simplefin_provider(
@@ -491,7 +522,7 @@ impl ConnectionService {
         let mut institution_count = 0;
 
         for org in &snapshot.connections {
-            if hidden_orgs.contains(&org.conn_id) {
+            if crate::services::simplefin_org_service::org_is_hidden(&hidden_orgs, org) {
                 continue;
             }
 
@@ -514,7 +545,23 @@ impl ConnectionService {
             }
         }
 
-        let connection_id = first_connection_id.unwrap_or_else(Uuid::new_v4).to_string();
+        if institution_count == 0 {
+            if snapshot.connections.is_empty() {
+                return Err(SimpleFinConnectError::NoInstitutionsOnBridge);
+            }
+            if snapshot
+                .connections
+                .iter()
+                .all(|org| crate::services::simplefin_org_service::org_is_hidden(&hidden_orgs, org))
+            {
+                return Err(SimpleFinConnectError::AllInstitutionsHidden);
+            }
+            return Err(SimpleFinConnectError::NoInstitutionsLinked);
+        }
+
+        let connection_id = first_connection_id
+            .expect("institution_count > 0 implies a persisted connection id")
+            .to_string();
 
         Ok(ProviderConnectResponse {
             connection_id,
@@ -1000,7 +1047,11 @@ impl ConnectionService {
             .await
             .map_err(ProviderSyncError::SyncFailure)?;
 
-        if hidden_orgs.contains(&conn_id) {
+        if crate::services::simplefin_org_service::conn_id_is_hidden(
+            &hidden_orgs,
+            &conn_id,
+            connection.institution_id.as_deref(),
+        ) {
             return Ok(SyncTransactionsResponse {
                 transactions: Vec::new(),
                 metadata: SyncMetadata {
@@ -1044,7 +1095,11 @@ impl ConnectionService {
             .iter()
             .filter(|account| {
                 account.org_conn_id().as_deref() == Some(conn_id.as_str())
-                    && !hidden_orgs.contains(&conn_id)
+                    && !crate::services::simplefin_org_service::conn_id_is_hidden(
+                        &hidden_orgs,
+                        &conn_id,
+                        connection.institution_id.as_deref(),
+                    )
             })
             .map(SimpleFinProvider::map_account)
             .collect();

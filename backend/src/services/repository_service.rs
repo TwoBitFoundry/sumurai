@@ -702,7 +702,7 @@ impl DatabaseRepository for PostgresRepository {
 
         sqlx::query(
             r#"
-            INSERT INTO plaid_credentials (id, user_id, item_id, encrypted_access_token)
+            INSERT INTO provider_credentials (id, user_id, item_id, encrypted_access_token)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (item_id)
             DO UPDATE SET
@@ -734,7 +734,7 @@ impl DatabaseRepository for PostgresRepository {
             .await?;
 
         let row = sqlx::query_as::<_, (Uuid, String, Vec<u8>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
-            "SELECT id, item_id, encrypted_access_token, created_at, updated_at FROM plaid_credentials WHERE item_id = $1"
+            "SELECT id, item_id, encrypted_access_token, created_at, updated_at FROM provider_credentials WHERE item_id = $1"
         )
         .bind(item_id)
         .fetch_optional(&mut *tx)
@@ -1043,7 +1043,7 @@ impl DatabaseRepository for PostgresRepository {
     }
 
     async fn delete_provider_credentials(&self, item_id: &str) -> Result<()> {
-        sqlx::query("DELETE FROM plaid_credentials WHERE item_id = $1")
+        sqlx::query("DELETE FROM provider_credentials WHERE item_id = $1")
             .bind(item_id)
             .execute(&self.pool)
             .await?;

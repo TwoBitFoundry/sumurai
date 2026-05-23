@@ -5,6 +5,7 @@ use crate::providers::ProviderCredentials;
 use crate::services::cache_service::CacheService;
 use crate::services::repository_service::DatabaseRepository;
 use anyhow::Result;
+use std::collections::HashSet;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -161,4 +162,24 @@ impl SimpleFinOrganizationService {
 
 pub fn simplefin_org_item_id(user_id: &Uuid, org_conn_id: &str) -> String {
     format!("simplefin_{user_id}_{org_conn_id}")
+}
+
+pub fn org_is_hidden(hidden_orgs: &HashSet<String>, org: &SimpleFinConnection) -> bool {
+    if hidden_orgs.contains(&org.conn_id) {
+        return true;
+    }
+
+    !org.org_id.is_empty() && hidden_orgs.contains(&org.org_id)
+}
+
+pub fn conn_id_is_hidden(
+    hidden_orgs: &HashSet<String>,
+    conn_id: &str,
+    org_id: Option<&str>,
+) -> bool {
+    if hidden_orgs.contains(conn_id) {
+        return true;
+    }
+
+    org_id.is_some_and(|id| !id.is_empty() && hidden_orgs.contains(id))
 }

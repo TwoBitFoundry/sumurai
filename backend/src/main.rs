@@ -2780,6 +2780,42 @@ async fn connect_authenticated_provider(
                     "Failed to save connection",
                 ))
             }
+            Err(SimpleFinConnectError::NoInstitutionsOnBridge) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "provider.connect",
+                );
+                Err(ApiErrorResponse::new(
+                    "NO_INSTITUTIONS",
+                    "No institutions are available from your SimpleFIN bridge yet",
+                )
+                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
+            }
+            Err(SimpleFinConnectError::AllInstitutionsHidden) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "provider.connect",
+                );
+                Err(ApiErrorResponse::new(
+                    "ALL_INSTITUTIONS_HIDDEN",
+                    "All SimpleFIN institutions are hidden in Sumurai. Restore one to start syncing.",
+                )
+                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
+            }
+            Err(SimpleFinConnectError::NoInstitutionsLinked) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "provider.connect",
+                );
+                Err(ApiErrorResponse::new(
+                    "NO_INSTITUTIONS",
+                    "No SimpleFIN institutions could be linked. Try again or check your bridge setup.",
+                )
+                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
+            }
         },
         _ => {
             log_provider_credential_outcome(

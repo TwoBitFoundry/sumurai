@@ -3,6 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use chrono::NaiveDate;
 
+use crate::models::api_error::ApiErrorResponse;
 use crate::models::plaid::ProviderConnection;
 use crate::models::transaction::SyncTransactionsResponse;
 use crate::services::connection_service::{
@@ -133,13 +134,32 @@ fn provider_sync_error_from_teller(err: TellerSyncError) -> ProviderSyncError {
     }
 }
 
+fn provider_sync_error_json_response(
+    status: axum::http::StatusCode,
+    error: &str,
+    message: &str,
+    retry_after_secs: Option<&'static str>,
+) -> axum::response::Response {
+    use axum::response::IntoResponse;
+
+    let body = axum::Json(ApiErrorResponse::new(error, message));
+    match retry_after_secs {
+        Some(retry_after) => (
+            status,
+            [(axum::http::header::RETRY_AFTER, retry_after)],
+            body,
+        )
+            .into_response(),
+        None => (status, body).into_response(),
+    }
+}
+
 pub fn provider_sync_error_to_response(
     err: ProviderSyncError,
     user_id: uuid::Uuid,
     item_id: &str,
 ) -> axum::response::Response {
     use axum::http::StatusCode;
-    use axum::response::IntoResponse;
 
     match err {
         ProviderSyncError::RateLimited => {
@@ -148,11 +168,12 @@ pub fn provider_sync_error_to_response(
                 user_id,
                 item_id
             );
-            (
+            provider_sync_error_json_response(
                 StatusCode::TOO_MANY_REQUESTS,
-                [(axum::http::header::RETRY_AFTER, "3600")],
+                "RATE_LIMITED",
+                "SimpleFIN allows about one sync per hour for this account. Try again later.",
+                Some("3600"),
             )
-                .into_response()
         }
         ProviderSyncError::CredentialsMissing => {
             tracing::error!(
@@ -160,7 +181,12 @@ pub fn provider_sync_error_to_response(
                 user_id,
                 item_id
             );
-            StatusCode::NOT_FOUND.into_response()
+            provider_sync_error_json_response(
+                StatusCode::NOT_FOUND,
+                "NOT_FOUND",
+                "This institution is linked in Sumurai but provider credentials are missing. Reconnect your financial provider from Accounts.",
+                None,
+            )
         }
         ProviderSyncError::CredentialAccess(e) => {
             tracing::error!(
@@ -169,7 +195,12 @@ pub fn provider_sync_error_to_response(
                 item_id,
                 e
             );
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            provider_sync_error_json_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "INTERNAL_SERVER_ERROR",
+                "Could not access provider credentials for this connection",
+                None,
+            )
         }
         ProviderSyncError::ProviderUnavailable(p) => {
             tracing::error!(
@@ -177,7 +208,12 @@ pub fn provider_sync_error_to_response(
                 p,
                 user_id
             );
-            StatusCode::BAD_REQUEST.into_response()
+            provider_sync_error_json_response(
+                StatusCode::BAD_REQUEST,
+                "BAD_REQUEST",
+                "This provider is not available for sync",
+                None,
+            )
         }
         ProviderSyncError::ProviderRequest(e) => {
             tracing::error!(
@@ -186,7 +222,12 @@ pub fn provider_sync_error_to_response(
                 item_id,
                 e
             );
-            StatusCode::BAD_GATEWAY.into_response()
+            provider_sync_error_json_response(
+                StatusCode::BAD_GATEWAY,
+                "BAD_GATEWAY",
+                "The financial provider request failed. Try again in a few minutes.",
+                None,
+            )
         }
         ProviderSyncError::AccountLookup(e) => {
             tracing::error!(
@@ -195,7 +236,12 @@ pub fn provider_sync_error_to_response(
                 item_id,
                 e
             );
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            provider_sync_error_json_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "INTERNAL_SERVER_ERROR",
+                "Could not load accounts for this connection",
+                None,
+            )
         }
         ProviderSyncError::TransactionLookup(e) => {
             tracing::error!(
@@ -204,7 +250,12 @@ pub fn provider_sync_error_to_response(
                 item_id,
                 e
             );
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            provider_sync_error_json_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "INTERNAL_SERVER_ERROR",
+                "Could not load transactions for this connection",
+                None,
+            )
         }
         ProviderSyncError::SyncFailure(e) => {
             tracing::error!(
@@ -213,7 +264,12 @@ pub fn provider_sync_error_to_response(
                 item_id,
                 e
             );
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            provider_sync_error_json_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "INTERNAL_SERVER_ERROR",
+                "Sync failed unexpectedly. Try again.",
+                None,
+            )
         }
     }
 }

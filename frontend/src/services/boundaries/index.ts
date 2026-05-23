@@ -6,6 +6,7 @@ export {
   ForbiddenError,
   NetworkError,
   NotFoundError,
+  RateLimitError,
   ServerError,
   ValidationError,
 } from './errors';

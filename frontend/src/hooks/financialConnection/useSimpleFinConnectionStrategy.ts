@@ -3,6 +3,7 @@ import { formatSimpleFinInstitutionsLabel } from '@/features/simplefin/utils/for
 import { connectionActions } from '@/hooks/financialConnection/connectionState';
 import { recordHandledIssue } from '@/observability';
 import { SimpleFinService } from '@/services/SimpleFinService';
+import { formatUserFacingApiError } from '@/utils/formatUserFacingApiError';
 import type { FinancialConnectionStrategy, FinancialConnectionStrategyContext } from './types';
 
 const DEFAULT_INSTITUTION_NAME = 'SimpleFIN';
@@ -75,12 +76,13 @@ export function useSimpleFinConnectionStrategy(
 
       const latest = await refreshStatus();
       await invalidateCache();
-      if (!latest && !rateLimited) {
+      if (latest || rateLimited) {
+        dispatch(connectionActions.patch({ error: null }));
+      } else {
         dispatch(connectionActions.patch({ isConnected: false, institutionName: null }));
       }
     } catch (connectError) {
-      const message =
-        connectError instanceof Error ? connectError.message : 'Failed to connect with SimpleFIN';
+      const message = formatUserFacingApiError(connectError, 'Failed to connect with SimpleFIN');
       handleError(message);
     } finally {
       dispatch(connectionActions.patch({ isSyncing: false, connectionInProgress: false }));

@@ -21,6 +21,7 @@ import { PlaidService } from '../services/PlaidService';
 import { SimpleFinService } from '../services/SimpleFinService';
 import { TellerService } from '../services/TellerService';
 import { dispatchAccountsChanged } from '../utils/events';
+import { formatUserFacingApiError } from '../utils/formatUserFacingApiError';
 import {
   getConnectAccountProviderContent,
   getProviderCardConfig,
@@ -206,10 +207,10 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     }, 1000);
     return () => clearInterval(id);
   }, [syncingAll]);
-  const flowError = banks.length > 0 ? connectionFlow.error : null;
   const accountsDataLoading = providerCatalog.loading || accountFilter.loading;
   const showSimpleFinIgnoredList =
     primaryProvider === 'simplefin' && banksWithSync.length === 0 && !accountsDataLoading;
+  const flowError = banks.length > 0 || showSimpleFinIgnoredList ? connectionFlow.error : null;
   const ignoredInstitutionsQuery = useQuery({
     queryKey: ['simplefin', 'ignored-institutions'],
     queryFn: () => SimpleFinService.getIgnoredInstitutions(),
@@ -261,7 +262,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         );
       } catch (error) {
         console.warn('Failed to sync bank', error);
-        onError?.('Failed to sync bank');
+        onError?.(formatUserFacingApiError(error, `Failed to sync ${bank.name}`));
       }
     },
     [banks, isOnline, onError, refreshBankData]
@@ -300,7 +301,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       );
     } catch (error) {
       console.warn('Failed to sync all banks', error);
-      onError?.('Failed to sync all banks');
+      onError?.(formatUserFacingApiError(error, 'Failed to sync all accounts'));
     } finally {
       setSyncingAll(false);
     }
@@ -340,34 +341,22 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       }
 
       setRestoringIgnoredOrgConnId(orgConnId);
+      connectionFlow.setError(null);
       onError?.(null);
 
       try {
-        await SimpleFinService.restoreIgnoredInstitution(orgConnId);
-      } catch (error) {
-        console.warn('Failed to restore ignored SimpleFIN institution', error);
-        onError?.('Failed to restore institution');
-        setRestoringIgnoredOrgConnId(null);
-        return;
-      }
+        const { rateLimited, transactionCount } =
+          await SimpleFinService.restoreInstitution(orgConnId);
 
-      await queryClient.refetchQueries({
-        queryKey: ['simplefin', 'ignored-institutions'],
-        type: 'active',
-      });
-
-      try {
-        await SimpleFinService.connect();
+        await queryClient.refetchQueries({
+          queryKey: ['simplefin', 'ignored-institutions'],
+          type: 'active',
+        });
         await refreshBankData('simplefin');
         dispatchAccountsChanged();
-      } catch (error) {
-        console.warn('Failed to connect after SimpleFIN institution restore', error);
-        await refreshBankData('simplefin');
-        dispatchAccountsChanged();
-      }
+        connectionFlow.setError(null);
+        onError?.(null);
 
-      try {
-        const { rateLimited, transactionCount } = await SimpleFinService.connectAndSyncAll();
         if (rateLimited) {
           setToast(
             'Institution restored. Balances are ready; transaction sync will resume when the rate limit clears.'
@@ -380,13 +369,18 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           setToast('Institution restored — accounts are up to date');
         }
       } catch (error) {
-        console.warn('Failed to sync after SimpleFIN institution restore', error);
-        setToast('Institution restored.');
+        console.warn('Failed to restore SimpleFIN institution', error);
+        const message = formatUserFacingApiError(
+          error,
+          'Failed to restore institution — try SimpleFIN again or refresh the page'
+        );
+        connectionFlow.setError(message);
+        onError?.(message);
       } finally {
         setRestoringIgnoredOrgConnId(null);
       }
     },
-    [isOnline, onError, queryClient, refreshBankData]
+    [connectionFlow, isOnline, onError, queryClient, refreshBankData]
   );
 
   const connectionsEmptyState = useMemo(() => {

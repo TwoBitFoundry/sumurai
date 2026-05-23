@@ -8,7 +8,9 @@ use crate::services::connection_service::{
     ProviderSyncError, SimpleFinConnectError, SyncConnectionParams,
 };
 use crate::services::repository_service::DatabaseRepository;
-use crate::services::simplefin_org_service::SimpleFinOrganizationService;
+use crate::services::simplefin_org_service::{
+    conn_id_is_hidden, org_is_hidden, SimpleFinOrganizationService,
+};
 use crate::services::simplefin_rate_limit_service::SimpleFinRateLimitService;
 use crate::services::sync_service::SyncService;
 use anyhow::Result;
@@ -94,7 +96,7 @@ impl SimpleFinConnectionService {
         let mut institution_count = 0;
 
         for org in &snapshot.connections {
-            if hidden_orgs.contains(&org.conn_id) {
+            if org_is_hidden(&hidden_orgs, org) {
                 continue;
             }
 
@@ -112,7 +114,23 @@ impl SimpleFinConnectionService {
             }
         }
 
-        let connection_id = first_connection_id.unwrap_or_else(Uuid::new_v4).to_string();
+        if institution_count == 0 {
+            if snapshot.connections.is_empty() {
+                return Err(SimpleFinConnectError::NoInstitutionsOnBridge);
+            }
+            if snapshot
+                .connections
+                .iter()
+                .all(|org| org_is_hidden(&hidden_orgs, org))
+            {
+                return Err(SimpleFinConnectError::AllInstitutionsHidden);
+            }
+            return Err(SimpleFinConnectError::NoInstitutionsLinked);
+        }
+
+        let connection_id = first_connection_id
+            .expect("institution_count > 0 implies a persisted connection id")
+            .to_string();
 
         Ok(ProviderConnectResponse {
             connection_id,
@@ -162,7 +180,7 @@ impl SimpleFinConnectionService {
             .await
             .map_err(ProviderSyncError::SyncFailure)?;
 
-        if hidden_orgs.contains(&conn_id) {
+        if conn_id_is_hidden(&hidden_orgs, &conn_id, connection.institution_id.as_deref()) {
             return Ok(SyncTransactionsResponse {
                 transactions: Vec::new(),
                 metadata: SyncMetadata {
@@ -207,7 +225,11 @@ impl SimpleFinConnectionService {
             .iter()
             .filter(|account| {
                 account.org_conn_id().as_deref() == Some(conn_id.as_str())
-                    && !hidden_orgs.contains(&conn_id)
+                    && !conn_id_is_hidden(
+                        &hidden_orgs,
+                        &conn_id,
+                        connection.institution_id.as_deref(),
+                    )
             })
             .map(SimpleFinProvider::map_account)
             .collect();

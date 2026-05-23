@@ -8,6 +8,7 @@ import {
   ConflictError,
   ForbiddenError,
   NotFoundError,
+  RateLimitError,
   ServerError,
   ValidationError,
 } from './errors';
@@ -43,6 +44,16 @@ export class FetchHttpClient implements IHttpClient {
     throw error;
   }
 
+  private parseRetryAfterSeconds(response: Response): number | undefined {
+    const header = response.headers.get('Retry-After');
+    if (!header) {
+      return undefined;
+    }
+
+    const seconds = Number.parseInt(header, 10);
+    return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined;
+  }
+
   private async createApiError(response: Response): Promise<ApiError> {
     let errorMessage = 'Request failed';
 
@@ -57,6 +68,7 @@ export class FetchHttpClient implements IHttpClient {
 
     switch (response.status) {
       case 400:
+      case 422:
         return new ValidationError(errorMessage);
       case 401:
         return new AuthenticationError(errorMessage);
@@ -66,6 +78,8 @@ export class FetchHttpClient implements IHttpClient {
         return new NotFoundError(errorMessage);
       case 409:
         return new ConflictError(errorMessage);
+      case 429:
+        return new RateLimitError(errorMessage, this.parseRetryAfterSeconds(response));
       case 500:
       case 502:
       case 503:

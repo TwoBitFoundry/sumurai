@@ -99,7 +99,7 @@ describe('SimpleFinService', () => {
           },
         } as any);
       getSpy.mockResolvedValue({
-        provider: 'plaid',
+        provider: 'simplefin',
         connections: [
           {
             is_connected: true,
@@ -118,10 +118,26 @@ describe('SimpleFinService', () => {
 
       expect(result).toEqual({ rateLimited: false, transactionCount: 12 });
       expect(postSpy).toHaveBeenCalledWith('/providers/sync-transactions', {
-        connection_id: 'conn-from-connect',
+        connection_id: 'conn-from-status',
         client_date: '2025-06-15',
       });
       expect(postSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('skips sync when connect succeeds but no institutions are linked yet', async () => {
+      postSpy.mockResolvedValueOnce({
+        connection_id: 'conn-from-connect',
+        institution_name: 'SimpleFIN (0 institutions)',
+      } as any);
+      getSpy.mockResolvedValue({
+        provider: 'simplefin',
+        connections: [],
+      } as any);
+
+      const result = await SimpleFinService.connectAndSyncAll();
+
+      expect(result).toEqual({ rateLimited: false, transactionCount: 0 });
+      expect(postSpy).toHaveBeenCalledTimes(1);
     });
 
     it('returns rateLimited when sync responds with 429', async () => {
@@ -133,7 +149,18 @@ describe('SimpleFinService', () => {
         .mockRejectedValueOnce(new ApiError(429, 'Too many requests'));
       getSpy.mockResolvedValue({
         provider: 'simplefin',
-        connections: [],
+        connections: [
+          {
+            is_connected: true,
+            last_sync_at: null,
+            institution_name: 'Bank A',
+            connection_id: 'conn-from-status',
+            item_id: 'simplefin_org_a',
+            transaction_count: 0,
+            account_count: 1,
+            sync_in_progress: false,
+          },
+        ],
       } as any);
 
       const result = await SimpleFinService.connectAndSyncAll();
@@ -145,7 +172,7 @@ describe('SimpleFinService', () => {
   describe('restoreInstitution', () => {
     it('unhides org, connects, and syncs the matching connection', async () => {
       postSpy
-        .mockResolvedValueOnce({} as any)
+        .mockResolvedValueOnce({ restored: true } as any)
         .mockResolvedValueOnce({
           connection_id: 'conn-demo',
           institution_name: 'SimpleFIN Demo',

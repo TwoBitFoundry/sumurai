@@ -348,6 +348,53 @@ async fn given_blocklisted_org_when_connect_simplefin_then_skips_hidden_org_rows
     assert!(!accounts.contains("acct-2"));
 }
 
+#[test]
+fn given_org_id_in_hidden_set_when_org_is_hidden_with_different_conn_id_then_true() {
+    use crate::models::simplefin::SimpleFinConnection;
+    use crate::services::simplefin_org_service::org_is_hidden;
+    use std::collections::HashSet;
+
+    let mut hidden = HashSet::new();
+    hidden.insert("org-id-1".to_string());
+    let org = SimpleFinConnection {
+        conn_id: "conn-id-1".to_string(),
+        name: "Bank".to_string(),
+        org_id: "org-id-1".to_string(),
+        org_url: None,
+        sfin_url: None,
+    };
+
+    assert!(org_is_hidden(&hidden, &org));
+}
+
+#[tokio::test]
+async fn given_all_orgs_hidden_when_connect_simplefin_then_returns_all_institutions_hidden() {
+    let user_id = Uuid::new_v4();
+    let jwt_id = "jwt_simplefin";
+    let hidden = ["org-1", "org-2", "org-3"]
+        .into_iter()
+        .map(str::to_string)
+        .collect::<HashSet<_>>();
+
+    let (connection_service, saved_item_ids, _) = build_simplefin_connection_service(
+        three_org_snapshot(),
+        hidden,
+        Some(SETUP_TOKEN.to_string()),
+        None,
+    );
+
+    let error = connection_service
+        .connect_simplefin_provider(&user_id, jwt_id, &simplefin_connect_request())
+        .await
+        .expect_err("connect should fail when every bridge org is hidden");
+
+    assert!(matches!(
+        error,
+        SimpleFinConnectError::AllInstitutionsHidden
+    ));
+    assert!(saved_item_ids.lock().unwrap().is_empty());
+}
+
 #[tokio::test]
 async fn given_stored_root_credentials_when_load_simplefin_access_url_then_returns_credentials() {
     let user_id = Uuid::new_v4();

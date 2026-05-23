@@ -19,8 +19,7 @@ const isSyncRateLimited = (error: unknown): boolean =>
 
 const resolveSimpleFinConnectionId = (
   statuses: ProviderConnectionStatus[],
-  preferredOrgConnId?: string,
-  connectConnectionId?: string
+  preferredOrgConnId?: string
 ): string | undefined => {
   if (preferredOrgConnId) {
     const scoped = statuses.find(
@@ -33,10 +32,6 @@ const resolveSimpleFinConnectionId = (
     if (scoped) {
       return scoped;
     }
-  }
-
-  if (connectConnectionId) {
-    return connectConnectionId;
   }
 
   return statuses.find((status) => status.connection_id)?.connection_id;
@@ -69,20 +64,21 @@ export class SimpleFinService {
     return response.institutions;
   }
 
-  static async restoreIgnoredInstitution(orgConnId: string): Promise<void> {
-    await ApiClient.post<{ restored: boolean }>('/providers/simplefin/ignored-institutions', {
-      org_conn_id: orgConnId,
-    });
+  static async restoreIgnoredInstitution(orgConnId: string): Promise<boolean> {
+    const response = await ApiClient.post<{ restored: boolean }>(
+      '/providers/simplefin/ignored-institutions',
+      {
+        org_conn_id: orgConnId,
+      }
+    );
+
+    return response.restored;
   }
 
   static async connectAndSyncAll(): Promise<SimpleFinConnectSyncResult> {
-    const connectResult = await SimpleFinService.connect();
+    await SimpleFinService.connect();
     const statuses = await SimpleFinService.getStatus();
-    const connectionId = resolveSimpleFinConnectionId(
-      statuses,
-      undefined,
-      connectResult.connection_id
-    );
+    const connectionId = resolveSimpleFinConnectionId(statuses);
 
     if (!connectionId) {
       return { rateLimited: false, transactionCount: 0 };
@@ -102,13 +98,9 @@ export class SimpleFinService {
 
   static async restoreInstitution(orgConnId: string): Promise<SimpleFinConnectSyncResult> {
     await SimpleFinService.restoreIgnoredInstitution(orgConnId);
-    const connectResult = await SimpleFinService.connect();
+    await SimpleFinService.connect();
     const statuses = await SimpleFinService.getStatus();
-    const connectionId = resolveSimpleFinConnectionId(
-      statuses,
-      orgConnId,
-      connectResult.connection_id
-    );
+    const connectionId = resolveSimpleFinConnectionId(statuses, orgConnId);
 
     if (!connectionId) {
       return { rateLimited: false, transactionCount: 0 };
