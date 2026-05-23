@@ -109,11 +109,20 @@ fn simplefin_org_item_id(user_id: &Uuid, org_conn_id: &str) -> String {
     format!("simplefin_{user_id}_{org_conn_id}")
 }
 
+#[deprecated(
+    since = "5.16.0",
+    note = "Use ProviderConnection.provider field instead of item_id pattern matching"
+)]
 fn is_simplefin_org_item_id(item_id: &str) -> bool {
     item_id.starts_with("simplefin_") && !item_id.starts_with("simplefin_root_")
 }
 
+#[deprecated(
+    since = "5.16.0",
+    note = "Use ProviderConnection.provider field instead of item_id pattern matching"
+)]
 fn simplefin_org_conn_id_from_item_id(item_id: &str, user_id: &Uuid) -> Option<String> {
+    #[allow(deprecated)]
     if !is_simplefin_org_item_id(item_id) {
         return None;
     }
@@ -126,7 +135,12 @@ fn simplefin_org_conn_id_from_item_id(item_id: &str, user_id: &Uuid) -> Option<S
     item_id.strip_prefix("simplefin_").map(str::to_string)
 }
 
+#[deprecated(
+    since = "5.16.0",
+    note = "Use ProviderConnection.provider field instead of item_id pattern matching"
+)]
 fn simplefin_conn_id_from_item_id(item_id: &str, user_id: &Uuid) -> Option<String> {
+    #[allow(deprecated)]
     simplefin_org_conn_id_from_item_id(item_id, user_id)
 }
 
@@ -250,7 +264,9 @@ impl ConnectionService {
             .clear_jwt_scoped_bank_connection_cache(jwt_id, connection.id)
             .await?;
 
+        #[allow(deprecated)]
         let cleared_keys = if is_simplefin_org_item_id(&connection.item_id) {
+            #[allow(deprecated)]
             let org_conn_id = simplefin_org_conn_id_from_item_id(&connection.item_id, user_id)
                 .ok_or_else(|| anyhow::anyhow!("Invalid SimpleFIN item_id"))?;
             let overview_keys = self
@@ -997,6 +1013,7 @@ impl ConnectionService {
             return Err(ProviderSyncError::RateLimited);
         }
 
+        #[allow(deprecated)]
         let conn_id = simplefin_conn_id_from_item_id(&connection.item_id, params.user_id).ok_or(
             ProviderSyncError::SyncFailure(anyhow::anyhow!("Invalid SimpleFIN connection item_id")),
         )?;
