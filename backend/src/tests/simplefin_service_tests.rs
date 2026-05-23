@@ -173,11 +173,11 @@ fn build_simplefin_connection_service(
 
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
-        .expect_get_provider_credentials_for_user()
-        .returning(|_, _| Box::pin(async { Ok(None) }));
+        .expect_get_simplefin_root_credential()
+        .returning(|_| Box::pin(async { Ok(None) }));
     mock_db
-        .expect_store_provider_credentials_for_user()
-        .returning(|_, _, _| Box::pin(async { Ok(Uuid::new_v4()) }));
+        .expect_store_simplefin_root_credential()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
 
     mock_db
         .expect_list_simplefin_hidden_orgs()
@@ -351,32 +351,16 @@ async fn given_blocklisted_org_when_connect_simplefin_then_skips_hidden_org_rows
 #[tokio::test]
 async fn given_stored_root_credentials_when_load_simplefin_access_url_then_returns_credentials() {
     let user_id = Uuid::new_v4();
-    let root_item_id = format!("simplefin_root_{user_id}");
-    let stored_user_id = user_id;
-    let stored_root_item_id = root_item_id.clone();
     let stored_access_url = ACCESS_URL.to_string();
 
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
-        .expect_get_provider_credentials_for_user()
-        .with(
-            mockall::predicate::eq(user_id),
-            mockall::predicate::eq(root_item_id.clone()),
-        )
+        .expect_get_simplefin_root_credential()
+        .with(mockall::predicate::eq(user_id))
         .times(1)
-        .returning(move |_, _| {
-            let item_id = stored_root_item_id.clone();
-            let access_token = stored_access_url.clone();
-            Box::pin(async move {
-                Ok(Some(crate::models::plaid::PlaidCredentials {
-                    id: Uuid::new_v4(),
-                    item_id,
-                    user_id: Some(stored_user_id),
-                    access_token,
-                    created_at: chrono::Utc::now(),
-                    updated_at: chrono::Utc::now(),
-                }))
-            })
+        .returning(move |_| {
+            let access_url = stored_access_url.clone();
+            Box::pin(async move { Ok(Some(access_url)) })
         });
 
     let db_repository: Arc<dyn crate::services::repository_service::DatabaseRepository> =
@@ -444,8 +428,8 @@ async fn build_simplefin_handler_app(
 
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
-        .expect_get_provider_credentials_for_user()
-        .returning(|_, _| Box::pin(async { Ok(None) }));
+        .expect_get_simplefin_root_credential()
+        .returning(|_| Box::pin(async { Ok(None) }));
     mock_db
         .expect_get_provider_transaction_ids_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
@@ -453,8 +437,8 @@ async fn build_simplefin_handler_app(
         .expect_count_transactions()
         .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
     mock_db
-        .expect_store_provider_credentials_for_user()
-        .returning(|_, _, _| Box::pin(async { Ok(Uuid::new_v4()) }));
+        .expect_store_simplefin_root_credential()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
     mock_db
         .expect_list_simplefin_hidden_orgs()
         .returning(|_| Box::pin(async { Ok(HashSet::new()) }));
@@ -668,19 +652,8 @@ fn build_simplefin_sync_service(
 
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
-        .expect_get_provider_credentials_for_user()
-        .returning(|_, _| {
-            Box::pin(async {
-                Ok(Some(crate::models::plaid::PlaidCredentials {
-                    id: Uuid::new_v4(),
-                    item_id: "simplefin_root".to_string(),
-                    user_id: Some(Uuid::new_v4()),
-                    access_token: ACCESS_URL.to_string(),
-                    created_at: chrono::Utc::now(),
-                    updated_at: chrono::Utc::now(),
-                }))
-            })
-        });
+        .expect_get_simplefin_root_credential()
+        .returning(|_| Box::pin(async { Ok(Some(ACCESS_URL.to_string())) }));
     mock_db
         .expect_list_simplefin_hidden_orgs()
         .returning(move |_| {

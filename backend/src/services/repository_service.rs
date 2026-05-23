@@ -218,6 +218,13 @@ pub trait DatabaseRepository: Send + Sync {
         id: &Uuid,
     ) -> Result<Option<Transaction>>;
 
+    async fn store_simplefin_root_credential(&self, user_id: &Uuid, access_url: &str)
+        -> Result<()>;
+
+    async fn get_simplefin_root_credential(&self, user_id: &Uuid) -> Result<Option<String>>;
+
+    async fn delete_simplefin_root_credential(&self, user_id: &Uuid) -> Result<bool>;
+
     async fn list_simplefin_hidden_orgs(
         &self,
         user_id: &Uuid,
@@ -2165,6 +2172,74 @@ impl DatabaseRepository for PostgresRepository {
                 created_at,
             },
         ))
+    }
+
+    async fn store_simplefin_root_credential(
+        &self,
+        user_id: &Uuid,
+        access_url: &str,
+    ) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let encrypted_access_url = self.encrypt_token(access_url)?;
+
+        sqlx::query(
+            r#"
+            INSERT INTO simplefin_root_credentials (user_id, encrypted_access_url, setup_token_used_at, updated_at)
+            VALUES ($1, $2, NOW(), NOW())
+            ON CONFLICT (user_id) DO UPDATE SET
+                encrypted_access_url = EXCLUDED.encrypted_access_url,
+                setup_token_used_at = NOW(),
+                updated_at = NOW()
+            "#,
+        )
+        .bind(user_id)
+        .bind(&encrypted_access_url)
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn get_simplefin_root_credential(&self, user_id: &Uuid) -> Result<Option<String>> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let row = sqlx::query_scalar::<_, Vec<u8>>(
+            "SELECT encrypted_access_url FROM simplefin_root_credentials WHERE user_id = $1",
+        )
+        .bind(user_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        row.map(|encrypted| self.decrypt_token(&encrypted))
+            .transpose()
+    }
+
+    async fn delete_simplefin_root_credential(&self, user_id: &Uuid) -> Result<bool> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let result = sqlx::query("DELETE FROM simplefin_root_credentials WHERE user_id = $1")
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+        Ok(result.rows_affected() > 0)
     }
 
     async fn list_simplefin_hidden_orgs(

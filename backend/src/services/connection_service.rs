@@ -470,7 +470,6 @@ impl ConnectionService {
         let credentials = self
             .resolve_simplefin_credentials_for_connect(user_id, provider.clone())
             .await?;
-        let root_item_id = credentials.item_id.clone();
 
         let snapshot = provider
             .fetch_balances_snapshot(&credentials)
@@ -481,11 +480,6 @@ impl ConnectionService {
                     "SimpleFIN balances snapshot unavailable"
                 ))
             })?;
-
-        self.db_repository
-            .store_provider_credentials_for_user(user_id, &root_item_id, &credentials.access_token)
-            .await
-            .map_err(SimpleFinConnectError::CredentialStorage)?;
 
         let hidden_orgs = self
             .db_repository

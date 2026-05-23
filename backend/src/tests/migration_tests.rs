@@ -926,3 +926,66 @@ async fn given_simplefin_hidden_orgs_migration_when_run_twice_then_idempotent() 
 
     assert!(simplefin_hidden_orgs_table_exists(&pool).await.unwrap());
 }
+
+async fn simplefin_root_credentials_table_exists(pool: &PgPool) -> Result<bool, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'simplefin_root_credentials'
+        )",
+    )
+    .fetch_one(pool)
+    .await
+}
+
+async fn apply_simplefin_root_credentials_migration(pool: &PgPool) -> Result<(), sqlx::Error> {
+    let sql = include_str!("../../migrations/032_create_simplefin_root_credentials.sql");
+    for stmt in sql.split(';') {
+        let statement = stmt.trim();
+        if statement.is_empty() {
+            continue;
+        }
+        sqlx::query(&format!("{statement};")).execute(pool).await?;
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_migrated_database_when_simplefin_root_credentials_migration_applied_then_table_exists(
+) {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    if !simplefin_root_credentials_table_exists(&pool)
+        .await
+        .unwrap()
+    {
+        apply_simplefin_root_credentials_migration(&pool)
+            .await
+            .expect("migration should apply");
+    }
+
+    assert!(simplefin_root_credentials_table_exists(&pool)
+        .await
+        .unwrap());
+}
+
+#[tokio::test]
+async fn given_simplefin_root_credentials_migration_when_run_twice_then_idempotent() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    apply_simplefin_root_credentials_migration(&pool)
+        .await
+        .unwrap();
+    apply_simplefin_root_credentials_migration(&pool)
+        .await
+        .expect("second application should be idempotent");
+
+    assert!(simplefin_root_credentials_table_exists(&pool)
+        .await
+        .unwrap());
+}

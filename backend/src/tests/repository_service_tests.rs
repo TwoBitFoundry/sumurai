@@ -908,3 +908,70 @@ async fn given_two_users_when_user_a_hides_org_then_user_b_cannot_see_it() {
     assert!(hidden_a.contains("conn-private"));
     assert!(!hidden_b.contains("conn-private"));
 }
+
+#[tokio::test]
+async fn given_user_when_store_and_get_simplefin_root_credential_then_round_trips() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let access_url = "https://user:pass@beta-bridge.simplefin.org/simplefin";
+
+    repo.store_simplefin_root_credential(&user.id, access_url)
+        .await
+        .unwrap();
+
+    let stored = repo
+        .get_simplefin_root_credential(&user.id)
+        .await
+        .unwrap()
+        .expect("root credential should exist");
+
+    assert_eq!(stored, access_url);
+}
+
+#[tokio::test]
+async fn given_stored_root_when_delete_simplefin_root_credential_then_returns_true() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+
+    repo.store_simplefin_root_credential(&user.id, "https://example.com/simplefin")
+        .await
+        .unwrap();
+
+    let deleted = repo
+        .delete_simplefin_root_credential(&user.id)
+        .await
+        .unwrap();
+    assert!(deleted);
+
+    let missing = repo.get_simplefin_root_credential(&user.id).await.unwrap();
+    assert!(missing.is_none());
+}
+
+#[tokio::test]
+async fn given_two_users_when_user_a_stores_root_then_user_b_cannot_read_it() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool);
+    let user_a = create_test_user(&repo).await;
+    let user_b = create_test_user(&repo).await;
+
+    repo.store_simplefin_root_credential(&user_a.id, "https://a.example/simplefin")
+        .await
+        .unwrap();
+
+    let for_b = repo
+        .get_simplefin_root_credential(&user_b.id)
+        .await
+        .unwrap();
+    assert!(for_b.is_none());
+}

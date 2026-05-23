@@ -32,6 +32,7 @@ mod plaid_service_tests;
 mod read_path_overlay_tests;
 mod repository_service_tests;
 mod security_resilience_edge_cases_tests;
+mod simplefin_credential_resolver_tests;
 mod simplefin_provider_tests;
 mod simplefin_service_tests;
 mod sync_service_factory_tests;

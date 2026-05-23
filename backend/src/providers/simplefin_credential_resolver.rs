@@ -17,6 +17,10 @@ impl SimpleFinCredentialResolver {
             setup_token,
         }
     }
+
+    fn root_item_id(user_id: &Uuid) -> String {
+        format!("simplefin_root_{user_id}")
+    }
 }
 
 #[async_trait]
@@ -26,17 +30,15 @@ impl ProviderCredentialResolver for SimpleFinCredentialResolver {
         user_id: &Uuid,
         provider: Arc<dyn FinancialDataProvider>,
     ) -> anyhow::Result<ProviderCredentials> {
-        let root_item_id = format!("simplefin_root_{user_id}");
-
-        if let Some(stored) = self
+        if let Some(access_url) = self
             .db_repository
-            .get_provider_credentials_for_user(user_id, &root_item_id)
+            .get_simplefin_root_credential(user_id)
             .await?
         {
             return Ok(ProviderCredentials {
                 provider: "simplefin".to_string(),
-                access_token: stored.access_token,
-                item_id: root_item_id,
+                access_token: access_url,
+                item_id: Self::root_item_id(user_id),
                 certificate: None,
                 private_key: None,
             });
@@ -49,23 +51,26 @@ impl ProviderCredentialResolver for SimpleFinCredentialResolver {
             .ok_or_else(|| anyhow::anyhow!("SimpleFIN setup token not configured"))?;
 
         let mut credentials = provider.exchange_public_token(setup_token).await?;
-        credentials.item_id = root_item_id;
+        credentials.item_id = Self::root_item_id(user_id);
+
+        self.db_repository
+            .store_simplefin_root_credential(user_id, &credentials.access_token)
+            .await?;
 
         Ok(credentials)
     }
 
     async fn resolve_for_sync(&self, user_id: &Uuid) -> anyhow::Result<ProviderCredentials> {
-        let item_id = format!("simplefin_root_{user_id}");
-        let stored = self
+        let access_url = self
             .db_repository
-            .get_provider_credentials_for_user(user_id, &item_id)
+            .get_simplefin_root_credential(user_id)
             .await?
             .ok_or_else(|| anyhow::anyhow!("SimpleFIN access URL not found for user"))?;
 
         Ok(ProviderCredentials {
             provider: "simplefin".to_string(),
-            access_token: stored.access_token,
-            item_id,
+            access_token: access_url,
+            item_id: Self::root_item_id(user_id),
             certificate: None,
             private_key: None,
         })

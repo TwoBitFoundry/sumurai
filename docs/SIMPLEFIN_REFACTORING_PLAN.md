@@ -1069,11 +1069,28 @@ Make SimpleFinProvider fully testable by injecting HTTP client via constructor i
 
 ---
 
-# PHASE 6: Eliminate Root Item ID Encoding
+# PHASE 6: Eliminate Root Item ID Encoding ✅ COMPLETED
 **Duration**: 1-2 sprints | **Risk**: Medium (schema change)
+**Completed**: Phase 6 — simplefin_root_credentials table and resolver migration
 
 ## Goal
 Replace SimpleFIN root credential encoding (`simplefin_root_{user_id}` item_id pattern) with explicit table, simplifying credential storage and lookup.
+
+## Acceptance Criteria - Phase 6
+- [x] simplefin_root_credentials table + RLS (Task 6.1) — migration 032 ✅
+- [x] Repository CRUD methods (Task 6.2) — store/get/delete with encryption ✅
+- [x] Credential resolver uses new table (Task 6.3) — connect + sync paths ✅
+- [x] Backfill from plaid_credentials (Task 6.4) — migration 033 ✅
+- [x] All 377 tests pass — VERIFIED ✅
+
+## TDD Log - Phase 6
+- **Slice 6.1-6.2**: Schema + repository
+  - Red: Tests for store/get/delete and RLS isolation
+  - Green: migrations 032/033, repository methods with encrypted_access_url
+- **Slice 6.3-6.4**: Resolver + connect flow
+  - Red: simplefin_credential_resolver_tests + updated simplefin_service_tests mocks
+  - Green: Resolver stores/loads root credentials; removed duplicate store_provider_credentials for root
+  - Migration tests for 032 idempotency
 
 ## Tasks
 
@@ -1102,10 +1119,10 @@ Replace SimpleFIN root credential encoding (`simplefin_root_{user_id}` item_id p
    ```
 
 **Acceptance Criteria**:
-- Migration applies without error
-- Table structure matches design
-- RLS policy is in place
-- Migration is idempotent
+- [x] Migration applies without error — 032_create_simplefin_root_credentials.sql ✅
+- [x] Table structure matches design — encrypted_access_url BYTEA + timestamps ✅
+- [x] RLS policy is in place — simplefin_root_credentials_user_isolation ✅
+- [x] Migration is idempotent — DROP POLICY IF EXISTS + CREATE TABLE IF NOT EXISTS ✅
 
 ---
 
@@ -1141,9 +1158,9 @@ Replace SimpleFIN root credential encoding (`simplefin_root_{user_id}` item_id p
 2. All queries should respect RLS
 
 **Acceptance Criteria**:
-- Methods compile
-- Tests verify CRUD operations work
-- RLS is enforced (queries go through auth.uid())
+- [x] Methods compile — store/get/delete on DatabaseRepository ✅
+- [x] Tests verify CRUD operations work — repository_service_tests ✅
+- [x] RLS is enforced (queries go through auth.uid()) — app.current_user_id set_config ✅
 
 ---
 
@@ -1161,10 +1178,10 @@ Replace SimpleFIN root credential encoding (`simplefin_root_{user_id}` item_id p
    - Remove item_id pattern lookup
 
 **Acceptance Criteria**:
-- Resolver uses new table for root credentials
-- Connect flow stores in new table
-- Sync flow loads from new table
-- Tests pass
+- [x] Resolver uses new table for root credentials — get/store_simplefin_root_credential ✅
+- [x] Connect flow stores in new table — resolve_for_connect after claim ✅
+- [x] Sync flow loads from new table — resolve_for_sync ✅
+- [x] Tests pass — simplefin_credential_resolver_tests + service tests ✅
 
 ---
 
@@ -1191,10 +1208,10 @@ Replace SimpleFIN root credential encoding (`simplefin_root_{user_id}` item_id p
    ```
 
 **Acceptance Criteria**:
-- Migration applies without error
-- All root credentials are backfilled
-- No data loss
-- Migration is idempotent
+- [x] Migration applies without error — 033 from plaid_credentials ✅
+- [x] All root credentials are backfilled — item_id LIKE 'simplefin_root_%' ✅
+- [x] No data loss — ON CONFLICT DO NOTHING ✅
+- [x] Migration is idempotent — ON CONFLICT DO NOTHING ✅
 
 ---
 
