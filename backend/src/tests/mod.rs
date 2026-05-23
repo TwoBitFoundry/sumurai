@@ -33,6 +33,7 @@ mod read_path_overlay_tests;
 mod repository_service_tests;
 mod security_resilience_edge_cases_tests;
 mod simplefin_provider_tests;
+mod simplefin_service_tests;
 mod sync_service_tests;
 mod sync_service_with_provider_tests;
 mod teller_model_tests;

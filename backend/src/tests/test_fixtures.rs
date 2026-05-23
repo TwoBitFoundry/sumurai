@@ -48,7 +48,7 @@ impl Categorizer for NoopCategorizer {
     }
 }
 
-fn noop_categorizer() -> Arc<dyn Categorizer> {
+pub(crate) fn noop_categorizer() -> Arc<dyn Categorizer> {
     Arc::new(NoopCategorizer)
 }
 

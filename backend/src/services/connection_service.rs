@@ -7,8 +7,10 @@ use crate::models::{
         DataCleared, DisconnectResult, ExchangeTokenResponse, ProviderConnectRequest,
         ProviderConnectResponse, ProviderConnection,
     },
+    simplefin::SimpleFinConnection,
     transaction::{SyncMetadata, SyncTransactionsResponse, Transaction},
 };
+use crate::providers::simplefin_provider::SimpleFinProvider;
 use crate::providers::{
     FinancialDataProvider, InstitutionInfo, ProviderCredentials, ProviderRegistry,
 };
@@ -34,6 +36,16 @@ pub enum TellerConnectError {
     InvalidProvider(String),
     CredentialStorage(Error),
     ConnectionPersistence(Error),
+}
+
+#[derive(Debug)]
+pub enum SimpleFinConnectError {
+    #[allow(dead_code)]
+    InvalidProvider(String),
+    ClaimFailed(Error),
+    CredentialStorage(Error),
+    ConnectionPersistence(Error),
+    SnapshotFetch(Error),
 }
 
 #[derive(Debug)]
@@ -286,6 +298,189 @@ impl ConnectionService {
             connection_id: connection.id.to_string(),
             institution_name,
         })
+    }
+
+    pub async fn connect_simplefin_provider(
+        &self,
+        user_id: &Uuid,
+        jwt_id: &str,
+        request: &ProviderConnectRequest,
+    ) -> Result<ProviderConnectResponse, SimpleFinConnectError> {
+        if request.provider.as_str() != "simplefin" {
+            return Err(SimpleFinConnectError::InvalidProvider(
+                request.provider.clone(),
+            ));
+        }
+
+        let provider = self
+            .resolve_provider("simplefin")
+            .ok_or_else(|| SimpleFinConnectError::InvalidProvider("simplefin".to_string()))?;
+
+        let mut credentials = provider
+            .as_ref()
+            .exchange_public_token(&request.access_token)
+            .await
+            .map_err(SimpleFinConnectError::ClaimFailed)?;
+
+        let root_item_id = format!("simplefin_root_{user_id}");
+        credentials.item_id = root_item_id.clone();
+        credentials.provider = "simplefin".to_string();
+
+        self.db_repository
+            .store_provider_credentials_for_user(user_id, &root_item_id, &credentials.access_token)
+            .await
+            .map_err(SimpleFinConnectError::CredentialStorage)?;
+
+        let snapshot = provider
+            .as_ref()
+            .fetch_balances_snapshot(&credentials)
+            .await
+            .map_err(SimpleFinConnectError::SnapshotFetch)?
+            .ok_or_else(|| {
+                SimpleFinConnectError::SnapshotFetch(anyhow::anyhow!(
+                    "SimpleFIN balances snapshot unavailable"
+                ))
+            })?;
+
+        let hidden_orgs = self
+            .db_repository
+            .list_simplefin_hidden_orgs(user_id)
+            .await
+            .map_err(SimpleFinConnectError::ConnectionPersistence)?;
+
+        let mut first_connection_id = None;
+        let mut institution_count = 0;
+
+        for org in &snapshot.connections {
+            if hidden_orgs.contains(&org.conn_id) {
+                continue;
+            }
+
+            let persisted = self
+                .persist_simplefin_org_connection(
+                    user_id,
+                    jwt_id,
+                    &credentials,
+                    org,
+                    &snapshot.accounts,
+                )
+                .await
+                .map_err(SimpleFinConnectError::ConnectionPersistence)?;
+
+            if let Some(connection_id) = persisted {
+                institution_count += 1;
+                if first_connection_id.is_none() {
+                    first_connection_id = Some(connection_id);
+                }
+            }
+        }
+
+        let connection_id = first_connection_id.unwrap_or_else(Uuid::new_v4).to_string();
+
+        Ok(ProviderConnectResponse {
+            connection_id,
+            institution_name: format!("SimpleFIN ({institution_count} institutions)"),
+        })
+    }
+
+    #[allow(dead_code)]
+    pub async fn load_simplefin_access_url(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<ProviderCredentials, SimpleFinConnectError> {
+        let item_id = format!("simplefin_root_{user_id}");
+        let stored = self
+            .db_repository
+            .get_provider_credentials_for_user(user_id, &item_id)
+            .await
+            .map_err(SimpleFinConnectError::CredentialStorage)?
+            .ok_or_else(|| {
+                SimpleFinConnectError::CredentialStorage(anyhow::anyhow!(
+                    "SimpleFIN access URL not found for user"
+                ))
+            })?;
+
+        Ok(ProviderCredentials {
+            provider: "simplefin".to_string(),
+            access_token: stored.access_token,
+            item_id,
+            certificate: None,
+            private_key: None,
+        })
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn persist_simplefin_org_connection(
+        &self,
+        user_id: &Uuid,
+        jwt_id: &str,
+        _credentials: &ProviderCredentials,
+        org: &SimpleFinConnection,
+        snapshot_accounts: &[crate::models::simplefin::SimpleFinAccount],
+    ) -> Result<Option<Uuid>> {
+        let item_id = format!("simplefin_{}", org.conn_id);
+        let mut connection = ProviderConnection::new(*user_id, &item_id);
+        connection.mark_connected(&org.name);
+        connection.institution_id = Some(org.org_id.clone());
+        connection.institution_name = Some(org.name.clone());
+        connection.transaction_count = 0;
+        connection.account_count = 0;
+        connection.last_sync_at = None;
+        connection.sync_cursor = None;
+
+        self.db_repository
+            .save_provider_connection(&connection)
+            .await?;
+
+        let mut persisted_accounts = Vec::new();
+        for simplefin_account in snapshot_accounts
+            .iter()
+            .filter(|account| account.conn_id == org.conn_id)
+        {
+            let mut account = SimpleFinProvider::map_account(simplefin_account);
+            account.user_id = Some(*user_id);
+            account.provider_connection_id = Some(connection.id);
+
+            match self.db_repository.upsert_account(&account).await {
+                Ok(_) => persisted_accounts.push(account),
+                Err(e) => {
+                    tracing::warn!(
+                        "Failed to persist SimpleFIN account {} for user {}: {}",
+                        simplefin_account.id,
+                        user_id,
+                        e
+                    );
+                }
+            }
+        }
+
+        if !persisted_accounts.is_empty() {
+            connection.account_count = persisted_accounts.len() as i32;
+            if let Err(e) = self
+                .db_repository
+                .save_provider_connection(&connection)
+                .await
+            {
+                tracing::warn!(
+                    "Failed to update SimpleFIN connection account count for user {}: {}",
+                    user_id,
+                    e
+                );
+            }
+
+            if let Err(e) = self
+                .complete_sync_with_jwt_cache_update(jwt_id, &connection, &persisted_accounts)
+                .await
+            {
+                tracing::warn!(
+                    "Failed to update JWT-scoped caches after SimpleFIN connect for user {}: {}",
+                    user_id,
+                    e
+                );
+            }
+        }
+
+        Ok(Some(connection.id))
     }
 
     pub async fn create_link_token(

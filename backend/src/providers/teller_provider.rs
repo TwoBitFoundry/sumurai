@@ -344,6 +344,13 @@ impl FinancialDataProvider for TellerProvider {
         })
     }
 
+    async fn fetch_balances_snapshot(
+        &self,
+        _credentials: &ProviderCredentials,
+    ) -> Result<Option<crate::models::simplefin::SimpleFinAccountsResponse>> {
+        Ok(None)
+    }
+
     async fn get_institution_info(
         &self,
         credentials: &ProviderCredentials,

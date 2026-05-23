@@ -19,8 +19,8 @@ pub use budget_service::BudgetService;
 pub use cache_service::{CacheService, RedisCache};
 pub use categorization::categorization_service::{CategorizationService, Categorizer};
 pub use connection_service::{
-    ConnectionService, ExchangeTokenError, LinkTokenError, ProviderSyncError, SyncConnectionParams,
-    TellerConnectError, TellerSyncError,
+    ConnectionService, ExchangeTokenError, LinkTokenError, ProviderSyncError,
+    SimpleFinConnectError, SyncConnectionParams, TellerConnectError, TellerSyncError,
 };
 pub use plaid_service::{PlaidService, RealPlaidClient};
 pub use sync_service::SyncService;

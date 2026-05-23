@@ -54,7 +54,7 @@ pub struct ExchangeTokenRequest {
     pub public_token: String,
 }
 
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[schema(example = json!({
     "provider": "teller",
     "access_token": "access-sandbox-xyz",
@@ -201,7 +201,7 @@ pub struct ProviderStatusResponse {
     pub connections: Vec<ProviderConnectionStatus>,
 }
 
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 #[schema(example = json!({"connection_id": "connection-uuid", "institution_name": "Demo Bank"}))]
 pub struct ProviderConnectResponse {
     pub connection_id: String,

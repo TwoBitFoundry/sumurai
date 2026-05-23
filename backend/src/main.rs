@@ -96,8 +96,8 @@ use services::{
     },
     AuthService, AuthorizationService, BudgetService, CacheService, CategorizationService,
     Categorizer, ConnectionService, ExchangeTokenError, LinkTokenError, PlaidService,
-    ProviderSyncError, RedisCache, SyncConnectionParams, SyncService, TellerConnectError,
-    TellerSyncError,
+    ProviderSyncError, RedisCache, SimpleFinConnectError, SyncConnectionParams, SyncService,
+    TellerConnectError, TellerSyncError,
 };
 use services::{AnalyticsService, RealPlaidClient};
 use sqlx::PgPool;
@@ -2632,7 +2632,7 @@ async fn load_connection_statuses(
 #[utoipa::path(
     post,
     path = "/api/providers/connect",
-    description = "Completes Teller Connect enrollment and stores provider credentials for the user.",
+    description = "Completes provider connect enrollment and stores provider credentials for the user.",
     request_body = ProviderConnectRequest,
     responses(
         (status = 200, description = "Provider connected successfully", body = ProviderConnectResponse),
@@ -2648,22 +2648,126 @@ async fn connect_authenticated_provider(
     auth_context: AuthContext,
     Json(req): Json<ProviderConnectRequest>,
 ) -> Result<Json<ProviderConnectResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    if req.provider != "teller" {
-        log_provider_credential_outcome(&req.provider, StatusCode::BAD_REQUEST, "provider.connect");
-        return Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
-            .into_response(StatusCode::BAD_REQUEST));
-    }
-
-    match state
-        .connection_service
-        .connect_teller_provider(&auth_context.user_id, &auth_context.jwt_id, &req)
-        .await
-    {
-        Ok(response) => {
-            log_provider_credential_outcome("teller", StatusCode::OK, "provider.connect");
-            Ok(Json(response))
-        }
-        Err(TellerConnectError::InvalidProvider(_)) => {
+    match req.provider.as_str() {
+        "teller" => match state
+            .connection_service
+            .connect_teller_provider(&auth_context.user_id, &auth_context.jwt_id, &req)
+            .await
+        {
+            Ok(response) => {
+                log_provider_credential_outcome("teller", StatusCode::OK, "provider.connect");
+                Ok(Json(response))
+            }
+            Err(TellerConnectError::InvalidProvider(_)) => {
+                log_provider_credential_outcome(
+                    &req.provider,
+                    StatusCode::BAD_REQUEST,
+                    "provider.connect",
+                );
+                Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
+                    .into_response(StatusCode::BAD_REQUEST))
+            }
+            Err(TellerConnectError::CredentialStorage(e)) => {
+                log_provider_credential_outcome(
+                    "teller",
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "provider.connect",
+                );
+                tracing::error!(
+                    "Failed to store Teller credentials for user {}: {}",
+                    auth_context.user_id,
+                    e
+                );
+                Err(ApiErrorResponse::internal_server_error(
+                    "Failed to store credentials",
+                ))
+            }
+            Err(TellerConnectError::ConnectionPersistence(e)) => {
+                log_provider_credential_outcome(
+                    "teller",
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "provider.connect",
+                );
+                tracing::error!(
+                    "Failed to persist Teller connection for user {}: {}",
+                    auth_context.user_id,
+                    e
+                );
+                Err(ApiErrorResponse::internal_server_error(
+                    "Failed to save connection",
+                ))
+            }
+        },
+        "simplefin" => match state
+            .connection_service
+            .connect_simplefin_provider(&auth_context.user_id, &auth_context.jwt_id, &req)
+            .await
+        {
+            Ok(response) => {
+                log_provider_credential_outcome("simplefin", StatusCode::OK, "provider.connect");
+                Ok(Json(response))
+            }
+            Err(SimpleFinConnectError::InvalidProvider(_)) => {
+                log_provider_credential_outcome(
+                    &req.provider,
+                    StatusCode::BAD_REQUEST,
+                    "provider.connect",
+                );
+                Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
+                    .into_response(StatusCode::BAD_REQUEST))
+            }
+            Err(SimpleFinConnectError::ClaimFailed(e)) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::BAD_REQUEST,
+                    "provider.connect",
+                );
+                tracing::error!(
+                    "Failed to claim SimpleFIN setup token for user {}: {}",
+                    auth_context.user_id,
+                    e
+                );
+                Err(ApiErrorResponse::new(
+                    "BAD_REQUEST",
+                    "Invalid or already-used SimpleFIN setup token",
+                )
+                .into_response(StatusCode::BAD_REQUEST))
+            }
+            Err(SimpleFinConnectError::CredentialStorage(e)) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "provider.connect",
+                );
+                tracing::error!(
+                    "Failed to store SimpleFIN credentials for user {}: {}",
+                    auth_context.user_id,
+                    e
+                );
+                Err(ApiErrorResponse::internal_server_error(
+                    "Failed to store credentials",
+                ))
+            }
+            Err(
+                SimpleFinConnectError::ConnectionPersistence(e)
+                | SimpleFinConnectError::SnapshotFetch(e),
+            ) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "provider.connect",
+                );
+                tracing::error!(
+                    "Failed to persist SimpleFIN connection for user {}: {}",
+                    auth_context.user_id,
+                    e
+                );
+                Err(ApiErrorResponse::internal_server_error(
+                    "Failed to save connection",
+                ))
+            }
+        },
+        _ => {
             log_provider_credential_outcome(
                 &req.provider,
                 StatusCode::BAD_REQUEST,
@@ -2671,36 +2775,6 @@ async fn connect_authenticated_provider(
             );
             Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
                 .into_response(StatusCode::BAD_REQUEST))
-        }
-        Err(TellerConnectError::CredentialStorage(e)) => {
-            log_provider_credential_outcome(
-                "teller",
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "provider.connect",
-            );
-            tracing::error!(
-                "Failed to store Teller credentials for user {}: {}",
-                auth_context.user_id,
-                e
-            );
-            Err(ApiErrorResponse::internal_server_error(
-                "Failed to store credentials",
-            ))
-        }
-        Err(TellerConnectError::ConnectionPersistence(e)) => {
-            log_provider_credential_outcome(
-                "teller",
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "provider.connect",
-            );
-            tracing::error!(
-                "Failed to persist Teller connection for user {}: {}",
-                auth_context.user_id,
-                e
-            );
-            Err(ApiErrorResponse::internal_server_error(
-                "Failed to save connection",
-            ))
         }
     }
 }

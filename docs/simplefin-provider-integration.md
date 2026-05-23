@@ -213,10 +213,16 @@ Tests in `backend/src/tests/migration_tests.rs` and `backend/src/tests/repositor
 
 Tests in `backend/src/tests/simplefin_service_tests.rs` (or extend `connection_service_tests.rs`):
 
-- [ ] Claim with a 3-org fixture writes exactly **3** `provider_connections` rows + their accounts.
-- [ ] Re-claim with the same setup token replaces the access URL credential and does **not** duplicate rows.
-- [ ] **Claim with a 3-org fixture where one `conn_id` is pre-inserted in `simplefin_hidden_orgs` writes exactly 2 rows; the third org's accounts are not in the `accounts` table.**
-- [ ] Handler integration test: `POST /api/providers/connect` with `provider: "simplefin"` → `200`; with `provider: "unknown"` → `400`.
+- [x] Claim with a 3-org fixture writes exactly **3** `provider_connections` rows + their accounts.
+- [x] Re-claim with the same setup token replaces the access URL credential and does **not** duplicate rows.
+- [x] **Claim with a 3-org fixture where one `conn_id` is pre-inserted in `simplefin_hidden_orgs` writes exactly 2 rows; the third org's accounts are not in the `accounts` table.**
+- [x] Handler integration test: `POST /api/providers/connect` with `provider: "simplefin"` → `200`; with `provider: "unknown"` → `400`.
+
+#### Phase 4 TDD log
+
+- Red: `simplefin_service_tests` connect, re-claim, blocklist, load credentials, handler routes.
+- Green: `connect_simplefin_provider`, `load_simplefin_access_url`, `fetch_balances_snapshot` trait method, handler routing.
+- Commands: `cargo test --manifest-path backend/Cargo.toml --locked` (355 passed).
 
 ---
 

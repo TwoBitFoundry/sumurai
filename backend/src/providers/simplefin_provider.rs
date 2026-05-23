@@ -208,7 +208,7 @@ impl SimpleFinProvider {
         chunks
     }
 
-    fn map_account(simplefin_account: &SimpleFinAccount) -> Account {
+    pub fn map_account(simplefin_account: &SimpleFinAccount) -> Account {
         let balance = simplefin_account
             .balance
             .as_deref()
@@ -282,7 +282,10 @@ impl FinancialDataProvider for SimpleFinProvider {
         })
     }
 
-    async fn get_accounts(&self, credentials: &ProviderCredentials) -> Result<Vec<Account>> {
+    async fn fetch_balances_snapshot(
+        &self,
+        credentials: &ProviderCredentials,
+    ) -> Result<Option<SimpleFinAccountsResponse>> {
         let response = self
             .http_client
             .get_accounts(
@@ -293,6 +296,14 @@ impl FinancialDataProvider for SimpleFinProvider {
                 },
             )
             .await?;
+        Ok(Some(response))
+    }
+
+    async fn get_accounts(&self, credentials: &ProviderCredentials) -> Result<Vec<Account>> {
+        let response = self
+            .fetch_balances_snapshot(credentials)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("SimpleFIN balances snapshot unavailable"))?;
         Ok(response.accounts.iter().map(Self::map_account).collect())
     }
 
