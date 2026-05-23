@@ -76,10 +76,11 @@ docker compose -f docker-compose.dev.yml up -d --build
 
 For the **production-oriented** stack with Seq, use `docker-compose.prod.yml` and [docs/PRODUCTION_TLS.md](docs/PRODUCTION_TLS.md).
 
-Demo credentials:
+Demo credentials (password `Test1234!` for each account):
 
-- Username: `me@test.com`
-- Password: `Test1234!`
+- Plaid: `plaid@test.com`
+- Teller: `teller@test.com`
+- SimpleFIN: `simplefin@test.com` (after login, paste a setup token during onboarding)
 
 ## Frontend Development
 
@@ -182,6 +183,10 @@ Teller values when using Teller:
 
 - `TELLER_APPLICATION_ID`
 
+SimpleFIN:
+
+- No provider-specific environment variables. Set `DEFAULT_PROVIDER=simplefin` and paste a setup token in the UI during onboarding.
+
 Optional values:
 
 - `NGROK_AUTHTOKEN`
@@ -204,12 +209,14 @@ Login and register under `/api/auth/` are rate limited in the Axum backend with 
 
 Use these provider test credentials for local sandbox flows:
 
+- SimpleFIN
+  - Sign in as `simplefin@test.com` / `Test1234!`, set `DEFAULT_PROVIDER=simplefin`, start the stack, and paste a demo setup token from [beta-bridge.simplefin.org/info/developers](https://beta-bridge.simplefin.org/info/developers) during onboarding.
 - Teller
-  - Username: `username`
-  - Password: `password`
+  - Sumurai login: `teller@test.com` / `Test1234!`
+  - Teller Connect sandbox (when prompted): `username` / `password`
 - Plaid
-  - Username: `user_good`
-  - Password: `pass_good`
+  - Sumurai login: `plaid@test.com` / `Test1234!`
+  - Plaid Link sandbox (when prompted): `user_good` / `pass_good`
 
 If a sandbox provider prompts for 2FA, click through with empty fields.
 

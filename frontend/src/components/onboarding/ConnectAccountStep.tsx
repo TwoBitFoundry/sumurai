@@ -361,6 +361,13 @@ export function ConnectAccountStep({
                   </span>
                 ) : (
                   <span className={cn('flex items-center gap-2', uiTypographyRecipes.bodyStrong)}>
+                    {content.logoSrc ? (
+                      <img
+                        src={content.logoSrc}
+                        alt={`${content.displayName} logo`}
+                        className={cn('h-5', 'w-5', 'rounded-full', 'object-cover')}
+                      />
+                    ) : null}
                     <span>Connect with {content.displayName}</span>
                     {content.cta.badge && (
                       <Badge variant="default" size="sm" className="tracking-[0.2em]">

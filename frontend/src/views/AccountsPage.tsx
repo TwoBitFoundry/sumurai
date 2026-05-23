@@ -18,6 +18,11 @@ import { useProviderCatalog } from '../hooks/useProviderCatalog';
 import { PageLayout } from '../layouts/PageLayout';
 import { PlaidService } from '../services/PlaidService';
 import { TellerService } from '../services/TellerService';
+import {
+  getConnectAccountProviderContent,
+  getProviderCardConfig,
+  getProviderLogoSrc,
+} from '../utils/providerCards';
 import { invalidateStaleCacheQueries, type SyncProvider } from '../utils/queryInvalidation';
 
 const formatRelativeTime = (iso: string): string => {
@@ -127,7 +132,10 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       providerCatalog.selectedProvider,
     ]
   );
-  const providerLabel = primaryProvider === 'teller' ? 'Teller' : 'Plaid';
+  const primaryProviderCard = getProviderCardConfig(primaryProvider);
+  const primaryConnectContent = getConnectAccountProviderContent(primaryProvider);
+  const providerLabel = primaryProviderCard.title;
+  const providerLogoSrc = getProviderLogoSrc(primaryProvider);
 
   const providersForSync = useMemo(() => {
     const providers = new Set<SyncProvider>([primaryProvider]);
@@ -340,9 +348,9 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           onClick={() => void connectionFlow.initiateConnection()}
           disabled={connectDisabled}
           title={!isOnline ? 'Unavailable while offline' : undefined}
-          leadingImageSrc={primaryProvider === 'teller' ? '/teller.webp' : '/plaid.webp'}
+          leadingImageSrc={providerLogoSrc}
         >
-          {primaryProvider === 'teller' ? 'Teller' : 'Add account'}
+          {primaryProvider === 'plaid' ? 'Add account' : providerLabel}
         </ConnectButton>
       </div>
       {!isOnline && (
@@ -381,9 +389,9 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           onSync={syncBank}
           onDisconnect={disconnect}
           isOnline={isOnline}
-          providerName={providerLabel === 'Teller' ? 'Teller accounts' : 'Plaid accounts'}
-          connectLabel={primaryProvider === 'teller' ? 'Teller' : 'Connect with Plaid'}
-          connectLogoSrc={primaryProvider === 'teller' ? '/teller.webp' : '/plaid.webp'}
+          providerName={`${providerLabel} accounts`}
+          connectLabel={primaryConnectContent.cta.defaultLabel}
+          connectLogoSrc={providerLogoSrc}
           onImportSuccess={handleImportSuccess}
         />
 

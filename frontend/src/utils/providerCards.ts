@@ -43,6 +43,7 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
     badge: 'Bring your own token',
     description:
       'Link many banks through your own SimpleFIN bridge—no third-party link UI inside Sumurai.',
+    logoSrc: '/simplefin.webp',
     bullets: [
       'Works with many banks from one setup token',
       'You control access at simplefin.org',
@@ -54,6 +55,9 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
 
 export const getProviderCardConfig = (provider: FinancialProvider): ProviderCardConfig =>
   PROVIDER_CARD_CONFIG[provider];
+
+export const getProviderLogoSrc = (provider: FinancialProvider): string | undefined =>
+  getProviderCardConfig(provider).logoSrc;
 
 type HighlightPalette = {
   gradient: string;
@@ -245,6 +249,7 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
 
 const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
   displayName: 'SimpleFIN',
+  logoSrc: '/simplefin.webp',
   eyebrow: {
     text: 'SimpleFIN Bridge',
     backgroundClassName: cn(uiStatusRecipes.info.surface),

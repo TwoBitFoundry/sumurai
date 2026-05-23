@@ -38,7 +38,7 @@ flowchart LR
 
 1. The browser loads the exported frontend through Nginx.
 2. The frontend validates the session with the backend and keeps auth state synchronized.
-3. When a user connects a provider, the frontend opens the provider-specific flow for Teller or Plaid.
+3. When a user connects a provider, the frontend opens the provider-specific flow for Teller, Plaid, or SimpleFIN.
 4. The backend receives the provider token exchange, encrypts provider secrets, and stores them in PostgreSQL.
 5. Sync services fetch accounts and transactions from the selected provider through the shared provider registry.
 6. The backend normalizes transactions, updates the cache, and persists the latest state.
@@ -47,10 +47,18 @@ flowchart LR
 ## Provider Flow
 
 - `DEFAULT_PROVIDER` determines the default provider shown by the app.
-- The backend registers both Teller and Plaid implementations in a shared provider registry.
-- The frontend uses provider-specific services and connect flows for Teller and Plaid.
+- The backend registers Teller, Plaid, and SimpleFIN implementations in a shared provider registry.
+- The frontend uses provider-specific services and connect flows for each provider.
 - `/api/providers/info`, `/api/providers/select`, `/api/providers/connect`, `/api/providers/status`, `/api/providers/accounts`, `/api/providers/sync-transactions`, and `/api/providers/disconnect` support the provider management UX.
 - Provider credentials are encrypted before persistence and invalidated through cache cleanup when a connection is removed.
+
+### SimpleFIN
+
+- A user pastes a one-time setup token in the UI. The backend claims it against the SimpleFIN bridge and stores a single access URL per user under `simplefin_root_{user_id}` in encrypted provider credentials.
+- One access URL backs many `provider_connections` rows: each financial institution in the bridge snapshot becomes `simplefin_{org_conn_id}` with its own accounts and transactions.
+- Re-sync and connect reuse the stored access URL; the bridge response may still list institutions the user removed in Sumurai.
+- `simplefin_hidden_orgs` records orgs the user disconnected. Sync and connect skip blocklisted `org_conn_id` values so disconnected institutions do not get new rows in `provider_connections`, `accounts`, or `transactions`, and no cache entries are keyed on that org.
+- Manual SimpleFIN sync is rate-limited per user (Redis floor key, one hour) to respect bridge usage expectations.
 
 ## Frontend
 

@@ -53,4 +53,4 @@
 - Never commit real secrets.
 - Generate local secrets with `openssl rand -hex 32` for `JWT_SECRET` and `ENCRYPTION_KEY`.
 - Redis is mandatory; the backend exits without it.
-- Local E2E demo credentials are `me@test.com` / `Test1234!`.
+- Local E2E demo users use password `Test1234!`: `plaid@test.com`, `teller@test.com`, `simplefin@test.com`.

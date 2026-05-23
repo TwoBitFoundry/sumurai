@@ -1,9 +1,11 @@
 import { AlertTriangle } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
+import type { FinancialProvider } from '@/types/api';
 import { Alert, Badge, Button, GlassCard, Modal } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
 import { font as uiTypographyRecipes } from '@/ui/recipes';
+import { getProviderCardConfig } from '@/utils/providerCards';
 
 interface ProviderMismatchModalProps {
   userProvider: string;
@@ -18,13 +20,15 @@ export const ProviderMismatchModal = ({
 }: ProviderMismatchModalProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const providerLabels: Record<string, string> = {
-    plaid: 'Plaid',
-    teller: 'Teller',
+  const labelFor = (provider: string) => {
+    if (provider === 'plaid' || provider === 'teller' || provider === 'simplefin') {
+      return getProviderCardConfig(provider as FinancialProvider).title;
+    }
+    return provider;
   };
 
-  const userProviderLabel = providerLabels[userProvider] || userProvider;
-  const defaultProviderLabel = providerLabels[defaultProvider] || defaultProvider;
+  const userProviderLabel = labelFor(userProvider);
+  const defaultProviderLabel = labelFor(defaultProvider);
 
   useEffect(() => {
     buttonRef.current?.focus();

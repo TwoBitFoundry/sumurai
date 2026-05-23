@@ -386,16 +386,18 @@ Tests in `frontend/tests/features/simplefin/hooks/useSimpleFinFlow.test.tsx`:
 
 ### Tasks
 
-1. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — extend the Provider Flow section: note that SimpleFIN uses one access URL across many `provider_connections` rows, and that `simplefin_hidden_orgs` enforces the "only keep what is implicitly allowed" rule.
-2. [README.md](README.md) — add SimpleFIN to the provider list with a short Quick Start pointing to <https://bridge.simplefin.org/>.
-3. [CONTRIBUTING.md](CONTRIBUTING.md) — env-var section: SimpleFIN needs none; sandbox section: demo setup token URL.
-4. [.env.example](.env.example) — add a comment-only line: `# SIMPLEFIN: no keys required; user pastes a setup token in the UI`. **Do not read or write `.env`.**
+1. [x] [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — extend the Provider Flow section: note that SimpleFIN uses one access URL across many `provider_connections` rows, and that `simplefin_hidden_orgs` enforces the "only keep what is implicitly allowed" rule.
+2. [x] [README.md](README.md) — add SimpleFIN to the provider list with a short Quick Start pointing to <https://bridge.simplefin.org/>.
+3. [x] [CONTRIBUTING.md](CONTRIBUTING.md) — env-var section: SimpleFIN needs none; sandbox section: demo setup token URL.
+4. [x] [.env.example](.env.example) — add a comment-only line: `# SIMPLEFIN: no keys required; user pastes a setup token in the UI`. **Do not read or write `.env`.**
 
 ### Acceptance
 
+Manual E2E (deferred; use provider-specific demo users, password `Test1234!`):
+
 - [ ] `npm run backend:ci && npm run frontend:ci` is green.
 - [ ] `DEFAULT_PROVIDER=simplefin docker compose -f docker-compose.dev.yml up -d --build` starts cleanly.
-- [ ] Register `me@test.com` / `Test1234!`; choose SimpleFIN in onboarding.
+- [ ] Sign in as `simplefin@test.com` / `Test1234!`; complete SimpleFIN onboarding.
 - [ ] Grab the demo token from <https://beta-bridge.simplefin.org/info/developers>; paste; submit succeeds.
 - [ ] Success badge shows the org count from the demo response; accounts appear in the accounts list.
 - [ ] Trigger a manual sync; transactions populate.
@@ -403,6 +405,12 @@ Tests in `frontend/tests/features/simplefin/hooks/useSimpleFinFlow.test.tsx`:
 - [ ] Disconnect one org from the accounts page; trigger a fresh sync; the disconnected org and its data **do not** reappear (verify with `psql` against `simplefin_hidden_orgs`, `provider_connections`, `accounts`, `transactions`).
 - [ ] Re-claim with a fresh demo token; previously-hidden org stays hidden.
 - [ ] Switch `DEFAULT_PROVIDER` back to `teller`; the provider-mismatch flow in `App.tsx` surfaces correctly.
+
+#### Phase 10 TDD log
+
+- Docs: `ARCHITECTURE.md` SimpleFIN subsection, `README.md` quick start, `CONTRIBUTING.md` env + sandbox notes, `.env.example` comment.
+- Demo users documented as `plaid@test.com`, `teller@test.com`, `simplefin@test.com` (password `Test1234!`).
+- E2E checklist left for manual verification after implementation.
 
 ---
 
