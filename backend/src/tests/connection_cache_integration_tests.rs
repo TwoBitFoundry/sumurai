@@ -117,7 +117,7 @@ async fn given_bank_sync_operation_when_completing_then_updates_jwt_scoped_cache
 
     let provider_registry = Arc::new(ProviderRegistry::new());
     let db_repository = Arc::new(mock_db);
-    let credential_resolvers = build_credential_resolvers(db_repository.clone(), None);
+    let credential_resolvers = build_credential_resolvers(db_repository.clone());
     let service = ConnectionService::new(
         db_repository,
         Arc::new(mock_cache),

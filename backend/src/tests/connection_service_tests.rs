@@ -234,7 +234,7 @@ async fn given_plaid_sync_with_many_transactions_when_persisting_then_batches_wr
         .returning(|_, _, _| Box::pin(async { Ok(()) }));
 
     let db_repository = Arc::new(mock_db);
-    let credential_resolvers = build_credential_resolvers(db_repository.clone(), None);
+    let credential_resolvers = build_credential_resolvers(db_repository.clone());
     let connection_service = ConnectionService::new(
         db_repository,
         Arc::new(mock_cache),

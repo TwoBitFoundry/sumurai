@@ -79,26 +79,32 @@ Move SimpleFIN connect to a user-submitted setup token model and make the stored
 
 ### Tasks
 
-- [ ] Update `ProviderConnectRequest` to carry a dedicated SimpleFIN setup-token field.
-- [ ] Refactor the SimpleFIN credential resolver so connect uses the request token instead of constructor-held env state.
-- [ ] Preserve stored-credential reuse when a user already has at least one active SimpleFIN institution.
-- [ ] Remove `SIMPLEFIN_SETUP_TOKEN` from `Config` as a connect-time dependency.
-- [ ] Update provider startup so SimpleFIN registration does not require a shared setup token.
-- [ ] Keep SimpleFIN availability gated by `DEFAULT_PROVIDER=simplefin`.
-- [ ] Add explicit SimpleFIN error mapping for:
-  - [ ] missing token when no SimpleFIN credential can be reused
-  - [ ] malformed token
-  - [ ] already-used or invalid token
-  - [ ] claim failure
-- [ ] Update OpenAPI schemas and examples for the connect request and documented error cases.
+- [x] Update `ProviderConnectRequest` to carry a dedicated SimpleFIN setup-token field.
+- [x] Refactor the SimpleFIN credential resolver so connect uses the request token instead of constructor-held env state.
+- [x] Preserve stored-credential reuse when a user already has at least one active SimpleFIN institution.
+- [x] Remove `SIMPLEFIN_SETUP_TOKEN` from `Config` as a connect-time dependency.
+- [x] Update provider startup so SimpleFIN registration does not require a shared setup token.
+- [x] Keep SimpleFIN availability gated by `DEFAULT_PROVIDER=simplefin`.
+- [x] Add explicit SimpleFIN error mapping for:
+  - [x] missing token when no SimpleFIN credential can be reused
+  - [x] malformed token
+  - [x] already-used or invalid token
+  - [x] claim failure
+- [x] Update OpenAPI schemas and examples for the connect request and documented error cases.
 
 ### Acceptance Criteria
 
-- [ ] A fresh user can connect SimpleFIN only by submitting a setup token in the request.
-- [ ] A user with existing active SimpleFIN institutions can reuse stored credentials without entering another token.
-- [ ] Backend startup no longer requires `SIMPLEFIN_SETUP_TOKEN`.
-- [ ] Token-related SimpleFIN connect failures return explicit non-500 API errors.
-- [ ] OpenAPI reflects the new SimpleFIN connect contract.
+- [x] A fresh user can connect SimpleFIN only by submitting a setup token in the request.
+- [x] A user with existing active SimpleFIN institutions can reuse stored credentials without entering another token.
+- [x] Backend startup no longer requires `SIMPLEFIN_SETUP_TOKEN`.
+- [x] Token-related SimpleFIN connect failures return explicit non-500 API errors.
+- [x] OpenAPI reflects the new SimpleFIN connect contract.
+
+### TDD Log
+
+- Red: added resolver, handler, and OpenAPI tests for missing token, malformed token, stored-credential reuse, and the connect request schema.
+- Green: updated `ProviderConnectRequest`, the credential resolver contract, SimpleFIN resolver, config/startup wiring, and handler error mapping.
+- Refactor/verify: `cargo fmt --manifest-path backend/Cargo.toml --all`, `cargo test --manifest-path backend/Cargo.toml simplefin -- --nocapture`, `cargo check --manifest-path backend/Cargo.toml --locked --all-targets`, `cargo clippy --manifest-path backend/Cargo.toml --locked --all-targets --no-deps -- -D warnings`.
 
 ## Phase 3: Institution-Aligned Disconnect Semantics With Persistent Ignore Lists
 

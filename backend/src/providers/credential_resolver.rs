@@ -9,6 +9,7 @@ pub trait ProviderCredentialResolver: Send + Sync {
         &self,
         user_id: &Uuid,
         provider: Arc<dyn FinancialDataProvider>,
+        setup_token: Option<&str>,
     ) -> anyhow::Result<ProviderCredentials>;
 
     async fn resolve_for_sync(&self, user_id: &Uuid) -> anyhow::Result<ProviderCredentials>;

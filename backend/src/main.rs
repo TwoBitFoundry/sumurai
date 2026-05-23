@@ -157,15 +157,9 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    if config.is_simplefin_configured() {
-        let simplefin_provider: Arc<dyn providers::FinancialDataProvider> =
-            Arc::new(providers::SimpleFinProvider::new_with_real_client().await?);
-        provider_registry.register("simplefin", simplefin_provider);
-    } else if default_provider == "simplefin" {
-        anyhow::bail!("DEFAULT_PROVIDER is simplefin but SIMPLEFIN_SETUP_TOKEN is not set");
-    } else {
-        tracing::warn!("SimpleFIN provider not configured; skipping SimpleFIN initialization");
-    }
+    let simplefin_provider: Arc<dyn providers::FinancialDataProvider> =
+        Arc::new(providers::SimpleFinProvider::new_with_real_client().await?);
+    provider_registry.register("simplefin", simplefin_provider);
 
     let provider_registry = Arc::new(provider_registry);
 
@@ -259,10 +253,8 @@ async fn main() -> anyhow::Result<()> {
     let mut credential_resolvers = std::collections::HashMap::new();
     credential_resolvers.insert(
         "simplefin".to_string(),
-        Arc::new(SimpleFinCredentialResolver::new(
-            db_repository.clone(),
-            config.get_simplefin_setup_token().map(str::to_string),
-        )) as Arc<dyn crate::providers::ProviderCredentialResolver>,
+        Arc::new(SimpleFinCredentialResolver::new(db_repository.clone()))
+            as Arc<dyn crate::providers::ProviderCredentialResolver>,
     );
     credential_resolvers.insert(
         "plaid".to_string(),
@@ -2676,17 +2668,57 @@ async fn connect_authenticated_provider(
                 Err(ApiErrorResponse::new("BAD_REQUEST", "Unsupported provider")
                     .into_response(StatusCode::BAD_REQUEST))
             }
-            Err(SimpleFinConnectError::SetupTokenNotConfigured) => {
+            Err(SimpleFinConnectError::MissingSetupToken) => {
                 log_provider_credential_outcome(
                     "simplefin",
-                    StatusCode::SERVICE_UNAVAILABLE,
+                    StatusCode::BAD_REQUEST,
                     "provider.connect",
                 );
                 Err(ApiErrorResponse::new(
-                    "SERVICE_UNAVAILABLE",
-                    "SimpleFIN is not configured on this server",
+                    "BAD_REQUEST",
+                    "Provide a SimpleFIN setup token to connect this account",
                 )
-                .into_response(StatusCode::SERVICE_UNAVAILABLE))
+                .into_response(StatusCode::BAD_REQUEST))
+            }
+            Err(SimpleFinConnectError::MalformedSetupToken) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::BAD_REQUEST,
+                    "provider.connect",
+                );
+                Err(
+                    ApiErrorResponse::new("BAD_REQUEST", "The SimpleFIN setup token is malformed")
+                        .into_response(StatusCode::BAD_REQUEST),
+                )
+            }
+            Err(SimpleFinConnectError::SetupTokenAlreadyClaimed) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "provider.connect",
+                );
+                Err(ApiErrorResponse::new(
+                    "SETUP_TOKEN_ALREADY_CLAIMED",
+                    "This SimpleFIN setup token has already been used",
+                )
+                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
+            }
+            Err(SimpleFinConnectError::ClaimFailed(e)) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "provider.connect",
+                );
+                tracing::error!(
+                    "Failed to claim SimpleFIN access URL for user {}: {}",
+                    auth_context.user_id,
+                    e
+                );
+                Err(ApiErrorResponse::new(
+                    "SETUP_TOKEN_CLAIM_FAILED",
+                    "Could not claim the SimpleFIN setup token",
+                )
+                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
             }
             Err(SimpleFinConnectError::CredentialStorage(e)) => {
                 log_provider_credential_outcome(

@@ -23,6 +23,7 @@ impl ProviderCredentialResolver for PlaidCredentialResolver {
         &self,
         _user_id: &Uuid,
         _provider: Arc<dyn FinancialDataProvider>,
+        _setup_token: Option<&str>,
     ) -> anyhow::Result<ProviderCredentials> {
         Err(anyhow::anyhow!(
             "Plaid requires exchange_public_token flow, not setup token"

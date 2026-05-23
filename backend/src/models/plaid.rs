@@ -61,13 +61,15 @@ pub struct ExchangeTokenRequest {
     "provider": "teller",
     "access_token": "access-sandbox-xyz",
     "enrollment_id": "enroll-123",
-    "institution_name": "Teller Demo Bank"
+    "institution_name": "Teller Demo Bank",
+    "simplefin_setup_token": null
 }))]
 pub struct ProviderConnectRequest {
     pub provider: String,
     pub access_token: String,
     pub enrollment_id: String,
     pub institution_name: Option<String>,
+    pub simplefin_setup_token: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]

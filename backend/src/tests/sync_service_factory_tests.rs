@@ -25,7 +25,7 @@ fn build_test_sync_service_factory() -> SyncServiceFactory {
     let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
     let db_repository: Arc<dyn DatabaseRepository> = Arc::new(MockDatabaseRepository::new());
     let cache_service: Arc<dyn CacheService> = Arc::new(MockCacheService::new());
-    let credential_resolvers = build_credential_resolvers(db_repository.clone(), None);
+    let credential_resolvers = build_credential_resolvers(db_repository.clone());
     let connection_service = Arc::new(ConnectionService::new(
         db_repository,
         cache_service,

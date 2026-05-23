@@ -58,15 +58,12 @@ pub(crate) fn noop_categorizer() -> Arc<dyn Categorizer> {
 
 pub(crate) fn build_credential_resolvers(
     db_repository: Arc<dyn DatabaseRepository>,
-    setup_token: Option<String>,
 ) -> std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>> {
     let mut resolvers = std::collections::HashMap::new();
     resolvers.insert(
         "simplefin".to_string(),
-        Arc::new(SimpleFinCredentialResolver::new(
-            Arc::clone(&db_repository),
-            setup_token,
-        )) as Arc<dyn crate::providers::ProviderCredentialResolver>,
+        Arc::new(SimpleFinCredentialResolver::new(Arc::clone(&db_repository)))
+            as Arc<dyn crate::providers::ProviderCredentialResolver>,
     );
     resolvers.insert(
         "plaid".to_string(),
@@ -301,7 +298,7 @@ impl TestFixtures {
 
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
 
-        let credential_resolvers = build_credential_resolvers(db_repository.clone(), None);
+        let credential_resolvers = build_credential_resolvers(db_repository.clone());
         let connection_service = Arc::new(ConnectionService::new(
             db_repository.clone(),
             cache_service.clone(),
@@ -423,7 +420,7 @@ impl TestFixtures {
 
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
 
-        let credential_resolvers = build_credential_resolvers(db_repository.clone(), None);
+        let credential_resolvers = build_credential_resolvers(db_repository.clone());
         let connection_service = Arc::new(ConnectionService::new(
             db_repository.clone(),
             cache_service.clone(),
@@ -511,7 +508,7 @@ impl TestFixtures {
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
 
-        let credential_resolvers = build_credential_resolvers(db_repository.clone(), None);
+        let credential_resolvers = build_credential_resolvers(db_repository.clone());
         let connection_service = Arc::new(ConnectionService::new(
             db_repository.clone(),
             cache_service.clone(),

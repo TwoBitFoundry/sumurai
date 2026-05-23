@@ -49,7 +49,10 @@ pub enum TellerConnectError {
 pub enum SimpleFinConnectError {
     #[allow(dead_code)]
     InvalidProvider(String),
-    SetupTokenNotConfigured,
+    MissingSetupToken,
+    MalformedSetupToken,
+    SetupTokenAlreadyClaimed,
+    ClaimFailed(Error),
     CredentialStorage(Error),
     ConnectionPersistence(Error),
     SnapshotFetch(Error),
@@ -106,6 +109,20 @@ fn simplefin_sync_floor_key(user_id: &Uuid) -> String {
 
 fn simplefin_org_item_id(user_id: &Uuid, org_conn_id: &str) -> String {
     format!("simplefin_{user_id}_{org_conn_id}")
+}
+
+fn simplefin_connect_error_from_message(message: &str) -> SimpleFinConnectError {
+    if message.contains("must be provided") {
+        SimpleFinConnectError::MissingSetupToken
+    } else if message.contains("malformed") {
+        SimpleFinConnectError::MalformedSetupToken
+    } else if message.contains("already been claimed") {
+        SimpleFinConnectError::SetupTokenAlreadyClaimed
+    } else if message.contains("claim failed") {
+        SimpleFinConnectError::ClaimFailed(anyhow::anyhow!(message.to_string()))
+    } else {
+        SimpleFinConnectError::CredentialStorage(anyhow::anyhow!(message.to_string()))
+    }
 }
 
 #[deprecated(
@@ -182,16 +199,17 @@ impl ConnectionService {
         &self,
         user_id: &Uuid,
         provider: Arc<dyn FinancialDataProvider>,
+        setup_token: Option<&str>,
     ) -> Result<ProviderCredentials, SimpleFinConnectError> {
         let resolver = self
             .credential_resolvers
             .get("simplefin")
-            .ok_or(SimpleFinConnectError::SetupTokenNotConfigured)?;
+            .ok_or(SimpleFinConnectError::MissingSetupToken)?;
 
         resolver
-            .resolve_for_connect(user_id, provider)
+            .resolve_for_connect(user_id, provider, setup_token)
             .await
-            .map_err(SimpleFinConnectError::CredentialStorage)
+            .map_err(|error| simplefin_connect_error_from_message(&error.to_string()))
     }
 
     fn resolve_provider(&self, provider: &str) -> Option<Arc<dyn FinancialDataProvider>> {
@@ -499,7 +517,11 @@ impl ConnectionService {
             .ok_or_else(|| SimpleFinConnectError::InvalidProvider("simplefin".to_string()))?;
 
         let credentials = self
-            .resolve_simplefin_credentials_for_connect(user_id, provider.clone())
+            .resolve_simplefin_credentials_for_connect(
+                user_id,
+                provider.clone(),
+                request.simplefin_setup_token.as_deref(),
+            )
             .await?;
 
         let snapshot = provider
@@ -576,7 +598,7 @@ impl ConnectionService {
         let resolver = self
             .credential_resolvers
             .get("simplefin")
-            .ok_or(SimpleFinConnectError::SetupTokenNotConfigured)?;
+            .ok_or(SimpleFinConnectError::MissingSetupToken)?;
 
         resolver
             .resolve_for_sync(user_id)

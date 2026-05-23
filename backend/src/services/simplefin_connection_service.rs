@@ -73,7 +73,11 @@ impl SimpleFinConnectionService {
             .ok_or_else(|| SimpleFinConnectError::InvalidProvider("simplefin".to_string()))?;
 
         let credentials = self
-            .resolve_simplefin_credentials_for_connect(user_id, provider.clone())
+            .resolve_simplefin_credentials_for_connect(
+                user_id,
+                provider.clone(),
+                request.simplefin_setup_token.as_deref(),
+            )
             .await?;
 
         let snapshot = provider
@@ -393,16 +397,29 @@ impl SimpleFinConnectionService {
         &self,
         user_id: &Uuid,
         provider: Arc<dyn crate::providers::FinancialDataProvider>,
+        setup_token: Option<&str>,
     ) -> Result<ProviderCredentials, SimpleFinConnectError> {
         let resolver = self
             .credential_resolvers
             .get("simplefin")
-            .ok_or(SimpleFinConnectError::SetupTokenNotConfigured)?;
+            .ok_or(SimpleFinConnectError::MissingSetupToken)?;
 
         resolver
-            .resolve_for_connect(user_id, provider)
+            .resolve_for_connect(user_id, provider, setup_token)
             .await
-            .map_err(SimpleFinConnectError::CredentialStorage)
+            .map_err(|error| {
+                if error.to_string().contains("must be provided") {
+                    SimpleFinConnectError::MissingSetupToken
+                } else if error.to_string().contains("malformed") {
+                    SimpleFinConnectError::MalformedSetupToken
+                } else if error.to_string().contains("already been claimed") {
+                    SimpleFinConnectError::SetupTokenAlreadyClaimed
+                } else if error.to_string().contains("claim failed") {
+                    SimpleFinConnectError::ClaimFailed(anyhow::anyhow!(error.to_string()))
+                } else {
+                    SimpleFinConnectError::CredentialStorage(anyhow::anyhow!(error.to_string()))
+                }
+            })
     }
 
     async fn load_simplefin_access_url(
@@ -412,7 +429,7 @@ impl SimpleFinConnectionService {
         let resolver = self
             .credential_resolvers
             .get("simplefin")
-            .ok_or(SimpleFinConnectError::SetupTokenNotConfigured)?;
+            .ok_or(SimpleFinConnectError::MissingSetupToken)?;
 
         resolver
             .resolve_for_sync(user_id)

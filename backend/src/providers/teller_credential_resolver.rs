@@ -23,6 +23,7 @@ impl ProviderCredentialResolver for TellerCredentialResolver {
         &self,
         _user_id: &Uuid,
         _provider: Arc<dyn FinancialDataProvider>,
+        _setup_token: Option<&str>,
     ) -> anyhow::Result<ProviderCredentials> {
         Err(anyhow::anyhow!(
             "Teller requires enrollment flow, not setup token"

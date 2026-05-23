@@ -8,15 +8,11 @@ use uuid::Uuid;
 
 pub struct SimpleFinCredentialResolver {
     db_repository: Arc<dyn DatabaseRepository>,
-    setup_token: Option<String>,
 }
 
 impl SimpleFinCredentialResolver {
-    pub fn new(db_repository: Arc<dyn DatabaseRepository>, setup_token: Option<String>) -> Self {
-        Self {
-            db_repository,
-            setup_token,
-        }
+    pub fn new(db_repository: Arc<dyn DatabaseRepository>) -> Self {
+        Self { db_repository }
     }
 
     fn root_item_id(user_id: &Uuid) -> String {
@@ -52,6 +48,7 @@ impl ProviderCredentialResolver for SimpleFinCredentialResolver {
         &self,
         user_id: &Uuid,
         provider: Arc<dyn FinancialDataProvider>,
+        setup_token: Option<&str>,
     ) -> anyhow::Result<ProviderCredentials> {
         if let Some(access_url) = self
             .db_repository
@@ -67,11 +64,10 @@ impl ProviderCredentialResolver for SimpleFinCredentialResolver {
             });
         }
 
-        let setup_token = self
-            .setup_token
-            .as_deref()
-            .filter(|token| !token.trim().is_empty())
-            .ok_or_else(|| anyhow::anyhow!("SimpleFIN setup token not configured"))?;
+        let setup_token = setup_token
+            .map(str::trim)
+            .filter(|token| !token.is_empty())
+            .ok_or_else(|| anyhow::anyhow!("SimpleFIN setup token must be provided"))?;
 
         let is_demo_user = self.is_simplefin_demo_user(user_id).await?;
         if !is_demo_user && SimpleFinProvider::is_beta_demo_setup_token(setup_token) {
@@ -81,6 +77,9 @@ impl ProviderCredentialResolver for SimpleFinCredentialResolver {
             ));
         }
 
+        let _decoded = SimpleFinProvider::decode_setup_token(setup_token)
+            .map_err(|_| anyhow::anyhow!("SimpleFIN setup token is malformed"))?;
+
         let credentials = match provider.exchange_public_token(setup_token).await {
             Ok(mut credentials) => {
                 credentials.item_id = Self::root_item_id(user_id);
@@ -89,18 +88,14 @@ impl ProviderCredentialResolver for SimpleFinCredentialResolver {
             Err(err) if Self::setup_token_already_claimed(&err) => {
                 if !is_demo_user {
                     return Err(anyhow::anyhow!(
-                        "SimpleFIN is not linked for this account. The deployment setup token was already claimed; sign in as {} or link SimpleFIN with your own bridge token.",
-                        Self::demo_user_email()
+                        "SimpleFIN setup token has already been claimed"
                     ));
                 }
-                let access_url = SimpleFinProvider::beta_demo_access_url_for_consumed_setup_token(
-                    setup_token,
-                )
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "SimpleFIN setup token was already claimed. Generate a new setup token from your SimpleFIN bridge."
-                    )
-                })?;
+                let access_url =
+                    SimpleFinProvider::beta_demo_access_url_for_consumed_setup_token(setup_token)
+                        .ok_or_else(|| {
+                        anyhow::anyhow!("SimpleFIN setup token has already been claimed")
+                    })?;
                 ProviderCredentials {
                     provider: "simplefin".to_string(),
                     access_token: access_url,
@@ -109,7 +104,7 @@ impl ProviderCredentialResolver for SimpleFinCredentialResolver {
                     private_key: None,
                 }
             }
-            Err(err) => return Err(err),
+            Err(err) => return Err(anyhow::anyhow!("SimpleFIN claim failed: {err}")),
         };
 
         self.db_repository

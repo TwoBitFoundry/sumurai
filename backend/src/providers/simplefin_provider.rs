@@ -196,7 +196,7 @@ impl SimpleFinProvider {
         Ok(Self::new(http_client))
     }
 
-    fn decode_setup_token(setup_token: &str) -> Result<String> {
+    pub(crate) fn decode_setup_token(setup_token: &str) -> Result<String> {
         let decoded = base64::engine::general_purpose::STANDARD
             .decode(setup_token.trim())
             .context("setup token is not valid base64")?;

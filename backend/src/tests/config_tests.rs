@@ -43,22 +43,6 @@ fn given_simplefin_provider_env_when_from_env_provider_then_returns_simplefin() 
 }
 
 #[test]
-fn given_simplefin_setup_token_when_from_env_provider_then_marks_configured() {
-    let mut env = MockEnvironment::new();
-    env.set("TELLER_ENV", "development");
-    env.set("SIMPLEFIN_SETUP_TOKEN", "test-simplefin-setup-token");
-    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
-
-    let config = Config::from_env_provider(&env).unwrap();
-
-    assert!(config.is_simplefin_configured());
-    assert_eq!(
-        config.get_simplefin_setup_token(),
-        Some("test-simplefin-setup-token")
-    );
-}
-
-#[test]
 fn given_teller_provider_env_when_from_env_provider_then_returns_teller() {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "development");

@@ -54,7 +54,7 @@ async fn given_stored_root_credential_when_resolve_for_sync_then_returns_access_
             })
         });
 
-    let resolver = SimpleFinCredentialResolver::new(Arc::new(mock_db), None);
+    let resolver = SimpleFinCredentialResolver::new(Arc::new(mock_db));
     let credentials = resolver.resolve_for_sync(&user_id).await.unwrap();
 
     assert_eq!(credentials.provider, "simplefin");
@@ -101,9 +101,9 @@ async fn given_no_stored_root_when_resolve_for_connect_then_claims_and_stores() 
         .times(1)
         .returning(|_, _| Box::pin(async { Ok(()) }));
 
-    let resolver = SimpleFinCredentialResolver::new(Arc::new(mock_db), Some(setup_token));
+    let resolver = SimpleFinCredentialResolver::new(Arc::new(mock_db));
     let credentials = resolver
-        .resolve_for_connect(&user_id, provider)
+        .resolve_for_connect(&user_id, provider, Some(&setup_token))
         .await
         .unwrap();
 
@@ -123,13 +123,87 @@ async fn given_resolver_map_when_resolve_for_sync_then_uses_simplefin_resolver()
         .expect_get_simplefin_root_credential()
         .returning(|_| Box::pin(async { Ok(Some(ACCESS_URL.to_string())) }));
 
-    let resolvers = build_credential_resolvers(Arc::new(mock_db), None);
+    let resolvers = build_credential_resolvers(Arc::new(mock_db));
     let resolver = resolvers
         .get("simplefin")
         .expect("simplefin resolver should be registered");
 
     let credentials = resolver.resolve_for_sync(&user_id).await.unwrap();
     assert_eq!(credentials.access_token, ACCESS_URL);
+}
+
+#[tokio::test]
+async fn given_no_stored_root_when_resolve_for_connect_without_setup_token_then_errors() {
+    let user_id = Uuid::new_v4();
+    let provider: Arc<dyn FinancialDataProvider> = Arc::new(SimpleFinProvider::new(Arc::new(
+        MockSimpleFinHttpClient::new(),
+    )));
+
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_simplefin_root_credential()
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(None) }));
+
+    let resolver = SimpleFinCredentialResolver::new(Arc::new(mock_db));
+    let error = resolver
+        .resolve_for_connect(&user_id, provider, None)
+        .await
+        .expect_err("expected missing setup token error");
+
+    assert!(error.to_string().contains("must be provided"));
+}
+
+#[tokio::test]
+async fn given_stored_root_when_resolve_for_connect_without_setup_token_then_reuses_access_url() {
+    let user_id = Uuid::new_v4();
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_simplefin_root_credential()
+        .with(mockall::predicate::eq(user_id))
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(Some(ACCESS_URL.to_string())) }));
+
+    let resolver = SimpleFinCredentialResolver::new(Arc::new(mock_db));
+    let provider: Arc<dyn FinancialDataProvider> = Arc::new(SimpleFinProvider::new(Arc::new(
+        MockSimpleFinHttpClient::new(),
+    )));
+    let credentials = resolver
+        .resolve_for_connect(&user_id, provider, None)
+        .await
+        .unwrap();
+
+    assert_eq!(credentials.access_token, ACCESS_URL);
+}
+
+#[tokio::test]
+async fn given_malformed_setup_token_when_resolve_for_connect_then_errors_before_claim() {
+    let user_id = Uuid::new_v4();
+    let setup_token = "not-base64";
+    let provider: Arc<dyn FinancialDataProvider> = Arc::new(SimpleFinProvider::new(Arc::new(
+        MockSimpleFinHttpClient::new(),
+    )));
+
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_simplefin_root_credential()
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_db
+        .expect_get_user_by_id()
+        .times(1)
+        .returning(move |_| {
+            let user = user_with_email("plaid@test.com", user_id);
+            Box::pin(async move { Ok(Some(user)) })
+        });
+
+    let resolver = SimpleFinCredentialResolver::new(Arc::new(mock_db));
+    let error = resolver
+        .resolve_for_connect(&user_id, provider, Some(setup_token))
+        .await
+        .expect_err("expected malformed setup token error");
+
+    assert!(error.to_string().contains("malformed"));
 }
 
 #[tokio::test]
@@ -162,15 +236,13 @@ async fn given_non_demo_user_when_setup_token_already_claimed_then_fails_without
         });
     mock_db.expect_store_simplefin_root_credential().times(0);
 
-    let resolver = SimpleFinCredentialResolver::new(Arc::new(mock_db), Some(setup_token));
+    let resolver = SimpleFinCredentialResolver::new(Arc::new(mock_db));
     let error = resolver
-        .resolve_for_connect(&user_id, provider)
+        .resolve_for_connect(&user_id, provider, Some(&setup_token))
         .await
         .expect_err("non-demo user should not receive shared demo access URL");
 
-    assert!(error
-        .to_string()
-        .contains("deployment setup token was already claimed"));
+    assert!(error.to_string().contains("already been claimed"));
 }
 
 #[tokio::test]
@@ -209,9 +281,9 @@ async fn given_demo_user_when_setup_token_already_claimed_then_stores_shared_dem
         .times(1)
         .returning(|_, _| Box::pin(async { Ok(()) }));
 
-    let resolver = SimpleFinCredentialResolver::new(Arc::new(mock_db), Some(setup_token));
+    let resolver = SimpleFinCredentialResolver::new(Arc::new(mock_db));
     let credentials = resolver
-        .resolve_for_connect(&user_id, provider)
+        .resolve_for_connect(&user_id, provider, Some(&setup_token))
         .await
         .unwrap();
 
@@ -240,9 +312,9 @@ async fn given_non_demo_user_when_demo_setup_token_configured_then_fails_without
             Box::pin(async move { Ok(Some(user)) })
         });
 
-    let resolver = SimpleFinCredentialResolver::new(Arc::new(mock_db), Some(setup_token));
+    let resolver = SimpleFinCredentialResolver::new(Arc::new(mock_db));
     let error = resolver
-        .resolve_for_connect(&user_id, provider)
+        .resolve_for_connect(&user_id, provider, Some(&setup_token))
         .await
         .expect_err("non-demo user should not use demo setup token");
 
