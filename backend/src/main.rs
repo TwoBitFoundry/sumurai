@@ -2068,7 +2068,7 @@ async fn sync_authenticated_provider_transactions(
     State(state): State<AppState>,
     auth_context: AuthContext,
     req: AuthorizedConnectionRequest<SyncTransactionsRequest>,
-) -> Result<Json<SyncTransactionsResponse>, StatusCode> {
+) -> Result<Json<SyncTransactionsResponse>, Response> {
     let user_id = auth_context.user_id;
     let AuthorizedConnectionRequest {
         _body: request_body,
@@ -2082,7 +2082,7 @@ async fn sync_authenticated_provider_transactions(
         .as_deref()
         .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
         .transpose()
-        .map_err(|_| StatusCode::BAD_REQUEST)?;
+        .map_err(|_| StatusCode::BAD_REQUEST.into_response())?;
     let mut connection = connection;
 
     if connection.item_id.starts_with("teller_") {
@@ -2103,7 +2103,7 @@ async fn sync_authenticated_provider_transactions(
                     user_id,
                     connection.item_id
                 );
-                return Err(StatusCode::NOT_FOUND);
+                return Err(StatusCode::NOT_FOUND.into_response());
             }
             Err(TellerSyncError::CredentialAccess(e)) => {
                 tracing::error!(
@@ -2112,15 +2112,15 @@ async fn sync_authenticated_provider_transactions(
                     connection.item_id,
                     e
                 );
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
             }
             Err(TellerSyncError::ProviderInitialization(e)) => {
                 tracing::error!("Failed to initialize Teller provider: {}", e);
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
             }
             Err(TellerSyncError::ProviderRequest(e)) => {
                 tracing::error!("Teller provider request failed for user {}: {}", user_id, e);
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
             }
             Err(TellerSyncError::AccountLookup(e)) => {
                 tracing::error!(
@@ -2128,7 +2128,7 @@ async fn sync_authenticated_provider_transactions(
                     user_id,
                     e
                 );
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
             }
             Err(TellerSyncError::TransactionLookup(e)) => {
                 tracing::error!(
@@ -2136,7 +2136,7 @@ async fn sync_authenticated_provider_transactions(
                     user_id,
                     e
                 );
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
             }
             Err(TellerSyncError::ConnectionPersistence(e)) => {
                 tracing::error!(
@@ -2145,13 +2145,19 @@ async fn sync_authenticated_provider_transactions(
                     user_id,
                     e
                 );
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
             }
         }
     }
 
+    let provider = if connection.item_id.starts_with("simplefin_") {
+        "simplefin"
+    } else {
+        "plaid"
+    };
+
     let sync_params = SyncConnectionParams {
-        provider: "plaid",
+        provider,
         user_id: &user_id,
         jwt_id: &auth_context.jwt_id,
     };
@@ -2167,13 +2173,25 @@ async fn sync_authenticated_provider_transactions(
         .await
     {
         Ok(response) => Ok(Json(response)),
+        Err(ProviderSyncError::RateLimited) => {
+            tracing::info!(
+                "SimpleFIN sync rate-limited for user {} and item {}",
+                user_id,
+                connection.item_id
+            );
+            Err((
+                StatusCode::TOO_MANY_REQUESTS,
+                [(axum::http::header::RETRY_AFTER, "3600")],
+            )
+                .into_response())
+        }
         Err(ProviderSyncError::CredentialsMissing) => {
             tracing::error!(
                 "Sync transactions: no credentials for user {} and item {}",
                 user_id,
                 connection.item_id
             );
-            Err(StatusCode::NOT_FOUND)
+            Err(StatusCode::NOT_FOUND.into_response())
         }
         Err(ProviderSyncError::CredentialAccess(e)) => {
             tracing::error!(
@@ -2182,7 +2200,7 @@ async fn sync_authenticated_provider_transactions(
                 connection.item_id,
                 e
             );
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            Err(StatusCode::INTERNAL_SERVER_ERROR.into_response())
         }
         Err(ProviderSyncError::ProviderUnavailable(p)) => {
             tracing::error!(
@@ -2190,7 +2208,7 @@ async fn sync_authenticated_provider_transactions(
                 p,
                 user_id
             );
-            Err(StatusCode::BAD_REQUEST)
+            Err(StatusCode::BAD_REQUEST.into_response())
         }
         Err(ProviderSyncError::ProviderRequest(e)) => {
             tracing::error!(
@@ -2199,7 +2217,7 @@ async fn sync_authenticated_provider_transactions(
                 connection.item_id,
                 e
             );
-            Err(StatusCode::BAD_GATEWAY)
+            Err(StatusCode::BAD_GATEWAY.into_response())
         }
         Err(ProviderSyncError::AccountLookup(e)) => {
             tracing::error!(
@@ -2208,7 +2226,7 @@ async fn sync_authenticated_provider_transactions(
                 connection.item_id,
                 e
             );
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            Err(StatusCode::INTERNAL_SERVER_ERROR.into_response())
         }
         Err(ProviderSyncError::TransactionLookup(e)) => {
             tracing::error!(
@@ -2217,7 +2235,7 @@ async fn sync_authenticated_provider_transactions(
                 connection.item_id,
                 e
             );
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            Err(StatusCode::INTERNAL_SERVER_ERROR.into_response())
         }
         Err(ProviderSyncError::SyncFailure(e)) => {
             tracing::error!(
@@ -2226,7 +2244,7 @@ async fn sync_authenticated_provider_transactions(
                 connection.item_id,
                 e
             );
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            Err(StatusCode::INTERNAL_SERVER_ERROR.into_response())
         }
     }
 }

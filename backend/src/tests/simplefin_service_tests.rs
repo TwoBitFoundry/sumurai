@@ -1,10 +1,16 @@
-use crate::models::plaid::{ProviderConnectRequest, ProviderConnectResponse};
+use crate::models::account::Account;
+use crate::models::plaid::{ProviderConnectRequest, ProviderConnectResponse, ProviderConnection};
+use crate::models::simplefin::SimpleFinTransaction;
 use crate::models::simplefin::{SimpleFinAccount, SimpleFinAccountsResponse, SimpleFinConnection};
+use crate::models::transaction::Transaction;
 use crate::providers::simplefin_provider::{MockSimpleFinHttpClient, SimpleFinProvider};
 use crate::providers::{FinancialDataProvider, ProviderRegistry};
 use crate::services::cache_service::MockCacheService;
-use crate::services::connection_service::ConnectionService;
+use crate::services::connection_service::{
+    ConnectionService, ProviderSyncError, SyncConnectionParams,
+};
 use crate::services::repository_service::MockDatabaseRepository;
+use crate::services::sync_service::SyncService;
 use crate::test_fixtures::TestFixtures;
 use axum::body::to_bytes;
 use std::collections::HashSet;
@@ -14,6 +20,14 @@ use uuid::Uuid;
 
 const ACCESS_URL: &str = "https://demo:pass@beta-bridge.simplefin.org/simplefin";
 const SETUP_TOKEN: &str = "dG9rZW4=";
+
+type SimpleFinSyncHarness = (
+    ConnectionService,
+    Arc<SyncService>,
+    Arc<dyn FinancialDataProvider>,
+    Arc<Mutex<usize>>,
+    Arc<Mutex<usize>>,
+);
 
 fn three_org_snapshot() -> SimpleFinAccountsResponse {
     SimpleFinAccountsResponse {
@@ -459,4 +473,256 @@ async fn given_unknown_provider_when_post_providers_connect_then_returns_bad_req
     let response = app.oneshot(request).await.unwrap();
 
     assert_eq!(response.status(), 400);
+}
+
+#[test]
+fn given_hidden_org_when_filter_simplefin_transactions_then_returns_empty() {
+    let account_id = Uuid::new_v4();
+    let accounts = vec![Account {
+        id: account_id,
+        user_id: None,
+        provider_account_id: Some("acct-hidden".to_string()),
+        provider_connection_id: None,
+        name: "Hidden".to_string(),
+        account_type: "depository".to_string(),
+        balance_current: None,
+        mask: None,
+        institution_name: None,
+        provider_conn_id: Some("org-hidden".to_string()),
+    }];
+    let transactions = vec![Transaction {
+        id: Uuid::new_v4(),
+        account_id,
+        user_id: None,
+        provider_account_id: Some("acct-hidden".to_string()),
+        provider_transaction_id: Some("txn-1".to_string()),
+        amount: rust_decimal::Decimal::new(100, 2),
+        date: chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+        merchant_name: Some("Store".to_string()),
+        category_primary: "OTHER".to_string(),
+        category_detailed: "OTHER".to_string(),
+        category_confidence: "LOW".to_string(),
+        payment_channel: None,
+        pending: false,
+        created_at: None,
+    }];
+    let mut hidden = HashSet::new();
+    hidden.insert("org-hidden".to_string());
+
+    let filtered = SyncService::filter_simplefin_transactions_for_connection(
+        transactions,
+        &accounts,
+        "org-hidden",
+        &hidden,
+    );
+
+    assert!(filtered.is_empty());
+}
+
+fn build_simplefin_sync_service(
+    snapshot: SimpleFinAccountsResponse,
+    hidden_orgs: HashSet<String>,
+    transactions: Vec<SimpleFinTransaction>,
+) -> SimpleFinSyncHarness {
+    let snapshot_for_accounts = snapshot.clone();
+    let mut mock_client = MockSimpleFinHttpClient::new();
+    mock_client
+        .expect_claim()
+        .returning(|_| Ok(ACCESS_URL.to_string()));
+    mock_client
+        .expect_get_accounts()
+        .returning(move |_, params| {
+            if params.balances_only {
+                Ok(snapshot_for_accounts.clone())
+            } else {
+                Ok(SimpleFinAccountsResponse {
+                    errors: vec![],
+                    connections: snapshot_for_accounts.connections.clone(),
+                    accounts: snapshot_for_accounts
+                        .accounts
+                        .iter()
+                        .map(|account| {
+                            let mut cloned = account.clone();
+                            cloned.transactions = transactions.clone();
+                            cloned
+                        })
+                        .collect(),
+                })
+            }
+        });
+
+    let simplefin_provider: Arc<dyn FinancialDataProvider> =
+        Arc::new(SimpleFinProvider::new_for_test(Arc::new(mock_client)));
+    let provider_registry = Arc::new(ProviderRegistry::from_providers([(
+        "simplefin",
+        Arc::clone(&simplefin_provider),
+    )]));
+    let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "simplefin"));
+
+    let upsert_accounts = Arc::new(Mutex::new(0usize));
+    let upsert_transactions = Arc::new(Mutex::new(0usize));
+
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_provider_credentials_for_user()
+        .returning(|_, _| {
+            Box::pin(async {
+                Ok(Some(crate::models::plaid::PlaidCredentials {
+                    id: Uuid::new_v4(),
+                    item_id: "simplefin_root".to_string(),
+                    user_id: Some(Uuid::new_v4()),
+                    access_token: ACCESS_URL.to_string(),
+                    created_at: chrono::Utc::now(),
+                    updated_at: chrono::Utc::now(),
+                }))
+            })
+        });
+    mock_db
+        .expect_list_simplefin_hidden_orgs()
+        .returning(move |_| {
+            let hidden = hidden_orgs.clone();
+            Box::pin(async move { Ok(hidden) })
+        });
+    mock_db
+        .expect_save_provider_connection()
+        .returning(|_| Box::pin(async { Ok(()) }));
+    let upsert_accounts_clone = Arc::clone(&upsert_accounts);
+    mock_db.expect_upsert_account().returning(move |_| {
+        *upsert_accounts_clone.lock().unwrap() += 1;
+        Box::pin(async { Ok(()) })
+    });
+    mock_db
+        .expect_get_accounts_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+    mock_db
+        .expect_get_provider_transaction_ids_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+    let upsert_transactions_clone = Arc::clone(&upsert_transactions);
+    mock_db
+        .expect_upsert_transactions_batch()
+        .returning(move |batch, _| {
+            *upsert_transactions_clone.lock().unwrap() += batch.len();
+            Box::pin(async { Ok(()) })
+        });
+    mock_db
+        .expect_count_transactions()
+        .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
+
+    let mut mock_cache = MockCacheService::new();
+    mock_cache
+        .expect_get_string()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_cache
+        .expect_set_with_ttl()
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_invalidate_pattern()
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_clear_transactions()
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_clear_budgets()
+        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_cache_jwt_scoped_bank_connection()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_cache_jwt_scoped_bank_accounts()
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
+
+    let connection_service =
+        ConnectionService::new(Arc::new(mock_db), Arc::new(mock_cache), provider_registry);
+
+    (
+        connection_service,
+        sync_service,
+        simplefin_provider,
+        upsert_accounts,
+        upsert_transactions,
+    )
+}
+
+#[tokio::test]
+async fn given_blocklisted_connection_when_sync_simplefin_then_writes_no_accounts_or_transactions()
+{
+    let user_id = Uuid::new_v4();
+    let mut connection = ProviderConnection::new(user_id, "simplefin_org-2");
+    connection.mark_connected("Bank B");
+    let mut hidden = HashSet::new();
+    hidden.insert("org-2".to_string());
+
+    let (connection_service, sync_service, _, upsert_accounts, upsert_transactions) =
+        build_simplefin_sync_service(three_org_snapshot(), hidden, vec![]);
+
+    let result = connection_service
+        .sync_provider_connection(
+            SyncConnectionParams {
+                provider: "simplefin",
+                user_id: &user_id,
+                jwt_id: "jwt_sync",
+            },
+            sync_service.as_ref(),
+            &mut connection,
+            None,
+        )
+        .await
+        .unwrap();
+
+    assert!(result.transactions.is_empty());
+    assert_eq!(*upsert_accounts.lock().unwrap(), 0);
+    assert_eq!(*upsert_transactions.lock().unwrap(), 0);
+}
+
+#[tokio::test]
+async fn given_sync_floor_when_second_simplefin_sync_within_hour_then_rate_limited() {
+    let user_id = Uuid::new_v4();
+    let mut connection = ProviderConnection::new(user_id, "simplefin_org-1");
+    connection.mark_connected("Bank A");
+
+    let floor_key = format!("simplefin:sync-floor:{user_id}");
+    let (connection_service, sync_service, _, _, _) =
+        build_simplefin_sync_service(three_org_snapshot(), HashSet::new(), vec![]);
+
+    connection_service
+        .sync_provider_connection(
+            SyncConnectionParams {
+                provider: "simplefin",
+                user_id: &user_id,
+                jwt_id: "jwt_sync",
+            },
+            sync_service.as_ref(),
+            &mut connection,
+            None,
+        )
+        .await
+        .unwrap();
+
+    let mut mock_cache = MockCacheService::new();
+    mock_cache
+        .expect_get_string()
+        .with(mockall::predicate::eq(floor_key.clone()))
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(Some("1".to_string())) }));
+
+    let limited_service = ConnectionService::new(
+        Arc::new(MockDatabaseRepository::new()),
+        Arc::new(mock_cache),
+        Arc::new(ProviderRegistry::new()),
+    );
+
+    let result = limited_service
+        .sync_provider_connection(
+            SyncConnectionParams {
+                provider: "simplefin",
+                user_id: &user_id,
+                jwt_id: "jwt_sync",
+            },
+            sync_service.as_ref(),
+            &mut connection,
+            None,
+        )
+        .await;
+
+    assert!(matches!(result, Err(ProviderSyncError::RateLimited)));
 }

@@ -2,7 +2,7 @@
 
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Duration, Months, NaiveDate, Utc};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -92,6 +92,36 @@ impl SyncService {
 
         Ok((mapped_transactions, new_cursor, page_count))
     }
+
+    pub fn filter_simplefin_transactions_for_connection(
+        transactions: Vec<Transaction>,
+        accounts: &[Account],
+        conn_id: &str,
+        hidden_orgs: &HashSet<String>,
+    ) -> Vec<Transaction> {
+        if hidden_orgs.contains(conn_id) {
+            return Vec::new();
+        }
+
+        let allowed_provider_account_ids: HashSet<String> = accounts
+            .iter()
+            .filter(|account| account.provider_conn_id.as_deref() == Some(conn_id))
+            .filter_map(|account| account.provider_account_id.clone())
+            .collect();
+
+        transactions
+            .into_iter()
+            .filter(|transaction| {
+                transaction
+                    .provider_account_id
+                    .as_ref()
+                    .is_some_and(|provider_account_id| {
+                        allowed_provider_account_ids.contains(provider_account_id)
+                    })
+            })
+            .collect()
+    }
+
     pub async fn sync_recent_transactions(
         &self,
         credentials: &ProviderCredentials,

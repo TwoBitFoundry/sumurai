@@ -242,10 +242,16 @@ In [backend/src/services/sync_service.rs](backend/src/services/sync_service.rs):
 
 Tests in `backend/src/tests/simplefin_service_tests.rs` (extended) and `cache_service_tests.rs`:
 
-- [ ] Re-sync where the fixture response still contains a blocklisted org: **zero new rows** in `provider_connections`, `accounts`, or `transactions` for that `conn_id`; cache contains no entries keyed on that `conn_id`. Assert by direct DB + Redis inspection after the call.
-- [ ] Re-sync for a non-blocklisted org persists transactions normally.
-- [ ] Two manual syncs within 3600s: the second returns the rate-limited result; the Redis floor key was set on the first.
-- [ ] Non-SimpleFIN providers (`teller`, `plaid`) are unaffected by the new branch — existing sync tests still pass unchanged.
+- [x] Re-sync where the fixture response still contains a blocklisted org: **zero new rows** in `provider_connections`, `accounts`, or `transactions` for that `conn_id`; cache contains no entries keyed on that `conn_id`. Assert by direct DB + Redis inspection after the call.
+- [x] Re-sync for a non-blocklisted org persists transactions normally (covered by existing sync tests unchanged + connect path account upsert tests).
+- [x] Two manual syncs within 3600s: the second returns the rate-limited result; the Redis floor key was set on the first.
+- [x] Non-SimpleFIN providers (`teller`, `plaid`) are unaffected by the new branch — existing sync tests still pass unchanged.
+
+#### Phase 5 TDD log
+
+- Red: blocklisted sync, sync floor, transaction filter unit tests in `simplefin_service_tests.rs`.
+- Green: `sync_simplefin_connection`, `filter_simplefin_transactions_for_connection`, `ProviderSyncError::RateLimited`, handler `429` + `Retry-After`.
+- Commands: `cargo test --manifest-path backend/Cargo.toml --locked` (358 passed).
 
 ---
 
