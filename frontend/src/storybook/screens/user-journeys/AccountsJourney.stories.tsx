@@ -96,7 +96,9 @@ export const Journey: Story = {
     await userEvent.click(syncNow);
     await waitFor(
       () => {
-        expect(body.getByText(/sync started for story federal credit union/i)).toBeVisible();
+        expect(
+          body.getByText(/synced \d+ transactions for story federal credit union/i)
+        ).toBeVisible();
       },
       { timeout: storyInteractionTimeoutMs }
     );
