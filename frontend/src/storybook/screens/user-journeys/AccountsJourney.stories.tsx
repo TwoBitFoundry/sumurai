@@ -255,7 +255,9 @@ export const SimpleFinConnected: Story = {
       },
       { timeout: storyInteractionTimeoutMs }
     );
-    await expect(canvas.queryByPlaceholderText('Paste your SimpleFIN setup token')).not.toBeInTheDocument();
+    await expect(
+      canvas.queryByPlaceholderText('Paste your SimpleFIN setup token')
+    ).not.toBeInTheDocument();
     await expect(canvas.queryByRole('button', { name: /^simplefin$/i })).not.toBeInTheDocument();
   },
 };
