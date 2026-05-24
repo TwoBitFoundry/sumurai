@@ -1,8 +1,6 @@
 use std::collections::HashMap;
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    Arc,
-};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -11,11 +9,7 @@ use mockall::predicate::eq;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-use crate::models::{
-    account::Account,
-    import::ImportResponse,
-    predicted_category::{Confidence, PredictedCategory},
-};
+use crate::models::{account::Account, import::ImportResponse};
 use crate::services::{
     cache_service::MockCacheService, repository_service::MockDatabaseRepository, Categorizer,
 };
@@ -37,60 +31,20 @@ fn owned_account(user_id: Uuid, account_id: Uuid) -> Account {
     }
 }
 
-enum StubMode {
-    Predict,
-    Fail,
-}
-
-struct StubCategorizer {
-    mode: StubMode,
-    expected_descriptions: Option<Vec<&'static str>>,
-}
+struct PanicCategorizer;
 
 #[async_trait]
-impl Categorizer for StubCategorizer {
-    async fn categorize_batch(&self, descriptions: Vec<String>) -> Result<Vec<PredictedCategory>> {
-        match self.mode {
-            StubMode::Fail => Err(anyhow::anyhow!("categorizer unavailable")),
-            StubMode::Predict => {
-                if let Some(expected) = &self.expected_descriptions {
-                    assert_eq!(descriptions, *expected);
-                }
-
-                Ok(descriptions
-                    .into_iter()
-                    .map(|description| {
-                        let lower = description.to_ascii_lowercase();
-                        if lower.contains("whole foods") {
-                            PredictedCategory {
-                                primary: "FOOD_AND_DRINK".to_string(),
-                                confidence: Confidence::High,
-                            }
-                        } else if lower.contains("shell oil") {
-                            PredictedCategory {
-                                primary: "TRANSPORTATION".to_string(),
-                                confidence: Confidence::Medium,
-                            }
-                        } else if lower.contains("netflix") {
-                            PredictedCategory {
-                                primary: "ENTERTAINMENT".to_string(),
-                                confidence: Confidence::Low,
-                            }
-                        } else {
-                            PredictedCategory {
-                                primary: "OTHER".to_string(),
-                                confidence: Confidence::Low,
-                            }
-                        }
-                    })
-                    .collect())
-            }
-        }
+impl Categorizer for PanicCategorizer {
+    async fn categorize_batch(
+        &self,
+        _descriptions: Vec<String>,
+    ) -> Result<Vec<crate::models::predicted_category::PredictedCategory>> {
+        panic!("categorizer should not be called for import ingestion");
     }
 }
 
 #[tokio::test]
-async fn given_stub_predictions_when_importing_then_overlays_medium_and_high_categories() {
+async fn given_import_file_when_importing_then_persists_other_categories_without_categorizer() {
     let mut mock_db = MockDatabaseRepository::new();
     let mut mock_cache = MockCacheService::new();
     let (user, token) = TestFixtures::create_authenticated_user_with_token();
@@ -118,7 +72,7 @@ async fn given_stub_predictions_when_importing_then_overlays_medium_and_high_cat
                 Box::pin(async move {
                     let current = call_count.fetch_add(1, Ordering::SeqCst);
                     let mut counts = HashMap::new();
-                    counts.insert(account_id, if current == 0 { 0 } else { 3 });
+                    counts.insert(account_id, if current == 0 { 0 } else { 2 });
                     Ok(counts)
                 })
             }
@@ -129,17 +83,14 @@ async fn given_stub_predictions_when_importing_then_overlays_medium_and_high_cat
         .times(1)
         .returning(move |transactions, user_id| {
             assert_eq!(*user_id, user.id);
-            assert_eq!(transactions.len(), 3);
+            assert_eq!(transactions.len(), 2);
 
             assert_eq!(transactions[0].user_id, Some(user.id));
-            assert_eq!(transactions[0].category_primary, "FOOD_AND_DRINK");
-            assert_eq!(transactions[0].category_confidence, "HIGH");
+            assert_eq!(transactions[0].category_primary, "OTHER");
+            assert!(transactions[0].category_confidence.is_empty());
 
-            assert_eq!(transactions[1].category_primary, "TRANSPORTATION");
-            assert_eq!(transactions[1].category_confidence, "MEDIUM");
-
-            assert_eq!(transactions[2].category_primary, "OTHER");
-            assert!(transactions[2].category_confidence.is_empty());
+            assert_eq!(transactions[1].category_primary, "OTHER");
+            assert!(transactions[1].category_confidence.is_empty());
 
             Box::pin(async { Ok(()) })
         });
@@ -155,19 +106,12 @@ async fn given_stub_predictions_when_importing_then_overlays_medium_and_high_cat
     let app = TestFixtures::create_test_app_with_db_cache_and_categorizer(
         mock_db,
         mock_cache,
-        Arc::new(StubCategorizer {
-            mode: StubMode::Predict,
-            expected_descriptions: Some(vec![
-                "[debit] Whole Foods Market #123",
-                "[debit] Shell Oil 5512",
-                "[debit] Netflix.com",
-            ]),
-        }),
+        Arc::new(PanicCategorizer),
     )
     .await
     .unwrap();
 
-    let file = b"Date,Description,Debit Amount,Credit Amount\n01/15/2024,WHOLE FOODS MARKET #123,12.34,\n01/16/2024,SHELL OIL 5512,45.67,\n01/17/2024,NETFLIX.COM,15.99,\n";
+    let file = b"Date,Description,Debit Amount,Credit Amount\n01/15/2024,WHOLE FOODS MARKET #123,12.34,\n01/16/2024,SHELL OIL 5512,45.67,\n";
     let request = authenticated_multipart_request(
         &token,
         "/api/transactions/import",
@@ -183,14 +127,14 @@ async fn given_stub_predictions_when_importing_then_overlays_medium_and_high_cat
 
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let import: ImportResponse = serde_json::from_slice(&body).unwrap();
-    assert_eq!(import.imported_count, 3);
+    assert_eq!(import.imported_count, 2);
     assert_eq!(import.skipped_count, 0);
-    assert_eq!(import.total_parsed, 3);
+    assert_eq!(import.total_parsed, 2);
     assert!(import.errors.is_empty());
 }
 
 #[tokio::test]
-async fn given_categorizer_error_when_importing_then_preserves_other_categories() {
+async fn given_import_failure_when_importing_then_still_persists_other_categories() {
     let mut mock_db = MockDatabaseRepository::new();
     let mut mock_cache = MockCacheService::new();
     let (user, token) = TestFixtures::create_authenticated_user_with_token();
@@ -246,10 +190,7 @@ async fn given_categorizer_error_when_importing_then_preserves_other_categories(
     let app = TestFixtures::create_test_app_with_db_cache_and_categorizer(
         mock_db,
         mock_cache,
-        Arc::new(StubCategorizer {
-            mode: StubMode::Fail,
-            expected_descriptions: None,
-        }),
+        Arc::new(PanicCategorizer),
     )
     .await
     .unwrap();

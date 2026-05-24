@@ -61,7 +61,6 @@ use crate::models::{
         ProviderConnectionStatus, ProviderInfoResponse, ProviderSelectRequest,
         ProviderSelectResponse, ProviderStatusResponse, SyncTransactionsRequest,
     },
-    predicted_category::Confidence,
     provider_connect::ProviderConnectRequest,
     transaction::{
         PaginatedTransactionsResponse, SyncTransactionsResponse, TransactionsInsightsResponse,
@@ -87,7 +86,6 @@ use middleware::resource_authorization::{
 };
 use middleware::telemetry_middleware::{self, request_tracing_middleware, TelemetryConfig};
 use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
-use services::categorization::classifier_labels::format_classifier_input;
 use services::category_management::service::CategoryManagementService;
 use services::import_service::ImportService;
 use services::repository_service::{DatabaseRepository, PostgresRepository};
@@ -288,7 +286,6 @@ async fn main() -> anyhow::Result<()> {
             credential_resolvers.clone(),
             simplefin_org_service,
             simplefin_rate_limit_service,
-            categorizer.clone(),
         ),
     );
 
@@ -1685,74 +1682,6 @@ async fn import_authenticated_transactions(
     }
 
     let mut transactions = std::mem::take(&mut parsed.transactions);
-    let categorization_trace_id = otel_sdk::find_current_trace_id();
-    let mut categorizable_rows = Vec::new();
-    let mut categorizable_descriptions = Vec::new();
-
-    for (index, transaction) in transactions.iter().enumerate() {
-        if transaction.category_primary == "OTHER" {
-            categorizable_rows.push(index);
-            categorizable_descriptions.push(format_classifier_input(
-                &transaction.amount,
-                transaction.merchant_name.as_deref().unwrap_or_default(),
-            ));
-        }
-    }
-
-    if !categorizable_descriptions.is_empty() {
-        let categorization_started = std::time::Instant::now();
-        let categorization_row_count = categorizable_descriptions.len();
-        match state
-            .categorizer
-            .categorize_batch(categorizable_descriptions)
-            .await
-        {
-            Ok(predictions) => {
-                for (index, prediction) in categorizable_rows.into_iter().zip(predictions) {
-                    if prediction.confidence != Confidence::Low {
-                        if let Some(transaction) = transactions.get_mut(index) {
-                            transaction.category_primary = prediction.primary;
-                            transaction.category_confidence =
-                                prediction.confidence.as_str().to_string();
-                        }
-                    }
-                }
-
-                if let Some(trace_id) = categorization_trace_id.as_deref() {
-                    tracing::info!(
-                        trace_id = %trace_id,
-                        rows = categorization_row_count,
-                        elapsed_ms = categorization_started.elapsed().as_millis(),
-                        "import categorization"
-                    );
-                } else {
-                    tracing::info!(
-                        rows = categorization_row_count,
-                        elapsed_ms = categorization_started.elapsed().as_millis(),
-                        "import categorization"
-                    );
-                }
-            }
-            Err(err) => {
-                if let Some(trace_id) = categorization_trace_id.as_deref() {
-                    tracing::warn!(
-                        trace_id = %trace_id,
-                        rows = categorization_row_count,
-                        elapsed_ms = categorization_started.elapsed().as_millis(),
-                        error = %err,
-                        "import categorization failed"
-                    );
-                } else {
-                    tracing::warn!(
-                        rows = categorization_row_count,
-                        elapsed_ms = categorization_started.elapsed().as_millis(),
-                        error = %err,
-                        "import categorization failed"
-                    );
-                }
-            }
-        }
-    }
 
     for transaction in &mut transactions {
         transaction.user_id = Some(auth_context.user_id);

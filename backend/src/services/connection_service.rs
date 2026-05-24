@@ -16,7 +16,6 @@ use crate::providers::{
     FinancialDataProvider, InstitutionInfo, ProviderCredentials, ProviderRegistry,
 };
 use crate::services::categorization::categorization_service::Categorizer;
-use crate::services::categorization::classifier_labels::format_classifier_input;
 use crate::services::{
     cache_service::CacheService, repository_service::DatabaseRepository, sync_service::SyncService,
 };
@@ -31,7 +30,6 @@ pub struct ConnectionService {
     db_repository: Arc<dyn DatabaseRepository>,
     cache_service: Arc<dyn CacheService>,
     provider_registry: Arc<ProviderRegistry>,
-    categorizer: Arc<dyn Categorizer>,
     credential_resolvers:
         std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>>,
     simplefin_connection_service:
@@ -172,7 +170,7 @@ impl ConnectionService {
         db_repository: Arc<dyn DatabaseRepository>,
         cache_service: Arc<dyn CacheService>,
         provider_registry: Arc<ProviderRegistry>,
-        categorizer: Arc<dyn Categorizer>,
+        _categorizer: Arc<dyn Categorizer>,
         credential_resolvers: std::collections::HashMap<
             String,
             Arc<dyn crate::providers::ProviderCredentialResolver>,
@@ -182,7 +180,6 @@ impl ConnectionService {
             db_repository,
             cache_service,
             provider_registry,
-            categorizer,
             credential_resolvers,
             simplefin_connection_service: None,
         }
@@ -1277,45 +1274,10 @@ impl ConnectionService {
             })
             .collect();
 
-        let mut categorizable_indexes = Vec::new();
-        let mut categorizable_inputs = Vec::new();
-        for (index, txn) in valid_transactions.iter().enumerate() {
-            if txn.category_primary == "OTHER" {
-                categorizable_indexes.push(index);
-                categorizable_inputs.push(format_classifier_input(
-                    &txn.amount,
-                    txn.merchant_name.as_deref().unwrap_or_default(),
-                ));
-            }
-        }
-
-        if !categorizable_inputs.is_empty() {
-            match self
-                .categorizer
-                .categorize_batch(categorizable_inputs)
-                .await
-            {
-                Ok(predictions) => {
-                    use crate::models::predicted_category::Confidence;
-                    for (index, prediction) in categorizable_indexes.into_iter().zip(predictions) {
-                        if prediction.confidence != Confidence::Low {
-                            if let Some(txn) = valid_transactions.get_mut(index) {
-                                txn.category_primary = prediction.primary;
-                                txn.category_confidence =
-                                    prediction.confidence.as_str().to_string();
-                            }
-                        }
-                    }
-                }
-                Err(err) => {
-                    tracing::warn!(
-                        provider = "simplefin",
-                        connection_id = %connection.id,
-                        error = %err,
-                        "SimpleFIN sync categorization failed"
-                    );
-                }
-            }
+        for txn in &mut valid_transactions {
+            txn.category_primary = "OTHER".to_string();
+            txn.category_detailed = "OTHER".to_string();
+            txn.category_confidence.clear();
         }
 
         for chunk in valid_transactions.chunks(500) {

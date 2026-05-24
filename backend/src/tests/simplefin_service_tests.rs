@@ -1,6 +1,7 @@
 use crate::models::account::Account;
 use crate::models::auth::User;
 use crate::models::plaid::{ProviderConnectResponse, ProviderConnection};
+use crate::models::predicted_category::PredictedCategory;
 use crate::models::provider_connect::ProviderConnectRequest;
 use crate::models::simplefin::SimpleFinTransaction;
 use crate::models::simplefin::{
@@ -18,7 +19,10 @@ use crate::services::connection_service::{
 };
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::sync_service::SyncService;
+use crate::services::Categorizer;
 use crate::test_fixtures::{noop_categorizer, TestFixtures};
+use anyhow::Result;
+use async_trait::async_trait;
 use axum::body::to_bytes;
 use chrono::Utc;
 use std::collections::HashSet;
@@ -28,6 +32,15 @@ use uuid::Uuid;
 
 const ACCESS_URL: &str = "https://demo:pass@beta-bridge.simplefin.org/simplefin";
 const SETUP_TOKEN: &str = "dGVzdC1zaW1wbGVmaW4tc2V0dXAtdG9rZW4=";
+
+struct PanicCategorizer;
+
+#[async_trait]
+impl Categorizer for PanicCategorizer {
+    async fn categorize_batch(&self, _descriptions: Vec<String>) -> Result<Vec<PredictedCategory>> {
+        panic!("categorizer should not be called for SimpleFIN sync");
+    }
+}
 
 fn mock_non_demo_user_lookup(mock_db: &mut MockDatabaseRepository) {
     mock_db
@@ -252,6 +265,9 @@ fn build_simplefin_connection_service(
     mock_cache
         .expect_cache_jwt_scoped_bank_accounts()
         .returning(|_, _, _| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_add_transaction()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
 
     let db_repository: Arc<dyn crate::services::repository_service::DatabaseRepository> =
         Arc::new(mock_db);
@@ -750,6 +766,36 @@ fn build_simplefin_sync_service(
     hidden_orgs: HashSet<String>,
     transactions: Vec<SimpleFinTransaction>,
 ) -> SimpleFinSyncHarness {
+    build_simplefin_sync_service_with_categorizer(
+        snapshot,
+        hidden_orgs,
+        transactions,
+        noop_categorizer(),
+    )
+}
+
+fn build_simplefin_sync_service_with_categorizer(
+    snapshot: SimpleFinAccountsResponse,
+    hidden_orgs: HashSet<String>,
+    transactions: Vec<SimpleFinTransaction>,
+    categorizer: Arc<dyn Categorizer>,
+) -> SimpleFinSyncHarness {
+    build_simplefin_sync_service_with_categorizer_and_accounts(
+        snapshot,
+        hidden_orgs,
+        transactions,
+        Vec::new(),
+        categorizer,
+    )
+}
+
+fn build_simplefin_sync_service_with_categorizer_and_accounts(
+    snapshot: SimpleFinAccountsResponse,
+    hidden_orgs: HashSet<String>,
+    transactions: Vec<SimpleFinTransaction>,
+    db_accounts: Vec<Account>,
+    categorizer: Arc<dyn Categorizer>,
+) -> SimpleFinSyncHarness {
     let snapshot_for_accounts = snapshot.clone();
     let mut mock_client = MockSimpleFinHttpClient::new();
     mock_client
@@ -814,9 +860,10 @@ fn build_simplefin_sync_service(
         *upsert_accounts_clone.lock().unwrap() += 1;
         Box::pin(async { Ok(()) })
     });
-    mock_db
-        .expect_get_accounts_for_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
+    mock_db.expect_get_accounts_for_user().returning(move |_| {
+        let db_accounts = db_accounts.clone();
+        Box::pin(async move { Ok(db_accounts) })
+    });
     mock_db
         .expect_get_provider_transaction_ids_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
@@ -853,6 +900,9 @@ fn build_simplefin_sync_service(
     mock_cache
         .expect_cache_jwt_scoped_bank_accounts()
         .returning(|_, _, _| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_add_transaction()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
 
     let db_repository: Arc<dyn crate::services::repository_service::DatabaseRepository> =
         Arc::new(mock_db);
@@ -862,7 +912,7 @@ fn build_simplefin_sync_service(
         db_repository,
         Arc::new(mock_cache),
         provider_registry,
-        noop_categorizer(),
+        categorizer,
         credential_resolvers,
     );
 
@@ -906,6 +956,125 @@ async fn given_blocklisted_connection_when_sync_simplefin_then_writes_no_account
     assert!(result.transactions.is_empty());
     assert_eq!(*upsert_accounts.lock().unwrap(), 0);
     assert_eq!(*upsert_transactions.lock().unwrap(), 0);
+}
+
+#[tokio::test]
+async fn given_simplefin_sync_when_transactions_are_persisted_then_they_stay_other() {
+    let user_id = Uuid::new_v4();
+    let mut connection =
+        ProviderConnection::new(user_id, &simplefin_org_item_id(&user_id, "org-1"));
+    connection.mark_connected("Bank A");
+    let mapped_account_id = Uuid::new_v4();
+
+    let snapshot = SimpleFinAccountsResponse {
+        errors: vec![],
+        connections: vec![SimpleFinConnection {
+            conn_id: "org-1".to_string(),
+            name: "Bank A".to_string(),
+            org_id: "inst-1".to_string(),
+            org_url: None,
+            sfin_url: None,
+        }],
+        accounts: vec![SimpleFinAccount {
+            id: "acct-1".to_string(),
+            name: "Checking A".to_string(),
+            conn_id: Some("org-1".to_string()),
+            org: None,
+            currency: Some("USD".to_string()),
+            balance: Some("100.00".to_string()),
+            available_balance: None,
+            balance_date: None,
+            holdings: vec![],
+            transactions: vec![
+                SimpleFinTransaction {
+                    id: "txn-1".to_string(),
+                    posted: 1_704_000_000,
+                    amount: "-12.34".to_string(),
+                    description: "Whole Foods Market".to_string(),
+                    pending: false,
+                    transacted_at: Some(1_704_000_000),
+                    extra: serde_json::json!({}),
+                },
+                SimpleFinTransaction {
+                    id: "txn-2".to_string(),
+                    posted: 1_704_086_400,
+                    amount: "-45.67".to_string(),
+                    description: "Shell Oil 5512".to_string(),
+                    pending: false,
+                    transacted_at: Some(1_704_086_400),
+                    extra: serde_json::json!({}),
+                },
+            ],
+        }],
+    };
+
+    let (connection_service, sync_service, _, _, upsert_accounts, upsert_transactions) =
+        build_simplefin_sync_service_with_categorizer_and_accounts(
+            snapshot,
+            HashSet::new(),
+            vec![
+                SimpleFinTransaction {
+                    id: "txn-1".to_string(),
+                    posted: 1_704_000_000,
+                    amount: "-12.34".to_string(),
+                    description: "Whole Foods Market".to_string(),
+                    pending: false,
+                    transacted_at: Some(1_704_000_000),
+                    extra: serde_json::json!({}),
+                },
+                SimpleFinTransaction {
+                    id: "txn-2".to_string(),
+                    posted: 1_704_086_400,
+                    amount: "-45.67".to_string(),
+                    description: "Shell Oil 5512".to_string(),
+                    pending: false,
+                    transacted_at: Some(1_704_086_400),
+                    extra: serde_json::json!({}),
+                },
+            ],
+            vec![Account {
+                id: mapped_account_id,
+                user_id: Some(user_id),
+                provider_account_id: Some("acct-1".to_string()),
+                provider_connection_id: Some(connection.id),
+                name: "Checking A".to_string(),
+                account_type: "depository".to_string(),
+                balance_current: None,
+                mask: None,
+                institution_name: None,
+                provider_conn_id: Some("org-1".to_string()),
+            }],
+            Arc::new(PanicCategorizer),
+        );
+
+    let result = connection_service
+        .sync_provider_connection(
+            SyncConnectionParams {
+                provider: "simplefin",
+                user_id: &user_id,
+                jwt_id: "jwt_sync",
+            },
+            sync_service.as_ref(),
+            &mut connection,
+            None,
+        )
+        .await
+        .unwrap();
+
+    assert!(!result.transactions.is_empty());
+    assert!(result
+        .transactions
+        .iter()
+        .all(|transaction| transaction.category_primary == "OTHER"));
+    assert!(result
+        .transactions
+        .iter()
+        .all(|transaction| transaction.category_confidence.is_empty()));
+    assert!(*upsert_accounts.lock().unwrap() >= 1);
+    assert_eq!(
+        *upsert_transactions.lock().unwrap(),
+        result.transactions.len()
+    );
 }
 
 #[tokio::test]

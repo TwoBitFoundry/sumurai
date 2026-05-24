@@ -4,7 +4,6 @@ use crate::models::transaction::SyncTransactionsResponse;
 use crate::providers::ProviderCredentials;
 use crate::providers::ProviderRegistry;
 use crate::services::cache_service::CacheService;
-use crate::services::categorization::categorization_service::Categorizer;
 use crate::services::connection_service::{
     ProviderSyncError, SimpleFinConnectError, SyncConnectionParams,
 };
@@ -26,7 +25,6 @@ pub struct SimpleFinConnectionService {
         std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>>,
     org_service: Arc<SimpleFinOrganizationService>,
     rate_limit_service: Arc<SimpleFinRateLimitService>,
-    categorizer: Arc<dyn Categorizer>,
 }
 
 impl SimpleFinConnectionService {
@@ -41,7 +39,6 @@ impl SimpleFinConnectionService {
         >,
         org_service: Arc<SimpleFinOrganizationService>,
         rate_limit_service: Arc<SimpleFinRateLimitService>,
-        categorizer: Arc<dyn Categorizer>,
     ) -> Self {
         Self {
             db_repository,
@@ -50,7 +47,6 @@ impl SimpleFinConnectionService {
             credential_resolvers,
             org_service,
             rate_limit_service,
-            categorizer,
         }
     }
 
@@ -136,7 +132,6 @@ impl SimpleFinConnectionService {
     ) -> Result<SyncTransactionsResponse, ProviderSyncError> {
         use crate::models::transaction::SyncMetadata;
         use crate::providers::simplefin_provider::SimpleFinProvider;
-        use crate::services::categorization::classifier_labels::format_classifier_input;
         use chrono::Utc;
 
         let sync_timestamp = Utc::now();
@@ -282,9 +277,12 @@ impl SimpleFinConnectionService {
 
         for txn in &mut transactions {
             txn.user_id = Some(*params.user_id);
+            txn.category_primary = "OTHER".to_string();
+            txn.category_detailed = "OTHER".to_string();
+            txn.category_confidence.clear();
         }
 
-        let mut valid_transactions: Vec<crate::models::transaction::Transaction> = transactions
+        let valid_transactions: Vec<crate::models::transaction::Transaction> = transactions
             .iter()
             .filter_map(|transaction| {
                 if transaction.account_id.is_nil() {
@@ -294,36 +292,6 @@ impl SimpleFinConnectionService {
                 }
             })
             .collect();
-
-        let mut categorizable_indexes = Vec::new();
-        let mut categorizable_inputs = Vec::new();
-        for (index, txn) in valid_transactions.iter().enumerate() {
-            if txn.category_primary == "OTHER" {
-                categorizable_indexes.push(index);
-                categorizable_inputs.push(format_classifier_input(
-                    &txn.amount,
-                    txn.merchant_name.as_deref().unwrap_or_default(),
-                ));
-            }
-        }
-
-        if !categorizable_inputs.is_empty() {
-            if let Ok(predictions) = self
-                .categorizer
-                .categorize_batch(categorizable_inputs)
-                .await
-            {
-                use crate::models::predicted_category::Confidence;
-                for (index, prediction) in categorizable_indexes.into_iter().zip(predictions) {
-                    if prediction.confidence != Confidence::Low {
-                        if let Some(txn) = valid_transactions.get_mut(index) {
-                            txn.category_primary = prediction.primary;
-                            txn.category_confidence = prediction.confidence.as_str().to_string();
-                        }
-                    }
-                }
-            }
-        }
 
         for chunk in valid_transactions.chunks(500) {
             let _ = self
