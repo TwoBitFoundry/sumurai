@@ -23,7 +23,6 @@ const eyebrowChip = cn(
 interface ProviderSelectionPanelProps {
   loading: boolean;
   error: string | null;
-  selectedProvider: FinancialProvider | null;
   availableProviders: FinancialProvider[];
   tellerApplicationId?: string | null;
   selectingProvider: FinancialProvider | null;
@@ -49,7 +48,6 @@ const panelClasses = cn(
 export const ProviderSelectionPanel = ({
   loading,
   error,
-  selectedProvider,
   availableProviders,
   tellerApplicationId,
   selectingProvider,
@@ -92,14 +90,10 @@ export const ProviderSelectionPanel = ({
     );
   }
 
-  if (selectedProvider) {
-    return null;
-  }
-
   const providerCatalogue: ProviderCatalogue = {
     available_providers: availableProviders,
     default_provider: availableProviders[0] ?? 'plaid',
-    user_provider: selectedProvider,
+    user_provider: null,
     teller_application_id: tellerApplicationId ?? undefined,
   };
 

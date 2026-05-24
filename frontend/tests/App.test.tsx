@@ -30,8 +30,8 @@ jest.mock('@/components/AuthenticatedApp', () => ({
   },
 }));
 
-jest.mock('@/components/onboarding/OnboardingWizard', () => ({
-  OnboardingWizard: () => null,
+jest.mock('@/components/onboarding/OnboardingProviderPicker', () => ({
+  OnboardingProviderPicker: () => <div data-testid="onboarding-provider-picker" />,
 }));
 
 jest.mock('@/components/ProviderMismatchCheck', () => ({
@@ -144,6 +144,22 @@ describe('App logout cache handling', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('logout-cache-state')).toHaveTextContent('miss');
+    });
+  });
+});
+
+describe('App onboarding gate', () => {
+  it('renders the onboarding provider picker until onboarding is complete', async () => {
+    jest.mocked(AuthService.refreshToken).mockResolvedValue({
+      user_id: 'user-1',
+      expires_at: '2099-01-01T00:00:00.000Z',
+      onboarding_completed: false,
+    });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('onboarding-provider-picker')).toBeInTheDocument();
     });
   });
 });

@@ -161,7 +161,7 @@ Behavior rules:
   - Render the **"Self-Hosted Cost"** eyebrow above the title (replace today's "Select Provider").
   - Show the `price` value as a chip beneath the title; keep the persona `badge` slot in the top-right.
   - Disabled state: card stays fully visible; only the action button is disabled (use the existing `Button` disabled styling — do not invent a new variant). Show a tiny `"Missing credentials"` line beneath the button using `uiTextRecipes.subtle` + `uiTypographyRecipes.caption`. SimpleFIN never renders disabled.
-  - Keep the existing `onSelectProvider` callback contract; selected card still hides itself once `selectedProvider` is set (unless we want it to stay visible — see Phase 6 accounts page).
+  - Keep the existing `onSelectProvider` callback contract; the panel stays visible after selection so onboarding can enable Continue without leaving the screen.
 - Update Storybook story (`AccountsScreenSlice.tsx` or the dedicated picker story if one exists) so it demos all three states: all enabled, Teller disabled, all disabled except SimpleFIN.
 
 **Acceptance criteria:**
@@ -186,7 +186,7 @@ Behavior rules:
 
 - Create `frontend/src/components/onboarding/OnboardingProviderPicker.tsx`:
   - Renders inside `GradientShell` + `AppTitleBar` (carry over from `OnboardingWizard.tsx`).
-  - Renders `ProviderSelectionPanel` (from Phase 4) with `providerCatalog` wired in.
+  - Renders `ProviderSelectionPanel` (from Phase 4) with `providerCatalog` wired in and keeps the picker visible after selection so the footer can enable Continue.
   - Footer row contains **Skip for now** and **Continue** buttons (use the existing `Button` primitive with the same variants as today's wizard).
   - **Continue** is disabled until `providerCatalog.userProvider` is non-empty. Clicking Continue calls `AuthService.completeOnboarding()` then `onComplete()`.
   - **Skip for now** calls `AuthService.completeOnboarding()` then `onComplete()` — leaves `user.provider` empty so the AccountsPage picker takes over.
@@ -208,13 +208,26 @@ Behavior rules:
 
 **Acceptance criteria:**
 
-- [ ] No file under `frontend/src/components/onboarding/` references "step", "Welcome", or "ConnectAccount" any more.
-- [ ] `OnboardingProviderPicker.tsx` exists and is the only onboarding-rendering component used by `App.tsx`.
+- [x] No file under `frontend/src/components/onboarding/` references "step", "Welcome", or "ConnectAccount" any more.
+- [x] `OnboardingProviderPicker.tsx` exists and is the only onboarding-rendering component used by `App.tsx`.
 - [ ] Fresh-user flow in the browser at [http://localhost:8080](http://localhost:8080): register → onboarding shows ONLY the picker (no step indicator, no Welcome). Continue button disabled until pick.
 - [ ] Skip-for-now path lands the user in the app with `user.provider = ''`.
 - [ ] Continue path lands the user in the app with `user.provider` set to the picked value.
-- [ ] `npm --prefix frontend test` passes (new picker test added; old wizard tests removed).
-- [ ] `npm --prefix frontend run typecheck` and `npm --prefix frontend run lint` pass.
+- [x] `npm --prefix frontend test` passes (new picker test added; old wizard tests removed).
+- [x] `npm --prefix frontend run typecheck` and `npm --prefix frontend run lint` pass.
+
+**TDD log:**
+
+- `npm --prefix frontend test -- --runTestsByPath tests/components/onboarding/OnboardingProviderPicker.test.tsx tests/App.test.tsx tests/features/plaid/components/ProviderSelectionPanel.test.tsx`
+  - Passed after wiring the new onboarding picker and keeping the provider panel visible after selection.
+- `npm --prefix frontend run typecheck`
+  - Passed after removing the wizard module tree and updating all onboarding imports.
+- `npm --prefix frontend run lint`
+  - Passed after formatting the new onboarding picker and app entrypoint.
+- `npm --prefix frontend run storybook:build`
+  - Passed after removing the old onboarding stories and updating the picker stories.
+- Browser verification at `http://localhost:8080`
+  - Blocked: no server was listening on port 8080 in this environment.
 
 ---
 

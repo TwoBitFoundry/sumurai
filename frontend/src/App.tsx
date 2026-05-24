@@ -5,7 +5,7 @@ import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { cn } from '@/ui/primitives';
 import { LoginScreen, RegisterScreen } from './Auth';
 import { AuthenticatedApp, type TabKey } from './components/AuthenticatedApp';
-import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
+import { OnboardingProviderPicker } from './components/onboarding/OnboardingProviderPicker';
 import { ProviderMismatchCheck } from './components/ProviderMismatchCheck';
 import { ThemeProvider } from './context/ThemeContext';
 import { AccountFilterProvider } from './hooks/useAccountFilter';
@@ -160,11 +160,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
 
   if (showOnboarding) {
     return (
-      <OnboardingWizard
-        onComplete={handleOnboardingComplete}
-        onLogout={handleLogout}
-        isOnline={isOnline}
-      />
+      <OnboardingProviderPicker onComplete={handleOnboardingComplete} onLogout={handleLogout} />
     );
   }
 

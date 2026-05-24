@@ -10,7 +10,6 @@ function renderPanel(props: Partial<ComponentProps<typeof ProviderSelectionPanel
       <ProviderSelectionPanel
         loading={false}
         error={null}
-        selectedProvider={null}
         availableProviders={['plaid', 'teller']}
         tellerApplicationId={null}
         selectingProvider={null}

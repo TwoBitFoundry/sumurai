@@ -16,7 +16,6 @@ export function AccountsProviderPickerSlice() {
       <ProviderSelectionPanel
         loading={false}
         error={null}
-        selectedProvider={null}
         availableProviders={['plaid', 'teller']}
         tellerApplicationId="story-teller-app"
         selectingProvider={null}
@@ -32,7 +31,6 @@ export function AccountsProviderPickerLoadingSlice() {
       <ProviderSelectionPanel
         loading
         error={null}
-        selectedProvider={null}
         availableProviders={['plaid', 'teller']}
         tellerApplicationId="story-teller-app"
         selectingProvider={null}

@@ -6,7 +6,6 @@ import { ProviderSelectionPanel } from './ProviderSelectionPanel';
 const fullCatalogueArgs = {
   loading: false,
   error: null,
-  selectedProvider: null,
   availableProviders: ['plaid', 'teller', 'simplefin'] as FinancialProvider[],
   tellerApplicationId: 'story-teller-app',
   selectingProvider: null,
