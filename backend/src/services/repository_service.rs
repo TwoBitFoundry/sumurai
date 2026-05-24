@@ -259,7 +259,8 @@ pub trait DatabaseRepository: Send + Sync {
         &self,
         user_id: &Uuid,
         limit: i64,
-        offset: i64,
+        after_date: Option<chrono::NaiveDate>,
+        after_id: Option<Uuid>,
     ) -> Result<Vec<Transaction>>;
 
     async fn update_transaction_categories_batch(
@@ -2471,7 +2472,8 @@ impl DatabaseRepository for PostgresRepository {
         &self,
         user_id: &Uuid,
         limit: i64,
-        offset: i64,
+        after_date: Option<chrono::NaiveDate>,
+        after_id: Option<Uuid>,
     ) -> Result<Vec<Transaction>> {
         let mut tx = self.pool.begin().await?;
         sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
@@ -2485,7 +2487,6 @@ impl DatabaseRepository for PostgresRepository {
                 Uuid,
                 Uuid,
                 Option<Uuid>,
-                Option<String>,
                 Option<String>,
                 rust_decimal::Decimal,
                 chrono::NaiveDate,
@@ -2503,7 +2504,6 @@ impl DatabaseRepository for PostgresRepository {
                 t.id,
                 t.account_id,
                 t.user_id,
-                t.provider_account_id,
                 t.provider_transaction_id,
                 t.amount,
                 t.date,
@@ -2523,13 +2523,19 @@ impl DatabaseRepository for PostgresRepository {
                   WHERE o.user_id = t.user_id
                     AND o.normalized_merchant = t.normalized_merchant
               )
+              AND (
+                  $3::date IS NULL
+                  OR t.date > $3
+                  OR (t.date = $3 AND t.id > $4)
+              )
             ORDER BY t.date ASC, t.id ASC
-            LIMIT $2 OFFSET $3
+            LIMIT $2
             "#,
         )
         .bind(user_id)
         .bind(limit)
-        .bind(offset)
+        .bind(after_date)
+        .bind(after_id)
         .fetch_all(&mut *tx)
         .await?;
 
@@ -2541,7 +2547,6 @@ impl DatabaseRepository for PostgresRepository {
                     id,
                     account_id,
                     user_id,
-                    provider_account_id,
                     provider_transaction_id,
                     amount,
                     date,
@@ -2556,7 +2561,7 @@ impl DatabaseRepository for PostgresRepository {
                     id,
                     account_id,
                     user_id,
-                    provider_account_id,
+                    provider_account_id: None,
                     provider_transaction_id,
                     amount,
                     date,

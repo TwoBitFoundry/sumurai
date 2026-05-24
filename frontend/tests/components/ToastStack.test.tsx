@@ -25,8 +25,9 @@ describe('ToastStack', () => {
       <ToastStack
         transients={[{ id: 't-1', message: 'Sync complete' }]}
         pinnedToast={{
-          message: 'Categorizing transactions… 2 / 5 processed · 1 updated · 1 skipped',
+          message: 'Categorizing transactions…',
           autoDismiss: false,
+          progress: { processed: 2, total: 5 },
         }}
         onDismissTransient={jest.fn()}
         onDismissPinned={jest.fn()}
@@ -37,7 +38,9 @@ describe('ToastStack', () => {
     const cards = stack.querySelectorAll('[class*="rounded"]');
     expect(cards.length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('Sync complete')).toBeInTheDocument();
-    expect(screen.getByText(/Categorizing transactions/)).toBeInTheDocument();
+    expect(screen.getByText('Categorizing transactions…')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
+    expect(screen.getByText('40% · 2 / 5')).toBeInTheDocument();
   });
 
   it('uses mobile layout classes above the floating tab bar', () => {

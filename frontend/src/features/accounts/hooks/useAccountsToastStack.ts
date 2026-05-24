@@ -4,7 +4,7 @@ import type {
   ToastStackTransientItem,
 } from '@/components/toastStack/ToastStack';
 import {
-  buildAutoCategorizationProgressMessage,
+  buildAutoCategorizationProgressTitle,
   buildAutoCategorizationTerminalMessage,
 } from '@/features/accounts/utils/autoCategorizationToastMessages';
 import { type AutoCategorizationJobState, isAutoCategorizationJobActive } from '@/types/api';
@@ -79,7 +79,11 @@ export function useAccountsToastStack(job: AutoCategorizationJobState | null) {
       return null;
     }
     return {
-      message: buildAutoCategorizationProgressMessage(job),
+      message: buildAutoCategorizationProgressTitle(job.status),
+      progress: {
+        processed: job.processed,
+        total: job.total,
+      },
       autoDismiss: false,
     };
   }, [job, dismissedProgressJobId, terminalToast]);

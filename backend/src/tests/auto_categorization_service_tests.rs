@@ -145,7 +145,7 @@ async fn given_no_active_job_when_starting_then_returns_running_without_waiting_
         .returning(|_| Box::pin(async { Ok(1) }));
     db.expect_fetch_eligible_auto_categorize_transactions()
         .times(..)
-        .returning(move |_, _, _| {
+        .returning(move |_, _, _, _| {
             let txn = txn.clone();
             Box::pin(async move { Ok(vec![txn]) })
         });
@@ -191,7 +191,7 @@ async fn given_active_job_when_starting_again_then_returns_active_job_exists() {
         .returning(|_| Box::pin(async { Ok(1) }));
     db.expect_fetch_eligible_auto_categorize_transactions()
         .times(..)
-        .returning(move |_, _, _| {
+        .returning(move |_, _, _, _| {
             let txn = txn.clone();
             Box::pin(async move { Ok(vec![txn]) })
         });
@@ -244,9 +244,9 @@ async fn given_eligible_transactions_when_job_runs_then_applies_medium_and_high_
         .times(1)
         .returning(|_| Box::pin(async { Ok(3) }));
     db.expect_fetch_eligible_auto_categorize_transactions()
-        .with(eq(user_id), always(), always())
+        .with(eq(user_id), always(), always(), always())
         .times(1)
-        .returning(move |_, _, _| {
+        .returning(move |_, _, _, _| {
             let txns = vec![high_txn.clone(), medium_txn.clone(), low_txn.clone()];
             Box::pin(async move { Ok(txns) })
         });
@@ -342,7 +342,7 @@ async fn given_running_job_when_cancel_requested_then_stops_after_current_batch(
         .times(1)
         .returning({
             let batch = batch.clone();
-            move |_, _, _| {
+            move |_, _, _, _| {
                 let batch = batch.clone();
                 Box::pin(async move { Ok(batch) })
             }
@@ -395,7 +395,7 @@ async fn given_completed_job_when_reading_status_then_terminal_state_is_availabl
         .returning(|_| Box::pin(async { Ok(1) }));
     db.expect_fetch_eligible_auto_categorize_transactions()
         .times(..)
-        .returning(move |_, _, _| {
+        .returning(move |_, _, _, _| {
             let txn = txn.clone();
             Box::pin(async move { Ok(vec![txn]) })
         });
@@ -441,7 +441,7 @@ async fn given_completed_job_when_worker_finishes_then_session_caches_are_invali
         .returning(|_| Box::pin(async { Ok(1) }));
     db.expect_fetch_eligible_auto_categorize_transactions()
         .times(..)
-        .returning(move |_, _, _| {
+        .returning(move |_, _, _, _| {
             let txn = txn.clone();
             Box::pin(async move { Ok(vec![txn]) })
         });
@@ -504,6 +504,86 @@ async fn given_completed_job_when_worker_finishes_then_session_caches_are_invali
     service.start(&user_id, jwt_id).await.unwrap();
     let finished = wait_for_terminal_status(&service, &user_id).await;
     assert_eq!(finished.status, AutoCategorizationJobStatus::Completed);
+}
+
+#[tokio::test]
+async fn given_multiple_batches_when_earlier_rows_are_categorized_then_later_batches_use_cursor() {
+    let user_id = Uuid::new_v4();
+    let jwt_id = "jwt-cursor-pages";
+    let date = NaiveDate::from_ymd_opt(2024, 3, 1).unwrap();
+    let first_id = Uuid::parse_str("00000000-0000-4000-8000-000000000001").unwrap();
+    let second_id = Uuid::parse_str("00000000-0000-4000-8000-000000000002").unwrap();
+    let third_id = Uuid::parse_str("00000000-0000-4000-8000-000000000003").unwrap();
+
+    let mut first_txn = make_other_transaction(user_id, first_id, "Shop A", dec!(-10.00));
+    first_txn.date = date;
+    let mut second_txn = make_other_transaction(user_id, second_id, "Shop B", dec!(-11.00));
+    second_txn.date = date;
+    let mut third_txn = make_other_transaction(user_id, third_id, "Shop C", dec!(-12.00));
+    third_txn.date = date;
+
+    let first_batch = vec![first_txn, second_txn.clone()];
+    let second_batch = vec![third_txn];
+    let cursor_date = second_txn.date;
+    let cursor_id = second_txn.id;
+
+    let mut db = MockDatabaseRepository::new();
+    db.expect_count_eligible_auto_categorize_transactions()
+        .with(eq(user_id))
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(3) }));
+    db.expect_fetch_eligible_auto_categorize_transactions()
+        .with(
+            eq(user_id),
+            eq(2_i64),
+            eq(None::<NaiveDate>),
+            eq(None::<Uuid>),
+        )
+        .times(1)
+        .returning({
+            let batch = first_batch.clone();
+            move |_, _, _, _| {
+                let batch = batch.clone();
+                Box::pin(async move { Ok(batch) })
+            }
+        });
+    db.expect_fetch_eligible_auto_categorize_transactions()
+        .with(
+            eq(user_id),
+            eq(2_i64),
+            eq(Some(cursor_date)),
+            eq(Some(cursor_id)),
+        )
+        .times(1)
+        .returning({
+            let batch = second_batch.clone();
+            move |_, _, _, _| {
+                let batch = batch.clone();
+                Box::pin(async move { Ok(batch) })
+            }
+        });
+    db.expect_update_transaction_categories_batch()
+        .times(2)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+
+    let service = make_service(
+        db,
+        InMemoryCache::new().into_mock(),
+        Arc::new(StubCategorizer {
+            predictions: vec![PredictedCategory {
+                primary: "FOOD_AND_DRINK".to_string(),
+                confidence: Confidence::High,
+            }],
+            gate: None,
+            entered: None,
+        }),
+    );
+
+    service.start(&user_id, jwt_id).await.unwrap();
+    let finished = wait_for_terminal_status(&service, &user_id).await;
+    assert_eq!(finished.status, AutoCategorizationJobStatus::Completed);
+    assert_eq!(finished.processed, 3);
+    assert_eq!(finished.updated, 3);
 }
 
 #[tokio::test]

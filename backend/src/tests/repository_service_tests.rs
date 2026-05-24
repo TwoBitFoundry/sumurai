@@ -975,3 +975,50 @@ async fn given_two_users_when_user_a_stores_root_then_user_b_cannot_read_it() {
         .unwrap();
     assert!(for_b.is_none());
 }
+
+#[tokio::test]
+async fn given_other_transactions_when_fetching_eligible_auto_categorize_then_returns_rows() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+
+    let mut transaction = create_test_transaction(
+        user.id,
+        account.id,
+        format!("eligible-{}", Uuid::new_v4()),
+        -1250,
+        NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+    );
+    transaction.category_primary = "OTHER".to_string();
+    transaction.category_detailed = "OTHER".to_string();
+    transaction.category_confidence = String::new();
+    transaction.merchant_name = Some("Eligible Merchant".to_string());
+
+    repo.upsert_transaction(&transaction).await.unwrap();
+
+    let count = repo
+        .count_eligible_auto_categorize_transactions(&user.id)
+        .await
+        .unwrap();
+    assert!(count >= 1);
+
+    let eligible = repo
+        .fetch_eligible_auto_categorize_transactions(&user.id, 10, None, None)
+        .await
+        .unwrap();
+
+    assert!(
+        eligible
+            .iter()
+            .any(|row| row.id == transaction.id && row.category_primary == "OTHER"),
+        "expected eligible OTHER transaction in fetch results"
+    );
+    assert!(eligible
+        .iter()
+        .find(|row| row.id == transaction.id)
+        .is_some_and(|row| row.provider_account_id.is_none()));
+}

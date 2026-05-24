@@ -1,6 +1,8 @@
 import {
-  buildAutoCategorizationProgressMessage,
+  buildAutoCategorizationProgressTitle,
   buildAutoCategorizationTerminalMessage,
+  formatAutoCategorizationProgressCaption,
+  getAutoCategorizationProgressPercent,
 } from '@/features/accounts/utils/autoCategorizationToastMessages';
 import type { AutoCategorizationJobState } from '@/types/api';
 
@@ -17,10 +19,19 @@ const baseJob: AutoCategorizationJobState = {
 };
 
 describe('autoCategorizationToastMessages', () => {
-  it('builds progress copy from backend counts', () => {
-    expect(buildAutoCategorizationProgressMessage(baseJob)).toBe(
-      'Categorizing transactions… 4 / 10 processed · 3 updated · 1 skipped'
-    );
+  it('builds progress title for running and cancelling states', () => {
+    expect(buildAutoCategorizationProgressTitle('running')).toBe('Categorizing transactions…');
+    expect(buildAutoCategorizationProgressTitle('cancelling')).toBe('Cancelling categorization…');
+  });
+
+  it('derives progress percent and caption from backend counts', () => {
+    expect(getAutoCategorizationProgressPercent(4, 10)).toBe(40);
+    expect(formatAutoCategorizationProgressCaption(2304, 6970)).toBe('33% · 2,304 / 6,970');
+  });
+
+  it('shows starting copy when total is zero', () => {
+    expect(getAutoCategorizationProgressPercent(0, 0)).toBe(0);
+    expect(formatAutoCategorizationProgressCaption(0, 0)).toBe('Starting…');
   });
 
   it('builds completed terminal copy', () => {

@@ -87,9 +87,9 @@ fn expect_eligible_single_transaction(
         .returning(|_| Box::pin(async { Ok(1) }));
     mock_db
         .expect_fetch_eligible_auto_categorize_transactions()
-        .with(eq(user_id), always(), always())
+        .with(eq(user_id), always(), always(), always())
         .times(..)
-        .returning(move |_, _, _| {
+        .returning(move |_, _, _, _| {
             let txn = txn_for_fetch.clone();
             Box::pin(async move { Ok(vec![txn]) })
         });

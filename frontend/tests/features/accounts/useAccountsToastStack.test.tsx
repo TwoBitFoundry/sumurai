@@ -26,7 +26,8 @@ describe('useAccountsToastStack', () => {
     const { result } = renderHook(() => useAccountsToastStack(runningJob));
 
     expect(result.current.pinnedToast?.autoDismiss).toBe(false);
-    expect(result.current.pinnedToast?.message).toContain('2 / 6 processed');
+    expect(result.current.pinnedToast?.message).toBe('Categorizing transactions…');
+    expect(result.current.pinnedToast?.progress).toEqual({ processed: 2, total: 6 });
   });
 
   it('keeps progress dismissed for the current run after manual close', () => {

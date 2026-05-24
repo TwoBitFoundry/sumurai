@@ -152,18 +152,27 @@ impl AutoCategorizationService {
             .filter(|status| status.job_id == job_id)
             .ok_or_else(|| anyhow!("job state missing for worker"))?;
 
+        let mut after_date = None;
+        let mut after_id = None;
+
         while state.processed < state.total {
             let batch = self
                 .db
                 .fetch_eligible_auto_categorize_transactions(
                     user_id,
                     self.batch_size,
-                    state.processed,
+                    after_date,
+                    after_id,
                 )
                 .await?;
 
             if batch.is_empty() {
                 break;
+            }
+
+            if let Some(last) = batch.last() {
+                after_date = Some(last.date);
+                after_id = Some(last.id);
             }
 
             let descriptions = batch

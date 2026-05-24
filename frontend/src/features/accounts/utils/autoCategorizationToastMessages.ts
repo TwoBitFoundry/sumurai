@@ -1,11 +1,22 @@
-import type { AutoCategorizationJobState } from '@/types/api';
+import type { AutoCategorizationJobState, AutoCategorizationJobStatus } from '@/types/api';
 
-export function buildAutoCategorizationProgressMessage(job: AutoCategorizationJobState): string {
-  const progress =
-    job.total > 0
-      ? `${job.processed} / ${job.total} processed`
-      : `${job.updated} updated, ${job.skipped} skipped`;
-  return `Categorizing transactions… ${progress} · ${job.updated} updated · ${job.skipped} skipped`;
+export function buildAutoCategorizationProgressTitle(status: AutoCategorizationJobStatus): string {
+  return status === 'cancelling' ? 'Cancelling categorization…' : 'Categorizing transactions…';
+}
+
+export function getAutoCategorizationProgressPercent(processed: number, total: number): number {
+  if (total <= 0) {
+    return 0;
+  }
+  return Math.min(100, Math.max(0, (processed / total) * 100));
+}
+
+export function formatAutoCategorizationProgressCaption(processed: number, total: number): string {
+  if (total <= 0) {
+    return 'Starting…';
+  }
+  const percent = Math.round(getAutoCategorizationProgressPercent(processed, total));
+  return `${percent}% · ${processed.toLocaleString()} / ${total.toLocaleString()}`;
 }
 
 export function buildAutoCategorizationTerminalMessage(job: AutoCategorizationJobState): string {
