@@ -1,1 +1,4478 @@
-{"openapi":"3.1.0","info":{"title":"Sumurai Financial API","description":"Multi-tenant financial aggregation platform with Teller integration","contact":{"name":"Sumurai Support","url":"https://github.com/two-bit-foundry/sumurai"},"license":{"name":"Sustainable Use License v1.0","url":"https://github.com/two-bit-foundry/sumurai/blob/main/LICENSE"},"version":"1.0.0"},"servers":[{"url":"http://localhost:3000","description":"Local development"},{"url":"http://localhost:8080/api","description":"Local via Nginx proxy"},{"url":"/api","description":"Relative API path (use in production)"}],"paths":{"/api/analytics/balances/overview":{"get":{"tags":["Analytics"],"operationId":"get_authenticated_balances_overview","parameters":[{"name":"account_ids","in":"query","description":"Filter by account IDs","required":false,"schema":{"type":"array","items":{"type":"string"}}}],"responses":{"200":{"description":"Balance overview across all institutions","content":{"application/json":{"schema":{"$ref":"#/components/schemas/BalancesOverviewResponse"}}}},"401":{"description":"Unauthorized"},"500":{"description":"Internal server error"}},"security":[{"bearer_auth":[]}]}},"/api/analytics/categories":{"get":{"tags":["Analytics"],"operationId":"get_authenticated_category_spending","parameters":[{"name":"start_date","in":"query","description":"Start date in YYYY-MM-DD format","required":false,"schema":{"type":"string"}},{"name":"end_date","in":"query","description":"End date in YYYY-MM-DD format","required":false,"schema":{"type":"string"}},{"name":"account_ids","in":"query","description":"Filter by account IDs","required":false,"schema":{"type":"array","items":{"type":"string"}}}],"responses":{"200":{"description":"Spending breakdown by category","content":{"application/json":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/CategorySpending"}}}}},"401":{"description":"Unauthorized"},"500":{"description":"Internal server error"}},"security":[{"bearer_auth":[]}]}},"/api/analytics/daily-spending":{"get":{"tags":["Analytics"],"operationId":"get_authenticated_daily_spending","parameters":[{"name":"month","in":"query","description":"Month in YYYY-MM format (defaults to current month)","required":false,"schema":{"type":"string"}}],"responses":{"200":{"description":"Daily spending data","content":{"application/json":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/DailySpending"}}}}},"400":{"description":"Invalid month format"},"401":{"description":"Unauthorized"},"500":{"description":"Internal server error"}},"security":[{"bearer_auth":[]}]}},"/api/analytics/monthly-totals":{"get":{"tags":["Analytics"],"operationId":"get_authenticated_monthly_totals","parameters":[{"name":"months","in":"query","description":"Number of months to retrieve (default: 6)","required":false,"schema":{"type":"integer","format":"int32"}},{"name":"account_ids","in":"query","description":"Filter by account IDs","required":false,"schema":{"type":"array","items":{"type":"string"}}}],"responses":{"200":{"description":"Monthly spending totals","content":{"application/json":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/MonthlySpending"}}}}},"401":{"description":"Unauthorized"},"500":{"description":"Internal server error"}},"security":[{"bearer_auth":[]}]}},"/api/analytics/net-worth-over-time":{"get":{"tags":["Analytics"],"operationId":"get_authenticated_net_worth_over_time","parameters":[{"name":"start_date","in":"query","description":"Start date in YYYY-MM-DD format","required":true,"schema":{"type":"string"}},{"name":"end_date","in":"query","description":"End date in YYYY-MM-DD format","required":true,"schema":{"type":"string"}},{"name":"account_ids","in":"query","description":"Filter by account IDs","required":false,"schema":{"type":"array","items":{"type":"string"}}}],"responses":{"200":{"description":"Net worth trend over time","content":{"application/json":{"schema":{"$ref":"#/components/schemas/NetWorthOverTimeResponse"}}}},"400":{"description":"Invalid date format or end_date before start_date"},"401":{"description":"Unauthorized"},"500":{"description":"Internal server error"}},"security":[{"bearer_auth":[]}]}},"/api/analytics/spending":{"get":{"tags":["Analytics"],"operationId":"get_authenticated_spending_by_date_range","parameters":[{"name":"start_date","in":"query","description":"Start date in YYYY-MM-DD format","required":false,"schema":{"type":"string"}},{"name":"end_date","in":"query","description":"End date in YYYY-MM-DD format","required":false,"schema":{"type":"string"}},{"name":"account_ids","in":"query","description":"Filter by account IDs","required":false,"schema":{"type":"array","items":{"type":"string"}}}],"responses":{"200":{"description":"Total spending for date range","content":{"text/plain":{"schema":{"type":"string"}}}},"401":{"description":"Unauthorized"},"500":{"description":"Internal server error"}},"security":[{"bearer_auth":[]}]}},"/api/analytics/spending/current-month":{"get":{"tags":["Analytics"],"operationId":"get_authenticated_current_month_spending","responses":{"200":{"description":"Current month spending total","content":{"text/plain":{"schema":{"type":"string"}}}},"401":{"description":"Unauthorized"},"500":{"description":"Internal server error"}},"security":[{"bearer_auth":[]}]}},"/api/analytics/top-merchants":{"get":{"tags":["Analytics"],"operationId":"get_authenticated_top_merchants","parameters":[{"name":"start_date","in":"query","description":"Start date in YYYY-MM-DD format","required":false,"schema":{"type":"string"}},{"name":"end_date","in":"query","description":"End date in YYYY-MM-DD format","required":false,"schema":{"type":"string"}},{"name":"account_ids","in":"query","description":"Filter by account IDs","required":false,"schema":{"type":"array","items":{"type":"string"}}}],"responses":{"200":{"description":"Top merchants by spending","content":{"application/json":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/TopMerchant"}}}}},"401":{"description":"Unauthorized"},"500":{"description":"Internal server error"}},"security":[{"bearer_auth":[]}]}},"/api/auth/account":{"delete":{"tags":["Authentication"],"operationId":"delete_user_account","responses":{"200":{"description":"Account deleted successfully","content":{"application/json":{"schema":{"$ref":"#/components/schemas/DeleteAccountResponse"}}}},"401":{"description":"Unauthorized"},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApiErrorResponse"}}}}},"security":[{"bearer_auth":[]}]}},"/api/auth/change-password":{"put":{"tags":["Authentication"],"operationId":"change_user_password","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ChangePasswordRequest"}}},"required":true},"responses":{"200":{"description":"Password changed successfully","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ChangePasswordResponse"}}}},"401":{"description":"Current password is incorrect"},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApiErrorResponse"}}}}},"security":[{"bearer_auth":[]}]}},"/api/auth/login":{"post":{"tags":["Authentication"],"operationId":"login_user","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/LoginRequest"}}},"required":true},"responses":{"200":{"description":"Login successful","content":{"application/json":{"schema":{"$ref":"#/components/schemas/AuthResponse"}}}},"401":{"description":"Invalid credentials","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApiErrorResponse"}}}},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApiErrorResponse"}}}}}}},"/api/auth/logout":{"post":{"tags":["Authentication"],"operationId":"logout_user","responses":{"200":{"description":"Logout successful"},"401":{"description":"Unauthorized"}},"security":[{"bearer_auth":[]}]}},"/api/auth/onboarding/complete":{"put":{"tags":["Authentication"],"operationId":"complete_user_onboarding","responses":{"200":{"description":"Onboarding completed"},"401":{"description":"Unauthorized"},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApiErrorResponse"}}}}},"security":[{"bearer_auth":[]}]}},"/api/auth/refresh":{"post":{"tags":["Authentication"],"operationId":"refresh_user_session","responses":{"200":{"description":"Token refreshed successfully","content":{"application/json":{"schema":{"$ref":"#/components/schemas/AuthResponse"}}}},"401":{"description":"Unauthorized or session expired"},"500":{"description":"Internal server error"}},"security":[{"bearer_auth":[]}]}},"/api/auth/register":{"post":{"tags":["Authentication"],"operationId":"register_user","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/RegisterRequest"}}},"required":true},"responses":{"200":{"description":"User registered successfully","content":{"application/json":{"schema":{"$ref":"#/components/schemas/AuthResponse"}}}},"409":{"description":"Email already registered","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApiErrorResponse"}}}},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApiErrorResponse"}}}}}}},"/api/budgets":{"get":{"tags":["Budgets"],"operationId":"get_authenticated_budgets","responses":{"200":{"description":"List of user budgets"},"401":{"description":"Unauthorized"},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApiErrorResponse"}}}}},"security":[{"bearer_auth":[]}]},"post":{"tags":["Budgets"],"operationId":"create_authenticated_budget","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateBudgetRequest"}}},"required":true},"responses":{"200":{"description":"Budget created","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Budget"}}}},"400":{"description":"Invalid budget data","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApiErrorResponse"}}}},"401":{"description":"Unauthorized"},"409":{"description":"Budget category already exists","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApiErrorResponse"}}}}},"security":[{"bearer_auth":[]}]}},"/api/budgets/{id}":{"put":{"tags":["Budgets"],"operationId":"update_authenticated_budget","parameters":[{"name":"id","in":"path","description":"Budget ID","required":true,"schema":{"type":"string"}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateBudgetRequest"}}},"required":true},"responses":{"200":{"description":"Budget updated successfully","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Budget"}}}},"400":{"description":"Invalid budget amount"},"401":{"description":"Unauthorized"},"404":{"description":"Budget not found","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApiErrorResponse"}}}},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApiErrorResponse"}}}}},"security":[{"bearer_auth":[]}]},"delete":{"tags":["Budgets"],"operationId":"delete_authenticated_budget","parameters":[{"name":"id","in":"path","description":"Budget ID","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"Budget deleted successfully"},"401":{"description":"Unauthorized"},"404":{"description":"Budget not found","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApiErrorResponse"}}}},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApiErrorResponse"}}}}},"security":[{"bearer_auth":[]}]}},"/api/providers/connect":{"post":{"tags":["Financial Providers"],"operationId":"connect_authenticated_provider","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ProviderConnectRequest"}}},"required":true},"responses":{"200":{"description":"Provider connected successfully","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ProviderConnectResponse"}}}},"400":{"description":"Unsupported provider"},"401":{"description":"Unauthorized"},"500":{"description":"Failed to connect provider","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApiErrorResponse"}}}}},"security":[{"bearer_auth":[]}]}},"/api/providers/disconnect":{"post":{"tags":["Financial Providers"],"operationId":"disconnect_authenticated_connection","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/DisconnectRequest"}}},"required":true},"responses":{"200":{"description":"Provider connection disconnected","content":{"application/json":{"schema":{"$ref":"#/components/schemas/DisconnectResult"}}}},"400":{"description":"Invalid connection_id format"},"401":{"description":"Unauthorized"},"500":{"description":"Internal server error"}},"security":[{"bearer_auth":[]}]}},"/api/providers/info":{"get":{"tags":["Financial Providers"],"operationId":"get_authenticated_provider_info","responses":{"200":{"description":"Available providers and current user provider configuration"},"401":{"description":"Unauthorized"},"500":{"description":"Internal server error"}},"security":[{"bearer_auth":[]}]}},"/api/providers/select":{"post":{"tags":["Financial Providers"],"operationId":"select_authenticated_provider","requestBody":{"content":{"application/json":{"schema":{}}},"required":true},"responses":{"200":{"description":"Provider selected successfully"},"400":{"description":"Invalid provider specified"},"401":{"description":"Unauthorized"},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApiErrorResponse"}}}}},"security":[{"bearer_auth":[]}]}},"/api/providers/status":{"get":{"tags":["Financial Providers"],"operationId":"get_authenticated_provider_status","responses":{"200":{"description":"Provider connection status and statistics","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ProviderStatusResponse"}}}},"401":{"description":"Unauthorized"},"500":{"description":"Internal server error"}},"security":[{"bearer_auth":[]}]}},"/api/providers/sync-transactions":{"post":{"tags":["Financial Providers"],"operationId":"sync_authenticated_provider_transactions","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/SyncTransactionsRequest"}}},"required":true},"responses":{"200":{"description":"Transactions synced successfully","content":{"application/json":{"schema":{"$ref":"#/components/schemas/SyncTransactionsResponse"}}}},"400":{"description":"Missing connection_id"},"401":{"description":"Unauthorized"},"404":{"description":"Connection not found or credentials missing"},"500":{"description":"Internal server error"},"502":{"description":"Provider request failed"}},"security":[{"bearer_auth":[]}]}},"/api/transactions":{"get":{"tags":["Transactions"],"operationId":"get_authenticated_transactions","parameters":[{"name":"search","in":"query","description":"Search transactions by merchant or category","required":false,"schema":{"type":"string"}},{"name":"account_ids","in":"query","description":"Filter by account IDs","required":false,"schema":{"type":"array","items":{"type":"string"}}}],"responses":{"200":{"description":"List of transactions"},"401":{"description":"Unauthorized"}},"security":[{"bearer_auth":[]}]}},"/health":{"get":{"tags":["Health"],"operationId":"health_check","responses":{"200":{"description":"Service is healthy"}}}}},"components":{"schemas":{"AccountResponse":{"type":"object","required":["id","name","account_type","transaction_count"],"properties":{"account_type":{"type":"string"},"balance_current":{"type":["string","null"]},"id":{"type":"string","format":"uuid"},"institution_name":{"type":["string","null"]},"mask":{"type":["string","null"]},"name":{"type":"string"},"provider_account_id":{"type":["string","null"]},"provider_connection_id":{"type":["string","null"],"format":"uuid"},"transaction_count":{"type":"integer","format":"int64"},"user_id":{"type":["string","null"],"format":"uuid"}}},"ApiErrorResponse":{"type":"object","required":["error","message"],"properties":{"code":{"type":["string","null"]},"details":{},"error":{"type":"string"},"message":{"type":"string"}}},"AuthResponse":{"type":"object","required":["token","user_id","expires_at","onboarding_completed"],"properties":{"expires_at":{"type":"string"},"onboarding_completed":{"type":"boolean"},"token":{"type":"string"},"user_id":{"type":"string"}}},"BalancesOverviewResponse":{"type":"object","required":["asOf","overall","banks","mixedCurrency"],"properties":{"asOf":{"type":"string"},"banks":{"type":"array","items":{"$ref":"#/components/schemas/BankTotals"}},"mixedCurrency":{"type":"boolean"},"overall":{"$ref":"#/components/schemas/Totals"}}},"BankTotals":{"allOf":[{"$ref":"#/components/schemas/Totals"},{"type":"object","required":["bankId","bankName"],"properties":{"bankId":{"type":"string"},"bankName":{"type":"string"}}}]},"Budget":{"type":"object","required":["id","user_id","category","amount","created_at","updated_at"],"properties":{"amount":{"type":"string"},"category":{"type":"string"},"created_at":{"type":"string","format":"date-time"},"id":{"type":"string","format":"uuid"},"updated_at":{"type":"string","format":"date-time"},"user_id":{"type":"string","format":"uuid"}}},"CategorySpending":{"type":"object","required":["name","value"],"properties":{"name":{"type":"string"},"value":{"type":"string"}}},"ChangePasswordRequest":{"type":"object","required":["current_password","new_password"],"properties":{"current_password":{"type":"string"},"new_password":{"type":"string"}}},"ChangePasswordResponse":{"type":"object","required":["message","requires_reauth"],"properties":{"message":{"type":"string"},"requires_reauth":{"type":"boolean"}}},"CreateBudgetRequest":{"type":"object","required":["category","amount"],"properties":{"amount":{"type":"string"},"category":{"type":"string"}}},"DailySpending":{"type":"object","required":["day","spend","cumulative"],"properties":{"cumulative":{"type":"string"},"day":{"type":"integer","format":"int32","minimum":0},"spend":{"type":"string"}}},"DailySpendingQueryParams":{"type":"object","properties":{"month":{"type":["string","null"],"example":"2024-01"}}},"DataCleared":{"type":"object","required":["transactions","accounts","cache_keys"],"properties":{"accounts":{"type":"integer","format":"int32"},"cache_keys":{"type":"array","items":{"type":"string"}},"transactions":{"type":"integer","format":"int32"}}},"DateRangeQueryParams":{"type":"object","properties":{"account_ids":{"type":["array","null"],"items":{"type":"string"}},"end_date":{"type":["string","null"],"example":"2024-12-31"},"start_date":{"type":["string","null"],"example":"2024-01-01"}}},"DeleteAccountResponse":{"type":"object","required":["message","deleted_items"],"properties":{"deleted_items":{"$ref":"#/components/schemas/DeletedItemsSummary"},"message":{"type":"string"}}},"DeletedItemsSummary":{"type":"object","required":["connections","transactions","accounts","budgets"],"properties":{"accounts":{"type":"integer","format":"int32"},"budgets":{"type":"integer","format":"int32"},"connections":{"type":"integer","format":"int32"},"transactions":{"type":"integer","format":"int32"}}},"DisconnectRequest":{"type":"object","required":["connection_id"],"properties":{"connection_id":{"type":"string"}}},"DisconnectResult":{"type":"object","required":["success","message","data_cleared"],"properties":{"data_cleared":{"$ref":"#/components/schemas/DataCleared"},"message":{"type":"string"},"success":{"type":"boolean"}}},"ErrorResponse":{"type":"object","required":["error","message","status_code"],"properties":{"error":{"type":"string"},"message":{"type":"string"},"status_code":{"type":"integer","format":"int32","minimum":0}},"example":{"error":"Unauthorized","message":"Invalid credentials","status_code":401}},"ExchangeTokenRequest":{"type":"object","required":["public_token"],"properties":{"public_token":{"type":"string"}}},"ExchangeTokenResponse":{"type":"object","required":["access_token","item_id","institution_name"],"properties":{"access_token":{"type":"string"},"institution_id":{"type":["string","null"]},"institution_name":{"type":"string"},"item_id":{"type":"string"}}},"HealthCheckResponse":{"type":"object","required":["status"],"properties":{"status":{"type":"string"}}},"LinkTokenRequest":{"type":"object"},"LoginRequest":{"type":"object","required":["email","password"],"properties":{"email":{"type":"string"},"password":{"type":"string"}},"example":{"email":"user@example.com","password":"SecurePass123!"}},"MonthlySpending":{"type":"object","required":["month","total"],"properties":{"month":{"type":"string"},"total":{"type":"string"}}},"MonthlyTotalsQueryParams":{"type":"object","properties":{"account_ids":{"type":["array","null"],"items":{"type":"string"}},"months":{"type":["integer","null"],"format":"int32","example":6,"minimum":0}}},"NetWorthOverTimeResponse":{"type":"object","required":["series","currency"],"properties":{"currency":{"type":"string"},"series":{"type":"array","items":{"$ref":"#/components/schemas/NetWorthSeriesPoint"}}}},"NetWorthSeriesPoint":{"type":"object","required":["date","value"],"properties":{"date":{"type":"string"},"value":{"type":"string"}}},"ProviderConnectRequest":{"type":"object","required":["provider","access_token","enrollment_id"],"properties":{"access_token":{"type":"string"},"enrollment_id":{"type":"string"},"institution_name":{"type":["string","null"]},"provider":{"type":"string"}}},"ProviderConnectResponse":{"type":"object","required":["connection_id","institution_name"],"properties":{"connection_id":{"type":"string"},"institution_name":{"type":"string"}}},"ProviderConnectionStatus":{"type":"object","required":["is_connected","transaction_count","account_count","sync_in_progress"],"properties":{"account_count":{"type":"integer","format":"int32"},"connection_id":{"type":["string","null"]},"institution_name":{"type":["string","null"]},"is_connected":{"type":"boolean"},"last_sync_at":{"type":["string","null"]},"sync_in_progress":{"type":"boolean"},"transaction_count":{"type":"integer","format":"int32"}}},"ProviderStatusResponse":{"type":"object","required":["provider","connections"],"properties":{"connections":{"type":"array","items":{"$ref":"#/components/schemas/ProviderConnectionStatus"}},"provider":{"type":"string"}}},"RegisterRequest":{"type":"object","required":["email","password"],"properties":{"email":{"type":"string"},"password":{"type":"string"}},"example":{"email":"user@example.com","password":"SecurePass123!"}},"SuccessResponse":{"type":"object","required":["message"],"properties":{"message":{"type":"string"}},"example":{"message":"Operation completed successfully"}},"SyncMetadata":{"type":"object","required":["transaction_count","account_count","sync_timestamp","start_date","end_date","connection_updated"],"properties":{"account_count":{"type":"integer","format":"int32"},"connection_updated":{"type":"boolean"},"end_date":{"type":"string"},"start_date":{"type":"string"},"sync_timestamp":{"type":"string"},"transaction_count":{"type":"integer","format":"int32"}}},"SyncTransactionsRequest":{"type":"object","properties":{"connection_id":{"type":["string","null"]}}},"SyncTransactionsResponse":{"type":"object","required":["transactions","metadata"],"properties":{"metadata":{"$ref":"#/components/schemas/SyncMetadata"},"transactions":{"type":"array","items":{"$ref":"#/components/schemas/Transaction"}}}},"TopMerchant":{"type":"object","required":["name","amount","count","percentage"],"properties":{"amount":{"type":"string"},"count":{"type":"integer","format":"int32","minimum":0},"name":{"type":"string"},"percentage":{"type":"string"}}},"Totals":{"type":"object","required":["cash","credit","loan","investments","positivesTotal","negativesTotal","net"],"properties":{"cash":{"type":"string"},"credit":{"type":"string"},"investments":{"type":"string"},"loan":{"type":"string"},"negativesTotal":{"type":"string"},"net":{"type":"string"},"positivesTotal":{"type":"string"},"ratio":{"type":["string","null"]}}},"Transaction":{"type":"object","required":["id","account_id","amount","date","category_primary","category_detailed","category_confidence","pending"],"properties":{"account_id":{"type":"string","format":"uuid"},"amount":{"type":"string"},"category_confidence":{"type":"string"},"category_detailed":{"type":"string"},"category_primary":{"type":"string"},"created_at":{"type":["string","null"],"format":"date-time"},"date":{"type":"string","format":"date"},"id":{"type":"string","format":"uuid"},"merchant_name":{"type":["string","null"]},"payment_channel":{"type":["string","null"]},"pending":{"type":"boolean"},"provider_account_id":{"type":["string","null"]},"provider_transaction_id":{"type":["string","null"]},"user_id":{"type":["string","null"],"format":"uuid"}}},"TransactionWithAccount":{"type":"object","required":["id","account_id","amount","date","category_primary","category_detailed","category_confidence","pending","account_name","account_type"],"properties":{"account_id":{"type":"string","format":"uuid"},"account_mask":{"type":["string","null"]},"account_name":{"type":"string"},"account_type":{"type":"string"},"amount":{"type":"string"},"category_confidence":{"type":"string"},"category_detailed":{"type":"string"},"category_primary":{"type":"string"},"created_at":{"type":["string","null"],"format":"date-time"},"date":{"type":"string","format":"date"},"id":{"type":"string","format":"uuid"},"merchant_name":{"type":["string","null"]},"payment_channel":{"type":["string","null"]},"pending":{"type":"boolean"},"provider_account_id":{"type":["string","null"]},"provider_transaction_id":{"type":["string","null"]},"user_id":{"type":["string","null"],"format":"uuid"}}},"TransactionsQueryParams":{"type":"object","properties":{"account_ids":{"type":["array","null"],"items":{"type":"string"}},"search":{"type":["string","null"],"example":"coffee"}}},"UpdateBudgetRequest":{"type":"object","required":["amount"],"properties":{"amount":{"type":"string"}}}}},"security":[{"bearer_auth":[]}],"tags":[{"name":"Authentication"},{"name":"Transactions"},{"name":"Financial Providers"},{"name":"Teller"},{"name":"Analytics"},{"name":"Budgets"},{"name":"Health"}]}
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Sumurai Financial API",
+    "description": "Multi-tenant financial aggregation platform with unified Plaid and Teller integration",
+    "contact": {
+      "name": "Sumurai Support",
+      "url": "https://github.com/two-bit-foundry/sumurai"
+    },
+    "license": {
+      "name": "Sustainable Use License v1.0",
+      "url": "https://github.com/two-bit-foundry/sumurai/blob/main/LICENSE"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development"
+    },
+    {
+      "url": "http://localhost:8080/api",
+      "description": "Local via Nginx proxy"
+    },
+    {
+      "url": "/api",
+      "description": "Relative API path (use in production)"
+    }
+  ],
+  "paths": {
+    "/api/analytics/balances/overview": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Aggregates balances by institution and overall totals, with optional account filtering.",
+        "operationId": "get_authenticated_balances_overview",
+        "parameters": [
+          {
+            "name": "account_ids",
+            "in": "query",
+            "description": "Filter by account IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Balance overview across all institutions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalancesOverviewResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/analytics/categories": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Returns category-level spend for the supplied filters.",
+        "operationId": "get_authenticated_category_spending",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "Start date in YYYY-MM-DD format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "End date in YYYY-MM-DD format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account_ids",
+            "in": "query",
+            "description": "Filter by account IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Spending breakdown by category",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategorySpending"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/analytics/daily-spending": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Provides daily spending totals for a given month (defaults to current month).",
+        "operationId": "get_authenticated_daily_spending",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "description": "Month in YYYY-MM format (defaults to current month)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily spending data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DailySpending"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid month format"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/analytics/monthly-totals": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Produces a timeline of monthly totals for dashboard charts.",
+        "operationId": "get_authenticated_monthly_totals",
+        "parameters": [
+          {
+            "name": "months",
+            "in": "query",
+            "description": "Number of months to retrieve (default: 6)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "account_ids",
+            "in": "query",
+            "description": "Filter by account IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Monthly spending totals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MonthlySpending"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/analytics/net-worth-over-time": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Generates a historical net worth series between the supplied start and end dates.",
+        "operationId": "get_authenticated_net_worth_over_time",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "Start date in YYYY-MM-DD format",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "End date in YYYY-MM-DD format",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account_ids",
+            "in": "query",
+            "description": "Filter by account IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Net worth trend over time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetWorthOverTimeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid date format or end_date before start_date"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/analytics/spending": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Aggregates spending across a user-defined date range.",
+        "operationId": "get_authenticated_spending_by_date_range",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "Start date in YYYY-MM-DD format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "End date in YYYY-MM-DD format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account_ids",
+            "in": "query",
+            "description": "Filter by account IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Total spending for date range",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "1540.22"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/analytics/spending/current-month": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Calculates the user's total spending for the current calendar month.",
+        "operationId": "get_authenticated_current_month_spending",
+        "responses": {
+          "200": {
+            "description": "Current month spending total",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "845.30"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/analytics/top-merchants": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Surfaces the top merchants by spend within the filter window.",
+        "operationId": "get_authenticated_top_merchants",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "Start date in YYYY-MM-DD format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "End date in YYYY-MM-DD format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account_ids",
+            "in": "query",
+            "description": "Filter by account IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Top merchants by spending",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TopMerchant"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/auth/account": {
+      "delete": {
+        "tags": [
+          "Authentication"
+        ],
+        "description": "Deletes the authenticated user's account and associated provider data.",
+        "operationId": "delete_user_account",
+        "responses": {
+          "200": {
+            "description": "Account deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteAccountResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/auth/change-password": {
+      "put": {
+        "tags": [
+          "Authentication"
+        ],
+        "description": "Allows an authenticated user to rotate their password and invalidate cached credentials.",
+        "operationId": "change_user_password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Password changed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangePasswordResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Current password is incorrect",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "description": "Authenticates a user and sets the auth_token HttpOnly cookie for subsequent requests.",
+        "operationId": "login_user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "IP temporarily banned after repeated abuse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "description": "Invalidates the active JWT and clears cached session state.",
+        "operationId": "logout_user",
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/auth/onboarding/complete": {
+      "put": {
+        "tags": [
+          "Authentication"
+        ],
+        "description": "Marks onboarding complete and refreshes user metadata.",
+        "operationId": "complete_user_onboarding",
+        "responses": {
+          "200": {
+            "description": "Onboarding completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingCompleteResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "description": "Refreshes the auth_token HttpOnly cookie.",
+        "operationId": "refresh_user_session",
+        "responses": {
+          "200": {
+            "description": "Session refreshed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized or session expired"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "description": "Registers a new user.",
+        "operationId": "register_user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "User registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "IP temporarily banned after repeated abuse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email already registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/budgets": {
+      "get": {
+        "tags": [
+          "Budgets"
+        ],
+        "description": "Retrieves all budgets for the authenticated user, leveraging Redis caching when available.",
+        "operationId": "get_authenticated_budgets",
+        "responses": {
+          "200": {
+            "description": "List of user budgets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Budget"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Budgets"
+        ],
+        "description": "Creates a new budget entry for the user with category and amount.",
+        "operationId": "create_authenticated_budget",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBudgetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Budget created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Budget"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid budget data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "409": {
+            "description": "Budget category already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/budgets/{id}": {
+      "put": {
+        "tags": [
+          "Budgets"
+        ],
+        "description": "Updates the amount of an existing budget owned by the authenticated user.",
+        "operationId": "update_authenticated_budget",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Budget ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBudgetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Budget updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Budget"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid budget amount"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Budget not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Budgets"
+        ],
+        "description": "Deletes a budget and invalidates cached budget data.",
+        "operationId": "delete_authenticated_budget",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Budget ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Budget deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteBudgetResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Budget not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/categories": {
+      "get": {
+        "tags": [
+          "Categories"
+        ],
+        "operationId": "list_categories",
+        "responses": {
+          "200": {
+            "description": "List of system and custom categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/categories/custom": {
+      "post": {
+        "tags": [
+          "Categories"
+        ],
+        "operationId": "create_custom_category",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomCategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Custom category created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomCategory"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error with error code"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/categories/custom/{id}": {
+      "delete": {
+        "tags": [
+          "Categories"
+        ],
+        "operationId": "delete_custom_category",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Custom category ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Custom category deleted"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/plaid/accounts": {
+      "get": {
+        "tags": [
+          "Plaid"
+        ],
+        "description": "Lists linked accounts with transaction counts for the user.",
+        "operationId": "get_authenticated_plaid_accounts",
+        "responses": {
+          "200": {
+            "description": "List of user accounts with transaction counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AccountResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/plaid/clear-synced-data": {
+      "post": {
+        "tags": [
+          "Plaid"
+        ],
+        "description": "Clears cached transactions for the calling user's session.",
+        "operationId": "clear_authenticated_synced_data",
+        "responses": {
+          "200": {
+            "description": "Synced data cleared successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClearSyncedDataResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/plaid/exchange-token": {
+      "post": {
+        "tags": [
+          "Plaid"
+        ],
+        "description": "Exchanges a Plaid public token for a persisted access token.",
+        "operationId": "exchange_authenticated_public_token",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExchangeTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Token exchanged successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unsupported provider"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Token exchange failed with provider"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/plaid/link-token": {
+      "post": {
+        "tags": [
+          "Plaid"
+        ],
+        "description": "Generates a provider-specific link token for Plaid/Teller flows.",
+        "operationId": "create_authenticated_link_token",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Link token created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unsupported provider"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Failed to create link token"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/providers/connect": {
+      "post": {
+        "tags": [
+          "Financial Providers"
+        ],
+        "description": "Completes provider connect enrollment and stores provider credentials for the user.",
+        "operationId": "connect_authenticated_provider",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderConnectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Provider connected successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderConnectResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unsupported provider"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Failed to connect provider",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/providers/disconnect": {
+      "post": {
+        "tags": [
+          "Financial Providers"
+        ],
+        "description": "Disconnects a provider connection and clears related cached artifacts.",
+        "operationId": "disconnect_authenticated_connection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisconnectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Provider connection disconnected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisconnectResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid connection_id format"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "415": {
+            "description": "Unsupported media type"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/providers/info": {
+      "get": {
+        "tags": [
+          "Financial Providers"
+        ],
+        "description": "Describes available providers and the caller's current selection.",
+        "operationId": "get_authenticated_provider_info",
+        "responses": {
+          "200": {
+            "description": "Available providers and current user provider configuration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderInfoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/providers/select": {
+      "post": {
+        "tags": [
+          "Financial Providers"
+        ],
+        "description": "Persists a provider switch for the authenticated user.",
+        "operationId": "select_authenticated_provider",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderSelectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Provider selected successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderSelectResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid provider specified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "409": {
+            "description": "Cannot switch while active connections exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/providers/simplefin/ignored-institutions": {
+      "get": {
+        "tags": [
+          "Financial Providers"
+        ],
+        "description": "Lists SimpleFIN bridge institutions the user has hidden in Sumurai.",
+        "operationId": "get_authenticated_simplefin_ignored_institutions",
+        "responses": {
+          "200": {
+            "description": "Ignored institutions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleFinIgnoredInstitutionsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Financial Providers"
+        ],
+        "description": "Removes a SimpleFIN institution from the ignore list so connect/sync can import it again. Idempotent: returns 200 even if the institution was not on the ignore list.",
+        "operationId": "restore_authenticated_simplefin_ignored_institution",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimpleFinRestoreIgnoredInstitutionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Institution restored (or was already not ignored)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleFinRestoreIgnoredInstitutionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/providers/status": {
+      "get": {
+        "tags": [
+          "Financial Providers"
+        ],
+        "description": "Summarizes connection status, sync metrics, and active institutions for the selected provider.",
+        "operationId": "get_authenticated_provider_status",
+        "responses": {
+          "200": {
+            "description": "Provider connection status and statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderStatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/providers/sync-transactions": {
+      "post": {
+        "tags": [
+          "Financial Providers"
+        ],
+        "description": "Kicks off a provider sync to pull the latest transactions.",
+        "operationId": "sync_authenticated_provider_transactions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncTransactionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Transactions synced successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncTransactionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing connection_id"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Connection not found or credentials missing"
+          },
+          "415": {
+            "description": "Unsupported media type"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "description": "Provider request failed"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/transactions": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "description": "Returns transactions with optional server-side pagination and filtering.",
+        "operationId": "get_authenticated_transactions",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search transactions by merchant, category, or account",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account_ids",
+            "in": "query",
+            "description": "Filter by account IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number starting at 1",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "Results per page, clamped to 200",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "Start date in YYYY-MM-DD format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "End date in YYYY-MM-DD format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category_primary",
+            "in": "query",
+            "description": "Filter by primary category",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedTransactionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid account filter"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Account filter references another user"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/transactions/auto-categorize": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "operationId": "get_auto_categorization_status",
+        "responses": {
+          "200": {
+            "description": "Latest auto-categorization job status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoCategorizationJobState"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Transactions"
+        ],
+        "operationId": "start_auto_categorization",
+        "responses": {
+          "200": {
+            "description": "Background categorization started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoCategorizationJobState"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Active job already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoCategorizationJobState"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Transactions"
+        ],
+        "operationId": "cancel_auto_categorization",
+        "responses": {
+          "200": {
+            "description": "Cancellation requested for active job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoCategorizationJobState"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No active job to cancel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/transactions/import": {
+      "post": {
+        "tags": [
+          "Transactions"
+        ],
+        "operationId": "import_authenticated_transactions",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file",
+                  "account_id"
+                ],
+                "properties": {
+                  "account_id": {
+                    "type": "string"
+                  },
+                  "csv_mapping": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "file": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Transactions imported successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing fields, invalid multipart payload, unsupported extension, invalid UTF-8, invalid CSV mapping, or file with no valid transactions"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account belongs to another user"
+          },
+          "413": {
+            "description": "Payload too large"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/transactions/import/validate": {
+      "post": {
+        "tags": [
+          "Transactions"
+        ],
+        "operationId": "validate_authenticated_transaction_import",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file",
+                  "account_id"
+                ],
+                "properties": {
+                  "account_id": {
+                    "type": "string"
+                  },
+                  "csv_mapping": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "file": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "File validation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing fields, invalid multipart payload, unsupported extension, invalid UTF-8, or invalid CSV mapping"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account belongs to another user"
+          },
+          "413": {
+            "description": "Payload too large"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/transactions/insights": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "description": "Returns aggregated transaction insights for the current filters.",
+        "operationId": "get_authenticated_transactions_insights",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search transactions by merchant, category, or account",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "account_ids",
+            "in": "query",
+            "description": "Filter by account IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "Start date in YYYY-MM-DD format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "End date in YYYY-MM-DD format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category_primary",
+            "in": "query",
+            "description": "Filter by primary category",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction insights",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionsInsightsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid account filter"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Account filter references another user"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/api/transactions/{id}/category": {
+      "put": {
+        "tags": [
+          "Transactions"
+        ],
+        "operationId": "set_transaction_category",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Transaction ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTransactionCategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Category updated"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Transaction not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "description": "Simple readiness probe for service health verification.",
+        "operationId": "health_check",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthCheckResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AccountResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "account_type",
+          "transaction_count"
+        ],
+        "properties": {
+          "account_type": {
+            "type": "string"
+          },
+          "balance_current": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "institution_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mask": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "provider_account_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider_connection_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "transaction_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        },
+        "example": {
+          "account_type": "depository",
+          "balance_current": "1234.56",
+          "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          "institution_name": "Demo Bank",
+          "mask": "1234",
+          "name": "Demo Checking",
+          "provider_account_id": "acct-123",
+          "provider_connection_id": "99999999-8888-7777-6666-555555555555",
+          "transaction_count": 42,
+          "user_id": "ffffffff-1111-2222-3333-444444444444"
+        }
+      },
+      "ApiErrorResponse": {
+        "type": "object",
+        "required": [
+          "error",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "details": {},
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "code": "AUTH_REQUIRED",
+          "details": null,
+          "error": "UNAUTHORIZED",
+          "message": "Authentication required."
+        }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "expires_at",
+          "onboarding_completed"
+        ],
+        "properties": {
+          "expires_at": {
+            "type": "string"
+          },
+          "onboarding_completed": {
+            "type": "boolean"
+          },
+          "user_id": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "expires_at": "2024-01-01T12:00:00Z",
+          "onboarding_completed": false,
+          "user_id": "11111111-2222-3333-4444-555555555555"
+        }
+      },
+      "AutoCategorizationJobState": {
+        "type": "object",
+        "required": [
+          "job_id",
+          "status",
+          "total",
+          "processed",
+          "updated",
+          "skipped",
+          "started_at"
+        ],
+        "properties": {
+          "error_message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "finished_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "processed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "skipped": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AutoCategorizationJobStatus"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "updated": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "example": {
+          "error_message": null,
+          "finished_at": null,
+          "job_id": "11111111-2222-3333-4444-555555555555",
+          "processed": 10,
+          "skipped": 3,
+          "started_at": "2024-01-01T12:00:00Z",
+          "status": "running",
+          "total": 42,
+          "updated": 7
+        }
+      },
+      "AutoCategorizationJobStatus": {
+        "type": "string",
+        "enum": [
+          "running",
+          "cancelling",
+          "completed",
+          "cancelled",
+          "failed"
+        ]
+      },
+      "BalancesOverviewResponse": {
+        "type": "object",
+        "required": [
+          "asOf",
+          "overall",
+          "banks",
+          "mixedCurrency"
+        ],
+        "properties": {
+          "asOf": {
+            "type": "string"
+          },
+          "banks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BankTotals"
+            }
+          },
+          "mixedCurrency": {
+            "type": "boolean"
+          },
+          "overall": {
+            "$ref": "#/components/schemas/Totals"
+          }
+        },
+        "example": {
+          "as_of": "2024-02-15T12:00:00Z",
+          "banks": [
+            {
+              "bank_id": "bank-1",
+              "bank_name": "Demo Bank",
+              "cash": "5000.00",
+              "credit": "-1200.00",
+              "investments": "2500.00",
+              "loan": "0.00",
+              "negatives_total": "-1200.00",
+              "net": "6300.00",
+              "positives_total": "7500.00",
+              "ratio": "1.40"
+            }
+          ],
+          "mixed_currency": false,
+          "overall": {
+            "cash": "9500.00",
+            "credit": "-2500.00",
+            "investments": "12000.00",
+            "loan": "-15000.00",
+            "negatives_total": "-17500.00",
+            "net": "4000.00",
+            "positives_total": "21500.00",
+            "ratio": "1.23"
+          }
+        }
+      },
+      "BankTotals": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Totals"
+          },
+          {
+            "type": "object",
+            "required": [
+              "bankId",
+              "bankName"
+            ],
+            "properties": {
+              "bankId": {
+                "type": "string"
+              },
+              "bankName": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "example": {
+          "bank_id": "bank-1",
+          "bank_name": "Demo Bank",
+          "cash": "5000.00",
+          "credit": "-1200.00",
+          "investments": "2500.00",
+          "loan": "0.00",
+          "negatives_total": "-1200.00",
+          "net": "6300.00",
+          "positives_total": "7500.00",
+          "ratio": "1.40"
+        }
+      },
+      "Budget": {
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "category",
+          "amount",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "example": {
+          "amount": "500.00",
+          "category": "groceries",
+          "created_at": "2024-01-01T12:00:00Z",
+          "id": "11111111-2222-3333-4444-555555555555",
+          "updated_at": "2024-01-15T12:00:00Z",
+          "user_id": "99999999-8888-7777-6666-555555555555"
+        }
+      },
+      "CategoryListResponse": {
+        "type": "object",
+        "required": [
+          "system",
+          "custom"
+        ],
+        "properties": {
+          "custom": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomCategory"
+            }
+          },
+          "system": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CategorySpending": {
+        "type": "object",
+        "required": [
+          "name",
+          "value"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "name": "groceries",
+          "value": "450.00"
+        }
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "properties": {
+          "current_password": {
+            "type": "string"
+          },
+          "new_password": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "current_password": "OldPass123!",
+          "new_password": "NewPass456!"
+        }
+      },
+      "ChangePasswordResponse": {
+        "type": "object",
+        "required": [
+          "message",
+          "requires_reauth"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "requires_reauth": {
+            "type": "boolean"
+          }
+        },
+        "example": {
+          "message": "Password updated successfully",
+          "requires_reauth": true
+        }
+      },
+      "ClearSyncedDataResponse": {
+        "type": "object",
+        "required": [
+          "cleared",
+          "user_id"
+        ],
+        "properties": {
+          "cleared": {
+            "type": "boolean"
+          },
+          "user_id": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "cleared": true,
+          "user_id": "99999999-8888-7777-6666-555555555555"
+        }
+      },
+      "CreateBudgetRequest": {
+        "type": "object",
+        "required": [
+          "category",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "amount": "500.00",
+          "category": "groceries"
+        }
+      },
+      "CreateCustomCategoryRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CsvColumnMapping": {
+        "type": "object",
+        "properties": {
+          "amount_column": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "credit_column": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date_column": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "debit_column": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description_column": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "CustomCategory": {
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "display_name",
+          "lookup_key"
+        ],
+        "properties": {
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lookup_key": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "DailySpending": {
+        "type": "object",
+        "required": [
+          "day",
+          "spend",
+          "cumulative"
+        ],
+        "properties": {
+          "cumulative": {
+            "type": "string"
+          },
+          "day": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "spend": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "cumulative": "890.25",
+          "day": 15,
+          "spend": "75.60"
+        }
+      },
+      "DailySpendingQueryParams": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "2024-01"
+          }
+        }
+      },
+      "DataCleared": {
+        "type": "object",
+        "required": [
+          "transactions",
+          "accounts",
+          "cache_keys"
+        ],
+        "properties": {
+          "accounts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cache_keys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "transactions": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "example": {
+          "accounts": 2,
+          "cache_keys": [
+            "user123_bank_connection"
+          ],
+          "transactions": 25
+        }
+      },
+      "DateRangeQueryParams": {
+        "type": "object",
+        "properties": {
+          "account_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "2024-12-31"
+          },
+          "start_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "2024-01-01"
+          }
+        }
+      },
+      "DeleteAccountResponse": {
+        "type": "object",
+        "required": [
+          "message",
+          "deleted_items"
+        ],
+        "properties": {
+          "deleted_items": {
+            "$ref": "#/components/schemas/DeletedItemsSummary"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "deleted_items": {
+            "accounts": 5,
+            "budgets": 3,
+            "connections": 2,
+            "transactions": 150
+          },
+          "message": "Account deleted successfully"
+        }
+      },
+      "DeleteBudgetResponse": {
+        "type": "object",
+        "required": [
+          "deleted",
+          "budget_id"
+        ],
+        "properties": {
+          "budget_id": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "example": {
+          "budget_id": "11111111-2222-3333-4444-555555555555",
+          "deleted": true
+        }
+      },
+      "DeletedItemsSummary": {
+        "type": "object",
+        "required": [
+          "connections",
+          "transactions",
+          "accounts",
+          "budgets"
+        ],
+        "properties": {
+          "accounts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "budgets": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "connections": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "transactions": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "example": {
+          "accounts": 5,
+          "budgets": 3,
+          "connections": 2,
+          "transactions": 150
+        }
+      },
+      "DisconnectRequest": {
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "properties": {
+          "connection_id": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "connection_id": "connection-uuid"
+        }
+      },
+      "DisconnectResult": {
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "data_cleared"
+        ],
+        "properties": {
+          "data_cleared": {
+            "$ref": "#/components/schemas/DataCleared"
+          },
+          "message": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "example": {
+          "data_cleared": {
+            "accounts": 2,
+            "cache_keys": [
+              "user123_bank_connection"
+            ],
+            "transactions": 25
+          },
+          "message": "Connection disconnected and data cleared",
+          "success": true
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error",
+          "message",
+          "status_code"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "status_code": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        },
+        "example": {
+          "error": "Unauthorized",
+          "message": "Invalid credentials",
+          "status_code": 401
+        }
+      },
+      "ExchangeTokenRequest": {
+        "type": "object",
+        "required": [
+          "public_token"
+        ],
+        "properties": {
+          "public_token": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "public_token": "public-sandbox-abc123"
+        }
+      },
+      "ExchangeTokenResponse": {
+        "type": "object",
+        "required": [
+          "access_token",
+          "item_id",
+          "institution_name",
+          "connection_id"
+        ],
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "connection_id": {
+            "type": "string"
+          },
+          "institution_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "institution_name": {
+            "type": "string"
+          },
+          "item_id": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "access_token": "access-sandbox-xyz",
+          "connection_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          "institution_id": "ins_123",
+          "institution_name": "Demo Bank",
+          "item_id": "item-123"
+        }
+      },
+      "HealthCheckResponse": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "status": "ok"
+        }
+      },
+      "ImportDateRange": {
+        "type": "object",
+        "required": [
+          "start_date",
+          "end_date"
+        ],
+        "properties": {
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "ImportFileFormat": {
+        "type": "string",
+        "enum": [
+          "Csv",
+          "Ofx",
+          "Qfx",
+          "Qbo",
+          "Qbx"
+        ]
+      },
+      "ImportMultipartRequest": {
+        "type": "object",
+        "required": [
+          "file",
+          "account_id"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string"
+          },
+          "csv_mapping": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "file": {
+            "type": "string"
+          }
+        }
+      },
+      "ImportResponse": {
+        "type": "object",
+        "required": [
+          "imported_count",
+          "skipped_count",
+          "truncated_count",
+          "total_parsed",
+          "errors"
+        ],
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "imported_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "skipped_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_parsed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "truncated_count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "LargestTransaction": {
+        "type": "object",
+        "required": [
+          "amount",
+          "merchant"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "merchant": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "amount": 42.75,
+          "merchant": "Coffee Collective"
+        }
+      },
+      "LinkTokenRequest": {
+        "type": "object",
+        "example": {}
+      },
+      "LinkTokenResponse": {
+        "type": "object",
+        "required": [
+          "link_token"
+        ],
+        "properties": {
+          "link_token": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "link_token": "link-sandbox-abc123"
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "email": "user@example.com",
+          "password": "SecurePass123!"
+        }
+      },
+      "LogoutResponse": {
+        "type": "object",
+        "required": [
+          "message",
+          "cleared_session"
+        ],
+        "properties": {
+          "cleared_session": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "cleared_session": "jwt-123",
+          "message": "Logged out successfully"
+        }
+      },
+      "MonthlySpending": {
+        "type": "object",
+        "required": [
+          "month",
+          "total"
+        ],
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "total": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "month": "2024-01",
+          "total": "1250.40"
+        }
+      },
+      "MonthlyTotalsQueryParams": {
+        "type": "object",
+        "properties": {
+          "account_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "months": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "example": 6,
+            "minimum": 0
+          }
+        }
+      },
+      "NetWorthOverTimeResponse": {
+        "type": "object",
+        "required": [
+          "series",
+          "currency"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetWorthSeriesPoint"
+            }
+          }
+        },
+        "example": {
+          "currency": "USD",
+          "series": [
+            {
+              "date": "2024-01-31",
+              "value": "12500.90"
+            },
+            {
+              "date": "2024-02-29",
+              "value": "13150.25"
+            }
+          ]
+        }
+      },
+      "NetWorthSeriesPoint": {
+        "type": "object",
+        "required": [
+          "date",
+          "value"
+        ],
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "date": "2024-01-31",
+          "value": "12500.90"
+        }
+      },
+      "OnboardingCompleteResponse": {
+        "type": "object",
+        "required": [
+          "message",
+          "onboarding_completed"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "onboarding_completed": {
+            "type": "boolean"
+          }
+        },
+        "example": {
+          "message": "Onboarding completed successfully",
+          "onboarding_completed": true
+        }
+      },
+      "PaginatedTransactionsResponse": {
+        "type": "object",
+        "required": [
+          "transactions",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page_size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionWithAccount"
+            }
+          }
+        },
+        "example": {
+          "page": 1,
+          "page_size": 50,
+          "total": 1,
+          "transactions": [
+            {
+              "account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+              "account_mask": "1234",
+              "account_name": "Demo Checking",
+              "account_type": "depository",
+              "amount": "42.75",
+              "category_confidence": "high",
+              "category_detailed": "Coffee shop",
+              "category_primary": "FOOD_AND_DRINK",
+              "created_at": "2024-01-15T13:45:00Z",
+              "date": "2024-01-15",
+              "id": "44444444-5555-6666-7777-888888888888",
+              "merchant_name": "Coffee Collective",
+              "payment_channel": "in_store",
+              "pending": false,
+              "provider_account_id": "acct-123",
+              "provider_transaction_id": "txn-456",
+              "user_id": "99999999-8888-7777-6666-555555555555"
+            }
+          ]
+        }
+      },
+      "PreviewTransaction": {
+        "type": "object",
+        "required": [
+          "date",
+          "amount",
+          "description"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "ProviderConnectRequest": {
+        "type": "object",
+        "required": [
+          "provider",
+          "access_token",
+          "enrollment_id"
+        ],
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "enrollment_id": {
+            "type": "string"
+          },
+          "institution_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider": {
+            "type": "string"
+          },
+          "simplefin": {
+            "$ref": "#/components/schemas/SimpleFinConnectRequest"
+          }
+        },
+        "example": {
+          "access_token": "access-sandbox-xyz",
+          "enrollment_id": "enroll-123",
+          "institution_name": "Teller Demo Bank",
+          "provider": "teller",
+          "simplefin": {
+            "simplefin_setup_token": null
+          }
+        }
+      },
+      "ProviderConnectResponse": {
+        "type": "object",
+        "required": [
+          "connection_id",
+          "institution_name"
+        ],
+        "properties": {
+          "connection_id": {
+            "type": "string"
+          },
+          "institution_name": {
+            "type": "string"
+          },
+          "simplefin_institutions_requiring_auth": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SimpleFinInstitutionAuthRequired"
+            }
+          }
+        },
+        "example": {
+          "connection_id": "connection-uuid",
+          "institution_name": "Demo Bank"
+        }
+      },
+      "ProviderConnectionStatus": {
+        "type": "object",
+        "required": [
+          "is_connected",
+          "transaction_count",
+          "account_count",
+          "sync_in_progress"
+        ],
+        "properties": {
+          "account_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "connection_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "institution_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_connected": {
+            "type": "boolean"
+          },
+          "item_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_sync_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sync_in_progress": {
+            "type": "boolean"
+          },
+          "transaction_count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "example": {
+          "account_count": 3,
+          "connection_id": "connection-uuid",
+          "institution_name": "Demo Bank",
+          "is_connected": true,
+          "last_sync_at": "2024-01-10T12:00:00Z",
+          "sync_in_progress": false,
+          "transaction_count": 120
+        }
+      },
+      "ProviderInfoResponse": {
+        "type": "object",
+        "required": [
+          "available_providers",
+          "teller_environment"
+        ],
+        "properties": {
+          "available_providers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "teller_application_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "teller_environment": {
+            "type": "string"
+          },
+          "user_provider": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "example": {
+          "available_providers": [
+            "plaid",
+            "teller",
+            "simplefin"
+          ],
+          "teller_application_id": "app-123",
+          "teller_environment": "sandbox",
+          "user_provider": "teller"
+        }
+      },
+      "ProviderSelectRequest": {
+        "type": "object",
+        "required": [
+          "provider"
+        ],
+        "properties": {
+          "provider": {
+            "type": "string",
+            "example": "teller"
+          }
+        },
+        "example": {
+          "provider": "teller"
+        }
+      },
+      "ProviderSelectResponse": {
+        "type": "object",
+        "required": [
+          "user_provider"
+        ],
+        "properties": {
+          "user_provider": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "user_provider": "teller"
+        }
+      },
+      "ProviderStatusResponse": {
+        "type": "object",
+        "required": [
+          "provider",
+          "connections"
+        ],
+        "properties": {
+          "connections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderConnectionStatus"
+            }
+          },
+          "provider": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "connections": [
+            {
+              "account_count": 3,
+              "connection_id": "connection-uuid",
+              "institution_name": "Demo Bank",
+              "is_connected": true,
+              "last_sync_at": "2024-01-10T12:00:00Z",
+              "sync_in_progress": false,
+              "transaction_count": 120
+            }
+          ],
+          "provider": "teller"
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "email": "user@example.com",
+          "password": "SecurePass123!"
+        }
+      },
+      "SetTransactionCategoryRequest": {
+        "type": "object",
+        "required": [
+          "category_name",
+          "is_custom"
+        ],
+        "properties": {
+          "category_name": {
+            "type": "string"
+          },
+          "is_custom": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SimpleFinConnectRequest": {
+        "type": "object",
+        "properties": {
+          "simplefin_setup_token": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "example": {
+          "simplefin_setup_token": null
+        }
+      },
+      "SimpleFinIgnoredInstitution": {
+        "type": "object",
+        "required": [
+          "org_conn_id",
+          "hidden_at"
+        ],
+        "properties": {
+          "hidden_at": {
+            "type": "string"
+          },
+          "institution_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "org_conn_id": {
+            "type": "string"
+          }
+        }
+      },
+      "SimpleFinIgnoredInstitutionsResponse": {
+        "type": "object",
+        "required": [
+          "institutions"
+        ],
+        "properties": {
+          "institutions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimpleFinIgnoredInstitution"
+            }
+          }
+        }
+      },
+      "SimpleFinInstitutionAuthRequired": {
+        "type": "object",
+        "required": [
+          "institution_name",
+          "message"
+        ],
+        "properties": {
+          "institution_name": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "org_conn_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "SimpleFinRestoreIgnoredInstitutionRequest": {
+        "type": "object",
+        "required": [
+          "org_conn_id"
+        ],
+        "properties": {
+          "org_conn_id": {
+            "type": "string"
+          }
+        }
+      },
+      "SimpleFinRestoreIgnoredInstitutionResponse": {
+        "type": "object",
+        "required": [
+          "restored"
+        ],
+        "properties": {
+          "restored": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "message": "Operation completed successfully"
+        }
+      },
+      "SyncMetadata": {
+        "type": "object",
+        "required": [
+          "transaction_count",
+          "account_count",
+          "sync_timestamp",
+          "start_date",
+          "end_date",
+          "connection_updated"
+        ],
+        "properties": {
+          "account_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "connection_updated": {
+            "type": "boolean"
+          },
+          "end_date": {
+            "type": "string"
+          },
+          "start_date": {
+            "type": "string"
+          },
+          "sync_timestamp": {
+            "type": "string"
+          },
+          "transaction_count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "example": {
+          "account_count": 2,
+          "connection_updated": true,
+          "end_date": "2024-01-15",
+          "start_date": "2024-01-01",
+          "sync_timestamp": "2024-01-15T14:00:00Z",
+          "transaction_count": 25
+        }
+      },
+      "SyncTransactionsRequest": {
+        "type": "object",
+        "properties": {
+          "client_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "connection_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "example": {
+          "connection_id": "connection-uuid"
+        }
+      },
+      "SyncTransactionsResponse": {
+        "type": "object",
+        "required": [
+          "transactions",
+          "metadata"
+        ],
+        "properties": {
+          "metadata": {
+            "$ref": "#/components/schemas/SyncMetadata"
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            }
+          }
+        },
+        "example": {
+          "metadata": {
+            "account_count": 1,
+            "connection_updated": true,
+            "end_date": "2024-01-15",
+            "start_date": "2024-01-01",
+            "sync_timestamp": "2024-01-15T14:00:00Z",
+            "transaction_count": 1
+          },
+          "transactions": [
+            {
+              "account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+              "amount": "42.75",
+              "category_confidence": "high",
+              "category_detailed": "Coffee shop",
+              "category_primary": "FOOD_AND_DRINK",
+              "created_at": "2024-01-15T13:45:00Z",
+              "date": "2024-01-15",
+              "id": "44444444-5555-6666-7777-888888888888",
+              "merchant_name": "Coffee Collective",
+              "payment_channel": "in_store",
+              "pending": false,
+              "provider_account_id": "acct-123",
+              "provider_transaction_id": "txn-456",
+              "user_id": "99999999-8888-7777-6666-555555555555"
+            }
+          ]
+        }
+      },
+      "TopMerchant": {
+        "type": "object",
+        "required": [
+          "name",
+          "amount",
+          "count",
+          "percentage"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "percentage": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "amount": "125.75",
+          "count": 8,
+          "name": "Coffee Collective",
+          "percentage": "12.50"
+        }
+      },
+      "Totals": {
+        "type": "object",
+        "required": [
+          "cash",
+          "credit",
+          "loan",
+          "investments",
+          "positivesTotal",
+          "negativesTotal",
+          "net"
+        ],
+        "properties": {
+          "cash": {
+            "type": "string"
+          },
+          "credit": {
+            "type": "string"
+          },
+          "investments": {
+            "type": "string"
+          },
+          "loan": {
+            "type": "string"
+          },
+          "negativesTotal": {
+            "type": "string"
+          },
+          "net": {
+            "type": "string"
+          },
+          "positivesTotal": {
+            "type": "string"
+          },
+          "ratio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "example": {
+          "cash": "9500.00",
+          "credit": "-2500.00",
+          "investments": "12000.00",
+          "loan": "-15000.00",
+          "negatives_total": "-17500.00",
+          "net": "4000.00",
+          "positives_total": "21500.00",
+          "ratio": "1.23"
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "required": [
+          "id",
+          "account_id",
+          "amount",
+          "date",
+          "category_primary",
+          "category_detailed",
+          "category_confidence",
+          "pending"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "category_confidence": {
+            "type": "string"
+          },
+          "category_detailed": {
+            "type": "string"
+          },
+          "category_primary": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "merchant_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "payment_channel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pending": {
+            "type": "boolean"
+          },
+          "provider_account_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider_transaction_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        },
+        "example": {
+          "account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          "amount": "24.99",
+          "category_confidence": "medium",
+          "category_detailed": "General merchandise",
+          "category_primary": "SHOPPING",
+          "created_at": "2024-01-20T14:32:00Z",
+          "date": "2024-01-20",
+          "id": "33333333-4444-5555-6666-777777777777",
+          "merchant_name": "Sample Store",
+          "payment_channel": "online",
+          "pending": false,
+          "provider_account_id": "acct-123",
+          "provider_transaction_id": "txn-890",
+          "user_id": "ffffffff-1111-2222-3333-444444444444"
+        }
+      },
+      "TransactionWithAccount": {
+        "type": "object",
+        "required": [
+          "id",
+          "account_id",
+          "amount",
+          "date",
+          "category_primary",
+          "category_detailed",
+          "category_confidence",
+          "pending",
+          "account_name",
+          "account_type",
+          "is_custom",
+          "is_overridden"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "account_mask": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "account_name": {
+            "type": "string"
+          },
+          "account_type": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "category_confidence": {
+            "type": "string"
+          },
+          "category_detailed": {
+            "type": "string"
+          },
+          "category_primary": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "is_custom": {
+            "type": "boolean"
+          },
+          "is_overridden": {
+            "type": "boolean"
+          },
+          "merchant_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "payment_channel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pending": {
+            "type": "boolean"
+          },
+          "provider_account_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider_transaction_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        },
+        "example": {
+          "account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          "account_mask": "1234",
+          "account_name": "Demo Checking",
+          "account_type": "depository",
+          "amount": "42.75",
+          "category_confidence": "high",
+          "category_detailed": "Coffee shop",
+          "category_primary": "FOOD_AND_DRINK",
+          "created_at": "2024-01-15T13:45:00Z",
+          "date": "2024-01-15",
+          "id": "44444444-5555-6666-7777-888888888888",
+          "merchant_name": "Coffee Collective",
+          "payment_channel": "in_store",
+          "pending": false,
+          "provider_account_id": "acct-123",
+          "provider_transaction_id": "txn-456",
+          "user_id": "99999999-8888-7777-6666-555555555555"
+        }
+      },
+      "TransactionsInsightsResponse": {
+        "type": "object",
+        "required": [
+          "total_count",
+          "total_spent",
+          "average_amount",
+          "recurring_count",
+          "recurring_merchants",
+          "top_categories"
+        ],
+        "properties": {
+          "average_amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "largest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LargestTransaction"
+              }
+            ]
+          },
+          "recurring_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "recurring_merchants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "top_categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "total_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_spent": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "example": {
+          "average_amount": 15.35,
+          "largest": {
+            "amount": 42.75,
+            "merchant": "Coffee Collective"
+          },
+          "recurring_count": 2,
+          "recurring_merchants": [
+            "Coffee Collective",
+            "Gas Station"
+          ],
+          "top_categories": [
+            "FOOD_AND_DRINK",
+            "TRANSPORTATION"
+          ],
+          "total_count": 12,
+          "total_spent": 184.25
+        }
+      },
+      "TransactionsQueryParams": {
+        "type": "object",
+        "properties": {
+          "account_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "search": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "coffee"
+          }
+        }
+      },
+      "UpdateBudgetRequest": {
+        "type": "object",
+        "required": [
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "amount": "625.00"
+        }
+      },
+      "ValidateResponse": {
+        "type": "object",
+        "required": [
+          "valid",
+          "transaction_count",
+          "truncated_count",
+          "preview_rows",
+          "csv_headers",
+          "sample_csv_rows",
+          "errors"
+        ],
+        "properties": {
+          "csv_headers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "date_range": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImportDateRange"
+              }
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "format": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImportFileFormat"
+              }
+            ]
+          },
+          "preview_rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PreviewTransaction"
+            }
+          },
+          "sample_csv_rows": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "suggested_csv_mapping": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CsvColumnMapping"
+              }
+            ]
+          },
+          "transaction_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "truncated_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "valid": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "auth_cookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "auth_token",
+        "description": "HttpOnly auth cookie issued by the authentication endpoints."
+      }
+    }
+  },
+  "security": [
+    {
+      "auth_cookie": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Session lifecycle endpoints covering registration, login, refresh, and logout flows."
+    },
+    {
+      "name": "Transactions",
+      "description": "Transaction APIs that power search, filtering, and sync of user financial activity."
+    },
+    {
+      "name": "Financial Providers",
+      "description": "Provider-agnostic endpoints for selecting, connecting, and managing financial data sources."
+    },
+    {
+      "name": "Plaid",
+      "description": "Plaid-specific endpoints for link token creation, token exchange, and account retrieval."
+    },
+    {
+      "name": "Teller",
+      "description": "Reserved for Teller Connect operations when expanded beyond provider selection flows."
+    },
+    {
+      "name": "Analytics",
+      "description": "Analytics endpoints delivering spend breakdowns, trends, balances, and net worth insights."
+    },
+    {
+      "name": "Budgets",
+      "description": "Budget management APIs for CRUD operations tied to user-defined spending targets."
+    },
+    {
+      "name": "Health",
+      "description": "Service health diagnostics for readiness and uptime monitoring."
+    }
+  ]
+}

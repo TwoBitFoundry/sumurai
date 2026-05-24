@@ -707,7 +707,7 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
 #[utoipa::path(
     post,
     path = "/api/auth/register",
-    description = "Registers a new user and seeds default provider metadata.",
+    description = "Registers a new user.",
     request_body = auth_models::RegisterRequest,
     responses(
         (status = 200, description = "User registered successfully", body = auth_models::AuthResponse),
@@ -3383,6 +3383,7 @@ async fn get_authenticated_provider_info(
         (status = 200, description = "Provider selected successfully", body = ProviderSelectResponse),
         (status = 400, description = "Invalid provider specified", body = ApiErrorResponse),
         (status = 401, description = "Unauthorized"),
+        (status = 409, description = "Cannot switch while active connections exist", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
     security(("auth_cookie" = [])),
@@ -3394,26 +3395,72 @@ async fn select_authenticated_provider(
     Json(req): Json<ProviderSelectRequest>,
 ) -> Result<Json<ProviderSelectResponse>, (StatusCode, Json<ApiErrorResponse>)> {
     let user_id = auth_context.user_id;
+    let requested_provider = req.provider;
 
-    let provider = req.provider;
-
-    if provider != "plaid" && provider != "teller" {
+    if state.provider_registry.get(&requested_provider).is_none() {
         return Err(ApiErrorResponse::new(
             "BAD_REQUEST",
-            "Invalid provider. Must be 'plaid' or 'teller'",
+            &format!("Provider '{}' is not registered", requested_provider),
         )
         .into_response(StatusCode::BAD_REQUEST));
     }
 
+    let user = match state.db_repository.get_user_by_id(&user_id).await {
+        Ok(Some(user)) => user,
+        Ok(None) => {
+            tracing::error!("User {} not found", user_id);
+            return Err(ApiErrorResponse::internal_server_error("User not found"));
+        }
+        Err(e) => {
+            tracing::error!("Failed to get user {}: {}", user_id, e);
+            return Err(ApiErrorResponse::internal_server_error(
+                "Failed to fetch user",
+            ));
+        }
+    };
+
+    if let Some(current_provider) = user.active_provider() {
+        if current_provider != requested_provider {
+            let connections = match state
+                .db_repository
+                .get_all_provider_connections_by_user(&user_id)
+                .await
+            {
+                Ok(conns) => conns,
+                Err(e) => {
+                    tracing::error!("Failed to get connections for user {}: {}", user_id, e);
+                    return Err(ApiErrorResponse::internal_server_error(
+                        "Failed to check active connections",
+                    ));
+                }
+            };
+
+            let has_active_connections = connections
+                .iter()
+                .any(|c| c.provider == current_provider && c.is_connected);
+
+            if has_active_connections {
+                return Err(ApiErrorResponse::new(
+                    "CONFLICT",
+                    &format!(
+                        "Disconnect all {} accounts before switching",
+                        current_provider
+                    ),
+                )
+                .into_response(StatusCode::CONFLICT));
+            }
+        }
+    }
+
     match state
         .db_repository
-        .update_user_provider(&user_id, &provider)
+        .update_user_provider(&user_id, &requested_provider)
         .await
     {
         Ok(_) => {
-            tracing::info!("User {} selected provider: {}", user_id, provider);
+            tracing::info!("User {} selected provider: {}", user_id, requested_provider);
             Ok(Json(ProviderSelectResponse {
-                user_provider: provider,
+                user_provider: requested_provider,
             }))
         }
         Err(e) => {

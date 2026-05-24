@@ -1,4 +1,5 @@
 use crate::openapi::init_openapi;
+use std::fs;
 
 #[test]
 fn given_cookie_auth_when_generating_openapi_then_documents_auth_cookie_scheme() {
@@ -117,4 +118,12 @@ fn given_transactions_insights_when_generating_openapi_then_documents_endpoint_a
         spec["components"]["schemas"]["LargestTransaction"]["properties"]["merchant"]["type"],
         serde_json::json!("string")
     );
+}
+
+#[test]
+#[ignore]
+fn regenerate_openapi_artifacts() {
+    let spec = serde_json::to_string_pretty(&init_openapi()).unwrap();
+    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../docs/OPENAPI.json");
+    fs::write(path, format!("{spec}\n")).unwrap();
 }

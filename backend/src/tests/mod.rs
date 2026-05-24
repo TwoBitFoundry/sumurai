@@ -31,6 +31,7 @@ mod openapi_tests;
 mod otel_traces_relay_tests;
 mod plaid_provider_tests;
 mod plaid_service_tests;
+mod provider_selection_api_tests;
 mod read_path_overlay_tests;
 mod repository_service_tests;
 mod security_resilience_edge_cases_tests;
