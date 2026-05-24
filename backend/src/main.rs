@@ -107,14 +107,42 @@ use services::{AnalyticsService, RealPlaidClient};
 use sqlx::PgPool;
 use utils::auth_cookie::{build_auth_cookie, build_clearing_auth_cookie, extract_auth_cookie};
 
+pub(crate) fn build_provider_registry(
+    plaid_provider: Option<Arc<dyn providers::FinancialDataProvider>>,
+    teller_provider: anyhow::Result<Arc<dyn providers::FinancialDataProvider>>,
+    simplefin_provider: Arc<dyn providers::FinancialDataProvider>,
+) -> providers::ProviderRegistry {
+    let mut provider_registry = providers::ProviderRegistry::new();
+
+    if let Some(plaid_provider) = plaid_provider {
+        provider_registry.register("plaid", plaid_provider);
+    } else {
+        tracing::warn!("Plaid provider not configured; skipping Plaid initialization");
+    }
+
+    match teller_provider {
+        Ok(teller_provider) => {
+            provider_registry.register("teller", teller_provider);
+        }
+        Err(e) => {
+            tracing::warn!(
+                error = %e,
+                "Teller provider not configured; skipping Teller initialization"
+            );
+        }
+    }
+
+    provider_registry.register("simplefin", simplefin_provider);
+
+    provider_registry
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let telemetry_config = TelemetryConfig::from_env()?;
     let telemetry = telemetry_middleware::init(&telemetry_config)?;
 
     let config = Config::from_env()?;
-
-    let mut provider_registry = providers::ProviderRegistry::new();
 
     let plaid_client_id = std::env::var("PLAID_CLIENT_ID").ok();
     let plaid_secret = std::env::var("PLAID_SECRET").ok();
@@ -125,35 +153,6 @@ async fn main() -> anyhow::Result<()> {
         .is_some_and(|v| !v.trim().is_empty())
         && plaid_secret.as_ref().is_some_and(|v| !v.trim().is_empty())
         && plaid_env.as_ref().is_some_and(|v| !v.trim().is_empty());
-
-    if plaid_configured {
-        let plaid_client = Arc::new(RealPlaidClient::new(
-            plaid_client_id.clone().unwrap(),
-            plaid_secret.clone().unwrap(),
-            plaid_env.clone().unwrap(),
-        ));
-        let plaid_provider: Arc<dyn providers::FinancialDataProvider> =
-            Arc::new(providers::PlaidProvider::new(plaid_client.clone()));
-        provider_registry.register("plaid", plaid_provider);
-    } else {
-        tracing::warn!("Plaid provider not configured; skipping Plaid initialization");
-    }
-
-    match providers::TellerProvider::new() {
-        Ok(teller) => {
-            let teller_provider: Arc<dyn providers::FinancialDataProvider> = Arc::new(teller);
-            provider_registry.register("teller", teller_provider);
-        }
-        Err(e) => {
-            tracing::warn!(error = %e, "Teller provider not configured; skipping Teller initialization");
-        }
-    }
-
-    let simplefin_provider: Arc<dyn providers::FinancialDataProvider> =
-        Arc::new(providers::SimpleFinProvider::new_with_real_client().await?);
-    provider_registry.register("simplefin", simplefin_provider);
-
-    let provider_registry = Arc::new(provider_registry);
 
     let plaid_client = if plaid_configured {
         Arc::new(RealPlaidClient::new(
@@ -168,6 +167,27 @@ async fn main() -> anyhow::Result<()> {
             "sandbox".to_string(),
         ))
     };
+
+    let plaid_provider = if plaid_configured {
+        Some(
+            Arc::new(providers::PlaidProvider::new(plaid_client.clone()))
+                as Arc<dyn providers::FinancialDataProvider>,
+        )
+    } else {
+        None
+    };
+
+    let teller_provider = providers::TellerProvider::new()
+        .map(|provider| Arc::new(provider) as Arc<dyn providers::FinancialDataProvider>);
+
+    let simplefin_provider: Arc<dyn providers::FinancialDataProvider> =
+        Arc::new(providers::SimpleFinProvider::new_with_real_client().await?);
+
+    let provider_registry = Arc::new(build_provider_registry(
+        plaid_provider,
+        teller_provider,
+        simplefin_provider,
+    ));
 
     let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
 

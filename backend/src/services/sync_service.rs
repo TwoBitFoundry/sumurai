@@ -27,7 +27,7 @@ impl SyncService {
         Self { providers }
     }
 
-    fn resolve_provider(
+    pub(crate) fn resolve_provider(
         &self,
         provider_name: Option<&str>,
     ) -> Result<Arc<dyn FinancialDataProvider>> {

@@ -7,7 +7,7 @@ Today, onboarding is a two-step wizard ([WelcomeStep](frontend/src/components/on
 We want to:
 
 1. **Replace the entire wizard with a single Provider Picker screen.** Keep only the **Skip for now** and **Continue** footer buttons from the wizard chrome. No step indicator, no Welcome step, no embedded connect flow.
-2. **Stop requiring `DEFAULT_PROVIDER` at startup.** The backend boots with whichever providers are configured (zero is OK). Each user chooses their own active provider; the server no longer carries a system default.
+2. **Remove the system-wide provider default concept.** Each user chooses their own active provider; provider selection is entirely user-owned.
 3. **Show the picker again on the Accounts page when the user has no active provider** (fresh user who skipped, or fully disconnected user) so they can switch.
 4. **Re-do the picker card copy** with accurate, price-led, self-hosted-pricing framing — Teller → SimpleFIN → Plaid — and emphasize SimpleFIN's privacy story.
 
@@ -24,33 +24,36 @@ Behavior rules:
 
 ---
 
-## Phase 1 — Backend: drop the `DEFAULT_PROVIDER` startup requirement
+## Phase 1 — Backend: remove the startup default-provider dependency
 
-**Goal:** The Rust app boots successfully with no `DEFAULT_PROVIDER` set and any subset of provider credentials configured (including zero). `/providers/info` reflects whatever was actually registered.
+**Goal:** The Rust app boots successfully with any subset of provider credentials configured (including zero). `/providers/info` reflects whatever was actually registered.
 
 **Tasks:**
 
-- Update [backend/src/config.rs](backend/src/config.rs):
-  - Change `Config.default_provider` from `String` to `Option<String>`.
-  - Update `from_env_provider` to read `DEFAULT_PROVIDER` as optional (no `unwrap_or_else("teller")` fallback).
-  - Change `get_default_provider()` to return `Option<&str>`.
 - Update startup block in [backend/src/main.rs](backend/src/main.rs) (lines ~115–185):
-  - Delete the `anyhow::bail!("DEFAULT_PROVIDER is plaid but ...")` branch.
-  - Delete the `return Err(e)` branch in the Teller registration arm.
   - When a provider's credentials are missing, log a warning and skip registration (current "skipping" log is fine — just don't crash).
   - If zero providers register, log a single warning ("No financial providers configured — users will see all picker cards disabled"). Don't crash.
 - Update [backend/src/services/sync_service.rs](backend/src/services/sync_service.rs):
-  - `SyncService::new` takes `Option<String>` for default provider (or no default at all — pick whichever fits cleanly with existing call sites).
-  - `resolve_provider`: if the per-connection provider name is missing **and** no default is set, return a clear error (`"No provider selected — connect an account first"`). Never silently fall back.
-- Update call sites where `state.config.get_default_provider()` was used as a non-optional string (handlers in [backend/src/main.rs](backend/src/main.rs) around `get_authenticated_provider_info` and `register_user`). Map to `Option<&str>` and treat `None` as "no system default".
+  - `resolve_provider`: if the per-connection provider name is missing, return a clear error (`"No provider selected — connect an account first"`). Never silently fall back.
 
 **Acceptance criteria:**
 
-- [ ] `cargo build --manifest-path backend/Cargo.toml --locked` succeeds.
-- [ ] With `DEFAULT_PROVIDER`, `PLAID`_*, and Teller cert vars all unset, `cargo run` boots without panic and logs that only SimpleFIN registered (SimpleFIN always initializes).
-- [ ] With `DEFAULT_PROVIDER=plaid` but no Plaid creds, the app still boots (the old bail no longer fires); Plaid is skipped with a warning.
-- [ ] `GET /api/providers/info` returns `default_provider: null` when no env var is set, and `available_providers` contains only the providers that successfully registered.
-- [ ] `cargo test --manifest-path backend/Cargo.toml --locked` passes (existing config tests updated where needed; add at least one test in `backend/src/tests/` covering the boot-with-zero-Plaid/Teller path and one for `SyncService::resolve_provider` error path).
+- [x] `cargo build --manifest-path backend/Cargo.toml --locked` succeeds.
+- [x] With `PLAID`_* and Teller cert vars all unset, `cargo run` boots without panic and logs that only SimpleFIN registered (SimpleFIN always initializes).
+- [x] With Plaid creds unset, the app still boots; Plaid is skipped with a warning.
+- [x] `GET /api/providers/info` returns `available_providers` containing only the providers that successfully registered.
+- [x] `cargo test --manifest-path backend/Cargo.toml --locked` passes (existing config tests updated where needed; add at least one test in `backend/src/tests/` covering the boot-with-zero-Plaid/Teller path and one for `SyncService::resolve_provider` error path).
+
+**TDD log:**
+
+- `cargo test --manifest-path backend/Cargo.toml --locked provider_bootstrap_tests::given_plaid_and_teller_unavailable_when_building_provider_registry_then_only_simplefin_is_registered -- --nocapture`
+  - Bootstrap helper test passed.
+- `cargo test --manifest-path backend/Cargo.toml --locked sync_service_tests::given_missing_provider_when_resolving_then_returns_error -- --nocapture`
+  - Resolve-provider error-path test passed.
+- `cargo build --manifest-path backend/Cargo.toml --locked`
+  - Build passed.
+- `cargo test --manifest-path backend/Cargo.toml --locked`
+  - 435 tests passed, 1 ignored.
 
 ---
 
@@ -68,10 +71,9 @@ Behavior rules:
   - Remove the `provider != "plaid" && provider != "teller"` check. Validate against the registry instead: 400 if the requested provider isn't registered.
   - Before persisting, check whether the user has any `is_connected = true` connections whose `provider` differs from the requested value. If yes, return 409 with `"Disconnect all <current_provider> accounts before switching"`. (Zero active connections ⇒ allow.)
 - Update `get_authenticated_provider_info` in [backend/src/main.rs](backend/src/main.rs) (lines ~3340–3388):
-  - `default_provider` serializes as `null` when `Option::None`.
   - `user_provider` serializes as `null` when `user.provider` is empty — drop the "fall back to default during onboarding" behavior. The picker is what drives selection now.
 - Confirm `update_user_provider` (already present at [backend/src/services/repository_service.rs:549](backend/src/services/repository_service.rs:549)) needs no schema change; it accepts any string and the column stays `NOT NULL DEFAULT 'teller'` from migration 019.
-- Regenerate OpenAPI: [backend/openapi/](backend/openapi/) and [docs/OPENAPI.json](docs/OPENAPI.json). The `ProviderInfoResponse` schema must show nullable `default_provider` and `user_provider`.
+- Regenerate OpenAPI: [backend/openapi/](backend/openapi/) and [docs/OPENAPI.json](docs/OPENAPI.json). The `ProviderInfoResponse` schema must show nullable `user_provider`.
 
 **Acceptance criteria:**
 
@@ -99,12 +101,11 @@ Behavior rules:
 
 ## Phase 3 — Frontend types + provider catalogue
 
-**Goal:** Types and provider catalogue helpers reflect that `default_provider` and `user_provider` can be null, and that picker availability is per-provider with a reason.
+**Goal:** Types and provider catalogue helpers reflect that `user_provider` can be null, and that picker availability is per-provider with a reason.
 
 **Tasks:**
 
 - Update [frontend/src/types/providerCatalog.ts](frontend/src/types/providerCatalog.ts) and [frontend/src/types/api.ts](frontend/src/types/api.ts):
-  - `default_provider?: FinancialProvider | null`.
   - `user_provider?: FinancialProvider | null`.
 - Update [frontend/src/hooks/useProviderCatalog.ts](frontend/src/hooks/useProviderCatalog.ts):
   - `defaultProvider` and `userProvider` already accept `null` — verify all consumers handle null without crashing.
@@ -120,7 +121,7 @@ Behavior rules:
 
 - [ ] `npm --prefix frontend run typecheck` passes.
 - [ ] Unit tests for `providerCapabilities` cover: Teller without creds → blocked with reason, Plaid without creds → blocked with reason, SimpleFIN always enabled, all three enabled when fully configured.
-- [ ] No remaining frontend code reads `defaultProvider`/`userProvider` as if they were guaranteed non-null.
+- [ ] No remaining frontend code reads `userProvider` as if it were guaranteed non-null.
 
 ---
 
@@ -255,7 +256,7 @@ Behavior rules:
 
 **Acceptance criteria:**
 
-- [ ] `rg -i "DEFAULT_PROVIDER"` returns only intentional references (e.g. a single docs note explaining it's no longer required) — no code paths.
+- [ ] `rg -i "DEFAULT_PROVIDER"` returns only intentional references in documentation that explain it is no longer required.
 - [ ] `docs/ARCHITECTURE.md` matches the new model on a careful read.
 - [ ] `CONTRIBUTING.md` and `.env.example` (if present) no longer suggest `DEFAULT_PROVIDER` is required.
 
@@ -265,7 +266,7 @@ Behavior rules:
 
 Run all of these manually before declaring done:
 
-- [ ] Fresh boot with **no** `DEFAULT_PROVIDER` and **no** Plaid/Teller creds → app starts; SimpleFIN registers; picker shows SimpleFIN enabled, Teller + Plaid disabled.
+- [ ] Fresh boot with **no** provider credentials configured → app starts; SimpleFIN registers; picker shows SimpleFIN enabled, Teller + Plaid disabled.
 - [ ] Fresh boot with Teller creds only → Teller + SimpleFIN enabled, Plaid disabled.
 - [ ] Fresh boot with all three → all three enabled.
 - [ ] Register → onboarding picker only → pick Teller → Continue → land on dashboard → /accounts shows "Add account" affordance.

@@ -25,6 +25,20 @@ fn create_test_sync_service() -> SyncService {
 }
 
 #[test]
+fn given_missing_provider_when_resolving_then_returns_error() {
+    let sync_service = SyncService::new(Arc::new(ProviderRegistry::new()));
+
+    let err = sync_service
+        .resolve_provider(None)
+        .err()
+        .expect("missing provider error");
+
+    assert!(err
+        .to_string()
+        .contains("No provider selected — connect an account first"));
+}
+
+#[test]
 fn test_calculate_account_mapping_creates_correct_mapping() {
     let sync_service = create_test_sync_service();
     let accounts = vec![
