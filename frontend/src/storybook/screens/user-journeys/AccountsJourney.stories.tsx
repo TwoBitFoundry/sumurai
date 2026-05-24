@@ -14,6 +14,36 @@ import { jsonResponse, route, StoryApiScope } from './storyApi';
 
 const storyInteractionTimeoutMs = 20_000;
 
+const storyAutoCategorizeHandlers = [
+  route('GET', '/transactions/auto-categorize', () => jsonResponse(null)),
+  route('POST', '/transactions/auto-categorize', () =>
+    jsonResponse({
+      job_id: '11111111-2222-3333-4444-555555555555',
+      status: 'running',
+      total: 12,
+      processed: 0,
+      updated: 0,
+      skipped: 0,
+      started_at: '2026-05-01T12:00:00.000Z',
+      finished_at: null,
+      error_message: null,
+    })
+  ),
+  route('DELETE', '/transactions/auto-categorize', () =>
+    jsonResponse({
+      job_id: '11111111-2222-3333-4444-555555555555',
+      status: 'cancelling',
+      total: 12,
+      processed: 4,
+      updated: 2,
+      skipped: 2,
+      started_at: '2026-05-01T12:00:00.000Z',
+      finished_at: null,
+      error_message: null,
+    })
+  ),
+];
+
 const storySimpleFinProviderInfo = {
   available_providers: ['simplefin'],
   default_provider: 'simplefin',
@@ -97,6 +127,7 @@ const handlers = [
   ),
   route('POST', '/providers/sync-transactions', () => jsonResponse(storyPlaidSyncTransactions)),
   route('POST', '/providers/disconnect', () => jsonResponse(storyPlaidDisconnect)),
+  ...storyAutoCategorizeHandlers,
 ];
 
 const simpleFinEmptyStateHandlers = [
@@ -111,12 +142,14 @@ const simpleFinEmptyStateHandlers = [
   route('GET', '/providers/simplefin/ignored-institutions', () =>
     jsonResponse({ institutions: [] })
   ),
+  ...storyAutoCategorizeHandlers,
 ];
 
 const simpleFinConnectedHandlers = [
   route('GET', '/providers/info', () => jsonResponse(storySimpleFinProviderInfo)),
   route('GET', '/providers/status', () => jsonResponse(storySimpleFinStatus)),
   route('GET', '/providers/accounts', () => jsonResponse(storySimpleFinAccounts)),
+  ...storyAutoCategorizeHandlers,
 ];
 
 const storyTellerProviderInfo = {
@@ -166,12 +199,14 @@ const tellerEmptyStateHandlers = [
     })
   ),
   route('GET', '/providers/accounts', () => jsonResponse([])),
+  ...storyAutoCategorizeHandlers,
 ];
 
 const tellerConnectedHandlers = [
   route('GET', '/providers/info', () => jsonResponse(storyTellerProviderInfo)),
   route('GET', '/providers/status', () => jsonResponse(storyTellerStatus)),
   route('GET', '/providers/accounts', () => jsonResponse(storyTellerAccounts)),
+  ...storyAutoCategorizeHandlers,
 ];
 
 function AccountsJourney() {

@@ -192,18 +192,30 @@ Support a durable categorization progress toast without breaking normal transien
 Leave a complete, implementation-ready handoff that matches current architecture and repo conventions.
 
 **Tasks**
-- Update backend tests in `backend/src/tests` for ingest-path behavior changes and new job, service, and handler coverage.
-- Update frontend tests in `frontend/tests` for Accounts action behavior, polling lifecycle, cancel behavior, toast stacking, reload recovery, and breakpoint-specific toast placement.
-- Update any existing Accounts stories only if needed to cover the new UI state cleanly.
-- Run focused validation for the touched areas: backend tests, frontend tests, and frontend typecheck.
-- Confirm no source comments were added and separation of concerns remains intact.
+- [x] Update backend tests in `backend/src/tests` for ingest-path behavior changes and new job, service, and handler coverage.
+- [x] Update frontend tests in `frontend/tests` for Accounts action behavior, polling lifecycle, cancel behavior, toast stacking, reload recovery, and breakpoint-specific toast placement.
+- [x] Update any existing Accounts stories only if needed to cover the new UI state cleanly.
+- [x] Run focused validation for the touched areas: backend tests, frontend tests, and frontend typecheck.
+- [x] Confirm no source comments were added and separation of concerns remains intact.
 
 **Acceptance Criteria**
-- [ ] Backend tests cover ingest decoupling, job behavior, and API handlers.
-- [ ] Frontend tests cover Accounts action flow, stacked toast behavior, and breakpoint-specific placement.
-- [ ] Type shapes are consistent across backend and frontend.
-- [ ] The implementation follows repo rules for models, services, and tests.
-- [ ] No source comments are introduced.
+- [x] Backend tests cover ingest decoupling, job behavior, and API handlers.
+- [x] Frontend tests cover Accounts action flow, stacked toast behavior, and breakpoint-specific placement.
+- [x] Type shapes are consistent across backend and frontend.
+- [x] The implementation follows repo rules for models, services, and tests.
+- [x] No source comments are introduced.
+
+**Notes**
+- Backend coverage spans `import_handler_categorization_tests`, `auto_categorization_service_tests`, `auto_categorization_handler_tests`, and `openapi_tests`.
+- Frontend coverage spans service, hook, toast stack, message builders, and Accounts page action tests.
+- `AutoCategorizationJobState` / `AutoCategorizationJobStatus` mirror backend serde snake_case fields in `frontend/src/types/api.ts`.
+- Accounts journey stories mock `GET/POST/DELETE /transactions/auto-categorize` so status polling on page load does not throw.
+
+**TDD Log**
+- `cargo test --manifest-path backend/Cargo.toml --locked auto_categorization` passed (12 tests).
+- `cargo test --manifest-path backend/Cargo.toml --locked import_handler_categorization` passed (2 tests).
+- `npm --prefix frontend test -- --testPathPatterns="autoCategorization|AutoCategorization|ToastStack|useAccountsToastStack|AccountsPage"` passed (37 tests).
+- `npm --prefix frontend run typecheck` passed.
 
 ## Assumptions
 - The job is user-scoped and processes all eligible transactions across all accounts for that user.
@@ -219,6 +231,4 @@ Leave a complete, implementation-ready handoff that matches current architecture
 - Session-scoped cache invalidation means another live session for the same user may briefly show stale categories until refresh.
 
 ## Next Actions
-- Implement Phase 1 first so ingestion behavior is stable before adding the background run.
-- Build the backend job service and API contract before wiring the new Accounts action.
-- Finish with the breakpoint-aware toast stack and UI verification once the end-to-end job lifecycle is working.
+- All phases in this plan are complete.
