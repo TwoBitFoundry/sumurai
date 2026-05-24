@@ -31,8 +31,8 @@ async fn given_authenticated_user_when_get_connection_status_then_returns_array(
     use axum::body::to_bytes;
 
     let mut mock_db = MockDatabaseRepository::new();
-    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
-    let user_id = uuid::Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
 
     let mut conn1 = ProviderConnection::new(user_id, "item_1");
     conn1.mark_connected("Bank A");
@@ -67,9 +67,11 @@ async fn given_authenticated_user_when_get_connection_status_then_returns_array(
         .expect_get_accounts_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
-    mock_db
-        .expect_get_user_by_id()
-        .returning(|_| Box::pin(async { Ok(None) }));
+    let user_clone = user.clone();
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let user = user_clone.clone();
+        Box::pin(async move { Ok(Some(user)) })
+    });
 
     let app = TestFixtures::create_test_app_with_db(mock_db)
         .await

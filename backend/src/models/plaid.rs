@@ -91,15 +91,14 @@ pub struct ProviderSelectResponse {
 #[derive(Debug, Serialize, ToSchema)]
 #[schema(example = json!({
     "available_providers": ["plaid", "teller", "simplefin"],
-    "default_provider": "teller",
     "user_provider": "teller",
     "teller_application_id": "app-123",
     "teller_environment": "sandbox"
 }))]
 pub struct ProviderInfoResponse {
     pub available_providers: Vec<String>,
-    pub default_provider: String,
-    pub user_provider: String,
+    #[schema(value_type = Option<String>)]
+    pub user_provider: Option<String>,
     #[schema(value_type = Option<String>)]
     pub teller_application_id: Option<String>,
     pub teller_environment: String,

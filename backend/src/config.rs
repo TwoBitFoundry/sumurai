@@ -44,7 +44,6 @@ impl EnvironmentProvider for SystemEnvironment {
 
 #[derive(Clone)]
 pub struct Config {
-    default_provider: String,
     teller_application_id: Option<String>,
     teller_environment: Option<String>,
     auth_cookie_same_site: AuthCookieSameSite,
@@ -56,9 +55,6 @@ impl Config {
     }
 
     pub fn from_env_provider(env: &dyn EnvironmentProvider) -> Result<Self> {
-        let default_provider = env
-            .get_var("DEFAULT_PROVIDER")
-            .unwrap_or_else(|| "teller".to_string());
         let teller_application_id = env.get_var("TELLER_APPLICATION_ID");
         let teller_environment = env
             .get_var("TELLER_ENV")
@@ -69,15 +65,10 @@ impl Config {
         )?;
 
         Ok(Self {
-            default_provider,
             teller_application_id,
             teller_environment,
             auth_cookie_same_site,
         })
-    }
-
-    pub fn get_default_provider(&self) -> &str {
-        &self.default_provider
     }
 
     pub fn get_teller_application_id(&self) -> Option<&str> {

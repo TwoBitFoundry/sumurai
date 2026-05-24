@@ -21,7 +21,7 @@ fn create_test_sync_service() -> SyncService {
         "plaid",
         Arc::clone(&plaid_provider),
     )]));
-    SyncService::new(provider_registry, "plaid")
+    SyncService::new(provider_registry)
 }
 
 #[test]
@@ -256,7 +256,7 @@ mod sync_recent_transactions_integration_tests {
             "plaid",
             Arc::clone(&plaid_provider),
         )]));
-        SyncService::new(provider_registry, "plaid")
+        SyncService::new(provider_registry)
     }
 
     #[tokio::test]

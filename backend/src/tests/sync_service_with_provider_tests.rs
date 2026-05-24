@@ -110,7 +110,7 @@ async fn given_sync_service_with_provider_when_sync_then_maps_accounts_correctly
         "mock",
         Arc::clone(&provider),
     )]));
-    let sync_service = SyncService::new(registry, "mock");
+    let sync_service = SyncService::new(registry);
 
     let connection = ProviderConnection {
         id: Uuid::new_v4(),

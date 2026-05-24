@@ -114,7 +114,6 @@ async fn main() -> anyhow::Result<()> {
 
     let config = Config::from_env()?;
 
-    let default_provider = config.get_default_provider().to_string();
     let mut provider_registry = providers::ProviderRegistry::new();
 
     let plaid_client_id = std::env::var("PLAID_CLIENT_ID").ok();
@@ -136,10 +135,6 @@ async fn main() -> anyhow::Result<()> {
         let plaid_provider: Arc<dyn providers::FinancialDataProvider> =
             Arc::new(providers::PlaidProvider::new(plaid_client.clone()));
         provider_registry.register("plaid", plaid_provider);
-    } else if default_provider == "plaid" {
-        anyhow::bail!(
-            "DEFAULT_PROVIDER is plaid but PLAID_CLIENT_ID/PLAID_SECRET/PLAID_ENV are not all set"
-        );
     } else {
         tracing::warn!("Plaid provider not configured; skipping Plaid initialization");
     }
@@ -150,9 +145,6 @@ async fn main() -> anyhow::Result<()> {
             provider_registry.register("teller", teller_provider);
         }
         Err(e) => {
-            if default_provider == "teller" {
-                return Err(e);
-            }
             tracing::warn!(error = %e, "Teller provider not configured; skipping Teller initialization");
         }
     }
@@ -179,10 +171,7 @@ async fn main() -> anyhow::Result<()> {
 
     let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
 
-    let sync_service = Arc::new(SyncService::new(
-        provider_registry.clone(),
-        &default_provider,
-    ));
+    let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
 
     let analytics_service = Arc::new(AnalyticsService::new());
     let budget_service = Arc::new(BudgetService::new());
@@ -746,7 +735,7 @@ async fn register_user(
         id: user_id,
         email: req.email.clone(),
         password_hash,
-        provider: state.config.get_default_provider().to_string(),
+        provider: String::new(),
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: false,
@@ -2956,7 +2945,7 @@ async fn get_authenticated_provider_status(
 
     let provider = match state.db_repository.get_user_by_id(&user_id).await {
         Ok(Some(user)) => user.provider,
-        Ok(None) => state.config.get_default_provider().to_string(),
+        Ok(None) => String::new(),
         Err(e) => {
             tracing::error!("Failed to load user {} for provider status: {}", user_id, e);
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
@@ -3361,7 +3350,6 @@ async fn get_authenticated_provider_info(
             StatusCode::NOT_FOUND
         })?;
 
-    let default_provider = state.config.get_default_provider();
     let mut available_providers = Vec::new();
     for provider in ["plaid", "teller", "simplefin"] {
         if state.provider_registry.get(provider).is_some() {
@@ -3369,15 +3357,14 @@ async fn get_authenticated_provider_info(
         }
     }
 
-    let user_provider = if user.onboarding_completed {
-        user.provider
+    let user_provider = if user.provider.is_empty() {
+        None
     } else {
-        default_provider.to_string()
+        Some(user.provider)
     };
 
     Ok(Json(ProviderInfoResponse {
         available_providers,
-        default_provider: default_provider.to_string(),
         user_provider,
         teller_application_id: state
             .config

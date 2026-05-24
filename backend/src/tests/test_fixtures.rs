@@ -223,7 +223,7 @@ impl TestFixtures {
             "plaid",
             Arc::clone(&plaid_provider),
         )]));
-        let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
+        let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
         let analytics_service = Arc::new(AnalyticsService::new());
 
         let mut mock_db = MockDatabaseRepository::new();
@@ -367,7 +367,7 @@ impl TestFixtures {
             "plaid",
             Arc::clone(&plaid_provider),
         )]));
-        let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
+        let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
         let analytics_service = Arc::new(AnalyticsService::new());
 
         let mut mock_db = mock_db;
@@ -507,7 +507,7 @@ impl TestFixtures {
             "plaid",
             Arc::clone(&plaid_provider),
         )]));
-        let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
+        let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
         let analytics_service = Arc::new(AnalyticsService::new());
 
         let mut mock_db = mock_db;

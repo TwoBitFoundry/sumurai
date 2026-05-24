@@ -603,7 +603,7 @@ async fn build_simplefin_handler_app(
         "simplefin",
         simplefin_provider,
     )]));
-    let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "simplefin"));
+    let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
 
     let plaid_client = Arc::new(RealPlaidClient::new(
         "test_client_id".to_string(),
@@ -919,7 +919,7 @@ fn build_simplefin_sync_service_with_categorizer_and_accounts(
         "simplefin",
         Arc::clone(&simplefin_provider),
     )]));
-    let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "simplefin"));
+    let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
 
     let saved_item_ids = Arc::new(Mutex::new(HashSet::new()));
     let upsert_accounts = Arc::new(Mutex::new(0usize));

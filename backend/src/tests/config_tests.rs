@@ -19,7 +19,18 @@ fn given_no_teller_env_when_from_env_provider_then_returns_error() {
 }
 
 #[test]
-fn given_plaid_provider_env_when_from_env_provider_then_returns_plaid() {
+fn given_minimal_env_when_from_env_provider_then_loads_successfully() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "development");
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+
+    let config = Config::from_env_provider(&env).unwrap();
+
+    assert_eq!(config.get_teller_environment(), "development");
+}
+
+#[test]
+fn given_default_provider_env_when_from_env_provider_then_ignores_it() {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "development");
     env.set("DEFAULT_PROVIDER", "plaid");
@@ -27,31 +38,7 @@ fn given_plaid_provider_env_when_from_env_provider_then_returns_plaid() {
 
     let config = Config::from_env_provider(&env).unwrap();
 
-    assert_eq!(config.get_default_provider(), "plaid");
-}
-
-#[test]
-fn given_simplefin_provider_env_when_from_env_provider_then_returns_simplefin() {
-    let mut env = MockEnvironment::new();
-    env.set("TELLER_ENV", "development");
-    env.set("DEFAULT_PROVIDER", "simplefin");
-    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
-
-    let config = Config::from_env_provider(&env).unwrap();
-
-    assert_eq!(config.get_default_provider(), "simplefin");
-}
-
-#[test]
-fn given_teller_provider_env_when_from_env_provider_then_returns_teller() {
-    let mut env = MockEnvironment::new();
-    env.set("TELLER_ENV", "development");
-    env.set("DEFAULT_PROVIDER", "teller");
-    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
-
-    let config = Config::from_env_provider(&env).unwrap();
-
-    assert_eq!(config.get_default_provider(), "teller");
+    assert_eq!(config.get_teller_environment(), "development");
 }
 
 #[test]
@@ -64,18 +51,6 @@ fn given_custom_database_url_when_from_env_provider_then_uses_custom_url() {
     let config = Config::from_env_provider(&env).ok();
 
     assert!(config.is_some());
-}
-
-#[test]
-fn given_no_provider_specified_when_from_env_provider_then_defaults_to_teller() {
-    let mut env = MockEnvironment::new();
-    env.set("TELLER_ENV", "development");
-    env.set("DATABASE_URL", "postgresql://localhost:5432/test");
-    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
-
-    let config = Config::from_env_provider(&env).unwrap();
-
-    assert_eq!(config.get_default_provider(), "teller");
 }
 
 #[test]
