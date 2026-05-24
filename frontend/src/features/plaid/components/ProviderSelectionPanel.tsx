@@ -1,5 +1,6 @@
 import type { FinancialProvider } from '@/types/api';
-import { cn, GlassCard } from '@/ui/primitives';
+import type { ProviderCatalogue } from '@/types/providerCatalog';
+import { cn } from '@/ui/primitives';
 import {
   border as uiBorderRecipes,
   effect as uiEffectRecipes,
@@ -9,16 +10,22 @@ import {
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
-import { getProviderCardConfig } from '../../../utils/providerCards';
+import { PROVIDER_PRICE_ORDER } from '../../../utils/providerCards';
+import { ProviderSelectionCard } from './ProviderSelectionCard';
 
-const eyebrowChip =
-  'inline-flex items-center justify-center rounded-full bg-white/75 px-3 py-1 font-label uppercase tracking-[0.32em] text-[#475569] shadow-[0_16px_42px_-30px_rgba(15,23,42,0.45)] dark:bg-[#1e293b]/75 dark:text-[#cbd5e1]';
+const eyebrowChip = cn(
+  'inline-flex items-center justify-center rounded-full px-4 py-1 uppercase tracking-[0.3em]',
+  uiTypographyRecipes.label,
+  ...uiStatusRecipes.info.surface,
+  ...uiStatusRecipes.info.text
+);
 
 interface ProviderSelectionPanelProps {
   loading: boolean;
   error: string | null;
   selectedProvider: FinancialProvider | null;
   availableProviders: FinancialProvider[];
+  tellerApplicationId?: string | null;
   selectingProvider: FinancialProvider | null;
   onSelectProvider: (provider: FinancialProvider) => void | Promise<void>;
 }
@@ -30,7 +37,10 @@ const panelClasses = cn(
   'border',
   ...uiBorderRecipes.glass,
   ...uiSurfaceRecipes.glassPanel,
-  'p-10',
+  'p-3',
+  'sm:p-4',
+  'md:p-8',
+  'lg:p-10',
   ...uiEffectRecipes.glassShadow,
   'backdrop-blur-[28px]'
 );
@@ -40,6 +50,7 @@ export const ProviderSelectionPanel = ({
   error,
   selectedProvider,
   availableProviders,
+  tellerApplicationId,
   selectingProvider,
   onSelectProvider,
 }: ProviderSelectionPanelProps) => {
@@ -63,7 +74,7 @@ export const ProviderSelectionPanel = ({
           'overflow-hidden',
           uiRadiusRecipes.standard,
           'border',
-          ...uiStatusRecipes.danger.border,
+          ...uiBorderRecipes.glass,
           ...uiStatusRecipes.danger.surface,
           'p-12',
           'text-center',
@@ -84,11 +95,18 @@ export const ProviderSelectionPanel = ({
     return null;
   }
 
+  const providerCatalogue: ProviderCatalogue = {
+    available_providers: availableProviders,
+    default_provider: availableProviders[0] ?? 'plaid',
+    user_provider: selectedProvider,
+    teller_application_id: tellerApplicationId ?? undefined,
+  };
+
   return (
     <section className={panelClasses} data-testid="provider-selection-panel">
       <div className={cn('relative', 'z-10', 'flex', 'flex-col', 'gap-8')}>
-        <div className={cn('space-y-3', 'text-center')}>
-          <span className={cn(eyebrowChip)}>Select Provider</span>
+        <div className={cn('mx-auto', 'w-full', 'max-w-4xl', 'space-y-3', 'text-left')}>
+          <span className={eyebrowChip}>Self-Hosted</span>
           <h1
             className={cn(
               uiTypographyRecipes.pageTitle,
@@ -98,132 +116,21 @@ export const ProviderSelectionPanel = ({
           >
             Choose how you connect accounts
           </h1>
-          <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
-            Pick the data provider that matches your deployment. You can change this later from
-            account settings.
+          <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body, 'mx-auto', 'max-w-3xl')}>
+            Select the provider that best fits your location, budget, and privacy priorities.
           </p>
         </div>
 
-        <div className={cn('grid', 'gap-6', 'lg:grid-cols-2')}>
-          {availableProviders.map((provider) => {
-            const details = getProviderCardConfig(provider);
-            return (
-              <button
-                key={provider}
-                type="button"
-                onClick={() => {
-                  void onSelectProvider(provider);
-                }}
-                disabled={selectingProvider === provider}
-                className={cn(
-                  'relative',
-                  'flex',
-                  'w-full',
-                  'h-full',
-                  'text-left',
-                  'transition-all',
-                  'duration-200',
-                  'ease-out',
-                  'hover:-translate-y-[2px]',
-                  'active:scale-[0.98]',
-                  'disabled:active:scale-100',
-                  'focus:outline-none',
-                  'focus-visible:ring-2',
-                  'focus-visible:ring-sky-400/80',
-                  'focus-visible:ring-offset-2',
-                  'focus-visible:ring-offset-white',
-                  'disabled:cursor-not-allowed',
-                  'disabled:opacity-75',
-                  'dark:focus-visible:ring-offset-slate-900'
-                )}
-              >
-                <GlassCard
-                  variant="accent"
-                  rounded="lg"
-                  padding="md"
-                  withInnerEffects={false}
-                  containerClassName={cn(
-                    'h-full',
-                    'w-full',
-                    'transition-all',
-                    'duration-200',
-                    ...uiBorderRecipes.glass,
-                    ...uiSurfaceRecipes.card,
-                    'hover:shadow-[0_24px_80px_-50px_rgba(15,23,42,0.55)]',
-                    'dark:hover:border-[var(--color-border-hover-accent)]',
-                    'dark:hover:shadow-[0_28px_90px_-60px_rgba(2,6,23,0.7)]'
-                  )}
-                >
-                  <div className={cn('flex', 'h-full', 'flex-col', 'gap-4')}>
-                    <div className={cn('flex', 'items-center', 'justify-between')}>
-                      <div className={cn('flex', 'items-center', 'gap-3')}>
-                        <div className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>
-                          {details.title}
-                        </div>
-                      </div>
-                      <span
-                        className={cn(
-                          'rounded-full',
-                          ...uiStatusRecipes.info.surface,
-                          'px-3',
-                          'py-1',
-                          uiTypographyRecipes.label,
-                          ...uiStatusRecipes.info.text
-                        )}
-                      >
-                        {details.badge}
-                      </span>
-                    </div>
-                    <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
-                      {details.description}
-                    </p>
-                    <ul className={cn('space-y-2', uiTypographyRecipes.body, uiTextRecipes.subtle)}>
-                      {details.bullets.map((bullet) => (
-                        <li key={bullet} className={cn('flex', 'items-start', 'gap-2')}>
-                          <span
-                            className={cn(
-                              'mt-[5px]',
-                              'h-1.5',
-                              'w-1.5',
-                              'rounded-full',
-                              'bg-[var(--color-brand-sky)]',
-                              'dark:bg-[var(--color-brand-sky)]'
-                            )}
-                          />
-                          <span>{bullet}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <div
-                      className={cn(
-                        'mt-auto',
-                        'inline-flex',
-                        'items-center',
-                        'justify-center',
-                        'gap-2',
-                        uiRadiusRecipes.standard,
-                        'bg-[var(--color-brand-sky)]',
-                        'px-4',
-                        'py-2',
-                        uiTypographyRecipes.bodyStrong,
-                        'text-white',
-                        'shadow-[0_18px_48px_-32px_rgba(14,165,233,0.65)]'
-                      )}
-                    >
-                      {details.logoSrc ? (
-                        <img
-                          src={details.logoSrc}
-                          alt={`${details.title} logo`}
-                          className={cn('h-5', 'w-5', 'rounded-full', 'object-cover')}
-                        />
-                      ) : null}
-                      {selectingProvider === provider ? 'Selecting…' : `Use ${details.title}`}
-                    </div>
-                  </div>
-                </GlassCard>
-              </button>
-            );
-          })}
+        <div className={cn('grid', 'gap-6', 'md:grid-cols-2', 'lg:grid-cols-3')}>
+          {PROVIDER_PRICE_ORDER.map((provider) => (
+            <ProviderSelectionCard
+              key={provider}
+              provider={provider}
+              providerCatalogue={providerCatalogue}
+              selectingProvider={selectingProvider}
+              onSelectProvider={onSelectProvider}
+            />
+          ))}
         </div>
       </div>
     </section>

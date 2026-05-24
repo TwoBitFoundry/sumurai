@@ -10,8 +10,8 @@ import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 const pickerDecorator = [
   (Story) => (
     <AuthenticatedScreenShell currentTab="accounts">
-      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-8">
-        <div className="w-full max-w-xl">
+      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center px-2 py-6 sm:px-4 lg:px-6">
+        <div className="w-full max-w-none">
           <Story />
         </div>
       </div>

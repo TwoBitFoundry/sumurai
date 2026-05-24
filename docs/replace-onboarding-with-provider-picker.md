@@ -136,14 +136,14 @@ Behavior rules:
 
 ## Phase 4 — Frontend: provider card copy + picker UI for the 3-tier layout
 
-**Goal:** The `ProviderSelectionPanel` renders the canonical Teller → SimpleFIN → Plaid order, with self-hosted pricing chips, accurate bullets, and disabled-with-reason states for cards whose backend credentials are missing.
+**Goal:** The `ProviderSelectionPanel` renders the canonical Teller → SimpleFIN → Plaid order, with Self-Hosted Cost chips, accurate bullets, and disabled-with-reason states for cards whose backend credentials are missing.
 
 **Design rule (non-negotiable):** Every visual primitive in this phase must come from [DESIGN.md](DESIGN.md)-driven tokens and recipes:
 
 - Use `cn()`, `GlassCard`, `Button`, and other shared primitives from `@/ui/primitives`.
 - Use recipes from `@/ui/recipes` (`border`, `effect`, `radius`, `status`, `surface`, `text`, `font`) — never inline raw Tailwind values that mirror token state (e.g. don't write `text-slate-500` when `uiTextRecipes.subtle` exists).
 - Pull palettes from `@/ui/tokens` (`featurePalettes` etc.) instead of bespoke gradients.
-- The new `price` chip, `Self-hosted pricing` eyebrow, and `"Missing credentials"` line all reuse existing recipes (`uiStatusRecipes.info.`* for the price chip, `uiTextRecipes.subtle` for the missing-credentials line, etc.). No new ad-hoc color literals.
+- The new `price` chip, `Self-Hosted Cost` eyebrow, and `"Missing credentials"` line all reuse existing recipes (`uiStatusRecipes.info.`* for the price chip, `uiTextRecipes.subtle` for the missing-credentials line, etc.). No new ad-hoc color literals.
 - If a needed token is missing, add it to `DESIGN.md` and regenerate via `npm run design:guard` rather than hardcoding values.
 
 **Tasks:**
@@ -158,7 +158,7 @@ Behavior rules:
 - Update [frontend/src/features/plaid/components/ProviderSelectionPanel.tsx](frontend/src/features/plaid/components/ProviderSelectionPanel.tsx):
   - Iterate `PROVIDER_PRICE_ORDER` instead of `availableProviders` so all three cards always render.
   - Accept per-provider `enabled` + `blockedReason` props (compute via `isPickerEnabled` / `getConnectBlockedReason`), or compute in-component from the catalogue object.
-  - Render the **"Self-hosted pricing"** eyebrow above the title (replace today's "Select Provider").
+  - Render the **"Self-Hosted Cost"** eyebrow above the title (replace today's "Select Provider").
   - Show the `price` value as a chip beneath the title; keep the persona `badge` slot in the top-right.
   - Disabled state: card stays fully visible; only the action button is disabled (use the existing `Button` disabled styling — do not invent a new variant). Show a tiny `"Missing credentials"` line beneath the button using `uiTextRecipes.subtle` + `uiTypographyRecipes.caption`. SimpleFIN never renders disabled.
   - Keep the existing `onSelectProvider` callback contract; selected card still hides itself once `selectedProvider` is set (unless we want it to stay visible — see Phase 6 accounts page).
@@ -166,15 +166,15 @@ Behavior rules:
 
 **Acceptance criteria:**
 
-- [ ] Picker always shows 3 cards in order Teller → SimpleFIN → Plaid.
-- [ ] Self-hosted pricing eyebrow + per-card price chip render exactly as specified.
-- [ ] With only Teller creds configured: Teller + SimpleFIN enabled, Plaid card visible with disabled button + `"Missing credentials"` line.
-- [ ] With only Plaid creds configured: Plaid + SimpleFIN enabled, Teller card visible with disabled button + `"Missing credentials"` line.
-- [ ] With zero provider creds configured: only SimpleFIN enabled; Teller + Plaid show disabled button + `"Missing credentials"` line.
-- [ ] `rg "text-(slate|gray|sky|emerald|red|amber)-[0-9]" frontend/src/utils/providerCards.ts frontend/src/features/plaid/components/ProviderSelectionPanel.tsx` returns nothing — all styling flows through `@/ui/recipes` / `@/ui/tokens` / `@/ui/primitives`.
-- [ ] `npm --prefix frontend run design:guard` (or the project equivalent) reports no drift between [DESIGN.md](DESIGN.md) and generated artifacts.
-- [ ] Storybook stories cover all three states; visual review confirms accurate copy and clear disabled affordances.
-- [ ] Unit / RTL tests in `frontend/tests/` cover enabled and disabled card states.
+- [x] Picker always shows 3 cards in order Teller → SimpleFIN → Plaid.
+- [x] Self-Hosted Cost eyebrow + per-card price chip render exactly as specified.
+- [x] With only Teller creds configured: Teller + SimpleFIN enabled, Plaid card visible with disabled button + `"Missing credentials"` line.
+- [x] With only Plaid creds configured: Plaid + SimpleFIN enabled, Teller card visible with disabled button + `"Missing credentials"` line.
+- [x] With zero provider creds configured: only SimpleFIN enabled; Teller + Plaid show disabled button + `"Missing credentials"` line.
+- [x] `rg "text-(slate|gray|sky|emerald|red|amber)-[0-9]" frontend/src/utils/providerCards.ts frontend/src/features/plaid/components/ProviderSelectionPanel.tsx` returns nothing — all styling flows through `@/ui/recipes` / `@/ui/tokens` / `@/ui/primitives`.
+- [x] `npm --prefix frontend run design:guard` (or the project equivalent) reports no drift between [DESIGN.md](DESIGN.md) and generated artifacts.
+- [x] Storybook stories cover all three states; visual review confirms accurate copy and clear disabled affordances.
+- [x] Unit / RTL tests in `frontend/tests/` cover enabled and disabled card states.
 
 ---
 
