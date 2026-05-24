@@ -46,6 +46,7 @@ use crate::models::analytics::{
 };
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, AuthMiddlewareState};
+use crate::models::auto_categorization_job::AutoCategorizationJobState;
 use crate::models::{
     account::AccountResponse,
     analytics::{DateRangeQuery, MonthlyTotalsQuery},
@@ -85,6 +86,7 @@ use middleware::resource_authorization::{
     AuthorizedBudgetId, AuthorizedConnectionRequest, AuthorizedQuery,
 };
 use middleware::telemetry_middleware::{self, request_tracing_middleware, TelemetryConfig};
+use services::auto_categorization::service::AutoCategorizationError;
 use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
 use services::category_management::service::CategoryManagementService;
 use services::import_service::ImportService;
@@ -310,6 +312,14 @@ async fn main() -> anyhow::Result<()> {
     let category_management_service =
         Arc::new(CategoryManagementService::new(SYSTEM_CATEGORY_SLUGS));
 
+    let auto_categorization_service = Arc::new(
+        crate::services::auto_categorization::AutoCategorizationService::new(
+            db_repository.clone(),
+            cache_service.clone(),
+            categorizer.clone(),
+        ),
+    );
+
     let state = AppState {
         plaid_service,
         plaid_client,
@@ -327,6 +337,7 @@ async fn main() -> anyhow::Result<()> {
         provider_registry,
         otlp_traces_relay,
         category_management_service,
+        auto_categorization_service,
     };
 
     let app = create_app(state);
@@ -411,6 +422,12 @@ pub fn create_app(state: AppState) -> Router {
         .route(
             "/api/transactions/insights",
             get(get_authenticated_transactions_insights),
+        )
+        .route(
+            "/api/transactions/auto-categorize",
+            post(start_auto_categorization)
+                .get(get_auto_categorization_status)
+                .delete(cancel_auto_categorization),
         )
         .route("/api/providers/info", get(get_authenticated_provider_info))
         .route("/api/providers/select", post(select_authenticated_provider))
@@ -1560,6 +1577,123 @@ async fn set_transaction_category(
                 "validation_error",
             )),
         )),
+    }
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/transactions/auto-categorize",
+    responses(
+        (status = 200, description = "Background categorization started", body = AutoCategorizationJobState),
+        (status = 409, description = "Active job already exists", body = AutoCategorizationJobState),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Transactions"
+)]
+async fn start_auto_categorization(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Response, (StatusCode, Json<ApiErrorResponse>)> {
+    match state
+        .auto_categorization_service
+        .start(&auth_context.user_id, &auth_context.jwt_id)
+        .await
+    {
+        Ok(job) => Ok((StatusCode::OK, Json(job)).into_response()),
+        Err(AutoCategorizationError::ActiveJobExists(job)) => {
+            Ok((StatusCode::CONFLICT, Json(job)).into_response())
+        }
+        Err(AutoCategorizationError::NoActiveJob) => Err(ApiErrorResponse::internal_server_error(
+            "Failed to start auto-categorization",
+        )),
+        Err(AutoCategorizationError::Storage(error)) => {
+            tracing::error!(
+                "Failed to start auto-categorization for user {}: {}",
+                auth_context.user_id,
+                error
+            );
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to start auto-categorization",
+            ))
+        }
+    }
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/transactions/auto-categorize",
+    responses(
+        (status = 200, description = "Latest auto-categorization job status", body = AutoCategorizationJobState),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Transactions"
+)]
+async fn get_auto_categorization_status(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<Option<AutoCategorizationJobState>>, (StatusCode, Json<ApiErrorResponse>)> {
+    match state
+        .auto_categorization_service
+        .get_status(&auth_context.user_id)
+        .await
+    {
+        Ok(status) => Ok(Json(status)),
+        Err(error) => {
+            tracing::error!(
+                "Failed to fetch auto-categorization status for user {}: {}",
+                auth_context.user_id,
+                error
+            );
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to fetch auto-categorization status",
+            ))
+        }
+    }
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/transactions/auto-categorize",
+    responses(
+        (status = 200, description = "Cancellation requested for active job", body = AutoCategorizationJobState),
+        (status = 404, description = "No active job to cancel", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Transactions"
+)]
+async fn cancel_auto_categorization(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<AutoCategorizationJobState>, (StatusCode, Json<ApiErrorResponse>)> {
+    match state
+        .auto_categorization_service
+        .cancel(&auth_context.user_id)
+        .await
+    {
+        Ok(job) => Ok(Json(job)),
+        Err(AutoCategorizationError::NoActiveJob) => Err((
+            StatusCode::NOT_FOUND,
+            Json(ApiErrorResponse::new(
+                "not_found",
+                "auto_categorization_job_not_found",
+            )),
+        )),
+        Err(AutoCategorizationError::ActiveJobExists(_)) => Err(
+            ApiErrorResponse::internal_server_error("Failed to cancel auto-categorization"),
+        ),
+        Err(AutoCategorizationError::Storage(error)) => {
+            tracing::error!(
+                "Failed to cancel auto-categorization for user {}: {}",
+                auth_context.user_id,
+                error
+            );
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to cancel auto-categorization",
+            ))
+        }
     }
 }
 

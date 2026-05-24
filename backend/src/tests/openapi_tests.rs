@@ -38,6 +38,28 @@ fn given_provider_connect_when_generating_openapi_then_documents_simplefin_setup
 }
 
 #[test]
+fn given_auto_categorize_when_generating_openapi_then_documents_endpoint_and_schemas() {
+    let spec = serde_json::to_value(init_openapi()).unwrap();
+    let path = &spec["paths"]["/api/transactions/auto-categorize"];
+
+    assert_eq!(path["post"]["tags"], serde_json::json!(["Transactions"]));
+    assert_eq!(path["get"]["tags"], serde_json::json!(["Transactions"]));
+    assert_eq!(path["delete"]["tags"], serde_json::json!(["Transactions"]));
+    assert_eq!(
+        path["post"]["responses"]["200"]["content"]["application/json"]["schema"]["$ref"],
+        serde_json::json!("#/components/schemas/AutoCategorizationJobState")
+    );
+    assert_eq!(
+        path["post"]["responses"]["409"]["content"]["application/json"]["schema"]["$ref"],
+        serde_json::json!("#/components/schemas/AutoCategorizationJobState")
+    );
+    assert_eq!(
+        spec["components"]["schemas"]["AutoCategorizationJobStatus"]["type"],
+        serde_json::json!("string")
+    );
+}
+
+#[test]
 fn given_transactions_insights_when_generating_openapi_then_documents_endpoint_and_schemas() {
     let spec = serde_json::to_value(init_openapi()).unwrap();
     let path = &spec["paths"]["/api/transactions/insights"]["get"];

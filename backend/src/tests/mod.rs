@@ -7,6 +7,7 @@ mod auth_rate_limit_tests;
 mod auth_redaction_tests;
 mod auth_service_tests;
 mod authorization_service_tests;
+mod auto_categorization_handler_tests;
 mod auto_categorization_service_tests;
 mod bank_level_sync_tests;
 mod budget_api_integration_tests;

@@ -83,20 +83,32 @@ Create a user-scoped background job that recategorizes eligible `OTHER` transact
 Provide a clean HTTP contract the frontend can use to start, monitor, and cancel background categorization.
 
 **Tasks**
-- Add `POST /api/transactions/auto-categorize` to start a run.
-- Add `GET /api/transactions/auto-categorize` to fetch latest job status.
-- Add `DELETE /api/transactions/auto-categorize` to cancel the active run.
-- Wire the new routes through the authenticated API surface in `backend/src/main.rs`.
-- Add request and response schemas to OpenAPI.
-- Ensure status responses are stable for no prior run, active run, recently completed run, cancelled run, and failed run.
-- Add handler-level tests for start, status, cancel, and duplicate-start rejection.
+- [x] Add `POST /api/transactions/auto-categorize` to start a run.
+- [x] Add `GET /api/transactions/auto-categorize` to fetch latest job status.
+- [x] Add `DELETE /api/transactions/auto-categorize` to cancel the active run.
+- [x] Wire the new routes through the authenticated API surface in `backend/src/main.rs`.
+- [x] Add request and response schemas to OpenAPI.
+- [x] Ensure status responses are stable for no prior run, active run, recently completed run, cancelled run, and failed run.
+- [x] Add handler-level tests for start, status, cancel, and duplicate-start rejection.
 
 **Acceptance Criteria**
-- [ ] The frontend has authenticated endpoints for start, status, and cancel.
-- [ ] Starting while a run is active returns `409` with current job state.
-- [ ] Cancelling an active run returns the latest job state.
-- [ ] Status polling returns meaningful progress counts while active.
-- [ ] OpenAPI includes the new endpoint and status model shapes.
+- [x] The frontend has authenticated endpoints for start, status, and cancel.
+- [x] Starting while a run is active returns `409` with current job state.
+- [x] Cancelling an active run returns the latest job state.
+- [x] Status polling returns meaningful progress counts while active.
+- [x] OpenAPI includes the new endpoint and status model shapes.
+
+**Notes**
+- `GET` returns JSON `null` when no job exists; otherwise returns `AutoCategorizationJobState`.
+- `POST` returns `200` with running state; duplicate active start returns `409` with the active job body.
+- `DELETE` returns `404` when no job exists; active cancel returns `200` with `cancelling` status.
+
+**TDD Log**
+- `cargo test --manifest-path backend/Cargo.toml --locked auto_categorization_handler_tests -- --nocapture` failed first (routes missing), then passed after handlers and route wiring.
+- `cargo test --manifest-path backend/Cargo.toml --locked openapi_tests -- --nocapture` passed after OpenAPI schema and path registration.
+- `cargo test --manifest-path backend/Cargo.toml --locked` passed (409 tests).
+- `cargo fmt --manifest-path backend/Cargo.toml --all --check` passed.
+- `cargo clippy --manifest-path backend/Cargo.toml --locked --all-targets --no-deps -- -D warnings` passed.
 
 ## Phase 4: Add Frontend Job Client and Accounts Hero Action
 **Goal**
