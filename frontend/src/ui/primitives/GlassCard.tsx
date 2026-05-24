@@ -31,6 +31,7 @@ export const glassCardRecipes = {
     'bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_36%,transparent)]',
     'dark:bg-[color:color-mix(in_srgb,var(--color-surface-glass-panel)_55%,transparent)]',
   ],
+  danger: ['border-red-200/70', 'bg-red-50/80', 'dark:border-red-700/60', 'dark:bg-red-900/25'],
   rounded: {
     default: uiRadiusRecipes.standard,
     lg: uiRadiusRecipes.standard,
@@ -55,6 +56,7 @@ const glassCardVariants = cva([...glassCardRecipes.base], {
       default: [...glassCardRecipes.default],
       auth: [...glassCardRecipes.auth],
       accent: [...glassCardRecipes.accent],
+      danger: [...glassCardRecipes.danger],
     },
     rounded: {
       default: glassCardRecipes.rounded.default,

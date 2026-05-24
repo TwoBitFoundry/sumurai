@@ -1,10 +1,12 @@
 use crate::models::account::Account;
 use crate::models::auth::User;
 use crate::models::plaid::{ProviderConnectResponse, ProviderConnection};
+use crate::models::predicted_category::PredictedCategory;
 use crate::models::provider_connect::ProviderConnectRequest;
 use crate::models::simplefin::SimpleFinTransaction;
 use crate::models::simplefin::{
-    SimpleFinAccount, SimpleFinAccountsResponse, SimpleFinConnectRequest, SimpleFinConnection,
+    SimpleFinAccount, SimpleFinAccountsResponse, SimpleFinApiErrorEntry, SimpleFinConnectRequest,
+    SimpleFinConnection,
 };
 use crate::models::transaction::Transaction;
 use crate::providers::simplefin_provider::{MockSimpleFinHttpClient, SimpleFinProvider};
@@ -18,9 +20,12 @@ use crate::services::connection_service::{
 };
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::sync_service::SyncService;
+use crate::services::Categorizer;
 use crate::test_fixtures::{noop_categorizer, TestFixtures};
+use anyhow::Result;
+use async_trait::async_trait;
 use axum::body::to_bytes;
-use chrono::Utc;
+use chrono::{NaiveDate, Utc};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use tower::ServiceExt;
@@ -28,6 +33,15 @@ use uuid::Uuid;
 
 const ACCESS_URL: &str = "https://demo:pass@beta-bridge.simplefin.org/simplefin";
 const SETUP_TOKEN: &str = "dGVzdC1zaW1wbGVmaW4tc2V0dXAtdG9rZW4=";
+
+struct PanicCategorizer;
+
+#[async_trait]
+impl Categorizer for PanicCategorizer {
+    async fn categorize_batch(&self, _descriptions: Vec<String>) -> Result<Vec<PredictedCategory>> {
+        panic!("categorizer should not be called for SimpleFIN sync");
+    }
+}
 
 fn mock_non_demo_user_lookup(mock_db: &mut MockDatabaseRepository) {
     mock_db
@@ -124,6 +138,33 @@ fn three_org_snapshot() -> SimpleFinAccountsResponse {
                 transactions: vec![],
             },
         ],
+    }
+}
+
+fn snapshot_with_org_auth_error() -> SimpleFinAccountsResponse {
+    let mut snapshot = three_org_snapshot();
+    snapshot.errors = vec![SimpleFinApiErrorEntry::Text(
+        "Connection to Bank B may need attention. Auth required".to_string(),
+    )];
+    snapshot
+        .accounts
+        .retain(|account| account.conn_id.as_deref() != Some("org-2"));
+    snapshot
+}
+
+fn snapshot_with_only_auth_errors() -> SimpleFinAccountsResponse {
+    SimpleFinAccountsResponse {
+        errors: vec![SimpleFinApiErrorEntry::Text(
+            "Connection to Bank of Oklahoma may need attention. Auth required".to_string(),
+        )],
+        connections: vec![SimpleFinConnection {
+            conn_id: "bok".to_string(),
+            name: "Bank of Oklahoma".to_string(),
+            org_id: "inst-bok".to_string(),
+            org_url: None,
+            sfin_url: None,
+        }],
+        accounts: vec![],
     }
 }
 
@@ -252,6 +293,9 @@ fn build_simplefin_connection_service(
     mock_cache
         .expect_cache_jwt_scoped_bank_accounts()
         .returning(|_, _, _| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_add_transaction()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
 
     let db_repository: Arc<dyn crate::services::repository_service::DatabaseRepository> =
         Arc::new(mock_db);
@@ -301,6 +345,60 @@ async fn given_three_org_snapshot_when_connect_simplefin_then_writes_three_conne
     assert!(accounts.contains("acct-1"));
     assert!(accounts.contains("acct-2"));
     assert!(accounts.contains("acct-3"));
+}
+
+#[tokio::test]
+async fn given_one_org_auth_error_when_connect_simplefin_then_links_other_institutions() {
+    let user_id = Uuid::new_v4();
+    let jwt_id = "jwt-1";
+    let (connection_service, saved_item_ids, _) = build_simplefin_connection_service(
+        snapshot_with_org_auth_error(),
+        HashSet::new(),
+        Some(SETUP_TOKEN.to_string()),
+        None,
+    );
+
+    let response = connection_service
+        .connect_simplefin_provider(&user_id, jwt_id, &simplefin_connect_request())
+        .await
+        .unwrap();
+
+    assert_eq!(response.institution_name, "SimpleFIN (2 institutions)");
+    let auth_required = response
+        .simplefin_institutions_requiring_auth
+        .expect("auth warnings should be returned");
+    assert_eq!(auth_required.len(), 1);
+    assert_eq!(auth_required[0].institution_name, "Bank B");
+
+    let saved = saved_item_ids.lock().unwrap();
+    assert!(saved.contains(&simplefin_org_item_id(&user_id, "org-1")));
+    assert!(!saved.contains(&simplefin_org_item_id(&user_id, "org-2")));
+    assert!(saved.contains(&simplefin_org_item_id(&user_id, "org-3")));
+}
+
+#[tokio::test]
+async fn given_only_auth_errors_when_connect_simplefin_then_returns_institutions_require_auth() {
+    let user_id = Uuid::new_v4();
+    let jwt_id = "jwt-1";
+    let (connection_service, _, _) = build_simplefin_connection_service(
+        snapshot_with_only_auth_errors(),
+        HashSet::new(),
+        Some(SETUP_TOKEN.to_string()),
+        None,
+    );
+
+    let error = connection_service
+        .connect_simplefin_provider(&user_id, jwt_id, &simplefin_connect_request())
+        .await
+        .unwrap_err();
+
+    match error {
+        SimpleFinConnectError::InstitutionsRequireAuth(notices) => {
+            assert_eq!(notices.len(), 1);
+            assert_eq!(notices[0].institution_name, "Bank of Oklahoma");
+        }
+        other => panic!("expected InstitutionsRequireAuth, got {other:?}"),
+    }
 }
 
 #[tokio::test]
@@ -480,7 +578,8 @@ async fn build_simplefin_handler_app(
     use crate::services::category_management::service::CategoryManagementService;
     use crate::services::{
         analytics_service::AnalyticsService, auth_service::AuthService,
-        authorization_service::AuthorizationService, budget_service::BudgetService,
+        authorization_service::AuthorizationService,
+        auto_categorization::AutoCategorizationService, budget_service::BudgetService,
         cache_service::CacheService, connection_service::ConnectionService,
         otel_traces_relay::OtlpTracesRelay, plaid_service::PlaidService,
         repository_service::DatabaseRepository, sync_service::SyncService,
@@ -583,6 +682,12 @@ async fn build_simplefin_handler_app(
     test_env.set("AUTH_COOKIE_SAME_SITE", "Lax");
     let config = Config::from_env_provider(&test_env).expect("Failed to create test config");
 
+    let auto_categorization_service = Arc::new(AutoCategorizationService::new(
+        db_repository.clone(),
+        cache_service.clone(),
+        crate::test_fixtures::noop_categorizer(),
+    ));
+
     let state = AppState {
         plaid_service,
         plaid_client,
@@ -602,6 +707,7 @@ async fn build_simplefin_handler_app(
         category_management_service: Arc::new(CategoryManagementService::new(
             SYSTEM_CATEGORY_SLUGS,
         )),
+        auto_categorization_service,
     };
 
     Ok(create_app(state))
@@ -750,6 +856,36 @@ fn build_simplefin_sync_service(
     hidden_orgs: HashSet<String>,
     transactions: Vec<SimpleFinTransaction>,
 ) -> SimpleFinSyncHarness {
+    build_simplefin_sync_service_with_categorizer(
+        snapshot,
+        hidden_orgs,
+        transactions,
+        noop_categorizer(),
+    )
+}
+
+fn build_simplefin_sync_service_with_categorizer(
+    snapshot: SimpleFinAccountsResponse,
+    hidden_orgs: HashSet<String>,
+    transactions: Vec<SimpleFinTransaction>,
+    categorizer: Arc<dyn Categorizer>,
+) -> SimpleFinSyncHarness {
+    build_simplefin_sync_service_with_categorizer_and_accounts(
+        snapshot,
+        hidden_orgs,
+        transactions,
+        Vec::new(),
+        categorizer,
+    )
+}
+
+fn build_simplefin_sync_service_with_categorizer_and_accounts(
+    snapshot: SimpleFinAccountsResponse,
+    hidden_orgs: HashSet<String>,
+    transactions: Vec<SimpleFinTransaction>,
+    db_accounts: Vec<Account>,
+    categorizer: Arc<dyn Categorizer>,
+) -> SimpleFinSyncHarness {
     let snapshot_for_accounts = snapshot.clone();
     let mut mock_client = MockSimpleFinHttpClient::new();
     mock_client
@@ -814,9 +950,10 @@ fn build_simplefin_sync_service(
         *upsert_accounts_clone.lock().unwrap() += 1;
         Box::pin(async { Ok(()) })
     });
-    mock_db
-        .expect_get_accounts_for_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
+    mock_db.expect_get_accounts_for_user().returning(move |_| {
+        let db_accounts = db_accounts.clone();
+        Box::pin(async move { Ok(db_accounts) })
+    });
     mock_db
         .expect_get_provider_transaction_ids_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
@@ -853,6 +990,9 @@ fn build_simplefin_sync_service(
     mock_cache
         .expect_cache_jwt_scoped_bank_accounts()
         .returning(|_, _, _| Box::pin(async { Ok(()) }));
+    mock_cache
+        .expect_add_transaction()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
 
     let db_repository: Arc<dyn crate::services::repository_service::DatabaseRepository> =
         Arc::new(mock_db);
@@ -862,7 +1002,7 @@ fn build_simplefin_sync_service(
         db_repository,
         Arc::new(mock_cache),
         provider_registry,
-        noop_categorizer(),
+        categorizer,
         credential_resolvers,
     );
 
@@ -906,6 +1046,125 @@ async fn given_blocklisted_connection_when_sync_simplefin_then_writes_no_account
     assert!(result.transactions.is_empty());
     assert_eq!(*upsert_accounts.lock().unwrap(), 0);
     assert_eq!(*upsert_transactions.lock().unwrap(), 0);
+}
+
+#[tokio::test]
+async fn given_simplefin_sync_when_transactions_are_persisted_then_they_stay_other() {
+    let user_id = Uuid::new_v4();
+    let mut connection =
+        ProviderConnection::new(user_id, &simplefin_org_item_id(&user_id, "org-1"));
+    connection.mark_connected("Bank A");
+    let mapped_account_id = Uuid::new_v4();
+
+    let snapshot = SimpleFinAccountsResponse {
+        errors: vec![],
+        connections: vec![SimpleFinConnection {
+            conn_id: "org-1".to_string(),
+            name: "Bank A".to_string(),
+            org_id: "inst-1".to_string(),
+            org_url: None,
+            sfin_url: None,
+        }],
+        accounts: vec![SimpleFinAccount {
+            id: "acct-1".to_string(),
+            name: "Checking A".to_string(),
+            conn_id: Some("org-1".to_string()),
+            org: None,
+            currency: Some("USD".to_string()),
+            balance: Some("100.00".to_string()),
+            available_balance: None,
+            balance_date: None,
+            holdings: vec![],
+            transactions: vec![
+                SimpleFinTransaction {
+                    id: "txn-1".to_string(),
+                    posted: 1_746_086_400,
+                    amount: "-12.34".to_string(),
+                    description: "Whole Foods Market".to_string(),
+                    pending: false,
+                    transacted_at: Some(1_746_086_400),
+                    extra: serde_json::json!({}),
+                },
+                SimpleFinTransaction {
+                    id: "txn-2".to_string(),
+                    posted: 1_746_172_800,
+                    amount: "-45.67".to_string(),
+                    description: "Shell Oil 5512".to_string(),
+                    pending: false,
+                    transacted_at: Some(1_746_172_800),
+                    extra: serde_json::json!({}),
+                },
+            ],
+        }],
+    };
+
+    let (connection_service, sync_service, _, _, upsert_accounts, upsert_transactions) =
+        build_simplefin_sync_service_with_categorizer_and_accounts(
+            snapshot,
+            HashSet::new(),
+            vec![
+                SimpleFinTransaction {
+                    id: "txn-1".to_string(),
+                    posted: 1_746_086_400,
+                    amount: "-12.34".to_string(),
+                    description: "Whole Foods Market".to_string(),
+                    pending: false,
+                    transacted_at: Some(1_746_086_400),
+                    extra: serde_json::json!({}),
+                },
+                SimpleFinTransaction {
+                    id: "txn-2".to_string(),
+                    posted: 1_746_172_800,
+                    amount: "-45.67".to_string(),
+                    description: "Shell Oil 5512".to_string(),
+                    pending: false,
+                    transacted_at: Some(1_746_172_800),
+                    extra: serde_json::json!({}),
+                },
+            ],
+            vec![Account {
+                id: mapped_account_id,
+                user_id: Some(user_id),
+                provider_account_id: Some("acct-1".to_string()),
+                provider_connection_id: Some(connection.id),
+                name: "Checking A".to_string(),
+                account_type: "depository".to_string(),
+                balance_current: None,
+                mask: None,
+                institution_name: None,
+                provider_conn_id: Some("org-1".to_string()),
+            }],
+            Arc::new(PanicCategorizer),
+        );
+
+    let result = connection_service
+        .sync_provider_connection(
+            SyncConnectionParams {
+                provider: "simplefin",
+                user_id: &user_id,
+                jwt_id: "jwt_sync",
+            },
+            sync_service.as_ref(),
+            &mut connection,
+            Some(NaiveDate::from_ymd_opt(2025, 5, 20).unwrap()),
+        )
+        .await
+        .unwrap();
+
+    assert!(!result.transactions.is_empty());
+    assert!(result
+        .transactions
+        .iter()
+        .all(|transaction| transaction.category_primary == "OTHER"));
+    assert!(result
+        .transactions
+        .iter()
+        .all(|transaction| transaction.category_confidence.is_empty()));
+    assert!(*upsert_accounts.lock().unwrap() >= 1);
+    assert_eq!(
+        *upsert_transactions.lock().unwrap(),
+        result.transactions.len()
+    );
 }
 
 #[tokio::test]
@@ -964,7 +1223,7 @@ async fn given_sync_floor_when_second_simplefin_sync_within_hour_then_rate_limit
         )
         .await;
 
-    assert!(matches!(result, Err(ProviderSyncError::RateLimited)));
+    assert!(matches!(result, Err(ProviderSyncError::RateLimited(_))));
 }
 
 #[tokio::test]

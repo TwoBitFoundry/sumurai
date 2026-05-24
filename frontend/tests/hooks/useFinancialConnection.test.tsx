@@ -249,8 +249,9 @@ describe('useFinancialConnection', () => {
   });
 
   it('given connect before strategy bridge mounts when connect called then reports not ready', async () => {
+    const onError = jest.fn();
     const { result } = renderHook(
-      () => useFinancialConnection({ provider: 'plaid', isOnline: true }),
+      () => useFinancialConnection({ provider: 'plaid', isOnline: true, onError }),
       { wrapper }
     );
 
@@ -258,7 +259,7 @@ describe('useFinancialConnection', () => {
       await result.current.initiateConnection();
     });
 
-    expect(result.current.error).toBe('Connection is not ready. Please try again.');
+    expect(onError).toHaveBeenCalledWith('Connection is not ready. Please try again.');
     expect(postSpy).not.toHaveBeenCalledWith('/plaid/link-token', {});
   });
 

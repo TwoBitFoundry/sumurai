@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo } from 'react';
+import { formatSimpleFinAuthRequiredToast } from '@/features/simplefin/utils/formatSimpleFinAuthRequiredToast';
 import { formatSimpleFinInstitutionsLabel } from '@/features/simplefin/utils/formatSimpleFinInstitutionsLabel';
 import { connectionActions } from '@/hooks/financialConnection/connectionState';
 import { recordHandledIssue } from '@/observability';
+import { ValidationError } from '@/services/ApiClient';
 import { SimpleFinService } from '@/services/SimpleFinService';
+import type { SimpleFinInstitutionAuthRequired } from '@/types/api';
 import { formatUserFacingApiError } from '@/utils/formatUserFacingApiError';
 import type { FinancialConnectionStrategy, FinancialConnectionStrategyContext } from './types';
 
@@ -11,7 +14,14 @@ const DEFAULT_INSTITUTION_NAME = 'SimpleFIN';
 export function useSimpleFinConnectionStrategy(
   context: FinancialConnectionStrategyContext
 ): FinancialConnectionStrategy {
-  const { isOnline, dispatch, handleError, onConnectionSuccess, invalidateCache } = context;
+  const {
+    isOnline,
+    dispatch,
+    handleError,
+    onConnectionSuccess,
+    onSimpleFinAuthRequired,
+    invalidateCache,
+  } = context;
 
   const refreshStatus = useCallback(async () => {
     if (!isOnline) {
@@ -75,7 +85,7 @@ export function useSimpleFinConnectionStrategy(
         connectionActions.patch({ connectionInProgress: true, error: null, isSyncing: true })
       );
       try {
-        await SimpleFinService.connectAndSyncAll(setupToken);
+        const result = await SimpleFinService.connectAndSyncAll(setupToken);
         dispatch(
           connectionActions.patch({
             isConnected: true,
@@ -84,16 +94,52 @@ export function useSimpleFinConnectionStrategy(
           })
         );
         onConnectionSuccess?.(DEFAULT_INSTITUTION_NAME);
+        if (result.institutionsRequiringAuth.length > 0) {
+          onSimpleFinAuthRequired?.(result.institutionsRequiringAuth);
+        }
         await refreshStatus();
         await invalidateCache();
       } catch (connectError) {
-        const message = formatUserFacingApiError(connectError, 'Failed to connect with SimpleFIN');
-        handleError(message);
+        if (
+          connectError instanceof ValidationError &&
+          connectError.details &&
+          typeof connectError.details === 'object' &&
+          'error' in connectError.details &&
+          connectError.details.error === 'SIMPLEFIN_INSTITUTIONS_REQUIRE_AUTH'
+        ) {
+          const details = connectError.details as {
+            error?: string;
+            details?: SimpleFinInstitutionAuthRequired[];
+          };
+          if (Array.isArray(details.details) && details.details.length > 0) {
+            onSimpleFinAuthRequired?.(details.details);
+            dispatch(connectionActions.patch({ error: null }));
+          } else {
+            const message = formatUserFacingApiError(
+              connectError,
+              'Failed to connect with SimpleFIN'
+            );
+            handleError(message);
+          }
+        } else {
+          const message = formatUserFacingApiError(
+            connectError,
+            'Failed to connect with SimpleFIN'
+          );
+          handleError(message);
+        }
       } finally {
         dispatch(connectionActions.patch({ isSyncing: false, connectionInProgress: false }));
       }
     },
-    [dispatch, handleError, invalidateCache, onConnectionSuccess, refreshStatus]
+    [
+      dispatch,
+      handleError,
+      invalidateCache,
+      onConnectionSuccess,
+      onSimpleFinAuthRequired,
+      refreshStatus,
+    ]
   );
 
   return useMemo(

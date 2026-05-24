@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -9,8 +11,11 @@ use crate::services::categorization::classifier_labels::{
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use ndarray::{Array2, Ix2};
-use ort::session::{builder::GraphOptimizationLevel, Session};
+use ort::ep;
+use ort::session::{builder::GraphOptimizationLevel, RunOptions, Session};
 use ort::value::Tensor;
+
+use crate::services::categorization::ort_memory_profile;
 use serde_json::Value;
 use tokenizers::{
     PaddingDirection, PaddingParams, PaddingStrategy, Tokenizer, TruncationDirection,
@@ -27,6 +32,7 @@ pub const MODEL_DIR: &str = concat!(
 
 pub struct CategorizationService {
     session: Option<Arc<Mutex<Session>>>,
+    inference_run_options: Option<Arc<RunOptions>>,
     tokenizer: Option<Arc<Tokenizer>>,
     classifier_labels: Vec<String>,
     max_seq_len: usize,
@@ -55,6 +61,10 @@ impl CategorizationService {
         let config_path = model_dir.join("config.json");
         let label_mapping_path = model_dir.join("label_mapping.json");
 
+        ort_memory_profile::register_balanced_cpu_arena().map_err(|err| {
+            anyhow!("failed to register balanced CPU arena allocator for categorization: {err}")
+        })?;
+
         tracing::info!("creating categorization ONNX session builder");
         let session = Session::builder()
             .map_err(|err| anyhow!("failed to create categorization session builder: {err}"))?
@@ -64,6 +74,12 @@ impl CategorizationService {
             .map_err(|err| anyhow!("failed to configure categorization session threads: {err}"))?
             .with_inter_threads(1)
             .map_err(|err| anyhow!("failed to configure categorization inter-op threads: {err}"))?
+            .with_env_allocators()
+            .map_err(|err| anyhow!("failed to configure categorization env allocators: {err}"))?
+            .with_execution_providers([ep::CPU::default().with_arena_allocator(true).build()])
+            .map_err(|err| {
+                anyhow!("failed to configure categorization CPU execution provider: {err}")
+            })?
             .with_optimization_level(GraphOptimizationLevel::Level1)
             .map_err(|err| anyhow!("failed to configure categorization graph optimization: {err}"))?
             .commit_from_file(&model_path)
@@ -74,6 +90,10 @@ impl CategorizationService {
                 )
             })?;
         tracing::info!("loaded categorization ONNX session");
+        let inference_run_options =
+            Arc::new(ort_memory_profile::inference_run_options().map_err(|err| {
+                anyhow!("failed to configure categorization inference run options: {err}")
+            })?);
         let tokenizer =
             Tokenizer::from_file(tokenizer_path.to_string_lossy().as_ref()).map_err(|err| {
                 anyhow!(
@@ -93,6 +113,7 @@ impl CategorizationService {
 
         Ok(Self {
             session: Some(Arc::new(Mutex::new(session))),
+            inference_run_options: Some(inference_run_options),
             tokenizer: Some(Arc::new(tokenizer)),
             classifier_labels,
             max_seq_len,
@@ -100,12 +121,16 @@ impl CategorizationService {
     }
 
     fn classify_texts(
+        &self,
         session: &mut Session,
         tokenizer: &Tokenizer,
-        max_seq_len: usize,
-        labels: &[String],
         inputs: Vec<String>,
     ) -> Result<Vec<PredictedCategory>> {
+        let inference_run_options = self.inference_run_options.as_ref().ok_or_else(|| {
+            anyhow!("categorization service is not initialized with inference run options")
+        })?;
+        let labels = &self.classifier_labels;
+        let max_seq_len = self.max_seq_len;
         if inputs.is_empty() {
             return Ok(Vec::new());
         }
@@ -158,7 +183,7 @@ impl CategorizationService {
             ort_inputs.push(("token_type_ids", Tensor::from_array(token_type_ids)?));
         }
 
-        let outputs = session.run(ort_inputs)?;
+        let outputs = session.run_with_options(ort_inputs, inference_run_options.as_ref())?;
         if outputs.len() == 0 {
             return Err(anyhow!("categorization model returned no outputs"));
         }
@@ -201,20 +226,29 @@ impl Categorizer for CategorizationService {
             self.tokenizer.as_ref().cloned().ok_or_else(|| {
                 anyhow!("categorization service is not initialized with a tokenizer")
             })?;
-        let classifier_labels = self.classifier_labels.clone();
-        let max_seq_len = self.max_seq_len;
+        let inference = Self {
+            session: Some(session),
+            inference_run_options: self.inference_run_options.clone(),
+            tokenizer: Some(tokenizer),
+            classifier_labels: self.classifier_labels.clone(),
+            max_seq_len: self.max_seq_len,
+        };
 
         task::spawn_blocking(move || {
-            let mut session = session
+            let mut session = inference
+                .session
+                .as_ref()
+                .ok_or_else(|| anyhow!("categorization service is not initialized with a model"))?
                 .lock()
                 .map_err(|_| anyhow!("categorization session lock was poisoned"))?;
+            let tokenizer = inference.tokenizer.as_ref().ok_or_else(|| {
+                anyhow!("categorization service is not initialized with a tokenizer")
+            })?;
             let mut predictions = Vec::with_capacity(descriptions.len());
             for chunk in descriptions.chunks(INFERENCE_BATCH_SIZE) {
-                predictions.extend(Self::classify_texts(
+                predictions.extend(inference.classify_texts(
                     &mut session,
                     tokenizer.as_ref(),
-                    max_seq_len,
-                    &classifier_labels,
                     chunk.to_vec(),
                 )?);
             }

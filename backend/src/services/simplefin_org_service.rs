@@ -72,6 +72,8 @@ impl SimpleFinOrganizationService {
             .await?;
 
         let mut persisted_accounts = Vec::new();
+        let mut transaction_count = 0;
+
         for simplefin_account in snapshot_accounts
             .iter()
             .filter(|account| account.org_conn_id().as_deref() == Some(org.conn_id.as_str()))
@@ -81,7 +83,35 @@ impl SimpleFinOrganizationService {
             account.provider_connection_id = Some(connection.id);
 
             match self.db_repository.upsert_account(&account).await {
-                Ok(_) => persisted_accounts.push(account),
+                Ok(_) => {
+                    persisted_accounts.push(account.clone());
+
+                    for simplefin_tx in &simplefin_account.transactions {
+                        match SimpleFinProvider::map_transaction(simplefin_tx, &account) {
+                            Ok(mut tx) => {
+                                tx.user_id = Some(*user_id);
+
+                                match self.db_repository.upsert_transaction(&tx).await {
+                                    Ok(_) => transaction_count += 1,
+                                    Err(e) => {
+                                        tracing::warn!(
+                                            "Failed to persist SimpleFIN transaction for user {}: {}",
+                                            user_id,
+                                            e
+                                        );
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                tracing::warn!(
+                                    "Failed to map SimpleFIN transaction for user {}: {}",
+                                    user_id,
+                                    e
+                                );
+                            }
+                        }
+                    }
+                }
                 Err(e) => {
                     tracing::warn!(
                         "Failed to persist SimpleFIN account {} for user {}: {}",
@@ -95,6 +125,7 @@ impl SimpleFinOrganizationService {
 
         if !persisted_accounts.is_empty() {
             connection.account_count = persisted_accounts.len() as i32;
+            connection.transaction_count = transaction_count;
             if let Err(e) = self
                 .db_repository
                 .save_provider_connection(&connection)
@@ -129,6 +160,7 @@ impl SimpleFinOrganizationService {
         hidden_orgs: &HashSet<String>,
         snapshot: &SimpleFinAccountsResponse,
     ) -> Result<SimpleFinSnapshotReconciliation> {
+        let institutions_requiring_auth = snapshot.institutions_requiring_auth();
         let mut institution_count = 0;
         let mut first_connection_id = None;
 
@@ -136,6 +168,10 @@ impl SimpleFinOrganizationService {
             .connections
             .iter()
             .filter(|org| !org_is_hidden(hidden_orgs, org))
+            .filter(|org| {
+                !org_requires_auth_refresh(org, &institutions_requiring_auth)
+                    || snapshot.org_has_accounts(&org.conn_id)
+            })
         {
             let persisted = self
                 .persist_org_connection(user_id, jwt_id, org, &snapshot.accounts)
@@ -213,6 +249,16 @@ pub fn conn_id_is_hidden(
     }
 
     org_id.is_some_and(|id| !id.is_empty() && hidden_orgs.contains(id))
+}
+
+pub(crate) fn org_requires_auth_refresh(
+    org: &SimpleFinConnection,
+    institutions_requiring_auth: &[crate::models::simplefin::SimpleFinInstitutionAuthRequired],
+) -> bool {
+    institutions_requiring_auth.iter().any(|notice| {
+        notice.org_conn_id.as_deref() == Some(org.conn_id.as_str())
+            || notice.institution_name.eq_ignore_ascii_case(&org.name)
+    })
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

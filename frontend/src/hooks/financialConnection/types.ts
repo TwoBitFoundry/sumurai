@@ -8,6 +8,7 @@ import type {
   FinancialConnectionState,
 } from '@/hooks/financialConnection/connectionState';
 import type { TellerEnvironment } from '@/hooks/useTellerConnect';
+import type { SimpleFinInstitutionAuthRequired } from '@/types/api';
 
 export interface FinancialConnectionStrategy {
   getReady: () => boolean;
@@ -28,6 +29,7 @@ export interface FinancialConnectionStrategyContext {
   dispatch: Dispatch<FinancialConnectionAction>;
   handleError: (message: string) => void;
   onConnectionSuccess?: (institutionName: string) => void;
+  onSimpleFinAuthRequired?: (institutions: SimpleFinInstitutionAuthRequired[]) => void;
   invalidateCache: () => Promise<void>;
   tellerApplicationId: string | null;
   tellerEnvironment: TellerEnvironment;

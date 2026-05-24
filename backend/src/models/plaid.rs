@@ -196,6 +196,9 @@ pub struct ProviderStatusResponse {
 pub struct ProviderConnectResponse {
     pub connection_id: String,
     pub institution_name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub simplefin_institutions_requiring_auth:
+        Option<Vec<crate::models::simplefin::SimpleFinInstitutionAuthRequired>>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]

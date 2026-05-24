@@ -119,7 +119,11 @@ describe('SimpleFinService', () => {
 
       const result = await SimpleFinService.connectAndSyncAll();
 
-      expect(result).toEqual({ rateLimited: false, transactionCount: 12 });
+      expect(result).toEqual({
+        rateLimited: false,
+        transactionCount: 12,
+        institutionsRequiringAuth: [],
+      });
       expect(postSpy).toHaveBeenCalledWith('/providers/sync-transactions', {
         connection_id: 'conn-from-status',
         client_date: '2025-06-15',
@@ -139,7 +143,11 @@ describe('SimpleFinService', () => {
 
       const result = await SimpleFinService.connectAndSyncAll();
 
-      expect(result).toEqual({ rateLimited: false, transactionCount: 0 });
+      expect(result).toEqual({
+        rateLimited: false,
+        transactionCount: 0,
+        institutionsRequiringAuth: [],
+      });
       expect(postSpy).toHaveBeenCalledTimes(1);
     });
 
@@ -168,7 +176,51 @@ describe('SimpleFinService', () => {
 
       const result = await SimpleFinService.connectAndSyncAll();
 
-      expect(result).toEqual({ rateLimited: true, transactionCount: 0 });
+      expect(result).toEqual({
+        rateLimited: true,
+        transactionCount: 0,
+        institutionsRequiringAuth: [],
+      });
+    });
+
+    it('returns auth notices from connect response', async () => {
+      postSpy.mockResolvedValueOnce({
+        connection_id: 'conn-from-connect',
+        institution_name: 'SimpleFIN (2 institutions)',
+        simplefin_institutions_requiring_auth: [
+          {
+            institution_name: 'Bank of Oklahoma',
+            org_conn_id: 'bok',
+            message: 'Connection to Bank of Oklahoma may need attention. Auth required',
+          },
+        ],
+      } as any);
+      getSpy.mockResolvedValue({
+        provider: 'simplefin',
+        connections: [
+          {
+            is_connected: true,
+            last_sync_at: null,
+            institution_name: 'Bank A',
+            connection_id: 'conn-from-status',
+            item_id: 'simplefin_org_a',
+            transaction_count: 0,
+            account_count: 1,
+            sync_in_progress: false,
+          },
+        ],
+      } as any);
+
+      const result = await SimpleFinService.connectAndSyncAll();
+
+      expect(result.institutionsRequiringAuth).toEqual([
+        {
+          institution_name: 'Bank of Oklahoma',
+          org_conn_id: 'bok',
+          message: 'Connection to Bank of Oklahoma may need attention. Auth required',
+        },
+      ]);
+      expect(postSpy).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -209,7 +261,11 @@ describe('SimpleFinService', () => {
 
       const result = await SimpleFinService.restoreInstitution('demo-org');
 
-      expect(result).toEqual({ rateLimited: false, transactionCount: 7 });
+      expect(result).toEqual({
+        rateLimited: false,
+        transactionCount: 7,
+        institutionsRequiringAuth: [],
+      });
       expect(postSpy).toHaveBeenCalledWith('/providers/simplefin/ignored-institutions', {
         org_conn_id: 'demo-org',
       });

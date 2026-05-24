@@ -16,7 +16,6 @@ use crate::providers::{
     FinancialDataProvider, InstitutionInfo, ProviderCredentials, ProviderRegistry,
 };
 use crate::services::categorization::categorization_service::Categorizer;
-use crate::services::categorization::classifier_labels::format_classifier_input;
 use crate::services::{
     cache_service::CacheService, repository_service::DatabaseRepository, sync_service::SyncService,
 };
@@ -31,7 +30,6 @@ pub struct ConnectionService {
     db_repository: Arc<dyn DatabaseRepository>,
     cache_service: Arc<dyn CacheService>,
     provider_registry: Arc<ProviderRegistry>,
-    categorizer: Arc<dyn Categorizer>,
     credential_resolvers:
         std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>>,
     simplefin_connection_service:
@@ -60,6 +58,7 @@ pub enum SimpleFinConnectError {
     NoInstitutionsOnBridge,
     AllInstitutionsHidden,
     NoInstitutionsLinked,
+    InstitutionsRequireAuth(Vec<crate::models::simplefin::SimpleFinInstitutionAuthRequired>),
 }
 
 #[derive(Debug)]
@@ -94,7 +93,7 @@ pub enum ProviderSyncError {
     AccountLookup(Error),
     TransactionLookup(Error),
     SyncFailure(Error),
-    RateLimited,
+    RateLimited(Option<String>),
 }
 
 fn simplefin_sync_floor_ttl_seconds() -> u64 {
@@ -172,7 +171,7 @@ impl ConnectionService {
         db_repository: Arc<dyn DatabaseRepository>,
         cache_service: Arc<dyn CacheService>,
         provider_registry: Arc<ProviderRegistry>,
-        categorizer: Arc<dyn Categorizer>,
+        _categorizer: Arc<dyn Categorizer>,
         credential_resolvers: std::collections::HashMap<
             String,
             Arc<dyn crate::providers::ProviderCredentialResolver>,
@@ -182,7 +181,6 @@ impl ConnectionService {
             db_repository,
             cache_service,
             provider_registry,
-            categorizer,
             credential_resolvers,
             simplefin_connection_service: None,
         }
@@ -450,6 +448,7 @@ impl ConnectionService {
         Ok(ProviderConnectResponse {
             connection_id: connection.id.to_string(),
             institution_name,
+            simplefin_institutions_requiring_auth: None,
         })
     }
 
@@ -575,11 +574,20 @@ impl ConnectionService {
             .await
             .map_err(SimpleFinConnectError::ConnectionPersistence)?;
 
+        let institutions_requiring_auth = snapshot.institutions_requiring_auth();
+
         let mut first_connection_id = None;
         let mut institution_count = 0;
 
         for org in &snapshot.connections {
             if crate::services::simplefin_org_service::org_is_hidden(&hidden_orgs, org) {
+                continue;
+            }
+            if crate::services::simplefin_org_service::org_requires_auth_refresh(
+                org,
+                &institutions_requiring_auth,
+            ) && !snapshot.org_has_accounts(&org.conn_id)
+            {
                 continue;
             }
 
@@ -597,6 +605,11 @@ impl ConnectionService {
         }
 
         if institution_count == 0 {
+            if !institutions_requiring_auth.is_empty() {
+                return Err(SimpleFinConnectError::InstitutionsRequireAuth(
+                    institutions_requiring_auth,
+                ));
+            }
             if snapshot.connections.is_empty() {
                 return Err(SimpleFinConnectError::NoInstitutionsOnBridge);
             }
@@ -617,6 +630,11 @@ impl ConnectionService {
         Ok(ProviderConnectResponse {
             connection_id,
             institution_name: format!("SimpleFIN ({institution_count} institutions)"),
+            simplefin_institutions_requiring_auth: if institutions_requiring_auth.is_empty() {
+                None
+            } else {
+                Some(institutions_requiring_auth)
+            },
         })
     }
 
@@ -1076,7 +1094,7 @@ impl ConnectionService {
                 connection_id = %connection.id,
                 "SimpleFIN sync skipped: hourly rate floor active"
             );
-            return Err(ProviderSyncError::RateLimited);
+            return Err(ProviderSyncError::RateLimited(None));
         }
 
         #[allow(deprecated)]
@@ -1277,45 +1295,10 @@ impl ConnectionService {
             })
             .collect();
 
-        let mut categorizable_indexes = Vec::new();
-        let mut categorizable_inputs = Vec::new();
-        for (index, txn) in valid_transactions.iter().enumerate() {
-            if txn.category_primary == "OTHER" {
-                categorizable_indexes.push(index);
-                categorizable_inputs.push(format_classifier_input(
-                    &txn.amount,
-                    txn.merchant_name.as_deref().unwrap_or_default(),
-                ));
-            }
-        }
-
-        if !categorizable_inputs.is_empty() {
-            match self
-                .categorizer
-                .categorize_batch(categorizable_inputs)
-                .await
-            {
-                Ok(predictions) => {
-                    use crate::models::predicted_category::Confidence;
-                    for (index, prediction) in categorizable_indexes.into_iter().zip(predictions) {
-                        if prediction.confidence != Confidence::Low {
-                            if let Some(txn) = valid_transactions.get_mut(index) {
-                                txn.category_primary = prediction.primary;
-                                txn.category_confidence =
-                                    prediction.confidence.as_str().to_string();
-                            }
-                        }
-                    }
-                }
-                Err(err) => {
-                    tracing::warn!(
-                        provider = "simplefin",
-                        connection_id = %connection.id,
-                        error = %err,
-                        "SimpleFIN sync categorization failed"
-                    );
-                }
-            }
+        for txn in &mut valid_transactions {
+            txn.category_primary = "OTHER".to_string();
+            txn.category_detailed = "OTHER".to_string();
+            txn.category_confidence.clear();
         }
 
         for chunk in valid_transactions.chunks(500) {

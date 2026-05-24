@@ -38,6 +38,68 @@ fn given_provider_connect_when_generating_openapi_then_documents_simplefin_setup
 }
 
 #[test]
+fn given_auto_categorize_when_generating_openapi_then_documents_endpoint_and_schemas() {
+    let spec = serde_json::to_value(init_openapi()).unwrap();
+    let path = &spec["paths"]["/api/transactions/auto-categorize"];
+
+    assert_eq!(path["post"]["tags"], serde_json::json!(["Transactions"]));
+    assert_eq!(path["get"]["tags"], serde_json::json!(["Transactions"]));
+    assert_eq!(path["delete"]["tags"], serde_json::json!(["Transactions"]));
+    assert_eq!(
+        path["post"]["responses"]["200"]["content"]["application/json"]["schema"]["$ref"],
+        serde_json::json!("#/components/schemas/AutoCategorizationJobState")
+    );
+    assert_eq!(
+        path["post"]["responses"]["401"]["description"],
+        serde_json::json!("Unauthorized")
+    );
+    assert_eq!(
+        path["post"]["responses"]["409"]["content"]["application/json"]["schema"]["$ref"],
+        serde_json::json!("#/components/schemas/AutoCategorizationJobState")
+    );
+    assert_eq!(
+        spec["components"]["schemas"]["AutoCategorizationJobStatus"]["type"],
+        serde_json::json!("string")
+    );
+}
+
+#[test]
+fn given_cookie_auth_paths_when_generating_openapi_then_each_operation_documents_401() {
+    let spec = serde_json::to_value(init_openapi()).unwrap();
+    let paths = spec["paths"].as_object().expect("paths object");
+
+    for (path, item) in paths {
+        let item = item.as_object().expect("path item");
+        for (method, operation) in item {
+            if method == "parameters" {
+                continue;
+            }
+            let operation = operation.as_object().expect("operation");
+            let uses_cookie = operation
+                .get("security")
+                .and_then(|s| s.as_array())
+                .is_some_and(|entries| {
+                    entries.iter().any(|entry| {
+                        entry
+                            .as_object()
+                            .is_some_and(|obj| obj.contains_key("auth_cookie"))
+                    })
+                });
+            if !uses_cookie {
+                continue;
+            }
+            assert!(
+                operation
+                    .get("responses")
+                    .and_then(|r| r.get("401"))
+                    .is_some(),
+                "missing 401 response for {method} {path}"
+            );
+        }
+    }
+}
+
+#[test]
 fn given_transactions_insights_when_generating_openapi_then_documents_endpoint_and_schemas() {
     let spec = serde_json::to_value(init_openapi()).unwrap();
     let path = &spec["paths"]["/api/transactions/insights"]["get"];

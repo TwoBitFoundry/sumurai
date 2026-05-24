@@ -46,6 +46,7 @@ use crate::models::analytics::{
 };
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, AuthMiddlewareState};
+use crate::models::auto_categorization_job::AutoCategorizationJobState;
 use crate::models::{
     account::AccountResponse,
     analytics::{DateRangeQuery, MonthlyTotalsQuery},
@@ -61,7 +62,6 @@ use crate::models::{
         ProviderConnectionStatus, ProviderInfoResponse, ProviderSelectRequest,
         ProviderSelectResponse, ProviderStatusResponse, SyncTransactionsRequest,
     },
-    predicted_category::Confidence,
     provider_connect::ProviderConnectRequest,
     transaction::{
         PaginatedTransactionsResponse, SyncTransactionsResponse, TransactionsInsightsResponse,
@@ -86,8 +86,8 @@ use middleware::resource_authorization::{
     AuthorizedBudgetId, AuthorizedConnectionRequest, AuthorizedQuery,
 };
 use middleware::telemetry_middleware::{self, request_tracing_middleware, TelemetryConfig};
+use services::auto_categorization::service::AutoCategorizationError;
 use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
-use services::categorization::classifier_labels::format_classifier_input;
 use services::category_management::service::CategoryManagementService;
 use services::import_service::ImportService;
 use services::repository_service::{DatabaseRepository, PostgresRepository};
@@ -288,7 +288,6 @@ async fn main() -> anyhow::Result<()> {
             credential_resolvers.clone(),
             simplefin_org_service,
             simplefin_rate_limit_service,
-            categorizer.clone(),
         ),
     );
 
@@ -313,6 +312,14 @@ async fn main() -> anyhow::Result<()> {
     let category_management_service =
         Arc::new(CategoryManagementService::new(SYSTEM_CATEGORY_SLUGS));
 
+    let auto_categorization_service = Arc::new(
+        crate::services::auto_categorization::AutoCategorizationService::new(
+            db_repository.clone(),
+            cache_service.clone(),
+            categorizer.clone(),
+        ),
+    );
+
     let state = AppState {
         plaid_service,
         plaid_client,
@@ -330,6 +337,7 @@ async fn main() -> anyhow::Result<()> {
         provider_registry,
         otlp_traces_relay,
         category_management_service,
+        auto_categorization_service,
     };
 
     let app = create_app(state);
@@ -414,6 +422,12 @@ pub fn create_app(state: AppState) -> Router {
         .route(
             "/api/transactions/insights",
             get(get_authenticated_transactions_insights),
+        )
+        .route(
+            "/api/transactions/auto-categorize",
+            post(start_auto_categorization)
+                .get(get_auto_categorization_status)
+                .delete(cancel_auto_categorization),
         )
         .route("/api/providers/info", get(get_authenticated_provider_info))
         .route("/api/providers/select", post(select_authenticated_provider))
@@ -1344,6 +1358,7 @@ async fn get_authenticated_transaction_categories(
     path = "/api/categories",
     responses(
         (status = 200, description = "List of system and custom categories", body = crate::models::custom_category::CategoryListResponse),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
         (status = 500, description = "Internal server error"),
     ),
     security(("auth_cookie" = [])),
@@ -1377,6 +1392,7 @@ async fn list_categories(
     responses(
         (status = 200, description = "Custom category created", body = crate::models::custom_category::CustomCategory),
         (status = 400, description = "Validation error with error code"),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
         (status = 500, description = "Internal server error"),
     ),
     security(("auth_cookie" = [])),
@@ -1473,6 +1489,7 @@ async fn create_custom_category(
     ),
     responses(
         (status = 204, description = "Custom category deleted"),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
         (status = 500, description = "Internal server error"),
     ),
     security(("auth_cookie" = [])),
@@ -1511,6 +1528,7 @@ async fn delete_custom_category(
     responses(
         (status = 200, description = "Category updated"),
         (status = 400, description = "Validation error"),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
         (status = 404, description = "Transaction not found"),
         (status = 500, description = "Internal server error"),
     ),
@@ -1566,6 +1584,126 @@ async fn set_transaction_category(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/transactions/auto-categorize",
+    responses(
+        (status = 200, description = "Background categorization started", body = AutoCategorizationJobState),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 409, description = "Active job already exists", body = AutoCategorizationJobState),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Transactions"
+)]
+async fn start_auto_categorization(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Response, (StatusCode, Json<ApiErrorResponse>)> {
+    match state
+        .auto_categorization_service
+        .start(&auth_context.user_id, &auth_context.jwt_id)
+        .await
+    {
+        Ok(job) => Ok((StatusCode::OK, Json(job)).into_response()),
+        Err(AutoCategorizationError::ActiveJobExists(job)) => {
+            Ok((StatusCode::CONFLICT, Json(job)).into_response())
+        }
+        Err(AutoCategorizationError::NoActiveJob) => Err(ApiErrorResponse::internal_server_error(
+            "Failed to start auto-categorization",
+        )),
+        Err(AutoCategorizationError::Storage(error)) => {
+            tracing::error!(
+                "Failed to start auto-categorization for user {}: {}",
+                auth_context.user_id,
+                error
+            );
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to start auto-categorization",
+            ))
+        }
+    }
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/transactions/auto-categorize",
+    responses(
+        (status = 200, description = "Latest auto-categorization job status", body = AutoCategorizationJobState),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Transactions"
+)]
+async fn get_auto_categorization_status(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<Option<AutoCategorizationJobState>>, (StatusCode, Json<ApiErrorResponse>)> {
+    match state
+        .auto_categorization_service
+        .get_status(&auth_context.user_id)
+        .await
+    {
+        Ok(status) => Ok(Json(status)),
+        Err(error) => {
+            tracing::error!(
+                "Failed to fetch auto-categorization status for user {}: {}",
+                auth_context.user_id,
+                error
+            );
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to fetch auto-categorization status",
+            ))
+        }
+    }
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/transactions/auto-categorize",
+    responses(
+        (status = 200, description = "Cancellation requested for active job", body = AutoCategorizationJobState),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 404, description = "No active job to cancel", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Transactions"
+)]
+async fn cancel_auto_categorization(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<AutoCategorizationJobState>, (StatusCode, Json<ApiErrorResponse>)> {
+    match state
+        .auto_categorization_service
+        .cancel(&auth_context.user_id)
+        .await
+    {
+        Ok(job) => Ok(Json(job)),
+        Err(AutoCategorizationError::NoActiveJob) => Err((
+            StatusCode::NOT_FOUND,
+            Json(ApiErrorResponse::new(
+                "not_found",
+                "auto_categorization_job_not_found",
+            )),
+        )),
+        Err(AutoCategorizationError::ActiveJobExists(_)) => Err(
+            ApiErrorResponse::internal_server_error("Failed to cancel auto-categorization"),
+        ),
+        Err(AutoCategorizationError::Storage(error)) => {
+            tracing::error!(
+                "Failed to cancel auto-categorization for user {}: {}",
+                auth_context.user_id,
+                error
+            );
+            Err(ApiErrorResponse::internal_server_error(
+                "Failed to cancel auto-categorization",
+            ))
+        }
+    }
+}
+
 struct ParsedImportMultipart {
     file_name: String,
     file_bytes: Vec<u8>,
@@ -1580,6 +1718,7 @@ struct ParsedImportMultipart {
     responses(
         (status = 200, description = "File validation result", body = ValidateResponse),
         (status = 400, description = "Missing fields, invalid multipart payload, unsupported extension, invalid UTF-8, or invalid CSV mapping"),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
         (status = 403, description = "Account belongs to another user"),
         (status = 413, description = "Payload too large"),
         (status = 500, description = "Internal server error"),
@@ -1626,6 +1765,7 @@ async fn validate_authenticated_transaction_import(
     responses(
         (status = 200, description = "Transactions imported successfully", body = ImportResponse),
         (status = 400, description = "Missing fields, invalid multipart payload, unsupported extension, invalid UTF-8, invalid CSV mapping, or file with no valid transactions"),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
         (status = 403, description = "Account belongs to another user"),
         (status = 413, description = "Payload too large"),
         (status = 500, description = "Internal server error"),
@@ -1685,74 +1825,6 @@ async fn import_authenticated_transactions(
     }
 
     let mut transactions = std::mem::take(&mut parsed.transactions);
-    let categorization_trace_id = otel_sdk::find_current_trace_id();
-    let mut categorizable_rows = Vec::new();
-    let mut categorizable_descriptions = Vec::new();
-
-    for (index, transaction) in transactions.iter().enumerate() {
-        if transaction.category_primary == "OTHER" {
-            categorizable_rows.push(index);
-            categorizable_descriptions.push(format_classifier_input(
-                &transaction.amount,
-                transaction.merchant_name.as_deref().unwrap_or_default(),
-            ));
-        }
-    }
-
-    if !categorizable_descriptions.is_empty() {
-        let categorization_started = std::time::Instant::now();
-        let categorization_row_count = categorizable_descriptions.len();
-        match state
-            .categorizer
-            .categorize_batch(categorizable_descriptions)
-            .await
-        {
-            Ok(predictions) => {
-                for (index, prediction) in categorizable_rows.into_iter().zip(predictions) {
-                    if prediction.confidence != Confidence::Low {
-                        if let Some(transaction) = transactions.get_mut(index) {
-                            transaction.category_primary = prediction.primary;
-                            transaction.category_confidence =
-                                prediction.confidence.as_str().to_string();
-                        }
-                    }
-                }
-
-                if let Some(trace_id) = categorization_trace_id.as_deref() {
-                    tracing::info!(
-                        trace_id = %trace_id,
-                        rows = categorization_row_count,
-                        elapsed_ms = categorization_started.elapsed().as_millis(),
-                        "import categorization"
-                    );
-                } else {
-                    tracing::info!(
-                        rows = categorization_row_count,
-                        elapsed_ms = categorization_started.elapsed().as_millis(),
-                        "import categorization"
-                    );
-                }
-            }
-            Err(err) => {
-                if let Some(trace_id) = categorization_trace_id.as_deref() {
-                    tracing::warn!(
-                        trace_id = %trace_id,
-                        rows = categorization_row_count,
-                        elapsed_ms = categorization_started.elapsed().as_millis(),
-                        error = %err,
-                        "import categorization failed"
-                    );
-                } else {
-                    tracing::warn!(
-                        rows = categorization_row_count,
-                        elapsed_ms = categorization_started.elapsed().as_millis(),
-                        error = %err,
-                        "import categorization failed"
-                    );
-                }
-            }
-        }
-    }
 
     for transaction in &mut transactions {
         transaction.user_id = Some(auth_context.user_id);
@@ -2173,7 +2245,33 @@ async fn sync_authenticated_provider_transactions(
         .sync(sync_params, &mut connection, reference_date)
         .await
     {
-        Ok(response) => Ok(Json(response)),
+        Ok(response) => {
+            if let Err(e) = state
+                .cache_service
+                .clear_jwt_scoped_bank_connection_cache(&auth_context.jwt_id, connection.id)
+                .await
+            {
+                tracing::warn!(
+                    "Failed to clear connection cache after sync for user {}: {}",
+                    user_id,
+                    e
+                );
+            }
+
+            if let Err(e) = state
+                .cache_service
+                .clear_transactions(&auth_context.jwt_id)
+                .await
+            {
+                tracing::warn!(
+                    "Failed to clear transaction cache after sync for user {}: {}",
+                    user_id,
+                    e
+                );
+            }
+
+            Ok(Json(response))
+        }
         Err(err) => Err(provider_sync_error_to_response(
             err,
             user_id,
@@ -2801,6 +2899,28 @@ async fn connect_authenticated_provider(
                     "NO_INSTITUTIONS",
                     "No SimpleFIN institutions could be linked. Try again or check your bridge setup.",
                 )
+                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
+            }
+            Err(SimpleFinConnectError::InstitutionsRequireAuth(notices)) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "provider.connect",
+                );
+                let message = if notices.len() == 1 {
+                    format!(
+                        "{} needs to be re-authenticated in your SimpleFIN dashboard before it can sync.",
+                        notices[0].institution_name
+                    )
+                } else {
+                    "Some SimpleFIN institutions need to be re-authenticated in your SimpleFIN dashboard before they can sync.".to_string()
+                };
+                Err(ApiErrorResponse {
+                    error: "SIMPLEFIN_INSTITUTIONS_REQUIRE_AUTH".to_string(),
+                    message,
+                    code: Some("SIMPLEFIN_AUTH_REQUIRED".to_string()),
+                    details: serde_json::to_value(notices).ok(),
+                }
                 .into_response(StatusCode::UNPROCESSABLE_ENTITY))
             }
         },

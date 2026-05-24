@@ -1,10 +1,9 @@
 use crate::models::plaid::{ProviderConnectResponse, ProviderConnection};
 use crate::models::provider_connect::ProviderConnectRequest;
 use crate::models::transaction::SyncTransactionsResponse;
-use crate::providers::ProviderCredentials;
-use crate::providers::ProviderRegistry;
+use crate::providers::simplefin_provider::SimpleFinProviderError;
+use crate::providers::{ProviderCredentials, ProviderRegistry};
 use crate::services::cache_service::CacheService;
-use crate::services::categorization::categorization_service::Categorizer;
 use crate::services::connection_service::{
     ProviderSyncError, SimpleFinConnectError, SyncConnectionParams,
 };
@@ -26,7 +25,6 @@ pub struct SimpleFinConnectionService {
         std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>>,
     org_service: Arc<SimpleFinOrganizationService>,
     rate_limit_service: Arc<SimpleFinRateLimitService>,
-    categorizer: Arc<dyn Categorizer>,
 }
 
 impl SimpleFinConnectionService {
@@ -41,7 +39,6 @@ impl SimpleFinConnectionService {
         >,
         org_service: Arc<SimpleFinOrganizationService>,
         rate_limit_service: Arc<SimpleFinRateLimitService>,
-        categorizer: Arc<dyn Categorizer>,
     ) -> Self {
         Self {
             db_repository,
@@ -50,7 +47,6 @@ impl SimpleFinConnectionService {
             credential_resolvers,
             org_service,
             rate_limit_service,
-            categorizer,
         }
     }
 
@@ -95,6 +91,8 @@ impl SimpleFinConnectionService {
             .await
             .map_err(SimpleFinConnectError::ConnectionPersistence)?;
 
+        let institutions_requiring_auth = snapshot.institutions_requiring_auth();
+
         let reconciliation = self
             .org_service
             .reconcile_snapshot_connections(user_id, jwt_id, &hidden_orgs, &snapshot)
@@ -103,6 +101,11 @@ impl SimpleFinConnectionService {
         let institution_count = reconciliation.institution_count;
 
         if institution_count == 0 {
+            if !institutions_requiring_auth.is_empty() {
+                return Err(SimpleFinConnectError::InstitutionsRequireAuth(
+                    institutions_requiring_auth,
+                ));
+            }
             if snapshot.connections.is_empty() {
                 return Err(SimpleFinConnectError::NoInstitutionsOnBridge);
             }
@@ -124,6 +127,11 @@ impl SimpleFinConnectionService {
         Ok(ProviderConnectResponse {
             connection_id,
             institution_name: format!("SimpleFIN ({institution_count} institutions)"),
+            simplefin_institutions_requiring_auth: if institutions_requiring_auth.is_empty() {
+                None
+            } else {
+                Some(institutions_requiring_auth)
+            },
         })
     }
 
@@ -136,7 +144,6 @@ impl SimpleFinConnectionService {
     ) -> Result<SyncTransactionsResponse, ProviderSyncError> {
         use crate::models::transaction::SyncMetadata;
         use crate::providers::simplefin_provider::SimpleFinProvider;
-        use crate::services::categorization::classifier_labels::format_classifier_input;
         use chrono::Utc;
 
         let sync_timestamp = Utc::now();
@@ -151,7 +158,7 @@ impl SimpleFinConnectionService {
             .map_err(ProviderSyncError::SyncFailure)?
             .is_some()
         {
-            return Err(ProviderSyncError::RateLimited);
+            return Err(ProviderSyncError::RateLimited(None));
         }
 
         #[allow(deprecated)]
@@ -260,7 +267,15 @@ impl SimpleFinConnectionService {
                 reference_date,
             )
             .await
-            .map_err(ProviderSyncError::SyncFailure)?;
+            .map_err(|e| {
+                if let Some(SimpleFinProviderError::RateLimited(msg)) =
+                    e.downcast_ref::<SimpleFinProviderError>()
+                {
+                    ProviderSyncError::RateLimited(Some(msg.clone()))
+                } else {
+                    ProviderSyncError::SyncFailure(e)
+                }
+            })?;
 
         transactions = SyncService::filter_simplefin_transactions_for_connection(
             transactions,
@@ -282,9 +297,12 @@ impl SimpleFinConnectionService {
 
         for txn in &mut transactions {
             txn.user_id = Some(*params.user_id);
+            txn.category_primary = "OTHER".to_string();
+            txn.category_detailed = "OTHER".to_string();
+            txn.category_confidence.clear();
         }
 
-        let mut valid_transactions: Vec<crate::models::transaction::Transaction> = transactions
+        let valid_transactions: Vec<crate::models::transaction::Transaction> = transactions
             .iter()
             .filter_map(|transaction| {
                 if transaction.account_id.is_nil() {
@@ -294,36 +312,6 @@ impl SimpleFinConnectionService {
                 }
             })
             .collect();
-
-        let mut categorizable_indexes = Vec::new();
-        let mut categorizable_inputs = Vec::new();
-        for (index, txn) in valid_transactions.iter().enumerate() {
-            if txn.category_primary == "OTHER" {
-                categorizable_indexes.push(index);
-                categorizable_inputs.push(format_classifier_input(
-                    &txn.amount,
-                    txn.merchant_name.as_deref().unwrap_or_default(),
-                ));
-            }
-        }
-
-        if !categorizable_inputs.is_empty() {
-            if let Ok(predictions) = self
-                .categorizer
-                .categorize_batch(categorizable_inputs)
-                .await
-            {
-                use crate::models::predicted_category::Confidence;
-                for (index, prediction) in categorizable_indexes.into_iter().zip(predictions) {
-                    if prediction.confidence != Confidence::Low {
-                        if let Some(txn) = valid_transactions.get_mut(index) {
-                            txn.category_primary = prediction.primary;
-                            txn.category_confidence = prediction.confidence.as_str().to_string();
-                        }
-                    }
-                }
-            }
-        }
 
         for chunk in valid_transactions.chunks(500) {
             let _ = self

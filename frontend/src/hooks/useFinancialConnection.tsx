@@ -19,6 +19,7 @@ import {
 } from '@/hooks/financialConnection/types';
 import { useProviderCatalog } from '@/hooks/useProviderCatalog';
 import { recordHandledIssue } from '@/observability';
+import type { SimpleFinInstitutionAuthRequired } from '@/types/api';
 import { POPUP_BLOCKED_MESSAGE } from '@/utils/popupBlockedMessage';
 import {
   refreshFinancialDataAfterProviderChange,
@@ -29,6 +30,7 @@ export interface UseFinancialConnectionOptions {
   provider: SyncProvider;
   onConnectionSuccess?: (institutionName: string) => void;
   onError?: (error: string) => void;
+  onSimpleFinAuthRequired?: (institutions: SimpleFinInstitutionAuthRequired[]) => void;
   isOnline?: boolean;
 }
 
@@ -48,7 +50,13 @@ export interface UseFinancialConnectionReturn {
 export function useFinancialConnection(
   options: UseFinancialConnectionOptions
 ): UseFinancialConnectionReturn {
-  const { provider, onConnectionSuccess, onError, isOnline = true } = options;
+  const {
+    provider,
+    onConnectionSuccess,
+    onError,
+    onSimpleFinAuthRequired,
+    isOnline = true,
+  } = options;
   const queryClient = useQueryClient();
   const providerCatalog = useProviderCatalog();
 
@@ -83,6 +91,7 @@ export function useFinancialConnection(
       dispatch,
       handleError,
       onConnectionSuccess,
+      onSimpleFinAuthRequired,
       invalidateCache,
       tellerApplicationId: providerCatalog.tellerApplicationId,
       tellerEnvironment: providerCatalog.tellerEnvironment,
@@ -92,6 +101,7 @@ export function useFinancialConnection(
       invalidateCache,
       isOnline,
       onConnectionSuccess,
+      onSimpleFinAuthRequired,
       providerCatalog.tellerApplicationId,
       providerCatalog.tellerEnvironment,
       sdkNonce,

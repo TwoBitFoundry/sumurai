@@ -3,6 +3,7 @@ pub mod analytics;
 pub mod api_error;
 pub mod app_state;
 pub mod auth;
+pub mod auto_categorization_job;
 pub mod budget;
 pub mod cache;
 pub mod custom_category;

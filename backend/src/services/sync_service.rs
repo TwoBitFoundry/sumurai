@@ -14,6 +14,7 @@ use crate::models::{
 use crate::providers::{FinancialDataProvider, ProviderCredentials, ProviderRegistry};
 
 const MAX_SYNC_YEARS: i64 = 5;
+const FIRST_SYNC_DAYS: i64 = 90;
 const SAFETY_MARGIN_DAYS: i64 = 2;
 
 pub struct SyncService {
@@ -215,9 +216,12 @@ impl SyncService {
                     (last_sync - Duration::days(SAFETY_MARGIN_DAYS)).date_naive();
                 std::cmp::max(last_sync_with_buffer, max_lookback).min(end_date)
             }
-            None => end_date
-                .checked_sub_months(lookback_months)
-                .unwrap_or(end_date),
+            None => {
+                let first_sync_start = end_date
+                    .checked_sub_days(chrono::Days::new(FIRST_SYNC_DAYS as u64))
+                    .unwrap_or(end_date);
+                std::cmp::max(first_sync_start, max_lookback)
+            }
         };
 
         (start_date, end_date)

@@ -34,6 +34,7 @@ interface ConnectionsListProps {
   connectLabel?: string;
   connectLogoSrc?: string;
   emptyState?: ReactNode;
+  syncDisabledForAll?: boolean;
 }
 
 const ConnectionsList = ({
@@ -47,6 +48,7 @@ const ConnectionsList = ({
   connectLabel,
   connectLogoSrc,
   emptyState,
+  syncDisabledForAll = false,
 }: ConnectionsListProps) => {
   const headingProviderName = providerName ?? 'accounts';
   const connectButtonLabel = connectLabel ?? 'Add account';
@@ -85,6 +87,7 @@ const ConnectionsList = ({
           onDisconnect={onDisconnect}
           isOnline={isOnline}
           onImportSuccess={onImportSuccess}
+          syncDisabled={syncDisabledForAll}
         />
       ))}
     </div>

@@ -1,14 +1,8 @@
 import { Building2, Clock, CreditCard } from 'lucide-react';
 import { cn } from '@/ui/primitives';
-import {
-  radius as uiRadiusRecipes,
-  text as uiTextRecipes,
-  font as uiTypographyRecipes,
-} from '@/ui/recipes';
 import HeroStatCard from '../../../components/widgets/HeroStatCard';
 
 interface AccountsSummaryStatsProps {
-  flowError: string | null;
   summary: {
     institutions: number;
     connectedInstitutions: number;
@@ -21,7 +15,6 @@ interface AccountsSummaryStatsProps {
 }
 
 export const AccountsSummaryStats = ({
-  flowError,
   summary,
   syncingAll,
   lastSyncValue,
@@ -32,30 +25,6 @@ export const AccountsSummaryStats = ({
 
   return (
     <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-3')}>
-      {flowError && (
-        <div
-          className={cn(
-            'col-span-2',
-            'lg:col-span-3',
-            uiRadiusRecipes.standard,
-            'border',
-            'border-red-200/70',
-            'bg-red-50/80',
-            'px-5',
-            'py-3',
-            'text-left',
-            'shadow-sm',
-            'dark:border-red-700/60',
-            'dark:bg-red-900/25'
-          )}
-          data-testid="accounts-flow-error"
-        >
-          <div className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.danger)}>
-            {flowError}
-          </div>
-        </div>
-      )}
-
       <HeroStatCard
         index={1}
         title="Active institutions"

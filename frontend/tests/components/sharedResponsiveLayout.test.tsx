@@ -82,7 +82,6 @@ describe('shared responsive layout surfaces', () => {
   it('keeps account summary stats in two columns until the lg tier', () => {
     const { container } = render(
       <AccountsSummaryStats
-        flowError={null}
         summary={{
           institutions: 2,
           connectedInstitutions: 2,

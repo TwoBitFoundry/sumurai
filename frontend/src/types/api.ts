@@ -137,6 +137,13 @@ export interface ProviderConnectionStatus {
 export interface ProviderConnectResponse {
   connection_id: string;
   institution_name: string;
+  simplefin_institutions_requiring_auth?: SimpleFinInstitutionAuthRequired[];
+}
+
+export interface SimpleFinInstitutionAuthRequired {
+  institution_name: string;
+  org_conn_id?: string | null;
+  message: string;
 }
 
 export interface ProviderStatusResponse {
@@ -188,6 +195,29 @@ export interface AnalyticsTopMerchantsResponse {
   amount: number;
   count?: number;
   percentage: number;
+}
+
+export type AutoCategorizationJobStatus =
+  | 'running'
+  | 'cancelling'
+  | 'completed'
+  | 'cancelled'
+  | 'failed';
+
+export interface AutoCategorizationJobState {
+  job_id: string;
+  status: AutoCategorizationJobStatus;
+  total: number;
+  processed: number;
+  updated: number;
+  skipped: number;
+  started_at: string;
+  finished_at: string | null;
+  error_message: string | null;
+}
+
+export function isAutoCategorizationJobActive(status: AutoCategorizationJobStatus): boolean {
+  return status === 'running' || status === 'cancelling';
 }
 
 export interface ApiError {
