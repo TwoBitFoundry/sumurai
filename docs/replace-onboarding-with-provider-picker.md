@@ -119,9 +119,18 @@ Behavior rules:
 
 **Acceptance criteria:**
 
-- [ ] `npm --prefix frontend run typecheck` passes.
-- [ ] Unit tests for `providerCapabilities` cover: Teller without creds → blocked with reason, Plaid without creds → blocked with reason, SimpleFIN always enabled, all three enabled when fully configured.
-- [ ] No remaining frontend code reads `userProvider` as if it were guaranteed non-null.
+- [x] `npm --prefix frontend run typecheck` passes.
+- [x] Unit tests for `providerCapabilities` cover: Teller without creds → blocked with reason, Plaid without creds → blocked with reason, SimpleFIN always enabled, all three enabled when fully configured.
+- [x] No remaining frontend code reads `userProvider` as if it were guaranteed non-null.
+
+**TDD log:**
+
+- `npm --prefix frontend test -- --runTestsByPath tests/utils/providerCapabilities.test.ts tests/hooks/useProviderCatalog.test.tsx`
+  - Passed after updating the stale Teller blocked-copy assertion.
+- `npm --prefix frontend run typecheck`
+  - Passed.
+- `rg -n "userProvider!|\\buserProvider\\s*\\." frontend/src frontend/tests`
+  - Returned no unsafe direct non-null assertions or property reads.
 
 ---
 

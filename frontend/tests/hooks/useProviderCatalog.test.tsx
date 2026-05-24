@@ -27,7 +27,7 @@ describe('useProviderCatalog', () => {
     fetchInfo: jest.fn().mockResolvedValue({
       available_providers: ['plaid', 'teller'],
       default_provider: 'plaid',
-      user_provider: undefined,
+      user_provider: null,
     }),
     selectProvider: jest.fn().mockResolvedValue({
       user_provider: 'teller',
@@ -42,7 +42,19 @@ describe('useProviderCatalog', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.availableProviders).toEqual(['plaid', 'teller']);
     expect(result.current.selectedProvider).toBe('plaid');
+    expect(result.current.userProvider).toBeNull();
     expect(gateway.fetchInfo).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps null user provider readable while retaining the default selection fallback', async () => {
+    const gateway = createGateway();
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useProviderCatalog({ gateway }), { wrapper });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.userProvider).toBeNull();
+    expect(result.current.selectedProvider).toBe('plaid');
   });
 
   it('reports teller as not connectable without application id', async () => {
@@ -54,7 +66,7 @@ describe('useProviderCatalog', () => {
 
     expect(result.current.canConnectWith('plaid')).toBe(true);
     expect(result.current.canConnectWith('teller')).toBe(false);
-    expect(result.current.getConnectBlockedReason('teller')).toContain('Teller application ID');
+    expect(result.current.getConnectBlockedReason('teller')).toBe('Missing credentials');
   });
 
   it('keeps the selected provider in the shared query cache across remounts', async () => {

@@ -7,7 +7,7 @@ import type { FinancialProvider } from '@/types/api';
 export interface ProviderCatalogue {
   available_providers: FinancialProvider[];
   default_provider: FinancialProvider;
-  user_provider?: FinancialProvider;
+  user_provider?: FinancialProvider | null;
   teller_application_id?: string;
   teller_environment?: string;
 }
