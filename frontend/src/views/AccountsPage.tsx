@@ -1,10 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, cn } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { control, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { Toast } from '../components/Toast';
+import { AutoCategorizeIcon } from '../features/auto-categorization/components/AutoCategorizeIcon';
+import { useAutoCategorization } from '../features/auto-categorization/hooks/useAutoCategorization';
 import AccountsSummaryStats from '../features/plaid/components/AccountsSummaryStats';
 import ConnectButton from '../features/plaid/components/ConnectButton';
 import ConnectionsList, {
@@ -189,6 +191,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     onError: (message) => onError?.(message),
     isOnline,
   });
+  const autoCategorization = useAutoCategorization();
 
   const [toast, setToast] = useState<string | null>(null);
   const [syncingAll, setSyncingAll] = useState(false);
@@ -483,6 +486,26 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const actions = (
     <div className="inline-flex max-w-full flex-col items-center gap-2">
       <div className="flex flex-wrap items-center justify-center gap-3">
+        <Button
+          type="button"
+          onClick={() => void autoCategorization.handleAction()}
+          disabled={!isOnline || autoCategorization.isPending}
+          variant="ghost"
+          size="md"
+          className={cn(appTitleBarRecipes.settingsIdle, 'normal-case')}
+          title={
+            !isOnline
+              ? 'Unavailable while offline'
+              : (autoCategorization.progressLabel ?? undefined)
+          }
+        >
+          {autoCategorization.isPending ? (
+            <Loader2 className={cn(control.glyph.md, 'animate-spin')} />
+          ) : (
+            <AutoCategorizeIcon />
+          )}
+          {autoCategorization.isActive ? 'Cancel categorization' : 'Auto-categorize'}
+        </Button>
         {summary.institutions > 0 && (
           <Button
             type="button"

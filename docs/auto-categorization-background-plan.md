@@ -116,24 +116,34 @@ Provide a clean HTTP contract the frontend can use to start, monitor, and cancel
 Add a top-level Accounts action that controls the background job and keeps app data fresh when it completes.
 
 **Tasks**
-- Add frontend API types for the categorization status model in `frontend/src/types/api.ts`.
-- Add a service client for start, status, and cancel requests.
-- Add a small hook for starting a run, polling while active, cancelling, and restoring job state on page load.
-- Add a new hero action on `frontend/src/views/AccountsPage.tsx` with label `Auto-categorize`.
-- Build the action icon as a small composed glyph using `lucide-react` `BrushCleaning` plus a `Sparkles` accent so the button reads visually as a brush with sparkles, not a wand.
-- Keep the action styled as a peer to `Sync all` using the existing title-bar action patterns.
-- Swap the button label to `Cancel categorization` while a run is active.
-- Disable the action while offline.
-- Keep this action user-wide, not per bank card.
-- On terminal success or cancellation, invalidate or refetch frontend queries for `transactions`, `analytics`, and `budgets`.
-- Keep existing sync and connect actions working independently.
+- [x] Add frontend API types for the categorization status model in `frontend/src/types/api.ts`.
+- [x] Add a service client for start, status, and cancel requests.
+- [x] Add a small hook for starting a run, polling while active, cancelling, and restoring job state on page load.
+- [x] Add a new hero action on `frontend/src/views/AccountsPage.tsx` with label `Auto-categorize`.
+- [x] Build the action icon as a small composed glyph using `lucide-react` `BrushCleaning` plus a `Sparkles` accent so the button reads visually as a brush with sparkles, not a wand.
+- [x] Keep the action styled as a peer to `Sync all` using the existing title-bar action patterns.
+- [x] Swap the button label to `Cancel categorization` while a run is active.
+- [x] Disable the action while offline.
+- [x] Keep this action user-wide, not per bank card.
+- [x] On terminal success or cancellation, invalidate or refetch frontend queries for `transactions`, `analytics`, and `budgets`.
+- [x] Keep existing sync and connect actions working independently.
 
 **Acceptance Criteria**
-- [ ] Accounts page shows a top-level `Auto-categorize` button with a brush-and-sparkles icon when online.
-- [ ] The action starts a background run instead of blocking the page.
-- [ ] The action switches to cancel while a run is active.
-- [ ] Reloading the Accounts page restores visible progress from the status endpoint.
-- [ ] Terminal job completion refreshes transaction- and category-dependent frontend data.
+- [x] Accounts page shows a top-level `Auto-categorize` button with a brush-and-sparkles icon when online.
+- [x] The action starts a background run instead of blocking the page.
+- [x] The action switches to cancel while a run is active.
+- [x] Reloading the Accounts page restores visible progress from the status endpoint.
+- [x] Terminal job completion refreshes transaction- and category-dependent frontend data.
+
+**Notes**
+- `AutoCategorizationService` treats HTTP `409` start conflicts as the active job payload.
+- Progress on reload is surfaced via the button `title` until Phase 5 adds stacked progress toasts.
+
+**TDD Log**
+- `npm --prefix frontend test -- AutoCategorizationService.test` passed after service and `ConflictError.body` wiring.
+- `npm --prefix frontend test -- useAutoCategorization.test` passed after hook polling and terminal cache invalidation.
+- `npm --prefix frontend test -- AccountsPage.test` passed after hero action wiring and hook mock coverage.
+- `npm --prefix frontend run typecheck` passed.
 
 ## Phase 5: Replace Single Toast With Breakpoint-Aware Stacked Progress Toasts
 **Goal**

@@ -35,3 +35,15 @@ export async function refreshFinancialDataAfterProviderChange(
   await invalidateStaleCacheQueries(queryClient, providers);
   await queryClient.refetchQueries({ queryKey: ['accounts'], type: 'active' });
 }
+
+const CATEGORIZATION_DEPENDENT_QUERY_KEYS = [['transactions'], ['analytics'], ['budgets']] as const;
+
+export async function invalidateCategorizationDependentQueries(
+  queryClient: QueryClient
+): Promise<void> {
+  await Promise.all(
+    CATEGORIZATION_DEPENDENT_QUERY_KEYS.map((queryKey) =>
+      queryClient.invalidateQueries({ queryKey, refetchType: 'active' })
+    )
+  );
+}

@@ -43,8 +43,11 @@ export class ServerError extends ApiError {
 }
 
 export class ConflictError extends ApiError {
-  constructor(message = 'Resource conflict') {
+  readonly body?: unknown;
+
+  constructor(message = 'Resource conflict', body?: unknown) {
     super(409, message, 'CONFLICT');
+    this.body = body;
   }
 }
 

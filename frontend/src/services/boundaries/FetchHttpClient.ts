@@ -56,12 +56,32 @@ export class FetchHttpClient implements IHttpClient {
 
   private async createApiError(response: Response): Promise<ApiError> {
     let errorMessage = 'Request failed';
+    let errorData: unknown;
 
     try {
-      const errorData = await response.json();
-      if (errorData.message) errorMessage = errorData.message;
-      else if (errorData.error) errorMessage = errorData.error;
-      else if (errorData.detail) errorMessage = errorData.detail;
+      errorData = await response.json();
+      if (
+        errorData &&
+        typeof errorData === 'object' &&
+        'message' in errorData &&
+        typeof (errorData as { message: unknown }).message === 'string'
+      ) {
+        errorMessage = (errorData as { message: string }).message;
+      } else if (
+        errorData &&
+        typeof errorData === 'object' &&
+        'error' in errorData &&
+        typeof (errorData as { error: unknown }).error === 'string'
+      ) {
+        errorMessage = (errorData as { error: string }).error;
+      } else if (
+        errorData &&
+        typeof errorData === 'object' &&
+        'detail' in errorData &&
+        typeof (errorData as { detail: unknown }).detail === 'string'
+      ) {
+        errorMessage = (errorData as { detail: string }).detail;
+      }
     } catch {
       errorMessage = `${response.status} ${response.statusText || 'Error'}`;
     }
@@ -77,7 +97,7 @@ export class FetchHttpClient implements IHttpClient {
       case 404:
         return new NotFoundError(errorMessage);
       case 409:
-        return new ConflictError(errorMessage);
+        return new ConflictError(errorMessage, errorData);
       case 429:
         return new RateLimitError(errorMessage, this.parseRetryAfterSeconds(response));
       case 500:
