@@ -1,5 +1,5 @@
 use crate::providers::simplefin_provider::{
-    AccountsQuery, MockSimpleFinHttpClient, SimpleFinProvider, SimpleFinProviderError,
+    MockSimpleFinHttpClient, SimpleFinProvider, SimpleFinProviderError,
 };
 use crate::providers::trait_definition::{FinancialDataProvider, ProviderCredentials};
 use base64::Engine;
@@ -177,10 +177,7 @@ async fn given_accounts_fixture_when_get_accounts_then_maps_accounts_with_conn_i
     let mut mock_client = MockSimpleFinHttpClient::new();
     mock_client
         .expect_get_accounts()
-        .with(
-            mockall::predicate::eq(access_url),
-            mockall::predicate::function(|params: &AccountsQuery| params.balances_only),
-        )
+        .withf(move |url, params| url == access_url && !params.balances_only && params.pending)
         .times(1)
         .returning(move |_, _| Ok(fixture.clone()));
 
@@ -209,17 +206,11 @@ async fn given_two_hundred_day_range_when_get_transactions_then_fetches_three_wi
     let mut mock_client = MockSimpleFinHttpClient::new();
     mock_client.expect_get_accounts().times(4).returning({
         let fixture = balances_fixture.clone();
-        let mut call = 0usize;
         move |_, params| {
-            call += 1;
-            if call == 1 {
-                assert!(params.balances_only);
-            } else {
-                assert!(!params.balances_only);
-                assert!(params.pending);
-                assert!(params.start_date.is_some());
-                assert!(params.end_date.is_some());
-            }
+            assert!(!params.balances_only);
+            assert!(params.pending);
+            assert!(params.start_date.is_some());
+            assert!(params.end_date.is_some());
             Ok(fixture.clone())
         }
     });
@@ -252,4 +243,272 @@ async fn given_simplefin_provider_when_get_institution_info_then_returns_not_app
         error.downcast_ref::<SimpleFinProviderError>(),
         Some(&SimpleFinProviderError::NotApplicableForSimpleFin)
     );
+}
+
+#[test]
+fn given_simplefin_account_with_brokerage_keyword_when_map_account_then_sets_investment_type() {
+    let account = crate::models::simplefin::SimpleFinAccount {
+        id: "investment-acct".to_string(),
+        name: "Brokerage Account".to_string(),
+        conn_id: None,
+        org: None,
+        currency: Some("USD".to_string()),
+        balance: Some("50000.00".to_string()),
+        available_balance: None,
+        balance_date: None,
+        holdings: vec![],
+        transactions: vec![],
+    };
+
+    let mapped = SimpleFinProvider::map_account(&account);
+
+    assert_eq!(mapped.account_type, "investment");
+}
+
+#[test]
+fn given_simplefin_account_without_holdings_when_map_account_then_sets_depository_type() {
+    let account = crate::models::simplefin::SimpleFinAccount {
+        id: "checking-acct".to_string(),
+        name: "Checking Account".to_string(),
+        conn_id: None,
+        org: None,
+        currency: Some("USD".to_string()),
+        balance: Some("5000.00".to_string()),
+        available_balance: None,
+        balance_date: None,
+        holdings: vec![],
+        transactions: vec![],
+    };
+
+    let mapped = SimpleFinProvider::map_account(&account);
+
+    assert_eq!(mapped.account_type, "depository");
+    assert_eq!(mapped.mask, Some("0000".to_string()));
+}
+
+#[test]
+fn given_simplefin_account_with_mask_in_parentheses_when_map_account_then_extracts_mask() {
+    let account = crate::models::simplefin::SimpleFinAccount {
+        id: "ira-acct".to_string(),
+        name: "Empower Premier Roth IRA (I-R3)".to_string(),
+        conn_id: None,
+        org: None,
+        currency: Some("USD".to_string()),
+        balance: Some("22639.87".to_string()),
+        available_balance: None,
+        balance_date: None,
+        holdings: vec![],
+        transactions: vec![],
+    };
+
+    let mapped = SimpleFinProvider::map_account(&account);
+
+    assert_eq!(mapped.mask, Some("I-R3".to_string()));
+}
+
+#[test]
+fn given_simplefin_account_with_mask_in_parentheses_when_map_account_then_removes_mask_from_name() {
+    let account = crate::models::simplefin::SimpleFinAccount {
+        id: "trad-ira".to_string(),
+        name: "Empower Premier Traditional IRA (I-01)".to_string(),
+        conn_id: None,
+        org: None,
+        currency: Some("USD".to_string()),
+        balance: Some("39428.78".to_string()),
+        available_balance: None,
+        balance_date: None,
+        holdings: vec![],
+        transactions: vec![],
+    };
+
+    let mapped = SimpleFinProvider::map_account(&account);
+
+    assert_eq!(mapped.name, "Empower Premier Traditional IRA");
+    assert_eq!(mapped.mask, Some("I-01".to_string()));
+}
+
+#[test]
+fn given_simplefin_account_with_credit_in_name_when_map_account_then_sets_credit_type() {
+    let account = crate::models::simplefin::SimpleFinAccount {
+        id: "credit-acct".to_string(),
+        name: "Chase Credit Card".to_string(),
+        conn_id: None,
+        org: None,
+        currency: Some("USD".to_string()),
+        balance: Some("-1500.00".to_string()),
+        available_balance: None,
+        balance_date: None,
+        holdings: vec![],
+        transactions: vec![],
+    };
+
+    let mapped = SimpleFinProvider::map_account(&account);
+
+    assert_eq!(mapped.account_type, "credit");
+}
+
+#[test]
+fn given_simplefin_account_with_mortgage_in_name_when_map_account_then_sets_loan_type() {
+    let account = crate::models::simplefin::SimpleFinAccount {
+        id: "mortgage-acct".to_string(),
+        name: "Home Mortgage".to_string(),
+        conn_id: None,
+        org: None,
+        currency: Some("USD".to_string()),
+        balance: Some("350000.00".to_string()),
+        available_balance: None,
+        balance_date: None,
+        holdings: vec![],
+        transactions: vec![],
+    };
+
+    let mapped = SimpleFinProvider::map_account(&account);
+
+    assert_eq!(mapped.account_type, "loan");
+}
+
+#[test]
+fn given_simplefin_account_with_loan_in_name_when_map_account_then_sets_loan_type() {
+    let account = crate::models::simplefin::SimpleFinAccount {
+        id: "loan-acct".to_string(),
+        name: "Auto Loan".to_string(),
+        conn_id: None,
+        org: None,
+        currency: Some("USD".to_string()),
+        balance: Some("25000.00".to_string()),
+        available_balance: None,
+        balance_date: None,
+        holdings: vec![],
+        transactions: vec![],
+    };
+
+    let mapped = SimpleFinProvider::map_account(&account);
+
+    assert_eq!(mapped.account_type, "loan");
+}
+
+#[test]
+fn given_simplefin_account_with_ira_keyword_when_map_account_then_sets_investment_type() {
+    let account = crate::models::simplefin::SimpleFinAccount {
+        id: "ira-acct".to_string(),
+        name: "Traditional IRA".to_string(),
+        conn_id: None,
+        org: None,
+        currency: Some("USD".to_string()),
+        balance: Some("125000.00".to_string()),
+        available_balance: None,
+        balance_date: None,
+        holdings: vec![],
+        transactions: vec![],
+    };
+
+    let mapped = SimpleFinProvider::map_account(&account);
+
+    assert_eq!(mapped.account_type, "investment");
+}
+
+#[test]
+fn given_simplefin_account_with_roth_keyword_when_map_account_then_sets_investment_type() {
+    let account = crate::models::simplefin::SimpleFinAccount {
+        id: "roth-acct".to_string(),
+        name: "Roth IRA".to_string(),
+        conn_id: None,
+        org: None,
+        currency: Some("USD".to_string()),
+        balance: Some("85000.00".to_string()),
+        available_balance: None,
+        balance_date: None,
+        holdings: vec![],
+        transactions: vec![],
+    };
+
+    let mapped = SimpleFinProvider::map_account(&account);
+
+    assert_eq!(mapped.account_type, "investment");
+}
+
+#[test]
+fn given_simplefin_account_with_401k_keyword_when_map_account_then_sets_investment_type() {
+    let account = crate::models::simplefin::SimpleFinAccount {
+        id: "401k-acct".to_string(),
+        name: "401(k) Plan".to_string(),
+        conn_id: None,
+        org: None,
+        currency: Some("USD".to_string()),
+        balance: Some("450000.00".to_string()),
+        available_balance: None,
+        balance_date: None,
+        holdings: vec![],
+        transactions: vec![],
+    };
+
+    let mapped = SimpleFinProvider::map_account(&account);
+
+    assert_eq!(mapped.account_type, "investment");
+}
+
+#[test]
+fn given_simplefin_account_with_visa_keyword_when_map_account_then_sets_credit_type() {
+    let account = crate::models::simplefin::SimpleFinAccount {
+        id: "visa-card".to_string(),
+        name: "Business Visa".to_string(),
+        conn_id: None,
+        org: None,
+        currency: Some("USD".to_string()),
+        balance: Some("-2500.00".to_string()),
+        available_balance: None,
+        balance_date: None,
+        holdings: vec![],
+        transactions: vec![],
+    };
+
+    let mapped = SimpleFinProvider::map_account(&account);
+
+    assert_eq!(mapped.account_type, "credit");
+}
+
+#[test]
+fn given_simplefin_account_with_heloc_keyword_when_map_account_then_sets_loan_type() {
+    let account = crate::models::simplefin::SimpleFinAccount {
+        id: "heloc-acct".to_string(),
+        name: "Home HELOC".to_string(),
+        conn_id: None,
+        org: None,
+        currency: Some("USD".to_string()),
+        balance: Some("50000.00".to_string()),
+        available_balance: None,
+        balance_date: None,
+        holdings: vec![],
+        transactions: vec![],
+    };
+
+    let mapped = SimpleFinProvider::map_account(&account);
+
+    assert_eq!(mapped.account_type, "loan");
+}
+
+#[test]
+fn given_simplefin_account_with_card_in_institution_name_when_map_account_then_sets_credit_type() {
+    let account = crate::models::simplefin::SimpleFinAccount {
+        id: "cc-acct".to_string(),
+        name: "Premium Account".to_string(),
+        conn_id: None,
+        org: Some(crate::models::simplefin::SimpleFinOrg {
+            id: "amex-services".to_string(),
+            name: Some("American Express Card Services".to_string()),
+            domain: None,
+            sfin_url: None,
+            url: None,
+        }),
+        currency: Some("USD".to_string()),
+        balance: Some("-1000.00".to_string()),
+        available_balance: None,
+        balance_date: None,
+        holdings: vec![],
+        transactions: vec![],
+    };
+
+    let mapped = SimpleFinProvider::map_account(&account);
+
+    assert_eq!(mapped.account_type, "credit");
 }

@@ -89,7 +89,7 @@ export class FetchHttpClient implements IHttpClient {
     switch (response.status) {
       case 400:
       case 422:
-        return new ValidationError(errorMessage);
+        return new ValidationError(errorMessage, errorData);
       case 401:
         return new AuthenticationError(errorMessage);
       case 403:

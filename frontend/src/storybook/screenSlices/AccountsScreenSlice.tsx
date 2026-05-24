@@ -76,7 +76,6 @@ export function AccountsConnectedScreenSlice(props: {
 
   const statsGrid = (
     <AccountsSummaryStats
-      flowError={props.flowError ?? null}
       summary={summary}
       syncingAll={props.syncingAll ?? false}
       lastSyncValue={props.syncingAll ? 'Syncing...' : '12m ago'}

@@ -19,6 +19,7 @@ const AUTO_DISMISS_MS = 5000;
 export type ToastStackTransientItem = {
   id: string;
   message: string;
+  type?: 'error' | 'success';
 };
 
 export type ToastStackProgress = {
@@ -69,9 +70,10 @@ type ToastCardProps = {
   onClose: () => void;
   autoDismiss: boolean;
   dismissKey: string;
+  type?: 'error' | 'success';
 };
 
-function ToastCard({ message, progress, onClose, autoDismiss, dismissKey }: ToastCardProps) {
+function ToastCard({ message, progress, onClose, autoDismiss, dismissKey, type }: ToastCardProps) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: dismissKey resets the dismiss timer intentionally
   useEffect(() => {
     if (!autoDismiss) {
@@ -81,9 +83,11 @@ function ToastCard({ message, progress, onClose, autoDismiss, dismissKey }: Toas
     return () => window.clearTimeout(id);
   }, [autoDismiss, dismissKey, onClose]);
 
+  const isError = type === 'error';
+
   return (
     <GlassCard
-      variant="accent"
+      variant={isError ? 'danger' : 'accent'}
       rounded="xl"
       padding="md"
       className={cn('flex', 'items-start', 'gap-4')}
@@ -94,7 +98,7 @@ function ToastCard({ message, progress, onClose, autoDismiss, dismissKey }: Toas
           className={cn(
             progress ? undefined : 'whitespace-normal break-words',
             uiTypographyRecipes.captionStrong,
-            uiTextRecipes.primary
+            isError ? uiTextRecipes.danger : uiTextRecipes.primary
           )}
         >
           {message}
@@ -168,6 +172,7 @@ export function ToastStack({
           onClose={() => onDismissTransient(toast.id)}
           autoDismiss
           dismissKey={`${toast.id}:${toast.message}`}
+          type={toast.type}
         />
       ))}
     </div>,

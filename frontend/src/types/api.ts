@@ -137,6 +137,13 @@ export interface ProviderConnectionStatus {
 export interface ProviderConnectResponse {
   connection_id: string;
   institution_name: string;
+  simplefin_institutions_requiring_auth?: SimpleFinInstitutionAuthRequired[];
+}
+
+export interface SimpleFinInstitutionAuthRequired {
+  institution_name: string;
+  org_conn_id?: string | null;
+  message: string;
 }
 
 export interface ProviderStatusResponse {

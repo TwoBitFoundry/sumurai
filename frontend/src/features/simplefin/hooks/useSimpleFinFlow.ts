@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import type { UsePlaidLinkFlowResult } from '@/features/plaid/hooks/usePlaidLinkFlow';
+import { formatSimpleFinAuthRequiredToast } from '@/features/simplefin/utils/formatSimpleFinAuthRequiredToast';
 import { SimpleFinService } from '@/services/SimpleFinService';
 import type { ProviderConnectionStatus } from '@/types/api';
 import { refreshFinancialDataAfterProviderChange } from '@/utils/queryInvalidation';
@@ -95,10 +96,14 @@ export function useSimpleFinFlow(options: UseSimpleFinFlowOptions = {}): UsePlai
       clearError();
       setSyncingAll(true);
       try {
-        await SimpleFinService.connectAndSyncAll(setupToken);
+        const result = await SimpleFinService.connectAndSyncAll(setupToken);
         await connectionsQuery.refetch();
         await invalidateSimpleFinCache();
-        setToast('SimpleFIN institutions connected');
+        if (result.institutionsRequiringAuth.length > 0) {
+          setToast(formatSimpleFinAuthRequiredToast(result.institutionsRequiringAuth));
+        } else {
+          setToast('SimpleFIN institutions connected');
+        }
       } catch (connectError: unknown) {
         const message = `Failed to connect SimpleFIN: ${connectError instanceof Error ? connectError.message : 'Unknown error'}`;
         handleError(message);

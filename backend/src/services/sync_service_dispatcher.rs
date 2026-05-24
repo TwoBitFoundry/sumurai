@@ -162,16 +162,19 @@ pub fn provider_sync_error_to_response(
     use axum::http::StatusCode;
 
     match err {
-        ProviderSyncError::RateLimited => {
+        ProviderSyncError::RateLimited(provider_message) => {
             tracing::info!(
                 "Provider sync rate-limited for user {} and item {}",
                 user_id,
                 item_id
             );
+            let message = provider_message.unwrap_or_else(|| {
+                "Unable to sync at this time. Please try again later.".to_string()
+            });
             provider_sync_error_json_response(
                 StatusCode::TOO_MANY_REQUESTS,
                 "RATE_LIMITED",
-                "SimpleFIN allows about one sync per hour for this account. Try again later.",
+                &message,
                 Some("3600"),
             )
         }

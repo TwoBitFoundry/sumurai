@@ -45,6 +45,7 @@ describe('useSimpleFinFlow', () => {
     simpleFinServiceMock.connectAndSyncAll.mockResolvedValue({
       rateLimited: false,
       transactionCount: 0,
+      institutionsRequiringAuth: [],
     });
     simpleFinServiceMock.getStatus.mockResolvedValueOnce([]).mockResolvedValue([
       {
@@ -85,6 +86,47 @@ describe('useSimpleFinFlow', () => {
       expect(result.current.connections).toHaveLength(2);
     });
     expect(result.current.error).toBeNull();
+  });
+
+  it('shows auth toast when connect succeeds with institutions requiring re-authentication', async () => {
+    simpleFinServiceMock.connectAndSyncAll.mockResolvedValue({
+      rateLimited: false,
+      transactionCount: 0,
+      institutionsRequiringAuth: [
+        {
+          institution_name: 'Bank of Oklahoma',
+          org_conn_id: 'bok',
+          message: 'Connection to Bank of Oklahoma may need attention. Auth required',
+        },
+      ],
+    });
+    simpleFinServiceMock.getStatus.mockResolvedValueOnce([]).mockResolvedValue([
+      {
+        is_connected: true,
+        last_sync_at: null,
+        institution_name: 'Bank A',
+        connection_id: 'conn-1',
+        transaction_count: 0,
+        account_count: 1,
+        sync_in_progress: false,
+      },
+    ]);
+
+    const { result } = renderHook(() => useSimpleFinFlow({ enabled: true, isOnline: true }), {
+      wrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.connect();
+    });
+
+    expect(result.current.toast).toBe(
+      'Bank of Oklahoma needs to be re-authenticated in your SimpleFIN dashboard.'
+    );
   });
 
   it('sets error and leaves connections unchanged when connect fails', async () => {

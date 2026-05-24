@@ -15,6 +15,7 @@ import ConnectionsList, {
 } from '../features/plaid/components/ConnectionsList';
 import { SimpleFinIgnoredInstitutionsPanel } from '../features/simplefin/components/SimpleFinIgnoredInstitutionsPanel';
 import { SimpleFinTokenEntry } from '../features/simplefin/components/SimpleFinTokenEntry';
+import { formatSimpleFinAuthRequiredToast } from '../features/simplefin/utils/formatSimpleFinAuthRequiredToast';
 import { useAccountFilter } from '../hooks/useAccountFilter';
 import { useFinancialConnection } from '../hooks/useFinancialConnection';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
@@ -187,15 +188,21 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     });
   }, [banks, plaidConnections.connections, tellerStatusQuery.data]);
 
-  const connectionFlow = useFinancialConnection({
-    provider: primaryProvider,
-    onError: (message) => onError?.(message),
-    isOnline,
-  });
   const autoCategorization = useAutoCategorization();
   const { pushToast: pushAccountsToast, ...accountsToastStack } = useAccountsToastStack(
     autoCategorization.job
   );
+  const connectionFlow = useFinancialConnection({
+    provider: primaryProvider,
+    onError: (message) => {
+      pushAccountsToast(message, 'error');
+      onError?.(message);
+    },
+    onSimpleFinAuthRequired: (institutions) => {
+      pushAccountsToast(formatSimpleFinAuthRequiredToast(institutions));
+    },
+    isOnline,
+  });
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncElapsed, setSyncElapsed] = useState(0);
   const syncStartRef = useRef<number | null>(null);
@@ -225,7 +232,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const ignoredInstitutions = ignoredInstitutionsQuery.data ?? [];
   const showSimpleFinIgnoredList = simpleFinEmptyStateActive && ignoredInstitutions.length > 0;
   const showSimpleFinTokenEntry = simpleFinEmptyStateActive && ignoredInstitutions.length === 0;
-  const flowError = banks.length > 0 || showSimpleFinIgnoredList ? connectionFlow.error : null;
   const refreshBankData = useCallback(
     async (provider: SyncProvider) => {
       await refreshFinancialDataAfterProviderChange(queryClient, [provider]);
@@ -239,6 +245,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     [queryClient]
   );
 
+  const dismissTransient = accountsToastStack.dismissTransient;
   const syncBank = useCallback(
     async (bankId: string) => {
       if (!isOnline) {
@@ -246,16 +253,12 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       }
 
       const bank = banks.find((entry) => entry.id === bankId);
-      if (!bank?.connectionId) {
+      if (!bank?.connectionId || primaryProvider === 'simplefin') {
         return;
       }
 
+      const statusToastId = pushAccountsToast(`Syncing ${bank.name}…`);
       try {
-        pushAccountsToast(
-          bank.provider === 'simplefin'
-            ? `Syncing ${bank.name} — auto-categorizing transactions…`
-            : `Syncing ${bank.name}…`
-        );
         let count = 0;
         if (bank.provider === 'teller') {
           await TellerService.syncTransactions(bank.connectionId);
@@ -271,10 +274,12 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         );
       } catch (error) {
         console.warn('Failed to sync bank', error);
-        onError?.(formatUserFacingApiError(error, `Failed to sync ${bank.name}`));
+        dismissTransient(statusToastId);
+        const message = formatUserFacingApiError(error, `Failed to sync ${bank.name}`);
+        pushAccountsToast(message, 'error');
       }
     },
-    [banks, isOnline, onError, refreshBankData, pushAccountsToast]
+    [banks, isOnline, primaryProvider, refreshBankData, pushAccountsToast, dismissTransient]
   );
 
   const syncAll = useCallback(async () => {
@@ -283,12 +288,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     }
 
     setSyncingAll(true);
-    const hasSimpleFin = banks.some((b) => b.connectionId && b.provider === 'simplefin');
-    pushAccountsToast(
-      hasSimpleFin
-        ? 'Syncing all accounts — auto-categorizing transactions…'
-        : 'Syncing all accounts…'
-    );
+    const statusToastId = pushAccountsToast('Syncing all accounts…');
     try {
       const providers = new Set<SyncProvider>();
       let totalCount = 0;
@@ -310,11 +310,13 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       );
     } catch (error) {
       console.warn('Failed to sync all banks', error);
-      onError?.(formatUserFacingApiError(error, 'Failed to sync all accounts'));
+      dismissTransient(statusToastId);
+      const message = formatUserFacingApiError(error, 'Failed to sync all accounts');
+      pushAccountsToast(message, 'error');
     } finally {
       setSyncingAll(false);
     }
-  }, [banks, isOnline, onError, refreshBankDataForProviders, pushAccountsToast]);
+  }, [banks, isOnline, refreshBankDataForProviders, pushAccountsToast, dismissTransient]);
 
   const disconnect = useCallback(
     async (bankId: string) => {
@@ -357,7 +359,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       onError?.(null);
 
       try {
-        const { rateLimited, transactionCount } =
+        const { rateLimited, transactionCount, institutionsRequiringAuth } =
           await SimpleFinService.restoreInstitution(orgConnId);
 
         await queryClient.refetchQueries({
@@ -373,6 +375,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           pushAccountsToast(
             'Institution restored. Balances are ready; transaction sync will resume when the rate limit clears.'
           );
+        } else if (institutionsRequiringAuth.length > 0) {
+          pushAccountsToast(formatSimpleFinAuthRequiredToast(institutionsRequiringAuth));
         } else if (transactionCount > 0) {
           pushAccountsToast(
             `Institution restored — synced ${transactionCount} transaction${transactionCount === 1 ? '' : 's'}`
@@ -471,12 +475,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const syncingWithSimpleFin = syncingAll && providersForSync.has('simplefin');
   const lastSyncValue = syncingAll
     ? syncElapsed > 0
-      ? syncingWithSimpleFin
-        ? `Categorizing... ${syncElapsed}s`
-        : `Syncing... ${syncElapsed}s`
-      : syncingWithSimpleFin
-        ? 'Syncing + categorizing...'
-        : 'Syncing...'
+      ? `Syncing... ${syncElapsed}s`
+      : 'Syncing...'
     : summary.institutions === 0 && catalogLoading
       ? 'Loading...'
       : summary.latestSync
@@ -524,12 +524,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
             <RefreshCw className={cn(control.glyph.md, syncingAll && 'animate-spin')} />
             {syncingAll
               ? syncElapsed > 0
-                ? syncingWithSimpleFin
-                  ? `Categorizing... ${syncElapsed}s`
-                  : `Syncing... ${syncElapsed}s`
-                : syncingWithSimpleFin
-                  ? 'Syncing + categorizing...'
-                  : 'Syncing...'
+                ? `Syncing... ${syncElapsed}s`
+                : 'Syncing...'
               : !isOnline
                 ? 'Offline'
                 : 'Sync all'}
@@ -558,7 +554,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
   const statsGrid = (
     <AccountsSummaryStats
-      flowError={flowError}
       summary={summary}
       syncingAll={syncingAll}
       lastSyncValue={lastSyncValue}
@@ -587,6 +582,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           connectLogoSrc={providerLogoSrc}
           onImportSuccess={handleImportSuccess}
           emptyState={connectionsEmptyState}
+          syncDisabledForAll={primaryProvider === 'simplefin'}
         />
 
         <ToastStack

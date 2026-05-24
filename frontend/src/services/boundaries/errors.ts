@@ -20,14 +20,14 @@ export class AuthenticationError extends ApiError {
 }
 
 export class ValidationError extends ApiError {
-  constructor(message = 'Invalid input data', details?: Record<string, string>) {
+  public details?: unknown;
+
+  constructor(message = 'Invalid input data', details?: unknown) {
     super(400, message, 'VALIDATION_ERROR');
     if (details) {
       this.details = details;
     }
   }
-
-  public details?: Record<string, string>;
 }
 
 export class NetworkError extends ApiError {

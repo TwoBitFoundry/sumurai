@@ -7,7 +7,6 @@ const meta = {
   component: AccountsSummaryStats,
   tags: ['autodocs', 'test'],
   args: {
-    flowError: null,
     summary: {
       institutions: 2,
       connectedInstitutions: 2,
@@ -25,23 +24,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Healthy: Story = {};
-
-export const FlowError: Story = {
-  args: {
-    flowError: 'One institution needs your attention to resume syncing.',
-    summary: {
-      institutions: 2,
-      connectedInstitutions: 1,
-      accounts: 3,
-      latestSync: null,
-    },
-  },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByTestId('accounts-flow-error')).toBeVisible();
-    await expect(canvas.getByText(/needs your attention/i)).toBeVisible();
-  },
-};
 
 export const SyncInProgress: Story = {
   args: {

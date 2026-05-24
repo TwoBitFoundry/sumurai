@@ -22,8 +22,10 @@ export function useAccountsToastStack(job: AutoCategorizationJobState | null) {
   const [terminalToast, setTerminalToast] = useState<ToastStackPinnedToast | null>(null);
   const wasActiveRef = useRef(false);
 
-  const pushToast = useCallback((message: string) => {
-    setTransients((current) => [...current, { id: nextTransientToastId(), message }]);
+  const pushToast = useCallback((message: string, type?: 'error' | 'success') => {
+    const id = nextTransientToastId();
+    setTransients((current) => [...current, { id, message, type }]);
+    return id;
   }, []);
 
   const dismissTransient = useCallback((id: string) => {

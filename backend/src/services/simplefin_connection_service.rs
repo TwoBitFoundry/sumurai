@@ -1,8 +1,8 @@
 use crate::models::plaid::{ProviderConnectResponse, ProviderConnection};
 use crate::models::provider_connect::ProviderConnectRequest;
 use crate::models::transaction::SyncTransactionsResponse;
-use crate::providers::ProviderCredentials;
-use crate::providers::ProviderRegistry;
+use crate::providers::simplefin_provider::SimpleFinProviderError;
+use crate::providers::{ProviderCredentials, ProviderRegistry};
 use crate::services::cache_service::CacheService;
 use crate::services::connection_service::{
     ProviderSyncError, SimpleFinConnectError, SyncConnectionParams,
@@ -91,6 +91,8 @@ impl SimpleFinConnectionService {
             .await
             .map_err(SimpleFinConnectError::ConnectionPersistence)?;
 
+        let institutions_requiring_auth = snapshot.institutions_requiring_auth();
+
         let reconciliation = self
             .org_service
             .reconcile_snapshot_connections(user_id, jwt_id, &hidden_orgs, &snapshot)
@@ -99,6 +101,11 @@ impl SimpleFinConnectionService {
         let institution_count = reconciliation.institution_count;
 
         if institution_count == 0 {
+            if !institutions_requiring_auth.is_empty() {
+                return Err(SimpleFinConnectError::InstitutionsRequireAuth(
+                    institutions_requiring_auth,
+                ));
+            }
             if snapshot.connections.is_empty() {
                 return Err(SimpleFinConnectError::NoInstitutionsOnBridge);
             }
@@ -120,6 +127,11 @@ impl SimpleFinConnectionService {
         Ok(ProviderConnectResponse {
             connection_id,
             institution_name: format!("SimpleFIN ({institution_count} institutions)"),
+            simplefin_institutions_requiring_auth: if institutions_requiring_auth.is_empty() {
+                None
+            } else {
+                Some(institutions_requiring_auth)
+            },
         })
     }
 
@@ -146,7 +158,7 @@ impl SimpleFinConnectionService {
             .map_err(ProviderSyncError::SyncFailure)?
             .is_some()
         {
-            return Err(ProviderSyncError::RateLimited);
+            return Err(ProviderSyncError::RateLimited(None));
         }
 
         #[allow(deprecated)]
@@ -255,7 +267,15 @@ impl SimpleFinConnectionService {
                 reference_date,
             )
             .await
-            .map_err(ProviderSyncError::SyncFailure)?;
+            .map_err(|e| {
+                if let Some(SimpleFinProviderError::RateLimited(msg)) =
+                    e.downcast_ref::<SimpleFinProviderError>()
+                {
+                    ProviderSyncError::RateLimited(Some(msg.clone()))
+                } else {
+                    ProviderSyncError::SyncFailure(e)
+                }
+            })?;
 
         transactions = SyncService::filter_simplefin_transactions_for_connection(
             transactions,

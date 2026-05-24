@@ -20,10 +20,11 @@ const MAX_TRANSACTION_WINDOW_DAYS: i64 = 90;
 pub(crate) const BETA_DEMO_BRIDGE_ACCESS_URL: &str =
     "https://demo:demo@beta-bridge.simplefin.org/simplefin";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SimpleFinProviderError {
     SetupTokenAlreadyClaimed,
     NotApplicableForSimpleFin,
+    RateLimited(String),
 }
 
 impl std::fmt::Display for SimpleFinProviderError {
@@ -34,6 +35,9 @@ impl std::fmt::Display for SimpleFinProviderError {
             }
             Self::NotApplicableForSimpleFin => {
                 f.write_str("operation is not applicable for SimpleFIN")
+            }
+            Self::RateLimited(msg) => {
+                write!(f, "SimpleFIN rate limited: {}", msg)
             }
         }
     }
@@ -157,6 +161,20 @@ impl SimpleFinHttpClient for RealSimpleFinHttpClient {
         let status = response.status();
         let body = response.text().await?;
         if !status.is_success() {
+            if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+                if let Ok(mut parsed) = serde_json::from_str::<SimpleFinAccountsResponse>(&body) {
+                    parsed.normalize();
+                    let messages = parsed.error_messages();
+                    if !messages.is_empty() {
+                        return Err(anyhow::Error::new(SimpleFinProviderError::RateLimited(
+                            messages.join("; "),
+                        )));
+                    }
+                }
+                return Err(anyhow::Error::new(SimpleFinProviderError::RateLimited(
+                    body.chars().take(240).collect::<String>(),
+                )));
+            }
             if let Ok(mut parsed) = serde_json::from_str::<SimpleFinAccountsResponse>(&body) {
                 parsed.normalize();
                 let messages = parsed.error_messages();
@@ -246,26 +264,118 @@ impl SimpleFinProvider {
         chunks
     }
 
+    fn contains_any_keyword(text: &str, keywords: &[&str]) -> bool {
+        keywords.iter().any(|kw| text.contains(kw))
+    }
+
+    fn extract_mask_from_name(account_name: &str) -> String {
+        if let Some(start) = account_name.rfind('(') {
+            if let Some(end) = account_name.rfind(')') {
+                if start < end {
+                    let mask_candidate = account_name[start + 1..end].trim();
+                    if !mask_candidate.is_empty() {
+                        return mask_candidate.to_string();
+                    }
+                }
+            }
+        }
+        "0000".to_string()
+    }
+
+    fn scrub_account_name(account_name: &str) -> String {
+        if let Some(start) = account_name.rfind('(') {
+            if account_name.rfind(')').is_some_and(|end| start < end) {
+                return account_name[..start].trim().to_string();
+            }
+        }
+        account_name.to_string()
+    }
+
+    fn classify_account_type(account_name: &str, institution_name: Option<&str>) -> String {
+        let name_lower = account_name.to_lowercase();
+        let institution_lower = institution_name.map(|n| n.to_lowercase());
+
+        const INVESTMENT_KEYWORDS: &[&str] = &[
+            "ira",
+            "roth",
+            "401k",
+            "401(k)",
+            "403b",
+            "403(b)",
+            "keogh",
+            "sep",
+            "investment",
+            "brokerage",
+            "trading",
+            "margin",
+        ];
+        const CREDIT_KEYWORDS: &[&str] = &[
+            "credit",
+            "visa",
+            "mastercard",
+            "amex",
+            "american express",
+            "discover",
+            "card",
+        ];
+        const LOAN_KEYWORDS: &[&str] = &[
+            "mortgage",
+            "loan",
+            "heloc",
+            "home equity",
+            "auto",
+            "car",
+            "student",
+            "line of credit",
+        ];
+
+        if Self::contains_any_keyword(&name_lower, INVESTMENT_KEYWORDS) {
+            return "investment".to_string();
+        }
+
+        if Self::contains_any_keyword(&name_lower, CREDIT_KEYWORDS) {
+            return "credit".to_string();
+        }
+
+        if let Some(inst_name) = &institution_lower {
+            if inst_name.contains("card") {
+                return "credit".to_string();
+            }
+        }
+
+        if Self::contains_any_keyword(&name_lower, LOAN_KEYWORDS) {
+            return "loan".to_string();
+        }
+
+        "depository".to_string()
+    }
+
     pub fn map_account(simplefin_account: &SimpleFinAccount) -> Account {
         let balance = simplefin_account
             .balance
             .as_deref()
             .and_then(|value| Decimal::from_str(value).ok());
+        let institution_name = simplefin_account
+            .org
+            .as_ref()
+            .and_then(|org| org.name.as_deref());
+        let mask = Self::extract_mask_from_name(&simplefin_account.name);
+        let scrubbed_name = Self::scrub_account_name(&simplefin_account.name);
         Account {
             id: Uuid::new_v4(),
             user_id: None,
             provider_account_id: Some(simplefin_account.id.clone()),
             provider_connection_id: None,
-            name: simplefin_account.name.clone(),
-            account_type: "depository".to_string(),
+            name: scrubbed_name,
+            account_type: Self::classify_account_type(&simplefin_account.name, institution_name),
             balance_current: balance,
-            mask: None,
+            mask: Some(mask),
             institution_name: None,
             provider_conn_id: simplefin_account.org_conn_id(),
         }
     }
 
-    fn map_transaction(
+    pub fn map_transaction(
         simplefin_txn: &SimpleFinTransaction,
         account: &Account,
     ) -> Result<Transaction> {
@@ -324,20 +434,32 @@ impl FinancialDataProvider for SimpleFinProvider {
         &self,
         credentials: &ProviderCredentials,
     ) -> Result<Option<SimpleFinAccountsResponse>> {
+        let today = Utc::now().date_naive();
+        let three_months_ago = today
+            .checked_sub_months(chrono::Months::new(3))
+            .unwrap_or(today);
+
         let response = self
             .http_client
             .get_accounts(
                 &credentials.access_token,
                 AccountsQuery {
-                    balances_only: true,
-                    ..AccountsQuery::default()
+                    start_date: Some(Self::date_to_epoch_start(three_months_ago)),
+                    end_date: Some(Self::date_to_epoch_end_exclusive(today)),
+                    pending: true,
+                    balances_only: false,
+                    account_ids: Vec::new(),
                 },
             )
             .await?;
 
         let messages = response.error_messages();
         if !messages.is_empty() {
-            bail!("SimpleFIN bridge returned errors: {}", messages.join("; "));
+            tracing::warn!(
+                provider = "simplefin",
+                bridge_errors = ?messages,
+                "SimpleFIN bridge returned errors during snapshot"
+            );
         }
 
         Ok(Some(response))

@@ -2,7 +2,7 @@ use crate::models::{account::Account, plaid::ProviderConnection};
 use crate::providers::{PlaidProvider, ProviderRegistry};
 
 use crate::services::{plaid_service::RealPlaidClient, sync_service::SyncService};
-use chrono::{Duration, Months, Utc};
+use chrono::{Duration, Utc};
 use rust_decimal_macros::dec;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -106,7 +106,7 @@ fn given_connection_with_no_cursor_when_calculating_date_ranges_then_uses_defaul
 
     let (start_date, end_date) =
         sync_service.calculate_sync_date_range(connection.last_sync_at, None);
-    let expected_start = now.checked_sub_months(Months::new(60)).unwrap();
+    let expected_start = now.checked_sub_days(chrono::Days::new(90)).unwrap();
     let expected_end = now;
 
     assert_eq!(start_date, expected_start);

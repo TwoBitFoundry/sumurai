@@ -173,12 +173,12 @@ mod date_range_calculation_tests {
     use super::*;
 
     #[test]
-    fn given_no_previous_sync_when_calculating_range_then_returns_5_year_default() {
+    fn given_no_previous_sync_when_calculating_range_then_returns_90_day_default() {
         let sync_service = create_test_sync_service();
         let now = Utc::now().date_naive();
 
         let (start_date, end_date) = sync_service.calculate_sync_date_range(None, None);
-        let expected_start = now.checked_sub_months(Months::new(60)).unwrap();
+        let expected_start = now.checked_sub_days(chrono::Days::new(90)).unwrap();
         let expected_end = now;
 
         assert_eq!(start_date, expected_start);
@@ -234,7 +234,10 @@ mod date_range_calculation_tests {
             SyncService::calculate_sync_date_range_static(None, Some(reference_date));
 
         assert_eq!(end_date, reference_date);
-        assert_eq!(start_date, NaiveDate::from_ymd_opt(2020, 6, 15).unwrap());
+        let expected_start = reference_date
+            .checked_sub_days(chrono::Days::new(90))
+            .unwrap();
+        assert_eq!(start_date, expected_start);
     }
 }
 
@@ -257,12 +260,12 @@ mod sync_recent_transactions_integration_tests {
     }
 
     #[tokio::test]
-    async fn given_no_last_sync_when_calling_sync_recent_transactions_then_uses_5_year_window() {
+    async fn given_no_last_sync_when_calling_sync_recent_transactions_then_uses_90_day_window() {
         let sync_service = create_test_sync_service_for_integration();
         let now = Utc::now().date_naive();
 
         let (start_date, end_date) = sync_service.calculate_sync_date_range(None, None);
-        let expected_start = now.checked_sub_months(Months::new(60)).unwrap();
+        let expected_start = now.checked_sub_days(chrono::Days::new(90)).unwrap();
         let expected_end = now;
 
         assert_eq!(start_date, expected_start);

@@ -5,6 +5,7 @@ import type {
   ProviderConnectResponse,
   ProviderStatusResponse,
   SimpleFinIgnoredInstitution,
+  SimpleFinInstitutionAuthRequired,
 } from '../types/api';
 import { buildSyncTransactionsRequest } from '../utils/syncTransactionsRequest';
 import { ApiClient, ApiError } from './ApiClient';
@@ -12,6 +13,7 @@ import { ApiClient, ApiError } from './ApiClient';
 export type SimpleFinConnectSyncResult = {
   rateLimited: boolean;
   transactionCount: number;
+  institutionsRequiringAuth: SimpleFinInstitutionAuthRequired[];
 };
 
 const isSyncRateLimited = (error: unknown): boolean =>
@@ -79,20 +81,25 @@ export class SimpleFinService {
   }
 
   static async connectAndSyncAll(setupToken?: string): Promise<SimpleFinConnectSyncResult> {
-    await SimpleFinService.connect(setupToken);
+    const connectResponse = await SimpleFinService.connect(setupToken);
+    const institutionsRequiringAuth = connectResponse.simplefin_institutions_requiring_auth ?? [];
     const statuses = await SimpleFinService.getStatus();
     const connectionId = resolveSimpleFinConnectionId(statuses);
 
     if (!connectionId) {
-      return { rateLimited: false, transactionCount: 0 };
+      return { rateLimited: false, transactionCount: 0, institutionsRequiringAuth };
     }
 
     try {
       const result = await SimpleFinService.syncTransactions(connectionId);
-      return { rateLimited: false, transactionCount: result?.metadata?.transaction_count ?? 0 };
+      return {
+        rateLimited: false,
+        transactionCount: result?.metadata?.transaction_count ?? 0,
+        institutionsRequiringAuth,
+      };
     } catch (error) {
       if (isSyncRateLimited(error)) {
-        return { rateLimited: true, transactionCount: 0 };
+        return { rateLimited: true, transactionCount: 0, institutionsRequiringAuth };
       }
 
       throw error;
@@ -101,20 +108,25 @@ export class SimpleFinService {
 
   static async restoreInstitution(orgConnId: string): Promise<SimpleFinConnectSyncResult> {
     await SimpleFinService.restoreIgnoredInstitution(orgConnId);
-    await SimpleFinService.connect();
+    const connectResponse = await SimpleFinService.connect();
+    const institutionsRequiringAuth = connectResponse.simplefin_institutions_requiring_auth ?? [];
     const statuses = await SimpleFinService.getStatus();
     const connectionId = resolveSimpleFinConnectionId(statuses, orgConnId);
 
     if (!connectionId) {
-      return { rateLimited: false, transactionCount: 0 };
+      return { rateLimited: false, transactionCount: 0, institutionsRequiringAuth };
     }
 
     try {
       const result = await SimpleFinService.syncTransactions(connectionId);
-      return { rateLimited: false, transactionCount: result?.metadata?.transaction_count ?? 0 };
+      return {
+        rateLimited: false,
+        transactionCount: result?.metadata?.transaction_count ?? 0,
+        institutionsRequiringAuth,
+      };
     } catch (error) {
       if (isSyncRateLimited(error)) {
-        return { rateLimited: true, transactionCount: 0 };
+        return { rateLimited: true, transactionCount: 0, institutionsRequiringAuth };
       }
 
       throw error;

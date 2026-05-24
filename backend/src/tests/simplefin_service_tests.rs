@@ -5,7 +5,8 @@ use crate::models::predicted_category::PredictedCategory;
 use crate::models::provider_connect::ProviderConnectRequest;
 use crate::models::simplefin::SimpleFinTransaction;
 use crate::models::simplefin::{
-    SimpleFinAccount, SimpleFinAccountsResponse, SimpleFinConnectRequest, SimpleFinConnection,
+    SimpleFinAccount, SimpleFinAccountsResponse, SimpleFinApiErrorEntry, SimpleFinConnectRequest,
+    SimpleFinConnection,
 };
 use crate::models::transaction::Transaction;
 use crate::providers::simplefin_provider::{MockSimpleFinHttpClient, SimpleFinProvider};
@@ -24,7 +25,7 @@ use crate::test_fixtures::{noop_categorizer, TestFixtures};
 use anyhow::Result;
 use async_trait::async_trait;
 use axum::body::to_bytes;
-use chrono::Utc;
+use chrono::{NaiveDate, Utc};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use tower::ServiceExt;
@@ -137,6 +138,33 @@ fn three_org_snapshot() -> SimpleFinAccountsResponse {
                 transactions: vec![],
             },
         ],
+    }
+}
+
+fn snapshot_with_org_auth_error() -> SimpleFinAccountsResponse {
+    let mut snapshot = three_org_snapshot();
+    snapshot.errors = vec![SimpleFinApiErrorEntry::Text(
+        "Connection to Bank B may need attention. Auth required".to_string(),
+    )];
+    snapshot
+        .accounts
+        .retain(|account| account.conn_id.as_deref() != Some("org-2"));
+    snapshot
+}
+
+fn snapshot_with_only_auth_errors() -> SimpleFinAccountsResponse {
+    SimpleFinAccountsResponse {
+        errors: vec![SimpleFinApiErrorEntry::Text(
+            "Connection to Bank of Oklahoma may need attention. Auth required".to_string(),
+        )],
+        connections: vec![SimpleFinConnection {
+            conn_id: "bok".to_string(),
+            name: "Bank of Oklahoma".to_string(),
+            org_id: "inst-bok".to_string(),
+            org_url: None,
+            sfin_url: None,
+        }],
+        accounts: vec![],
     }
 }
 
@@ -317,6 +345,60 @@ async fn given_three_org_snapshot_when_connect_simplefin_then_writes_three_conne
     assert!(accounts.contains("acct-1"));
     assert!(accounts.contains("acct-2"));
     assert!(accounts.contains("acct-3"));
+}
+
+#[tokio::test]
+async fn given_one_org_auth_error_when_connect_simplefin_then_links_other_institutions() {
+    let user_id = Uuid::new_v4();
+    let jwt_id = "jwt-1";
+    let (connection_service, saved_item_ids, _) = build_simplefin_connection_service(
+        snapshot_with_org_auth_error(),
+        HashSet::new(),
+        Some(SETUP_TOKEN.to_string()),
+        None,
+    );
+
+    let response = connection_service
+        .connect_simplefin_provider(&user_id, jwt_id, &simplefin_connect_request())
+        .await
+        .unwrap();
+
+    assert_eq!(response.institution_name, "SimpleFIN (2 institutions)");
+    let auth_required = response
+        .simplefin_institutions_requiring_auth
+        .expect("auth warnings should be returned");
+    assert_eq!(auth_required.len(), 1);
+    assert_eq!(auth_required[0].institution_name, "Bank B");
+
+    let saved = saved_item_ids.lock().unwrap();
+    assert!(saved.contains(&simplefin_org_item_id(&user_id, "org-1")));
+    assert!(!saved.contains(&simplefin_org_item_id(&user_id, "org-2")));
+    assert!(saved.contains(&simplefin_org_item_id(&user_id, "org-3")));
+}
+
+#[tokio::test]
+async fn given_only_auth_errors_when_connect_simplefin_then_returns_institutions_require_auth() {
+    let user_id = Uuid::new_v4();
+    let jwt_id = "jwt-1";
+    let (connection_service, _, _) = build_simplefin_connection_service(
+        snapshot_with_only_auth_errors(),
+        HashSet::new(),
+        Some(SETUP_TOKEN.to_string()),
+        None,
+    );
+
+    let error = connection_service
+        .connect_simplefin_provider(&user_id, jwt_id, &simplefin_connect_request())
+        .await
+        .unwrap_err();
+
+    match error {
+        SimpleFinConnectError::InstitutionsRequireAuth(notices) => {
+            assert_eq!(notices.len(), 1);
+            assert_eq!(notices[0].institution_name, "Bank of Oklahoma");
+        }
+        other => panic!("expected InstitutionsRequireAuth, got {other:?}"),
+    }
 }
 
 #[tokio::test]
@@ -996,20 +1078,20 @@ async fn given_simplefin_sync_when_transactions_are_persisted_then_they_stay_oth
             transactions: vec![
                 SimpleFinTransaction {
                     id: "txn-1".to_string(),
-                    posted: 1_704_000_000,
+                    posted: 1_746_086_400,
                     amount: "-12.34".to_string(),
                     description: "Whole Foods Market".to_string(),
                     pending: false,
-                    transacted_at: Some(1_704_000_000),
+                    transacted_at: Some(1_746_086_400),
                     extra: serde_json::json!({}),
                 },
                 SimpleFinTransaction {
                     id: "txn-2".to_string(),
-                    posted: 1_704_086_400,
+                    posted: 1_746_172_800,
                     amount: "-45.67".to_string(),
                     description: "Shell Oil 5512".to_string(),
                     pending: false,
-                    transacted_at: Some(1_704_086_400),
+                    transacted_at: Some(1_746_172_800),
                     extra: serde_json::json!({}),
                 },
             ],
@@ -1023,20 +1105,20 @@ async fn given_simplefin_sync_when_transactions_are_persisted_then_they_stay_oth
             vec![
                 SimpleFinTransaction {
                     id: "txn-1".to_string(),
-                    posted: 1_704_000_000,
+                    posted: 1_746_086_400,
                     amount: "-12.34".to_string(),
                     description: "Whole Foods Market".to_string(),
                     pending: false,
-                    transacted_at: Some(1_704_000_000),
+                    transacted_at: Some(1_746_086_400),
                     extra: serde_json::json!({}),
                 },
                 SimpleFinTransaction {
                     id: "txn-2".to_string(),
-                    posted: 1_704_086_400,
+                    posted: 1_746_172_800,
                     amount: "-45.67".to_string(),
                     description: "Shell Oil 5512".to_string(),
                     pending: false,
-                    transacted_at: Some(1_704_086_400),
+                    transacted_at: Some(1_746_172_800),
                     extra: serde_json::json!({}),
                 },
             ],
@@ -1064,7 +1146,7 @@ async fn given_simplefin_sync_when_transactions_are_persisted_then_they_stay_oth
             },
             sync_service.as_ref(),
             &mut connection,
-            None,
+            Some(NaiveDate::from_ymd_opt(2025, 5, 20).unwrap()),
         )
         .await
         .unwrap();
@@ -1141,7 +1223,7 @@ async fn given_sync_floor_when_second_simplefin_sync_within_hour_then_rate_limit
         )
         .await;
 
-    assert!(matches!(result, Err(ProviderSyncError::RateLimited)));
+    assert!(matches!(result, Err(ProviderSyncError::RateLimited(_))));
 }
 
 #[tokio::test]

@@ -63,6 +63,86 @@ impl SimpleFinAccountsResponse {
             .map(SimpleFinApiErrorEntry::message)
             .collect()
     }
+
+    pub fn institutions_requiring_auth(&self) -> Vec<SimpleFinInstitutionAuthRequired> {
+        let mut notices = Vec::new();
+        let mut seen = HashSet::new();
+
+        for error in &self.errors {
+            let message = error.message();
+            if !message_requires_auth_refresh(&message) {
+                continue;
+            }
+
+            let org_conn_id = error
+                .conn_id()
+                .or_else(|| conn_id_from_auth_message(&message));
+            let institution_name = org_conn_id
+                .as_ref()
+                .and_then(|conn_id| {
+                    self.connections
+                        .iter()
+                        .find(|connection| connection.conn_id == *conn_id)
+                        .map(|connection| connection.name.clone())
+                })
+                .or_else(|| institution_name_from_auth_message(&message))
+                .unwrap_or_else(|| "Institution".to_string());
+
+            let dedupe_key = org_conn_id
+                .clone()
+                .unwrap_or_else(|| institution_name.to_ascii_lowercase());
+            if !seen.insert(dedupe_key) {
+                continue;
+            }
+
+            notices.push(SimpleFinInstitutionAuthRequired {
+                institution_name,
+                org_conn_id,
+                message,
+            });
+        }
+
+        notices
+    }
+
+    pub fn org_has_accounts(&self, org_conn_id: &str) -> bool {
+        self.accounts
+            .iter()
+            .any(|account| account.org_conn_id().as_deref() == Some(org_conn_id))
+    }
+}
+
+fn message_requires_auth_refresh(message: &str) -> bool {
+    let lower = message.to_ascii_lowercase();
+    lower.contains("auth required") || lower.contains("may need attention")
+}
+
+fn institution_name_from_auth_message(message: &str) -> Option<String> {
+    const PREFIX: &str = "connection to ";
+    const SUFFIX: &str = " may need attention";
+
+    let lower = message.to_ascii_lowercase();
+    let start = lower.find(PREFIX)?;
+    let rest = &message[start + PREFIX.len()..];
+    let end = rest.to_ascii_lowercase().find(SUFFIX)?;
+    let name = rest[..end].trim();
+    if name.is_empty() {
+        None
+    } else {
+        Some(name.to_string())
+    }
+}
+
+fn conn_id_from_auth_message(_message: &str) -> Option<String> {
+    None
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+pub struct SimpleFinInstitutionAuthRequired {
+    pub institution_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub org_conn_id: Option<String>,
+    pub message: String,
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
@@ -82,6 +162,13 @@ impl SimpleFinApiErrorEntry {
                 .or(error.msg.clone())
                 .or(error.code.clone())
                 .unwrap_or_else(|| "unknown SimpleFIN bridge error".to_string()),
+        }
+    }
+
+    pub fn conn_id(&self) -> Option<String> {
+        match self {
+            Self::Text(_) => None,
+            Self::Structured(error) => error.conn_id.clone(),
         }
     }
 }

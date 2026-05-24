@@ -12,6 +12,7 @@ import { getConnectionStatusCaption } from '../domain/connectionStatus';
 import { cn, GlassCard, IconButton } from '../ui/primitives';
 import { appTitleBarRecipes } from '../ui/primitives/AppTitleBar';
 import {
+  control,
   controlIconWell,
   border as uiBorderRecipes,
   status as uiStatusRecipes,
@@ -48,6 +49,7 @@ interface BankCardProps {
   onDisconnect: (id: string) => Promise<void>;
   isOnline: boolean;
   onImportSuccess?: (count: number, mask: string) => void;
+  syncDisabled?: boolean;
 }
 
 export const BankCard: React.FC<BankCardProps> = ({
@@ -56,6 +58,7 @@ export const BankCard: React.FC<BankCardProps> = ({
   onDisconnect,
   isOnline,
   onImportSuccess,
+  syncDisabled = false,
 }) => {
   const sectionBadgeClass = cn(uiTypographyRecipes.label, uiTextRecipes.muted);
   const statusCaption = getConnectionStatusCaption(bank.status);
@@ -148,33 +151,28 @@ export const BankCard: React.FC<BankCardProps> = ({
         <div
           className={cn('col-start-1', 'row-start-1', 'flex', 'flex-col', 'items-center', 'gap-1')}
         >
-          <IconButton
-            type="button"
-            size="md"
-            onClick={handleSync}
-            disabled={loading || !isOnline}
-            variant="ghost"
-            aria-label="Sync now"
-            title={!isOnline ? 'Unavailable while offline' : undefined}
-            className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
-          >
-            <RefreshCw className={cn(loading && 'animate-spin')} />
-          </IconButton>
-          {loading && syncElapsed > 0 && (
-            <span
-              className={cn(
-                uiTypographyRecipes.caption,
-                uiTextRecipes.muted,
-                'tabular-nums',
-                'text-center',
-                'flex',
-                'flex-col',
-                'items-center'
-              )}
+          {!syncDisabled && (
+            <IconButton
+              type="button"
+              size="md"
+              onClick={handleSync}
+              disabled={loading || !isOnline}
+              variant="ghost"
+              aria-label="Sync now"
+              title={!isOnline ? 'Unavailable while offline' : undefined}
+              className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
             >
-              {bank.provider === 'simplefin' && <span>Categorizing</span>}
-              <span>{syncElapsed}s</span>
-            </span>
+              <div className={cn('flex', 'flex-col', 'items-center', 'gap-0.5', control.glyph.md)}>
+                <RefreshCw className={cn(loading && 'animate-spin')} />
+                {loading && syncElapsed > 0 && (
+                  <span
+                    className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted, 'tabular-nums')}
+                  >
+                    {syncElapsed}s
+                  </span>
+                )}
+              </div>
+            </IconButton>
           )}
           <IconButton
             type="button"

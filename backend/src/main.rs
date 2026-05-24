@@ -2245,7 +2245,33 @@ async fn sync_authenticated_provider_transactions(
         .sync(sync_params, &mut connection, reference_date)
         .await
     {
-        Ok(response) => Ok(Json(response)),
+        Ok(response) => {
+            if let Err(e) = state
+                .cache_service
+                .clear_jwt_scoped_bank_connection_cache(&auth_context.jwt_id, connection.id)
+                .await
+            {
+                tracing::warn!(
+                    "Failed to clear connection cache after sync for user {}: {}",
+                    user_id,
+                    e
+                );
+            }
+
+            if let Err(e) = state
+                .cache_service
+                .clear_transactions(&auth_context.jwt_id)
+                .await
+            {
+                tracing::warn!(
+                    "Failed to clear transaction cache after sync for user {}: {}",
+                    user_id,
+                    e
+                );
+            }
+
+            Ok(Json(response))
+        }
         Err(err) => Err(provider_sync_error_to_response(
             err,
             user_id,
@@ -2873,6 +2899,28 @@ async fn connect_authenticated_provider(
                     "NO_INSTITUTIONS",
                     "No SimpleFIN institutions could be linked. Try again or check your bridge setup.",
                 )
+                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
+            }
+            Err(SimpleFinConnectError::InstitutionsRequireAuth(notices)) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "provider.connect",
+                );
+                let message = if notices.len() == 1 {
+                    format!(
+                        "{} needs to be re-authenticated in your SimpleFIN dashboard before it can sync.",
+                        notices[0].institution_name
+                    )
+                } else {
+                    "Some SimpleFIN institutions need to be re-authenticated in your SimpleFIN dashboard before they can sync.".to_string()
+                };
+                Err(ApiErrorResponse {
+                    error: "SIMPLEFIN_INSTITUTIONS_REQUIRE_AUTH".to_string(),
+                    message,
+                    code: Some("SIMPLEFIN_AUTH_REQUIRED".to_string()),
+                    details: serde_json::to_value(notices).ok(),
+                }
                 .into_response(StatusCode::UNPROCESSABLE_ENTITY))
             }
         },

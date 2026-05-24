@@ -268,7 +268,7 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    expect(screen.queryByTestId('accounts-flow-error')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Failed to load connections/)).not.toBeInTheDocument();
   });
 
   it('shows per-account transaction counts from the filter for Plaid', async () => {

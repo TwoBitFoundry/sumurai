@@ -58,6 +58,7 @@ pub enum SimpleFinConnectError {
     NoInstitutionsOnBridge,
     AllInstitutionsHidden,
     NoInstitutionsLinked,
+    InstitutionsRequireAuth(Vec<crate::models::simplefin::SimpleFinInstitutionAuthRequired>),
 }
 
 #[derive(Debug)]
@@ -92,7 +93,7 @@ pub enum ProviderSyncError {
     AccountLookup(Error),
     TransactionLookup(Error),
     SyncFailure(Error),
-    RateLimited,
+    RateLimited(Option<String>),
 }
 
 fn simplefin_sync_floor_ttl_seconds() -> u64 {
@@ -447,6 +448,7 @@ impl ConnectionService {
         Ok(ProviderConnectResponse {
             connection_id: connection.id.to_string(),
             institution_name,
+            simplefin_institutions_requiring_auth: None,
         })
     }
 
@@ -572,11 +574,20 @@ impl ConnectionService {
             .await
             .map_err(SimpleFinConnectError::ConnectionPersistence)?;
 
+        let institutions_requiring_auth = snapshot.institutions_requiring_auth();
+
         let mut first_connection_id = None;
         let mut institution_count = 0;
 
         for org in &snapshot.connections {
             if crate::services::simplefin_org_service::org_is_hidden(&hidden_orgs, org) {
+                continue;
+            }
+            if crate::services::simplefin_org_service::org_requires_auth_refresh(
+                org,
+                &institutions_requiring_auth,
+            ) && !snapshot.org_has_accounts(&org.conn_id)
+            {
                 continue;
             }
 
@@ -594,6 +605,11 @@ impl ConnectionService {
         }
 
         if institution_count == 0 {
+            if !institutions_requiring_auth.is_empty() {
+                return Err(SimpleFinConnectError::InstitutionsRequireAuth(
+                    institutions_requiring_auth,
+                ));
+            }
             if snapshot.connections.is_empty() {
                 return Err(SimpleFinConnectError::NoInstitutionsOnBridge);
             }
@@ -614,6 +630,11 @@ impl ConnectionService {
         Ok(ProviderConnectResponse {
             connection_id,
             institution_name: format!("SimpleFIN ({institution_count} institutions)"),
+            simplefin_institutions_requiring_auth: if institutions_requiring_auth.is_empty() {
+                None
+            } else {
+                Some(institutions_requiring_auth)
+            },
         })
     }
 
@@ -1073,7 +1094,7 @@ impl ConnectionService {
                 connection_id = %connection.id,
                 "SimpleFIN sync skipped: hourly rate floor active"
             );
-            return Err(ProviderSyncError::RateLimited);
+            return Err(ProviderSyncError::RateLimited(None));
         }
 
         #[allow(deprecated)]

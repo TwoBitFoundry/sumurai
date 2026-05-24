@@ -79,6 +79,7 @@ use utoipa::OpenApi;
             crate::models::plaid::ClearSyncedDataResponse,
             crate::models::simplefin::SimpleFinIgnoredInstitution,
             crate::models::simplefin::SimpleFinIgnoredInstitutionsResponse,
+            crate::models::simplefin::SimpleFinInstitutionAuthRequired,
             crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionRequest,
             crate::models::simplefin::SimpleFinRestoreIgnoredInstitutionResponse,
             crate::models::account::AccountResponse,
