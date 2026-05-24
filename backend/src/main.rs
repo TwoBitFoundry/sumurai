@@ -1358,6 +1358,7 @@ async fn get_authenticated_transaction_categories(
     path = "/api/categories",
     responses(
         (status = 200, description = "List of system and custom categories", body = crate::models::custom_category::CategoryListResponse),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
         (status = 500, description = "Internal server error"),
     ),
     security(("auth_cookie" = [])),
@@ -1391,6 +1392,7 @@ async fn list_categories(
     responses(
         (status = 200, description = "Custom category created", body = crate::models::custom_category::CustomCategory),
         (status = 400, description = "Validation error with error code"),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
         (status = 500, description = "Internal server error"),
     ),
     security(("auth_cookie" = [])),
@@ -1487,6 +1489,7 @@ async fn create_custom_category(
     ),
     responses(
         (status = 204, description = "Custom category deleted"),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
         (status = 500, description = "Internal server error"),
     ),
     security(("auth_cookie" = [])),
@@ -1525,6 +1528,7 @@ async fn delete_custom_category(
     responses(
         (status = 200, description = "Category updated"),
         (status = 400, description = "Validation error"),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
         (status = 404, description = "Transaction not found"),
         (status = 500, description = "Internal server error"),
     ),
@@ -1585,6 +1589,7 @@ async fn set_transaction_category(
     path = "/api/transactions/auto-categorize",
     responses(
         (status = 200, description = "Background categorization started", body = AutoCategorizationJobState),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
         (status = 409, description = "Active job already exists", body = AutoCategorizationJobState),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
@@ -1625,6 +1630,7 @@ async fn start_auto_categorization(
     path = "/api/transactions/auto-categorize",
     responses(
         (status = 200, description = "Latest auto-categorization job status", body = AutoCategorizationJobState),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
     security(("auth_cookie" = [])),
@@ -1658,6 +1664,7 @@ async fn get_auto_categorization_status(
     path = "/api/transactions/auto-categorize",
     responses(
         (status = 200, description = "Cancellation requested for active job", body = AutoCategorizationJobState),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
         (status = 404, description = "No active job to cancel", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
@@ -1711,6 +1718,7 @@ struct ParsedImportMultipart {
     responses(
         (status = 200, description = "File validation result", body = ValidateResponse),
         (status = 400, description = "Missing fields, invalid multipart payload, unsupported extension, invalid UTF-8, or invalid CSV mapping"),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
         (status = 403, description = "Account belongs to another user"),
         (status = 413, description = "Payload too large"),
         (status = 500, description = "Internal server error"),
@@ -1757,6 +1765,7 @@ async fn validate_authenticated_transaction_import(
     responses(
         (status = 200, description = "Transactions imported successfully", body = ImportResponse),
         (status = 400, description = "Missing fields, invalid multipart payload, unsupported extension, invalid UTF-8, invalid CSV mapping, or file with no valid transactions"),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
         (status = 403, description = "Account belongs to another user"),
         (status = 413, description = "Payload too large"),
         (status = 500, description = "Internal server error"),
