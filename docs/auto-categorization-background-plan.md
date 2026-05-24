@@ -42,28 +42,40 @@ Make imports and SimpleFIN sync fast and non-blocking by removing classifier wor
 Create a user-scoped background job that recategorizes eligible `OTHER` transactions without blocking imports, syncs, or page requests.
 
 **Tasks**
-- Add a dedicated backend service under `backend/src/services` to own job start, status persistence, cancellation, batching, classifier execution, and terminal state handling.
-- Store job state in Redis with a short-lived terminal-status TTL so the UI can recover after refresh.
-- Define a shared status model containing `job_id`, `status`, `total`, `processed`, `updated`, `skipped`, `started_at`, `finished_at`, and `error_message`.
-- Enforce one active job per user.
-- On duplicate start while active, return `409` plus the active job state.
-- Support cooperative cancellation through a cancel flag checked between batches.
-- Add repository methods to count eligible transactions, fetch eligible transactions in deterministic batches, and batch-update stored category fields by transaction id.
-- Define eligibility strictly as stored `transactions.category_primary = 'OTHER'` with no matching `transaction_category_overrides` row.
-- Apply only medium/high-confidence predictions.
-- Leave low-confidence predictions as stored `OTHER`.
-- Clear the initiating session’s transactions cache and budgets cache after terminal completion.
-- Invalidate the initiating session’s analytics cache patterns after terminal completion.
+- [x] Add a dedicated backend service under `backend/src/services` to own job start, status persistence, cancellation, batching, classifier execution, and terminal state handling.
+- [x] Store job state in Redis with a short-lived terminal-status TTL so the UI can recover after refresh.
+- [x] Define a shared status model containing `job_id`, `status`, `total`, `processed`, `updated`, `skipped`, `started_at`, `finished_at`, and `error_message`.
+- [x] Enforce one active job per user.
+- [x] On duplicate start while active, return active job state (`ActiveJobExists`; HTTP 409 mapping in Phase 3).
+- [x] Support cooperative cancellation through a cancel flag checked between batches.
+- [x] Add repository methods to count eligible transactions, fetch eligible transactions in deterministic batches, and batch-update stored category fields by transaction id.
+- [x] Define eligibility strictly as stored `transactions.category_primary = 'OTHER'` with no matching `transaction_category_overrides` row.
+- [x] Apply only medium/high-confidence predictions.
+- [x] Leave low-confidence predictions as stored `OTHER`.
+- [x] Clear the initiating session’s transactions cache and budgets cache after terminal completion.
+- [x] Invalidate the initiating session’s analytics cache patterns after terminal completion.
 
 **Acceptance Criteria**
-- [ ] A background run can be started without waiting for classification to finish in the request.
-- [ ] Only one active categorization job can exist per user.
-- [ ] Eligible transactions exclude rows with category overrides.
-- [ ] Medium/high-confidence predictions rewrite stored category fields in place.
-- [ ] Low-confidence predictions remain stored as `OTHER`.
-- [ ] Cancellation stops the run after the current batch boundary.
-- [ ] Terminal states are persisted long enough for the UI to read them after refresh.
-- [ ] Session-scoped transaction, budget, and analytics caches are invalidated on terminal completion.
+- [x] A background run can be started without waiting for classification to finish in the request.
+- [x] Only one active categorization job can exist per user.
+- [x] Eligible transactions exclude rows with category overrides.
+- [x] Medium/high-confidence predictions rewrite stored category fields in place.
+- [x] Low-confidence predictions remain stored as `OTHER`.
+- [x] Cancellation stops the run after the current batch boundary.
+- [x] Terminal states are persisted long enough for the UI to read them after refresh.
+- [x] Session-scoped transaction, budget, and analytics caches are invalidated on terminal completion.
+
+**Notes**
+- `AutoCategorizationService` lives in `backend/src/services/auto_categorization/` with Redis-backed job and cancel keys per user.
+- Duplicate start returns `AutoCategorizationError::ActiveJobExists` for Phase 3 to map to HTTP 409.
+- Repository eligibility uses stored `OTHER` plus `NOT EXISTS` on `transaction_category_overrides`.
+- Cancel flag is checked only between batches; in-flight batch work completes before terminal `cancelled`.
+
+**TDD Log**
+- `cargo test --manifest-path backend/Cargo.toml auto_categorization_service_tests -- --nocapture` failed first on cancel-flag false positives and early-loop cancellation, then passed after cancel detection and between-batch checks were corrected.
+- `cargo test --manifest-path backend/Cargo.toml --locked` passed (403 tests).
+- `cargo fmt --manifest-path backend/Cargo.toml --all --check` passed after formatting.
+- `cargo check --manifest-path backend/Cargo.toml --locked --all-targets` passed.
 
 ## Phase 3: Expose Start, Status, and Cancel APIs
 **Goal**

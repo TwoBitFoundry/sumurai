@@ -3,6 +3,7 @@
 use crate::models::{
     account::Account,
     auth::User,
+    auto_categorization_job::TransactionCategoryUpdate,
     budget::Budget,
     custom_category::CustomCategory,
     plaid::{LatestAccountBalance, PlaidCredentials, ProviderConnection},
@@ -251,6 +252,21 @@ pub trait DatabaseRepository: Send + Sync {
         org_conn_id: &str,
         institution_name: Option<&str>,
     ) -> Result<(i32, i32)>;
+
+    async fn count_eligible_auto_categorize_transactions(&self, user_id: &Uuid) -> Result<i64>;
+
+    async fn fetch_eligible_auto_categorize_transactions(
+        &self,
+        user_id: &Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<Transaction>>;
+
+    async fn update_transaction_categories_batch(
+        &self,
+        user_id: &Uuid,
+        updates: &[TransactionCategoryUpdate],
+    ) -> Result<()>;
 }
 
 pub struct PostgresRepository {
@@ -2420,5 +2436,178 @@ impl DatabaseRepository for PostgresRepository {
             deleted_transactions.rows_affected() as i32,
             deleted_accounts.rows_affected() as i32,
         ))
+    }
+
+    async fn count_eligible_auto_categorize_transactions(&self, user_id: &Uuid) -> Result<i64> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let count = sqlx::query_scalar::<_, i64>(
+            r#"
+            SELECT COUNT(*)
+            FROM transactions t
+            WHERE t.user_id = $1
+              AND t.category_primary = 'OTHER'
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM transaction_category_overrides o
+                  WHERE o.user_id = t.user_id
+                    AND o.normalized_merchant = t.normalized_merchant
+              )
+            "#,
+        )
+        .bind(user_id)
+        .fetch_one(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(count)
+    }
+
+    async fn fetch_eligible_auto_categorize_transactions(
+        &self,
+        user_id: &Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<Transaction>> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        let rows = sqlx::query_as::<
+            _,
+            (
+                Uuid,
+                Uuid,
+                Option<Uuid>,
+                Option<String>,
+                Option<String>,
+                rust_decimal::Decimal,
+                chrono::NaiveDate,
+                Option<String>,
+                String,
+                String,
+                String,
+                Option<String>,
+                bool,
+                Option<chrono::DateTime<chrono::Utc>>,
+            ),
+        >(
+            r#"
+            SELECT
+                t.id,
+                t.account_id,
+                t.user_id,
+                t.provider_account_id,
+                t.provider_transaction_id,
+                t.amount,
+                t.date,
+                t.merchant_name,
+                t.category_primary,
+                t.category_detailed,
+                t.category_confidence,
+                t.payment_channel,
+                t.pending,
+                t.created_at
+            FROM transactions t
+            WHERE t.user_id = $1
+              AND t.category_primary = 'OTHER'
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM transaction_category_overrides o
+                  WHERE o.user_id = t.user_id
+                    AND o.normalized_merchant = t.normalized_merchant
+              )
+            ORDER BY t.date ASC, t.id ASC
+            LIMIT $2 OFFSET $3
+            "#,
+        )
+        .bind(user_id)
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(rows
+            .into_iter()
+            .map(
+                |(
+                    id,
+                    account_id,
+                    user_id,
+                    provider_account_id,
+                    provider_transaction_id,
+                    amount,
+                    date,
+                    merchant_name,
+                    category_primary,
+                    category_detailed,
+                    category_confidence,
+                    payment_channel,
+                    pending,
+                    created_at,
+                )| Transaction {
+                    id,
+                    account_id,
+                    user_id,
+                    provider_account_id,
+                    provider_transaction_id,
+                    amount,
+                    date,
+                    merchant_name,
+                    category_primary,
+                    category_detailed,
+                    category_confidence,
+                    payment_channel,
+                    pending,
+                    created_at,
+                },
+            )
+            .collect())
+    }
+
+    async fn update_transaction_categories_batch(
+        &self,
+        user_id: &Uuid,
+        updates: &[TransactionCategoryUpdate],
+    ) -> Result<()> {
+        if updates.is_empty() {
+            return Ok(());
+        }
+
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT set_config('app.current_user_id', $1, true)")
+            .bind(user_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+
+        for update in updates {
+            sqlx::query(
+                r#"
+                UPDATE transactions
+                SET category_primary = $3,
+                    category_detailed = $4,
+                    category_confidence = $5
+                WHERE id = $2
+                  AND user_id = $1
+                "#,
+            )
+            .bind(user_id)
+            .bind(update.transaction_id)
+            .bind(&update.category_primary)
+            .bind(&update.category_detailed)
+            .bind(&update.category_confidence)
+            .execute(&mut *tx)
+            .await?;
+        }
+
+        tx.commit().await?;
+        Ok(())
     }
 }

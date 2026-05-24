@@ -496,7 +496,8 @@ async fn build_simplefin_handler_app(
     use crate::services::category_management::service::CategoryManagementService;
     use crate::services::{
         analytics_service::AnalyticsService, auth_service::AuthService,
-        authorization_service::AuthorizationService, budget_service::BudgetService,
+        authorization_service::AuthorizationService,
+        auto_categorization::AutoCategorizationService, budget_service::BudgetService,
         cache_service::CacheService, connection_service::ConnectionService,
         otel_traces_relay::OtlpTracesRelay, plaid_service::PlaidService,
         repository_service::DatabaseRepository, sync_service::SyncService,
@@ -599,6 +600,12 @@ async fn build_simplefin_handler_app(
     test_env.set("AUTH_COOKIE_SAME_SITE", "Lax");
     let config = Config::from_env_provider(&test_env).expect("Failed to create test config");
 
+    let auto_categorization_service = Arc::new(AutoCategorizationService::new(
+        db_repository.clone(),
+        cache_service.clone(),
+        crate::test_fixtures::noop_categorizer(),
+    ));
+
     let state = AppState {
         plaid_service,
         plaid_client,
@@ -618,6 +625,7 @@ async fn build_simplefin_handler_app(
         category_management_service: Arc::new(CategoryManagementService::new(
             SYSTEM_CATEGORY_SLUGS,
         )),
+        auto_categorization_service,
     };
 
     Ok(create_app(state))

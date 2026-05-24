@@ -10,7 +10,8 @@ use crate::services::repository_service::DatabaseRepository;
 use crate::services::sync_service::SyncService;
 use crate::services::sync_service_factory::SyncServiceFactory;
 use crate::services::{
-    AuthService, AuthorizationService, BudgetService, CacheService, ConnectionService,
+    AuthService, AuthorizationService, AutoCategorizationService, BudgetService, CacheService,
+    ConnectionService,
 };
 
 pub struct AppState {
@@ -30,6 +31,8 @@ pub struct AppState {
     pub(crate) provider_registry: Arc<ProviderRegistry>,
     pub(crate) otlp_traces_relay: Arc<OtlpTracesRelay>,
     pub(crate) category_management_service: Arc<CategoryManagementService>,
+    #[allow(dead_code)]
+    pub(crate) auto_categorization_service: Arc<AutoCategorizationService>,
 }
 
 impl Clone for AppState {
@@ -51,6 +54,7 @@ impl Clone for AppState {
             provider_registry: self.provider_registry.clone(),
             otlp_traces_relay: self.otlp_traces_relay.clone(),
             category_management_service: self.category_management_service.clone(),
+            auto_categorization_service: self.auto_categorization_service.clone(),
         }
     }
 }

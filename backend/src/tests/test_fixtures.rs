@@ -16,6 +16,7 @@ use crate::services::{
     analytics_service::AnalyticsService,
     auth_service::AuthService,
     authorization_service::AuthorizationService,
+    auto_categorization::AutoCategorizationService,
     budget_service::BudgetService,
     cache_service::{CacheService, MockCacheService},
     categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS,
@@ -318,6 +319,12 @@ impl TestFixtures {
         let authorization_service = Arc::new(AuthorizationService::new());
         let config = Self::create_test_config();
 
+        let auto_categorization_service = Arc::new(AutoCategorizationService::new(
+            db_repository.clone(),
+            cache_service.clone(),
+            noop_categorizer(),
+        ));
+
         let state = AppState {
             plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
@@ -337,6 +344,7 @@ impl TestFixtures {
             category_management_service: Arc::new(CategoryManagementService::new(
                 SYSTEM_CATEGORY_SLUGS,
             )),
+            auto_categorization_service,
         };
 
         Ok(create_app(state))
@@ -441,6 +449,12 @@ impl TestFixtures {
         let authorization_service = Arc::new(AuthorizationService::new());
         let config = Self::create_test_config();
 
+        let auto_categorization_service = Arc::new(AutoCategorizationService::new(
+            db_repository.clone(),
+            cache_service.clone(),
+            noop_categorizer(),
+        ));
+
         let state = AppState {
             plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
@@ -460,6 +474,7 @@ impl TestFixtures {
             category_management_service: Arc::new(CategoryManagementService::new(
                 SYSTEM_CATEGORY_SLUGS,
             )),
+            auto_categorization_service,
         };
 
         Ok(create_app(state))
@@ -529,6 +544,12 @@ impl TestFixtures {
         let authorization_service = Arc::new(AuthorizationService::new());
         let config = Self::create_test_config();
 
+        let auto_categorization_service = Arc::new(AutoCategorizationService::new(
+            db_repository.clone(),
+            cache_service.clone(),
+            categorizer.clone(),
+        ));
+
         let state = AppState {
             plaid_service: plaid_service_arc,
             plaid_client: plaid_client_arc,
@@ -548,6 +569,7 @@ impl TestFixtures {
             category_management_service: Arc::new(CategoryManagementService::new(
                 SYSTEM_CATEGORY_SLUGS,
             )),
+            auto_categorization_service,
         };
 
         Ok(create_app(state))
