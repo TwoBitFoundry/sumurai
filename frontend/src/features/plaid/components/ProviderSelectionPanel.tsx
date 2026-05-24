@@ -40,7 +40,8 @@ const panelClasses = cn(
   'p-3',
   'sm:p-4',
   'md:p-8',
-  'lg:p-10',
+  'lg:py-10',
+  'lg:px-6',
   ...uiEffectRecipes.glassShadow,
   'backdrop-blur-[28px]'
 );
@@ -116,12 +117,12 @@ export const ProviderSelectionPanel = ({
           >
             Choose how you connect accounts
           </h1>
-          <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body, 'mx-auto', 'max-w-3xl')}>
+          <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body, 'max-w-3xl', 'text-left')}>
             Select the provider that best fits your location, budget, and privacy priorities.
           </p>
         </div>
 
-        <div className={cn('grid', 'gap-6', 'md:grid-cols-2', 'lg:grid-cols-3')}>
+        <div className={cn('grid', 'gap-6', 'md:grid-cols-2', 'lg:grid-cols-3', 'lg:gap-4')}>
           {PROVIDER_PRICE_ORDER.map((provider) => (
             <ProviderSelectionCard
               key={provider}

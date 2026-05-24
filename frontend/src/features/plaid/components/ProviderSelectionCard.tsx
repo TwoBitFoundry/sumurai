@@ -53,7 +53,7 @@ export const ProviderSelectionCard = ({
       containerClassName={cn(
         'h-full',
         'w-full',
-        'max-w-xl',
+        'lg:max-w-3xl',
         'mx-auto',
         'p-3',
         'sm:p-6',

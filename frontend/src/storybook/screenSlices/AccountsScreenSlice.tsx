@@ -12,29 +12,33 @@ import { font as uiTypographyRecipes } from '@/ui/recipes';
 
 export function AccountsProviderPickerSlice() {
   return (
-    <ProviderSelectionPanel
-      loading={false}
-      error={null}
-      selectedProvider={null}
-      availableProviders={['plaid', 'teller']}
-      tellerApplicationId="story-teller-app"
-      selectingProvider={null}
-      onSelectProvider={async () => {}}
-    />
+    <div className="mx-auto w-full max-w-7xl">
+      <ProviderSelectionPanel
+        loading={false}
+        error={null}
+        selectedProvider={null}
+        availableProviders={['plaid', 'teller']}
+        tellerApplicationId="story-teller-app"
+        selectingProvider={null}
+        onSelectProvider={async () => {}}
+      />
+    </div>
   );
 }
 
 export function AccountsProviderPickerLoadingSlice() {
   return (
-    <ProviderSelectionPanel
-      loading
-      error={null}
-      selectedProvider={null}
-      availableProviders={['plaid', 'teller']}
-      tellerApplicationId="story-teller-app"
-      selectingProvider={null}
-      onSelectProvider={async () => {}}
-    />
+    <div className="mx-auto w-full max-w-7xl">
+      <ProviderSelectionPanel
+        loading
+        error={null}
+        selectedProvider={null}
+        availableProviders={['plaid', 'teller']}
+        tellerApplicationId="story-teller-app"
+        selectingProvider={null}
+        onSelectProvider={async () => {}}
+      />
+    </div>
   );
 }
 
