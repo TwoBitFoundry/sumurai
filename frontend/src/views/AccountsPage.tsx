@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, cn } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { control, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
-import { Toast } from '../components/Toast';
+import { ToastStack } from '../components/toastStack/ToastStack';
+import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToastStack';
 import { AutoCategorizeIcon } from '../features/auto-categorization/components/AutoCategorizeIcon';
 import { useAutoCategorization } from '../features/auto-categorization/hooks/useAutoCategorization';
 import AccountsSummaryStats from '../features/plaid/components/AccountsSummaryStats';
@@ -192,8 +193,9 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     isOnline,
   });
   const autoCategorization = useAutoCategorization();
-
-  const [toast, setToast] = useState<string | null>(null);
+  const { pushToast: pushAccountsToast, ...accountsToastStack } = useAccountsToastStack(
+    autoCategorization.job
+  );
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncElapsed, setSyncElapsed] = useState(0);
   const syncStartRef = useRef<number | null>(null);
@@ -249,7 +251,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       }
 
       try {
-        setToast(
+        pushAccountsToast(
           bank.provider === 'simplefin'
             ? `Syncing ${bank.name} — auto-categorizing transactions…`
             : `Syncing ${bank.name}…`
@@ -262,7 +264,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           count = result?.metadata?.transaction_count ?? 0;
         }
         await refreshBankData(bank.provider);
-        setToast(
+        pushAccountsToast(
           count > 0
             ? `Synced ${count} transaction${count === 1 ? '' : 's'} for ${bank.name}`
             : `${bank.name} is up to date`
@@ -272,7 +274,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         onError?.(formatUserFacingApiError(error, `Failed to sync ${bank.name}`));
       }
     },
-    [banks, isOnline, onError, refreshBankData]
+    [banks, isOnline, onError, refreshBankData, pushAccountsToast]
   );
 
   const syncAll = useCallback(async () => {
@@ -282,7 +284,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
     setSyncingAll(true);
     const hasSimpleFin = banks.some((b) => b.connectionId && b.provider === 'simplefin');
-    setToast(
+    pushAccountsToast(
       hasSimpleFin
         ? 'Syncing all accounts — auto-categorizing transactions…'
         : 'Syncing all accounts…'
@@ -301,7 +303,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         }
       }
       await refreshBankDataForProviders(Array.from(providers));
-      setToast(
+      pushAccountsToast(
         totalCount > 0
           ? `Synced ${totalCount} transaction${totalCount === 1 ? '' : 's'}`
           : 'All accounts are up to date'
@@ -312,7 +314,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     } finally {
       setSyncingAll(false);
     }
-  }, [banks, isOnline, onError, refreshBankDataForProviders]);
+  }, [banks, isOnline, onError, refreshBankDataForProviders, pushAccountsToast]);
 
   const disconnect = useCallback(
     async (bankId: string) => {
@@ -328,18 +330,21 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           await PlaidService.disconnect(bank.connectionId);
         }
         await refreshBankData(bank.provider);
-        setToast(`${bank.name} disconnected successfully`);
+        pushAccountsToast(`${bank.name} disconnected successfully`);
       } catch (error) {
         console.warn('Failed to disconnect bank', error);
         onError?.('Failed to disconnect bank');
       }
     },
-    [banks, onError, refreshBankData]
+    [banks, onError, refreshBankData, pushAccountsToast]
   );
 
-  const handleImportSuccess = useCallback((count: number, mask: string) => {
-    setToast(`Imported ${count} transactions for ••${mask}`);
-  }, []);
+  const handleImportSuccess = useCallback(
+    (count: number, mask: string) => {
+      pushAccountsToast(`Imported ${count} transactions for ••${mask}`);
+    },
+    [pushAccountsToast]
+  );
 
   const restoreIgnoredInstitution = useCallback(
     async (orgConnId: string) => {
@@ -365,15 +370,15 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         onError?.(null);
 
         if (rateLimited) {
-          setToast(
+          pushAccountsToast(
             'Institution restored. Balances are ready; transaction sync will resume when the rate limit clears.'
           );
         } else if (transactionCount > 0) {
-          setToast(
+          pushAccountsToast(
             `Institution restored — synced ${transactionCount} transaction${transactionCount === 1 ? '' : 's'}`
           );
         } else {
-          setToast('Institution restored — accounts are up to date');
+          pushAccountsToast('Institution restored — accounts are up to date');
         }
       } catch (error) {
         console.warn('Failed to restore SimpleFIN institution', error);
@@ -387,7 +392,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         setRestoringIgnoredOrgConnId(null);
       }
     },
-    [connectionFlow, isOnline, onError, queryClient, refreshBankData]
+    [connectionFlow, isOnline, onError, queryClient, refreshBankData, pushAccountsToast]
   );
 
   const connectionsEmptyState = useMemo(() => {
@@ -584,7 +589,12 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           emptyState={connectionsEmptyState}
         />
 
-        {toast ? <Toast message={toast} onClose={() => setToast(null)} /> : null}
+        <ToastStack
+          transients={accountsToastStack.transients}
+          pinnedToast={accountsToastStack.pinnedToast}
+          onDismissTransient={accountsToastStack.dismissTransient}
+          onDismissPinned={accountsToastStack.dismissPinned}
+        />
       </PageLayout>
     </div>
   );

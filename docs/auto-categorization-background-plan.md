@@ -151,29 +151,40 @@ Add a top-level Accounts action that controls the background job and keeps app d
 Support a durable categorization progress toast without breaking normal transient toasts, and make the layout feel intentional on mobile, tablet, and desktop.
 
 **Tasks**
-- Replace the single-message Accounts toast state with a small toast stack controller that can render multiple toasts in one portal.
-- Reuse `useViewportBreakpoint` so toast layout decisions follow the app’s existing `mobile`, `tablet`, and `desktop` breakpoints.
-- Keep one categorization progress toast as a special pinned item at the bottom of the stack while the job is `running` or `cancelling`.
-- Render any newer success, error, or info toasts above that pinned progress toast so they never overwrite it.
-- If the user manually dismisses the progress toast while the job is still active, keep it dismissed for that run instead of re-opening it on every poll.
-- When the job reaches `completed`, `cancelled`, or `failed`, convert the pinned progress toast into a terminal summary toast with normal auto-dismiss behavior.
-- Show progress content using backend counts: `processed / total`, `updated`, and `skipped`.
-- Keep the layout rules concrete by breakpoint:
-- Mobile `<768`: anchor the stack centered above the floating primary tab bar, use near-full-width cards with safe-area padding, allow wrapped copy, and keep the stack high enough to avoid colliding with bottom chrome.
-- Tablet `768-1023`: anchor the stack to the bottom-right, keep a medium column width, preserve extra bottom clearance so it does not sit on the reserved bottom chrome spacer, and allow 2-3 visible stacked toasts comfortably.
-- Desktop `>=1024`: anchor the stack to the bottom-right with the widest column, compact vertical density, and enough horizontal room for richer terminal summaries without turning into a banner.
-- Keep the visual style aligned with existing primitives and current shell layering rules.
-- Add viewport-specific tests by mocking the breakpoint hook rather than relying on raw window width only.
+- [x] Replace the single-message Accounts toast state with a small toast stack controller that can render multiple toasts in one portal.
+- [x] Reuse `useViewportBreakpoint` so toast layout decisions follow the app’s existing `mobile`, `tablet`, and `desktop` breakpoints.
+- [x] Keep one categorization progress toast as a special pinned item at the bottom of the stack while the job is `running` or `cancelling`.
+- [x] Render any newer success, error, or info toasts above that pinned progress toast so they never overwrite it.
+- [x] If the user manually dismisses the progress toast while the job is still active, keep it dismissed for that run instead of re-opening it on every poll.
+- [x] When the job reaches `completed`, `cancelled`, or `failed`, convert the pinned progress toast into a terminal summary toast with normal auto-dismiss behavior.
+- [x] Show progress content using backend counts: `processed / total`, `updated`, and `skipped`.
+- [x] Keep the layout rules concrete by breakpoint:
+- [x] Mobile `<768`: anchor the stack centered above the floating primary tab bar, use near-full-width cards with safe-area padding, allow wrapped copy, and keep the stack high enough to avoid colliding with bottom chrome.
+- [x] Tablet `768-1023`: anchor the stack to the bottom-right, keep a medium column width, preserve extra bottom clearance so it does not sit on the reserved bottom chrome spacer, and allow 2-3 visible stacked toasts comfortably.
+- [x] Desktop `>=1024`: anchor the stack to the bottom-right with the widest column, compact vertical density, and enough horizontal room for richer terminal summaries without turning into a banner.
+- [x] Keep the visual style aligned with existing primitives and current shell layering rules.
+- [x] Add viewport-specific tests by mocking the breakpoint hook rather than relying on raw window width only.
 
 **Acceptance Criteria**
-- [ ] The categorization progress toast stays open until the user dismisses it or the job reaches a terminal state.
-- [ ] New toasts appear above the categorization toast instead of overwriting it.
-- [ ] Mobile layout clears the floating tab bar and safe-area inset.
-- [ ] Tablet layout clears the reserved bottom chrome spacer and remains readable without spanning the full width.
-- [ ] Desktop layout remains compact and anchored to the bottom-right.
-- [ ] Progress updates are visible while the background run is active.
-- [ ] Completed, cancelled, and failed states are clearly communicated.
-- [ ] Existing non-progress toasts still work.
+- [x] The categorization progress toast stays open until the user dismisses it or the job reaches a terminal state.
+- [x] New toasts appear above the categorization toast instead of overwriting it.
+- [x] Mobile layout clears the floating tab bar and safe-area inset.
+- [x] Tablet layout clears the reserved bottom chrome spacer and remains readable without spanning the full width.
+- [x] Desktop layout remains compact and anchored to the bottom-right.
+- [x] Progress updates are visible while the background run is active.
+- [x] Completed, cancelled, and failed states are clearly communicated.
+- [x] Existing non-progress toasts still work.
+
+**Notes**
+- `ToastStack` renders transients above a pinned progress or terminal toast via `flex-col-reverse`.
+- `useAccountsToastStack` tracks per-run dismiss state and terminal auto-dismiss separately from sync/import toasts.
+
+**TDD Log**
+- `npm --prefix frontend test -- autoCategorizationToastMessages` passed after message builders were added.
+- `npm --prefix frontend test -- ToastStack` passed after breakpoint layout classes were wired.
+- `npm --prefix frontend test -- useAccountsToastStack` passed after dismiss and terminal transition logic.
+- `npm --prefix frontend test -- AccountsPage.test` passed after Accounts page integration.
+- `npm --prefix frontend run typecheck` passed.
 
 ## Phase 6: Verification and Cleanup
 **Goal**
