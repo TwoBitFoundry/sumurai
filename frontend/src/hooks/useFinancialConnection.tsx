@@ -67,7 +67,7 @@ export function useFinancialConnection(
 
   const handleError = useCallback(
     (message: string) => {
-      dispatch(connectionActions.patch({ error: null, connectionInProgress: false }));
+      dispatch(connectionActions.patch({ error: message, connectionInProgress: false }));
       onError?.(message);
     },
     [onError]
