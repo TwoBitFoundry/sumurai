@@ -26,6 +26,7 @@ export type TellerConnectSdkProps = {
   environment?: TellerEnvironment;
   retryKey?: number;
   gateway?: TellerConnectGateway;
+  onReady?: () => void;
   onConnected?: (payload: TellerEnrollmentConnectedPayload) => Promise<void> | void;
   onExit?: () => Promise<void> | void;
   onEnrollmentError?: (error: unknown) => Promise<void> | void;
@@ -44,6 +45,7 @@ export const TellerConnectSdk = function TellerConnectSdk({
   environment = 'development',
   retryKey = 0,
   gateway = apiGateway,
+  onReady,
   onConnected,
   onExit,
   onEnrollmentError,
@@ -54,6 +56,7 @@ export const TellerConnectSdk = function TellerConnectSdk({
   const onConnectedRef = useRef(onConnected);
   const onExitRef = useRef(onExit);
   const onEnrollmentErrorRef = useRef(onEnrollmentError);
+  const onReadyRef = useRef(onReady);
   const onScriptLoadFailedRef = useRef(onScriptLoadFailed);
   const openedRef = useRef(false);
   const initializedAfterOpenRef = useRef(false);
@@ -86,6 +89,10 @@ export const TellerConnectSdk = function TellerConnectSdk({
   useEffect(() => {
     onEnrollmentErrorRef.current = onEnrollmentError;
   }, [onEnrollmentError]);
+
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  }, [onReady]);
 
   useEffect(() => {
     onScriptLoadFailedRef.current = onScriptLoadFailed;
@@ -183,6 +190,7 @@ export const TellerConnectSdk = function TellerConnectSdk({
 
         createdInstance = tellerInstance;
         instanceRef.current = tellerInstance;
+        onReadyRef.current?.();
       } catch (err) {
         console.warn('Failed to initialize Teller Connect', err);
         if (isActive) {

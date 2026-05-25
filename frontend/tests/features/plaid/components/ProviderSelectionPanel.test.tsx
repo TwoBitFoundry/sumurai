@@ -12,7 +12,7 @@ function renderPanel(props: Partial<ComponentProps<typeof ProviderSelectionPanel
         error={null}
         availableProviders={['plaid', 'teller']}
         tellerApplicationId={null}
-        selectingProvider={null}
+        connectingProvider={null}
         onSelectProvider={jest.fn()}
         {...props}
       />
@@ -57,12 +57,12 @@ describe('ProviderSelectionPanel', () => {
     );
     expect(privacyLinks[2]).toHaveAttribute('href', 'https://plaid.com/legal/#consumers');
 
-    const buttons = screen.getAllByRole('button', { name: /select/i });
+    const buttons = screen.getAllByRole('button', { name: /connect/i });
 
     expect(buttons).toHaveLength(3);
-    expect(buttons[0]).toHaveAccessibleName('Select');
-    expect(buttons[1]).toHaveAccessibleName('Select');
-    expect(buttons[2]).toHaveAccessibleName('Select');
+    expect(buttons[0]).toHaveAccessibleName('Connect');
+    expect(buttons[1]).toHaveAccessibleName('Connect');
+    expect(buttons[2]).toHaveAccessibleName('Connect');
   });
 
   it('keeps Teller disabled with missing credentials while SimpleFIN stays enabled', async () => {
@@ -74,7 +74,7 @@ describe('ProviderSelectionPanel', () => {
       onSelectProvider,
     });
 
-    const buttons = screen.getAllByRole('button', { name: 'Select' });
+    const buttons = screen.getAllByRole('button', { name: 'Connect' });
     const tellerButton = buttons[0];
     const simpleFinButton = buttons[1];
 
@@ -96,7 +96,7 @@ describe('ProviderSelectionPanel', () => {
       onSelectProvider,
     });
 
-    const buttons = screen.getAllByRole('button', { name: 'Select' });
+    const buttons = screen.getAllByRole('button', { name: 'Connect' });
     const tellerButton = buttons[0];
     const plaidButton = buttons[2];
     const simpleFinButton = buttons[1];
@@ -116,11 +116,49 @@ describe('ProviderSelectionPanel', () => {
       availableProviders: [],
     });
 
-    const buttons = screen.getAllByRole('button', { name: 'Select' });
+    const buttons = screen.getAllByRole('button', { name: 'Connect' });
 
     expect(buttons[0]).toBeDisabled();
     expect(buttons[1]).toBeEnabled();
     expect(buttons[2]).toBeDisabled();
     expect(screen.getAllByText('Missing credentials')).toHaveLength(2);
+  });
+
+  it('keeps connect buttons neutral after selection is initiated', async () => {
+    const user = userEvent.setup();
+    const onSelectProvider = jest.fn();
+
+    renderPanel({
+      availableProviders: ['plaid', 'teller', 'simplefin'],
+      tellerApplicationId: 'app-123',
+      onSelectProvider,
+    });
+
+    await user.click(screen.getAllByRole('button', { name: 'Connect' })[0]);
+
+    expect(onSelectProvider).toHaveBeenCalledWith('teller');
+    expect(screen.queryByRole('button', { name: 'Selected' })).not.toBeInTheDocument();
+  });
+
+  it('keeps popup providers disabled until their secure connection is prepared', () => {
+    renderPanel({
+      availableProviders: ['plaid', 'teller', 'simplefin'],
+      tellerApplicationId: 'app-123',
+      providerReadyState: {
+        plaid: false,
+        teller: false,
+        simplefin: true,
+      },
+    });
+
+    const buttons = screen.getAllByRole('button', { name: /^(Loading…|Connect)$/ });
+
+    expect(buttons[0]).toHaveAccessibleName('Loading…');
+    expect(buttons[0]).toBeDisabled();
+    expect(buttons[1]).toHaveAccessibleName('Connect');
+    expect(buttons[1]).toBeEnabled();
+    expect(buttons[2]).toHaveAccessibleName('Connect');
+    expect(buttons[2]).toBeEnabled();
+    expect(screen.getAllByText('Preparing secure connection')).toHaveLength(1);
   });
 });

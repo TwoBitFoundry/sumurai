@@ -1,3 +1,4 @@
+import useViewportBreakpoint from '@/hooks/useViewportBreakpoint';
 import type { FinancialProvider } from '@/types/api';
 import type { ProviderCatalogue } from '@/types/providerCatalog';
 import { Button, cn, GlassCard } from '@/ui/primitives';
@@ -29,20 +30,33 @@ const privacyLinkClasses = cn(
 interface ProviderSelectionCardProps {
   provider: FinancialProvider;
   providerCatalogue: ProviderCatalogue;
-  selectingProvider: FinancialProvider | null;
+  ready: boolean;
+  connectingProvider: FinancialProvider | null;
   onSelectProvider: (provider: FinancialProvider) => void | Promise<void>;
 }
 
 export const ProviderSelectionCard = ({
   provider,
   providerCatalogue,
-  selectingProvider,
+  ready,
+  connectingProvider,
   onSelectProvider,
 }: ProviderSelectionCardProps) => {
+  const { isMobile } = useViewportBreakpoint();
   const details = getProviderCardConfig(provider);
   const enabled = isPickerEnabled(provider, providerCatalogue);
   const blockedReason = getConnectBlockedReason(provider, providerCatalogue);
   const privacyLinkLabel = `${details.title} privacy policy`;
+  const isConnecting = connectingProvider === provider;
+  const isAnyProviderConnecting = connectingProvider !== null;
+  const requiresPreparedSdk = provider === 'teller';
+  const isPrepared = !requiresPreparedSdk || ready;
+  const disabled = !enabled || !isPrepared || isAnyProviderConnecting;
+  const availabilityReason = !enabled
+    ? blockedReason
+    : !isPrepared
+      ? 'Preparing secure connection'
+      : null;
 
   return (
     <GlassCard
@@ -130,10 +144,10 @@ export const ProviderSelectionCard = ({
         </div>
         <div className={cn('space-y-3')}>
           {details.sections.map((section) => (
-            <ProviderSelectionSection key={section.label} section={section} />
+            <ProviderSelectionSection key={section.label} section={section} isMobile={isMobile} />
           ))}
         </div>
-        <div className={cn('mt-auto', 'flex', 'flex-col', 'items-start', 'gap-3')}>
+        <div className={cn('mt-auto', 'flex', 'w-full', 'flex-col', 'items-start', 'gap-3')}>
           <a
             href={details.privacyHref}
             target="_blank"
@@ -143,22 +157,22 @@ export const ProviderSelectionCard = ({
           >
             {privacyLinkLabel}
           </a>
-          <div className={cn('space-y-2', 'text-left')}>
+          <div className={cn('w-full', 'space-y-2', 'text-left')}>
             <Button
               type="button"
               variant="connect"
               size="md"
-              disabled={!enabled || selectingProvider === provider}
+              disabled={disabled}
               onClick={() => {
                 void onSelectProvider(provider);
               }}
-              className={cn('min-w-40', 'self-start')}
+              className={cn('w-full', 'sm:w-auto', 'sm:min-w-40')}
             >
-              {selectingProvider === provider ? 'Selecting…' : 'Select'}
+              {isConnecting ? 'Connecting…' : !isPrepared ? 'Loading…' : 'Connect'}
             </Button>
-            {!enabled && blockedReason ? (
+            {availabilityReason ? (
               <p className={cn('text-left', uiTypographyRecipes.caption, uiTextRecipes.subtle)}>
-                {blockedReason}
+                {availabilityReason}
               </p>
             ) : null}
           </div>

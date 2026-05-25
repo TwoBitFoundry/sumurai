@@ -114,4 +114,4 @@ Cache keys are namespaced by session, connection, and account identifiers so pro
 ## Development URLs
 
 - Use `http://localhost:8080` for integrated validation through Nginx.
-- Use `http://localhost:3001` for frontend-only development.
+- Use `http://localhost:3001` for Next.js dev-server validation; it proxies `/api` and `/health` to the backend during local development.

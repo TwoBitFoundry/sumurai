@@ -151,7 +151,7 @@ describe('shared responsive layout surfaces', () => {
         loading={false}
         error={null}
         availableProviders={['plaid', 'teller']}
-        selectingProvider={null}
+        connectingProvider={null}
         onSelectProvider={jest.fn()}
       />
     );

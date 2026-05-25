@@ -180,15 +180,16 @@ Behavior rules:
 
 ## Phase 5 — Frontend: delete wizard, replace with single-screen onboarding
 
-**Goal:** Onboarding is one screen: the provider picker with Skip-for-now + Continue footer. The multi-step wizard, Welcome step, and embedded connect step are gone.
+**Goal:** Onboarding is one screen: the provider picker with Skip-for-now + Continue footer. The multi-step wizard and Welcome step are gone. The card action launches the provider-specific connect modal, and SimpleFIN uses the same modal pattern for its setup-token flow.
 
 **Tasks:**
 
 - Create `frontend/src/components/onboarding/OnboardingProviderPicker.tsx`:
   - Renders inside `GradientShell` + `AppTitleBar` (carry over from `OnboardingWizard.tsx`).
-  - Renders `ProviderSelectionPanel` (from Phase 4) with `providerCatalog` wired in and keeps the picker visible after selection so the footer can enable Continue.
-  - Footer row contains **Skip for now** and **Continue** buttons (use the existing `Button` primitive with the same variants as today's wizard).
-  - **Continue** is disabled until `providerCatalog.userProvider` is non-empty. Clicking Continue calls `AuthService.completeOnboarding()` then `onComplete()`.
+  - Renders `ProviderSelectionPanel` (from Phase 4) with `providerCatalog` wired in and keeps the picker visible while the modal handles the provider connection.
+  - When a card's `Connect` action is used, open the provider-specific connect modal. SimpleFIN uses the setup-token field; Teller and Plaid launch their existing SDK/link flows from inside the modal.
+  - Footer row contains **Skip for now** and **Continue** buttons (use the existing `Button` primitive with the same variants as today's wizard) and stays inside the picker surface.
+  - **Continue** is disabled until `providerCatalog.userProvider` is non-empty. After the modal finishes successfully, the chosen provider is saved and Continue becomes available. Clicking Continue calls `AuthService.completeOnboarding()` then `onComplete()`.
   - **Skip for now** calls `AuthService.completeOnboarding()` then `onComplete()` — leaves `user.provider` empty so the AccountsPage picker takes over.
 - Update [frontend/src/App.tsx](frontend/src/App.tsx):
   - Replace `<OnboardingWizard ... />` with `<OnboardingProviderPicker ... />`. Same `onboarding_completed` gate.
@@ -201,10 +202,11 @@ Behavior rules:
   - [frontend/src/components/onboarding/ConnectAccountStep.tsx](frontend/src/components/onboarding/ConnectAccountStep.tsx)
   - Their `frontend/tests/components/onboarding/`* siblings.
 - Add `frontend/tests/components/onboarding/OnboardingProviderPicker.test.tsx`:
-  - Continue disabled with no selection.
-  - Picking a provider enables Continue.
+  - Continue disabled before a provider connect completes.
+  - Completing a provider connect enables Continue.
   - Skip-for-now calls `completeOnboarding` without touching `/providers/select`.
-  - Continue after selection calls `chooseProvider` then `completeOnboarding`.
+  - Continue after a completed provider connect calls `chooseProvider` then `completeOnboarding`.
+  - Connect on SimpleFIN reveals the setup-token field; Connect on Teller/Plaid triggers the provider connect hook.
 
 **Acceptance criteria:**
 
@@ -219,6 +221,8 @@ Behavior rules:
 **TDD log:**
 
 - `npm --prefix frontend test -- --runTestsByPath tests/components/onboarding/OnboardingProviderPicker.test.tsx tests/App.test.tsx tests/features/plaid/components/ProviderSelectionPanel.test.tsx`
+  - Passed after wiring the onboarding picker and keeping the provider panel visible after selection.
+- `npm --prefix frontend test -- --runTestsByPath tests/components/onboarding/OnboardingProviderPicker.test.tsx tests/features/plaid/components/ProviderSelectionPanel.test.tsx`
   - Passed after wiring the new onboarding picker and keeping the provider panel visible after selection.
 - `npm --prefix frontend run typecheck`
   - Passed after removing the wizard module tree and updating all onboarding imports.
@@ -226,6 +230,8 @@ Behavior rules:
   - Passed after formatting the new onboarding picker and app entrypoint.
 - `npm --prefix frontend run storybook:build`
   - Passed after removing the old onboarding stories and updating the picker stories.
+- `npm --prefix frontend test -- --runTestsByPath tests/components/onboarding/OnboardingProviderPicker.test.tsx tests/features/plaid/components/ProviderSelectionPanel.test.tsx`
+  - Passed after adding the provider connect surface and SimpleFIN token-entry path under the picker.
 - Browser verification at `http://localhost:8080`
   - Blocked: no server was listening on port 8080 in this environment.
 
@@ -253,13 +259,21 @@ Behavior rules:
 
 - [ ] Browser test at [http://localhost:8080](http://localhost:8080): from a "Skip for now" user, navigating to /accounts shows the picker. Selecting SimpleFIN there transitions seamlessly to the SimpleFIN token entry (same page).
 - [ ] Browser test: with an existing user who has Teller banks, disconnect each bank in turn. After the final disconnect, the page state updates to the picker (no full reload needed).
-- [ ] With active connections present, the picker is not rendered.
+- [x] With active connections present, the picker is not rendered.
 - [ ] Attempting to pick a provider while active connections still exist for a different provider surfaces the backend 409 message in the UI.
-- [ ] `npm --prefix frontend test` passes.
-- Browser test: with an existing user who has Teller banks, disconnect each bank in turn. After the final disconnect, the page state updates to the picker (no full reload needed).
-- With active connections present, the picker is not rendered.
-- Attempting to pick a provider while active connections still exist for a different provider surfaces the backend 409 message in the UI.
-- `npm --prefix frontend test` passes.
+- [x] `npm --prefix frontend test` passes.
+
+**TDD log:**
+
+- `npm --prefix frontend test -- tests/views/AccountsPage.test.tsx`
+  - 3 new picker-fallback tests added (red → green). Existing tests updated to include connected banks where needed to avoid triggering the picker when testing normal-page features.
+- `npm --prefix frontend test` — 715 tests passed.
+- `npm --prefix frontend run typecheck` — passed.
+- `npm --prefix frontend run lint` — passed (auto-fixed import order).
+- Also fixed in this phase:
+  - `TellerConnectSdk` and `PlaidLinkSdk` refactored to use refs for SDK instance instead of state, eliminating `flushSync` inside `useEffect` async callbacks (source of 10x console warning on accounts page load).
+  - SimpleFIN modal `connectionMount` was missing → fixed "Connection is not ready" error on connect.
+  - SimpleFIN modal `connectionMount` was missing → fixed "Connection is not ready" error on connect.
 
 ---
 

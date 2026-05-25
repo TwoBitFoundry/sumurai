@@ -17,6 +17,7 @@ export type PlaidLinkSdkProps = {
   token: string | undefined;
   onSuccess: PlaidLinkOnSuccess;
   onExit: PlaidLinkOnExit;
+  onReady?: () => void;
   onScriptLoadFailed: () => void;
 };
 
@@ -24,12 +25,14 @@ export const PlaidLinkSdk = function PlaidLinkSdk({
   token,
   onSuccess,
   onExit,
+  onReady,
   onScriptLoadFailed,
   ref,
 }: PlaidLinkSdkProps & { ref?: RefObject<PlaidLinkSdkHandle | null> }) {
   const handlerRef = useRef<PlaidLinkHandler | null>(null);
   const onSuccessRef = useRef(onSuccess);
   const onExitRef = useRef(onExit);
+  const onReadyRef = useRef(onReady);
   const onScriptLoadFailedRef = useRef(onScriptLoadFailed);
 
   useEffect(() => {
@@ -39,6 +42,10 @@ export const PlaidLinkSdk = function PlaidLinkSdk({
   useEffect(() => {
     onExitRef.current = onExit;
   }, [onExit]);
+
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  }, [onReady]);
 
   useEffect(() => {
     onScriptLoadFailedRef.current = onScriptLoadFailed;
@@ -70,6 +77,7 @@ export const PlaidLinkSdk = function PlaidLinkSdk({
         createdHandler = nextHandler;
         if (isActive) {
           handlerRef.current = nextHandler;
+          onReadyRef.current?.();
         } else {
           nextHandler.destroy();
         }

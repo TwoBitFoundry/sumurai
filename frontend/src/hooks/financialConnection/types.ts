@@ -24,6 +24,7 @@ export interface FinancialConnectionStrategyContext {
   isOnline: boolean;
   sdkNonce: number;
   setSdkNonce: Dispatch<SetStateAction<number>>;
+  setReady: Dispatch<SetStateAction<boolean>>;
   sdkFailedRef: MutableRefObject<boolean>;
   state: FinancialConnectionState;
   dispatch: Dispatch<FinancialConnectionAction>;

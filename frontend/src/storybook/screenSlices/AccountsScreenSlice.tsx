@@ -18,7 +18,7 @@ export function AccountsProviderPickerSlice() {
         error={null}
         availableProviders={['plaid', 'teller']}
         tellerApplicationId="story-teller-app"
-        selectingProvider={null}
+        connectingProvider={null}
         onSelectProvider={async () => {}}
       />
     </div>
@@ -33,7 +33,7 @@ export function AccountsProviderPickerLoadingSlice() {
         error={null}
         availableProviders={['plaid', 'teller']}
         tellerApplicationId="story-teller-app"
-        selectingProvider={null}
+        connectingProvider={null}
         onSelectProvider={async () => {}}
       />
     </div>

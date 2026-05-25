@@ -2,7 +2,7 @@
 
 Thanks for helping improve Sumurai. This guide covers the current workflow, local validation commands, and the conventions used in this repository.
 
-> Heads-up: end-to-end validation happens at `http://localhost:8080` through Nginx. The frontend dev server at `http://localhost:3001` is for UI iteration only.
+> Heads-up: both `http://localhost:8080` and `http://localhost:3001` support end-to-end validation locally. `8080` runs through Nginx; `3001` uses Next dev rewrites to proxy `/api` and `/health` to the backend.
 
 ## Prerequisites
 
@@ -93,7 +93,8 @@ npm test
 ```
 
 - `npm run dev` starts the Next.js dev server on `http://localhost:3001`.
-- Use the Docker stack at `http://localhost:8080` to validate integrated flows.
+- `http://localhost:3001` proxies `/api` and `/health` to the backend for local end-to-end flows.
+- `http://localhost:8080` remains the Nginx-backed integrated stack.
 - Supported local host platforms are macOS, Linux, and Windows through Docker Compose.
 
 ### Storybook
@@ -162,7 +163,7 @@ DATABASE_URL=postgresql://postgres:password@localhost:5432/accounting \
 - Use `docker compose logs -f <service>` for logs.
 - Use `docker compose down -v` to reset local data.
 - Redis is required for the backend to start in Docker.
-- Validate end-to-end behavior only through the Nginx-backed stack at `http://localhost:8080`.
+- Validate end-to-end behavior through either `http://localhost:3001` or `http://localhost:8080`.
 
 ## Environment Variables
 
@@ -194,6 +195,7 @@ Optional values:
 - `NGROK_URL`
 - `SEQ_PASSWORD`
 - `SEQ_API_KEY`
+- `CLEAR_SESSIONS_ON_BOOT` set to `true` only when you intentionally want backend startup to invalidate all active sessions
 
 ## Authentication Rate Limiting
 

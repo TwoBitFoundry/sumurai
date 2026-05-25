@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { FinancialProvider } from '@/types/api';
 import type { ProviderCatalogue } from '@/types/providerCatalog';
 import { cn } from '@/ui/primitives';
@@ -25,8 +26,10 @@ interface ProviderSelectionPanelProps {
   error: string | null;
   availableProviders: FinancialProvider[];
   tellerApplicationId?: string | null;
-  selectingProvider: FinancialProvider | null;
+  providerReadyState?: Partial<Record<FinancialProvider, boolean>>;
+  connectingProvider?: FinancialProvider | null;
   onSelectProvider: (provider: FinancialProvider) => void | Promise<void>;
+  footerContent?: ReactNode;
 }
 
 const panelClasses = cn(
@@ -50,9 +53,13 @@ export const ProviderSelectionPanel = ({
   error,
   availableProviders,
   tellerApplicationId,
-  selectingProvider,
+  providerReadyState,
+  connectingProvider,
   onSelectProvider,
+  footerContent,
 }: ProviderSelectionPanelProps) => {
+  const currentConnectingProvider = connectingProvider ?? null;
+
   if (loading) {
     return (
       <section className={panelClasses} data-testid="provider-loading-panel">
@@ -100,7 +107,7 @@ export const ProviderSelectionPanel = ({
   return (
     <section className={panelClasses} data-testid="provider-selection-panel">
       <div className={cn('relative', 'z-10', 'flex', 'flex-col', 'gap-8')}>
-        <div className={cn('mx-auto', 'w-full', 'max-w-4xl', 'space-y-3', 'text-left')}>
+        <div className={cn('w-full', 'max-w-4xl', 'space-y-3', 'text-left')}>
           <span className={eyebrowChip}>Self-Hosted</span>
           <h1
             className={cn(
@@ -122,11 +129,14 @@ export const ProviderSelectionPanel = ({
               key={provider}
               provider={provider}
               providerCatalogue={providerCatalogue}
-              selectingProvider={selectingProvider}
+              ready={providerReadyState?.[provider] ?? true}
+              connectingProvider={currentConnectingProvider}
               onSelectProvider={onSelectProvider}
             />
           ))}
         </div>
+
+        {footerContent ? <div className={cn('flex', 'justify-end')}>{footerContent}</div> : null}
       </div>
     </section>
   );

@@ -19,6 +19,7 @@ export function usePlaidConnectionStrategy(
   const {
     isOnline,
     sdkNonce,
+    setReady,
     sdkFailedRef,
     dispatch,
     handleError,
@@ -87,6 +88,7 @@ export function usePlaidConnectionStrategy(
           await invalidateCache();
         }
         setLinkToken(null);
+        setReady(false);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Connection failed';
         handleError(errorMessage);
@@ -94,7 +96,7 @@ export function usePlaidConnectionStrategy(
         dispatch(connectionActions.patch({ connectionInProgress: false }));
       }
     },
-    [dispatch, handleError, invalidateCache, onConnectionSuccess]
+    [dispatch, handleError, invalidateCache, onConnectionSuccess, setReady]
   );
 
   const onScriptLoadFailed = useCallback(() => {
@@ -105,8 +107,9 @@ export function usePlaidConnectionStrategy(
       { provider: 'plaid' }
     );
     sdkFailedRef.current = true;
+    setReady(false);
     handleError(PLAID_LINK_LOAD_FAILED_MESSAGE);
-  }, [handleError, sdkFailedRef]);
+  }, [handleError, sdkFailedRef, setReady]);
 
   const getLinkToken = useCallback(async () => {
     if (!isOnline) {
@@ -153,6 +156,12 @@ export function usePlaidConnectionStrategy(
     };
   }, [getLinkToken, isOnline, linkToken]);
 
+  useEffect(() => {
+    if (!linkToken) {
+      setReady(false);
+    }
+  }, [linkToken, setReady]);
+
   return useMemo(
     () => ({
       getReady: () => sdkRef.current?.getReady() ?? false,
@@ -163,7 +172,10 @@ export function usePlaidConnectionStrategy(
           setLinkToken(token);
         });
       },
-      reset: () => setLinkToken(null),
+      reset: () => {
+        setReady(false);
+        setLinkToken(null);
+      },
       loadFailedMessage: PLAID_LINK_LOAD_FAILED_MESSAGE,
       render: () =>
         linkToken
@@ -172,7 +184,9 @@ export function usePlaidConnectionStrategy(
               ref: sdkRef,
               token: linkToken,
               onSuccess: handleSuccess,
+              onReady: () => setReady(true),
               onExit: (err) => {
+                setReady(false);
                 setLinkToken(null);
                 dispatch(connectionActions.patch({ connectionInProgress: false }));
                 if (err) {
@@ -183,6 +197,15 @@ export function usePlaidConnectionStrategy(
             })
           : null,
     }),
-    [dispatch, getLinkToken, handleError, handleSuccess, linkToken, onScriptLoadFailed, sdkNonce]
+    [
+      dispatch,
+      getLinkToken,
+      handleError,
+      handleSuccess,
+      linkToken,
+      onScriptLoadFailed,
+      sdkNonce,
+      setReady,
+    ]
   );
 }

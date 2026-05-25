@@ -4,7 +4,15 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
-import { createElement, useCallback, useMemo, useReducer, useRef, useState } from 'react';
+import {
+  createElement,
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
 import { flushSync } from 'react-dom';
 import {
   connectionActions,
@@ -12,6 +20,7 @@ import {
   initialFinancialConnectionState,
 } from '@/hooks/financialConnection/connectionState';
 import { FinancialConnectionStrategyBridge } from '@/hooks/financialConnection/FinancialConnectionStrategyBridge';
+import { acquireProviderLaunchBackdropBlur } from '@/hooks/financialConnection/providerLaunchBackdropBlur';
 import {
   type FinancialConnectionStrategy,
   type FinancialConnectionStrategyContext,
@@ -35,6 +44,7 @@ export interface UseFinancialConnectionOptions {
 }
 
 export interface UseFinancialConnectionReturn {
+  isReady: boolean;
   isConnected: boolean;
   connectionInProgress: boolean;
   isSyncing: boolean;
@@ -62,8 +72,22 @@ export function useFinancialConnection(
 
   const [state, dispatch] = useReducer(financialConnectionReducer, initialFinancialConnectionState);
   const [sdkNonce, setSdkNonce] = useState(0);
+  const [isReady, setReady] = useState(provider === 'simplefin');
   const sdkFailedRef = useRef(false);
   const strategyRef = useRef<FinancialConnectionStrategy>(PENDING_CONNECTION_STRATEGY);
+  const isLaunchBackdropBlurActive = state.connectionInProgress || state.isSyncing;
+
+  useEffect(() => {
+    setReady(provider === 'simplefin');
+  }, [provider]);
+
+  useEffect(() => {
+    if (!isLaunchBackdropBlurActive) {
+      return;
+    }
+
+    return acquireProviderLaunchBackdropBlur();
+  }, [isLaunchBackdropBlurActive]);
 
   const handleError = useCallback(
     (message: string) => {
@@ -86,6 +110,7 @@ export function useFinancialConnection(
       isOnline,
       sdkNonce,
       setSdkNonce,
+      setReady,
       sdkFailedRef,
       state,
       dispatch,
@@ -219,6 +244,7 @@ export function useFinancialConnection(
   }, []);
 
   return {
+    isReady,
     isConnected: state.isConnected,
     connectionInProgress: state.connectionInProgress,
     isSyncing: state.isSyncing,

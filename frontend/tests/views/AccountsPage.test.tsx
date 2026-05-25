@@ -38,6 +38,7 @@ function makeFinancialConnectionMock(
   overrides: Partial<UseFinancialConnectionReturn> = {}
 ): UseFinancialConnectionReturn {
   return {
+    isReady: true,
     isConnected: false,
     connectionInProgress: false,
     isSyncing: false,
@@ -600,7 +601,7 @@ describe('AccountsPage', () => {
       expect(screen.queryByText('Link accounts and keep balances current')).not.toBeInTheDocument();
     });
 
-    it('shows the provider picker when all banks are disconnected', () => {
+    it('does not show the picker when user has a provider but no banks', () => {
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
@@ -624,7 +625,8 @@ describe('AccountsPage', () => {
 
       renderAccountsPage();
 
-      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+      expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
+      expect(screen.getByText('Link accounts and keep balances current')).toBeInTheDocument();
     });
 
     it('does not show the picker when active connections exist', () => {
@@ -668,6 +670,41 @@ describe('AccountsPage', () => {
 
       expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
       expect(screen.getByText('Link accounts and keep balances current')).toBeInTheDocument();
+    });
+
+    it('starts Teller connect from the picker click instead of only selecting the provider', async () => {
+      const user = userEvent.setup();
+      const chooseProvider = jest.fn();
+      const tellerInitiateConnection = jest.fn();
+
+      jest.mocked(useOnlineStatus).mockReturnValue(true);
+      jest.mocked(useProviderCatalog).mockReturnValue(
+        makeProviderCatalogMock(
+          {
+            available_providers: ['teller', 'simplefin', 'plaid'],
+            default_provider: 'teller',
+            user_provider: null,
+            teller_application_id: 'app_123',
+          },
+          {
+            chooseProvider,
+          }
+        )
+      );
+      jest
+        .mocked(useFinancialConnection)
+        .mockImplementation(({ provider }: { provider: 'plaid' | 'teller' | 'simplefin' }) =>
+          makeFinancialConnectionMock({
+            initiateConnection: provider === 'teller' ? tellerInitiateConnection : jest.fn(),
+          })
+        );
+
+      renderAccountsPage();
+
+      await user.click(screen.getAllByRole('button', { name: 'Connect' })[0]);
+
+      expect(tellerInitiateConnection).toHaveBeenCalledTimes(1);
+      expect(chooseProvider).not.toHaveBeenCalled();
     });
   });
 

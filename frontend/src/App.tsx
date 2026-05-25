@@ -12,6 +12,7 @@ import { AccountFilterProvider } from './hooks/useAccountFilter';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { TelemetryProvider, TelemetryService } from './observability';
 import { SessionManager } from './SessionManager';
+import { AuthenticationError } from './services/ApiClient';
 import { AuthService } from './services/authService';
 import { BrowserStorageAdapter } from './services/boundaries';
 import { AppFooter, AppTitleBar, GlassCard, GradientShell } from './ui/primitives';
@@ -61,11 +62,13 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
         setShowOnboarding(!refreshResponse.onboarding_completed);
         setSessionExpiresAt(refreshResponse.expires_at);
       } catch (error) {
-        console.warn('Auth validation error:', error);
         if (active) {
           setIsAuthenticated(false);
           setShowOnboarding(false);
           setSessionExpiresAt(null);
+        }
+        if (!(error instanceof AuthenticationError)) {
+          console.warn('Auth validation error:', error);
         }
         AuthService.clearToken();
       } finally {

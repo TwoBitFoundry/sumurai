@@ -8,7 +8,7 @@ const fullCatalogueArgs = {
   error: null,
   availableProviders: ['plaid', 'teller', 'simplefin'] as FinancialProvider[],
   tellerApplicationId: 'story-teller-app',
-  selectingProvider: null,
+  connectingProvider: null,
   onSelectProvider: fn(),
 };
 
@@ -67,6 +67,6 @@ export const ZeroCreds: Story = {
 
 export const Selecting: Story = {
   args: {
-    selectingProvider: 'plaid',
+    connectingProvider: 'plaid',
   },
 };

@@ -98,6 +98,7 @@ export function OnboardingProviderConnectModal({
         labelledBy={`${provider}-connect-modal-title`}
         description={`${provider}-connect-modal-description`}
         size="sm"
+        animateCentered={isSimpleFin}
         preventCloseOnBackdrop={connectionFlow.connectionInProgress || connectionFlow.isSyncing}
       >
         <GlassCard variant="auth" padding="none" className={cn('space-y-6', 'p-5', 'sm:p-6')}>

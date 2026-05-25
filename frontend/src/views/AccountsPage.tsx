@@ -26,6 +26,7 @@ import { PageLayout } from '../layouts/PageLayout';
 import { PlaidService } from '../services/PlaidService';
 import { SimpleFinService } from '../services/SimpleFinService';
 import { TellerService } from '../services/TellerService';
+import type { FinancialProvider } from '../types/api';
 import { dispatchAccountsChanged } from '../utils/events';
 import { formatUserFacingApiError } from '../utils/formatUserFacingApiError';
 import {
@@ -199,6 +200,26 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     },
     isOnline,
   });
+  const plaidPickerConnectionFlow = useFinancialConnection({
+    provider: 'plaid',
+    onError: (message) => {
+      pushAccountsToast(message, 'error');
+      onError?.(message);
+    },
+    isOnline,
+  });
+  const tellerPickerConnectionFlow = useFinancialConnection({
+    provider: 'teller',
+    onError: (message) => {
+      pushAccountsToast(message, 'error');
+      onError?.(message);
+    },
+    isOnline,
+  });
+  const [pickerConnectingProvider, setPickerConnectingProvider] = useState<SyncProvider | null>(
+    null
+  );
+  const pickerPrevInProgressRef = useRef(false);
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncElapsed, setSyncElapsed] = useState(0);
   const syncStartRef = useRef<number | null>(null);
@@ -218,14 +239,21 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   }, [syncingAll]);
   const accountsDataLoading = providerCatalog.loading || accountFilter.loading;
 
-  const hasActiveConnections = banksWithSync.some((b) => b.status === 'connected');
-  const needsProviderPick =
-    !accountsDataLoading &&
-    (providerCatalog.userProvider == null ||
-      (!hasActiveConnections && providerCatalog.userProvider !== 'simplefin'));
+  const needsProviderPick = !accountsDataLoading && providerCatalog.userProvider == null;
+  const pickerConnectionFlow =
+    pickerConnectingProvider === 'plaid'
+      ? plaidPickerConnectionFlow
+      : pickerConnectingProvider === 'teller'
+        ? tellerPickerConnectionFlow
+        : null;
 
   const simpleFinEmptyStateActive =
     primaryProvider === 'simplefin' && banksWithSync.length === 0 && !accountsDataLoading;
+  const pickerProviderReadyState = {
+    plaid: plaidPickerConnectionFlow.isReady,
+    teller: tellerPickerConnectionFlow.isReady,
+    simplefin: true,
+  } satisfies Partial<Record<FinancialProvider, boolean>>;
   const ignoredInstitutionsQuery = useQuery({
     queryKey: ['simplefin', 'ignored-institutions'],
     queryFn: () => SimpleFinService.getIgnoredInstitutions(),
@@ -247,6 +275,59 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     },
     [queryClient]
   );
+
+  const startProviderPickerConnection = useCallback(
+    async (provider: FinancialProvider) => {
+      if (provider === 'simplefin') {
+        await providerCatalog.chooseProvider(provider);
+        return;
+      }
+
+      setPickerConnectingProvider(provider);
+
+      if (provider === 'plaid') {
+        await plaidPickerConnectionFlow.initiateConnection();
+        return;
+      }
+
+      await tellerPickerConnectionFlow.initiateConnection();
+    },
+    [plaidPickerConnectionFlow, providerCatalog, tellerPickerConnectionFlow]
+  );
+
+  useEffect(() => {
+    if (!pickerConnectionFlow || !pickerConnectingProvider) {
+      pickerPrevInProgressRef.current = false;
+      return;
+    }
+
+    const wasInProgress = pickerPrevInProgressRef.current;
+    pickerPrevInProgressRef.current = pickerConnectionFlow.connectionInProgress;
+
+    if (
+      wasInProgress &&
+      !pickerConnectionFlow.connectionInProgress &&
+      !pickerConnectionFlow.isConnected
+    ) {
+      setPickerConnectingProvider(null);
+    }
+  }, [pickerConnectingProvider, pickerConnectionFlow]);
+
+  useEffect(() => {
+    if (!pickerConnectionFlow || !pickerConnectingProvider) {
+      return;
+    }
+
+    if (
+      pickerConnectionFlow.isConnected &&
+      !pickerConnectionFlow.connectionInProgress &&
+      !pickerConnectionFlow.isSyncing
+    ) {
+      void providerCatalog
+        .chooseProvider(pickerConnectingProvider)
+        .catch(() => pushAccountsToast('Unable to select provider right now', 'error'));
+    }
+  }, [pickerConnectingProvider, pickerConnectionFlow, providerCatalog, pushAccountsToast]);
 
   const dismissTransient = accountsToastStack.dismissTransient;
   const syncBank = useCallback(
@@ -472,10 +553,10 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const connectDisabled =
     catalogLoading ||
     connectionFlow.connectionInProgress ||
+    (primaryProvider === 'teller' && !connectionFlow.isReady) ||
     !isOnline ||
     !providerCatalog.canConnectWith(primaryProvider);
 
-  const syncingWithSimpleFin = syncingAll && providersForSync.has('simplefin');
   const lastSyncValue = syncingAll
     ? syncElapsed > 0
       ? `Syncing... ${syncElapsed}s`
@@ -567,13 +648,19 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   if (needsProviderPick) {
     return (
       <div data-testid="accounts-page">
+        <div hidden>
+          {plaidPickerConnectionFlow.connectionMount}
+          {tellerPickerConnectionFlow.connectionMount}
+        </div>
         <div className={cn('mx-auto', 'w-full', 'max-w-7xl', 'px-4', 'py-8')}>
           <ProviderSelectionPanel
             loading={providerCatalog.loading}
             error={providerCatalog.error}
             availableProviders={providerCatalog.availableProviders}
             tellerApplicationId={providerCatalog.tellerApplicationId}
-            onSelectProvider={(provider) => void providerCatalog.chooseProvider(provider)}
+            providerReadyState={pickerProviderReadyState}
+            connectingProvider={pickerConnectingProvider}
+            onSelectProvider={(provider) => void startProviderPickerConnection(provider)}
           />
         </div>
       </div>

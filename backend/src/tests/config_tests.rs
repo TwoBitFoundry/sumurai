@@ -99,6 +99,29 @@ fn given_valid_cookie_settings_when_from_env_provider_then_returns_values() {
 }
 
 #[test]
+fn given_missing_clear_sessions_setting_when_from_env_provider_then_defaults_to_false() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "development");
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+
+    let config = Config::from_env_provider(&env).unwrap();
+
+    assert!(!config.should_clear_sessions_on_boot());
+}
+
+#[test]
+fn given_clear_sessions_setting_when_from_env_provider_then_parses_boolean() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "development");
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("CLEAR_SESSIONS_ON_BOOT", "true");
+
+    let config = Config::from_env_provider(&env).unwrap();
+
+    assert!(config.should_clear_sessions_on_boot());
+}
+
+#[test]
 fn given_invalid_cookie_mode_when_from_env_provider_then_returns_error() {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "development");

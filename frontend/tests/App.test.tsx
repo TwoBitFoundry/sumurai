@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { type ReactNode, useEffect } from 'react';
 import { App, AppProviders } from '@/App';
+import { AuthenticationError } from '@/services/ApiClient';
 import { AuthService } from '@/services/authService';
 
 jest.mock('@/Auth', () => ({
@@ -161,5 +162,22 @@ describe('App onboarding gate', () => {
     await waitFor(() => {
       expect(screen.getByTestId('onboarding-provider-picker')).toBeInTheDocument();
     });
+  });
+});
+
+describe('App auth bootstrap', () => {
+  it('treats refresh 401 as unauthenticated without logging a validation warning', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    jest.mocked(AuthService.refreshToken).mockRejectedValueOnce(new AuthenticationError());
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('logout-cache-state')).toHaveTextContent('miss');
+    });
+
+    expect(warnSpy).not.toHaveBeenCalledWith('Auth validation error:', expect.anything());
+
+    warnSpy.mockRestore();
   });
 });

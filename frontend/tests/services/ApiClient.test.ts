@@ -3,6 +3,7 @@ import {
   ApiError,
   AuthenticationError,
   ConflictError,
+  DEFAULT_API_BASE,
   ForbiddenError,
   NetworkError,
   NotFoundError,
@@ -30,6 +31,10 @@ describe('ApiClient with Injected IHttpClient', () => {
     mockHttp = boundaries.http;
     jest.spyOn(AuthService, 'clearToken');
     ApiClient.setTestMaxRetries(0);
+  });
+
+  it('defaults to same-origin api routing when no override is provided', () => {
+    expect(DEFAULT_API_BASE).toBe('/api');
   });
 
   afterEach(() => {

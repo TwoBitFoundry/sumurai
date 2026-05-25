@@ -24,6 +24,23 @@
     font-family: 'Cal Sans', system-ui, sans-serif;
   }
 
+  #app-shell {
+    min-height: 100dvh;
+    transition:
+      filter 180ms ease,
+      transform 180ms ease,
+      opacity 180ms ease;
+    will-change: filter, transform, opacity;
+  }
+
+  body.provider-launch-backdrop-blur-active #app-shell {
+    pointer-events: none;
+    user-select: none;
+    filter: blur(6px) saturate(0.92);
+    opacity: 0.9;
+    transform: scale(1.004);
+  }
+
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]) {
     cursor: pointer;
@@ -108,6 +125,28 @@
   }
 }
 
+@keyframes modalZoomIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modalZoomOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+
 @keyframes slideInRight {
   from {
     opacity: 0;
@@ -153,6 +192,22 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .modal-centered-overlay[data-state='open'] {
+    animation: fadeIn 180ms ease-out forwards;
+  }
+
+  .modal-centered-overlay[data-exiting='true'] {
+    animation: fadeOut 160ms ease-in forwards;
+  }
+
+  .modal-centered-content[data-state='open'] {
+    animation: modalZoomIn 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .modal-centered-content[data-exiting='true'] {
+    animation: modalZoomOut 180ms ease-in forwards;
+  }
+
   .modal-drawer-content[data-state='open'] {
     animation: drawerSlideIn 320ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
   }
@@ -177,6 +232,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .modal-centered-overlay,
+  .modal-centered-content,
   .modal-drawer-overlay,
   .modal-drawer-content,
   .category-picker-popover {

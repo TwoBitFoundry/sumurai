@@ -222,18 +222,18 @@ async fn main() -> anyhow::Result<()> {
     })?;
     tracing::info!("Redis connection verified successfully");
 
-    // Clear all cached sessions on app startup for security
-    if let Err(e) = cache_service.invalidate_pattern("*_session_valid").await {
-        tracing::warn!("Failed to clear cached sessions on startup: {}", e);
-    } else {
-        tracing::info!("Cleared all cached sessions on app startup");
-    }
+    if config.should_clear_sessions_on_boot() {
+        if let Err(e) = cache_service.invalidate_pattern("*_session_valid").await {
+            tracing::warn!("Failed to clear cached sessions on startup: {}", e);
+        } else {
+            tracing::info!("Cleared all cached sessions on app startup");
+        }
 
-    // Clear all JWT tokens on startup for security
-    if let Err(e) = cache_service.invalidate_pattern("*_session_token").await {
-        tracing::warn!("Failed to clear JWT tokens on startup: {}", e);
-    } else {
-        tracing::info!("Cleared all JWT tokens on app startup");
+        if let Err(e) = cache_service.invalidate_pattern("*_session_token").await {
+            tracing::warn!("Failed to clear JWT tokens on startup: {}", e);
+        } else {
+            tracing::info!("Cleared all JWT tokens on app startup");
+        }
     }
 
     let jwt_secret = std::env::var("JWT_SECRET").context(

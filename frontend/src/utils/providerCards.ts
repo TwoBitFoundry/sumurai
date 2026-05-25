@@ -19,6 +19,12 @@ export type ProviderCardSection = {
   label: string;
   value: string;
   description?: string;
+  privacyDetails?: ProviderPrivacyDetail[];
+};
+
+export type ProviderPrivacyDetail = {
+  label: string;
+  value: string;
 };
 
 export type ProviderCardConfig = {
@@ -35,7 +41,7 @@ export const PROVIDER_PRICE_ORDER: FinancialProvider[] = ['teller', 'simplefin',
 export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig> = {
   plaid: {
     title: 'Plaid',
-    badge: 'Turnkey',
+    badge: 'Turn Key',
     region: 'US, CA, UK, EU',
     logoSrc: '/plaid.webp',
     privacyHref: 'https://plaid.com/legal/#consumers',
@@ -54,13 +60,30 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
         icon: ShieldCheck,
         label: 'Privacy',
         value: 'Broad',
-        description: 'Commercial collection terms under standard affiliate sharing.',
+        privacyDetails: [
+          {
+            label: 'How it connects',
+            value: 'Connects through Plaid Link for a live account feed.',
+          },
+          {
+            label: 'What it stores',
+            value: "Keeps up to 24 months of history on Plaid's servers.",
+          },
+          {
+            label: 'How it uses data',
+            value: 'Does not sell data, but may share some with affiliates for risk checks.',
+          },
+          {
+            label: 'How to disconnect',
+            value: 'Stops syncing; full deletion requires the Plaid Portal.',
+          },
+        ],
       },
     ],
   },
   teller: {
     title: 'Teller',
-    badge: 'Budget-Friendly',
+    badge: 'Budget Friendly',
     region: 'US Only',
     logoSrc: '/teller.webp',
     privacyHref: 'https://teller.io/legal',
@@ -79,13 +102,30 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
         icon: ShieldCheck,
         label: 'Privacy',
         value: 'Moderate',
-        description: 'Encrypted credentials used to manage automated data refreshes.',
+        privacyDetails: [
+          {
+            label: 'How it connects',
+            value: 'Uses your bank login to connect your accounts.',
+          },
+          {
+            label: 'What it stores',
+            value: 'May collect login, account, and transaction data.',
+          },
+          {
+            label: 'How it uses data',
+            value: 'Does not sell or license your data.',
+          },
+          {
+            label: 'How to disconnect',
+            value: 'Stops access; deleting data may require a request.',
+          },
+        ],
       },
     ],
   },
   simplefin: {
     title: 'SimpleFIN',
-    badge: 'Privacy-First',
+    badge: 'Privacy First',
     region: 'US, CA',
     logoSrc: '/simplefin.webp',
     privacyHref: 'https://beta-bridge.simplefin.org/info/privacy',
@@ -104,7 +144,24 @@ export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig>
         icon: ShieldCheck,
         label: 'Privacy',
         value: 'Strongest',
-        description: 'Strict read-only protocol. You manage token revocation.',
+        privacyDetails: [
+          {
+            label: 'How it connects',
+            value: 'Connects through SimpleFIN and MX.',
+          },
+          {
+            label: 'What it stores',
+            value: 'Uses a bridge that routes your data and does not store it.',
+          },
+          {
+            label: 'How it uses data',
+            value: 'Does not sell, license, or use your data for AI training.',
+          },
+          {
+            label: 'How to disconnect',
+            value: 'Deletes your setup right away.',
+          },
+        ],
       },
     ],
   },

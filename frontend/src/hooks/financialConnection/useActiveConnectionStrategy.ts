@@ -1,8 +1,3 @@
-/**
- * Activates the connection strategy for the current provider.
- */
-
-import { connectionProviders } from '@/hooks/financialConnection/connectionProviders';
 import type {
   FinancialConnectionStrategy,
   FinancialConnectionStrategyContext,
@@ -10,18 +5,8 @@ import type {
 import type { SyncProvider } from '@/utils/queryInvalidation';
 
 export function useActiveConnectionStrategy(
-  provider: SyncProvider,
-  context: FinancialConnectionStrategyContext
+  _provider: SyncProvider,
+  _context: FinancialConnectionStrategyContext
 ): FinancialConnectionStrategy {
-  switch (provider) {
-    case 'plaid':
-      // biome-ignore lint/correctness/useHookAtTopLevel: keyed bridge remount
-      return connectionProviders.plaid.useStrategy(context);
-    case 'teller':
-      // biome-ignore lint/correctness/useHookAtTopLevel: keyed bridge remount
-      return connectionProviders.teller.useStrategy(context);
-    case 'simplefin':
-      // biome-ignore lint/correctness/useHookAtTopLevel: keyed bridge remount
-      return connectionProviders.simplefin.useStrategy(context);
-  }
+  throw new Error('useActiveConnectionStrategy is no longer used');
 }
