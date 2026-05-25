@@ -2,7 +2,12 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type * as React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { floatingChromeGlass, modalDrawer, surface as uiSurfaceRecipes } from '@/ui/recipes';
+import {
+  floatingChromeGlass,
+  modalBackdrop,
+  modalDrawer,
+  surface as uiSurfaceRecipes,
+} from '@/ui/recipes';
 import { cn } from './utils';
 
 const DRAWER_EXIT_MS = 280;
@@ -22,6 +27,7 @@ const contentVariants = cva('relative w-full', {
 });
 
 export type ModalPresentation = 'centered' | 'drawer';
+export type ModalBackdropVariant = 'default' | 'provider';
 
 export interface ModalProps
   extends Omit<React.ComponentPropsWithoutRef<typeof Dialog.Content>, 'children'>,
@@ -34,6 +40,7 @@ export interface ModalProps
   presentation?: ModalPresentation;
   preventCloseOnBackdrop?: boolean;
   animateCentered?: boolean;
+  backdropVariant?: ModalBackdropVariant;
   backdropClassName?: string;
   containerClassName?: string;
   gridClassName?: string;
@@ -49,6 +56,7 @@ export function Modal({
   presentation = 'centered',
   preventCloseOnBackdrop,
   animateCentered = false,
+  backdropVariant = 'default',
   className,
   backdropClassName,
   containerClassName,
@@ -57,6 +65,12 @@ export function Modal({
 }: ModalProps) {
   const isDrawer = presentation === 'drawer';
   const isCenteredAnimated = !isDrawer && animateCentered;
+  const centeredBackdropClassName = cn(
+    ...(backdropVariant === 'provider'
+      ? modalBackdrop.provider
+      : [...floatingChromeGlass.backdrop, ...uiSurfaceRecipes.overlay]),
+    backdropClassName
+  );
   const [drawerOpen, setDrawerOpen] = useState(isOpen);
   const [isExiting, setIsExiting] = useState(false);
   const [centeredOpen, setCenteredOpen] = useState(isOpen);
@@ -327,9 +341,7 @@ export function Modal({
               className={cn(
                 isCenteredAnimated && 'modal-centered-overlay',
                 'absolute inset-0',
-                ...floatingChromeGlass.backdrop,
-                ...uiSurfaceRecipes.overlay,
-                backdropClassName
+                centeredBackdropClassName
               )}
               onPointerDown={(event) => {
                 if (preventCloseOnBackdrop) {

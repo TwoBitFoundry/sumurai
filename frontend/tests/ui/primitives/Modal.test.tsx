@@ -15,6 +15,17 @@ describe('Modal', () => {
     expect(screen.getByTestId('modal-backdrop').className).toContain('backdrop-blur-md');
   });
 
+  it('uses the provider backdrop treatment when backdropVariant is provider', () => {
+    render(
+      <Modal isOpen onClose={jest.fn()} presentation="centered" backdropVariant="provider">
+        <p>Provider connect</p>
+      </Modal>
+    );
+
+    expect(screen.getByTestId('modal-backdrop').className).toContain('backdrop-blur-[6px]');
+    expect(screen.getByTestId('modal-backdrop').className).toContain('backdrop-saturate-[92%]');
+  });
+
   it('does not blur or dim the backdrop for drawer modals', () => {
     render(
       <Modal isOpen onClose={jest.fn()} presentation="drawer">

@@ -1752,6 +1752,16 @@ async fn given_owned_connection_id_when_disconnect_then_returns_200() {
         .expect_delete_provider_connection()
         .times(1)
         .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .with(mockall::predicate::eq(user.id))
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+    mock_db
+        .expect_update_user_provider()
+        .with(mockall::predicate::eq(user.id), mockall::predicate::eq(""))
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
 
     mock_cache
         .expect_health_check()

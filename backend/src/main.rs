@@ -2810,6 +2810,23 @@ async fn connect_authenticated_provider(
                 )
                 .into_response(StatusCode::UNPROCESSABLE_ENTITY))
             }
+            Err(SimpleFinConnectError::DemoBridgeRestricted) => {
+                log_provider_credential_outcome(
+                    "simplefin",
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "provider.connect",
+                );
+                tracing::error!(
+                    "Failed to store SimpleFIN credentials for user {}: {}",
+                    auth_context.user_id,
+                    "SimpleFIN demo bridge is only available to the demo account (simplefin@test.com)"
+                );
+                Err(ApiErrorResponse::new(
+                    "SIMPLEFIN_DEMO_BRIDGE_RESTRICTED",
+                    "The SimpleFIN demo bridge is only available to the demo account",
+                )
+                .into_response(StatusCode::UNPROCESSABLE_ENTITY))
+            }
             Err(SimpleFinConnectError::ClaimFailed(e)) => {
                 log_provider_credential_outcome(
                     "simplefin",

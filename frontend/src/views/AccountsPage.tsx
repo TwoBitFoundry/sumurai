@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, cn } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { control, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { OnboardingProviderConnectModal } from '../components/onboarding/OnboardingProviderConnectModal';
 import { ToastStack } from '../components/toastStack/ToastStack';
 import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToastStack';
 import { AutoCategorizeIcon } from '../features/auto-categorization/components/AutoCategorizeIcon';
@@ -15,7 +16,6 @@ import ConnectionsList, {
 } from '../features/plaid/components/ConnectionsList';
 import { ProviderSelectionPanel } from '../features/plaid/components/ProviderSelectionPanel';
 import { SimpleFinIgnoredInstitutionsPanel } from '../features/simplefin/components/SimpleFinIgnoredInstitutionsPanel';
-import { SimpleFinTokenEntry } from '../features/simplefin/components/SimpleFinTokenEntry';
 import { formatSimpleFinAuthRequiredToast } from '../features/simplefin/utils/formatSimpleFinAuthRequiredToast';
 import { useAccountFilter } from '../hooks/useAccountFilter';
 import { useFinancialConnection } from '../hooks/useFinancialConnection';
@@ -27,6 +27,7 @@ import { PlaidService } from '../services/PlaidService';
 import { SimpleFinService } from '../services/SimpleFinService';
 import { TellerService } from '../services/TellerService';
 import type { FinancialProvider } from '../types/api';
+import type { ProviderCatalogue } from '../types/providerCatalog';
 import { dispatchAccountsChanged } from '../utils/events';
 import { formatUserFacingApiError } from '../utils/formatUserFacingApiError';
 import {
@@ -262,7 +263,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   });
   const ignoredInstitutions = ignoredInstitutionsQuery.data ?? [];
   const showSimpleFinIgnoredList = simpleFinEmptyStateActive && ignoredInstitutions.length > 0;
-  const showSimpleFinTokenEntry = simpleFinEmptyStateActive && ignoredInstitutions.length === 0;
   const refreshBankData = useCallback(
     async (provider: SyncProvider) => {
       await refreshFinancialDataAfterProviderChange(queryClient, [provider]);
@@ -279,7 +279,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const startProviderPickerConnection = useCallback(
     async (provider: FinancialProvider) => {
       if (provider === 'simplefin') {
-        await providerCatalog.chooseProvider(provider);
+        setPickerConnectingProvider(provider);
         return;
       }
 
@@ -292,8 +292,35 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
       await tellerPickerConnectionFlow.initiateConnection();
     },
-    [plaidPickerConnectionFlow, providerCatalog, tellerPickerConnectionFlow]
+    [plaidPickerConnectionFlow, tellerPickerConnectionFlow]
   );
+
+  const finishSimpleFinPickerConnection = useCallback(
+    async (provider: FinancialProvider) => {
+      try {
+        await providerCatalog.chooseProvider(provider);
+      } catch (error) {
+        console.warn('Failed to select provider after SimpleFIN connection', error);
+        pushAccountsToast('Unable to select provider right now', 'error');
+      } finally {
+        setPickerConnectingProvider(null);
+      }
+    },
+    [providerCatalog, pushAccountsToast]
+  );
+
+  const openConnectModal = useCallback(() => {
+    setPickerConnectingProvider('simplefin');
+  }, []);
+
+  const handlePrimaryConnect = useCallback(() => {
+    if (primaryProvider === 'simplefin') {
+      openConnectModal();
+      return;
+    }
+
+    void connectionFlow.initiateConnection();
+  }, [connectionFlow, openConnectModal, primaryProvider]);
 
   useEffect(() => {
     if (!pickerConnectionFlow || !pickerConnectingProvider) {
@@ -409,6 +436,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         return;
       }
 
+      const disconnectingLastBank = banks.length === 1;
+
       try {
         if (bank.provider === 'teller') {
           await TellerService.disconnect(bank.connectionId);
@@ -416,13 +445,24 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           await PlaidService.disconnect(bank.connectionId);
         }
         await refreshBankData(bank.provider);
+        dispatchAccountsChanged();
+        if (disconnectingLastBank) {
+          queryClient.setQueryData<ProviderCatalogue>(['provider', 'catalog'], (prev) =>
+            prev ? { ...prev, user_provider: null } : prev
+          );
+        }
+        try {
+          await providerCatalog.refresh();
+        } catch (refreshError) {
+          console.warn('Failed to refresh provider catalog after disconnect', refreshError);
+        }
         pushAccountsToast(`${bank.name} disconnected successfully`);
       } catch (error) {
         console.warn('Failed to disconnect bank', error);
         onError?.('Failed to disconnect bank');
       }
     },
-    [banks, onError, refreshBankData, pushAccountsToast]
+    [banks, onError, providerCatalog, refreshBankData, pushAccountsToast, queryClient.setQueryData]
   );
 
   const handleImportSuccess = useCallback(
@@ -484,18 +524,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   );
 
   const connectionsEmptyState = useMemo(() => {
-    if (showSimpleFinTokenEntry) {
-      return (
-        <SimpleFinTokenEntry
-          isOnline={isOnline}
-          isSubmitting={connectionFlow.connectionInProgress}
-          error={connectionFlow.error}
-          blockedReason={providerCatalog.getConnectBlockedReason('simplefin')}
-          onSubmit={(setupToken) => connectionFlow.initiateConnection(setupToken)}
-        />
-      );
-    }
-
     if (!showSimpleFinIgnoredList) {
       return undefined;
     }
@@ -509,16 +537,11 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       />
     );
   }, [
-    connectionFlow.connectionInProgress,
-    connectionFlow.error,
     ignoredInstitutions,
     isOnline,
-    providerCatalog,
-    connectionFlow.initiateConnection,
     restoreIgnoredInstitution,
     restoringIgnoredOrgConnId,
     showSimpleFinIgnoredList,
-    showSimpleFinTokenEntry,
   ]);
 
   const summary = useMemo(() => {
@@ -615,16 +638,14 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
                 : 'Sync all'}
           </Button>
         )}
-        {!showSimpleFinTokenEntry && primaryProvider !== 'simplefin' ? (
-          <ConnectButton
-            onClick={() => void connectionFlow.initiateConnection()}
-            disabled={connectDisabled}
-            title={!isOnline ? 'Unavailable while offline' : undefined}
-            leadingImageSrc={providerLogoSrc}
-          >
-            {primaryProvider === 'plaid' ? 'Add account' : providerLabel}
-          </ConnectButton>
-        ) : null}
+        <ConnectButton
+          onClick={handlePrimaryConnect}
+          disabled={connectDisabled}
+          title={!isOnline ? 'Unavailable while offline' : undefined}
+          leadingImageSrc={providerLogoSrc}
+        >
+          {primaryProvider === 'plaid' ? 'Add account' : providerLabel}
+        </ConnectButton>
       </div>
       {!isOnline && (
         <span
@@ -652,17 +673,27 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           {plaidPickerConnectionFlow.connectionMount}
           {tellerPickerConnectionFlow.connectionMount}
         </div>
-        <div className={cn('mx-auto', 'w-full', 'max-w-7xl', 'px-4', 'py-8')}>
-          <ProviderSelectionPanel
-            loading={providerCatalog.loading}
-            error={providerCatalog.error}
-            availableProviders={providerCatalog.availableProviders}
-            tellerApplicationId={providerCatalog.tellerApplicationId}
-            providerReadyState={pickerProviderReadyState}
-            connectingProvider={pickerConnectingProvider}
-            onSelectProvider={(provider) => void startProviderPickerConnection(provider)}
-          />
+        <div className={cn('flex', 'h-full', 'items-center', 'justify-center', 'px-4', 'py-8')}>
+          <div className={cn('w-full', 'max-w-7xl')}>
+            <ProviderSelectionPanel
+              loading={providerCatalog.loading}
+              error={providerCatalog.error}
+              availableProviders={providerCatalog.availableProviders}
+              tellerApplicationId={providerCatalog.tellerApplicationId}
+              providerReadyState={pickerProviderReadyState}
+              connectingProvider={pickerConnectingProvider}
+              onSelectProvider={(provider) => void startProviderPickerConnection(provider)}
+            />
+          </div>
         </div>
+        {pickerConnectingProvider === 'simplefin' ? (
+          <OnboardingProviderConnectModal
+            provider={pickerConnectingProvider}
+            isOpen
+            onClose={() => setPickerConnectingProvider(null)}
+            onConnected={(provider) => void finishSimpleFinPickerConnection(provider)}
+          />
+        ) : null}
       </div>
     );
   }
@@ -679,7 +710,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       >
         <ConnectionsList
           banks={banksWithSync}
-          onConnect={() => void connectionFlow.initiateConnection()}
+          onConnect={handlePrimaryConnect}
           onSync={syncBank}
           onDisconnect={disconnect}
           isOnline={isOnline}
@@ -698,6 +729,14 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           onDismissPinned={accountsToastStack.dismissPinned}
         />
       </PageLayout>
+      {pickerConnectingProvider === 'simplefin' ? (
+        <OnboardingProviderConnectModal
+          provider={pickerConnectingProvider}
+          isOpen
+          onClose={() => setPickerConnectingProvider(null)}
+          onConnected={(provider) => void finishSimpleFinPickerConnection(provider)}
+        />
+      ) : null}
     </div>
   );
 };

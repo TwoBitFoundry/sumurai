@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 import {
   createElement,
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -14,13 +15,13 @@ import {
   useState,
 } from 'react';
 import { flushSync } from 'react-dom';
+import { ProviderSdkLaunchBackdrop } from '@/components/ProviderSdkLaunchBackdrop';
 import {
   connectionActions,
   financialConnectionReducer,
   initialFinancialConnectionState,
 } from '@/hooks/financialConnection/connectionState';
 import { FinancialConnectionStrategyBridge } from '@/hooks/financialConnection/FinancialConnectionStrategyBridge';
-import { acquireProviderLaunchBackdropBlur } from '@/hooks/financialConnection/providerLaunchBackdropBlur';
 import {
   type FinancialConnectionStrategy,
   type FinancialConnectionStrategyContext,
@@ -75,19 +76,9 @@ export function useFinancialConnection(
   const [isReady, setReady] = useState(provider === 'simplefin');
   const sdkFailedRef = useRef(false);
   const strategyRef = useRef<FinancialConnectionStrategy>(PENDING_CONNECTION_STRATEGY);
-  const isLaunchBackdropBlurActive = state.connectionInProgress || state.isSyncing;
-
   useEffect(() => {
     setReady(provider === 'simplefin');
   }, [provider]);
-
-  useEffect(() => {
-    if (!isLaunchBackdropBlurActive) {
-      return;
-    }
-
-    return acquireProviderLaunchBackdropBlur();
-  }, [isLaunchBackdropBlurActive]);
 
   const handleError = useCallback(
     (message: string) => {
@@ -134,16 +125,29 @@ export function useFinancialConnection(
     ]
   );
 
-  const connectionMount = useMemo(
-    () =>
-      createElement(FinancialConnectionStrategyBridge, {
-        key: provider,
-        provider,
-        context: strategyContext,
-        strategyRef,
+  const sdkLaunchBackdropActive =
+    provider !== 'simplefin' && (state.connectionInProgress || state.isSyncing);
+
+  const connectionMount = useMemo(() => {
+    const bridge = createElement(FinancialConnectionStrategyBridge, {
+      key: provider,
+      provider,
+      context: strategyContext,
+      strategyRef,
+    });
+
+    if (provider === 'simplefin') {
+      return bridge;
+    }
+
+    return createElement(Fragment, { key: `${provider}-connection` }, [
+      createElement(ProviderSdkLaunchBackdrop, {
+        key: 'sdk-launch-backdrop',
+        active: sdkLaunchBackdropActive,
       }),
-    [provider, strategyContext]
-  );
+      bridge,
+    ]);
+  }, [provider, sdkLaunchBackdropActive, strategyContext]);
 
   const waitForSdkReady = useCallback(async (timeoutMs: number) => {
     await new Promise((r) => setTimeout(r, 0));

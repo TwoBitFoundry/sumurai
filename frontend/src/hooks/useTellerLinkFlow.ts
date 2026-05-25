@@ -17,6 +17,7 @@ import {
 import type { BackendAccount } from '../domain/AccountNormalizer';
 import { ProviderCatalog } from '../services/ProviderCatalog';
 import { TellerService } from '../services/TellerService';
+import { dispatchAccountsChanged } from '../utils/events';
 import { invalidateStaleCacheQueries } from '../utils/queryInvalidation';
 import type { PlaidConnection } from './usePlaidConnections';
 
@@ -292,6 +293,7 @@ export function useTellerLinkFlow(options: UseTellerLinkFlowOptions): UseTellerL
         console.warn('Initial Teller sync failed after enrollment', err);
       }
       await loadConnectionsWithRetry();
+      dispatchAccountsChanged();
     },
     [loadConnectionsWithRetry]
   );

@@ -38,8 +38,6 @@ type TellerInstance = {
   destroy: () => void;
 };
 
-const TELLER_OPEN_TIMEOUT_MS = 8_000;
-
 export const TellerConnectSdk = function TellerConnectSdk({
   applicationId,
   environment = 'development',
@@ -59,24 +57,14 @@ export const TellerConnectSdk = function TellerConnectSdk({
   const onReadyRef = useRef(onReady);
   const onScriptLoadFailedRef = useRef(onScriptLoadFailed);
   const openedRef = useRef(false);
-  const initializedAfterOpenRef = useRef(false);
-  const openTimeoutRef = useRef<number | null>(null);
-
-  const clearOpenTimeout = useCallback(() => {
-    if (openTimeoutRef.current !== null) {
-      window.clearTimeout(openTimeoutRef.current);
-      openTimeoutRef.current = null;
-    }
-  }, []);
 
   useEffect(() => {
     cleanupTellerConnectDom();
 
     return () => {
-      clearOpenTimeout();
       cleanupTellerConnectDom();
     };
-  }, [clearOpenTimeout]);
+  }, []);
 
   useEffect(() => {
     onConnectedRef.current = onConnected;
@@ -106,15 +94,6 @@ export const TellerConnectSdk = function TellerConnectSdk({
       }
 
       openedRef.current = true;
-      initializedAfterOpenRef.current = false;
-      clearOpenTimeout();
-      openTimeoutRef.current = window.setTimeout(() => {
-        if (openedRef.current && !initializedAfterOpenRef.current) {
-          cleanupTellerConnectDom();
-          openedRef.current = false;
-          onEnrollmentErrorRef.current?.(new Error('Teller Connect did not finish loading'));
-        }
-      }, TELLER_OPEN_TIMEOUT_MS);
       inst.open();
     },
     getReady: () => Boolean(instanceRef.current),
@@ -147,14 +126,7 @@ export const TellerConnectSdk = function TellerConnectSdk({
           environment,
           products: ['balance', 'transactions'],
           selectAccount: 'multiple',
-          onInit: () => {
-            if (openedRef.current) {
-              initializedAfterOpenRef.current = true;
-              clearOpenTimeout();
-            }
-          },
           onSuccess: async (enrollment: TellerEnrollment) => {
-            clearOpenTimeout();
             openedRef.current = false;
             try {
               const result = await gateway.storeEnrollment({
@@ -173,13 +145,11 @@ export const TellerConnectSdk = function TellerConnectSdk({
             }
           },
           onExit: () => {
-            clearOpenTimeout();
             openedRef.current = false;
             cleanupTellerConnectDom();
             void onExitRef.current?.();
           },
           onFailure: (failure) => {
-            clearOpenTimeout();
             openedRef.current = false;
             cleanupTellerConnectDom();
             void onEnrollmentErrorRef.current?.(
@@ -208,13 +178,12 @@ export const TellerConnectSdk = function TellerConnectSdk({
 
     return () => {
       isActive = false;
-      clearOpenTimeout();
       if (createdInstance) {
         createdInstance.destroy();
       }
       cleanupTellerConnectDom();
     };
-  }, [applicationId, clearOpenTimeout, environment, gateway, retryKey]);
+  }, [applicationId, environment, gateway, retryKey]);
 
   return null;
 };

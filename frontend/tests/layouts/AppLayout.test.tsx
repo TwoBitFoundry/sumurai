@@ -35,7 +35,7 @@ describe('AppLayout', () => {
     const root = container.firstElementChild;
     const main = container.querySelector('main');
 
-    expect(root).toHaveClass('min-h-screen');
+    expect(root).toHaveClass('min-h-dvh');
     expect(root).toHaveClass('flex');
     expect(root).toHaveClass('flex-col');
     expect(main).toHaveClass('flex-1');

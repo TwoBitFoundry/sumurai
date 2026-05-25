@@ -41,7 +41,7 @@ export function AppLayout({
   const bottomBarRow = <div className={cn('flex w-full justify-center')}>{bottomBarContent}</div>;
 
   return (
-    <div className={cn('flex', 'min-h-screen', 'flex-col', className)}>
+    <div className={cn('flex', 'min-h-dvh', 'flex-col', className)}>
       <div className={cn('relative', 'z-10', 'flex', 'flex-1', 'flex-col')}>
         <AppTitleBar
           state="authenticated"

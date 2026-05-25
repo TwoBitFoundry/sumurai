@@ -10,6 +10,7 @@ import {
 import { connectionActions } from '@/hooks/financialConnection/connectionState';
 import { recordHandledIssue } from '@/observability';
 import { TellerService } from '@/services/TellerService';
+import { dispatchAccountsChanged } from '@/utils/events';
 import {
   POPUP_BLOCKED_MESSAGE,
   TELLER_CONNECT_LOAD_FAILED_MESSAGE,
@@ -101,9 +102,23 @@ export function useTellerConnectionStrategy(
   }, [dispatch, refreshStatus]);
 
   const onConnected = useCallback(
-    async ({ connectionId }: { connectionId: string }) => {
+    async ({
+      connectionId,
+      institutionName,
+    }: {
+      connectionId: string;
+      institutionName: string;
+    }) => {
       dispatch(connectionActions.patch({ isSyncing: true, error: null }));
       try {
+        let resolvedInstitutionName = institutionName || DEFAULT_INSTITUTION_NAME;
+        dispatch(
+          connectionActions.patch({
+            isConnected: true,
+            institutionName: resolvedInstitutionName,
+          })
+        );
+
         try {
           await TellerService.syncTransactions(connectionId);
         } catch (syncError) {
@@ -116,18 +131,20 @@ export function useTellerConnectionStrategy(
         }
 
         const latest = await refreshStatus();
-        if (!latest) {
-          handleError('Connected account not found. Please try again.');
-          dispatch(connectionActions.patch({ isConnected: false }));
-        } else {
-          await invalidateCache();
+        if (latest) {
+          resolvedInstitutionName = latest.institution_name || resolvedInstitutionName;
+          dispatch(connectionActions.patch({ institutionName: resolvedInstitutionName }));
         }
+
+        onConnectionSuccess?.(resolvedInstitutionName);
+        await invalidateCache();
+        dispatchAccountsChanged();
       } finally {
         dispatch(connectionActions.patch({ isSyncing: false, connectionInProgress: false }));
         rearmSdk();
       }
     },
-    [dispatch, handleError, invalidateCache, rearmSdk, refreshStatus]
+    [dispatch, invalidateCache, onConnectionSuccess, rearmSdk, refreshStatus]
   );
 
   const onExit = useCallback(() => {

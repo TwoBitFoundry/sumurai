@@ -10,6 +10,7 @@ import {
 } from '@/hooks/useFinancialConnection';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useProviderCatalog } from '@/hooks/useProviderCatalog';
+import type { ProviderCatalogue } from '@/types/providerCatalog';
 import { isProviderConnectable } from '@/utils/providerCapabilities';
 import AccountsPage from '@/views/AccountsPage';
 import { ThemeTestProvider } from '../utils/ThemeTestProvider';
@@ -436,13 +437,15 @@ describe('AccountsPage', () => {
     expect(screen.queryByText('PLACEHOLDER')).not.toBeInTheDocument();
   });
 
-  it('shows the SimpleFIN token entry when there are no connected institutions', () => {
+  it('opens the SimpleFIN modal from the provider picker', async () => {
+    const user = userEvent.setup();
+
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
         available_providers: ['plaid', 'simplefin'],
         default_provider: 'simplefin',
-        user_provider: 'simplefin',
+        user_provider: null,
       })
     );
     jest.mocked(useFinancialConnection).mockReturnValue(
@@ -453,11 +456,75 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    expect(screen.getByPlaceholderText('Paste your token')).toBeVisible();
-    expect(screen.queryByRole('button', { name: /^simplefin$/i })).not.toBeInTheDocument();
+    await user.click(screen.getAllByRole('button', { name: /^connect$/i })[1]);
+
+    expect(
+      screen.getByRole('dialog', { name: /connect your simplefin bridge/i })
+    ).toBeInTheDocument();
   });
 
-  it('hides the SimpleFIN connect action once an institution is connected', () => {
+  it('clears the cached provider when the last bank is disconnected', async () => {
+    const user = userEvent.setup();
+    const setQueryDataSpy = jest.spyOn(queryClient, 'setQueryData');
+    const refresh = jest.fn().mockResolvedValue(undefined);
+    setQueryDataSpy.mockClear();
+
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock(
+        {
+          available_providers: ['plaid', 'teller'],
+          default_provider: 'teller',
+          user_provider: 'teller',
+        },
+        { refresh }
+      )
+    );
+    jest.mocked(useAccountFilter).mockReturnValue(
+      makeTellerAccountFilter({
+        accountsByBank: {
+          'Demo Bank': [
+            {
+              id: 'acc_1',
+              name: 'Checking',
+              account_type: 'depository',
+              balance_ledger: 100,
+              balance_available: 100,
+              mask: '1234',
+              provider: 'teller',
+              institution_name: 'Demo Bank',
+              connection_id: 'conn_1',
+              transaction_count: 0,
+            },
+          ],
+        },
+      })
+    );
+
+    renderAccountsPage();
+
+    await user.click(screen.getByRole('button', { name: 'Disconnect' }));
+    await user.click(screen.getByRole('button', { name: /^disconnect$/i }));
+
+    expect(setQueryDataSpy).toHaveBeenCalledWith(['provider', 'catalog'], expect.any(Function));
+    const updater = setQueryDataSpy.mock.calls.find(
+      ([key]) => Array.isArray(key) && key[0] === 'provider' && key[1] === 'catalog'
+    )?.[1];
+    expect(typeof updater).toBe('function');
+    const updated = (updater as (prev?: ProviderCatalogue) => ProviderCatalogue | undefined)({
+      available_providers: ['plaid', 'teller'],
+      default_provider: 'teller',
+      user_provider: 'teller',
+    });
+    expect(updated?.user_provider).toBeNull();
+    expect(refresh).toHaveBeenCalled();
+
+    setQueryDataSpy.mockRestore();
+  });
+
+  it('opens the SimpleFIN modal from the connect action once an institution is connected', async () => {
+    const user = userEvent.setup();
+
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
@@ -495,10 +562,11 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
+    await user.click(screen.getByRole('button', { name: /^simplefin$/i }));
+
     expect(
-      screen.queryByPlaceholderText('Paste your SimpleFIN setup token')
-    ).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^simplefin$/i })).not.toBeInTheDocument();
+      screen.getByRole('dialog', { name: /connect your simplefin bridge/i })
+    ).toBeInTheDocument();
   });
 
   it('enables plaid connect when provider catalog is unavailable', () => {

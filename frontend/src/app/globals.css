@@ -24,21 +24,12 @@
     font-family: 'Cal Sans', system-ui, sans-serif;
   }
 
-  #app-shell {
-    min-height: 100dvh;
-    transition:
-      filter 180ms ease,
-      transform 180ms ease,
-      opacity 180ms ease;
-    will-change: filter, transform, opacity;
+  body {
+    background-color: var(--color-surface-app-shell);
   }
 
-  body.provider-launch-backdrop-blur-active #app-shell {
-    pointer-events: none;
-    user-select: none;
-    filter: blur(6px) saturate(0.92);
-    opacity: 0.9;
-    transform: scale(1.004);
+  #app-shell {
+    min-height: 100dvh;
   }
 
   button:not(:disabled),

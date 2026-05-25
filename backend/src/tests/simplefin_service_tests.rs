@@ -25,6 +25,7 @@ use crate::test_fixtures::{noop_categorizer, TestFixtures};
 use anyhow::Result;
 use async_trait::async_trait;
 use axum::body::to_bytes;
+use base64::Engine;
 use chrono::{NaiveDate, Utc};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
@@ -178,6 +179,11 @@ fn simplefin_connect_request() -> ProviderConnectRequest {
             simplefin_setup_token: Some(SETUP_TOKEN.to_string()),
         },
     }
+}
+
+fn demo_setup_token() -> String {
+    base64::engine::general_purpose::STANDARD
+        .encode("https://beta-bridge.simplefin.org/simplefin/claim/DEMO-v2-test-fixture")
 }
 
 fn build_credential_resolvers(
@@ -785,6 +791,38 @@ async fn given_malformed_simplefin_setup_token_when_post_providers_connect_then_
 }
 
 #[tokio::test]
+async fn given_non_demo_user_when_using_demo_simplefin_token_then_returns_unprocessable_entity() {
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let app = build_simplefin_handler_app(three_org_snapshot(), false)
+        .await
+        .expect("test app should build");
+
+    let request = TestFixtures::create_authenticated_post_request(
+        "/api/providers/connect",
+        &token,
+        ProviderConnectRequest {
+            provider: "simplefin".to_string(),
+            access_token: String::new(),
+            enrollment_id: String::new(),
+            institution_name: None,
+            simplefin: SimpleFinConnectRequest {
+                simplefin_setup_token: Some(demo_setup_token()),
+            },
+        },
+    );
+    let response = app.oneshot(request).await.unwrap();
+
+    assert_eq!(response.status(), 422);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert!(payload["message"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("demo bridge is only available to the demo account"));
+}
+
+#[tokio::test]
 async fn given_unknown_provider_when_post_providers_connect_then_returns_bad_request() {
     let (_user, token) = TestFixtures::create_authenticated_user_with_token();
     let app = TestFixtures::create_test_app()
@@ -1312,7 +1350,7 @@ async fn given_last_simplefin_org_connection_when_disconnect_then_clears_root_an
     mock_db
         .expect_get_all_provider_connections_by_user()
         .with(mockall::predicate::eq(user_id))
-        .times(1)
+        .times(2)
         .returning({
             let remaining_connections = remaining_connections.clone();
             move |_| {
@@ -1348,6 +1386,11 @@ async fn given_last_simplefin_org_connection_when_disconnect_then_clears_root_an
     mock_db.expect_delete_provider_transactions().times(0);
     mock_db.expect_delete_provider_accounts().times(0);
     mock_db.expect_insert_simplefin_hidden_org().times(0);
+    mock_db
+        .expect_update_user_provider()
+        .with(mockall::predicate::eq(user_id), mockall::predicate::eq(""))
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
 
     let service = build_disconnect_service(mock_db);
     let result = service
@@ -1391,7 +1434,7 @@ async fn given_simplefin_connection_remaining_when_disconnect_then_keeps_root_cr
     mock_db
         .expect_get_all_provider_connections_by_user()
         .with(mockall::predicate::eq(user_id))
-        .times(1)
+        .times(2)
         .returning({
             let remaining_connections = remaining_connections.clone();
             move |_| {
@@ -1406,6 +1449,7 @@ async fn given_simplefin_connection_remaining_when_disconnect_then_keeps_root_cr
     mock_db.expect_delete_provider_transactions().times(0);
     mock_db.expect_delete_provider_accounts().times(0);
     mock_db.expect_insert_simplefin_hidden_org().times(0);
+    mock_db.expect_update_user_provider().times(0);
 
     let service = build_disconnect_service(mock_db);
     let result = service
@@ -1456,6 +1500,16 @@ async fn given_teller_connection_when_disconnect_then_does_not_call_simplefin_di
         .returning(|_| Box::pin(async { Ok(()) }));
     mock_db
         .expect_delete_provider_connection()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .with(mockall::predicate::eq(user_id))
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+    mock_db
+        .expect_update_user_provider()
+        .with(mockall::predicate::eq(user_id), mockall::predicate::eq(""))
+        .times(1)
         .returning(|_, _| Box::pin(async { Ok(()) }));
 
     let service = build_disconnect_service(mock_db);

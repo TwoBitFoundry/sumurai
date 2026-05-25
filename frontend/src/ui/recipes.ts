@@ -335,6 +335,15 @@ export const dashboardCategoryCard = {
   ],
 } as const;
 
+export const modalBackdrop = {
+  provider: [
+    'backdrop-blur-[6px]',
+    'backdrop-saturate-[92%]',
+    'bg-[color:color-mix(in_srgb,var(--color-surface-overlay)_22%,transparent)]',
+    'dark:bg-[color:color-mix(in_srgb,var(--color-surface-overlay)_38%,transparent)]',
+  ],
+} as const;
+
 export const floatingChromeGlass = {
   backdrop: ['backdrop-blur-md', 'backdrop-saturate-[150%]'],
   shell: [
