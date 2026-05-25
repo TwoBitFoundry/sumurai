@@ -126,7 +126,6 @@ export const storyPlaidDisconnect = {
 
 export const storyProviderInfo = {
   available_providers: ['plaid', 'teller'] as FinancialProvider[],
-  default_provider: null,
   user_provider: null,
   teller_application_id: 'story-teller-app',
   teller_environment: 'sandbox',

@@ -99,7 +99,6 @@ export const ProviderSelectionPanel = ({
 
   const providerCatalogue: ProviderCatalogue = {
     available_providers: availableProviders,
-    default_provider: availableProviders[0] ?? 'plaid',
     user_provider: null,
     teller_application_id: tellerApplicationId ?? undefined,
   };

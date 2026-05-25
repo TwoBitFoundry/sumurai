@@ -9,12 +9,10 @@ import {
 
 const plaidOnlyCatalogue: ProviderCatalogue = {
   available_providers: ['plaid'],
-  default_provider: 'plaid',
 };
 
 const tellerWithoutAppId: ProviderCatalogue = {
   available_providers: ['plaid', 'teller'],
-  default_provider: 'teller',
   user_provider: 'teller',
 };
 
@@ -24,8 +22,9 @@ const tellerReadyCatalogue: ProviderCatalogue = {
 };
 
 describe('providerCapabilities', () => {
-  it('given missing catalogue when checked then plaid is connectable and teller is not', () => {
+  it('given missing catalogue when checked then plaid and simplefin are connectable', () => {
     expect(isProviderConnectable('plaid', null)).toBe(true);
+    expect(isProviderConnectable('simplefin', null)).toBe(true);
     expect(isProviderConnectable('teller', null)).toBe(false);
   });
 
@@ -61,7 +60,6 @@ describe('providerCapabilities', () => {
   it('given providers are fully configured when checked then picker enables all three', () => {
     const fullCatalogue: ProviderCatalogue = {
       available_providers: ['plaid', 'teller', 'simplefin'],
-      default_provider: 'plaid',
       teller_application_id: 'app-123',
     };
 

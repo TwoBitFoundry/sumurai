@@ -156,7 +156,6 @@ describe('AccountsPage', () => {
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
         available_providers: ['plaid', 'teller'],
-        default_provider: 'teller',
         user_provider: 'teller',
         teller_application_id: 'app_123',
       })
@@ -314,7 +313,6 @@ describe('AccountsPage', () => {
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
         available_providers: ['plaid', 'teller'],
-        default_provider: 'plaid',
         user_provider: 'plaid',
       })
     );
@@ -358,7 +356,6 @@ describe('AccountsPage', () => {
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
         available_providers: ['plaid', 'teller'],
-        default_provider: 'plaid',
         user_provider: 'plaid',
       })
     );
@@ -395,7 +392,6 @@ describe('AccountsPage', () => {
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
         available_providers: ['plaid', 'teller'],
-        default_provider: 'teller',
         user_provider: 'teller',
         teller_application_id: 'app_123',
       })
@@ -444,7 +440,6 @@ describe('AccountsPage', () => {
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
         available_providers: ['plaid', 'simplefin'],
-        default_provider: 'simplefin',
         user_provider: null,
       })
     );
@@ -474,7 +469,6 @@ describe('AccountsPage', () => {
       makeProviderCatalogMock(
         {
           available_providers: ['plaid', 'teller'],
-          default_provider: 'teller',
           user_provider: 'teller',
         },
         { refresh }
@@ -513,7 +507,6 @@ describe('AccountsPage', () => {
     expect(typeof updater).toBe('function');
     const updated = (updater as (prev?: ProviderCatalogue) => ProviderCatalogue | undefined)({
       available_providers: ['plaid', 'teller'],
-      default_provider: 'teller',
       user_provider: 'teller',
     });
     expect(updated?.user_provider).toBeNull();
@@ -529,7 +522,6 @@ describe('AccountsPage', () => {
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
         available_providers: ['plaid', 'simplefin'],
-        default_provider: 'simplefin',
         user_provider: 'simplefin',
       })
     );
@@ -575,14 +567,11 @@ describe('AccountsPage', () => {
       makeProviderCatalogMock(
         {
           available_providers: ['plaid', 'teller'],
-          default_provider: 'plaid',
           user_provider: 'plaid',
         },
         {
           error: 'Unable to load provider configuration',
           availableProviders: [],
-          selectedProvider: 'plaid',
-          defaultProvider: 'plaid',
           userProvider: 'plaid',
           canConnectWith: (provider) => isProviderConnectable(provider, null),
           getConnectBlockedReason: () => null,
@@ -621,7 +610,6 @@ describe('AccountsPage', () => {
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
         available_providers: ['plaid', 'teller'],
-        default_provider: 'teller',
         user_provider: 'teller',
       })
     );
@@ -658,7 +646,6 @@ describe('AccountsPage', () => {
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
           available_providers: ['teller', 'simplefin', 'plaid'],
-          default_provider: 'teller',
           user_provider: null,
         })
       );
@@ -669,14 +656,20 @@ describe('AccountsPage', () => {
       expect(screen.queryByText('Link accounts and keep balances current')).not.toBeInTheDocument();
     });
 
-    it('does not show the picker when user has a provider but no banks', () => {
+    it('shows the provider picker when user has a provider but no active connections', () => {
       jest.mocked(useOnlineStatus).mockReturnValue(true);
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
           available_providers: ['teller', 'simplefin', 'plaid'],
-          default_provider: 'teller',
-          user_provider: 'teller',
+          user_provider: 'plaid',
           teller_application_id: 'app_123',
+        })
+      );
+      jest.mocked(useFinancialConnection).mockImplementation(({ provider }) =>
+        makeFinancialConnectionMock({
+          isReady: true,
+          connectionInProgress: false,
+          provider,
         })
       );
       jest.mocked(useAccountFilter).mockReturnValue({
@@ -693,8 +686,11 @@ describe('AccountsPage', () => {
 
       renderAccountsPage();
 
-      expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
-      expect(screen.getByText('Link accounts and keep balances current')).toBeInTheDocument();
+      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+      expect(screen.queryByText('Link accounts and keep balances current')).not.toBeInTheDocument();
+      for (const button of screen.getAllByRole('button', { name: /^connect$/i })) {
+        expect(button).toBeEnabled();
+      }
     });
 
     it('does not show the picker when active connections exist', () => {
@@ -702,7 +698,6 @@ describe('AccountsPage', () => {
       jest.mocked(useProviderCatalog).mockReturnValue(
         makeProviderCatalogMock({
           available_providers: ['teller', 'simplefin', 'plaid'],
-          default_provider: 'teller',
           user_provider: 'teller',
           teller_application_id: 'app_123',
         })
@@ -750,7 +745,6 @@ describe('AccountsPage', () => {
         makeProviderCatalogMock(
           {
             available_providers: ['teller', 'simplefin', 'plaid'],
-            default_provider: 'teller',
             user_provider: null,
             teller_application_id: 'app_123',
           },
@@ -783,7 +777,6 @@ describe('AccountsPage', () => {
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
         available_providers: ['plaid', 'teller'],
-        default_provider: 'plaid',
         user_provider: 'plaid',
       })
     );

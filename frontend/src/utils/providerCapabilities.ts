@@ -17,7 +17,7 @@ export function isProviderConnectable(
   catalogue: ProviderCatalogue | null
 ): boolean {
   if (!catalogue) {
-    return provider === 'plaid';
+    return provider !== 'teller';
   }
 
   if (!isProviderListed(provider, catalogue)) {

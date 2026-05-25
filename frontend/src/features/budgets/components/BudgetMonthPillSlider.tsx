@@ -31,7 +31,10 @@ export function BudgetMonthPillSlider({
         ...appTitleBarRecipes.pillContainer,
         ...appTitleBarRecipes.pillInset,
         ...appTitleBarRecipes.pillContainerSize,
-        'w-fit'
+        'min-w-0',
+        'w-full',
+        'max-w-full',
+        'overflow-x-auto'
       )}
       data-no-swipe
       data-testid="budget-month-pill-slider"

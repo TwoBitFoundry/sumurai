@@ -100,7 +100,6 @@ beforeEach(() => {
     if (url.includes('/providers/info')) {
       return jsonResponse({
         available_providers: ['plaid', 'teller'],
-        default_provider: 'plaid',
         user_provider: 'plaid',
         teller_application_id: null,
         teller_environment: 'development',

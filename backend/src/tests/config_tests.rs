@@ -30,18 +30,6 @@ fn given_minimal_env_when_from_env_provider_then_loads_successfully() {
 }
 
 #[test]
-fn given_default_provider_env_when_from_env_provider_then_ignores_it() {
-    let mut env = MockEnvironment::new();
-    env.set("TELLER_ENV", "development");
-    env.set("DEFAULT_PROVIDER", "plaid");
-    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
-
-    let config = Config::from_env_provider(&env).unwrap();
-
-    assert_eq!(config.get_teller_environment(), "development");
-}
-
-#[test]
 fn given_custom_database_url_when_from_env_provider_then_uses_custom_url() {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "development");

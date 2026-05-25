@@ -137,17 +137,14 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
   }, [isOpen]);
 
   return (
-    <div className={cn('relative')}>
+    <div className={cn('relative', triggerStyle === 'icon-only' && chromeBar.square)}>
       {triggerStyle === 'icon-only' ? (
         <nav
           className={cn(
             ...appTitleBarRecipes.pillContainer,
             ...appTitleBarRecipes.contextPillInset,
-            ...appTitleBarRecipes.pillContainerSize,
+            chromeBar.square,
             'flex',
-            'aspect-square',
-            'h-full',
-            'w-auto',
             'shrink-0',
             'items-center',
             'justify-center'
@@ -163,7 +160,6 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
             size="inherit"
             className={cn(
               ...appTitleBarRecipes.contextPillTab,
-              'aspect-square',
               'h-full',
               'w-full',
               'min-h-0',

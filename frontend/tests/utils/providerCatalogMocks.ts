@@ -16,8 +16,6 @@ export function makeProviderCatalogMock(
     loading: false,
     error: null,
     availableProviders: catalogue.available_providers,
-    selectedProvider: catalogue.user_provider ?? catalogue.default_provider,
-    defaultProvider: catalogue.default_provider,
     userProvider: catalogue.user_provider ?? null,
     tellerApplicationId: catalogue.teller_application_id ?? null,
     tellerEnvironment: 'development',

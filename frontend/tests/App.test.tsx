@@ -35,10 +35,6 @@ jest.mock('@/components/onboarding/OnboardingProviderPicker', () => ({
   OnboardingProviderPicker: () => <div data-testid="onboarding-provider-picker" />,
 }));
 
-jest.mock('@/components/ProviderMismatchCheck', () => ({
-  ProviderMismatchCheck: () => null,
-}));
-
 jest.mock('@/SessionManager', () => ({
   SessionManager: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));

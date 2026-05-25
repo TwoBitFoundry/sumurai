@@ -21,8 +21,6 @@ jest.mock('@/hooks/useProviderCatalog', () => {
         loading: false,
         error: null,
         availableProviders: ['teller', 'simplefin', 'plaid'],
-        selectedProvider: userProvider,
-        defaultProvider: null,
         userProvider,
         tellerApplicationId: 'app-123',
         tellerEnvironment: 'development',

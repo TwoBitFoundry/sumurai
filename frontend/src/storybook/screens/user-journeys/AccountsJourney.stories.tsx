@@ -46,7 +46,6 @@ const storyAutoCategorizeHandlers = [
 
 const storySimpleFinProviderInfo = {
   available_providers: ['simplefin'],
-  default_provider: 'simplefin',
   user_provider: 'simplefin',
 };
 
@@ -154,7 +153,6 @@ const simpleFinConnectedHandlers = [
 
 const storyTellerProviderInfo = {
   available_providers: ['plaid', 'teller'],
-  default_provider: 'teller',
   user_provider: 'teller',
   teller_application_id: 'story-teller-app',
   teller_environment: 'sandbox',

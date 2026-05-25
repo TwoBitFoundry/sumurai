@@ -102,7 +102,6 @@ describe('useFinancialConnection', () => {
       if (url === '/providers/info') {
         return Promise.resolve({
           available_providers: ['plaid', 'teller'],
-          default_provider: 'plaid',
           teller_application_id: 'app-123',
           teller_environment: 'development',
         } as any);
@@ -376,7 +375,6 @@ describe('useFinancialConnection', () => {
       if (url === '/providers/info') {
         return Promise.resolve({
           available_providers: ['plaid', 'teller'],
-          default_provider: 'plaid',
           teller_application_id: 'app-123',
           teller_environment: 'development',
         } as never);

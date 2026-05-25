@@ -187,7 +187,6 @@ Teller values when using Teller:
 SimpleFIN:
 
 - `SIMPLEFIN_SETUP_TOKEN` (one-time bridge setup token; claim from [beta-bridge.simplefin.org/info/developers](https://beta-bridge.simplefin.org/info/developers) for local trials)
-- `DEFAULT_PROVIDER=simplefin` when SimpleFIN is the default onboarding provider
 
 Optional values:
 
@@ -213,7 +212,7 @@ Login and register under `/api/auth/` are rate limited in the Axum backend with 
 Use these provider test credentials for local sandbox flows:
 
 - SimpleFIN
-  - Sign in as `simplefin@test.com` / `Test1234!`, set `DEFAULT_PROVIDER=simplefin` and `SIMPLEFIN_SETUP_TOKEN` (demo token from [beta-bridge.simplefin.org/info/developers](https://beta-bridge.simplefin.org/info/developers)), start the stack, then connect in onboarding.
+  - Sign in as `simplefin@test.com` / `Test1234!`, set `SIMPLEFIN_SETUP_TOKEN` (demo token from [beta-bridge.simplefin.org/info/developers](https://beta-bridge.simplefin.org/info/developers)), start the stack, then choose SimpleFIN in the provider picker.
 - Teller
   - Sumurai login: `teller@test.com` / `Test1234!`
   - Teller Connect sandbox (when prompted): `username` / `password`

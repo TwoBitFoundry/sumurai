@@ -52,7 +52,8 @@ describe('HeaderAccountFilter', () => {
     render(<HeaderAccountFilter triggerStyle="icon-only" />);
 
     const trigger = screen.getByRole('button', { name: 'Filter accounts' });
-    expect(trigger.parentElement?.className).toContain('aspect-square');
+    expect(trigger.parentElement?.className).toContain('h-12');
+    expect(trigger.parentElement?.className).toContain('w-12');
     expect(trigger.className).toContain('rounded-lg');
     expect(trigger.className).toContain('h-full');
     expect(trigger.className).toContain('w-full');

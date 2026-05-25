@@ -84,7 +84,6 @@ impl TestFixtures {
         std::env::set_var("OTEL_TRACES_EXPORTER", "none");
         let mut test_env = MockEnvironment::new();
         test_env.set("TELLER_ENV", "test");
-        test_env.set("DEFAULT_PROVIDER", "plaid");
         test_env.set("AUTH_COOKIE_SAME_SITE", "Lax");
         Config::from_env_provider(&test_env).expect("Failed to create test config")
     }

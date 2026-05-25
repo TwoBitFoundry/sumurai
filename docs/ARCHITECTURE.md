@@ -46,8 +46,8 @@ flowchart LR
 
 ## Provider Flow
 
-- `DEFAULT_PROVIDER` determines the default provider shown by the app.
-- The backend registers Teller, Plaid, and SimpleFIN implementations in a shared provider registry.
+- Each user chooses their own active provider during onboarding or from the Accounts picker when they have no active connections.
+- The backend registers Teller, Plaid, and SimpleFIN implementations in a shared provider registry based on configured credentials.
 - The frontend uses provider-specific services and connect flows for each provider.
 - `/api/providers/info`, `/api/providers/select`, `/api/providers/connect`, `/api/providers/status`, `/api/providers/accounts`, `/api/providers/sync-transactions`, and `/api/providers/disconnect` support the provider management UX.
 - Provider credentials are encrypted before persistence and invalidated through cache cleanup when a connection is removed.
@@ -64,7 +64,7 @@ flowchart LR
 ## Frontend
 
 - The frontend lives under `frontend/` and builds to a static `out/` directory.
-- `frontend/src/App.tsx` coordinates authentication, onboarding, provider mismatch handling, and the authenticated app shell.
+- `frontend/src/App.tsx` coordinates authentication, onboarding, and the authenticated app shell.
 - `frontend/src/services/ApiClient.ts` centralizes API access with retry and auth refresh behavior.
 - Provider-specific flows live in the frontend service and hook layer rather than in page components.
 - OpenTelemetry instrumentation is configured in the browser and gated by `NEXT_PUBLIC_OTEL_*` flags.

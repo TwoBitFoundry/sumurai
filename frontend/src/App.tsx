@@ -6,7 +6,6 @@ import { cn } from '@/ui/primitives';
 import { LoginScreen, RegisterScreen } from './Auth';
 import { AuthenticatedApp, type TabKey } from './components/AuthenticatedApp';
 import { OnboardingProviderPicker } from './components/onboarding/OnboardingProviderPicker';
-import { ProviderMismatchCheck } from './components/ProviderMismatchCheck';
 import { ThemeProvider } from './context/ThemeContext';
 import { AccountFilterProvider } from './hooks/useAccountFilter';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
@@ -45,7 +44,6 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>(initialAuthScreen ?? 'login');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [mainAppKey, setMainAppKey] = useState(0);
-  const [showProviderMismatch, setShowProviderMismatch] = useState(false);
   const [sessionExpiresAt, setSessionExpiresAt] = useState<string | null>(null);
 
   const isOnline = useOnlineStatus();
@@ -114,11 +112,6 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     setMainAppKey((prev) => prev + 1);
   }, []);
 
-  const handleProviderMismatchConfirm = useCallback(async () => {
-    setShowProviderMismatch(false);
-    await handleLogout();
-  }, [handleLogout]);
-
   if (isLoading) {
     return (
       <GradientShell>
@@ -181,12 +174,6 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
           isOnline={isOnline}
         />
       </AccountFilterProvider>
-
-      <ProviderMismatchCheck
-        showMismatch={showProviderMismatch}
-        onShowMismatch={setShowProviderMismatch}
-        onConfirm={handleProviderMismatchConfirm}
-      />
     </SessionManager>
   );
 }

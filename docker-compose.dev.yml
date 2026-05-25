@@ -12,7 +12,6 @@ services:
         NEXT_PUBLIC_OTEL_CAPTURE_BODIES: "false"
         NEXT_PUBLIC_OTEL_BLOCK_SENSITIVE_ENDPOINTS: "true"
     environment:
-      DEFAULT_PROVIDER: ${DEFAULT_PROVIDER:-teller}
       NEXT_PUBLIC_OTEL_ENABLED: "true"
       NEXT_PUBLIC_OTEL_SERVICE_NAME: sumurai-frontend
       NEXT_PUBLIC_OTEL_SERVICE_VERSION: "1.0.0"
@@ -40,8 +39,6 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080,http://localhost:3001},${NGROK_URL:-}
 
       OTEL_TRACES_EXPORTER: console
-
-      DEFAULT_PROVIDER: ${DEFAULT_PROVIDER:-teller}
 
       TELLER_APPLICATION_ID: ${TELLER_APPLICATION_ID}
       TELLER_CERT_PATH: /etc/teller/certificate.pem
