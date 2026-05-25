@@ -101,6 +101,36 @@ jest.mock('@/features/import/components/ImportModal', () => ({
     ) : null,
 }));
 
+function makeTellerAccountFilter(overrides = {}) {
+  return {
+    selectedAccountIds: ['acc_1'],
+    allAccountIds: ['acc_1'],
+    isAllAccountsSelected: true,
+    accountsByBank: {
+      'Demo Bank': [
+        {
+          id: 'acc_1',
+          name: 'Checking',
+          account_type: 'depository',
+          balance_ledger: 100,
+          balance_available: 100,
+          mask: '1234',
+          provider: 'teller',
+          institution_name: 'Demo Bank',
+          connection_id: 'conn_1',
+          transaction_count: 0,
+        },
+      ],
+    },
+    loading: false,
+    setSelectedAccountIds: jest.fn(),
+    toggleBank: jest.fn(),
+    toggleAccount: jest.fn(),
+    removeAccountsByIds: jest.fn(),
+    ...overrides,
+  };
+}
+
 async function expandInstitutionAccounts(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Show accounts' }));
   await waitFor(() => {
@@ -144,6 +174,7 @@ describe('AccountsPage', () => {
   });
 
   it('keeps the Teller accounts page available while offline', () => {
+    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
     renderAccountsPage();
 
     expect(screen.getByTestId('accounts-page')).toBeInTheDocument();
@@ -156,6 +187,7 @@ describe('AccountsPage', () => {
 
   it('shows Auto-categorize when online', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
 
     renderAccountsPage();
 
@@ -164,6 +196,7 @@ describe('AccountsPage', () => {
 
   it('disables Auto-categorize while offline', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(false);
+    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
 
     renderAccountsPage();
 
@@ -172,6 +205,7 @@ describe('AccountsPage', () => {
 
   it('shows Cancel categorization while a run is active', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
     jest.mocked(useAutoCategorization).mockReturnValue({
       job: {
         job_id: '11111111-2222-3333-4444-555555555555',
@@ -199,6 +233,7 @@ describe('AccountsPage', () => {
   it('calls handleAction when Auto-categorize is clicked', async () => {
     const user = userEvent.setup();
     jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
 
     renderAccountsPage();
 
@@ -325,6 +360,26 @@ describe('AccountsPage', () => {
         user_provider: 'plaid',
       })
     );
+    jest.mocked(useAccountFilter).mockReturnValue(
+      makeTellerAccountFilter({
+        accountsByBank: {
+          'Demo Bank': [
+            {
+              id: 'acc_plaid_1',
+              name: 'Checking',
+              account_type: 'depository',
+              balance_ledger: 100,
+              balance_available: 100,
+              mask: '1234',
+              provider: 'plaid',
+              institution_name: 'Demo Bank',
+              connection_id: 'conn_plaid',
+              transaction_count: 0,
+            },
+          ],
+        },
+      })
+    );
 
     renderAccountsPage();
 
@@ -397,7 +452,7 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    expect(screen.getByPlaceholderText('Paste your SimpleFIN setup token')).toBeVisible();
+    expect(screen.getByPlaceholderText('Paste your token')).toBeVisible();
     expect(screen.queryByRole('button', { name: /^simplefin$/i })).not.toBeInTheDocument();
   });
 
@@ -466,6 +521,26 @@ describe('AccountsPage', () => {
         }
       )
     );
+    jest.mocked(useAccountFilter).mockReturnValue(
+      makeTellerAccountFilter({
+        accountsByBank: {
+          'Demo Bank': [
+            {
+              id: 'acc_plaid_1',
+              name: 'Checking',
+              account_type: 'depository',
+              balance_ledger: 100,
+              balance_available: 100,
+              mask: '1234',
+              provider: 'plaid',
+              institution_name: 'Demo Bank',
+              connection_id: 'conn_plaid',
+              transaction_count: 0,
+            },
+          ],
+        },
+      })
+    );
 
     renderAccountsPage();
 
@@ -481,11 +556,119 @@ describe('AccountsPage', () => {
         user_provider: 'teller',
       })
     );
+    jest.mocked(useAccountFilter).mockReturnValue(
+      makeTellerAccountFilter({
+        accountsByBank: {
+          'Demo Bank': [
+            {
+              id: 'acc_plaid_1',
+              name: 'Checking',
+              account_type: 'depository',
+              balance_ledger: 100,
+              balance_available: 100,
+              mask: '1234',
+              provider: 'plaid',
+              institution_name: 'Demo Bank',
+              connection_id: 'conn_plaid',
+              transaction_count: 0,
+            },
+          ],
+        },
+      })
+    );
 
     renderAccountsPage();
 
     expect(screen.getByRole('button', { name: /^add account$/i })).toBeEnabled();
     expect(screen.queryByRole('button', { name: /^teller$/i })).not.toBeInTheDocument();
+  });
+
+  describe('provider picker fallback', () => {
+    it('shows the provider picker when user has no active provider', () => {
+      jest.mocked(useOnlineStatus).mockReturnValue(true);
+      jest.mocked(useProviderCatalog).mockReturnValue(
+        makeProviderCatalogMock({
+          available_providers: ['teller', 'simplefin', 'plaid'],
+          default_provider: 'teller',
+          user_provider: null,
+        })
+      );
+
+      renderAccountsPage();
+
+      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+      expect(screen.queryByText('Link accounts and keep balances current')).not.toBeInTheDocument();
+    });
+
+    it('shows the provider picker when all banks are disconnected', () => {
+      jest.mocked(useOnlineStatus).mockReturnValue(true);
+      jest.mocked(useProviderCatalog).mockReturnValue(
+        makeProviderCatalogMock({
+          available_providers: ['teller', 'simplefin', 'plaid'],
+          default_provider: 'teller',
+          user_provider: 'teller',
+          teller_application_id: 'app_123',
+        })
+      );
+      jest.mocked(useAccountFilter).mockReturnValue({
+        selectedAccountIds: [],
+        allAccountIds: [],
+        isAllAccountsSelected: false,
+        accountsByBank: {},
+        loading: false,
+        setSelectedAccountIds: jest.fn(),
+        toggleBank: jest.fn(),
+        toggleAccount: jest.fn(),
+        removeAccountsByIds: jest.fn(),
+      });
+
+      renderAccountsPage();
+
+      expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
+    });
+
+    it('does not show the picker when active connections exist', () => {
+      jest.mocked(useOnlineStatus).mockReturnValue(true);
+      jest.mocked(useProviderCatalog).mockReturnValue(
+        makeProviderCatalogMock({
+          available_providers: ['teller', 'simplefin', 'plaid'],
+          default_provider: 'teller',
+          user_provider: 'teller',
+          teller_application_id: 'app_123',
+        })
+      );
+      jest.mocked(useAccountFilter).mockReturnValue({
+        selectedAccountIds: ['acc_1'],
+        allAccountIds: ['acc_1'],
+        isAllAccountsSelected: true,
+        accountsByBank: {
+          'Demo Bank': [
+            {
+              id: 'acc_1',
+              name: 'Checking',
+              account_type: 'depository',
+              balance_ledger: 100,
+              balance_available: 100,
+              mask: '1234',
+              provider: 'teller',
+              institution_name: 'Demo Bank',
+              connection_id: 'conn_1',
+              transaction_count: 0,
+            },
+          ],
+        },
+        loading: false,
+        setSelectedAccountIds: jest.fn(),
+        toggleBank: jest.fn(),
+        toggleAccount: jest.fn(),
+        removeAccountsByIds: jest.fn(),
+      });
+
+      renderAccountsPage();
+
+      expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
+      expect(screen.getByText('Link accounts and keep balances current')).toBeInTheDocument();
+    });
   });
 
   it('shows an import success toast with the account mask', async () => {

@@ -1,7 +1,6 @@
 'use client';
 
-import { type RefObject, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
+import { type RefObject, useEffect, useImperativeHandle, useRef } from 'react';
 import type { PlaidLinkOnExit, PlaidLinkOnSuccess } from 'react-plaid-link';
 import {
   createPlaidLinkHandler,
@@ -28,7 +27,7 @@ export const PlaidLinkSdk = function PlaidLinkSdk({
   onScriptLoadFailed,
   ref,
 }: PlaidLinkSdkProps & { ref?: RefObject<PlaidLinkSdkHandle | null> }) {
-  const [handler, setHandler] = useState<PlaidLinkHandler | null>(null);
+  const handlerRef = useRef<PlaidLinkHandler | null>(null);
   const onSuccessRef = useRef(onSuccess);
   const onExitRef = useRef(onExit);
   const onScriptLoadFailedRef = useRef(onScriptLoadFailed);
@@ -45,20 +44,16 @@ export const PlaidLinkSdk = function PlaidLinkSdk({
     onScriptLoadFailedRef.current = onScriptLoadFailed;
   }, [onScriptLoadFailed]);
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      open: () => {
-        handler?.open();
-      },
-      getReady: () => Boolean(handler),
-    }),
-    [handler]
-  );
+  useImperativeHandle(ref, () => ({
+    open: () => {
+      handlerRef.current?.open();
+    },
+    getReady: () => Boolean(handlerRef.current),
+  }));
 
   useEffect(() => {
     if (!token) {
-      setHandler(null);
+      handlerRef.current = null;
       return;
     }
 
@@ -74,16 +69,14 @@ export const PlaidLinkSdk = function PlaidLinkSdk({
         });
         createdHandler = nextHandler;
         if (isActive) {
-          flushSync(() => {
-            setHandler(nextHandler);
-          });
+          handlerRef.current = nextHandler;
         } else {
           nextHandler.destroy();
         }
       } catch (err) {
         console.warn('Failed to initialize Plaid Link', err);
         if (isActive) {
-          setHandler(null);
+          handlerRef.current = null;
         }
         if (isPlaidScriptOrInitError(err)) {
           onScriptLoadFailedRef.current();

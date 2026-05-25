@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  type RefObject,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from 'react';
-import { flushSync } from 'react-dom';
+import { type RefObject, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
 import {
   apiGateway,
   cleanupTellerConnectDom,
@@ -58,7 +50,7 @@ export const TellerConnectSdk = function TellerConnectSdk({
   onScriptLoadFailed,
   ref,
 }: TellerConnectSdkProps & { ref?: RefObject<TellerConnectSdkHandle | null> }) {
-  const [instance, setInstance] = useState<TellerInstance | null>(null);
+  const instanceRef = useRef<TellerInstance | null>(null);
   const onConnectedRef = useRef(onConnected);
   const onExitRef = useRef(onExit);
   const onEnrollmentErrorRef = useRef(onEnrollmentError);
@@ -99,35 +91,32 @@ export const TellerConnectSdk = function TellerConnectSdk({
     onScriptLoadFailedRef.current = onScriptLoadFailed;
   }, [onScriptLoadFailed]);
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      open: () => {
-        if (!instance) {
-          return;
-        }
+  useImperativeHandle(ref, () => ({
+    open: () => {
+      const inst = instanceRef.current;
+      if (!inst) {
+        return;
+      }
 
-        openedRef.current = true;
-        initializedAfterOpenRef.current = false;
-        clearOpenTimeout();
-        openTimeoutRef.current = window.setTimeout(() => {
-          if (openedRef.current && !initializedAfterOpenRef.current) {
-            cleanupTellerConnectDom();
-            openedRef.current = false;
-            onEnrollmentErrorRef.current?.(new Error('Teller Connect did not finish loading'));
-          }
-        }, TELLER_OPEN_TIMEOUT_MS);
-        instance.open();
-      },
-      getReady: () => Boolean(instance),
-    }),
-    [clearOpenTimeout, instance]
-  );
+      openedRef.current = true;
+      initializedAfterOpenRef.current = false;
+      clearOpenTimeout();
+      openTimeoutRef.current = window.setTimeout(() => {
+        if (openedRef.current && !initializedAfterOpenRef.current) {
+          cleanupTellerConnectDom();
+          openedRef.current = false;
+          onEnrollmentErrorRef.current?.(new Error('Teller Connect did not finish loading'));
+        }
+      }, TELLER_OPEN_TIMEOUT_MS);
+      inst.open();
+    },
+    getReady: () => Boolean(instanceRef.current),
+  }));
 
   useEffect(() => {
     void retryKey;
     if (!applicationId) {
-      setInstance(null);
+      instanceRef.current = null;
       return;
     }
 
@@ -193,13 +182,11 @@ export const TellerConnectSdk = function TellerConnectSdk({
         });
 
         createdInstance = tellerInstance;
-        flushSync(() => {
-          setInstance(tellerInstance);
-        });
+        instanceRef.current = tellerInstance;
       } catch (err) {
         console.warn('Failed to initialize Teller Connect', err);
         if (isActive) {
-          setInstance(null);
+          instanceRef.current = null;
         }
         if (isTellerScriptOrInitError(err)) {
           onScriptLoadFailedRef.current?.();

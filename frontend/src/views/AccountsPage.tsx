@@ -13,6 +13,7 @@ import ConnectButton from '../features/plaid/components/ConnectButton';
 import ConnectionsList, {
   type BankConnectionViewModel,
 } from '../features/plaid/components/ConnectionsList';
+import { ProviderSelectionPanel } from '../features/plaid/components/ProviderSelectionPanel';
 import { SimpleFinIgnoredInstitutionsPanel } from '../features/simplefin/components/SimpleFinIgnoredInstitutionsPanel';
 import { SimpleFinTokenEntry } from '../features/simplefin/components/SimpleFinTokenEntry';
 import { formatSimpleFinAuthRequiredToast } from '../features/simplefin/utils/formatSimpleFinAuthRequiredToast';
@@ -130,20 +131,15 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       }),
     [accountFilter.accountsByBank]
   );
-  const primaryProvider = useMemo(
-    () =>
-      providerCatalog.resolveConnectProvider(
-        providerCatalog.selectedProvider ??
-          providerCatalog.defaultProvider ??
-          (banks.length > 0 ? banks[0].provider : 'plaid')
-      ),
-    [
-      banks,
-      providerCatalog.defaultProvider,
-      providerCatalog.resolveConnectProvider,
-      providerCatalog.selectedProvider,
-    ]
-  );
+  const primaryProvider = useMemo(() => {
+    const preferred =
+      providerCatalog.userProvider ??
+      (banks.length > 0
+        ? (banks[0].provider as (typeof providerCatalog.availableProviders)[number])
+        : null);
+    if (!preferred) return 'plaid' as const;
+    return providerCatalog.resolveConnectProvider(preferred);
+  }, [banks, providerCatalog]);
   const primaryProviderCard = getProviderCardConfig(primaryProvider);
   const primaryConnectContent = getConnectAccountProviderContent(primaryProvider);
   const providerLabel = primaryProviderCard.title;
@@ -221,6 +217,13 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     return () => clearInterval(id);
   }, [syncingAll]);
   const accountsDataLoading = providerCatalog.loading || accountFilter.loading;
+
+  const hasActiveConnections = banksWithSync.some((b) => b.status === 'connected');
+  const needsProviderPick =
+    !accountsDataLoading &&
+    (providerCatalog.userProvider == null ||
+      (!hasActiveConnections && providerCatalog.userProvider !== 'simplefin'));
+
   const simpleFinEmptyStateActive =
     primaryProvider === 'simplefin' && banksWithSync.length === 0 && !accountsDataLoading;
   const ignoredInstitutionsQuery = useQuery({
@@ -560,6 +563,22 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       lastSyncDetail={lastSyncDetail}
     />
   );
+
+  if (needsProviderPick) {
+    return (
+      <div data-testid="accounts-page">
+        <div className={cn('mx-auto', 'w-full', 'max-w-7xl', 'px-4', 'py-8')}>
+          <ProviderSelectionPanel
+            loading={providerCatalog.loading}
+            error={providerCatalog.error}
+            availableProviders={providerCatalog.availableProviders}
+            tellerApplicationId={providerCatalog.tellerApplicationId}
+            onSelectProvider={(provider) => void providerCatalog.chooseProvider(provider)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div data-testid="accounts-page">
