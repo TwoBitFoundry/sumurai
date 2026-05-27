@@ -7,7 +7,9 @@ import { control } from '@/ui/recipes';
 import { ThemeTestProvider } from '../utils/ThemeTestProvider';
 
 jest.mock('@/utils/sessionPreferences', () => {
-  const actual = jest.requireActual('@/utils/sessionPreferences') as typeof import('@/utils/sessionPreferences');
+  const actual = jest.requireActual(
+    '@/utils/sessionPreferences'
+  ) as typeof import('@/utils/sessionPreferences');
   return {
     ...actual,
     getSessionBankExpanded: jest.fn(() => false),
