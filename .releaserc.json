@@ -24,9 +24,9 @@
       {
         "assets": [
           "package.json",
-          "package-lock.json",
+          "bun.lock",
           "frontend/package.json",
-          "frontend/package-lock.json",
+          "frontend/bun.lock",
           "backend/Cargo.toml",
           "backend/Cargo.lock"
         ],

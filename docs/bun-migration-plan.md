@@ -188,11 +188,13 @@ This repo currently uses npm 24 + Node 24.10 as the package manager, script runn
   ```
 
 **Acceptance criteria:**
-- [ ] `.husky/pre-commit` contains no `npm` invocations.
-- [ ] `scripts/sync-release-version.mjs` does not reference `package-lock.json`.
-- [ ] `.releaserc.json` assets list contains `bun.lock` and `frontend/bun.lock`, no `*-lock.json`.
-- [ ] Manual dry-run: `node scripts/sync-release-version.mjs 99.99.99` updates both `package.json` files, both `bun.lock` files, and the Cargo files; `git diff` shows version bumps only. **Revert the diff after testing** (`git checkout -- package.json frontend/package.json bun.lock frontend/bun.lock backend/Cargo.toml backend/Cargo.lock`).
+- [x] `.husky/pre-commit` contains no `npm` invocations.
+- [x] `scripts/sync-release-version.mjs` does not reference `package-lock.json`.
+- [x] `.releaserc.json` assets list contains `bun.lock` and `frontend/bun.lock`, no `*-lock.json`.
+- [x] Manual dry-run: `node scripts/sync-release-version.mjs 99.99.99` updates both `package.json` files, both `bun.lock` files, and the Cargo files; `git diff` shows version bumps only. **Revert the diff after testing** (`git checkout -- package.json frontend/package.json bun.lock frontend/bun.lock backend/Cargo.toml backend/Cargo.lock`).
 - [ ] `git commit` against any staged change triggers `.husky/pre-commit` and runs `bun --cwd frontend run precommit && bun run backend:ci` to completion.
+
+**Phase 3 TDD log:** Added `frontend/tests/scripts/sync-release-version.test.ts` (husky, releaserc assets, sync script contract). Dry-run verified version bumps + lockfile refresh; reverted test versions.
 
 ---
 
