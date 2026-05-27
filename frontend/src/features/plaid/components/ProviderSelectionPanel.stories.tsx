@@ -1,14 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
+import { storyProviderPickerPanelProps } from '@/storybook/fixtures/providerPicker';
 import type { FinancialProvider } from '@/types/api';
 import { ProviderSelectionPanel } from './ProviderSelectionPanel';
 
 const fullCatalogueArgs = {
-  loading: false,
-  error: null,
-  availableProviders: ['plaid', 'teller', 'simplefin'] as FinancialProvider[],
-  tellerApplicationId: 'story-teller-app',
-  connectingProvider: null,
+  ...storyProviderPickerPanelProps,
   onSelectProvider: fn(),
 };
 
@@ -31,24 +28,44 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+function connectButtonIndex(provider: FinancialProvider): number {
+  const order: FinancialProvider[] = ['teller', 'simplefin', 'plaid'];
+  return order.indexOf(provider);
+}
+
 export const AllEnabled: Story = {
   args: fullCatalogueArgs,
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
+    await expect(canvas.getByTestId('provider-selection-panel')).toBeVisible();
+    await expect(canvas.getByText('Choose how you connect accounts')).toBeVisible();
+    await expect(canvas.getByAltText('Teller logo')).toBeVisible();
+    await expect(canvas.getByAltText('SimpleFIN logo')).toBeVisible();
+    await expect(canvas.getByAltText('Plaid logo')).toBeVisible();
     const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
-    await userEvent.click(connectButtons[2]!);
+    await userEvent.click(connectButtons[connectButtonIndex('plaid')]!);
     await expect(args.onSelectProvider).toHaveBeenCalledWith('plaid');
   },
 };
 
 export const Loading: Story = {
   args: { loading: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByTestId('provider-loading-panel')).toBeVisible();
+    await expect(canvas.getByText(/loading provider catalogue/i)).toBeVisible();
+  },
 };
 
 export const ErrorState: Story = {
   args: {
     error: 'Providers unavailable',
     loading: false,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByTestId('provider-error-panel')).toBeVisible();
+    await expect(canvas.getByText('Providers unavailable')).toBeVisible();
   },
 };
 
@@ -57,6 +74,13 @@ export const TellerDisabled: Story = {
     availableProviders: ['plaid', 'simplefin'] as FinancialProvider[],
     tellerApplicationId: null,
   },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
+    await expect(connectButtons[connectButtonIndex('teller')]).toBeDisabled();
+    await userEvent.click(connectButtons[connectButtonIndex('simplefin')]!);
+    await expect(args.onSelectProvider).toHaveBeenCalledWith('simplefin');
+  },
 };
 
 export const ZeroCreds: Story = {
@@ -64,10 +88,21 @@ export const ZeroCreds: Story = {
     availableProviders: [] as FinancialProvider[],
     tellerApplicationId: null,
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
+    await expect(connectButtons[connectButtonIndex('teller')]).toBeDisabled();
+    await expect(connectButtons[connectButtonIndex('plaid')]).toBeDisabled();
+    await expect(connectButtons[connectButtonIndex('simplefin')]).toBeEnabled();
+  },
 };
 
 export const Selecting: Story = {
   args: {
     connectingProvider: 'plaid',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('button', { name: /connecting/i })).toBeVisible();
   },
 };

@@ -1,8 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
+import { storyFullProviderCatalogInfo } from '@/storybook/fixtures/providerPicker';
 import AccountsPage from '@/views/AccountsPage';
 import {
+  buildStoryLastInstitutionDisconnectHandlers,
+  storyAutoCategorizeHandlers,
+  storyPickerEmptyHandlers,
   storyPlaidDisconnect,
   storyPlaidStatus,
   storyPlaidSyncTransactions,
@@ -14,41 +18,9 @@ import { jsonResponse, route, StoryApiScope } from './storyApi';
 
 const storyInteractionTimeoutMs = 20_000;
 
-const storyAutoCategorizeHandlers = [
-  route('GET', '/transactions/auto-categorize', () => jsonResponse(null)),
-  route('POST', '/transactions/auto-categorize', () =>
-    jsonResponse({
-      job_id: '11111111-2222-3333-4444-555555555555',
-      status: 'running',
-      total: 12,
-      processed: 0,
-      updated: 0,
-      skipped: 0,
-      started_at: '2026-05-01T12:00:00.000Z',
-      finished_at: null,
-      error_message: null,
-    })
-  ),
-  route('DELETE', '/transactions/auto-categorize', () =>
-    jsonResponse({
-      job_id: '11111111-2222-3333-4444-555555555555',
-      status: 'cancelling',
-      total: 12,
-      processed: 4,
-      updated: 2,
-      skipped: 2,
-      started_at: '2026-05-01T12:00:00.000Z',
-      finished_at: null,
-      error_message: null,
-    })
-  ),
-];
-
 const storySimpleFinProviderInfo = {
-  available_providers: ['plaid', 'teller', 'simplefin'] as const,
+  ...storyFullProviderCatalogInfo,
   user_provider: 'simplefin' as const,
-  teller_application_id: 'story-teller-app',
-  teller_environment: 'sandbox',
 };
 
 const storySimpleFinAccounts = [
@@ -159,10 +131,8 @@ const simpleFinConnectedHandlers = [
 ];
 
 const storyTellerProviderInfo = {
-  available_providers: ['plaid', 'teller'],
-  user_provider: 'teller',
-  teller_application_id: 'story-teller-app',
-  teller_environment: 'sandbox',
+  ...storyFullProviderCatalogInfo,
+  user_provider: 'teller' as const,
 };
 
 const storyTellerAccounts = [
@@ -257,6 +227,29 @@ export const Journey: Story = {
   },
 };
 
+export const ProviderPickerEmpty: Story = {
+  render: () => (
+    <AccountFilterStoryProvider>
+      <StoryApiScope handlers={storyPickerEmptyHandlers}>
+        <AccountsPage />
+      </StoryApiScope>
+    </AccountFilterStoryProvider>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await waitFor(
+      () => {
+        expect(canvas.getByTestId('provider-selection-panel')).toBeVisible();
+      },
+      { timeout: storyInteractionTimeoutMs }
+    );
+
+    await expect(canvas.getByText('Choose how you connect accounts')).toBeVisible();
+    await expect(canvas.getByAltText('SimpleFIN logo')).toBeVisible();
+  },
+};
+
 export const SimpleFinEmptyState: Story = {
   render: () => (
     <AccountFilterStoryProvider>
@@ -278,6 +271,50 @@ export const SimpleFinEmptyState: Story = {
     await expect(canvas.getByAltText('SimpleFIN logo')).toBeVisible();
     const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
     await expect(connectButtons[1]).toBeEnabled();
+  },
+};
+
+export const LastInstitutionDisconnect: Story = {
+  render: () => (
+    <AccountFilterStoryProvider>
+      <StoryApiScope handlers={buildStoryLastInstitutionDisconnectHandlers()}>
+        <AccountsPage />
+      </StoryApiScope>
+    </AccountFilterStoryProvider>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+
+    await waitFor(
+      () => {
+        expect(canvas.getByText('Story Federal Credit Union')).toBeVisible();
+      },
+      { timeout: storyInteractionTimeoutMs }
+    );
+
+    await userEvent.click(canvas.getByRole('button', { name: /^disconnect$/i }));
+    await userEvent.click(body.getByRole('button', { name: /^disconnect$/i }));
+
+    await waitFor(
+      () => {
+        expect(canvas.getByTestId('provider-selection-panel')).toBeVisible();
+      },
+      { timeout: storyInteractionTimeoutMs }
+    );
+
+    await expect(canvas.queryByText('Story Federal Credit Union')).not.toBeInTheDocument();
+
+    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
+    await userEvent.click(connectButtons[1]!);
+
+    await waitFor(
+      () => {
+        expect(body.getByRole('dialog')).toBeVisible();
+        expect(body.getByLabelText('SimpleFIN setup token')).toBeVisible();
+      },
+      { timeout: storyInteractionTimeoutMs }
+    );
   },
 };
 

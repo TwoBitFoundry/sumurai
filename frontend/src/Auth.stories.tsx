@@ -1,7 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { OnboardingProviderPicker } from '@/components/onboarding/OnboardingProviderPicker';
+import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
+import { storyOnboardingPickerHandlers } from '@/storybook/screens/user-journeys/shared';
+import { StoryApiScope } from '@/storybook/screens/user-journeys/storyApi';
 import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { LoginScreen, RegisterScreen } from './Auth';
+
+const storyInteractionTimeoutMs = 20_000;
 
 type AuthStoryArgs = {
   onNavigateToRegister: () => void;
@@ -205,5 +211,39 @@ export const RegisterNavigateToLogin: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: /^sign in$/i }));
     await expect(args.onNavigateToLogin).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const OnboardingProviderPickerStory: StoryObj<{ onComplete: () => void }> = {
+  parameters: { layout: 'fullscreen' },
+  tags: ['autodocs', 'test'],
+  args: {
+    onComplete: fn(),
+  },
+  render: (args) => (
+    <AccountFilterStoryProvider>
+      <StoryApiScope handlers={storyOnboardingPickerHandlers}>
+        <OnboardingProviderPicker onComplete={args.onComplete} />
+      </StoryApiScope>
+    </AccountFilterStoryProvider>
+  ),
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await waitFor(
+      () => {
+        expect(canvas.getByTestId('provider-selection-panel')).toBeVisible();
+      },
+      { timeout: storyInteractionTimeoutMs }
+    );
+
+    await expect(canvas.getByRole('button', { name: /skip for now/i })).toBeVisible();
+    await expect(canvas.getByAltText('SimpleFIN logo')).toBeVisible();
+
+    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
+    await expect(connectButtons[1]).toBeEnabled();
+
+    await userEvent.click(canvas.getByRole('button', { name: /skip for now/i }));
+    await expect(args.onComplete).toHaveBeenCalledTimes(1);
   },
 };

@@ -6,35 +6,33 @@ import ConnectionsList from '@/features/plaid/components/ConnectionsList';
 import ProviderSelectionPanel from '@/features/plaid/components/ProviderSelectionPanel';
 import { PageLayout } from '@/layouts/PageLayout';
 import { sampleBankConnections } from '@/storybook/fixtures/plaid';
+import { storyProviderPickerPanelProps } from '@/storybook/fixtures/providerPicker';
+import type { FinancialProvider } from '@/types/api';
 import { Button, cn } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { font as uiTypographyRecipes } from '@/ui/recipes';
 
-export function AccountsProviderPickerSlice() {
-  return (
-    <div className="mx-auto w-full max-w-7xl">
-      <ProviderSelectionPanel
-        loading={false}
-        error={null}
-        availableProviders={['plaid', 'teller']}
-        tellerApplicationId="story-teller-app"
-        connectingProvider={null}
-        onSelectProvider={async () => {}}
-      />
-    </div>
-  );
-}
+type ProviderPickerSliceProps = {
+  loading?: boolean;
+  error?: string | null;
+  connectingProvider?: FinancialProvider | null;
+  onSelectProvider?: (provider: FinancialProvider) => void | Promise<void>;
+};
 
-export function AccountsProviderPickerLoadingSlice() {
+export function AccountsProviderPickerSlice({
+  loading = false,
+  error = null,
+  connectingProvider = null,
+  onSelectProvider = async () => {},
+}: ProviderPickerSliceProps = {}) {
   return (
     <div className="mx-auto w-full max-w-7xl">
       <ProviderSelectionPanel
-        loading
-        error={null}
-        availableProviders={['plaid', 'teller']}
-        tellerApplicationId="story-teller-app"
-        connectingProvider={null}
-        onSelectProvider={async () => {}}
+        {...storyProviderPickerPanelProps}
+        loading={loading}
+        error={error}
+        connectingProvider={connectingProvider}
+        onSelectProvider={onSelectProvider}
       />
     </div>
   );
