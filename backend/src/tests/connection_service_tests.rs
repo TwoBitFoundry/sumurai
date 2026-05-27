@@ -242,7 +242,7 @@ async fn given_plaid_sync_with_many_transactions_when_persisting_then_batches_wr
         noop_categorizer(),
         credential_resolvers,
     );
-    let sync_service = SyncService::new(provider_registry, "plaid");
+    let sync_service = SyncService::new(provider_registry);
 
     let result = connection_service
         .sync_provider_connection(

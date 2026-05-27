@@ -19,34 +19,22 @@ const SAFETY_MARGIN_DAYS: i64 = 2;
 
 pub struct SyncService {
     providers: Arc<ProviderRegistry>,
-    default_provider: String,
 }
 
 #[allow(dead_code)]
 impl SyncService {
-    pub fn new(providers: Arc<ProviderRegistry>, default_provider: impl Into<String>) -> Self {
-        let default_provider = default_provider.into().to_lowercase();
-        if providers.get(&default_provider).is_none() {
-            panic!(
-                "Default provider '{}' is not registered in the provider registry",
-                default_provider
-            );
-        }
-
-        Self {
-            providers,
-            default_provider,
-        }
+    pub fn new(providers: Arc<ProviderRegistry>) -> Self {
+        Self { providers }
     }
 
-    fn resolve_provider(
+    pub(crate) fn resolve_provider(
         &self,
         provider_name: Option<&str>,
     ) -> Result<Arc<dyn FinancialDataProvider>> {
         let name = provider_name
             .map(|s| s.to_lowercase())
             .filter(|s| !s.is_empty())
-            .unwrap_or_else(|| self.default_provider.clone());
+            .ok_or_else(|| anyhow!("No provider selected — connect an account first"))?;
 
         self.providers
             .get(&name)

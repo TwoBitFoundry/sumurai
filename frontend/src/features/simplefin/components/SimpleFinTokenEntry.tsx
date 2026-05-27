@@ -9,6 +9,11 @@ interface SimpleFinTokenEntryProps {
   error: string | null;
   blockedReason?: string | null;
   onSubmit: (setupToken: string) => Promise<void> | void;
+  showCard?: boolean;
+  showHeader?: boolean;
+  centered?: boolean;
+  buttonLabel?: string;
+  className?: string;
 }
 
 export function SimpleFinTokenEntry({
@@ -17,6 +22,11 @@ export function SimpleFinTokenEntry({
   error,
   blockedReason,
   onSubmit,
+  showCard = true,
+  showHeader = true,
+  centered = false,
+  buttonLabel = 'Connect with SimpleFIN',
+  className,
 }: SimpleFinTokenEntryProps) {
   const [setupToken, setSetupToken] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -34,17 +44,19 @@ export function SimpleFinTokenEntry({
 
   const disabled = !isOnline || isSubmitting || Boolean(blockedReason);
 
-  return (
-    <GlassCard padding="md" className="space-y-4">
-      <div className="space-y-2">
-        <h3 className={cn(uiTypographyRecipes.cardTitle, semanticTextRecipes.primary)}>
-          Connect with your SimpleFIN token
-        </h3>
-        <p className={cn(uiTypographyRecipes.body, semanticTextRecipes.body)}>
-          Paste the one-time setup token from SimpleFIN Bridge to connect or refresh your
-          institutions.
-        </p>
-      </div>
+  const content = (
+    <>
+      {showHeader ? (
+        <div className="space-y-2">
+          <h3 className={cn(uiTypographyRecipes.cardTitle, semanticTextRecipes.primary)}>
+            Connect with your SimpleFIN token
+          </h3>
+          <p className={cn(uiTypographyRecipes.body, semanticTextRecipes.body)}>
+            Paste the one-time setup token from SimpleFIN Bridge to connect or refresh your
+            institutions.
+          </p>
+        </div>
+      ) : null}
 
       {blockedReason ? (
         <Alert variant="warning" className="rounded-2xl">
@@ -58,7 +70,7 @@ export function SimpleFinTokenEntry({
         </Alert>
       ) : null}
 
-      <div className="space-y-3">
+      <div className={cn('space-y-3', centered && 'text-center')}>
         <label
           htmlFor="simplefin-setup-token"
           className={cn(uiTypographyRecipes.label, semanticTextRecipes.primary)}
@@ -70,9 +82,10 @@ export function SimpleFinTokenEntry({
           type="password"
           value={setupToken}
           onChange={(event) => setSetupToken(event.target.value)}
-          placeholder="Paste your SimpleFIN setup token"
+          placeholder="Paste your token"
           disabled={disabled}
           autoComplete="off"
+          className={cn(centered && 'text-center placeholder:text-center')}
         />
         {(validationError ?? null) && (
           <p className={cn(uiTypographyRecipes.caption, semanticTextRecipes.warning)}>
@@ -81,9 +94,26 @@ export function SimpleFinTokenEntry({
         )}
       </div>
 
-      <Button type="button" variant="connect" size="md" disabled={disabled} onClick={submit}>
-        {isSubmitting ? 'Connecting…' : 'Connect with SimpleFIN'}
+      <Button
+        type="button"
+        variant="connect"
+        size="md"
+        disabled={disabled}
+        onClick={submit}
+        className={cn(centered && 'w-full')}
+      >
+        {isSubmitting ? 'Connecting…' : buttonLabel}
       </Button>
+    </>
+  );
+
+  if (!showCard) {
+    return <div className={cn('space-y-4', className)}>{content}</div>;
+  }
+
+  return (
+    <GlassCard padding="md" className={cn('space-y-4', className)}>
+      {content}
     </GlassCard>
   );
 }

@@ -4,7 +4,6 @@
 
 import type { FinancialProvider } from '@/types/api';
 import type { ProviderCatalogue } from '@/types/providerCatalog';
-import { CONNECT_ACCOUNT_PROVIDER_CONTENT } from '@/utils/providerCards';
 
 export function isProviderListed(
   provider: FinancialProvider,
@@ -18,7 +17,7 @@ export function isProviderConnectable(
   catalogue: ProviderCatalogue | null
 ): boolean {
   if (!catalogue) {
-    return provider === 'plaid';
+    return provider !== 'teller';
   }
 
   if (!isProviderListed(provider, catalogue)) {
@@ -32,30 +31,34 @@ export function isProviderConnectable(
   return true;
 }
 
+export function isPickerEnabled(
+  provider: FinancialProvider,
+  catalogue: ProviderCatalogue | null
+): boolean {
+  if (provider === 'simplefin') {
+    return true;
+  }
+
+  return isProviderConnectable(provider, catalogue);
+}
+
 export function getConnectBlockedReason(
   provider: FinancialProvider,
   catalogue: ProviderCatalogue | null
 ): string | null {
-  if (!catalogue) {
+  if (provider === 'simplefin') {
     return null;
   }
 
-  if (!isProviderListed(provider, catalogue)) {
-    if (provider === 'simplefin') {
-      return 'SimpleFIN is not enabled for this deployment.';
-    }
-
-    return `${CONNECT_ACCOUNT_PROVIDER_CONTENT[provider].displayName} is not enabled for this deployment.`;
+  if (!catalogue) {
+    return provider === 'teller' ? 'Missing credentials' : null;
   }
 
-  if (provider === 'teller' && !catalogue.teller_application_id?.trim()) {
-    return (
-      CONNECT_ACCOUNT_PROVIDER_CONTENT.teller.applicationIdMissingCopy ??
-      'Add your Teller application ID in provider settings to continue.'
-    );
+  if (isProviderConnectable(provider, catalogue)) {
+    return null;
   }
 
-  return null;
+  return 'Missing credentials';
 }
 
 export function resolveConnectProvider(

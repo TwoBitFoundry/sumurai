@@ -10,6 +10,7 @@ import {
 import { connectionActions } from '@/hooks/financialConnection/connectionState';
 import { recordHandledIssue } from '@/observability';
 import { TellerService } from '@/services/TellerService';
+import { dispatchAccountsChanged } from '@/utils/events';
 import {
   POPUP_BLOCKED_MESSAGE,
   TELLER_CONNECT_LOAD_FAILED_MESSAGE,
@@ -24,6 +25,8 @@ export function useTellerConnectionStrategy(
   const {
     isOnline,
     sdkNonce,
+    setSdkNonce,
+    setReady,
     sdkFailedRef,
     dispatch,
     handleError,
@@ -34,6 +37,11 @@ export function useTellerConnectionStrategy(
   } = context;
 
   const sdkRef = useRef<TellerConnectSdkHandle>(null);
+
+  const rearmSdk = useCallback(() => {
+    setReady(false);
+    setSdkNonce((value) => value + 1);
+  }, [setReady, setSdkNonce]);
 
   const refreshStatus = useCallback(async () => {
     if (!isOnline) {
@@ -63,6 +71,12 @@ export function useTellerConnectionStrategy(
   }, [dispatch, isOnline, onConnectionSuccess]);
 
   useEffect(() => {
+    if (!isOnline || !tellerApplicationId) {
+      setReady(false);
+    }
+  }, [isOnline, tellerApplicationId, setReady]);
+
+  useEffect(() => {
     let isMounted = true;
     const loadExistingConnection = async () => {
       try {
@@ -88,9 +102,23 @@ export function useTellerConnectionStrategy(
   }, [dispatch, refreshStatus]);
 
   const onConnected = useCallback(
-    async ({ connectionId }: { connectionId: string }) => {
+    async ({
+      connectionId,
+      institutionName,
+    }: {
+      connectionId: string;
+      institutionName: string;
+    }) => {
       dispatch(connectionActions.patch({ isSyncing: true, error: null }));
       try {
+        let resolvedInstitutionName = institutionName || DEFAULT_INSTITUTION_NAME;
+        dispatch(
+          connectionActions.patch({
+            isConnected: true,
+            institutionName: resolvedInstitutionName,
+          })
+        );
+
         try {
           await TellerService.syncTransactions(connectionId);
         } catch (syncError) {
@@ -103,38 +131,44 @@ export function useTellerConnectionStrategy(
         }
 
         const latest = await refreshStatus();
-        if (!latest) {
-          handleError('Connected account not found. Please try again.');
-          dispatch(connectionActions.patch({ isConnected: false }));
-        } else {
-          await invalidateCache();
+        if (latest) {
+          resolvedInstitutionName = latest.institution_name || resolvedInstitutionName;
+          dispatch(connectionActions.patch({ institutionName: resolvedInstitutionName }));
         }
+
+        onConnectionSuccess?.(resolvedInstitutionName);
+        await invalidateCache();
+        dispatchAccountsChanged();
       } finally {
         dispatch(connectionActions.patch({ isSyncing: false, connectionInProgress: false }));
+        rearmSdk();
       }
     },
-    [dispatch, handleError, invalidateCache, refreshStatus]
+    [dispatch, invalidateCache, onConnectionSuccess, rearmSdk, refreshStatus]
   );
 
   const onExit = useCallback(() => {
     dispatch(connectionActions.patch({ connectionInProgress: false }));
-  }, [dispatch]);
+    rearmSdk();
+  }, [dispatch, rearmSdk]);
 
   const onEnrollmentError = useCallback(
     (error?: unknown) => {
+      rearmSdk();
       const message =
         error instanceof Error && error.message.includes('did not finish loading')
           ? TELLER_CONNECT_LOAD_FAILED_MESSAGE
           : POPUP_BLOCKED_MESSAGE;
       handleError(message);
     },
-    [handleError]
+    [handleError, rearmSdk]
   );
 
   const onScriptLoadFailed = useCallback(() => {
     sdkFailedRef.current = true;
+    setReady(false);
     handleError(TELLER_CONNECT_LOAD_FAILED_MESSAGE);
-  }, [handleError, sdkFailedRef]);
+  }, [handleError, sdkFailedRef, setReady]);
 
   return useMemo(
     () => ({
@@ -149,15 +183,17 @@ export function useTellerConnectionStrategy(
       loadFailedMessage: TELLER_CONNECT_LOAD_FAILED_MESSAGE,
       render: () => {
         if (!tellerApplicationId) {
+          setReady(false);
           return null;
         }
-        const applicationIdForSdk = sdkNonce > 0 && isOnline ? tellerApplicationId : '';
+        const applicationIdForSdk = isOnline ? tellerApplicationId : '';
         return createElement(TellerConnectSdk, {
           key: `${sdkNonce}:${tellerApplicationId}:${tellerEnvironment}`,
           ref: sdkRef,
           applicationId: applicationIdForSdk,
           environment: tellerEnvironment,
           retryKey: sdkNonce,
+          onReady: () => setReady(true),
           onConnected,
           onExit,
           onEnrollmentError,
@@ -174,6 +210,7 @@ export function useTellerConnectionStrategy(
       sdkNonce,
       tellerApplicationId,
       tellerEnvironment,
+      setReady,
     ]
   );
 }

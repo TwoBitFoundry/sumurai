@@ -1,54 +1,168 @@
 import type { LucideIcon } from 'lucide-react';
-import { Building2, Eye, Fingerprint, Landmark, ShieldCheck, Sparkles, Zap } from 'lucide-react';
+import {
+  Building2,
+  CircleDollarSign,
+  Eye,
+  Fingerprint,
+  Landmark,
+  ShieldCheck,
+  Sparkles,
+  Zap,
+} from 'lucide-react';
 import type { FinancialProvider } from '@/types/api';
 import { cn } from '@/ui/primitives';
 import { status as uiStatusRecipes } from '@/ui/recipes';
 import { featurePalettes } from '@/ui/tokens';
 
+export type ProviderCardSection = {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  description?: string;
+  privacyDetails?: ProviderPrivacyDetail[];
+};
+
+export type ProviderPrivacyDetail = {
+  label: string;
+  value: string;
+};
+
 export type ProviderCardConfig = {
   title: string;
   badge: string;
-  description: string;
-  bullets: string[];
+  region: string;
+  sections: ProviderCardSection[];
+  privacyHref: string;
   logoSrc?: string;
 };
+
+export const PROVIDER_PRICE_ORDER: FinancialProvider[] = ['teller', 'simplefin', 'plaid'];
 
 export const PROVIDER_CARD_CONFIG: Record<FinancialProvider, ProviderCardConfig> = {
   plaid: {
     title: 'Plaid',
-    badge: 'Premium',
-    description: 'Enterprise-grade data enrichment with the broadest institution coverage.',
+    badge: 'Turn Key',
+    region: 'US, CA, UK, EU',
     logoSrc: '/plaid.webp',
-    bullets: [
-      'Enhanced categorization with confidence scores',
-      '12,000+ supported institutions',
-      'Merchant enrichment and location data',
-      'Managed compliance under our SaaS offering',
+    privacyHref: 'https://plaid.com/legal/#consumers',
+    sections: [
+      {
+        icon: CircleDollarSign,
+        label: 'Cost',
+        value: 'Pay/use',
+      },
+      {
+        icon: Building2,
+        label: 'Coverage',
+        value: '~12,000 Institutions',
+      },
+      {
+        icon: ShieldCheck,
+        label: 'Privacy',
+        value: 'Broad',
+        privacyDetails: [
+          {
+            label: 'How it connects',
+            value: 'Connects through Plaid Link for a live account feed.',
+          },
+          {
+            label: 'What it stores',
+            value: "Keeps up to 24 months of history on Plaid's servers.",
+          },
+          {
+            label: 'How it uses data',
+            value: 'Does not sell data, but may share some with affiliates for risk checks.',
+          },
+          {
+            label: 'How to disconnect',
+            value: 'Stops syncing; full deletion requires the Plaid Portal.',
+          },
+        ],
+      },
     ],
   },
   teller: {
     title: 'Teller',
-    badge: 'Self-hosted friendly',
-    description: 'Bring your own Teller credentials for lightweight, developer-first access.',
+    badge: 'Budget Friendly',
+    region: 'US Only',
     logoSrc: '/teller.webp',
-    bullets: [
-      'Unlimited sandbox with 100 free live connections',
-      'Direct connections with running balances',
-      'Simple category strings that map into your budgets',
-      'Ideal for self-hosted deployments',
+    privacyHref: 'https://teller.io/legal',
+    sections: [
+      {
+        icon: CircleDollarSign,
+        label: 'Cost',
+        value: 'Free',
+      },
+      {
+        icon: Building2,
+        label: 'Coverage',
+        value: '~7,000 Institutions',
+      },
+      {
+        icon: ShieldCheck,
+        label: 'Privacy',
+        value: 'Moderate',
+        privacyDetails: [
+          {
+            label: 'How it connects',
+            value: 'Uses your bank login to connect your accounts.',
+          },
+          {
+            label: 'What it stores',
+            value: 'May collect login, account, and transaction data.',
+          },
+          {
+            label: 'How it uses data',
+            value: 'Does not sell or license your data.',
+          },
+          {
+            label: 'How to disconnect',
+            value: 'Stops access; deleting data may require a request.',
+          },
+        ],
+      },
     ],
   },
   simplefin: {
     title: 'SimpleFIN',
-    badge: 'Bring your own token',
-    description:
-      'Link many banks through your own SimpleFIN bridge—no third-party link UI inside Sumurai.',
+    badge: 'Privacy First',
+    region: 'US, CA',
     logoSrc: '/simplefin.webp',
-    bullets: [
-      'Works with many banks from one bridge',
-      'You control access at simplefin.org',
-      'Running balances and transaction history',
-      'Disconnect individual institutions without losing bridge access',
+    privacyHref: 'https://beta-bridge.simplefin.org/info/privacy',
+    sections: [
+      {
+        icon: CircleDollarSign,
+        label: 'Cost',
+        value: '$1.50/mo',
+      },
+      {
+        icon: Building2,
+        label: 'Coverage',
+        value: '~16,000 Institutions',
+      },
+      {
+        icon: ShieldCheck,
+        label: 'Privacy',
+        value: 'Strongest',
+        privacyDetails: [
+          {
+            label: 'How it connects',
+            value: 'Connects through SimpleFIN and MX.',
+          },
+          {
+            label: 'What it stores',
+            value: 'Uses a bridge that routes your data and does not store it.',
+          },
+          {
+            label: 'How it uses data',
+            value: 'Does not sell, license, or use your data for AI training.',
+          },
+          {
+            label: 'How to disconnect',
+            value: 'Deletes your setup right away.',
+          },
+        ],
+      },
     ],
   },
 };

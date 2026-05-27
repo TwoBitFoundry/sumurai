@@ -1,5 +1,4 @@
 use crate::models::account::Account;
-use crate::models::auth::User;
 use crate::models::plaid::{ProviderConnectResponse, ProviderConnection};
 use crate::models::predicted_category::PredictedCategory;
 use crate::models::provider_connect::ProviderConnectRequest;
@@ -25,7 +24,8 @@ use crate::test_fixtures::{noop_categorizer, TestFixtures};
 use anyhow::Result;
 use async_trait::async_trait;
 use axum::body::to_bytes;
-use chrono::{NaiveDate, Utc};
+use base64::Engine;
+use chrono::NaiveDate;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use tower::ServiceExt;
@@ -41,24 +41,6 @@ impl Categorizer for PanicCategorizer {
     async fn categorize_batch(&self, _descriptions: Vec<String>) -> Result<Vec<PredictedCategory>> {
         panic!("categorizer should not be called for SimpleFIN sync");
     }
-}
-
-fn mock_non_demo_user_lookup(mock_db: &mut MockDatabaseRepository) {
-    mock_db
-        .expect_get_user_by_id()
-        .returning(|user_id| {
-            let user = User {
-                id: *user_id,
-                email: format!("test-{user_id}@example.com"),
-                password_hash: "hash".to_string(),
-                provider: "simplefin".to_string(),
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-                onboarding_completed: false,
-            };
-            Box::pin(async move { Ok(Some(user)) })
-        })
-        .times(0..);
 }
 
 fn simplefin_org_item_id(user_id: &Uuid, org_conn_id: &str) -> String {
@@ -180,6 +162,11 @@ fn simplefin_connect_request() -> ProviderConnectRequest {
     }
 }
 
+fn demo_setup_token() -> String {
+    base64::engine::general_purpose::STANDARD
+        .encode("https://beta-bridge.simplefin.org/simplefin/claim/DEMO-v2-test-fixture")
+}
+
 fn build_credential_resolvers(
     db_repository: Arc<dyn crate::services::repository_service::DatabaseRepository>,
 ) -> std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>> {
@@ -243,10 +230,6 @@ fn build_simplefin_connection_service(
     mock_db
         .expect_store_simplefin_root_credential()
         .returning(|_, _| Box::pin(async { Ok(()) }));
-
-    if request_setup_token.is_some() {
-        mock_non_demo_user_lookup(&mut mock_db);
-    }
 
     mock_db
         .expect_list_simplefin_hidden_orgs()
@@ -603,7 +586,7 @@ async fn build_simplefin_handler_app(
         "simplefin",
         simplefin_provider,
     )]));
-    let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "simplefin"));
+    let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
 
     let plaid_client = Arc::new(RealPlaidClient::new(
         "test_client_id".to_string(),
@@ -625,7 +608,6 @@ async fn build_simplefin_handler_app(
     mock_db
         .expect_store_simplefin_root_credential()
         .returning(|_, _| Box::pin(async { Ok(()) }));
-    mock_non_demo_user_lookup(&mut mock_db);
     mock_db
         .expect_list_simplefin_hidden_orgs()
         .returning(|_| Box::pin(async { Ok(HashSet::new()) }));
@@ -678,7 +660,6 @@ async fn build_simplefin_handler_app(
     std::env::set_var("OTEL_TRACES_EXPORTER", "none");
     let mut test_env = MockEnvironment::new();
     test_env.set("TELLER_ENV", "test");
-    test_env.set("DEFAULT_PROVIDER", "simplefin");
     test_env.set("AUTH_COOKIE_SAME_SITE", "Lax");
     let config = Config::from_env_provider(&test_env).expect("Failed to create test config");
 
@@ -782,6 +763,31 @@ async fn given_malformed_simplefin_setup_token_when_post_providers_connect_then_
     let response = app.oneshot(request).await.unwrap();
 
     assert_eq!(response.status(), 400);
+}
+
+#[tokio::test]
+async fn given_any_user_when_using_demo_simplefin_token_then_connects() {
+    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let app = build_simplefin_handler_app(three_org_snapshot(), true)
+        .await
+        .expect("test app should build");
+
+    let request = TestFixtures::create_authenticated_post_request(
+        "/api/providers/connect",
+        &token,
+        ProviderConnectRequest {
+            provider: "simplefin".to_string(),
+            access_token: String::new(),
+            enrollment_id: String::new(),
+            institution_name: None,
+            simplefin: SimpleFinConnectRequest {
+                simplefin_setup_token: Some(demo_setup_token()),
+            },
+        },
+    );
+    let response = app.oneshot(request).await.unwrap();
+
+    assert_eq!(response.status(), 200);
 }
 
 #[tokio::test]
@@ -919,7 +925,7 @@ fn build_simplefin_sync_service_with_categorizer_and_accounts(
         "simplefin",
         Arc::clone(&simplefin_provider),
     )]));
-    let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "simplefin"));
+    let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
 
     let saved_item_ids = Arc::new(Mutex::new(HashSet::new()));
     let upsert_accounts = Arc::new(Mutex::new(0usize));
@@ -1312,7 +1318,7 @@ async fn given_last_simplefin_org_connection_when_disconnect_then_clears_root_an
     mock_db
         .expect_get_all_provider_connections_by_user()
         .with(mockall::predicate::eq(user_id))
-        .times(1)
+        .times(2)
         .returning({
             let remaining_connections = remaining_connections.clone();
             move |_| {
@@ -1348,6 +1354,11 @@ async fn given_last_simplefin_org_connection_when_disconnect_then_clears_root_an
     mock_db.expect_delete_provider_transactions().times(0);
     mock_db.expect_delete_provider_accounts().times(0);
     mock_db.expect_insert_simplefin_hidden_org().times(0);
+    mock_db
+        .expect_update_user_provider()
+        .with(mockall::predicate::eq(user_id), mockall::predicate::eq(""))
+        .times(1)
+        .returning(|_, _| Box::pin(async { Ok(()) }));
 
     let service = build_disconnect_service(mock_db);
     let result = service
@@ -1391,7 +1402,7 @@ async fn given_simplefin_connection_remaining_when_disconnect_then_keeps_root_cr
     mock_db
         .expect_get_all_provider_connections_by_user()
         .with(mockall::predicate::eq(user_id))
-        .times(1)
+        .times(2)
         .returning({
             let remaining_connections = remaining_connections.clone();
             move |_| {
@@ -1406,6 +1417,7 @@ async fn given_simplefin_connection_remaining_when_disconnect_then_keeps_root_cr
     mock_db.expect_delete_provider_transactions().times(0);
     mock_db.expect_delete_provider_accounts().times(0);
     mock_db.expect_insert_simplefin_hidden_org().times(0);
+    mock_db.expect_update_user_provider().times(0);
 
     let service = build_disconnect_service(mock_db);
     let result = service
@@ -1456,6 +1468,16 @@ async fn given_teller_connection_when_disconnect_then_does_not_call_simplefin_di
         .returning(|_| Box::pin(async { Ok(()) }));
     mock_db
         .expect_delete_provider_connection()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .with(mockall::predicate::eq(user_id))
+        .times(1)
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+    mock_db
+        .expect_update_user_provider()
+        .with(mockall::predicate::eq(user_id), mockall::predicate::eq(""))
+        .times(1)
         .returning(|_, _| Box::pin(async { Ok(()) }));
 
     let service = build_disconnect_service(mock_db);

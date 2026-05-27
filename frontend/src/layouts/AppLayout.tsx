@@ -30,7 +30,7 @@ export function AppLayout({
   bottomBarContent,
 }: AppLayoutProps) {
   const mainBottomPadding = bottomBarContent
-    ? 'pb-[calc(8.75rem_+_env(safe-area-inset-bottom))]'
+    ? 'pb-[calc(8.75rem_+_env(safe-area-inset-bottom))] md:pb-[calc(6rem_+_env(safe-area-inset-bottom))]'
     : 'pb-[calc(3.75rem_+_env(safe-area-inset-bottom))]';
   const scrolled = useScrollDetection();
   const showFooter = currentTab === 'dashboard';
@@ -38,10 +38,12 @@ export function AppLayout({
   const { floatingVisible, floatingChromeRef, footerSentinelRef } =
     useFloatingChromeFooterVisibility(showFooter);
 
-  const bottomBarRow = <div className={cn('flex w-full justify-center')}>{bottomBarContent}</div>;
+  const bottomBarRow = (
+    <div className={cn(floatingVisible && 'pointer-events-auto')}>{bottomBarContent}</div>
+  );
 
   return (
-    <div className={cn('flex', 'min-h-screen', 'flex-col', className)}>
+    <div className={cn('flex', 'min-h-dvh', 'flex-col', className)}>
       <div className={cn('relative', 'z-10', 'flex', 'flex-1', 'flex-col')}>
         <AppTitleBar
           state="authenticated"
@@ -76,27 +78,37 @@ export function AppLayout({
             'z-50',
             'flex',
             'flex-col',
+            'pointer-events-none',
             'pb-[env(safe-area-inset-bottom)]',
             'transition-opacity',
             'duration-200',
-            floatingVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            floatingVisible ? 'opacity-100' : 'opacity-0'
           )}
         >
           {showBottomChromeRow ? (
-            <div className={cn('min-h-[3.25rem]', ...appTitleBarRecipes.floatingChromeGutter)}>
+            <div
+              className={cn(
+                'flex',
+                'min-h-[3.25rem]',
+                'justify-center',
+                'pointer-events-none',
+                ...appTitleBarRecipes.floatingChromeGutter
+              )}
+            >
               {bottomBarRow}
             </div>
           ) : null}
 
           <div
             aria-hidden
-            className={cn('hidden', 'md:block', 'h-[4.75rem]', 'pointer-events-none')}
+            className={cn('hidden', 'md:block', 'h-[2rem]', 'pointer-events-none')}
           />
 
           <div
             className={cn(
               'flex',
               'justify-center',
+              'pointer-events-none',
               ...appTitleBarRecipes.floatingChromeGutter,
               'pt-1',
               'pb-2',
@@ -107,7 +119,8 @@ export function AppLayout({
               className={cn(
                 ...appTitleBarRecipes.pillContainer,
                 ...appTitleBarRecipes.contextPillInset,
-                ...appTitleBarRecipes.pillContainerSize
+                ...appTitleBarRecipes.pillContainerSize,
+                floatingVisible && 'pointer-events-auto'
               )}
               aria-label="Primary"
             >

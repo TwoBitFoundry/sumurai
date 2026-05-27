@@ -5,7 +5,6 @@ services:
     image: ${SUMURAI_GHCR_PREFIX:-ghcr.io/twobitfoundry/sumurai}-frontend:${SUMURAI_IMAGE_TAG:-latest}
     pull_policy: always
     environment:
-      DEFAULT_PROVIDER: ${DEFAULT_PROVIDER:-teller}
       NEXT_PUBLIC_OTEL_ENABLED: "false"
       NEXT_PUBLIC_OTEL_SERVICE_NAME: sumurai-frontend
       NEXT_PUBLIC_OTEL_SERVICE_VERSION: "1.0.0"
@@ -31,8 +30,6 @@ services:
 
       OTEL_TRACES_EXPORTER: none
 
-      DEFAULT_PROVIDER: ${DEFAULT_PROVIDER:-teller}
-
       TELLER_APPLICATION_ID: ${TELLER_APPLICATION_ID}
       TELLER_CERT_PATH: /etc/teller/certificate.pem
       TELLER_KEY_PATH: /etc/teller/private_key.pem
@@ -41,8 +38,6 @@ services:
       PLAID_CLIENT_ID: ${PLAID_CLIENT_ID}
       PLAID_SECRET: ${PLAID_SECRET}
       PLAID_ENV: production
-
-      SIMPLEFIN_SETUP_TOKEN: ${SIMPLEFIN_SETUP_TOKEN}
 
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}

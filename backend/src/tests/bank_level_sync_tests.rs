@@ -63,7 +63,7 @@ fn build_sync_service(plaid_client: Arc<RealPlaidClient>) -> SyncService {
         "plaid",
         Arc::clone(&plaid_provider),
     )]));
-    SyncService::new(provider_registry, "plaid")
+    SyncService::new(provider_registry)
 }
 
 #[test]

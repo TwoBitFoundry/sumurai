@@ -31,4 +31,12 @@ describe('DateRangePillSlider', () => {
     expect(activeButton.className).not.toContain('aspect-square');
     expect(activeButton.className).not.toContain('radius-standard');
   });
+
+  it('constrains the pill shell so it can shrink beside the account filter', () => {
+    render(<DateRangePillSlider dateRange="current-month" onChange={jest.fn()} />);
+
+    const shell = screen.getByRole('button', { name: '1M' }).parentElement;
+    expect(shell?.className).toContain('min-w-0');
+    expect(shell?.className).toContain('overflow-x-auto');
+  });
 });

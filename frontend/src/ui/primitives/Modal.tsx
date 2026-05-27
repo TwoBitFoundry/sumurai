@@ -2,10 +2,16 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type * as React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { floatingChromeGlass, modalDrawer, surface as uiSurfaceRecipes } from '@/ui/recipes';
+import {
+  floatingChromeGlass,
+  modalBackdrop,
+  modalDrawer,
+  surface as uiSurfaceRecipes,
+} from '@/ui/recipes';
 import { cn } from './utils';
 
 const DRAWER_EXIT_MS = 280;
+const CENTERED_EXIT_MS = 220;
 
 const contentVariants = cva('relative w-full', {
   variants: {
@@ -21,6 +27,7 @@ const contentVariants = cva('relative w-full', {
 });
 
 export type ModalPresentation = 'centered' | 'drawer';
+export type ModalBackdropVariant = 'default' | 'provider';
 
 export interface ModalProps
   extends Omit<React.ComponentPropsWithoutRef<typeof Dialog.Content>, 'children'>,
@@ -32,6 +39,8 @@ export interface ModalProps
   description?: string;
   presentation?: ModalPresentation;
   preventCloseOnBackdrop?: boolean;
+  animateCentered?: boolean;
+  backdropVariant?: ModalBackdropVariant;
   backdropClassName?: string;
   containerClassName?: string;
   gridClassName?: string;
@@ -46,6 +55,8 @@ export function Modal({
   description,
   presentation = 'centered',
   preventCloseOnBackdrop,
+  animateCentered = false,
+  backdropVariant = 'default',
   className,
   backdropClassName,
   containerClassName,
@@ -53,11 +64,23 @@ export function Modal({
   ...props
 }: ModalProps) {
   const isDrawer = presentation === 'drawer';
+  const isCenteredAnimated = !isDrawer && animateCentered;
+  const centeredBackdropClassName = cn(
+    ...(backdropVariant === 'provider'
+      ? modalBackdrop.provider
+      : [...floatingChromeGlass.backdrop, ...uiSurfaceRecipes.overlay]),
+    backdropClassName
+  );
   const [drawerOpen, setDrawerOpen] = useState(isOpen);
   const [isExiting, setIsExiting] = useState(false);
+  const [centeredOpen, setCenteredOpen] = useState(isOpen);
+  const [isCenteredExiting, setIsCenteredExiting] = useState(false);
   const drawerContentRef = useRef<HTMLDivElement>(null);
+  const centeredContentRef = useRef<HTMLDivElement>(null);
   const exitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const centeredExitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isExitingRef = useRef(false);
+  const isCenteredExitingRef = useRef(false);
 
   const finishDrawerExit = useCallback(
     (notifyParent: boolean) => {
@@ -114,29 +137,115 @@ export function Modal({
     [finishDrawerExit]
   );
 
-  useEffect(() => {
-    if (!isDrawer) {
-      return;
-    }
-    if (isOpen) {
-      if (exitTimeoutRef.current) {
-        clearTimeout(exitTimeoutRef.current);
-        exitTimeoutRef.current = null;
+  const finishCenteredExit = useCallback(
+    (notifyParent: boolean) => {
+      isCenteredExitingRef.current = false;
+      setIsCenteredExiting(false);
+      setCenteredOpen(false);
+      if (notifyParent) {
+        onClose?.();
       }
-      isExitingRef.current = false;
-      setIsExiting(false);
-      setDrawerOpen(true);
+    },
+    [onClose]
+  );
+
+  const beginCenteredExit = useCallback(
+    (notifyParent: boolean) => {
+      if (isCenteredExitingRef.current) {
+        return;
+      }
+      isCenteredExitingRef.current = true;
+      setIsCenteredExiting(true);
+
+      const node = centeredContentRef.current;
+      if (!node) {
+        finishCenteredExit(notifyParent);
+        return;
+      }
+
+      let finished = false;
+      const complete = () => {
+        if (finished) {
+          return;
+        }
+        finished = true;
+        if (centeredExitTimeoutRef.current) {
+          clearTimeout(centeredExitTimeoutRef.current);
+          centeredExitTimeoutRef.current = null;
+        }
+        node.removeEventListener('animationend', onAnimationEnd);
+        finishCenteredExit(notifyParent);
+      };
+
+      const onAnimationEnd = (event: AnimationEvent) => {
+        if (event.target !== node) {
+          return;
+        }
+        complete();
+      };
+
+      requestAnimationFrame(() => {
+        node.addEventListener('animationend', onAnimationEnd);
+        centeredExitTimeoutRef.current = setTimeout(complete, CENTERED_EXIT_MS);
+      });
+    },
+    [finishCenteredExit]
+  );
+
+  useEffect(() => {
+    if (isDrawer) {
+      if (isOpen) {
+        if (exitTimeoutRef.current) {
+          clearTimeout(exitTimeoutRef.current);
+          exitTimeoutRef.current = null;
+        }
+        isExitingRef.current = false;
+        setIsExiting(false);
+        setDrawerOpen(true);
+        return;
+      }
+
+      if (drawerOpen && !isExitingRef.current) {
+        beginDrawerExit(false);
+      }
       return;
     }
-    if (drawerOpen && !isExitingRef.current) {
-      beginDrawerExit(false);
+
+    if (!isCenteredAnimated) {
+      return;
     }
-  }, [beginDrawerExit, drawerOpen, isDrawer, isOpen]);
+
+    if (isOpen) {
+      if (centeredExitTimeoutRef.current) {
+        clearTimeout(centeredExitTimeoutRef.current);
+        centeredExitTimeoutRef.current = null;
+      }
+      isCenteredExitingRef.current = false;
+      setIsCenteredExiting(false);
+      setCenteredOpen(true);
+      return;
+    }
+
+    if (centeredOpen && !isCenteredExitingRef.current) {
+      beginCenteredExit(false);
+    }
+  }, [
+    beginCenteredExit,
+    beginDrawerExit,
+    centeredOpen,
+    drawerOpen,
+    isCenteredAnimated,
+    isDrawer,
+    isOpen,
+  ]);
 
   useEffect(() => {
     return () => {
       if (exitTimeoutRef.current) {
         clearTimeout(exitTimeoutRef.current);
+      }
+      if (centeredExitTimeoutRef.current) {
+        clearTimeout(centeredExitTimeoutRef.current);
       }
     };
   }, []);
@@ -152,13 +261,31 @@ export function Modal({
       beginDrawerExit(true);
       return;
     }
-    if (!nextOpen) {
-      onClose?.();
+
+    if (!isCenteredAnimated) {
+      if (!nextOpen) {
+        onClose?.();
+      }
+      return;
     }
+
+    if (nextOpen) {
+      isCenteredExitingRef.current = false;
+      setIsCenteredExiting(false);
+      setCenteredOpen(true);
+      return;
+    }
+
+    onClose?.();
   };
 
-  const rootOpen = isDrawer ? drawerOpen || isExiting : isOpen;
+  const rootOpen = isDrawer
+    ? drawerOpen || isExiting
+    : isCenteredAnimated
+      ? centeredOpen || isCenteredExiting
+      : isOpen;
   const drawerExitingProps = isExiting ? ({ 'data-exiting': 'true' } as const) : {};
+  const centeredExitingProps = isCenteredExiting ? ({ 'data-exiting': 'true' } as const) : {};
 
   return (
     <Dialog.Root open={rootOpen} onOpenChange={handleOpenChange}>
@@ -210,11 +337,11 @@ export function Modal({
             <Dialog.Overlay
               data-testid="modal-backdrop"
               data-presentation={presentation}
+              {...(isCenteredAnimated ? centeredExitingProps : {})}
               className={cn(
+                isCenteredAnimated && 'modal-centered-overlay',
                 'absolute inset-0',
-                ...floatingChromeGlass.backdrop,
-                ...uiSurfaceRecipes.overlay,
-                backdropClassName
+                centeredBackdropClassName
               )}
               onPointerDown={(event) => {
                 if (preventCloseOnBackdrop) {
@@ -224,10 +351,17 @@ export function Modal({
             />
             <div className={cn('grid h-full place-items-center', gridClassName ?? 'p-4')}>
               <Dialog.Content
+                ref={isCenteredAnimated ? centeredContentRef : undefined}
                 aria-labelledby={labelledBy}
                 aria-describedby={description}
                 data-presentation={presentation}
-                className={cn('z-50 outline-none', contentVariants({ size }), className)}
+                {...(isCenteredAnimated ? centeredExitingProps : {})}
+                className={cn(
+                  'z-50 outline-none',
+                  contentVariants({ size }),
+                  isCenteredAnimated && 'modal-centered-content',
+                  className
+                )}
                 onPointerDownOutside={(event) => {
                   if (preventCloseOnBackdrop) {
                     event.preventDefault();

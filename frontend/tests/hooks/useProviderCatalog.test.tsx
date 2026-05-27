@@ -26,8 +26,7 @@ describe('useProviderCatalog', () => {
   const createGateway = (): ProviderCatalogGateway => ({
     fetchInfo: jest.fn().mockResolvedValue({
       available_providers: ['plaid', 'teller'],
-      default_provider: 'plaid',
-      user_provider: undefined,
+      user_provider: null,
     }),
     selectProvider: jest.fn().mockResolvedValue({
       user_provider: 'teller',
@@ -41,7 +40,7 @@ describe('useProviderCatalog', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.availableProviders).toEqual(['plaid', 'teller']);
-    expect(result.current.selectedProvider).toBe('plaid');
+    expect(result.current.userProvider).toBeNull();
     expect(gateway.fetchInfo).toHaveBeenCalledTimes(1);
   });
 
@@ -54,7 +53,7 @@ describe('useProviderCatalog', () => {
 
     expect(result.current.canConnectWith('plaid')).toBe(true);
     expect(result.current.canConnectWith('teller')).toBe(false);
-    expect(result.current.getConnectBlockedReason('teller')).toContain('Teller application ID');
+    expect(result.current.getConnectBlockedReason('teller')).toBe('Missing credentials');
   });
 
   it('keeps the selected provider in the shared query cache across remounts', async () => {
@@ -68,14 +67,14 @@ describe('useProviderCatalog', () => {
       await first.result.current.chooseProvider('teller');
     });
 
-    expect(first.result.current.selectedProvider).toBe('teller');
+    expect(first.result.current.userProvider).toBe('teller');
 
     first.unmount();
 
     const second = renderHook(() => useProviderCatalog({ gateway }), { wrapper });
 
     expect(second.result.current.loading).toBe(false);
-    expect(second.result.current.selectedProvider).toBe('teller');
+    expect(second.result.current.userProvider).toBe('teller');
     expect(gateway.fetchInfo).toHaveBeenCalledTimes(1);
   });
 });

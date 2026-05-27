@@ -3,7 +3,7 @@
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { ProviderCatalogue, ProviderSelectionResult } from '@/types/providerCatalog';
 import {
   getConnectBlockedReason,
@@ -37,8 +37,6 @@ export interface ProviderCatalogState {
   loading: boolean;
   error: string | null;
   availableProviders: FinancialProvider[];
-  selectedProvider: FinancialProvider | null;
-  defaultProvider: FinancialProvider | null;
   userProvider: FinancialProvider | null;
   tellerApplicationId: string | null;
   tellerEnvironment: TellerEnvironment;
@@ -63,13 +61,6 @@ export function useProviderCatalog(options: UseProviderCatalogOptions = {}): Pro
   });
   const catalogue = query.data ?? null;
 
-  const selectedProvider = useMemo<FinancialProvider | null>(() => {
-    if (!catalogue) {
-      return null;
-    }
-    return catalogue.user_provider ?? catalogue.default_provider ?? null;
-  }, [catalogue]);
-
   const chooseProvider = useCallback(
     async (provider: FinancialProvider) => {
       try {
@@ -79,7 +70,6 @@ export function useProviderCatalog(options: UseProviderCatalogOptions = {}): Pro
           if (!prev) {
             return {
               available_providers: [result.user_provider],
-              default_provider: result.user_provider,
               user_provider: result.user_provider,
             };
           }
@@ -131,8 +121,6 @@ export function useProviderCatalog(options: UseProviderCatalogOptions = {}): Pro
     loading: query.isPending,
     error: mutationError ?? query.error?.message ?? null,
     availableProviders: catalogue?.available_providers ?? emptyProviders,
-    selectedProvider,
-    defaultProvider: catalogue?.default_provider ?? null,
     userProvider: catalogue?.user_provider ?? null,
     tellerApplicationId: catalogue?.teller_application_id ?? null,
     tellerEnvironment,

@@ -29,12 +29,10 @@ export {
   ValidationError,
 };
 
-const DEV_DOCKER_API_BASE = 'http://localhost:3000/api';
 const NODE_ENV = typeof process !== 'undefined' ? process.env.NODE_ENV : undefined;
 const NEXT_PUBLIC_API_BASE =
   typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_API_BASE : undefined;
-const DEFAULT_API_BASE =
-  NEXT_PUBLIC_API_BASE || (NODE_ENV === 'development' ? DEV_DOCKER_API_BASE : '/api');
+export const DEFAULT_API_BASE = NEXT_PUBLIC_API_BASE || '/api';
 
 interface RetryConfig {
   maxRetries: number;

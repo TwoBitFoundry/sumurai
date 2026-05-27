@@ -7,6 +7,7 @@ describe('registerProductionServiceWorker', () => {
       register,
       fetch: jest.fn(),
       hasServiceWorker: true,
+      isProduction: false,
     });
     expect(register).not.toHaveBeenCalled();
   });
@@ -17,6 +18,18 @@ describe('registerProductionServiceWorker', () => {
       register,
       fetch: jest.fn(),
       hasServiceWorker: false,
+      isProduction: true,
+    });
+    expect(register).not.toHaveBeenCalled();
+  });
+
+  it('skips outside production', async () => {
+    const register = jest.fn();
+    await registerProductionServiceWorker({
+      register,
+      fetch: jest.fn(),
+      hasServiceWorker: true,
+      isProduction: false,
     });
     expect(register).not.toHaveBeenCalled();
   });
@@ -28,6 +41,7 @@ describe('registerProductionServiceWorker', () => {
       register,
       fetch,
       hasServiceWorker: true,
+      isProduction: true,
     });
     expect(register).not.toHaveBeenCalled();
   });
@@ -39,6 +53,7 @@ describe('registerProductionServiceWorker', () => {
       register,
       fetch,
       hasServiceWorker: true,
+      isProduction: true,
     });
     expect(register).toHaveBeenCalledWith('/sw.js', {
       scope: '/',
@@ -54,6 +69,7 @@ describe('registerProductionServiceWorker', () => {
         register,
         fetch,
         hasServiceWorker: true,
+        isProduction: true,
       })
     ).resolves.toBeUndefined();
   });

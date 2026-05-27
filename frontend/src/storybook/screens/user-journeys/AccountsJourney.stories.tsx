@@ -1,8 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { AccountFilterStoryProvider } from '@/storybook/AccountFilterStoryProvider';
+import {
+  STORY_ALL_PROVIDERS,
+  storyConnectButtonIndex,
+  storyFullProviderCatalogInfo,
+} from '@/storybook/fixtures/providerPicker';
+import { installStoryTellerConnectWindow } from '@/storybook/fixtures/providerPickerStorySetup';
 import AccountsPage from '@/views/AccountsPage';
 import {
+  buildStoryLastInstitutionDisconnectHandlers,
+  buildStoryPlaidPickerEmptyHandlers,
+  buildStoryTellerPickerEmptyHandlers,
+  storyAutoCategorizeHandlers,
+  storyPickerEmptyHandlers,
   storyPlaidDisconnect,
   storyPlaidStatus,
   storyPlaidSyncTransactions,
@@ -14,40 +25,46 @@ import { jsonResponse, route, StoryApiScope } from './storyApi';
 
 const storyInteractionTimeoutMs = 20_000;
 
-const storyAutoCategorizeHandlers = [
-  route('GET', '/transactions/auto-categorize', () => jsonResponse(null)),
-  route('POST', '/transactions/auto-categorize', () =>
-    jsonResponse({
-      job_id: '11111111-2222-3333-4444-555555555555',
-      status: 'running',
-      total: 12,
-      processed: 0,
-      updated: 0,
-      skipped: 0,
-      started_at: '2026-05-01T12:00:00.000Z',
-      finished_at: null,
-      error_message: null,
-    })
-  ),
-  route('DELETE', '/transactions/auto-categorize', () =>
-    jsonResponse({
-      job_id: '11111111-2222-3333-4444-555555555555',
-      status: 'cancelling',
-      total: 12,
-      processed: 4,
-      updated: 2,
-      skipped: 2,
-      started_at: '2026-05-01T12:00:00.000Z',
-      finished_at: null,
-      error_message: null,
-    })
-  ),
-];
+async function waitForPickerSdkConnect(
+  canvas: ReturnType<typeof within>,
+  body: ReturnType<typeof within>,
+  timeoutMs = storyInteractionTimeoutMs
+) {
+  await waitFor(
+    () => {
+      const connecting = canvas.queryByRole('button', { name: /connecting/i });
+      if (connecting) {
+        expect(connecting).toBeVisible();
+        return;
+      }
+
+      expect(body.getByTestId('provider-sdk-launch-backdrop').className).toContain('opacity-100');
+    },
+    { timeout: timeoutMs }
+  );
+}
+
+async function waitForPickerConnectButtons(canvas: ReturnType<typeof within>) {
+  await waitFor(
+    () => {
+      expect(canvas.getAllByRole('button', { name: /^connect$/i })).toHaveLength(3);
+    },
+    { timeout: storyInteractionTimeoutMs }
+  );
+}
+
+async function waitForProviderPicker(canvas: ReturnType<typeof within>) {
+  await waitFor(
+    () => {
+      expect(canvas.getByTestId('provider-selection-panel')).toBeVisible();
+    },
+    { timeout: storyInteractionTimeoutMs }
+  );
+}
 
 const storySimpleFinProviderInfo = {
-  available_providers: ['simplefin'],
-  default_provider: 'simplefin',
-  user_provider: 'simplefin',
+  ...storyFullProviderCatalogInfo,
+  user_provider: 'simplefin' as const,
 };
 
 const storySimpleFinAccounts = [
@@ -115,8 +132,13 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+const storyPlaidProviderInfo = {
+  ...storyProviderInfo,
+  user_provider: 'plaid' as const,
+};
+
 const handlers = [
-  route('GET', '/providers/info', () => jsonResponse(storyProviderInfo)),
+  route('GET', '/providers/info', () => jsonResponse(storyPlaidProviderInfo)),
   route('POST', '/providers/select', () => jsonResponse(storyProviderSelect)),
   route('GET', '/providers/status', () => jsonResponse(storyPlaidStatus)),
   route('GET', '/providers/accounts', () => jsonResponse(storyProviderAccounts)),
@@ -153,12 +175,11 @@ const simpleFinConnectedHandlers = [
 ];
 
 const storyTellerProviderInfo = {
-  available_providers: ['plaid', 'teller'],
-  default_provider: 'teller',
-  user_provider: 'teller',
-  teller_application_id: 'story-teller-app',
-  teller_environment: 'sandbox',
+  ...storyFullProviderCatalogInfo,
+  user_provider: 'teller' as const,
 };
+
+const tellerEmptyStateHandlers = buildStoryTellerPickerEmptyHandlers();
 
 const storyTellerAccounts = [
   {
@@ -189,18 +210,6 @@ const storyTellerStatus = {
     },
   ],
 };
-
-const tellerEmptyStateHandlers = [
-  route('GET', '/providers/info', () => jsonResponse(storyTellerProviderInfo)),
-  route('GET', '/providers/status', () =>
-    jsonResponse({
-      provider: 'teller',
-      connections: [],
-    })
-  ),
-  route('GET', '/providers/accounts', () => jsonResponse([])),
-  ...storyAutoCategorizeHandlers,
-];
 
 const tellerConnectedHandlers = [
   route('GET', '/providers/info', () => jsonResponse(storyTellerProviderInfo)),
@@ -252,6 +261,55 @@ export const Journey: Story = {
   },
 };
 
+export const ProviderPickerEmpty: Story = {
+  render: () => (
+    <AccountFilterStoryProvider>
+      <StoryApiScope handlers={storyPickerEmptyHandlers}>
+        <AccountsPage />
+      </StoryApiScope>
+    </AccountFilterStoryProvider>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await waitForProviderPicker(canvas);
+
+    await expect(canvas.getByText('Choose how you connect accounts')).toBeVisible();
+    for (const provider of STORY_ALL_PROVIDERS) {
+      const label =
+        provider === 'simplefin'
+          ? 'SimpleFIN'
+          : provider.charAt(0).toUpperCase() + provider.slice(1);
+      await expect(canvas.getByAltText(`${label} logo`)).toBeVisible();
+    }
+  },
+};
+
+export const PlaidEmptyState: Story = {
+  render: () => (
+    <AccountFilterStoryProvider>
+      <StoryApiScope handlers={buildStoryPlaidPickerEmptyHandlers()}>
+        <AccountsPage />
+      </StoryApiScope>
+    </AccountFilterStoryProvider>
+  ),
+  play: async ({ canvasElement }) => {
+    installStoryTellerConnectWindow();
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+
+    await waitForProviderPicker(canvas);
+    await expect(canvas.getByAltText('Plaid logo')).toBeVisible();
+    await waitForPickerConnectButtons(canvas);
+
+    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
+    await userEvent.click(connectButtons[storyConnectButtonIndex('plaid')]!);
+
+    await waitForPickerSdkConnect(canvas, body);
+    await expect(body.queryByRole('dialog')).not.toBeInTheDocument();
+  },
+};
+
 export const SimpleFinEmptyState: Story = {
   render: () => (
     <AccountFilterStoryProvider>
@@ -265,11 +323,93 @@ export const SimpleFinEmptyState: Story = {
 
     await waitFor(
       () => {
-        expect(canvas.getByPlaceholderText('Paste your SimpleFIN setup token')).toBeVisible();
+        expect(canvas.getByTestId('provider-selection-panel')).toBeVisible();
       },
       { timeout: storyInteractionTimeoutMs }
     );
-    await expect(canvas.queryByRole('button', { name: /^simplefin$/i })).not.toBeInTheDocument();
+
+    await expect(canvas.getByAltText('SimpleFIN logo')).toBeVisible();
+    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
+    await expect(connectButtons[storyConnectButtonIndex('simplefin')]).toBeEnabled();
+  },
+};
+
+export const LastInstitutionDisconnect: Story = {
+  render: () => (
+    <AccountFilterStoryProvider>
+      <StoryApiScope handlers={buildStoryLastInstitutionDisconnectHandlers()}>
+        <AccountsPage />
+      </StoryApiScope>
+    </AccountFilterStoryProvider>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+
+    await waitFor(
+      () => {
+        expect(canvas.getByText('Story Federal Credit Union')).toBeVisible();
+      },
+      { timeout: storyInteractionTimeoutMs }
+    );
+
+    await userEvent.click(canvas.getByRole('button', { name: /^disconnect$/i }));
+    await userEvent.click(body.getByRole('button', { name: /^disconnect$/i }));
+
+    await waitFor(
+      () => {
+        expect(canvas.getByTestId('provider-selection-panel')).toBeVisible();
+      },
+      { timeout: storyInteractionTimeoutMs }
+    );
+
+    await expect(canvas.queryByText('Story Federal Credit Union')).not.toBeInTheDocument();
+
+    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
+    await userEvent.click(connectButtons[storyConnectButtonIndex('simplefin')]!);
+
+    await waitFor(
+      () => {
+        expect(body.getByRole('dialog')).toBeVisible();
+        expect(body.getByLabelText('SimpleFIN setup token')).toBeVisible();
+      },
+      { timeout: storyInteractionTimeoutMs }
+    );
+  },
+};
+
+export const LastInstitutionDisconnectPlaidPicker: Story = {
+  render: () => (
+    <AccountFilterStoryProvider>
+      <StoryApiScope handlers={buildStoryLastInstitutionDisconnectHandlers()}>
+        <AccountsPage />
+      </StoryApiScope>
+    </AccountFilterStoryProvider>
+  ),
+  play: async ({ canvasElement }) => {
+    installStoryTellerConnectWindow();
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+
+    await waitFor(
+      () => {
+        expect(canvas.getByText('Story Federal Credit Union')).toBeVisible();
+      },
+      { timeout: storyInteractionTimeoutMs }
+    );
+
+    await userEvent.click(canvas.getByRole('button', { name: /^disconnect$/i }));
+    await userEvent.click(body.getByRole('button', { name: /^disconnect$/i }));
+
+    await waitForProviderPicker(canvas);
+    await waitForPickerConnectButtons(canvas);
+    await expect(canvas.queryByText('Story Federal Credit Union')).not.toBeInTheDocument();
+
+    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
+    await userEvent.click(connectButtons[storyConnectButtonIndex('plaid')]!);
+
+    await waitForPickerSdkConnect(canvas, body);
+    await expect(body.queryByRole('dialog')).not.toBeInTheDocument();
   },
 };
 
@@ -290,10 +430,8 @@ export const SimpleFinConnected: Story = {
       },
       { timeout: storyInteractionTimeoutMs }
     );
-    await expect(
-      canvas.queryByPlaceholderText('Paste your SimpleFIN setup token')
-    ).not.toBeInTheDocument();
-    await expect(canvas.queryByRole('button', { name: /^simplefin$/i })).not.toBeInTheDocument();
+    await expect(canvas.queryByPlaceholderText('Paste your token')).not.toBeInTheDocument();
+    await expect(canvas.getByRole('button', { name: /simplefin/i })).toBeVisible();
   },
 };
 
@@ -306,15 +444,18 @@ export const TellerEmptyState: Story = {
     </AccountFilterStoryProvider>
   ),
   play: async ({ canvasElement }) => {
+    installStoryTellerConnectWindow();
     const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
 
-    await waitFor(
-      () => {
-        expect(canvas.getAllByRole('button', { name: /^teller$/i })).toHaveLength(2);
-      },
-      { timeout: storyInteractionTimeoutMs }
-    );
-    await expect(canvas.getByText(/no teller accounts connected yet/i)).toBeVisible();
+    await waitForProviderPicker(canvas);
+    await expect(canvas.getByAltText('Teller logo')).toBeVisible();
+    await waitForPickerConnectButtons(canvas);
+
+    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
+    await userEvent.click(connectButtons[storyConnectButtonIndex('teller')]!);
+    await waitForPickerSdkConnect(canvas, body);
+    await expect(body.queryByRole('dialog')).not.toBeInTheDocument();
   },
 };
 

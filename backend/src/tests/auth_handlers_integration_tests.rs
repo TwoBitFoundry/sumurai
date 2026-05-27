@@ -115,9 +115,10 @@ async fn given_valid_login_when_authenticating_then_sets_auth_cookie_and_omits_t
 async fn given_valid_registration_when_registering_then_sets_auth_cookie_and_omits_token() {
     let mut mock_db = MockDatabaseRepository::new();
 
-    mock_db
-        .expect_create_user()
-        .returning(|_| Box::pin(async { Ok(()) }));
+    mock_db.expect_create_user().returning(|user| {
+        assert!(user.provider.is_empty());
+        Box::pin(async { Ok(()) })
+    });
 
     let mut mock_cache = create_auth_cookie_cache();
     mock_cache

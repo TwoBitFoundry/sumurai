@@ -102,7 +102,6 @@ describe('useFinancialConnection', () => {
       if (url === '/providers/info') {
         return Promise.resolve({
           available_providers: ['plaid', 'teller'],
-          default_provider: 'plaid',
           teller_application_id: 'app-123',
           teller_environment: 'development',
         } as any);
@@ -205,10 +204,6 @@ describe('useFinancialConnection', () => {
       )
     );
 
-    await act(async () => {
-      void connectionFlowRef.current?.initiateConnection();
-    });
-
     await waitFor(() => {
       expect(tellerSetup).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -218,9 +213,34 @@ describe('useFinancialConnection', () => {
         })
       );
     });
+
+    await act(async () => {
+      void connectionFlowRef.current?.initiateConnection();
+    });
+
     await waitFor(() => {
       expect(tellerOpen).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('given teller connection when mounted then prepares Teller before the user clicks', async () => {
+    render(
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        React.createElement(FinancialConnectionMount, { provider: 'teller' })
+      )
+    );
+
+    await waitFor(() => {
+      expect(connectionFlowRef.current?.isReady).toBe(true);
+    });
+
+    expect(tellerSetup).toHaveBeenCalledWith(
+      expect.objectContaining({
+        applicationId: 'app-123',
+      })
+    );
   });
 
   it('given teller reconnect after prior open when connect is called then reuses ready Teller instance', async () => {
@@ -355,7 +375,6 @@ describe('useFinancialConnection', () => {
       if (url === '/providers/info') {
         return Promise.resolve({
           available_providers: ['plaid', 'teller'],
-          default_provider: 'plaid',
           teller_application_id: 'app-123',
           teller_environment: 'development',
         } as never);

@@ -84,7 +84,6 @@ impl TestFixtures {
         std::env::set_var("OTEL_TRACES_EXPORTER", "none");
         let mut test_env = MockEnvironment::new();
         test_env.set("TELLER_ENV", "test");
-        test_env.set("DEFAULT_PROVIDER", "plaid");
         test_env.set("AUTH_COOKIE_SAME_SITE", "Lax");
         Config::from_env_provider(&test_env).expect("Failed to create test config")
     }
@@ -223,7 +222,7 @@ impl TestFixtures {
             "plaid",
             Arc::clone(&plaid_provider),
         )]));
-        let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
+        let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
         let analytics_service = Arc::new(AnalyticsService::new());
 
         let mut mock_db = MockDatabaseRepository::new();
@@ -367,7 +366,7 @@ impl TestFixtures {
             "plaid",
             Arc::clone(&plaid_provider),
         )]));
-        let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
+        let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
         let analytics_service = Arc::new(AnalyticsService::new());
 
         let mut mock_db = mock_db;
@@ -507,7 +506,7 @@ impl TestFixtures {
             "plaid",
             Arc::clone(&plaid_provider),
         )]));
-        let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
+        let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
         let analytics_service = Arc::new(AnalyticsService::new());
 
         let mut mock_db = mock_db;

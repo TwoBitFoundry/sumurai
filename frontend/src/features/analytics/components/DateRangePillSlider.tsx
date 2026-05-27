@@ -26,7 +26,9 @@ export function DateRangePillSlider({
         ...appTitleBarRecipes.contextPillInset,
         ...appTitleBarRecipes.pillContainerSize,
         'min-w-0',
-        'max-w-full'
+        'w-full',
+        'max-w-full',
+        'overflow-x-auto'
       )}
     >
       {options.map((option) => {

@@ -14,7 +14,7 @@ interface TransactionsSearchBarProps {
 export function TransactionsSearchBar({ search, onSearch }: TransactionsSearchBarProps) {
   return (
     <div
-      className={cn('relative', 'w-full', 'max-w-full')}
+      className={cn('relative', 'min-w-0', 'w-full', 'max-w-full')}
       data-no-swipe
       data-testid="transactions-search-bar"
     >

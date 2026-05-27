@@ -1,6 +1,7 @@
 import type { BackendTransaction } from '@/domain/TransactionTransformer';
 import { sampleDonutByCategory, sampleTopMerchants } from '@/storybook/fixtures/analytics';
 import { sampleBudgetProgressEntries } from '@/storybook/fixtures/budgets';
+import { storyFullProviderCatalogInfo } from '@/storybook/fixtures/providerPicker';
 import { sampleTransactions, transactionsTablePage } from '@/storybook/fixtures/transactions';
 import type {
   Account,
@@ -10,6 +11,7 @@ import type {
   FinancialProvider,
   Transaction,
 } from '@/types/api';
+import { jsonResponse, route, type StoryApiRoute } from './storyApi';
 
 const storyNow = new Date();
 
@@ -124,9 +126,89 @@ export const storyPlaidDisconnect = {
   },
 };
 
+export const storySinglePlaidAccounts: Account[] = [storyProviderAccounts[0]!];
+
+export const storySinglePlaidStatus = {
+  provider: 'plaid' as FinancialProvider,
+  connections: [storyPlaidStatus.connections[0]!],
+};
+
+export const storyPlaidConnectedCatalogInfo = {
+  ...storyFullProviderCatalogInfo,
+  user_provider: 'plaid' as const,
+};
+
+export const storyPlaidEmptyProviderInfo = {
+  ...storyFullProviderCatalogInfo,
+  user_provider: 'plaid' as const,
+};
+
+export const storyTellerEmptyProviderInfo = {
+  ...storyFullProviderCatalogInfo,
+  user_provider: 'teller' as const,
+};
+
+const storyPlaidLinkTokenHandler = route('POST', '/plaid/link-token', () =>
+  jsonResponse({ link_token: 'story-link-token' })
+);
+
+export function buildStoryPlaidPickerEmptyHandlers(): StoryApiRoute[] {
+  return [
+    route('GET', '/providers/info', () => jsonResponse(storyPlaidEmptyProviderInfo)),
+    route('GET', '/providers/status', () =>
+      jsonResponse({
+        provider: 'plaid',
+        connections: [],
+      })
+    ),
+    route('GET', '/providers/accounts', () => jsonResponse([])),
+    storyPlaidLinkTokenHandler,
+    ...storyAutoCategorizeHandlers,
+  ];
+}
+
+export function buildStoryTellerPickerEmptyHandlers(): StoryApiRoute[] {
+  return [
+    route('GET', '/providers/info', () => jsonResponse(storyTellerEmptyProviderInfo)),
+    route('GET', '/providers/status', () =>
+      jsonResponse({
+        provider: 'teller',
+        connections: [],
+      })
+    ),
+    route('GET', '/providers/accounts', () => jsonResponse([])),
+    ...storyAutoCategorizeHandlers,
+  ];
+}
+
+export function buildStoryLastInstitutionDisconnectHandlers(): StoryApiRoute[] {
+  let disconnected = false;
+
+  return [
+    route('GET', '/providers/info', () =>
+      jsonResponse(disconnected ? storyFullProviderCatalogInfo : storyPlaidConnectedCatalogInfo)
+    ),
+    route('GET', '/providers/accounts', () =>
+      jsonResponse(disconnected ? [] : storySinglePlaidAccounts)
+    ),
+    route('GET', '/providers/status', () =>
+      jsonResponse(disconnected ? { provider: 'plaid', connections: [] } : storySinglePlaidStatus)
+    ),
+    route('GET', '/providers/simplefin/ignored-institutions', () =>
+      jsonResponse({ institutions: [] })
+    ),
+    route('POST', '/providers/disconnect', () => {
+      disconnected = true;
+      return jsonResponse(storyPlaidDisconnect);
+    }),
+    route('POST', '/providers/select', () => jsonResponse({ user_provider: 'simplefin' })),
+    storyPlaidLinkTokenHandler,
+    ...storyAutoCategorizeHandlers,
+  ];
+}
+
 export const storyProviderInfo = {
   available_providers: ['plaid', 'teller'] as FinancialProvider[],
-  default_provider: null,
   user_provider: null,
   teller_application_id: 'story-teller-app',
   teller_environment: 'sandbox',
@@ -135,6 +217,60 @@ export const storyProviderInfo = {
 export const storyProviderSelect = {
   user_provider: 'plaid' as FinancialProvider,
 };
+
+export const storyAutoCategorizeHandlers: StoryApiRoute[] = [
+  route('GET', '/transactions/auto-categorize', () => jsonResponse(null)),
+  route('POST', '/transactions/auto-categorize', () =>
+    jsonResponse({
+      job_id: '11111111-2222-3333-4444-555555555555',
+      status: 'running',
+      total: 12,
+      processed: 0,
+      updated: 0,
+      skipped: 0,
+      started_at: '2026-05-01T12:00:00.000Z',
+      finished_at: null,
+      error_message: null,
+    })
+  ),
+  route('DELETE', '/transactions/auto-categorize', () =>
+    jsonResponse({
+      job_id: '11111111-2222-3333-4444-555555555555',
+      status: 'cancelling',
+      total: 12,
+      processed: 4,
+      updated: 2,
+      skipped: 2,
+      started_at: '2026-05-01T12:00:00.000Z',
+      finished_at: null,
+      error_message: null,
+    })
+  ),
+];
+
+export const storyPickerEmptyHandlers: StoryApiRoute[] = [
+  route('GET', '/providers/info', () => jsonResponse(storyFullProviderCatalogInfo)),
+  route('GET', '/providers/status', () =>
+    jsonResponse({
+      provider: null,
+      connections: [],
+    })
+  ),
+  route('GET', '/providers/accounts', () => jsonResponse([])),
+  route('GET', '/providers/simplefin/ignored-institutions', () =>
+    jsonResponse({ institutions: [] })
+  ),
+  storyPlaidLinkTokenHandler,
+  ...storyAutoCategorizeHandlers,
+];
+
+export const storyOnboardingPickerHandlers: StoryApiRoute[] = [
+  ...storyPickerEmptyHandlers,
+  route('PUT', '/auth/onboarding/complete', () =>
+    jsonResponse({ message: 'Onboarding completed', onboarding_completed: true })
+  ),
+  route('POST', '/providers/select', () => jsonResponse({ user_provider: 'simplefin' })),
+];
 
 export const storyBudgetRecords = sampleBudgetProgressEntries.map(
   ({ spent, percentage, ...budget }) => budget

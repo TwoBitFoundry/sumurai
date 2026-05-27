@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { type ReactNode, useEffect } from 'react';
 import { App, AppProviders } from '@/App';
+import { AuthenticationError } from '@/services/ApiClient';
 import { AuthService } from '@/services/authService';
 
 jest.mock('@/Auth', () => ({
@@ -30,12 +31,8 @@ jest.mock('@/components/AuthenticatedApp', () => ({
   },
 }));
 
-jest.mock('@/components/onboarding/OnboardingWizard', () => ({
-  OnboardingWizard: () => null,
-}));
-
-jest.mock('@/components/ProviderMismatchCheck', () => ({
-  ProviderMismatchCheck: () => null,
+jest.mock('@/components/onboarding/OnboardingProviderPicker', () => ({
+  OnboardingProviderPicker: () => <div data-testid="onboarding-provider-picker" />,
 }));
 
 jest.mock('@/SessionManager', () => ({
@@ -145,5 +142,38 @@ describe('App logout cache handling', () => {
     await waitFor(() => {
       expect(screen.getByTestId('logout-cache-state')).toHaveTextContent('miss');
     });
+  });
+});
+
+describe('App onboarding gate', () => {
+  it('renders the onboarding provider picker until onboarding is complete', async () => {
+    jest.mocked(AuthService.refreshToken).mockResolvedValue({
+      user_id: 'user-1',
+      expires_at: '2099-01-01T00:00:00.000Z',
+      onboarding_completed: false,
+    });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('onboarding-provider-picker')).toBeInTheDocument();
+    });
+  });
+});
+
+describe('App auth bootstrap', () => {
+  it('treats refresh 401 as unauthenticated without logging a validation warning', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    jest.mocked(AuthService.refreshToken).mockRejectedValueOnce(new AuthenticationError());
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('logout-cache-state')).toHaveTextContent('miss');
+    });
+
+    expect(warnSpy).not.toHaveBeenCalledWith('Auth validation error:', expect.anything());
+
+    warnSpy.mockRestore();
   });
 });

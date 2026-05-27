@@ -5,13 +5,13 @@ import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { cn } from '@/ui/primitives';
 import { LoginScreen, RegisterScreen } from './Auth';
 import { AuthenticatedApp, type TabKey } from './components/AuthenticatedApp';
-import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
-import { ProviderMismatchCheck } from './components/ProviderMismatchCheck';
+import { OnboardingProviderPicker } from './components/onboarding/OnboardingProviderPicker';
 import { ThemeProvider } from './context/ThemeContext';
 import { AccountFilterProvider } from './hooks/useAccountFilter';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { TelemetryProvider, TelemetryService } from './observability';
 import { SessionManager } from './SessionManager';
+import { AuthenticationError } from './services/ApiClient';
 import { AuthService } from './services/authService';
 import { BrowserStorageAdapter } from './services/boundaries';
 import { AppFooter, AppTitleBar, GlassCard, GradientShell } from './ui/primitives';
@@ -44,7 +44,6 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>(initialAuthScreen ?? 'login');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [mainAppKey, setMainAppKey] = useState(0);
-  const [showProviderMismatch, setShowProviderMismatch] = useState(false);
   const [sessionExpiresAt, setSessionExpiresAt] = useState<string | null>(null);
 
   const isOnline = useOnlineStatus();
@@ -61,11 +60,13 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
         setShowOnboarding(!refreshResponse.onboarding_completed);
         setSessionExpiresAt(refreshResponse.expires_at);
       } catch (error) {
-        console.warn('Auth validation error:', error);
         if (active) {
           setIsAuthenticated(false);
           setShowOnboarding(false);
           setSessionExpiresAt(null);
+        }
+        if (!(error instanceof AuthenticationError)) {
+          console.warn('Auth validation error:', error);
         }
         AuthService.clearToken();
       } finally {
@@ -111,15 +112,10 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     setMainAppKey((prev) => prev + 1);
   }, []);
 
-  const handleProviderMismatchConfirm = useCallback(async () => {
-    setShowProviderMismatch(false);
-    await handleLogout();
-  }, [handleLogout]);
-
   if (isLoading) {
     return (
       <GradientShell>
-        <div className={cn('flex', 'min-h-screen', 'items-center', 'justify-center', 'px-4')}>
+        <div className={cn('flex', 'min-h-dvh', 'items-center', 'justify-center', 'px-4')}>
           <GlassCard
             variant="accent"
             rounded="lg"
@@ -137,7 +133,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   if (!isAuthenticated) {
     return (
       <GradientShell className={uiTextRecipes.primary}>
-        <div className={cn('flex', 'flex-col', 'min-h-screen')}>
+        <div className={cn('flex', 'flex-col', 'min-h-dvh')}>
           <AppTitleBar state="unauthenticated" scrolled={false} isOnline={isOnline} />
           <main className={cn('flex-1', 'flex', 'items-center', 'justify-center')}>
             {authScreen === 'login' ? (
@@ -160,11 +156,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
 
   if (showOnboarding) {
     return (
-      <OnboardingWizard
-        onComplete={handleOnboardingComplete}
-        onLogout={handleLogout}
-        isOnline={isOnline}
-      />
+      <OnboardingProviderPicker onComplete={handleOnboardingComplete} onLogout={handleLogout} />
     );
   }
 
@@ -182,12 +174,6 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
           isOnline={isOnline}
         />
       </AccountFilterProvider>
-
-      <ProviderMismatchCheck
-        showMismatch={showProviderMismatch}
-        onShowMismatch={setShowProviderMismatch}
-        onConfirm={handleProviderMismatchConfirm}
-      />
     </SessionManager>
   );
 }

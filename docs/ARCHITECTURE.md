@@ -46,15 +46,15 @@ flowchart LR
 
 ## Provider Flow
 
-- `DEFAULT_PROVIDER` determines the default provider shown by the app.
-- The backend registers Teller, Plaid, and SimpleFIN implementations in a shared provider registry.
+- Each user chooses their own active provider during onboarding or from the Accounts picker when they have no active connections.
+- The backend registers Teller, Plaid, and SimpleFIN implementations in a shared provider registry based on configured credentials.
 - The frontend uses provider-specific services and connect flows for each provider.
 - `/api/providers/info`, `/api/providers/select`, `/api/providers/connect`, `/api/providers/status`, `/api/providers/accounts`, `/api/providers/sync-transactions`, and `/api/providers/disconnect` support the provider management UX.
 - Provider credentials are encrypted before persistence and invalidated through cache cleanup when a connection is removed.
 
 ### SimpleFIN
 
-- The user pastes a one-time SimpleFIN setup token when connecting. The backend claims it into a per-user stored access URL in `simplefin_root_credentials` (encrypted). A shared beta demo bridge URL is only used when the token was already claimed and the user matches `SIMPLEFIN_DEMO_USER_EMAIL` (default `simplefin@test.com`); other users must have their own stored root credential or a fresh setup token claim.
+- The user pastes a one-time SimpleFIN setup token when connecting. The backend claims it into a per-user stored access URL in `simplefin_root_credentials` (encrypted). When a beta demo setup token was already claimed, any user can reuse the shared beta demo bridge URL for local trials.
 - One access URL backs many `provider_connections` rows: each financial institution in the bridge snapshot becomes `simplefin_{org_conn_id}` with its own accounts and transactions.
 - Connect and sync reuse the stored access URL while at least one SimpleFIN institution remains connected. Sync can also materialize newly linked institutions from the latest bridge snapshot.
 - `simplefin_hidden_orgs` records orgs the user disconnected. Sync and connect skip blocklisted `org_conn_id` values so disconnected institutions do not get new rows in `provider_connections`, `accounts`, or `transactions`, and no cache entries are keyed on that org.
@@ -64,7 +64,7 @@ flowchart LR
 ## Frontend
 
 - The frontend lives under `frontend/` and builds to a static `out/` directory.
-- `frontend/src/App.tsx` coordinates authentication, onboarding, provider mismatch handling, and the authenticated app shell.
+- `frontend/src/App.tsx` coordinates authentication, onboarding, and the authenticated app shell.
 - `frontend/src/services/ApiClient.ts` centralizes API access with retry and auth refresh behavior.
 - Provider-specific flows live in the frontend service and hook layer rather than in page components.
 - OpenTelemetry instrumentation is configured in the browser and gated by `NEXT_PUBLIC_OTEL_*` flags.
@@ -114,4 +114,4 @@ Cache keys are namespaced by session, connection, and account identifiers so pro
 ## Development URLs
 
 - Use `http://localhost:8080` for integrated validation through Nginx.
-- Use `http://localhost:3001` for frontend-only development.
+- Use `http://localhost:3001` for Next.js dev-server validation; it proxies `/api` and `/health` to the backend during local development.

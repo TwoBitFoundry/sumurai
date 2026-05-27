@@ -44,10 +44,10 @@ impl EnvironmentProvider for SystemEnvironment {
 
 #[derive(Clone)]
 pub struct Config {
-    default_provider: String,
     teller_application_id: Option<String>,
     teller_environment: Option<String>,
     auth_cookie_same_site: AuthCookieSameSite,
+    clear_sessions_on_boot: bool,
 }
 
 impl Config {
@@ -56,9 +56,6 @@ impl Config {
     }
 
     pub fn from_env_provider(env: &dyn EnvironmentProvider) -> Result<Self> {
-        let default_provider = env
-            .get_var("DEFAULT_PROVIDER")
-            .unwrap_or_else(|| "teller".to_string());
         let teller_application_id = env.get_var("TELLER_APPLICATION_ID");
         let teller_environment = env
             .get_var("TELLER_ENV")
@@ -67,17 +64,17 @@ impl Config {
             env.get_var("AUTH_COOKIE_SAME_SITE")
                 .ok_or_else(|| anyhow!("AUTH_COOKIE_SAME_SITE must be set"))?,
         )?;
+        let clear_sessions_on_boot = env
+            .get_var("CLEAR_SESSIONS_ON_BOOT")
+            .map(|value| value.eq_ignore_ascii_case("true"))
+            .unwrap_or(false);
 
         Ok(Self {
-            default_provider,
             teller_application_id,
             teller_environment,
             auth_cookie_same_site,
+            clear_sessions_on_boot,
         })
-    }
-
-    pub fn get_default_provider(&self) -> &str {
-        &self.default_provider
     }
 
     pub fn get_teller_application_id(&self) -> Option<&str> {
@@ -90,6 +87,10 @@ impl Config {
 
     pub fn get_auth_cookie_same_site(&self) -> AuthCookieSameSite {
         self.auth_cookie_same_site
+    }
+
+    pub fn should_clear_sessions_on_boot(&self) -> bool {
+        self.clear_sessions_on_boot
     }
 }
 

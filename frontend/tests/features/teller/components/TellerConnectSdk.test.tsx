@@ -171,43 +171,4 @@ describe('TellerConnectSdk', () => {
     expect(document.querySelector('#teller-connect-window')).toBeNull();
     expect(document.body.style.overflow).toBe('');
   });
-
-  it('cleans up Teller iframe DOM when open never initializes', async () => {
-    jest.useFakeTimers();
-    const onEnrollmentError = jest.fn();
-    open.mockImplementation(() => {
-      const iframe = document.createElement('iframe');
-      iframe.id = 'teller-connect-window';
-      iframe.src = 'https://teller.io/connect/app_123';
-      document.body.style.overflow = 'hidden';
-      document.body.appendChild(iframe);
-    });
-
-    const ref = createRef<TellerConnectSdkHandle>();
-    render(
-      <TellerConnectSdk
-        ref={ref}
-        applicationId="app-123"
-        gateway={createGateway()}
-        onEnrollmentError={onEnrollmentError}
-      />
-    );
-
-    await waitFor(() => expect(ref.current?.getReady()).toBe(true));
-
-    act(() => {
-      ref.current?.open();
-    });
-
-    expect(document.querySelector('#teller-connect-window')).not.toBeNull();
-
-    act(() => {
-      jest.advanceTimersByTime(8000);
-    });
-
-    expect(document.querySelector('#teller-connect-window')).toBeNull();
-    expect(document.body.style.overflow).toBe('');
-    expect(onEnrollmentError).toHaveBeenCalledWith(expect.any(Error));
-    jest.useRealTimers();
-  });
 });

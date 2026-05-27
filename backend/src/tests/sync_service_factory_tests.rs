@@ -22,7 +22,7 @@ fn build_test_sync_service_factory() -> SyncServiceFactory {
         "plaid",
         plaid_provider,
     )]));
-    let sync_service = Arc::new(SyncService::new(provider_registry.clone(), "plaid"));
+    let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
     let db_repository: Arc<dyn DatabaseRepository> = Arc::new(MockDatabaseRepository::new());
     let cache_service: Arc<dyn CacheService> = Arc::new(MockCacheService::new());
     let credential_resolvers = build_credential_resolvers(db_repository.clone());

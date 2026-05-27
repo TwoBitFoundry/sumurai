@@ -5,12 +5,13 @@ export type RegisterProductionServiceWorkerDeps = {
   ) => Promise<ServiceWorkerRegistration>;
   fetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
   hasServiceWorker: boolean;
+  isProduction: boolean;
 };
 
 export async function registerProductionServiceWorker(
   deps: RegisterProductionServiceWorkerDeps
 ): Promise<ServiceWorkerRegistration | undefined> {
-  if (!deps.hasServiceWorker) {
+  if (!deps.hasServiceWorker || !deps.isProduction) {
     return undefined;
   }
   try {

@@ -99,19 +99,18 @@ openssl rand -hex 32
 ### 2. SimpleFIN (Bring your own token)
 
 1. Open the [SimpleFIN Bridge](https://bridge.simplefin.org/) and create a bridge (or use the beta developer bridge for local trials).
-2. Set `SIMPLEFIN_SETUP_TOKEN` (one-time token from [beta-bridge.simplefin.org/info/developers](https://beta-bridge.simplefin.org/info/developers)) and `DEFAULT_PROVIDER=simplefin` in `.env`. The backend claims the token once at startup.
-3. Start the app:
+2. Start the app:
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d --build
 ```
 
-4. Sign in and use **Connect with SimpleFIN** in onboarding.
+4. Sign in, choose SimpleFIN in the provider picker, and paste your setup token when prompted.
 
 ### 3. Teller (Recommended)
 
 1. Follow the [Teller Quickstart](https://teller.io/docs/guides/quickstart).
-2. Set `TELLER_APPLICATION_ID` and `DEFAULT_PROVIDER=teller` if you are not using another provider.
+2. Set `TELLER_APPLICATION_ID`.
 3. Download your Teller client certificate and private key from the Teller dashboard, then place them at `.certs/teller/certificate.pem` and `.certs/teller/private_key.pem`.
 4. Start the app:
 

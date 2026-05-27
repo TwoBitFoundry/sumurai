@@ -110,6 +110,16 @@ pub struct User {
     pub onboarding_completed: bool,
 }
 
+impl User {
+    pub fn active_provider(&self) -> Option<&str> {
+        if self.provider.is_empty() {
+            None
+        } else {
+            Some(&self.provider)
+        }
+    }
+}
+
 #[derive(Deserialize, ToSchema)]
 #[schema(example = json!({"current_password": "OldPass123!", "new_password": "NewPass456!"}))]
 pub struct ChangePasswordRequest {

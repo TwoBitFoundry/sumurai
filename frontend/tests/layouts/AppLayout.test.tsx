@@ -35,7 +35,7 @@ describe('AppLayout', () => {
     const root = container.firstElementChild;
     const main = container.querySelector('main');
 
-    expect(root).toHaveClass('min-h-screen');
+    expect(root).toHaveClass('min-h-dvh');
     expect(root).toHaveClass('flex');
     expect(root).toHaveClass('flex-col');
     expect(main).toHaveClass('flex-1');
@@ -81,6 +81,9 @@ describe('AppLayout', () => {
     expect(container.querySelector('main')).toHaveClass(
       'pb-[calc(8.75rem_+_env(safe-area-inset-bottom))]'
     );
+    expect(container.querySelector('main')).toHaveClass(
+      'md:pb-[calc(6rem_+_env(safe-area-inset-bottom))]'
+    );
   });
 
   it('always renders the floating primary tab bar', () => {
@@ -107,8 +110,34 @@ describe('AppLayout', () => {
       </AppLayout>
     );
 
-    expect(container.querySelector('.min-h-\\[3\\.25rem\\] > .flex.justify-center')).toBeTruthy();
+    expect(container.querySelector('.min-h-\\[3\\.25rem\\].flex.justify-center')).toBeTruthy();
     expect(container.querySelector('[data-testid="contextual-menu"]')).toBeInTheDocument();
+  });
+
+  it('lets clicks pass through the floating chrome shell outside control bounds', () => {
+    const { container } = render(
+      <AppLayout
+        currentTab="dashboard"
+        onTabChange={jest.fn()}
+        onLogout={jest.fn()}
+        isOnline
+        bottomBarContent={<div data-testid="contextual-menu">Menu</div>}
+      >
+        <div>Content</div>
+      </AppLayout>
+    );
+
+    const shell = container.querySelector('.fixed.bottom-4');
+    const contextualRow = container.querySelector('.min-h-\\[3\\.25rem\\]');
+    const contextualControls = container.querySelector(
+      '[data-testid="contextual-menu"]'
+    )?.parentElement;
+    const mobileNav = container.querySelector('nav[aria-label="Primary"]');
+
+    expect(shell).toHaveClass('pointer-events-none');
+    expect(contextualRow).toHaveClass('pointer-events-none');
+    expect(contextualControls).toHaveClass('pointer-events-auto');
+    expect(mobileNav).toHaveClass('pointer-events-auto');
   });
 
   it('reserves the mobile tab stack height on tablet and desktop', () => {
@@ -126,7 +155,7 @@ describe('AppLayout', () => {
 
     const spacer = container.querySelector('[aria-hidden].hidden.md\\:block');
     expect(spacer).toBeInTheDocument();
-    expect(spacer).toHaveClass('h-[4.75rem]');
+    expect(spacer).toHaveClass('h-[2rem]');
   });
 
   it('omits stacked bottom chrome row on accounts when there is no contextual content', () => {

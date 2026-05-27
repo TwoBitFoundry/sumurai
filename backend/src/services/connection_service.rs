@@ -289,6 +289,8 @@ impl ConnectionService {
 
             self.clear_simplefin_root_if_last_connection(user_id)
                 .await?;
+            self.clear_user_provider_if_no_active_connections(user_id)
+                .await?;
 
             return Ok(DisconnectResult {
                 success: true,
@@ -319,6 +321,9 @@ impl ConnectionService {
 
         self.db_repository
             .delete_provider_connection(user_id, &connection.item_id)
+            .await?;
+
+        self.clear_user_provider_if_no_active_connections(user_id)
             .await?;
 
         tracing::info!(
@@ -526,6 +531,21 @@ impl ConnectionService {
                 .remove_simplefin_hidden_org(user_id, &hidden_org)
                 .await?;
         }
+
+        Ok(())
+    }
+
+    async fn clear_user_provider_if_no_active_connections(&self, user_id: &Uuid) -> Result<()> {
+        let connections = self
+            .db_repository
+            .get_all_provider_connections_by_user(user_id)
+            .await?;
+
+        if connections.iter().any(|connection| connection.is_connected) {
+            return Ok(());
+        }
+
+        self.db_repository.update_user_provider(user_id, "").await?;
 
         Ok(())
     }

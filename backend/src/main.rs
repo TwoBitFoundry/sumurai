@@ -107,15 +107,42 @@ use services::{AnalyticsService, RealPlaidClient};
 use sqlx::PgPool;
 use utils::auth_cookie::{build_auth_cookie, build_clearing_auth_cookie, extract_auth_cookie};
 
+pub(crate) fn build_provider_registry(
+    plaid_provider: Option<Arc<dyn providers::FinancialDataProvider>>,
+    teller_provider: anyhow::Result<Arc<dyn providers::FinancialDataProvider>>,
+    simplefin_provider: Arc<dyn providers::FinancialDataProvider>,
+) -> providers::ProviderRegistry {
+    let mut provider_registry = providers::ProviderRegistry::new();
+
+    if let Some(plaid_provider) = plaid_provider {
+        provider_registry.register("plaid", plaid_provider);
+    } else {
+        tracing::warn!("Plaid provider not configured; skipping Plaid initialization");
+    }
+
+    match teller_provider {
+        Ok(teller_provider) => {
+            provider_registry.register("teller", teller_provider);
+        }
+        Err(e) => {
+            tracing::warn!(
+                error = %e,
+                "Teller provider not configured; skipping Teller initialization"
+            );
+        }
+    }
+
+    provider_registry.register("simplefin", simplefin_provider);
+
+    provider_registry
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let telemetry_config = TelemetryConfig::from_env()?;
     let telemetry = telemetry_middleware::init(&telemetry_config)?;
 
     let config = Config::from_env()?;
-
-    let default_provider = config.get_default_provider().to_string();
-    let mut provider_registry = providers::ProviderRegistry::new();
 
     let plaid_client_id = std::env::var("PLAID_CLIENT_ID").ok();
     let plaid_secret = std::env::var("PLAID_SECRET").ok();
@@ -126,42 +153,6 @@ async fn main() -> anyhow::Result<()> {
         .is_some_and(|v| !v.trim().is_empty())
         && plaid_secret.as_ref().is_some_and(|v| !v.trim().is_empty())
         && plaid_env.as_ref().is_some_and(|v| !v.trim().is_empty());
-
-    if plaid_configured {
-        let plaid_client = Arc::new(RealPlaidClient::new(
-            plaid_client_id.clone().unwrap(),
-            plaid_secret.clone().unwrap(),
-            plaid_env.clone().unwrap(),
-        ));
-        let plaid_provider: Arc<dyn providers::FinancialDataProvider> =
-            Arc::new(providers::PlaidProvider::new(plaid_client.clone()));
-        provider_registry.register("plaid", plaid_provider);
-    } else if default_provider == "plaid" {
-        anyhow::bail!(
-            "DEFAULT_PROVIDER is plaid but PLAID_CLIENT_ID/PLAID_SECRET/PLAID_ENV are not all set"
-        );
-    } else {
-        tracing::warn!("Plaid provider not configured; skipping Plaid initialization");
-    }
-
-    match providers::TellerProvider::new() {
-        Ok(teller) => {
-            let teller_provider: Arc<dyn providers::FinancialDataProvider> = Arc::new(teller);
-            provider_registry.register("teller", teller_provider);
-        }
-        Err(e) => {
-            if default_provider == "teller" {
-                return Err(e);
-            }
-            tracing::warn!(error = %e, "Teller provider not configured; skipping Teller initialization");
-        }
-    }
-
-    let simplefin_provider: Arc<dyn providers::FinancialDataProvider> =
-        Arc::new(providers::SimpleFinProvider::new_with_real_client().await?);
-    provider_registry.register("simplefin", simplefin_provider);
-
-    let provider_registry = Arc::new(provider_registry);
 
     let plaid_client = if plaid_configured {
         Arc::new(RealPlaidClient::new(
@@ -177,12 +168,30 @@ async fn main() -> anyhow::Result<()> {
         ))
     };
 
+    let plaid_provider = if plaid_configured {
+        Some(
+            Arc::new(providers::PlaidProvider::new(plaid_client.clone()))
+                as Arc<dyn providers::FinancialDataProvider>,
+        )
+    } else {
+        None
+    };
+
+    let teller_provider = providers::TellerProvider::new()
+        .map(|provider| Arc::new(provider) as Arc<dyn providers::FinancialDataProvider>);
+
+    let simplefin_provider: Arc<dyn providers::FinancialDataProvider> =
+        Arc::new(providers::SimpleFinProvider::new_with_real_client().await?);
+
+    let provider_registry = Arc::new(build_provider_registry(
+        plaid_provider,
+        teller_provider,
+        simplefin_provider,
+    ));
+
     let plaid_service = Arc::new(PlaidService::new(plaid_client.clone()));
 
-    let sync_service = Arc::new(SyncService::new(
-        provider_registry.clone(),
-        &default_provider,
-    ));
+    let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
 
     let analytics_service = Arc::new(AnalyticsService::new());
     let budget_service = Arc::new(BudgetService::new());
@@ -213,18 +222,18 @@ async fn main() -> anyhow::Result<()> {
     })?;
     tracing::info!("Redis connection verified successfully");
 
-    // Clear all cached sessions on app startup for security
-    if let Err(e) = cache_service.invalidate_pattern("*_session_valid").await {
-        tracing::warn!("Failed to clear cached sessions on startup: {}", e);
-    } else {
-        tracing::info!("Cleared all cached sessions on app startup");
-    }
+    if config.should_clear_sessions_on_boot() {
+        if let Err(e) = cache_service.invalidate_pattern("*_session_valid").await {
+            tracing::warn!("Failed to clear cached sessions on startup: {}", e);
+        } else {
+            tracing::info!("Cleared all cached sessions on app startup");
+        }
 
-    // Clear all JWT tokens on startup for security
-    if let Err(e) = cache_service.invalidate_pattern("*_session_token").await {
-        tracing::warn!("Failed to clear JWT tokens on startup: {}", e);
-    } else {
-        tracing::info!("Cleared all JWT tokens on app startup");
+        if let Err(e) = cache_service.invalidate_pattern("*_session_token").await {
+            tracing::warn!("Failed to clear JWT tokens on startup: {}", e);
+        } else {
+            tracing::info!("Cleared all JWT tokens on app startup");
+        }
     }
 
     let jwt_secret = std::env::var("JWT_SECRET").context(
@@ -718,7 +727,7 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
 #[utoipa::path(
     post,
     path = "/api/auth/register",
-    description = "Registers a new user and seeds default provider metadata.",
+    description = "Registers a new user.",
     request_body = auth_models::RegisterRequest,
     responses(
         (status = 200, description = "User registered successfully", body = auth_models::AuthResponse),
@@ -746,7 +755,7 @@ async fn register_user(
         id: user_id,
         email: req.email.clone(),
         password_hash,
-        provider: state.config.get_default_provider().to_string(),
+        provider: String::new(),
         created_at: Utc::now(),
         updated_at: Utc::now(),
         onboarding_completed: false,
@@ -2956,7 +2965,7 @@ async fn get_authenticated_provider_status(
 
     let provider = match state.db_repository.get_user_by_id(&user_id).await {
         Ok(Some(user)) => user.provider,
-        Ok(None) => state.config.get_default_provider().to_string(),
+        Ok(None) => String::new(),
         Err(e) => {
             tracing::error!("Failed to load user {} for provider status: {}", user_id, e);
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
@@ -3361,7 +3370,6 @@ async fn get_authenticated_provider_info(
             StatusCode::NOT_FOUND
         })?;
 
-    let default_provider = state.config.get_default_provider();
     let mut available_providers = Vec::new();
     for provider in ["plaid", "teller", "simplefin"] {
         if state.provider_registry.get(provider).is_some() {
@@ -3369,15 +3377,14 @@ async fn get_authenticated_provider_info(
         }
     }
 
-    let user_provider = if user.onboarding_completed {
-        user.provider
+    let user_provider = if user.provider.is_empty() {
+        None
     } else {
-        default_provider.to_string()
+        Some(user.provider)
     };
 
     Ok(Json(ProviderInfoResponse {
         available_providers,
-        default_provider: default_provider.to_string(),
         user_provider,
         teller_application_id: state
             .config
@@ -3396,6 +3403,7 @@ async fn get_authenticated_provider_info(
         (status = 200, description = "Provider selected successfully", body = ProviderSelectResponse),
         (status = 400, description = "Invalid provider specified", body = ApiErrorResponse),
         (status = 401, description = "Unauthorized"),
+        (status = 409, description = "Cannot switch while active connections exist", body = ApiErrorResponse),
         (status = 500, description = "Internal server error", body = ApiErrorResponse),
     ),
     security(("auth_cookie" = [])),
@@ -3407,26 +3415,67 @@ async fn select_authenticated_provider(
     Json(req): Json<ProviderSelectRequest>,
 ) -> Result<Json<ProviderSelectResponse>, (StatusCode, Json<ApiErrorResponse>)> {
     let user_id = auth_context.user_id;
+    let requested_provider = req.provider;
 
-    let provider = req.provider;
-
-    if provider != "plaid" && provider != "teller" {
+    if state.provider_registry.get(&requested_provider).is_none() {
         return Err(ApiErrorResponse::new(
             "BAD_REQUEST",
-            "Invalid provider. Must be 'plaid' or 'teller'",
+            &format!("Provider '{}' is not registered", requested_provider),
         )
         .into_response(StatusCode::BAD_REQUEST));
     }
 
+    let _user = match state.db_repository.get_user_by_id(&user_id).await {
+        Ok(Some(user)) => user,
+        Ok(None) => {
+            tracing::error!("User {} not found", user_id);
+            return Err(ApiErrorResponse::internal_server_error("User not found"));
+        }
+        Err(e) => {
+            tracing::error!("Failed to get user {}: {}", user_id, e);
+            return Err(ApiErrorResponse::internal_server_error(
+                "Failed to fetch user",
+            ));
+        }
+    };
+
+    let connections = match state
+        .db_repository
+        .get_all_provider_connections_by_user(&user_id)
+        .await
+    {
+        Ok(conns) => conns,
+        Err(e) => {
+            tracing::error!("Failed to get connections for user {}: {}", user_id, e);
+            return Err(ApiErrorResponse::internal_server_error(
+                "Failed to check active connections",
+            ));
+        }
+    };
+
+    if let Some(conflicting_provider) = connections.iter().find_map(|connection| {
+        (connection.is_connected && connection.provider != requested_provider)
+            .then_some(connection.provider.as_str())
+    }) {
+        return Err(ApiErrorResponse::new(
+            "CONFLICT",
+            &format!(
+                "Disconnect all {} accounts before switching",
+                conflicting_provider
+            ),
+        )
+        .into_response(StatusCode::CONFLICT));
+    }
+
     match state
         .db_repository
-        .update_user_provider(&user_id, &provider)
+        .update_user_provider(&user_id, &requested_provider)
         .await
     {
         Ok(_) => {
-            tracing::info!("User {} selected provider: {}", user_id, provider);
+            tracing::info!("User {} selected provider: {}", user_id, requested_provider);
             Ok(Json(ProviderSelectResponse {
-                user_provider: provider,
+                user_provider: requested_provider,
             }))
         }
         Err(e) => {
