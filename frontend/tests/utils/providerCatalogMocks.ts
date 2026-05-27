@@ -7,6 +7,7 @@ import {
   isProviderListed,
   resolveConnectProvider,
 } from '@/utils/providerCapabilities';
+import { createMockFunction } from '../mocks/mockHttpClient';
 
 export function makeProviderCatalogMock(
   catalogue: ProviderCatalogue,
@@ -25,8 +26,8 @@ export function makeProviderCatalogMock(
       getConnectBlockedReason(provider, catalogue),
     resolveConnectProvider: (preferred: FinancialProvider) =>
       resolveConnectProvider(catalogue, preferred),
-    refresh: jest.fn(),
-    chooseProvider: jest.fn(),
+    refresh: createMockFunction(),
+    chooseProvider: createMockFunction(),
     ...overrides,
   };
 }

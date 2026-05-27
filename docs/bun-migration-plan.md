@@ -42,7 +42,7 @@ This repo currently uses npm 24 + Node 24.10 as the package manager, script runn
   - `lint`, `lint:verbose`, `format`, `check`: unchanged (Biome — Rust binary)
   - `test*`: stay as `jest …` in Phase 1; Phase 2 swaps these to `bun test`.
   - All `design:*` and `ui:imports` scripts: change `node ./scripts/X.mjs` → `bun ./scripts/X.mjs`. Same for the chained `design:guard`.
-- `precommit`: `bun run lint && bun run typecheck && bun run design:guard && bun run test:ci`
+- `precommit`: `bun run lint && bun run typecheck && bun run build && bun run design:guard && bun run test:ci`
   - **Storybook + Playwright scripts unchanged**: `storybook`, `storybook:doctor`, `storybook:build`, `test:storybook`, `test:storybook:watch`, `playwright:install`, `playwright:install-ci`, `test:storybook-runtime:run` all stay literal (`storybook dev …`, `vitest …`, `playwright …`). `test:storybook-runtime` becomes `bun run storybook:build && bun run test:storybook-runtime:run`.
 - Add `"bun": ">=1.3.14"` to `engines` in both `package.json` files. Keep the existing `node` floor — semantic-release and `tsc` still benefit from a Node presence, and CI runners have Node preinstalled.
 - Verify `frontend/scripts/run-designmd.mjs` still works under bun (it reads `npm_config_*` env vars; bun sets compatible ones for `bun run`). If it breaks, add a minimal env shim — do NOT rewrite the script.

@@ -116,9 +116,8 @@ export function StoryApiScope({
   const restoreRef = useRef<(() => void) | null>(null);
 
   if (!restoreRef.current) {
-    const originalFetch = globalThis.fetch.bind(globalThis);
-
-    globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const originalFetch = globalThis.fetch;
+    const mockedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const request = buildRequest(input, init);
       const handler = handlersRef.current.find((entry) => entry.match(request));
 
@@ -128,7 +127,9 @@ export function StoryApiScope({
 
       const response = await handler.respond(request);
       return normalizeResponse(response);
-    };
+    }) as typeof globalThis.fetch;
+
+    globalThis.fetch = mockedFetch;
 
     restoreRef.current = () => {
       globalThis.fetch = originalFetch;

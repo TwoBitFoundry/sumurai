@@ -13,6 +13,7 @@ import {
   spyOn,
   test,
 } from 'bun:test';
+import { createMockFunction } from '../mocks/mockHttpClient';
 
 const createAutoMock = () =>
   new Proxy(
@@ -21,7 +22,7 @@ const createAutoMock = () =>
       get(_target, prop) {
         if (prop === '__esModule') return true;
         if (typeof prop === 'symbol') return undefined;
-        return jest.fn();
+        return createMockFunction();
       },
     }
   );

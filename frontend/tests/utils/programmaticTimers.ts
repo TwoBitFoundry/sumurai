@@ -1,3 +1,4 @@
+import { jest } from 'bun:test';
 import { act, fireEvent } from '@testing-library/react';
 
 export async function flushProgrammaticFrames(): Promise<void> {

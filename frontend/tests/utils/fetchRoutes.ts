@@ -30,49 +30,53 @@ function normalizeKey(method: string, url: string): string {
  *  - Plain object (will be JSON.stringified)
  *  - Function handler: (req, init) => Response | body | Promise
  */
+import { createMockFunction } from '../mocks/mockHttpClient';
+
 export function installFetchRoutes(routes: RouteMap) {
   const entries = Object.entries(routes);
-  const mock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const method = (init?.method || 'GET').toUpperCase();
-    const url =
-      typeof input === 'string' || input instanceof URL ? String(input) : (input as Request).url;
+  const mock = createMockFunction().mockImplementation(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const method = (init?.method || 'GET').toUpperCase();
+      const url =
+        typeof input === 'string' || input instanceof URL ? String(input) : (input as Request).url;
 
-    // Try method+url first, then url-only (defaults to GET)
-    let handler: RouteValue | undefined =
-      routes[normalizeKey(method, url)] ?? (method === 'GET' ? routes[url] : undefined);
+      // Try method+url first, then url-only (defaults to GET)
+      let handler: RouteValue | undefined =
+        routes[normalizeKey(method, url)] ?? (method === 'GET' ? routes[url] : undefined);
 
-    // Wildcard prefix match: keys may end with '*' to match any suffix (e.g., query params)
-    if (handler === undefined) {
-      // Search method-scoped wildcards first
-      const methodPrefix = `${method} `;
-      const wildcard = entries.find(
-        ([key]) =>
-          key.startsWith(methodPrefix) &&
-          key.endsWith('*') &&
-          url.startsWith(key.slice(methodPrefix.length, -1))
-      );
-      if (wildcard) handler = wildcard[1];
-    }
-    if (handler === undefined && method === 'GET') {
-      // Allow GET-only wildcard without explicit method in key
-      const urlWildcard = entries.find(
-        ([key]) => !key.includes(' ') && key.endsWith('*') && url.startsWith(key.slice(0, -1))
-      );
-      if (urlWildcard) handler = urlWildcard[1];
-    }
+      // Wildcard prefix match: keys may end with '*' to match any suffix (e.g., query params)
+      if (handler === undefined) {
+        // Search method-scoped wildcards first
+        const methodPrefix = `${method} `;
+        const wildcard = entries.find(
+          ([key]) =>
+            key.startsWith(methodPrefix) &&
+            key.endsWith('*') &&
+            url.startsWith(key.slice(methodPrefix.length, -1))
+        );
+        if (wildcard) handler = wildcard[1];
+      }
+      if (handler === undefined && method === 'GET') {
+        // Allow GET-only wildcard without explicit method in key
+        const urlWildcard = entries.find(
+          ([key]) => !key.includes(' ') && key.endsWith('*') && url.startsWith(key.slice(0, -1))
+        );
+        if (urlWildcard) handler = urlWildcard[1];
+      }
 
-    if (handler === undefined) {
-      throw new Error(`Unhandled fetch route: ${method} ${url}`);
-    }
+      if (handler === undefined) {
+        throw new Error(`Unhandled fetch route: ${method} ${url}`);
+      }
 
-    if (typeof handler === 'function') {
-      // Ensure absolute URL for Node's Request constructor
-      const absUrl = /^https?:/i.test(url) ? url : new URL(url, 'http://localhost').toString();
-      const result = await (handler as any)(new Request(absUrl, init), init);
-      return toJsonResponse(result);
+      if (typeof handler === 'function') {
+        // Ensure absolute URL for Node's Request constructor
+        const absUrl = /^https?:/i.test(url) ? url : new URL(url, 'http://localhost').toString();
+        const result = await (handler as any)(new Request(absUrl, init), init);
+        return toJsonResponse(result);
+      }
+      return toJsonResponse(handler);
     }
-    return toJsonResponse(handler);
-  });
+  );
 
   (globalThis as any).fetch = mock;
   return mock;

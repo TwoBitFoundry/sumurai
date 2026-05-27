@@ -1,8 +1,9 @@
 import { invalidateStaleCacheQueries } from '@/utils/queryInvalidation';
+import { createMockFunction } from '../mocks/mockHttpClient';
 
 describe('invalidateStaleCacheQueries', () => {
   it('invalidates domain caches and provider connection caches', async () => {
-    const invalidateQueries = jest.fn().mockResolvedValue(undefined);
+    const invalidateQueries = createMockFunction().mockResolvedValue(undefined);
     const queryClient = {
       invalidateQueries,
     } as any;
