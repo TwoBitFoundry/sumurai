@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
-import { storyProviderPickerPanelProps } from '@/storybook/fixtures/providerPicker';
+import {
+  storyConnectButtonIndex,
+  storyProviderPickerPanelProps,
+} from '@/storybook/fixtures/providerPicker';
 import type { FinancialProvider } from '@/types/api';
 import { ProviderSelectionPanel } from './ProviderSelectionPanel';
 
@@ -28,11 +31,6 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-function connectButtonIndex(provider: FinancialProvider): number {
-  const order: FinancialProvider[] = ['teller', 'simplefin', 'plaid'];
-  return order.indexOf(provider);
-}
-
 export const AllEnabled: Story = {
   args: fullCatalogueArgs,
   play: async ({ args, canvasElement }) => {
@@ -43,7 +41,7 @@ export const AllEnabled: Story = {
     await expect(canvas.getByAltText('SimpleFIN logo')).toBeVisible();
     await expect(canvas.getByAltText('Plaid logo')).toBeVisible();
     const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
-    await userEvent.click(connectButtons[connectButtonIndex('plaid')]!);
+    await userEvent.click(connectButtons[storyConnectButtonIndex('plaid')]!);
     await expect(args.onSelectProvider).toHaveBeenCalledWith('plaid');
   },
 };
@@ -77,8 +75,8 @@ export const TellerDisabled: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
-    await expect(connectButtons[connectButtonIndex('teller')]).toBeDisabled();
-    await userEvent.click(connectButtons[connectButtonIndex('simplefin')]!);
+    await expect(connectButtons[storyConnectButtonIndex('teller')]).toBeDisabled();
+    await userEvent.click(connectButtons[storyConnectButtonIndex('simplefin')]!);
     await expect(args.onSelectProvider).toHaveBeenCalledWith('simplefin');
   },
 };
@@ -91,9 +89,9 @@ export const ZeroCreds: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
-    await expect(connectButtons[connectButtonIndex('teller')]).toBeDisabled();
-    await expect(connectButtons[connectButtonIndex('plaid')]).toBeDisabled();
-    await expect(connectButtons[connectButtonIndex('simplefin')]).toBeEnabled();
+    await expect(connectButtons[storyConnectButtonIndex('teller')]).toBeDisabled();
+    await expect(connectButtons[storyConnectButtonIndex('plaid')]).toBeDisabled();
+    await expect(connectButtons[storyConnectButtonIndex('simplefin')]).toBeEnabled();
   },
 };
 

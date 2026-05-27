@@ -138,6 +138,49 @@ export const storyPlaidConnectedCatalogInfo = {
   user_provider: 'plaid' as const,
 };
 
+export const storyPlaidEmptyProviderInfo = {
+  ...storyFullProviderCatalogInfo,
+  user_provider: 'plaid' as const,
+};
+
+export const storyTellerEmptyProviderInfo = {
+  ...storyFullProviderCatalogInfo,
+  user_provider: 'teller' as const,
+};
+
+const storyPlaidLinkTokenHandler = route('POST', '/plaid/link-token', () =>
+  jsonResponse({ link_token: 'story-link-token' })
+);
+
+export function buildStoryPlaidPickerEmptyHandlers(): StoryApiRoute[] {
+  return [
+    route('GET', '/providers/info', () => jsonResponse(storyPlaidEmptyProviderInfo)),
+    route('GET', '/providers/status', () =>
+      jsonResponse({
+        provider: 'plaid',
+        connections: [],
+      })
+    ),
+    route('GET', '/providers/accounts', () => jsonResponse([])),
+    storyPlaidLinkTokenHandler,
+    ...storyAutoCategorizeHandlers,
+  ];
+}
+
+export function buildStoryTellerPickerEmptyHandlers(): StoryApiRoute[] {
+  return [
+    route('GET', '/providers/info', () => jsonResponse(storyTellerEmptyProviderInfo)),
+    route('GET', '/providers/status', () =>
+      jsonResponse({
+        provider: 'teller',
+        connections: [],
+      })
+    ),
+    route('GET', '/providers/accounts', () => jsonResponse([])),
+    ...storyAutoCategorizeHandlers,
+  ];
+}
+
 export function buildStoryLastInstitutionDisconnectHandlers(): StoryApiRoute[] {
   let disconnected = false;
 
@@ -159,6 +202,7 @@ export function buildStoryLastInstitutionDisconnectHandlers(): StoryApiRoute[] {
       return jsonResponse(storyPlaidDisconnect);
     }),
     route('POST', '/providers/select', () => jsonResponse({ user_provider: 'simplefin' })),
+    storyPlaidLinkTokenHandler,
     ...storyAutoCategorizeHandlers,
   ];
 }
@@ -216,6 +260,7 @@ export const storyPickerEmptyHandlers: StoryApiRoute[] = [
   route('GET', '/providers/simplefin/ignored-institutions', () =>
     jsonResponse({ institutions: [] })
   ),
+  storyPlaidLinkTokenHandler,
   ...storyAutoCategorizeHandlers,
 ];
 
