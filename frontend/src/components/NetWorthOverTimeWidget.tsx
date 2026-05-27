@@ -33,11 +33,12 @@ export const NetWorthOverTimeWidget: React.FC = () => {
       </div>
       <div className={cn('h-[200px]', 'w-full', 'min-w-0')}>
         <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={mockData}>
+          <LineChart accessibilityLayer={false} data={mockData}>
             <CartesianGrid strokeDasharray="3 3" stroke={chart.grid[mode]} />
             <XAxis dataKey="date" tick={{ fill: chart.axis[mode] }} />
             <YAxis tick={{ fill: chart.axis[mode] }} />
             <Tooltip
+              cursor={false}
               content={(tooltipProps) => (
                 <ChartGlassTooltip {...tooltipProps} valueClassName={uiTextRecipes.success} />
               )}

@@ -265,7 +265,7 @@ const DashboardPage: React.FC<{
             ) : (
               <div className={cn('flex-1', 'h-full', 'w-full', 'min-w-0', 'overflow-visible')}>
                 <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                  <AreaChart
+                  <AreaChart accessibilityLayer={false}
                     data={debouncedNetSeries}
                     margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
                   >
@@ -329,6 +329,7 @@ const DashboardPage: React.FC<{
                       }}
                     />
                     <Tooltip
+                      cursor={false}
                       content={(tooltipProps) => (
                         <ChartGlassTooltip
                           {...tooltipProps}
@@ -346,7 +347,6 @@ const DashboardPage: React.FC<{
                       fillOpacity={1}
                       fill="url(#netGradient)"
                       dot={netDotRenderer}
-                      activeDot={{ r: 6 }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>

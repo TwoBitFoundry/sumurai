@@ -74,7 +74,7 @@ describe('shared shell text surfaces', () => {
   });
 
   it('uses semantic text roles in the budget toolbar and net worth widget', () => {
-    render(
+    const { container } = render(
       <ThemeProvider>
         <BudgetToolbar
           loading
@@ -88,5 +88,7 @@ describe('shared shell text surfaces', () => {
 
     expect(screen.getByText('Updating')).toHaveClass(uiTextRecipes.subtle);
     expect(screen.getByText('Net Worth Over Time')).toHaveClass(uiTextRecipes.muted);
+    expect(container.querySelector('[data-accessibility-layer="false"]')).toBeTruthy();
+    expect(container.querySelector('[data-cursor="false"]')).toBeTruthy();
   });
 });
