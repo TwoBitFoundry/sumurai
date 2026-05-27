@@ -7,7 +7,7 @@ import { useDebouncedChartRecalc } from '../hooks/useDebouncedChartRecalc';
 
 const donutCenterTotalTypography = 'font-display text-2xl font-bold tracking-tight';
 
-import { chart, getThemeColors } from '@/ui/tokens';
+import { chart } from '@/ui/tokens';
 import { useTheme } from '../../../context/ThemeContext';
 import { fmtUSD } from '../../../utils/format';
 import type { DonutDatum } from '../adapters/chartData';
@@ -40,7 +40,6 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
   animated = true,
 }) => {
   const { mode } = useTheme();
-  const colors = getThemeColors(mode);
   const debouncedData = useDebouncedChartRecalc(data);
   const debouncedTotal = useDebouncedChartRecalc(total);
   return (
@@ -70,8 +69,8 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
             'mx-auto'
           )}
         >
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+          <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+            <PieChart accessibilityLayer={false}>
               <Pie
                 dataKey="value"
                 data={debouncedData}
@@ -88,25 +87,20 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
               >
                 {debouncedData.map((cat, index) => {
                   const palette = chart.series[mode];
-                  const color = palette[index % palette.length];
+                  const color = cat.color ?? palette[index % palette.length];
                   const isHovered = hoveredCategory === cat.name;
                   return (
                     <Cell
                       key={`cell-${cat.name}`}
                       fill={color}
-                      stroke={
-                        isHovered
-                          ? mode === 'light'
-                            ? colors.chart.dotFill
-                            : colors.chart.tooltipText
-                          : 'none'
-                      }
-                      strokeWidth={isHovered ? 3 : 0}
+                      fillOpacity={hoveredCategory === null || isHovered ? 1 : 0.35}
                       onMouseEnter={() => setHoveredCategory(cat.name)}
                       onMouseLeave={() => setHoveredCategory(null)}
+                      onClick={() => setHoveredCategory(cat.name)}
                       style={{
-                        filter: isHovered ? 'brightness(1.15) saturate(1.1)' : 'none',
+                        filter: isHovered ? 'brightness(1.08) saturate(1.05)' : 'none',
                         cursor: 'pointer',
+                        outline: 'none',
                         transition: 'all 0.2s ease',
                       }}
                     />

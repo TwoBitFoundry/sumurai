@@ -64,7 +64,10 @@ const DashboardPage: React.FC<{
   const analytics = useAnalytics(dateRange);
   const analyticsLoading = analytics.loading;
   const analyticsRefreshing = analytics.refreshing;
-  const byCat = useMemo(() => categoriesToDonut(analytics.categories), [analytics.categories]);
+  const byCat = useMemo(
+    () => categoriesToDonut(analytics.categories, accentIndexByName),
+    [accentIndexByName, analytics.categories]
+  );
   const netWorth = useNetWorthSeries(dateRange);
   const netSeries = netWorth.series;
   const debouncedNetSeries = useDebouncedChartRecalc(netSeries);
@@ -80,6 +83,9 @@ const DashboardPage: React.FC<{
   }, [spendingByCategoryAnimationKey]);
 
   const monthSpend = analytics.spendingTotal;
+  const handleCategoryHover = (name: string | null) => {
+    setHoveredCategory(name);
+  };
 
   const netDotRenderer = useMemo<((props: DotItemDotProps) => React.ReactNode) | undefined>(() => {
     const n = debouncedNetSeries?.length || 0;
@@ -174,8 +180,9 @@ const DashboardPage: React.FC<{
                             key={`topcard-${cat.name}`}
                             className={cn('p-2', dashboardCategoryCard.shell)}
                             style={isHovered ? { borderColor: colors.chart.primary[0] } : undefined}
-                            onMouseEnter={() => setHoveredCategory(cat.name)}
-                            onMouseLeave={() => setHoveredCategory(null)}
+                            onMouseEnter={() => handleCategoryHover(cat.name)}
+                            onMouseLeave={() => handleCategoryHover(null)}
+                            onClick={() => handleCategoryHover(cat.name)}
                           >
                             <div className={cn('mb-1')}>
                               <Pill
@@ -257,7 +264,7 @@ const DashboardPage: React.FC<{
               </div>
             ) : (
               <div className={cn('flex-1', 'h-full', 'w-full', 'min-w-0', 'overflow-visible')}>
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                   <AreaChart
                     data={debouncedNetSeries}
                     margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
