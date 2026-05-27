@@ -389,6 +389,109 @@ async fn given_no_active_connections_when_switching_provider_then_updates_provid
 }
 
 #[tokio::test]
+async fn given_empty_provider_when_active_connection_exists_for_different_provider_then_returns_conflict(
+) {
+    let (user, token) = crate::test_fixtures::TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+    let mut mock_db = MockDatabaseRepository::new();
+    let mut connection = ProviderConnection::new(user_id, "item-1");
+    connection.provider = "teller".to_string();
+    connection.mark_connected("Test Bank");
+
+    mock_db
+        .expect_get_user_by_id()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let user = User {
+                provider: String::new(),
+                ..user.clone()
+            };
+            Box::pin(async move { Ok(Some(user)) })
+        });
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let connection = connection.clone();
+            Box::pin(async move { Ok(vec![connection]) })
+        });
+
+    let app = build_test_app(mock_db, provider_registry(&["plaid", "teller"])).await;
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::POST)
+        .uri("/api/providers/select")
+        .header("Cookie", format!("auth_token={}", token))
+        .header("Content-Type", "application/json")
+        .body(axum::body::Body::from(
+            serde_json::to_string(&json!({ "provider": "plaid" })).unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 409);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert!(payload["message"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("Disconnect all teller accounts before switching"));
+}
+
+#[tokio::test]
+async fn given_orphan_connection_when_selecting_different_provider_then_returns_conflict() {
+    let (user, token) = crate::test_fixtures::TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+    let mut mock_db = MockDatabaseRepository::new();
+    let mut teller_connection = ProviderConnection::new(user_id, "item-teller");
+    teller_connection.provider = "teller".to_string();
+    teller_connection.mark_connected("Teller Bank");
+
+    mock_db
+        .expect_get_user_by_id()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let user = User {
+                provider: "plaid".to_string(),
+                ..user.clone()
+            };
+            Box::pin(async move { Ok(Some(user)) })
+        });
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .with(mockall::predicate::eq(user_id))
+        .returning(move |_| {
+            let teller_connection = teller_connection.clone();
+            Box::pin(async move { Ok(vec![teller_connection]) })
+        });
+
+    let app = build_test_app(mock_db, provider_registry(&["plaid", "teller"])).await;
+
+    let request = axum::http::Request::builder()
+        .method(axum::http::Method::POST)
+        .uri("/api/providers/select")
+        .header("Cookie", format!("auth_token={}", token))
+        .header("Content-Type", "application/json")
+        .body(axum::body::Body::from(
+            serde_json::to_string(&json!({ "provider": "plaid" })).unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 409);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert!(payload["message"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("Disconnect all teller accounts before switching"));
+}
+
+#[tokio::test]
 async fn given_simplefin_when_selecting_then_returns_ok() {
     let (user, token) = crate::test_fixtures::TestFixtures::create_authenticated_user_with_token();
     let user_id = user.id;

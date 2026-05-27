@@ -3425,7 +3425,7 @@ async fn select_authenticated_provider(
         .into_response(StatusCode::BAD_REQUEST));
     }
 
-    let user = match state.db_repository.get_user_by_id(&user_id).await {
+    let _user = match state.db_repository.get_user_by_id(&user_id).await {
         Ok(Some(user)) => user,
         Ok(None) => {
             tracing::error!("User {} not found", user_id);
@@ -3439,37 +3439,32 @@ async fn select_authenticated_provider(
         }
     };
 
-    if let Some(current_provider) = user.active_provider() {
-        if current_provider != requested_provider {
-            let connections = match state
-                .db_repository
-                .get_all_provider_connections_by_user(&user_id)
-                .await
-            {
-                Ok(conns) => conns,
-                Err(e) => {
-                    tracing::error!("Failed to get connections for user {}: {}", user_id, e);
-                    return Err(ApiErrorResponse::internal_server_error(
-                        "Failed to check active connections",
-                    ));
-                }
-            };
-
-            let has_active_connections = connections
-                .iter()
-                .any(|c| c.provider == current_provider && c.is_connected);
-
-            if has_active_connections {
-                return Err(ApiErrorResponse::new(
-                    "CONFLICT",
-                    &format!(
-                        "Disconnect all {} accounts before switching",
-                        current_provider
-                    ),
-                )
-                .into_response(StatusCode::CONFLICT));
-            }
+    let connections = match state
+        .db_repository
+        .get_all_provider_connections_by_user(&user_id)
+        .await
+    {
+        Ok(conns) => conns,
+        Err(e) => {
+            tracing::error!("Failed to get connections for user {}: {}", user_id, e);
+            return Err(ApiErrorResponse::internal_server_error(
+                "Failed to check active connections",
+            ));
         }
+    };
+
+    if let Some(conflicting_provider) = connections.iter().find_map(|connection| {
+        (connection.is_connected && connection.provider != requested_provider)
+            .then_some(connection.provider.as_str())
+    }) {
+        return Err(ApiErrorResponse::new(
+            "CONFLICT",
+            &format!(
+                "Disconnect all {} accounts before switching",
+                conflicting_provider
+            ),
+        )
+        .into_response(StatusCode::CONFLICT));
     }
 
     match state
