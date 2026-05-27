@@ -136,14 +136,18 @@ This repo currently uses npm 24 + Node 24.10 as the package manager, script runn
 - Do **not** touch `frontend/vitest.config.ts`, `frontend/.storybook/vitest.setup.ts`, `frontend/playwright.storybook-runtime.config.ts`, or any `*.stories.*` files.
 
 **Acceptance criteria:**
-- [ ] `frontend/jest.config.cjs` deleted.
-- [ ] `frontend/bunfig.toml` and `frontend/tests/setup/bun-dom.ts` exist.
-- [ ] `jest`, `jest-environment-jsdom`, `@types/jest`, `identity-obj-proxy` no longer in `frontend/package.json`.
-- [ ] `@happy-dom/global-registrator` in `frontend/devDependencies`.
-- [ ] `bun --cwd frontend run test` runs `bun test` and exits 0.
-- [ ] `bun --cwd frontend run test:ci` exits 0 with no `jest` invocation.
-- [ ] `bun --cwd frontend run test:storybook` still passes (vitest path untouched).
-- [ ] Test count under `bun test` ≥ test count under previous `jest` run (no silently skipped suites). Spot-check with `bun test --verbose | tail -50`.
+- [x] `frontend/jest.config.cjs` deleted.
+- [x] `frontend/bunfig.toml` and `frontend/tests/setup/bun-dom.ts` exist.
+- [x] `jest`, `jest-environment-jsdom`, `@types/jest`, `identity-obj-proxy` no longer in `frontend/package.json`.
+- [x] `@happy-dom/global-registrator` in `frontend/devDependencies`.
+- [x] `bun --cwd=frontend run test` runs `bun test` and exits 0.
+- [x] `bun --cwd=frontend run test:ci` exits 0 with no `jest` invocation.
+- [x] `bun --cwd=frontend run test:storybook` still passes (vitest path untouched).
+- [x] Test count under `bun test` ≥ test count under previous `jest` run (no silently skipped suites). Spot-check with `bun test --verbose | tail -50`.
+
+**Phase 2 notes:** Preload chain is `bun-globals.ts` → `bun-dom.ts` → `setup.ts`. Test scripts use `bun test --parallel` (~3.5s for 730 tests). Drawer exit tests use `tests/utils/programmaticTimers.ts` (fake timers + `animationEnd`). Heavy mocks (recharts, framer-motion) moved to side-effect imports under `tests/mocks/`. `bun-types` is a devDependency referenced from `bun-globals.ts`; main `tsconfig.json` keeps `"types": ["node"]` so Storybook typecheck is unaffected.
+
+**Phase 2 TDD log:** Migrated 134 suites / 730 tests to `bun:test` with happy-dom. Verification: `bun test --ci --parallel`, `test:storybook` (vitest unchanged). Commit `208ba480`.
 
 ---
 
