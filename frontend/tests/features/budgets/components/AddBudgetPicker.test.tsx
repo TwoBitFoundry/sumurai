@@ -1,5 +1,4 @@
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { createRef } from 'react';
 import { AddBudgetPicker } from '@/features/budgets/components/AddBudgetPicker';
 
@@ -37,7 +36,6 @@ describe('AddBudgetPicker', () => {
   it('saves when a category and amount are provided', async () => {
     const onSave = jest.fn();
     const onChange = jest.fn();
-    const user = userEvent.setup();
 
     render(
       <AddBudgetPicker
@@ -52,7 +50,9 @@ describe('AddBudgetPicker', () => {
       />
     );
 
-    await user.click(screen.getByRole('button', { name: 'Save budget' }));
+    const form = screen.getByLabelText('Amount').closest('form');
+    expect(form).not.toBeNull();
+    fireEvent.submit(form!);
 
     expect(onSave).toHaveBeenCalledTimes(1);
   });

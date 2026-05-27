@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { act, render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { completeExitAnimation, withProgrammaticTimers } from '@tests/utils/programmaticTimers';
 import { Modal } from '@/ui/primitives/Modal';
 
 describe('Modal', () => {
@@ -63,9 +63,7 @@ describe('Modal', () => {
   });
 
   it('defers drawer onClose until the exit animation finishes', async () => {
-    jest.useFakeTimers();
     const onClose = jest.fn();
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
 
     render(
       <Modal isOpen onClose={onClose} presentation="drawer">
@@ -75,15 +73,13 @@ describe('Modal', () => {
       </Modal>
     );
 
-    await user.click(screen.getByRole('button', { name: 'Close drawer' }));
-    expect(onClose).not.toHaveBeenCalled();
-    expect(screen.getByRole('dialog')).toHaveAttribute('data-exiting', 'true');
-
-    await act(async () => {
-      jest.runAllTimers();
+    await withProgrammaticTimers(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Close drawer' }));
+      expect(onClose).not.toHaveBeenCalled();
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toHaveAttribute('data-exiting', 'true');
+      await completeExitAnimation(dialog);
+      expect(onClose).toHaveBeenCalledTimes(1);
     });
-    expect(onClose).toHaveBeenCalledTimes(1);
-
-    jest.useRealTimers();
   });
 });

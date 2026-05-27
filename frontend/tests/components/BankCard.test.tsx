@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import '../mocks/framerMotionStub';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type React from 'react';
 import { BankCard } from '@/components/BankCard';
@@ -34,6 +35,10 @@ jest.mock('@/features/import/components/ImportModal', () => ({
 }));
 
 describe('BankCard', () => {
+  beforeEach(() => {
+    window.sessionStorage.clear();
+  });
+
   const renderWithTheme = (ui: React.ReactElement) =>
     render(<ThemeTestProvider>{ui}</ThemeTestProvider>);
 
@@ -224,9 +229,8 @@ describe('BankCard', () => {
     });
 
     await user.click(screen.getByRole('button', { name: 'Disconnect' }));
-    expect(screen.getByRole('dialog', { name: /Disconnect Chase/ })).toBeVisible();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+    const dialog = await screen.findByRole('dialog', { name: /Disconnect Chase/ });
+    await user.click(within(dialog).getByRole('button', { name: 'Disconnect' }));
     expect(onDisconnect).toHaveBeenCalledWith('bank-1');
   });
 

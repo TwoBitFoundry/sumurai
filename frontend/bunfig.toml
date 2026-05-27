@@ -1,0 +1,3 @@
+[test]
+preload = ["./tests/setup/bun-globals.ts", "./tests/setup/bun-dom.ts", "./tests/setup.ts"]
+pathIgnorePatterns = ["tests/visual/**", ".next/**", "node_modules/**"]

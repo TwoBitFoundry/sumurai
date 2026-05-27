@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { jest } from 'bun:test';
 import { ApiClient, ApiError } from '@/services/ApiClient';
 import { SimpleFinService } from '@/services/SimpleFinService';
 import type { PlaidDisconnectResponse, ProviderStatusResponse } from '@/types/api';

@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { jest } from 'bun:test';
 import { apiGateway } from '@/features/teller/tellerConnectScript';
 import { ApiClient } from '@/services/ApiClient';
 import { TellerService } from '@/services/TellerService';
