@@ -182,7 +182,7 @@ describe('BankCard', () => {
     const onSync = jest.fn().mockResolvedValue(undefined);
     const onDisconnect = jest.fn().mockResolvedValue(undefined);
 
-    renderWithTheme(
+    const { container } = renderWithTheme(
       <BankCard
         bank={{
           id: 'bank-1',
@@ -204,31 +204,32 @@ describe('BankCard', () => {
         isOnline
       />
     );
+    const local = within(container);
 
-    expect(screen.getByRole('button', { name: 'Show accounts' })).toBeVisible();
-    expect(screen.queryByText('Checking')).not.toBeInTheDocument();
+    expect(local.getByRole('button', { name: 'Show accounts' })).toBeVisible();
+    expect(local.queryByText('Checking')).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Show accounts' }));
+    await user.click(local.getByRole('button', { name: 'Show accounts' }));
     await waitFor(() => {
-      expect(screen.getByText('Checking')).toBeVisible();
-      expect(screen.getByText('••1234')).toBeVisible();
+      expect(local.getByText('Checking')).toBeVisible();
+      expect(local.getByText('••1234')).toBeVisible();
     });
 
-    await user.click(screen.getByRole('button', { name: 'Sync now' }));
+    await user.click(local.getByRole('button', { name: 'Sync now' }));
     expect(onSync).toHaveBeenCalledWith('bank-1');
 
-    await user.click(screen.getByRole('button', { name: 'Hide accounts' }));
-    expect(screen.getByRole('button', { name: 'Show accounts' })).toBeVisible();
+    await user.click(local.getByRole('button', { name: 'Hide accounts' }));
+    expect(local.getByRole('button', { name: 'Show accounts' })).toBeVisible();
     await waitFor(() => {
-      expect(screen.queryByText('Checking')).not.toBeInTheDocument();
+      expect(local.queryByText('Checking')).not.toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: 'Show accounts' }));
+    await user.click(local.getByRole('button', { name: 'Show accounts' }));
     await waitFor(() => {
-      expect(screen.getByText('Checking')).toBeVisible();
+      expect(local.getByText('Checking')).toBeVisible();
     });
 
-    await user.click(screen.getByRole('button', { name: 'Disconnect' }));
+    await user.click(local.getByRole('button', { name: 'Disconnect' }));
     const dialog = await screen.findByRole('dialog', { name: /Disconnect Chase/ });
     await user.click(within(dialog).getByRole('button', { name: 'Disconnect' }));
     expect(onDisconnect).toHaveBeenCalledWith('bank-1');
