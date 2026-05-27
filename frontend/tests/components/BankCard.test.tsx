@@ -1,10 +1,19 @@
 import '../mocks/framerMotionStub';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type React from 'react';
 import { BankCard } from '@/components/BankCard';
 import { control } from '@/ui/recipes';
 import { ThemeTestProvider } from '../utils/ThemeTestProvider';
+
+jest.mock('@/utils/sessionPreferences', () => {
+  const actual = jest.requireActual('@/utils/sessionPreferences') as typeof import('@/utils/sessionPreferences');
+  return {
+    ...actual,
+    getSessionBankExpanded: jest.fn(() => false),
+    setSessionBankExpanded: jest.fn(),
+  };
+});
 
 jest.mock('@/features/import/components/ImportModal', () => ({
   ImportModal: ({
@@ -220,9 +229,7 @@ describe('BankCard', () => {
 
     await user.click(local.getByRole('button', { name: 'Hide accounts' }));
     expect(local.getByRole('button', { name: 'Show accounts' })).toBeVisible();
-    await waitFor(() => {
-      expect(local.queryByText('Checking')).not.toBeInTheDocument();
-    });
+    await waitForElementToBeRemoved(() => local.queryByText('Checking'));
 
     await user.click(local.getByRole('button', { name: 'Show accounts' }));
     await waitFor(() => {
