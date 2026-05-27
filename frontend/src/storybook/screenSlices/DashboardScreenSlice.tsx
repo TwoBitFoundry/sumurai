@@ -215,7 +215,7 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
                         onMouseLeave={() => setHoveredCategory(null)}
                       >
                         <div className={cn('mb-1')}>
-                          <Pill categoryName={cat.name} className={cn('max-w-full')}>
+                          <Pill categoryName={cat.categoryKey} className={cn('max-w-full')}>
                             {cat.name}
                           </Pill>
                         </div>

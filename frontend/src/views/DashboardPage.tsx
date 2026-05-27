@@ -186,7 +186,7 @@ const DashboardPage: React.FC<{
                           >
                             <div className={cn('mb-1')}>
                               <Pill
-                                categoryName={cat.name}
+                                categoryName={cat.categoryKey}
                                 accentIndexByName={accentIndexByName}
                                 className={cn('max-w-full')}
                               >

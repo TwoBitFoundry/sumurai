@@ -5,7 +5,12 @@
 import type { AnalyticsTopMerchantsResponse } from '../../../types/api';
 import { formatCategoryName, getTagThemeForCategory } from '../../../utils/categories';
 
-export type DonutDatum = { name: string; value: number; color?: string };
+export type DonutDatum = {
+  name: string;
+  categoryKey: string;
+  value: number;
+  color?: string;
+};
 
 type CategoryDatum = {
   category?: string | null;
@@ -23,9 +28,10 @@ export function categoriesToDonut(
     const displayName = formatCategoryName(rawName);
     const rawAmount: number | string | null | undefined = c.amount ?? c.value ?? 0;
     const value = typeof rawAmount === 'string' ? Number(rawAmount) : Number(rawAmount || 0);
-    const theme = getTagThemeForCategory(displayName, accentIndexByName);
+    const theme = getTagThemeForCategory(rawName, accentIndexByName);
     return {
       name: displayName,
+      categoryKey: rawName,
       value: Number.isFinite(value) ? value : 0,
       color: theme.ringHex,
     };

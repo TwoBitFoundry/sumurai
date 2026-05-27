@@ -2,10 +2,10 @@ import type { DonutDatum } from '@/features/analytics/adapters/chartData';
 import type { AnalyticsTopMerchantsResponse } from '@/types/api';
 
 export const sampleDonutByCategory: DonutDatum[] = [
-  { name: 'Food', value: 420 },
-  { name: 'Transit', value: 188 },
-  { name: 'Income', value: 3100 },
-  { name: 'Shopping', value: 240 },
+  { name: 'Food', categoryKey: 'food_and_drink', value: 420 },
+  { name: 'Transit', categoryKey: 'transportation', value: 188 },
+  { name: 'Income', categoryKey: 'income', value: 3100 },
+  { name: 'Shopping', categoryKey: 'shopping', value: 240 },
 ];
 
 export const sampleDonutTotal = sampleDonutByCategory.reduce((s, d) => s + d.value, 0);
