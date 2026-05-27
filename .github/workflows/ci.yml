@@ -111,7 +111,7 @@ jobs:
         run: bun run design:guard
 
       - name: Unit tests
-        run: bun test --ci
+        run: bun run test:ci
 
       - name: Production build
         run: bun run build

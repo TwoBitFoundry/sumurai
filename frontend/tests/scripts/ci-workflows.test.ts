@@ -36,7 +36,7 @@ describe('bun migration ci workflows', () => {
     expect(contents).toContain('run: bun run lint');
     expect(contents).toContain('run: bun run typecheck');
     expect(contents).toContain('run: bun run design:guard');
-    expect(contents).toContain('run: bun test --ci');
+    expect(contents).toContain('run: bun run test:ci');
     expect(contents).toContain('run: bun run build');
     expect(contents).toContain('run: bunx playwright install chromium --with-deps');
     expect(contents).toContain('run: bun run test:storybook');

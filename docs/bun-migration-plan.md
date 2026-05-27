@@ -128,7 +128,7 @@ This repo currently uses npm 24 + Node 24.10 as the package manager, script runn
   ```
 - Keep `frontend/tests/setup.ts` as-is — `@testing-library/jest-dom` matchers work under `bun:test`, `jest.fn()` exists as a shim.
 - Verify `frontend/tsconfig.json` paths cover `@/*`, `@tests/*`, `@docs/*`. Bun resolves tsconfig paths natively; the previous `moduleNameMapper` entries are no longer needed. If `@docs/*` (resolves outside `frontend/`) doesn't load, extend `tsconfig.json` `paths` rather than adding a `bunfig.toml` alias.
-- Update `frontend/package.json` test scripts: `test` → `bun test`, `test:ci` → `bun test --ci`, `test:serial` → `bun test --jobs 1`, `test:verbose` → `bun test --jobs 1 --verbose`.
+- Update `frontend/package.json` test scripts: `test` → `bun test --parallel`, `test:ci` → `bun test --ci --parallel`, `test:serial` → `bun test --jobs 1`, `test:verbose` → `bun test --jobs 1 --verbose`.
 - Run `bun test` and fix failures in waves. Triage order: `tests/utils` → `tests/services` → `tests/hooks` → `tests/components` → `tests/views` → `tests/features`. Most files should pass unchanged. Expected hot spots:
   - Files using `next/navigation`, `next/router`, `next/image`, `next/link` — if a test fails on these, add a `mock.module("next/navigation", () => ({ useRouter: () => ({ push: () => {} }) }))` (or similar) inside the test file or extend `bun-dom.ts` with broad mocks.
   - Files using `jest.requireActual` — replace with `await import(...)` plus `mock.module`.
@@ -141,7 +141,7 @@ This repo currently uses npm 24 + Node 24.10 as the package manager, script runn
 - [x] `jest`, `jest-environment-jsdom`, `@types/jest`, `identity-obj-proxy` no longer in `frontend/package.json`.
 - [x] `@happy-dom/global-registrator` in `frontend/devDependencies`.
 - [x] `bun --cwd=frontend run test` runs `bun test` and exits 0.
-- [x] `bun --cwd=frontend run test:ci` exits 0 with no `jest` invocation.
+- [x] `bun --cwd=frontend run test:ci` exits 0 with `bun test --ci --parallel` and no `jest` invocation.
 - [x] `bun --cwd=frontend run test:storybook` still passes (vitest path untouched).
 - [x] Test count under `bun test` ≥ test count under previous `jest` run (no silently skipped suites). Spot-check with `bun test --verbose | tail -50`.
 
@@ -261,7 +261,7 @@ This repo currently uses npm 24 + Node 24.10 as the package manager, script runn
   - name: Design guard
     run: bun run design:guard
   - name: Unit tests
-    run: bun test --ci
+    run: bun run test:ci
   - name: Production build
     run: bun run build
 
