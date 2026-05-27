@@ -39,8 +39,6 @@ services:
       PLAID_SECRET: ${PLAID_SECRET}
       PLAID_ENV: production
 
-      SIMPLEFIN_SETUP_TOKEN: ${SIMPLEFIN_SETUP_TOKEN}
-
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
       RUST_LOG: info,otel::tracing=trace,axum_tracing_opentelemetry=trace

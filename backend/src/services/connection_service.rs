@@ -51,7 +51,6 @@ pub enum SimpleFinConnectError {
     MissingSetupToken,
     MalformedSetupToken,
     SetupTokenAlreadyClaimed,
-    DemoBridgeRestricted,
     ClaimFailed(Error),
     CredentialStorage(Error),
     ConnectionPersistence(Error),
@@ -119,8 +118,6 @@ fn simplefin_connect_error_from_message(message: &str) -> SimpleFinConnectError 
         SimpleFinConnectError::MalformedSetupToken
     } else if message.contains("already been claimed") {
         SimpleFinConnectError::SetupTokenAlreadyClaimed
-    } else if message.contains("demo bridge is only available to the demo account") {
-        SimpleFinConnectError::DemoBridgeRestricted
     } else if message.contains("claim failed") {
         SimpleFinConnectError::ClaimFailed(anyhow::anyhow!(message.to_string()))
     } else {

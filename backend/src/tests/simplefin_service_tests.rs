@@ -1,5 +1,4 @@
 use crate::models::account::Account;
-use crate::models::auth::User;
 use crate::models::plaid::{ProviderConnectResponse, ProviderConnection};
 use crate::models::predicted_category::PredictedCategory;
 use crate::models::provider_connect::ProviderConnectRequest;
@@ -26,7 +25,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use axum::body::to_bytes;
 use base64::Engine;
-use chrono::{NaiveDate, Utc};
+use chrono::NaiveDate;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use tower::ServiceExt;
@@ -42,24 +41,6 @@ impl Categorizer for PanicCategorizer {
     async fn categorize_batch(&self, _descriptions: Vec<String>) -> Result<Vec<PredictedCategory>> {
         panic!("categorizer should not be called for SimpleFIN sync");
     }
-}
-
-fn mock_non_demo_user_lookup(mock_db: &mut MockDatabaseRepository) {
-    mock_db
-        .expect_get_user_by_id()
-        .returning(|user_id| {
-            let user = User {
-                id: *user_id,
-                email: format!("test-{user_id}@example.com"),
-                password_hash: "hash".to_string(),
-                provider: "simplefin".to_string(),
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-                onboarding_completed: false,
-            };
-            Box::pin(async move { Ok(Some(user)) })
-        })
-        .times(0..);
 }
 
 fn simplefin_org_item_id(user_id: &Uuid, org_conn_id: &str) -> String {
@@ -249,10 +230,6 @@ fn build_simplefin_connection_service(
     mock_db
         .expect_store_simplefin_root_credential()
         .returning(|_, _| Box::pin(async { Ok(()) }));
-
-    if request_setup_token.is_some() {
-        mock_non_demo_user_lookup(&mut mock_db);
-    }
 
     mock_db
         .expect_list_simplefin_hidden_orgs()
@@ -631,7 +608,6 @@ async fn build_simplefin_handler_app(
     mock_db
         .expect_store_simplefin_root_credential()
         .returning(|_, _| Box::pin(async { Ok(()) }));
-    mock_non_demo_user_lookup(&mut mock_db);
     mock_db
         .expect_list_simplefin_hidden_orgs()
         .returning(|_| Box::pin(async { Ok(HashSet::new()) }));
@@ -790,9 +766,9 @@ async fn given_malformed_simplefin_setup_token_when_post_providers_connect_then_
 }
 
 #[tokio::test]
-async fn given_non_demo_user_when_using_demo_simplefin_token_then_returns_unprocessable_entity() {
+async fn given_any_user_when_using_demo_simplefin_token_then_connects() {
     let (_user, token) = TestFixtures::create_authenticated_user_with_token();
-    let app = build_simplefin_handler_app(three_org_snapshot(), false)
+    let app = build_simplefin_handler_app(three_org_snapshot(), true)
         .await
         .expect("test app should build");
 
@@ -811,14 +787,7 @@ async fn given_non_demo_user_when_using_demo_simplefin_token_then_returns_unproc
     );
     let response = app.oneshot(request).await.unwrap();
 
-    assert_eq!(response.status(), 422);
-
-    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    assert!(payload["message"]
-        .as_str()
-        .unwrap_or_default()
-        .contains("demo bridge is only available to the demo account"));
+    assert_eq!(response.status(), 200);
 }
 
 #[tokio::test]

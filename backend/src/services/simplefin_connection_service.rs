@@ -393,11 +393,6 @@ impl SimpleFinConnectionService {
                     SimpleFinConnectError::MalformedSetupToken
                 } else if error.to_string().contains("already been claimed") {
                     SimpleFinConnectError::SetupTokenAlreadyClaimed
-                } else if error
-                    .to_string()
-                    .contains("demo bridge is only available to the demo account")
-                {
-                    SimpleFinConnectError::DemoBridgeRestricted
                 } else if error.to_string().contains("claim failed") {
                     SimpleFinConnectError::ClaimFailed(anyhow::anyhow!(error.to_string()))
                 } else {

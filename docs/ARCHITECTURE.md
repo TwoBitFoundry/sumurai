@@ -54,7 +54,7 @@ flowchart LR
 
 ### SimpleFIN
 
-- The user pastes a one-time SimpleFIN setup token when connecting. The backend claims it into a per-user stored access URL in `simplefin_root_credentials` (encrypted). A shared beta demo bridge URL is only used when the token was already claimed and the user matches `SIMPLEFIN_DEMO_USER_EMAIL` (default `simplefin@test.com`); other users must have their own stored root credential or a fresh setup token claim.
+- The user pastes a one-time SimpleFIN setup token when connecting. The backend claims it into a per-user stored access URL in `simplefin_root_credentials` (encrypted). When a beta demo setup token was already claimed, any user can reuse the shared beta demo bridge URL for local trials.
 - One access URL backs many `provider_connections` rows: each financial institution in the bridge snapshot becomes `simplefin_{org_conn_id}` with its own accounts and transactions.
 - Connect and sync reuse the stored access URL while at least one SimpleFIN institution remains connected. Sync can also materialize newly linked institutions from the latest bridge snapshot.
 - `simplefin_hidden_orgs` records orgs the user disconnected. Sync and connect skip blocklisted `org_conn_id` values so disconnected institutions do not get new rows in `provider_connections`, `accounts`, or `transactions`, and no cache entries are keyed on that org.

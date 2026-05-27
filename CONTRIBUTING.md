@@ -76,11 +76,7 @@ docker compose -f docker-compose.dev.yml up -d --build
 
 For the **production-oriented** stack with Seq, use `docker-compose.prod.yml` and [docs/PRODUCTION_TLS.md](docs/PRODUCTION_TLS.md).
 
-Demo credentials (password `Test1234!` for each account):
-
-- Plaid: `plaid@test.com`
-- Teller: `teller@test.com`
-- SimpleFIN: `simplefin@test.com` (requires `SIMPLEFIN_SETUP_TOKEN` in the environment)
+Demo credentials: `me@test.com` / `Test1234!`
 
 ## Frontend Development
 
@@ -184,10 +180,6 @@ Teller values when using Teller:
 
 - `TELLER_APPLICATION_ID`
 
-SimpleFIN:
-
-- `SIMPLEFIN_SETUP_TOKEN` (one-time bridge setup token; claim from [beta-bridge.simplefin.org/info/developers](https://beta-bridge.simplefin.org/info/developers) for local trials)
-
 Optional values:
 
 - `NGROK_AUTHTOKEN`
@@ -209,15 +201,13 @@ Login and register under `/api/auth/` are rate limited in the Axum backend with 
 
 ## Sandbox Credentials
 
-Use these provider test credentials for local sandbox flows:
+Use these sandbox credentials for local provider flows with `me@test.com` / `Test1234!`:
 
 - SimpleFIN
-  - Sign in as `simplefin@test.com` / `Test1234!`, set `SIMPLEFIN_SETUP_TOKEN` (demo token from [beta-bridge.simplefin.org/info/developers](https://beta-bridge.simplefin.org/info/developers)), start the stack, then choose SimpleFIN in the provider picker.
+  - Start the stack, choose SimpleFIN in the provider picker, and paste a setup token from [beta-bridge.simplefin.org/info/developers](https://beta-bridge.simplefin.org/info/developers) when prompted. The shared beta demo bridge works with any account.
 - Teller
-  - Sumurai login: `teller@test.com` / `Test1234!`
   - Teller Connect sandbox (when prompted): `username` / `password`
 - Plaid
-  - Sumurai login: `plaid@test.com` / `Test1234!`
   - Plaid Link sandbox (when prompted): `user_good` / `pass_good`
 
 If a sandbox provider prompts for 2FA, click through with empty fields.
