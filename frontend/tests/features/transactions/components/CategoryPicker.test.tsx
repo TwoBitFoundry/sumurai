@@ -85,7 +85,7 @@ describe('CategoryPicker', () => {
     );
 
     expect(screen.getByText('Customize Category')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Food And Drink' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Food & Drink' })).toHaveAttribute(
       'aria-pressed',
       'true'
     );
@@ -257,7 +257,7 @@ describe('CategoryPicker', () => {
       'overflow-hidden'
     );
     expect(screen.queryByTestId('category-picker-popover')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Food And Drink' })).toHaveClass(
+    expect(screen.getByRole('button', { name: 'Food & Drink' })).toHaveClass(
       'min-h-11',
       'md:min-h-9',
       'lg:min-h-8',
@@ -270,7 +270,7 @@ describe('CategoryPicker', () => {
       'flex-col',
       'overflow-hidden'
     );
-    expect(screen.getByRole('button', { name: 'Food And Drink' }).parentElement).toHaveClass(
+    expect(screen.getByRole('button', { name: 'Food & Drink' }).parentElement).toHaveClass(
       'flex-wrap',
       'gap-2'
     );
@@ -306,7 +306,7 @@ describe('CategoryPicker', () => {
       .filter((button) => button.hasAttribute('aria-pressed'))
       .map((button) => button.textContent);
 
-    expect(labels).toEqual(['Coffee', 'Entertainment', 'Food And Drink', 'Groceries']);
+    expect(labels).toEqual(['Coffee', 'Entertainment', 'Food & Drink', 'Groceries']);
   });
 
   it('closes without selecting when the current category is clicked again', async () => {

@@ -2,7 +2,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeProviderCatalogMock } from '@tests/utils/providerCatalogMocks';
-import { useAutoCategorization } from '@/features/auto-categorization/hooks/useAutoCategorization';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
 import {
   type UseFinancialConnectionReturn,
@@ -68,12 +67,6 @@ jest.mock('@/hooks/useFinancialConnection', () => ({
 
 jest.mock('@/hooks/useAccountFilter', () => ({
   useAccountFilter: jest.fn(),
-}));
-
-const mockHandleAutoCategorizeAction = jest.fn();
-
-jest.mock('@/features/auto-categorization/hooks/useAutoCategorization', () => ({
-  useAutoCategorization: jest.fn(),
 }));
 
 jest.mock('@/features/import/components/ImportModal', () => ({
@@ -143,15 +136,6 @@ async function expandInstitutionAccounts(user: ReturnType<typeof userEvent.setup
 describe('AccountsPage', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
-    mockHandleAutoCategorizeAction.mockReset();
-    jest.mocked(useAutoCategorization).mockReturnValue({
-      job: null,
-      isActive: false,
-      isLoading: false,
-      isPending: false,
-      progressLabel: null,
-      handleAction: mockHandleAutoCategorizeAction,
-    });
     jest.mocked(useOnlineStatus).mockReturnValue(false);
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
@@ -186,61 +170,16 @@ describe('AccountsPage', () => {
     expect(tellerButton.querySelector('img')).toHaveAttribute('src', '/teller.webp');
   });
 
-  it('shows Auto-categorize when online', () => {
+  it('does not show the auto-categorize action on the accounts page', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
 
     renderAccountsPage();
 
-    expect(screen.getByRole('button', { name: /auto-categorize/i })).toBeEnabled();
-  });
-
-  it('disables Auto-categorize while offline', () => {
-    jest.mocked(useOnlineStatus).mockReturnValue(false);
-    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
-
-    renderAccountsPage();
-
-    expect(screen.getByRole('button', { name: /auto-categorize/i })).toBeDisabled();
-  });
-
-  it('shows Cancel categorization while a run is active', () => {
-    jest.mocked(useOnlineStatus).mockReturnValue(true);
-    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
-    jest.mocked(useAutoCategorization).mockReturnValue({
-      job: {
-        job_id: '11111111-2222-3333-4444-555555555555',
-        status: 'running',
-        total: 8,
-        processed: 2,
-        updated: 1,
-        skipped: 1,
-        started_at: '2024-01-01T12:00:00Z',
-        finished_at: null,
-        error_message: null,
-      },
-      isActive: true,
-      isLoading: false,
-      isPending: false,
-      progressLabel: '2 / 8 processed',
-      handleAction: mockHandleAutoCategorizeAction,
-    });
-
-    renderAccountsPage();
-
-    expect(screen.getByRole('button', { name: /cancel categorization/i })).toBeEnabled();
-  });
-
-  it('calls handleAction when Auto-categorize is clicked', async () => {
-    const user = userEvent.setup();
-    jest.mocked(useOnlineStatus).mockReturnValue(true);
-    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
-
-    renderAccountsPage();
-
-    await user.click(screen.getByRole('button', { name: /auto-categorize/i }));
-
-    expect(mockHandleAutoCategorizeAction).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: /auto-categorize/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /cancel categorization/i })
+    ).not.toBeInTheDocument();
   });
 
   it('shows Offline on sync when offline with linked institutions', () => {

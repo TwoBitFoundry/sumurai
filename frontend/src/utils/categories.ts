@@ -5,6 +5,27 @@
 import type { CustomCategory } from '@/types/api';
 import { getCategoryAccent, getCategoryAccentByIndex } from '@/ui/tokens';
 
+const SYSTEM_CATEGORY_LABELS: Record<string, string> = {
+  BANK_FEES: 'Bank Fees',
+  ENTERTAINMENT: 'Entertainment',
+  FOOD_AND_DRINK: 'Food & Drink',
+  GENERAL_MERCHANDISE: 'Merch',
+  GENERAL_SERVICES: 'Services',
+  GOVERNMENT_AND_NON_PROFIT: 'Govt & Non Profit',
+  HOME_IMPROVEMENT: 'Home',
+  INCOME: 'Income',
+  LOAN_PAYMENTS: 'Loan Payments',
+  MEDICAL: 'Medical',
+  OTHER: 'Other',
+  PERSONAL_CARE: 'Personal Care',
+  RENT_AND_UTILITIES: 'Bills',
+  SHOPPING: 'Shopping',
+  TRANSFER_IN: 'Transfer In',
+  TRANSFER_OUT: 'Transfer Out',
+  TRANSPORTATION: 'Transport',
+  TRAVEL: 'Travel',
+};
+
 export const SYSTEM_CATEGORY_SLUGS = [
   'BANK_FEES',
   'ENTERTAINMENT',
@@ -28,8 +49,14 @@ export const SYSTEM_CATEGORY_SLUGS = [
 
 export function formatCategoryName(categoryPrimary: string | undefined | null): string {
   if (!categoryPrimary) return 'Other';
+  const key = categoryPrimary.trim().replace(/\s+/g, '_').toUpperCase();
+  const override = SYSTEM_CATEGORY_LABELS[key];
+  if (override) {
+    return override;
+  }
   return categoryPrimary
-    .split('_')
+    .trim()
+    .split(/[_\s]+/)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
 }

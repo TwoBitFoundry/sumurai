@@ -175,9 +175,9 @@ const DashboardPage: React.FC<{
                           categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0';
                         const isHovered = hoveredCategory === cat.name;
                         return (
-                          // biome-ignore lint/a11y/noStaticElementInteractions: visual hover only
-                          <div
+                          <button
                             key={`topcard-${cat.name}`}
+                            type="button"
                             className={cn('p-2', dashboardCategoryCard.shell)}
                             style={isHovered ? { borderColor: colors.chart.primary[0] } : undefined}
                             onMouseEnter={() => handleCategoryHover(cat.name)}
@@ -206,7 +206,7 @@ const DashboardPage: React.FC<{
                                 {percentage}%
                               </div>
                             </div>
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
@@ -265,7 +265,8 @@ const DashboardPage: React.FC<{
             ) : (
               <div className={cn('flex-1', 'h-full', 'w-full', 'min-w-0', 'overflow-visible')}>
                 <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                  <AreaChart accessibilityLayer={false}
+                  <AreaChart
+                    accessibilityLayer={false}
                     data={debouncedNetSeries}
                     margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
                   >

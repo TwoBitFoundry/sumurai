@@ -50,28 +50,54 @@ export const BudgetSummaryCard = ({ totalBudgeted, totalSpent }: BudgetSummaryCa
           <div className={cn(heroStatCardRecipes.ringLine)} style={ringColorStyle} />
         </div>
 
-        <div className={cn('relative', 'z-10', 'flex', 'flex-wrap', 'items-start', 'gap-4')}>
-          <div className={cn('min-w-[10rem]', 'flex-1')}>
-            <div className={cn(uiTypographyRecipes.label, uiTextRecipes.subtle)}>Total Planned</div>
-            <div className={cn('mt-1', 'text-2xl', 'font-semibold', uiTextRecipes.primary)}>
-              {fmtUSD(totalBudgeted)}
-            </div>
-          </div>
-          <div className={cn('min-w-[10rem]', 'flex-1', 'text-right')}>
+        <div
+          className={cn(
+            'relative',
+            'z-10',
+            'grid',
+            'grid-cols-2',
+            'gap-x-2',
+            'gap-y-2',
+            'md:gap-x-3',
+            'lg:gap-x-4'
+          )}
+        >
+          <div className={cn('min-w-0')}>
             <div className={cn(uiTypographyRecipes.label, uiTextRecipes.subtle)}>Total Spent</div>
             <div
               className={cn(
                 'mt-1',
-                'text-2xl',
+                'text-[1.45rem]',
                 'font-semibold',
+                'leading-none',
+                'tracking-[-0.02em]',
+                'md:text-[1.65rem]',
+                'lg:text-2xl',
                 overBudget ? uiTextRecipes.danger : uiTextRecipes.body
               )}
             >
               {fmtUSD(totalSpent)}
             </div>
           </div>
+          <div className={cn('min-w-0', 'text-right')}>
+            <div className={cn(uiTypographyRecipes.label, uiTextRecipes.subtle)}>Total Planned</div>
+            <div
+              className={cn(
+                'mt-1',
+                'text-[1.45rem]',
+                'font-semibold',
+                'leading-none',
+                'tracking-[-0.02em]',
+                'md:text-[1.65rem]',
+                'lg:text-2xl',
+                uiTextRecipes.primary
+              )}
+            >
+              {fmtUSD(totalBudgeted)}
+            </div>
+          </div>
         </div>
-        <div className={cn('relative', 'z-10', 'mt-4')}>
+        <div className={cn('relative', 'z-10', 'mt-3', 'md:mt-4')}>
           <BudgetProgress amount={totalBudgeted} spent={totalSpent} />
         </div>
       </div>

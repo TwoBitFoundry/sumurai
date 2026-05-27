@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { BudgetList } from '@/features/budgets/components/BudgetList';
 import { radius as uiRadiusRecipes } from '@/ui/recipes';
 
@@ -45,7 +45,7 @@ describe('BudgetList', () => {
     expect(card).toHaveClass(uiRadiusRecipes.standard);
   });
 
-  it('places the divider and budget actions at the bottom of the card', () => {
+  it('keeps budget actions in the header without a dedicated footer block', () => {
     const { container } = render(
       <BudgetList
         items={[
@@ -66,14 +66,42 @@ describe('BudgetList', () => {
     );
 
     const card = container.querySelector('li');
-    const footer = card?.querySelector('.mt-4.space-y-2');
-    const divider = footer?.firstElementChild;
-    const actionRow = footer?.lastElementChild;
+    const header = card?.querySelector('.relative.z-10.flex.items-start.justify-between.gap-3');
+    const editButton = header?.querySelector('[aria-label="Edit budget"]');
+    const deleteButton = header?.querySelector('[aria-label="Delete budget"]');
 
-    expect(card?.textContent).toContain('Food and drink');
-    expect(footer).toHaveClass('mt-4');
-    expect(footer).toHaveClass('space-y-2');
-    expect(divider).toHaveClass('h-px');
-    expect(actionRow?.querySelector('[aria-label="Edit budget"]')).toBeTruthy();
+    expect(card?.textContent).toContain('Food & Drink');
+    expect(card?.querySelector('.mt-4.space-y-2')).toBeNull();
+    expect(editButton).toBeTruthy();
+    expect(deleteButton).toBeTruthy();
+  });
+
+  it('shows spent before planned in the budget stat row', () => {
+    render(
+      <BudgetList
+        items={[
+          {
+            id: 'budget-1',
+            category: 'food and drink',
+            amount: 100,
+            spent: 25,
+            percentage: 25,
+          },
+        ]}
+        editingId={null}
+        onStartEdit={jest.fn()}
+        onCancelEdit={jest.fn()}
+        onSaveEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+
+    const spentLabel = screen.getByText('Spent');
+    const plannedLabel = screen.getByText('Planned');
+
+    expect(
+      spentLabel.compareDocumentPosition(plannedLabel) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(plannedLabel.parentElement).toHaveClass('text-right');
   });
 });

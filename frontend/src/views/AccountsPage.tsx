@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, cn } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
@@ -7,8 +7,6 @@ import { control, text as uiTextRecipes, font as uiTypographyRecipes } from '@/u
 import { OnboardingProviderConnectModal } from '../components/onboarding/OnboardingProviderConnectModal';
 import { ToastStack } from '../components/toastStack/ToastStack';
 import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToastStack';
-import { AutoCategorizeIcon } from '../features/auto-categorization/components/AutoCategorizeIcon';
-import { useAutoCategorization } from '../features/auto-categorization/hooks/useAutoCategorization';
 import AccountsSummaryStats from '../features/plaid/components/AccountsSummaryStats';
 import ConnectButton from '../features/plaid/components/ConnectButton';
 import ConnectionsList, {
@@ -190,10 +188,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     });
   }, [banks, plaidConnections.connections, tellerStatusQuery.data]);
 
-  const autoCategorization = useAutoCategorization();
-  const { pushToast: pushAccountsToast, ...accountsToastStack } = useAccountsToastStack(
-    autoCategorization.job
-  );
+  const { pushToast: pushAccountsToast, ...accountsToastStack } = useAccountsToastStack(null);
   const connectionFlow = useFinancialConnection({
     provider: primaryProvider,
     onError: (message) => {
@@ -621,30 +616,9 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const lastSyncDetail = summary.latestSync
     ? `Refreshed ${formatAbsoluteTime(summary.latestSync)}`
     : '';
-
   const actions = (
     <div className="inline-flex max-w-full flex-col items-center gap-2">
       <div className="flex flex-wrap items-center justify-center gap-3">
-        <Button
-          type="button"
-          onClick={() => void autoCategorization.handleAction()}
-          disabled={!isOnline || autoCategorization.isPending}
-          variant="ghost"
-          size="md"
-          className={cn(appTitleBarRecipes.settingsIdle, 'normal-case')}
-          title={
-            !isOnline
-              ? 'Unavailable while offline'
-              : (autoCategorization.progressLabel ?? undefined)
-          }
-        >
-          {autoCategorization.isPending ? (
-            <Loader2 className={cn(control.glyph.md, 'animate-spin')} />
-          ) : (
-            <AutoCategorizeIcon />
-          )}
-          {autoCategorization.isActive ? 'Cancel categorization' : 'Auto-categorize'}
-        </Button>
         {summary.institutions > 0 && (
           <Button
             type="button"

@@ -2,6 +2,7 @@ import { categoryAccents } from '@/ui/tokens';
 import {
   buildCategoryAccentIndex,
   categoryLookupKey,
+  formatCategoryName,
   formatCustomCategoryDisplay,
   getTagThemeForCategory,
   getTagThemeForCategoryAtIndex,
@@ -29,14 +30,28 @@ describe('category accent index', () => {
 
 describe('longestFormattedCategoryLabel', () => {
   it('returns the longest system category display label', () => {
-    expect(longestFormattedCategoryLabel()).toBe('Government And Non Profit');
+    expect(longestFormattedCategoryLabel()).toBe('Govt & Non Profit');
   });
 });
 
 describe('mobileCategoryChipWidthRem', () => {
   it('sizes the chip from the longest label without oversized ch padding', () => {
     const longestLabel = longestFormattedCategoryLabel();
-    expect(mobileCategoryChipWidthRem(longestLabel)).toBe('13.65rem');
+    expect(mobileCategoryChipWidthRem(longestLabel)).toBe('9.81rem');
+  });
+});
+
+describe('formatCategoryName', () => {
+  it.each([
+    ['FOOD_AND_DRINK', 'Food & Drink'],
+    ['GENERAL_MERCHANDISE', 'Merch'],
+    ['GENERAL_SERVICES', 'Services'],
+    ['GOVERNMENT_AND_NON_PROFIT', 'Govt & Non Profit'],
+    ['HOME_IMPROVEMENT', 'Home'],
+    ['RENT_AND_UTILITIES', 'Bills'],
+    ['TRANSPORTATION', 'Transport'],
+  ])('formats %s as %s', (input, expected) => {
+    expect(formatCategoryName(input)).toBe(expected);
   });
 });
 

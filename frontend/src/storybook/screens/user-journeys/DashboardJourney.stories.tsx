@@ -54,10 +54,10 @@ export const Journey: Story = {
       expect(canvas.getByRole('heading', { name: /balances overview/i })).toBeVisible();
     });
     await waitFor(() => {
-      expect(canvas.getByText('Food And Drink')).toBeVisible();
+      expect(canvas.getByText('Food & Drink')).toBeVisible();
     });
 
-    const foodLabel = canvas.getByText('Food And Drink');
+    const foodLabel = canvas.getByText('Food & Drink');
     const foodCard = foodLabel.parentElement?.parentElement;
     if (!foodCard) {
       throw new Error('Missing category card');

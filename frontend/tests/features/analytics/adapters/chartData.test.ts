@@ -4,7 +4,7 @@ import { categoryAccents } from '@/ui/tokens';
 describe('categoriesToDonut', () => {
   it('assigns stable category colors from the accent index map', () => {
     const accentIndexByName = new Map([
-      ['Merchandise', 0],
+      ['Merch', 0],
       ['Services', 1],
       ['Food & Drink', 2],
     ]);
@@ -20,7 +20,7 @@ describe('categoriesToDonut', () => {
 
     expect(result).toEqual([
       {
-        name: 'Merchandise',
+        name: 'Merch',
         value: 2368.1,
         color: categoryAccents[0].ringHex,
       },

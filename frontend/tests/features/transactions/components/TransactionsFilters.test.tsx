@@ -42,9 +42,10 @@ describe('TransactionsFilters', () => {
 
     render(<TransactionsFilters {...filterProps} onSelectCategory={onSelectCategory} />);
 
-    const foodButton = screen.getByRole('button', { name: 'Food And Drink' });
+    const foodButton = screen.getByRole('button', { name: 'Food & Drink' });
     expect(foodButton.className).toContain('rounded-full');
     expect(foodButton.className).toContain('cursor-pointer');
+    expect(foodButton.className).toContain('py-0');
     expect(foodButton.className).not.toContain('h-11');
     expect(foodButton).toHaveAttribute('aria-pressed', 'false');
 
@@ -62,7 +63,9 @@ describe('TransactionsFilters', () => {
 
     render(<TransactionsFilters {...filterProps} />);
 
-    expect(screen.getByRole('button', { name: 'Food And Drink' }).className).toContain('h-11');
+    const foodButton = screen.getByRole('button', { name: 'Food & Drink' });
+    expect(foodButton.className).toContain('py-0');
+    expect(foodButton.className).not.toContain('h-11');
   });
 
   it('marks the active category filter as pressed', () => {
