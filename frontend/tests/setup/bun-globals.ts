@@ -37,7 +37,10 @@ const jestCompat = Object.assign(jest, {
     mock.module(moduleId, () => createAutoMock());
   },
   requireMock: (moduleId: string) => require(moduleId),
-  requireActual: (moduleId: string) => require(moduleId),
+  requireActual: (moduleId: string) => {
+    const resolvedModuleId = Bun.resolveSync(moduleId, import.meta.url);
+    return require(resolvedModuleId);
+  },
 });
 
 Object.assign(globalThis, {
