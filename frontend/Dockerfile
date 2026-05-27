@@ -1,5 +1,6 @@
+# syntax=docker/dockerfile:1.7
 # ---------- Build stage ----------
-FROM node:24-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 WORKDIR /app/frontend
 
 ARG NEXT_PUBLIC_OTEL_ENABLED=true
@@ -16,8 +17,8 @@ ENV NEXT_PUBLIC_OTEL_BLOCK_SENSITIVE_ENDPOINTS=${NEXT_PUBLIC_OTEL_BLOCK_SENSITIV
 ENV NEXT_DISABLE_REACT_COMPILER=true
 
 # Copy dependency manifests first to leverage Docker layer caching
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+COPY frontend/package.json frontend/bun.lock ./
+RUN --mount=type=cache,target=/root/.bun/install/cache bun ci
 
 # Copy configuration and source files for the build
 COPY frontend/tsconfig.json .
@@ -27,7 +28,7 @@ COPY frontend/postcss.config.js .
 COPY frontend/src ./src
 COPY frontend/public ./public
 COPY docs /app/docs
-RUN npm run build
+RUN bun run build
 
 # ---------- Runtime stage ----------
 FROM nginx:1.25-alpine
