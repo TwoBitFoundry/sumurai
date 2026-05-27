@@ -3,17 +3,18 @@
   "version": "5.19.0",
   "private": true,
   "engines": {
-    "node": ">=24.10.0"
+    "node": ">=24.10.0",
+    "bun": ">=1.3.14"
   },
   "overrides": {
     "postcss": "^8.5.10"
   },
   "scripts": {
-    "dev": "next dev -p 3001 --turbo",
-    "dev:webpack": "next dev -p 3001 --webpack",
-    "build": "next build --webpack",
+    "dev": "bun --bun next dev -p 3001 --turbo",
+    "dev:webpack": "bun --bun next dev -p 3001 --webpack",
+    "build": "bun --bun next build --webpack",
     "typecheck": "tsc --noEmit --project tsconfig.ci.json",
-    "start": "next start",
+    "start": "bun --bun next start",
     "lint": "biome check --diagnostic-level=error .",
     "lint:verbose": "biome check .",
     "format": "biome format --write .",
@@ -22,16 +23,16 @@
     "test:ci": "jest --ci --silent --maxWorkers=50%",
     "test:serial": "jest --runInBand --silent",
     "test:verbose": "jest --runInBand",
-    "design:generate": "node ./scripts/generate-design-tokens.mjs",
-    "design:drift": "node ./scripts/check-design-tokens-drift.mjs",
-    "design:lint": "node ./scripts/run-designmd.mjs lint ../DESIGN.md",
-    "design:export:dtcg": "node ./scripts/run-designmd.mjs export --format dtcg ../DESIGN.md",
-    "design:export:tailwind": "node ./scripts/run-designmd.mjs export --format css-tailwind ../DESIGN.md",
-    "design:spec": "node ./scripts/run-designmd.mjs spec --rules",
-    "design:styling": "node ./scripts/check-raw-styling.mjs",
-    "ui:imports": "node ./scripts/check-ui-imports.mjs",
-    "design:guard": "node ./scripts/run-designmd.mjs --quiet lint ../DESIGN.md && node ./scripts/check-design-tokens-drift.mjs && node ./scripts/check-raw-styling.mjs && node ./scripts/check-text-color-styling.mjs && node ./scripts/check-ui-imports.mjs && node ./scripts/run-designmd.mjs --quiet export --format dtcg ../DESIGN.md && node ./scripts/run-designmd.mjs --quiet export --format css-tailwind ../DESIGN.md",
-    "precommit": "npm run lint && npm run typecheck && npm run design:guard && npm run test",
+    "design:generate": "bun ./scripts/generate-design-tokens.mjs",
+    "design:drift": "bun ./scripts/check-design-tokens-drift.mjs",
+    "design:lint": "bun ./scripts/run-designmd.mjs lint ../DESIGN.md",
+    "design:export:dtcg": "bun ./scripts/run-designmd.mjs export --format dtcg ../DESIGN.md",
+    "design:export:tailwind": "bun ./scripts/run-designmd.mjs export --format css-tailwind ../DESIGN.md",
+    "design:spec": "bun ./scripts/run-designmd.mjs spec --rules",
+    "design:styling": "bun ./scripts/check-raw-styling.mjs",
+    "ui:imports": "bun ./scripts/check-ui-imports.mjs",
+    "design:guard": "bun ./scripts/run-designmd.mjs --quiet lint ../DESIGN.md && bun ./scripts/check-design-tokens-drift.mjs && bun ./scripts/check-raw-styling.mjs && bun ./scripts/check-text-color-styling.mjs && bun ./scripts/check-ui-imports.mjs && bun ./scripts/run-designmd.mjs --quiet export --format dtcg ../DESIGN.md && bun ./scripts/run-designmd.mjs --quiet export --format css-tailwind ../DESIGN.md",
+    "precommit": "bun run lint && bun run typecheck && bun run design:guard && bun run test",
     "storybook": "storybook dev -p 6006",
     "storybook:doctor": "storybook doctor",
     "storybook:build": "storybook build -o storybook-static",
@@ -40,7 +41,7 @@
     "playwright:install": "playwright install chromium",
     "playwright:install-ci": "playwright install chromium --with-deps",
     "test:storybook-runtime:run": "playwright test --config playwright.storybook-runtime.config.ts",
-    "test:storybook-runtime": "npm run storybook:build && npm run test:storybook-runtime:run"
+    "test:storybook-runtime": "bun run storybook:build && bun run test:storybook-runtime:run"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
