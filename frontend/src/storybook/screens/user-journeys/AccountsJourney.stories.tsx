@@ -45,8 +45,10 @@ const storyAutoCategorizeHandlers = [
 ];
 
 const storySimpleFinProviderInfo = {
-  available_providers: ['simplefin'],
-  user_provider: 'simplefin',
+  available_providers: ['plaid', 'teller', 'simplefin'] as const,
+  user_provider: 'simplefin' as const,
+  teller_application_id: 'story-teller-app',
+  teller_environment: 'sandbox',
 };
 
 const storySimpleFinAccounts = [
@@ -114,8 +116,13 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+const storyPlaidProviderInfo = {
+  ...storyProviderInfo,
+  user_provider: 'plaid' as const,
+};
+
 const handlers = [
-  route('GET', '/providers/info', () => jsonResponse(storyProviderInfo)),
+  route('GET', '/providers/info', () => jsonResponse(storyPlaidProviderInfo)),
   route('POST', '/providers/select', () => jsonResponse(storyProviderSelect)),
   route('GET', '/providers/status', () => jsonResponse(storyPlaidStatus)),
   route('GET', '/providers/accounts', () => jsonResponse(storyProviderAccounts)),
@@ -263,11 +270,14 @@ export const SimpleFinEmptyState: Story = {
 
     await waitFor(
       () => {
-        expect(canvas.getByPlaceholderText('Paste your SimpleFIN setup token')).toBeVisible();
+        expect(canvas.getByTestId('provider-selection-panel')).toBeVisible();
       },
       { timeout: storyInteractionTimeoutMs }
     );
-    await expect(canvas.queryByRole('button', { name: /^simplefin$/i })).not.toBeInTheDocument();
+
+    await expect(canvas.getByAltText('SimpleFIN logo')).toBeVisible();
+    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
+    await expect(connectButtons[1]).toBeEnabled();
   },
 };
 
@@ -288,10 +298,8 @@ export const SimpleFinConnected: Story = {
       },
       { timeout: storyInteractionTimeoutMs }
     );
-    await expect(
-      canvas.queryByPlaceholderText('Paste your SimpleFIN setup token')
-    ).not.toBeInTheDocument();
-    await expect(canvas.queryByRole('button', { name: /^simplefin$/i })).not.toBeInTheDocument();
+    await expect(canvas.queryByPlaceholderText('Paste your token')).not.toBeInTheDocument();
+    await expect(canvas.getByRole('button', { name: /simplefin/i })).toBeVisible();
   },
 };
 
@@ -308,11 +316,13 @@ export const TellerEmptyState: Story = {
 
     await waitFor(
       () => {
-        expect(canvas.getAllByRole('button', { name: /^teller$/i })).toHaveLength(2);
+        expect(canvas.getByTestId('provider-selection-panel')).toBeVisible();
       },
       { timeout: storyInteractionTimeoutMs }
     );
-    await expect(canvas.getByText(/no teller accounts connected yet/i)).toBeVisible();
+
+    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
+    await expect(connectButtons[0]).toBeVisible();
   },
 };
 

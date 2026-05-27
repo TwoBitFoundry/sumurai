@@ -35,7 +35,8 @@ export const AllEnabled: Story = {
   args: fullCatalogueArgs,
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: /select plaid/i }));
+    const connectButtons = canvas.getAllByRole('button', { name: /^connect$/i });
+    await userEvent.click(connectButtons[2]!);
     await expect(args.onSelectProvider).toHaveBeenCalledWith('plaid');
   },
 };
