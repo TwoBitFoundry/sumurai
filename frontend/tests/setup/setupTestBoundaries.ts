@@ -2,11 +2,11 @@ import { ApiClient } from '@/services/ApiClient';
 import { AuthService } from '@/services/authService';
 import type { IHttpClient } from '@/services/boundaries/IHttpClient';
 import type { IStorageAdapter } from '@/services/boundaries/IStorageAdapter';
-import { createMockHttpClient } from '../mocks/mockHttpClient';
+import { createMockHttpClient, type MockHttpClient } from '../mocks/mockHttpClient';
 import { createMockStorage } from '../mocks/mockStorage';
 
 export interface TestBoundaries {
-  http: jest.Mocked<IHttpClient>;
+  http: MockHttpClient;
   storage: IStorageAdapter;
 }
 

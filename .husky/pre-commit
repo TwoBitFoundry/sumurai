@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
 set -e
 
-npm --prefix frontend run precommit
-npm run backend:ci
+bun --cwd=frontend run precommit
+bun run backend:ci

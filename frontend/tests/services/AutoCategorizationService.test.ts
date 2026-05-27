@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { jest } from 'bun:test';
 import { ApiClient, ConflictError } from '@/services/ApiClient';
 import { AutoCategorizationService } from '@/services/AutoCategorizationService';
 import type { AutoCategorizationJobState } from '@/types/api';

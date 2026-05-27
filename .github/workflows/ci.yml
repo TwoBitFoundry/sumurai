@@ -93,52 +93,49 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 24.10.0
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          bun-version: 1.3.14
 
       - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+        run: bun ci
 
       - name: Biome check (format + lint)
-        run: npm run lint
+        run: bun run lint
 
       - name: Type check
-        run: npm run typecheck
+        run: bun run typecheck
 
       - name: Design guard
-        run: npm run design:guard
+        run: bun run design:guard
 
       - name: Unit tests
-        run: npm run test:ci
+        run: bun run test:ci
 
       - name: Production build
-        run: npm run build
+        run: bun run build
+
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(bun -e 'console.log(require("@playwright/test/package.json").version)')" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright Chromium
         uses: actions/cache@v4
         with:
           path: frontend/.playwright-browsers
-          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
           restore-keys: |
-            playwright-chromium-${{ runner.os }}-
+            playwright-${{ runner.os }}-
 
       - name: Install Playwright Chromium
-        run: npx playwright install chromium --with-deps
+        run: bunx playwright install chromium --with-deps
 
       - name: Storybook Vitest
-        run: npm run test:storybook
+        run: bun run test:storybook
 
       - name: Storybook static build
-        run: npm run storybook:build
+        run: bun run storybook:build
 
       - name: Storybook iframe smoke
-        run: npm run test:storybook-runtime:run
+        run: bun run test:storybook-runtime:run

@@ -1,9 +1,21 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import '../mocks/framerMotionStub';
+import { render, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type React from 'react';
 import { BankCard } from '@/components/BankCard';
 import { control } from '@/ui/recipes';
 import { ThemeTestProvider } from '../utils/ThemeTestProvider';
+
+jest.mock('@/utils/sessionPreferences', () => {
+  const actual = jest.requireActual(
+    '@/utils/sessionPreferences'
+  ) as typeof import('@/utils/sessionPreferences');
+  return {
+    ...actual,
+    getSessionBankExpanded: jest.fn(() => false),
+    setSessionBankExpanded: jest.fn(),
+  };
+});
 
 jest.mock('@/features/import/components/ImportModal', () => ({
   ImportModal: ({
@@ -34,6 +46,10 @@ jest.mock('@/features/import/components/ImportModal', () => ({
 }));
 
 describe('BankCard', () => {
+  beforeEach(() => {
+    window.sessionStorage.clear();
+  });
+
   const renderWithTheme = (ui: React.ReactElement) =>
     render(<ThemeTestProvider>{ui}</ThemeTestProvider>);
 
@@ -177,7 +193,7 @@ describe('BankCard', () => {
     const onSync = jest.fn().mockResolvedValue(undefined);
     const onDisconnect = jest.fn().mockResolvedValue(undefined);
 
-    renderWithTheme(
+    const { container } = renderWithTheme(
       <BankCard
         bank={{
           id: 'bank-1',
@@ -199,34 +215,32 @@ describe('BankCard', () => {
         isOnline
       />
     );
+    const local = within(container);
 
-    expect(screen.getByRole('button', { name: 'Show accounts' })).toBeVisible();
-    expect(screen.queryByText('Checking')).not.toBeInTheDocument();
+    expect(local.getByRole('button', { name: 'Show accounts' })).toBeVisible();
+    expect(local.queryByText('Checking')).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Show accounts' }));
+    await user.click(local.getByRole('button', { name: 'Show accounts' }));
     await waitFor(() => {
-      expect(screen.getByText('Checking')).toBeVisible();
-      expect(screen.getByText('••1234')).toBeVisible();
+      expect(local.getByText('Checking')).toBeVisible();
+      expect(local.getByText('••1234')).toBeVisible();
     });
 
-    await user.click(screen.getByRole('button', { name: 'Sync now' }));
+    await user.click(local.getByRole('button', { name: 'Sync now' }));
     expect(onSync).toHaveBeenCalledWith('bank-1');
 
-    await user.click(screen.getByRole('button', { name: 'Hide accounts' }));
-    expect(screen.getByRole('button', { name: 'Show accounts' })).toBeVisible();
+    await user.click(local.getByRole('button', { name: 'Hide accounts' }));
+    expect(local.getByRole('button', { name: 'Show accounts' })).toBeVisible();
+    await waitForElementToBeRemoved(() => local.queryByText('Checking'));
+
+    await user.click(local.getByRole('button', { name: 'Show accounts' }));
     await waitFor(() => {
-      expect(screen.queryByText('Checking')).not.toBeInTheDocument();
+      expect(local.getByText('Checking')).toBeVisible();
     });
 
-    await user.click(screen.getByRole('button', { name: 'Show accounts' }));
-    await waitFor(() => {
-      expect(screen.getByText('Checking')).toBeVisible();
-    });
-
-    await user.click(screen.getByRole('button', { name: 'Disconnect' }));
-    expect(screen.getByRole('dialog', { name: /Disconnect Chase/ })).toBeVisible();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+    await user.click(local.getByRole('button', { name: 'Disconnect' }));
+    const dialog = await screen.findByRole('dialog', { name: /Disconnect Chase/ });
+    await user.click(within(dialog).getByRole('button', { name: 'Disconnect' }));
     expect(onDisconnect).toHaveBeenCalledWith('bank-1');
   });
 

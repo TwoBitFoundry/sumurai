@@ -113,7 +113,7 @@ describe('TellerConnectSdk', () => {
     await waitFor(() => expect(appendChildSpy).toHaveBeenCalled());
 
     const script = appendChildSpy.mock.calls[0][0] as HTMLScriptElement;
-    expect(script.crossOrigin).toBeNull();
+    expect(script.hasAttribute('crossorigin')).toBe(false);
     expect(script.async).toBe(false);
 
     Object.assign(window, {

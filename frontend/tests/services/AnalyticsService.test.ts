@@ -6,7 +6,15 @@ import type {
   AnalyticsTopMerchantsResponse,
 } from '@/types/api';
 
-jest.mock('@/services/ApiClient');
+jest.mock('@/services/ApiClient', () => ({
+  ApiClient: {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
+    configure: jest.fn(),
+  },
+}));
 
 describe('AnalyticsService (date-range endpoints)', () => {
   beforeEach(() => {

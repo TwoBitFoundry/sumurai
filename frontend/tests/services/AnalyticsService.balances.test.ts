@@ -2,7 +2,16 @@ import { AnalyticsService, computeRatio, formatRatio } from '@/services/Analytic
 import { ApiClient, ApiError } from '@/services/ApiClient';
 import type { BalancesOverview } from '@/types/analytics';
 
-jest.mock('@/services/ApiClient');
+jest.mock('@/services/ApiClient', () => ({
+  ApiClient: {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
+    configure: jest.fn(),
+  },
+  ApiError,
+}));
 
 describe('computeRatio (balances helper)', () => {
   it('returns positives / abs(negatives), rounded to 2dp', () => {

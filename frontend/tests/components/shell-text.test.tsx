@@ -1,3 +1,4 @@
+import '../mocks/rechartsStub';
 import { render, screen } from '@testing-library/react';
 import { Footer } from '@/components/Footer';
 import { NetWorthOverTimeWidget } from '@/components/NetWorthOverTimeWidget';

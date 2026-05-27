@@ -1,6 +1,9 @@
+import { execFile } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { promisify } from 'node:util';
 
+const exec = promisify(execFile);
 const root = process.cwd();
 const version = process.argv[2];
 
@@ -34,8 +37,8 @@ async function updateCargoLock(filePath, packageName) {
 }
 
 await updateJson(path.join(root, 'package.json'));
-await updateJson(path.join(root, 'package-lock.json'));
 await updateJson(path.join(root, 'frontend', 'package.json'));
-await updateJson(path.join(root, 'frontend', 'package-lock.json'));
 await updateToml(path.join(root, 'backend', 'Cargo.toml'));
 await updateCargoLock(path.join(root, 'backend', 'Cargo.lock'), 'sumurai-backend');
+await exec('bun', ['install', '--lockfile-only'], { cwd: root });
+await exec('bun', ['install', '--lockfile-only'], { cwd: path.join(root, 'frontend') });

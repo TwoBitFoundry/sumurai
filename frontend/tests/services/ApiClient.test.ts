@@ -1,3 +1,4 @@
+import { expect } from 'bun:test';
 import {
   ApiClient,
   ApiError,
@@ -12,6 +13,17 @@ import {
 } from '@/services/ApiClient';
 import { AuthService } from '@/services/authService';
 import { setupTestBoundaries } from '../setup/setupTestBoundaries';
+
+expect.extend({
+  toHaveBeenCalledOnce(received: jest.Mock | jest.Spied<any>) {
+    const calls = (received as jest.Mock).mock?.calls?.length ?? 0;
+    const pass = calls === 1;
+    return {
+      pass,
+      message: () => `expected mock to have been called once, but was called ${calls} times`,
+    };
+  },
+});
 
 describe('ApiClient with Injected IHttpClient', () => {
   let mockHttp: any;

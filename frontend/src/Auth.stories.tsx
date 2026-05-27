@@ -55,8 +55,8 @@ export const LoginAuthenticationError: Story = {
   render: (args) => <LoginScreen onNavigateToRegister={args.onNavigateToRegister} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const originalFetch = globalThis.fetch.bind(globalThis);
-    globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const originalFetch = globalThis.fetch;
+    const mockedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
       if (url.includes('/auth/login')) {
         return new Response(JSON.stringify({ message: 'Unauthorized' }), {
@@ -65,7 +65,8 @@ export const LoginAuthenticationError: Story = {
         });
       }
       return originalFetch(input, init);
-    };
+    }) as typeof globalThis.fetch;
+    globalThis.fetch = mockedFetch;
     try {
       await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
       await userEvent.type(canvas.getByLabelText(/^password$/i), 'wrong-pass');
@@ -88,8 +89,8 @@ export const LoginSuccess: Story = {
   ),
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    const originalFetch = globalThis.fetch.bind(globalThis);
-    globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const originalFetch = globalThis.fetch;
+    const mockedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
       if (url.includes('/auth/login')) {
         return new Response(
@@ -105,7 +106,8 @@ export const LoginSuccess: Story = {
         );
       }
       return originalFetch(input, init);
-    };
+    }) as typeof globalThis.fetch;
+    globalThis.fetch = mockedFetch;
     try {
       await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
       await userEvent.type(canvas.getByLabelText(/^password$/i), 'Test1234!');
@@ -169,8 +171,8 @@ export const RegisterSuccess: Story = {
   ),
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    const originalFetch = globalThis.fetch.bind(globalThis);
-    globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const originalFetch = globalThis.fetch;
+    const mockedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
       if (url.includes('/auth/register')) {
         return new Response(
@@ -186,7 +188,8 @@ export const RegisterSuccess: Story = {
         );
       }
       return originalFetch(input, init);
-    };
+    }) as typeof globalThis.fetch;
+    globalThis.fetch = mockedFetch;
     try {
       await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
       await userEvent.type(canvas.getByLabelText(/^password$/i), 'Test1234!');
