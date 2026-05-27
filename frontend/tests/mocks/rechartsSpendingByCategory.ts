@@ -21,7 +21,10 @@ mock.module('recharts', () => {
           'data-is-animation-active': props.isAnimationActive,
           'data-animation-begin': props.animationBegin,
           'data-fill': typeof props.fill === 'string' ? props.fill : undefined,
-          'data-style': typeof props.style === 'object' && props.style != null ? JSON.stringify(props.style) : undefined,
+          'data-style':
+            typeof props.style === 'object' && props.style != null
+              ? JSON.stringify(props.style)
+              : undefined,
         },
         children
       );
