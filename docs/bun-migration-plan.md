@@ -302,12 +302,14 @@ This repo currently uses npm 24 + Node 24.10 as the package manager, script runn
 - `.github/workflows/publish-images.yml` — no edits. It's pure Docker and references no npm.
 
 **Acceptance criteria:**
-- [ ] `git grep -n 'actions/setup-node\|npm ci\|npm run\|npx ' .github/workflows/` returns no matches.
-- [ ] `.github/workflows/ci.yml` frontend job uses `oven-sh/setup-bun@v2` with `bun-version: 1.3.14`.
-- [ ] Playwright cache key in `ci.yml` references `steps.pw.outputs.version`, not `hashFiles(...)`.
-- [ ] `.github/workflows/semantic-release.yml` runs `bun ci` and `bun run release`.
+- [x] `git grep -n 'actions/setup-node\|npm ci\|npm run\|npx ' .github/workflows/` returns no matches.
+- [x] `.github/workflows/ci.yml` frontend job uses `oven-sh/setup-bun@v2` with `bun-version: 1.3.14`.
+- [x] Playwright cache key in `ci.yml` references `steps.pw.outputs.version`, not `hashFiles(...)`.
+- [x] `.github/workflows/semantic-release.yml` runs `bun ci` and `bun run release`.
 - [ ] Draft PR opened from `feat/bun-migration` — `frontend` job in `ci.yml` goes green on first run.
 - [ ] Second CI run on the same PR shows Bun install cache hit (visible in setup-bun step logs) and Playwright cache hit (visible in `actions/cache` step).
+
+**Phase 5 TDD log:** Added `frontend/tests/scripts/ci-workflows.test.ts` (workflow contract: no npm/setup-node, setup-bun 1.3.14, Playwright version cache key, semantic-release bun commands). Updated `.github/workflows/ci.yml` and `.github/workflows/semantic-release.yml`. Local: `git grep` clean; boundary tests pass.
 
 ---
 
