@@ -19,8 +19,12 @@ import {
   type ProviderAccount,
 } from '@/context/AccountFilterContext';
 import { ProviderCatalog } from '@/services/ProviderCatalog';
+import {
+  ACCOUNT_FILTER_CHANNEL,
+  type AccountFilterMessage,
+  canUseBroadcastChannel,
+} from '@/utils/accountFilterChannel';
 import { ACCOUNTS_CHANGED_EVENT } from '@/utils/events';
-import { getSessionAccountFilterIds, setSessionAccountFilterIds } from '@/utils/sessionPreferences';
 
 const EMPTY_PROVIDER_ACCOUNTS: ProviderAccount[] = [];
 
@@ -40,7 +44,10 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
   const queryClient = useQueryClient();
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const previousAllAccountIdsRef = useRef<string[]>([]);
-  const restoredSelectionRef = useRef(false);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const shouldBroadcastRef = useRef(false);
+  const hasRequestedInitialSyncRef = useRef(false);
+  const hasAppliedInitialSyncRef = useRef(false);
   const accountsQuery = useQuery({
     queryKey: ['accounts'],
     queryFn: async () => mapProviderAccounts(await ProviderCatalog.getAccounts()),
@@ -71,22 +78,53 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
     allAccountIds.length > 0 && selectedAccountIds.length === allAccountIds.length;
 
   useEffect(() => {
+    if (!canUseBroadcastChannel()) return;
+    const ch = new BroadcastChannel(ACCOUNT_FILTER_CHANNEL);
+    channelRef.current = ch;
+    return () => {
+      ch.close();
+      channelRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const channel = channelRef.current;
+    if (!channel) return;
+
+    const handleMessage = (event: MessageEvent<AccountFilterMessage>) => {
+      const msg = event.data;
+      if (msg.type === 'filter-changed') {
+        if (allAccountIds.length === 0) return;
+        const valid = msg.selectedIds.filter((id) => allAccountIds.includes(id));
+        setSelectedAccountIds(valid);
+      } else if (msg.type === 'filter-request') {
+        channel.postMessage({ type: 'filter-response', selectedIds: selectedAccountIds });
+      } else if (msg.type === 'filter-response' && !hasAppliedInitialSyncRef.current) {
+        hasAppliedInitialSyncRef.current = true;
+        if (allAccountIds.length === 0) return;
+        const valid = msg.selectedIds.filter((id) => allAccountIds.includes(id));
+        if (valid.length > 0) {
+          setSelectedAccountIds(valid);
+        }
+      }
+    };
+
+    channel.addEventListener('message', handleMessage);
+    return () => channel.removeEventListener('message', handleMessage);
+  }, [allAccountIds, selectedAccountIds]);
+
+  useEffect(() => {
+    if (!shouldBroadcastRef.current) return;
+    shouldBroadcastRef.current = false;
+    channelRef.current?.postMessage({ type: 'filter-changed', selectedIds: selectedAccountIds });
+  }, [selectedAccountIds]);
+
+  useEffect(() => {
     const previousAllAccountIds = previousAllAccountIdsRef.current;
 
     setSelectedAccountIds((prev) => {
       if (allAccountIds.length === 0) {
         return prev.length === 0 ? prev : [];
-      }
-
-      if (!restoredSelectionRef.current) {
-        restoredSelectionRef.current = true;
-        const stored = getSessionAccountFilterIds();
-        if (stored && stored.length > 0) {
-          const valid = stored.filter((id) => allAccountIds.includes(id));
-          if (valid.length > 0) {
-            return valid;
-          }
-        }
       }
 
       if (prev.length === 0) {
@@ -107,14 +145,12 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
     });
 
     previousAllAccountIdsRef.current = allAccountIds;
-  }, [allAccountIds]);
 
-  useEffect(() => {
-    if (allAccountIds.length === 0) {
-      return;
+    if (allAccountIds.length > 0 && !hasRequestedInitialSyncRef.current) {
+      hasRequestedInitialSyncRef.current = true;
+      channelRef.current?.postMessage({ type: 'filter-request' });
     }
-    setSessionAccountFilterIds(selectedAccountIds);
-  }, [allAccountIds.length, selectedAccountIds]);
+  }, [allAccountIds]);
 
   useEffect(() => {
     const handleAccountsChanged = () => {
@@ -130,6 +166,7 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
       const bankAccounts = accountsByBank[bankName] || [];
       const bankAccountIds = bankAccounts.map((account) => account.id);
 
+      shouldBroadcastRef.current = true;
       setSelectedAccountIds((prev) => {
         const allBankAccountsSelected = bankAccountIds.every((id) => prev.includes(id));
 
@@ -150,6 +187,7 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
   );
 
   const toggleAccount = useCallback((accountId: string) => {
+    shouldBroadcastRef.current = true;
     setSelectedAccountIds((prev) => {
       if (prev.includes(accountId)) {
         return prev.filter((id) => id !== accountId);
@@ -177,6 +215,11 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
     [queryClient]
   );
 
+  const setSelectedAccountIdsPublic = useCallback((accountIds: string[]) => {
+    shouldBroadcastRef.current = true;
+    setSelectedAccountIds(accountIds);
+  }, []);
+
   const value = useMemo(
     (): AccountFilterContextType => ({
       selectedAccountIds,
@@ -184,7 +227,7 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
       isAllAccountsSelected,
       accountsByBank,
       loading: accountsQuery.isPending,
-      setSelectedAccountIds,
+      setSelectedAccountIds: setSelectedAccountIdsPublic,
       toggleBank,
       toggleAccount,
       removeAccountsByIds,
@@ -195,6 +238,7 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
       isAllAccountsSelected,
       accountsByBank,
       accountsQuery.isPending,
+      setSelectedAccountIdsPublic,
       toggleBank,
       toggleAccount,
       removeAccountsByIds,

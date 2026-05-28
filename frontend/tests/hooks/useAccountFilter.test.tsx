@@ -5,12 +5,53 @@ import { createProviderConnection, createProviderStatus } from '@tests/utils/fix
 import { useAccountFilter } from '@/hooks/useAccountFilter';
 import { ACCOUNTS_CHANGED_EVENT } from '@/utils/events';
 
+type BroadcastChannelListener = (event: MessageEvent) => void;
+
+interface MockBroadcastChannel {
+  postMessage: jest.Mock;
+  addEventListener: jest.Mock;
+  removeEventListener: jest.Mock;
+  close: jest.Mock;
+  _listeners: BroadcastChannelListener[];
+  _simulateMessage: (data: unknown) => void;
+}
+
+let mockChannelInstance: MockBroadcastChannel | null = null;
+
+function makeMockChannel(): MockBroadcastChannel {
+  const listeners: BroadcastChannelListener[] = [];
+  const instance: MockBroadcastChannel = {
+    postMessage: jest.fn(),
+    addEventListener: jest.fn((_type: string, fn: BroadcastChannelListener) => {
+      listeners.push(fn);
+    }),
+    removeEventListener: jest.fn((_type: string, fn: BroadcastChannelListener) => {
+      const idx = listeners.indexOf(fn);
+      if (idx !== -1) listeners.splice(idx, 1);
+    }),
+    close: jest.fn(),
+    _listeners: listeners,
+    _simulateMessage(data: unknown) {
+      listeners.forEach((fn) => {
+        fn({ data } as MessageEvent);
+      });
+    },
+  };
+  return instance;
+}
+
 describe('AccountFilterProvider', () => {
   let fetchMock: ReturnType<typeof installFetchRoutes>;
 
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.clear();
+    mockChannelInstance = makeMockChannel();
+    Object.defineProperty(window, 'BroadcastChannel', {
+      value: jest.fn(() => mockChannelInstance),
+      writable: true,
+      configurable: true,
+    });
 
     const providerStatus = createProviderStatus({
       connections: [
@@ -369,6 +410,101 @@ describe('AccountFilterProvider', () => {
           fetchMock.mock.calls.filter((call) => String(call[0]).includes('/api/providers/accounts'))
             .length
         ).toBe(2);
+      });
+    });
+  });
+
+  describe('BroadcastChannel sync', () => {
+    it('Then it should broadcast filter-changed when a user toggles an account', async () => {
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <AccountFilterTestProvider>{children}</AccountFilterTestProvider>
+      );
+
+      const { result } = renderHook(() => useAccountFilter(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.allAccountIds).toHaveLength(3);
+      });
+
+      const channel = mockChannelInstance!;
+      channel.postMessage.mockClear();
+
+      act(() => {
+        result.current.toggleAccount('acc_1');
+      });
+
+      expect(channel.postMessage).toHaveBeenCalledWith({
+        type: 'filter-changed',
+        selectedIds: expect.arrayContaining(['acc_2', 'acc_3']),
+      });
+      expect(channel.postMessage.mock.calls[0][0].selectedIds).toHaveLength(2);
+    });
+
+    it('Then it should not broadcast on initial default load', async () => {
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <AccountFilterTestProvider>{children}</AccountFilterTestProvider>
+      );
+
+      const { result } = renderHook(() => useAccountFilter(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isAllAccountsSelected).toBe(true);
+      });
+
+      const filterChangedCalls = mockChannelInstance!.postMessage.mock.calls.filter(
+        (call) => call[0]?.type === 'filter-changed'
+      );
+      expect(filterChangedCalls).toHaveLength(0);
+    });
+
+    it('Then it should apply filter-changed from another tab without echoing', async () => {
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <AccountFilterTestProvider>{children}</AccountFilterTestProvider>
+      );
+
+      const { result } = renderHook(() => useAccountFilter(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.allAccountIds).toHaveLength(3);
+      });
+
+      const channel = mockChannelInstance!;
+      channel.postMessage.mockClear();
+
+      act(() => {
+        channel._simulateMessage({ type: 'filter-changed', selectedIds: ['acc_1'] });
+      });
+
+      await waitFor(() => {
+        expect(result.current.selectedAccountIds).toEqual(['acc_1']);
+      });
+
+      const filterChangedCalls = channel.postMessage.mock.calls.filter(
+        (call) => call[0]?.type === 'filter-changed'
+      );
+      expect(filterChangedCalls).toHaveLength(0);
+    });
+
+    it('Then it should send filter-request on first load and apply filter-response', async () => {
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <AccountFilterTestProvider>{children}</AccountFilterTestProvider>
+      );
+
+      const { result } = renderHook(() => useAccountFilter(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.allAccountIds).toHaveLength(3);
+      });
+
+      const channel = mockChannelInstance!;
+      expect(channel.postMessage).toHaveBeenCalledWith({ type: 'filter-request' });
+
+      act(() => {
+        channel._simulateMessage({ type: 'filter-response', selectedIds: ['acc_2', 'acc_3'] });
+      });
+
+      await waitFor(() => {
+        expect(result.current.selectedAccountIds.sort()).toEqual(['acc_2', 'acc_3']);
       });
     });
   });

@@ -27,7 +27,7 @@ describe('bun migration ci workflows', () => {
     }
   });
 
-  it('ci.yml frontend job uses setup-bun 1.3.14 and bun commands', () => {
+  it('ci.yml frontend jobs use setup-bun 1.3.14 and bun commands', () => {
     const contents = readWorkflow(ciWorkflow);
 
     expect(contents).toContain('oven-sh/setup-bun@v2');
@@ -38,10 +38,25 @@ describe('bun migration ci workflows', () => {
     expect(contents).toContain('run: bun run design:guard');
     expect(contents).toContain('run: bun run test:ci');
     expect(contents).toContain('run: bun run build');
-    expect(contents).toContain('run: bunx playwright install chromium --with-deps');
+    expect(contents).toContain('run: bunx playwright install-deps chromium');
+    expect(contents).toContain('run: bunx playwright install chromium');
     expect(contents).toContain('run: bun run test:storybook');
     expect(contents).toContain('run: bun run storybook:build');
     expect(contents).toContain('run: bun run test:storybook-runtime:run');
+  });
+
+  it('ci.yml splits lint/test and build/storybook into parallel jobs', () => {
+    const contents = readWorkflow(ciWorkflow);
+
+    expect(contents).toContain('frontend-check:');
+    expect(contents).toContain('frontend-build:');
+  });
+
+  it('ci.yml caches Next.js build output', () => {
+    const contents = readWorkflow(ciWorkflow);
+
+    expect(contents).toContain('frontend/.next/cache');
+    expect(contents).toContain('nextjs-');
   });
 
   it('ci.yml Playwright cache keys off resolved version', () => {
@@ -52,7 +67,6 @@ describe('bun migration ci workflows', () => {
       'echo "version=$(bun -e \'console.log(require("@playwright/test/package.json").version)\')" >> "$GITHUB_OUTPUT"'
     );
     expect(contents).toContain('key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}');
-    expect(contents).not.toContain('hashFiles(');
   });
 
   it('semantic-release.yml uses bun ci and bun run release', () => {

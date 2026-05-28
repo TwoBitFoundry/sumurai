@@ -1,9 +1,10 @@
-import withSerwistInit from '@serwist/next';
-
 const disableReactCompiler = process.env.NEXT_DISABLE_REACT_COMPILER === 'true';
 
 const nextConfig = {
   reactStrictMode: true,
+  experimental: {
+    turbopackFileSystemCacheForBuild: true,
+  },
   ...(process.env.NODE_ENV === 'production' ? { output: 'export' } : {}),
   ...(process.env.NODE_ENV === 'development' ? { skipTrailingSlashRedirect: true } : {}),
   trailingSlash: true,
@@ -26,11 +27,4 @@ const nextConfig = {
   },
 };
 
-const withSerwist = withSerwistInit({
-  swSrc: 'src/app/sw.ts',
-  swDest: 'public/sw.js',
-  register: false,
-  disable: process.env.NODE_ENV !== 'production',
-});
-
-export default withSerwist(nextConfig);
+export default nextConfig;
