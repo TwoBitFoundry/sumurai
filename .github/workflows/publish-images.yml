@@ -92,15 +92,9 @@ jobs:
           IMAGE: ${{ env.IMAGE_PREFIX }}-backend
         run: |
           short_sha="${GITHUB_SHA::7}"
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            targets=("${IMAGE}:latest" "${IMAGE}:${GITHUB_REF_NAME}" "${IMAGE}:sha-${short_sha}")
-            source_amd64="${IMAGE}:${GITHUB_REF_NAME}-amd64"
-            source_arm64="${IMAGE}:${GITHUB_REF_NAME}-arm64"
-          else
-            targets=("${IMAGE}:latest" "${IMAGE}:${GITHUB_REF_NAME}" "${IMAGE}:sha-${short_sha}")
-            source_amd64="${IMAGE}:${GITHUB_REF_NAME}-amd64"
-            source_arm64="${IMAGE}:${GITHUB_REF_NAME}-arm64"
-          fi
+          targets=("${IMAGE}:latest" "${IMAGE}:${GITHUB_REF_NAME}" "${IMAGE}:sha-${short_sha}")
+          source_amd64="${IMAGE}:${GITHUB_REF_NAME}-amd64"
+          source_arm64="${IMAGE}:${GITHUB_REF_NAME}-arm64"
           args=()
           for target in "${targets[@]}"; do
             args+=(--tag "$target")
@@ -187,15 +181,9 @@ jobs:
           IMAGE: ${{ env.IMAGE_PREFIX }}-frontend
         run: |
           short_sha="${GITHUB_SHA::7}"
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            targets=("${IMAGE}:latest" "${IMAGE}:${GITHUB_REF_NAME}" "${IMAGE}:sha-${short_sha}")
-            source_amd64="${IMAGE}:${GITHUB_REF_NAME}-amd64"
-            source_arm64="${IMAGE}:${GITHUB_REF_NAME}-arm64"
-          else
-            targets=("${IMAGE}:latest" "${IMAGE}:${GITHUB_REF_NAME}" "${IMAGE}:sha-${short_sha}")
-            source_amd64="${IMAGE}:${GITHUB_REF_NAME}-amd64"
-            source_arm64="${IMAGE}:${GITHUB_REF_NAME}-arm64"
-          fi
+          targets=("${IMAGE}:latest" "${IMAGE}:${GITHUB_REF_NAME}" "${IMAGE}:sha-${short_sha}")
+          source_amd64="${IMAGE}:${GITHUB_REF_NAME}-amd64"
+          source_arm64="${IMAGE}:${GITHUB_REF_NAME}-arm64"
           args=()
           for target in "${targets[@]}"; do
             args+=(--tag "$target")

@@ -25,10 +25,12 @@ COPY frontend/tsconfig.json .
 COPY frontend/next.config.mjs .
 COPY frontend/tailwind.config.js .
 COPY frontend/postcss.config.js .
+COPY frontend/serwist.config.js .
+COPY frontend/scripts ./scripts
 COPY frontend/src ./src
 COPY frontend/public ./public
 COPY docs /app/docs
-RUN bun run build
+RUN --mount=type=cache,target=/app/frontend/.next/cache bun run build
 
 # ---------- Runtime stage ----------
 FROM nginx:1.25-alpine
