@@ -1138,6 +1138,7 @@ name = "entity"
 version = "0.1.0"
 dependencies = [
  "sea-orm",
+ "serde",
 ]
 
 [[package]]
@@ -4327,6 +4328,7 @@ dependencies = [
  "chrono",
  "cookie",
  "csv",
+ "entity",
  "futures",
  "governor",
  "hex",
@@ -4346,6 +4348,7 @@ dependencies = [
  "reqwest 0.13.3",
  "rust_decimal",
  "rust_decimal_macros",
+ "sea-orm",
  "serde",
  "serde_json",
  "sha2 0.11.0",

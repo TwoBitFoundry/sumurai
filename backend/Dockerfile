@@ -1,5 +1,5 @@
 FROM rust:1.95-slim-trixie AS chef
-WORKDIR /app/backend
+WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential pkg-config libssl-dev ca-certificates curl postgresql-client && rm -rf /var/lib/apt/lists/*
 RUN cargo install cargo-chef --version 0.1.77 --locked
 
@@ -36,14 +36,16 @@ RUN set -eu; \
     rm -rf /tmp/onnxruntime /tmp/onnxruntime.tgz
 
 FROM chef AS planner
-COPY backend/ ./
+COPY rust-toolchain.toml Cargo.toml Cargo.lock ./
+COPY backend/ ./backend/
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
-COPY --from=planner /app/backend/recipe.json ./recipe.json
+COPY --from=planner /app/recipe.json ./recipe.json
 RUN cargo chef cook --release --locked --recipe-path recipe.json
-COPY backend/ ./
-RUN cargo build --release --locked
+COPY rust-toolchain.toml Cargo.toml Cargo.lock ./
+COPY backend/ ./backend/
+RUN cargo build --release --locked -p sumurai-backend
 
 FROM debian:trixie-slim AS runtime
 WORKDIR /app
@@ -53,7 +55,7 @@ COPY --from=assets /usr/local/lib/libonnxruntime.so* /usr/local/lib/
 RUN ldconfig
 COPY --from=assets /app/backend/assets/models/distilbert-us-transaction-classifier-v2 /app/backend/assets/models/distilbert-us-transaction-classifier-v2
 ENV ORT_DYLIB_PATH=/usr/local/lib/libonnxruntime.so
-COPY --from=builder /app/backend/target/release/sumurai-backend /app/sumurai-backend
+COPY --from=builder /app/target/release/sumurai-backend /app/sumurai-backend
 COPY backend/migrations /app/migrations
 EXPOSE 3000
 CMD ["./sumurai-backend"]

@@ -169,11 +169,11 @@ The implementor should treat the table above as the translation rubric while wor
 - **Relation correctness tests.** For each hand-edited `Relation` impl, add a small integration test that seeds a minimal fixture and traverses the relation via `find_also_related` / `find_with_related`, asserting the result shape and cardinality. These tests cover **generated/hand-edited entity code, not business logic** — a separate category from the boundary-only handler/service tests, justified because the entity adapter layer is new code with no other coverage. One test per non-trivial relationship is enough; the goal is "the relation is wired to the right columns," not exhaustive query coverage.
 
 **Acceptance criteria**
-- [ ] `cargo build -p entity` succeeds.
-- [ ] One module per table exists under `backend/entity/src/`, each exposing `Entity`, `Model`, `ActiveModel`, `Column`, `Relation`.
-- [ ] A smoke test that does `Entity::find().limit(1).all(&db).await` against the `_init` schema compiles and runs for at least one representative entity from each domain (transactions, accounts, budgets, categories, plaid).
-- [ ] Relations between major entities (user → accounts → transactions, transactions → categories) are traversable via `find_also_related` / `find_with_related`.
-- [ ] Each hand-edited `Relation` impl has a corresponding integration test that seeds a fixture, traverses the relation, and asserts result shape and cardinality. Tests pass against the `_init` schema.
+- [x] `cargo build -p entity` succeeds.
+- [x] One module per table exists under `backend/entity/src/`, each exposing `Entity`, `Model`, `ActiveModel`, `Column`, `Relation`.
+- [x] A smoke test that does `Entity::find().limit(1).all(&db).await` against the `_init` schema compiles and runs for at least one representative entity from each domain (transactions, accounts, budgets, categories, plaid).
+- [x] Relations between major entities (user → accounts → transactions, transactions → categories) are traversable via `find_also_related` / `find_with_related`.
+- [x] No Relation impls required hand-editing (generator output was correct); integration test criterion N/A per plan language ("each hand-edited impl").
 
 ---
 

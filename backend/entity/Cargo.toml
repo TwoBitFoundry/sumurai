@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 sea-orm = { version = "1", features = ["runtime-tokio-rustls", "sqlx-postgres", "with-uuid", "with-chrono", "with-rust_decimal"] }
+serde = { version = "1", features = ["derive"] }
