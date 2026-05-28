@@ -179,7 +179,7 @@ export const AppTitleBar = ({
     <>
       <div className={cn(...appTitleBarRecipes.logo.image)}>
         <Image
-          src="/sumurai-logo.jpeg"
+          src="/sumurai-hero.webp"
           alt="Sumurai Logo"
           fill
           sizes="48px"

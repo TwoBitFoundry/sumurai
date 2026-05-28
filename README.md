@@ -2,7 +2,7 @@
 
 Personal finance dashboard. Self-hosted. Connects to your bank via Teller, Plaid, or SimpleFIN, syncs transactions, and shows where your money goes.
 
-<img width="1257" height="931" alt="image" src="https://github.com/user-attachments/assets/50d30e23-224c-4182-9dae-e7d8da8b75c5" />
+![Sumurai](frontend/public/sumurai-hero.webp)
 
 ## Why This Exists
 
@@ -15,32 +15,30 @@ Sumurai exists because there are not a lot of free, simple, and modern budgeting
 - Tracks budgets by category
 - Charts spending, balances, and net worth over time
 
-<img width="1478" height="870" alt="image" src="https://github.com/user-attachments/assets/ed35ee89-0e4b-461c-adf7-5401f3ef6021" />
-<img width="1477" height="872" alt="image" src="https://github.com/user-attachments/assets/704860a2-e206-4a9e-832b-67ae8dfd3338" />
-<img width="1477" height="870" alt="image" src="https://github.com/user-attachments/assets/b3b34a07-09c1-4736-b0d2-694ab3dda215" />
-<img width="1476" height="871" alt="image" src="https://github.com/user-attachments/assets/18721bc8-1191-4edb-8679-01129b65a98e" />
-<img width="1476" height="871" alt="image" src="https://github.com/user-attachments/assets/1e7bf41f-7cd4-4857-9add-f925b2d62ce5" />
+![Dashboard](frontend/public/dashboard-hero.webp)
+![Dashboard extras](frontend/public/dashboard-extras.webp)
+![Transactions](frontend/public/transactions.webp)
+![Budgets](frontend/public/budgets.webp)
+![Accounts](frontend/public/accounts.webp)
 
 ## Which Financial Provider is Right for You?
 
 Import your own data, or connect through an aggregator. For aggregators, check whether your bank is supported:
 
-- [SimpleFIN institutions search](https://beta-bridge.simplefin.org/search-institutions) (TBA)
+- [SimpleFIN institutions search](https://beta-bridge.simplefin.org/search-institutions)
 - [Plaid US/Canada coverage](https://plaid.com/docs/institutions/) · [Plaid Europe coverage](https://plaid.com/docs/institutions/europe/)
 - [Teller institutions search](https://teller.io/#:~:text=Thousands%20of%20supported%20institutions)
 
 ℹ️ Sumurai never stores your bank login when using an aggregator. Pick the path that's right for you. Teller/Plaid require a developer account.
 
 
-|                        | Self                                                | SimpleFIN                                                             | Teller                                                   | Plaid                                                               |
-| ---------------------- | --------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------- |
-| Privacy                | Strongest: no aggregator; you export from your bank | Strong: read-only protocol; user revokes on Bridge; bank creds via MX | Moderate: no sale; stores credentials; affiliate sharing | Broad: no sale; wide collection; affiliate sharing; product-based   |
-| Categorization         | Sumurai ML Enhancement                              | None + Sumurai ML Enhancement                                         | Basic + Sumurai AI Enhancement                           | Rich                                                                |
-| Secrets on your server | None                                                | None                                                                  | App ID + client certs                                    | Client ID + secret                                                  |
-| Region                 | Any bank you can export from                        | US/Canada                                                             | US only                                                  | Global (US, Canada, UK, Europe)                                     |
-| Institutions           | Any                                                 | ~16,000                                                               | ~7,000                                                   | ~12,000 global                                                      |
-| Cost                   | Free                                                | **You** pay SimpleFIN: $1.50/mo or $15/yr                             | Free ≤100 bank connections                               | **You** pay Plaid: Pay as You Go (per Item/mo + per-API by product) |
-| In Sumurai             | ✅                                                   | ⏱️                                                                    | ✅                                                        | ✅                                                                   |
+|          | Self          | Teller              | SimpleFIN            | Plaid                |
+| -------- | ------------- | ------------------- | -------------------- | -------------------- |
+| Focus    | Manual import | Budget Friendly     | Privacy First        | Turn Key             |
+| Region   | Any           | US Only             | US, CA               | US, CA, UK, EU       |
+| Cost     | Free          | Free                | $1.50/mo             | Pay/use              |
+| Coverage | Any           | ~7,000 Institutions | ~16,000 Institutions | ~12,000 Institutions |
+| Privacy  | Strongest     | Moderate            | Strong               | Broad                |
 
 
 ## Privacy Disclosure for 3rd Party Financial Aggregators
@@ -60,20 +58,20 @@ Review the provider trade-offs before connecting real financial accounts.
 Sumurai normalizes transactions into these primary category buckets:
 
 - `ENTERTAINMENT`
-- `FOOD AND DRINK`
-- `GENERAL MERCHANDISE`
-- `GENERAL SERVICES`
-- `GOVERNMENT AND NON PROFIT`
-- `HOME IMPROVEMENT`
+- `FOOD & DRINK`
+- `MERCHANDISE`
+- `SERVICES`
+- `GOVT & NON PROFIT`
+- `HOME`
 - `INCOME`
 - `LOAN PAYMENTS`
 - `MEDICAL`
 - `OTHER`
 - `PERSONAL CARE`
-- `RENT AND UTILITIES`
+- `BILLS`
 - `TRANSFER IN`
 - `TRANSFER OUT`
-- `TRANSPORTATION`
+- `TRANSPORT`
 - `TRAVEL`
 
 ## Quick Start
@@ -105,7 +103,7 @@ openssl rand -hex 32
 docker compose -f docker-compose.dev.yml up -d --build
 ```
 
-4. Sign in, choose SimpleFIN in the provider picker, and paste your setup token when prompted.
+1. Sign in, choose SimpleFIN in the provider picker, and paste your setup token when prompted.
 
 ### 3. Teller (Recommended)
 
@@ -141,7 +139,7 @@ Sumurai is intended to run on any host where Docker Compose is available, includ
 
 The app is a static Next.js export served by Nginx on port 8080, with `/api/*` and `/health` proxied to the Rust backend.
 
-- Frontend: Next.js 16, React 19, TypeScript, Tailwind, Recharts, Biome, Jest, and browser OpenTelemetry (enabled per compose via `NEXT_PUBLIC_OTEL_*`)
+- Frontend: Next.js 16, React 19, TypeScript 6, Tailwind 4, Recharts 3, Biome 2, Bun, and browser OpenTelemetry (enabled per compose via `NEXT_PUBLIC_OTEL_*`)
 - Backend: Rust 1.95, Axum, SQLx, Redis, PostgreSQL, JWT auth, provider integrations, and OpenTelemetry tracing (export mode is set per environment; production compose sends OTLP to Seq)
 - Deployment: standalone Docker Compose files—default OSS (`docker-compose.yml`), local dev builds (`docker-compose.dev.yml`), or production with Seq (`docker-compose.prod.yml`); each includes nginx, frontend, backend, Postgres, and Redis
 - Providers: Teller, Plaid, and SimpleFIN through a shared provider registry
