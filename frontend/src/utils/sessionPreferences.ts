@@ -3,7 +3,6 @@ import type { DateRangeKey } from '@/utils/dateRanges';
 
 const SESSION_KEYS = {
   theme: 'sumurai.ui.theme',
-  accountFilterIds: 'sumurai.ui.accountFilterIds',
   dashboardDateRange: 'sumurai.ui.dashboardDateRange',
   transactionsPage: 'sumurai.ui.transactionsPage',
   transactionsCategory: 'sumurai.ui.transactionsCategory',
@@ -79,20 +78,6 @@ export function getSessionThemePreference(): ThemePreference | null {
 
 export function setSessionThemePreference(preference: ThemePreference): void {
   writeItem(SESSION_KEYS.theme, preference);
-}
-
-export function getSessionAccountFilterIds(): string[] | null {
-  return readJson(SESSION_KEYS.accountFilterIds, (value) => {
-    if (!Array.isArray(value)) {
-      return null;
-    }
-    const ids = value.filter((id): id is string => typeof id === 'string' && id.length > 0);
-    return ids;
-  });
-}
-
-export function setSessionAccountFilterIds(accountIds: string[]): void {
-  writeJson(SESSION_KEYS.accountFilterIds, accountIds);
 }
 
 export function getSessionDashboardDateRange(): DateRangeKey | null {

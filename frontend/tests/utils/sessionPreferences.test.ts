@@ -1,12 +1,10 @@
 import {
-  getSessionAccountFilterIds,
   getSessionBankExpanded,
   getSessionDashboardDateRange,
   getSessionThemePreference,
   getSessionTransactionsCategory,
   getSessionTransactionsPage,
   getSessionTransactionsSearch,
-  setSessionAccountFilterIds,
   setSessionBankExpanded,
   setSessionDashboardDateRange,
   setSessionThemePreference,
@@ -40,11 +38,6 @@ describe('sessionPreferences', () => {
   it('stores and restores theme preference in session storage', () => {
     setSessionThemePreference('dark');
     expect(getSessionThemePreference()).toBe('dark');
-  });
-
-  it('stores and restores account filter ids', () => {
-    setSessionAccountFilterIds(['a-1', 'a-2']);
-    expect(getSessionAccountFilterIds()).toEqual(['a-1', 'a-2']);
   });
 
   it('stores and restores dashboard date range', () => {
