@@ -33,15 +33,21 @@ jobs:
           filters: |
             backend:
               - 'backend/**'
-              - 'backend/Dockerfile'
-              - 'backend/Cargo.toml'
-              - 'backend/Cargo.lock'
               - 'rust-toolchain.toml'
-              - '.github/workflows/**'
+              - '.github/workflows/ci.yml'
             frontend:
-              - 'frontend/**'
+              - 'frontend/src/**'
+              - 'frontend/package.json'
+              - 'frontend/bun.lock'
+              - 'frontend/tsconfig**'
+              - 'frontend/next.config**'
+              - 'frontend/tailwind**'
+              - 'frontend/biome**'
+              - 'frontend/vite**'
+              - 'frontend/playwright**'
+              - 'frontend/.storybook/**'
               - 'DESIGN.md'
-              - '.github/workflows/**'
+              - '.github/workflows/ci.yml'
 
   backend:
     name: Backend (Rust)

@@ -78,7 +78,7 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
         )}
       >
         <img
-          src="/sumurai-logo-no-background.png"
+          src="/sumurai-logo-no-background.webp"
           alt="Sumurai"
           className={cn('w-full', 'h-full', 'object-contain', 'object-right-bottom')}
         />
@@ -234,7 +234,7 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
         )}
       >
         <img
-          src="/sumurai-logo-no-background.png"
+          src="/sumurai-logo-no-background.webp"
           alt="Sumurai"
           className={cn('w-full', 'h-full', 'object-contain', 'object-right-bottom')}
         />

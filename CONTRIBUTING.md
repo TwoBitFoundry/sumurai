@@ -6,7 +6,7 @@ Thanks for helping improve Sumurai. This guide covers the current workflow, loca
 
 ## Prerequisites
 
-- Node 24.10+ and npm 10+
+- Node 24.10+ and Bun 1.3.14+
 - Rust stable and Cargo
 - Docker and Docker Compose
 - `sqlx-cli`
@@ -34,9 +34,9 @@ The backend Docker build performs the same fetch automatically, but local `cargo
 
 This project treats **GitHub Actions as the merge gate**. The default Git hook trades some parity for contributor time.
 
-**`npm run precommit` (Husky):** frontend **Biome check**, `typecheck`, **design guard**, and **Jest**, then **`npm run backend:ci`**. It does **not** run `npm ci` in `frontend/`, **`next build`**, Storybook static build, Vitest browser tests, or Playwright iframe smoke. Typecheck already includes `*.stories.tsx` under `src/` with the app.
+**`bun run precommit` (Husky):** frontend **Biome check**, `typecheck`, **design guard**, and **Jest**, then **`bun run backend:ci`**. It does **not** run `bun install` in `frontend/`, **`next build`**, Storybook static build, Vitest browser tests, or Playwright iframe smoke. Typecheck already includes `*.stories.tsx` under `src/` with the app.
 
-For **full parity** with `.github/workflows/ci.yml` frontend steps before you push (for example Storybook/Vite/Playwright paths), run **`npm run backend:ci && npm run frontend:ci`** manually.
+For **full parity** with `.github/workflows/ci.yml` frontend steps before you push (for example Storybook/Vite/Playwright paths), run **`bun run backend:ci && bun run frontend:ci`** manually.
 
 **Draft pull requests:** the **`ci`** workflow **does not** run GitHub-hosted jobs while the PR is marked draft. Mark the PR ready for review to trigger it (aside from what you run locally with `npm run precommit`). **CodeQL** runs on a weekly schedule only, not on pull requests.
 
@@ -45,11 +45,11 @@ On GitHub, backend or frontend jobs can be **skipped per path filters**; `precom
 **If you only changed one side**, you can narrow scope while developing:
 
 ```bash
-npm run backend:ci
+bun run backend:ci
 ```
 
 ```bash
-npm run frontend:ci
+bun run frontend:ci
 ```
 
 For finer slices while iterating, use the commands in **Frontend Development** and **Backend Validation** below.
@@ -80,15 +80,26 @@ Demo credentials: `me@test.com` / `Test1234!`
 
 ## Frontend Development
 
+From the repo root (preferred):
+
 ```bash
-cd frontend
-npm install
-npm run dev
-npm run build
-npm test
+bun run frontend:build
+bun run frontend:test
+bun run frontend:typecheck
+bun run frontend:lint
 ```
 
-- `npm run dev` starts the Next.js dev server on `http://localhost:3001`.
+Or directly in `frontend/`:
+
+```bash
+cd frontend
+bun install
+bun run dev
+bun run build
+bun test
+```
+
+- `bun run dev` starts the Next.js dev server on `http://localhost:3001`.
 - `http://localhost:3001` proxies `/api` and `/health` to the backend for local end-to-end flows.
 - `http://localhost:8080` remains the Nginx-backed integrated stack.
 - Supported local host platforms are macOS, Linux, and Windows through Docker Compose.
@@ -98,9 +109,9 @@ npm test
 Component stories live under `frontend/src` as `*.stories.tsx`. From the repo root:
 
 ```bash
-npm run storybook
-npm run storybook:build
-npm run frontend:storybook-test
+bun run storybook
+bun run storybook:build
+bun run frontend:storybook-test
 ```
 
 The root Storybook commands delegate to `frontend/` (same as `cd frontend && npm run …`). `storybook` serves `http://localhost:6006`. `storybook:build` writes `frontend/storybook-static` (used by CI Storybook iframe smoke tests). `frontend:storybook-test` runs the Storybook Vitest project from the repo root. Storybook MCP needs Storybook running first; see `AGENTS.md`.
@@ -127,7 +138,7 @@ DATABASE_URL=postgresql://postgres:password@localhost:5432/accounting \
 
 ## Repository Layout
 
-- `frontend/` - Next.js 16, React 19, TypeScript, Tailwind, Biome, Jest, Recharts
+- `frontend/` - Next.js 16, React 19, TypeScript 6, Tailwind 4, Biome 2, Recharts 3
 - `backend/` - Rust 1.95, Axum, SQLx, Redis, PostgreSQL, provider integrations, OpenTelemetry
 - `docs/` - architecture, screenshots, compliance, and reference documents
 
