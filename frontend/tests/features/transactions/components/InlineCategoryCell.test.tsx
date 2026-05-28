@@ -42,14 +42,10 @@ describe('InlineCategoryCell', () => {
     const slot = container.firstElementChild as HTMLElement;
     expect(slot.style.width).toBe(expectedWidth);
 
-    const button = screen.getByRole('button', { name: /Edit category: General Merchandise/i });
+    const button = screen.getByRole('button', { name: /Edit category: Merch/i });
     expect(button.className).toContain('!justify-start');
     expect(button.querySelector('span.flex-1')?.className).toContain('text-center');
     expect(button.querySelector('[aria-hidden="true"]')?.className).toContain('shrink-0');
-    if (dense) {
-      expect(button.className).toContain('h-11');
-    } else {
-      expect(button.className).not.toContain('h-11');
-    }
+    expect(button.className).not.toContain('h-11');
   });
 });

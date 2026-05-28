@@ -53,6 +53,9 @@ export const TransactionsTable: React.FC<Props> = ({
   const { isDesktop } = useViewportBreakpoint();
   const tbodyAnimationKey = bodyAnimationKey ?? String(currentPage);
   const visibleItems = items.slice(0, pageSize);
+  const from = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const to = Math.min(total, currentPage * pageSize);
+  const showEmpty = total === 0 && !isLoading;
   const placeholderCount = Math.max(0, pageSize - visibleItems.length);
   const placeholderRows = useMemo(
     () =>
@@ -61,9 +64,6 @@ export const TransactionsTable: React.FC<Props> = ({
       })),
     [currentPage, placeholderCount]
   );
-  const from = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const to = Math.min(total, currentPage * pageSize);
-  const showEmpty = total === 0 && !isLoading;
 
   const paginationFooter = (
     <div className={cn('flex', 'items-center', 'justify-between', tableFooter)}>
@@ -321,6 +321,7 @@ export const TransactionsTable: React.FC<Props> = ({
                       tabIndex={-1}
                       className={cn(
                         transactionsRowRecipes.placeholder,
+                        transactionsRowRecipes.placeholderDesktopHeight,
                         transactionsRowRecipes.even
                       )}
                     >

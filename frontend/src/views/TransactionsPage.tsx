@@ -1,13 +1,20 @@
-import { AlertTriangle, ReceiptText, RefreshCcw, TrendingUp } from 'lucide-react';
+import { AlertTriangle, Loader2, ReceiptText, RefreshCcw, TrendingUp } from 'lucide-react';
 import type React from 'react';
-import { cn, GlassCard } from '@/ui/primitives';
+import { Button, cn, GlassCard } from '@/ui/primitives';
+import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
+import { control } from '@/ui/recipes';
+import { ToastStack } from '../components/toastStack/ToastStack';
 import HeroStatCard from '../components/widgets/HeroStatCard';
+import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToastStack';
+import { AutoCategorizeIcon } from '../features/auto-categorization/components/AutoCategorizeIcon';
+import { useAutoCategorization } from '../features/auto-categorization/hooks/useAutoCategorization';
 import TransactionsTable from '../features/transactions/components/TransactionsTable';
 import TransactionsToolbar from '../features/transactions/components/TransactionsToolbar';
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import type { TransactionFilterControl } from '../features/transactions/hooks/useTransactionFilterState';
 import { useTransactions } from '../features/transactions/hooks/useTransactions';
 import { useTransactionsInsights } from '../features/transactions/hooks/useTransactionsInsights';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { PageLayout } from '../layouts/PageLayout';
 import { formatCategoryName } from '../utils/categories';
 import { fmtUSD } from '../utils/format';
@@ -39,6 +46,11 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
     selectedCategory,
     dateRange,
   });
+  const isOnline = useOnlineStatus();
+  const autoCategorization = useAutoCategorization();
+  const { pinnedToast, transients, dismissTransient, dismissPinned } = useAccountsToastStack(
+    autoCategorization.job
+  );
 
   const loadingMessage = insightsLoading
     ? 'Loading...'
@@ -59,6 +71,28 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
       : topCategories.length === 1
         ? `⚠ ${formatCategoryName(topCategories[0])}`
         : `⚠ ${formatCategoryName(topCategories[0])} & ${formatCategoryName(topCategories[1])}`;
+  const actions = (
+    <div className="inline-flex max-w-full flex-col items-center gap-2">
+      <Button
+        type="button"
+        onClick={() => void autoCategorization.handleAction()}
+        disabled={!isOnline || autoCategorization.isPending}
+        variant="ghost"
+        size="md"
+        className={cn(appTitleBarRecipes.settingsIdle, 'normal-case')}
+        title={
+          !isOnline ? 'Unavailable while offline' : (autoCategorization.progressLabel ?? undefined)
+        }
+      >
+        {autoCategorization.isPending ? (
+          <Loader2 className={cn(control.glyph.md, 'animate-spin')} />
+        ) : (
+          <AutoCategorizeIcon />
+        )}
+        {autoCategorization.isActive ? 'Cancel categorization' : 'Auto-categorize'}
+      </Button>
+    </div>
+  );
 
   return (
     <div data-testid="transactions-page">
@@ -66,6 +100,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
         badge="Transactions"
         title="Review every dollar across accounts"
         subtitle="Search and filter transactions across all connected accounts."
+        actions={actions}
         error={error}
         stats={
           <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-4')}>
@@ -145,6 +180,12 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
             onNext={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
           />
         </GlassCard>
+        <ToastStack
+          transients={transients}
+          pinnedToast={pinnedToast}
+          onDismissTransient={dismissTransient}
+          onDismissPinned={dismissPinned}
+        />
       </PageLayout>
     </div>
   );

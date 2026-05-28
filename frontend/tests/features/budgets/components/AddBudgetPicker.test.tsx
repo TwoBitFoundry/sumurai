@@ -28,7 +28,7 @@ describe('AddBudgetPicker', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: 'Food And Drink' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Food & Drink' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Coffee' })).toBeInTheDocument();
     expect(screen.queryByTestId('budget-category-select')).not.toBeInTheDocument();
   });

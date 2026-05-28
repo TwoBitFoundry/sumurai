@@ -88,6 +88,8 @@ export const cleanupTellerConnectDom = (): void => {
   if (document.body.style.overflow === 'hidden') {
     document.body.style.overflow = '';
   }
+
+  delete document.body.dataset.providerSdkInset;
 };
 
 const findTellerScript = (): HTMLScriptElement | null =>

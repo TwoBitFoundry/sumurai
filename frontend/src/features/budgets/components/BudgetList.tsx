@@ -67,7 +67,7 @@ export function BudgetList({
                 heroStyles.borderDark,
                 heroStyles.hoverBorder,
                 heroStyles.hoverBorderDark,
-                'flex h-full flex-col p-4 pt-5'
+                'flex h-full flex-col p-3.5 pt-4 md:p-3.5 md:pt-4 lg:p-4 lg:pt-5'
               )}
             >
               <div
@@ -89,23 +89,78 @@ export function BudgetList({
               <div className={cn(heroStatCardRecipes.ring)}>
                 <div className={cn(heroStatCardRecipes.ringLine)} style={ringColorStyle} />
               </div>
-              <Pill
-                variant="category"
-                categoryName={displayName}
-                accentIndexByName={accentIndexByName}
+              <div className={cn('relative z-10 flex items-start justify-between gap-3')}>
+                <Pill
+                  variant="category"
+                  categoryName={displayName}
+                  accentIndexByName={accentIndexByName}
+                  className={cn(
+                    'transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10'
+                  )}
+                >
+                  {displayName}
+                </Pill>
+                <div
+                  className={cn('flex items-center justify-end gap-1.5', uiTypographyRecipes.label)}
+                >
+                  {isEditing ? (
+                    <>
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        className={cn(appTitleBarRecipes.settingsIdle)}
+                        onClick={onCancelEdit}
+                        title="Cancel"
+                        aria-label="Cancel edit"
+                      >
+                        <XMarkIcon />
+                      </IconButton>
+                      <IconButton
+                        variant="success"
+                        size="sm"
+                        onClick={() => onSaveEdit(b.id, Number(draft))}
+                        title="Save"
+                        aria-label="Save budget"
+                      >
+                        <CheckIcon />
+                      </IconButton>
+                    </>
+                  ) : (
+                    <>
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        className={cn(appTitleBarRecipes.settingsIdle)}
+                        onClick={() => onStartEdit(b)}
+                        title="Edit budget"
+                        aria-label="Edit budget"
+                      >
+                        <PencilSquareIcon />
+                      </IconButton>
+                      <IconButton
+                        variant="danger"
+                        size="sm"
+                        onClick={() => onDelete(b.id)}
+                        title="Delete budget"
+                        aria-label="Delete budget"
+                      >
+                        <TrashSolidIcon />
+                      </IconButton>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div
                 className={cn(
-                  'relative z-10 transition-all duration-300 backdrop-blur-sm ring-1 ring-white/60 dark:ring-white/10'
+                  'relative z-10 mt-3 flex-1 space-y-3 md:space-y-3.5 lg:mt-2 lg:space-y-4'
                 )}
               >
-                {displayName}
-              </Pill>
-              <div className={cn('relative z-10 mt-2 flex-1 space-y-4')}>
                 {isEditing ? (
                   <div
                     className={cn(
                       'grid',
                       'grid-cols-1',
-                      'gap-4',
+                      'gap-3',
                       'md:grid-cols-[1fr_auto]',
                       'md:items-end'
                     )}
@@ -172,7 +227,7 @@ export function BudgetList({
                     className={cn(
                       'grid',
                       'grid-cols-2',
-                      'gap-4',
+                      'gap-3',
                       uiTypographyRecipes.caption,
                       uiTextRecipes.subtle,
                       'transition-colors',
@@ -180,29 +235,6 @@ export function BudgetList({
                     )}
                   >
                     <div>
-                      <span
-                        className={cn(
-                          uiTypographyRecipes.label,
-                          uiTextRecipes.subtle,
-                          'transition-colors',
-                          'duration-300'
-                        )}
-                      >
-                        Planned
-                      </span>
-                      <div
-                        className={cn(
-                          'mt-1',
-                          uiTypographyRecipes.cardTitle,
-                          uiTextRecipes.primary,
-                          'transition-colors',
-                          'duration-300'
-                        )}
-                      >
-                        {fmtUSD(b.amount)}
-                      </div>
-                    </div>
-                    <div className="text-right">
                       <span
                         className={cn(
                           uiTypographyRecipes.label,
@@ -225,63 +257,32 @@ export function BudgetList({
                         {fmtUSD(b.spent)}
                       </div>
                     </div>
+                    <div className="text-right">
+                      <span
+                        className={cn(
+                          uiTypographyRecipes.label,
+                          uiTextRecipes.subtle,
+                          'transition-colors',
+                          'duration-300'
+                        )}
+                      >
+                        Planned
+                      </span>
+                      <div
+                        className={cn(
+                          'mt-1',
+                          uiTypographyRecipes.cardTitle,
+                          uiTextRecipes.primary,
+                          'transition-colors',
+                          'duration-300'
+                        )}
+                      >
+                        {fmtUSD(b.amount)}
+                      </div>
+                    </div>
                   </div>
                 )}
                 <BudgetProgress amount={b.amount} spent={b.spent} />
-              </div>
-              <div className={cn('relative z-10 mt-4 space-y-2')}>
-                <div className={cn('h-px', 'bg-white/10', 'dark:bg-white/5')} />
-                <div
-                  className={cn(
-                    'flex',
-                    'items-center',
-                    'justify-end',
-                    'gap-1.5',
-                    uiTypographyRecipes.label
-                  )}
-                >
-                  {isEditing ? (
-                    <>
-                      <IconButton
-                        variant="ghost"
-                        className={cn(appTitleBarRecipes.settingsIdle)}
-                        onClick={onCancelEdit}
-                        title="Cancel"
-                        aria-label="Cancel edit"
-                      >
-                        <XMarkIcon />
-                      </IconButton>
-                      <IconButton
-                        variant="success"
-                        onClick={() => onSaveEdit(b.id, Number(draft))}
-                        title="Save"
-                        aria-label="Save budget"
-                      >
-                        <CheckIcon />
-                      </IconButton>
-                    </>
-                  ) : (
-                    <>
-                      <IconButton
-                        variant="ghost"
-                        className={cn(appTitleBarRecipes.settingsIdle)}
-                        onClick={() => onStartEdit(b)}
-                        title="Edit budget"
-                        aria-label="Edit budget"
-                      >
-                        <PencilSquareIcon />
-                      </IconButton>
-                      <IconButton
-                        variant="danger"
-                        onClick={() => onDelete(b.id)}
-                        title="Delete budget"
-                        aria-label="Delete budget"
-                      >
-                        <TrashSolidIcon />
-                      </IconButton>
-                    </>
-                  )}
-                </div>
               </div>
             </div>
           </li>

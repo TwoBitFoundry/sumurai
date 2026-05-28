@@ -154,6 +154,8 @@ export const TABS: Array<{
   { key: 'accounts', label: 'Accounts', icon: Building2 },
 ];
 
+export const APP_TITLE_BAR_ACTIVE_PILL_LAYOUT_ID = 'title-bar-pill-active';
+
 export interface AppTitleBarProps {
   state: 'unauthenticated' | 'onboarding' | 'authenticated';
   scrolled: boolean;
@@ -221,7 +223,7 @@ export const AppTitleBar = ({
           >
             {currentTab === key ? (
               <motion.div
-                layoutId="pill-active"
+                layoutId={APP_TITLE_BAR_ACTIVE_PILL_LAYOUT_ID}
                 data-slot="active-pill"
                 className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
                 transition={{ stiffness: 400, damping: 35 }}

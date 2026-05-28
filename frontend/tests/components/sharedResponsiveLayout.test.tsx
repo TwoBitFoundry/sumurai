@@ -139,10 +139,22 @@ describe('shared responsive layout surfaces', () => {
     expect(container.firstElementChild).toHaveClass(uiRadiusRecipes.standard);
   });
 
-  it('keeps total spent right aligned at every breakpoint', () => {
+  it('keeps total planned right aligned at every breakpoint', () => {
     render(<BudgetSummaryCard totalBudgeted={1000} totalSpent={250} />);
 
-    expect(screen.getByText('Total Spent').parentElement).toHaveClass('text-right');
+    expect(screen.getByText('Total Planned').parentElement).toHaveClass('text-right');
+  });
+
+  it('keeps budget summary totals in a two-column grid on mobile and tablet', () => {
+    const { container } = render(<BudgetSummaryCard totalBudgeted={1000} totalSpent={250} />);
+
+    const totalsRow = container.querySelector(
+      '[data-testid="budget-summary-card"] .grid.grid-cols-2'
+    );
+
+    expect(totalsRow).toHaveClass('grid-cols-2');
+    expect(totalsRow).toHaveClass('gap-x-2');
+    expect(totalsRow).toHaveClass('md:gap-x-3');
   });
 
   it('keeps the provider selection title on the md tier', () => {
@@ -186,7 +198,7 @@ describe('shared responsive layout surfaces', () => {
     );
 
     const list = container.querySelector('ul');
-    const editGrid = container.querySelector('div.grid.grid-cols-1.gap-4');
+    const editGrid = container.querySelector('div.grid.grid-cols-1.gap-3');
 
     expect(list).not.toHaveClass('md:px-10');
     expect(editGrid).toHaveClass('md:grid-cols-[1fr_auto]');

@@ -9,7 +9,9 @@ use crate::models::custom_category::{CategoryListResponse, CustomCategory, Custo
 use crate::models::transaction_category_override::{
     SetTransactionCategoryRequest, TransactionCategoryOverride,
 };
-use crate::services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
+use crate::services::categorization::category_descriptors::{
+    system_category_display_label, SYSTEM_CATEGORY_SLUGS,
+};
 use crate::services::repository_service::DatabaseRepository;
 use crate::utils::merchant_name::{
     category_lookup_key, format_custom_category_display, normalize_merchant_for_match,
@@ -35,10 +37,13 @@ pub struct CategoryManagementService {
 
 impl CategoryManagementService {
     pub fn new(system_slugs: &[&str]) -> Self {
-        let system_lookup_keys = system_slugs
-            .iter()
-            .map(|slug| category_lookup_key(&slug.replace('_', " ")))
-            .collect();
+        let mut system_lookup_keys = HashSet::new();
+        for slug in system_slugs {
+            system_lookup_keys.insert(category_lookup_key(&slug.replace('_', " ")));
+            if let Some(label) = system_category_display_label(slug) {
+                system_lookup_keys.insert(category_lookup_key(label));
+            }
+        }
         Self { system_lookup_keys }
     }
 

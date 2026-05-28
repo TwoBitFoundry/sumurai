@@ -5,11 +5,11 @@ describe('Pill', () => {
   it('renders category pills without a leading dot', () => {
     render(
       <Pill categoryName="food_and_drink" accentIndexByName={new Map([['food_and_drink', 0]])}>
-        Food And Drink
+        Food & Drink
       </Pill>
     );
 
-    const pill = screen.getByText('Food And Drink').closest('span');
+    const pill = screen.getByText('Food & Drink').closest('span');
     expect(pill).toBeInTheDocument();
     expect(pill?.querySelector('[aria-hidden="true"]')).toBeNull();
   });

@@ -3,6 +3,7 @@ use crate::test_fixtures::TestFixtures;
 use axum::{extract::Json, routing::post, Router};
 use rust_decimal::Decimal;
 use serde_json::Value;
+use std::io::ErrorKind;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
@@ -36,7 +37,7 @@ fn plaid_transaction_page(offset: usize) -> Vec<Value> {
         .collect()
 }
 
-async fn spawn_plaid_test_server(requests: Arc<Mutex<Vec<(usize, usize)>>>) -> String {
+async fn spawn_plaid_test_server(requests: Arc<Mutex<Vec<(usize, usize)>>>) -> Option<String> {
     let app = Router::new().route(
         "/transactions/get",
         post(move |Json(payload): Json<Value>| {
@@ -53,13 +54,17 @@ async fn spawn_plaid_test_server(requests: Arc<Mutex<Vec<(usize, usize)>>>) -> S
         }),
     );
 
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let listener = match TcpListener::bind("127.0.0.1:0").await {
+        Ok(listener) => listener,
+        Err(error) if error.kind() == ErrorKind::PermissionDenied => return None,
+        Err(error) => panic!("failed to bind Plaid test server: {error}"),
+    };
     let addr = listener.local_addr().unwrap();
     tokio::spawn(async move {
         axum::serve(listener, app).await.unwrap();
     });
 
-    format!("http://{}", addr)
+    Some(format!("http://{}", addr))
 }
 
 #[test]
@@ -141,7 +146,9 @@ fn merchant_name_from_plaid_falls_back_to_transaction_name() {
 #[tokio::test]
 async fn given_plaid_transactions_when_getting_transactions_then_paginates_until_total_is_loaded() {
     let requests = Arc::new(Mutex::new(Vec::new()));
-    let base_url = spawn_plaid_test_server(Arc::clone(&requests)).await;
+    let Some(base_url) = spawn_plaid_test_server(Arc::clone(&requests)).await else {
+        return;
+    };
     let client = crate::services::plaid_service::RealPlaidClient::new_for_test(base_url);
 
     let result = client

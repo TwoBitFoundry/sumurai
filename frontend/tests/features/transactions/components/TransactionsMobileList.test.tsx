@@ -61,6 +61,7 @@ describe('TransactionsMobileList', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.getByText('Bank Of All')).toBeInTheDocument();
     expect(screen.getByText('$69.65')).toBeInTheDocument();
+    expect(screen.getByText('May 21, 2026')).toBeInTheDocument();
     expect(screen.getByTitle(/Platinum Card/)).toBeInTheDocument();
     expect(screen.getByText(/Platinum Card/)).toBeInTheDocument();
     expect(screen.getByText(/6017/)).toBeInTheDocument();
@@ -106,5 +107,26 @@ describe('TransactionsMobileList', () => {
     render(<TransactionsMobileList {...listProps} />);
 
     expect(screen.getByTitle(/2026/)).toBeInTheDocument();
+  });
+
+  it('stacks the date above the account label', () => {
+    render(<TransactionsMobileList {...listProps} />);
+
+    const dateLine = screen.getByText('May 21, 2026');
+    const accountLine = screen.getByText(/Platinum Card/);
+
+    expect(
+      dateLine.compareDocumentPosition(accountLine) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('reserves full-height space for placeholder rows', () => {
+    const { container } = render(
+      <TransactionsMobileList items={[]} currentPage={1} pageSize={8} animationKey="page-1" />
+    );
+
+    expect(container.querySelector('li[aria-hidden="true"]')?.className).toContain(
+      'min-h-[5.25rem]'
+    );
   });
 });

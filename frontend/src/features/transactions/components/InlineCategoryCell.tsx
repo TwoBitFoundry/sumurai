@@ -19,7 +19,7 @@ interface Props {
   dense?: boolean;
 }
 
-export function InlineCategoryCell({ transaction, dense = false }: Props) {
+export function InlineCategoryCell({ transaction, dense: _dense = false }: Props) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const { accentIndexByName, all } = useCategories();
@@ -59,7 +59,6 @@ export function InlineCategoryCell({ transaction, dense = false }: Props) {
         onClick={() => setOpen((value) => !value)}
         className={cn(
           transactionsRowRecipes.categoryPill,
-          dense && transactionsRowRecipes.categoryPillDense,
           themeTagClasses(categoryName, isCustom, accentIndexByName),
           isCustom
             ? 'ring-2 ring-[color:color-mix(in_srgb,var(--color-border-focus-active)_70%,white)]'
@@ -95,7 +94,7 @@ export default InlineCategoryCell;
 
 function themeTagClasses(
   categoryName: string,
-  isCustom: boolean,
+  _isCustom: boolean,
   accentIndexByName: ReadonlyMap<string, number>
 ): string {
   const theme = getTagThemeForCategory(categoryName, accentIndexByName);

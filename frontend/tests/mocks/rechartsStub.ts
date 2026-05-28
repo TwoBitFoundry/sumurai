@@ -1,8 +1,24 @@
 import { mock } from 'bun:test';
 import React from 'react';
 
-const Stub = ({ children, ...rest }: { children?: React.ReactNode; [key: string]: unknown }) =>
-  React.createElement('div', rest, children);
+const Stub = ({
+  children,
+  accessibilityLayer,
+  cursor,
+}: {
+  children?: React.ReactNode;
+  accessibilityLayer?: boolean;
+  cursor?: boolean;
+}) =>
+  React.createElement(
+    'div',
+    {
+      'data-accessibility-layer':
+        typeof accessibilityLayer === 'boolean' ? String(accessibilityLayer) : undefined,
+      'data-cursor': typeof cursor === 'boolean' ? String(cursor) : undefined,
+    },
+    children
+  );
 
 mock.module('recharts', () => ({
   ResponsiveContainer: Stub,

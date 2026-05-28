@@ -7,6 +7,7 @@ describe('ProviderSdkLaunchBackdrop', () => {
 
     const backdrop = screen.getByTestId('provider-sdk-launch-backdrop');
     expect(backdrop.parentElement).toBe(document.body);
+    expect(document.body.dataset.providerSdkInset).toBe('active');
     expect(backdrop.className).toContain('pointer-events-none');
     expect(backdrop.className).toContain('backdrop-blur-[6px]');
     expect(backdrop.className).toContain('fixed');
@@ -16,9 +17,20 @@ describe('ProviderSdkLaunchBackdrop', () => {
   it('hides the blur layer when inactive', () => {
     render(<ProviderSdkLaunchBackdrop active={false} />);
 
+    expect(document.body.dataset.providerSdkInset).toBeUndefined();
     expect(screen.getByTestId('provider-sdk-launch-backdrop').className).toContain('opacity-0');
     expect(screen.getByTestId('provider-sdk-launch-backdrop').className).not.toContain(
       'backdrop-blur-[6px]'
     );
+  });
+
+  it('clears the inset state on unmount', () => {
+    const { unmount } = render(<ProviderSdkLaunchBackdrop active />);
+
+    expect(document.body.dataset.providerSdkInset).toBe('active');
+
+    unmount();
+
+    expect(document.body.dataset.providerSdkInset).toBeUndefined();
   });
 });

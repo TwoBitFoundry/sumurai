@@ -1,7 +1,6 @@
 import { Search } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import type { CustomCategory } from '@/types/api';
 import { Button, cn, Input } from '@/ui/primitives';
 import { pillScrollFadeRecipes } from '@/ui/primitives/Pill';
@@ -40,7 +39,6 @@ export const TransactionsFilters: React.FC<Props> = ({
   showFilterLabel = true,
   scrollFadeSurface = 'card',
 }) => {
-  const { isMobile } = useViewportBreakpoint();
   const scrollFade = pillScrollFadeRecipes[scrollFadeSurface];
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [deleteTarget, setDeleteTarget] = useState<CustomCategory | null>(null);
@@ -120,7 +118,17 @@ export const TransactionsFilters: React.FC<Props> = ({
         </div>
       )}
       {showCategories && (
-        <div className={cn('flex', 'w-full', 'items-center', 'gap-3')}>
+        <div
+          className={cn(
+            'flex',
+            'w-full',
+            'flex-col',
+            'gap-2',
+            'md:flex-row',
+            'md:items-center',
+            'md:gap-3'
+          )}
+        >
           {showFilterLabel ? (
             <span
               className={cn(
@@ -134,7 +142,7 @@ export const TransactionsFilters: React.FC<Props> = ({
               Filter
             </span>
           ) : null}
-          <div className={cn('relative', 'min-w-0', 'flex-1', 'overflow-hidden')}>
+          <div className={cn('relative', 'min-w-0', 'w-full', 'md:flex-1', 'overflow-hidden')}>
             <div
               ref={scrollContainerRef}
               onScroll={checkScroll}
@@ -142,10 +150,9 @@ export const TransactionsFilters: React.FC<Props> = ({
                 'scrollbar-hide',
                 'flex',
                 'items-center',
-                'gap-2',
+                'gap-1',
                 'overflow-x-auto',
                 'pb-1',
-                'pl-1',
                 'pt-1'
               )}
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -174,7 +181,7 @@ export const TransactionsFilters: React.FC<Props> = ({
                       onClick={() => onSelectCategory(isSelected ? null : name)}
                       className={cn(
                         'whitespace-nowrap',
-                        isMobile && transactionsRowRecipes.categoryPillDense,
+                        transactionsRowRecipes.categoryFilterPill,
                         isCustom &&
                           'pr-10 hover:translate-y-0 hover:shadow-none group-hover:shadow-lg',
                         theme.tag,

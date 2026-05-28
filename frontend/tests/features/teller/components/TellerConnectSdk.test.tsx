@@ -157,6 +157,7 @@ describe('TellerConnectSdk', () => {
     iframe.src = 'https://teller.io/connect/app_123';
     iframe.id = 'teller-connect-window';
     document.body.style.overflow = 'hidden';
+    document.body.dataset.providerSdkInset = 'active';
     document.body.appendChild(iframe);
 
     const { unmount } = render(
@@ -170,5 +171,6 @@ describe('TellerConnectSdk', () => {
     expect(document.querySelector('iframe[src*="teller.io/connect"]')).toBeNull();
     expect(document.querySelector('#teller-connect-window')).toBeNull();
     expect(document.body.style.overflow).toBe('');
+    expect(document.body.dataset.providerSdkInset).toBeUndefined();
   });
 });

@@ -1,4 +1,5 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { SpendingByCategoryChart } from '@/features/analytics/components/SpendingByCategoryChart';
@@ -86,5 +87,19 @@ describe('DashboardPage', () => {
 
     expect(chartMock).toHaveBeenCalledTimes(2);
     expect(chartMock.mock.calls[1][0].animated).toBe(false);
+  });
+
+  it('highlights a top category card when tapped the same way as the chart', async () => {
+    const user = userEvent.setup();
+    const noop = jest.fn();
+    render(<DashboardPage dateRange="current-month" setDateRange={noop} />);
+
+    const topCard = screen.getByText('Food').closest('button');
+    expect(topCard).toBeTruthy();
+    expect((topCard as HTMLButtonElement).style.borderColor).toBe('');
+
+    await user.click(topCard as HTMLElement);
+
+    expect((topCard as HTMLButtonElement).style.borderColor).toBe('#0ea5e9');
   });
 });

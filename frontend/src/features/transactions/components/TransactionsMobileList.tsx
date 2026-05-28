@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { Receipt } from 'lucide-react';
 import type React from 'react';
 import { useMemo } from 'react';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import type { Transaction } from '@/types/api';
-import { cn } from '@/ui/primitives';
+import { cn, EmptyState } from '@/ui/primitives';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { fmtUSD } from '@/utils/format';
 import InlineCategoryCell from './InlineCategoryCell';
@@ -124,26 +125,24 @@ export const TransactionsMobileList: React.FC<Props> = ({
                 </p>
               </div>
               <div className={cn('mt-1', 'flex', 'min-w-0', 'items-center', 'gap-2')}>
-                <p
-                  className={cn(
-                    'min-w-0',
-                    'flex-1',
-                    'truncate',
-                    uiTypographyRecipes.caption,
-                    uiTextRecipes.muted
-                  )}
-                  title={metaTitle}
-                >
-                  {formatMobileDate(transaction.date)}
+                <div className={cn('min-w-0', 'flex-1')}>
+                  <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
+                    {formatMobileDate(transaction.date)}
+                  </p>
                   {accountLabel ? (
-                    <>
-                      <span className={cn('mx-1', uiTextRecipes.subtle)} aria-hidden="true">
-                        ·
-                      </span>
+                    <p
+                      className={cn(
+                        'min-w-0',
+                        'truncate',
+                        uiTypographyRecipes.caption,
+                        uiTextRecipes.muted
+                      )}
+                      title={metaTitle}
+                    >
                       {accountLabel}
-                    </>
+                    </p>
                   ) : null}
-                </p>
+                </div>
                 <InlineCategoryCell transaction={transaction} dense={isMobile} />
               </div>
             </li>
@@ -155,8 +154,8 @@ export const TransactionsMobileList: React.FC<Props> = ({
             aria-hidden="true"
             className={cn(
               transactionsRowRecipes.placeholder,
+              transactionsRowRecipes.placeholderMobileHeight,
               transactionsRowRecipes.even,
-              'min-h-[4rem]',
               'px-3',
               'py-2.5'
             )}
