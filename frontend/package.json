@@ -12,7 +12,7 @@
   "scripts": {
     "dev": "bun --bun next dev -p 3001 --turbo",
     "dev:webpack": "bun --bun next dev -p 3001 --webpack",
-    "build": "bun --bun next build --webpack",
+    "build": "bun --bun next build",
     "typecheck": "tsc --noEmit --project tsconfig.ci.json",
     "start": "bun --bun next start",
     "lint": "biome check --diagnostic-level=error .",

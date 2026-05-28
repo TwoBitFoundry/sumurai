@@ -4,6 +4,9 @@ const disableReactCompiler = process.env.NEXT_DISABLE_REACT_COMPILER === 'true';
 
 const nextConfig = {
   reactStrictMode: true,
+  experimental: {
+    turbopackFileSystemCacheForBuild: true,
+  },
   ...(process.env.NODE_ENV === 'production' ? { output: 'export' } : {}),
   ...(process.env.NODE_ENV === 'development' ? { skipTrailingSlashRedirect: true } : {}),
   trailingSlash: true,
