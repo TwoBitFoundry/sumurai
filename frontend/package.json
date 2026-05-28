@@ -12,7 +12,7 @@
   "scripts": {
     "dev": "bun --bun next dev -p 3001 --turbo",
     "dev:webpack": "bun --bun next dev -p 3001 --webpack",
-    "build": "bun --bun next build",
+    "build": "bun --bun next build && bun ./scripts/build-sw.mjs",
     "typecheck": "tsc --noEmit --project tsconfig.ci.json",
     "start": "bun --bun next start",
     "lint": "biome check --diagnostic-level=error .",
@@ -32,7 +32,7 @@
     "design:styling": "bun ./scripts/check-raw-styling.mjs",
     "ui:imports": "bun ./scripts/check-ui-imports.mjs",
     "design:guard": "bun ./scripts/run-designmd.mjs --quiet lint ../DESIGN.md && bun ./scripts/check-design-tokens-drift.mjs && bun ./scripts/check-raw-styling.mjs && bun ./scripts/check-text-color-styling.mjs && bun ./scripts/check-ui-imports.mjs && bun ./scripts/run-designmd.mjs --quiet export --format dtcg ../DESIGN.md && bun ./scripts/run-designmd.mjs --quiet export --format css-tailwind ../DESIGN.md",
-    "precommit": "bun run lint && bun run typecheck && bun run build && bun run design:guard && bun run test:ci",
+    "precommit": "(bun run lint & bun run typecheck & wait) && bun run design:guard && bun run test:ci && bun run build",
     "storybook": "storybook dev -p 6006",
     "storybook:doctor": "storybook doctor",
     "storybook:build": "storybook build -o storybook-static",
