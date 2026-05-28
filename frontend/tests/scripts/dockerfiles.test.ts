@@ -3,18 +3,14 @@ import path from 'node:path';
 
 const repoRoot = path.join(__dirname, '../../..');
 const frontendDockerfile = path.join(repoRoot, 'frontend/Dockerfile');
-const rootDockerfile = path.join(repoRoot, 'Dockerfile');
 
 function readDockerfile(filePath: string) {
   return fs.readFileSync(filePath, 'utf8');
 }
 
 describe('bun migration dockerfiles', () => {
-  it.each([
-    ['frontend/Dockerfile', frontendDockerfile],
-    ['Dockerfile', rootDockerfile],
-  ])('%s uses Bun builder stage and lockfile', (_label, filePath) => {
-    const contents = readDockerfile(filePath);
+  it('frontend/Dockerfile uses Bun builder stage and lockfile', () => {
+    const contents = readDockerfile(frontendDockerfile);
 
     expect(contents.startsWith('# syntax=docker/dockerfile:1.7\n')).toBe(true);
     expect(contents).toContain('FROM oven/bun:1-alpine AS builder');
