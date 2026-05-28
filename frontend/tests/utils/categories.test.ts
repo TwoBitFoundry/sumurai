@@ -168,6 +168,24 @@ describe('validateCustomCategoryName', () => {
     expect(result.code).toBe('collides_system');
   });
 
+  it('rejects collision with a system category display alias', () => {
+    const result = validateCustomCategoryName('Bills', {
+      system: ['RENT_AND_UTILITIES'],
+      custom: [],
+    });
+    expect(result.ok).toBe(false);
+    expect(result.code).toBe('collides_system');
+  });
+
+  it('rejects plural collision with a system category display alias', () => {
+    const result = validateCustomCategoryName('Merchs', {
+      system: ['GENERAL_MERCHANDISE'],
+      custom: [],
+    });
+    expect(result.ok).toBe(false);
+    expect(result.code).toBe('collides_system');
+  });
+
   it('accepts exactly 3 words', () => {
     const result = validateCustomCategoryName('One Two Three', existing);
     expect(result.ok).toBe(true);

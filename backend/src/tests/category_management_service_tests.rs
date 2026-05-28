@@ -181,6 +181,23 @@ async fn given_name_colliding_with_system_slug_when_create_category_then_rejects
 }
 
 #[tokio::test]
+async fn given_name_colliding_with_system_display_alias_when_create_category_then_rejects() {
+    let service = make_service();
+    let mut repo = MockDatabaseRepository::new();
+    let user_id = Uuid::new_v4();
+
+    repo.expect_list_custom_categories_for_user().times(0);
+
+    let result = service
+        .create_custom_category(&repo, &user_id, "Bills")
+        .await;
+    assert_eq!(
+        validation_error(result),
+        CustomCategoryError::CollidesWithSystemCategory
+    );
+}
+
+#[tokio::test]
 async fn given_plural_of_existing_custom_when_create_category_then_rejects_collision() {
     let service = make_service();
     let user_id = Uuid::new_v4();

@@ -172,6 +172,11 @@ export function validateCustomCategoryName(
     if (lookupKey === systemLookup) {
       return { ok: false, code: 'collides_system' };
     }
+
+    const displayLookup = categoryLookupKey(formatCategoryName(systemCategory));
+    if (lookupKey === displayLookup) {
+      return { ok: false, code: 'collides_system' };
+    }
   }
 
   for (const customCategory of existing.custom) {
