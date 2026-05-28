@@ -397,14 +397,14 @@ erDiagram
         timestamptz updated_at
     }
     simplefin_root_credentials {
-        uuid user_id PK_FK
+        uuid user_id PK
         bytea encrypted_access_url
         timestamptz setup_token_used_at
         timestamptz created_at
         timestamptz updated_at
     }
     simplefin_hidden_orgs {
-        uuid user_id PK_FK
+        uuid user_id PK
         text org_conn_id PK
         timestamptz hidden_at
     }
