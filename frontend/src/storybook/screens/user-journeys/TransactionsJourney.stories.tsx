@@ -90,7 +90,7 @@ export const Journey: Story = {
 
     const toolbar = page.getByTestId('transactions-toolbar');
     const category = await waitFor(
-      () => within(toolbar).getByRole('button', { name: /food and drink/i }),
+      () => within(toolbar).getByRole('button', { name: /food & drink/i }),
       { timeout: storyInteractionTimeoutMs }
     );
     await userEvent.click(category);
