@@ -1,17 +1,22 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 type ChartContainerSize = {
   width: number;
   height: number;
 };
 
-export const useChartContainerSize = (deps: unknown[] = []) => {
-  const ref = useRef<HTMLDivElement>(null);
+export const useChartContainerSize = () => {
+  const observerRef = useRef<ResizeObserver | null>(null);
   const [size, setSize] = useState<ChartContainerSize>({ width: 0, height: 0 });
 
-  useLayoutEffect(() => {
-    const node = ref.current;
-    if (!node) return;
+  const ref = useCallback((node: HTMLDivElement | null) => {
+    observerRef.current?.disconnect();
+    observerRef.current = null;
+
+    if (!node) {
+      setSize({ width: 0, height: 0 });
+      return;
+    }
 
     const updateSize = () => {
       const { width, height } = node.getBoundingClientRect();
@@ -29,8 +34,12 @@ export const useChartContainerSize = (deps: unknown[] = []) => {
     updateSize();
     const observer = new ResizeObserver(updateSize);
     observer.observe(node);
-    return () => observer.disconnect();
-  }, deps);
+    observerRef.current = observer;
+  }, []);
+
+  useLayoutEffect(() => {
+    return () => observerRef.current?.disconnect();
+  }, []);
 
   return { ref, ...size };
 };

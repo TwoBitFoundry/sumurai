@@ -25,8 +25,8 @@ import DashboardChartCard from '../features/analytics/components/DashboardChartC
 import { SpendingByCategoryChart } from '../features/analytics/components/SpendingByCategoryChart';
 import { TopMerchantsList } from '../features/analytics/components/TopMerchantsList';
 import { useAnalytics } from '../features/analytics/hooks/useAnalytics';
-import { useDebouncedChartRecalc } from '../features/analytics/hooks/useDebouncedChartRecalc';
 import { useChartContainerSize } from '../features/analytics/hooks/useChartContainerSize';
+import { useDebouncedChartRecalc } from '../features/analytics/hooks/useDebouncedChartRecalc';
 import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries';
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import { PageLayout } from '../layouts/PageLayout';
@@ -103,7 +103,7 @@ const DashboardPage: React.FC<{
     ref: netChartRef,
     width: netChartWidth,
     height: netChartHeight,
-  } = useChartContainerSize([netLoading, netSeries.length]);
+  } = useChartContainerSize();
 
   return (
     <div data-testid="dashboard-page">
@@ -160,68 +160,72 @@ const DashboardPage: React.FC<{
               />
               <div className={cn('min-w-0', 'w-full')}>
                 {(() => {
-                const categories = byCat;
-                if (!categories || categories.length === 0) return null;
-                const categorySum = categories.reduce(
-                  (sum, c) => sum + (Number.isFinite(c.value) ? c.value : 0),
-                  0
-                );
-                const top = categories.slice(0, 4);
-                return (
-                  <div>
-                    <div
-                      className={cn(
-                        uiTypographyRecipes.label,
-                        uiTextRecipes.label,
-                        'mb-2',
-                        'font-medium'
-                      )}
-                    >
-                      Top Categories
-                    </div>
-                    <div className={cn('grid', 'grid-cols-2', 'gap-2')}>
-                      {top.map((cat) => {
-                        const percentage =
-                          categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0';
-                        const isHovered = hoveredCategory === cat.name;
-                        return (
-                          <button
-                            key={`topcard-${cat.name}`}
-                            type="button"
-                            className={cn('p-2', dashboardCategoryCard.shell)}
-                            style={isHovered ? { borderColor: colors.chart.primary[0] } : undefined}
-                            onMouseEnter={() => handleCategoryHover(cat.name)}
-                            onMouseLeave={() => handleCategoryHover(null)}
-                            onClick={() => handleCategoryHover(cat.name)}
-                          >
-                            <div className={cn('mb-1')}>
-                              <Pill
-                                categoryName={cat.categoryKey}
-                                accentIndexByName={accentIndexByName}
-                                className={cn('max-w-full')}
-                              >
-                                {cat.name}
-                              </Pill>
-                            </div>
-                            <div className={cn('flex', 'items-baseline', 'justify-between')}>
-                              <div
-                                className={cn(
-                                  uiTypographyRecipes.bodyStrong,
-                                  uiTextRecipes.primary
-                                )}
-                              >
-                                {fmtUSD(cat.value)}
+                  const categories = byCat;
+                  if (!categories || categories.length === 0) return null;
+                  const categorySum = categories.reduce(
+                    (sum, c) => sum + (Number.isFinite(c.value) ? c.value : 0),
+                    0
+                  );
+                  const top = categories.slice(0, 4);
+                  return (
+                    <div>
+                      <div
+                        className={cn(
+                          uiTypographyRecipes.label,
+                          uiTextRecipes.label,
+                          'mb-2',
+                          'font-medium'
+                        )}
+                      >
+                        Top Categories
+                      </div>
+                      <div className={cn('grid', 'grid-cols-2', 'gap-2')}>
+                        {top.map((cat) => {
+                          const percentage =
+                            categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0';
+                          const isHovered = hoveredCategory === cat.name;
+                          return (
+                            <button
+                              key={`topcard-${cat.name}`}
+                              type="button"
+                              className={cn('p-2', dashboardCategoryCard.shell)}
+                              style={
+                                isHovered ? { borderColor: colors.chart.primary[0] } : undefined
+                              }
+                              onMouseEnter={() => handleCategoryHover(cat.name)}
+                              onMouseLeave={() => handleCategoryHover(null)}
+                              onClick={() => handleCategoryHover(cat.name)}
+                            >
+                              <div className={cn('mb-1')}>
+                                <Pill
+                                  categoryName={cat.categoryKey}
+                                  accentIndexByName={accentIndexByName}
+                                  className={cn('max-w-full')}
+                                >
+                                  {cat.name}
+                                </Pill>
                               </div>
-                              <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-                                {percentage}%
+                              <div className={cn('flex', 'items-baseline', 'justify-between')}>
+                                <div
+                                  className={cn(
+                                    uiTypographyRecipes.bodyStrong,
+                                    uiTextRecipes.primary
+                                  )}
+                                >
+                                  {fmtUSD(cat.value)}
+                                </div>
+                                <div
+                                  className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}
+                                >
+                                  {percentage}%
+                                </div>
                               </div>
-                            </div>
-                          </button>
-                        );
-                      })}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                );
+                  );
                 })()}
               </div>
             </div>
@@ -282,10 +286,7 @@ const DashboardPage: React.FC<{
                 />
               </div>
             ) : (
-              <div
-                ref={netChartRef}
-                className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}
-              >
+              <div ref={netChartRef} className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}>
                 {netChartWidth > 0 && netChartHeight > 0 ? (
                   <AreaChart
                     width={netChartWidth}

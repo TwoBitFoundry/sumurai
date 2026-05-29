@@ -857,27 +857,25 @@ impl DatabaseRepository for PostgresRepository {
     }
 
     async fn upsert_account(&self, account: &Account) -> Result<()> {
-        if let Some(user_id) = account.user_id {
-            let account = account.clone();
-            self.with_tenant(&user_id, move |txn| {
-                Box::pin(async move { Self::upsert_account_on(txn, &account).await })
-            })
-            .await
-        } else {
-            Self::upsert_account_on(&self.conn(), account).await
-        }
+        let user_id = account
+            .user_id
+            .ok_or_else(|| anyhow::anyhow!("account user_id is required"))?;
+        let account = account.clone();
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move { Self::upsert_account_on(txn, &account).await })
+        })
+        .await
     }
 
     async fn upsert_transaction(&self, transaction: &Transaction) -> Result<()> {
-        if let Some(user_id) = transaction.user_id {
-            let transaction = transaction.clone();
-            self.with_tenant(&user_id, move |txn| {
-                Box::pin(async move { Self::upsert_transaction_on(txn, &transaction).await })
-            })
-            .await
-        } else {
-            Self::upsert_transaction_on(&self.conn(), transaction).await
-        }
+        let user_id = transaction
+            .user_id
+            .ok_or_else(|| anyhow::anyhow!("transaction user_id is required"))?;
+        let transaction = transaction.clone();
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move { Self::upsert_transaction_on(txn, &transaction).await })
+        })
+        .await
     }
 
     async fn upsert_transactions_batch(
@@ -977,13 +975,21 @@ impl DatabaseRepository for PostgresRepository {
 
         if let Some(row) = row {
             let access_token = self.decrypt_token(&row.encrypted_access_token)?;
+            let created_at = row
+                .created_at
+                .map(Into::into)
+                .unwrap_or_else(chrono::Utc::now);
+            let updated_at = row
+                .updated_at
+                .map(Into::into)
+                .unwrap_or_else(chrono::Utc::now);
             Ok(Some(PlaidCredentials {
                 id: row.id,
                 item_id: row.item_id,
                 user_id: row.user_id,
                 access_token,
-                created_at: row.created_at.expect("created_at is set").into(),
-                updated_at: row.updated_at.expect("updated_at is set").into(),
+                created_at,
+                updated_at,
             }))
         } else {
             Ok(None)
@@ -1642,7 +1648,7 @@ impl DatabaseRepository for PostgresRepository {
     ) -> Result<Budget> {
         self.with_tenant(&user_id, move |txn| {
             Box::pin(async move {
-                budgets::Entity::update_many()
+                let update = budgets::Entity::update_many()
                     .col_expr(budgets::Column::Amount, Expr::value(amount))
                     .col_expr(
                         budgets::Column::UpdatedAt,
@@ -1653,13 +1659,18 @@ impl DatabaseRepository for PostgresRepository {
                     .exec(txn)
                     .await?;
 
-                Ok(budgets::Entity::find()
+                if update.rows_affected == 0 {
+                    return Err(anyhow::anyhow!("Budget not found or access denied"));
+                }
+
+                let budget = budgets::Entity::find()
                     .filter(budgets::Column::Id.eq(budget_id))
                     .filter(budgets::Column::UserId.eq(user_id))
                     .one(txn)
                     .await?
-                    .expect("budget exists after update")
-                    .into())
+                    .ok_or_else(|| anyhow::anyhow!("Budget not found or access denied"))?;
+
+                Ok(budget.into())
             })
         })
         .await

@@ -33,7 +33,7 @@ The backend Docker build performs the same fetch automatically, but local `cargo
 
 This project treats **GitHub Actions as the merge gate**. The default Git hook trades some parity for contributor time.
 
-**`bun run precommit` (Husky):** frontend **Biome check**, `typecheck`, **design guard**, and **Jest**, then **`bun run backend:ci`**. It does **not** run `bun install` in `frontend/`, **`next build`**, Storybook static build, Vitest browser tests, or Playwright iframe smoke. Typecheck already includes `*.stories.tsx` under `src/` with the app.
+**`bun run precommit` (Husky):** frontend **Biome check**, `typecheck`, **design guard**, and **`bun test`**, then **`bun run backend:ci`**. It does **not** run `bun install` in `frontend/`, Storybook static build, Vitest browser tests, or Playwright iframe smoke. Typecheck already includes `*.stories.tsx` under `src/` with the app.
 
 For **full parity** with `.github/workflows/ci.yml` frontend steps before you push (for example Storybook/Vite/Playwright paths), run **`bun run backend:ci && bun run frontend:ci`** manually.
 

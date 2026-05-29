@@ -1,15 +1,14 @@
 import { BarChart3 } from 'lucide-react';
 import type React from 'react';
-import { useLayoutEffect, useRef, useState } from 'react';
 import { Cell, Pie, PieChart, Tooltip } from 'recharts';
 import { cn, EmptyState } from '@/ui/primitives';
 import { text as uiTextRecipes } from '@/ui/recipes';
-import { useDebouncedChartRecalc } from '../hooks/useDebouncedChartRecalc';
-
 import { chart } from '@/ui/tokens';
 import { useTheme } from '../../../context/ThemeContext';
 import { fmtUSD } from '../../../utils/format';
 import type { DonutDatum } from '../adapters/chartData';
+import { useChartContainerSize } from '../hooks/useChartContainerSize';
+import { useDebouncedChartRecalc } from '../hooks/useDebouncedChartRecalc';
 import { ChartGlassTooltip, chartTooltipRechartsProps } from './ChartGlassTooltip';
 
 type Props = {
@@ -43,26 +42,8 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
   const { mode } = useTheme();
   const debouncedData = useDebouncedChartRecalc(data);
   const debouncedTotal = useDebouncedChartRecalc(total);
-  const chartContainerRef = useRef<HTMLDivElement>(null);
-  const [chartSize, setChartSize] = useState(240);
-
-  useLayoutEffect(() => {
-    const node = chartContainerRef.current;
-    if (!node) return;
-
-    const updateSize = () => {
-      const { width, height } = node.getBoundingClientRect();
-      const nextSize = Math.floor(Math.min(width, height));
-      if (nextSize > 0) {
-        setChartSize((current) => (current === nextSize ? current : nextSize));
-      }
-    };
-
-    updateSize();
-    const observer = new ResizeObserver(updateSize);
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [debouncedData.length]);
+  const { ref: chartContainerRef, width, height } = useChartContainerSize();
+  const chartSize = Math.min(width, height);
 
   if (debouncedData.length === 0) {
     return (

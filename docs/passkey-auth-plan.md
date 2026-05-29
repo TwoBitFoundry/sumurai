@@ -120,7 +120,7 @@ Sign-in is username-first: user enters email → server returns allowed credenti
   - Each method wraps the `navigator.credentials.create()` / `.get()` call and the server round-trips.
 
 **Acceptance**
-- [ ] Jest tests in `frontend/tests/` cover each service method with `navigator.credentials` and `ApiClient` mocked at the boundary per [sumurai-testing-policy](.agents/skills/).
+- [ ] Bun tests in `frontend/tests/` cover each service method with `navigator.credentials` and `ApiClient` mocked at the boundary per [sumurai-testing-policy](.agents/skills/).
 - [ ] Encoding utility tests cover round-trip on known WebAuthn fixtures.
 - [ ] Frontend type-check passes against regenerated `api.ts`.
 
