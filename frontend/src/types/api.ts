@@ -236,6 +236,16 @@ export interface AuthResponse {
   onboarding_completed: boolean;
 }
 
+export interface PasswordLoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface PasswordLoginRequest {
+  email: string;
+  password: string;
+}
+
 export interface RefreshResponse {
   user_id: string;
   expires_at: string;
@@ -262,6 +272,8 @@ export interface PasskeyRegisterBeginResponse {
 export interface PasskeyLoginBeginResponse {
   session_id: string;
   challenge: Record<string, unknown>;
+  account_exists: boolean;
+  passkey_available: boolean;
 }
 
 export interface RegisterBeginResponse {

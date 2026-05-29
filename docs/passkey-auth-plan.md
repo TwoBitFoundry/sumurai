@@ -16,7 +16,7 @@ Use the [`webauthn-rs`](https://github.com/kanidm/webauthn-rs) crate (Kanidm tea
 
 Sign-in is username-first: user enters email → server returns allowed credentials for that account → browser prompts for the matching authenticator.
 
-Existing users with a `password_hash` are migrated: on their next visit they are prompted to enroll a passkey before proceeding. Once enrolled, `password_hash` is no longer consulted.
+Existing users without an enrolled passkey are migrated: on their next authenticated visit they are prompted to enroll a passkey before proceeding. Password sign-in remains available only until a passkey exists; once enrolled, `password_hash` is cleared and no longer consulted.
 
 ---
 
@@ -178,9 +178,10 @@ Existing users with a `password_hash` are migrated: on their next visit they are
 **Goal:** Users created before this change are guided to enroll a passkey on their next visit, after which their `password_hash` is ignored and the password login path is gone.
 
 **Tasks**
-- Add a migration check to the app boot / first authenticated request: if `password_hash IS NOT NULL` and `webauthn_credentials` count = 0, return a 403 with a structured body `{ code: "passkey_enrollment_required" }`.
-- Frontend intercepts this 403 in [ApiClient.ts](frontend/src/services/ApiClient.ts) and redirects to a `/enroll-passkey` route.
-- `/enroll-passkey` page: explains the change, walks the user through the passkey ceremony (reuses Phase 7 enrollment flow), then redirects to the dashboard.
+- Add a migration check to the app boot / first authenticated request: if `webauthn_credentials` count = 0, return a 403 with a structured body `{ code: "passkey_enrollment_required" }`.
+- Add a **migration-only** `POST /api/auth/login/password` (and login UI) so legacy users without a passkey can sign in once Phase 4 removed the old password login endpoint. Allowed only when passkey count is zero and the password verifies; rejected once a passkey exists. `POST /api/auth/passkey/login/begin` returns `passkey_available` so the login UI routes to passkey ceremony vs password without checking `password_hash`.
+- Frontend intercepts this 403 in [ApiClient.ts](frontend/src/services/ApiClient.ts) and opens the enrollment modal via a `sumurai:enrollment-required` custom event.
+- Enrollment modal (`EnrollPasskeyScreen`): explains the change, walks the user through the passkey ceremony (reuses Phase 7 enrollment flow), then completes auth; sign-out exits without entering the app.
 - After successful enrollment, `password_hash` on the user row is set to NULL (it is no longer consulted).
 
 **Acceptance**
@@ -188,12 +189,14 @@ Existing users with a `password_hash` are migrated: on their next visit they are
 - [x] After enrollment, subsequent requests succeed normally.
 - [x] New users (created post-migration) never have `password_hash` set; they are not shown the prompt.
 - [x] Storybook entry for the `/enroll-passkey` page.
+- [ ] Legacy user with expired session can sign in with email + password, is redirected to enroll passkey, then uses the app without password.
 
 **TDD log**
-- Backend middleware `passkey_enrollment_middleware` returns 403 `{ code: "passkey_enrollment_required" }` when `password_hash` is set and credential count is zero; exempts passkey register begin/finish and logout.
+- Backend middleware `passkey_enrollment_middleware` returns 403 `{ code: "passkey_enrollment_required" }` when credential count is zero; exempts passkey register begin/finish and logout.
 - `clear_user_password_hash` repository method; `finish_passkey_registration` clears password after authenticated enrollment.
 - 5 tests in `backend/src/tests/passkey_enrollment_middleware_tests.rs` including full SoftPasskey legacy migration ceremony.
-- Frontend: `ApiClient` redirects on `passkey_enrollment_required`; `/enroll-passkey` route + `EnrollPasskeyScreen`; `passkeyService.enrollPasskey`.
+- `login_with_password` + tests in `backend/src/tests/password_migration_login_tests.rs`.
+- Frontend: `ApiClient` dispatches `sumurai:enrollment-required` on `passkey_enrollment_required`; `EnrollPasskeyScreen` modal + `passkeyService.enrollPasskey`; login screen legacy password path via `AuthService.loginWithPassword`.
 - Frontend tests: ApiClient redirect, passkeyService, webauthnEncoding, FetchHttpClient 403 code parsing.
 - `bun run backend:ci`: 482 passed, 0 failed.
 
@@ -242,11 +245,22 @@ Existing users with a `password_hash` are migrated: on their next visit they are
 - Compose with shared primitives per [sumurai-frontend-design-system](.agents/skills/).
 
 **Acceptance**
-- [ ] Storybook entries for the login page: default, loading, error states (no passkey, ceremony cancelled, network error).
-- [ ] Storybook entries for the registration page: default, awaiting ceremony, error.
-- [ ] Manual: full register → sign out → sign in with passkey lands on the dashboard.
-- [ ] Cancelling the browser prompt shows a non-blocking toast and leaves the form usable.
-- [ ] No password field is present anywhere in the login or registration UI.
+- [x] Storybook entries for the login page: default, loading, error states (no passkey, ceremony cancelled, network error).
+- [x] Storybook entries for the registration page: default, awaiting ceremony, error.
+- [x] Manual: full register → sign out → sign in with passkey lands on the dashboard. *(verified locally during Phase 8 impl; full fresh-clone E2E re-verified in Phase 11)*
+- [x] Cancelling the browser prompt shows a non-blocking toast and leaves the form usable.
+- [x] No password field is present anywhere in the login or registration UI.
+
+**TDD log**
+- Auth UI moved to `frontend/src/features/auth/` with `AuthFormLayout`, `LoginScreen`, `RegisterScreen` using `GlassCard`, `Badge`, `Input`, `Button`, and `ui/recipes` text/font atoms.
+- Explicit ceremony flow: `beginLogin` → `getPasskeyCredential` → `finishLogin`; `beginSignUp` → `createPasskeyCredential` → `finishRegistration`.
+- `mapPasskeyAuthError` + `useAuthToastStack` + `ToastStack` for cancellation/network; banner `Alert` for no-passkey and verification failures.
+- Storybook: `LoginScreen.stories.tsx`, `RegisterScreen.stories.tsx` (default, loading/awaiting, error, interaction stories).
+- Tests: `tests/features/auth/mapPasskeyAuthError.test.ts`, `tests/Auth.test.tsx` asserts no password fields.
+- Legacy password migration on `LoginScreen` (email → passkey vs password path via `passkey_available`); pre-auth enrollment gate in `App.tsx` blocks authenticated app until passkey enrolled.
+- `EnrollPasskeyScreen` is a centered modal (not a route): `sumurai:enrollment-required` event from `ApiClient`, sign-out via danger `LogOut` button, responsive action sizing.
+- Backend: `insert_webauthn_credential` sets UUID PK explicitly; demo user `me@test.com` seeded when `SEED_DEMO_USER=true` (dev/OSS compose only).
+- Removed `/enroll-passkey` page route; enrollment modal overlays login or authenticated shell.
 
 ---
 

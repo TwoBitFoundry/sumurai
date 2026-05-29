@@ -1,5 +1,10 @@
 import { SpanStatusCode, trace } from '@opentelemetry/api';
-import type { LogoutResponse, RefreshResponse } from '@/types/api';
+import type {
+  AuthResponse,
+  LogoutResponse,
+  PasswordLoginRequest,
+  RefreshResponse,
+} from '@/types/api';
 import { ApiClient } from './ApiClient';
 import type { IStorageAdapter } from './boundaries';
 
@@ -101,5 +106,10 @@ export class AuthService {
     return ApiClient.put<{ message: string; onboarding_completed: boolean }>(
       '/auth/onboarding/complete'
     );
+  }
+
+  static async loginWithPassword(email: string, password: string): Promise<AuthResponse> {
+    const body: PasswordLoginRequest = { email, password };
+    return ApiClient.post<AuthResponse>('/auth/login/password', body);
   }
 }

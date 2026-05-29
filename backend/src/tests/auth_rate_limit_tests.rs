@@ -13,8 +13,8 @@ use tower::ServiceExt;
 async fn given_five_register_attempts_when_sixth_register_then_returns_429_with_retry_after() {
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
-        .expect_create_user()
-        .returning(|_| Box::pin(async { Ok(()) }));
+        .expect_get_user_by_email()
+        .returning(|_| Box::pin(async { Ok(None) }));
 
     let mut mock_cache = MockCacheService::new();
     mock_cache

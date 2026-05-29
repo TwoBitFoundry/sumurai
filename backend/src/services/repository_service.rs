@@ -845,8 +845,12 @@ impl DatabaseRepository for PostgresRepository {
 
     async fn get_user_by_email(&self, email: &str) -> Result<Option<User>> {
         let db = self.conn();
+        let normalized = email.trim().to_lowercase();
         Ok(users::Entity::find()
-            .filter(users::Column::Email.eq(email))
+            .filter(
+                Expr::expr(Func::lower(Expr::col(users::Column::Email)))
+                    .eq(Expr::value(normalized)),
+            )
             .one(&db)
             .await?
             .map(Into::into))
@@ -1826,9 +1830,11 @@ impl DatabaseRepository for PostgresRepository {
     ) -> Result<WebAuthnCredential> {
         let user_id = *user_id;
         let name = name.to_string();
+        let id = Uuid::new_v4();
         self.with_tenant(&user_id, move |txn| {
             Box::pin(async move {
                 let row = webauthn_credentials::Entity::insert(webauthn_credentials::ActiveModel {
+                    id: Set(id),
                     user_id: Set(user_id),
                     credential_id: Set(credential_id),
                     passkey: Set(passkey),

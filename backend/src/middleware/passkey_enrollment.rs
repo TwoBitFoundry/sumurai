@@ -1,6 +1,7 @@
 use crate::models::api_error::ApiErrorResponse;
 use crate::models::auth::AuthContext;
 use crate::services::repository_service::DatabaseRepository;
+use crate::utils::webauthn_credentials::has_usable_passkey;
 use axum::{
     extract::{Request, State},
     middleware::Next,
@@ -34,32 +35,6 @@ pub async fn passkey_enrollment_middleware(
         None => return Ok(next.run(request).await),
     };
 
-    let user = match state
-        .db_repository
-        .get_user_by_id(&auth_context.user_id)
-        .await
-    {
-        Ok(Some(user)) => user,
-        Ok(None) => {
-            return Err(ApiErrorResponse::unauthorized("Authentication failed").into_response())
-        }
-        Err(error) => {
-            tracing::error!(
-                "Failed to load user {} for passkey enrollment check: {}",
-                auth_context.user_id,
-                error
-            );
-            return Err(
-                ApiErrorResponse::internal_server_error("Failed to verify account status")
-                    .into_response(),
-            );
-        }
-    };
-
-    if user.password_hash.is_none() {
-        return Ok(next.run(request).await);
-    }
-
     let credentials = match state
         .db_repository
         .list_webauthn_credentials_for_user(&auth_context.user_id)
@@ -79,7 +54,7 @@ pub async fn passkey_enrollment_middleware(
         }
     };
 
-    if credentials.is_empty() {
+    if !has_usable_passkey(&credentials) {
         return Err(ApiErrorResponse::passkey_enrollment_required(
             "Passkey enrollment is required before continuing",
         )

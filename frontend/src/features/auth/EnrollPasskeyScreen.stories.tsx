@@ -11,7 +11,9 @@ const meta = {
   },
   tags: ['autodocs'],
   args: {
+    isOpen: true,
     onEnrollmentComplete: fn(),
+    onLogout: fn(),
   },
 } satisfies Meta<typeof EnrollPasskeyScreen>;
 

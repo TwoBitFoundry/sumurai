@@ -248,17 +248,10 @@ describe('ApiClient with Injected IHttpClient', () => {
       }
     });
 
-    it('redirects to enroll passkey when migration is required', async () => {
-      const assign = jest.fn();
-      const originalLocation = window.location;
-      Object.defineProperty(window, 'location', {
-        configurable: true,
-        value: {
-          ...originalLocation,
-          pathname: '/',
-          assign,
-        },
-      });
+    it('dispatches enrollment-required event when passkey enrollment is needed', async () => {
+      const dispatched: Event[] = [];
+      const handler = (event: Event) => dispatched.push(event);
+      window.addEventListener('sumurai:enrollment-required', handler);
 
       mockHttp.get.mockRejectedValueOnce(
         new ForbiddenError(
@@ -268,12 +261,10 @@ describe('ApiClient with Injected IHttpClient', () => {
       );
 
       await expect(ApiClient.get('/budgets')).rejects.toBeInstanceOf(ForbiddenError);
-      expect(assign).toHaveBeenCalledWith('/enroll-passkey');
+      expect(dispatched).toHaveLength(1);
+      expect(dispatched[0].type).toBe('sumurai:enrollment-required');
 
-      Object.defineProperty(window, 'location', {
-        configurable: true,
-        value: originalLocation,
-      });
+      window.removeEventListener('sumurai:enrollment-required', handler);
     });
 
     it('should throw NetworkError for network failures', async () => {

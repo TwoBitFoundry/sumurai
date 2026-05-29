@@ -9,10 +9,21 @@ use tower::ServiceExt;
 
 #[tokio::test]
 async fn given_duplicate_email_when_register_then_returns_409_with_expected_message() {
+    use crate::models::auth::User;
+    use chrono::Utc;
     let mut mock_db = MockDatabaseRepository::new();
-    mock_db
-        .expect_create_user()
-        .returning(|_| Box::pin(async { Err(anyhow::anyhow!("duplicate key")) }));
+    mock_db.expect_get_user_by_email().returning(|email| {
+        let existing = User {
+            id: uuid::Uuid::new_v4(),
+            email: email.to_string(),
+            password_hash: None,
+            provider: String::new(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            onboarding_completed: false,
+        };
+        Box::pin(async move { Ok(Some(existing)) })
+    });
 
     let app = TestFixtures::create_test_app_with_db(mock_db)
         .await

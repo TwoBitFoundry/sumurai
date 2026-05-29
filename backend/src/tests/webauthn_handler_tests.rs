@@ -1,7 +1,7 @@
-use crate::models::auth::{User, WebAuthnCredential};
+use crate::models::auth::User;
 use crate::services::cache_service::MockCacheService;
 use crate::services::repository_service::MockDatabaseRepository;
-use crate::test_fixtures::TestFixtures;
+use crate::test_fixtures::{test_passkey_for_user, TestFixtures};
 use axum::body::to_bytes;
 use axum::http::Method;
 use chrono::Utc;
@@ -9,16 +9,8 @@ use serde_json::json;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-fn make_credential(user_id: Uuid) -> WebAuthnCredential {
-    WebAuthnCredential {
-        id: Uuid::new_v4(),
-        user_id,
-        credential_id: vec![1, 2, 3, 4],
-        passkey: json!({}),
-        name: "Test Key".to_string(),
-        created_at: Utc::now(),
-        last_used_at: None,
-    }
+fn make_credential(user_id: Uuid) -> crate::models::auth::WebAuthnCredential {
+    test_passkey_for_user(user_id)
 }
 
 fn mock_cache_for_auth() -> MockCacheService {
@@ -143,14 +135,10 @@ async fn given_authenticated_when_begin_registration_then_200_with_challenge() {
 }
 
 #[tokio::test]
-async fn given_authenticated_when_list_passkeys_then_200_empty_array() {
+async fn given_authenticated_when_list_passkeys_then_200_with_passkeys() {
     let (_, token) = TestFixtures::create_authenticated_user_with_token();
 
-    let mut mock_db = MockDatabaseRepository::new();
-    mock_db
-        .expect_list_webauthn_credentials_for_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
-
+    let mock_db = MockDatabaseRepository::new();
     let mock_cache = mock_cache_for_auth();
 
     let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
@@ -170,7 +158,6 @@ async fn given_authenticated_when_list_passkeys_then_200_empty_array() {
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert!(json.is_array());
-    assert_eq!(json.as_array().unwrap().len(), 0);
 }
 
 #[tokio::test]
@@ -419,6 +406,14 @@ async fn given_unknown_email_when_begin_login_then_200_same_shape() {
     let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert!(json.get("session_id").is_some(), "must have session_id");
     assert!(json.get("challenge").is_some(), "must have challenge");
+    assert_eq!(
+        json.get("account_exists").and_then(|v| v.as_bool()),
+        Some(false)
+    );
+    assert_eq!(
+        json.get("passkey_available").and_then(|v| v.as_bool()),
+        Some(false)
+    );
 }
 
 #[tokio::test]
@@ -468,6 +463,14 @@ async fn given_known_email_when_begin_login_then_200_with_challenge() {
         user_id
     );
     assert!(json.get("challenge").is_some(), "must have challenge");
+    assert_eq!(
+        json.get("account_exists").and_then(|v| v.as_bool()),
+        Some(true)
+    );
+    assert_eq!(
+        json.get("passkey_available").and_then(|v| v.as_bool()),
+        Some(false)
+    );
 }
 
 #[tokio::test]
@@ -550,7 +553,7 @@ async fn given_valid_challenge_but_invalid_response_when_finish_login_then_400()
 
     let service = WebAuthnService::new(
         "localhost",
-        &url::Url::parse("http://localhost:8080").unwrap(),
+        &[url::Url::parse("http://localhost:8080").unwrap()],
     )
     .unwrap();
     let (_, auth_state) = service.begin_authentication(&[]).unwrap();

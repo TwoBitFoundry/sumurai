@@ -144,10 +144,9 @@ export class ApiClient {
       if (
         error instanceof ForbiddenError &&
         error.code === 'passkey_enrollment_required' &&
-        typeof window !== 'undefined' &&
-        !window.location.pathname.startsWith('/enroll-passkey')
+        typeof window !== 'undefined'
       ) {
-        window.location.assign('/enroll-passkey');
+        window.dispatchEvent(new CustomEvent('sumurai:enrollment-required'));
       }
 
       if (

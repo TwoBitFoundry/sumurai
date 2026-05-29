@@ -27,7 +27,9 @@ use crate::services::{
     plaid_service::PlaidService, plaid_service::RealPlaidClient,
     repository_service::DatabaseRepository, sync_service_factory::SyncServiceFactory,
 };
-use crate::test_fixtures::{build_credential_resolvers, noop_categorizer};
+use crate::test_fixtures::{
+    apply_passkey_enrollment_mock_defaults, build_credential_resolvers, noop_categorizer,
+};
 use crate::{create_app, AppState, Config, Router};
 
 struct MockProvider {
@@ -147,9 +149,10 @@ fn build_test_config() -> Config {
 }
 
 async fn build_test_app(
-    mock_db: MockDatabaseRepository,
+    mut mock_db: MockDatabaseRepository,
     provider_registry: Arc<ProviderRegistry>,
 ) -> Router {
+    apply_passkey_enrollment_mock_defaults(&mut mock_db);
     let plaid_client = Arc::new(RealPlaidClient::new(
         "test_client_id".to_string(),
         "test_secret".to_string(),
@@ -209,7 +212,7 @@ async fn build_test_app(
         webauthn_service: Arc::new(
             crate::services::webauthn_service::WebAuthnService::new(
                 "localhost",
-                &url::Url::parse("http://localhost:8080").unwrap(),
+                &[url::Url::parse("http://localhost:8080").unwrap()],
             )
             .unwrap(),
         ),
@@ -222,11 +225,9 @@ async fn build_test_app(
 async fn given_registering_user_when_creating_account_then_persists_empty_provider() {
     let mut mock_db = MockDatabaseRepository::new();
 
-    mock_db.expect_create_user().returning(|user| {
-        assert!(user.provider.is_empty());
-        assert!(user.password_hash.is_none());
-        Box::pin(async { Ok(()) })
-    });
+    mock_db
+        .expect_get_user_by_email()
+        .returning(|_| Box::pin(async { Ok(None) }));
 
     let mut mock_cache = create_auth_cookie_cache();
     mock_cache

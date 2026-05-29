@@ -1,11 +1,9 @@
-use crate::models::auth::WebAuthnCredential;
 use crate::services::auth_service::AuthService;
 use crate::services::repository_service::MockDatabaseRepository;
-use crate::test_fixtures::TestFixtures;
+use crate::test_fixtures::{test_passkey_for_user, TestFixtures};
 use axum::body::to_bytes;
 use axum::http::header::SET_COOKIE;
 use axum::http::Method;
-use chrono::Utc;
 use serde_json::json;
 use tower::ServiceExt;
 use uuid::Uuid;
@@ -55,11 +53,9 @@ fn set_cookie_value(response: &axum::response::Response) -> Option<&str> {
 async fn given_valid_registration_when_registering_then_returns_challenge_without_auth_cookie() {
     let mut mock_db = MockDatabaseRepository::new();
 
-    mock_db.expect_create_user().returning(|user| {
-        assert!(user.provider.is_empty());
-        assert!(user.password_hash.is_none());
-        Box::pin(async { Ok(()) })
-    });
+    mock_db
+        .expect_get_user_by_email()
+        .returning(|_| Box::pin(async { Ok(None) }));
 
     let mut mock_cache = create_auth_cookie_cache();
     mock_cache
@@ -254,15 +250,7 @@ async fn given_valid_current_password_when_change_password_then_returns_200() {
             Box::pin(async move { Ok(Some(u)) })
         });
 
-    let enrolled_passkey = WebAuthnCredential {
-        id: Uuid::new_v4(),
-        user_id,
-        credential_id: vec![1],
-        passkey: json!({}),
-        name: "Test Key".to_string(),
-        created_at: Utc::now(),
-        last_used_at: None,
-    };
+    let enrolled_passkey = test_passkey_for_user(user_id);
     mock_db
         .expect_list_webauthn_credentials_for_user()
         .times(0..)
@@ -338,15 +326,7 @@ async fn given_invalid_current_password_when_change_password_then_returns_401() 
             Box::pin(async move { Ok(Some(u)) })
         });
 
-    let enrolled_passkey = WebAuthnCredential {
-        id: Uuid::new_v4(),
-        user_id,
-        credential_id: vec![1],
-        passkey: json!({}),
-        name: "Test Key".to_string(),
-        created_at: Utc::now(),
-        last_used_at: None,
-    };
+    let enrolled_passkey = test_passkey_for_user(user_id);
     mock_db
         .expect_list_webauthn_credentials_for_user()
         .times(0..)

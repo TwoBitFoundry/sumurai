@@ -12,9 +12,19 @@ pub struct WebAuthnService {
 }
 
 impl WebAuthnService {
-    pub fn new(rp_id: &str, rp_origin: &Url) -> Result<Self> {
-        let webauthn = WebauthnBuilder::new(rp_id, rp_origin)
-            .map_err(|e| anyhow!("Failed to build WebAuthn: {:?}", e))?
+    pub fn new(rp_id: &str, rp_origins: &[Url]) -> Result<Self> {
+        let primary = rp_origins
+            .first()
+            .ok_or_else(|| anyhow!("At least one WebAuthn origin is required"))?;
+
+        let mut builder = WebauthnBuilder::new(rp_id, primary)
+            .map_err(|e| anyhow!("Failed to build WebAuthn: {:?}", e))?;
+
+        for origin in rp_origins.iter().skip(1) {
+            builder = builder.append_allowed_origin(origin);
+        }
+
+        let webauthn = builder
             .build()
             .map_err(|e| anyhow!("Failed to build WebAuthn: {:?}", e))?;
         Ok(Self { webauthn })

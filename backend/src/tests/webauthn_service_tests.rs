@@ -3,8 +3,8 @@ use url::Url;
 use webauthn_rs::prelude::PasskeyAuthentication;
 
 fn test_service() -> WebAuthnService {
-    let origin = Url::parse("http://localhost:8080").unwrap();
-    WebAuthnService::new("localhost", &origin).expect("WebAuthnService should build")
+    let origins = [Url::parse("http://localhost:8080").unwrap()];
+    WebAuthnService::new("localhost", &origins).expect("WebAuthnService should build")
 }
 
 #[test]
@@ -14,9 +14,19 @@ fn given_valid_config_when_new_then_builds() {
 
 #[test]
 fn given_invalid_origin_when_new_then_errors() {
-    let origin = Url::parse("http://localhost:8080").unwrap();
-    let result = WebAuthnService::new("", &origin);
+    let origins = [Url::parse("http://localhost:8080").unwrap()];
+    let result = WebAuthnService::new("", &origins);
     assert!(result.is_err(), "empty rp_id should fail");
+}
+
+#[test]
+fn given_local_dev_origins_when_new_then_builds() {
+    let origins = [
+        Url::parse("http://localhost:8080").unwrap(),
+        Url::parse("http://localhost:3001").unwrap(),
+    ];
+    let service = WebAuthnService::new("localhost", &origins);
+    assert!(service.is_ok());
 }
 
 #[test]

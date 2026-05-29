@@ -81,8 +81,8 @@ async fn given_password_in_register_body_when_registering_then_400() {
 async fn given_register_without_finish_when_accessing_protected_route_then_401() {
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
-        .expect_create_user()
-        .returning(|_| Box::pin(async { Ok(()) }));
+        .expect_get_user_by_email()
+        .returning(|_| Box::pin(async { Ok(None) }));
 
     let mut mock_cache = mock_public_auth_cache();
     mock_cache
@@ -129,6 +129,9 @@ async fn given_register_and_finish_when_authenticated_request_then_succeeds() {
 
     let users_for_create = stored_users.clone();
     let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_user_by_email()
+        .returning(|_| Box::pin(async { Ok(None) }));
     mock_db.expect_create_user().returning(move |user| {
         users_for_create
             .lock()

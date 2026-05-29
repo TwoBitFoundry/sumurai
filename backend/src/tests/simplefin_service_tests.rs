@@ -695,7 +695,7 @@ async fn build_simplefin_handler_app(
         webauthn_service: Arc::new(
             crate::services::webauthn_service::WebAuthnService::new(
                 "localhost",
-                &url::Url::parse("http://localhost:8080").unwrap(),
+                &[url::Url::parse("http://localhost:8080").unwrap()],
             )
             .unwrap(),
         ),

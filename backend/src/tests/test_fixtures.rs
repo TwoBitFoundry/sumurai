@@ -4,7 +4,10 @@ use chrono::{NaiveDate, Utc};
 use rust_decimal_macros::dec;
 use std::sync::Arc;
 use uuid::Uuid;
+use webauthn_authenticator_rs::prelude::WebauthnAuthenticator;
+use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 
+use crate::models::auth::WebAuthnCredential;
 use crate::models::predicted_category::PredictedCategory;
 use crate::models::{auth::User, transaction::Transaction};
 use crate::providers::ProviderRegistry;
@@ -44,6 +47,34 @@ use axum::{
 
 pub struct TestFixtures;
 
+pub(crate) fn test_passkey_for_user(user_id: Uuid) -> WebAuthnCredential {
+    let webauthn_service = crate::services::webauthn_service::WebAuthnService::new(
+        "localhost",
+        &[url::Url::parse("http://localhost:8080").unwrap()],
+    )
+    .unwrap();
+    let (challenge, reg_state) = webauthn_service
+        .begin_registration(user_id, "test@example.com", "Test User", &[])
+        .unwrap();
+    let origin = url::Url::parse("http://localhost:8080").unwrap();
+    let mut authenticator = WebauthnAuthenticator::new(SoftPasskey::new(true));
+    let credential_response = authenticator.do_registration(origin, challenge).unwrap();
+    let passkey = webauthn_service
+        .finish_registration(&reg_state, &credential_response)
+        .unwrap();
+    let credential_id = passkey.cred_id().to_vec();
+    let passkey_json = serde_json::to_value(&passkey).unwrap();
+    WebAuthnCredential {
+        id: Uuid::new_v4(),
+        user_id,
+        credential_id,
+        passkey: passkey_json,
+        name: "Test Passkey".to_string(),
+        created_at: Utc::now(),
+        last_used_at: None,
+    }
+}
+
 pub(crate) fn apply_passkey_enrollment_mock_defaults(mock_db: &mut MockDatabaseRepository) {
     mock_db
         .expect_get_user_by_id()
@@ -61,6 +92,13 @@ pub(crate) fn apply_passkey_enrollment_mock_defaults(mock_db: &mut MockDatabaseR
                     onboarding_completed: true,
                 }))
             })
+        });
+    mock_db
+        .expect_list_webauthn_credentials_for_user()
+        .times(0..)
+        .returning(|user_id| {
+            let credential = test_passkey_for_user(*user_id);
+            Box::pin(async move { Ok(vec![credential]) })
         });
 }
 
@@ -370,7 +408,7 @@ impl TestFixtures {
             webauthn_service: Arc::new(
                 crate::services::webauthn_service::WebAuthnService::new(
                     "localhost",
-                    &url::Url::parse("http://localhost:8080").unwrap(),
+                    &[url::Url::parse("http://localhost:8080").unwrap()],
                 )
                 .unwrap(),
             ),
@@ -509,7 +547,7 @@ impl TestFixtures {
             webauthn_service: Arc::new(
                 crate::services::webauthn_service::WebAuthnService::new(
                     "localhost",
-                    &url::Url::parse("http://localhost:8080").unwrap(),
+                    &[url::Url::parse("http://localhost:8080").unwrap()],
                 )
                 .unwrap(),
             ),
@@ -613,7 +651,7 @@ impl TestFixtures {
             webauthn_service: Arc::new(
                 crate::services::webauthn_service::WebAuthnService::new(
                     "localhost",
-                    &url::Url::parse("http://localhost:8080").unwrap(),
+                    &[url::Url::parse("http://localhost:8080").unwrap()],
                 )
                 .unwrap(),
             ),

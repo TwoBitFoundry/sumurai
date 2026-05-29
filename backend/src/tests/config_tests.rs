@@ -19,6 +19,25 @@ fn given_no_teller_env_when_from_env_provider_then_returns_error() {
 }
 
 #[test]
+fn given_comma_separated_app_origin_when_from_env_provider_then_loads_all_origins() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "development");
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080,http://localhost:3001");
+
+    let config = Config::from_env_provider(&env).unwrap();
+
+    assert_eq!(
+        config.app_origins(),
+        &[
+            "http://localhost:8080".to_string(),
+            "http://localhost:3001".to_string(),
+        ]
+    );
+    assert_eq!(config.app_origin(), "http://localhost:8080");
+}
+
+#[test]
 fn given_minimal_env_when_from_env_provider_then_loads_successfully() {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "development");

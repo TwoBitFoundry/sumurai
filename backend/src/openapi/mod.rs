@@ -45,6 +45,7 @@ use utoipa::OpenApi;
             crate::models::auth::PasskeyRegisterBeginResponse,
             crate::models::auth::PasskeyRegisterFinishRequest,
             crate::models::auth::PasskeyItem,
+            crate::models::auth::PasswordLoginRequest,
             crate::models::auth::PasskeyLoginBeginRequest,
             crate::models::auth::PasskeyLoginBeginResponse,
             crate::models::auth::PasskeyLoginFinishRequest,
@@ -155,6 +156,7 @@ use utoipa::OpenApi;
         crate::finish_passkey_registration,
         crate::list_user_passkeys,
         crate::delete_user_passkey,
+        crate::login_with_password,
         crate::begin_passkey_login,
         crate::finish_passkey_login,
     )

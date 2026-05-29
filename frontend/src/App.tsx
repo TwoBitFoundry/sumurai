@@ -7,6 +7,7 @@ import { LoginScreen, RegisterScreen } from './Auth';
 import { AuthenticatedApp, type TabKey } from './components/AuthenticatedApp';
 import { OnboardingProviderPicker } from './components/onboarding/OnboardingProviderPicker';
 import { ThemeProvider } from './context/ThemeContext';
+import { EnrollPasskeyScreen } from './features/auth/EnrollPasskeyScreen';
 import { AccountFilterProvider } from './hooks/useAccountFilter';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { TelemetryProvider, TelemetryService } from './observability';
@@ -40,6 +41,10 @@ interface AppContentProps {
 
 function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [needsPasskeyEnrollment, setNeedsPasskeyEnrollment] = useState(false);
+  const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
+  const [pendingOnboarding, setPendingOnboarding] = useState(false);
+  const [pendingExpiresAt, setPendingExpiresAt] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>(initialAuthScreen ?? 'login');
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -47,6 +52,12 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   const [sessionExpiresAt, setSessionExpiresAt] = useState<string | null>(null);
 
   const isOnline = useOnlineStatus();
+
+  useEffect(() => {
+    const handler = () => setShowEnrollmentModal(true);
+    window.addEventListener('sumurai:enrollment-required', handler);
+    return () => window.removeEventListener('sumurai:enrollment-required', handler);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -92,6 +103,25 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     []
   );
 
+  const handleEnrollmentRequired = useCallback(
+    (authResponse: { user_id: string; expires_at: string; onboarding_completed: boolean }) => {
+      setPendingOnboarding(!authResponse.onboarding_completed);
+      setPendingExpiresAt(authResponse.expires_at);
+      setNeedsPasskeyEnrollment(true);
+    },
+    []
+  );
+
+  const handleEnrollmentComplete = useCallback(() => {
+    setNeedsPasskeyEnrollment(false);
+    setShowEnrollmentModal(false);
+    setIsAuthenticated(true);
+    setShowOnboarding(pendingOnboarding);
+    setSessionExpiresAt(pendingExpiresAt);
+    setPendingOnboarding(false);
+    setPendingExpiresAt(null);
+  }, [pendingOnboarding, pendingExpiresAt]);
+
   const handleLogout = useCallback(async () => {
     try {
       await AuthService.logout();
@@ -102,8 +132,12 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     }
 
     setIsAuthenticated(false);
+    setNeedsPasskeyEnrollment(false);
+    setShowEnrollmentModal(false);
     setShowOnboarding(false);
     setSessionExpiresAt(null);
+    setPendingOnboarding(false);
+    setPendingExpiresAt(null);
     setAuthScreen('login');
   }, []);
 
@@ -132,25 +166,33 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
 
   if (!isAuthenticated) {
     return (
-      <GradientShell className={uiTextRecipes.primary}>
-        <div className={cn('flex', 'flex-col', 'min-h-dvh')}>
-          <AppTitleBar state="unauthenticated" scrolled={false} isOnline={isOnline} />
-          <main className={cn('flex-1', 'flex', 'items-center', 'justify-center')}>
-            {authScreen === 'login' ? (
-              <LoginScreen
-                onNavigateToRegister={() => setAuthScreen('register')}
-                onLoginSuccess={handleAuthSuccess}
-              />
-            ) : (
-              <RegisterScreen
-                onNavigateToLogin={() => setAuthScreen('login')}
-                onRegisterSuccess={handleAuthSuccess}
-              />
-            )}
-          </main>
-          <AppFooter />
-        </div>
-      </GradientShell>
+      <>
+        <GradientShell className={uiTextRecipes.primary}>
+          <div className={cn('flex', 'flex-col', 'min-h-dvh')}>
+            <AppTitleBar state="unauthenticated" scrolled={false} isOnline={isOnline} />
+            <main className={cn('flex-1', 'flex', 'items-center', 'justify-center')}>
+              {authScreen === 'login' ? (
+                <LoginScreen
+                  onNavigateToRegister={() => setAuthScreen('register')}
+                  onLoginSuccess={handleAuthSuccess}
+                  onEnrollmentRequired={handleEnrollmentRequired}
+                />
+              ) : (
+                <RegisterScreen
+                  onNavigateToLogin={() => setAuthScreen('login')}
+                  onRegisterSuccess={handleAuthSuccess}
+                />
+              )}
+            </main>
+            <AppFooter />
+          </div>
+        </GradientShell>
+        <EnrollPasskeyScreen
+          isOpen={needsPasskeyEnrollment}
+          onEnrollmentComplete={handleEnrollmentComplete}
+          onLogout={handleLogout}
+        />
+      </>
     );
   }
 
@@ -174,6 +216,11 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
           isOnline={isOnline}
         />
       </AccountFilterProvider>
+      <EnrollPasskeyScreen
+        isOpen={showEnrollmentModal}
+        onEnrollmentComplete={handleEnrollmentComplete}
+        onLogout={handleLogout}
+      />
     </SessionManager>
   );
 }

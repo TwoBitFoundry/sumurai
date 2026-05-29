@@ -169,6 +169,13 @@ pub struct PasskeyItem {
 }
 
 #[derive(Deserialize, ToSchema)]
+#[schema(example = json!({"email": "legacy@example.com", "password": "Test1234!"}))]
+pub struct PasswordLoginRequest {
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Deserialize, ToSchema)]
 #[schema(example = json!({"email": "user@example.com"}))]
 pub struct PasskeyLoginBeginRequest {
     pub email: String,
@@ -178,6 +185,8 @@ pub struct PasskeyLoginBeginRequest {
 pub struct PasskeyLoginBeginResponse {
     pub session_id: String,
     pub challenge: serde_json::Value,
+    pub account_exists: bool,
+    pub passkey_available: bool,
 }
 
 #[derive(Deserialize, ToSchema)]

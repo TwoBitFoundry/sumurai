@@ -126,7 +126,12 @@ describe('PasskeyService', () => {
   });
 
   it('beginLogin posts email to login begin endpoint', async () => {
-    const beginResponse = { session_id: 'login-session', challenge: requestChallenge };
+    const beginResponse = {
+      session_id: 'login-session',
+      challenge: requestChallenge,
+      account_exists: true,
+      passkey_available: true,
+    };
     jest.spyOn(ApiClient, 'post').mockResolvedValueOnce(beginResponse);
 
     const result = await PasskeyService.beginLogin('user@example.com');
@@ -156,7 +161,12 @@ describe('PasskeyService', () => {
   });
 
   it('signIn runs login begin, browser get, and login finish', async () => {
-    const beginResponse = { session_id: 'login-session', challenge: requestChallenge };
+    const beginResponse = {
+      session_id: 'login-session',
+      challenge: requestChallenge,
+      account_exists: true,
+      passkey_available: true,
+    };
     const authResponse: AuthResponse = {
       user_id: 'user-1',
       expires_at: '2026-01-01T00:00:00Z',

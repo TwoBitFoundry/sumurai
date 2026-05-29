@@ -1,39 +1,58 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { LoginScreen, RegisterScreen } from '@/Auth';
 
-jest.mock('@/hooks/useRegistrationValidation', () => ({
-  useRegistrationValidation: jest.fn(() => ({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    isEmailValid: false,
-    passwordValidation: {
-      minLength: false,
-      hasCapital: false,
-      hasNumber: false,
-      hasSpecial: false,
-      isValid: false,
-    },
-    isPasswordMatch: false,
-    setEmail: jest.fn(),
-    setPassword: jest.fn(),
-    setConfirmPassword: jest.fn(),
-    validateForm: jest.fn(),
-  })),
-}));
-
 describe('Auth screens', () => {
-  it('keeps login shell padding on the md tier', () => {
-    const { container } = render(<LoginScreen onNavigateToRegister={jest.fn()} />);
-
-    expect(container.firstElementChild).toHaveClass('md:px-6');
-    expect(container.firstElementChild).not.toHaveClass('sm:px-6');
+  it('renders email step without password fields', () => {
+    render(<LoginScreen onNavigateToRegister={jest.fn()} />);
+    expect(screen.getByLabelText(/^email$/i)).toBeTruthy();
+    expect(screen.queryByLabelText(/password/i)).toBeNull();
+    expect(screen.getByRole('button', { name: /^continue$/i })).toBeTruthy();
   });
 
-  it('keeps register shell padding on the md tier', () => {
-    const { container } = render(<RegisterScreen onNavigateToLogin={jest.fn()} />);
+  it('shows an error when login begin reports unknown email', async () => {
+    const { userEvent } = await import('@testing-library/user-event');
+    const { PasskeyService } = await import('@/services/passkeyService');
+    jest.spyOn(PasskeyService, 'beginLogin').mockResolvedValue({
+      session_id: 'session-1',
+      challenge: {},
+      account_exists: false,
+      passkey_available: false,
+    });
+    const user = userEvent.setup();
+    render(<LoginScreen onNavigateToRegister={jest.fn()} />);
+    await user.type(screen.getByLabelText(/^email$/i), 'nobody@example.com');
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    expect(screen.getByText(/no account found for this email/i)).toBeTruthy();
+    expect(screen.queryByLabelText(/^password$/i)).toBeNull();
+  });
 
-    expect(container.firstElementChild).toHaveClass('md:px-6');
-    expect(container.firstElementChild).not.toHaveClass('sm:px-6');
+  it('shows password step when login begin reports no passkey', async () => {
+    const { userEvent } = await import('@testing-library/user-event');
+    const { PasskeyService } = await import('@/services/passkeyService');
+    jest.spyOn(PasskeyService, 'beginLogin').mockResolvedValue({
+      session_id: 'session-1',
+      challenge: {},
+      account_exists: true,
+      passkey_available: false,
+    });
+    const user = userEvent.setup();
+    render(<LoginScreen onNavigateToRegister={jest.fn()} />);
+    await user.type(screen.getByLabelText(/^email$/i), 'legacy@example.com');
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    expect(await screen.findByLabelText(/^password$/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /sign in with password/i })).toBeTruthy();
+  });
+
+  it('renders register without password fields', () => {
+    render(<RegisterScreen onNavigateToLogin={jest.fn()} />);
+    expect(screen.getByLabelText(/^email$/i)).toBeTruthy();
+    expect(screen.getByLabelText(/^passkey name$/i)).toBeTruthy();
+    expect(screen.queryByLabelText(/password/i)).toBeNull();
+    expect(screen.getByRole('button', { name: /^create account$/i })).toBeTruthy();
+  });
+
+  it('keeps auth form layout padding on the md tier', () => {
+    const { container } = render(<LoginScreen onNavigateToRegister={jest.fn()} />);
+    expect(container.querySelector('.md\\:px-6')).toBeTruthy();
   });
 });
