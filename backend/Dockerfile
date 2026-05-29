@@ -37,10 +37,13 @@ COPY rust-toolchain.toml Cargo.toml Cargo.lock ./
 COPY backend/Cargo.toml backend/Cargo.toml
 COPY backend/entity/Cargo.toml backend/entity/Cargo.toml
 COPY backend/migration/Cargo.toml backend/migration/Cargo.toml
-RUN mkdir -p backend/src backend/entity/src backend/migration/src \
+COPY cli/Cargo.toml cli/Cargo.toml
+RUN mkdir -p backend/src backend/entity/src backend/migration/src cli/src \
     && printf 'fn main() {}\n' > backend/src/main.rs \
     && printf '\n' > backend/entity/src/lib.rs \
-    && printf '\n' > backend/migration/src/lib.rs
+    && printf '\n' > backend/migration/src/lib.rs \
+    && printf 'fn main() {}\n' > cli/src/main.rs \
+    && printf '\n' > cli/src/lib.rs
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
@@ -48,7 +51,8 @@ COPY --from=planner /app/recipe.json ./recipe.json
 RUN cargo chef cook --release --locked --recipe-path recipe.json
 COPY rust-toolchain.toml Cargo.toml Cargo.lock ./
 COPY backend/ ./backend/
-RUN cargo build --release --locked -p sumurai-backend -p migration
+COPY cli/ ./cli/
+RUN cargo build --release --locked -p sumurai-backend -p migration -p sumurai-cli
 
 FROM debian:trixie-slim AS runtime
 WORKDIR /app
@@ -68,6 +72,7 @@ COPY --from=assets /app/backend/assets/models/distilbert-us-transaction-classifi
 ENV ORT_DYLIB_PATH=/usr/local/lib/libonnxruntime.so
 COPY --from=builder /app/target/release/sumurai-backend /app/sumurai-backend
 COPY --from=builder /app/target/release/migration /app/migration
+COPY --from=builder /app/target/release/sumurai /app/sumurai
 COPY backend/scripts/docker-migrate.sh /app/docker-migrate.sh
 COPY backend/scripts/docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-migrate.sh /app/docker-entrypoint.sh

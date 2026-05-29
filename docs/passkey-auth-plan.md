@@ -277,10 +277,17 @@ Existing users without an enrolled passkey are migrated: on their next authentic
 - Does not delete the user account or any other data.
 
 **Acceptance**
-- [ ] Running the command against an existing user clears their credentials row(s).
-- [ ] After reset, the user hits the migration prompt (Phase 6) on next request and can re-enroll.
-- [ ] Running the command against an unknown username/email prints a clear error and exits non-zero.
-- [ ] Command is documented in [CONTRIBUTING.md](CONTRIBUTING.md) under a "Recovery" section.
+- [x] Running the command against an existing user clears their credentials row(s).
+- [x] After reset, the user hits the migration prompt (Phase 6) on next request and can re-enroll. *(integration test clears credentials; enrollment middleware covered in Phase 6)*
+- [x] Running the command against an unknown username/email prints a clear error and exits non-zero.
+- [x] Command is documented in [CONTRIBUTING.md](CONTRIBUTING.md) under a "Recovery" section.
+
+**TDD log**
+- New workspace crate `cli/` (`sumurai-cli`) with `sumurai` binary: `reset-passkeys <email-or-uuid>`.
+- `reset_passkeys` service + `PasskeyResetStore` trait; `PostgresPasskeyResetStore` uses `DATABASE_URL` and SeaORM `delete_many` on `webauthn_credentials` (superuser bypasses RLS).
+- 3 boundary tests in `cli/tests/reset_passkeys_tests.rs` (unknown user, email reset, UUID reset).
+- 1 integration test in `cli/tests/reset_passkeys_integration_tests.rs` (skips without `DATABASE_URL`).
+- Docker image ships `/app/sumurai`; `backend:ci` includes `sumurai-cli` fmt/clippy/test.
 
 ---
 

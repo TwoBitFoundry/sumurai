@@ -136,12 +136,12 @@ cargo test -p sumurai-backend --locked
 
 The backend image is built from the **repository root** (not `backend/` alone). Compose and CI use `docker build -f backend/Dockerfile .`.
 
-The Rust workspace lockfile is **`Cargo.lock`** at the repo root. Workspace members are `backend`, `backend/entity`, and `backend/migration`.
+The Rust workspace lockfile is **`Cargo.lock`** at the repo root. Workspace members are `backend`, `backend/entity`, `backend/migration`, and `cli`.
 
 [`backend/Dockerfile`](backend/Dockerfile) uses [cargo-chef](https://github.com/LukeMathWalker/cargo-chef) to cache dependency compilation:
 
 1. **Planner** — copies root `Cargo.toml` / `Cargo.lock`, workspace crate manifests, and minimal `src` stubs (not application source), then runs `cargo chef prepare`.
-2. **Builder** — `cargo chef cook` from `recipe.json`, then copies full `backend/` sources and builds `sumurai-backend` and `migration` binaries.
+2. **Builder** — `cargo chef cook` from `recipe.json`, then copies full `backend/` and `cli/` sources and builds `sumurai-backend`, `migration`, and `sumurai` binaries.
 3. **Runtime** — ONNX assets plus the release binaries and entrypoint scripts.
 
 Only manifest or lockfile changes should invalidate the planner/cook layers; ordinary Rust edits in `backend/src/` rebuild in the final `cargo build` step.
@@ -242,10 +242,34 @@ Document why the escape hatch was needed in the PR.
 5. Add or extend a `From<entity::…::Model>` mapping in `conversions.rs` if the API exposes the field.
 6. Run `cargo test -p sumurai-backend --locked` from the repository root.
 
+## Recovery
+
+If a user loses every enrolled passkey, an operator with database access can clear their credentials so the user is prompted to enroll again on the next sign-in. The user account and financial data are not deleted.
+
+The `sumurai` CLI ships in the backend Docker image at `/app/sumurai`. It connects with `DATABASE_URL` using the same superuser connection as migrations, so it bypasses row-level security for operator maintenance.
+
+```bash
+docker compose -f docker-compose.dev.yml exec backend /app/sumurai reset-passkeys user@example.com
+```
+
+You can pass an email address or the user's UUID. On success the command prints:
+
+`Passkeys cleared for user@example.com. User will be prompted to enroll a new passkey on next sign-in.`
+
+If no matching user exists, the command exits with a non-zero status and an error message.
+
+For local development without Docker, build the CLI from the repository root and point it at Postgres:
+
+```bash
+cargo build --release -p sumurai-cli
+DATABASE_URL=postgres://… ./target/release/sumurai reset-passkeys user@example.com
+```
+
 ## Repository Layout
 
 - `frontend/` - Next.js 16, React 19, TypeScript 6, Tailwind 4, Biome 2, Recharts 3
 - `backend/` - Rust 1.95, Axum, SeaORM, Redis, PostgreSQL, provider integrations, OpenTelemetry
+- `cli/` - operator CLI (`sumurai reset-passkeys`, …)
 - `docs/` - architecture, screenshots, compliance, and reference documents
 
 ## Coding Standards
