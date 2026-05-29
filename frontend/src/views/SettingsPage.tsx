@@ -3,6 +3,7 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { PasswordChecker } from '@/components/PasswordChecker';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
 import { useTheme } from '@/context/ThemeContext';
+import { PasskeySecuritySection } from '@/features/settings/PasskeySecuritySection';
 import { usePasswordValidation } from '@/hooks/usePasswordValidation';
 import { pageLayoutRecipes } from '@/layouts/PageLayout';
 import { AuthService } from '@/services/authService';
@@ -142,6 +143,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
               </h2>
               <ThemeModeSelector value={preference} onChange={setPreference} />
             </section>
+
+            <PasskeySecuritySection />
 
             <section className={cn('space-y-3', 'border-t', 'pt-5', ...uiBorderRecipes.divider)}>
               <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>

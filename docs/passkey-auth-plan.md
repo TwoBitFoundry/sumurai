@@ -310,10 +310,18 @@ Existing users without an enrolled passkey are migrated: on their next authentic
 - Remove flow: confirm dialog → `passkeyService.remove(id)` → refresh. If only one passkey remains, the remove button is disabled with a tooltip: "Enroll another passkey before removing this one."
 
 **Acceptance**
-- [ ] Storybook entries cover: one passkey (remove disabled), multiple passkeys, mid-enrollment, error after cancellation.
-- [ ] Remove button is disabled when only one passkey is enrolled.
+- [x] Storybook entries cover: one passkey (remove disabled), multiple passkeys, mid-enrollment, error after cancellation.
+- [x] Remove button is disabled when only one passkey is enrolled.
 - [ ] Manual: enrolling a second passkey under a different name shows both; `last_used_at` updates after subsequent sign-ins.
 - [ ] Removing a passkey causes future sign-in with that credential to fail (server-side rejection).
+
+**TDD log**
+- `PasskeySecuritySection` + `PasskeySecuritySectionView` in `frontend/src/features/settings/`; wired into `SettingsPage` Security section.
+- `passkeySecurityPolicy.ts`: `canRemovePasskey`, `formatPasskeyTimestamp`, `LAST_PASSKEY_REMOVE_TOOLTIP`.
+- `suggestPasskeyName` exported from `passkeyService` for add-passkey default.
+- Storybook: `PasskeySecuritySection.stories.tsx` (single, multiple, mid-enrollment, cancellation toast, dark).
+- Tests: `tests/features/settings/passkeySecurityPolicy.test.ts`, `PasskeySecuritySectionView.test.tsx`.
+- `npm --prefix frontend test -- tests/features/settings/`; `npm --prefix frontend run typecheck`.
 
 ---
 

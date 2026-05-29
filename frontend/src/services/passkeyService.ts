@@ -15,7 +15,7 @@ import {
 } from '../utils/webauthnEncoding';
 import { ApiClient } from './ApiClient';
 
-function defaultPasskeyName(): string {
+export function suggestPasskeyName(): string {
   if (typeof navigator === 'undefined') {
     return 'Passkey';
   }
@@ -47,7 +47,7 @@ export class PasskeyService {
     return ApiClient.post<PasskeyItem | AuthResponse>('/auth/passkey/register/finish', {
       session_id: sessionId,
       response: serializeRegistrationCredential(credential),
-      name: name?.trim() || defaultPasskeyName(),
+      name: name?.trim() || suggestPasskeyName(),
     });
   }
 
