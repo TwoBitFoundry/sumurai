@@ -3,9 +3,6 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential pkg-config libssl-dev ca-certificates curl postgresql-client && rm -rf /var/lib/apt/lists/*
 RUN cargo install cargo-chef --version 0.1.77 --locked
 
-FROM chef AS sqlx-cli
-RUN cargo install sqlx-cli --version 0.8.6 --locked --no-default-features --features rustls,postgres
-
 FROM chef AS assets
 ARG TARGETARCH
 ARG ONNXRUNTIME_VERSION=1.24.4
@@ -50,12 +47,10 @@ RUN cargo build --release --locked -p sumurai-backend
 FROM debian:trixie-slim AS runtime
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl postgresql-client libssl3 libgomp1 && rm -rf /var/lib/apt/lists/*
-COPY --from=sqlx-cli /usr/local/cargo/bin/sqlx /usr/local/bin/sqlx
 COPY --from=assets /usr/local/lib/libonnxruntime.so* /usr/local/lib/
 RUN ldconfig
 COPY --from=assets /app/backend/assets/models/distilbert-us-transaction-classifier-v2 /app/backend/assets/models/distilbert-us-transaction-classifier-v2
 ENV ORT_DYLIB_PATH=/usr/local/lib/libonnxruntime.so
 COPY --from=builder /app/target/release/sumurai-backend /app/sumurai-backend
-COPY backend/migrations /app/migrations
 EXPOSE 3000
 CMD ["./sumurai-backend"]

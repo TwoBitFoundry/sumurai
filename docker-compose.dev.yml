@@ -57,13 +57,6 @@ services:
     volumes:
       - .certs/teller/certificate.pem:/etc/teller/certificate.pem:ro
       - .certs/teller/private_key.pem:/etc/teller/private_key.pem:ro
-    command: >
-      sh -c "
-        echo 'Running database migrations...' &&
-        sqlx migrate run &&
-        echo 'Starting backend server...' &&
-        exec ./sumurai-backend
-      "
     depends_on:
       postgres:
         condition: service_healthy

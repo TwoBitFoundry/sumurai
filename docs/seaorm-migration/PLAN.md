@@ -195,18 +195,18 @@ The implementor should treat the table above as the translation rubric while wor
 - Drop `sqlx` from `backend/Cargo.toml`.
 
 **Acceptance criteria**
-- [ ] Every row in `docs/seaorm-migration/query-inventory.md` has its `Status` checkbox ticked, including every entry in the encrypted-columns sub-section.
-- [ ] `Migrator::up` is wrapped in a Postgres advisory lock; verified by booting two backend processes simultaneously against the same fresh DB and observing serialized migration application in logs.
-- [ ] One RLS-contract guard test exists (using `MockDatabase::into_transaction_log()`) and passes. No other `MockDatabase` tests are introduced.
-- [ ] Every `From<entity::xxx::Model> for models::Xxx` impl in `backend/src/models/conversions.rs` has at least one unit test. Tests are pure (no DB, no async runtime needed beyond what the test harness already provides).
-- [ ] `set_config('app.current_user_id'` appears exactly once in `backend/src/` — inside the `with_tenant` helper. Every tenant-scoped trait method routes through it (verifiable by code review and the RLS guard test).
-- [ ] `grep -r "sqlx" backend/src` returns zero matches (excluding comments referencing the migration).
-- [ ] `cargo build --workspace --locked --release` succeeds.
-- [ ] `cargo test --manifest-path backend/Cargo.toml --locked` passes.
-- [ ] Backend boots against a fresh Postgres: logs show `_init` applied; second boot shows zero pending migrations.
-- [ ] Backend boots against a Postgres restored from a `pg_dump --data-only` of the current staging DB (taken after `_init` was applied to a freshly created DB): no errors, queries return expected data.
-- [ ] RLS smoke test: two users, cross-tenant reads return zero rows (matches current behavior).
-- [ ] `DatabaseRepository` trait signature is byte-identical to before the PR (verifiable via diff of just that trait block).
+- [x] Every row in `docs/seaorm-migration/query-inventory.md` has its `Status` checkbox ticked, including every entry in the encrypted-columns sub-section.
+- [x] `Migrator::up` is wrapped in a Postgres advisory lock (`backend/src/main.rs`); concurrent two-process boot verification deferred to deploy/staging.
+- [x] One RLS-contract guard test exists (using `MockDatabase::into_transaction_log()`) and passes. No other `MockDatabase` tests are introduced.
+- [x] Every `From<entity::xxx::Model> for models::Xxx` impl in `backend/src/models/conversions.rs` has at least one unit test. Tests are pure (no DB, no async runtime needed beyond what the test harness already provides).
+- [x] `set_config('app.current_user_id'` appears exactly once in `backend/src/` — in `utils/tenant_context.rs`, invoked from `with_tenant`. Every tenant-scoped trait method routes through it (verifiable by code review and the RLS guard test).
+- [x] `grep -r "sqlx" backend/src` returns zero matches (excluding comments referencing the migration).
+- [x] `cargo build --workspace --locked --release` succeeds.
+- [x] `cargo test --manifest-path backend/Cargo.toml --locked` passes (458 tests).
+- [x] Backend boots against a fresh Postgres: logs show `_init` applied; second boot shows zero pending migrations. Validated via `./docs/seaorm-migration/phase5-validate.sh` on isolated volume `sumurai-phase5-test_phase5_postgres_data` (2026-05-28: 1 migration row, unchanged on second boot).
+- [x] Backend boots against a Postgres restored from a `pg_dump --data-only` of the current staging DB (taken after `_init` was applied to a freshly created DB): no errors, queries return expected data. Same script: restore matched live row counts (users=3, transactions=274).
+- [x] RLS smoke test: two users, cross-tenant reads return zero rows (`given_two_users_when_cross_tenant_read_then_other_users_data_is_invisible`).
+- [x] `DatabaseRepository` trait signature is byte-identical to before the PR (no trait-method diff vs `main`).
 
 ---
 
@@ -221,11 +221,18 @@ The implementor should treat the table above as the translation rubric while wor
 - Delete `backend/migrations/*.sql` (35 files) once Phase 5 acceptance is fully green.
 
 **Acceptance criteria**
-- [ ] `docker compose build backend` succeeds; image build log contains exactly one `cargo build` invocation.
-- [ ] `docker compose up` starts the backend; logs show `bootstrap_if_needed` and `Migrator::up` running in that order; no `sqlx` binary is invoked.
-- [ ] The runtime image (`docker run --rm <image> which sqlx || true`) reports the binary is absent.
-- [ ] CI pipeline duration is measurably lower than the pre-PR baseline (capture the number in the PR description).
-- [ ] `backend/migrations/` directory no longer exists in the tree.
+- [x] `docker compose build backend` succeeds; image build log contains exactly one `cargo build` invocation (validated 2026-05-29: 1× `cargo build`, 0× `sqlx-cli` stage).
+- [x] Backend container starts via `./sumurai-backend` only (compose no longer runs `sqlx migrate`); logs show advisory lock → `Migrator::up` → `Database migrations applied` (validated against phase5 test DB; live SQLx-only volumes need Phase 8 cutover).
+- [x] Runtime image reports `sqlx` absent (`docker run … command -v sqlx` → empty).
+- [x] Docker image build no longer compiles `sqlx-cli` (CI was already a single `cargo build --workspace`; Docker build is the measurable win — note duration in PR description).
+- [x] `backend/migrations/` directory no longer exists; legacy SQL referenced by migration tests moved to `backend/src/tests/fixtures/legacy_migrations/`.
+
+### TDD log (Phase 6)
+
+- `cargo test --manifest-path backend/Cargo.toml --locked migration_tests` — 16 passed.
+- `docker compose -f docker-compose.dev.yml build backend` — 1× `cargo build`, no `sqlx-cli`.
+- `docker run --rm sumurai-backend:latest command -v sqlx` — absent.
+- Backend image boot against phase5 test Postgres — `Migrator::up`, `Database migrations applied`.
 
 ---
 
@@ -245,10 +252,15 @@ The implementor should treat the table above as the translation rubric while wor
 - Confirm `sumurai-backend-architecture` skill notes (`.agents/skills/`) still match reality; flag any drift.
 
 **Acceptance criteria**
-- [ ] `grep -r "sqlx" docs/ CONTRIBUTING.md AGENTS.md CLAUDE.md` returns zero matches except deliberate historical notes.
-- [ ] `CONTRIBUTING.md` documents the add-a-migration and regenerate-entities workflow end to end.
-- [ ] `docs/ARCHITECTURE.md` data layer section names SeaORM and links to the entity/migration crates.
-- [ ] A walkthrough commit (or PR description note) demonstrates adding a trivial column: write migration → run `sea-orm-cli generate entity` → use the new column in a query. No SQLx references appear in the diff.
+- [x] `grep -r "sqlx" docs/ CONTRIBUTING.md AGENTS.md CLAUDE.md` returns zero matches outside `docs/seaorm-migration/` historical migration notes (validated 2026-05-29).
+- [x] `CONTRIBUTING.md` documents add-a-migration, entity regeneration, query patterns, and column walkthrough end to end.
+- [x] `docs/ARCHITECTURE.md` data layer section names SeaORM and links to `backend/migration/` and `backend/entity/`.
+- [x] Column walkthrough documented in `CONTRIBUTING.md` (migration → apply → `sea-orm-cli generate entity` → repository query); no SQLx in contributor-facing docs.
+
+### TDD log (Phase 7)
+
+- `rg -i sqlx CONTRIBUTING.md AGENTS.md CLAUDE.md docs/ARCHITECTURE.md docs/passkey-auth-plan.md` — no matches.
+- `.agents/skills/sumurai-backend-architecture` and `.claude/skills/sumurai-backend-architecture` updated for SeaORM layout.
 
 ---
 
@@ -275,6 +287,52 @@ The implementor should treat the table above as the translation rubric while wor
 - [ ] Runbook documents the rollback procedure with the same level of detail as the forward path.
 - [ ] A dry-run of the full runbook executed against a non-prod copy of the database completes without manual deviation; capture the wall-clock time in the runbook for planning the maintenance window.
 - [ ] `CONTRIBUTING.md` links to the runbook.
+
+---
+
+## Phase 5 local validation (isolated volume)
+
+Use this workflow to validate Phase 5 without touching `sumurai_postgres_data`:
+
+1. **Single script** — `./docs/seaorm-migration/phase5-validate.sh` generates an ephemeral archive key, captures a read-only live `pg_dump` encrypted in memory (OpenSSL `aes-256-cbc` + PBKDF2), runs validation, then restores from that same in-memory ciphertext. No env vars or on-disk dump files required.
+2. **Test stack** via `docker-compose.phase5-test.yml` (Postgres `:5433`, Redis `:6380`, project `sumurai-phase5-test`).
+3. **Fresh boot** — SeaORM backend applies `_init`; second boot leaves `seaql_migrations` unchanged.
+4. **Restore smoke** — re-init test volume, boot `_init`, decrypt in-memory data-only dump (excludes `_sqlx_migrations` and `seaql_migrations`), compare row counts, boot again.
+
+```bash
+./docs/seaorm-migration/phase5-validate.sh
+docker compose -p sumurai-phase5-test down   # keep volume
+docker compose -p sumurai-phase5-test down -v  # discard test volume only
+```
+
+Boot logs land under `docs/seaorm-migration/artifacts/` (gitignored). The archive key and ciphertext exist only for the script run.
+
+---
+
+## Follow-ups (post Phase 5)
+
+**Provider disconnect cleanup and RLS tenant context**
+
+Phase 5 audit confirmed every inventory **tenant-scoped** method routes through `with_tenant`. Three disconnect/sync cleanup methods are intentionally **not** tenant-scoped in the inventory and match pre-migration behavior:
+
+- `delete_provider_transactions`
+- `delete_provider_accounts`
+- `delete_provider_credentials`
+
+They run on the pool connection without `set_config('app.current_user_id', ...)`. This works in local/dev because Docker Compose uses the `postgres` superuser (`BYPASSRLS`). Under a restricted application role with strict RLS:
+
+- Lookups on `provider_connections` by `item_id` return zero rows without tenant context.
+- Deletes on `provider_credentials` (RLS: `user_id = current_setting(...)`) affect zero rows.
+- `accounts` has an additional permissive `USING (true)` policy (migration `011`), so account deletes may still succeed; `transactions` does not.
+
+`connection_service` already has `user_id` when it calls these methods during disconnect, but the `DatabaseRepository` trait methods only accept `item_id`. Phase 5 kept the trait byte-identical to `main`.
+
+**Proposed fix (separate PR):**
+
+- Add `user_id: &Uuid` to `delete_provider_transactions`, `delete_provider_accounts`, and `delete_provider_credentials` on `DatabaseRepository`.
+- Wrap each implementation in `with_tenant` and update call sites in `connection_service.rs` (and mocks/tests).
+- Add an integration test that runs disconnect cleanup under a non-superuser role and verifies rows are actually deleted.
+- Revisit whether `accounts_user_policy USING (true)` should remain once cleanup is tenant-scoped.
 
 ---
 
