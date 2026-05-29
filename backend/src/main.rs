@@ -33,6 +33,7 @@ mod openapi;
 
 #[path = "../connection_pool.rs"]
 pub mod connection_pool;
+#[cfg(test)]
 #[path = "../db_compat.rs"]
 mod db;
 mod handlers;
