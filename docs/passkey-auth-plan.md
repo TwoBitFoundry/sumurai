@@ -189,7 +189,7 @@ Existing users without an enrolled passkey are migrated: on their next authentic
 - [x] After enrollment, subsequent requests succeed normally.
 - [x] New users (created post-migration) never have `password_hash` set; they are not shown the prompt.
 - [x] Storybook entry for the `/enroll-passkey` page.
-- [ ] Legacy user with expired session can sign in with email + password, is redirected to enroll passkey, then uses the app without password.
+- [x] Legacy user with expired session can sign in with email + password, is redirected to enroll passkey, then uses the app without password.
 
 **TDD log**
 - Backend middleware `passkey_enrollment_middleware` returns 403 `{ code: "passkey_enrollment_required" }` when credential count is zero; exempts passkey register begin/finish and logout.
@@ -288,6 +288,8 @@ Existing users without an enrolled passkey are migrated: on their next authentic
 - 3 boundary tests in `cli/tests/reset_passkeys_tests.rs` (unknown user, email reset, UUID reset).
 - 1 integration test in `cli/tests/reset_passkeys_integration_tests.rs` (skips without `DATABASE_URL`).
 - Docker image ships `/app/sumurai`; `backend:ci` includes `sumurai-cli` fmt/clippy/test.
+- `authLayout` recipes in `frontend/src/ui/recipes.ts` (mobile full-width actions, tablet `md:`, desktop `lg:` brand aside + centered actions) applied to `AuthFormLayout`, `EnrollPasskeyScreen`, login/register footers for post-reset re-enrollment.
+- `cargo test -p sumurai-cli --locked`; `npm --prefix frontend test -- tests/ui/recipes.test.ts tests/Auth.test.tsx`.
 
 ---
 
@@ -343,7 +345,7 @@ Existing users without an enrolled passkey are migrated: on their next authentic
 - [ ] Full E2E manual flow passes on a fresh clone with no extra env config.
 - [ ] Migration path verified on a DB with pre-existing password users.
 - [ ] [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) updated; Caching section reflects any new TTL constants.
-- [ ] [CONTRIBUTING.md](CONTRIBUTING.md) updated with Recovery section documenting `reset-passkeys`.
+- [x] [CONTRIBUTING.md](CONTRIBUTING.md) updated with Recovery section documenting `reset-passkeys`.
 
 ---
 

@@ -1,4 +1,5 @@
 import {
+  authLayout,
   border,
   chrome,
   chromeBar,
@@ -138,5 +139,16 @@ describe('shared UI recipes', () => {
       'border-[var(--color-status-danger-border)]',
       'dark:border-[var(--color-status-danger-border)]',
     ]);
+  });
+
+  it('exposes auth layout recipes for mobile, tablet, and desktop tiers', () => {
+    expect(authLayout.shell).toEqual(expect.arrayContaining(['px-4', 'md:px-6', 'lg:max-w-lg']));
+    expect(authLayout.brandAside[0]).toBe('hidden');
+    expect(authLayout.brandAside).toContain('lg:flex');
+    expect(authLayout.stackedActions).toContain('lg:items-center');
+    expect(authLayout.primaryAction).toEqual(
+      expect.arrayContaining(['w-full', 'md:w-full', 'lg:w-auto'])
+    );
+    expect(authLayout.footerLink).toEqual(expect.arrayContaining([font.body, text.body]));
   });
 });

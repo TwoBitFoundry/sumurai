@@ -4,7 +4,7 @@ import { ToastStack } from '@/components/toastStack/ToastStack';
 import { PasskeyService } from '@/services/passkeyService';
 import type { AuthResponse } from '@/types/api';
 import { Alert, Badge, Button, cn, FormLabel, Input } from '@/ui/primitives';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { authLayout, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import {
   type CreationChallengeResponseJSON,
   createPasskeyCredential,
@@ -162,7 +162,7 @@ export function RegisterScreen({
             </Button>
           </form>
 
-          <div className={cn('text-center', uiTypographyRecipes.body, uiTextRecipes.body)}>
+          <div className={cn(authLayout.footerLink)}>
             <p className="mb-3">Already have an account?</p>
             <Button
               type="button"

@@ -95,5 +95,41 @@ describe('Auth screens', () => {
   it('keeps auth form layout padding on the md tier', () => {
     const { container } = render(<LoginScreen onNavigateToRegister={jest.fn()} />);
     expect(container.querySelector('.md\\:px-6')).toBeTruthy();
+    expect(container.querySelector('.lg\\:max-w-lg')).toBeTruthy();
+  });
+
+  it('starts legacy password migration enrollment after password sign-in', async () => {
+    const { userEvent } = await import('@testing-library/user-event');
+    const { PasskeyService } = await import('@/services/passkeyService');
+    const { AuthService } = await import('@/services/authService');
+    jest.spyOn(PasskeyService, 'beginLogin').mockResolvedValue({
+      session_id: '',
+      challenge: {},
+      account_exists: true,
+      passkey_available: false,
+      password_available: true,
+    });
+    jest.spyOn(AuthService, 'loginWithPassword').mockResolvedValue({
+      user_id: 'legacy-user',
+      expires_at: '2099-01-01T00:00:00Z',
+      onboarding_completed: true,
+    });
+    const onEnrollmentRequired = jest.fn();
+    const user = userEvent.setup();
+    render(
+      <LoginScreen onNavigateToRegister={jest.fn()} onEnrollmentRequired={onEnrollmentRequired} />
+    );
+    await user.type(screen.getByLabelText(/^email$/i), 'legacy@example.com');
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    await user.type(screen.getByLabelText(/^password$/i), 'Test1234!');
+    await user.click(screen.getByRole('button', { name: /sign in with password/i }));
+    expect(onEnrollmentRequired).toHaveBeenCalledWith(
+      {
+        user_id: 'legacy-user',
+        expires_at: '2099-01-01T00:00:00Z',
+        onboarding_completed: true,
+      },
+      'legacy@example.com'
+    );
   });
 });

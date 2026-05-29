@@ -5,7 +5,12 @@ import { ToastStack } from '@/components/toastStack/ToastStack';
 import { PasskeyService } from '@/services/passkeyService';
 import type { AuthResponse } from '@/types/api';
 import { Alert, Badge, Button, cn, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
-import { control, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import {
+  authLayout,
+  control,
+  text as uiTextRecipes,
+  font as uiTypographyRecipes,
+} from '@/ui/recipes';
 import {
   type CreationChallengeResponseJSON,
   createPasskeyCredential,
@@ -114,12 +119,12 @@ export function EnrollPasskeyScreen({
               />
             </div>
 
-            <div className="flex flex-col items-stretch gap-3 sm:items-center">
+            <div className={cn(authLayout.stackedActions)}>
               <Button
                 type="submit"
                 variant="primary"
                 size="lg"
-                className="w-full sm:w-auto sm:min-w-[220px]"
+                className={cn(authLayout.primaryAction)}
                 disabled={isLoading}
               >
                 {isLoading ? 'Waiting for your device…' : 'Enroll passkey'}
@@ -130,7 +135,7 @@ export function EnrollPasskeyScreen({
                   type="button"
                   variant="danger"
                   size="md"
-                  className="w-full sm:w-auto"
+                  className={cn(authLayout.secondaryAction)}
                   disabled={isLoading}
                   onClick={onLogout}
                 >

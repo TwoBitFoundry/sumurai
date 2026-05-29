@@ -6,7 +6,7 @@ import { AuthenticationError } from '@/services/boundaries';
 import { PasskeyService } from '@/services/passkeyService';
 import type { AuthResponse } from '@/types/api';
 import { Alert, Badge, Button, cn, FormLabel, Input } from '@/ui/primitives';
-import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import { authLayout, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import {
   type CreationChallengeResponseJSON,
   getPasskeyCredential,
@@ -308,7 +308,7 @@ export function LoginScreen({
             </form>
           )}
 
-          <div className={cn('text-center', uiTypographyRecipes.body, uiTextRecipes.body)}>
+          <div className={cn(authLayout.footerLink)}>
             <p className="mb-3">Don't have an account?</p>
             <Button
               type="button"
