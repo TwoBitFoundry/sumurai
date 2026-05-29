@@ -229,3 +229,48 @@ export interface ApiResponse<T> {
   data?: T;
   error?: ApiError;
 }
+
+export interface AuthResponse {
+  user_id: string;
+  expires_at: string;
+  onboarding_completed: boolean;
+}
+
+export interface RefreshResponse {
+  user_id: string;
+  expires_at: string;
+  onboarding_completed: boolean;
+}
+
+export interface LogoutResponse {
+  message: string;
+  cleared_session: string;
+}
+
+export interface PasskeyItem {
+  id: string;
+  name: string;
+  created_at: string;
+  last_used_at?: string | null;
+}
+
+export interface PasskeyRegisterBeginResponse {
+  session_id: string;
+  challenge: Record<string, unknown>;
+}
+
+export interface PasskeyLoginBeginResponse {
+  session_id: string;
+  challenge: Record<string, unknown>;
+}
+
+export interface RegisterBeginResponse {
+  user_id: string;
+  session_id: string;
+  challenge: Record<string, unknown>;
+}
+
+export interface RegisterRequest {
+  email: string;
+  name: string;
+}

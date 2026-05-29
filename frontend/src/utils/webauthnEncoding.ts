@@ -90,3 +90,66 @@ export async function createPasskeyCredential(
   }
   return credential as PublicKeyCredential;
 }
+
+type PublicKeyCredentialRequestOptionsJSON = {
+  challenge: string;
+  timeout?: number;
+  rpId?: string;
+  allowCredentials?: PublicKeyCredentialDescriptorJSON[];
+  userVerification?: UserVerificationRequirement;
+};
+
+export type RequestChallengeResponseJSON = {
+  publicKey: PublicKeyCredentialRequestOptionsJSON;
+};
+
+export function toCredentialRequestOptions(
+  challenge: RequestChallengeResponseJSON
+): CredentialRequestOptions {
+  const publicKey = challenge.publicKey;
+  return {
+    publicKey: {
+      ...publicKey,
+      challenge: toBufferSource(publicKey.challenge),
+      allowCredentials: publicKey.allowCredentials?.map((credential) => ({
+        ...credential,
+        id: toBufferSource(credential.id),
+      })),
+    },
+  };
+}
+
+export function serializeAuthenticationCredential(
+  credential: PublicKeyCredential
+): Record<string, unknown> {
+  const response = credential.response as AuthenticatorAssertionResponse;
+  const payload: Record<string, unknown> = {
+    id: credential.id,
+    rawId: bytesToBase64Url(new Uint8Array(credential.rawId)),
+    type: credential.type,
+    response: {
+      authenticatorData: bytesToBase64Url(new Uint8Array(response.authenticatorData)),
+      clientDataJSON: bytesToBase64Url(new Uint8Array(response.clientDataJSON)),
+      signature: bytesToBase64Url(new Uint8Array(response.signature)),
+    },
+  };
+
+  if (response.userHandle && response.userHandle.byteLength > 0) {
+    (payload.response as Record<string, unknown>).userHandle = bytesToBase64Url(
+      new Uint8Array(response.userHandle)
+    );
+  }
+
+  return payload;
+}
+
+export async function getPasskeyCredential(
+  challenge: RequestChallengeResponseJSON
+): Promise<PublicKeyCredential> {
+  const options = toCredentialRequestOptions(challenge);
+  const credential = await navigator.credentials.get(options);
+  if (!credential || credential.type !== 'public-key') {
+    throw new Error('Passkey sign-in was cancelled or failed');
+  }
+  return credential as PublicKeyCredential;
+}

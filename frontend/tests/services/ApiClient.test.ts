@@ -133,12 +133,15 @@ describe('ApiClient with Injected IHttpClient', () => {
       expect(AuthService.clearToken).toHaveBeenCalledOnce();
     });
 
-    it('should not refresh token when login returns 401', async () => {
+    it('should not refresh token when passkey login finish returns 401', async () => {
       const refreshSpy = jest.spyOn(AuthService, 'refreshToken');
       mockHttp.post.mockRejectedValueOnce(new AuthenticationError());
 
       await expect(
-        ApiClient.post('/auth/login', { email: 'a@b.com', password: 'secret' })
+        ApiClient.post('/auth/passkey/login/finish', {
+          session_id: 'session-1',
+          response: {},
+        })
       ).rejects.toThrow(AuthenticationError);
 
       expect(refreshSpy).not.toHaveBeenCalled();

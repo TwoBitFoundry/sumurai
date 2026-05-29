@@ -1,8 +1,10 @@
 import { expect } from 'bun:test';
 import {
   bytesToBase64Url,
+  serializeAuthenticationCredential,
   serializeRegistrationCredential,
   toCredentialCreationOptions,
+  toCredentialRequestOptions,
 } from '@/utils/webauthnEncoding';
 
 function base64UrlToBytes(value: string): Uint8Array {
@@ -61,5 +63,39 @@ describe('webauthnEncoding', () => {
     expect(typeof (serialized.response as { attestationObject: string }).attestationObject).toBe(
       'string'
     );
+  });
+
+  it('converts server request options into ArrayBuffer-backed assertion options', () => {
+    const challenge = {
+      publicKey: {
+        challenge: 'BAUH',
+        rpId: 'localhost',
+        allowCredentials: [{ id: 'AQID', type: 'public-key' as const }],
+        userVerification: 'preferred' as const,
+      },
+    };
+
+    const options = toCredentialRequestOptions(challenge);
+    expect(options.publicKey?.challenge).toBeInstanceOf(ArrayBuffer);
+    expect(options.publicKey?.allowCredentials?.[0]?.id).toBeInstanceOf(ArrayBuffer);
+  });
+
+  it('serializes authentication credentials to base64url JSON fields', () => {
+    const credential = {
+      id: 'cred-id',
+      rawId: new Uint8Array([9, 8, 7]).buffer,
+      type: 'public-key',
+      response: {
+        authenticatorData: new Uint8Array([1, 2]).buffer,
+        clientDataJSON: new Uint8Array([3, 4]).buffer,
+        signature: new Uint8Array([5, 6]).buffer,
+        userHandle: new Uint8Array([7, 8]).buffer,
+      },
+    } as unknown as PublicKeyCredential;
+
+    const serialized = serializeAuthenticationCredential(credential);
+    expect(serialized.id).toBe('cred-id');
+    expect(typeof (serialized.response as { signature: string }).signature).toBe('string');
+    expect(typeof (serialized.response as { userHandle: string }).userHandle).toBe('string');
   });
 });

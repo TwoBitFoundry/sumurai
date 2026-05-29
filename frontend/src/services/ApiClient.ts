@@ -234,7 +234,7 @@ export class ApiClient {
       throw new AuthenticationError();
     }
 
-    if (endpoint === '/auth/login') {
+    if (endpoint === '/auth/passkey/login/finish') {
       AuthService.clearToken();
       throw new AuthenticationError();
     }

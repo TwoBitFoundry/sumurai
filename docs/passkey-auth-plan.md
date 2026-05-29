@@ -214,9 +214,17 @@ Existing users with a `password_hash` are migrated: on their next visit they are
 - Remove password-related methods from [authService.ts](frontend/src/services/authService.ts) (`login`, `register` password fields).
 
 **Acceptance**
-- [ ] Bun tests in `frontend/tests/` cover each service method with `navigator.credentials` and `ApiClient` mocked at the boundary per [sumurai-testing-policy](.agents/skills/).
-- [ ] Encoding utility tests cover round-trip on known WebAuthn fixtures.
-- [ ] Frontend type-check passes against regenerated `api.ts`.
+- [x] Bun tests in `frontend/tests/` cover each service method with `navigator.credentials` and `ApiClient` mocked at the boundary per [sumurai-testing-policy](.agents/skills/).
+- [x] Encoding utility tests cover round-trip on known WebAuthn fixtures.
+- [x] Frontend type-check passes against regenerated `api.ts`.
+
+**TDD log**
+- Added passkey/auth types to `frontend/src/types/api.ts` (OpenAPI already current; `regenerate_openapi_artifacts` produced no diff).
+- Extended `webauthnEncoding.ts` with request-challenge conversion, assertion serialization, and `getPasskeyCredential`.
+- `PasskeyService`: `beginRegistration`, `finishRegistration`, `enrollPasskey`, `beginLogin`, `finishLogin`, `signIn`, `beginSignUp`, `signUp`, `list`, `remove`.
+- Removed `login` and `register` from `authService.ts`; session helpers remain.
+- `Auth.tsx` wired to passkey-only flows for typecheck; Storybook auth stories updated for passkey endpoints.
+- 10 tests in `passkeyService.test.ts`, 5 in `webauthnEncoding.test.ts`; `AuthService.integration.test.ts` trimmed to non-password flows.
 
 ---
 

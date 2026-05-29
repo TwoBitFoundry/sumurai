@@ -1,48 +1,49 @@
 import type React from 'react';
-import { useState } from 'react';
-import { useRegistrationValidation } from './hooks/useRegistrationValidation';
-import { AuthService } from './services/authService';
-import {
-  Alert,
-  Badge,
-  Button,
-  cn,
-  FormLabel,
-  GlassCard,
-  Input,
-  RequirementPill,
-} from './ui/primitives';
+import { useMemo, useState } from 'react';
+import type { AuthResponse } from '@/types/api';
+import { PasskeyService } from './services/passkeyService';
+import { Alert, Badge, Button, cn, FormLabel, GlassCard, Input } from './ui/primitives';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from './ui/recipes';
+
+function validateEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
 
 interface LoginScreenProps {
   onNavigateToRegister: () => void;
-  onLoginSuccess?: (authResponse: {
-    user_id: string;
-    expires_at: string;
-    onboarding_completed: boolean;
-  }) => void;
+  onLoginSuccess?: (authResponse: AuthResponse) => void;
 }
 
 export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScreenProps) {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const isEmailValid = useMemo(() => validateEmail(email), [email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!isEmailValid) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const response = await AuthService.login({ email, password });
+      const response = await PasskeyService.signIn(email);
       onLoginSuccess?.(response);
-    } catch (error) {
+    } catch (loginError) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Login failed. Please check your credentials.';
-      setError(errorMessage);
+        loginError instanceof Error ? loginError.message : 'Sign-in failed. Please try again.';
+      if (errorMessage.toLowerCase().includes('cancel')) {
+        setError('Passkey sign-in was cancelled. You can try again when ready.');
+      } else {
+        setError(errorMessage);
+      }
       if (process.env.NODE_ENV !== 'test') {
-        console.error('Login failed:', error);
+        console.error('Login failed:', loginError);
       }
     } finally {
       setIsLoading(false);
@@ -92,10 +93,10 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
           <div className={cn('space-y-3', 'text-center')}>
             <Badge size="md">Welcome Back</Badge>
             <h2 className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}>
-              Sign in to your account
+              Sign in with your passkey
             </h2>
             <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-              Access your latest financial dashboards and insights.
+              Enter your email, then approve the passkey prompt on this device.
             </p>
           </div>
 
@@ -114,32 +115,25 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                variant={email && !isEmailValid ? 'invalid' : 'default'}
                 placeholder="you@example.com"
                 disabled={isLoading}
               />
-            </div>
-
-            <div className="space-y-1.5">
-              <FormLabel htmlFor="password">Password</FormLabel>
-              <Input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                placeholder="••••••••"
-                disabled={isLoading}
-              />
+              {email && !isEmailValid && (
+                <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.danger)}>
+                  Please enter a valid email address.
+                </p>
+              )}
             </div>
 
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !isEmailValid}
               variant="primary"
               size="lg"
               className="w-full"
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {isLoading ? 'Waiting for your device…' : 'Sign in with passkey'}
             </Button>
           </form>
 
@@ -157,49 +151,47 @@ export function LoginScreen({ onNavigateToRegister, onLoginSuccess }: LoginScree
 
 interface RegisterScreenProps {
   onNavigateToLogin: () => void;
-  onRegisterSuccess?: (authResponse: {
-    user_id: string;
-    expires_at: string;
-    onboarding_completed: boolean;
-  }) => void;
+  onRegisterSuccess?: (authResponse: AuthResponse) => void;
 }
 
 export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: RegisterScreenProps) {
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  const {
-    email,
-    password,
-    confirmPassword,
-    isEmailValid,
-    passwordValidation,
-    isPasswordMatch,
-    setEmail,
-    setPassword,
-    setConfirmPassword,
-    validateForm,
-  } = useRegistrationValidation();
+  const isEmailValid = useMemo(() => validateEmail(email), [email]);
+  const isNameValid = useMemo(() => name.trim().length > 0, [name]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
+    if (!isEmailValid) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
+    if (!isNameValid) {
+      setError('Please enter your name.');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const response = await AuthService.register({ email, password });
+      const response = await PasskeyService.signUp(email, name.trim());
       onRegisterSuccess?.(response);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
-      setError(errorMessage);
-      console.error('Registration failed:', error);
+    } catch (registerError) {
+      const errorMessage =
+        registerError instanceof Error ? registerError.message : 'Registration failed';
+      if (errorMessage.includes('409')) {
+        setError('Email already exists');
+      } else if (errorMessage.toLowerCase().includes('cancel')) {
+        setError('Passkey setup was cancelled. You can try again when ready.');
+      } else {
+        setError(errorMessage);
+      }
+      console.error('Registration failed:', registerError);
     } finally {
       setIsLoading(false);
     }
@@ -248,10 +240,10 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
           <div className={cn('space-y-3', 'text-center')}>
             <Badge size="md">JOIN TODAY</Badge>
             <h2 className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}>
-              Sign Up for Sumurai
+              Create your Sumurai account
             </h2>
             <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-              Finish sign up to unlock onboarding and account sync.
+              Enter your details, then enroll a passkey to finish sign up.
             </p>
           </div>
 
@@ -281,75 +273,27 @@ export function RegisterScreen({ onNavigateToLogin, onRegisterSuccess }: Registe
               )}
             </div>
 
-            <div className={cn('grid', 'gap-4', 'md:grid-cols-2')}>
-              <div className="space-y-1.5">
-                <FormLabel htmlFor="password">Password</FormLabel>
-                <Input
-                  type="password"
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password"
-                  variant={password && !passwordValidation.isValid ? 'invalid' : 'default'}
-                  placeholder="Create a password"
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <FormLabel htmlFor="confirm-password">Confirm password</FormLabel>
-                <Input
-                  type="password"
-                  id="confirm-password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  autoComplete="new-password"
-                  variant={confirmPassword && !isPasswordMatch ? 'invalid' : 'default'}
-                  placeholder="Re-enter password"
-                  disabled={isLoading}
-                />
-                {confirmPassword && !isPasswordMatch && (
-                  <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.danger)}>
-                    Passwords do not match.
-                  </p>
-                )}
-              </div>
+            <div className="space-y-1.5">
+              <FormLabel htmlFor="name">Name</FormLabel>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoComplete="name"
+                variant={name && !isNameValid ? 'invalid' : 'default'}
+                placeholder="Your name"
+                disabled={isLoading}
+              />
             </div>
-
-            <GlassCard
-              variant="accent"
-              rounded="lg"
-              padding="sm"
-              withInnerEffects={false}
-              className={cn('space-y-1.5', uiTypographyRecipes.caption, uiTextRecipes.body)}
-            >
-              <h3 className={cn(uiTypographyRecipes.label, uiTextRecipes.label)}>
-                Password checklist
-              </h3>
-              <div className={cn('flex', 'flex-wrap', 'gap-1.5')}>
-                <RequirementPill status={passwordValidation.minLength ? 'met' : 'pending'}>
-                  8+ characters
-                </RequirementPill>
-                <RequirementPill status={passwordValidation.hasCapital ? 'met' : 'pending'}>
-                  1 capital letter
-                </RequirementPill>
-                <RequirementPill status={passwordValidation.hasNumber ? 'met' : 'pending'}>
-                  1 number
-                </RequirementPill>
-                <RequirementPill status={passwordValidation.hasSpecial ? 'met' : 'pending'}>
-                  1 special character
-                </RequirementPill>
-              </div>
-            </GlassCard>
 
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !isEmailValid || !isNameValid}
               variant="primary"
               size="lg"
               className="w-full"
             >
-              {isLoading ? 'Creating account...' : 'Create account'}
+              {isLoading ? 'Waiting for your device…' : 'Create account with passkey'}
             </Button>
           </form>
 

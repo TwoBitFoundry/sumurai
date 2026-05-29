@@ -1,86 +1,18 @@
-/**
- * Client authentication state and token refresh.
- */
-
 import { SpanStatusCode, trace } from '@opentelemetry/api';
-import { ApiClient, AuthenticationError } from './ApiClient';
+import type { LogoutResponse, RefreshResponse } from '@/types/api';
+import { ApiClient } from './ApiClient';
 import type { IStorageAdapter } from './boundaries';
 
-interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-interface RegisterCredentials {
-  email: string;
-  password: string;
-}
-
-export interface AuthResponse {
-  user_id: string;
-  expires_at: string;
-  onboarding_completed: boolean;
-}
-
-export interface RefreshResponse {
-  user_id: string;
-  expires_at: string;
-  onboarding_completed: boolean;
-}
-
-export interface LogoutResponse {
-  message: string;
-  cleared_session: string;
-}
+export type { AuthResponse, LogoutResponse, RefreshResponse } from '@/types/api';
 
 interface AuthServiceDependencies {
   storage: IStorageAdapter;
-}
-
-function hasUnauthorizedStatus(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'status' in error &&
-    typeof (error as { status: unknown }).status === 'number' &&
-    (error as { status: number }).status === 401
-  );
 }
 
 export class AuthService {
   private static refreshPromise: Promise<RefreshResponse> | null = null;
 
   static configure(_deps: AuthServiceDependencies): void {}
-
-  static async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const tracer = trace.getTracer('auth-service');
-    const span = tracer.startSpan('AuthService.login', {
-      attributes: {
-        'auth.method': 'password',
-      },
-    });
-
-    try {
-      const response = await ApiClient.post<AuthResponse>('/auth/login', credentials);
-      span.setStatus({ code: SpanStatusCode.OK });
-      return response;
-    } catch (error) {
-      span.recordException(error as Error);
-      span.setStatus({ code: SpanStatusCode.ERROR });
-
-      if (error instanceof AuthenticationError || hasUnauthorizedStatus(error)) {
-        throw new Error('Invalid email or password');
-      }
-      if (error instanceof Error) {
-        if (error.message.includes('500')) {
-          throw new Error('Server error. Please try again later.');
-        }
-      }
-      throw error;
-    } finally {
-      span.end();
-    }
-  }
 
   static storeToken(..._args: unknown[]): void {}
 
@@ -133,38 +65,7 @@ export class AuthService {
     }
   }
 
-  static async register(credentials: RegisterCredentials): Promise<AuthResponse> {
-    const tracer = trace.getTracer('auth-service');
-    const span = tracer.startSpan('AuthService.register', {
-      attributes: {
-        'auth.method': 'password',
-      },
-    });
-
-    try {
-      const response = await ApiClient.post<AuthResponse>('/auth/register', credentials);
-      span.setStatus({ code: SpanStatusCode.OK });
-      return response;
-    } catch (error) {
-      span.recordException(error as Error);
-      span.setStatus({ code: SpanStatusCode.ERROR });
-
-      if (error instanceof Error) {
-        if (error.message.includes('409')) {
-          throw new Error('Email already exists');
-        }
-        if (error.message.includes('400')) {
-          throw new Error('Invalid registration data');
-        }
-      }
-      throw error;
-    } finally {
-      span.end();
-    }
-  }
-
   static async refreshToken(): Promise<RefreshResponse> {
-    // Prevent multiple simultaneous refresh attempts
     if (AuthService.refreshPromise) {
       return AuthService.refreshPromise;
     }

@@ -9,6 +9,24 @@ import { LoginScreen, RegisterScreen } from './Auth';
 
 const storyInteractionTimeoutMs = 20_000;
 
+const passkeyChallenge = {
+  publicKey: {
+    challenge: 'AQID',
+    rpId: 'localhost',
+    allowCredentials: [{ id: 'AQID', type: 'public-key' as const }],
+    userVerification: 'preferred' as const,
+  },
+};
+
+const creationChallenge = {
+  publicKey: {
+    challenge: 'AQID',
+    rp: { id: 'localhost', name: 'Sumurai' },
+    user: { id: 'BAUG', name: 'you@test.com', displayName: 'Story User' },
+    pubKeyCredParams: [{ alg: -7, type: 'public-key' as const }],
+  },
+};
+
 type AuthStoryArgs = {
   onNavigateToRegister: () => void;
   onNavigateToLogin: () => void;
@@ -58,7 +76,13 @@ export const LoginAuthenticationError: Story = {
     const originalFetch = globalThis.fetch;
     const mockedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
-      if (url.includes('/auth/login')) {
+      if (url.includes('/auth/passkey/login/begin')) {
+        return new Response(
+          JSON.stringify({ session_id: 'story-session', challenge: passkeyChallenge }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      if (url.includes('/auth/passkey/login/finish')) {
         return new Response(JSON.stringify({ message: 'Unauthorized' }), {
           status: 401,
           headers: { 'Content-Type': 'application/json' },
@@ -66,13 +90,30 @@ export const LoginAuthenticationError: Story = {
       }
       return originalFetch(input, init);
     }) as typeof globalThis.fetch;
+    const mockCredential = {
+      id: 'cred-id',
+      rawId: new Uint8Array([1]).buffer,
+      type: 'public-key',
+      response: {
+        authenticatorData: new Uint8Array([2]).buffer,
+        clientDataJSON: new Uint8Array([3]).buffer,
+        signature: new Uint8Array([4]).buffer,
+      },
+    } as unknown as PublicKeyCredential;
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: {
+        credentials: {
+          get: async () => mockCredential,
+        },
+      },
+    });
     globalThis.fetch = mockedFetch;
     try {
       await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
-      await userEvent.type(canvas.getByLabelText(/^password$/i), 'wrong-pass');
-      await userEvent.click(canvas.getByRole('button', { name: /^sign in$/i }));
+      await userEvent.click(canvas.getByRole('button', { name: /sign in with passkey/i }));
       await waitFor(() => {
-        expect(canvas.getByText(/invalid email or password/i)).toBeInTheDocument();
+        expect(canvas.getByText(/sign-in failed|unauthorized|authentication error/i)).toBeTruthy();
       });
     } finally {
       globalThis.fetch = originalFetch;
@@ -92,26 +133,46 @@ export const LoginSuccess: Story = {
     const originalFetch = globalThis.fetch;
     const mockedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
-      if (url.includes('/auth/login')) {
+      if (url.includes('/auth/passkey/login/begin')) {
+        return new Response(
+          JSON.stringify({ session_id: 'story-session', challenge: passkeyChallenge }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      if (url.includes('/auth/passkey/login/finish')) {
         return new Response(
           JSON.stringify({
             user_id: 'story-user',
             expires_at: '2026-05-07T18:30:00.000Z',
             onboarding_completed: true,
           }),
-          {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          }
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
       }
       return originalFetch(input, init);
     }) as typeof globalThis.fetch;
+    const mockCredential = {
+      id: 'cred-id',
+      rawId: new Uint8Array([1]).buffer,
+      type: 'public-key',
+      response: {
+        authenticatorData: new Uint8Array([2]).buffer,
+        clientDataJSON: new Uint8Array([3]).buffer,
+        signature: new Uint8Array([4]).buffer,
+      },
+    } as unknown as PublicKeyCredential;
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: {
+        credentials: {
+          get: async () => mockCredential,
+        },
+      },
+    });
     globalThis.fetch = mockedFetch;
     try {
       await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
-      await userEvent.type(canvas.getByLabelText(/^password$/i), 'Test1234!');
-      await userEvent.click(canvas.getByRole('button', { name: /^sign in$/i }));
+      await userEvent.click(canvas.getByRole('button', { name: /sign in with passkey/i }));
       await waitFor(() => {
         expect(args.onLoginSuccess).toHaveBeenCalledWith({
           user_id: 'story-user',
@@ -149,19 +210,6 @@ export const RegisterInlineEmailValidation: Story = {
   },
 };
 
-export const RegisterPasswordMismatch: Story = {
-  render: (args) => <RegisterScreen onNavigateToLogin={args.onNavigateToLogin} />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
-    await userEvent.type(canvas.getByLabelText(/^password$/i), 'Test1234!');
-    await userEvent.type(canvas.getByLabelText(/^confirm password$/i), 'Test12345!');
-    await waitFor(() => {
-      expect(canvas.getByText(/passwords do not match/i)).toBeInTheDocument();
-    });
-  },
-};
-
 export const RegisterSuccess: Story = {
   render: (args) => (
     <RegisterScreen
@@ -178,23 +226,46 @@ export const RegisterSuccess: Story = {
         return new Response(
           JSON.stringify({
             user_id: 'story-user',
+            session_id: 'signup-session',
+            challenge: creationChallenge,
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      if (url.includes('/auth/passkey/register/finish')) {
+        return new Response(
+          JSON.stringify({
+            user_id: 'story-user',
             expires_at: '2026-05-07T18:30:00.000Z',
             onboarding_completed: false,
           }),
-          {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          }
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
       }
       return originalFetch(input, init);
     }) as typeof globalThis.fetch;
+    const mockCredential = {
+      id: 'cred-id',
+      rawId: new Uint8Array([1]).buffer,
+      type: 'public-key',
+      response: {
+        attestationObject: new Uint8Array([2]).buffer,
+        clientDataJSON: new Uint8Array([3]).buffer,
+      },
+    } as unknown as PublicKeyCredential;
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: {
+        credentials: {
+          create: async () => mockCredential,
+        },
+      },
+    });
     globalThis.fetch = mockedFetch;
     try {
       await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
-      await userEvent.type(canvas.getByLabelText(/^password$/i), 'Test1234!');
-      await userEvent.type(canvas.getByLabelText(/^confirm password$/i), 'Test1234!');
-      await userEvent.click(canvas.getByRole('button', { name: /^create account$/i }));
+      await userEvent.type(canvas.getByLabelText(/^name$/i), 'Story User');
+      await userEvent.click(canvas.getByRole('button', { name: /create account with passkey/i }));
       await waitFor(() => {
         expect(args.onRegisterSuccess).toHaveBeenCalledWith({
           user_id: 'story-user',
