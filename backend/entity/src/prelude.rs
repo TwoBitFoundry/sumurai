@@ -10,3 +10,4 @@ pub use super::transaction_category_overrides::Entity as TransactionCategoryOver
 pub use super::transactions::Entity as Transactions;
 pub use super::user_custom_categories::Entity as UserCustomCategories;
 pub use super::users::Entity as Users;
+pub use super::webauthn_credentials::Entity as WebauthnCredentials;

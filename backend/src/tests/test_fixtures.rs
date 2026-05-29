@@ -581,7 +581,7 @@ impl TestFixtures {
         let user = User {
             id: user_id,
             email: format!("test-{}@example.com", user_id),
-            password_hash: auth_service.hash_password("SecurePass123!").unwrap(),
+            password_hash: Some(auth_service.hash_password("SecurePass123!").unwrap()),
             provider: "teller".to_string(),
             created_at: Utc::now(),
             updated_at: Utc::now(),

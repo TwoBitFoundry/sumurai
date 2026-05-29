@@ -103,11 +103,22 @@ where
 pub struct User {
     pub id: Uuid,
     pub email: String,
-    pub password_hash: String,
+    pub password_hash: Option<String>,
     pub provider: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub onboarding_completed: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct WebAuthnCredential {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub credential_id: Vec<u8>,
+    pub passkey: serde_json::Value,
+    pub name: String,
+    pub created_at: DateTime<Utc>,
+    pub last_used_at: Option<DateTime<Utc>>,
 }
 
 impl User {

@@ -78,7 +78,7 @@ async fn given_concurrent_user_creation_with_same_email_when_race_condition_occu
             let user = User {
                 id: user_id,
                 email: format!("{}_{}", email_clone, i),
-                password_hash: password_clone,
+                password_hash: Some(password_clone),
                 provider: "teller".to_string(),
                 created_at: Utc::now(),
                 updated_at: Utc::now(),

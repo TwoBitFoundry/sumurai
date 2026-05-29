@@ -1,6 +1,10 @@
 use crate::models::{
-    account::Account, auth::User, budget::Budget, custom_category::CustomCategory,
-    plaid::ProviderConnection, transaction::Transaction,
+    account::Account,
+    auth::{User, WebAuthnCredential},
+    budget::Budget,
+    custom_category::CustomCategory,
+    plaid::ProviderConnection,
+    transaction::Transaction,
     transaction_category_override::TransactionCategoryOverride,
 };
 
@@ -135,6 +139,20 @@ impl From<entity::transaction_category_overrides::Model> for TransactionCategory
     }
 }
 
+impl From<entity::webauthn_credentials::Model> for WebAuthnCredential {
+    fn from(m: entity::webauthn_credentials::Model) -> Self {
+        WebAuthnCredential {
+            id: m.id,
+            user_id: m.user_id,
+            credential_id: m.credential_id,
+            passkey: m.passkey,
+            name: m.name,
+            created_at: fixed_to_utc(m.created_at),
+            last_used_at: opt_fixed_to_utc(m.last_used_at),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -152,7 +170,7 @@ mod tests {
         let m = entity::users::Model {
             id,
             email: "test@example.com".to_string(),
-            password_hash: "hash".to_string(),
+            password_hash: Some("hash".to_string()),
             provider: "plaid".to_string(),
             created_at: Some(now),
             updated_at: Some(now),
@@ -161,7 +179,7 @@ mod tests {
         let user = User::from(m);
         assert_eq!(user.id, id);
         assert_eq!(user.email, "test@example.com");
-        assert_eq!(user.password_hash, "hash");
+        assert_eq!(user.password_hash, Some("hash".to_string()));
         assert_eq!(user.provider, "plaid");
         assert!(user.onboarding_completed);
     }
@@ -172,7 +190,7 @@ mod tests {
         let m = entity::users::Model {
             id: Uuid::new_v4(),
             email: "x@x.com".to_string(),
-            password_hash: "h".to_string(),
+            password_hash: Some("h".to_string()),
             provider: "".to_string(),
             created_at: None,
             updated_at: None,

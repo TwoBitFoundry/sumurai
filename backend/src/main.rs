@@ -778,7 +778,7 @@ async fn register_user(
     let user = User {
         id: user_id,
         email: req.email.clone(),
-        password_hash,
+        password_hash: Some(password_hash),
         provider: String::new(),
         created_at: Utc::now(),
         updated_at: Utc::now(),
@@ -886,9 +886,10 @@ async fn login_user(
         }
     };
 
+    let hash = user.password_hash.as_deref().unwrap_or("");
     let is_valid = state
         .auth_service
-        .verify_password(&req.password, &user.password_hash)
+        .verify_password(&req.password, hash)
         .map_err(|e| {
             tracing::error!("Password verification failed for user {}: {}", user.id, e);
             ApiErrorResponse::internal_server_error("Authentication service error")
@@ -3943,9 +3944,10 @@ async fn change_user_password(
             ApiErrorResponse::internal_server_error("User account not found")
         })?;
 
+    let hash = user.password_hash.as_deref().unwrap_or("");
     let is_valid = state
         .auth_service
-        .verify_password(&req.current_password, &user.password_hash)
+        .verify_password(&req.current_password, hash)
         .map_err(|e| {
             tracing::error!("Password verification failed for user {}: {}", user_id, e);
             ApiErrorResponse::internal_server_error("Authentication service error")

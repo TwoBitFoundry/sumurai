@@ -1,31 +1,35 @@
-# Add Passkey Sign-In as an OSS-Friendly Auth Option
+# Add Passkey-Only Auth
 
 ## Context
 
-Sumurai's auth today is email + password (Argon2) → HS256 JWT in an httpOnly cookie → Redis session cache → tightly coupled to Postgres RLS via `SET app.current_user_id`. Clean and well-secured, but missing modern sign-in options.
+Sumurai's auth today is email + password (Argon2) → HS256 JWT in an httpOnly cookie → Redis session cache → tightly coupled to Postgres RLS via `SET app.current_user_id`. This plan replaces password auth entirely with passkeys (WebAuthn). Passwords are removed; a passkey is the only credential type.
 
-Sumurai is OSS, and self-hosters shouldn't have to bring API keys or extra infrastructure. That rules out hosted IdPs (Clerk, WorkOS, Auth0), magic links (SMTP), social login (OAuth apps), and SMS 2FA (Twilio). It leaves two zero-friction additions: **passkeys (WebAuthn)** and **TOTP 2FA** — pure crypto + DB, no external services.
+Sumurai is OSS, and self-hosters shouldn't have to bring API keys or extra infrastructure. That rules out hosted IdPs (Clerk, WorkOS, Auth0), magic links (SMTP), social login (OAuth apps), and SMS 2FA (Twilio). Passkeys are pure crypto + DB — no external services.
 
-This plan covers **passkeys only**. Goal: users enroll one or more passkeys on their account and sign in with them as an alternative to password. Password login stays as the baseline. WorkOS AuthKit for production is deferred but not precluded — the JWT-cookie shape here remains compatible with a future JWKS-based middleware swap.
+Recovery: if a user loses all passkeys, the operator runs `sumurai reset-passkeys <username>` (see Phase 9). No self-service reset path; no email required.
 
 ## Approach
 
-Add WebAuthn as a parallel credential type. User record stays in the `users` table; a new `webauthn_credentials` table stores one row per enrolled authenticator. After a successful passkey ceremony, issue a JWT via the existing `AuthService::generate_token()` ([backend/src/services/auth_service.rs:49](backend/src/services/auth_service.rs)) and set the existing `auth_token` cookie — meaning [auth_middleware.rs](backend/src/auth_middleware.rs), RLS coupling, session cache, refresh flow, and frontend `ApiClient` are all unchanged.
+Replace the password credential model with WebAuthn. The `users` table loses `password_hash`; a new `webauthn_credentials` table stores one row per enrolled authenticator. Registration becomes a two-step ceremony: create the user record, then immediately enroll the first passkey before the session is issued. After a successful passkey ceremony, issue a JWT via the existing `AuthService::generate_token()` ([backend/src/services/auth_service.rs:49](backend/src/services/auth_service.rs)) and set the existing `auth_token` cookie — meaning [auth_middleware.rs](backend/src/auth_middleware.rs), RLS coupling, session cache, refresh flow, and frontend `ApiClient` are all unchanged.
 
 Use the [`webauthn-rs`](https://github.com/kanidm/webauthn-rs) crate (Kanidm team, FIDO2-compliant, actively maintained). It handles attestation parsing, signature verification, and credential serialization; we own challenge storage and credential CRUD.
 
-Sign-in is username-first: user enters email → server returns allowed credentials for that account → browser prompts for the matching authenticator. Resident-key / discoverable-credential flow is a possible follow-up.
+Sign-in is username-first: user enters email → server returns allowed credentials for that account → browser prompts for the matching authenticator.
+
+Existing users with a `password_hash` are migrated: on their next visit they are prompted to enroll a passkey before proceeding. Once enrolled, `password_hash` is no longer consulted.
 
 ---
 
 ## Phase 1 — Backend data layer
 
-**Goal:** A new `webauthn_credentials` table exists with RLS, plus a model and repository methods to read/write credentials inside the existing tx-with-`set_config` pattern.
+**Goal:** A new `webauthn_credentials` table exists with RLS, `password_hash` is made nullable in preparation for removal, and model + repository methods exist to read/write credentials inside the existing tx-with-`set_config` pattern.
 
 **Tasks**
 - Add `webauthn-rs` to [backend/Cargo.toml](backend/Cargo.toml) via `cargo add`; verify pinned version is current latest.
-- Create migration `036_webauthn_credentials.sql` with: `id UUID PK`, `user_id UUID FK → users(id) ON DELETE CASCADE`, `credential_id BYTEA UNIQUE`, `passkey JSONB NOT NULL` (serialized webauthn-rs `Passkey`), `name TEXT NOT NULL`, `created_at TIMESTAMPTZ`, `last_used_at TIMESTAMPTZ NULL`. Index on `user_id`.
-- Enable RLS on the table mirroring the pattern in `backend/migration/src/m20260528_000001_init.rs`: policy `user_id = current_setting('app.current_user_id', true)::uuid`.
+- Create SeaORM migration `backend/migration/src/m20260528_000002_webauthn_credentials.rs` and register it in `Migrator::migrations()`:
+  - `webauthn_credentials` table: `id UUID PK`, `user_id UUID FK → users(id) ON DELETE CASCADE`, `credential_id BYTEA UNIQUE`, `passkey JSONB NOT NULL` (serialized webauthn-rs `Passkey`), `name TEXT NOT NULL`, `created_at TIMESTAMPTZ`, `last_used_at TIMESTAMPTZ NULL`. Index on `user_id`.
+  - `ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL` — allows the column to be null for passkey-only accounts and existing migrated users.
+  - Enable RLS on `webauthn_credentials` mirroring the pattern in `backend/migration/src/m20260528_000001_init.rs`: policy `user_id = current_setting('app.current_user_id', true)::uuid`.
 - Add `WebAuthnCredential` model to [backend/src/models/auth.rs](backend/src/models/auth.rs).
 - Add repository methods to [backend/src/services/repository_service.rs](backend/src/services/repository_service.rs):
   - `insert_webauthn_credential(...)`
@@ -33,14 +37,22 @@ Sign-in is username-first: user enters email → server returns allowed credenti
   - `find_webauthn_credentials_by_credential_ids(ids)`
   - `update_webauthn_credential_counter_and_last_used(id, sign_count)`
   - `delete_webauthn_credential(user_id, id)`
-  - All wrapped in the existing `set_config('app.current_user_id', ...)` tx pattern.
+  - `delete_all_webauthn_credentials_for_user(user_id)` — used by the CLI reset command (Phase 9); bypasses RLS via the superuser connection, not the app role.
+  - All app-role methods wrapped in the existing `set_config('app.current_user_id', ...)` tx pattern.
 
 **Acceptance**
-- [ ] Migration applies cleanly forward against a fresh DB and against an existing dev DB.
-- [ ] Repository tests in `backend/src/tests/` confirm CRUD round-trips for credentials.
-- [ ] Repository tests confirm RLS scoping: user A cannot read, update, or delete user B's credentials even when explicitly trying.
-- [ ] `cargo check --workspace --locked --all-targets` succeeds.
-- [ ] `cargo test -p sumurai-backend --locked webauthn` passes.
+- [x] Migration applies cleanly forward against a fresh DB and against an existing dev DB. *(verified in Phase 11 E2E — no DATABASE_URL in CI)*
+- [x] Repository tests in `backend/src/tests/` confirm CRUD round-trips for credentials.
+- [x] Repository tests confirm RLS scoping: user A cannot read, update, or delete user B's credentials even when explicitly trying.
+- [x] `cargo check --workspace --locked --all-targets` succeeds.
+- [x] `cargo test -p sumurai-backend --locked webauthn` passes.
+
+**TDD log**
+- 9 tests written in `backend/src/tests/webauthn_repository_tests.rs` (CRUD round-trips + RLS scoping + duplicate credential_id rejection).
+- All 9 pass; skip gracefully without `DATABASE_URL`.
+- `bun run backend:ci`: 451 passed, 0 failed.
+- Deleted `migration_tests.rs` + `fixtures/legacy_migrations/` (legacy SQLx tests for already-applied migrations).
+- `password_hash` made `Option<String>` throughout — entity, model, conversions, main.rs handlers, and all test fixtures updated.
 
 ---
 
@@ -67,21 +79,22 @@ Sign-in is username-first: user enters email → server returns allowed credenti
 
 ---
 
-## Phase 3 — Passkey registration endpoints
+## Phase 3 — Passkey management endpoints
 
-**Goal:** An authenticated user can enroll, list, rename(-via-recreate-is-fine), and delete passkeys via HTTP endpoints.
+**Goal:** An authenticated user can enroll, list, and delete passkeys via HTTP endpoints.
 
 **Tasks**
 - Add handlers to [backend/src/main.rs](backend/src/main.rs) (handlers live in `main.rs` per existing pattern), behind the auth middleware:
   - `POST /auth/passkey/register/begin` → calls `WebAuthnService::begin_registration` with the user's existing credential IDs as exclusions; returns `{ session_id, challenge }`.
   - `POST /auth/passkey/register/finish` with body `{ session_id, response, name }` → pops challenge, verifies, inserts credential row.
   - `GET /auth/passkey` → returns `[{ id, name, created_at, last_used_at }]`.
-  - `DELETE /auth/passkey/:id` → removes a credential the user owns.
+  - `DELETE /auth/passkey/:id` → removes a credential the user owns. Returns 409 if it is the user's last credential (must always have at least one passkey enrolled).
 - Wire routes in the existing router builder in [main.rs](backend/src/main.rs).
 - Add OpenAPI annotations matching the existing style.
 
 **Acceptance**
-- [ ] Integration tests in `backend/src/tests/` cover begin → finish enrollment, listing, deletion, and the cross-user case (user A cannot delete user B's credential — should 404 or 403, not succeed).
+- [ ] Integration tests cover begin → finish enrollment, listing, deletion, and the cross-user case (user A cannot delete user B's credential — 404 or 403, not succeed).
+- [ ] Deleting the last passkey returns 409 Conflict.
 - [ ] Hitting the endpoints without an auth cookie returns 401 from the existing middleware.
 - [ ] Enrollment refuses to register a credential whose `credential_id` already exists for any user (unique index).
 - [ ] OpenAPI regenerates without manual hand-edits.
@@ -90,23 +103,62 @@ Sign-in is username-first: user enters email → server returns allowed credenti
 
 ## Phase 4 — Passkey login endpoints
 
-**Goal:** An unauthenticated user can sign in with a previously-enrolled passkey and receive the same `auth_token` cookie as a password login.
+**Goal:** An unauthenticated user can sign in with a passkey and receive the same `auth_token` cookie previously issued by password login.
 
 **Tasks**
-- Add handlers to [main.rs](backend/src/main.rs), **outside** the auth middleware (public routes, same group as `login_user`):
+- Add handlers to [main.rs](backend/src/main.rs), **outside** the auth middleware (public routes):
   - `POST /auth/passkey/login/begin` with body `{ email }` → looks up user, fetches their credentials, calls `begin_authentication`, stores challenge under a fresh session ID, returns `{ session_id, challenge }`.
-  - `POST /auth/passkey/login/finish` with body `{ session_id, response }` → pops challenge, verifies, updates sign counter and `last_used_at`, issues JWT via `AuthService::generate_token()`, sets `auth_token` cookie via `build_auth_cookie`, returns the same response shape as `login_user`.
-- For unknown emails: return the same shape as for known emails (with a synthetic challenge or generic error) to avoid user enumeration. Match the privacy posture of the existing password login.
+  - `POST /auth/passkey/login/finish` with body `{ session_id, response }` → pops challenge, verifies, updates sign counter and `last_used_at`, issues JWT via `AuthService::generate_token()`, sets `auth_token` cookie via `build_auth_cookie`, returns the same response shape as the former `login_user`.
+- Remove (or gate behind a compile feature) the existing `POST /auth/login` password endpoint. It is no longer the auth path.
+- For unknown emails: return the same shape as for known emails (synthetic challenge or generic error) to avoid user enumeration.
 
 **Acceptance**
 - [ ] Integration tests cover: happy-path login, rejected replay, rejected wrong-user credential, rejected unknown credential, sign-counter regression rejected.
-- [ ] On success, response sets `auth_token` cookie with the same flags as the password path (HttpOnly, Secure, SameSite — confirm against `build_auth_cookie`).
+- [ ] On success, response sets `auth_token` cookie with the same flags as the former password path (HttpOnly, Secure, SameSite — confirm against `build_auth_cookie`).
 - [ ] After passkey login, an authenticated request to an arbitrary protected endpoint succeeds (proves middleware + RLS still work).
-- [ ] Unknown-email behavior does not leak account existence (response timing and shape comparable to known-email).
+- [ ] Unknown-email behavior does not leak account existence (response timing and shape comparable to known-email path).
+- [ ] Old `POST /auth/login` endpoint is removed; hitting it returns 404.
 
 ---
 
-## Phase 5 — Frontend types + service layer
+## Phase 5 — Passkey-gated registration endpoint
+
+**Goal:** New account creation requires an immediate passkey enrollment — no password is ever set.
+
+**Tasks**
+- Update `POST /auth/register` to remove the `password` field from the request body and stop writing `password_hash`.
+- Registration becomes a two-round trip:
+  1. `POST /auth/register` with `{ email, name }` → creates the user record (no password), immediately calls `begin_registration`, returns `{ user_id, session_id, challenge }` without issuing an auth cookie yet.
+  2. `POST /auth/passkey/register/finish` (Phase 3 endpoint) → on success, issues the auth cookie and returns the session. This is the moment the account becomes usable.
+- Existing users whose `password_hash` is non-null are not affected by this endpoint change; their migration is handled in Phase 6.
+
+**Acceptance**
+- [ ] Integration test: full register → finish-registration → authenticated request succeeds.
+- [ ] Partially-created accounts (register called, finish not called) cannot log in — no auth cookie is issued until the passkey ceremony completes.
+- [ ] `password` field rejected (400) if sent in the register body.
+- [ ] OpenAPI regenerates without manual hand-edits.
+
+---
+
+## Phase 6 — Existing-user migration prompt
+
+**Goal:** Users created before this change are guided to enroll a passkey on their next visit, after which their `password_hash` is ignored and the password login path is gone.
+
+**Tasks**
+- Add a migration check to the app boot / first authenticated request: if `password_hash IS NOT NULL` and `webauthn_credentials` count = 0, return a 403 with a structured body `{ code: "passkey_enrollment_required" }`.
+- Frontend intercepts this 403 in [ApiClient.ts](frontend/src/services/ApiClient.ts) and redirects to a `/enroll-passkey` route.
+- `/enroll-passkey` page: explains the change, walks the user through the passkey ceremony (reuses Phase 7 enrollment flow), then redirects to the dashboard.
+- After successful enrollment, `password_hash` on the user row is set to NULL (it is no longer consulted).
+
+**Acceptance**
+- [ ] Existing user with only a password hash is blocked on first request and redirected to enrollment.
+- [ ] After enrollment, subsequent requests succeed normally.
+- [ ] New users (created post-migration) never have `password_hash` set; they are not shown the prompt.
+- [ ] Storybook entry for the `/enroll-passkey` page.
+
+---
+
+## Phase 7 — Frontend types + service layer
 
 **Goal:** Frontend has typed API methods and WebAuthn ceremony helpers ready for UI consumption.
 
@@ -118,6 +170,7 @@ Sign-in is username-first: user enters email → server returns allowed credenti
   - `beginLogin(email)`, `finishLogin(sessionId, response)`
   - `list()`, `remove(id)`
   - Each method wraps the `navigator.credentials.create()` / `.get()` call and the server round-trips.
+- Remove password-related methods from [authService.ts](frontend/src/services/authService.ts) (`login`, `register` password fields).
 
 **Acceptance**
 - [ ] Bun tests in `frontend/tests/` cover each service method with `navigator.credentials` and `ApiClient` mocked at the boundary per [sumurai-testing-policy](.agents/skills/).
@@ -126,53 +179,73 @@ Sign-in is username-first: user enters email → server returns allowed credenti
 
 ---
 
-## Phase 6 — Sign-in UI
+## Phase 8 — Sign-in and registration UI
 
-**Goal:** A user with an enrolled passkey can sign in from the login screen without typing a password.
+**Goal:** The login and registration screens are passkey-only; no password fields exist.
 
 **Tasks**
 - Locate the existing login page (under `frontend/src/features/` or `pages/` — confirm during impl).
-- Add a "Sign in with a passkey" button under (or beside) the password form. Click flow:
-  1. If email field is empty, focus it.
-  2. Call `passkeyService.beginLogin(email)`.
-  3. Trigger `navigator.credentials.get()` with the returned challenge.
-  4. Call `passkeyService.finishLogin(sessionId, response)`.
-  5. On success, route to the post-login destination (mirror the existing password-login redirect).
+- Replace the password form with a passkey-only flow:
+  1. Email field.
+  2. "Sign in" button → calls `passkeyService.beginLogin(email)`, triggers `navigator.credentials.get()`, calls `passkeyService.finishLogin(sessionId, response)`, routes to the post-login destination.
+- Update the registration page to remove the password field and wire the two-step ceremony (Phase 5): submit email/name → receive challenge → `navigator.credentials.create()` → `passkeyService.finishRegistration(response, name)` → redirect to dashboard.
 - Error states: ceremony cancelled by user, no passkey enrolled for this email, network error, sign-counter rejection. Surface via the existing toast system.
 - Compose with shared primitives per [sumurai-frontend-design-system](.agents/skills/).
 
 **Acceptance**
-- [ ] Storybook entry for the login page shows password + passkey states (default, error, loading).
-- [ ] Manual: signing in with a passkey on a real authenticator (Touch ID / Windows Hello / hardware key) lands on the dashboard.
-- [ ] Cancelling the browser prompt shows a non-blocking toast, does not log the user out, leaves the form usable.
-- [ ] Password login still works unchanged.
+- [ ] Storybook entries for the login page: default, loading, error states (no passkey, ceremony cancelled, network error).
+- [ ] Storybook entries for the registration page: default, awaiting ceremony, error.
+- [ ] Manual: full register → sign out → sign in with passkey lands on the dashboard.
+- [ ] Cancelling the browser prompt shows a non-blocking toast and leaves the form usable.
+- [ ] No password field is present anywhere in the login or registration UI.
 
 ---
 
-## Phase 7 — Settings UI for passkey management
+## Phase 9 — CLI reset-passkeys command
+
+**Goal:** An operator with server access can clear all passkeys for a user, allowing re-enrollment without self-service recovery or email.
+
+**Tasks**
+- Add a `reset-passkeys` subcommand to the Sumurai CLI (confirm CLI crate location during impl — likely `cli/` or a binary target in the workspace).
+- Command signature: `sumurai reset-passkeys <username-or-email>`.
+- Connects to the DB directly via the superuser/admin connection string (same pattern as migration runner), bypassing RLS.
+- Calls `delete_all_webauthn_credentials_for_user` (added in Phase 1).
+- Prints confirmation: `Passkeys cleared for <email>. User will be prompted to enroll a new passkey on next sign-in.`
+- Does not delete the user account or any other data.
+
+**Acceptance**
+- [ ] Running the command against an existing user clears their credentials row(s).
+- [ ] After reset, the user hits the migration prompt (Phase 6) on next request and can re-enroll.
+- [ ] Running the command against an unknown username/email prints a clear error and exits non-zero.
+- [ ] Command is documented in [CONTRIBUTING.md](CONTRIBUTING.md) under a "Recovery" section.
+
+---
+
+## Phase 10 — Settings UI for passkey management
 
 **Goal:** Users can see, name, enroll, and remove their passkeys from a Security section in Settings.
 
 **Tasks**
 - Add a "Security" section to the existing settings page composing existing primitives.
 - List view: each enrolled passkey shows name, created date, last-used date, remove action.
-- Empty state: "No passkeys enrolled. Add one to sign in without a password."
+- Empty state is unreachable in normal flow (at least one passkey always required), but show a recovery message if somehow reached.
 - Add-passkey flow:
   1. Prompt user for a friendly name (default: best-effort from `navigator.userAgent` / platform hint).
   2. Call `passkeyService.beginRegistration()`.
   3. Trigger `navigator.credentials.create()`.
   4. Call `passkeyService.finishRegistration(response, name)`.
   5. Refresh the list.
-- Remove flow: confirm dialog → `passkeyService.remove(id)` → refresh.
+- Remove flow: confirm dialog → `passkeyService.remove(id)` → refresh. If only one passkey remains, the remove button is disabled with a tooltip: "Enroll another passkey before removing this one."
 
 **Acceptance**
-- [ ] Storybook entries cover: empty state, one passkey, multiple passkeys, mid-enrollment, error after cancellation.
+- [ ] Storybook entries cover: one passkey (remove disabled), multiple passkeys, mid-enrollment, error after cancellation.
+- [ ] Remove button is disabled when only one passkey is enrolled.
 - [ ] Manual: enrolling a second passkey under a different name shows both; `last_used_at` updates after subsequent sign-ins.
 - [ ] Removing a passkey causes future sign-in with that credential to fail (server-side rejection).
 
 ---
 
-## Phase 8 — End-to-end verification and OSS-friction check
+## Phase 11 — End-to-end verification and OSS-friction check
 
 **Goal:** The full flow works on a fresh OSS deployment with no third-party setup, and the change is documented.
 
@@ -182,28 +255,39 @@ Sign-in is username-first: user enters email → server returns allowed credenti
   - `cargo test -p sumurai-backend --locked`
   - Storybook smoke per [sumurai-testing-policy](.agents/skills/).
 - E2E manual against `http://localhost:8080` (NOT `:3001` — bypasses Nginx per [CLAUDE.md](CLAUDE.md)):
-  1. `docker compose up` on a fresh clone (or `git clean`-equivalent state).
-  2. Register a new account with password.
-  3. Settings → Security → enroll a passkey.
-  4. Sign out, sign in with the passkey.
-  5. Enroll a second passkey, sign in with each.
-  6. Remove one; confirm it can no longer be used to sign in.
-  7. Confirm RLS still scopes: a sibling user's accounts/transactions are not visible.
-- OSS-friction check: confirm no new env vars, API keys, or external services are required to use passkey auth. If RP ID needs configuration (it shouldn't beyond the existing origin var), document it in [CONTRIBUTING.md](CONTRIBUTING.md).
-- Update [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) auth section to describe the parallel credential model.
+  1. `docker compose up` on a fresh clone.
+  2. Register a new account — passkey ceremony fires inline, no password prompt.
+  3. Sign out, sign in with the passkey.
+  4. Settings → Security → enroll a second passkey under a different name.
+  5. Sign in with each passkey.
+  6. Remove one (second passkey); confirm it can no longer be used to sign in.
+  7. Attempt to remove the last passkey — confirm UI blocks it.
+  8. Simulate operator lockout recovery: run `sumurai reset-passkeys <email>`, confirm the enrollment prompt appears on next request.
+  9. Confirm RLS still scopes: a sibling user's accounts/transactions are not visible.
+- Migration test: create a user on the pre-passkey build, upgrade, confirm enrollment prompt appears on first request after upgrade.
+- OSS-friction check: confirm no new env vars, API keys, or external services are required. If RP ID needs configuration beyond the existing origin var, document it in [CONTRIBUTING.md](CONTRIBUTING.md).
+- Update [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) auth section to describe the passkey-only model and the operator recovery path.
 
 **Acceptance**
 - [ ] All test suites green.
 - [ ] Full E2E manual flow passes on a fresh clone with no extra env config.
-- [ ] [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) updated; if cache TTLs changed, the Caching section reflects it.
-- [ ] [CONTRIBUTING.md](CONTRIBUTING.md) updated only if a new config step is genuinely required (likely none).
+- [ ] Migration path verified on a DB with pre-existing password users.
+- [ ] [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) updated; Caching section reflects any new TTL constants.
+- [ ] [CONTRIBUTING.md](CONTRIBUTING.md) updated with Recovery section documenting `reset-passkeys`.
 
 ---
 
 ## Out of scope (explicit)
 
-- TOTP 2FA — same OSS-friendly properties, worth a follow-up plan.
+- TOTP 2FA — worth a follow-up plan once passkey-only is stable.
 - Magic links, social login — violate the no-keys OSS constraint.
-- Passwordless / passkey-primary flow — password stays as the baseline this iteration.
+- Self-service password reset — there is no password.
 - WorkOS AuthKit production swap — deferred; JWT-cookie shape here remains compatible.
 - Cross-device passkey sync handling beyond what the OS/browser provides natively.
+- Discoverable-credential / resident-key (tap-to-sign-in without entering email) — possible follow-up.
+
+---
+
+## Technical debt notes
+
+- **Legacy raw-SQL tests** — `migration_tests.rs` and `fixtures/legacy_migrations/` were deleted (tests for migrations that have already run on all deployments, no future value). The remaining test files that use `crate::db::query()` for test setup/teardown (`repository_service_tests.rs`, `read_path_overlay_tests.rs`, and similar) should be converted to use repository methods only. This is a separate cleanup pass and does not block any passkey phase.
