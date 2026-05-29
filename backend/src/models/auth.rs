@@ -16,13 +16,6 @@ pub struct RegisterRequest {
     pub password: String,
 }
 
-#[derive(Deserialize, ToSchema)]
-#[schema(example = json!({"email": "user@example.com", "password": "SecurePass123!"}))]
-pub struct LoginRequest {
-    pub email: String,
-    pub password: String,
-}
-
 #[derive(Serialize, ToSchema)]
 #[schema(example = json!({"user_id": "11111111-2222-3333-4444-555555555555", "expires_at": "2024-01-01T12:00:00Z", "onboarding_completed": false}))]
 pub struct AuthResponse {
@@ -164,6 +157,24 @@ pub struct PasskeyItem {
     pub name: String,
     pub created_at: DateTime<Utc>,
     pub last_used_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Deserialize, ToSchema)]
+#[schema(example = json!({"email": "user@example.com"}))]
+pub struct PasskeyLoginBeginRequest {
+    pub email: String,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct PasskeyLoginBeginResponse {
+    pub session_id: String,
+    pub challenge: serde_json::Value,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct PasskeyLoginFinishRequest {
+    pub session_id: String,
+    pub response: serde_json::Value,
 }
 
 #[derive(Serialize, ToSchema)]

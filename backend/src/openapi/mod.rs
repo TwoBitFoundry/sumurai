@@ -35,7 +35,6 @@ use utoipa::OpenApi;
     components(
         schemas(
             crate::models::auth::RegisterRequest,
-            crate::models::auth::LoginRequest,
             crate::models::auth::AuthResponse,
             crate::models::auth::ChangePasswordRequest,
             crate::models::auth::ChangePasswordResponse,
@@ -45,6 +44,9 @@ use utoipa::OpenApi;
             crate::models::auth::PasskeyRegisterBeginResponse,
             crate::models::auth::PasskeyRegisterFinishRequest,
             crate::models::auth::PasskeyItem,
+            crate::models::auth::PasskeyLoginBeginRequest,
+            crate::models::auth::PasskeyLoginBeginResponse,
+            crate::models::auth::PasskeyLoginFinishRequest,
             crate::models::import::ImportMultipartRequest,
             crate::models::import::ImportFileFormat,
             crate::models::import::CsvColumnMapping,
@@ -107,7 +109,6 @@ use utoipa::OpenApi;
     ),
     paths(
         crate::register_user,
-        crate::login_user,
         crate::refresh_user_session,
         crate::logout_user,
         crate::change_user_password,
@@ -153,6 +154,8 @@ use utoipa::OpenApi;
         crate::finish_passkey_registration,
         crate::list_user_passkeys,
         crate::delete_user_passkey,
+        crate::begin_passkey_login,
+        crate::finish_passkey_login,
     )
 )]
 pub struct ApiDoc;

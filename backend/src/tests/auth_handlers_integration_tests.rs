@@ -49,69 +49,6 @@ fn set_cookie_value(response: &axum::response::Response) -> Option<&str> {
 }
 
 #[tokio::test]
-async fn given_valid_login_when_authenticating_then_sets_auth_cookie_and_omits_token() {
-    let mut mock_db = MockDatabaseRepository::new();
-    let (user, _) = TestFixtures::create_authenticated_user_with_token();
-    let user_id = user.id;
-    let email = "login@example.com".to_string();
-    let expected_email = email.clone();
-
-    mock_db
-        .expect_get_user_by_email()
-        .withf(move |candidate| candidate == expected_email)
-        .returning(move |_| {
-            let user = user.clone();
-            Box::pin(async move { Ok(Some(user)) })
-        });
-
-    let mut mock_cache = create_auth_cookie_cache();
-    mock_cache
-        .expect_set_session_valid()
-        .returning(|_, _| Box::pin(async { Ok(()) }));
-    mock_cache
-        .expect_set_jwt_token()
-        .returning(|_, _, _| Box::pin(async { Ok(()) }));
-
-    let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
-        .await
-        .unwrap();
-
-    let request_body = json!({
-        "email": email,
-        "password": "SecurePass123!"
-    });
-
-    let request = axum::http::Request::builder()
-        .method(Method::POST)
-        .uri("/api/auth/login")
-        .header("X-Forwarded-For", "127.0.0.1")
-        .header("Content-Type", "application/json")
-        .body(axum::body::Body::from(
-            serde_json::to_string(&request_body).unwrap(),
-        ))
-        .unwrap();
-
-    let response = app.oneshot(request).await.unwrap();
-    assert_eq!(response.status(), 200);
-
-    let set_cookie = set_cookie_value(&response).expect("expected auth cookie");
-    assert!(set_cookie.contains("auth_token="));
-
-    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-    let response_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-
-    assert!(response_json.get("token").is_none());
-    assert_eq!(
-        response_json.get("user_id").unwrap(),
-        &json!(user_id.to_string())
-    );
-    assert_eq!(
-        response_json.get("onboarding_completed").unwrap(),
-        &json!(false)
-    );
-}
-
-#[tokio::test]
 async fn given_valid_registration_when_registering_then_sets_auth_cookie_and_omits_token() {
     let mut mock_db = MockDatabaseRepository::new();
 

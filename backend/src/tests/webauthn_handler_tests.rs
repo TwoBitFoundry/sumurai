@@ -1,4 +1,4 @@
-use crate::models::auth::WebAuthnCredential;
+use crate::models::auth::{User, WebAuthnCredential};
 use crate::services::cache_service::MockCacheService;
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::test_fixtures::TestFixtures;
@@ -347,4 +347,265 @@ async fn given_cross_user_credential_when_user_b_deletes_then_404() {
 
     let response = app.oneshot(request).await.unwrap();
     assert_eq!(response.status(), 404);
+}
+
+fn make_user() -> User {
+    User {
+        id: Uuid::new_v4(),
+        email: "test@example.com".to_string(),
+        password_hash: None,
+        provider: String::new(),
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+        onboarding_completed: false,
+    }
+}
+
+#[tokio::test]
+async fn given_old_login_endpoint_when_called_then_404() {
+    let mock_db = MockDatabaseRepository::new();
+    let mock_cache = MockCacheService::new();
+
+    let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
+        .await
+        .unwrap();
+
+    let request = axum::http::Request::builder()
+        .method(Method::POST)
+        .uri("/api/auth/login")
+        .header("content-type", "application/json")
+        .body(axum::body::Body::from(
+            serde_json::to_vec(&json!({"email": "a@b.com", "password": "x"})).unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 404);
+}
+
+#[tokio::test]
+async fn given_unknown_email_when_begin_login_then_200_same_shape() {
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_get_user_by_email()
+        .returning(|_| Box::pin(async { Ok(None) }));
+
+    let mut mock_cache = MockCacheService::new();
+    mock_cache
+        .expect_is_auth_ip_banned()
+        .returning(|_| Box::pin(async { Ok(false) }));
+    mock_cache
+        .expect_set_webauthn_challenge()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+
+    let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
+        .await
+        .unwrap();
+
+    let request = axum::http::Request::builder()
+        .method(Method::POST)
+        .uri("/api/auth/passkey/login/begin")
+        .header("content-type", "application/json")
+        .header("X-Forwarded-For", "127.0.0.1")
+        .body(axum::body::Body::from(
+            serde_json::to_vec(&json!({"email": "nobody@example.com"})).unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert!(json.get("session_id").is_some(), "must have session_id");
+    assert!(json.get("challenge").is_some(), "must have challenge");
+}
+
+#[tokio::test]
+async fn given_known_email_when_begin_login_then_200_with_challenge() {
+    let user = make_user();
+    let user_id = user.id;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db.expect_get_user_by_email().returning(move |_| {
+        let u = user.clone();
+        Box::pin(async move { Ok(Some(u)) })
+    });
+    mock_db
+        .expect_list_webauthn_credentials_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let mut mock_cache = MockCacheService::new();
+    mock_cache
+        .expect_is_auth_ip_banned()
+        .returning(|_| Box::pin(async { Ok(false) }));
+    mock_cache
+        .expect_set_webauthn_challenge()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+
+    let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
+        .await
+        .unwrap();
+
+    let request = axum::http::Request::builder()
+        .method(Method::POST)
+        .uri("/api/auth/passkey/login/begin")
+        .header("content-type", "application/json")
+        .header("X-Forwarded-For", "127.0.0.1")
+        .body(axum::body::Body::from(
+            serde_json::to_vec(&json!({"email": "test@example.com"})).unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert!(
+        json.get("session_id").is_some(),
+        "must have session_id for user {}",
+        user_id
+    );
+    assert!(json.get("challenge").is_some(), "must have challenge");
+}
+
+#[tokio::test]
+async fn given_no_challenge_when_finish_login_then_400() {
+    let mock_db = MockDatabaseRepository::new();
+    let mut mock_cache = MockCacheService::new();
+    mock_cache
+        .expect_is_auth_ip_banned()
+        .returning(|_| Box::pin(async { Ok(false) }));
+    mock_cache
+        .expect_take_webauthn_challenge()
+        .returning(|_| Box::pin(async { Ok(None) }));
+
+    let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
+        .await
+        .unwrap();
+
+    let body = json!({
+        "session_id": Uuid::new_v4().to_string(),
+        "response": {}
+    });
+
+    let request = axum::http::Request::builder()
+        .method(Method::POST)
+        .uri("/api/auth/passkey/login/finish")
+        .header("content-type", "application/json")
+        .header("X-Forwarded-For", "127.0.0.1")
+        .body(axum::body::Body::from(serde_json::to_vec(&body).unwrap()))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 400);
+}
+
+#[tokio::test]
+async fn given_unknown_user_challenge_when_finish_login_then_401() {
+    let mock_db = MockDatabaseRepository::new();
+    let mut mock_cache = MockCacheService::new();
+
+    let payload = json!({
+        "user_id": Uuid::nil().to_string(),
+        "state": {}
+    })
+    .to_string();
+
+    mock_cache
+        .expect_is_auth_ip_banned()
+        .returning(|_| Box::pin(async { Ok(false) }));
+    mock_cache
+        .expect_take_webauthn_challenge()
+        .returning(move |_| {
+            let p = payload.clone();
+            Box::pin(async move { Ok(Some(p)) })
+        });
+
+    let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
+        .await
+        .unwrap();
+
+    let body = json!({
+        "session_id": Uuid::new_v4().to_string(),
+        "response": {}
+    });
+
+    let request = axum::http::Request::builder()
+        .method(Method::POST)
+        .uri("/api/auth/passkey/login/finish")
+        .header("content-type", "application/json")
+        .header("X-Forwarded-For", "127.0.0.1")
+        .body(axum::body::Body::from(serde_json::to_vec(&body).unwrap()))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 401);
+}
+
+#[tokio::test]
+async fn given_valid_challenge_but_invalid_response_when_finish_login_then_400() {
+    use crate::services::webauthn_service::WebAuthnService;
+
+    let service = WebAuthnService::new(
+        "localhost",
+        &url::Url::parse("http://localhost:8080").unwrap(),
+    )
+    .unwrap();
+    let (_, auth_state) = service.begin_authentication(&[]).unwrap();
+    let state_json = serde_json::to_value(&auth_state).unwrap();
+
+    let user_id = Uuid::new_v4();
+    let payload = json!({
+        "user_id": user_id.to_string(),
+        "state": state_json
+    })
+    .to_string();
+
+    let mock_db = MockDatabaseRepository::new();
+    let mut mock_cache = MockCacheService::new();
+    mock_cache
+        .expect_is_auth_ip_banned()
+        .returning(|_| Box::pin(async { Ok(false) }));
+    mock_cache
+        .expect_take_webauthn_challenge()
+        .returning(move |_| {
+            let p = payload.clone();
+            Box::pin(async move { Ok(Some(p)) })
+        });
+
+    let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
+        .await
+        .unwrap();
+
+    let body = json!({
+        "session_id": Uuid::new_v4().to_string(),
+        "response": {
+            "id": "notvalidbase64url!!!",
+            "rawId": "notvalidbase64url!!!",
+            "type": "public-key",
+            "response": {
+                "authenticatorData": "bad",
+                "clientDataJSON": "bad",
+                "signature": "bad"
+            }
+        }
+    });
+
+    let request = axum::http::Request::builder()
+        .method(Method::POST)
+        .uri("/api/auth/passkey/login/finish")
+        .header("content-type", "application/json")
+        .header("X-Forwarded-For", "127.0.0.1")
+        .body(axum::body::Body::from(serde_json::to_vec(&body).unwrap()))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    let status = response.status().as_u16();
+    assert!(
+        status == 400 || status == 401,
+        "expected 400 or 401, got {}",
+        status
+    );
 }

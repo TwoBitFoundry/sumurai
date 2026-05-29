@@ -1,7 +1,11 @@
 use anyhow::{anyhow, Result};
 use url::Url;
 use uuid::Uuid;
-use webauthn_rs::prelude::*;
+use webauthn_rs::prelude::{
+    AuthenticationResult, CreationChallengeResponse, CredentialID, Passkey, PasskeyAuthentication,
+    PasskeyRegistration, PublicKeyCredential, RegisterPublicKeyCredential,
+    RequestChallengeResponse, Webauthn, WebauthnBuilder,
+};
 
 pub struct WebAuthnService {
     webauthn: Webauthn,
@@ -46,5 +50,24 @@ impl WebAuthnService {
         self.webauthn
             .finish_passkey_registration(response, state)
             .map_err(|e| anyhow!("finish_registration failed: {:?}", e))
+    }
+
+    pub fn begin_authentication(
+        &self,
+        passkeys: &[Passkey],
+    ) -> Result<(RequestChallengeResponse, PasskeyAuthentication)> {
+        self.webauthn
+            .start_passkey_authentication(passkeys)
+            .map_err(|e| anyhow!("begin_authentication failed: {:?}", e))
+    }
+
+    pub fn finish_authentication(
+        &self,
+        state: &PasskeyAuthentication,
+        response: &PublicKeyCredential,
+    ) -> Result<AuthenticationResult> {
+        self.webauthn
+            .finish_passkey_authentication(response, state)
+            .map_err(|e| anyhow!("finish_authentication failed: {:?}", e))
     }
 }

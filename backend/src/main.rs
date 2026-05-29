@@ -80,6 +80,12 @@ use crate::models::{
         OnboardingCompleteResponse, User,
     },
 };
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct LoginChallengePayload {
+    user_id: Uuid,
+    state: serde_json::Value,
+}
 use crate::providers::{
     PlaidCredentialResolver, SimpleFinCredentialResolver, TellerCredentialResolver,
 };
@@ -405,8 +411,9 @@ async fn main() -> anyhow::Result<()> {
 }
 
 pub fn create_app(state: AppState) -> Router {
-    let auth_login = Router::new()
-        .route("/", post(login_user))
+    let passkey_login = Router::new()
+        .route("/api/auth/passkey/login/begin", post(begin_passkey_login))
+        .route("/api/auth/passkey/login/finish", post(finish_passkey_login))
         .layer(auth_login_governor_layer())
         .layer(from_fn_with_state(state.clone(), auth_ip_ban_middleware))
         .with_state(state.clone());
@@ -440,7 +447,7 @@ pub fn create_app(state: AppState) -> Router {
     let public_routes = Router::new()
         .route("/health", get(health_check))
         .nest("/api/v1/public", public_browser_traces)
-        .nest("/api/auth/login", auth_login)
+        .merge(passkey_login)
         .nest("/api/auth/register", auth_register)
         .route("/api/auth/refresh", post(refresh_user_session))
         .route("/api/auth/logout", post(logout_user));
@@ -863,113 +870,6 @@ async fn register_user(
             user_id: user_id.to_string(),
             expires_at,
             onboarding_completed: false,
-        }),
-    ))
-}
-
-#[utoipa::path(
-    post,
-    path = "/api/auth/login",
-    description = "Authenticates a user and sets the auth_token HttpOnly cookie for subsequent requests.",
-    request_body = auth_models::LoginRequest,
-    responses(
-        (status = 200, description = "Login successful", body = auth_models::AuthResponse),
-        (status = 401, description = "Invalid credentials", body = ApiErrorResponse),
-        (status = 429, description = "Too many requests", body = ApiErrorResponse),
-        (status = 403, description = "IP temporarily banned after repeated abuse", body = ApiErrorResponse),
-        (status = 500, description = "Internal server error", body = ApiErrorResponse),
-    ),
-    tag = "Authentication"
-)]
-async fn login_user(
-    State(state): State<AppState>,
-    Json(req): Json<auth_models::LoginRequest>,
-) -> Result<(HeaderMap, Json<auth_models::AuthResponse>), (StatusCode, Json<ApiErrorResponse>)> {
-    let user = match state.db_repository.get_user_by_email(&req.email).await {
-        Ok(Some(user)) => user,
-        Ok(None) => {
-            tracing::info!(
-                auth_operation = "login",
-                auth_result = "failure",
-                failure_reason = "unknown_user",
-                "Login attempt with non-existent user"
-            );
-            return Err(ApiErrorResponse::unauthorized("Invalid email or password"));
-        }
-        Err(e) => {
-            tracing::error!(
-                auth_operation = "login",
-                auth_result = "failure",
-                failure_reason = "database_error",
-                error = %e,
-                "Database error during login"
-            );
-            return Err(ApiErrorResponse::internal_server_error(
-                "Authentication service temporarily unavailable",
-            ));
-        }
-    };
-
-    let hash = user.password_hash.as_deref().unwrap_or("");
-    let is_valid = state
-        .auth_service
-        .verify_password(&req.password, hash)
-        .map_err(|e| {
-            tracing::error!("Password verification failed for user {}: {}", user.id, e);
-            ApiErrorResponse::internal_server_error("Authentication service error")
-        })?;
-
-    if !is_valid {
-        tracing::info!(
-            auth_operation = "login",
-            auth_result = "failure",
-            failure_reason = "invalid_password",
-            user_id = %user.id,
-            "Login attempt with invalid password"
-        );
-        return Err(ApiErrorResponse::unauthorized("Invalid email or password"));
-    }
-
-    let auth_token = state.auth_service.generate_token(user.id).map_err(|e| {
-        tracing::error!("Token generation failed for user {}: {}", user.id, e);
-        ApiErrorResponse::internal_server_error("Failed to generate authentication token")
-    })?;
-
-    let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
-    if ttl > 0 {
-        // Set session validity flag in cache with JWT TTL
-        if let Err(e) = state
-            .cache_service
-            .set_session_valid(&auth_token.jwt_id, ttl)
-            .await
-        {
-            tracing::warn!("Failed to set session validity in cache: {}", e);
-        }
-
-        // Cache JWT token for reuse
-        if let Err(e) = state
-            .cache_service
-            .set_jwt_token(&auth_token.jwt_id, &auth_token.token, ttl)
-            .await
-        {
-            tracing::warn!("Failed to cache JWT token: {}", e);
-        }
-    }
-
-    let expires_at = auth_token.expires_at.to_rfc3339();
-
-    tracing::info!("User authenticated successfully");
-
-    Ok((
-        auth_cookie_headers(build_auth_cookie(
-            &auth_token.token,
-            auth_token.expires_at,
-            &state.config,
-        )),
-        Json(auth_models::AuthResponse {
-            user_id: user.id.to_string(),
-            expires_at,
-            onboarding_completed: user.onboarding_completed,
         }),
     ))
 }
@@ -4367,4 +4267,237 @@ async fn delete_user_passkey(
     } else {
         Err(ApiErrorResponse::not_found("Passkey not found"))
     }
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/auth/passkey/login/begin",
+    description = "Begin passkey authentication. Returns a challenge for any email; response shape is identical for unknown emails to prevent user enumeration.",
+    request_body = auth_models::PasskeyLoginBeginRequest,
+    responses(
+        (status = 200, description = "Authentication challenge", body = auth_models::PasskeyLoginBeginResponse),
+        (status = 429, description = "Too many requests", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    tag = "Authentication"
+)]
+async fn begin_passkey_login(
+    State(state): State<AppState>,
+    Json(req): Json<auth_models::PasskeyLoginBeginRequest>,
+) -> Result<Json<auth_models::PasskeyLoginBeginResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    use webauthn_rs::prelude::Passkey;
+
+    let (user_id, passkeys) = match state.db_repository.get_user_by_email(&req.email).await {
+        Ok(Some(user)) => {
+            let creds = state
+                .db_repository
+                .list_webauthn_credentials_for_user(&user.id)
+                .await
+                .map_err(|e| {
+                    tracing::error!("Failed to list credentials for user {}: {}", user.id, e);
+                    ApiErrorResponse::internal_server_error("Authentication service error")
+                })?;
+
+            let passkeys: Vec<Passkey> = creds
+                .iter()
+                .filter_map(|c| serde_json::from_value(c.passkey.clone()).ok())
+                .collect();
+
+            (user.id, passkeys)
+        }
+        Ok(None) | Err(_) => (Uuid::nil(), vec![]),
+    };
+
+    let (challenge, auth_state) = state
+        .webauthn_service
+        .begin_authentication(&passkeys)
+        .map_err(|e| {
+            tracing::error!("begin_authentication failed: {}", e);
+            ApiErrorResponse::internal_server_error("Failed to begin authentication")
+        })?;
+
+    let state_value = serde_json::to_value(&auth_state).map_err(|e| {
+        tracing::error!("Failed to serialize auth state: {}", e);
+        ApiErrorResponse::internal_server_error("Failed to serialize authentication state")
+    })?;
+
+    let payload = serde_json::to_string(&LoginChallengePayload {
+        user_id,
+        state: state_value,
+    })
+    .map_err(|e| {
+        tracing::error!("Failed to serialize challenge payload: {}", e);
+        ApiErrorResponse::internal_server_error("Failed to store authentication challenge")
+    })?;
+
+    let session_id = Uuid::new_v4().to_string();
+
+    state
+        .cache_service
+        .set_webauthn_challenge(&session_id, &payload)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to store challenge for session {}: {}",
+                session_id,
+                e
+            );
+            ApiErrorResponse::internal_server_error("Failed to store authentication challenge")
+        })?;
+
+    let challenge_json = serde_json::to_value(&challenge).map_err(|e| {
+        tracing::error!("Failed to serialize challenge: {}", e);
+        ApiErrorResponse::internal_server_error("Failed to serialize challenge")
+    })?;
+
+    Ok(Json(auth_models::PasskeyLoginBeginResponse {
+        session_id,
+        challenge: challenge_json,
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/auth/passkey/login/finish",
+    description = "Complete passkey authentication and receive an auth_token cookie.",
+    request_body = auth_models::PasskeyLoginFinishRequest,
+    responses(
+        (status = 200, description = "Authentication successful", body = auth_models::AuthResponse),
+        (status = 400, description = "Challenge not found, expired, or invalid response", body = ApiErrorResponse),
+        (status = 401, description = "Authentication failed", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    tag = "Authentication"
+)]
+async fn finish_passkey_login(
+    State(state): State<AppState>,
+    Json(req): Json<auth_models::PasskeyLoginFinishRequest>,
+) -> Result<(HeaderMap, Json<auth_models::AuthResponse>), (StatusCode, Json<ApiErrorResponse>)> {
+    use webauthn_rs::prelude::{PasskeyAuthentication, PublicKeyCredential};
+
+    let challenge_json = state
+        .cache_service
+        .take_webauthn_challenge(&req.session_id)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to retrieve challenge for session {}: {}",
+                req.session_id,
+                e
+            );
+            ApiErrorResponse::internal_server_error("Failed to retrieve challenge")
+        })?
+        .ok_or_else(|| ApiErrorResponse::bad_request("Challenge not found or already used"))?;
+
+    let payload: LoginChallengePayload = serde_json::from_str(&challenge_json).map_err(|e| {
+        tracing::error!("Failed to deserialize challenge payload: {}", e);
+        ApiErrorResponse::bad_request("Invalid challenge state")
+    })?;
+
+    if payload.user_id == Uuid::nil() {
+        return Err(ApiErrorResponse::unauthorized("Authentication failed"));
+    }
+
+    let user_id = payload.user_id;
+
+    let auth_state: PasskeyAuthentication = serde_json::from_value(payload.state).map_err(|e| {
+        tracing::error!("Failed to deserialize authentication state: {}", e);
+        ApiErrorResponse::bad_request("Invalid authentication state")
+    })?;
+
+    let credential_response: PublicKeyCredential =
+        serde_json::from_value(req.response).map_err(|e| {
+            tracing::error!("Failed to deserialize credential response: {}", e);
+            ApiErrorResponse::bad_request("Invalid credential response")
+        })?;
+
+    let auth_result = state
+        .webauthn_service
+        .finish_authentication(&auth_state, &credential_response)
+        .map_err(|e| {
+            tracing::warn!("finish_authentication failed for user {}: {}", user_id, e);
+            ApiErrorResponse::unauthorized("Authentication failed")
+        })?;
+
+    let cred_id_bytes: Vec<u8> = auth_result.cred_id().to_vec();
+    let new_count = auth_result.counter();
+
+    let matching = state
+        .db_repository
+        .find_webauthn_credentials_by_credential_ids(&user_id, &[cred_id_bytes])
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to find matched credential for user {}: {}",
+                user_id,
+                e
+            );
+            ApiErrorResponse::internal_server_error("Authentication service error")
+        })?;
+
+    if let Some(credential) = matching.first() {
+        if let Err(e) = state
+            .db_repository
+            .update_webauthn_credential_counter_and_last_used(&user_id, &credential.id, new_count)
+            .await
+        {
+            tracing::warn!(
+                "Failed to update sign counter for credential {}: {}",
+                credential.id,
+                e
+            );
+        }
+    }
+
+    let user = state
+        .db_repository
+        .get_user_by_id(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to fetch user {} after authentication: {}",
+                user_id,
+                e
+            );
+            ApiErrorResponse::internal_server_error("Authentication service error")
+        })?
+        .ok_or_else(|| ApiErrorResponse::unauthorized("Authentication failed"))?;
+
+    let auth_token = state.auth_service.generate_token(user_id).map_err(|e| {
+        tracing::error!("Token generation failed for user {}: {}", user_id, e);
+        ApiErrorResponse::internal_server_error("Failed to generate authentication token")
+    })?;
+
+    let ttl = (auth_token.expires_at - Utc::now()).num_seconds().max(0) as u64;
+    if ttl > 0 {
+        if let Err(e) = state
+            .cache_service
+            .set_session_valid(&auth_token.jwt_id, ttl)
+            .await
+        {
+            tracing::warn!("Failed to set session validity in cache: {}", e);
+        }
+        if let Err(e) = state
+            .cache_service
+            .set_jwt_token(&auth_token.jwt_id, &auth_token.token, ttl)
+            .await
+        {
+            tracing::warn!("Failed to cache JWT token: {}", e);
+        }
+    }
+
+    tracing::info!("User {} authenticated successfully via passkey", user_id);
+
+    Ok((
+        auth_cookie_headers(build_auth_cookie(
+            &auth_token.token,
+            auth_token.expires_at,
+            &state.config,
+        )),
+        Json(auth_models::AuthResponse {
+            user_id: user_id.to_string(),
+            expires_at: auth_token.expires_at.to_rfc3339(),
+            onboarding_completed: user.onboarding_completed,
+        }),
+    ))
 }

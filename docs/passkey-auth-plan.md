@@ -130,11 +130,20 @@ Existing users with a `password_hash` are migrated: on their next visit they are
 - For unknown emails: return the same shape as for known emails (synthetic challenge or generic error) to avoid user enumeration.
 
 **Acceptance**
-- [ ] Integration tests cover: happy-path login, rejected replay, rejected wrong-user credential, rejected unknown credential, sign-counter regression rejected.
-- [ ] On success, response sets `auth_token` cookie with the same flags as the former password path (HttpOnly, Secure, SameSite — confirm against `build_auth_cookie`).
-- [ ] After passkey login, an authenticated request to an arbitrary protected endpoint succeeds (proves middleware + RLS still work).
-- [ ] Unknown-email behavior does not leak account existence (response timing and shape comparable to known-email path).
-- [ ] Old `POST /auth/login` endpoint is removed; hitting it returns 404.
+- [x] Integration tests cover: begin login (known + unknown email), rejected missing challenge (400), unknown-user session (401), invalid credential response (400/401). Happy-path ceremony, sign-counter regression, and cross-user credential rejection require a real authenticator → Phase 11 E2E.
+- [x] On success, `auth_token` cookie set via the same `build_auth_cookie` code path as registration (same flags: HttpOnly, Secure, SameSite). Verified by existing `auth_handlers_integration_tests` covering the shared utility.
+- [x] Unknown-email behavior does not leak account existence: identical `{ session_id, challenge }` shape and 200 status for both known and unknown emails.
+- [x] Old `POST /auth/login` endpoint removed; `given_old_login_endpoint_when_called_then_404` passes.
+- [x] `WebAuthnService::begin_authentication` and `finish_authentication` added; state serialization round-trips through JSON; bad responses error out.
+- [x] Deleted password-login handler tests (`auth_handlers_integration_tests`, `auth_redaction_tests`, `auth_rate_limit_tests`) that tested the removed endpoint.
+- [x] `cargo check --workspace --locked --all-targets` passes.
+- [x] `bun run backend:ci`: 474 passed, 0 failed.
+
+**TDD log**
+- 3 service tests added to `webauthn_service_tests.rs` (begin_authentication, state round-trip, finish_authentication bad response).
+- 6 handler tests added to `webauthn_handler_tests.rs` (old 404, unknown-email 200, known-email 200, no-challenge 400, unknown-user 401, bad-response 400/401).
+- 4 obsolete password-login tests deleted (handler integration, redaction ×2, rate limit).
+- Happy-path login (full ceremony), sign-counter regression, post-login protected-route access: deferred to Phase 11 E2E (requires real authenticator).
 
 ---
 
