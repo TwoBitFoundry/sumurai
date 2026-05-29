@@ -1,6 +1,6 @@
 ---
 name: sumurai-backend-architecture
-description: Use when working on Sumurai backend Rust, Axum APIs, SQLx, Redis, auth, providers, services, models, migrations, middleware, OpenAPI, telemetry, or backend architecture. Guides agents to preserve service/model/provider separation.
+description: Use when working on Sumurai backend Rust, Axum APIs, SeaORM, Redis, auth, providers, services, models, migrations, middleware, OpenAPI, telemetry, or backend architecture. Guides agents to preserve service/model/provider separation.
 ---
 
 # Sumurai Backend Architecture
@@ -21,7 +21,7 @@ Read the relevant reference before backend changes:
 - Keep provider-specific external integration code in `backend/src/providers`.
 - Keep HTTP routing and request/response glue in handlers, `middleware/`, `auth_middleware.rs`, and `main.rs`.
 - Keep environment-driven configuration types and loading in `config.rs`.
-- Keep database schema changes in forward migrations under `backend/migrations`.
+- Keep database schema changes in forward migrations under `backend/migration/src/`.
 - Keep tests in `backend/src/tests`.
 - Preserve Redis as a required backend dependency.
 - Do not read or write `.env` files.

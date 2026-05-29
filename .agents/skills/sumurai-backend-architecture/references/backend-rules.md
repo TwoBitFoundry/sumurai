@@ -21,9 +21,9 @@ Use these rules when changing the Rust backend.
 
 ## Database
 
-- Add forward migrations under `backend/migrations`.
-- Preserve existing migration numbering convention.
-- Keep migrations compatible with deployed data where possible.
+- Add forward migrations under `backend/migration/src/` and register them in `Migrator::migrations()`.
+- Regenerate entities in `backend/entity/` after schema changes (`sea-orm-cli generate entity`).
+- Preserve existing migration compatibility with deployed data where possible.
 - Add migration tests when schema behavior or compatibility matters.
 
 ## Providers

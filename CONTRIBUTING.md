@@ -9,7 +9,6 @@ Thanks for helping improve Sumurai. This guide covers the current workflow, loca
 - Node 24.10+ and Bun 1.3.14+
 - Rust stable and Cargo
 - Docker and Docker Compose
-- `sqlx-cli`
 - OpenSSL
 
 ## Getting Started
@@ -127,19 +126,100 @@ cargo fmt --manifest-path backend/Cargo.toml --all --check
 cargo clippy --manifest-path backend/Cargo.toml --all-targets --no-deps -- -D warnings
 ```
 
-## Database Migrations
+## Working with the database
 
-If you need to run migrations manually against a Postgres instance:
+Schema and migrations live in the Cargo workspace members `backend/migration/` (migrations) and `backend/entity/` (generated entities). The backend applies pending migrations at startup via `Migrator::up` in `backend/src/main.rs` (wrapped in a Postgres advisory lock).
+
+### Add a migration
+
+1. Create `backend/migration/src/m<YYYYMMDD>_<name>.rs` implementing `MigrationTrait` (use `SchemaManager` builders; use `execute_unprepared` for RLS policy DDL the builder cannot express).
+2. Register the module in `backend/migration/src/lib.rs` and append it to `Migrator::migrations()`.
+3. Boot the backend against a local Postgres (or run `cargo run -p migration -- up`) to apply the migration.
+4. Regenerate entities (see below) if the migration adds or changes tables/columns.
+
+Example migration skeleton:
+
+```rust
+use sea_orm_migration::prelude::*;
+
+#[derive(DeriveMigrationName)]
+pub struct Migration;
+
+#[async_trait::async_trait]
+impl MigrationTrait for Migration {
+    async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .alter_table(
+                Table::alter()
+                    .table(Users::Table)
+                    .add_column(ColumnDef::new(Users::Nickname).string().null())
+                    .to_owned(),
+            )
+            .await
+    }
+
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .alter_table(
+                Table::alter()
+                    .table(Users::Table)
+                    .drop_column(Users::Nickname)
+                    .to_owned(),
+            )
+            .await
+    }
+}
+
+#[derive(DeriveIden)]
+enum Users {
+    Table,
+    Nickname,
+}
+```
+
+### Regenerate entities
+
+After schema changes, point `sea-orm-cli` at a database that has the migration applied:
 
 ```bash
-DATABASE_URL=postgresql://postgres:password@localhost:5432/accounting \
-  sqlx migrate run
+cargo install sea-orm-cli --locked
+sea-orm-cli generate entity \
+  --database-url "$DATABASE_URL" \
+  --output-dir backend/entity/src \
+  --entity-format dense
 ```
+
+Review generated `Relation` impls; hand-edit only when the generator misses a composite or polymorphic link. Re-export modules from `backend/entity/src/prelude.rs` if you add tables.
+
+### Write queries
+
+- Tenant-scoped reads/writes go through `PostgresRepository::with_tenant` and use entity DSL inside the closure (`entity::transaction::Entity::find()`, etc.).
+- Convert `entity::Model` to domain types via `backend/src/models/conversions.rs` — handlers and services never import `entity::*`.
+- When the DSL is insufficient (complex CTEs, aggregates), use the escape hatch in `repository_service.rs`:
+
+```rust
+Model::find_by_statement(Statement::from_sql_and_values(
+    DbBackend::Postgres,
+    r#"SELECT …"#,
+    vec![…],
+))
+```
+
+Document why the escape hatch was needed in the PR.
+
+### Column walkthrough (end to end)
+
+1. Add a migration file and register it in `Migrator::migrations()`.
+2. Apply migrations locally (`docker compose -f docker-compose.dev.yml up -d --build backend` or `cargo run -p migration -- up`).
+3. Run `sea-orm-cli generate entity` against that database.
+4. Use the new `Column` variant in `repository_service.rs` (inside `with_tenant` when tenant-scoped).
+5. Add or extend a `From<entity::…::Model>` mapping in `conversions.rs` if the API exposes the field.
+6. Run `cargo test --manifest-path backend/Cargo.toml --locked`.
 
 ## Repository Layout
 
 - `frontend/` - Next.js 16, React 19, TypeScript 6, Tailwind 4, Biome 2, Recharts 3
-- `backend/` - Rust 1.95, Axum, SQLx, Redis, PostgreSQL, provider integrations, OpenTelemetry
+- `backend/` - Rust 1.95, Axum, SeaORM, Redis, PostgreSQL, provider integrations, OpenTelemetry
 - `docs/` - architecture, screenshots, compliance, and reference documents
 
 ## Coding Standards

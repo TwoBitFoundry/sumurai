@@ -7,7 +7,7 @@ Use this map to place tests in the correct area.
 - Backend tests live under `backend/src/tests/`.
 - Backend fixtures live in `backend/src/tests/test_fixtures.rs`.
 - Backend test modules are registered through `backend/src/tests/mod.rs`.
-- Backend migrations live in `backend/migrations/` and migration tests live under `backend/src/tests/`.
+- SeaORM migrations live in `backend/migration/`; entity code in `backend/entity/`; migration regression fixtures in `backend/src/tests/fixtures/legacy_migrations/`.
 - Run backend tests with `cargo test --manifest-path backend/Cargo.toml --locked`.
 
 Common backend areas:
