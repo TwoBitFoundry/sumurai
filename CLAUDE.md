@@ -18,7 +18,7 @@ AGENTS.md covers the full suites. For iteration:
 
 - Frontend single file: `npm --prefix frontend test -- path/to/file.test.tsx`
 - Frontend single test name: `npm --prefix frontend test -- -t "name pattern"`
-- Backend single test: `cargo test --manifest-path backend/Cargo.toml --locked <name_substring>`
+- Backend single test: `cargo test -p sumurai-backend --locked <name_substring>` (from repository root)
 
 ## Architecture notes
 

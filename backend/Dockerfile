@@ -34,7 +34,13 @@ RUN set -eu; \
 
 FROM chef AS planner
 COPY rust-toolchain.toml Cargo.toml Cargo.lock ./
-COPY backend/ ./backend/
+COPY backend/Cargo.toml backend/Cargo.toml
+COPY backend/entity/Cargo.toml backend/entity/Cargo.toml
+COPY backend/migration/Cargo.toml backend/migration/Cargo.toml
+RUN mkdir -p backend/src backend/entity/src backend/migration/src \
+    && printf 'fn main() {}\n' > backend/src/main.rs \
+    && printf '\n' > backend/entity/src/lib.rs \
+    && printf '\n' > backend/migration/src/lib.rs
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder

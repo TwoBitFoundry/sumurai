@@ -39,8 +39,8 @@ Sign-in is username-first: user enters email → server returns allowed credenti
 - [ ] Migration applies cleanly forward against a fresh DB and against an existing dev DB.
 - [ ] Repository tests in `backend/src/tests/` confirm CRUD round-trips for credentials.
 - [ ] Repository tests confirm RLS scoping: user A cannot read, update, or delete user B's credentials even when explicitly trying.
-- [ ] `cargo build --manifest-path backend/Cargo.toml --locked` succeeds.
-- [ ] `cargo test --manifest-path backend/Cargo.toml --locked webauthn` passes.
+- [ ] `cargo check --workspace --locked --all-targets` succeeds.
+- [ ] `cargo test -p sumurai-backend --locked webauthn` passes.
 
 ---
 
@@ -179,7 +179,7 @@ Sign-in is username-first: user enters email → server returns allowed credenti
 **Tasks**
 - Run the suites:
   - `npm --prefix frontend test`
-  - `cargo test --manifest-path backend/Cargo.toml --locked`
+  - `cargo test -p sumurai-backend --locked`
   - Storybook smoke per [sumurai-testing-policy](.agents/skills/).
 - E2E manual against `http://localhost:8080` (NOT `:3001` — bypasses Nginx per [CLAUDE.md](CLAUDE.md)):
   1. `docker compose up` on a fresh clone (or `git clean`-equivalent state).

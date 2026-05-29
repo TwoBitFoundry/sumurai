@@ -197,6 +197,21 @@ flowchart TD
     CacheSvc --> Redis[("Redis")]
 ```
 
+### Container build
+
+GHCR backend images are produced from the **repository root** with `backend/Dockerfile` (see `publish-images` workflow). The image targets a Cargo **workspace** whose root manifest and lockfile live at `Cargo.toml` and `Cargo.lock`; members are `backend` (Axum API), `backend/entity` (SeaORM entities), and `backend/migration` (SeaORM migrations).
+
+Docker builds use **cargo-chef** so dependency layers stay cached when only application source changes:
+
+| Stage | Role |
+|-------|------|
+| `planner` | Workspace manifests + stubs → `cargo chef prepare` → `recipe.json` |
+| `builder` | `cargo chef cook` (deps) → copy `backend/` → `cargo build -p sumurai-backend -p migration` |
+| `assets` | ONNX runtime + Hugging Face model artifacts (verified by checksum) |
+| `runtime` | Debian slim + `sumurai-backend`, `migration` CLI, `docker-entrypoint.sh` |
+
+The runtime container runs `docker-migrate.sh` then starts the API; see **Database Schema** for migration layout.
+
 ### Middleware stack (applied in order)
 
 1. `OtelAxumLayer` — trace context propagation

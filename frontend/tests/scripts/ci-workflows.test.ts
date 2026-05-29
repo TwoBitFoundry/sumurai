@@ -45,6 +45,15 @@ describe('bun migration ci workflows', () => {
     expect(contents).toContain('run: bun run test:storybook-runtime:run');
   });
 
+  it('ci.yml backend job uses workspace root paths and rust-cache', () => {
+    const contents = readWorkflow(ciWorkflow);
+
+    expect(contents).toContain("- 'Cargo.toml'");
+    expect(contents).toContain("- 'Cargo.lock'");
+    expect(contents).toContain('workspaces: .');
+    expect(contents).not.toContain('working-directory: backend');
+  });
+
   it('ci.yml splits lint/test and build/storybook into parallel jobs', () => {
     const contents = readWorkflow(ciWorkflow);
 

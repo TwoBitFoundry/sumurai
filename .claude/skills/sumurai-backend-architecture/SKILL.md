@@ -38,11 +38,11 @@ Read the relevant reference before backend changes:
 
 ## Validation
 
-Match local checks to `npm run backend:ci` (locked dependency graph, same as GitHub):
+Match local checks to `bun run backend:ci` from the repository root (locked workspace graph, same as GitHub):
 
-- `cargo fmt --manifest-path backend/Cargo.toml --all --check`
-- `cargo check --manifest-path backend/Cargo.toml --locked --all-targets`
-- `cargo clippy --manifest-path backend/Cargo.toml --locked --all-targets --no-deps -- -D warnings`
-- `cargo test --manifest-path backend/Cargo.toml --locked`
+- `cargo fmt -p sumurai-backend -p entity --check`
+- `cargo check --workspace --locked --all-targets`
+- `cargo clippy -p sumurai-backend -p entity --locked --all-targets --no-deps -- -D warnings`
+- `cargo test -p sumurai-backend --locked`
 
-`npm run backend:ci` runs the same steps and sets `RUST_BACKTRACE=1` for the test invocation only.
+`bun run backend:ci` runs the same steps and sets `RUST_BACKTRACE=1` for the test invocation only.

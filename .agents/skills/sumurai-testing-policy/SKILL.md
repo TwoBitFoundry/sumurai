@@ -38,8 +38,8 @@ Read the relevant reference before changing tests:
 
 Use the commands that match the touched area:
 
-- Backend: `cargo test --manifest-path backend/Cargo.toml --locked`
-- Backend type/build sanity: `cargo check --manifest-path backend/Cargo.toml --locked --all-targets`
+- Backend: `cargo test -p sumurai-backend --locked` (from repository root; or `bun run backend:ci`)
+- Backend type/build sanity: `cargo check --workspace --locked --all-targets`
 - Frontend tests: `npm --prefix frontend test`
 - Storybook browser tests (Vitest project): `npm --prefix frontend run test:storybook`
 - Storybook static build + Playwright iframe smoke: `npm --prefix frontend run test:storybook-runtime` (needs Playwright Chromium; use `npm run frontend:playwright-install` or `npm --prefix frontend run playwright:install-ci` to match CI)

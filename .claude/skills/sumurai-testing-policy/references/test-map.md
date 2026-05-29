@@ -8,7 +8,7 @@ Use this map to place tests in the correct area.
 - Backend fixtures live in `backend/src/tests/test_fixtures.rs`.
 - Backend test modules are registered through `backend/src/tests/mod.rs`.
 - SeaORM migrations live in `backend/migration/`; entity code in `backend/entity/`; migration regression fixtures in `backend/src/tests/fixtures/legacy_migrations/`.
-- Run backend tests with `cargo test --manifest-path backend/Cargo.toml --locked`.
+- Run backend tests with `cargo test -p sumurai-backend --locked` from the repository root.
 
 Common backend areas:
 

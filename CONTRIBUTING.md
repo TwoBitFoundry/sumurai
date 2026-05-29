@@ -117,14 +117,36 @@ The root Storybook commands delegate to `frontend/` (same as `cd frontend && npm
 
 ## Backend Validation
 
-Use Cargo commands for backend changes:
+Run backend validation from the repository root (workspace lockfile is `Cargo.lock`):
 
 ```bash
-cargo check --manifest-path backend/Cargo.toml
-cargo test --manifest-path backend/Cargo.toml
-cargo fmt --manifest-path backend/Cargo.toml --all --check
-cargo clippy --manifest-path backend/Cargo.toml --all-targets --no-deps -- -D warnings
+bun run backend:ci
 ```
+
+Or run individual steps:
+
+```bash
+cargo fmt -p sumurai-backend -p entity --check
+cargo check --workspace --locked --all-targets
+cargo clippy -p sumurai-backend -p entity --locked --all-targets --no-deps -- -D warnings
+cargo test -p sumurai-backend --locked
+```
+
+## Backend Docker image
+
+The backend image is built from the **repository root** (not `backend/` alone). Compose and CI use `docker build -f backend/Dockerfile .`.
+
+The Rust workspace lockfile is **`Cargo.lock`** at the repo root. Workspace members are `backend`, `backend/entity`, and `backend/migration`.
+
+[`backend/Dockerfile`](backend/Dockerfile) uses [cargo-chef](https://github.com/LukeMathWalker/cargo-chef) to cache dependency compilation:
+
+1. **Planner** — copies root `Cargo.toml` / `Cargo.lock`, workspace crate manifests, and minimal `src` stubs (not application source), then runs `cargo chef prepare`.
+2. **Builder** — `cargo chef cook` from `recipe.json`, then copies full `backend/` sources and builds `sumurai-backend` and `migration` binaries.
+3. **Runtime** — ONNX assets plus the release binaries and entrypoint scripts.
+
+Only manifest or lockfile changes should invalidate the planner/cook layers; ordinary Rust edits in `backend/src/` rebuild in the final `cargo build` step.
+
+Local dev stack: `docker compose -f docker-compose.dev.yml up -d --build` rebuilds from source. Published images are built by `.github/workflows/publish-images.yml` after semantic-release tags a release.
 
 ## Working with the database
 
@@ -218,7 +240,7 @@ Document why the escape hatch was needed in the PR.
 3. Regenerate entities (see **Regenerate entities** above).
 4. Use the new `Column` variant in `repository_service.rs` (inside `with_tenant` when tenant-scoped).
 5. Add or extend a `From<entity::…::Model>` mapping in `conversions.rs` if the API exposes the field.
-6. Run `cargo test --manifest-path backend/Cargo.toml --locked`.
+6. Run `cargo test -p sumurai-backend --locked` from the repository root.
 
 ## Repository Layout
 

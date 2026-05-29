@@ -31,7 +31,7 @@
 - Keep tests in the existing test folders; do not add tests inline with source files.
 
 ## Testing
-- Backend tests live in `backend/src/tests/` and run with `cargo test --manifest-path backend/Cargo.toml`.
+- Backend tests live in `backend/src/tests/` and run with `cargo test -p sumurai-backend --locked` from the repository root (`bun run backend:ci` for the full backend suite).
 - Frontend Bun tests live under `frontend/tests/` and own services, domain logic, hooks, API contracts, observability, setup, mocks, token flows, and business rules.
 - Storybook Vitest owns rendered UI states, browser interactions, loading/error/disabled states, form validation display, callback outcomes, and other browser-only component behavior.
 - Playwright Storybook iframe smoke tests own static Storybook load checks without screenshot baselines.
