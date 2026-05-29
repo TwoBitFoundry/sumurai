@@ -245,6 +245,34 @@ describe('ApiClient with Injected IHttpClient', () => {
       }
     });
 
+    it('redirects to enroll passkey when migration is required', async () => {
+      const assign = jest.fn();
+      const originalLocation = window.location;
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: {
+          ...originalLocation,
+          pathname: '/',
+          assign,
+        },
+      });
+
+      mockHttp.get.mockRejectedValueOnce(
+        new ForbiddenError(
+          'Passkey enrollment is required before continuing',
+          'passkey_enrollment_required'
+        )
+      );
+
+      await expect(ApiClient.get('/budgets')).rejects.toBeInstanceOf(ForbiddenError);
+      expect(assign).toHaveBeenCalledWith('/enroll-passkey');
+
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: originalLocation,
+      });
+    });
+
     it('should throw NetworkError for network failures', async () => {
       mockHttp.get
         .mockRejectedValueOnce(new Error('Failed to fetch'))

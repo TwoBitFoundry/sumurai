@@ -61,7 +61,7 @@ async fn given_password_in_register_body_when_registering_then_400() {
     let request = axum::http::Request::builder()
         .method(Method::POST)
         .uri("/api/auth/register")
-        .header("X-Forwarded-For", "127.0.0.1")
+        .header("X-Forwarded-For", "198.51.100.30")
         .header("content-type", "application/json")
         .body(axum::body::Body::from(
             serde_json::to_vec(&json!({
@@ -96,7 +96,7 @@ async fn given_register_without_finish_when_accessing_protected_route_then_401()
     let register_request = axum::http::Request::builder()
         .method(Method::POST)
         .uri("/api/auth/register")
-        .header("X-Forwarded-For", "127.0.0.1")
+        .header("X-Forwarded-For", "198.51.100.31")
         .header("content-type", "application/json")
         .body(axum::body::Body::from(
             serde_json::to_vec(&json!({
@@ -209,7 +209,7 @@ async fn given_register_and_finish_when_authenticated_request_then_succeeds() {
     let register_request = axum::http::Request::builder()
         .method(Method::POST)
         .uri("/api/auth/register")
-        .header("X-Forwarded-For", "127.0.0.1")
+        .header("X-Forwarded-For", "198.51.100.32")
         .header("content-type", "application/json")
         .body(axum::body::Body::from(
             serde_json::to_vec(&json!({
@@ -245,7 +245,7 @@ async fn given_register_and_finish_when_authenticated_request_then_succeeds() {
     let finish_request = axum::http::Request::builder()
         .method(Method::POST)
         .uri("/api/auth/passkey/register/finish")
-        .header("X-Forwarded-For", "127.0.0.1")
+        .header("X-Forwarded-For", "198.51.100.32")
         .header("content-type", "application/json")
         .body(axum::body::Body::from(
             serde_json::to_vec(&finish_body).unwrap(),

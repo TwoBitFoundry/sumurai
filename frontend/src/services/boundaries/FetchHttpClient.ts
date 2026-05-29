@@ -86,6 +86,14 @@ export class FetchHttpClient implements IHttpClient {
       errorMessage = `${response.status} ${response.statusText || 'Error'}`;
     }
 
+    const errorCode =
+      errorData &&
+      typeof errorData === 'object' &&
+      'code' in errorData &&
+      typeof (errorData as { code: unknown }).code === 'string'
+        ? (errorData as { code: string }).code
+        : undefined;
+
     switch (response.status) {
       case 400:
       case 422:
@@ -93,7 +101,7 @@ export class FetchHttpClient implements IHttpClient {
       case 401:
         return new AuthenticationError(errorMessage);
       case 403:
-        return new ForbiddenError(errorMessage);
+        return new ForbiddenError(errorMessage, errorCode ?? 'FORBIDDEN');
       case 404:
         return new NotFoundError(errorMessage);
       case 409:

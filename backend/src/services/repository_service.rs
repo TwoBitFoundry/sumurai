@@ -200,6 +200,8 @@ pub trait DatabaseRepository: Send + Sync {
 
     async fn update_user_password(&self, user_id: &Uuid, new_password_hash: &str) -> Result<()>;
 
+    async fn clear_user_password_hash(&self, user_id: &Uuid) -> Result<()>;
+
     async fn delete_user(&self, user_id: &Uuid) -> Result<()>;
 
     async fn insert_webauthn_credential(
@@ -1766,6 +1768,28 @@ impl DatabaseRepository for PostgresRepository {
             Box::pin(async move {
                 users::Entity::update_many()
                     .col_expr(users::Column::PasswordHash, Expr::value(new_password_hash))
+                    .col_expr(
+                        users::Column::UpdatedAt,
+                        Expr::value(Self::to_db_time(chrono::Utc::now())),
+                    )
+                    .filter(users::Column::Id.eq(user_id))
+                    .exec(txn)
+                    .await?;
+                Ok(())
+            })
+        })
+        .await
+    }
+
+    async fn clear_user_password_hash(&self, user_id: &Uuid) -> Result<()> {
+        let user_id = *user_id;
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move {
+                users::Entity::update_many()
+                    .col_expr(
+                        users::Column::PasswordHash,
+                        Expr::value(Option::<String>::None),
+                    )
                     .col_expr(
                         users::Column::UpdatedAt,
                         Expr::value(Self::to_db_time(chrono::Utc::now())),

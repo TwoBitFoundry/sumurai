@@ -618,6 +618,8 @@ async fn build_simplefin_handler_app(
         .expect_upsert_account()
         .returning(|_| Box::pin(async { Ok(()) }));
 
+    crate::test_fixtures::apply_passkey_enrollment_mock_defaults(&mut mock_db);
+
     let mut mock_cache = MockCacheService::new();
     mock_cache
         .expect_is_session_valid()

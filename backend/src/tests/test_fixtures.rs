@@ -44,6 +44,26 @@ use axum::{
 
 pub struct TestFixtures;
 
+pub(crate) fn apply_passkey_enrollment_mock_defaults(mock_db: &mut MockDatabaseRepository) {
+    mock_db
+        .expect_get_user_by_id()
+        .times(0..)
+        .returning(|user_id| {
+            let user_id = *user_id;
+            Box::pin(async move {
+                Ok(Some(User {
+                    id: user_id,
+                    email: format!("test-{}@example.com", user_id),
+                    password_hash: None,
+                    provider: String::new(),
+                    created_at: Utc::now(),
+                    updated_at: Utc::now(),
+                    onboarding_completed: true,
+                }))
+            })
+        });
+}
+
 struct NoopCategorizer;
 
 #[async_trait]
@@ -252,6 +272,8 @@ impl TestFixtures {
             .expect_get_latest_account_balances_for_user()
             .returning(|_| Box::pin(async { Ok(vec![]) }));
 
+        apply_passkey_enrollment_mock_defaults(&mut mock_db);
+
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
 
         let mut mock_cache = MockCacheService::new();
@@ -386,6 +408,8 @@ impl TestFixtures {
         mock_db
             .expect_count_transactions()
             .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
+
+        apply_passkey_enrollment_mock_defaults(&mut mock_db);
 
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
 
@@ -534,6 +558,8 @@ impl TestFixtures {
             .expect_count_transactions()
             .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
 
+        apply_passkey_enrollment_mock_defaults(&mut mock_db);
+
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
 
@@ -603,7 +629,7 @@ impl TestFixtures {
         let user = User {
             id: user_id,
             email: format!("test-{}@example.com", user_id),
-            password_hash: Some(auth_service.hash_password("SecurePass123!").unwrap()),
+            password_hash: None,
             provider: "teller".to_string(),
             created_at: Utc::now(),
             updated_at: Utc::now(),
@@ -611,6 +637,13 @@ impl TestFixtures {
         };
 
         let auth_token = auth_service.generate_token(user_id).unwrap();
+        (user, auth_token.token)
+    }
+
+    pub fn create_authenticated_user_with_token_for_user(user: User) -> (User, String) {
+        let auth_service =
+            AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap();
+        let auth_token = auth_service.generate_token(user.id).unwrap();
         (user, auth_token.token)
     }
 

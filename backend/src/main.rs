@@ -99,6 +99,9 @@ use crate::utils::encryption_key::parse_encryption_key_hex;
 use auth_middleware::auth_middleware;
 use config::Config;
 use middleware::auth_ip_ban::auth_ip_ban_middleware;
+use middleware::passkey_enrollment::{
+    passkey_enrollment_middleware, PasskeyEnrollmentMiddlewareState,
+};
 use middleware::resource_authorization::{
     AuthorizedBudgetId, AuthorizedConnectionRequest, AuthorizedQuery,
 };
@@ -584,6 +587,12 @@ pub fn create_app(state: AppState) -> Router {
         .route("/api/auth/passkey", get(list_user_passkeys))
         .route("/api/auth/passkey/{id}", delete(delete_user_passkey))
         .nest("/api/v1/private", protected_browser_traces)
+        .layer(axum::middleware::from_fn_with_state(
+            PasskeyEnrollmentMiddlewareState {
+                db_repository: state.db_repository.clone(),
+            },
+            passkey_enrollment_middleware,
+        ))
         .layer(axum::middleware::from_fn_with_state(
             AuthMiddlewareState {
                 auth_service: state.auth_service.clone(),
@@ -4217,16 +4226,33 @@ async fn finish_passkey_registration(
             ApiErrorResponse::internal_server_error("Failed to save passkey")
         })?;
 
-    if complete_signup {
-        let user = state
+    let enrolled_user = state
+        .db_repository
+        .get_user_by_id(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to fetch user {} after enrollment: {}", user_id, e);
+            ApiErrorResponse::internal_server_error("Failed to complete passkey enrollment")
+        })?
+        .ok_or_else(|| ApiErrorResponse::internal_server_error("User not found"))?;
+
+    if enrolled_user.password_hash.is_some() {
+        state
             .db_repository
-            .get_user_by_id(&user_id)
+            .clear_user_password_hash(&user_id)
             .await
             .map_err(|e| {
-                tracing::error!("Failed to fetch user {} after enrollment: {}", user_id, e);
-                ApiErrorResponse::internal_server_error("Failed to complete registration")
-            })?
-            .ok_or_else(|| ApiErrorResponse::internal_server_error("User not found"))?;
+                tracing::error!(
+                    "Failed to clear password hash for user {} after passkey enrollment: {}",
+                    user_id,
+                    e
+                );
+                ApiErrorResponse::internal_server_error("Failed to complete passkey enrollment")
+            })?;
+    }
+
+    if complete_signup {
+        let user = enrolled_user;
 
         let auth_token = state.auth_service.generate_token(user_id).map_err(|e| {
             tracing::error!("Token generation failed for user {}: {}", user_id, e);

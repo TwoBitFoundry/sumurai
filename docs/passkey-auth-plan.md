@@ -184,10 +184,18 @@ Existing users with a `password_hash` are migrated: on their next visit they are
 - After successful enrollment, `password_hash` on the user row is set to NULL (it is no longer consulted).
 
 **Acceptance**
-- [ ] Existing user with only a password hash is blocked on first request and redirected to enrollment.
-- [ ] After enrollment, subsequent requests succeed normally.
-- [ ] New users (created post-migration) never have `password_hash` set; they are not shown the prompt.
-- [ ] Storybook entry for the `/enroll-passkey` page.
+- [x] Existing user with only a password hash is blocked on first request and redirected to enrollment.
+- [x] After enrollment, subsequent requests succeed normally.
+- [x] New users (created post-migration) never have `password_hash` set; they are not shown the prompt.
+- [x] Storybook entry for the `/enroll-passkey` page.
+
+**TDD log**
+- Backend middleware `passkey_enrollment_middleware` returns 403 `{ code: "passkey_enrollment_required" }` when `password_hash` is set and credential count is zero; exempts passkey register begin/finish and logout.
+- `clear_user_password_hash` repository method; `finish_passkey_registration` clears password after authenticated enrollment.
+- 5 tests in `backend/src/tests/passkey_enrollment_middleware_tests.rs` including full SoftPasskey legacy migration ceremony.
+- Frontend: `ApiClient` redirects on `passkey_enrollment_required`; `/enroll-passkey` route + `EnrollPasskeyScreen`; `passkeyService.enrollPasskey`.
+- Frontend tests: ApiClient redirect, passkeyService, webauthnEncoding, FetchHttpClient 403 code parsing.
+- `bun run backend:ci`: 482 passed, 0 failed.
 
 ---
 

@@ -142,6 +142,15 @@ export class ApiClient {
       }
 
       if (
+        error instanceof ForbiddenError &&
+        error.code === 'passkey_enrollment_required' &&
+        typeof window !== 'undefined' &&
+        !window.location.pathname.startsWith('/enroll-passkey')
+      ) {
+        window.location.assign('/enroll-passkey');
+      }
+
+      if (
         error instanceof ApiError &&
         ApiClient.isRetryableStatus(error.status) &&
         attempt < ApiClient.retryConfig.maxRetries

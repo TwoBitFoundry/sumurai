@@ -1,8 +1,11 @@
+use crate::models::auth::WebAuthnCredential;
+use crate::services::auth_service::AuthService;
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::test_fixtures::TestFixtures;
 use axum::body::to_bytes;
 use axum::http::header::SET_COOKIE;
 use axum::http::Method;
+use chrono::Utc;
 use serde_json::json;
 use tower::ServiceExt;
 use uuid::Uuid;
@@ -236,15 +239,36 @@ async fn given_missing_auth_cookie_when_logging_out_then_returns_401() {
 #[tokio::test]
 async fn given_valid_current_password_when_change_password_then_returns_200() {
     let mut mock_db = MockDatabaseRepository::new();
-    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let auth_service =
+        AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap();
+    let (mut user, token) = TestFixtures::create_authenticated_user_with_token();
+    user.password_hash = Some(auth_service.hash_password("SecurePass123!").unwrap());
     let user_id = user.id;
 
     mock_db
         .expect_get_user_by_id()
         .withf(move |id| *id == user_id)
+        .times(0..)
         .returning(move |_| {
             let u = user.clone();
             Box::pin(async move { Ok(Some(u)) })
+        });
+
+    let enrolled_passkey = WebAuthnCredential {
+        id: Uuid::new_v4(),
+        user_id,
+        credential_id: vec![1],
+        passkey: json!({}),
+        name: "Test Key".to_string(),
+        created_at: Utc::now(),
+        last_used_at: None,
+    };
+    mock_db
+        .expect_list_webauthn_credentials_for_user()
+        .times(0..)
+        .returning(move |_| {
+            let credential = enrolled_passkey.clone();
+            Box::pin(async move { Ok(vec![credential]) })
         });
 
     mock_db
@@ -299,15 +323,36 @@ async fn given_valid_current_password_when_change_password_then_returns_200() {
 #[tokio::test]
 async fn given_invalid_current_password_when_change_password_then_returns_401() {
     let mut mock_db = MockDatabaseRepository::new();
-    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let auth_service =
+        AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap();
+    let (mut user, token) = TestFixtures::create_authenticated_user_with_token();
+    user.password_hash = Some(auth_service.hash_password("SecurePass123!").unwrap());
     let user_id = user.id;
 
     mock_db
         .expect_get_user_by_id()
         .withf(move |id| *id == user_id)
+        .times(0..)
         .returning(move |_| {
             let u = user.clone();
             Box::pin(async move { Ok(Some(u)) })
+        });
+
+    let enrolled_passkey = WebAuthnCredential {
+        id: Uuid::new_v4(),
+        user_id,
+        credential_id: vec![1],
+        passkey: json!({}),
+        name: "Test Key".to_string(),
+        created_at: Utc::now(),
+        last_used_at: None,
+    };
+    mock_db
+        .expect_list_webauthn_credentials_for_user()
+        .times(0..)
+        .returning(move |_| {
+            let credential = enrolled_passkey.clone();
+            Box::pin(async move { Ok(vec![credential]) })
         });
 
     mock_db

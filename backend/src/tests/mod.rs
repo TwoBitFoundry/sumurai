@@ -29,6 +29,7 @@ mod merchant_name_normalization_tests;
 mod models_tests;
 mod openapi_tests;
 mod otel_traces_relay_tests;
+mod passkey_enrollment_middleware_tests;
 mod passkey_registration_tests;
 mod plaid_provider_tests;
 mod plaid_service_tests;

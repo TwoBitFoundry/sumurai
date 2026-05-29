@@ -53,17 +53,17 @@ impl MigrationTrait for Migration {
         db.execute_unprepared("DROP TABLE IF EXISTS webauthn_credentials CASCADE")
             .await?;
 
-        db.execute_unprepared(
-            "UPDATE users SET password_hash = '' WHERE password_hash IS NULL",
-        )
-        .await?;
+        db.execute_unprepared("UPDATE users SET password_hash = '' WHERE password_hash IS NULL")
+            .await?;
 
         manager
             .alter_table(
                 Table::alter()
                     .table(Alias::new("users"))
                     .modify_column(
-                        ColumnDef::new(Alias::new("password_hash")).string().not_null(),
+                        ColumnDef::new(Alias::new("password_hash"))
+                            .string()
+                            .not_null(),
                     )
                     .to_owned(),
             )
