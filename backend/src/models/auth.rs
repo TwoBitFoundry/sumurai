@@ -146,6 +146,27 @@ pub struct ChangePasswordResponse {
 }
 
 #[derive(Serialize, ToSchema)]
+pub struct PasskeyRegisterBeginResponse {
+    pub session_id: String,
+    pub challenge: serde_json::Value,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct PasskeyRegisterFinishRequest {
+    pub session_id: String,
+    pub response: serde_json::Value,
+    pub name: String,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
+pub struct PasskeyItem {
+    pub id: Uuid,
+    pub name: String,
+    pub created_at: DateTime<Utc>,
+    pub last_used_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Serialize, ToSchema)]
 #[schema(example = json!({"message": "Logged out successfully", "cleared_session": "jwt-123"}))]
 pub struct LogoutResponse {
     pub message: String,

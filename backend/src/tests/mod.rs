@@ -47,4 +47,7 @@ mod teller_provider_tests;
 pub mod test_fixtures;
 mod transaction_import_api_tests;
 mod user_model_tests;
+mod webauthn_cache_tests;
+mod webauthn_handler_tests;
 mod webauthn_repository_tests;
+mod webauthn_service_tests;

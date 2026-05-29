@@ -1,0 +1,71 @@
+use crate::services::webauthn_service::WebAuthnService;
+use url::Url;
+
+fn test_service() -> WebAuthnService {
+    let origin = Url::parse("http://localhost:8080").unwrap();
+    WebAuthnService::new("localhost", &origin).expect("WebAuthnService should build")
+}
+
+#[test]
+fn given_valid_config_when_new_then_builds() {
+    let _service = test_service();
+}
+
+#[test]
+fn given_invalid_origin_when_new_then_errors() {
+    let origin = Url::parse("http://localhost:8080").unwrap();
+    let result = WebAuthnService::new("", &origin);
+    assert!(result.is_err(), "empty rp_id should fail");
+}
+
+#[test]
+fn given_user_when_begin_registration_then_returns_challenge_and_state() {
+    let service = test_service();
+    let user_id = uuid::Uuid::new_v4();
+    let result = service.begin_registration(user_id, "user@example.com", &[]);
+    assert!(
+        result.is_ok(),
+        "begin_registration should succeed: {:?}",
+        result
+    );
+    let (challenge, state) = result.unwrap();
+    let challenge_json = serde_json::to_value(&challenge).unwrap();
+    assert!(challenge_json.get("publicKey").is_some());
+    let state_json = serde_json::to_string(&state).unwrap();
+    assert!(!state_json.is_empty());
+}
+
+#[test]
+fn given_registration_state_when_serialized_then_round_trips() {
+    let service = test_service();
+    let user_id = uuid::Uuid::new_v4();
+    let (_, state) = service
+        .begin_registration(user_id, "user@example.com", &[])
+        .unwrap();
+
+    let json = serde_json::to_string(&state).unwrap();
+    let restored: webauthn_rs::prelude::PasskeyRegistration = serde_json::from_str(&json).unwrap();
+    let json2 = serde_json::to_string(&restored).unwrap();
+    assert_eq!(json, json2);
+}
+
+#[test]
+fn given_wrong_response_when_finish_registration_then_errors() {
+    use webauthn_rs::prelude::RegisterPublicKeyCredential;
+    let service = test_service();
+    let user_id = uuid::Uuid::new_v4();
+    let (_, state) = service
+        .begin_registration(user_id, "user@example.com", &[])
+        .unwrap();
+
+    let bad_response: Result<RegisterPublicKeyCredential, _> = serde_json::from_str(
+        r#"{"id":"bad","rawId":"bad","response":{"attestationObject":"bad","clientDataJSON":"bad"},"type":"public-key"}"#,
+    );
+    if let Ok(response) = bad_response {
+        let result = service.finish_registration(&state, &response);
+        assert!(
+            result.is_err(),
+            "finish_registration with bad response must fail"
+        );
+    }
+}

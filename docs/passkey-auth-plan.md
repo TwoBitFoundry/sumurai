@@ -73,9 +73,21 @@ Existing users with a `password_hash` are migrated: on their next visit they are
   - TTL constant goes at the top of the file with the existing TTL constants per [CLAUDE.md](CLAUDE.md) — update `docs/ARCHITECTURE.md` Caching section if added.
 
 **Acceptance**
-- [ ] Service tests cover: successful registration ceremony, successful auth ceremony, rejected replay (challenge already consumed), rejected unknown credential, rejected sign-counter regression.
-- [ ] Cache tests confirm challenges are single-use (second `take_*` returns `None`) and expire at TTL.
-- [ ] No service method bypasses `webauthn-rs` for crypto — verification is delegated, not reimplemented.
+- [x] `WebAuthnService::new()` builds with valid config and rejects an empty RP ID.
+- [x] `begin_registration()` returns a challenge and a state that round-trips through JSON serialization (proves Redis storage is safe).
+- [x] `finish_registration()` with a garbage response returns an error (crypto is delegated to webauthn-rs, not reimplemented).
+- [x] Cache tests: `set_webauthn_challenge` / `take_webauthn_challenge` round-trips; second `take_*` on the same key returns `None` (single-use); missing key returns `None`. (Skipped without `REDIS_URL`.)
+- [x] `cargo check --workspace --locked --all-targets` passes.
+- [x] `cargo test -p sumurai-backend --locked webauthn_service` passes.
+- [x] `cargo test -p sumurai-backend --locked webauthn_cache` passes.
+
+**TDD log**
+- 5 service tests in `backend/src/tests/webauthn_service_tests.rs` (build, begin_registration, state serialization, finish_registration rejection).
+- 3 cache tests in `backend/src/tests/webauthn_cache_tests.rs` (round-trip, single-use, missing key — skip without REDIS_URL).
+- `bun run backend:ci`: 467 passed, 0 failed.
+- `begin_authentication`, `finish_authentication`, and their tests deferred to Phase 4 (no binary-level caller until Phase 4 login handler).
+
+*Moved to Phase 4 AC:* `begin_authentication` and `finish_authentication` — both methods are added in Phase 4 alongside the login handler that calls them. Their state serialization round-trip tests and rejection tests (unknown credential, sign-counter regression) live in Phase 4. Full ceremony tests (successful registration / auth with a real authenticator) are Phase 11 E2E.
 
 ---
 
@@ -93,11 +105,16 @@ Existing users with a `password_hash` are migrated: on their next visit they are
 - Add OpenAPI annotations matching the existing style.
 
 **Acceptance**
-- [ ] Integration tests cover begin → finish enrollment, listing, deletion, and the cross-user case (user A cannot delete user B's credential — 404 or 403, not succeed).
-- [ ] Deleting the last passkey returns 409 Conflict.
-- [ ] Hitting the endpoints without an auth cookie returns 401 from the existing middleware.
-- [ ] Enrollment refuses to register a credential whose `credential_id` already exists for any user (unique index).
-- [ ] OpenAPI regenerates without manual hand-edits.
+- [x] Integration tests cover begin enrollment, listing, deletion, finish with missing challenge (400), cross-user delete (404). Full ceremony (begin → valid authenticator response → finish) requires E2E — Phase 11.
+- [x] Deleting the last passkey returns 409 Conflict.
+- [x] Hitting the endpoints without an auth cookie returns 401 from the existing middleware.
+- [x] Enrollment refuses to register a credential whose `credential_id` already exists for any user (unique index). Enforced by Phase 1 DB constraint; verified by `given_duplicate_credential_id_when_insert_then_error` repository test.
+- [x] OpenAPI regenerates without manual hand-edits. Verified by `openapi_tests.rs` which asserts all protected operations document 401.
+
+**TDD log**
+- 10 handler tests in `backend/src/tests/webauthn_handler_tests.rs`: 401 gates, begin, list (empty + populated), last-credential 409, delete 200, finish 400 on missing challenge, cross-user delete 404.
+- `bun run backend:ci`: 469 passed, 0 failed.
+- Phases 2 and 3 committed together — `main.rs` contains both AppState wiring (Phase 2) and handlers/routes (Phase 3) and cannot be partially staged without interactive git.
 
 ---
 

@@ -42,6 +42,9 @@ use utoipa::OpenApi;
             crate::models::auth::DeleteAccountResponse,
             crate::models::auth::LogoutResponse,
             crate::models::auth::OnboardingCompleteResponse,
+            crate::models::auth::PasskeyRegisterBeginResponse,
+            crate::models::auth::PasskeyRegisterFinishRequest,
+            crate::models::auth::PasskeyItem,
             crate::models::import::ImportMultipartRequest,
             crate::models::import::ImportFileFormat,
             crate::models::import::CsvColumnMapping,
@@ -146,6 +149,10 @@ use utoipa::OpenApi;
         crate::exchange_authenticated_public_token,
         crate::get_authenticated_plaid_accounts,
         crate::clear_authenticated_synced_data,
+        crate::begin_passkey_registration,
+        crate::finish_passkey_registration,
+        crate::list_user_passkeys,
+        crate::delete_user_passkey,
     )
 )]
 pub struct ApiDoc;

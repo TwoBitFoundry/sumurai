@@ -661,6 +661,7 @@ async fn build_simplefin_handler_app(
     let mut test_env = MockEnvironment::new();
     test_env.set("TELLER_ENV", "test");
     test_env.set("AUTH_COOKIE_SAME_SITE", "Lax");
+    test_env.set("APP_ORIGIN", "http://localhost:8080");
     let config = Config::from_env_provider(&test_env).expect("Failed to create test config");
 
     let auto_categorization_service = Arc::new(AutoCategorizationService::new(
@@ -689,6 +690,13 @@ async fn build_simplefin_handler_app(
             SYSTEM_CATEGORY_SLUGS,
         )),
         auto_categorization_service,
+        webauthn_service: Arc::new(
+            crate::services::webauthn_service::WebAuthnService::new(
+                "localhost",
+                &url::Url::parse("http://localhost:8080").unwrap(),
+            )
+            .unwrap(),
+        ),
     };
 
     Ok(create_app(state))

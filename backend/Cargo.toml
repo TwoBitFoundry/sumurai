@@ -51,6 +51,7 @@ ort = { version = "2.0.0-rc.12", default-features = false, features = ["api-24",
 tokenizers = { version = "0", default-features = false, features = ["onig"] }
 ndarray = "0.17"
 webauthn-rs = { version = "0.5.5", features = ["danger-allow-state-serialisation"] }
+url = "2.5.8"
 
 [dev-dependencies]
 mockall = "0.14"

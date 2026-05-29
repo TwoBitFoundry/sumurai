@@ -48,6 +48,7 @@ pub struct Config {
     teller_environment: Option<String>,
     auth_cookie_same_site: AuthCookieSameSite,
     clear_sessions_on_boot: bool,
+    app_origin: String,
 }
 
 impl Config {
@@ -68,12 +69,16 @@ impl Config {
             .get_var("CLEAR_SESSIONS_ON_BOOT")
             .map(|value| value.eq_ignore_ascii_case("true"))
             .unwrap_or(false);
+        let app_origin = env
+            .get_var("APP_ORIGIN")
+            .ok_or_else(|| anyhow!("APP_ORIGIN must be set"))?;
 
         Ok(Self {
             teller_application_id,
             teller_environment,
             auth_cookie_same_site,
             clear_sessions_on_boot,
+            app_origin,
         })
     }
 
@@ -91,6 +96,10 @@ impl Config {
 
     pub fn should_clear_sessions_on_boot(&self) -> bool {
         self.clear_sessions_on_boot
+    }
+
+    pub fn app_origin(&self) -> &str {
+        &self.app_origin
     }
 }
 

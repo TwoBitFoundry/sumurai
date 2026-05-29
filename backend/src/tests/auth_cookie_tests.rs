@@ -9,6 +9,7 @@ fn create_cookie_config(same_site: &str) -> Config {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "test");
     env.set("AUTH_COOKIE_SAME_SITE", same_site);
+    env.set("APP_ORIGIN", "http://localhost:8080");
     Config::from_env_provider(&env).unwrap()
 }
 
@@ -27,6 +28,7 @@ fn given_valid_cookie_settings_when_loading_config_then_returns_values() {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "test");
     env.set("AUTH_COOKIE_SAME_SITE", "Lax");
+    env.set("APP_ORIGIN", "http://localhost:8080");
 
     let config = Config::from_env_provider(&env).unwrap();
 

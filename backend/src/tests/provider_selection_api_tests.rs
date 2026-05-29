@@ -142,6 +142,7 @@ fn build_test_config() -> Config {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "test");
     env.set("AUTH_COOKIE_SAME_SITE", "Lax");
+    env.set("APP_ORIGIN", "http://localhost:8080");
     Config::from_env_provider(&env).unwrap()
 }
 
@@ -205,6 +206,13 @@ async fn build_test_app(
             crate::services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS,
         )),
         auto_categorization_service,
+        webauthn_service: Arc::new(
+            crate::services::webauthn_service::WebAuthnService::new(
+                "localhost",
+                &url::Url::parse("http://localhost:8080").unwrap(),
+            )
+            .unwrap(),
+        ),
     };
 
     create_app(state)

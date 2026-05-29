@@ -353,6 +353,19 @@ async fn main() -> anyhow::Result<()> {
         ),
     );
 
+    let webauthn_service = {
+        let origin = url::Url::parse(config.app_origin())
+            .map_err(|e| anyhow::anyhow!("Invalid APP_ORIGIN: {}", e))?;
+        let rp_id = origin
+            .host_str()
+            .ok_or_else(|| anyhow::anyhow!("APP_ORIGIN has no host"))?
+            .to_string();
+        Arc::new(
+            crate::services::webauthn_service::WebAuthnService::new(&rp_id, &origin)
+                .map_err(|e| anyhow::anyhow!("Failed to build WebAuthnService: {}", e))?,
+        )
+    };
+
     let state = AppState {
         plaid_service,
         plaid_client,
@@ -371,6 +384,7 @@ async fn main() -> anyhow::Result<()> {
         otlp_traces_relay,
         category_management_service,
         auto_categorization_service,
+        webauthn_service,
     };
 
     let app = create_app(state);
@@ -540,6 +554,16 @@ pub fn create_app(state: AppState) -> Router {
         .route("/api/budgets/{id}", delete(delete_authenticated_budget))
         .route("/api/auth/change-password", put(change_user_password))
         .route("/api/auth/account", delete(delete_user_account))
+        .route(
+            "/api/auth/passkey/register/begin",
+            post(begin_passkey_registration),
+        )
+        .route(
+            "/api/auth/passkey/register/finish",
+            post(finish_passkey_registration),
+        )
+        .route("/api/auth/passkey", get(list_user_passkeys))
+        .route("/api/auth/passkey/{id}", delete(delete_user_passkey))
         .nest("/api/v1/private", protected_browser_traces)
         .layer(axum::middleware::from_fn_with_state(
             AuthMiddlewareState {
@@ -4102,4 +4126,245 @@ async fn delete_user_account(
             budgets: deleted_budgets,
         },
     }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/auth/passkey/register/begin",
+    description = "Begin passkey enrollment for the authenticated user.",
+    responses(
+        (status = 200, description = "Registration challenge", body = auth_models::PasskeyRegisterBeginResponse),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    tag = "Authentication"
+)]
+async fn begin_passkey_registration(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<auth_models::PasskeyRegisterBeginResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user_id = auth_context.user_id;
+
+    let existing = state
+        .db_repository
+        .list_webauthn_credentials_for_user(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to list credentials for user {}: {}", user_id, e);
+            ApiErrorResponse::internal_server_error("Failed to retrieve existing credentials")
+        })?;
+
+    let existing_ids: Vec<Vec<u8>> = existing.iter().map(|c| c.credential_id.clone()).collect();
+
+    let (challenge, reg_state) = state
+        .webauthn_service
+        .begin_registration(user_id, &auth_context.user_id.to_string(), &existing_ids)
+        .map_err(|e| {
+            tracing::error!("begin_registration failed for user {}: {}", user_id, e);
+            ApiErrorResponse::internal_server_error("Failed to begin passkey registration")
+        })?;
+
+    let state_json = serde_json::to_string(&reg_state).map_err(|e| {
+        tracing::error!("Failed to serialize registration state: {}", e);
+        ApiErrorResponse::internal_server_error("Failed to serialize registration state")
+    })?;
+
+    let session_id = Uuid::new_v4().to_string();
+
+    state
+        .cache_service
+        .set_webauthn_challenge(&session_id, &state_json)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to store challenge for session {}: {}",
+                session_id,
+                e
+            );
+            ApiErrorResponse::internal_server_error("Failed to store registration challenge")
+        })?;
+
+    let challenge_json = serde_json::to_value(&challenge).map_err(|e| {
+        tracing::error!("Failed to serialize challenge: {}", e);
+        ApiErrorResponse::internal_server_error("Failed to serialize challenge")
+    })?;
+
+    Ok(Json(auth_models::PasskeyRegisterBeginResponse {
+        session_id,
+        challenge: challenge_json,
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/auth/passkey/register/finish",
+    description = "Complete passkey enrollment with the authenticator response.",
+    request_body = auth_models::PasskeyRegisterFinishRequest,
+    responses(
+        (status = 200, description = "Passkey enrolled", body = auth_models::PasskeyItem),
+        (status = 400, description = "Invalid response or expired challenge", body = ApiErrorResponse),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    tag = "Authentication"
+)]
+async fn finish_passkey_registration(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Json(req): Json<auth_models::PasskeyRegisterFinishRequest>,
+) -> Result<Json<auth_models::PasskeyItem>, (StatusCode, Json<ApiErrorResponse>)> {
+    use webauthn_rs::prelude::{PasskeyRegistration, RegisterPublicKeyCredential};
+
+    let user_id = auth_context.user_id;
+
+    let state_json = state
+        .cache_service
+        .take_webauthn_challenge(&req.session_id)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to retrieve challenge for session {}: {}",
+                req.session_id,
+                e
+            );
+            ApiErrorResponse::internal_server_error("Failed to retrieve challenge")
+        })?
+        .ok_or_else(|| ApiErrorResponse::bad_request("Challenge not found or already used"))?;
+
+    let reg_state: PasskeyRegistration = serde_json::from_str(&state_json).map_err(|e| {
+        tracing::error!("Failed to deserialize registration state: {}", e);
+        ApiErrorResponse::bad_request("Invalid challenge state")
+    })?;
+
+    let credential_response: RegisterPublicKeyCredential = serde_json::from_value(req.response)
+        .map_err(|e| {
+            tracing::error!("Failed to deserialize credential response: {}", e);
+            ApiErrorResponse::bad_request("Invalid credential response")
+        })?;
+
+    let passkey = state
+        .webauthn_service
+        .finish_registration(&reg_state, &credential_response)
+        .map_err(|e| {
+            tracing::warn!("finish_registration failed for user {}: {}", user_id, e);
+            ApiErrorResponse::bad_request("Passkey verification failed")
+        })?;
+
+    let credential_id = passkey.cred_id().to_vec();
+    let passkey_json = serde_json::to_value(&passkey).map_err(|e| {
+        tracing::error!("Failed to serialize passkey: {}", e);
+        ApiErrorResponse::internal_server_error("Failed to serialize passkey")
+    })?;
+
+    let credential = state
+        .db_repository
+        .insert_webauthn_credential(&user_id, credential_id, passkey_json, &req.name)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to insert credential for user {}: {}", user_id, e);
+            ApiErrorResponse::internal_server_error("Failed to save passkey")
+        })?;
+
+    Ok(Json(auth_models::PasskeyItem {
+        id: credential.id,
+        name: credential.name,
+        created_at: credential.created_at,
+        last_used_at: credential.last_used_at,
+    }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/auth/passkey",
+    description = "List all enrolled passkeys for the authenticated user.",
+    responses(
+        (status = 200, description = "List of passkeys", body = Vec<auth_models::PasskeyItem>),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    tag = "Authentication"
+)]
+async fn list_user_passkeys(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<Vec<auth_models::PasskeyItem>>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user_id = auth_context.user_id;
+
+    let credentials = state
+        .db_repository
+        .list_webauthn_credentials_for_user(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to list passkeys for user {}: {}", user_id, e);
+            ApiErrorResponse::internal_server_error("Failed to retrieve passkeys")
+        })?;
+
+    let items = credentials
+        .into_iter()
+        .map(|c| auth_models::PasskeyItem {
+            id: c.id,
+            name: c.name,
+            created_at: c.created_at,
+            last_used_at: c.last_used_at,
+        })
+        .collect();
+
+    Ok(Json(items))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/auth/passkey/{id}",
+    description = "Remove an enrolled passkey. Returns 409 if it is the last credential.",
+    params(("id" = Uuid, Path, description = "Passkey ID")),
+    responses(
+        (status = 200, description = "Passkey removed"),
+        (status = 404, description = "Passkey not found", body = ApiErrorResponse),
+        (status = 409, description = "Cannot remove last passkey", body = ApiErrorResponse),
+        (status = 401, description = "Unauthorized", body = ApiErrorResponse),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    tag = "Authentication"
+)]
+async fn delete_user_passkey(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    axum::extract::Path(id): axum::extract::Path<Uuid>,
+) -> Result<StatusCode, (StatusCode, Json<ApiErrorResponse>)> {
+    let user_id = auth_context.user_id;
+
+    let existing = state
+        .db_repository
+        .list_webauthn_credentials_for_user(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to list passkeys for user {}: {}", user_id, e);
+            ApiErrorResponse::internal_server_error("Failed to retrieve passkeys")
+        })?;
+
+    if existing.len() <= 1 {
+        return Err(ApiErrorResponse::conflict(
+            "Cannot remove the last enrolled passkey",
+        ));
+    }
+
+    let deleted = state
+        .db_repository
+        .delete_webauthn_credential(&user_id, &id)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to delete passkey {} for user {}: {}",
+                id,
+                user_id,
+                e
+            );
+            ApiErrorResponse::internal_server_error("Failed to delete passkey")
+        })?;
+
+    if deleted {
+        Ok(StatusCode::OK)
+    } else {
+        Err(ApiErrorResponse::not_found("Passkey not found"))
+    }
 }
