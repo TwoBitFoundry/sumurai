@@ -31,6 +31,10 @@ mod middleware;
 mod models;
 mod openapi;
 
+#[path = "../connection_pool.rs"]
+pub mod connection_pool;
+#[path = "../db_compat.rs"]
+mod db;
 mod handlers;
 pub mod providers;
 mod services;
@@ -86,6 +90,8 @@ use middleware::resource_authorization::{
     AuthorizedBudgetId, AuthorizedConnectionRequest, AuthorizedQuery,
 };
 use middleware::telemetry_middleware::{self, request_tracing_middleware, TelemetryConfig};
+use migration::MigratorTrait;
+use sea_orm::{ConnectOptions, ConnectionTrait, Database, DbBackend, Statement};
 use services::auto_categorization::service::AutoCategorizationError;
 use services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS;
 use services::category_management::service::CategoryManagementService;
@@ -104,7 +110,6 @@ use services::{
     TellerConnectError,
 };
 use services::{AnalyticsService, RealPlaidClient};
-use sqlx::PgPool;
 use utils::auth_cookie::{build_auth_cookie, build_clearing_auth_cookie, extract_auth_cookie};
 
 pub(crate) fn build_provider_registry(
@@ -205,10 +210,28 @@ async fn main() -> anyhow::Result<()> {
     )?;
     let encryption_key = parse_encryption_key_hex(&encryption_key_raw)?;
 
-    let pool = PgPool::connect(&database_url).await?;
+    let mut connect_options = ConnectOptions::new(&database_url);
+    connect_options.max_connections(10).min_connections(0);
+    let db = Database::connect(connect_options).await?;
+
+    db.execute(Statement::from_string(
+        DbBackend::Postgres,
+        "SELECT pg_advisory_lock(7329481923)",
+    ))
+    .await?;
+    let migration_result = migration::Migrator::up(&db, None).await;
+    let _ = db
+        .execute(Statement::from_string(
+            DbBackend::Postgres,
+            "SELECT pg_advisory_unlock(7329481923)",
+        ))
+        .await;
+    migration_result?;
+    tracing::info!("Database migrations applied");
+
     tracing::info!("ENCRYPTION_KEY loaded and validated for token encryption");
     let db_repository: Arc<dyn DatabaseRepository> =
-        Arc::new(PostgresRepository::new(pool, encryption_key));
+        Arc::new(PostgresRepository::from_database(&db, encryption_key));
 
     let redis_url =
         std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());

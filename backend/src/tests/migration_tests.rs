@@ -1,4 +1,5 @@
-use sqlx::{PgPool, Row};
+use crate::db;
+use crate::db::{PgPool, Row};
 use uuid::Uuid;
 
 async fn connect_pool() -> Option<PgPool> {
@@ -18,7 +19,7 @@ async fn connect_pool() -> Option<PgPool> {
     }
 }
 
-async fn create_pre_migration_table(pool: &PgPool, table: &str) -> Result<(), sqlx::Error> {
+async fn create_pre_migration_table(pool: &PgPool, table: &str) -> Result<(), db::Error> {
     let uq_name = format!("{}_user_id_category_month_key", table);
     let idx_month = format!("idx_{}_month", table);
     let idx_user_month = format!("idx_{}_user_month", table);
@@ -40,7 +41,7 @@ async fn create_pre_migration_table(pool: &PgPool, table: &str) -> Result<(), sq
         format!("CREATE INDEX IF NOT EXISTS {idx_user_month} ON {table}(user_id, month)"),
     ];
     for s in stmts {
-        sqlx::query(&s).execute(pool).await?;
+        db::query(&s).execute(pool).await?;
     }
     Ok(())
 }
@@ -90,7 +91,7 @@ async fn insert_budget(
     pool: &PgPool,
     table: &str,
     seed: BudgetSeed<'_>,
-) -> Result<Uuid, sqlx::Error> {
+) -> Result<Uuid, db::Error> {
     let BudgetSeed {
         user_id,
         category,
@@ -106,7 +107,7 @@ async fn insert_budget(
     let sql = format!(
         "INSERT INTO {table} (id, user_id, category, month, amount, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7)"
     );
-    sqlx::query(&sql)
+    db::query(&sql)
         .bind(id)
         .bind(user_id)
         .bind(category)
@@ -119,8 +120,8 @@ async fn insert_budget(
     Ok(id)
 }
 
-async fn month_column_exists(pool: &PgPool, table: &str) -> Result<bool, sqlx::Error> {
-    let row = sqlx::query(
+async fn month_column_exists(pool: &PgPool, table: &str) -> Result<bool, db::Error> {
+    let row = db::query(
         "SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = 'month'",
     )
     .bind(table)
@@ -185,7 +186,7 @@ async fn given_month_based_duplicates_when_migration_runs_then_deduplicates_and_
     .unwrap();
 
     // Apply migration (adapted to test table)
-    let sql = include_str!("../../migrations/010_budgets_monthless.sql");
+    let sql = include_str!("fixtures/legacy_migrations/010_budgets_monthless.sql");
     let adapted = adapt_migration_sql_for_table(sql, &tname);
 
     // Parse statements properly by handling multi-line statements
@@ -238,14 +239,14 @@ async fn given_month_based_duplicates_when_migration_runs_then_deduplicates_and_
             continue;
         }
 
-        let _ = sqlx::query(s).execute(&pool).await;
+        let _ = db::query(s).execute(&pool).await;
     }
 
     let count_sql = format!(
         "SELECT COUNT(*)::BIGINT FROM {t} WHERE user_id = $1 AND category = $2",
         t = tname
     );
-    let count: i64 = sqlx::query_scalar(&count_sql)
+    let count: i64 = db::query_scalar(&count_sql)
         .bind(user_id)
         .bind("FOOD_AND_DRINK")
         .fetch_one(&pool)
@@ -257,7 +258,7 @@ async fn given_month_based_duplicates_when_migration_runs_then_deduplicates_and_
         "SELECT amount::TEXT FROM {t} WHERE user_id = $1 AND category = $2",
         t = tname
     );
-    let amt_text: String = sqlx::query_scalar(&amt_sql)
+    let amt_text: String = db::query_scalar(&amt_sql)
         .bind(user_id)
         .bind("FOOD_AND_DRINK")
         .fetch_one(&pool)
@@ -269,7 +270,7 @@ async fn given_month_based_duplicates_when_migration_runs_then_deduplicates_and_
     assert!(!has_month);
 
     let drop_sql = format!("DROP TABLE IF EXISTS {}", tname);
-    let _ = sqlx::query(&drop_sql).execute(&pool).await;
+    let _ = db::query(&drop_sql).execute(&pool).await;
 }
 
 #[tokio::test]
@@ -312,7 +313,7 @@ async fn given_migration_applied_when_run_again_then_idempotent() {
     .await
     .unwrap();
 
-    let sql = include_str!("../../migrations/010_budgets_monthless.sql");
+    let sql = include_str!("fixtures/legacy_migrations/010_budgets_monthless.sql");
     let adapted = adapt_migration_sql_for_table(sql, &tname);
 
     for _ in 0..2 {
@@ -365,7 +366,7 @@ async fn given_migration_applied_when_run_again_then_idempotent() {
                 continue;
             }
 
-            let _ = sqlx::query(s).execute(&pool).await;
+            let _ = db::query(s).execute(&pool).await;
         }
     }
 
@@ -373,7 +374,7 @@ async fn given_migration_applied_when_run_again_then_idempotent() {
         "SELECT COUNT(*)::BIGINT FROM {t} WHERE user_id = $1 AND category = $2",
         t = tname
     );
-    let count: i64 = sqlx::query_scalar(&count_sql)
+    let count: i64 = db::query_scalar(&count_sql)
         .bind(user_id)
         .bind("GROCERIES")
         .fetch_one(&pool)
@@ -383,7 +384,7 @@ async fn given_migration_applied_when_run_again_then_idempotent() {
 
     // Cleanup
     let drop_sql = format!("DROP TABLE IF EXISTS {}", tname);
-    let _ = sqlx::query(&drop_sql).execute(&pool).await;
+    let _ = db::query(&drop_sql).execute(&pool).await;
 }
 
 #[tokio::test]
@@ -413,7 +414,7 @@ async fn given_post_migration_schema_when_inserting_duplicate_category_then_uniq
     .await
     .unwrap();
 
-    let sql = include_str!("../../migrations/010_budgets_monthless.sql");
+    let sql = include_str!("fixtures/legacy_migrations/010_budgets_monthless.sql");
     let adapted = adapt_migration_sql_for_table(sql, &tname);
     for stmt in adapted.split(';') {
         let s = stmt.trim();
@@ -421,14 +422,14 @@ async fn given_post_migration_schema_when_inserting_duplicate_category_then_uniq
             continue;
         }
         let stmt_sql = format!("{};", s);
-        let _ = sqlx::query(&stmt_sql).execute(&pool).await;
+        let _ = db::query(&stmt_sql).execute(&pool).await;
     }
 
     let insert_sql = format!(
         "INSERT INTO {t} (id, user_id, category, amount, created_at, updated_at) VALUES ($1,$2,$3,$4,NOW(),NOW())",
         t = tname
     );
-    let res = sqlx::query(&insert_sql)
+    let res = db::query(&insert_sql)
         .bind(Uuid::new_v4())
         .bind(user_id)
         .bind("UTILITIES")
@@ -438,17 +439,17 @@ async fn given_post_migration_schema_when_inserting_duplicate_category_then_uniq
 
     match res {
         Ok(_) => panic!("Expected unique constraint violation, but insert succeeded"),
-        Err(sqlx::Error::Database(db_err)) => {
+        Err(db::Error::Database(db_err)) => {
             assert_eq!(db_err.code().as_deref(), Some("23505"));
         }
         Err(e) => panic!("Unexpected error: {}", e),
     }
 
     let drop_sql = format!("DROP TABLE IF EXISTS {}", tname);
-    let _ = sqlx::query(&drop_sql).execute(&pool).await;
+    let _ = db::query(&drop_sql).execute(&pool).await;
 }
 
-async fn create_test_accounts_table(pool: &PgPool, table: &str) -> Result<(), sqlx::Error> {
+async fn create_test_accounts_table(pool: &PgPool, table: &str) -> Result<(), db::Error> {
     let sql = format!(
         r#"CREATE TABLE IF NOT EXISTS {table} (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -460,14 +461,14 @@ async fn create_test_accounts_table(pool: &PgPool, table: &str) -> Result<(), sq
             updated_at TIMESTAMPTZ DEFAULT NOW()
         )"#
     );
-    sqlx::query(&sql).execute(pool).await?;
+    db::query(&sql).execute(pool).await?;
     Ok(())
 }
 
 async fn create_test_provider_connections_table(
     pool: &PgPool,
     table: &str,
-) -> Result<(), sqlx::Error> {
+) -> Result<(), db::Error> {
     let sql = format!(
         r#"CREATE TABLE IF NOT EXISTS {table} (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -484,12 +485,12 @@ async fn create_test_provider_connections_table(
             updated_at TIMESTAMPTZ DEFAULT NOW()
         )"#
     );
-    sqlx::query(&sql).execute(pool).await?;
+    db::query(&sql).execute(pool).await?;
     Ok(())
 }
 
-async fn column_exists(pool: &PgPool, table: &str, column: &str) -> Result<bool, sqlx::Error> {
-    let row = sqlx::query(
+async fn column_exists(pool: &PgPool, table: &str, column: &str) -> Result<bool, db::Error> {
+    let row = db::query(
         "SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = $2",
     )
     .bind(table)
@@ -585,7 +586,7 @@ async fn given_pre_migration_schema_when_bank_operations_migration_runs_then_add
         "INSERT INTO {} (id, provider_account_id, name, account_type, balance_current) VALUES ($1, $2, $3, $4, $5)",
         accounts_table
     );
-    sqlx::query(&insert_account_sql)
+    db::query(&insert_account_sql)
         .bind(account_id)
         .bind("test_account_123")
         .bind("Test Checking")
@@ -599,7 +600,7 @@ async fn given_pre_migration_schema_when_bank_operations_migration_runs_then_add
         "INSERT INTO {} (id, user_id, item_id, institution_name, is_connected) VALUES ($1, $2, $3, $4, $5)",
         connections_table
     );
-    sqlx::query(&insert_connection_sql)
+    db::query(&insert_connection_sql)
         .bind(connection_id)
         .bind("test_user_456")
         .bind("test_item_789")
@@ -625,7 +626,7 @@ async fn given_pre_migration_schema_when_bank_operations_migration_runs_then_add
         .await
         .unwrap());
 
-    let sql = include_str!("../../migrations/011_enhance_bank_operations.sql");
+    let sql = include_str!("fixtures/legacy_migrations/011_enhance_bank_operations.sql");
     let adapted = adapt_bank_migration_sql_for_table(sql, &accounts_table, &connections_table);
 
     for stmt in adapted.split(';') {
@@ -634,7 +635,7 @@ async fn given_pre_migration_schema_when_bank_operations_migration_runs_then_add
             continue;
         }
         let stmt_sql = format!("{};", s);
-        let _ = sqlx::query(&stmt_sql).execute(&pool).await;
+        let _ = db::query(&stmt_sql).execute(&pool).await;
     }
 
     assert!(column_exists(&pool, &accounts_table, "mask").await.unwrap());
@@ -657,7 +658,7 @@ async fn given_pre_migration_schema_when_bank_operations_migration_runs_then_add
         "SELECT provider_account_id, name, account_type, balance_current FROM {} WHERE id = $1",
         accounts_table
     );
-    let account_row = sqlx::query(&account_check_sql)
+    let account_row = db::query(&account_check_sql)
         .bind(account_id)
         .fetch_one(&pool)
         .await
@@ -674,7 +675,7 @@ async fn given_pre_migration_schema_when_bank_operations_migration_runs_then_add
         "SELECT user_id, item_id, institution_name FROM {} WHERE id = $1",
         connections_table
     );
-    let connection_row = sqlx::query(&connection_check_sql)
+    let connection_row = db::query(&connection_check_sql)
         .bind(connection_id)
         .fetch_one(&pool)
         .await
@@ -687,10 +688,10 @@ async fn given_pre_migration_schema_when_bank_operations_migration_runs_then_add
         "Test Bank"
     );
 
-    let _ = sqlx::query(&format!("DROP TABLE IF EXISTS {}", accounts_table))
+    let _ = db::query(&format!("DROP TABLE IF EXISTS {}", accounts_table))
         .execute(&pool)
         .await;
-    let _ = sqlx::query(&format!("DROP TABLE IF EXISTS {}", connections_table))
+    let _ = db::query(&format!("DROP TABLE IF EXISTS {}", connections_table))
         .execute(&pool)
         .await;
 }
@@ -717,7 +718,7 @@ async fn given_bank_migration_when_run_twice_then_idempotent() {
         .await
         .unwrap();
 
-    let sql = include_str!("../../migrations/011_enhance_bank_operations.sql");
+    let sql = include_str!("fixtures/legacy_migrations/011_enhance_bank_operations.sql");
     let adapted = adapt_bank_migration_sql_for_table(sql, &accounts_table, &connections_table);
 
     for _ in 0..2 {
@@ -727,7 +728,7 @@ async fn given_bank_migration_when_run_twice_then_idempotent() {
                 continue;
             }
             let stmt_sql = format!("{};", s);
-            let _ = sqlx::query(&stmt_sql).execute(&pool).await;
+            let _ = db::query(&stmt_sql).execute(&pool).await;
         }
     }
 
@@ -747,10 +748,10 @@ async fn given_bank_migration_when_run_twice_then_idempotent() {
         .await
         .unwrap());
 
-    let _ = sqlx::query(&format!("DROP TABLE IF EXISTS {}", accounts_table))
+    let _ = db::query(&format!("DROP TABLE IF EXISTS {}", accounts_table))
         .execute(&pool)
         .await;
-    let _ = sqlx::query(&format!("DROP TABLE IF EXISTS {}", connections_table))
+    let _ = db::query(&format!("DROP TABLE IF EXISTS {}", connections_table))
         .execute(&pool)
         .await;
 }
@@ -777,7 +778,7 @@ async fn given_post_migration_schema_when_inserting_new_fields_then_succeeds() {
         .await
         .unwrap();
 
-    let sql = include_str!("../../migrations/011_enhance_bank_operations.sql");
+    let sql = include_str!("fixtures/legacy_migrations/011_enhance_bank_operations.sql");
     let adapted = adapt_bank_migration_sql_for_table(sql, &accounts_table, &connections_table);
 
     for stmt in adapted.split(';') {
@@ -786,7 +787,7 @@ async fn given_post_migration_schema_when_inserting_new_fields_then_succeeds() {
             continue;
         }
         let stmt_sql = format!("{};", s);
-        let _ = sqlx::query(&stmt_sql).execute(&pool).await;
+        let _ = db::query(&stmt_sql).execute(&pool).await;
     }
 
     let account_id = Uuid::new_v4();
@@ -794,7 +795,7 @@ async fn given_post_migration_schema_when_inserting_new_fields_then_succeeds() {
         "INSERT INTO {} (id, provider_account_id, name, account_type, balance_current, mask, subtype, official_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         accounts_table
     );
-    sqlx::query(&insert_account_sql)
+    db::query(&insert_account_sql)
         .bind(account_id)
         .bind("test_plaid_123")
         .bind("My Checking Account")
@@ -812,7 +813,7 @@ async fn given_post_migration_schema_when_inserting_new_fields_then_succeeds() {
         "INSERT INTO {} (id, user_id, item_id, institution_name, is_connected, institution_logo_url, sync_cursor) VALUES ($1, $2, $3, $4, $5, $6, $7)",
         connections_table
     );
-    sqlx::query(&insert_connection_sql)
+    db::query(&insert_connection_sql)
         .bind(connection_id)
         .bind("user_789")
         .bind("item_456")
@@ -828,7 +829,7 @@ async fn given_post_migration_schema_when_inserting_new_fields_then_succeeds() {
         "SELECT mask, subtype, official_name FROM {} WHERE id = $1",
         accounts_table
     );
-    let account_row = sqlx::query(&account_check_sql)
+    let account_row = db::query(&account_check_sql)
         .bind(account_id)
         .fetch_one(&pool)
         .await
@@ -851,7 +852,7 @@ async fn given_post_migration_schema_when_inserting_new_fields_then_succeeds() {
         "SELECT institution_logo_url, sync_cursor FROM {} WHERE id = $1",
         connections_table
     );
-    let connection_row = sqlx::query(&connection_check_sql)
+    let connection_row = db::query(&connection_check_sql)
         .bind(connection_id)
         .fetch_one(&pool)
         .await
@@ -866,16 +867,16 @@ async fn given_post_migration_schema_when_inserting_new_fields_then_succeeds() {
         Some("sync_cursor_abc123".to_string())
     );
 
-    let _ = sqlx::query(&format!("DROP TABLE IF EXISTS {}", accounts_table))
+    let _ = db::query(&format!("DROP TABLE IF EXISTS {}", accounts_table))
         .execute(&pool)
         .await;
-    let _ = sqlx::query(&format!("DROP TABLE IF EXISTS {}", connections_table))
+    let _ = db::query(&format!("DROP TABLE IF EXISTS {}", connections_table))
         .execute(&pool)
         .await;
 }
 
-async fn simplefin_hidden_orgs_table_exists(pool: &PgPool) -> Result<bool, sqlx::Error> {
-    sqlx::query_scalar(
+async fn simplefin_hidden_orgs_table_exists(pool: &PgPool) -> Result<bool, db::Error> {
+    db::query_scalar(
         "SELECT EXISTS (
             SELECT 1
             FROM information_schema.tables
@@ -886,14 +887,14 @@ async fn simplefin_hidden_orgs_table_exists(pool: &PgPool) -> Result<bool, sqlx:
     .await
 }
 
-async fn apply_simplefin_hidden_orgs_migration(pool: &PgPool) -> Result<(), sqlx::Error> {
-    let sql = include_str!("../../migrations/027_simplefin_hidden_orgs.sql");
+async fn apply_simplefin_hidden_orgs_migration(pool: &PgPool) -> Result<(), db::Error> {
+    let sql = include_str!("fixtures/legacy_migrations/027_simplefin_hidden_orgs.sql");
     for stmt in sql.split(';') {
         let statement = stmt.trim();
         if statement.is_empty() {
             continue;
         }
-        sqlx::query(&format!("{statement};")).execute(pool).await?;
+        db::query(&format!("{statement};")).execute(pool).await?;
     }
     Ok(())
 }
@@ -927,8 +928,8 @@ async fn given_simplefin_hidden_orgs_migration_when_run_twice_then_idempotent() 
     assert!(simplefin_hidden_orgs_table_exists(&pool).await.unwrap());
 }
 
-async fn simplefin_root_credentials_table_exists(pool: &PgPool) -> Result<bool, sqlx::Error> {
-    sqlx::query_scalar(
+async fn simplefin_root_credentials_table_exists(pool: &PgPool) -> Result<bool, db::Error> {
+    db::query_scalar(
         "SELECT EXISTS (
             SELECT 1
             FROM information_schema.tables
@@ -939,14 +940,14 @@ async fn simplefin_root_credentials_table_exists(pool: &PgPool) -> Result<bool, 
     .await
 }
 
-async fn apply_simplefin_root_credentials_migration(pool: &PgPool) -> Result<(), sqlx::Error> {
-    let sql = include_str!("../../migrations/032_create_simplefin_root_credentials.sql");
+async fn apply_simplefin_root_credentials_migration(pool: &PgPool) -> Result<(), db::Error> {
+    let sql = include_str!("fixtures/legacy_migrations/032_create_simplefin_root_credentials.sql");
     for stmt in sql.split(';') {
         let statement = stmt.trim();
         if statement.is_empty() {
             continue;
         }
-        sqlx::query(&format!("{statement};")).execute(pool).await?;
+        db::query(&format!("{statement};")).execute(pool).await?;
     }
     Ok(())
 }
@@ -992,28 +993,29 @@ async fn given_simplefin_root_credentials_migration_when_run_twice_then_idempote
 
 async fn apply_remove_simplefin_root_legacy_credentials_migration(
     pool: &PgPool,
-) -> Result<(), sqlx::Error> {
-    let sql = include_str!("../../migrations/034_remove_simplefin_root_legacy_credentials.sql");
+) -> Result<(), db::Error> {
+    let sql =
+        include_str!("fixtures/legacy_migrations/034_remove_simplefin_root_legacy_credentials.sql");
     for stmt in sql.split(';') {
         let statement = stmt.trim();
         if statement.is_empty() {
             continue;
         }
-        sqlx::query(&format!("{statement};")).execute(pool).await?;
+        db::query(&format!("{statement};")).execute(pool).await?;
     }
     Ok(())
 }
 
-async fn ensure_simplefin_root_credentials_table(pool: &PgPool) -> Result<(), sqlx::Error> {
+async fn ensure_simplefin_root_credentials_table(pool: &PgPool) -> Result<(), db::Error> {
     if !simplefin_root_credentials_table_exists(pool).await? {
         apply_simplefin_root_credentials_migration(pool).await?;
     }
     Ok(())
 }
 
-async fn insert_test_user(pool: &PgPool, user_id: Uuid) -> Result<(), sqlx::Error> {
+async fn insert_test_user(pool: &PgPool, user_id: Uuid) -> Result<(), db::Error> {
     let now = chrono::Utc::now();
-    sqlx::query(
+    db::query(
         r#"
         INSERT INTO users (id, email, password_hash, provider, created_at, updated_at, onboarding_completed)
         VALUES ($1, $2, $3, $4, $5, $6, false)
@@ -1062,7 +1064,7 @@ async fn given_migrated_root_when_cleanup_migration_then_removes_legacy_plaid_cr
     let item_id = format!("simplefin_root_{user_id}");
     insert_test_user(&pool, user_id).await.unwrap();
 
-    sqlx::query(
+    db::query(
         r#"
         INSERT INTO plaid_credentials (id, user_id, item_id, encrypted_access_token)
         VALUES ($1, $2, $3, $4)
@@ -1077,7 +1079,7 @@ async fn given_migrated_root_when_cleanup_migration_then_removes_legacy_plaid_cr
     .await
     .unwrap();
 
-    sqlx::query(
+    db::query(
         r#"
         INSERT INTO simplefin_root_credentials (user_id, encrypted_access_url)
         VALUES ($1, $2)
@@ -1095,7 +1097,7 @@ async fn given_migrated_root_when_cleanup_migration_then_removes_legacy_plaid_cr
         .unwrap();
 
     let legacy_count: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM plaid_credentials WHERE item_id = $1")
+        db::query_scalar("SELECT COUNT(*) FROM plaid_credentials WHERE item_id = $1")
             .bind(&item_id)
             .fetch_one(&pool)
             .await
@@ -1103,18 +1105,18 @@ async fn given_migrated_root_when_cleanup_migration_then_removes_legacy_plaid_cr
     assert_eq!(legacy_count, 0);
 
     let root_count: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM simplefin_root_credentials WHERE user_id = $1")
+        db::query_scalar("SELECT COUNT(*) FROM simplefin_root_credentials WHERE user_id = $1")
             .bind(user_id)
             .fetch_one(&pool)
             .await
             .unwrap();
     assert_eq!(root_count, 1);
 
-    let _ = sqlx::query("DELETE FROM simplefin_root_credentials WHERE user_id = $1")
+    let _ = db::query("DELETE FROM simplefin_root_credentials WHERE user_id = $1")
         .bind(user_id)
         .execute(&pool)
         .await;
-    let _ = sqlx::query("DELETE FROM users WHERE id = $1")
+    let _ = db::query("DELETE FROM users WHERE id = $1")
         .bind(user_id)
         .execute(&pool)
         .await;
@@ -1134,7 +1136,7 @@ async fn given_unmigrated_legacy_root_when_cleanup_migration_then_preserves_plai
     let item_id = format!("simplefin_root_{user_id}");
     insert_test_user(&pool, user_id).await.unwrap();
 
-    sqlx::query(
+    db::query(
         r#"
         INSERT INTO plaid_credentials (id, user_id, item_id, encrypted_access_token)
         VALUES ($1, $2, $3, $4)
@@ -1154,25 +1156,25 @@ async fn given_unmigrated_legacy_root_when_cleanup_migration_then_preserves_plai
         .unwrap();
 
     let legacy_count: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM plaid_credentials WHERE item_id = $1")
+        db::query_scalar("SELECT COUNT(*) FROM plaid_credentials WHERE item_id = $1")
             .bind(&item_id)
             .fetch_one(&pool)
             .await
             .unwrap();
     assert_eq!(legacy_count, 1);
 
-    let _ = sqlx::query("DELETE FROM plaid_credentials WHERE item_id = $1")
+    let _ = db::query("DELETE FROM plaid_credentials WHERE item_id = $1")
         .bind(&item_id)
         .execute(&pool)
         .await;
-    let _ = sqlx::query("DELETE FROM users WHERE id = $1")
+    let _ = db::query("DELETE FROM users WHERE id = $1")
         .bind(user_id)
         .execute(&pool)
         .await;
 }
 
-async fn provider_credentials_table_exists(pool: &PgPool) -> Result<bool, sqlx::Error> {
-    sqlx::query_scalar(
+async fn provider_credentials_table_exists(pool: &PgPool) -> Result<bool, db::Error> {
+    db::query_scalar(
         "SELECT EXISTS (
             SELECT 1
             FROM information_schema.tables
@@ -1183,24 +1185,25 @@ async fn provider_credentials_table_exists(pool: &PgPool) -> Result<bool, sqlx::
     .await
 }
 
-async fn apply_rename_plaid_credentials_migration(pool: &PgPool) -> Result<(), sqlx::Error> {
-    let sql =
-        include_str!("../../migrations/035_rename_plaid_credentials_to_provider_credentials.sql");
+async fn apply_rename_plaid_credentials_migration(pool: &PgPool) -> Result<(), db::Error> {
+    let sql = include_str!(
+        "fixtures/legacy_migrations/035_rename_plaid_credentials_to_provider_credentials.sql"
+    );
     for stmt in sql.split(';') {
         let statement = stmt.trim();
         if statement.is_empty() {
             continue;
         }
-        sqlx::query(&format!("{statement};")).execute(pool).await?;
+        db::query(&format!("{statement};")).execute(pool).await?;
     }
     Ok(())
 }
 
-async fn ensure_provider_credentials_table(pool: &PgPool) -> Result<(), sqlx::Error> {
+async fn ensure_provider_credentials_table(pool: &PgPool) -> Result<(), db::Error> {
     if provider_credentials_table_exists(pool).await? {
         return Ok(());
     }
-    if sqlx::query_scalar::<_, bool>(
+    if db::query_scalar::<_, bool>(
         "SELECT EXISTS (
             SELECT 1
             FROM information_schema.tables
@@ -1236,7 +1239,7 @@ async fn given_provider_credentials_rename_when_applied_then_plaid_credentials_t
         return;
     };
 
-    let plaid_exists: bool = sqlx::query_scalar(
+    let plaid_exists: bool = db::query_scalar(
         "SELECT EXISTS (
             SELECT 1
             FROM information_schema.tables
@@ -1254,7 +1257,7 @@ async fn given_provider_credentials_rename_when_applied_then_plaid_credentials_t
     }
 
     assert!(provider_credentials_table_exists(&pool).await.unwrap());
-    let plaid_still_exists: bool = sqlx::query_scalar(
+    let plaid_still_exists: bool = db::query_scalar(
         "SELECT EXISTS (
             SELECT 1
             FROM information_schema.tables
@@ -1282,7 +1285,11 @@ async fn given_provider_credentials_when_store_and_get_then_round_trips() {
         .expect("ENCRYPTION_KEY must be 64 hex characters");
     use crate::services::repository_service::DatabaseRepository;
 
-    let repo = crate::services::repository_service::PostgresRepository::new(pool.clone(), key);
+    use crate::connection_pool::RepositoryPool;
+    let repo = crate::services::repository_service::PostgresRepository::new(
+        RepositoryPool::from_pg_pool(pool.clone()),
+        key,
+    );
 
     let user_id = Uuid::new_v4();
     insert_test_user(&pool, user_id).await.unwrap();
@@ -1302,7 +1309,7 @@ async fn given_provider_credentials_when_store_and_get_then_round_trips() {
     assert_eq!(stored.item_id, item_id);
 
     let _ = repo.delete_provider_credentials(&item_id).await;
-    let _ = sqlx::query("DELETE FROM users WHERE id = $1")
+    let _ = db::query("DELETE FROM users WHERE id = $1")
         .bind(user_id)
         .execute(&pool)
         .await;

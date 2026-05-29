@@ -1,16 +1,18 @@
+use crate::connection_pool::RepositoryPool;
+use crate::db;
+use crate::db::PgPool;
 use crate::models::transaction::Transaction;
 use crate::services::repository_service::{DatabaseRepository, PostgresRepository};
 use crate::utils::encryption_key::parse_encryption_key_hex;
 use chrono::NaiveDate;
 use rust_decimal_macros::dec;
-use sqlx::PgPool;
 use uuid::Uuid;
 
 fn open_repository(pool: PgPool) -> PostgresRepository {
     let raw = std::env::var("ENCRYPTION_KEY")
         .expect("ENCRYPTION_KEY must be set when DATABASE_URL is set");
     let key = parse_encryption_key_hex(&raw).expect("ENCRYPTION_KEY must be 64 hex characters");
-    PostgresRepository::new(pool, key)
+    PostgresRepository::new(RepositoryPool::from_pg_pool(pool), key)
 }
 
 async fn connect_pool() -> Option<PgPool> {
@@ -37,7 +39,7 @@ async fn setup_test_data(
     user_id: &Uuid,
 ) -> (Uuid, Uuid, Uuid, Transaction, Transaction) {
     let account_id = Uuid::new_v4();
-    sqlx::query("INSERT INTO accounts (id, user_id, account_type, mask) VALUES ($1, $2, $3, $4)")
+    db::query("INSERT INTO accounts (id, user_id, account_type, mask) VALUES ($1, $2, $3, $4)")
         .bind(account_id)
         .bind(user_id)
         .bind("checking")
@@ -64,7 +66,7 @@ async fn setup_test_data(
         created_at: None,
     };
 
-    sqlx::query(
+    db::query(
         "INSERT INTO transactions (id, account_id, user_id, amount, date, merchant_name, category_primary, category_detailed, category_confidence, pending)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)"
     )
@@ -100,7 +102,7 @@ async fn setup_test_data(
         created_at: None,
     };
 
-    sqlx::query(
+    db::query(
         "INSERT INTO transactions (id, account_id, user_id, amount, date, merchant_name, category_primary, category_detailed, category_confidence, pending)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)"
     )
@@ -131,7 +133,7 @@ async fn given_override_when_listing_transactions_then_returns_effective_categor
 
     let user_id = Uuid::new_v4();
 
-    sqlx::query("INSERT INTO users (id, email, password_hash, provider) VALUES ($1, $2, $3, $4)")
+    db::query("INSERT INTO users (id, email, password_hash, provider) VALUES ($1, $2, $3, $4)")
         .bind(user_id)
         .bind(format!("user{}@test.com", user_id))
         .bind("hash")
@@ -142,7 +144,7 @@ async fn given_override_when_listing_transactions_then_returns_effective_categor
 
     let (_, _, _, _, _) = setup_test_data(&pool, &user_id).await;
 
-    sqlx::query(
+    db::query(
         "INSERT INTO transaction_category_overrides (id, user_id, normalized_merchant, category_name, custom_category_id)
          VALUES ($1, $2, $3, $4, $5)"
     )
@@ -176,7 +178,7 @@ async fn given_no_override_when_listing_transactions_then_returns_stored_categor
 
     let user_id = Uuid::new_v4();
 
-    sqlx::query("INSERT INTO users (id, email, password_hash, provider) VALUES ($1, $2, $3, $4)")
+    db::query("INSERT INTO users (id, email, password_hash, provider) VALUES ($1, $2, $3, $4)")
         .bind(user_id)
         .bind(format!("user{}@test.com", user_id))
         .bind("hash")
@@ -208,7 +210,7 @@ async fn given_custom_category_override_when_listing_transactions_then_marks_is_
 
     let user_id = Uuid::new_v4();
 
-    sqlx::query("INSERT INTO users (id, email, password_hash, provider) VALUES ($1, $2, $3, $4)")
+    db::query("INSERT INTO users (id, email, password_hash, provider) VALUES ($1, $2, $3, $4)")
         .bind(user_id)
         .bind(format!("user{}@test.com", user_id))
         .bind("hash")
@@ -219,7 +221,7 @@ async fn given_custom_category_override_when_listing_transactions_then_marks_is_
 
     let (_, custom_cat_id, txn1_id, _, _) = setup_test_data(&pool, &user_id).await;
 
-    sqlx::query(
+    db::query(
         "INSERT INTO user_custom_categories (id, user_id, display_name, lookup_key)
          VALUES ($1, $2, $3, $4)",
     )
@@ -231,7 +233,7 @@ async fn given_custom_category_override_when_listing_transactions_then_marks_is_
     .await
     .unwrap();
 
-    sqlx::query(
+    db::query(
         "INSERT INTO transaction_category_overrides (id, user_id, normalized_merchant, category_name, custom_category_id)
          SELECT $1, $2, t.normalized_merchant, $3, $4
          FROM transactions t
@@ -269,7 +271,7 @@ async fn given_filter_by_overridden_category_when_listing_then_returns_matching_
 
     let user_id = Uuid::new_v4();
 
-    sqlx::query("INSERT INTO users (id, email, password_hash, provider) VALUES ($1, $2, $3, $4)")
+    db::query("INSERT INTO users (id, email, password_hash, provider) VALUES ($1, $2, $3, $4)")
         .bind(user_id)
         .bind(format!("user{}@test.com", user_id))
         .bind("hash")
@@ -280,7 +282,7 @@ async fn given_filter_by_overridden_category_when_listing_then_returns_matching_
 
     let (_, _, _, _, _) = setup_test_data(&pool, &user_id).await;
 
-    sqlx::query(
+    db::query(
         "INSERT INTO transaction_category_overrides (id, user_id, normalized_merchant, category_name, custom_category_id)
          VALUES ($1, $2, $3, $4, $5)"
     )
@@ -311,7 +313,7 @@ async fn given_insights_when_override_exists_then_aggregates_by_effective_catego
 
     let user_id = Uuid::new_v4();
 
-    sqlx::query("INSERT INTO users (id, email, password_hash, provider) VALUES ($1, $2, $3, $4)")
+    db::query("INSERT INTO users (id, email, password_hash, provider) VALUES ($1, $2, $3, $4)")
         .bind(user_id)
         .bind(format!("user{}@test.com", user_id))
         .bind("hash")
@@ -322,7 +324,7 @@ async fn given_insights_when_override_exists_then_aggregates_by_effective_catego
 
     let (_, _, _, _, _) = setup_test_data(&pool, &user_id).await;
 
-    sqlx::query(
+    db::query(
         "INSERT INTO transaction_category_overrides (id, user_id, normalized_merchant, category_name, custom_category_id)
          VALUES ($1, $2, $3, $4, $5)"
     )

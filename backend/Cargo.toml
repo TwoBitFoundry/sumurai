@@ -17,7 +17,9 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-opentelemetry = "0.32"
 anyhow = "1.0"
-sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "rust_decimal"] }
+sea-orm = { version = "1", features = ["runtime-tokio-rustls", "sqlx-postgres", "with-uuid", "with-chrono", "with-rust_decimal", "macros", "mock"] }
+entity = { path = "entity" }
+migration = { path = "migration" }
 # Package-specific dependencies not in workspace
 rust_decimal_macros = "1.40"
 hyper = "1.9"
@@ -51,5 +53,3 @@ ndarray = "0.17"
 
 [dev-dependencies]
 mockall = "0.14"
-entity = { path = "entity" }
-sea-orm = { version = "1", features = ["runtime-tokio-rustls", "sqlx-postgres", "with-uuid", "with-chrono", "with-rust_decimal"] }
