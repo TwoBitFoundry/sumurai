@@ -33,11 +33,9 @@ async fn given_five_register_attempts_when_sixth_register_then_returns_429_with_
         .expect_invalidate_pattern()
         .returning(|_| Box::pin(async { Ok(()) }));
     mock_cache
-        .expect_set_session_valid()
+        .expect_set_webauthn_challenge()
+        .times(0..)
         .returning(|_, _| Box::pin(async { Ok(()) }));
-    mock_cache
-        .expect_set_jwt_token()
-        .returning(|_, _, _| Box::pin(async { Ok(()) }));
     mock_cache
         .expect_is_auth_ip_banned()
         .times(0..)
@@ -56,7 +54,7 @@ async fn given_five_register_attempts_when_sixth_register_then_returns_429_with_
     for i in 0..5 {
         let body_json = serde_json::to_string(&json!({
             "email": format!("user{}@example.com", i),
-            "password": "SecurePass123!",
+            "name": format!("User {}", i),
         }))
         .unwrap();
 
@@ -78,7 +76,7 @@ async fn given_five_register_attempts_when_sixth_register_then_returns_429_with_
 
     let body_json = serde_json::to_string(&json!({
         "email": "user5@example.com",
-        "password": "SecurePass123!",
+        "name": "User Five",
     }))
     .unwrap();
 

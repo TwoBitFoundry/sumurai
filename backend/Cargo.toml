@@ -55,3 +55,4 @@ url = "2.5.8"
 
 [dev-dependencies]
 mockall = "0.14"
+webauthn-authenticator-rs = { version = "0.5.5", features = ["softpasskey"] }

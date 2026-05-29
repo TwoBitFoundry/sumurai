@@ -23,7 +23,8 @@ impl WebAuthnService {
     pub fn begin_registration(
         &self,
         user_id: Uuid,
-        user_email: &str,
+        user_name: &str,
+        user_display_name: &str,
         existing_credential_ids: &[Vec<u8>],
     ) -> Result<(CreationChallengeResponse, PasskeyRegistration)> {
         let exclude = if existing_credential_ids.is_empty() {
@@ -38,7 +39,7 @@ impl WebAuthnService {
         };
 
         self.webauthn
-            .start_passkey_registration(user_id, user_email, user_email, exclude)
+            .start_passkey_registration(user_id, user_name, user_display_name, exclude)
             .map_err(|e| anyhow!("begin_registration failed: {:?}", e))
     }
 

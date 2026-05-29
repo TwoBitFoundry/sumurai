@@ -35,6 +35,7 @@ use utoipa::OpenApi;
     components(
         schemas(
             crate::models::auth::RegisterRequest,
+            crate::models::auth::RegisterBeginResponse,
             crate::models::auth::AuthResponse,
             crate::models::auth::ChangePasswordRequest,
             crate::models::auth::ChangePasswordResponse,

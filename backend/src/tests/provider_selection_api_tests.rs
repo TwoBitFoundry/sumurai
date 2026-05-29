@@ -224,25 +224,29 @@ async fn given_registering_user_when_creating_account_then_persists_empty_provid
 
     mock_db.expect_create_user().returning(|user| {
         assert!(user.provider.is_empty());
+        assert!(user.password_hash.is_none());
         Box::pin(async { Ok(()) })
     });
 
-    let app = crate::test_fixtures::TestFixtures::create_test_app_with_db_and_cache(
-        mock_db,
-        create_auth_cookie_cache(),
-    )
-    .await
-    .unwrap();
+    let mut mock_cache = create_auth_cookie_cache();
+    mock_cache
+        .expect_set_webauthn_challenge()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+
+    let app =
+        crate::test_fixtures::TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
+            .await
+            .unwrap();
 
     let request_body = json!({
         "email": "register@example.com",
-        "password": "SecurePass123!"
+        "name": "Register User"
     });
 
     let request = axum::http::Request::builder()
         .method(axum::http::Method::POST)
         .uri("/api/auth/register")
-        .header("X-Forwarded-For", "127.0.0.1")
+        .header("X-Forwarded-For", "203.0.113.50")
         .header("Content-Type", "application/json")
         .body(axum::body::Body::from(
             serde_json::to_string(&request_body).unwrap(),

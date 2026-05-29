@@ -21,7 +21,7 @@ async fn given_duplicate_email_when_register_then_returns_409_with_expected_mess
 
     let request_body = json!({
         "email": "existing@example.com",
-        "password": "SecurePass123!"
+        "name": "Existing User"
     });
 
     let request = Request::builder()

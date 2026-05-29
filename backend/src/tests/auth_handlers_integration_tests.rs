@@ -49,21 +49,19 @@ fn set_cookie_value(response: &axum::response::Response) -> Option<&str> {
 }
 
 #[tokio::test]
-async fn given_valid_registration_when_registering_then_sets_auth_cookie_and_omits_token() {
+async fn given_valid_registration_when_registering_then_returns_challenge_without_auth_cookie() {
     let mut mock_db = MockDatabaseRepository::new();
 
     mock_db.expect_create_user().returning(|user| {
         assert!(user.provider.is_empty());
+        assert!(user.password_hash.is_none());
         Box::pin(async { Ok(()) })
     });
 
     let mut mock_cache = create_auth_cookie_cache();
     mock_cache
-        .expect_set_session_valid()
+        .expect_set_webauthn_challenge()
         .returning(|_, _| Box::pin(async { Ok(()) }));
-    mock_cache
-        .expect_set_jwt_token()
-        .returning(|_, _, _| Box::pin(async { Ok(()) }));
 
     let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
         .await
@@ -71,7 +69,7 @@ async fn given_valid_registration_when_registering_then_sets_auth_cookie_and_omi
 
     let request_body = json!({
         "email": "register@example.com",
-        "password": "SecurePass123!"
+        "name": "Register User"
     });
 
     let request = axum::http::Request::builder()
@@ -87,17 +85,15 @@ async fn given_valid_registration_when_registering_then_sets_auth_cookie_and_omi
     let response = app.oneshot(request).await.unwrap();
     assert_eq!(response.status(), 200);
 
-    let set_cookie = set_cookie_value(&response).expect("expected auth cookie");
-    assert!(set_cookie.contains("auth_token="));
+    assert!(set_cookie_value(&response).is_none());
 
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let response_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
+    assert!(response_json.get("user_id").is_some());
+    assert!(response_json.get("session_id").is_some());
+    assert!(response_json.get("challenge").is_some());
     assert!(response_json.get("token").is_none());
-    assert_eq!(
-        response_json.get("onboarding_completed").unwrap(),
-        &json!(false)
-    );
 }
 
 #[tokio::test]

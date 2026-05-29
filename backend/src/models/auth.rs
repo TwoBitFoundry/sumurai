@@ -10,10 +10,19 @@ use uuid::Uuid;
 use serde_json::json;
 
 #[derive(Deserialize, ToSchema)]
-#[schema(example = json!({"email": "user@example.com", "password": "SecurePass123!"}))]
+#[schema(example = json!({"email": "user@example.com", "name": "Alex"}))]
 pub struct RegisterRequest {
     pub email: String,
-    pub password: String,
+    pub name: String,
+    #[serde(default)]
+    pub password: Option<String>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct RegisterBeginResponse {
+    pub user_id: String,
+    pub session_id: String,
+    pub challenge: serde_json::Value,
 }
 
 #[derive(Serialize, ToSchema)]

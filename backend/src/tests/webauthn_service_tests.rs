@@ -23,7 +23,7 @@ fn given_invalid_origin_when_new_then_errors() {
 fn given_user_when_begin_registration_then_returns_challenge_and_state() {
     let service = test_service();
     let user_id = uuid::Uuid::new_v4();
-    let result = service.begin_registration(user_id, "user@example.com", &[]);
+    let result = service.begin_registration(user_id, "user@example.com", "User", &[]);
     assert!(
         result.is_ok(),
         "begin_registration should succeed: {:?}",
@@ -41,7 +41,7 @@ fn given_registration_state_when_serialized_then_round_trips() {
     let service = test_service();
     let user_id = uuid::Uuid::new_v4();
     let (_, state) = service
-        .begin_registration(user_id, "user@example.com", &[])
+        .begin_registration(user_id, "user@example.com", "User", &[])
         .unwrap();
 
     let json = serde_json::to_string(&state).unwrap();
@@ -56,7 +56,7 @@ fn given_wrong_response_when_finish_registration_then_errors() {
     let service = test_service();
     let user_id = uuid::Uuid::new_v4();
     let (_, state) = service
-        .begin_registration(user_id, "user@example.com", &[])
+        .begin_registration(user_id, "user@example.com", "User", &[])
         .unwrap();
 
     let bad_response: Result<RegisterPublicKeyCredential, _> = serde_json::from_str(

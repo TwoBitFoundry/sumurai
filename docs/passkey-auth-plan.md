@@ -159,10 +159,17 @@ Existing users with a `password_hash` are migrated: on their next visit they are
 - Existing users whose `password_hash` is non-null are not affected by this endpoint change; their migration is handled in Phase 6.
 
 **Acceptance**
-- [ ] Integration test: full register → finish-registration → authenticated request succeeds.
-- [ ] Partially-created accounts (register called, finish not called) cannot log in — no auth cookie is issued until the passkey ceremony completes.
-- [ ] `password` field rejected (400) if sent in the register body.
-- [ ] OpenAPI regenerates without manual hand-edits.
+- [x] Integration test: full register → finish-registration → authenticated request succeeds.
+- [x] Partially-created accounts (register called, finish not called) cannot log in — no auth cookie is issued until the passkey ceremony completes.
+- [x] `password` field rejected (400) if sent in the register body.
+- [x] OpenAPI regenerates without manual hand-edits.
+
+**TDD log**
+- 3 tests in `backend/src/tests/passkey_registration_tests.rs`: password rejected (400), partial account blocked (401 on protected route), full SoftPasskey ceremony (register → finish → list passkeys with cookie).
+- `webauthn-authenticator-rs` 0.5.5 (latest stable per Context7/crates.io) added as dev-dependency with `softpasskey` feature for ceremony simulation.
+- `register_user` returns `RegisterBeginResponse` without auth cookie; `finish_passkey_registration` moved to public routes and issues cookie on signup completion.
+- `WebAuthnService::begin_registration` now accepts separate `user_name` and `user_display_name`.
+- `bun run backend:ci`: 477 passed, 0 failed.
 
 ---
 
