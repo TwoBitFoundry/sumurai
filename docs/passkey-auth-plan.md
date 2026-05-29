@@ -322,6 +322,7 @@ Existing users without an enrolled passkey are migrated: on their next authentic
 - Storybook: `PasskeySecuritySection.stories.tsx` (single, multiple, mid-enrollment, cancellation toast, dark).
 - Tests: `tests/features/settings/passkeySecurityPolicy.test.ts`, `PasskeySecuritySectionView.test.tsx`.
 - `npm --prefix frontend test -- tests/features/settings/`; `npm --prefix frontend run typecheck`.
+- `settingsSecurityLayout` in `recipes.ts` (mobile stack, `md:` row/grid, `lg:` spacing and auto-width actions); replaces ad-hoc classes and misplaced `authLayout` on settings forms.
 
 ---
 

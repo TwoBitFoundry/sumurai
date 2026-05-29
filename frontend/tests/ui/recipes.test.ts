@@ -13,6 +13,7 @@ import {
   placeholder,
   semanticPlaceholderTextRecipes,
   semanticTextRecipes,
+  settingsSecurityLayout,
   status,
   successCta,
   surface,
@@ -150,5 +151,18 @@ describe('shared UI recipes', () => {
       expect.arrayContaining(['w-full', 'md:w-full', 'lg:w-auto'])
     );
     expect(authLayout.footerLink).toEqual(expect.arrayContaining([font.body, text.body]));
+  });
+
+  it('exposes settings security layout recipes for mobile, tablet, and desktop tiers', () => {
+    expect(settingsSecurityLayout.passkeyRow).toEqual(
+      expect.arrayContaining(['flex-col', 'md:flex-row', 'lg:gap-4'])
+    );
+    expect(settingsSecurityLayout.addFormBody).toContain('md:grid-cols-[minmax(0,1fr)_auto]');
+    expect(settingsSecurityLayout.primaryAction).toEqual(
+      expect.arrayContaining(['w-full', 'md:w-full', 'lg:w-auto'])
+    );
+    expect(settingsSecurityLayout.modalActions).toEqual(
+      expect.arrayContaining(['flex-col', 'md:flex-row'])
+    );
   });
 });

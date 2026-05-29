@@ -5,10 +5,8 @@ import type { PasskeyItem } from '@/types/api';
 import { Alert, Button, cn, FormLabel, GlassCard, IconButton, Input, Modal } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import {
-  authLayout,
   control,
-  border as uiBorderRecipes,
-  surface as uiSurfaceRecipes,
+  settingsSecurityLayout,
   text as uiTextRecipes,
   font as uiTypographyRecipes,
 } from '@/ui/recipes';
@@ -61,7 +59,7 @@ export function PasskeySecuritySectionView({
 
   return (
     <>
-      <section className={cn('space-y-4', 'border-t', 'pt-5', ...uiBorderRecipes.divider)}>
+      <section className={cn(settingsSecurityLayout.section)}>
         <div className={cn('space-y-1')}>
           <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>Security</h2>
           <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
@@ -87,7 +85,7 @@ export function PasskeySecuritySectionView({
         ) : null}
 
         {!isLoading && passkeys.length > 0 ? (
-          <ul className={cn('flex', 'flex-col', 'gap-3')}>
+          <ul className={cn(settingsSecurityLayout.list)}>
             {passkeys.map((passkey) => {
               const removeDisabled = !removeAllowed || isBusy;
               return (
@@ -96,17 +94,9 @@ export function PasskeySecuritySectionView({
                     variant="default"
                     padding="md"
                     rounded="lg"
-                    className={cn(
-                      'flex',
-                      'flex-col',
-                      'gap-3',
-                      'md:flex-row',
-                      'md:items-center',
-                      'md:justify-between',
-                      'lg:gap-4'
-                    )}
+                    className={cn(settingsSecurityLayout.passkeyRow)}
                   >
-                    <div className={cn('min-w-0', 'flex-1', 'space-y-1')}>
+                    <div className={cn(settingsSecurityLayout.passkeyMeta)}>
                       <p className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>
                         {passkey.name}
                       </p>
@@ -117,7 +107,7 @@ export function PasskeySecuritySectionView({
                       </p>
                     </div>
                     <span
-                      className={cn('inline-flex', 'shrink-0', 'self-end', 'md:self-center')}
+                      className={cn(settingsSecurityLayout.passkeyRemoveWrap)}
                       title={
                         removeDisabled && !removeAllowed ? LAST_PASSKEY_REMOVE_TOOLTIP : undefined
                       }
@@ -140,39 +130,31 @@ export function PasskeySecuritySectionView({
           </ul>
         ) : null}
 
-        <form
-          onSubmit={handleAddSubmit}
-          className={cn(
-            'space-y-3',
-            'rounded-xl',
-            'border',
-            'p-4',
-            ...uiBorderRecipes.subtle,
-            ...uiSurfaceRecipes.insetWell
-          )}
-        >
+        <form onSubmit={handleAddSubmit} className={cn(settingsSecurityLayout.addForm)}>
           <p className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>Add passkey</p>
-          <div className={cn('space-y-1.5')}>
-            <FormLabel htmlFor="settings-passkey-name">Passkey name</FormLabel>
-            <Input
-              id="settings-passkey-name"
-              value={newPasskeyName}
-              onChange={(event) => onNewPasskeyNameChange(event.target.value)}
-              placeholder="MacBook Pro"
-              autoComplete="off"
-              disabled={isBusy}
-            />
-          </div>
-          <div className={cn(authLayout.stackedActions)}>
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              className={cn(authLayout.primaryAction)}
-              disabled={isBusy}
-            >
-              {isEnrolling ? 'Waiting for your device…' : 'Add passkey'}
-            </Button>
+          <div className={cn(settingsSecurityLayout.addFormBody)}>
+            <div className={cn('space-y-1.5')}>
+              <FormLabel htmlFor="settings-passkey-name">Passkey name</FormLabel>
+              <Input
+                id="settings-passkey-name"
+                value={newPasskeyName}
+                onChange={(event) => onNewPasskeyNameChange(event.target.value)}
+                placeholder="MacBook Pro"
+                autoComplete="off"
+                disabled={isBusy}
+              />
+            </div>
+            <div className={cn(settingsSecurityLayout.addActions)}>
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                className={cn(settingsSecurityLayout.primaryAction)}
+                disabled={isBusy}
+              >
+                {isEnrolling ? 'Waiting for your device…' : 'Add passkey'}
+              </Button>
+            </div>
           </div>
         </form>
       </section>
@@ -196,13 +178,17 @@ export function PasskeySecuritySectionView({
               ? `“${removeTarget.name}” will no longer work for sign-in.`
               : 'This passkey will no longer work for sign-in.'}
           </p>
-          <div className={cn('flex', 'flex-col', 'gap-3', 'sm:flex-row')}>
+          <div className={cn(settingsSecurityLayout.modalActions)}>
             <Button
               type="button"
               variant="ghost"
               onClick={onCancelRemove}
               disabled={isRemoving}
-              className={cn(appTitleBarRecipes.settingsIdle, 'flex-1', 'normal-case')}
+              className={cn(
+                appTitleBarRecipes.settingsIdle,
+                settingsSecurityLayout.modalAction,
+                'normal-case'
+              )}
             >
               Cancel
             </Button>
@@ -212,7 +198,7 @@ export function PasskeySecuritySectionView({
               size="md"
               onClick={onConfirmRemove}
               disabled={isRemoving}
-              className={cn('flex-1')}
+              className={cn(settingsSecurityLayout.modalAction)}
             >
               {isRemoving ? 'Removing…' : 'Remove passkey'}
             </Button>

@@ -540,6 +540,35 @@ export const controlIconWell = {
   ],
 } as const;
 
+export const settingsSecurityLayout = {
+  section: ['space-y-4', 'border-t', 'pt-5', ...border.divider],
+  list: ['flex', 'flex-col', 'gap-3'],
+  passkeyRow: [
+    'flex',
+    'flex-col',
+    'gap-3',
+    'md:flex-row',
+    'md:items-center',
+    'md:justify-between',
+    'lg:gap-4',
+  ],
+  passkeyMeta: ['min-w-0', 'flex-1', 'space-y-1'],
+  passkeyRemoveWrap: ['inline-flex', 'shrink-0', 'self-end', 'md:self-center'],
+  addForm: ['space-y-3', 'rounded-xl', 'border', 'p-4', ...border.subtle, ...surface.insetWell],
+  addFormBody: [
+    'grid',
+    'grid-cols-1',
+    'gap-3',
+    'md:grid-cols-[minmax(0,1fr)_auto]',
+    'md:items-end',
+    'lg:gap-4',
+  ],
+  addActions: ['flex', 'flex-col', 'items-stretch', 'gap-3', 'md:items-stretch', 'lg:items-end'],
+  primaryAction: ['w-full', 'md:w-full', 'lg:w-auto', 'lg:min-w-[220px]'],
+  modalActions: ['flex', 'flex-col', 'gap-3', 'md:flex-row', 'lg:gap-4'],
+  modalAction: ['w-full', 'md:flex-1'],
+} as const;
+
 export const authLayout = {
   shell: [
     'relative',
