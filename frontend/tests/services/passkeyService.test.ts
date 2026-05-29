@@ -131,6 +131,7 @@ describe('PasskeyService', () => {
       challenge: requestChallenge,
       account_exists: true,
       passkey_available: true,
+      password_available: false,
     };
     jest.spyOn(ApiClient, 'post').mockResolvedValueOnce(beginResponse);
 
@@ -166,6 +167,7 @@ describe('PasskeyService', () => {
       challenge: requestChallenge,
       account_exists: true,
       passkey_available: true,
+      password_available: false,
     };
     const authResponse: AuthResponse = {
       user_id: 'user-1',

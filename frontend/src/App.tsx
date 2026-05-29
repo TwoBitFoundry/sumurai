@@ -7,7 +7,10 @@ import { LoginScreen, RegisterScreen } from './Auth';
 import { AuthenticatedApp, type TabKey } from './components/AuthenticatedApp';
 import { OnboardingProviderPicker } from './components/onboarding/OnboardingProviderPicker';
 import { ThemeProvider } from './context/ThemeContext';
-import { EnrollPasskeyScreen } from './features/auth/EnrollPasskeyScreen';
+import {
+  EnrollPasskeyScreen,
+  type PendingPasskeyRecoveryEnrollment,
+} from './features/auth/EnrollPasskeyScreen';
 import { AccountFilterProvider } from './hooks/useAccountFilter';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { TelemetryProvider, TelemetryService } from './observability';
@@ -42,6 +45,9 @@ interface AppContentProps {
 function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [needsPasskeyEnrollment, setNeedsPasskeyEnrollment] = useState(false);
+  const [pendingRecoveryEnrollment, setPendingRecoveryEnrollment] =
+    useState<PendingPasskeyRecoveryEnrollment | null>(null);
+  const [enrollmentLockedEmail, setEnrollmentLockedEmail] = useState<string | null>(null);
   const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
   const [pendingOnboarding, setPendingOnboarding] = useState(false);
   const [pendingExpiresAt, setPendingExpiresAt] = useState<string | null>(null);
@@ -104,7 +110,11 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   );
 
   const handleEnrollmentRequired = useCallback(
-    (authResponse: { user_id: string; expires_at: string; onboarding_completed: boolean }) => {
+    (
+      authResponse: { user_id: string; expires_at: string; onboarding_completed: boolean },
+      email: string
+    ) => {
+      setEnrollmentLockedEmail(email);
       setPendingOnboarding(!authResponse.onboarding_completed);
       setPendingExpiresAt(authResponse.expires_at);
       setNeedsPasskeyEnrollment(true);
@@ -112,15 +122,36 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
     []
   );
 
-  const handleEnrollmentComplete = useCallback(() => {
-    setNeedsPasskeyEnrollment(false);
-    setShowEnrollmentModal(false);
-    setIsAuthenticated(true);
-    setShowOnboarding(pendingOnboarding);
-    setSessionExpiresAt(pendingExpiresAt);
-    setPendingOnboarding(false);
-    setPendingExpiresAt(null);
-  }, [pendingOnboarding, pendingExpiresAt]);
+  const handleEnrollmentComplete = useCallback(
+    (authResponse?: { user_id: string; expires_at: string; onboarding_completed: boolean }) => {
+      setNeedsPasskeyEnrollment(false);
+      setShowEnrollmentModal(false);
+      setPendingRecoveryEnrollment(null);
+      setEnrollmentLockedEmail(null);
+      setIsAuthenticated(true);
+      if (authResponse) {
+        setShowOnboarding(!authResponse.onboarding_completed);
+        setSessionExpiresAt(authResponse.expires_at);
+        setPendingOnboarding(false);
+        setPendingExpiresAt(null);
+      } else {
+        setShowOnboarding(pendingOnboarding);
+        setSessionExpiresAt(pendingExpiresAt);
+        setPendingOnboarding(false);
+        setPendingExpiresAt(null);
+      }
+    },
+    [pendingOnboarding, pendingExpiresAt]
+  );
+
+  const handleRecoveryEnrollmentStarted = useCallback(
+    (pending: PendingPasskeyRecoveryEnrollment) => {
+      setEnrollmentLockedEmail(pending.email);
+      setPendingRecoveryEnrollment(pending);
+      setNeedsPasskeyEnrollment(true);
+    },
+    []
+  );
 
   const handleLogout = useCallback(async () => {
     try {
@@ -133,6 +164,8 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
 
     setIsAuthenticated(false);
     setNeedsPasskeyEnrollment(false);
+    setPendingRecoveryEnrollment(null);
+    setEnrollmentLockedEmail(null);
     setShowEnrollmentModal(false);
     setShowOnboarding(false);
     setSessionExpiresAt(null);
@@ -176,6 +209,8 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
                   onNavigateToRegister={() => setAuthScreen('register')}
                   onLoginSuccess={handleAuthSuccess}
                   onEnrollmentRequired={handleEnrollmentRequired}
+                  onRecoveryEnrollmentStarted={handleRecoveryEnrollmentStarted}
+                  lockedEmail={needsPasskeyEnrollment ? enrollmentLockedEmail : null}
                 />
               ) : (
                 <RegisterScreen
@@ -189,6 +224,7 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
         </GradientShell>
         <EnrollPasskeyScreen
           isOpen={needsPasskeyEnrollment}
+          pendingRecovery={pendingRecoveryEnrollment}
           onEnrollmentComplete={handleEnrollmentComplete}
           onLogout={handleLogout}
         />

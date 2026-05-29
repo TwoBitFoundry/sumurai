@@ -38,6 +38,19 @@ fn mock_cache_for_auth() -> MockCacheService {
     cache
 }
 
+fn mock_cache_for_passkey_login() -> MockCacheService {
+    let mut cache = MockCacheService::new();
+    cache
+        .expect_is_auth_ip_banned()
+        .times(0..)
+        .returning(|_| Box::pin(async { Ok(false) }));
+    cache
+        .expect_record_auth_rate_limit_exceeded()
+        .times(0..)
+        .returning(|_| Box::pin(async { Ok(()) }));
+    cache
+}
+
 #[tokio::test]
 async fn given_no_auth_when_begin_registration_then_401() {
     let mock_db = MockDatabaseRepository::new();
@@ -377,13 +390,7 @@ async fn given_unknown_email_when_begin_login_then_200_same_shape() {
         .expect_get_user_by_email()
         .returning(|_| Box::pin(async { Ok(None) }));
 
-    let mut mock_cache = MockCacheService::new();
-    mock_cache
-        .expect_is_auth_ip_banned()
-        .returning(|_| Box::pin(async { Ok(false) }));
-    mock_cache
-        .expect_set_webauthn_challenge()
-        .returning(|_, _| Box::pin(async { Ok(()) }));
+    let mock_cache = mock_cache_for_passkey_login();
 
     let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
         .await
@@ -393,7 +400,7 @@ async fn given_unknown_email_when_begin_login_then_200_same_shape() {
         .method(Method::POST)
         .uri("/api/auth/passkey/login/begin")
         .header("content-type", "application/json")
-        .header("X-Forwarded-For", "127.0.0.1")
+        .header("X-Forwarded-For", "198.51.100.1")
         .body(axum::body::Body::from(
             serde_json::to_vec(&json!({"email": "nobody@example.com"})).unwrap(),
         ))
@@ -414,10 +421,14 @@ async fn given_unknown_email_when_begin_login_then_200_same_shape() {
         json.get("passkey_available").and_then(|v| v.as_bool()),
         Some(false)
     );
+    assert_eq!(
+        json.get("password_available").and_then(|v| v.as_bool()),
+        Some(false)
+    );
 }
 
 #[tokio::test]
-async fn given_known_email_when_begin_login_then_200_with_challenge() {
+async fn given_known_email_when_begin_login_then_200_with_recovery_challenge() {
     let user = make_user();
     let user_id = user.id;
 
@@ -430,10 +441,7 @@ async fn given_known_email_when_begin_login_then_200_with_challenge() {
         .expect_list_webauthn_credentials_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
 
-    let mut mock_cache = MockCacheService::new();
-    mock_cache
-        .expect_is_auth_ip_banned()
-        .returning(|_| Box::pin(async { Ok(false) }));
+    let mut mock_cache = mock_cache_for_passkey_login();
     mock_cache
         .expect_set_webauthn_challenge()
         .returning(|_, _| Box::pin(async { Ok(()) }));
@@ -446,7 +454,7 @@ async fn given_known_email_when_begin_login_then_200_with_challenge() {
         .method(Method::POST)
         .uri("/api/auth/passkey/login/begin")
         .header("content-type", "application/json")
-        .header("X-Forwarded-For", "127.0.0.1")
+        .header("X-Forwarded-For", "198.51.100.2")
         .body(axum::body::Body::from(
             serde_json::to_vec(&json!({"email": "test@example.com"})).unwrap(),
         ))
@@ -471,15 +479,78 @@ async fn given_known_email_when_begin_login_then_200_with_challenge() {
         json.get("passkey_available").and_then(|v| v.as_bool()),
         Some(false)
     );
+    assert_eq!(
+        json.get("password_available").and_then(|v| v.as_bool()),
+        Some(false)
+    );
+    assert!(
+        !json
+            .get("session_id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .is_empty(),
+        "recovery should return a registration session"
+    );
+}
+
+#[tokio::test]
+async fn given_passkeyless_user_with_password_when_begin_login_then_password_available() {
+    let auth_service = crate::services::AuthService::new(
+        "test_jwt_secret_key_for_integration_testing".to_string(),
+    )
+    .unwrap();
+    let mut user = make_user();
+    user.password_hash = Some(auth_service.hash_password("Test1234!").unwrap());
+
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db.expect_get_user_by_email().returning(move |_| {
+        let u = user.clone();
+        Box::pin(async move { Ok(Some(u)) })
+    });
+    mock_db
+        .expect_list_webauthn_credentials_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let mock_cache = mock_cache_for_passkey_login();
+
+    let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
+        .await
+        .unwrap();
+
+    let request = axum::http::Request::builder()
+        .method(Method::POST)
+        .uri("/api/auth/passkey/login/begin")
+        .header("content-type", "application/json")
+        .header("X-Forwarded-For", "198.51.100.3")
+        .body(axum::body::Body::from(
+            serde_json::to_vec(&json!({"email": "test@example.com"})).unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 200);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(
+        json.get("account_exists").and_then(|v| v.as_bool()),
+        Some(true)
+    );
+    assert_eq!(
+        json.get("passkey_available").and_then(|v| v.as_bool()),
+        Some(false)
+    );
+    assert_eq!(
+        json.get("password_available").and_then(|v| v.as_bool()),
+        Some(true)
+    );
+    assert_eq!(json.get("session_id").and_then(|v| v.as_str()), Some(""));
 }
 
 #[tokio::test]
 async fn given_no_challenge_when_finish_login_then_400() {
     let mock_db = MockDatabaseRepository::new();
-    let mut mock_cache = MockCacheService::new();
-    mock_cache
-        .expect_is_auth_ip_banned()
-        .returning(|_| Box::pin(async { Ok(false) }));
+    let mut mock_cache = mock_cache_for_passkey_login();
     mock_cache
         .expect_take_webauthn_challenge()
         .returning(|_| Box::pin(async { Ok(None) }));
@@ -497,7 +568,7 @@ async fn given_no_challenge_when_finish_login_then_400() {
         .method(Method::POST)
         .uri("/api/auth/passkey/login/finish")
         .header("content-type", "application/json")
-        .header("X-Forwarded-For", "127.0.0.1")
+        .header("X-Forwarded-For", "198.51.100.4")
         .body(axum::body::Body::from(serde_json::to_vec(&body).unwrap()))
         .unwrap();
 
@@ -508,7 +579,7 @@ async fn given_no_challenge_when_finish_login_then_400() {
 #[tokio::test]
 async fn given_unknown_user_challenge_when_finish_login_then_401() {
     let mock_db = MockDatabaseRepository::new();
-    let mut mock_cache = MockCacheService::new();
+    let mut mock_cache = mock_cache_for_passkey_login();
 
     let payload = json!({
         "user_id": Uuid::nil().to_string(),
@@ -516,9 +587,6 @@ async fn given_unknown_user_challenge_when_finish_login_then_401() {
     })
     .to_string();
 
-    mock_cache
-        .expect_is_auth_ip_banned()
-        .returning(|_| Box::pin(async { Ok(false) }));
     mock_cache
         .expect_take_webauthn_challenge()
         .returning(move |_| {
@@ -539,7 +607,7 @@ async fn given_unknown_user_challenge_when_finish_login_then_401() {
         .method(Method::POST)
         .uri("/api/auth/passkey/login/finish")
         .header("content-type", "application/json")
-        .header("X-Forwarded-For", "127.0.0.1")
+        .header("X-Forwarded-For", "198.51.100.5")
         .body(axum::body::Body::from(serde_json::to_vec(&body).unwrap()))
         .unwrap();
 
@@ -567,10 +635,7 @@ async fn given_valid_challenge_but_invalid_response_when_finish_login_then_400()
     .to_string();
 
     let mock_db = MockDatabaseRepository::new();
-    let mut mock_cache = MockCacheService::new();
-    mock_cache
-        .expect_is_auth_ip_banned()
-        .returning(|_| Box::pin(async { Ok(false) }));
+    let mut mock_cache = mock_cache_for_passkey_login();
     mock_cache
         .expect_take_webauthn_challenge()
         .returning(move |_| {
@@ -600,7 +665,7 @@ async fn given_valid_challenge_but_invalid_response_when_finish_login_then_400()
         .method(Method::POST)
         .uri("/api/auth/passkey/login/finish")
         .header("content-type", "application/json")
-        .header("X-Forwarded-For", "127.0.0.1")
+        .header("X-Forwarded-For", "198.51.100.6")
         .body(axum::body::Body::from(serde_json::to_vec(&body).unwrap()))
         .unwrap();
 

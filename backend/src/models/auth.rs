@@ -187,6 +187,7 @@ pub struct PasskeyLoginBeginResponse {
     pub challenge: serde_json::Value,
     pub account_exists: bool,
     pub passkey_available: bool,
+    pub password_available: bool,
 }
 
 #[derive(Deserialize, ToSchema)]

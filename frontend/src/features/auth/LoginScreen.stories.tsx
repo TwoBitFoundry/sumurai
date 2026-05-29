@@ -69,6 +69,7 @@ export const CeremonyCancelledToast: Story = {
             challenge: passkeyChallenge,
             account_exists: true,
             passkey_available: true,
+            password_available: false,
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
@@ -136,6 +137,7 @@ export const SignInSuccess: Story = {
             challenge: passkeyChallenge,
             account_exists: true,
             passkey_available: true,
+            password_available: false,
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         );

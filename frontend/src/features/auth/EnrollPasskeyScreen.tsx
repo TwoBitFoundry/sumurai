@@ -3,19 +3,32 @@ import type React from 'react';
 import { useState } from 'react';
 import { ToastStack } from '@/components/toastStack/ToastStack';
 import { PasskeyService } from '@/services/passkeyService';
+import type { AuthResponse } from '@/types/api';
 import { Alert, Badge, Button, cn, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
 import { control, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
+import {
+  type CreationChallengeResponseJSON,
+  createPasskeyCredential,
+} from '@/utils/webauthnEncoding';
 import { useAuthToastStack } from './hooks/useAuthToastStack';
 import { mapPasskeyAuthError } from './utils/mapPasskeyAuthError';
 
+export type PendingPasskeyRecoveryEnrollment = {
+  email: string;
+  sessionId: string;
+  challenge: CreationChallengeResponseJSON;
+};
+
 export interface EnrollPasskeyScreenProps {
   isOpen: boolean;
-  onEnrollmentComplete?: () => void;
+  pendingRecovery?: PendingPasskeyRecoveryEnrollment | null;
+  onEnrollmentComplete?: (authResponse?: AuthResponse) => void;
   onLogout?: () => void;
 }
 
 export function EnrollPasskeyScreen({
   isOpen,
+  pendingRecovery,
   onEnrollmentComplete,
   onLogout,
 }: EnrollPasskeyScreenProps) {
@@ -30,8 +43,22 @@ export function EnrollPasskeyScreen({
     setIsLoading(true);
 
     try {
-      await PasskeyService.enrollPasskey(passkeyName.trim() || undefined);
-      onEnrollmentComplete?.();
+      const name = passkeyName.trim() || undefined;
+      if (pendingRecovery) {
+        const credential = await createPasskeyCredential(pendingRecovery.challenge);
+        const result = await PasskeyService.finishRegistration(
+          pendingRecovery.sessionId,
+          credential,
+          name
+        );
+        if (!('user_id' in result)) {
+          throw new Error('Passkey recovery did not return an authenticated session');
+        }
+        onEnrollmentComplete?.(result);
+      } else {
+        await PasskeyService.enrollPasskey(name);
+        onEnrollmentComplete?.();
+      }
     } catch (enrollmentError) {
       const presentation = mapPasskeyAuthError(enrollmentError, 'enroll');
       setBannerError(presentation.bannerMessage);

@@ -274,6 +274,7 @@ export interface PasskeyLoginBeginResponse {
   challenge: Record<string, unknown>;
   account_exists: boolean;
   passkey_available: boolean;
+  password_available: boolean;
 }
 
 export interface RegisterBeginResponse {

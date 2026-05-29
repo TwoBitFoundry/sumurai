@@ -7,8 +7,13 @@ import { PasskeyService } from '@/services/passkeyService';
 import type { AuthResponse } from '@/types/api';
 import { Alert, Badge, Button, cn, FormLabel, Input } from '@/ui/primitives';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
-import { getPasskeyCredential, type RequestChallengeResponseJSON } from '@/utils/webauthnEncoding';
+import {
+  type CreationChallengeResponseJSON,
+  getPasskeyCredential,
+  type RequestChallengeResponseJSON,
+} from '@/utils/webauthnEncoding';
 import { AuthFormLayout } from './AuthFormLayout';
+import type { PendingPasskeyRecoveryEnrollment } from './EnrollPasskeyScreen';
 import { useAuthToastStack } from './hooks/useAuthToastStack';
 import { mapPasskeyAuthError } from './utils/mapPasskeyAuthError';
 
@@ -23,7 +28,9 @@ type LoginStep = 'email' | 'passkey' | 'password';
 export interface LoginScreenProps {
   onNavigateToRegister: () => void;
   onLoginSuccess?: (authResponse: AuthResponse) => void;
-  onEnrollmentRequired?: (authResponse: AuthResponse) => void;
+  onEnrollmentRequired?: (authResponse: AuthResponse, email: string) => void;
+  onRecoveryEnrollmentStarted?: (pending: PendingPasskeyRecoveryEnrollment) => void;
+  lockedEmail?: string | null;
   uiPhase?: AuthUiPhase;
   bannerError?: string | null;
 }
@@ -32,6 +39,8 @@ export function LoginScreen({
   onNavigateToRegister,
   onLoginSuccess,
   onEnrollmentRequired,
+  onRecoveryEnrollmentStarted,
+  lockedEmail,
   uiPhase: uiPhaseOverride,
   bannerError: bannerErrorOverride,
 }: LoginScreenProps) {
@@ -41,7 +50,9 @@ export function LoginScreen({
   const [bannerError, setBannerError] = useState<string | null>(null);
   const [uiPhase, setUiPhase] = useState<AuthUiPhase>('idle');
   const { transients, pushToast, dismissTransient } = useAuthToastStack();
-  const isEmailValid = useMemo(() => validateEmail(email), [email]);
+  const isEmailLocked = Boolean(lockedEmail);
+  const effectiveEmail = lockedEmail ?? email;
+  const isEmailValid = useMemo(() => validateEmail(effectiveEmail), [effectiveEmail]);
   const canSubmitPassword = isEmailValid && password.length > 0;
 
   const resolvedPhase = uiPhaseOverride ?? uiPhase;
@@ -57,6 +68,10 @@ export function LoginScreen({
   const handleEmailContinue = async (event: React.FormEvent) => {
     event.preventDefault();
     setBannerError(null);
+
+    if (isEmailLocked) {
+      return;
+    }
 
     if (!isEmailValid) {
       setBannerError('Please enter a valid email address.');
@@ -76,8 +91,17 @@ export function LoginScreen({
         setBannerError('No account found for this email. Check the spelling or create an account.');
         return;
       }
-      if (!begin.passkey_available) {
+      if (!begin.passkey_available && begin.password_available) {
         setLoginStep('password');
+        return;
+      }
+
+      if (!begin.passkey_available && !begin.password_available) {
+        onRecoveryEnrollmentStarted?.({
+          email: normalizedEmail,
+          sessionId: begin.session_id,
+          challenge: begin.challenge as CreationChallengeResponseJSON,
+        });
         return;
       }
 
@@ -107,6 +131,10 @@ export function LoginScreen({
     event.preventDefault();
     setBannerError(null);
 
+    if (isEmailLocked) {
+      return;
+    }
+
     if (!canSubmitPassword) {
       return;
     }
@@ -118,9 +146,10 @@ export function LoginScreen({
     setUiPhase('submitting');
 
     try {
-      const response = await AuthService.loginWithPassword(email.trim().toLowerCase(), password);
+      const normalizedEmail = email.trim().toLowerCase();
+      const response = await AuthService.loginWithPassword(normalizedEmail, password);
       if (onEnrollmentRequired) {
-        onEnrollmentRequired(response);
+        onEnrollmentRequired(response, normalizedEmail);
       } else {
         onLoginSuccess?.(response);
       }
@@ -183,10 +212,11 @@ export function LoginScreen({
                 <Input
                   type="email"
                   id="login-email"
-                  value={email}
+                  value={effectiveEmail}
                   onChange={(event) => setEmail(event.target.value)}
                   autoComplete="email"
-                  disabled={isBusy}
+                  disabled={isBusy || isEmailLocked}
+                  readOnly={isEmailLocked}
                 />
               </div>
 
@@ -212,16 +242,18 @@ export function LoginScreen({
                 {primaryLabel}
               </Button>
 
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="w-full"
-                disabled={isBusy}
-                onClick={resetToEmail}
-              >
-                Use a different email
-              </Button>
+              {!isEmailLocked ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full"
+                  disabled={isBusy}
+                  onClick={resetToEmail}
+                >
+                  Use a different email
+                </Button>
+              ) : null}
             </form>
           ) : (
             <form className="space-y-4" onSubmit={handleEmailContinue}>
@@ -236,14 +268,15 @@ export function LoginScreen({
                 <Input
                   type="email"
                   id="login-email"
-                  value={email}
+                  value={effectiveEmail}
                   onChange={(event) => setEmail(event.target.value)}
                   autoComplete="email"
-                  variant={email && !isEmailValid ? 'invalid' : 'default'}
+                  variant={effectiveEmail && !isEmailValid ? 'invalid' : 'default'}
                   placeholder="you@example.com"
-                  disabled={isBusy}
+                  disabled={isBusy || isEmailLocked}
+                  readOnly={isEmailLocked}
                 />
-                {email && !isEmailValid ? (
+                {effectiveEmail && !isEmailValid ? (
                   <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.danger)}>
                     Please enter a valid email address.
                   </p>
@@ -252,7 +285,7 @@ export function LoginScreen({
 
               <Button
                 type="submit"
-                disabled={isBusy || !isEmailValid}
+                disabled={isBusy || !isEmailValid || isEmailLocked}
                 variant="primary"
                 size="lg"
                 className="w-full"
@@ -260,7 +293,7 @@ export function LoginScreen({
                 {primaryLabel}
               </Button>
 
-              {loginStep === 'passkey' ? (
+              {loginStep === 'passkey' && !isEmailLocked ? (
                 <Button
                   type="button"
                   variant="ghost"
@@ -282,7 +315,7 @@ export function LoginScreen({
               onClick={onNavigateToRegister}
               variant="ghost"
               size="sm"
-              disabled={isBusy}
+              disabled={isBusy || isEmailLocked}
             >
               Create account
             </Button>
