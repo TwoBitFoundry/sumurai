@@ -24,6 +24,8 @@ services:
     environment:
       REDIS_URL: redis://redis:6379
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-accounting}
+      POSTGRES_DB: ${POSTGRES_DB:-accounting}
+      MIGRATION_ARTIFACTS_DIR: /var/lib/sumurai/migration
 
       AUTH_COOKIE_SAME_SITE: Strict
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080},${NGROK_URL:-}
@@ -45,6 +47,7 @@ services:
     volumes:
       - .certs/teller/certificate.pem:/etc/teller/certificate.pem:ro
       - .certs/teller/private_key.pem:/etc/teller/private_key.pem:ro
+      - migration_artifacts:/var/lib/sumurai/migration
     depends_on:
       postgres:
         condition: service_healthy
@@ -135,5 +138,6 @@ services:
 volumes:
   redis_data:
   postgres_data:
+  migration_artifacts:
   certbot-etc:
   certbot-var:

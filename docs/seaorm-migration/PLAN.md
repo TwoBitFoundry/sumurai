@@ -269,43 +269,34 @@ The implementor should treat the table above as the translation rubric while wor
 **Goal:** A documented, reversible deploy procedure that uses a data-only dump as the migration artifact and the rollback artifact.
 
 **Tasks**
-- Add `docs/seaorm-migration/cutover-runbook.md` covering:
-  - **Pre-cutover** — announce maintenance window; verify the new image builds and passes Phase 5 acceptance against a staging restore.
-  - **Step 1: Snapshot.** Take a full `pg_dump` (schema + data) of the current DB as the immutable rollback artifact: `pg_dump --no-owner --no-privileges -Fc -f sumurai-pre-cutover.dump`. Store offsite.
-  - **Step 2: Data-only export.** `pg_dump --data-only --no-owner --no-privileges --disable-triggers -f sumurai-data.sql`. `--disable-triggers` is required because RLS policies would otherwise reject the bulk insert; the dump runs the imports with `SET session_replication_role = replica`.
-  - **Step 3: Drop and recreate.** `DROP DATABASE sumurai; CREATE DATABASE sumurai;` (or equivalent managed-Postgres console action).
-  - **Step 4: Deploy new backend.** Boot the SeaORM-based image against the empty DB. Confirm logs show `_init` applied, app is healthy, but no user data is reachable yet.
-  - **Step 5: Restore data.** `psql -v ON_ERROR_STOP=1 -f sumurai-data.sql`. Run as a role with `BYPASSRLS` (or temporarily `ALTER ROLE app SET row_security = off`) so the data-only import isn't blocked by tenant policies. Reset role/setting once import completes.
-  - **Step 6: Verify.** Smoke-test critical paths (login, fetch transactions, run a categorization); compare row counts per table against the pre-cutover snapshot.
-  - **Step 7: Reset sequences.** `pg_dump --data-only` does emit `setval(...)` for sequences, but verify manually for tables with `SERIAL`/`BIGSERIAL` columns. Bad sequence values will surface as PK collisions on the next insert.
-  - **Rollback path.** Drop the SeaORM-populated DB, restore `sumurai-pre-cutover.dump` (`pg_restore -d sumurai sumurai-pre-cutover.dump`), redeploy the previous backend image. No data is lost because step 1 captured the full state.
-- Cross-reference the runbook from `CONTRIBUTING.md` under the new "Working with the database" section so it's discoverable.
+- [x] Add `docs/seaorm-migration/docker-migration.md` — Compose path via backend entrypoint (`backend/scripts/docker-entrypoint.sh` → `docker-migrate.sh`).
+- [x] Backend `POSTGRES_DB`, `MIGRATION_ARTIFACTS_DIR`, and `migration_artifacts` volume in all compose files; no separate `migrate` service.
+- [x] Conditional detection (`already_seaorm` / `legacy` / `empty`), legacy cutover (snapshot → data dump → drop/recreate DB → `migration up` → restore → verify), automatic snapshot rollback on failure.
+- [x] Cross-reference from `CONTRIBUTING.md` under "Working with the database".
 
 **Acceptance criteria**
-- [ ] `docs/seaorm-migration/cutover-runbook.md` exists and walks through all eight steps end-to-end with exact commands.
-- [ ] Runbook explicitly names the RLS-bypass step required during data restore (`session_replication_role = replica` and/or `BYPASSRLS` role).
-- [ ] Runbook documents the rollback procedure with the same level of detail as the forward path.
+- [x] `docs/seaorm-migration/docker-migration.md` exists and walks through all steps end-to-end with exact commands.
+- [x] Runbook explicitly names the RLS-bypass step required during data restore (`session_replication_role = replica` and/or `BYPASSRLS` role).
+- [x] Runbook documents the rollback procedure with the same level of detail as the forward path.
 - [ ] A dry-run of the full runbook executed against a non-prod copy of the database completes without manual deviation; capture the wall-clock time in the runbook for planning the maintenance window.
-- [ ] `CONTRIBUTING.md` links to the runbook.
+- [x] `CONTRIBUTING.md` links to the runbook.
 
 ---
 
-## Phase 5 local validation (isolated volume)
+## Phase 5 local validation (live backup)
 
-Use this workflow to validate Phase 5 without touching `sumurai_postgres_data`:
+Use this workflow to verify the data-only backup pipeline against the running dev stack (read-only — does not modify `sumurai_postgres_data`):
 
-1. **Single script** — `./docs/seaorm-migration/phase5-validate.sh` generates an ephemeral archive key, captures a read-only live `pg_dump` encrypted in memory (OpenSSL `aes-256-cbc` + PBKDF2), runs validation, then restores from that same in-memory ciphertext. No env vars or on-disk dump files required.
-2. **Test stack** via `docker-compose.phase5-test.yml` (Postgres `:5433`, Redis `:6380`, project `sumurai-phase5-test`).
-3. **Fresh boot** — SeaORM backend applies `_init`; second boot leaves `seaql_migrations` unchanged.
-4. **Restore smoke** — re-init test volume, boot `_init`, decrypt in-memory data-only dump (excludes `_sqlx_migrations` and `seaql_migrations`), compare row counts, boot again.
+1. **Single script** — `./docs/seaorm-migration/phase5-validate.sh` generates an ephemeral archive key, captures a read-only live `pg_dump` encrypted in memory (OpenSSL `aes-256-cbc` + PBKDF2), and verifies encrypt/decrypt round-trip. No env vars or on-disk dump files required.
+2. **Row counts** — compares live `users` and `transactions` counts for a quick sanity check.
+
+Full migration on the actual volume is documented in [docker-migration.md](docker-migration.md). Read-only backup check only:
 
 ```bash
 ./docs/seaorm-migration/phase5-validate.sh
-docker compose -p sumurai-phase5-test down   # keep volume
-docker compose -p sumurai-phase5-test down -v  # discard test volume only
 ```
 
-Boot logs land under `docs/seaorm-migration/artifacts/` (gitignored). The archive key and ciphertext exist only for the script run.
+The archive key and ciphertext exist only for the script run.
 
 ---
 

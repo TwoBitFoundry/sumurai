@@ -128,14 +128,16 @@ cargo clippy --manifest-path backend/Cargo.toml --all-targets --no-deps -- -D wa
 
 ## Working with the database
 
-Schema and migrations live in the Cargo workspace members `backend/migration/` (migrations) and `backend/entity/` (generated entities). The backend applies pending migrations at startup via `Migrator::up` in `backend/src/main.rs` (wrapped in a Postgres advisory lock).
+Schema and migrations live in `backend/migration/` (migrations) and `backend/entity/` (entities). **All schema application runs through Docker Compose** — the backend container runs database migration automatically on start (legacy SQLx cutover or fresh `_init`), then applies pending migrations via `Migrator::up`. See [Database migration (Docker Compose)](docs/seaorm-migration/docker-migration.md).
+
+Do not run `cargo run -p migration` against a legacy SQLx database outside Compose.
 
 ### Add a migration
 
 1. Create `backend/migration/src/m<YYYYMMDD>_<name>.rs` implementing `MigrationTrait` (use `SchemaManager` builders; use `execute_unprepared` for RLS policy DDL the builder cannot express).
 2. Register the module in `backend/migration/src/lib.rs` and append it to `Migrator::migrations()`.
-3. Boot the backend against a local Postgres (or run `cargo run -p migration -- up`) to apply the migration.
-4. Regenerate entities (see below) if the migration adds or changes tables/columns.
+3. Apply via Docker: `docker compose -f docker-compose.dev.yml up -d --build`
+4. Regenerate entities — see [docker-migration.md — Apply a new SeaORM migration](docs/seaorm-migration/docker-migration.md#apply-a-new-seaorm-migration-schema-pr)
 
 Example migration skeleton:
 
@@ -179,15 +181,7 @@ enum Users {
 
 ### Regenerate entities
 
-After schema changes, point `sea-orm-cli` at a database that has the migration applied:
-
-```bash
-cargo install sea-orm-cli --locked
-sea-orm-cli generate entity \
-  --database-url "$DATABASE_URL" \
-  --output-dir backend/entity/src \
-  --entity-format dense
-```
+After a migration is applied through Docker, regenerate entities using the one-off container steps in [docker-migration.md](docs/seaorm-migration/docker-migration.md#apply-a-new-seaorm-migration-schema-pr).
 
 Review generated `Relation` impls; hand-edit only when the generator misses a composite or polymorphic link. Re-export modules from `backend/entity/src/prelude.rs` if you add tables.
 
@@ -210,8 +204,8 @@ Document why the escape hatch was needed in the PR.
 ### Column walkthrough (end to end)
 
 1. Add a migration file and register it in `Migrator::migrations()`.
-2. Apply migrations locally (`docker compose -f docker-compose.dev.yml up -d --build backend` or `cargo run -p migration -- up`).
-3. Run `sea-orm-cli generate entity` against that database.
+2. Apply via Docker: `docker compose -f docker-compose.dev.yml up -d --build backend`
+3. Regenerate entities per [docker-migration.md](docs/seaorm-migration/docker-migration.md#apply-a-new-seaorm-migration-schema-pr).
 4. Use the new `Column` variant in `repository_service.rs` (inside `with_tenant` when tenant-scoped).
 5. Add or extend a `From<entity::…::Model>` mapping in `conversions.rs` if the API exposes the field.
 6. Run `cargo test --manifest-path backend/Cargo.toml --locked`.

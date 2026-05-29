@@ -42,15 +42,28 @@ COPY --from=planner /app/recipe.json ./recipe.json
 RUN cargo chef cook --release --locked --recipe-path recipe.json
 COPY rust-toolchain.toml Cargo.toml Cargo.lock ./
 COPY backend/ ./backend/
-RUN cargo build --release --locked -p sumurai-backend
+RUN cargo build --release --locked -p sumurai-backend -p migration
 
 FROM debian:trixie-slim AS runtime
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl postgresql-client libssl3 libgomp1 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates curl gnupg libssl3 libgomp1 \
+  && install -d /usr/share/postgresql-common/pgdg \
+  && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+    -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+  && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt trixie-pgdg main" \
+    > /etc/apt/sources.list.d/pgdg.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends postgresql-client-15 \
+  && rm -rf /var/lib/apt/lists/*
 COPY --from=assets /usr/local/lib/libonnxruntime.so* /usr/local/lib/
 RUN ldconfig
 COPY --from=assets /app/backend/assets/models/distilbert-us-transaction-classifier-v2 /app/backend/assets/models/distilbert-us-transaction-classifier-v2
 ENV ORT_DYLIB_PATH=/usr/local/lib/libonnxruntime.so
 COPY --from=builder /app/target/release/sumurai-backend /app/sumurai-backend
+COPY --from=builder /app/target/release/migration /app/migration
+COPY backend/scripts/docker-migrate.sh /app/docker-migrate.sh
+COPY backend/scripts/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-migrate.sh /app/docker-entrypoint.sh
 EXPOSE 3000
-CMD ["./sumurai-backend"]
+CMD ["/app/docker-entrypoint.sh"]

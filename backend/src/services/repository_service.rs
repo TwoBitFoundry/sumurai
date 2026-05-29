@@ -685,7 +685,7 @@ impl PostgresRepository {
         .column(transactions::Column::Amount)
         .column_as(
             Expr::cust_with_expr(
-                "NULLIF(TRIM({}), '')",
+                "NULLIF(TRIM($1), '')",
                 Expr::col((transactions::Entity, transactions::Column::MerchantName)),
             ),
             "merchant",
@@ -1346,7 +1346,7 @@ impl DatabaseRepository for PostgresRepository {
                 );
                 qb.push(
                     r#"
-                    ),
+                    ,
                     aggregates AS (
                         SELECT
                             COUNT(*) AS total_count,

@@ -359,7 +359,7 @@ All keys are scoped to `jwt_id`. There are no cross-user keys.
 
 ## Database Schema
 
-Migrations live in [`backend/migration/`](../backend/migration/) and are applied at backend startup via SeaORM `Migrator::up` (see [`backend/src/main.rs`](../backend/src/main.rs)). Generated table mappings are in [`backend/entity/`](../backend/entity/). Repository code uses the entity DSL; raw SQL via `Statement::from_sql_and_values` is a deliberate escape hatch for joins/aggregates the DSL cannot express. RLS tenant context (`set_config('app.current_user_id', …)`) is unchanged in behavior — it is centralized in `backend/src/utils/tenant_context.rs` and invoked through `PostgresRepository::with_tenant`.
+Migrations live in [`backend/migration/`](../backend/migration/) and are applied when the backend container starts (`Migrator::up` in [`backend/src/main.rs`](../backend/src/main.rs)). All database migration — including legacy SQLx volumes — follows the Docker Compose procedure in [`docs/seaorm-migration/docker-migration.md`](seaorm-migration/docker-migration.md). Generated table mappings are in [`backend/entity/`](../backend/entity/). Repository code uses the entity DSL; raw SQL via `Statement::from_sql_and_values` is a deliberate escape hatch for joins/aggregates the DSL cannot express. RLS tenant context (`set_config('app.current_user_id', …)`) is unchanged in behavior — it is centralized in `backend/src/utils/tenant_context.rs` and invoked through `PostgresRepository::with_tenant`.
 
 ```mermaid
 erDiagram

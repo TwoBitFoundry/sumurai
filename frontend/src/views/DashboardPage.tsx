@@ -2,15 +2,7 @@ import { TrendingUp } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import type { TooltipProps } from 'recharts';
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { Area, AreaChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts';
 import type { DotItemDotProps } from 'recharts/types/util/types';
 import { cn, EmptyState, Pill } from '@/ui/primitives';
 import {
@@ -34,6 +26,7 @@ import { SpendingByCategoryChart } from '../features/analytics/components/Spendi
 import { TopMerchantsList } from '../features/analytics/components/TopMerchantsList';
 import { useAnalytics } from '../features/analytics/hooks/useAnalytics';
 import { useDebouncedChartRecalc } from '../features/analytics/hooks/useDebouncedChartRecalc';
+import { useChartContainerSize } from '../features/analytics/hooks/useChartContainerSize';
 import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries';
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import { PageLayout } from '../layouts/PageLayout';
@@ -106,6 +99,11 @@ const DashboardPage: React.FC<{
     () => DashboardCalculator.calculateNetYAxisDomain(debouncedNetSeries),
     [debouncedNetSeries]
   );
+  const {
+    ref: netChartRef,
+    width: netChartWidth,
+    height: netChartHeight,
+  } = useChartContainerSize([netLoading, netSeries.length]);
 
   return (
     <div data-testid="dashboard-page">
@@ -141,15 +139,27 @@ const DashboardPage: React.FC<{
                 Loading analytics...
               </div>
             )}
-            <SpendingByCategoryChart
-              data={byCat}
-              total={monthSpend}
-              hoveredCategory={hoveredCategory}
-              setHoveredCategory={setHoveredCategory}
-              animated={shouldAnimateSpendingByCategory}
-            />
-            <div className="mt-4">
-              {(() => {
+            <div
+              className={cn(
+                'grid',
+                'flex-1',
+                'min-h-0',
+                'gap-4',
+                'grid-cols-1',
+                'md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]',
+                'lg:grid-cols-1',
+                'items-center'
+              )}
+            >
+              <SpendingByCategoryChart
+                data={byCat}
+                total={monthSpend}
+                hoveredCategory={hoveredCategory}
+                setHoveredCategory={setHoveredCategory}
+                animated={shouldAnimateSpendingByCategory}
+              />
+              <div className={cn('min-w-0', 'w-full')}>
+                {(() => {
                 const categories = byCat;
                 if (!categories || categories.length === 0) return null;
                 const categorySum = categories.reduce(
@@ -212,7 +222,8 @@ const DashboardPage: React.FC<{
                     </div>
                   </div>
                 );
-              })()}
+                })()}
+              </div>
             </div>
           </DashboardChartCard>
 
@@ -240,11 +251,12 @@ const DashboardPage: React.FC<{
             isRefreshing={!netLoading && netRefreshing}
           >
             {netLoading ? (
-              <div className={cn('flex-1', dashboardLoadingCard)} />
+              <div className={cn('flex-1', 'min-h-0', dashboardLoadingCard)} />
             ) : netError ? (
               <div
                 className={cn(
                   'flex-1',
+                  'min-h-0',
                   'min-h-[220px]',
                   uiTypographyRecipes.body,
                   uiTextRecipes.danger
@@ -254,7 +266,14 @@ const DashboardPage: React.FC<{
               </div>
             ) : netSeries.length === 0 ? (
               <div
-                className={cn('flex-1', 'min-h-[220px]', 'flex', 'items-center', 'justify-center')}
+                className={cn(
+                  'flex-1',
+                  'min-h-0',
+                  'min-h-[220px]',
+                  'flex',
+                  'items-center',
+                  'justify-center'
+                )}
               >
                 <EmptyState
                   icon={TrendingUp}
@@ -263,9 +282,14 @@ const DashboardPage: React.FC<{
                 />
               </div>
             ) : (
-              <div className={cn('flex-1', 'h-full', 'w-full', 'min-w-0', 'overflow-visible')}>
-                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+              <div
+                ref={netChartRef}
+                className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}
+              >
+                {netChartWidth > 0 && netChartHeight > 0 ? (
                   <AreaChart
+                    width={netChartWidth}
+                    height={netChartHeight}
                     accessibilityLayer={false}
                     data={debouncedNetSeries}
                     margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
@@ -350,7 +374,7 @@ const DashboardPage: React.FC<{
                       dot={netDotRenderer}
                     />
                   </AreaChart>
-                </ResponsiveContainer>
+                ) : null}
               </div>
             )}
           </DashboardChartCard>
