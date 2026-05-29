@@ -7,7 +7,7 @@ Use this map to place tests in the correct area.
 - Backend tests live under `backend/src/tests/`.
 - Backend fixtures live in `backend/src/tests/test_fixtures.rs`.
 - Backend test modules are registered through `backend/src/tests/mod.rs`.
-- Backend migrations live in `backend/migrations/` and migration tests live under `backend/src/tests/`.
+- SeaORM migrations live in `backend/migration/`; entity code in `backend/entity/`; migration regression fixtures in `backend/src/tests/fixtures/legacy_migrations/`.
 - Run backend tests with `cargo test --manifest-path backend/Cargo.toml --locked`.
 
 Common backend areas:
@@ -35,7 +35,7 @@ Common backend areas:
 - Stories live next to components as `*.stories.tsx` (for example under `frontend/src/ui/primitives/`).
 - Browser-level UI behavior is exercised by the Storybook Vitest project (`npm --prefix frontend run test:storybook`), configured in `frontend/vitest.config.ts` and `frontend/.storybook/` with the Storybook Vitest addon.
 - After static Storybook is built, Playwright smoke tests load the iframe shell (`npm --prefix frontend run test:storybook-runtime`, config in `frontend/playwright.storybook-runtime.config.ts`). They guard that the built Storybook loads; they do not replace Storybook Vitest for component behavior.
-- Storybook-related checks are not in the default Husky `precommit` path; `npm run frontend:ci` runs lint, typecheck, design guard, Jest, build, Playwright install for CI, Storybook Vitest, Storybook build, and the runtime smoke sequence.
+- Storybook-related checks are not in the default Husky `precommit` path; `npm run frontend:ci` runs lint, typecheck, design guard, `bun test`, build, Playwright install for CI, Storybook Vitest, Storybook build, and the runtime smoke sequence.
 
 ## Placement Rules
 

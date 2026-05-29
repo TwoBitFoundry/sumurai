@@ -25,7 +25,7 @@ Sign-in is username-first: user enters email → server returns allowed credenti
 **Tasks**
 - Add `webauthn-rs` to [backend/Cargo.toml](backend/Cargo.toml) via `cargo add`; verify pinned version is current latest.
 - Create migration `036_webauthn_credentials.sql` with: `id UUID PK`, `user_id UUID FK → users(id) ON DELETE CASCADE`, `credential_id BYTEA UNIQUE`, `passkey JSONB NOT NULL` (serialized webauthn-rs `Passkey`), `name TEXT NOT NULL`, `created_at TIMESTAMPTZ`, `last_used_at TIMESTAMPTZ NULL`. Index on `user_id`.
-- Enable RLS on the table mirroring the pattern in [backend/migrations/005_row_level_security.sql](backend/migrations/005_row_level_security.sql): policy `user_id = current_setting('app.current_user_id', true)::uuid`.
+- Enable RLS on the table mirroring the pattern in `backend/migration/src/m20260528_000001_init.rs`: policy `user_id = current_setting('app.current_user_id', true)::uuid`.
 - Add `WebAuthnCredential` model to [backend/src/models/auth.rs](backend/src/models/auth.rs).
 - Add repository methods to [backend/src/services/repository_service.rs](backend/src/services/repository_service.rs):
   - `insert_webauthn_credential(...)`
@@ -120,7 +120,7 @@ Sign-in is username-first: user enters email → server returns allowed credenti
   - Each method wraps the `navigator.credentials.create()` / `.get()` call and the server round-trips.
 
 **Acceptance**
-- [ ] Jest tests in `frontend/tests/` cover each service method with `navigator.credentials` and `ApiClient` mocked at the boundary per [sumurai-testing-policy](.agents/skills/).
+- [ ] Bun tests in `frontend/tests/` cover each service method with `navigator.credentials` and `ApiClient` mocked at the boundary per [sumurai-testing-policy](.agents/skills/).
 - [ ] Encoding utility tests cover round-trip on known WebAuthn fixtures.
 - [ ] Frontend type-check passes against regenerated `api.ts`.
 

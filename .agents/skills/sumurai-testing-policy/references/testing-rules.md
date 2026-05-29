@@ -11,12 +11,12 @@ Use these rules when designing Sumurai tests.
 
 ## Frontend
 
-- Use existing React Testing Library and Jest patterns under `frontend/tests/`.
+- Use existing React Testing Library and Bun test patterns under `frontend/tests/` (`mock.module`, `mock()` from `bun:test`).
 - Use existing test providers and setup helpers.
 - Test user-visible behavior, API client contracts, hook state transitions, and domain transformations.
 - Keep snapshots limited to stable primitive output where the repo already uses them.
 - Add token tests when changing shared design-token semantics.
-- For rendered UI in a real browser (interactions, a11y-relevant rendering paths, story-driven states), extend or add Storybook stories and cover them with the Storybook Vitest project rather than duplicating the same scenarios only in Jest when the browser project already owns that boundary.
+- For rendered UI in a real browser (interactions, a11y-relevant rendering paths, story-driven states), extend or add Storybook stories and cover them with the Storybook Vitest project rather than duplicating the same scenarios only in Bun test when the browser project already owns that boundary.
 - Treat `npm --prefix frontend run test:storybook-runtime` as a smoke gate on the static Storybook artifact; add or adjust those tests only when the failure mode is load-level or routing of the Storybook build, not for per-component assertions.
 
 ## Storybook

@@ -6,6 +6,7 @@ pub mod auth;
 pub mod auto_categorization_job;
 pub mod budget;
 pub mod cache;
+pub mod conversions;
 pub mod custom_category;
 pub mod import;
 pub mod ip_ban;

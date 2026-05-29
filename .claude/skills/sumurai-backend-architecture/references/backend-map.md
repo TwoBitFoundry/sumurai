@@ -14,7 +14,8 @@ Use this map to place backend changes in the right module.
 - `backend/src/handlers`: request handlers that are not embedded directly in main routing.
 - `backend/src/openapi`: OpenAPI schemas, tags, and generated API documentation shape.
 - `backend/src/utils`: focused helpers for auth cookies, cache keys, encryption key handling, and account validation.
-- `backend/migrations`: SQL migrations.
+- `backend/migration`: SeaORM migrations (`Migrator`, `m*_*.rs` files).
+- `backend/entity`: generated SeaORM entities (`Entity`, `Model`, `ActiveModel`, `Column`).
 - `backend/src/tests`: backend tests and fixtures.
 
 ## Placement Rules

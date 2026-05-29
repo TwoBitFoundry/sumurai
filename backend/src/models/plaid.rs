@@ -244,7 +244,7 @@ pub struct DataCleared {
     pub cache_keys: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, sqlx::FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct LatestAccountBalance {
     pub account_id: Uuid,
     pub institution_id: String,

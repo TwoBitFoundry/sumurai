@@ -7,7 +7,7 @@ use uuid::Uuid;
 #[allow(unused_imports)]
 use serde_json::json;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, sqlx::FromRow, ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 #[schema(example = json!({
     "id": "11111111-2222-3333-4444-555555555555",
     "user_id": "99999999-8888-7777-6666-555555555555",

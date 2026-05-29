@@ -1,28 +1,56 @@
 import '../../../mocks/rechartsSpendingByCategory';
+import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { useTheme } from '@/context/ThemeContext';
-import { SpendingByCategoryChart } from '@/features/analytics/components/SpendingByCategoryChart';
 import { getThemeColors } from '@/ui/tokens';
 
-jest.mock('@/context/ThemeContext', () => ({
-  useTheme: jest.fn(),
+const mockUseTheme = mock(() => ({
+  preference: 'light' as const,
+  mode: 'light' as const,
+  setPreference: mock(() => {}),
+  setMode: mock(() => {}),
+  toggle: mock(() => {}),
+  colors: getThemeColors('light'),
 }));
 
+mock.module('@/context/ThemeContext', () => ({
+  useTheme: mockUseTheme,
+}));
+
+import { SpendingByCategoryChart } from '@/features/analytics/components/SpendingByCategoryChart';
+
 describe('SpendingByCategoryChart', () => {
+  let rectSpy: ReturnType<typeof spyOn>;
+
   beforeEach(() => {
-    jest.mocked(useTheme).mockReturnValue({
+    rectSpy = spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      width: 240,
+      height: 240,
+      top: 0,
+      left: 0,
+      bottom: 240,
+      right: 240,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    mockUseTheme.mockReturnValue({
       preference: 'light',
       mode: 'light',
-      setPreference: jest.fn(),
-      setMode: jest.fn(),
-      toggle: jest.fn(),
+      setPreference: mock(() => {}),
+      setMode: mock(() => {}),
+      toggle: mock(() => {}),
       colors: getThemeColors('light'),
-    } as any);
+    });
+  });
+
+  afterEach(() => {
+    rectSpy.mockRestore();
   });
 
   it('disables pie animation when animated is false', () => {
-    const setHoveredCategory = jest.fn();
-    const { container } = render(
+    const setHoveredCategory = mock(() => {});
+    render(
       <SpendingByCategoryChart
         data={[{ name: 'Food', value: 10, color: '#123456' }]}
         total={10}

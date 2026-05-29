@@ -1,10 +1,7 @@
 FROM rust:1.95-slim-trixie AS chef
-WORKDIR /app/backend
+WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential pkg-config libssl-dev ca-certificates curl postgresql-client && rm -rf /var/lib/apt/lists/*
 RUN cargo install cargo-chef --version 0.1.77 --locked
-
-FROM chef AS sqlx-cli
-RUN cargo install sqlx-cli --version 0.8.6 --locked --no-default-features --features rustls,postgres
 
 FROM chef AS assets
 ARG TARGETARCH
@@ -36,24 +33,37 @@ RUN set -eu; \
     rm -rf /tmp/onnxruntime /tmp/onnxruntime.tgz
 
 FROM chef AS planner
-COPY backend/ ./
+COPY rust-toolchain.toml Cargo.toml Cargo.lock ./
+COPY backend/ ./backend/
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
-COPY --from=planner /app/backend/recipe.json ./recipe.json
+COPY --from=planner /app/recipe.json ./recipe.json
 RUN cargo chef cook --release --locked --recipe-path recipe.json
-COPY backend/ ./
-RUN cargo build --release --locked
+COPY rust-toolchain.toml Cargo.toml Cargo.lock ./
+COPY backend/ ./backend/
+RUN cargo build --release --locked -p sumurai-backend -p migration
 
 FROM debian:trixie-slim AS runtime
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl postgresql-client libssl3 libgomp1 && rm -rf /var/lib/apt/lists/*
-COPY --from=sqlx-cli /usr/local/cargo/bin/sqlx /usr/local/bin/sqlx
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates curl gnupg libssl3 libgomp1 \
+  && install -d /usr/share/postgresql-common/pgdg \
+  && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+    -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+  && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt trixie-pgdg main" \
+    > /etc/apt/sources.list.d/pgdg.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends postgresql-client-15 \
+  && rm -rf /var/lib/apt/lists/*
 COPY --from=assets /usr/local/lib/libonnxruntime.so* /usr/local/lib/
 RUN ldconfig
 COPY --from=assets /app/backend/assets/models/distilbert-us-transaction-classifier-v2 /app/backend/assets/models/distilbert-us-transaction-classifier-v2
 ENV ORT_DYLIB_PATH=/usr/local/lib/libonnxruntime.so
-COPY --from=builder /app/backend/target/release/sumurai-backend /app/sumurai-backend
-COPY backend/migrations /app/migrations
+COPY --from=builder /app/target/release/sumurai-backend /app/sumurai-backend
+COPY --from=builder /app/target/release/migration /app/migration
+COPY backend/scripts/docker-migrate.sh /app/docker-migrate.sh
+COPY backend/scripts/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-migrate.sh /app/docker-entrypoint.sh
 EXPOSE 3000
-CMD ["./sumurai-backend"]
+CMD ["/app/docker-entrypoint.sh"]

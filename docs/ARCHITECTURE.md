@@ -27,7 +27,7 @@ flowchart LR
     Browser -->|"SPA assets"| Nginx
     Browser -->|"/api/*  /health"| Nginx
     Nginx -->|"proxy"| Backend
-    Backend -->|"SQLx"| Postgres
+    Backend -->|"SeaORM"| Postgres
     Backend -->|"Redis client"| Redis
     Backend -.->|"OTLP (prod)"| Seq
     Backend -.->|"mTLS"| Teller
@@ -150,7 +150,7 @@ flowchart TD
 
 ## Backend
 
-Handlers → services → `repository_service` (SQLx) / `cache_service` (Redis) / providers. Domain types in `models/`. Tests in `backend/src/tests/`.
+Handlers → services → `repository_service` (SeaORM entities via `with_tenant`) / `cache_service` (Redis) / providers. Domain types in `models/`. Tests in `backend/src/tests/`.
 
 ```mermaid
 flowchart TD
@@ -173,7 +173,7 @@ flowchart TD
     end
 
     subgraph Services
-        RepoSvc["repository_service\n(SQLx)"]
+        RepoSvc["repository_service\n(SeaORM)"]
         CacheSvc["cache_service\n(Redis)"]
         SyncSvc["sync_service"]
         AuthSvc["auth_service"]
@@ -359,7 +359,7 @@ All keys are scoped to `jwt_id`. There are no cross-user keys.
 
 ## Database Schema
 
-Migrations in `backend/migrations/`, applied with `sqlx migrate`.
+Migrations live in [`backend/migration/`](../backend/migration/) and are applied when the backend container starts: `backend/scripts/docker-migrate.sh` handles legacy SQLx cutover (snapshot, data export, SeaORM schema, restore), then `Migrator::up` in [`backend/src/main.rs`](../backend/src/main.rs) applies incremental migrations. Generated table mappings are in [`backend/entity/`](../backend/entity/). Repository code uses the entity DSL; raw SQL via `Statement::from_sql_and_values` is a deliberate escape hatch for joins/aggregates the DSL cannot express. RLS tenant context (`set_config('app.current_user_id', …)`) is unchanged in behavior — it is centralized in `backend/src/utils/tenant_context.rs` and invoked through `PostgresRepository::with_tenant`.
 
 ```mermaid
 erDiagram

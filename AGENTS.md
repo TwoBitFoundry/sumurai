@@ -1,8 +1,8 @@
 # Repository Guidelines
 
 ## Project Structure
-- `frontend/` - Next.js 16 + React 19 + TypeScript UI with Tailwind, Biome, Jest, Recharts, and OpenTelemetry browser instrumentation.
-- `backend/` - Rust 1.95 Axum API with SQLx, Redis, Postgres, JWT auth, provider integrations, and OpenTelemetry tracing (`OTEL_TRACES_EXPORTER`: none, console, or OTLP).
+- `frontend/` - Next.js 16 + React 19 + TypeScript UI with Tailwind, Biome, Bun test, Recharts, and OpenTelemetry browser instrumentation.
+- `backend/` - Rust 1.95 Axum API with SeaORM, Redis, Postgres, JWT auth, provider integrations, and OpenTelemetry tracing (`OTEL_TRACES_EXPORTER`: none, console, or OTLP).
 - `docs/` - architecture docs, screenshots, threat model, compliance docs, and reference diagrams.
 - `nginx/` - local reverse proxy and TLS entrypoint files used by Docker Compose.
 - `docker-compose.yml` - OSS-style deployment: prebuilt GHCR images, nginx (slim template, no Seq), frontend, backend, Postgres, Redis, optional certbot profile.
@@ -16,7 +16,7 @@
 - `npm --prefix frontend install` - install frontend dependencies.
 - `npm --prefix frontend run dev` - Next.js dev server on `http://localhost:3001`.
 - `npm --prefix frontend run build` / `npm --prefix frontend test` - frontend build and tests.
-- `npm run precommit` (Husky default): frontend Biome check, `typecheck`, `design:guard`, and Jest, then `backend:ci`. Does not reinstall `frontend` deps with `npm ci`, nor `next build`, Storybook static build, Vitest browser tests, Playwright iframe smoke, or Chromium install; `typescript`/`tsc` still covers `*.stories.tsx` under `src/` with the rest of the app sources. Assumes dependencies are installed. Run `npm run backend:ci && npm run frontend:ci` when you need full local parity with the GitHub frontend job (`frontend:ci`).
+- `npm run precommit` (Husky default): frontend Biome check, `typecheck`, `design:guard`, and `bun test`, then `backend:ci`. Does not reinstall `frontend` deps with `npm ci`, nor Storybook static build, Vitest browser tests, Playwright iframe smoke, or Chromium install; `typescript`/`tsc` still covers `*.stories.tsx` under `src/` with the rest of the app sources. Assumes dependencies are installed. Run `npm run backend:ci && npm run frontend:ci` when you need full local parity with the GitHub frontend job (`frontend:ci`).
 
 ## Design system guardrails and Storybook AI
 
@@ -32,7 +32,7 @@
 
 ## Testing
 - Backend tests live in `backend/src/tests/` and run with `cargo test --manifest-path backend/Cargo.toml`.
-- Frontend Jest tests live under `frontend/tests/` and own services, domain logic, hooks, API contracts, observability, setup, mocks, token flows, and business rules.
+- Frontend Bun tests live under `frontend/tests/` and own services, domain logic, hooks, API contracts, observability, setup, mocks, token flows, and business rules.
 - Storybook Vitest owns rendered UI states, browser interactions, loading/error/disabled states, form validation display, callback outcomes, and other browser-only component behavior.
 - Playwright Storybook iframe smoke tests own static Storybook load checks without screenshot baselines.
 - Add or adjust tests when changing business logic, especially around auth, provider sync, budgets, and cache behavior.

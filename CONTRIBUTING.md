@@ -9,7 +9,6 @@ Thanks for helping improve Sumurai. This guide covers the current workflow, loca
 - Node 24.10+ and Bun 1.3.14+
 - Rust stable and Cargo
 - Docker and Docker Compose
-- `sqlx-cli`
 - OpenSSL
 
 ## Getting Started
@@ -34,7 +33,7 @@ The backend Docker build performs the same fetch automatically, but local `cargo
 
 This project treats **GitHub Actions as the merge gate**. The default Git hook trades some parity for contributor time.
 
-**`bun run precommit` (Husky):** frontend **Biome check**, `typecheck`, **design guard**, and **Jest**, then **`bun run backend:ci`**. It does **not** run `bun install` in `frontend/`, **`next build`**, Storybook static build, Vitest browser tests, or Playwright iframe smoke. Typecheck already includes `*.stories.tsx` under `src/` with the app.
+**`bun run precommit` (Husky):** frontend **Biome check**, `typecheck`, **design guard**, and **`bun test`**, then **`bun run backend:ci`**. It does **not** run `bun install` in `frontend/`, Storybook static build, Vitest browser tests, or Playwright iframe smoke. Typecheck already includes `*.stories.tsx` under `src/` with the app.
 
 For **full parity** with `.github/workflows/ci.yml` frontend steps before you push (for example Storybook/Vite/Playwright paths), run **`bun run backend:ci && bun run frontend:ci`** manually.
 
@@ -127,19 +126,104 @@ cargo fmt --manifest-path backend/Cargo.toml --all --check
 cargo clippy --manifest-path backend/Cargo.toml --all-targets --no-deps -- -D warnings
 ```
 
-## Database Migrations
+## Working with the database
 
-If you need to run migrations manually against a Postgres instance:
+Schema and migrations live in `backend/migration/` (migrations) and `backend/entity/` (entities). **All schema application runs through Docker Compose** — `backend/scripts/docker-entrypoint.sh` runs `docker-migrate.sh` (legacy SQLx cutover or fresh schema), then the backend applies pending migrations via `Migrator::up` in `backend/src/main.rs`.
+
+Do not run `cargo run -p migration` against a legacy SQLx database outside Compose.
+
+### Add a migration
+
+1. Create `backend/migration/src/m<YYYYMMDD>_<name>.rs` implementing `MigrationTrait` (use `SchemaManager` builders; use `execute_unprepared` for RLS policy DDL the builder cannot express).
+2. Register the module in `backend/migration/src/lib.rs` and append it to `Migrator::migrations()`.
+3. Apply via Docker: `docker compose -f docker-compose.dev.yml up -d --build`
+4. Regenerate entities (see below)
+
+Example migration skeleton:
+
+```rust
+use sea_orm_migration::prelude::*;
+
+#[derive(DeriveMigrationName)]
+pub struct Migration;
+
+#[async_trait::async_trait]
+impl MigrationTrait for Migration {
+    async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .alter_table(
+                Table::alter()
+                    .table(Users::Table)
+                    .add_column(ColumnDef::new(Users::Nickname).string().null())
+                    .to_owned(),
+            )
+            .await
+    }
+
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .alter_table(
+                Table::alter()
+                    .table(Users::Table)
+                    .drop_column(Users::Nickname)
+                    .to_owned(),
+            )
+            .await
+    }
+}
+
+#[derive(DeriveIden)]
+enum Users {
+    Table,
+    Nickname,
+}
+```
+
+### Regenerate entities
+
+After a migration is applied through Docker, point `sea-orm-cli` at that database:
 
 ```bash
-DATABASE_URL=postgresql://postgres:password@localhost:5432/accounting \
-  sqlx migrate run
+cargo install sea-orm-cli --locked
+sea-orm-cli generate entity \
+  --database-url "$DATABASE_URL" \
+  --output-dir backend/entity/src \
+  --entity-format dense
 ```
+
+Use the same `DATABASE_URL` as the dev stack (for example from `.env.example` and your local compose env). Run this from a machine that can reach Postgres, or exec into the backend container after `docker compose -f docker-compose.dev.yml up -d --build`.
+
+Review generated `Relation` impls; hand-edit only when the generator misses a composite or polymorphic link. Re-export modules from `backend/entity/src/prelude.rs` if you add tables.
+
+### Write queries
+
+- Tenant-scoped reads/writes go through `PostgresRepository::with_tenant` and use entity DSL inside the closure (`entity::transaction::Entity::find()`, etc.).
+- Convert `entity::Model` to domain types via `backend/src/models/conversions.rs` — handlers and services never import `entity::*`.
+- When the DSL is insufficient (complex CTEs, aggregates), use the escape hatch in `repository_service.rs`:
+
+```rust
+Model::find_by_statement(Statement::from_sql_and_values(
+    DbBackend::Postgres,
+    r#"SELECT …"#,
+    vec![…],
+))
+```
+
+Document why the escape hatch was needed in the PR.
+
+### Column walkthrough (end to end)
+
+1. Add a migration file and register it in `Migrator::migrations()`.
+2. Apply via Docker: `docker compose -f docker-compose.dev.yml up -d --build backend`
+3. Regenerate entities (see **Regenerate entities** above).
+4. Use the new `Column` variant in `repository_service.rs` (inside `with_tenant` when tenant-scoped).
+5. Add or extend a `From<entity::…::Model>` mapping in `conversions.rs` if the API exposes the field.
+6. Run `cargo test --manifest-path backend/Cargo.toml --locked`.
 
 ## Repository Layout
 
 - `frontend/` - Next.js 16, React 19, TypeScript 6, Tailwind 4, Biome 2, Recharts 3
-- `backend/` - Rust 1.95, Axum, SQLx, Redis, PostgreSQL, provider integrations, OpenTelemetry
+- `backend/` - Rust 1.95, Axum, SeaORM, Redis, PostgreSQL, provider integrations, OpenTelemetry
 - `docs/` - architecture, screenshots, compliance, and reference documents
 
 ## Coding Standards

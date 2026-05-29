@@ -1,16 +1,20 @@
+use crate::connection_pool::RepositoryPool;
+use crate::db;
 use crate::models::{account::Account, auth::User, transaction::Transaction};
 use crate::services::repository_service::{DatabaseRepository, PostgresRepository};
 use crate::utils::encryption_key::parse_encryption_key_hex;
+use crate::utils::tenant_context::tenant_set_config_statement;
 use chrono::{NaiveDate, Utc};
+use db::PgPool;
 use rust_decimal_macros::dec;
-use sqlx::PgPool;
+use sea_orm::{DbBackend, MockDatabase, MockExecResult, Statement};
 use uuid::Uuid;
 
 fn open_repository(pool: PgPool) -> PostgresRepository {
     let raw = std::env::var("ENCRYPTION_KEY")
         .expect("ENCRYPTION_KEY must be set when DATABASE_URL is set for repository_service_tests");
     let key = parse_encryption_key_hex(&raw).expect("ENCRYPTION_KEY must be 64 hex characters");
-    PostgresRepository::new(pool, key)
+    PostgresRepository::new(RepositoryPool::from_pg_pool(pool), key)
 }
 
 async fn connect_pool() -> Option<PgPool> {
@@ -133,7 +137,7 @@ async fn given_user_with_budgets_when_deleting_then_budgets_cascade() {
     repo.create_budget_for_user(budget.clone()).await.unwrap();
 
     let budget_count_before: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM budgets WHERE user_id = $1")
+        db::query_scalar("SELECT COUNT(*) FROM budgets WHERE user_id = $1")
             .bind(user.id)
             .fetch_one(&pool)
             .await
@@ -145,7 +149,7 @@ async fn given_user_with_budgets_when_deleting_then_budgets_cascade() {
     assert!(delete_result.is_ok());
 
     let budget_count_after: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM budgets WHERE user_id = $1")
+        db::query_scalar("SELECT COUNT(*) FROM budgets WHERE user_id = $1")
             .bind(user.id)
             .fetch_one(&pool)
             .await
@@ -198,6 +202,78 @@ async fn given_update_password_when_executed_then_updated_at_changes() {
 }
 
 #[tokio::test]
+async fn given_tenant_scoped_transaction_when_wrapped_then_logs_set_config_first() {
+    let user_id = Uuid::new_v4();
+    let key = parse_encryption_key_hex(
+        "0101010101010101010101010101010101010101010101010101010101010101",
+    )
+    .expect("test encryption key must be valid hex");
+
+    let db = MockDatabase::new(DbBackend::Postgres)
+        .append_exec_results([
+            MockExecResult {
+                rows_affected: 0,
+                ..Default::default()
+            },
+            MockExecResult {
+                rows_affected: 1,
+                ..Default::default()
+            },
+        ])
+        .into_connection();
+
+    let repo = PostgresRepository::from_mock(db, key);
+    repo.delete_user(&user_id).await.unwrap();
+
+    let log = repo.into_mock_transaction_log();
+    assert_eq!(log.len(), 1);
+    let stmts = log[0].statements();
+    assert!(stmts.len() >= 3);
+    assert_eq!(
+        stmts[0],
+        Statement::from_string(DbBackend::Postgres, "BEGIN")
+    );
+    assert_eq!(stmts[1], tenant_set_config_statement(user_id));
+    assert_eq!(
+        stmts.last(),
+        Some(&Statement::from_string(DbBackend::Postgres, "COMMIT"))
+    );
+}
+
+#[tokio::test]
+async fn given_two_users_when_cross_tenant_read_then_other_users_data_is_invisible() {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user_a = create_test_user(&repo).await;
+    let user_b = create_test_user(&repo).await;
+    let account_b = create_test_account(&repo, user_b.id).await;
+    let transaction_b = create_test_transaction(
+        user_b.id,
+        account_b.id,
+        format!("cross_tenant_{}", Uuid::new_v4()),
+        -2500,
+        NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+    );
+
+    repo.upsert_transactions_batch(std::slice::from_ref(&transaction_b), &user_b.id)
+        .await
+        .unwrap();
+
+    let user_a_transactions = repo.get_transactions_for_user(&user_a.id).await.unwrap();
+    assert!(user_a_transactions.is_empty());
+
+    let user_b_transactions = repo.get_transactions_for_user(&user_b.id).await.unwrap();
+    assert_eq!(user_b_transactions.len(), 1);
+    assert_eq!(
+        user_b_transactions[0].provider_transaction_id,
+        transaction_b.provider_transaction_id
+    );
+}
+
+#[tokio::test]
 async fn given_many_transactions_when_batch_upserting_then_writes_all_rows_without_duplicates() {
     let Some(pool) = connect_pool().await else {
         return;
@@ -238,7 +314,7 @@ async fn given_many_transactions_when_batch_upserting_then_writes_all_rows_witho
         .unwrap();
 
     let transaction_count_after_first_insert: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM transactions WHERE user_id = $1")
+        db::query_scalar("SELECT COUNT(*) FROM transactions WHERE user_id = $1")
             .bind(user.id)
             .fetch_one(&pool)
             .await
@@ -254,13 +330,13 @@ async fn given_many_transactions_when_batch_upserting_then_writes_all_rows_witho
         .unwrap();
 
     let transaction_count_after_reinsert: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM transactions WHERE user_id = $1")
+        db::query_scalar("SELECT COUNT(*) FROM transactions WHERE user_id = $1")
             .bind(user.id)
             .fetch_one(&pool)
             .await
             .unwrap();
 
-    let distinct_provider_transaction_count: i64 = sqlx::query_scalar(
+    let distinct_provider_transaction_count: i64 = db::query_scalar(
         "SELECT COUNT(DISTINCT provider_transaction_id) FROM transactions WHERE user_id = $1",
     )
     .bind(user.id)

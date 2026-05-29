@@ -1,6 +1,6 @@
 ---
 name: sumurai-testing-policy
-description: Use when adding, updating, reviewing, or debugging Sumurai tests across frontend or backend, including Jest, Storybook Vitest, and Playwright Storybook smoke runs. Guides agents to keep tests in existing test folders, prefer boundary-focused tests, and run the right validation commands.
+description: Use when adding, updating, reviewing, or debugging Sumurai tests across frontend or backend, including Bun test, Storybook Vitest, and Playwright Storybook smoke runs. Guides agents to keep tests in existing test folders, prefer boundary-focused tests, and run the right validation commands.
 ---
 
 # Sumurai Testing Policy
@@ -22,7 +22,7 @@ Read the relevant reference before changing tests:
 - Test observable behavior, contracts, edge cases, and integration boundaries.
 - Keep mocks and fixtures declarative and deterministic.
 - Use existing test utilities before adding new ones.
-- Use Storybook Vitest for browser-rendered UI behavior (interactions, loading and error states, validation display, callbacks) when Jest alone is not the right boundary; keep Playwright Storybook runtime for static build and iframe smoke, not fine-grained behavior specs.
+- Use Storybook Vitest for browser-rendered UI behavior (interactions, loading and error states, validation display, callbacks) when Bun test alone is not the right boundary; keep Playwright Storybook runtime for static build and iframe smoke, not fine-grained behavior specs.
 - Do not read or write `.env` files.
 - Do not add comments to source code.
 
