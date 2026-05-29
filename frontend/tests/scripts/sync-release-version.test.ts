@@ -28,7 +28,7 @@ describe('bun migration release plumbing', () => {
       'frontend/package.json',
       'frontend/bun.lock',
       'backend/Cargo.toml',
-      'backend/Cargo.lock',
+      'Cargo.lock',
     ]);
   });
 

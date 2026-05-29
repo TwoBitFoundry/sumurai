@@ -39,6 +39,6 @@ async function updateCargoLock(filePath, packageName) {
 await updateJson(path.join(root, 'package.json'));
 await updateJson(path.join(root, 'frontend', 'package.json'));
 await updateToml(path.join(root, 'backend', 'Cargo.toml'));
-await updateCargoLock(path.join(root, 'backend', 'Cargo.lock'), 'sumurai-backend');
+await updateCargoLock(path.join(root, 'Cargo.lock'), 'sumurai-backend');
 await exec('bun', ['install', '--lockfile-only'], { cwd: root });
 await exec('bun', ['install', '--lockfile-only'], { cwd: path.join(root, 'frontend') });
