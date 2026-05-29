@@ -62,7 +62,7 @@ async fn given_no_auth_when_begin_registration_then_401() {
 
     let request = axum::http::Request::builder()
         .method(Method::POST)
-        .uri("/api/auth/passkey/register/begin")
+        .uri("/api/auth/passkey/enroll/begin")
         .body(axum::body::Body::empty())
         .unwrap();
 
@@ -129,7 +129,7 @@ async fn given_authenticated_when_begin_registration_then_200_with_challenge() {
 
     let request = axum::http::Request::builder()
         .method(Method::POST)
-        .uri("/api/auth/passkey/register/begin")
+        .uri("/api/auth/passkey/enroll/begin")
         .header("Cookie", format!("auth_token={}", token))
         .body(axum::body::Body::empty())
         .unwrap();
@@ -276,7 +276,94 @@ async fn given_two_credentials_when_delete_one_then_200() {
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
-    assert_eq!(response.status(), 200);
+    assert_eq!(response.status(), 204);
+}
+
+#[tokio::test]
+async fn given_one_usable_and_one_broken_when_delete_broken_then_204() {
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+    let usable = make_credential(user_id);
+    let broken = crate::models::auth::WebAuthnCredential {
+        id: uuid::Uuid::new_v4(),
+        user_id,
+        credential_id: vec![9, 9, 9],
+        passkey: serde_json::json!({}),
+        name: "Broken entry".to_string(),
+        created_at: chrono::Utc::now(),
+        last_used_at: None,
+    };
+    let delete_id = broken.id;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_list_webauthn_credentials_for_user()
+        .returning(move |_| {
+            let u = usable.clone();
+            let b = broken.clone();
+            Box::pin(async move { Ok(vec![u, b]) })
+        });
+    mock_db
+        .expect_delete_webauthn_credential()
+        .returning(|_, _| Box::pin(async { Ok(true) }));
+
+    let mock_cache = mock_cache_for_auth();
+
+    let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
+        .await
+        .unwrap();
+
+    let request = axum::http::Request::builder()
+        .method(Method::DELETE)
+        .uri(format!("/api/auth/passkey/{}", delete_id))
+        .header("Cookie", format!("auth_token={}", token))
+        .body(axum::body::Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 204);
+}
+
+#[tokio::test]
+async fn given_one_usable_and_one_broken_when_delete_usable_then_409() {
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+    let usable = make_credential(user_id);
+    let broken = crate::models::auth::WebAuthnCredential {
+        id: uuid::Uuid::new_v4(),
+        user_id,
+        credential_id: vec![9, 9, 9],
+        passkey: serde_json::json!({}),
+        name: "Broken entry".to_string(),
+        created_at: chrono::Utc::now(),
+        last_used_at: None,
+    };
+    let delete_id = usable.id;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    mock_db
+        .expect_list_webauthn_credentials_for_user()
+        .returning(move |_| {
+            let u = usable.clone();
+            let b = broken.clone();
+            Box::pin(async move { Ok(vec![u, b]) })
+        });
+
+    let mock_cache = mock_cache_for_auth();
+
+    let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
+        .await
+        .unwrap();
+
+    let request = axum::http::Request::builder()
+        .method(Method::DELETE)
+        .uri(format!("/api/auth/passkey/{}", delete_id))
+        .header("Cookie", format!("auth_token={}", token))
+        .body(axum::body::Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 409);
 }
 
 #[tokio::test]

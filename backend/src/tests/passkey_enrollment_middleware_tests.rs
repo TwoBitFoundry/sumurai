@@ -132,7 +132,7 @@ async fn given_legacy_user_when_begin_passkey_registration_then_200() {
 
     let request = axum::http::Request::builder()
         .method(Method::POST)
-        .uri("/api/auth/passkey/register/begin")
+        .uri("/api/auth/passkey/enroll/begin")
         .header("Cookie", format!("auth_token={}", token))
         .body(axum::body::Body::empty())
         .unwrap();
@@ -301,7 +301,7 @@ async fn given_legacy_user_when_enrollment_finishes_then_password_cleared_and_re
 
     let begin_request = axum::http::Request::builder()
         .method(Method::POST)
-        .uri("/api/auth/passkey/register/begin")
+        .uri("/api/auth/passkey/enroll/begin")
         .header("Cookie", format!("auth_token={}", token))
         .body(axum::body::Body::empty())
         .unwrap();
@@ -328,7 +328,7 @@ async fn given_legacy_user_when_enrollment_finishes_then_password_cleared_and_re
     });
     let finish_request = axum::http::Request::builder()
         .method(Method::POST)
-        .uri("/api/auth/passkey/register/finish")
+        .uri("/api/auth/passkey/enroll/finish")
         .header("X-Forwarded-For", "198.51.100.33")
         .header("Cookie", format!("auth_token={}", token))
         .header("content-type", "application/json")

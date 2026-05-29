@@ -5,6 +5,7 @@ This directory contains the reusable UI primitives that implement Sumurai's glas
 Start here when editing UI:
 - `.agents/skills/sumurai-frontend-design-system/SKILL.md` for the UI policy.
 - `.agents/skills/sumurai-frontend-design-system/examples.md` for good and bad composition patterns.
+- `.agents/skills/sumurai-design-token-pipeline/references/design-md-standard.md` for `DESIGN.md` format and designmd commands.
 - `frontend/src/ui/recipes.ts` for shared class atoms.
 - `frontend/src/ui/tokens.ts` for runtime JS values.
 
@@ -795,6 +796,7 @@ See `__tests__/` directory for examples.
 ## Related Documentation
 
 - [DESIGN.md](../../../../DESIGN.md) - Design system fundamentals
+- [DESIGN.md standard](../../../../.agents/skills/sumurai-design-token-pipeline/references/design-md-standard.md) - upstream format, section order, and designmd CLI
 - [UI skill](../../../../.agents/skills/sumurai-frontend-design-system/SKILL.md) - the authoritative UI policy and examples
 - [AGENTS.md](../../../../AGENTS.md) - repository-wide guidance
 

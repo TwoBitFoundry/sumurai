@@ -15,7 +15,8 @@ pub struct PasskeyEnrollmentMiddlewareState {
 }
 
 const EXEMPT_PATHS: &[&str] = &[
-    "/api/auth/passkey/register/begin",
+    "/api/auth/passkey/enroll/begin",
+    "/api/auth/passkey/enroll/finish",
     "/api/auth/passkey/register/finish",
     "/api/auth/logout",
 ];

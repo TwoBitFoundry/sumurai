@@ -1,5 +1,9 @@
 export const LAST_PASSKEY_REMOVE_TOOLTIP = 'Enroll another passkey before removing this one.';
 
+export function passkeyIdsEqual(left: string, right: string): boolean {
+  return left.trim().toLowerCase() === right.trim().toLowerCase();
+}
+
 export function canRemovePasskey(passkeyCount: number): boolean {
   return passkeyCount > 1;
 }

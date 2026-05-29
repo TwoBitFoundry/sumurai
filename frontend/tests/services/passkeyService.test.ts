@@ -79,18 +79,22 @@ describe('PasskeyService', () => {
     jest.restoreAllMocks();
   });
 
-  it('beginRegistration calls the register begin endpoint', async () => {
+  it('beginAuthenticatedEnrollment calls the protected enroll begin endpoint', async () => {
     const beginResponse = { session_id: 'session-123', challenge: creationChallenge };
     jest.spyOn(ApiClient, 'post').mockResolvedValueOnce(beginResponse);
 
-    const result = await PasskeyService.beginRegistration();
+    const result = await PasskeyService.beginAuthenticatedEnrollment();
 
     expect(result).toEqual(beginResponse);
-    expect(ApiClient.post).toHaveBeenCalledWith('/auth/passkey/register/begin');
+    expect(ApiClient.post).toHaveBeenCalledWith('/auth/passkey/enroll/begin');
   });
 
-  it('finishRegistration posts serialized credential payload', async () => {
-    const finishResponse = { id: 'passkey-1', name: 'Laptop', created_at: '2026-01-01T00:00:00Z' };
+  it('finishRegistration posts to the public register finish endpoint', async () => {
+    const finishResponse: AuthResponse = {
+      user_id: 'user-1',
+      expires_at: '2026-01-01T00:00:00Z',
+      onboarding_completed: false,
+    };
     const credential = mockPublicKeyCredential('create');
     jest.spyOn(ApiClient, 'post').mockResolvedValueOnce(finishResponse);
 
@@ -104,7 +108,7 @@ describe('PasskeyService', () => {
     });
   });
 
-  it('enrollPasskey runs begin, browser create, and finish', async () => {
+  it('enrollPasskey runs protected enroll begin and finish', async () => {
     const beginResponse = { session_id: 'session-123', challenge: creationChallenge };
     const finishResponse = { id: 'passkey-1', name: 'Laptop', created_at: '2026-01-01T00:00:00Z' };
     const credential = mockPublicKeyCredential('create');
@@ -117,8 +121,8 @@ describe('PasskeyService', () => {
     const result = await PasskeyService.enrollPasskey('Laptop');
 
     expect(result).toEqual(finishResponse);
-    expect(ApiClient.post).toHaveBeenCalledWith('/auth/passkey/register/begin');
-    expect(ApiClient.post).toHaveBeenCalledWith('/auth/passkey/register/finish', {
+    expect(ApiClient.post).toHaveBeenCalledWith('/auth/passkey/enroll/begin');
+    expect(ApiClient.post).toHaveBeenCalledWith('/auth/passkey/enroll/finish', {
       session_id: 'session-123',
       response: expect.any(Object),
       name: 'Laptop',

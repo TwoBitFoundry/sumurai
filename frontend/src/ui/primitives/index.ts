@@ -36,4 +36,4 @@ export { RequirementPill } from './RequirementPill';
 export type { SelectProps } from './Select';
 export { Select } from './Select';
 
-export { cn } from './utils';
+export { cn, disabledClasses } from './utils';

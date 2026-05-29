@@ -5,7 +5,7 @@ Use this map to place frontend design-system changes in the right layer.
 ## Design Contract
 
 - `DESIGN.md`: design intent, token meaning, design rationale, component guidance, and agent-facing guardrails.
-- `docs/design-md-standard.md`: local summary of the `DESIGN.md` standard and validation/export commands.
+- `.agents/skills/sumurai-design-token-pipeline/references/design-md-standard.md`: local summary of the `DESIGN.md` standard and validation/export commands.
 - `docs/design-token-refactor-design-md-plan.md`: historical context for the current token refactor and remaining debt.
 
 ## Frontend Layers

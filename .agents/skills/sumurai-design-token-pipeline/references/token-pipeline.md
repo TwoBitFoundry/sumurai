@@ -5,7 +5,7 @@ Use this reference when aligning `DESIGN.md`, frontend tokens, and generated art
 ## Current State
 
 - `DESIGN.md` contains YAML front matter with design tokens and Markdown rationale.
-- `docs/design-md-standard.md` documents the local standard and designmd commands.
+- `.agents/skills/sumurai-design-token-pipeline/references/design-md-standard.md` documents the local standard and designmd commands.
 - `frontend/src/ui/tokens.ts` is the hand-maintained TypeScript API that imports generated token data from `frontend/src/ui/generated/tokens`.
 - `frontend/src/ui/generated/theme.css` and related exports carry CSS variables and Tailwind-oriented output from the designmd export chain.
 - `frontend/tailwind.config.js` configures Tailwind content paths; the app consumes generated theme CSS through the normal stylesheet graph.

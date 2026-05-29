@@ -23,13 +23,17 @@ const meta = {
     passkeys: basePasskeys,
     isLoading: false,
     bannerError: null,
+    isAddModalOpen: false,
+    addModalError: null,
     newPasskeyName: 'MacBook Pro',
     isEnrolling: false,
     removeTarget: null,
     isRemoving: false,
     transients: [],
+    onOpenAddModal: fn(),
+    onCancelAdd: fn(),
     onNewPasskeyNameChange: fn(),
-    onAddPasskey: fn(),
+    onConfirmAdd: fn(),
     onRequestRemove: fn(),
     onConfirmRemove: fn(),
     onCancelRemove: fn(),
@@ -58,16 +62,32 @@ export const MultiplePasskeys: Story = {
   },
 };
 
+export const AddPasskeyModal: Story = {
+  args: {
+    isAddModalOpen: true,
+    newPasskeyName: 'Work laptop',
+  },
+};
+
 export const MidEnrollment: Story = {
   args: {
+    isAddModalOpen: true,
     isEnrolling: true,
     newPasskeyName: 'Work laptop',
   },
 };
 
+export const AddModalEnrollmentError: Story = {
+  args: {
+    isAddModalOpen: true,
+    addModalError: 'Passkey verification failed. Try again on this device.',
+    newPasskeyName: 'iPad',
+  },
+};
+
 export const CeremonyCancelled: Story = {
   args: {
-    bannerError: null,
+    isAddModalOpen: true,
     transients: [
       {
         id: 'toast-1',

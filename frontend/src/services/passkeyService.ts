@@ -35,26 +35,45 @@ function parseRequestChallenge(challenge: Record<string, unknown>): RequestChall
 }
 
 export class PasskeyService {
-  static async beginRegistration(): Promise<PasskeyRegisterBeginResponse> {
-    return ApiClient.post<PasskeyRegisterBeginResponse>('/auth/passkey/register/begin');
+  static async beginAuthenticatedEnrollment(): Promise<PasskeyRegisterBeginResponse> {
+    return ApiClient.post<PasskeyRegisterBeginResponse>('/auth/passkey/enroll/begin');
   }
 
-  static async finishRegistration(
+  static async finishAuthenticatedEnrollment(
     sessionId: string,
     credential: PublicKeyCredential,
     name?: string
-  ): Promise<PasskeyItem | AuthResponse> {
-    return ApiClient.post<PasskeyItem | AuthResponse>('/auth/passkey/register/finish', {
+  ): Promise<PasskeyItem> {
+    return ApiClient.post<PasskeyItem>('/auth/passkey/enroll/finish', {
       session_id: sessionId,
       response: serializeRegistrationCredential(credential),
       name: name?.trim() || suggestPasskeyName(),
     });
   }
 
-  static async enrollPasskey(name?: string): Promise<PasskeyItem | AuthResponse> {
-    const begin = await PasskeyService.beginRegistration();
+  static async finishRegistration(
+    sessionId: string,
+    credential: PublicKeyCredential,
+    name?: string
+  ): Promise<AuthResponse> {
+    const result = await ApiClient.post<PasskeyItem | AuthResponse>(
+      '/auth/passkey/register/finish',
+      {
+        session_id: sessionId,
+        response: serializeRegistrationCredential(credential),
+        name: name?.trim() || suggestPasskeyName(),
+      }
+    );
+    if (!('user_id' in result)) {
+      throw new Error('Passkey registration did not return an authenticated session');
+    }
+    return result;
+  }
+
+  static async enrollPasskey(name?: string): Promise<PasskeyItem> {
+    const begin = await PasskeyService.beginAuthenticatedEnrollment();
     const credential = await createPasskeyCredential(parseCreationChallenge(begin.challenge));
-    return PasskeyService.finishRegistration(begin.session_id, credential, name);
+    return PasskeyService.finishAuthenticatedEnrollment(begin.session_id, credential, name);
   }
 
   static async beginLogin(email: string): Promise<PasskeyLoginBeginResponse> {

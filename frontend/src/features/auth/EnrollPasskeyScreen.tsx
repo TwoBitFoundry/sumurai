@@ -4,18 +4,14 @@ import { useState } from 'react';
 import { ToastStack } from '@/components/toastStack/ToastStack';
 import { PasskeyService } from '@/services/passkeyService';
 import type { AuthResponse } from '@/types/api';
-import { Alert, Badge, Button, cn, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
-import {
-  authLayout,
-  control,
-  text as uiTextRecipes,
-  font as uiTypographyRecipes,
-} from '@/ui/recipes';
+import { cn, GlassCard, Modal } from '@/ui/primitives';
+import { control, text as uiTextRecipes } from '@/ui/recipes';
 import {
   type CreationChallengeResponseJSON,
   createPasskeyCredential,
 } from '@/utils/webauthnEncoding';
 import { useAuthToastStack } from './hooks/useAuthToastStack';
+import { PasskeyEnrollmentModalForm } from './PasskeyEnrollmentModalForm';
 import { mapPasskeyAuthError } from './utils/mapPasskeyAuthError';
 
 export type PendingPasskeyRecoveryEnrollment = {
@@ -86,65 +82,28 @@ export function EnrollPasskeyScreen({
         onEscapeKeyDown={(event) => event.preventDefault()}
       >
         <GlassCard variant="auth" padding="lg" className={cn('w-full', uiTextRecipes.primary)}>
-          <form className="space-y-5" onSubmit={handleSubmit}>
-            <div className={cn('space-y-3', 'text-center')}>
-              <Badge size="md">Security Update</Badge>
-              <h2
-                id="enroll-passkey-title"
-                className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}
-              >
-                Set up your passkey
-              </h2>
-              <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-                Sumurai now uses passkeys instead of passwords. Enroll one to continue using your
-                account.
-              </p>
-            </div>
-
-            {bannerError ? (
-              <Alert variant="error" title="Enrollment error">
-                {bannerError}
-              </Alert>
-            ) : null}
-
-            <div className="space-y-2">
-              <FormLabel htmlFor="passkey-name">Passkey name</FormLabel>
-              <Input
-                id="passkey-name"
-                value={passkeyName}
-                onChange={(event) => setPasskeyName(event.target.value)}
-                placeholder="MacBook Pro"
-                autoComplete="off"
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className={cn(authLayout.stackedActions)}>
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                className={cn(authLayout.primaryAction)}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Waiting for your device…' : 'Enroll passkey'}
-              </Button>
-
-              {onLogout ? (
-                <Button
-                  type="button"
-                  variant="danger"
-                  size="md"
-                  className={cn(authLayout.secondaryAction)}
-                  disabled={isLoading}
-                  onClick={onLogout}
-                >
-                  <LogOut className={control.glyph.md} aria-hidden />
-                  Sign out
-                </Button>
-              ) : null}
-            </div>
-          </form>
+          <PasskeyEnrollmentModalForm
+            titleId="enroll-passkey-title"
+            title="Set up your passkey"
+            description="Sumurai now uses passkeys instead of passwords. Enroll one to continue using your account."
+            nameInputId="passkey-name"
+            passkeyName={passkeyName}
+            onPasskeyNameChange={setPasskeyName}
+            bannerError={bannerError}
+            isLoading={isLoading}
+            onSubmit={handleSubmit}
+            badgeLabel="Security Update"
+            secondaryAction={
+              onLogout
+                ? {
+                    label: 'Sign out',
+                    onClick: onLogout,
+                    variant: 'danger',
+                    icon: <LogOut className={control.glyph.md} aria-hidden />,
+                  }
+                : null
+            }
+          />
         </GlassCard>
       </Modal>
       <ToastStack

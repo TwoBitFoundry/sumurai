@@ -60,7 +60,7 @@ fn mock_cache_for_passkey_login() -> MockCacheService {
 }
 
 #[tokio::test]
-async fn given_user_with_passkey_when_begin_passkey_registration_then_400() {
+async fn given_user_with_passkey_when_begin_passkey_enroll_then_200() {
     let (user, token) = TestFixtures::create_authenticated_user_with_token();
     let user_id = user.id;
     let cred = test_passkey_for_user(user_id);
@@ -77,37 +77,96 @@ async fn given_user_with_passkey_when_begin_passkey_registration_then_400() {
             Box::pin(async move { Ok(vec![c]) })
         });
 
-    let mock_cache = mock_cache_for_auth();
+    let mut mock_cache = mock_cache_for_auth();
+    mock_cache
+        .expect_set_webauthn_challenge()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+
     let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
         .await
         .unwrap();
 
     let request = axum::http::Request::builder()
         .method(Method::POST)
-        .uri("/api/auth/passkey/register/begin")
+        .uri("/api/auth/passkey/enroll/begin")
         .header("Cookie", format!("auth_token={}", token))
         .body(axum::body::Body::empty())
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
-    assert_eq!(response.status(), 400);
+    assert_eq!(response.status(), 200);
 
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    assert!(payload
-        .get("message")
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .contains("Passkey sign-in is already available"));
+    assert!(payload.get("session_id").is_some());
+    assert!(payload.get("challenge").is_some());
 }
 
 #[tokio::test]
-async fn given_user_with_passkey_when_finish_passkey_registration_then_400() {
-    let (user, token) = TestFixtures::create_authenticated_user_with_token();
-    let user_id = user.id;
+async fn given_no_cookie_when_begin_passkey_enroll_then_401() {
+    let mock_db = MockDatabaseRepository::new();
+    let mock_cache = mock_cache_for_auth();
+
+    let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
+        .await
+        .unwrap();
+
+    let request = axum::http::Request::builder()
+        .method(Method::POST)
+        .uri("/api/auth/passkey/enroll/begin")
+        .body(axum::body::Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 401);
+}
+
+#[tokio::test]
+async fn given_auth_cookie_when_public_register_finish_then_400() {
+    let (_, token) = TestFixtures::create_authenticated_user_with_token();
+    let session_id = Uuid::new_v4().to_string();
+
+    let mut mock_cache = mock_cache_for_auth();
+    mock_cache
+        .expect_take_webauthn_challenge()
+        .returning(|_| Box::pin(async { Ok(Some("{}".to_string())) }));
+
+    let mock_db = MockDatabaseRepository::new();
+    let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
+        .await
+        .unwrap();
+
+    let body = json!({
+        "session_id": session_id,
+        "response": {},
+        "name": "Key"
+    });
+
+    let request = axum::http::Request::builder()
+        .method(Method::POST)
+        .uri("/api/auth/passkey/register/finish")
+        .header("Cookie", format!("auth_token={}", token))
+        .header("content-type", "application/json")
+        .body(axum::body::Body::from(serde_json::to_vec(&body).unwrap()))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 400);
+}
+
+#[tokio::test]
+async fn given_recovery_challenge_when_user_already_has_passkey_then_finish_registration_400() {
+    let user_id = Uuid::new_v4();
     let cred = test_passkey_for_user(user_id);
     let session_id = Uuid::new_v4().to_string();
-    let challenge_payload = "{}".to_string();
+    let challenge_payload = serde_json::to_string(&json!({
+        "user_id": user_id.to_string(),
+        "email": "test@example.com",
+        "display_name": "Test",
+        "state": {},
+        "existing_user_recovery": true,
+    }))
+    .unwrap();
 
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
@@ -132,13 +191,12 @@ async fn given_user_with_passkey_when_finish_passkey_registration_then_400() {
     let body = json!({
         "session_id": session_id,
         "response": {},
-        "name": "Extra Key"
+        "name": "Recovery Key"
     });
 
     let request = axum::http::Request::builder()
         .method(Method::POST)
         .uri("/api/auth/passkey/register/finish")
-        .header("Cookie", format!("auth_token={}", token))
         .header("content-type", "application/json")
         .body(axum::body::Body::from(serde_json::to_vec(&body).unwrap()))
         .unwrap();

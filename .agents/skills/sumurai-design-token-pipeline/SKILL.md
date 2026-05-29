@@ -12,7 +12,7 @@ Use this skill for token pipeline planning, token generation, `DESIGN.md` change
 Before token pipeline work, read:
 
 - `DESIGN.md`
-- `docs/design-md-standard.md`
+- `.agents/skills/sumurai-design-token-pipeline/references/design-md-standard.md`
 - `frontend/src/ui/tokens.ts`
 - `frontend/src/ui/generated/tokens.ts`
 - `frontend/src/ui/generated/theme.css`

@@ -26,6 +26,7 @@ const buildUrl = (baseUrl: string, endpoint: string): string => {
 };
 
 const apiFetchCredentials: RequestCredentials = 'include';
+const apiFetchCache: RequestCache = 'no-store';
 
 export class FetchHttpClient implements IHttpClient {
   private readonly baseUrl: string;
@@ -37,7 +38,9 @@ export class FetchHttpClient implements IHttpClient {
   private async handleResponse<T>(response: Response): Promise<T> {
     if (response.ok) {
       if (response.status === 204) return {} as T;
-      return response.json();
+      const text = await response.text();
+      if (text.length === 0) return {} as T;
+      return JSON.parse(text) as T;
     }
 
     const error = await this.createApiError(response);
@@ -124,7 +127,12 @@ export class FetchHttpClient implements IHttpClient {
       'Content-Type': 'application/json',
       ...options?.headers,
     };
-    const response = await fetch(url, { method: 'GET', headers, credentials: apiFetchCredentials });
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+      credentials: apiFetchCredentials,
+      cache: apiFetchCache,
+    });
     return this.handleResponse<T>(response);
   }
 
@@ -139,6 +147,7 @@ export class FetchHttpClient implements IHttpClient {
       headers,
       body: data ? JSON.stringify(data) : undefined,
       credentials: apiFetchCredentials,
+      cache: apiFetchCache,
     });
     return this.handleResponse<T>(response);
   }
@@ -150,6 +159,7 @@ export class FetchHttpClient implements IHttpClient {
       headers: options?.headers,
       body: data,
       credentials: apiFetchCredentials,
+      cache: apiFetchCache,
     });
     return this.handleResponse<T>(response);
   }
@@ -165,6 +175,7 @@ export class FetchHttpClient implements IHttpClient {
       headers,
       body: data ? JSON.stringify(data) : undefined,
       credentials: apiFetchCredentials,
+      cache: apiFetchCache,
     });
     return this.handleResponse<T>(response);
   }
@@ -179,6 +190,7 @@ export class FetchHttpClient implements IHttpClient {
       method: 'DELETE',
       headers,
       credentials: apiFetchCredentials,
+      cache: apiFetchCache,
     });
     return this.handleResponse<T>(response);
   }
