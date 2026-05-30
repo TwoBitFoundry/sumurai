@@ -116,7 +116,8 @@ const DashboardPage: React.FC<{
             'lg:grid-cols-3',
             'gap-4',
             'md:gap-6',
-            'items-stretch'
+            'items-stretch',
+            'auto-rows-fr'
           )}
         >
           <DashboardChartCard
