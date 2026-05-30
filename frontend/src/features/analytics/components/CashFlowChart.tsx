@@ -17,6 +17,7 @@ import {
 import { useTheme } from '../../../context/ThemeContext';
 import type { AnalyticsCashFlowPoint } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
+import { formatChartMonthLabel } from '../utils/chartMonth';
 import { ChartGlassTooltip, chartTooltipRechartsProps } from './ChartGlassTooltip';
 
 export interface CashFlowChartProps {
@@ -58,19 +59,7 @@ const CashFlowChartFn: React.FC<CashFlowChartProps> = ({ data, width, height }) 
         tickLine={false}
         interval="preserveStartEnd"
         minTickGap={24}
-        tickFormatter={(value: string) => {
-          try {
-            const [year, month] = value.split('-');
-            if (!year || !month) return value;
-            const date = new Date(`${year}-${month}-01`);
-            if (!Number.isFinite(date.getTime())) return value;
-            const shortMonth = date.toLocaleString('en-US', { month: 'short' });
-            const shortYear = date.toLocaleString('en-US', { year: '2-digit' });
-            return `${shortMonth} '${shortYear}`;
-          } catch {
-            return value;
-          }
-        }}
+        tickFormatter={(value: string) => formatChartMonthLabel(value)}
       />
       <YAxis
         tick={{ fill: colors.chart.axis, fontSize: 12 }}

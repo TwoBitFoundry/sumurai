@@ -9,6 +9,7 @@ import { AnalyticsService } from '../../../services/AnalyticsService';
 import type { AnalyticsCashFlowPoint } from '../../../types/api';
 import { accountIdsCacheKey } from '../../../utils/cacheKeys';
 import { computeDateRange, type DateRangeKey } from '../../../utils/dateRanges';
+import { chartSeriesStartDate, generateMonthRange } from '../utils/chartMonth';
 
 export type UseCashFlowResult = {
   series: AnalyticsCashFlowPoint[];
@@ -33,18 +34,25 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
     return { start: undefined, end: undefined };
   }, [dateRange]);
 
+  const chartStart = useMemo(() => {
+    if (!start) {
+      return undefined;
+    }
+    return chartSeriesStartDate(start);
+  }, [start]);
+
   const monthsToFetch = useMemo(() => {
-    if (!start || !end) {
+    if (!chartStart || !end) {
       return months;
     }
-    const startDate = new Date(start);
+    const startDate = new Date(chartStart);
     const endDate = new Date(end);
     const monthDiff =
       (endDate.getFullYear() - startDate.getFullYear()) * 12 +
       (endDate.getMonth() - startDate.getMonth()) +
       1;
     return Math.max(1, monthDiff);
-  }, [start, end, months]);
+  }, [chartStart, end, months]);
 
   const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
 
@@ -61,16 +69,17 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
       const response = await AnalyticsService.getCashFlow(monthsToFetch, accountIds);
       const data = response.series ?? [];
 
-      if (!start || !end) {
+      if (!chartStart || !end) {
         return data;
       }
 
-      const allMonths = generateMonthRange(start, end);
+      const allMonths = generateMonthRange(chartStart, end);
       const dataMap = new Map(data.map((point) => [point.month, point]));
 
       return allMonths.map((month) => {
-        if (dataMap.has(month)) {
-          return dataMap.get(month)!;
+        const point = dataMap.get(month);
+        if (point) {
+          return point;
         }
         return {
           month,
@@ -97,22 +106,4 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
     error: query.error?.message ?? null,
     reload,
   };
-}
-
-function generateMonthRange(startStr: string, endStr: string): string[] {
-  const months: string[] = [];
-  const start = new Date(startStr);
-  const end = new Date(endStr);
-
-  const current = new Date(start.getFullYear(), start.getMonth(), 1);
-  const endDate = new Date(end.getFullYear(), end.getMonth(), 1);
-
-  while (current <= endDate) {
-    const year = current.getFullYear();
-    const month = String(current.getMonth() + 1).padStart(2, '0');
-    months.push(`${year}-${month}`);
-    current.setMonth(current.getMonth() + 1);
-  }
-
-  return months;
 }

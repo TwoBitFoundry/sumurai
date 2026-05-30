@@ -14,6 +14,14 @@ use uuid::Uuid;
 
 pub struct AnalyticsService;
 
+fn truncate_to_latest_months<T>(result: &mut Vec<T>, months: u32) {
+    let keep = months as usize;
+    if result.len() > keep {
+        let drop_count = result.len() - keep;
+        result.drain(0..drop_count);
+    }
+}
+
 #[allow(dead_code)]
 impl AnalyticsService {
     pub fn map_account_to_balance_category(
@@ -267,10 +275,7 @@ impl AnalyticsService {
             .collect();
 
         result.sort_by(|a, b| a.month.cmp(&b.month));
-
-        if result.len() > months as usize {
-            result.truncate(months as usize);
-        }
+        truncate_to_latest_months(&mut result, months);
 
         result
     }
@@ -321,10 +326,7 @@ impl AnalyticsService {
             .collect();
 
         result.sort_by(|a, b| a.month.cmp(&b.month));
-
-        if result.len() > months as usize {
-            result.truncate(months as usize);
-        }
+        truncate_to_latest_months(&mut result, months);
 
         result
     }

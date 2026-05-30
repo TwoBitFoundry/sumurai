@@ -692,8 +692,8 @@ fn given_multiple_months_when_calculating_cash_flow_then_truncates_to_month_limi
 
     let result = analytics.calculate_cash_flow(&txns, 2);
     assert_eq!(result.len(), 2);
-    assert!(result[0].month == "2024-01");
-    assert!(result[1].month == "2024-02");
+    assert!(result[0].month == "2024-02");
+    assert!(result[1].month == "2024-03");
 }
 
 #[test]

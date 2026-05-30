@@ -75,6 +75,7 @@ const DashboardPage: React.FC<{
       })),
     [cashFlowSeries]
   );
+  const debouncedBudgetVsActualData = useDebouncedChartRecalc(budgetVsActualData);
 
   const monthSpend = analytics.spendingTotal;
   const handleCategoryHover = useCallback((name: string | null) => {
@@ -277,7 +278,7 @@ const DashboardPage: React.FC<{
             >
               {budgets.isLoading ? (
                 <div className={cn('flex-1', 'min-h-0', dashboardLoadingCard)} />
-              ) : budgetVsActualData.length === 0 ? (
+              ) : debouncedBudgetVsActualData.length === 0 ? (
                 <div
                   className={cn(
                     'flex-1',
@@ -298,7 +299,7 @@ const DashboardPage: React.FC<{
                 <div ref={budgetChartRef} className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}>
                   {budgetChartWidth > 0 && budgetChartHeight > 0 ? (
                     <BudgetVsActualChart
-                      data={budgetVsActualData}
+                      data={debouncedBudgetVsActualData}
                       totalBudget={totalBudget}
                       width={budgetChartWidth}
                       height={budgetChartHeight}
