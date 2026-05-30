@@ -1,3 +1,11 @@
+export function compareBankNames(a: string, b: string) {
+  return a.localeCompare(b, undefined, { sensitivity: 'base' });
+}
+
+export function sortBanksAlphabetically<T extends { bankName: string }>(banks: readonly T[]): T[] {
+  return [...banks].sort((left, right) => compareBankNames(left.bankName, right.bankName));
+}
+
 export function safeBalanceAmount(value: number | null | undefined) {
   const amount = Number(value ?? 0);
   return Number.isFinite(amount) ? amount : 0;

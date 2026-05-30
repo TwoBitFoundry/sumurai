@@ -15,6 +15,7 @@ import {
   balancesYTickCount,
   formatBalancesAxisValue,
   safeBalanceAmount,
+  sortBanksAlphabetically,
   symmetricZeroAxisTicks,
 } from '../features/analytics/utils/balancesChartAxis';
 import {
@@ -106,7 +107,7 @@ export function BalancesOverview() {
 
   const chartData = useMemo<BankBarDatum[]>(
     () =>
-      debouncedBanks.map((b) => ({
+      sortBanksAlphabetically(debouncedBanks).map((b) => ({
         bank: b.bankName,
         cash: safeBalanceAmount(b.cash),
         investments: safeBalanceAmount(b.investments),

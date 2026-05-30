@@ -38,6 +38,13 @@ function varianceMarkerColor(variance: number, underColor: string, overColor: st
   return variance > 0 ? overColor : underColor;
 }
 
+const CHART_ANIMATION_MS = 800;
+
+function BudgetVarianceCurve({ curveProps, stroke }: { curveProps: CurveProps; stroke: string }) {
+  const { strokeDasharray: _strokeDasharray, ...curveWithoutDash } = curveProps;
+  return <Curve {...curveWithoutDash} stroke={stroke} strokeWidth={2} fill="none" />;
+}
+
 const budgetTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) => {
   const numericValue = Array.isArray(value) ? Number(value[0]) : Number(value);
   return fmtUSD(Number.isFinite(numericValue) ? numericValue : 0);
@@ -224,10 +231,13 @@ const BudgetVsActualChartFn: React.FC<BudgetVsActualChartProps> = ({
             />
           );
         }}
-        isAnimationActive={false}
+        isAnimationActive
+        animationBegin={0}
+        animationDuration={CHART_ANIMATION_MS}
+        animateNewValues
         name="Variance"
         shape={(curveProps: CurveProps) => (
-          <Curve {...curveProps} stroke={lineStroke} strokeWidth={2} fill="none" />
+          <BudgetVarianceCurve curveProps={curveProps} stroke={lineStroke} />
         )}
       />
     </LineChart>

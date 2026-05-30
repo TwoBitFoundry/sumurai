@@ -3,6 +3,7 @@ import {
   balancesYTickCount,
   formatBalancesAxisValue,
   safeBalanceAmount,
+  sortBanksAlphabetically,
   symmetricZeroAxisTicks,
 } from '@/features/analytics/utils/balancesChartAxis';
 
@@ -58,5 +59,27 @@ describe('safeBalanceAmount', () => {
 describe('formatBalancesAxisValue', () => {
   it('does not render NaN for non-finite input', () => {
     expect(formatBalancesAxisValue(Number.NaN)).toBe('0');
+  });
+});
+
+describe('sortBanksAlphabetically', () => {
+  it('orders institutions by bank name case-insensitively', () => {
+    const banks = [
+      { bankName: 'OnePay', cash: 1 },
+      { bankName: 'chime', cash: 2 },
+      { bankName: 'Ally', cash: 3 },
+    ];
+    expect(sortBanksAlphabetically(banks).map((bank) => bank.bankName)).toEqual([
+      'Ally',
+      'chime',
+      'OnePay',
+    ]);
+  });
+
+  it('does not mutate the input array', () => {
+    const banks = [{ bankName: 'Zeta' }, { bankName: 'Alpha' }];
+    const copy = [...banks];
+    sortBanksAlphabetically(banks);
+    expect(banks).toEqual(copy);
   });
 });
