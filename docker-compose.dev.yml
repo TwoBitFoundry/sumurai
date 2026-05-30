@@ -18,9 +18,10 @@ services:
       NEXT_PUBLIC_OTEL_CAPTURE_BODIES: "false"
       NEXT_PUBLIC_OTEL_BLOCK_SENSITIVE_ENDPOINTS: "true"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "-q", "-O-", "http://127.0.0.1:8080/health" ]
+      test: [ "CMD", "wget", "-q", "-O-", "http://127.0.0.1:8080/" ]
       interval: 15s
       timeout: 5s
       retries: 3
