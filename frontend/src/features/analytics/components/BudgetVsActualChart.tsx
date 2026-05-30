@@ -118,12 +118,57 @@ export const BudgetVsActualChart: React.FC<BudgetVsActualChartProps> = ({
       <Line
         type="monotone"
         dataKey="variance"
-        stroke={colors.semantic.credit}
         strokeWidth={2}
         dot={false}
         isAnimationActive={false}
         name="Variance"
+        shape={
+          <VarianceLineWithConditionalColor
+            greenColor={colors.semantic.cash}
+            redColor={colors.semantic.credit}
+          />
+        }
       />
     </LineChart>
   );
+};
+
+interface VarianceLineWithConditionalColorProps {
+  greenColor: string;
+  redColor: string;
+  points?: Array<{ x: number; y: number; payload?: VarianceDataPoint }>;
+  strokeWidth?: number;
+}
+
+const VarianceLineWithConditionalColor: React.FC<VarianceLineWithConditionalColorProps> = ({
+  greenColor,
+  redColor,
+  points = [],
+  strokeWidth = 2,
+}) => {
+  if (points.length < 2) return null;
+
+  const pathSegments: JSX.Element[] = [];
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const current = points[i];
+    const next = points[i + 1];
+    const variance = current.payload?.variance ?? 0;
+    const stroke = variance < 0 ? greenColor : redColor;
+
+    const pathData = `M ${current.x} ${current.y} L ${next.x} ${next.y}`;
+
+    pathSegments.push(
+      <path
+        key={`variance-segment-${i}`}
+        d={pathData}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+        fill="none"
+        vectorEffect="non-scaling-stroke"
+      />
+    );
+  }
+
+  return <g>{pathSegments}</g>;
 };
