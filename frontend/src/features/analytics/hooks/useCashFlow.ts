@@ -33,10 +33,21 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
     return { start: undefined, end: undefined };
   }, [dateRange]);
 
+  const monthsToFetch = useMemo(() => {
+    if (!start || !end) {
+      return months;
+    }
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const monthDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+                      (endDate.getMonth() - startDate.getMonth()) + 1;
+    return Math.max(1, monthDiff);
+  }, [start, end, months]);
+
   const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
 
   const query = useQuery<AnalyticsCashFlowPoint[], Error>({
-    queryKey: ['analytics', 'cash-flow', months, cacheKey, dateRange],
+    queryKey: ['analytics', 'cash-flow', monthsToFetch, cacheKey, dateRange],
     enabled: !accountsLoading,
     queryFn: async () => {
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
@@ -45,7 +56,7 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
 
       const accountIds =
         !isAllAccountsSelected && selectedAccountIds.length > 0 ? selectedAccountIds : undefined;
-      const response = await AnalyticsService.getCashFlow(months, accountIds);
+      const response = await AnalyticsService.getCashFlow(monthsToFetch, accountIds);
       return response.series ?? [];
     },
   });
