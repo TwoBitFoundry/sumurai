@@ -1,4 +1,4 @@
-import { RefreshCcw } from 'lucide-react';
+import { ChevronRight, RefreshCcw } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn, GlassCard } from '@/ui/primitives';
 import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
@@ -10,6 +10,10 @@ interface DashboardChartCardProps {
   isRefreshing: boolean;
   className?: string;
   bodyClassName?: string;
+  headerAction?: {
+    label: string;
+    onClick: () => void;
+  };
   children: ReactNode;
 }
 
@@ -20,6 +24,7 @@ export const DashboardChartCard = ({
   isRefreshing,
   className,
   bodyClassName,
+  headerAction,
   children,
 }: DashboardChartCardProps) => {
   return (
@@ -41,12 +46,32 @@ export const DashboardChartCard = ({
           <h3 className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>{title}</h3>
           <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>{description}</p>
         </div>
-        {isRefreshing && (
-          <RefreshCcw
-            aria-label={refreshingLabel}
-            className={cn('h-4', 'w-4', uiTextRecipes.subtle, 'animate-spin')}
-          />
-        )}
+        <div className={cn('flex', 'items-center', 'gap-2')}>
+          {headerAction && (
+            <button
+              type="button"
+              onClick={headerAction.onClick}
+              className={cn(
+                'flex',
+                'items-center',
+                'gap-1',
+                'text-sm',
+                uiTextRecipes.muted,
+                'hover:text-primary',
+                'transition-colors'
+              )}
+            >
+              {headerAction.label}
+              <ChevronRight className={cn('h-4', 'w-4')} />
+            </button>
+          )}
+          {isRefreshing && (
+            <RefreshCcw
+              aria-label={refreshingLabel}
+              className={cn('h-4', 'w-4', uiTextRecipes.subtle, 'animate-spin')}
+            />
+          )}
+        </div>
       </div>
       <div
         className={cn(

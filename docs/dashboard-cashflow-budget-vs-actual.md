@@ -53,7 +53,7 @@ Resolved with the user:
 - Build: Backend compiles without errors
 - Commit: feat(phase-1) - b860994
 
-## Phase 2 — Cash Flow chart (Card A, replaces net worth) 🚧 IN PROGRESS
+## Phase 2 — Cash Flow chart (Card A, replaces net worth) ✓ COMPLETE
 
 **Goal:** Render income vs expenses over time on the dashboard.
 
@@ -62,20 +62,22 @@ Resolved with the user:
 - [x] Add `getCashFlow(months, accountIds?)` to [AnalyticsService.ts](../frontend/src/services/AnalyticsService.ts) mirroring `getMonthlyTotals`.
 - [x] Add `frontend/src/features/analytics/hooks/useCashFlow.ts` mirroring useNetWorthSeries - data loading with React Query, account filtering, refresh support.
 - [x] Add `frontend/src/features/analytics/components/CashFlowChart.tsx`: ComposedChart with income/expense bars, net line, tooltips, axis formatters.
-- [ ] Wire into [DashboardPage.tsx](../frontend/src/views/DashboardPage.tsx): Replace net worth card JSX, connect hooks/state (IN PROGRESS - formatter conflicts).
+- [x] Wire into [DashboardPage.tsx](../frontend/src/views/DashboardPage.tsx): Replace net worth card JSX, connect hooks/state.
 
 **Acceptance criteria:**
 - [x] Dashboard component structure ready (Card A component created)
 - [x] Tooltip functionality implemented (CashFlowChart includes ChartGlassTooltip)
 - [x] Loading/error/empty states pattern established
-- [ ] **Pending**: DashboardPage JSX integration (requires finalizing chart replacement in view)
-- [ ] Net-worth endpoint/hook still exist; dashboard no longer imports the net-worth chart.
+- [x] DashboardPage JSX integration complete (chart replacement in view successful)
+- [x] Net-worth endpoint/hook still exist; dashboard no longer imports the net-worth chart.
 
 **TDD Log:**
-- Created hook with proper account filtering and caching (queryKey includes cacheKey)
+- Phase 1 tests: all 5 tests for calculate_cash_flow passed
+- Phase 2 created hook with proper account filtering and caching (queryKey includes cacheKey)
 - CashFlowChart component with ComposedChart, Bar + Line, ReferenceLine at 0
-- Tests pending: will be added in Phase 4
-- Commit: feat(phase-2) - c52f2cb
+- DashboardPage integration: replaced net worth card with cash flow card, updated test mocks
+- Frontend tests: DashboardPage.test.tsx passes with 2/2 tests
+- Commits: feat(phase-1) - b860994, feat(phase-2) - c52f2cb, feat(phase-2) integration - f37ad9f4
 
 ## Phase 3 — Budget vs Actual trend (Card B)
 

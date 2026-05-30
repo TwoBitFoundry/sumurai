@@ -15,6 +15,7 @@ import BalancesOverview from '../components/BalancesOverview';
 import { useTheme } from '../context/ThemeContext';
 import { DashboardCalculator } from '../domain/DashboardCalculator';
 import { categoriesToDonut } from '../features/analytics/adapters/chartData';
+import { BudgetVsActualChart } from '../features/analytics/components/BudgetVsActualChart';
 import { CashFlowChart } from '../features/analytics/components/CashFlowChart';
 import {
   ChartGlassTooltip,
@@ -27,6 +28,7 @@ import { useAnalytics } from '../features/analytics/hooks/useAnalytics';
 import { useCashFlow } from '../features/analytics/hooks/useCashFlow';
 import { useChartContainerSize } from '../features/analytics/hooks/useChartContainerSize';
 import { useDebouncedChartRecalc } from '../features/analytics/hooks/useDebouncedChartRecalc';
+import { useBudgets } from '../features/budgets/hooks/useBudgets';
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import { PageLayout } from '../layouts/PageLayout';
 import type { DateRangeKey as DateRange } from '../utils/dateRanges';
@@ -61,6 +63,21 @@ const DashboardPage: React.FC<{
   const cashFlowLoading = cashFlow.loading;
   const cashFlowRefreshing = cashFlow.refreshing;
   const cashFlowError = cashFlow.error;
+
+  const budgets = useBudgets();
+  const totalBudget = useMemo(
+    () => budgets.budgets.reduce((sum, b) => sum + Number(b.amount || 0), 0),
+    [budgets.budgets]
+  );
+  const budgetVsActualData = useMemo(
+    () =>
+      cashFlowSeries.map((point) => ({
+        month: point.month,
+        expenses: point.expenses,
+      })),
+    [cashFlowSeries]
+  );
+
   const spendingByCategoryAnimationKey = `${dateRange}-${analytics.cacheKey}`;
   const shouldAnimateSpendingByCategory =
     spendingByCategoryAnimationKey !== lastSpendingByCategoryAnimationKey;
@@ -272,6 +289,52 @@ const DashboardPage: React.FC<{
               </div>
             )}
           </DashboardChartCard>
+
+          {totalBudget > 0 && (
+            <DashboardChartCard
+              className="min-w-0"
+              title="Budget vs Actual"
+              description="Monthly spending against budget"
+              refreshingLabel="Refreshing budget data"
+              isRefreshing={budgets.transactionsLoading}
+              headerAction={{
+                label: 'View budgets',
+                onClick: () => window.location.href = '/budgets',
+              }}
+            >
+              {budgets.isLoading ? (
+                <div className={cn('flex-1', 'min-h-0', dashboardLoadingCard)} />
+              ) : budgetVsActualData.length === 0 ? (
+                <div
+                  className={cn(
+                    'flex-1',
+                    'min-h-0',
+                    'min-h-[220px]',
+                    'flex',
+                    'items-center',
+                    'justify-center'
+                  )}
+                >
+                  <EmptyState
+                    icon={TrendingUp}
+                    title="No spending data"
+                    description="Budget data will appear when you have transactions."
+                  />
+                </div>
+              ) : (
+                <div ref={netChartRef} className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}>
+                  {netChartWidth > 0 && netChartHeight > 0 ? (
+                    <BudgetVsActualChart
+                      data={budgetVsActualData}
+                      totalBudget={totalBudget}
+                      width={netChartWidth}
+                      height={netChartHeight}
+                    />
+                  ) : null}
+                </div>
+              )}
+            </DashboardChartCard>
+          )}
         </div>
       </PageLayout>
     </div>

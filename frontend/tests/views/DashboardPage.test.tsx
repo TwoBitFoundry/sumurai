@@ -5,6 +5,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { SpendingByCategoryChart } from '@/features/analytics/components/SpendingByCategoryChart';
 import { useAnalytics } from '@/features/analytics/hooks/useAnalytics';
 import { useCashFlow } from '@/features/analytics/hooks/useCashFlow';
+import { useBudgets } from '@/features/budgets/hooks/useBudgets';
 import { useNetWorthSeries } from '@/features/analytics/hooks/useNetWorthSeries';
 import { getThemeColors } from '@/ui/tokens';
 import DashboardPage from '@/views/DashboardPage';
@@ -19,6 +20,10 @@ jest.mock('@/features/analytics/hooks/useAnalytics', () => ({
 
 jest.mock('@/features/analytics/hooks/useCashFlow', () => ({
   useCashFlow: jest.fn(),
+}));
+
+jest.mock('@/features/budgets/hooks/useBudgets', () => ({
+  useBudgets: jest.fn(),
 }));
 
 jest.mock('@/features/analytics/hooks/useNetWorthSeries', () => ({
@@ -69,6 +74,33 @@ describe('DashboardPage', () => {
         { month: '2026-04', income: 5000, expenses: 3000, net: 2000 },
       ] as any,
       reload: jest.fn(),
+    });
+
+    jest.mocked(useBudgets).mockReturnValue({
+      isLoading: false,
+      transactionsLoading: false,
+      error: null,
+      validationError: null,
+      budgets: [
+        { id: '1', category: 'Food', amount: 500 },
+        { id: '2', category: 'Entertainment', amount: 300 },
+      ] as any,
+      computedBudgets: [] as any,
+      load: jest.fn(),
+      add: jest.fn(),
+      update: jest.fn(),
+      remove: jest.fn(),
+      categories: [],
+      categoryOptions: [],
+      availableCategoryOptions: [],
+      usedCategories: new Set(),
+      month: new Date(),
+      monthLabel: '',
+      range: { start: '', end: '' },
+      setMonth: jest.fn(),
+      goToPreviousMonth: jest.fn(),
+      goToNextMonth: jest.fn(),
+      goToCurrentMonth: jest.fn(),
     });
 
     jest.mocked(useNetWorthSeries).mockReturnValue({
