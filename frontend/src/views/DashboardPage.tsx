@@ -57,7 +57,7 @@ const DashboardPage: React.FC<{
     () => categoriesToDonut(analytics.categories, accentIndexByName),
     [accentIndexByName, analytics.categories]
   );
-  const cashFlow = useCashFlow(6);
+  const cashFlow = useCashFlow(6, dateRange);
   const cashFlowSeries = cashFlow.series;
   const debouncedCashFlowSeries = useDebouncedChartRecalc(cashFlowSeries);
   const cashFlowLoading = cashFlow.loading;

@@ -3,11 +3,12 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { AnalyticsService } from '../../../services/AnalyticsService';
 import type { AnalyticsCashFlowPoint } from '../../../types/api';
 import { accountIdsCacheKey } from '../../../utils/cacheKeys';
+import { computeDateRange, type DateRangeKey } from '../../../utils/dateRanges';
 
 export type UseCashFlowResult = {
   series: AnalyticsCashFlowPoint[];
@@ -17,7 +18,7 @@ export type UseCashFlowResult = {
   reload: () => Promise<void>;
 };
 
-export function useCashFlow(months: number = 6): UseCashFlowResult {
+export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCashFlowResult {
   const {
     selectedAccountIds,
     isAllAccountsSelected,
@@ -25,10 +26,17 @@ export function useCashFlow(months: number = 6): UseCashFlowResult {
     loading: accountsLoading,
   } = useAccountFilter();
 
+  const { start, end } = useMemo(() => {
+    if (dateRange) {
+      return computeDateRange(dateRange);
+    }
+    return { start: undefined, end: undefined };
+  }, [dateRange]);
+
   const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
 
   const query = useQuery<AnalyticsCashFlowPoint[], Error>({
-    queryKey: ['analytics', 'cash-flow', months, cacheKey],
+    queryKey: ['analytics', 'cash-flow', months, cacheKey, dateRange],
     enabled: !accountsLoading,
     queryFn: async () => {
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
