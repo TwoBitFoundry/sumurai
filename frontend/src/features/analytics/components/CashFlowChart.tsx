@@ -5,9 +5,9 @@
 import type React from 'react';
 import type { TooltipProps } from 'recharts';
 import {
-  Bar,
+  Area,
+  AreaChart,
   CartesianGrid,
-  ComposedChart,
   Line,
   ReferenceLine,
   Tooltip,
@@ -34,7 +34,7 @@ export const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, width, heigh
   const { colors } = useTheme();
 
   return (
-    <ComposedChart
+    <AreaChart
       width={width}
       height={height}
       data={data}
@@ -42,9 +42,13 @@ export const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, width, heigh
       accessibilityLayer={false}
     >
       <defs>
-        <linearGradient id="cashGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%" stopColor={colors.semantic.cash} stopOpacity={0.4} />
-          <stop offset="95%" stopColor={colors.semantic.cash} stopOpacity={0} />
+        <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor={colors.semantic.cash} stopOpacity={0.6} />
+          <stop offset="95%" stopColor={colors.semantic.cash} stopOpacity={0.1} />
+        </linearGradient>
+        <linearGradient id="expensesGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor={colors.semantic.credit} stopOpacity={0.6} />
+          <stop offset="95%" stopColor={colors.semantic.credit} stopOpacity={0.1} />
         </linearGradient>
       </defs>
       <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
@@ -94,29 +98,35 @@ export const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, width, heigh
         {...chartTooltipRechartsProps}
       />
       <ReferenceLine y={0} stroke={colors.chart.axis} strokeDasharray="3 3" />
-      <Bar
+      <Area
+        type="monotone"
         dataKey="income"
-        fill={colors.semantic.cash}
+        stackId="flow"
+        fill="url(#incomeGradient)"
+        stroke={colors.semantic.cash}
+        strokeWidth={0}
         name="Income"
-        radius={[4, 4, 0, 0]}
         isAnimationActive={false}
       />
-      <Bar
+      <Area
+        type="monotone"
         dataKey="expenses"
-        fill={colors.semantic.credit}
+        stackId="flow"
+        fill="url(#expensesGradient)"
+        stroke={colors.semantic.credit}
+        strokeWidth={0}
         name="Expenses"
-        radius={[4, 4, 0, 0]}
         isAnimationActive={false}
       />
       <Line
         type="monotone"
         dataKey="net"
-        stroke={colors.semantic.netWorth || colors.semantic.cash}
+        stroke={colors.semantic.netWorth || colors.chart.axis}
         strokeWidth={2}
         dot={false}
         name="Net"
         isAnimationActive={false}
       />
-    </ComposedChart>
+    </AreaChart>
   );
 };
