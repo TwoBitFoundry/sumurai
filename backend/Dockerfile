@@ -42,6 +42,7 @@ RUN mkdir -p backend/src backend/entity/src backend/migration/src cli/src \
     && printf 'fn main() {}\n' > backend/src/main.rs \
     && printf '\n' > backend/entity/src/lib.rs \
     && printf '\n' > backend/migration/src/lib.rs \
+    && printf 'fn main() {}\n' > backend/migration/src/main.rs \
     && printf 'fn main() {}\n' > cli/src/main.rs \
     && printf '\n' > cli/src/lib.rs
 RUN cargo chef prepare --recipe-path recipe.json
