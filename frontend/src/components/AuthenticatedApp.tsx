@@ -79,6 +79,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
           data-testid="page-swipe-container"
           style={{ touchAction: 'pan-y' }}
           onPanStart={(e) => {
+            if (!window.matchMedia('(pointer: coarse)').matches) return;
             let el = e.target as HTMLElement | null;
             while (el) {
               if (el.dataset?.noSwipe !== undefined) {
@@ -90,6 +91,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
             swipeBlockedRef.current = false;
           }}
           onPanEnd={(_, info) => {
+            if (!window.matchMedia('(pointer: coarse)').matches) return;
             if (swipeBlockedRef.current) return;
             if (tab === 'settings') return;
             const idx = TAB_ORDER.indexOf(tab as (typeof TAB_ORDER)[number]);

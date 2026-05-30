@@ -336,6 +336,7 @@ export function BalancesOverview() {
               accent={card.accent}
               className={cn('h-full', card.key === 'net' && 'col-span-2 lg:col-span-1')}
               minHeightClassName="min-h-0"
+              layout={card.key === 'net' ? 'row' : 'row-tablet'}
             />
           ))}
         </div>

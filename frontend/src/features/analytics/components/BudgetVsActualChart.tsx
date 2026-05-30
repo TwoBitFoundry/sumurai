@@ -1,4 +1,4 @@
-import type React from 'react';
+import React from 'react';
 import type { TooltipProps } from 'recharts';
 import { CartesianGrid, Line, LineChart, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts';
 import { useTheme } from '../../../context/ThemeContext';
@@ -27,7 +27,7 @@ const budgetTooltipFormatter: TooltipProps<number, string>['formatter'] = (value
   return fmtUSD(Number.isFinite(numericValue) ? numericValue : 0);
 };
 
-export const BudgetVsActualChart: React.FC<BudgetVsActualChartProps> = ({
+const BudgetVsActualChartFn: React.FC<BudgetVsActualChartProps> = ({
   data,
   totalBudget,
   width,
@@ -87,7 +87,7 @@ export const BudgetVsActualChart: React.FC<BudgetVsActualChartProps> = ({
         tick={{ fill: colors.chart.axis, fontSize: 12 }}
         axisLine={false}
         tickLine={false}
-        tickCount={Math.max(3, Math.floor(height / 70))}
+        tickCount={Math.min(7, Math.max(3, Math.floor(height / 50)))}
         tickFormatter={(v) => {
           const n = Math.abs(Number(v));
           const sign = Number(v) < 0 ? '-' : '';
@@ -134,9 +134,12 @@ export const BudgetVsActualChart: React.FC<BudgetVsActualChartProps> = ({
         stroke="url(#varianceGradient)"
         strokeWidth={2}
         dot={false}
-        isAnimationActive={false}
+        isAnimationActive={true}
+        animationBegin={0}
+        animationDuration={800}
         name="Variance"
       />
     </LineChart>
   );
 };
+export const BudgetVsActualChart = React.memo(BudgetVsActualChartFn);

@@ -5,7 +5,7 @@ import { text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes
 
 interface DashboardChartCardProps {
   title: string;
-  description: string;
+  description?: string;
   refreshingLabel: string;
   isRefreshing: boolean;
   className?: string;
@@ -44,7 +44,9 @@ export const DashboardChartCard = ({
       <div className={cn('mb-3', 'md:mb-4', 'flex', 'items-center', 'justify-between')}>
         <div>
           <h3 className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>{title}</h3>
-          <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>{description}</p>
+          {description && (
+            <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>{description}</p>
+          )}
         </div>
         <div className={cn('flex', 'items-center', 'gap-2')}>
           {headerAction && (
@@ -76,7 +78,7 @@ export const DashboardChartCard = ({
       <div
         className={cn(
           'flex',
-          'min-h-[240px]',
+          'min-h-[30px]',
           'flex-1',
           'flex-col',
           'min-w-0',

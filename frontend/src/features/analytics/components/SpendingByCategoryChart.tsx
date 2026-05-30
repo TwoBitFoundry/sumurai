@@ -1,5 +1,5 @@
 import { BarChart3 } from 'lucide-react';
-import type React from 'react';
+import React from 'react';
 import { Cell, Pie, PieChart, Tooltip } from 'recharts';
 import { cn, EmptyState } from '@/ui/primitives';
 import { text as uiTextRecipes } from '@/ui/recipes';
@@ -8,7 +8,6 @@ import { useTheme } from '../../../context/ThemeContext';
 import { fmtUSD } from '../../../utils/format';
 import type { DonutDatum } from '../adapters/chartData';
 import { useChartContainerSize } from '../hooks/useChartContainerSize';
-import { useDebouncedChartRecalc } from '../hooks/useDebouncedChartRecalc';
 import { ChartGlassTooltip, chartTooltipRechartsProps } from './ChartGlassTooltip';
 
 type Props = {
@@ -16,7 +15,6 @@ type Props = {
   total: number;
   hoveredCategory: string | null;
   setHoveredCategory: (name: string | null) => void;
-  animated?: boolean;
   className?: string;
 };
 
@@ -31,21 +29,17 @@ const tooltipFormatter = (
   return [fmtUSD(Number.isFinite(numericValue) ? numericValue : 0), item.payload?.name ?? ''];
 };
 
-export const SpendingByCategoryChart: React.FC<Props> = ({
+const SpendingByCategoryChartFn: React.FC<Props> = ({
   data,
   total,
   hoveredCategory,
   setHoveredCategory,
-  animated = true,
   className,
 }) => {
   const { mode } = useTheme();
-  const debouncedData = useDebouncedChartRecalc(data);
-  const debouncedTotal = useDebouncedChartRecalc(total);
   const { ref: chartContainerRef, width, height } = useChartContainerSize();
   const chartSize = Math.min(width, height);
-
-  if (debouncedData.length === 0) {
+  if (data.length === 0) {
     return (
       <EmptyState
         icon={BarChart3}
@@ -62,7 +56,16 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
   return (
     <div
       ref={chartContainerRef}
-      className={cn('relative', 'mx-auto', 'aspect-square', 'w-full', 'min-w-0', className)}
+      className={cn(
+        'relative',
+        'w-full',
+        'h-full',
+        'min-w-0',
+        'flex',
+        'items-center',
+        'justify-center',
+        className
+      )}
     >
       {chartSize > 0 ? (
         <>
@@ -74,7 +77,7 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
           >
             <Pie
               dataKey="value"
-              data={debouncedData}
+              data={data}
               cx={center}
               cy={center}
               outerRadius={outerRadius}
@@ -82,11 +85,11 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
               stroke="none"
               paddingAngle={1}
               nameKey="name"
-              isAnimationActive={animated}
+              isAnimationActive={true}
               animationBegin={0}
-              animationDuration={animated ? 800 : 0}
+              animationDuration={800}
             >
-              {debouncedData.map((cat, index) => {
+              {data.map((cat, index) => {
                 const palette = chart.series[mode];
                 const color = cat.color ?? palette[index % palette.length];
                 const isHovered = hoveredCategory === cat.name;
@@ -137,7 +140,7 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
                 uiTextRecipes.primary
               )}
             >
-              {fmtUSD(debouncedTotal)}
+              {fmtUSD(total)}
             </div>
           </div>
         </>
@@ -145,5 +148,5 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
     </div>
   );
 };
-
+export const SpendingByCategoryChart = React.memo(SpendingByCategoryChartFn);
 export default SpendingByCategoryChart;

@@ -2,7 +2,7 @@
  * Cash flow chart showing monthly income, expenses, and net savings.
  */
 
-import type React from 'react';
+import React from 'react';
 import type { TooltipProps } from 'recharts';
 import {
   Area,
@@ -30,9 +30,8 @@ const cashFlowTooltipFormatter: TooltipProps<number, string>['formatter'] = (val
   return fmtUSD(Number.isFinite(numericValue) ? numericValue : 0);
 };
 
-export const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, width, height }) => {
+const CashFlowChartFn: React.FC<CashFlowChartProps> = ({ data, width, height }) => {
   const { colors } = useTheme();
-
   return (
     <AreaChart
       width={width}
@@ -77,7 +76,7 @@ export const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, width, heigh
         tick={{ fill: colors.chart.axis, fontSize: 12 }}
         axisLine={false}
         tickLine={false}
-        tickCount={Math.max(3, Math.floor(height / 70))}
+        tickCount={Math.min(7, Math.max(3, Math.floor(height / 50)))}
         tickFormatter={(v) => {
           const n = Math.abs(Number(v));
           const sign = Number(v) < 0 ? '-' : '';
@@ -107,7 +106,9 @@ export const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, width, heigh
         stroke={colors.semantic.cash}
         strokeWidth={0}
         name="Income"
-        isAnimationActive={false}
+        isAnimationActive={true}
+        animationBegin={0}
+        animationDuration={800}
       />
       <Area
         type="monotone"
@@ -117,7 +118,9 @@ export const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, width, heigh
         stroke={colors.semantic.credit}
         strokeWidth={0}
         name="Expenses"
-        isAnimationActive={false}
+        isAnimationActive={true}
+        animationBegin={0}
+        animationDuration={800}
       />
       <Line
         type="monotone"
@@ -126,8 +129,11 @@ export const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, width, heigh
         strokeWidth={2}
         dot={false}
         name="Net"
-        isAnimationActive={false}
+        isAnimationActive={true}
+        animationBegin={0}
+        animationDuration={800}
       />
     </AreaChart>
   );
 };
+export const CashFlowChart = React.memo(CashFlowChartFn);

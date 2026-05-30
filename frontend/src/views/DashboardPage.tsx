@@ -1,6 +1,6 @@
 import { TrendingUp } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { cn, EmptyState, Pill } from '@/ui/primitives';
 import {
@@ -35,12 +35,10 @@ import type { DateRangeKey as DateRange } from '../utils/dateRanges';
 import { fmtUSD } from '../utils/format';
 
 const dashboardLoadingCard = [
-  `min-h-[220px] ${uiRadiusRecipes.standard} border animate-pulse`,
+  `min-h-[28px] ${uiRadiusRecipes.standard} border animate-pulse`,
   ...semanticBorders.subtle,
   ...semanticSurfaces.mutedChip,
 ] as const;
-
-let lastSpendingByCategoryAnimationKey = '';
 
 const DashboardPage: React.FC<{
   dateRange: DateRange;
@@ -78,23 +76,21 @@ const DashboardPage: React.FC<{
     [cashFlowSeries]
   );
 
-  const spendingByCategoryAnimationKey = `${dateRange}-${analytics.cacheKey}`;
-  const shouldAnimateSpendingByCategory =
-    spendingByCategoryAnimationKey !== lastSpendingByCategoryAnimationKey;
-
-  useEffect(() => {
-    lastSpendingByCategoryAnimationKey = spendingByCategoryAnimationKey;
-  }, [spendingByCategoryAnimationKey]);
-
   const monthSpend = analytics.spendingTotal;
-  const handleCategoryHover = (name: string | null) => {
+  const handleCategoryHover = useCallback((name: string | null) => {
     setHoveredCategory(name);
-  };
+  }, []);
 
   const {
     ref: netChartRef,
     width: netChartWidth,
     height: netChartHeight,
+  } = useChartContainerSize();
+
+  const {
+    ref: budgetChartRef,
+    width: budgetChartWidth,
+    height: budgetChartHeight,
   } = useChartContainerSize();
 
   return (
@@ -112,18 +108,16 @@ const DashboardPage: React.FC<{
             'min-w-0',
             'max-w-full',
             'grid-cols-1',
-            'md:grid-cols-2',
-            'lg:grid-cols-3',
+            'lg:grid-cols-2',
+            'auto-rows-[minmax(390px,auto)]',
             'gap-4',
             'md:gap-6',
-            'items-stretch',
-            'auto-rows-fr'
+            'items-stretch'
           )}
         >
           <DashboardChartCard
-            className="min-w-0"
+            className={cn('min-w-0', 'col-span-1')}
             title="Spending Over Time"
-            description="Breakdown by category"
             refreshingLabel="Refreshing analytics"
             isRefreshing={!analyticsLoading && analyticsRefreshing}
           >
@@ -135,23 +129,31 @@ const DashboardPage: React.FC<{
             <div
               className={cn(
                 'grid',
+                'grid-cols-[repeat(auto-fit,minmax(180px,1fr))]',
                 'flex-1',
                 'min-h-0',
                 'gap-4',
-                'grid-cols-1',
-                'md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]',
-                'lg:grid-cols-1',
-                'items-center'
+                'overflow-hidden'
               )}
             >
-              <SpendingByCategoryChart
-                data={byCat}
-                total={monthSpend}
-                hoveredCategory={hoveredCategory}
-                setHoveredCategory={setHoveredCategory}
-                animated={shouldAnimateSpendingByCategory}
-              />
-              <div className={cn('min-w-0', 'w-full')}>
+              <div className={cn('min-w-0', 'min-h-0', 'flex', 'items-center', 'justify-center')}>
+                <SpendingByCategoryChart
+                  data={byCat}
+                  total={monthSpend}
+                  hoveredCategory={hoveredCategory}
+                  setHoveredCategory={setHoveredCategory}
+                />
+              </div>
+              <div
+                className={cn(
+                  'flex-1',
+                  'min-w-0',
+                  'self-center',
+                  'flex',
+                  'flex-col',
+                  'gap-[length:var(--spacing-compact-gap)]'
+                )}
+              >
                 {(() => {
                   const categories = byCat;
                   if (!categories || categories.length === 0) return null;
@@ -159,75 +161,51 @@ const DashboardPage: React.FC<{
                     (sum, c) => sum + (Number.isFinite(c.value) ? c.value : 0),
                     0
                   );
-                  const top = categories.slice(0, 4);
-                  return (
-                    <div>
-                      <div
-                        className={cn(
-                          uiTypographyRecipes.label,
-                          uiTextRecipes.label,
-                          'mb-2',
-                          'font-medium'
-                        )}
+                  const top = categories.slice(0, 5);
+                  return top.map((cat) => {
+                    const percentage =
+                      categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0';
+                    const isHovered = hoveredCategory === cat.name;
+                    return (
+                      <button
+                        key={`topcard-${cat.name}`}
+                        type="button"
+                        className={cn('p-2', dashboardCategoryCard.shell)}
+                        style={isHovered ? { borderColor: colors.chart.primary[0] } : undefined}
+                        onMouseEnter={() => handleCategoryHover(cat.name)}
+                        onMouseLeave={() => handleCategoryHover(null)}
+                        onClick={() => handleCategoryHover(cat.name)}
                       >
-                        Top Categories
-                      </div>
-                      <div className={cn('grid', 'grid-cols-2', 'gap-2')}>
-                        {top.map((cat) => {
-                          const percentage =
-                            categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0';
-                          const isHovered = hoveredCategory === cat.name;
-                          return (
-                            <button
-                              key={`topcard-${cat.name}`}
-                              type="button"
-                              className={cn('p-2', dashboardCategoryCard.shell)}
-                              style={
-                                isHovered ? { borderColor: colors.chart.primary[0] } : undefined
-                              }
-                              onMouseEnter={() => handleCategoryHover(cat.name)}
-                              onMouseLeave={() => handleCategoryHover(null)}
-                              onClick={() => handleCategoryHover(cat.name)}
+                        <div className={cn('flex', 'items-center', 'justify-between', 'gap-2')}>
+                          <Pill
+                            categoryName={cat.categoryKey}
+                            accentIndexByName={accentIndexByName}
+                            className={cn('min-w-0', 'truncate')}
+                          >
+                            {cat.name}
+                          </Pill>
+                          <div className={cn('flex', 'items-baseline', 'gap-2', 'shrink-0')}>
+                            <span
+                              className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}
                             >
-                              <div className={cn('mb-1')}>
-                                <Pill
-                                  categoryName={cat.categoryKey}
-                                  accentIndexByName={accentIndexByName}
-                                  className={cn('max-w-full')}
-                                >
-                                  {cat.name}
-                                </Pill>
-                              </div>
-                              <div className={cn('flex', 'items-baseline', 'justify-between')}>
-                                <div
-                                  className={cn(
-                                    uiTypographyRecipes.bodyStrong,
-                                    uiTextRecipes.primary
-                                  )}
-                                >
-                                  {fmtUSD(cat.value)}
-                                </div>
-                                <div
-                                  className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}
-                                >
-                                  {percentage}%
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
+                              {fmtUSD(cat.value)}
+                            </span>
+                            <span className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
+                              {percentage}%
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  });
                 })()}
               </div>
             </div>
           </DashboardChartCard>
 
           <DashboardChartCard
-            className="min-w-0"
+            className={cn('min-w-0')}
             title="Top Merchants Over Time"
-            description="Highest spending locations"
             refreshingLabel="Refreshing analytics"
             isRefreshing={!analyticsLoading && analyticsRefreshing}
             bodyClassName={cn('overflow-hidden')}
@@ -241,9 +219,8 @@ const DashboardPage: React.FC<{
           </DashboardChartCard>
 
           <DashboardChartCard
-            className="min-w-0"
+            className={cn('min-w-0')}
             title="Cash flow"
-            description="Income vs expenses"
             refreshingLabel="Refreshing cash flow"
             isRefreshing={!cashFlowLoading && cashFlowRefreshing}
           >
@@ -254,7 +231,7 @@ const DashboardPage: React.FC<{
                 className={cn(
                   'flex-1',
                   'min-h-0',
-                  'min-h-[220px]',
+                  'min-h-[28px]',
                   uiTypographyRecipes.body,
                   uiTextRecipes.danger
                 )}
@@ -266,7 +243,7 @@ const DashboardPage: React.FC<{
                 className={cn(
                   'flex-1',
                   'min-h-0',
-                  'min-h-[220px]',
+                  'min-h-[28px]',
                   'flex',
                   'items-center',
                   'justify-center'
@@ -293,15 +270,10 @@ const DashboardPage: React.FC<{
 
           {totalBudget > 0 && (
             <DashboardChartCard
-              className="min-w-0"
+              className={cn('min-w-0')}
               title="Budget vs Actual"
-              description="Monthly spending against budget"
               refreshingLabel="Refreshing budget data"
               isRefreshing={budgets.transactionsLoading}
-              headerAction={{
-                label: 'View budgets',
-                onClick: () => (window.location.href = '/budgets'),
-              }}
             >
               {budgets.isLoading ? (
                 <div className={cn('flex-1', 'min-h-0', dashboardLoadingCard)} />
@@ -310,7 +282,7 @@ const DashboardPage: React.FC<{
                   className={cn(
                     'flex-1',
                     'min-h-0',
-                    'min-h-[220px]',
+                    'min-h-[28px]',
                     'flex',
                     'items-center',
                     'justify-center'
@@ -323,13 +295,13 @@ const DashboardPage: React.FC<{
                   />
                 </div>
               ) : (
-                <div ref={netChartRef} className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}>
-                  {netChartWidth > 0 && netChartHeight > 0 ? (
+                <div ref={budgetChartRef} className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}>
+                  {budgetChartWidth > 0 && budgetChartHeight > 0 ? (
                     <BudgetVsActualChart
                       data={budgetVsActualData}
                       totalBudget={totalBudget}
-                      width={netChartWidth}
-                      height={netChartHeight}
+                      width={budgetChartWidth}
+                      height={budgetChartHeight}
                     />
                   ) : null}
                 </div>

@@ -593,10 +593,7 @@ pub fn create_app(state: AppState) -> Router {
             "/api/analytics/monthly-totals",
             get(get_authenticated_monthly_totals),
         )
-        .route(
-            "/api/analytics/cash-flow",
-            get(get_authenticated_cash_flow),
-        )
+        .route("/api/analytics/cash-flow", get(get_authenticated_cash_flow))
         .route(
             "/api/analytics/top-merchants",
             get(get_authenticated_top_merchants),

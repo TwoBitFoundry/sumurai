@@ -4,7 +4,9 @@ use crate::models::analytics::{
     BalanceCategory, CashFlowPoint, CategorySpending, DailySpending, MonthlySpending, TopMerchant,
 };
 use crate::models::transaction::Transaction;
-use crate::services::repository_service::{DatabaseRepository, EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES};
+use crate::services::repository_service::{
+    DatabaseRepository, EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES,
+};
 use anyhow::Result;
 use chrono::Datelike;
 use rust_decimal::Decimal;
@@ -294,14 +296,15 @@ impl AnalyticsService {
                 transaction.date.year(),
                 transaction.date.month()
             );
-            let flow = monthly_flows.entry(month_key).or_insert(MonthlyCashFlow::default());
+            let flow = monthly_flows
+                .entry(month_key)
+                .or_insert(MonthlyCashFlow::default());
 
-            if transaction.amount > Decimal::ZERO
-                && transaction.category_primary != "TRANSFER_IN"
-            {
+            if transaction.amount > Decimal::ZERO && transaction.category_primary != "TRANSFER_IN" {
                 flow.income += transaction.amount;
             } else if transaction.amount < Decimal::ZERO
-                && !EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES.contains(&transaction.category_primary.as_str())
+                && !EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES
+                    .contains(&transaction.category_primary.as_str())
             {
                 flow.expenses += -transaction.amount;
             }

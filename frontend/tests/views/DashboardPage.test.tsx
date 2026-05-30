@@ -111,7 +111,7 @@ describe('DashboardPage', () => {
     } as any);
   });
 
-  it('keeps the spending chart animation off on remount when the query key is unchanged', () => {
+  it('renders the spending chart and responsive dashboard grid', () => {
     const chartMock = jest.mocked(SpendingByCategoryChart);
     const noop = jest.fn();
     const { container, unmount } = render(
@@ -119,14 +119,11 @@ describe('DashboardPage', () => {
     );
 
     expect(chartMock).toHaveBeenCalledTimes(1);
-    expect(chartMock.mock.calls[0][0].animated).toBe(true);
-    expect(container.querySelector('[data-testid="dashboard-page"] .space-y-6')).toHaveClass(
-      'md:space-y-8'
-    );
+    expect(chartMock.mock.calls[0][0].data).toEqual([
+      expect.objectContaining({ name: 'Food', value: 10 }),
+    ]);
     expect(
-      container.querySelector(
-        '[data-testid="dashboard-page"] .grid.grid-cols-1.gap-4.items-stretch'
-      )
+      container.querySelector('[data-testid="dashboard-page"] .grid.grid-cols-1.lg\\:grid-cols-2')
     ).toHaveClass('md:gap-6');
 
     unmount();
@@ -134,7 +131,6 @@ describe('DashboardPage', () => {
     render(<DashboardPage dateRange="current-month" setDateRange={noop} />);
 
     expect(chartMock).toHaveBeenCalledTimes(2);
-    expect(chartMock.mock.calls[1][0].animated).toBe(false);
   });
 
   it('highlights a top category card when tapped the same way as the chart', async () => {

@@ -224,10 +224,11 @@ export const AppTitleBar = ({
           >
             {currentTab === key ? (
               <motion.div
+                layout
                 layoutId={APP_TITLE_BAR_ACTIVE_PILL_LAYOUT_ID}
                 data-slot="active-pill"
                 className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
-                transition={{ stiffness: 400, damping: 35 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 35 }}
               />
             ) : null}
             <span className={cn('relative z-10 shrink-0', ...appTitleBarRecipes.pillTabIconWell)}>

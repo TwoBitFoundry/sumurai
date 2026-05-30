@@ -36,7 +36,7 @@ describe('shared responsive layout surfaces', () => {
     expect(root).toHaveClass('lg:p-8');
     expect(root).toHaveClass('h-full');
     expect(root).not.toHaveClass('p-6');
-    expect(container.querySelector('div.min-h-\\[240px\\]')).toBeTruthy();
+    expect(container.querySelector('div.min-h-\\[30px\\]')).toBeTruthy();
     expect(header).toHaveClass('md:mb-4');
     expect(content).toBeTruthy();
   });
@@ -168,7 +168,7 @@ describe('shared responsive layout surfaces', () => {
       />
     );
 
-    expect(screen.getByRole('heading', { name: 'Choose your financial alliance' })).toHaveClass(
+    expect(screen.getByRole('heading', { name: 'Choose how you connect accounts' })).toHaveClass(
       'md:text-[2.25rem]'
     );
     expect(screen.getByAltText('Plaid logo')).toHaveAttribute('src', '/plaid.webp');

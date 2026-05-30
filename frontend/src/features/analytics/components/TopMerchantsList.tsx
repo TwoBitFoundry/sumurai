@@ -1,6 +1,5 @@
 import { MapPin } from 'lucide-react';
-import type React from 'react';
-import type { CSSProperties } from 'react';
+import React, { type CSSProperties } from 'react';
 import { cn, EmptyState } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
@@ -17,13 +16,13 @@ type Props = {
 };
 
 const merchantRow = [
-  'flex items-center justify-between p-3',
+  'flex items-center justify-between p-2',
   ...dashboardCategoryCard.shellInteractive,
 ] as const;
 
-export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' }) => {
+const TopMerchantsListFn: React.FC<Props> = ({ merchants, className = '' }) => {
   const { colors } = useTheme();
-  const merchantsToShow = merchants.slice(0, 6);
+  const merchantsToShow = merchants.slice(0, 8);
   const hoverBorderStyle = {
     '--dashboard-category-card-hover-border': colors.chart.primary[0],
   } as CSSProperties;
@@ -31,7 +30,13 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
   return (
     <div className={cn('h-full', 'flex', 'flex-col', className)}>
       {merchantsToShow.length > 0 ? (
-        <div className={cn('space-y-3')}>
+        <div
+          className={cn(
+            'grid',
+            'grid-cols-[repeat(auto-fill,minmax(max(calc(50%-4px),160px),1fr))]',
+            'gap-[length:var(--spacing-compact-gap)]'
+          )}
+        >
           {merchantsToShow.map((merchant) => (
             <div key={merchant.name} className={cn(merchantRow)} style={hoverBorderStyle}>
               <div className={cn('min-w-0', 'flex-1')}>
@@ -67,5 +72,5 @@ export const TopMerchantsList: React.FC<Props> = ({ merchants, className = '' })
     </div>
   );
 };
-
+export const TopMerchantsList = React.memo(TopMerchantsListFn);
 export default TopMerchantsList;
