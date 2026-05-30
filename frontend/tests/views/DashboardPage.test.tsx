@@ -5,8 +5,8 @@ import { useTheme } from '@/context/ThemeContext';
 import { SpendingByCategoryChart } from '@/features/analytics/components/SpendingByCategoryChart';
 import { useAnalytics } from '@/features/analytics/hooks/useAnalytics';
 import { useCashFlow } from '@/features/analytics/hooks/useCashFlow';
-import { useBudgets } from '@/features/budgets/hooks/useBudgets';
 import { useNetWorthSeries } from '@/features/analytics/hooks/useNetWorthSeries';
+import { useBudgets } from '@/features/budgets/hooks/useBudgets';
 import { getThemeColors } from '@/ui/tokens';
 import DashboardPage from '@/views/DashboardPage';
 

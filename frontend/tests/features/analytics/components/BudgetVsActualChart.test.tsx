@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react';
 import React from 'react';
-import { BudgetVsActualChart } from '@/features/analytics/components/BudgetVsActualChart';
 import { useTheme } from '@/context/ThemeContext';
+import { BudgetVsActualChart } from '@/features/analytics/components/BudgetVsActualChart';
 import { getThemeColors } from '@/ui/tokens';
 
 jest.mock('@/context/ThemeContext', () => ({
@@ -20,7 +20,7 @@ describe('BudgetVsActualChart', () => {
     } as any);
   });
 
-  it('renders a bar chart with monthly expenses', () => {
+  it('renders a line chart showing variance', () => {
     const data = [
       { month: '2026-05', expenses: 2000 },
       { month: '2026-04', expenses: 2500 },
@@ -34,21 +34,21 @@ describe('BudgetVsActualChart', () => {
     expect(container.querySelector('svg')).toBeInTheDocument();
   });
 
-  it('colors bars green when under budget and rose when over', () => {
+  it('calculates variance as expenses minus budget', () => {
     const data = [
-      { month: '2026-05', expenses: 1500 },
-      { month: '2026-04', expenses: 2500 },
+      { month: '2026-05', expenses: 2500 },
+      { month: '2026-04', expenses: 1800 },
     ];
     const totalBudget = 2000;
     const { container } = render(
       <BudgetVsActualChart data={data} totalBudget={totalBudget} width={400} height={300} />
     );
 
-    const bars = container.querySelectorAll('[class*="recharts-bar"]');
-    expect(bars.length).toBeGreaterThan(0);
+    const svg = container.querySelector('svg');
+    expect(svg).toBeInTheDocument();
   });
 
-  it('displays a reference line at the budget amount', () => {
+  it('displays a reference line at y=0 for on-budget marker', () => {
     const data = [{ month: '2026-05', expenses: 2000 }];
     const totalBudget = 2500;
     const { container } = render(

@@ -39,8 +39,10 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
     }
     const startDate = new Date(start);
     const endDate = new Date(end);
-    const monthDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 +
-                      (endDate.getMonth() - startDate.getMonth()) + 1;
+    const monthDiff =
+      (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+      (endDate.getMonth() - startDate.getMonth()) +
+      1;
     return Math.max(1, monthDiff);
   }, [start, end, months]);
 
@@ -102,7 +104,7 @@ function generateMonthRange(startStr: string, endStr: string): string[] {
   const start = new Date(startStr);
   const end = new Date(endStr);
 
-  let current = new Date(start.getFullYear(), start.getMonth(), 1);
+  const current = new Date(start.getFullYear(), start.getMonth(), 1);
   const endDate = new Date(end.getFullYear(), end.getMonth(), 1);
 
   while (current <= endDate) {

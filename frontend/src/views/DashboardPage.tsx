@@ -300,7 +300,7 @@ const DashboardPage: React.FC<{
               isRefreshing={budgets.transactionsLoading}
               headerAction={{
                 label: 'View budgets',
-                onClick: () => window.location.href = '/budgets',
+                onClick: () => (window.location.href = '/budgets'),
               }}
             >
               {budgets.isLoading ? (

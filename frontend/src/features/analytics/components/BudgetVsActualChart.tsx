@@ -1,14 +1,6 @@
 import type React from 'react';
 import type { TooltipProps } from 'recharts';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ReferenceLine,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { CartesianGrid, Line, LineChart, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts';
 import { useTheme } from '../../../context/ThemeContext';
 import { fmtUSD } from '../../../utils/format';
 import { ChartGlassTooltip, chartTooltipRechartsProps } from './ChartGlassTooltip';
@@ -25,6 +17,11 @@ export interface BudgetVsActualChartProps {
   height: number;
 }
 
+interface VarianceDataPoint {
+  month: string;
+  variance: number;
+}
+
 const budgetTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) => {
   const numericValue = Array.isArray(value) ? Number(value[0]) : Number(value);
   return fmtUSD(Number.isFinite(numericValue) ? numericValue : 0);
@@ -38,11 +35,16 @@ export const BudgetVsActualChart: React.FC<BudgetVsActualChartProps> = ({
 }) => {
   const { colors } = useTheme();
 
+  const varianceData: VarianceDataPoint[] = data.map((point) => ({
+    month: point.month,
+    variance: point.expenses - totalBudget,
+  }));
+
   return (
-    <BarChart
+    <LineChart
       width={width}
       height={height}
-      data={data}
+      data={varianceData}
       margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
       accessibilityLayer={false}
     >
@@ -72,6 +74,7 @@ export const BudgetVsActualChart: React.FC<BudgetVsActualChartProps> = ({
         tick={{ fill: colors.chart.axis, fontSize: 12 }}
         axisLine={false}
         tickLine={false}
+        tickCount={Math.max(3, Math.floor(height / 70))}
         tickFormatter={(v) => {
           const n = Math.abs(Number(v));
           const sign = Number(v) < 0 ? '-' : '';
@@ -88,74 +91,39 @@ export const BudgetVsActualChart: React.FC<BudgetVsActualChartProps> = ({
             {...tooltipProps}
             formatter={budgetTooltipFormatter}
             valueClassName="text-muted"
+            labelFormatter={(label, payload) => {
+              if (!payload?.length) return null;
+              const value = payload[0].value;
+              if (typeof value !== 'number') return null;
+              return value > 0
+                ? `Over budget: ${fmtUSD(value)}`
+                : `Under budget: ${fmtUSD(-value)}`;
+            }}
           />
         )}
         {...chartTooltipRechartsProps}
       />
       <ReferenceLine
-        y={totalBudget}
+        y={0}
         stroke={colors.chart.axis}
-        strokeDasharray="4 4"
+        strokeDasharray="3 3"
         label={{
-          value: `Budget ${fmtUSD(totalBudget)}`,
+          value: 'On Budget',
           position: 'right',
           fill: colors.chart.axis,
           fontSize: 12,
           offset: 8,
         }}
       />
-      <Bar
-        dataKey="expenses"
-        fill={colors.semantic.cash}
-        name="Expenses"
-        radius={[4, 4, 0, 0]}
+      <Line
+        type="monotone"
+        dataKey="variance"
+        stroke={colors.semantic.credit}
+        strokeWidth={2}
+        dot={false}
         isAnimationActive={false}
-        shape={
-          <BarWithConditionalColor
-            totalBudget={totalBudget}
-            greenColor={colors.semantic.cash}
-            roseColor={colors.semantic.credit}
-          />
-        }
+        name="Variance"
       />
-    </BarChart>
-  );
-};
-
-interface BarWithConditionalColorProps {
-  totalBudget: number;
-  greenColor: string;
-  roseColor: string;
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-  payload?: { expenses: number };
-}
-
-const BarWithConditionalColor: React.FC<BarWithConditionalColorProps> = ({
-  totalBudget,
-  greenColor,
-  roseColor,
-  x = 0,
-  y = 0,
-  width = 0,
-  height = 0,
-  payload,
-}) => {
-  const isOver = (payload?.expenses ?? 0) > totalBudget;
-  const fill = isOver ? roseColor : greenColor;
-
-  return (
-    <rect
-      x={x}
-      y={y}
-      width={width}
-      height={height}
-      fill={fill}
-      rx={4}
-      ry={4}
-      style={{ transition: 'fill 0.2s ease-in-out' }}
-    />
+    </LineChart>
   );
 };
