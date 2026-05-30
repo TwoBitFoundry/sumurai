@@ -50,8 +50,8 @@ use utils::webauthn_credentials::{
 };
 
 use crate::models::analytics::{
-    BalanceCategory, BalancesOverviewQuery, BalancesOverviewResponse, CategorySpending,
-    DailySpending, MonthlySpending, NetWorthOverTimeResponse, TopMerchant,
+    BalanceCategory, BalancesOverviewQuery, BalancesOverviewResponse, CashFlowResponse,
+    CategorySpending, DailySpending, MonthlySpending, NetWorthOverTimeResponse, TopMerchant,
 };
 use crate::models::app_state::AppState;
 use crate::models::auth::{AuthContext, AuthMiddlewareState};
@@ -592,6 +592,10 @@ pub fn create_app(state: AppState) -> Router {
         .route(
             "/api/analytics/monthly-totals",
             get(get_authenticated_monthly_totals),
+        )
+        .route(
+            "/api/analytics/cash-flow",
+            get(get_authenticated_cash_flow),
         )
         .route(
             "/api/analytics/top-merchants",
@@ -2592,6 +2596,75 @@ async fn get_authenticated_monthly_totals(
         .analytics_service
         .calculate_monthly_totals(&transactions, months);
     Ok(Json(monthly_totals))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/analytics/cash-flow",
+    description = "Produces a timeline of monthly income, expenses, and net savings for dashboard charts.",
+    params(("months" = Option<i32>, Query, description = "Number of months to retrieve (default: 6)"),
+           ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
+    responses(
+        (status = 200, description = "Monthly cash flow data", body = CashFlowResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Analytics"
+)]
+async fn get_authenticated_cash_flow(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    AuthorizedQuery {
+        query,
+        authorized_account_ids,
+    }: AuthorizedQuery<MonthlyTotalsQuery>,
+) -> Result<Json<CashFlowResponse>, StatusCode> {
+    use chrono::Datelike;
+
+    let user_id = auth_context.user_id;
+    let months = query.months.unwrap_or(6);
+    let now = Utc::now().naive_utc().date();
+
+    let current_year = now.year();
+    let current_month = now.month();
+    let total_months = current_year * 12 + (current_month as i32) - 1 - ((months - 1) as i32);
+    let start_year = total_months.div_euclid(12);
+    let start_month0 = total_months.rem_euclid(12);
+    let start_month = (start_month0 + 1) as u32;
+
+    let start_date = chrono::NaiveDate::from_ymd_opt(start_year, start_month, 1).unwrap_or(now);
+    let end_date = now;
+
+    let transactions = state
+        .db_repository
+        .get_transactions_by_date_range_for_user(&user_id, start_date, end_date)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to get transactions for user {} in range [{}, {}]: {}",
+                user_id,
+                start_date,
+                end_date,
+                e
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    let transactions = if let Some(ref allowed_ids) = authorized_account_ids {
+        transactions
+            .into_iter()
+            .filter(|t| allowed_ids.contains(&t.account_id))
+            .collect()
+    } else {
+        transactions
+    };
+
+    let currency = "USD".to_string();
+    let series = state
+        .analytics_service
+        .calculate_cash_flow(&transactions, months);
+    Ok(Json(CashFlowResponse { series, currency }))
 }
 
 #[utoipa::path(

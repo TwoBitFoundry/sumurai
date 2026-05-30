@@ -1,10 +1,10 @@
 //! Aggregated analytics queries for dashboards.
 
 use crate::models::analytics::{
-    BalanceCategory, CategorySpending, DailySpending, MonthlySpending, TopMerchant,
+    BalanceCategory, CashFlowPoint, CategorySpending, DailySpending, MonthlySpending, TopMerchant,
 };
 use crate::models::transaction::Transaction;
-use crate::services::repository_service::DatabaseRepository;
+use crate::services::repository_service::{DatabaseRepository, EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES};
 use anyhow::Result;
 use chrono::Datelike;
 use rust_decimal::Decimal;
@@ -262,6 +262,57 @@ impl AnalyticsService {
         let mut result: Vec<MonthlySpending> = monthly_totals
             .into_iter()
             .map(|(month, total)| MonthlySpending { month, total })
+            .collect();
+
+        result.sort_by(|a, b| a.month.cmp(&b.month));
+
+        if result.len() > months as usize {
+            result.truncate(months as usize);
+        }
+
+        result
+    }
+
+    pub fn calculate_cash_flow(
+        &self,
+        transactions: &[Transaction],
+        months: u32,
+    ) -> Vec<CashFlowPoint> {
+        use chrono::Datelike;
+
+        #[derive(Default)]
+        struct MonthlyCashFlow {
+            income: Decimal,
+            expenses: Decimal,
+        }
+
+        let mut monthly_flows = std::collections::HashMap::new();
+
+        for transaction in transactions {
+            let month_key = format!(
+                "{}-{:02}",
+                transaction.date.year(),
+                transaction.date.month()
+            );
+            let flow = monthly_flows.entry(month_key).or_insert(MonthlyCashFlow::default());
+
+            if transaction.amount > Decimal::ZERO && transaction.category_primary == "INCOME" {
+                flow.income += transaction.amount;
+            } else if transaction.amount < Decimal::ZERO
+                && !EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES.contains(&transaction.category_primary.as_str())
+            {
+                flow.expenses += -transaction.amount;
+            }
+        }
+
+        let mut result: Vec<CashFlowPoint> = monthly_flows
+            .into_iter()
+            .map(|(month, flow)| CashFlowPoint {
+                month,
+                income: Self::round_amount(flow.income),
+                expenses: Self::round_amount(flow.expenses),
+                net: Self::round_amount(flow.income - flow.expenses),
+            })
             .collect();
 
         result.sort_by(|a, b| a.month.cmp(&b.month));

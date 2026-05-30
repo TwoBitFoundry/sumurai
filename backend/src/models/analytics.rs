@@ -339,6 +339,31 @@ impl<T> VecOrOne<T> {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({"month": "2024-01", "income": "5000.00", "expenses": "3500.00", "net": "1500.00"}))]
+pub struct CashFlowPoint {
+    pub month: String,
+    #[schema(value_type = String)]
+    pub income: Decimal,
+    #[schema(value_type = String)]
+    pub expenses: Decimal,
+    #[schema(value_type = String)]
+    pub net: Decimal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({
+    "series": [
+        {"month": "2024-01", "income": "5000.00", "expenses": "3500.00", "net": "1500.00"},
+        {"month": "2024-02", "income": "5200.00", "expenses": "3600.00", "net": "1600.00"}
+    ],
+    "currency": "USD"
+}))]
+pub struct CashFlowResponse {
+    pub series: Vec<CashFlowPoint>,
+    pub currency: String,
+}
+
 fn round2(v: Decimal) -> Decimal {
     v.round_dp(2)
 }
