@@ -149,25 +149,68 @@ const VarianceLineWithConditionalColor: React.FC<VarianceLineWithConditionalColo
   if (points.length < 2) return null;
 
   const pathSegments: React.JSX.Element[] = [];
+  let segmentKey = 0;
 
   for (let i = 0; i < points.length - 1; i++) {
     const current = points[i];
     const next = points[i + 1];
-    const variance = current.payload?.variance ?? 0;
-    const stroke = variance < 0 ? greenColor : redColor;
+    const currentVariance = current.payload?.variance ?? 0;
+    const nextVariance = next.payload?.variance ?? 0;
 
-    const pathData = `M ${current.x} ${current.y} L ${next.x} ${next.y}`;
+    const currentIsNegative = currentVariance < 0;
+    const nextIsNegative = nextVariance < 0;
+    const crossesZero = currentIsNegative !== nextIsNegative;
 
-    pathSegments.push(
-      <path
-        key={`variance-segment-${i}`}
-        d={pathData}
-        stroke={stroke}
-        strokeWidth={strokeWidth}
-        fill="none"
-        vectorEffect="non-scaling-stroke"
-      />
-    );
+    if (!crossesZero) {
+      const stroke = currentIsNegative ? greenColor : redColor;
+      const pathData = `M ${current.x} ${current.y} L ${next.x} ${next.y}`;
+
+      pathSegments.push(
+        <path
+          key={`segment-${segmentKey}`}
+          d={pathData}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          fill="none"
+          vectorEffect="non-scaling-stroke"
+        />
+      );
+      segmentKey += 1;
+    } else {
+      const t = -currentVariance / (nextVariance - currentVariance);
+      const crossX = current.x + (next.x - current.x) * t;
+      const crossY = 0;
+
+      const firstPathData = `M ${current.x} ${current.y} L ${crossX} ${crossY}`;
+      const firstStroke = currentIsNegative ? greenColor : redColor;
+
+      pathSegments.push(
+        <path
+          key={`segment-${segmentKey}`}
+          d={firstPathData}
+          stroke={firstStroke}
+          strokeWidth={strokeWidth}
+          fill="none"
+          vectorEffect="non-scaling-stroke"
+        />
+      );
+      segmentKey += 1;
+
+      const secondPathData = `M ${crossX} ${crossY} L ${next.x} ${next.y}`;
+      const secondStroke = nextIsNegative ? greenColor : redColor;
+
+      pathSegments.push(
+        <path
+          key={`segment-${segmentKey}`}
+          d={secondPathData}
+          stroke={secondStroke}
+          strokeWidth={strokeWidth}
+          fill="none"
+          vectorEffect="non-scaling-stroke"
+        />
+      );
+      segmentKey += 1;
+    }
   }
 
   return <g>{pathSegments}</g>;
