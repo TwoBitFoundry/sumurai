@@ -296,7 +296,9 @@ impl AnalyticsService {
             );
             let flow = monthly_flows.entry(month_key).or_insert(MonthlyCashFlow::default());
 
-            if transaction.amount > Decimal::ZERO && transaction.category_primary == "INCOME" {
+            if transaction.amount > Decimal::ZERO
+                && transaction.category_primary != "TRANSFER_IN"
+            {
                 flow.income += transaction.amount;
             } else if transaction.amount < Decimal::ZERO
                 && !EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES.contains(&transaction.category_primary.as_str())
