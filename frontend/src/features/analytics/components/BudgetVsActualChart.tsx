@@ -40,6 +40,11 @@ export const BudgetVsActualChart: React.FC<BudgetVsActualChartProps> = ({
     variance: point.expenses - totalBudget,
   }));
 
+  const minVariance = Math.min(...varianceData.map((p) => p.variance), 0);
+  const maxVariance = Math.max(...varianceData.map((p) => p.variance), 0);
+  const range = maxVariance - minVariance;
+  const zeroPercent = range === 0 ? 50 : ((-minVariance / range) * 100).toFixed(2);
+
   return (
     <LineChart
       width={width}
@@ -48,6 +53,14 @@ export const BudgetVsActualChart: React.FC<BudgetVsActualChartProps> = ({
       margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
       accessibilityLayer={false}
     >
+      <defs>
+        <linearGradient id="varianceGradient" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stopColor={colors.semantic.cash} />
+          <stop offset={`${zeroPercent}%`} stopColor={colors.semantic.cash} />
+          <stop offset={`${zeroPercent}%`} stopColor={colors.semantic.credit} />
+          <stop offset="100%" stopColor={colors.semantic.credit} />
+        </linearGradient>
+      </defs>
       <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
       <XAxis
         dataKey="month"
@@ -118,100 +131,12 @@ export const BudgetVsActualChart: React.FC<BudgetVsActualChartProps> = ({
       <Line
         type="monotone"
         dataKey="variance"
+        stroke="url(#varianceGradient)"
         strokeWidth={2}
         dot={false}
         isAnimationActive={false}
         name="Variance"
-        shape={
-          <VarianceLineWithConditionalColor
-            greenColor={colors.semantic.cash}
-            redColor={colors.semantic.credit}
-          />
-        }
       />
     </LineChart>
   );
-};
-
-interface VarianceLineWithConditionalColorProps {
-  greenColor: string;
-  redColor: string;
-  points?: Array<{ x: number; y: number; payload?: VarianceDataPoint }>;
-  strokeWidth?: number;
-}
-
-const VarianceLineWithConditionalColor: React.FC<VarianceLineWithConditionalColorProps> = ({
-  greenColor,
-  redColor,
-  points = [],
-  strokeWidth = 2,
-}) => {
-  if (points.length < 2) return null;
-
-  const pathSegments: React.JSX.Element[] = [];
-  let segmentKey = 0;
-
-  for (let i = 0; i < points.length - 1; i++) {
-    const current = points[i];
-    const next = points[i + 1];
-    const currentVariance = current.payload?.variance ?? 0;
-    const nextVariance = next.payload?.variance ?? 0;
-
-    const currentIsNegative = currentVariance < 0;
-    const nextIsNegative = nextVariance < 0;
-    const crossesZero = currentIsNegative !== nextIsNegative;
-
-    if (!crossesZero) {
-      const stroke = currentIsNegative ? greenColor : redColor;
-      const pathData = `M ${current.x} ${current.y} L ${next.x} ${next.y}`;
-
-      pathSegments.push(
-        <path
-          key={`segment-${segmentKey}`}
-          d={pathData}
-          stroke={stroke}
-          strokeWidth={strokeWidth}
-          fill="none"
-          vectorEffect="non-scaling-stroke"
-        />
-      );
-      segmentKey += 1;
-    } else {
-      const t = -currentVariance / (nextVariance - currentVariance);
-      const crossX = current.x + (next.x - current.x) * t;
-      const crossY = 0;
-
-      const firstPathData = `M ${current.x} ${current.y} L ${crossX} ${crossY}`;
-      const firstStroke = currentIsNegative ? greenColor : redColor;
-
-      pathSegments.push(
-        <path
-          key={`segment-${segmentKey}`}
-          d={firstPathData}
-          stroke={firstStroke}
-          strokeWidth={strokeWidth}
-          fill="none"
-          vectorEffect="non-scaling-stroke"
-        />
-      );
-      segmentKey += 1;
-
-      const secondPathData = `M ${crossX} ${crossY} L ${next.x} ${next.y}`;
-      const secondStroke = nextIsNegative ? greenColor : redColor;
-
-      pathSegments.push(
-        <path
-          key={`segment-${segmentKey}`}
-          d={secondPathData}
-          stroke={secondStroke}
-          strokeWidth={strokeWidth}
-          fill="none"
-          vectorEffect="non-scaling-stroke"
-        />
-      );
-      segmentKey += 1;
-    }
-  }
-
-  return <g>{pathSegments}</g>;
 };
