@@ -281,7 +281,6 @@ flowchart LR
 | Method | Path |
 |--------|------|
 | POST | `/api/auth/onboarding/complete` |
-| PUT | `/api/auth/change-password` |
 | DELETE | `/api/auth/account` |
 
 **Transactions**

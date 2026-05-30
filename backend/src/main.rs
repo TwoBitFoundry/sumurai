@@ -79,10 +79,7 @@ use crate::models::{
 };
 use crate::models::{
     api_error::ApiErrorResponse,
-    auth::{
-        ChangePasswordRequest, ChangePasswordResponse, DeleteAccountResponse, LogoutResponse,
-        OnboardingCompleteResponse, User,
-    },
+    auth::{DeleteAccountResponse, LogoutResponse, OnboardingCompleteResponse, User},
 };
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -612,7 +609,6 @@ pub fn create_app(state: AppState) -> Router {
         .route("/api/budgets", post(create_authenticated_budget))
         .route("/api/budgets/{id}", put(update_authenticated_budget))
         .route("/api/budgets/{id}", delete(delete_authenticated_budget))
-        .route("/api/auth/change-password", put(change_user_password))
         .route("/api/auth/account", delete(delete_user_account))
         .route("/api/auth/passkey/enroll/begin", post(begin_passkey_enroll))
         .route(
@@ -3882,94 +3878,6 @@ async fn get_authenticated_net_worth_over_time(
     }
 
     Ok(Json(response))
-}
-
-#[utoipa::path(
-    put,
-    path = "/api/auth/change-password",
-    description = "Allows an authenticated user to rotate their password and invalidate cached credentials.",
-    request_body = ChangePasswordRequest,
-    responses(
-        (status = 200, description = "Password changed successfully", body = ChangePasswordResponse),
-        (status = 401, description = "Current password is incorrect", body = ApiErrorResponse),
-        (status = 500, description = "Internal server error", body = ApiErrorResponse),
-    ),
-    security(("auth_cookie" = [])),
-    tag = "Authentication"
-)]
-async fn change_user_password(
-    State(state): State<AppState>,
-    auth_context: AuthContext,
-    Json(req): Json<auth_models::ChangePasswordRequest>,
-) -> Result<Json<auth_models::ChangePasswordResponse>, (StatusCode, Json<ApiErrorResponse>)> {
-    let user_id = auth_context.user_id;
-
-    let user = state
-        .db_repository
-        .get_user_by_id(&user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user {}: {}", user_id, e);
-            ApiErrorResponse::internal_server_error(
-                "Authentication service temporarily unavailable",
-            )
-        })?
-        .ok_or_else(|| {
-            tracing::warn!("User {} not found during password change", user_id);
-            ApiErrorResponse::internal_server_error("User account not found")
-        })?;
-
-    let hash = user.password_hash.as_deref().unwrap_or("");
-    let is_valid = state
-        .auth_service
-        .verify_password(&req.current_password, hash)
-        .map_err(|e| {
-            tracing::error!("Password verification failed for user {}: {}", user_id, e);
-            ApiErrorResponse::internal_server_error("Authentication service error")
-        })?;
-
-    if !is_valid {
-        tracing::info!("Invalid current password for user {}", user_id);
-        return Err(ApiErrorResponse::unauthorized(
-            "Current password is incorrect",
-        ));
-    }
-
-    let new_hash = state
-        .auth_service
-        .hash_password(&req.new_password)
-        .map_err(|e| {
-            tracing::error!("Password hashing failed for user {}: {}", user_id, e);
-            ApiErrorResponse::internal_server_error("Failed to process new password")
-        })?;
-
-    state
-        .db_repository
-        .update_user_password(&user_id, &new_hash)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to update password for user {}: {}", user_id, e);
-            ApiErrorResponse::internal_server_error("Failed to update password")
-        })?;
-
-    if let Err(e) = state
-        .cache_service
-        .invalidate_pattern(&format!("{}_*", auth_context.jwt_id))
-        .await
-    {
-        tracing::warn!(
-            "Failed to invalidate JWT cache for user {} after password change: {}",
-            user_id,
-            e
-        );
-    }
-
-    tracing::info!("User {} password changed successfully", user_id);
-
-    Ok(Json(auth_models::ChangePasswordResponse {
-        message: "Password changed successfully. Please log in again.".to_string(),
-        requires_reauth: true,
-    }))
 }
 
 #[utoipa::path(

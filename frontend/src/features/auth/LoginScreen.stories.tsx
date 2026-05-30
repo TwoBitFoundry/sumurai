@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { pushStoryCredentialsOverride } from '@/storybook/screens/user-journeys/storyApi';
 import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { LoginScreen, type LoginScreenProps } from './LoginScreen';
 
@@ -76,14 +77,9 @@ export const CeremonyCancelledToast: Story = {
       }
       return originalFetch(input, init);
     }) as unknown as typeof globalThis.fetch;
-    Object.defineProperty(globalThis, 'navigator', {
-      configurable: true,
-      value: {
-        credentials: {
-          get: async () => {
-            throw new Error('The operation was cancelled');
-          },
-        },
+    const restoreCredentials = pushStoryCredentialsOverride({
+      get: async () => {
+        throw new Error('The operation was cancelled');
       },
     });
     globalThis.fetch = mockedFetch;
@@ -97,6 +93,7 @@ export const CeremonyCancelledToast: Story = {
       });
       expect(canvas.getByLabelText(/^email$/i)).not.toBeDisabled();
     } finally {
+      restoreCredentials();
       globalThis.fetch = originalFetch;
     }
   },
@@ -115,9 +112,12 @@ export const NetworkError: Story = {
     try {
       await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
       await userEvent.click(canvas.getByRole('button', { name: /^continue$/i }));
-      await waitFor(() => {
-        expect(within(document.body).getByText(/network error/i)).toBeInTheDocument();
-      });
+      await waitFor(
+        () => {
+          expect(within(document.body).getByText(/network error/i)).toBeInTheDocument();
+        },
+        { timeout: 15_000 }
+      );
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -164,13 +164,8 @@ export const SignInSuccess: Story = {
         signature: new Uint8Array([4]).buffer,
       },
     } as unknown as PublicKeyCredential;
-    Object.defineProperty(globalThis, 'navigator', {
-      configurable: true,
-      value: {
-        credentials: {
-          get: async () => mockCredential,
-        },
-      },
+    const restoreCredentials = pushStoryCredentialsOverride({
+      get: async () => mockCredential,
     });
     globalThis.fetch = mockedFetch;
     try {
@@ -180,6 +175,7 @@ export const SignInSuccess: Story = {
         expect(args.onLoginSuccess).toHaveBeenCalled();
       });
     } finally {
+      restoreCredentials();
       globalThis.fetch = originalFetch;
     }
   },

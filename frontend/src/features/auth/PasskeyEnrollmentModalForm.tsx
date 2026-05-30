@@ -63,7 +63,7 @@ export function PasskeyEnrollmentModalForm({
           id={nameInputId}
           value={passkeyName}
           onChange={(event) => onPasskeyNameChange(event.target.value)}
-          placeholder="MacBook Pro"
+          placeholder="Provider Name"
           autoComplete="off"
           disabled={isLoading}
         />

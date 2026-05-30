@@ -146,7 +146,7 @@ export function RegisterScreen({
                 onChange={(event) => setName(event.target.value)}
                 autoComplete="name"
                 variant={name && !isNameValid ? 'invalid' : 'default'}
-                placeholder="Your name"
+                placeholder="Provider Name"
                 disabled={isBusy}
               />
             </div>

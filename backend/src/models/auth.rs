@@ -133,20 +133,6 @@ impl User {
     }
 }
 
-#[derive(Deserialize, ToSchema)]
-#[schema(example = json!({"current_password": "OldPass123!", "new_password": "NewPass456!"}))]
-pub struct ChangePasswordRequest {
-    pub current_password: String,
-    pub new_password: String,
-}
-
-#[derive(Serialize, ToSchema)]
-#[schema(example = json!({"message": "Password updated successfully", "requires_reauth": true}))]
-pub struct ChangePasswordResponse {
-    pub message: String,
-    pub requires_reauth: bool,
-}
-
 #[derive(Serialize, ToSchema)]
 pub struct PasskeyRegisterBeginResponse {
     pub session_id: String,

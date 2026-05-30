@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { pushStoryCredentialsOverride } from '@/storybook/screens/user-journeys/storyApi';
 import { storyDarkTheme } from '@/storybook/storyDarkTheme';
 import { RegisterScreen, type RegisterScreenProps } from './RegisterScreen';
 
@@ -67,25 +68,21 @@ export const CeremonyCancelledToast: Story = {
       }
       return originalFetch(input, init);
     }) as unknown as typeof globalThis.fetch;
-    Object.defineProperty(globalThis, 'navigator', {
-      configurable: true,
-      value: {
-        credentials: {
-          create: async () => {
-            throw new Error('The operation was cancelled');
-          },
-        },
+    const restoreCredentials = pushStoryCredentialsOverride({
+      create: async () => {
+        throw new Error('The operation was cancelled');
       },
     });
     globalThis.fetch = mockedFetch;
     try {
       await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
-      await userEvent.type(canvas.getByLabelText(/^name$/i), 'Story User');
+      await userEvent.type(canvas.getByLabelText(/^passkey name$/i), 'Story User');
       await userEvent.click(canvas.getByRole('button', { name: /^create account$/i }));
       await waitFor(() => {
         expect(within(document.body).getByText(/passkey setup was cancelled/i)).toBeInTheDocument();
       });
     } finally {
+      restoreCredentials();
       globalThis.fetch = originalFetch;
     }
   },
@@ -128,23 +125,19 @@ export const SignUpSuccess: Story = {
         clientDataJSON: new Uint8Array([3]).buffer,
       },
     } as unknown as PublicKeyCredential;
-    Object.defineProperty(globalThis, 'navigator', {
-      configurable: true,
-      value: {
-        credentials: {
-          create: async () => mockCredential,
-        },
-      },
+    const restoreCredentials = pushStoryCredentialsOverride({
+      create: async () => mockCredential,
     });
     globalThis.fetch = mockedFetch;
     try {
       await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
-      await userEvent.type(canvas.getByLabelText(/^name$/i), 'Story User');
+      await userEvent.type(canvas.getByLabelText(/^passkey name$/i), 'Story User');
       await userEvent.click(canvas.getByRole('button', { name: /^create account$/i }));
       await waitFor(() => {
         expect(args.onRegisterSuccess).toHaveBeenCalled();
       });
     } finally {
+      restoreCredentials();
       globalThis.fetch = originalFetch;
     }
   },
