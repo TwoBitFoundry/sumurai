@@ -58,8 +58,8 @@ export class NotFoundError extends ApiError {
 }
 
 export class ForbiddenError extends ApiError {
-  constructor(message = 'Access forbidden') {
-    super(403, message, 'FORBIDDEN');
+  constructor(message = 'Access forbidden', code = 'FORBIDDEN') {
+    super(403, message, code);
   }
 }
 

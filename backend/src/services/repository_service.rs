@@ -3,7 +3,7 @@
 use crate::connection_pool::RepositoryPool;
 use crate::models::{
     account::Account,
-    auth::User,
+    auth::{User, WebAuthnCredential},
     auto_categorization_job::TransactionCategoryUpdate,
     budget::Budget,
     custom_category::CustomCategory,
@@ -24,7 +24,7 @@ use chrono::NaiveDate;
 use entity::{
     accounts, budgets, provider_connections, provider_credentials, simplefin_hidden_orgs,
     simplefin_root_credentials, transaction_category_overrides, transactions,
-    user_custom_categories, users,
+    user_custom_categories, users, webauthn_credentials,
 };
 use sea_orm::{
     sea_query::{Expr, Func, JoinType, OnConflict, Query, SimpleExpr},
@@ -200,7 +200,39 @@ pub trait DatabaseRepository: Send + Sync {
 
     async fn update_user_password(&self, user_id: &Uuid, new_password_hash: &str) -> Result<()>;
 
+    async fn clear_user_password_hash(&self, user_id: &Uuid) -> Result<()>;
+
     async fn delete_user(&self, user_id: &Uuid) -> Result<()>;
+
+    async fn insert_webauthn_credential(
+        &self,
+        user_id: &Uuid,
+        credential_id: Vec<u8>,
+        passkey: serde_json::Value,
+        name: &str,
+    ) -> Result<crate::models::auth::WebAuthnCredential>;
+
+    async fn list_webauthn_credentials_for_user(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Vec<crate::models::auth::WebAuthnCredential>>;
+
+    async fn find_webauthn_credentials_by_credential_ids(
+        &self,
+        user_id: &Uuid,
+        ids: &[Vec<u8>],
+    ) -> Result<Vec<crate::models::auth::WebAuthnCredential>>;
+
+    async fn update_webauthn_credential_counter_and_last_used(
+        &self,
+        user_id: &Uuid,
+        id: &Uuid,
+        sign_count: u32,
+    ) -> Result<()>;
+
+    async fn delete_webauthn_credential(&self, user_id: &Uuid, id: &Uuid) -> Result<bool>;
+
+    async fn delete_all_webauthn_credentials_for_user(&self, user_id: &Uuid) -> Result<u64>;
 
     async fn create_custom_category(
         &self,
@@ -813,8 +845,12 @@ impl DatabaseRepository for PostgresRepository {
 
     async fn get_user_by_email(&self, email: &str) -> Result<Option<User>> {
         let db = self.conn();
+        let normalized = email.trim().to_lowercase();
         Ok(users::Entity::find()
-            .filter(users::Column::Email.eq(email))
+            .filter(
+                Expr::expr(Func::lower(Expr::col(users::Column::Email)))
+                    .eq(Expr::value(normalized)),
+            )
             .one(&db)
             .await?
             .map(Into::into))
@@ -1749,6 +1785,28 @@ impl DatabaseRepository for PostgresRepository {
         .await
     }
 
+    async fn clear_user_password_hash(&self, user_id: &Uuid) -> Result<()> {
+        let user_id = *user_id;
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move {
+                users::Entity::update_many()
+                    .col_expr(
+                        users::Column::PasswordHash,
+                        Expr::value(Option::<String>::None),
+                    )
+                    .col_expr(
+                        users::Column::UpdatedAt,
+                        Expr::value(Self::to_db_time(chrono::Utc::now())),
+                    )
+                    .filter(users::Column::Id.eq(user_id))
+                    .exec(txn)
+                    .await?;
+                Ok(())
+            })
+        })
+        .await
+    }
+
     async fn delete_user(&self, user_id: &Uuid) -> Result<()> {
         let user_id = *user_id;
         self.with_tenant(&user_id, move |txn| {
@@ -1758,6 +1816,128 @@ impl DatabaseRepository for PostgresRepository {
                     .exec(txn)
                     .await?;
                 Ok(())
+            })
+        })
+        .await
+    }
+
+    async fn insert_webauthn_credential(
+        &self,
+        user_id: &Uuid,
+        credential_id: Vec<u8>,
+        passkey: serde_json::Value,
+        name: &str,
+    ) -> Result<WebAuthnCredential> {
+        let user_id = *user_id;
+        let name = name.to_string();
+        let id = Uuid::new_v4();
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move {
+                let row = webauthn_credentials::Entity::insert(webauthn_credentials::ActiveModel {
+                    id: Set(id),
+                    user_id: Set(user_id),
+                    credential_id: Set(credential_id),
+                    passkey: Set(passkey),
+                    name: Set(name),
+                    created_at: Set(Self::to_db_time(chrono::Utc::now())),
+                    ..Default::default()
+                })
+                .exec_with_returning(txn)
+                .await?;
+                Ok(WebAuthnCredential::from(row))
+            })
+        })
+        .await
+    }
+
+    async fn list_webauthn_credentials_for_user(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Vec<WebAuthnCredential>> {
+        let user_id = *user_id;
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move {
+                let rows = webauthn_credentials::Entity::find()
+                    .filter(webauthn_credentials::Column::UserId.eq(user_id))
+                    .order_by_asc(webauthn_credentials::Column::CreatedAt)
+                    .all(txn)
+                    .await?;
+                Ok(rows.into_iter().map(WebAuthnCredential::from).collect())
+            })
+        })
+        .await
+    }
+
+    async fn find_webauthn_credentials_by_credential_ids(
+        &self,
+        user_id: &Uuid,
+        ids: &[Vec<u8>],
+    ) -> Result<Vec<WebAuthnCredential>> {
+        let user_id = *user_id;
+        let ids = ids.to_vec();
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move {
+                let rows = webauthn_credentials::Entity::find()
+                    .filter(webauthn_credentials::Column::UserId.eq(user_id))
+                    .filter(webauthn_credentials::Column::CredentialId.is_in(ids))
+                    .all(txn)
+                    .await?;
+                Ok(rows.into_iter().map(WebAuthnCredential::from).collect())
+            })
+        })
+        .await
+    }
+
+    async fn update_webauthn_credential_counter_and_last_used(
+        &self,
+        user_id: &Uuid,
+        id: &Uuid,
+        _sign_count: u32,
+    ) -> Result<()> {
+        let user_id = *user_id;
+        let id = *id;
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move {
+                webauthn_credentials::Entity::update_many()
+                    .col_expr(
+                        webauthn_credentials::Column::LastUsedAt,
+                        Expr::value(Self::to_db_time(chrono::Utc::now())),
+                    )
+                    .filter(webauthn_credentials::Column::Id.eq(id))
+                    .filter(webauthn_credentials::Column::UserId.eq(user_id))
+                    .exec(txn)
+                    .await?;
+                Ok(())
+            })
+        })
+        .await
+    }
+
+    async fn delete_webauthn_credential(&self, user_id: &Uuid, id: &Uuid) -> Result<bool> {
+        let user_id = *user_id;
+        let id = *id;
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move {
+                let result = webauthn_credentials::Entity::delete_many()
+                    .filter(webauthn_credentials::Column::Id.eq(id))
+                    .filter(webauthn_credentials::Column::UserId.eq(user_id))
+                    .exec(txn)
+                    .await?;
+                Ok(result.rows_affected > 0)
+            })
+        })
+        .await
+    }
+
+    async fn delete_all_webauthn_credentials_for_user(&self, user_id: &Uuid) -> Result<u64> {
+        let user_id = *user_id;
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move {
+                let result = webauthn_credentials::Entity::delete_many()
+                    .filter(webauthn_credentials::Column::UserId.eq(user_id))
+                    .exec(txn)
+                    .await?;
+                Ok(result.rows_affected)
             })
         })
         .await

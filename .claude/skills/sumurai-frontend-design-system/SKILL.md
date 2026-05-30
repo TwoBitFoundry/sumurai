@@ -12,7 +12,7 @@ Use this skill for UI implementation, component refactors, token-aware styling, 
 Before changing frontend visuals, read:
 
 - `DESIGN.md`
-- `docs/design-md-standard.md`
+- `.agents/skills/sumurai-design-token-pipeline/references/design-md-standard.md`
 - `frontend/src/ui/primitives/README.md`
 - `frontend/src/ui/recipes.ts`
 - `frontend/src/ui/tokens.ts`

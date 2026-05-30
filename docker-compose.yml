@@ -43,6 +43,7 @@ services:
 
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
+      SEED_DEMO_USER: "true"
       RUST_LOG: info,otel::tracing=trace,axum_tracing_opentelemetry=trace
     volumes:
       - .certs/teller/certificate.pem:/etc/teller/certificate.pem:ro

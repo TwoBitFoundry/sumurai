@@ -42,7 +42,7 @@ async fn create_test_user(repo: &PostgresRepository) -> User {
     let user = User {
         id: Uuid::new_v4(),
         email: format!("test_{}@example.com", Uuid::new_v4()),
-        password_hash: "original_hash_value".to_string(),
+        password_hash: Some("original_hash_value".to_string()),
         provider: "teller".to_string(),
         created_at: Utc::now(),
         updated_at: Utc::now(),
@@ -112,7 +112,7 @@ async fn given_valid_user_when_updating_password_then_hash_changes() {
     assert!(result.is_ok());
 
     let updated_user = repo.get_user_by_id(&user.id).await.unwrap().unwrap();
-    assert_eq!(updated_user.password_hash, new_hash);
+    assert_eq!(updated_user.password_hash, Some(new_hash));
     assert_ne!(updated_user.password_hash, original_hash);
 }
 

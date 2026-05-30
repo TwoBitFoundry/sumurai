@@ -520,74 +520,18 @@
         ]
       }
     },
-    "/api/auth/change-password": {
-      "put": {
-        "tags": [
-          "Authentication"
-        ],
-        "description": "Allows an authenticated user to rotate their password and invalidate cached credentials.",
-        "operationId": "change_user_password",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChangePasswordRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Password changed successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChangePasswordResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Current password is incorrect",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "auth_cookie": []
-          }
-        ]
-      }
-    },
-    "/api/auth/login": {
+    "/api/auth/login/password": {
       "post": {
         "tags": [
           "Authentication"
         ],
-        "description": "Authenticates a user and sets the auth_token HttpOnly cookie for subsequent requests.",
-        "operationId": "login_user",
+        "description": "Sign in with email and password when the account has no enrolled passkey. Returns the same auth_token cookie as passkey login. Rejected when a passkey exists or the password does not match.",
+        "operationId": "login_with_password",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
+                "$ref": "#/components/schemas/PasswordLoginRequest"
               }
             }
           },
@@ -595,7 +539,7 @@
         },
         "responses": {
           "200": {
-            "description": "Login successful",
+            "description": "Authentication successful",
             "content": {
               "application/json": {
                 "schema": {
@@ -606,16 +550,6 @@
           },
           "401": {
             "description": "Invalid credentials",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "IP temporarily banned after repeated abuse",
             "content": {
               "application/json": {
                 "schema": {
@@ -715,6 +649,391 @@
         ]
       }
     },
+    "/api/auth/passkey": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "description": "List all enrolled passkeys for the authenticated user.",
+        "operationId": "list_user_passkeys",
+        "responses": {
+          "200": {
+            "description": "List of passkeys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PasskeyItem"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/passkey/enroll/begin": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "description": "Begin passkey enrollment for the authenticated user (settings or migration). Requires an auth_token cookie; complete with enroll/finish.",
+        "operationId": "begin_passkey_enroll",
+        "responses": {
+          "200": {
+            "description": "Registration challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyRegisterBeginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/passkey/enroll/finish": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "description": "Complete authenticated passkey enrollment and return the enrolled passkey.",
+        "operationId": "finish_passkey_enroll",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyRegisterFinishRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Passkey enrolled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid response or expired challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/passkey/login/begin": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "description": "Begin passkey authentication. Returns a challenge for any email; response shape is identical for unknown emails to prevent user enumeration.",
+        "operationId": "begin_passkey_login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyLoginBeginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyLoginBeginResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/passkey/login/finish": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "description": "Complete passkey authentication and receive an auth_token cookie.",
+        "operationId": "finish_passkey_login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyLoginFinishRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Challenge not found, expired, or invalid response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/passkey/register/finish": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "description": "Complete passkey signup or recovery enrollment without an auth cookie. Returns an auth_token cookie on success. Authenticated enrollment uses enroll/finish instead.",
+        "operationId": "finish_passkey_registration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyRegisterFinishRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Signup or recovery completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid response or expired challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/passkey/{id}": {
+      "delete": {
+        "tags": [
+          "Authentication"
+        ],
+        "description": "Remove an enrolled passkey. Returns 409 if it is the last credential.",
+        "operationId": "delete_user_passkey",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Passkey ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Passkey removed"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Passkey not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Cannot remove last passkey",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/refresh": {
       "post": {
         "tags": [
@@ -752,7 +1071,7 @@
         "tags": [
           "Authentication"
         ],
-        "description": "Registers a new user.",
+        "description": "Creates a new user and begins passkey enrollment. No auth cookie is issued until passkey registration completes.",
         "operationId": "register_user",
         "requestBody": {
           "content": {
@@ -766,11 +1085,21 @@
         },
         "responses": {
           "200": {
-            "description": "User registered successfully",
+            "description": "Registration challenge issued",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
+                  "$ref": "#/components/schemas/RegisterBeginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
             }
@@ -2658,44 +2987,6 @@
           "value": "450.00"
         }
       },
-      "ChangePasswordRequest": {
-        "type": "object",
-        "required": [
-          "current_password",
-          "new_password"
-        ],
-        "properties": {
-          "current_password": {
-            "type": "string"
-          },
-          "new_password": {
-            "type": "string"
-          }
-        },
-        "example": {
-          "current_password": "OldPass123!",
-          "new_password": "NewPass456!"
-        }
-      },
-      "ChangePasswordResponse": {
-        "type": "object",
-        "required": [
-          "message",
-          "requires_reauth"
-        ],
-        "properties": {
-          "message": {
-            "type": "string"
-          },
-          "requires_reauth": {
-            "type": "boolean"
-          }
-        },
-        "example": {
-          "message": "Password updated successfully",
-          "requires_reauth": true
-        }
-      },
       "ClearSyncedDataResponse": {
         "type": "object",
         "required": [
@@ -3246,25 +3537,6 @@
           "link_token": "link-sandbox-abc123"
         }
       },
-      "LoginRequest": {
-        "type": "object",
-        "required": [
-          "email",
-          "password"
-        ],
-        "properties": {
-          "email": {
-            "type": "string"
-          },
-          "password": {
-            "type": "string"
-          }
-        },
-        "example": {
-          "email": "user@example.com",
-          "password": "SecurePass123!"
-        }
-      },
       "LogoutResponse": {
         "type": "object",
         "required": [
@@ -3448,6 +3720,135 @@
               "user_id": "99999999-8888-7777-6666-555555555555"
             }
           ]
+        }
+      },
+      "PasskeyItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "created_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "last_used_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "PasskeyLoginBeginRequest": {
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "email": "user@example.com"
+        }
+      },
+      "PasskeyLoginBeginResponse": {
+        "type": "object",
+        "required": [
+          "session_id",
+          "challenge",
+          "account_exists",
+          "passkey_available",
+          "password_available"
+        ],
+        "properties": {
+          "account_exists": {
+            "type": "boolean"
+          },
+          "challenge": {},
+          "passkey_available": {
+            "type": "boolean"
+          },
+          "password_available": {
+            "type": "boolean"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        }
+      },
+      "PasskeyLoginFinishRequest": {
+        "type": "object",
+        "required": [
+          "session_id",
+          "response"
+        ],
+        "properties": {
+          "response": {},
+          "session_id": {
+            "type": "string"
+          }
+        }
+      },
+      "PasskeyRegisterBeginResponse": {
+        "type": "object",
+        "required": [
+          "session_id",
+          "challenge"
+        ],
+        "properties": {
+          "challenge": {},
+          "session_id": {
+            "type": "string"
+          }
+        }
+      },
+      "PasskeyRegisterFinishRequest": {
+        "type": "object",
+        "required": [
+          "session_id",
+          "response",
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "response": {},
+          "session_id": {
+            "type": "string"
+          }
+        }
+      },
+      "PasswordLoginRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "email": "legacy@example.com",
+          "password": "Test1234!"
         }
       },
       "PreviewTransaction": {
@@ -3694,23 +4095,46 @@
           "provider": "teller"
         }
       },
+      "RegisterBeginResponse": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "session_id",
+          "challenge"
+        ],
+        "properties": {
+          "challenge": {},
+          "session_id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          }
+        }
+      },
       "RegisterRequest": {
         "type": "object",
         "required": [
           "email",
-          "password"
+          "name"
         ],
         "properties": {
           "email": {
             "type": "string"
           },
-          "password": {
+          "name": {
             "type": "string"
+          },
+          "password": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "example": {
           "email": "user@example.com",
-          "password": "SecurePass123!"
+          "name": "Alex"
         }
       },
       "SetTransactionCategoryRequest": {

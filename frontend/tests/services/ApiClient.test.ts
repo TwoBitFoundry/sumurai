@@ -133,12 +133,15 @@ describe('ApiClient with Injected IHttpClient', () => {
       expect(AuthService.clearToken).toHaveBeenCalledOnce();
     });
 
-    it('should not refresh token when login returns 401', async () => {
+    it('should not refresh token when passkey login finish returns 401', async () => {
       const refreshSpy = jest.spyOn(AuthService, 'refreshToken');
       mockHttp.post.mockRejectedValueOnce(new AuthenticationError());
 
       await expect(
-        ApiClient.post('/auth/login', { email: 'a@b.com', password: 'secret' })
+        ApiClient.post('/auth/passkey/login/finish', {
+          session_id: 'session-1',
+          response: {},
+        })
       ).rejects.toThrow(AuthenticationError);
 
       expect(refreshSpy).not.toHaveBeenCalled();
@@ -243,6 +246,25 @@ describe('ApiClient with Injected IHttpClient', () => {
         expect(err).toBeInstanceOf(ForbiddenError);
         expect((err as ForbiddenError).status).toBe(403);
       }
+    });
+
+    it('dispatches enrollment-required event when passkey enrollment is needed', async () => {
+      const dispatched: Event[] = [];
+      const handler = (event: Event) => dispatched.push(event);
+      window.addEventListener('sumurai:enrollment-required', handler);
+
+      mockHttp.get.mockRejectedValueOnce(
+        new ForbiddenError(
+          'Passkey enrollment is required before continuing',
+          'passkey_enrollment_required'
+        )
+      );
+
+      await expect(ApiClient.get('/budgets')).rejects.toBeInstanceOf(ForbiddenError);
+      expect(dispatched).toHaveLength(1);
+      expect(dispatched[0].type).toBe('sumurai:enrollment-required');
+
+      window.removeEventListener('sumurai:enrollment-required', handler);
     });
 
     it('should throw NetworkError for network failures', async () => {

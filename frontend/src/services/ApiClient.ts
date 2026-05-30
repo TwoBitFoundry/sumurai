@@ -142,6 +142,14 @@ export class ApiClient {
       }
 
       if (
+        error instanceof ForbiddenError &&
+        error.code === 'passkey_enrollment_required' &&
+        typeof window !== 'undefined'
+      ) {
+        window.dispatchEvent(new CustomEvent('sumurai:enrollment-required'));
+      }
+
+      if (
         error instanceof ApiError &&
         ApiClient.isRetryableStatus(error.status) &&
         attempt < ApiClient.retryConfig.maxRetries
@@ -225,7 +233,7 @@ export class ApiClient {
       throw new AuthenticationError();
     }
 
-    if (endpoint === '/auth/login') {
+    if (endpoint === '/auth/passkey/login/finish') {
       AuthService.clearToken();
       throw new AuthenticationError();
     }

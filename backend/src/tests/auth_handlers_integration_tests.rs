@@ -49,84 +49,17 @@ fn set_cookie_value(response: &axum::response::Response) -> Option<&str> {
 }
 
 #[tokio::test]
-async fn given_valid_login_when_authenticating_then_sets_auth_cookie_and_omits_token() {
+async fn given_valid_registration_when_registering_then_returns_challenge_without_auth_cookie() {
     let mut mock_db = MockDatabaseRepository::new();
-    let (user, _) = TestFixtures::create_authenticated_user_with_token();
-    let user_id = user.id;
-    let email = "login@example.com".to_string();
-    let expected_email = email.clone();
 
     mock_db
         .expect_get_user_by_email()
-        .withf(move |candidate| candidate == expected_email)
-        .returning(move |_| {
-            let user = user.clone();
-            Box::pin(async move { Ok(Some(user)) })
-        });
+        .returning(|_| Box::pin(async { Ok(None) }));
 
     let mut mock_cache = create_auth_cookie_cache();
     mock_cache
-        .expect_set_session_valid()
+        .expect_set_webauthn_challenge()
         .returning(|_, _| Box::pin(async { Ok(()) }));
-    mock_cache
-        .expect_set_jwt_token()
-        .returning(|_, _, _| Box::pin(async { Ok(()) }));
-
-    let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
-        .await
-        .unwrap();
-
-    let request_body = json!({
-        "email": email,
-        "password": "SecurePass123!"
-    });
-
-    let request = axum::http::Request::builder()
-        .method(Method::POST)
-        .uri("/api/auth/login")
-        .header("X-Forwarded-For", "127.0.0.1")
-        .header("Content-Type", "application/json")
-        .body(axum::body::Body::from(
-            serde_json::to_string(&request_body).unwrap(),
-        ))
-        .unwrap();
-
-    let response = app.oneshot(request).await.unwrap();
-    assert_eq!(response.status(), 200);
-
-    let set_cookie = set_cookie_value(&response).expect("expected auth cookie");
-    assert!(set_cookie.contains("auth_token="));
-
-    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-    let response_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-
-    assert!(response_json.get("token").is_none());
-    assert_eq!(
-        response_json.get("user_id").unwrap(),
-        &json!(user_id.to_string())
-    );
-    assert_eq!(
-        response_json.get("onboarding_completed").unwrap(),
-        &json!(false)
-    );
-}
-
-#[tokio::test]
-async fn given_valid_registration_when_registering_then_sets_auth_cookie_and_omits_token() {
-    let mut mock_db = MockDatabaseRepository::new();
-
-    mock_db.expect_create_user().returning(|user| {
-        assert!(user.provider.is_empty());
-        Box::pin(async { Ok(()) })
-    });
-
-    let mut mock_cache = create_auth_cookie_cache();
-    mock_cache
-        .expect_set_session_valid()
-        .returning(|_, _| Box::pin(async { Ok(()) }));
-    mock_cache
-        .expect_set_jwt_token()
-        .returning(|_, _, _| Box::pin(async { Ok(()) }));
 
     let app = TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
         .await
@@ -134,7 +67,7 @@ async fn given_valid_registration_when_registering_then_sets_auth_cookie_and_omi
 
     let request_body = json!({
         "email": "register@example.com",
-        "password": "SecurePass123!"
+        "name": "Register User"
     });
 
     let request = axum::http::Request::builder()
@@ -150,17 +83,15 @@ async fn given_valid_registration_when_registering_then_sets_auth_cookie_and_omi
     let response = app.oneshot(request).await.unwrap();
     assert_eq!(response.status(), 200);
 
-    let set_cookie = set_cookie_value(&response).expect("expected auth cookie");
-    assert!(set_cookie.contains("auth_token="));
+    assert!(set_cookie_value(&response).is_none());
 
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let response_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
+    assert!(response_json.get("user_id").is_some());
+    assert!(response_json.get("session_id").is_some());
+    assert!(response_json.get("challenge").is_some());
     assert!(response_json.get("token").is_none());
-    assert_eq!(
-        response_json.get("onboarding_completed").unwrap(),
-        &json!(false)
-    );
 }
 
 #[tokio::test]
@@ -294,142 +225,6 @@ async fn given_missing_auth_cookie_when_logging_out_then_returns_401() {
         .method(Method::POST)
         .uri("/api/auth/logout")
         .body(axum::body::Body::empty())
-        .unwrap();
-
-    let response = app.oneshot(request).await.unwrap();
-    assert_eq!(response.status(), 401);
-}
-
-#[tokio::test]
-async fn given_valid_current_password_when_change_password_then_returns_200() {
-    let mut mock_db = MockDatabaseRepository::new();
-    let (user, token) = TestFixtures::create_authenticated_user_with_token();
-    let user_id = user.id;
-
-    mock_db
-        .expect_get_user_by_id()
-        .withf(move |id| *id == user_id)
-        .returning(move |_| {
-            let u = user.clone();
-            Box::pin(async move { Ok(Some(u)) })
-        });
-
-    mock_db
-        .expect_update_user_password()
-        .withf(move |id, _| *id == user_id)
-        .returning(|_, _| Box::pin(async { Ok(()) }));
-
-    mock_db
-        .expect_get_all_provider_connections_by_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
-
-    mock_db
-        .expect_get_transactions_for_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
-
-    mock_db
-        .expect_get_budgets_for_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
-
-    mock_db
-        .expect_get_latest_account_balances_for_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
-
-    let app = TestFixtures::create_test_app_with_db(mock_db)
-        .await
-        .unwrap();
-
-    let request_body = json!({
-        "current_password": "SecurePass123!",
-        "new_password": "NewSecurePass456!"
-    });
-
-    let body_json = serde_json::to_string(&request_body).unwrap();
-    let request = axum::http::Request::builder()
-        .method(Method::PUT)
-        .uri("/api/auth/change-password")
-        .header("Cookie", format!("auth_token={}", token))
-        .header("Content-Type", "application/json")
-        .body(axum::body::Body::from(body_json))
-        .unwrap();
-
-    let response = app.oneshot(request).await.unwrap();
-    assert_eq!(response.status(), 200);
-
-    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-    let response_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-
-    assert!(response_json.get("message").is_some());
-    assert_eq!(response_json.get("requires_reauth").unwrap(), &json!(true));
-}
-
-#[tokio::test]
-async fn given_invalid_current_password_when_change_password_then_returns_401() {
-    let mut mock_db = MockDatabaseRepository::new();
-    let (user, token) = TestFixtures::create_authenticated_user_with_token();
-    let user_id = user.id;
-
-    mock_db
-        .expect_get_user_by_id()
-        .withf(move |id| *id == user_id)
-        .returning(move |_| {
-            let u = user.clone();
-            Box::pin(async move { Ok(Some(u)) })
-        });
-
-    mock_db
-        .expect_get_all_provider_connections_by_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
-
-    mock_db
-        .expect_get_transactions_for_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
-
-    mock_db
-        .expect_get_budgets_for_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
-
-    mock_db
-        .expect_get_latest_account_balances_for_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
-
-    let app = TestFixtures::create_test_app_with_db(mock_db)
-        .await
-        .unwrap();
-
-    let request_body = json!({
-        "current_password": "WrongPassword123!",
-        "new_password": "NewSecurePass456!"
-    });
-
-    let body_json = serde_json::to_string(&request_body).unwrap();
-    let request = axum::http::Request::builder()
-        .method(Method::PUT)
-        .uri("/api/auth/change-password")
-        .header("Cookie", format!("auth_token={}", token))
-        .header("Content-Type", "application/json")
-        .body(axum::body::Body::from(body_json))
-        .unwrap();
-
-    let response = app.oneshot(request).await.unwrap();
-    assert_eq!(response.status(), 401);
-}
-
-#[tokio::test]
-async fn given_no_auth_token_when_change_password_then_returns_401() {
-    let app = TestFixtures::create_test_app().await.unwrap();
-
-    let request_body = json!({
-        "current_password": "SecurePass123!",
-        "new_password": "NewSecurePass456!"
-    });
-
-    let body_json = serde_json::to_string(&request_body).unwrap();
-    let request = axum::http::Request::builder()
-        .method(Method::PUT)
-        .uri("/api/auth/change-password")
-        .header("Content-Type", "application/json")
-        .body(axum::body::Body::from(body_json))
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();

@@ -27,7 +27,9 @@ use crate::services::{
     plaid_service::PlaidService, plaid_service::RealPlaidClient,
     repository_service::DatabaseRepository, sync_service_factory::SyncServiceFactory,
 };
-use crate::test_fixtures::{build_credential_resolvers, noop_categorizer};
+use crate::test_fixtures::{
+    apply_passkey_enrollment_mock_defaults, build_credential_resolvers, noop_categorizer,
+};
 use crate::{create_app, AppState, Config, Router};
 
 struct MockProvider {
@@ -142,13 +144,15 @@ fn build_test_config() -> Config {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "test");
     env.set("AUTH_COOKIE_SAME_SITE", "Lax");
+    env.set("APP_ORIGIN", "http://localhost:8080");
     Config::from_env_provider(&env).unwrap()
 }
 
 async fn build_test_app(
-    mock_db: MockDatabaseRepository,
+    mut mock_db: MockDatabaseRepository,
     provider_registry: Arc<ProviderRegistry>,
 ) -> Router {
+    apply_passkey_enrollment_mock_defaults(&mut mock_db);
     let plaid_client = Arc::new(RealPlaidClient::new(
         "test_client_id".to_string(),
         "test_secret".to_string(),
@@ -205,6 +209,13 @@ async fn build_test_app(
             crate::services::categorization::category_descriptors::SYSTEM_CATEGORY_SLUGS,
         )),
         auto_categorization_service,
+        webauthn_service: Arc::new(
+            crate::services::webauthn_service::WebAuthnService::new(
+                "localhost",
+                &[url::Url::parse("http://localhost:8080").unwrap()],
+            )
+            .unwrap(),
+        ),
     };
 
     create_app(state)
@@ -214,27 +225,29 @@ async fn build_test_app(
 async fn given_registering_user_when_creating_account_then_persists_empty_provider() {
     let mut mock_db = MockDatabaseRepository::new();
 
-    mock_db.expect_create_user().returning(|user| {
-        assert!(user.provider.is_empty());
-        Box::pin(async { Ok(()) })
-    });
+    mock_db
+        .expect_get_user_by_email()
+        .returning(|_| Box::pin(async { Ok(None) }));
 
-    let app = crate::test_fixtures::TestFixtures::create_test_app_with_db_and_cache(
-        mock_db,
-        create_auth_cookie_cache(),
-    )
-    .await
-    .unwrap();
+    let mut mock_cache = create_auth_cookie_cache();
+    mock_cache
+        .expect_set_webauthn_challenge()
+        .returning(|_, _| Box::pin(async { Ok(()) }));
+
+    let app =
+        crate::test_fixtures::TestFixtures::create_test_app_with_db_and_cache(mock_db, mock_cache)
+            .await
+            .unwrap();
 
     let request_body = json!({
         "email": "register@example.com",
-        "password": "SecurePass123!"
+        "name": "Register User"
     });
 
     let request = axum::http::Request::builder()
         .method(axum::http::Method::POST)
         .uri("/api/auth/register")
-        .header("X-Forwarded-For", "127.0.0.1")
+        .header("X-Forwarded-For", "203.0.113.50")
         .header("Content-Type", "application/json")
         .body(axum::body::Body::from(
             serde_json::to_string(&request_body).unwrap(),

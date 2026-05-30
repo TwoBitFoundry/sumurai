@@ -9,6 +9,7 @@ use crate::services::plaid_service::{PlaidService, RealPlaidClient};
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::sync_service::SyncService;
 use crate::services::sync_service_factory::SyncServiceFactory;
+use crate::services::webauthn_service::WebAuthnService;
 use crate::services::{
     AuthService, AuthorizationService, AutoCategorizationService, BudgetService, CacheService,
     ConnectionService,
@@ -33,6 +34,7 @@ pub struct AppState {
     pub(crate) category_management_service: Arc<CategoryManagementService>,
     #[allow(dead_code)]
     pub(crate) auto_categorization_service: Arc<AutoCategorizationService>,
+    pub(crate) webauthn_service: Arc<WebAuthnService>,
 }
 
 impl Clone for AppState {
@@ -55,6 +57,7 @@ impl Clone for AppState {
             otlp_traces_relay: self.otlp_traces_relay.clone(),
             category_management_service: self.category_management_service.clone(),
             auto_categorization_service: self.auto_categorization_service.clone(),
+            webauthn_service: self.webauthn_service.clone(),
         }
     }
 }

@@ -6,6 +6,10 @@ jest.mock('@/context/ThemeContext', () => ({
   useTheme: jest.fn(),
 }));
 
+jest.mock('@/features/settings/PasskeySecuritySection', () => ({
+  PasskeySecuritySection: () => <div data-testid="passkey-security-section" />,
+}));
+
 describe('SettingsPage', () => {
   it('renders appearance inside account settings and updates theme preference', () => {
     const setPreference = jest.fn();
@@ -23,7 +27,6 @@ describe('SettingsPage', () => {
     const pageContainer = container.firstElementChild as HTMLElement;
     const accountSettingsBadge = screen.getByText('ACCOUNT SETTINGS');
     const appearanceLabel = screen.getByText('Appearance');
-    const changePasswordHeading = screen.getByRole('heading', { name: 'Change Password' });
     const accountSettingsCard = accountSettingsBadge.closest('[class*="space-y-5"]');
     const themeSelector = screen.getByRole('radiogroup', { name: 'Theme' });
 
@@ -35,13 +38,11 @@ describe('SettingsPage', () => {
     expect(accountSettingsBadge.compareDocumentPosition(appearanceLabel)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
-    expect(appearanceLabel.compareDocumentPosition(changePasswordHeading)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING
-    );
     expect(accountSettingsCard).toContainElement(themeSelector);
     expect(themeSelector).toHaveClass('grid');
     expect(themeSelector).toHaveClass('w-full');
-    expect(container).toHaveTextContent('Update your password to keep your account secure.');
+    expect(screen.queryByRole('heading', { name: 'Change Password' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('passkey-security-section')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('radio', { name: 'Light' }));
     expect(setPreference).toHaveBeenCalledWith('light');
   });

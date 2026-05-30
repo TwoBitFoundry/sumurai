@@ -23,15 +23,14 @@ export default meta;
 type Story = StoryObj<SettingsJourneyStoryArgs>;
 
 const successHandlers = [
-  route('PUT', '/auth/change-password', () =>
-    jsonResponse({ message: 'Password updated successfully.' })
-  ),
+  route('GET', '/auth/passkey', () => jsonResponse([])),
   route('DELETE', '/auth/account', () =>
     jsonResponse({
       message: 'Account deleted',
       deleted_items: {
-        accounts: 3,
+        connections: 0,
         transactions: 12,
+        accounts: 3,
         budgets: 2,
       },
     })
@@ -39,9 +38,7 @@ const successHandlers = [
 ];
 
 const deleteFailureHandlers = [
-  route('PUT', '/auth/change-password', () =>
-    jsonResponse({ message: 'Password updated successfully.' })
-  ),
+  route('GET', '/auth/passkey', () => jsonResponse([])),
   route('DELETE', '/auth/account', () =>
     jsonResponse({ message: 'Account deletion failed. Try again.' }, { status: 500 })
   ),
@@ -62,19 +59,10 @@ export const Journey: Story = {
     const body = within(canvasElement.ownerDocument.body);
 
     await waitFor(() => {
-      expect(canvas.getByRole('heading', { name: /change password/i })).toBeVisible();
+      expect(canvas.getByRole('heading', { name: /appearance/i })).toBeVisible();
     });
 
-    await userEvent.type(canvas.getByLabelText(/^current password$/i), 'Current123!');
-    await userEvent.type(canvas.getByLabelText(/^new password$/i), 'StrongPass1!');
-    await userEvent.type(canvas.getByLabelText(/^confirm new password$/i), 'Mismatch1!');
-    await userEvent.click(canvas.getByRole('button', { name: /change password/i }));
-    await expect(canvas.getByText(/passwords do not match/i)).toBeVisible();
-
-    await userEvent.clear(canvas.getByLabelText(/^confirm new password$/i));
-    await userEvent.type(canvas.getByLabelText(/^confirm new password$/i), 'StrongPass1!');
-    await userEvent.click(canvas.getByRole('button', { name: /change password/i }));
-    await expect(canvas.getByText(/password updated successfully/i)).toBeVisible();
+    await userEvent.click(canvas.getByRole('radio', { name: /light/i }));
 
     await userEvent.click(canvas.getByRole('button', { name: /delete account/i }));
     await userEvent.type(body.getByLabelText(/^type delete to confirm$/i), 'DELETE');

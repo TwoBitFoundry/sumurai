@@ -12,3 +12,4 @@ pub mod transaction_category_overrides;
 pub mod transactions;
 pub mod user_custom_categories;
 pub mod users;
+pub mod webauthn_credentials;

@@ -32,3 +32,4 @@ pub use connection_service::{
 pub use plaid_service::{PlaidService, RealPlaidClient};
 pub use sync_service::SyncService;
 pub use sync_service_factory::SyncServiceFactory;
+pub mod webauthn_service;

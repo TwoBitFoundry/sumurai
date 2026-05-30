@@ -40,14 +40,6 @@ export const DefaultDark: Story = {
   render: () => <SettingsScreenSlice scenario="default" />,
 };
 
-export const PasswordInvalid: Story = scenarioStory('passwordInvalid');
-
-export const PasswordMismatch: Story = scenarioStory('passwordMismatch');
-
-export const PasswordErrorBanner: Story = scenarioStory('passwordErrorBanner');
-
-export const SuccessBanner: Story = scenarioStory('successBanner');
-
 export const DeleteModal: Story = scenarioStory('deleteModal');
 
 export const DeleteModalError: Story = scenarioStory('deleteModalError');

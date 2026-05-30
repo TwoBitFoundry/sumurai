@@ -16,7 +16,7 @@ impl EntityName for Entity {
 pub struct Model {
     pub id: Uuid,
     pub email: String,
-    pub password_hash: String,
+    pub password_hash: Option<String>,
     pub created_at: Option<DateTimeWithTimeZone>,
     pub updated_at: Option<DateTimeWithTimeZone>,
     pub onboarding_completed: bool,
@@ -57,6 +57,7 @@ pub enum Relation {
     TransactionCategoryOverrides,
     Transactions,
     UserCustomCategories,
+    WebauthnCredentials,
 }
 
 impl ColumnTrait for Column {
@@ -65,7 +66,7 @@ impl ColumnTrait for Column {
         match self {
             Self::Id => ColumnType::Uuid.def(),
             Self::Email => ColumnType::String(StringLen::None).def().unique(),
-            Self::PasswordHash => ColumnType::String(StringLen::None).def(),
+            Self::PasswordHash => ColumnType::String(StringLen::None).def().null(),
             Self::CreatedAt => ColumnType::TimestampWithTimeZone.def().null(),
             Self::UpdatedAt => ColumnType::TimestampWithTimeZone.def().null(),
             Self::OnboardingCompleted => ColumnType::Boolean.def(),
@@ -97,6 +98,9 @@ impl RelationTrait for Relation {
             Self::Transactions => Entity::has_many(super::transactions::Entity).into(),
             Self::UserCustomCategories => {
                 Entity::has_many(super::user_custom_categories::Entity).into()
+            }
+            Self::WebauthnCredentials => {
+                Entity::has_many(super::webauthn_credentials::Entity).into()
             }
         }
     }
@@ -153,6 +157,12 @@ impl Related<super::transactions::Entity> for Entity {
 impl Related<super::user_custom_categories::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::UserCustomCategories.def()
+    }
+}
+
+impl Related<super::webauthn_credentials::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::WebauthnCredentials.def()
     }
 }
 

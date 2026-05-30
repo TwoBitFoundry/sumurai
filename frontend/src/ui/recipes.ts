@@ -540,5 +540,61 @@ export const controlIconWell = {
   ],
 } as const;
 
+export const settingsSecurityLayout = {
+  section: ['space-y-4', 'border-t', 'pt-5', ...border.divider],
+  list: ['flex', 'flex-col', 'gap-3'],
+  passkeyRow: [
+    'flex',
+    'flex-col',
+    'gap-3',
+    'md:flex-row',
+    'md:items-center',
+    'md:justify-between',
+    'lg:gap-4',
+  ],
+  passkeyMeta: ['min-w-0', 'flex-1', 'space-y-1'],
+  passkeyRemoveWrap: ['inline-flex', 'shrink-0', 'self-end', 'md:self-center'],
+  addTrigger: ['w-full', 'md:w-auto', 'lg:w-auto'],
+  modalActions: ['flex', 'flex-col', 'gap-3', 'md:flex-row', 'lg:gap-4'],
+  modalAction: ['w-full', 'md:flex-1'],
+} as const;
+
+export const authLayout = {
+  shell: [
+    'relative',
+    'flex',
+    'w-full',
+    'max-w-md',
+    'flex-col',
+    'items-center',
+    'justify-center',
+    'px-4',
+    'py-8',
+    'md:px-6',
+    'md:py-10',
+    'lg:max-w-lg',
+    'lg:py-12',
+  ],
+  brandAside: [
+    'hidden',
+    'lg:flex',
+    'pointer-events-none',
+    'fixed',
+    'right-0',
+    'top-0',
+    'bottom-0',
+    'z-0',
+    'w-1/2',
+    'items-end',
+    'justify-end',
+  ],
+  brandAsideImage: ['h-full', 'w-full', 'object-contain', 'object-right-bottom'],
+  card: ['relative', 'z-10', 'w-full'],
+  stackedActions: ['flex', 'flex-col', 'items-stretch', 'gap-3', 'md:gap-3', 'lg:items-center'],
+  primaryAction: ['w-full', 'md:w-full', 'lg:w-auto', 'lg:min-w-[220px]'],
+  secondaryAction: ['w-full', 'md:w-full', 'lg:w-auto'],
+  footerLink: ['text-center', font.body, text.body],
+} as const;
+
 export const semanticTextRecipes = text;
 export const semanticPlaceholderTextRecipes = placeholder;

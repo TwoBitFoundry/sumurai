@@ -49,4 +49,17 @@ impl ApiErrorResponse {
     pub fn conflict(message: &str) -> (StatusCode, Json<Self>) {
         Self::new("CONFLICT", message).into_response(StatusCode::CONFLICT)
     }
+
+    pub fn bad_request(message: &str) -> (StatusCode, Json<Self>) {
+        Self::new("BAD_REQUEST", message).into_response(StatusCode::BAD_REQUEST)
+    }
+
+    pub fn not_found(message: &str) -> (StatusCode, Json<Self>) {
+        Self::new("NOT_FOUND", message).into_response(StatusCode::NOT_FOUND)
+    }
+
+    pub fn passkey_enrollment_required(message: &str) -> (StatusCode, Json<Self>) {
+        Self::with_code("FORBIDDEN", message, "passkey_enrollment_required")
+            .into_response(StatusCode::FORBIDDEN)
+    }
 }

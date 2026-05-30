@@ -23,6 +23,8 @@ const TRANSACTIONS_TTL: u64 = 1800;
 const BANK_CONNECTION_TTL: u64 = 7200;
 const BANK_ACCOUNTS_TTL: u64 = 7200;
 const BUDGETS_TTL: u64 = 300;
+pub const WEBAUTHN_CHALLENGE_TTL: u64 = 300;
+const WEBAUTHN_CHALLENGE_SUFFIX: &str = "_webauthn_challenge";
 
 pub fn synced_transactions_key(jwt_id: &str) -> String {
     format!("{}{}", jwt_id, SYNCED_TRANSACTIONS_SUFFIX)
@@ -77,6 +79,9 @@ pub trait CacheService: Send + Sync {
     async fn get_budgets(&self, jwt_id: &str) -> Result<Option<String>>;
     async fn set_budgets(&self, jwt_id: &str, budgets_json: &str) -> Result<()>;
     async fn clear_budgets(&self, jwt_id: &str) -> Result<()>;
+
+    async fn set_webauthn_challenge(&self, session_id: &str, state_json: &str) -> Result<()>;
+    async fn take_webauthn_challenge(&self, session_id: &str) -> Result<Option<String>>;
 }
 
 pub struct RedisCache {
@@ -349,6 +354,29 @@ impl RedisCache {
         conn.del::<_, ()>(self.budgets_key(jwt_id)).await?;
         Ok(())
     }
+
+    fn webauthn_challenge_key(&self, session_id: &str) -> String {
+        format!("{}{}", session_id, WEBAUTHN_CHALLENGE_SUFFIX)
+    }
+
+    pub async fn set_webauthn_challenge(&self, session_id: &str, state_json: &str) -> Result<()> {
+        self.set_with_ttl(
+            &self.webauthn_challenge_key(session_id),
+            state_json,
+            WEBAUTHN_CHALLENGE_TTL,
+        )
+        .await
+    }
+
+    pub async fn take_webauthn_challenge(&self, session_id: &str) -> Result<Option<String>> {
+        let key = self.webauthn_challenge_key(session_id);
+        let value = self.get_string(&key).await?;
+        if value.is_some() {
+            let mut conn = self.connection_manager.clone();
+            conn.del::<_, ()>(&key).await?;
+        }
+        Ok(value)
+    }
 }
 
 #[async_trait]
@@ -460,5 +488,13 @@ impl CacheService for RedisCache {
 
     async fn clear_budgets(&self, jwt_id: &str) -> Result<()> {
         self.clear_budgets(jwt_id).await
+    }
+
+    async fn set_webauthn_challenge(&self, session_id: &str, state_json: &str) -> Result<()> {
+        self.set_webauthn_challenge(session_id, state_json).await
+    }
+
+    async fn take_webauthn_challenge(&self, session_id: &str) -> Result<Option<String>> {
+        self.take_webauthn_challenge(session_id).await
     }
 }

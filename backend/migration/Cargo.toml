@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sea-orm-migration = { version = "1", features = ["runtime-tokio-rustls", "sqlx-postgres", "with-uuid", "with-chrono", "with-rust_decimal", "cli"] }
+sea-orm-migration = { version = "1", features = ["runtime-tokio-rustls", "sqlx-postgres", "with-uuid", "with-chrono", "with-rust_decimal", "with-json", "cli"] }
+entity = { path = "../entity" }
 async-trait = "0.1"
 tokio = { version = "1", features = ["full"] }

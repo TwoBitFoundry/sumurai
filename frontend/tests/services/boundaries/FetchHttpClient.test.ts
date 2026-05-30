@@ -62,11 +62,18 @@ describe('FetchHttpClient', () => {
 
   it('maps auth and server errors for multipart requests', async () => {
     const responses = [
-      new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403,
-        statusText: 'Forbidden',
-        headers: { 'Content-Type': 'application/json' },
-      }),
+      new Response(
+        JSON.stringify({
+          error: 'FORBIDDEN',
+          message: 'Passkey enrollment is required before continuing',
+          code: 'passkey_enrollment_required',
+        }),
+        {
+          status: 403,
+          statusText: 'Forbidden',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      ),
       new Response(JSON.stringify({ detail: 'Down' }), {
         status: 503,
         statusText: 'Service Unavailable',
@@ -87,9 +94,9 @@ describe('FetchHttpClient', () => {
 
     const client = new FetchHttpClient('http://example.com/api');
 
-    await expect(client.postFormData('/test', new FormData())).rejects.toBeInstanceOf(
-      ForbiddenError
-    );
+    await expect(client.postFormData('/test', new FormData())).rejects.toMatchObject({
+      code: 'passkey_enrollment_required',
+    });
     await expect(client.postFormData('/test', new FormData())).rejects.toBeInstanceOf(ServerError);
     await expect(client.postFormData('/test', new FormData())).rejects.toBeInstanceOf(
       AuthenticationError

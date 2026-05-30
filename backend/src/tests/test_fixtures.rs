@@ -4,7 +4,10 @@ use chrono::{NaiveDate, Utc};
 use rust_decimal_macros::dec;
 use std::sync::Arc;
 use uuid::Uuid;
+use webauthn_authenticator_rs::prelude::WebauthnAuthenticator;
+use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 
+use crate::models::auth::WebAuthnCredential;
 use crate::models::predicted_category::PredictedCategory;
 use crate::models::{auth::User, transaction::Transaction};
 use crate::providers::ProviderRegistry;
@@ -43,6 +46,61 @@ use axum::{
 };
 
 pub struct TestFixtures;
+
+pub(crate) fn test_passkey_for_user(user_id: Uuid) -> WebAuthnCredential {
+    let webauthn_service = crate::services::webauthn_service::WebAuthnService::new(
+        "localhost",
+        &[url::Url::parse("http://localhost:8080").unwrap()],
+    )
+    .unwrap();
+    let (challenge, reg_state) = webauthn_service
+        .begin_registration(user_id, "test@example.com", "Test User", &[])
+        .unwrap();
+    let origin = url::Url::parse("http://localhost:8080").unwrap();
+    let mut authenticator = WebauthnAuthenticator::new(SoftPasskey::new(true));
+    let credential_response = authenticator.do_registration(origin, challenge).unwrap();
+    let passkey = webauthn_service
+        .finish_registration(&reg_state, &credential_response)
+        .unwrap();
+    let credential_id = passkey.cred_id().to_vec();
+    let passkey_json = serde_json::to_value(&passkey).unwrap();
+    WebAuthnCredential {
+        id: Uuid::new_v4(),
+        user_id,
+        credential_id,
+        passkey: passkey_json,
+        name: "Test Passkey".to_string(),
+        created_at: Utc::now(),
+        last_used_at: None,
+    }
+}
+
+pub(crate) fn apply_passkey_enrollment_mock_defaults(mock_db: &mut MockDatabaseRepository) {
+    mock_db
+        .expect_get_user_by_id()
+        .times(0..)
+        .returning(|user_id| {
+            let user_id = *user_id;
+            Box::pin(async move {
+                Ok(Some(User {
+                    id: user_id,
+                    email: format!("test-{}@example.com", user_id),
+                    password_hash: None,
+                    provider: String::new(),
+                    created_at: Utc::now(),
+                    updated_at: Utc::now(),
+                    onboarding_completed: true,
+                }))
+            })
+        });
+    mock_db
+        .expect_list_webauthn_credentials_for_user()
+        .times(0..)
+        .returning(|user_id| {
+            let credential = test_passkey_for_user(*user_id);
+            Box::pin(async move { Ok(vec![credential]) })
+        });
+}
 
 struct NoopCategorizer;
 
@@ -85,6 +143,7 @@ impl TestFixtures {
         let mut test_env = MockEnvironment::new();
         test_env.set("TELLER_ENV", "test");
         test_env.set("AUTH_COOKIE_SAME_SITE", "Lax");
+        test_env.set("APP_ORIGIN", "http://localhost:8080");
         Config::from_env_provider(&test_env).expect("Failed to create test config")
     }
 
@@ -251,6 +310,8 @@ impl TestFixtures {
             .expect_get_latest_account_balances_for_user()
             .returning(|_| Box::pin(async { Ok(vec![]) }));
 
+        apply_passkey_enrollment_mock_defaults(&mut mock_db);
+
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
 
         let mut mock_cache = MockCacheService::new();
@@ -344,6 +405,13 @@ impl TestFixtures {
                 SYSTEM_CATEGORY_SLUGS,
             )),
             auto_categorization_service,
+            webauthn_service: Arc::new(
+                crate::services::webauthn_service::WebAuthnService::new(
+                    "localhost",
+                    &[url::Url::parse("http://localhost:8080").unwrap()],
+                )
+                .unwrap(),
+            ),
         };
 
         Ok(create_app(state))
@@ -379,6 +447,8 @@ impl TestFixtures {
             .expect_count_transactions()
             .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
 
+        apply_passkey_enrollment_mock_defaults(&mut mock_db);
+
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
 
         let mut mock_cache = MockCacheService::new();
@@ -474,6 +544,13 @@ impl TestFixtures {
                 SYSTEM_CATEGORY_SLUGS,
             )),
             auto_categorization_service,
+            webauthn_service: Arc::new(
+                crate::services::webauthn_service::WebAuthnService::new(
+                    "localhost",
+                    &[url::Url::parse("http://localhost:8080").unwrap()],
+                )
+                .unwrap(),
+            ),
         };
 
         Ok(create_app(state))
@@ -518,6 +595,8 @@ impl TestFixtures {
         mock_db
             .expect_count_transactions()
             .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
+
+        apply_passkey_enrollment_mock_defaults(&mut mock_db);
 
         let db_repository: Arc<dyn DatabaseRepository> = Arc::new(mock_db);
         let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
@@ -569,6 +648,13 @@ impl TestFixtures {
                 SYSTEM_CATEGORY_SLUGS,
             )),
             auto_categorization_service,
+            webauthn_service: Arc::new(
+                crate::services::webauthn_service::WebAuthnService::new(
+                    "localhost",
+                    &[url::Url::parse("http://localhost:8080").unwrap()],
+                )
+                .unwrap(),
+            ),
         };
 
         Ok(create_app(state))
@@ -581,7 +667,7 @@ impl TestFixtures {
         let user = User {
             id: user_id,
             email: format!("test-{}@example.com", user_id),
-            password_hash: auth_service.hash_password("SecurePass123!").unwrap(),
+            password_hash: None,
             provider: "teller".to_string(),
             created_at: Utc::now(),
             updated_at: Utc::now(),
@@ -589,6 +675,13 @@ impl TestFixtures {
         };
 
         let auth_token = auth_service.generate_token(user_id).unwrap();
+        (user, auth_token.token)
+    }
+
+    pub fn create_authenticated_user_with_token_for_user(user: User) -> (User, String) {
+        let auth_service =
+            AuthService::new("test_jwt_secret_key_for_integration_testing".to_string()).unwrap();
+        let auth_token = auth_service.generate_token(user.id).unwrap();
         (user, auth_token.token)
     }
 

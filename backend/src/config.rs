@@ -48,6 +48,7 @@ pub struct Config {
     teller_environment: Option<String>,
     auth_cookie_same_site: AuthCookieSameSite,
     clear_sessions_on_boot: bool,
+    app_origins: Vec<String>,
 }
 
 impl Config {
@@ -68,12 +69,14 @@ impl Config {
             .get_var("CLEAR_SESSIONS_ON_BOOT")
             .map(|value| value.eq_ignore_ascii_case("true"))
             .unwrap_or(false);
+        let app_origins = parse_app_origins(env)?;
 
         Ok(Self {
             teller_application_id,
             teller_environment,
             auth_cookie_same_site,
             clear_sessions_on_boot,
+            app_origins,
         })
     }
 
@@ -92,6 +95,42 @@ impl Config {
     pub fn should_clear_sessions_on_boot(&self) -> bool {
         self.clear_sessions_on_boot
     }
+
+    #[allow(dead_code)]
+    pub fn app_origin(&self) -> &str {
+        self.app_origins
+            .first()
+            .map(String::as_str)
+            .expect("app_origins is never empty")
+    }
+
+    pub fn app_origins(&self) -> &[String] {
+        &self.app_origins
+    }
+}
+
+fn parse_app_origins(env: &dyn EnvironmentProvider) -> Result<Vec<String>> {
+    let raw = env
+        .get_var("APP_ORIGIN")
+        .ok_or_else(|| anyhow!("APP_ORIGIN must be set"))?;
+
+    let origins: Vec<String> = raw
+        .split(',')
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+        .collect();
+
+    if origins.is_empty() {
+        return Err(anyhow!("APP_ORIGIN must contain at least one origin"));
+    }
+
+    for origin in &origins {
+        url::Url::parse(origin)
+            .map_err(|error| anyhow!("Invalid origin '{}': {}", origin, error))?;
+    }
+
+    Ok(origins)
 }
 
 fn parse_same_site(value: String) -> Result<AuthCookieSameSite> {

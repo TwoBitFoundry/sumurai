@@ -19,10 +19,30 @@ fn given_no_teller_env_when_from_env_provider_then_returns_error() {
 }
 
 #[test]
+fn given_comma_separated_app_origin_when_from_env_provider_then_loads_all_origins() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "development");
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080,http://localhost:3001");
+
+    let config = Config::from_env_provider(&env).unwrap();
+
+    assert_eq!(
+        config.app_origins(),
+        &[
+            "http://localhost:8080".to_string(),
+            "http://localhost:3001".to_string(),
+        ]
+    );
+    assert_eq!(config.app_origin(), "http://localhost:8080");
+}
+
+#[test]
 fn given_minimal_env_when_from_env_provider_then_loads_successfully() {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "development");
     env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080");
 
     let config = Config::from_env_provider(&env).unwrap();
 
@@ -35,6 +55,7 @@ fn given_custom_database_url_when_from_env_provider_then_uses_custom_url() {
     env.set("TELLER_ENV", "development");
     env.set("TELLER_ENV", "sandbox");
     env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080");
 
     let config = Config::from_env_provider(&env).ok();
 
@@ -47,6 +68,7 @@ fn given_teller_application_id_when_from_env_provider_then_exposes_id() {
     env.set("TELLER_ENV", "development");
     env.set("TELLER_APPLICATION_ID", "app-123");
     env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080");
 
     let config = Config::from_env_provider(&env).unwrap();
 
@@ -59,6 +81,7 @@ fn given_teller_environment_when_from_env_provider_then_uses_value() {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "sandbox");
     env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080");
 
     let config = Config::from_env_provider(&env).unwrap();
 
@@ -80,6 +103,7 @@ fn given_valid_cookie_settings_when_from_env_provider_then_returns_values() {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "development");
     env.set("AUTH_COOKIE_SAME_SITE", "Lax");
+    env.set("APP_ORIGIN", "http://localhost:8080");
 
     let config = Config::from_env_provider(&env).unwrap();
 
@@ -91,6 +115,7 @@ fn given_missing_clear_sessions_setting_when_from_env_provider_then_defaults_to_
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "development");
     env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080");
 
     let config = Config::from_env_provider(&env).unwrap();
 
@@ -102,6 +127,7 @@ fn given_clear_sessions_setting_when_from_env_provider_then_parses_boolean() {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "development");
     env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "http://localhost:8080");
     env.set("CLEAR_SESSIONS_ON_BOOT", "true");
 
     let config = Config::from_env_provider(&env).unwrap();
@@ -114,6 +140,7 @@ fn given_invalid_cookie_mode_when_from_env_provider_then_returns_error() {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "development");
     env.set("AUTH_COOKIE_SAME_SITE", "Relaxed");
+    env.set("APP_ORIGIN", "http://localhost:8080");
 
     let result = Config::from_env_provider(&env);
 
