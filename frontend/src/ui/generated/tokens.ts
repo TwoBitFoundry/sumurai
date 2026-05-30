@@ -1658,6 +1658,12 @@ export const generatedTokens = {
         "unit": "px"
       }
     },
+    "content-max": {
+      "$value": {
+        "value": 1440,
+        "unit": "px"
+      }
+    },
     "compact-gap": {
       "$value": {
         "value": 8,

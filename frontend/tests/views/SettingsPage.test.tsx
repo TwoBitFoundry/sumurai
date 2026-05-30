@@ -31,8 +31,7 @@ describe('SettingsPage', () => {
     const themeSelector = screen.getByRole('radiogroup', { name: 'Theme' });
 
     expect(pageContainer).toHaveClass('w-full');
-    expect(pageContainer).toHaveClass('max-w-5xl');
-    expect(pageContainer).toHaveClass('md:px-8');
+    expect(pageContainer).toHaveClass('max-w-3xl');
     expect(screen.queryByRole('button', { name: 'Back to Dashboard' })).not.toBeInTheDocument();
     expect(appearanceLabel).toBeInTheDocument();
     expect(accountSettingsBadge.compareDocumentPosition(appearanceLabel)).toBe(

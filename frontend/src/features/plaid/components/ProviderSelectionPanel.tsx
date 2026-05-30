@@ -118,7 +118,7 @@ export const ProviderSelectionPanel = ({
             Choose how you connect accounts
           </h1>
           <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body, 'max-w-3xl', 'text-left')}>
-            Select the provider that best fits your location, budget, and privacy priorities.
+            Pick the provider that fits your household, budget, and privacy needs.
           </p>
         </div>
 

@@ -168,7 +168,7 @@ describe('shared responsive layout surfaces', () => {
       />
     );
 
-    expect(screen.getByRole('heading', { name: 'Choose how you connect accounts' })).toHaveClass(
+    expect(screen.getByRole('heading', { name: 'Choose your financial alliance' })).toHaveClass(
       'md:text-[2.25rem]'
     );
     expect(screen.getByAltText('Plaid logo')).toHaveAttribute('src', '/plaid.webp');

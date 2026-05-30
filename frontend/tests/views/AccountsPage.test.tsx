@@ -163,7 +163,7 @@ describe('AccountsPage', () => {
     renderAccountsPage();
 
     expect(screen.getByTestId('accounts-page')).toBeInTheDocument();
-    expect(screen.getByText('Link accounts and keep balances current')).toBeVisible();
+    expect(screen.getByRole('heading', { name: /sworn accounts & allies/i })).toBeVisible();
     expect(screen.getByText('Unavailable while offline')).toBeVisible();
     const tellerButton = screen.getAllByRole('button', { name: /^teller$/i })[0];
     expect(tellerButton).toBeDisabled();
@@ -213,7 +213,7 @@ describe('AccountsPage', () => {
     renderAccountsPage();
 
     const heroSection = screen
-      .getByRole('heading', { name: /link accounts and keep balances current/i })
+      .getByRole('heading', { name: /sworn accounts & allies/i })
       .closest('section');
     expect(heroSection).toBeTruthy();
     expect(
@@ -592,7 +592,9 @@ describe('AccountsPage', () => {
       renderAccountsPage();
 
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
-      expect(screen.queryByText('Link accounts and keep balances current')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('heading', { name: /sworn accounts & allies/i })
+      ).not.toBeInTheDocument();
     });
 
     it('shows the provider picker when user has a provider but no active connections', () => {
@@ -626,7 +628,9 @@ describe('AccountsPage', () => {
       renderAccountsPage();
 
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
-      expect(screen.queryByText('Link accounts and keep balances current')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('heading', { name: /sworn accounts & allies/i })
+      ).not.toBeInTheDocument();
       for (const button of screen.getAllByRole('button', { name: /^connect$/i })) {
         expect(button).toBeEnabled();
       }
@@ -671,7 +675,7 @@ describe('AccountsPage', () => {
       renderAccountsPage();
 
       expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
-      expect(screen.getByText('Link accounts and keep balances current')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /sworn accounts & allies/i })).toBeInTheDocument();
     });
 
     it('starts Teller connect from the picker click instead of only selecting the provider', async () => {

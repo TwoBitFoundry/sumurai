@@ -1,9 +1,7 @@
 import { TrendingUp } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import type { TooltipProps } from 'recharts';
-import { Area, AreaChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts';
-import type { DotItemDotProps } from 'recharts/types/util/types';
+
 import { cn, EmptyState, Pill } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
@@ -17,6 +15,7 @@ import BalancesOverview from '../components/BalancesOverview';
 import { useTheme } from '../context/ThemeContext';
 import { DashboardCalculator } from '../domain/DashboardCalculator';
 import { categoriesToDonut } from '../features/analytics/adapters/chartData';
+import { CashFlowChart } from '../features/analytics/components/CashFlowChart';
 import {
   ChartGlassTooltip,
   chartTooltipRechartsProps,
@@ -25,9 +24,9 @@ import DashboardChartCard from '../features/analytics/components/DashboardChartC
 import { SpendingByCategoryChart } from '../features/analytics/components/SpendingByCategoryChart';
 import { TopMerchantsList } from '../features/analytics/components/TopMerchantsList';
 import { useAnalytics } from '../features/analytics/hooks/useAnalytics';
+import { useCashFlow } from '../features/analytics/hooks/useCashFlow';
 import { useChartContainerSize } from '../features/analytics/hooks/useChartContainerSize';
 import { useDebouncedChartRecalc } from '../features/analytics/hooks/useDebouncedChartRecalc';
-import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries';
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import { PageLayout } from '../layouts/PageLayout';
 import type { DateRangeKey as DateRange } from '../utils/dateRanges';
@@ -38,11 +37,6 @@ const dashboardLoadingCard = [
   ...semanticBorders.subtle,
   ...semanticSurfaces.mutedChip,
 ] as const;
-
-const netTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) => {
-  const numericValue = Array.isArray(value) ? Number(value[0]) : Number(value);
-  return fmtUSD(Number.isFinite(numericValue) ? numericValue : 0);
-};
 
 let lastSpendingByCategoryAnimationKey = '';
 
@@ -61,12 +55,12 @@ const DashboardPage: React.FC<{
     () => categoriesToDonut(analytics.categories, accentIndexByName),
     [accentIndexByName, analytics.categories]
   );
-  const netWorth = useNetWorthSeries(dateRange);
-  const netSeries = netWorth.series;
-  const debouncedNetSeries = useDebouncedChartRecalc(netSeries);
-  const netLoading = netWorth.loading;
-  const netRefreshing = netWorth.refreshing;
-  const netError = netWorth.error;
+  const cashFlow = useCashFlow(6);
+  const cashFlowSeries = cashFlow.series;
+  const debouncedCashFlowSeries = useDebouncedChartRecalc(cashFlowSeries);
+  const cashFlowLoading = cashFlow.loading;
+  const cashFlowRefreshing = cashFlow.refreshing;
+  const cashFlowError = cashFlow.error;
   const spendingByCategoryAnimationKey = `${dateRange}-${analytics.cacheKey}`;
   const shouldAnimateSpendingByCategory =
     spendingByCategoryAnimationKey !== lastSpendingByCategoryAnimationKey;
@@ -80,25 +74,6 @@ const DashboardPage: React.FC<{
     setHoveredCategory(name);
   };
 
-  const netDotRenderer = useMemo<((props: DotItemDotProps) => React.ReactNode) | undefined>(() => {
-    const n = debouncedNetSeries?.length || 0;
-    const fill = colors.chart.dotFill;
-    const stroke = colors.semantic.cash;
-    if (!n) return undefined;
-    const selected = DashboardCalculator.calculateNetDotIndices(debouncedNetSeries);
-    return ({ index, cx, cy }: DotItemDotProps) => {
-      if (index == null || cx == null || cy == null) return null;
-      if (!selected.has(index)) return null;
-      return (
-        <circle cx={cx} cy={cy} r={3} stroke={stroke} strokeWidth={1} fill={fill} />
-      ) as React.ReactElement<SVGCircleElement>;
-    };
-  }, [debouncedNetSeries, colors.chart.dotFill, colors.semantic.cash]);
-
-  const netYAxisDomain = useMemo(
-    () => DashboardCalculator.calculateNetYAxisDomain(debouncedNetSeries),
-    [debouncedNetSeries]
-  );
   const {
     ref: netChartRef,
     width: netChartWidth,
@@ -249,14 +224,14 @@ const DashboardPage: React.FC<{
 
           <DashboardChartCard
             className="min-w-0"
-            title="Net Worth Over Time"
-            description="Historical asset growth"
-            refreshingLabel="Refreshing net worth"
-            isRefreshing={!netLoading && netRefreshing}
+            title="Cash flow"
+            description="Income vs expenses"
+            refreshingLabel="Refreshing cash flow"
+            isRefreshing={!cashFlowLoading && cashFlowRefreshing}
           >
-            {netLoading ? (
+            {cashFlowLoading ? (
               <div className={cn('flex-1', 'min-h-0', dashboardLoadingCard)} />
-            ) : netError ? (
+            ) : cashFlowError ? (
               <div
                 className={cn(
                   'flex-1',
@@ -266,9 +241,9 @@ const DashboardPage: React.FC<{
                   uiTextRecipes.danger
                 )}
               >
-                {netError}
+                {cashFlowError}
               </div>
-            ) : netSeries.length === 0 ? (
+            ) : cashFlowSeries.length === 0 ? (
               <div
                 className={cn(
                   'flex-1',
@@ -281,100 +256,18 @@ const DashboardPage: React.FC<{
               >
                 <EmptyState
                   icon={TrendingUp}
-                  title="No net worth data"
-                  description="No data available for this date range"
+                  title="No cash flow data"
+                  description="No transactions in this period."
                 />
               </div>
             ) : (
               <div ref={netChartRef} className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}>
                 {netChartWidth > 0 && netChartHeight > 0 ? (
-                  <AreaChart
+                  <CashFlowChart
+                    data={debouncedCashFlowSeries}
                     width={netChartWidth}
                     height={netChartHeight}
-                    accessibilityLayer={false}
-                    data={debouncedNetSeries}
-                    margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient id="netGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={colors.semantic.cash} stopOpacity={0.4} />
-                        <stop offset="95%" stopColor={colors.semantic.cash} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fill: colors.chart.axis, fontSize: 12 }}
-                      axisLine={false}
-                      tickLine={false}
-                      interval="preserveStartEnd"
-                      minTickGap={24}
-                      tickFormatter={(value: string) => {
-                        try {
-                          if (!value) return '';
-                          const first = debouncedNetSeries[0]?.date;
-                          const last = debouncedNetSeries[debouncedNetSeries.length - 1]?.date;
-                          const d = new Date(value);
-                          const spanDays =
-                            first && last
-                              ? Math.max(
-                                  1,
-                                  Math.round(
-                                    (new Date(last).getTime() - new Date(first).getTime()) /
-                                      86400000
-                                  )
-                                )
-                              : 0;
-                          if (!Number.isFinite(d.getTime())) return value;
-                          if (spanDays && spanDays <= 92) {
-                            return d.toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                            });
-                          }
-                          const mm = d.toLocaleString('en-US', { month: 'short' });
-                          const yy = d.toLocaleString('en-US', { year: '2-digit' });
-                          return `${mm} ’${yy}`;
-                        } catch {
-                          return value;
-                        }
-                      }}
-                    />
-                    <YAxis
-                      tick={{ fill: colors.chart.axis, fontSize: 12 }}
-                      axisLine={false}
-                      tickLine={false}
-                      domain={netYAxisDomain ?? ['auto', 'auto']}
-                      tickFormatter={(v) => {
-                        const n = Math.abs(Number(v));
-                        const sign = Number(v) < 0 ? '-' : '';
-                        if (n >= 1e9) return `${sign}$${(n / 1e9).toFixed(0)}b`;
-                        if (n >= 1e6) return `${sign}$${(n / 1e6).toFixed(0)}m`;
-                        if (n >= 1e3) return `${sign}$${(n / 1e3).toFixed(0)}k`;
-                        return `${sign}$${Number(n).toFixed(0)}`;
-                      }}
-                    />
-                    <Tooltip
-                      cursor={false}
-                      content={(tooltipProps) => (
-                        <ChartGlassTooltip
-                          {...tooltipProps}
-                          formatter={netTooltipFormatter}
-                          valueClassName={uiTextRecipes.success}
-                        />
-                      )}
-                      {...chartTooltipRechartsProps}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      stroke={colors.semantic.cash}
-                      strokeWidth={2}
-                      fillOpacity={1}
-                      fill="url(#netGradient)"
-                      dot={netDotRenderer}
-                    />
-                  </AreaChart>
+                  />
                 ) : null}
               </div>
             )}

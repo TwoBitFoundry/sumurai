@@ -36,8 +36,6 @@ describe('storybook screen slices responsive contract', () => {
     ) as HTMLElement | null;
 
     expect(settingsShell).toHaveClass('w-full');
-    expect(settingsShell).toHaveClass('max-w-5xl');
-    expect(settingsShell).toHaveClass('md:px-8');
-    expect(settingsShell).toHaveClass('lg:px-8');
+    expect(settingsShell).toHaveClass('max-w-3xl');
   });
 });

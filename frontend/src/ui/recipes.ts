@@ -311,7 +311,7 @@ export const radius = {
 
 export const dashboardCategoryCard = {
   shell: [
-    `${radius.standard} border transition-all duration-300`,
+    `${radius.standard} border transition-all duration-300 text-left`,
     ...border.subtle,
     ...surface.card,
     ...effect.glassShadow,
@@ -557,6 +557,20 @@ export const settingsSecurityLayout = {
   addTrigger: ['w-full', 'md:w-auto', 'lg:w-auto'],
   modalActions: ['flex', 'flex-col', 'gap-3', 'md:flex-row', 'lg:gap-4'],
   modalAction: ['w-full', 'md:flex-1'],
+} as const;
+
+export const appLayout = {
+  contentShell: ['mx-auto', 'w-full', 'max-w-[var(--spacing-content-max)]'],
+  contentGutter: ['px-4', 'md:px-6', 'lg:px-8'],
+  contentShellWithGutter: [
+    'mx-auto',
+    'w-full',
+    'max-w-[var(--spacing-content-max)]',
+    'px-4',
+    'md:px-6',
+    'lg:px-8',
+  ],
+  mainSafeArea: ['pl-[env(safe-area-inset-left)]', 'pr-[env(safe-area-inset-right)]'],
 } as const;
 
 export const authLayout = {

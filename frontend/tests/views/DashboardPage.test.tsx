@@ -4,6 +4,7 @@ import React from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { SpendingByCategoryChart } from '@/features/analytics/components/SpendingByCategoryChart';
 import { useAnalytics } from '@/features/analytics/hooks/useAnalytics';
+import { useCashFlow } from '@/features/analytics/hooks/useCashFlow';
 import { useNetWorthSeries } from '@/features/analytics/hooks/useNetWorthSeries';
 import { getThemeColors } from '@/ui/tokens';
 import DashboardPage from '@/views/DashboardPage';
@@ -14,6 +15,10 @@ jest.mock('@/context/ThemeContext', () => ({
 
 jest.mock('@/features/analytics/hooks/useAnalytics', () => ({
   useAnalytics: jest.fn(),
+}));
+
+jest.mock('@/features/analytics/hooks/useCashFlow', () => ({
+  useCashFlow: jest.fn(),
 }));
 
 jest.mock('@/features/analytics/hooks/useNetWorthSeries', () => ({
@@ -53,6 +58,17 @@ describe('DashboardPage', () => {
       cacheKey: 'all',
       start: '2026-05-01',
       end: '2026-05-31',
+    });
+
+    jest.mocked(useCashFlow).mockReturnValue({
+      loading: false,
+      refreshing: false,
+      error: null,
+      series: [
+        { month: '2026-05', income: 5000, expenses: 3000, net: 2000 },
+        { month: '2026-04', income: 5000, expenses: 3000, net: 2000 },
+      ] as any,
+      reload: jest.fn(),
     });
 
     jest.mocked(useNetWorthSeries).mockReturnValue({

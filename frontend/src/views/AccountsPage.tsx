@@ -704,8 +704,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       {connectionFlow.connectionMount}
       <PageLayout
         badge={`${providerLabel} Accounts`}
-        title="Link accounts and keep balances current"
-        subtitle="View cached balances and sync when you need fresh data."
+        title="Sworn accounts & allies"
+        subtitle="Bind your financial houses. Link institutions and keep every balance true."
         actions={actions}
         stats={statsGrid}
       >

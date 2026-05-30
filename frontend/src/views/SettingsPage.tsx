@@ -88,13 +88,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
             Once you delete your account, there is no going back. This action cannot be undone.
           </Alert>
 
-          <Button
-            type="button"
-            variant="danger"
-            size="md"
-            onClick={() => setShowDeleteModal(true)}
-            className={cn('w-full')}
-          >
+          <Button type="button" variant="danger" size="md" onClick={() => setShowDeleteModal(true)}>
             Delete Account
           </Button>
         </GlassCard>

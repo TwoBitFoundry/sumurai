@@ -58,7 +58,6 @@ export function Pill({
     const theme = statusThemes[tone];
     return (
       <span className={cn(base, theme.wrapper, className)} {...props}>
-        <span className={cn(pillRecipes.dot, theme.dot)} aria-hidden="true" />
         <span className="whitespace-nowrap">{children}</span>
       </span>
     );

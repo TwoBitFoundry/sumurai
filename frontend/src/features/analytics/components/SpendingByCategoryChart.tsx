@@ -49,8 +49,8 @@ export const SpendingByCategoryChart: React.FC<Props> = ({
     return (
       <EmptyState
         icon={BarChart3}
-        title="No transactions found"
-        description="No transaction data available"
+        title="No spending yet"
+        description="Nothing to chart in this period."
       />
     );
   }

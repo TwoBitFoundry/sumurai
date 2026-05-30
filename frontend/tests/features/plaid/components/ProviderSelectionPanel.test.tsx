@@ -30,9 +30,7 @@ describe('ProviderSelectionPanel', () => {
     expect(screen.getByText('Self-Hosted')).toBeVisible();
     expect(screen.getByText('Choose how you connect accounts')).toBeVisible();
     expect(
-      screen.getByText(
-        'Select the provider that best fits your location, budget, and privacy priorities.'
-      )
+      screen.getByText('Pick the provider that fits your household, budget, and privacy needs.')
     ).toBeVisible();
     expect(screen.getByText('US Only')).toBeVisible();
     expect(screen.getByText('US, CA')).toBeVisible();

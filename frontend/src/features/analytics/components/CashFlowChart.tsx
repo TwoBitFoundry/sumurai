@@ -14,8 +14,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { AnalyticsCashFlowPoint } from '../../../types/api';
 import { useTheme } from '../../../context/ThemeContext';
+import type { AnalyticsCashFlowPoint } from '../../../types/api';
 import { fmtUSD } from '../../../utils/format';
 import { ChartGlassTooltip, chartTooltipRechartsProps } from './ChartGlassTooltip';
 

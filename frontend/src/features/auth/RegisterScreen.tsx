@@ -103,12 +103,12 @@ export function RegisterScreen({
       <AuthFormLayout>
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
-            <Badge size="md">JOIN TODAY</Badge>
+            <Badge size="md">Enlist today</Badge>
             <h2 className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}>
-              Sign up for Sumurai
+              Join the Sumurai clan
             </h2>
             <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-              Enter your details, then enroll a passkey to finish creating your account.
+              Share your details, then seal your account with a passkey.
             </p>
           </div>
 

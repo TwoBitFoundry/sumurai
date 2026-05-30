@@ -176,7 +176,7 @@ export function LoginScreen({
       ? 'No passkey is enrolled for this email yet. Sign in with your password to set one up.'
       : loginStep === 'passkey'
         ? 'Approve the passkey prompt on this device.'
-        : 'Enter your email to continue.';
+        : 'Present your credentials to continue.';
 
   const primaryLabel =
     resolvedPhase === 'awaitingCeremony'
@@ -192,9 +192,9 @@ export function LoginScreen({
       <AuthFormLayout>
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
-            <Badge size="md">Welcome Back</Badge>
+            <Badge size="md">Welcome back</Badge>
             <h2 className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}>
-              Sign in to your account
+              Return to the dojo
             </h2>
             <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>{caption}</p>
           </div>

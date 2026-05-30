@@ -6,8 +6,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { AnalyticsService } from '../../../services/AnalyticsService';
-import { accountIdsCacheKey } from '../../../utils/cacheKeys';
 import type { AnalyticsCashFlowPoint } from '../../../types/api';
+import { accountIdsCacheKey } from '../../../utils/cacheKeys';
 
 export type UseCashFlowResult = {
   series: AnalyticsCashFlowPoint[];

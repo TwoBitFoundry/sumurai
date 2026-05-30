@@ -148,8 +148,8 @@ export function DashboardScreenSlice(props: { variant: DashboardScreenSliceVaria
     <div data-testid="dashboard-page">
       <PageLayout
         badge="Dashboard"
-        title="Balances Overview"
-        subtitle="View balances, spending, top merchants, and net worth across linked accounts."
+        title="Command dashboard"
+        subtitle="Your command post—balances, spending, top merchants, and net worth in one briefing."
         stats={balancesOverview}
       >
         <div
