@@ -77,6 +77,7 @@ export const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, width, heigh
         tick={{ fill: colors.chart.axis, fontSize: 12 }}
         axisLine={false}
         tickLine={false}
+        tickCount={Math.max(3, Math.floor(height / 70))}
         tickFormatter={(v) => {
           const n = Math.abs(Number(v));
           const sign = Number(v) < 0 ? '-' : '';
