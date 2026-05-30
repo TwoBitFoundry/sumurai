@@ -57,7 +57,26 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
       const accountIds =
         !isAllAccountsSelected && selectedAccountIds.length > 0 ? selectedAccountIds : undefined;
       const response = await AnalyticsService.getCashFlow(monthsToFetch, accountIds);
-      return response.series ?? [];
+      const data = response.series ?? [];
+
+      if (!start || !end) {
+        return data;
+      }
+
+      const allMonths = generateMonthRange(start, end);
+      const dataMap = new Map(data.map((point) => [point.month, point]));
+
+      return allMonths.map((month) => {
+        if (dataMap.has(month)) {
+          return dataMap.get(month)!;
+        }
+        return {
+          month,
+          income: 0,
+          expenses: 0,
+          net: 0,
+        };
+      });
     },
   });
 
@@ -76,4 +95,22 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
     error: query.error?.message ?? null,
     reload,
   };
+}
+
+function generateMonthRange(startStr: string, endStr: string): string[] {
+  const months: string[] = [];
+  const start = new Date(startStr);
+  const end = new Date(endStr);
+
+  let current = new Date(start.getFullYear(), start.getMonth(), 1);
+  const endDate = new Date(end.getFullYear(), end.getMonth(), 1);
+
+  while (current <= endDate) {
+    const year = current.getFullYear();
+    const month = String(current.getMonth() + 1).padStart(2, '0');
+    months.push(`${year}-${month}`);
+    current.setMonth(current.getMonth() + 1);
+  }
+
+  return months;
 }
