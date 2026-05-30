@@ -148,7 +148,7 @@ const VarianceLineWithConditionalColor: React.FC<VarianceLineWithConditionalColo
 }) => {
   if (points.length < 2) return null;
 
-  const pathSegments: JSX.Element[] = [];
+  const pathSegments: React.JSX.Element[] = [];
 
   for (let i = 0; i < points.length - 1; i++) {
     const current = points[i];
