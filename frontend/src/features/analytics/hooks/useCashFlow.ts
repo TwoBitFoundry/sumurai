@@ -2,7 +2,7 @@
  * Loads cash flow (income vs expenses) time series for analytics charts.
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { AnalyticsService } from '../../../services/AnalyticsService';
@@ -59,6 +59,7 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
   const query = useQuery<AnalyticsCashFlowPoint[], Error>({
     queryKey: ['analytics', 'cash-flow', monthsToFetch, cacheKey, dateRange],
     enabled: !accountsLoading,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
         return [];
@@ -91,6 +92,10 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
     },
   });
 
+  const loading =
+    (accountsLoading && query.data === undefined) ||
+    (!accountsLoading && query.fetchStatus === 'fetching' && query.data === undefined);
+
   const reload = useCallback(async () => {
     if (accountsLoading) {
       return;
@@ -101,7 +106,7 @@ export function useCashFlow(months: number = 6, dateRange?: DateRangeKey): UseCa
 
   return {
     series: query.data ?? [],
-    loading: accountsLoading || query.isPending,
+    loading,
     refreshing: query.isFetching && !query.isPending && !accountsLoading,
     error: query.error?.message ?? null,
     reload,

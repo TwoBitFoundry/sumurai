@@ -388,4 +388,70 @@ describe('useAnalytics', () => {
       expect(result.current.refreshing).toBe(false);
     });
   });
+
+  it('keeps prior analytics data visible while the next filter selection loads', async () => {
+    const totalsDeferred = createDeferred<number>();
+    const categoriesDeferred = createDeferred<any[]>();
+    const merchantsDeferred = createDeferred<any[]>();
+    const monthlyDeferred = createDeferred<any[]>();
+
+    jest
+      .mocked(AnalyticsService.getSpendingTotal)
+      .mockResolvedValueOnce(500)
+      .mockReturnValueOnce(totalsDeferred.promise as any);
+    jest
+      .mocked(AnalyticsService.getCategorySpendingByDateRange)
+      .mockResolvedValueOnce([{ name: 'Food', value: 300 }] as any)
+      .mockReturnValueOnce(categoriesDeferred.promise as any);
+    jest
+      .mocked(AnalyticsService.getTopMerchantsByDateRange)
+      .mockResolvedValueOnce([{ name: 'Cafe', amount: 120 }] as any)
+      .mockReturnValueOnce(merchantsDeferred.promise as any);
+    jest
+      .mocked(AnalyticsService.getMonthlyTotals)
+      .mockResolvedValueOnce([{ month: '2026-05', income: 0, expenses: 500 }] as any)
+      .mockReturnValueOnce(monthlyDeferred.promise as any);
+
+    let accountFilterHook: ReturnType<typeof useAccountFilter>;
+
+    const { result } = renderHook(
+      () => {
+        accountFilterHook = useAccountFilter();
+        return useAnalytics('current-month');
+      },
+      { wrapper: TestWrapper }
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.spendingTotal).toBe(500);
+    expect(result.current.categories).toEqual([{ name: 'Food', value: 300 }]);
+
+    await act(async () => {
+      accountFilterHook!.setSelectedAccountIds(['account1']);
+    });
+
+    await waitFor(() => {
+      expect(result.current.refreshing).toBe(true);
+    });
+
+    expect(result.current.loading).toBe(false);
+    expect(result.current.spendingTotal).toBe(500);
+    expect(result.current.categories).toEqual([{ name: 'Food', value: 300 }]);
+    expect(result.current.topMerchants).toEqual([{ name: 'Cafe', amount: 120 }]);
+
+    totalsDeferred.resolve(275);
+    categoriesDeferred.resolve([{ name: 'Travel', value: 275 }] as any);
+    merchantsDeferred.resolve([{ name: 'Airline', amount: 275 }] as any);
+    monthlyDeferred.resolve([{ month: '2026-05', income: 0, expenses: 275 }] as any);
+
+    await waitFor(() => {
+      expect(result.current.refreshing).toBe(false);
+    });
+
+    expect(result.current.spendingTotal).toBe(275);
+    expect(result.current.categories).toEqual([{ name: 'Travel', value: 275 }]);
+  });
 });
