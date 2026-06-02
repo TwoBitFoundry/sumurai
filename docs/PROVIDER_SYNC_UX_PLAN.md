@@ -187,14 +187,14 @@ sequenceDiagram
 
 **Acceptance criteria:**
 
-- [ ] **Sync all** works for Plaid, Teller, and SimpleFIN from the same Accounts button.
-- [ ] Plaid/Teller: N backend sync calls for N institutions; modal rows update per institution; one institution failing does not stop the rest; **429 mid-batch** marks remaining rows `rate_limited`.
-- [ ] SimpleFIN: one backend call; modal shows all institution rows from `simplefin_institution_results`.
-- [ ] **`rate_limited` copy is identical across providers** (daily limit + retry after **local** midnight / "tomorrow", honoring `Retry-After`; never say "UTC").
-- [ ] Per-bank sync enabled for SimpleFIN (remove `syncDisabledForAll`; implement `syncBank` for SimpleFIN).
-- [ ] SimpleFIN `auth_required` rows show bridge link; Plaid `needs_reauth` / Teller errors show provider-appropriate copy.
-- [ ] Full success auto-closes modal after last row success + delay; any warning/error/rate-limit requires manual dismiss.
-- [ ] Mixed outcomes show per-row status without a misleading global "sync failed" toast.
+- [x] **Sync all** works for Plaid, Teller, and SimpleFIN from the same Accounts button.
+- [x] Plaid/Teller: N backend sync calls for N institutions; modal rows update per institution; one institution failing does not stop the rest; **429 mid-batch** marks remaining rows `rate_limited`.
+- [x] SimpleFIN: one backend call; modal shows all institution rows from `simplefin_institution_results`.
+- [x] **`rate_limited` copy is identical across providers** (daily limit + retry after **local** midnight / "tomorrow", honoring `Retry-After`; never say "UTC").
+- [x] Per-bank sync enabled for SimpleFIN (remove `syncDisabledForAll`; implement `syncBank` for SimpleFIN).
+- [x] SimpleFIN `auth_required` rows show bridge link; Plaid `needs_reauth` / Teller errors show provider-appropriate copy.
+- [x] Full success auto-closes modal after last row success + delay; any warning/error/rate-limit requires manual dismiss.
+- [x] Mixed outcomes show per-row status without a misleading global "sync failed" toast.
 
 ---
 

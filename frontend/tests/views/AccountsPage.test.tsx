@@ -69,6 +69,14 @@ jest.mock('@/hooks/useAccountFilter', () => ({
   useAccountFilter: jest.fn(),
 }));
 
+jest.mock('@/services/SimpleFinService', () => ({
+  SimpleFinService: {
+    getIgnoredInstitutions: jest.fn().mockResolvedValue([]),
+    restoreInstitution: jest.fn(),
+    syncBridge: jest.fn(),
+  },
+}));
+
 jest.mock('@/features/import/components/ImportModal', () => ({
   ImportModal: ({
     account,
@@ -500,6 +508,46 @@ describe('AccountsPage', () => {
     expect(
       screen.getByRole('dialog', { name: /connect your simplefin bridge/i })
     ).toBeInTheDocument();
+  });
+
+  it('keeps the SimpleFIN per-bank sync action available', () => {
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid', 'simplefin'],
+        user_provider: 'simplefin',
+      })
+    );
+    jest.mocked(useAccountFilter).mockReturnValue({
+      selectedAccountIds: ['acc_1'],
+      allAccountIds: ['acc_1'],
+      isAllAccountsSelected: true,
+      accountsByBank: {
+        'SimpleFIN Bank': [
+          {
+            id: 'acc_1',
+            name: 'Checking',
+            account_type: 'depository',
+            balance_ledger: 100,
+            balance_available: 100,
+            mask: '1234',
+            provider: 'simplefin',
+            institution_name: 'SimpleFIN Bank',
+            connection_id: 'conn_1',
+            transaction_count: 0,
+          },
+        ],
+      },
+      loading: false,
+      setSelectedAccountIds: jest.fn(),
+      toggleBank: jest.fn(),
+      toggleAccount: jest.fn(),
+      removeAccountsByIds: jest.fn(),
+    });
+
+    renderAccountsPage();
+
+    expect(screen.getByRole('button', { name: /sync now/i })).toBeEnabled();
   });
 
   it('enables plaid connect when provider catalog is unavailable', () => {

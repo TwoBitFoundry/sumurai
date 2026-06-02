@@ -8,6 +8,7 @@ export const sampleBankConnections: BankConnectionViewModel[] = [
     status: 'connected',
     lastSync: '2026-05-01T12:00:00.000Z',
     provider: 'plaid',
+    connectionId: 'story-connection-1',
     accounts: [
       {
         id: 'story-plaid-acct-1',
@@ -34,6 +35,7 @@ export const sampleBankConnections: BankConnectionViewModel[] = [
     status: 'needs_reauth',
     lastSync: '2026-04-18T09:30:00.000Z',
     provider: 'plaid',
+    connectionId: 'story-connection-2',
     accounts: [
       {
         id: 'story-plaid-acct-3',

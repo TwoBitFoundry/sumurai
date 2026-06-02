@@ -1,5 +1,6 @@
 import { Link2 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import type { FinancialProvider } from '@/types/api';
 import { EmptyState } from '@/ui/primitives';
 import { BankCard } from '../../../components/BankCard';
 import ConnectButton from './ConnectButton';
@@ -19,7 +20,8 @@ export interface BankConnectionViewModel {
   short: string;
   status: 'connected' | 'needs_reauth' | 'error';
   lastSync?: string | null;
-  provider: string;
+  provider: FinancialProvider;
+  connectionId: string | null;
   accounts: BankAccount[];
 }
 
@@ -34,7 +36,6 @@ interface ConnectionsListProps {
   connectLabel?: string;
   connectLogoSrc?: string;
   emptyState?: ReactNode;
-  syncDisabledForAll?: boolean;
 }
 
 const ConnectionsList = ({
@@ -48,7 +49,6 @@ const ConnectionsList = ({
   connectLabel,
   connectLogoSrc,
   emptyState,
-  syncDisabledForAll = false,
 }: ConnectionsListProps) => {
   const headingProviderName = providerName ?? 'accounts';
   const connectButtonLabel = connectLabel ?? 'Add ally account';
@@ -87,7 +87,6 @@ const ConnectionsList = ({
           onDisconnect={onDisconnect}
           isOnline={isOnline}
           onImportSuccess={onImportSuccess}
-          syncDisabled={syncDisabledForAll}
         />
       ))}
     </div>
