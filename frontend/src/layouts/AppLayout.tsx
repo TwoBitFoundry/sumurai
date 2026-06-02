@@ -10,7 +10,7 @@ import { Button } from '@/ui/primitives/Button';
 import { useFloatingChromeFooterVisibility } from '../hooks/useFloatingChromeFooterVisibility';
 import { useScrollDetection } from '../hooks/useScrollDetection';
 import { AppFooter, AppTitleBar } from '../ui/primitives';
-import { text as semanticTextRecipes, font as uiTypographyRecipes } from '../ui/recipes';
+import { appLayout, text as semanticTextRecipes, font as uiTypographyRecipes } from '../ui/recipes';
 
 export type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
@@ -62,14 +62,12 @@ export function AppLayout({
           className={cn(
             'flex-1',
             'overflow-hidden',
-            'pl-[calc(1rem_+_env(safe-area-inset-left))] pr-[calc(1rem_+_env(safe-area-inset-right))]',
-            'md:pl-[calc(3rem_+_env(safe-area-inset-left))] md:pr-[calc(3rem_+_env(safe-area-inset-right))]',
-            'lg:pl-[calc(4rem_+_env(safe-area-inset-left))] lg:pr-[calc(4rem_+_env(safe-area-inset-right))]',
+            ...appLayout.mainSafeArea,
             'pt-3 md:pt-6 lg:pt-8',
             mainBottomPadding
           )}
         >
-          {children}
+          <div className={cn(...appLayout.contentShellWithGutter, 'min-w-0')}>{children}</div>
         </main>
 
         <div
@@ -147,10 +145,11 @@ export function AppLayout({
                 >
                   {currentTab === key ? (
                     <motion.div
+                      layout
                       layoutId={`${APP_TITLE_BAR_ACTIVE_PILL_LAYOUT_ID}-mobile`}
                       data-slot="active-pill"
                       className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
-                      transition={{ stiffness: 400, damping: 35 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 35 }}
                     />
                   ) : null}
                   <span

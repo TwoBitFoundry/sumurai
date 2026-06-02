@@ -4,7 +4,9 @@ import React from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { SpendingByCategoryChart } from '@/features/analytics/components/SpendingByCategoryChart';
 import { useAnalytics } from '@/features/analytics/hooks/useAnalytics';
+import { useCashFlow } from '@/features/analytics/hooks/useCashFlow';
 import { useNetWorthSeries } from '@/features/analytics/hooks/useNetWorthSeries';
+import { useBudgets } from '@/features/budgets/hooks/useBudgets';
 import { getThemeColors } from '@/ui/tokens';
 import DashboardPage from '@/views/DashboardPage';
 
@@ -14,6 +16,14 @@ jest.mock('@/context/ThemeContext', () => ({
 
 jest.mock('@/features/analytics/hooks/useAnalytics', () => ({
   useAnalytics: jest.fn(),
+}));
+
+jest.mock('@/features/analytics/hooks/useCashFlow', () => ({
+  useCashFlow: jest.fn(),
+}));
+
+jest.mock('@/features/budgets/hooks/useBudgets', () => ({
+  useBudgets: jest.fn(),
 }));
 
 jest.mock('@/features/analytics/hooks/useNetWorthSeries', () => ({
@@ -55,6 +65,44 @@ describe('DashboardPage', () => {
       end: '2026-05-31',
     });
 
+    jest.mocked(useCashFlow).mockReturnValue({
+      loading: false,
+      refreshing: false,
+      error: null,
+      series: [
+        { month: '2026-05', income: 5000, expenses: 3000, net: 2000 },
+        { month: '2026-04', income: 5000, expenses: 3000, net: 2000 },
+      ] as any,
+      reload: jest.fn(),
+    });
+
+    jest.mocked(useBudgets).mockReturnValue({
+      isLoading: false,
+      transactionsLoading: false,
+      error: null,
+      validationError: null,
+      budgets: [
+        { id: '1', category: 'Food', amount: 500 },
+        { id: '2', category: 'Entertainment', amount: 300 },
+      ] as any,
+      computedBudgets: [] as any,
+      load: jest.fn(),
+      add: jest.fn(),
+      update: jest.fn(),
+      remove: jest.fn(),
+      categories: [],
+      categoryOptions: [],
+      availableCategoryOptions: [],
+      usedCategories: new Set(),
+      month: new Date(),
+      monthLabel: '',
+      range: { start: '', end: '' },
+      setMonth: jest.fn(),
+      goToPreviousMonth: jest.fn(),
+      goToNextMonth: jest.fn(),
+      goToCurrentMonth: jest.fn(),
+    });
+
     jest.mocked(useNetWorthSeries).mockReturnValue({
       loading: false,
       refreshing: false,
@@ -63,7 +111,7 @@ describe('DashboardPage', () => {
     } as any);
   });
 
-  it('keeps the spending chart animation off on remount when the query key is unchanged', () => {
+  it('renders the spending chart and responsive dashboard grid', () => {
     const chartMock = jest.mocked(SpendingByCategoryChart);
     const noop = jest.fn();
     const { container, unmount } = render(
@@ -71,14 +119,11 @@ describe('DashboardPage', () => {
     );
 
     expect(chartMock).toHaveBeenCalledTimes(1);
-    expect(chartMock.mock.calls[0][0].animated).toBe(true);
-    expect(container.querySelector('[data-testid="dashboard-page"] .space-y-6')).toHaveClass(
-      'md:space-y-8'
-    );
+    expect(chartMock.mock.calls[0][0].data).toEqual([
+      expect.objectContaining({ name: 'Food', value: 10 }),
+    ]);
     expect(
-      container.querySelector(
-        '[data-testid="dashboard-page"] .grid.grid-cols-1.gap-4.items-stretch'
-      )
+      container.querySelector('[data-testid="dashboard-page"] .grid.grid-cols-1.lg\\:grid-cols-2')
     ).toHaveClass('md:gap-6');
 
     unmount();
@@ -86,7 +131,6 @@ describe('DashboardPage', () => {
     render(<DashboardPage dateRange="current-month" setDateRange={noop} />);
 
     expect(chartMock).toHaveBeenCalledTimes(2);
-    expect(chartMock.mock.calls[1][0].animated).toBe(false);
   });
 
   it('highlights a top category card when tapped the same way as the chart', async () => {

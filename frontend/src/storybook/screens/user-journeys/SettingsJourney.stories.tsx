@@ -79,7 +79,7 @@ export const DeleteAccountCancel: Story = {
 
     await userEvent.click(canvas.getByRole('button', { name: /delete account/i }));
     await expect(body.getByRole('heading', { name: /delete account/i })).toBeVisible();
-    await userEvent.click(body.getByRole('button', { name: /^cancel$/i }));
+    await userEvent.click(body.getByRole('button', { name: /^exit$/i }));
     await waitFor(() => {
       expect(body.queryByRole('heading', { name: /delete account/i })).not.toBeInTheDocument();
     });

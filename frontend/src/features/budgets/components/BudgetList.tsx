@@ -39,8 +39,8 @@ export function BudgetList({
       <div className={cn('px-6', 'py-12')}>
         <EmptyState
           icon={Target}
-          title="No budgets found"
-          description="Create your first budget to start tracking spending targets for each category."
+          title="No budgets yet"
+          description="Set your first category limit. Lead the month with discipline."
         />
       </div>
     );

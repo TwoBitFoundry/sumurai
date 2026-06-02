@@ -63,6 +63,8 @@ use utoipa::OpenApi;
             crate::models::analytics::TopMerchant,
             crate::models::analytics::BalancesOverviewResponse,
             crate::models::analytics::NetWorthOverTimeResponse,
+            crate::models::analytics::CashFlowPoint,
+            crate::models::analytics::CashFlowResponse,
             crate::models::budget::Budget,
             crate::models::budget::DeleteBudgetResponse,
             crate::models::plaid::LinkTokenRequest,

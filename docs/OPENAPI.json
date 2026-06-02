@@ -2722,13 +2722,17 @@
         "required": [
           "user_id",
           "expires_at",
-          "onboarding_completed"
+          "onboarding_completed",
+          "requires_passkey_enrollment"
         ],
         "properties": {
           "expires_at": {
             "type": "string"
           },
           "onboarding_completed": {
+            "type": "boolean"
+          },
+          "requires_passkey_enrollment": {
             "type": "boolean"
           },
           "user_id": {
@@ -2738,6 +2742,7 @@
         "example": {
           "expires_at": "2024-01-01T12:00:00Z",
           "onboarding_completed": false,
+          "requires_passkey_enrollment": true,
           "user_id": "11111111-2222-3333-4444-555555555555"
         }
       },

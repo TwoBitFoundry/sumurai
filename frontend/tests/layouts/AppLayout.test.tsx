@@ -1,5 +1,6 @@
 import { render } from '@testing-library/react';
 import { AppLayout } from '@/layouts/AppLayout';
+import { appLayout } from '@/ui/recipes';
 
 jest.mock('@/ui/primitives/AppTitleBar', () => {
   const actual = jest.requireActual<typeof import('@/ui/primitives/AppTitleBar')>(
@@ -39,10 +40,15 @@ describe('AppLayout', () => {
     expect(root).toHaveClass('flex');
     expect(root).toHaveClass('flex-col');
     expect(main).toHaveClass('flex-1');
-    expect(main).toHaveClass('md:pl-[calc(3rem_+_env(safe-area-inset-left))]');
+    expect(main).toHaveClass(...appLayout.mainSafeArea);
     expect(main).toHaveClass('md:pt-6');
-    expect(main).toHaveClass('lg:pl-[calc(4rem_+_env(safe-area-inset-left))]');
-    expect(main).not.toHaveClass('sm:pl-[calc(3rem_+_env(safe-area-inset-left))]', 'sm:pt-6');
+    expect(main).not.toHaveClass('md:pl-[calc(3rem_+_env(safe-area-inset-left))]');
+
+    const contentShell = main?.firstElementChild;
+    expect(contentShell).toHaveClass('max-w-[var(--spacing-content-max)]');
+    expect(contentShell).toHaveClass('md:px-6');
+    expect(contentShell).toHaveClass('lg:px-8');
+    expect(contentShell).not.toHaveClass('sm:px-6');
   });
 
   it('shows the footer on the dashboard tab only', () => {

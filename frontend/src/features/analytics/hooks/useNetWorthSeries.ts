@@ -2,7 +2,7 @@
  * Loads net-worth time series for analytics charts.
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { AnalyticsService } from '../../../services/AnalyticsService';
@@ -35,6 +35,7 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
   const query = useQuery<NetWorthPoint[], Error>({
     queryKey: ['analytics', 'net-worth', range, cacheKey],
     enabled: !accountsLoading && !!start && !!end,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       if (!start || !end) {
         return [];
@@ -56,6 +57,10 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
     },
   });
 
+  const loading =
+    (accountsLoading && query.data === undefined) ||
+    (!accountsLoading && query.fetchStatus === 'fetching' && query.data === undefined);
+
   const reload = useCallback(async () => {
     if (accountsLoading || !start || !end) {
       return;
@@ -66,7 +71,7 @@ export function useNetWorthSeries(range: DateRangeKey): UseNetWorthSeriesResult 
 
   return {
     series: query.data ?? [],
-    loading: accountsLoading || query.isPending,
+    loading,
     refreshing: query.isFetching && !query.isPending && !accountsLoading,
     error: query.error?.message ?? null,
     start,

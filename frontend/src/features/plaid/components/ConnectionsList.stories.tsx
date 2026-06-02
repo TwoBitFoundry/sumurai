@@ -48,7 +48,7 @@ export const Empty: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText(/no accounts connected yet/i)).toBeVisible();
-    await userEvent.click(canvas.getByRole('button', { name: /add account/i }));
+    await userEvent.click(canvas.getByRole('button', { name: /add ally account/i }));
     await expect(args.onConnect).toHaveBeenCalledTimes(1);
   },
 };

@@ -85,7 +85,7 @@ export const CeremonyCancelledToast: Story = {
     globalThis.fetch = mockedFetch;
     try {
       await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
-      await userEvent.click(canvas.getByRole('button', { name: /^continue$/i }));
+      await userEvent.click(canvas.getByRole('button', { name: /^enter$/i }));
       await waitFor(() => {
         expect(
           within(document.body).getByText(/passkey sign-in was cancelled/i)
@@ -111,7 +111,7 @@ export const NetworkError: Story = {
     }) as unknown as typeof globalThis.fetch;
     try {
       await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
-      await userEvent.click(canvas.getByRole('button', { name: /^continue$/i }));
+      await userEvent.click(canvas.getByRole('button', { name: /^enter$/i }));
       await waitFor(
         () => {
           expect(within(document.body).getByText(/network error/i)).toBeInTheDocument();
@@ -170,7 +170,7 @@ export const SignInSuccess: Story = {
     globalThis.fetch = mockedFetch;
     try {
       await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
-      await userEvent.click(canvas.getByRole('button', { name: /^continue$/i }));
+      await userEvent.click(canvas.getByRole('button', { name: /^enter$/i }));
       await waitFor(() => {
         expect(args.onLoginSuccess).toHaveBeenCalled();
       });

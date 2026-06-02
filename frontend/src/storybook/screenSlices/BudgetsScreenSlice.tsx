@@ -98,8 +98,8 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
     <div data-testid="budgets-page">
       <PageLayout
         badge="Budgets"
-        title="Budgets at a glance"
-        subtitle="Shape your spending plan, watch commitments, and stay ahead before the month runs away."
+        title="Budgets under command"
+        subtitle="Cut through the budgeting fog of war."
         error={errorMessage}
         stats={heroStats}
       >
@@ -151,8 +151,8 @@ export function BudgetsScreenSlice(props: { state: BudgetsScreenSliceState }) {
             {props.state === 'empty' ? (
               <EmptyState
                 icon={Target}
-                title="No budgets found"
-                description="Create your first category plan to watch spending settle into rhythm."
+                title="No budgets yet"
+                description="Set your first category limit. Lead the month with discipline."
                 action={
                   <Button type="button" onClick={() => {}} variant="primary" size="md">
                     <Plus />

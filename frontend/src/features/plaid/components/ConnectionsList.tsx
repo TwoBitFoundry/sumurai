@@ -51,7 +51,7 @@ const ConnectionsList = ({
   syncDisabledForAll = false,
 }: ConnectionsListProps) => {
   const headingProviderName = providerName ?? 'accounts';
-  const connectButtonLabel = connectLabel ?? 'Add account';
+  const connectButtonLabel = connectLabel ?? 'Add ally account';
 
   if (!banks.length) {
     if (emptyState) {

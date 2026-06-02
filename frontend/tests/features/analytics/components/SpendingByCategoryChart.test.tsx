@@ -48,7 +48,7 @@ describe('SpendingByCategoryChart', () => {
     rectSpy.mockRestore();
   });
 
-  it('disables pie animation when animated is false', () => {
+  it('renders the pie chart with animation enabled', () => {
     const setHoveredCategory = mock(() => {});
     render(
       <SpendingByCategoryChart
@@ -56,13 +56,12 @@ describe('SpendingByCategoryChart', () => {
         total={10}
         hoveredCategory={null}
         setHoveredCategory={setHoveredCategory}
-        animated={false}
       />
     );
 
     expect(screen.getByTestId('PieChart').getAttribute('data-accessibility-layer')).toBe('false');
-    expect(screen.getByTestId('Pie')).toHaveAttribute('data-animation-duration', '0');
-    expect(screen.getByTestId('Pie')).toHaveAttribute('data-is-animation-active', 'false');
+    expect(screen.getByTestId('Pie').getAttribute('data-animation-duration')).toBe('800');
+    expect(screen.getByTestId('Pie').getAttribute('data-is-animation-active')).toBe('true');
     expect(screen.getByTestId('Cell')).toHaveAttribute('data-fill', '#123456');
     expect(screen.getByTestId('Cell').getAttribute('data-style')).toContain('"outline":"none"');
     expect(screen.getByTestId('Tooltip')).toHaveAttribute(

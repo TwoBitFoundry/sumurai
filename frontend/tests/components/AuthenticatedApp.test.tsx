@@ -139,6 +139,21 @@ describe('AuthenticatedApp', () => {
   });
 
   describe('full-page swipe navigation', () => {
+    beforeEach(() => {
+      Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        value: jest.fn().mockImplementation((query: string) => ({
+          matches: query === '(pointer: coarse)',
+          media: query,
+          addEventListener: jest.fn(),
+          removeEventListener: jest.fn(),
+          addListener: jest.fn(),
+          removeListener: jest.fn(),
+          dispatchEvent: jest.fn(),
+        })),
+      });
+    });
+
     it('swipe left advances to the next tab', () => {
       render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
       swipePage(-100);

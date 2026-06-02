@@ -1,4 +1,11 @@
-import { AlertTriangle, Loader2, ReceiptText, RefreshCcw, TrendingUp } from 'lucide-react';
+import {
+  AlertTriangle,
+  Loader2,
+  ReceiptText,
+  RefreshCcw,
+  TrendingUp,
+  WandSparkles,
+} from 'lucide-react';
 import type React from 'react';
 import { Button, cn, GlassCard } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
@@ -6,7 +13,6 @@ import { control } from '@/ui/recipes';
 import { ToastStack } from '../components/toastStack/ToastStack';
 import HeroStatCard from '../components/widgets/HeroStatCard';
 import { useAccountsToastStack } from '../features/accounts/hooks/useAccountsToastStack';
-import { AutoCategorizeIcon } from '../features/auto-categorization/components/AutoCategorizeIcon';
 import { useAutoCategorization } from '../features/auto-categorization/hooks/useAutoCategorization';
 import TransactionsTable from '../features/transactions/components/TransactionsTable';
 import TransactionsToolbar from '../features/transactions/components/TransactionsToolbar';
@@ -53,7 +59,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
   );
 
   const loadingMessage = insightsLoading
-    ? 'Loading...'
+    ? 'Fetching...'
     : !insights && insightsError
       ? 'Unavailable'
       : null;
@@ -87,9 +93,9 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
         {autoCategorization.isPending ? (
           <Loader2 className={cn(control.glyph.md, 'animate-spin')} />
         ) : (
-          <AutoCategorizeIcon />
+          <WandSparkles className={cn(control.glyph.md)} />
         )}
-        {autoCategorization.isActive ? 'Cancel categorization' : 'Auto-categorize'}
+        {autoCategorization.isActive ? 'Cancel' : 'Classify'}
       </Button>
     </div>
   );
@@ -98,8 +104,8 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
     <div data-testid="transactions-page">
       <PageLayout
         badge="Transactions"
-        title="Review every dollar across accounts"
-        subtitle="Search and filter transactions across all connected accounts."
+        title="Slice your ledger across ally accounts"
+        subtitle="Every movement, accounted for, categorized, and within reach."
         actions={actions}
         error={error}
         stats={
@@ -144,7 +150,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
 
             <HeroStatCard
               index={4}
-              title="Recurring"
+              title="Reoccurring"
               icon={<RefreshCcw />}
               value={loadingMessage ?? recurringCount}
               suffix={loadingMessage ? undefined : recurringCount === 1 ? 'merchant' : 'merchants'}

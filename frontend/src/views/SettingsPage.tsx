@@ -65,12 +65,12 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         <GlassCard variant="default" padding="lg">
           <div className={cn('space-y-5')}>
             <div className={cn('space-y-3')}>
-              <Badge size="md">ACCOUNT SETTINGS</Badge>
+              <Badge size="md">Settings</Badge>
             </div>
 
             <section className={cn('space-y-3')}>
               <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
-                Appearance
+                Adjust your appearance
               </h2>
               <ThemeModeSelector value={preference} onChange={setPreference} />
             </section>
@@ -82,19 +82,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         <GlassCard variant="default" padding="lg" className={cn('space-y-4')}>
           <Alert
             variant="error"
-            title="Danger Zone"
+            title="Account Deletion Zone"
             icon={<AlertTriangle className={cn('h-5', 'w-5')} />}
           >
             Once you delete your account, there is no going back. This action cannot be undone.
           </Alert>
 
-          <Button
-            type="button"
-            variant="danger"
-            size="md"
-            onClick={() => setShowDeleteModal(true)}
-            className={cn('w-full')}
-          >
+          <Button type="button" variant="danger" size="md" onClick={() => setShowDeleteModal(true)}>
             Delete Account
           </Button>
         </GlassCard>
@@ -117,20 +111,20 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
           <Alert
             variant="error"
-            title="This will permanently delete:"
+            title="All to be severed:"
             icon={<AlertTriangle className={cn('h-5', 'w-5')} />}
             className={cn('mb-6')}
           >
             <ul className={cn('space-y-1', uiTypographyRecipes.caption)}>
-              <li>• All bank connections (Plaid/Teller)</li>
-              <li>• All transactions and accounts</li>
+              <li>• All bank connections</li>
+              <li>• All transactions and bank information</li>
               <li>• All budgets and settings</li>
               <li>• Your user account and login credentials</li>
             </ul>
           </Alert>
 
           {deleteError && (
-            <Alert variant="error" title="Delete failed" className={cn('mb-4')}>
+            <Alert variant="error" title="Deletion failed" className={cn('mb-4')}>
               {deleteError}
             </Alert>
           )}
@@ -158,7 +152,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
               disabled={isDeleting}
               className={cn(appTitleBarRecipes.settingsIdle, 'flex-1', 'normal-case')}
             >
-              Cancel
+              Exit
             </Button>
             <Button
               type="button"
@@ -168,7 +162,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
               disabled={confirmText !== 'DELETE' || isDeleting}
               className={cn('flex-1')}
             >
-              {isDeleting ? 'Deleting...' : 'Delete Forever'}
+              {isDeleting ? 'Deleting...' : 'Delete forever'}
             </Button>
           </div>
         </GlassCard>

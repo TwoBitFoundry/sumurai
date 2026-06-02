@@ -77,15 +77,18 @@ pub struct DateRangeQuery {
     pub start_date: Option<String>,
     pub end_date: Option<String>,
     pub account_ids: Vec<String>,
+    pub exclude_account_ids: Vec<String>,
 }
 
 pub struct MonthlyTotalsQuery {
     pub months: Option<u32>,
     pub account_ids: Vec<String>,
+    pub exclude_account_ids: Vec<String>,
 }
 
 pub struct BalancesOverviewQuery {
     pub account_ids: Vec<String>,
+    pub exclude_account_ids: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, ToSchema)]
@@ -196,6 +199,7 @@ impl<'de> Deserialize<'de> for DateRangeQuery {
                 let mut start_date: Option<Option<String>> = None;
                 let mut end_date: Option<Option<String>> = None;
                 let mut account_ids: Vec<String> = Vec::new();
+                let mut exclude_account_ids: Vec<String> = Vec::new();
 
                 while let Some(key) = map.next_key::<String>()? {
                     match key.as_str() {
@@ -215,6 +219,12 @@ impl<'de> Deserialize<'de> for DateRangeQuery {
                             let values: VecOrOne<String> = map.next_value()?;
                             account_ids.extend(values.into_vec());
                         }
+                        "exclude_account_ids"
+                        | "exclude_account_ids[]"
+                        | "exclude_account_ids%5B%5D" => {
+                            let values: VecOrOne<String> = map.next_value()?;
+                            exclude_account_ids.extend(values.into_vec());
+                        }
                         _ => {
                             map.next_value::<IgnoredAny>()?;
                         }
@@ -225,6 +235,7 @@ impl<'de> Deserialize<'de> for DateRangeQuery {
                     start_date: start_date.unwrap_or(None),
                     end_date: end_date.unwrap_or(None),
                     account_ids,
+                    exclude_account_ids,
                 })
             }
         }
@@ -253,6 +264,7 @@ impl<'de> Deserialize<'de> for MonthlyTotalsQuery {
             {
                 let mut months: Option<Option<u32>> = None;
                 let mut account_ids: Vec<String> = Vec::new();
+                let mut exclude_account_ids: Vec<String> = Vec::new();
 
                 while let Some(key) = map.next_key::<String>()? {
                     match key.as_str() {
@@ -266,6 +278,12 @@ impl<'de> Deserialize<'de> for MonthlyTotalsQuery {
                             let values: VecOrOne<String> = map.next_value()?;
                             account_ids.extend(values.into_vec());
                         }
+                        "exclude_account_ids"
+                        | "exclude_account_ids[]"
+                        | "exclude_account_ids%5B%5D" => {
+                            let values: VecOrOne<String> = map.next_value()?;
+                            exclude_account_ids.extend(values.into_vec());
+                        }
                         _ => {
                             map.next_value::<IgnoredAny>()?;
                         }
@@ -275,6 +293,7 @@ impl<'de> Deserialize<'de> for MonthlyTotalsQuery {
                 Ok(MonthlyTotalsQuery {
                     months: months.unwrap_or(None),
                     account_ids,
+                    exclude_account_ids,
                 })
             }
         }
@@ -302,6 +321,7 @@ impl<'de> Deserialize<'de> for BalancesOverviewQuery {
                 A: MapAccess<'de>,
             {
                 let mut account_ids: Vec<String> = Vec::new();
+                let mut exclude_account_ids: Vec<String> = Vec::new();
 
                 while let Some(key) = map.next_key::<String>()? {
                     match key.as_str() {
@@ -309,13 +329,22 @@ impl<'de> Deserialize<'de> for BalancesOverviewQuery {
                             let values: VecOrOne<String> = map.next_value()?;
                             account_ids.extend(values.into_vec());
                         }
+                        "exclude_account_ids"
+                        | "exclude_account_ids[]"
+                        | "exclude_account_ids%5B%5D" => {
+                            let values: VecOrOne<String> = map.next_value()?;
+                            exclude_account_ids.extend(values.into_vec());
+                        }
                         _ => {
                             map.next_value::<IgnoredAny>()?;
                         }
                     }
                 }
 
-                Ok(BalancesOverviewQuery { account_ids })
+                Ok(BalancesOverviewQuery {
+                    account_ids,
+                    exclude_account_ids,
+                })
             }
         }
 
@@ -337,6 +366,38 @@ impl<T> VecOrOne<T> {
             VecOrOne::One(item) => vec![item],
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct MonthlyCashFlowAggregate {
+    pub month: String,
+    pub income: Decimal,
+    pub expenses: Decimal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({"month": "2024-01", "income": "5000.00", "expenses": "3500.00", "net": "1500.00"}))]
+pub struct CashFlowPoint {
+    pub month: String,
+    #[schema(value_type = String)]
+    pub income: Decimal,
+    #[schema(value_type = String)]
+    pub expenses: Decimal,
+    #[schema(value_type = String)]
+    pub net: Decimal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({
+    "series": [
+        {"month": "2024-01", "income": "5000.00", "expenses": "3500.00", "net": "1500.00"},
+        {"month": "2024-02", "income": "5200.00", "expenses": "3600.00", "net": "1600.00"}
+    ],
+    "currency": "USD"
+}))]
+pub struct CashFlowResponse {
+    pub series: Vec<CashFlowPoint>,
+    pub currency: String,
 }
 
 fn round2(v: Decimal) -> Decimal {

@@ -13,6 +13,7 @@ import {
 import Image from 'next/image';
 import type React from 'react';
 import {
+  appLayout,
   buttonChrome,
   chromeBar,
   control,
@@ -70,7 +71,7 @@ export const appTitleBarRecipes = {
     ...floatingChromeGlass.shell,
   ],
   pillInset: ['p-2', 'md:p-3'],
-  floatingChromeGutter: ['px-4', 'md:px-6', 'lg:px-8'],
+  floatingChromeGutter: [...appLayout.contentShellWithGutter],
   pillContainerSize: [chromeBar.height],
   pillTab: [
     `relative flex h-full min-h-0 items-center justify-center gap-0 ${uiRadiusRecipes.standard}`,
@@ -223,10 +224,11 @@ export const AppTitleBar = ({
           >
             {currentTab === key ? (
               <motion.div
+                layout
                 layoutId={APP_TITLE_BAR_ACTIVE_PILL_LAYOUT_ID}
                 data-slot="active-pill"
                 className={cn('absolute inset-0 rounded-[length:inherit] bg-[inherit]')}
-                transition={{ stiffness: 400, damping: 35 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 35 }}
               />
             ) : null}
             <span className={cn('relative z-10 shrink-0', ...appTitleBarRecipes.pillTabIconWell)}>
@@ -251,7 +253,7 @@ export const AppTitleBar = ({
 
   return (
     <header ref={ref} className={titleBarVariants({ state })}>
-      <div className={cn('px-4', 'md:px-6', 'lg:px-8')}>
+      <div className={cn(...appLayout.contentShellWithGutter)}>
         <div className={cn(...appTitleBarRecipes.titleBarGrid)}>
           <div
             className={cn('col-start-1', 'row-start-1', ...appTitleBarRecipes.titleBarRow, 'gap-6')}

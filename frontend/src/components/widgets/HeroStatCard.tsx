@@ -33,6 +33,7 @@ export type HeroStatCardProps = {
   className?: string;
   minHeightClassName?: string;
   footerScrollClassName?: string;
+  layout?: 'stack' | 'row' | 'row-tablet';
 };
 
 export { heroStatSemanticThemes };
@@ -195,6 +196,7 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
   className,
   minHeightClassName = 'min-h-[120px]',
   footerScrollClassName,
+  layout = 'stack',
 }) => {
   const accent = accentProp ?? accentFromIndex(index);
   const styles = heroAccents[accent] ?? getHeroAccentTheme(accent);
@@ -238,8 +240,12 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
 
         <div
           className={cn(
-            'relative z-10 flex h-full flex-col gap-2',
-            hasFooter ? 'justify-between' : 'justify-start'
+            'relative z-10 flex h-full gap-2',
+            layout === 'row'
+              ? 'flex-row items-center justify-between lg:flex-col lg:items-start lg:justify-start'
+              : layout === 'row-tablet'
+                ? 'flex-col md:flex-row md:items-center md:justify-between lg:flex-col lg:items-start lg:justify-start'
+                : cn('flex-col', hasFooter ? 'justify-between' : 'justify-start')
           )}
         >
           <div className="flex min-w-0 items-center gap-2">

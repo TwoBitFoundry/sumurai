@@ -548,3 +548,175 @@ fn given_transactions_when_getting_top_merchants_with_date_range_then_filters_an
     assert_eq!(merchant.amount, dec!(325.00));
     assert_eq!(merchant.count, 3);
 }
+
+#[test]
+fn given_income_and_expense_transactions_when_calculating_cash_flow_then_buckets_by_month() {
+    let analytics = AnalyticsService::new();
+    let txns = vec![
+        create_test_transaction(
+            dec!(5000.00),
+            NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            "INCOME",
+        ),
+        create_test_transaction(
+            dec!(-3500.00),
+            NaiveDate::from_ymd_opt(2024, 1, 20).unwrap(),
+            "Food",
+        ),
+        create_test_transaction(
+            dec!(5200.00),
+            NaiveDate::from_ymd_opt(2024, 2, 10).unwrap(),
+            "INCOME",
+        ),
+        create_test_transaction(
+            dec!(-3600.00),
+            NaiveDate::from_ymd_opt(2024, 2, 15).unwrap(),
+            "Transport",
+        ),
+    ];
+
+    let result = analytics.calculate_cash_flow(&txns, 3);
+    assert_eq!(result.len(), 2);
+
+    let jan = result.iter().find(|m| m.month == "2024-01").unwrap();
+    assert_eq!(jan.income, dec!(5000.00));
+    assert_eq!(jan.expenses, dec!(3500.00));
+    assert_eq!(jan.net, dec!(1500.00));
+
+    let feb = result.iter().find(|m| m.month == "2024-02").unwrap();
+    assert_eq!(feb.income, dec!(5200.00));
+    assert_eq!(feb.expenses, dec!(3600.00));
+    assert_eq!(feb.net, dec!(1600.00));
+}
+
+#[test]
+fn given_transfer_transactions_when_calculating_cash_flow_then_excludes_transfers() {
+    let analytics = AnalyticsService::new();
+    let txns = vec![
+        create_test_transaction(
+            dec!(5000.00),
+            NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            "INCOME",
+        ),
+        create_test_transaction(
+            dec!(-3500.00),
+            NaiveDate::from_ymd_opt(2024, 1, 20).unwrap(),
+            "Food",
+        ),
+        create_test_transaction(
+            dec!(-1000.00),
+            NaiveDate::from_ymd_opt(2024, 1, 25).unwrap(),
+            "TRANSFER_OUT",
+        ),
+        create_test_transaction(
+            dec!(500.00),
+            NaiveDate::from_ymd_opt(2024, 1, 28).unwrap(),
+            "TRANSFER_IN",
+        ),
+    ];
+
+    let result = analytics.calculate_cash_flow(&txns, 3);
+    assert_eq!(result.len(), 1);
+
+    let jan = result.iter().find(|m| m.month == "2024-01").unwrap();
+    assert_eq!(jan.income, dec!(5000.00));
+    assert_eq!(jan.expenses, dec!(3500.00));
+    assert_eq!(jan.net, dec!(1500.00));
+}
+
+#[test]
+fn given_loan_payment_transactions_when_calculating_cash_flow_then_excludes_loan_payments() {
+    let analytics = AnalyticsService::new();
+    let txns = vec![
+        create_test_transaction(
+            dec!(5000.00),
+            NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            "INCOME",
+        ),
+        create_test_transaction(
+            dec!(-3500.00),
+            NaiveDate::from_ymd_opt(2024, 1, 20).unwrap(),
+            "Food",
+        ),
+        create_test_transaction(
+            dec!(-500.00),
+            NaiveDate::from_ymd_opt(2024, 1, 25).unwrap(),
+            "LOAN_PAYMENTS",
+        ),
+    ];
+
+    let result = analytics.calculate_cash_flow(&txns, 3);
+    assert_eq!(result.len(), 1);
+
+    let jan = result.iter().find(|m| m.month == "2024-01").unwrap();
+    assert_eq!(jan.income, dec!(5000.00));
+    assert_eq!(jan.expenses, dec!(3500.00));
+    assert_eq!(jan.net, dec!(1500.00));
+}
+
+#[test]
+fn given_multiple_months_when_calculating_cash_flow_then_truncates_to_month_limit() {
+    let analytics = AnalyticsService::new();
+    let txns = vec![
+        create_test_transaction(
+            dec!(1000.00),
+            NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            "INCOME",
+        ),
+        create_test_transaction(
+            dec!(-500.00),
+            NaiveDate::from_ymd_opt(2024, 1, 20).unwrap(),
+            "Food",
+        ),
+        create_test_transaction(
+            dec!(1100.00),
+            NaiveDate::from_ymd_opt(2024, 2, 10).unwrap(),
+            "INCOME",
+        ),
+        create_test_transaction(
+            dec!(-600.00),
+            NaiveDate::from_ymd_opt(2024, 2, 15).unwrap(),
+            "Food",
+        ),
+        create_test_transaction(
+            dec!(1200.00),
+            NaiveDate::from_ymd_opt(2024, 3, 10).unwrap(),
+            "INCOME",
+        ),
+        create_test_transaction(
+            dec!(-700.00),
+            NaiveDate::from_ymd_opt(2024, 3, 15).unwrap(),
+            "Food",
+        ),
+    ];
+
+    let result = analytics.calculate_cash_flow(&txns, 2);
+    assert_eq!(result.len(), 2);
+    assert!(result[0].month == "2024-02");
+    assert!(result[1].month == "2024-03");
+}
+
+#[test]
+fn given_no_income_when_calculating_cash_flow_then_handles_zero_income() {
+    let analytics = AnalyticsService::new();
+    let txns = vec![
+        create_test_transaction(
+            dec!(-500.00),
+            NaiveDate::from_ymd_opt(2024, 1, 20).unwrap(),
+            "Food",
+        ),
+        create_test_transaction(
+            dec!(-100.00),
+            NaiveDate::from_ymd_opt(2024, 1, 25).unwrap(),
+            "Transport",
+        ),
+    ];
+
+    let result = analytics.calculate_cash_flow(&txns, 3);
+    assert_eq!(result.len(), 1);
+
+    let jan = result.iter().find(|m| m.month == "2024-01").unwrap();
+    assert_eq!(jan.income, dec!(0.00));
+    assert_eq!(jan.expenses, dec!(600.00));
+    assert_eq!(jan.net, dec!(-600.00));
+}

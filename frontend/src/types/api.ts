@@ -197,6 +197,18 @@ export interface AnalyticsTopMerchantsResponse {
   percentage: number;
 }
 
+export interface AnalyticsCashFlowPoint {
+  month: string;
+  income: number;
+  expenses: number;
+  net: number;
+}
+
+export interface AnalyticsCashFlowResponse {
+  series: AnalyticsCashFlowPoint[];
+  currency: string;
+}
+
 export type AutoCategorizationJobStatus =
   | 'running'
   | 'cancelling'
@@ -234,6 +246,7 @@ export interface AuthResponse {
   user_id: string;
   expires_at: string;
   onboarding_completed: boolean;
+  requires_passkey_enrollment?: boolean;
 }
 
 export interface PasswordLoginRequest {

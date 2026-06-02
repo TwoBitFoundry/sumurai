@@ -25,14 +25,13 @@ describe('SettingsPage', () => {
     const { container } = render(<SettingsPage />);
 
     const pageContainer = container.firstElementChild as HTMLElement;
-    const accountSettingsBadge = screen.getByText('ACCOUNT SETTINGS');
-    const appearanceLabel = screen.getByText('Appearance');
+    const accountSettingsBadge = screen.getByText('Settings');
+    const appearanceLabel = screen.getByText('Adjust your appearance');
     const accountSettingsCard = accountSettingsBadge.closest('[class*="space-y-5"]');
     const themeSelector = screen.getByRole('radiogroup', { name: 'Theme' });
 
     expect(pageContainer).toHaveClass('w-full');
-    expect(pageContainer).toHaveClass('max-w-5xl');
-    expect(pageContainer).toHaveClass('md:px-8');
+    expect(pageContainer).toHaveClass('max-w-3xl');
     expect(screen.queryByRole('button', { name: 'Back to Dashboard' })).not.toBeInTheDocument();
     expect(appearanceLabel).toBeInTheDocument();
     expect(accountSettingsBadge.compareDocumentPosition(appearanceLabel)).toBe(

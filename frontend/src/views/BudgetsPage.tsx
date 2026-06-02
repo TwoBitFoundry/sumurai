@@ -117,7 +117,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
     if (stats.overBudgetCount === 0 && computedBudgets.length > 0) {
       return [
         {
-          label: 'All budgets on track',
+          label: 'All budgets hold the line',
           type: 'semantic' as const,
           tone: 'success' as const,
         },
@@ -203,8 +203,8 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
     <div data-testid="budgets-page">
       <PageLayout
         badge="Budgets"
-        title="Budgets at a glance"
-        subtitle="Shape your spending plan, watch commitments, and stay ahead before the month runs away."
+        title="Command your spending"
+        subtitle="Name your allowances. Honor your commitments. The month moves whether you plan or not."
         error={errorMessage}
         stats={heroStats}
       >
@@ -248,8 +248,8 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
               <>
                 <EmptyState
                   icon={Target}
-                  title="No budgets found"
-                  description="Create your first category plan to watch spending settle into rhythm."
+                  title="No budgets yet"
+                  description="Establish your first allowance to see your progress."
                   data-testid="budgets-empty-state"
                 />
               </>

@@ -1,6 +1,7 @@
 import { Handshake, Star } from 'lucide-react';
 import { cn } from '@/ui/primitives';
 import {
+  appLayout,
   border as uiBorderRecipes,
   radius as uiRadiusRecipes,
   surface as uiSurfaceRecipes,
@@ -53,8 +54,7 @@ export function Footer() {
     >
       <div
         className={cn(
-          'max-w-6xl',
-          'mx-auto',
+          ...appLayout.contentShell,
           'pl-[calc(1rem_+_env(safe-area-inset-left))] pr-[calc(1rem_+_env(safe-area-inset-right))]',
           'md:pl-[calc(2rem_+_env(safe-area-inset-left))] md:pr-[calc(2rem_+_env(safe-area-inset-right))]',
           'py-8'
@@ -74,7 +74,7 @@ export function Footer() {
           <div className={cn('flex', 'flex-col', 'gap-2', 'items-start')}>
             <img src="/tbf-logo.svg" alt="Two Bit Foundry" className={cn('h-10', 'w-auto')} />
             <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
-              Built in the open with the community
+              Forging better systems for founders
             </p>
           </div>
 

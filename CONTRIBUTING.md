@@ -73,6 +73,8 @@ For **source-built** local development (console traces, Lax cookies in compose):
 docker compose -f docker-compose.dev.yml up -d --build
 ```
 
+Dev compose uses separate Postgres/Redis volumes (`postgres_data_dev`, `redis_data_dev`) from the default OSS stack (`postgres_data_oss`, `redis_data_oss`). The first run after switching stacks starts with a fresh database; migrations and `SEED_DEMO_USER` recreate the demo account. The dev backend image is built with the `dev-seed` Cargo feature so `me@test.com` can sign in with password only (no passkey enrollment).
+
 For the **production-oriented** stack with Seq, use `docker-compose.prod.yml` and [docs/PRODUCTION_TLS.md](docs/PRODUCTION_TLS.md).
 
 Demo credentials: `me@test.com` / `Test1234!`

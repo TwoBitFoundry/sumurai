@@ -4,6 +4,7 @@
 
 import type { BalancesOverview } from '../types/analytics';
 import type {
+  AnalyticsCashFlowResponse,
   AnalyticsCategoryResponse,
   AnalyticsMonthlyTotalsResponse,
   AnalyticsSpendingResponse,
@@ -58,6 +59,18 @@ export class AnalyticsService {
     const qs = params.toString();
     if (qs) endpoint = `/analytics/monthly-totals?${qs}`;
     return ApiClient.get<AnalyticsMonthlyTotalsResponse[]>(endpoint);
+  }
+
+  static async getCashFlow(
+    months: number,
+    accountIds?: string[]
+  ): Promise<AnalyticsCashFlowResponse> {
+    let endpoint = `/analytics/cash-flow?months=${months}`;
+    const params = new URLSearchParams(`months=${months}`);
+    appendAccountQueryParams(params, accountIds);
+    const qs = params.toString();
+    if (qs) endpoint = `/analytics/cash-flow?${qs}`;
+    return ApiClient.get<AnalyticsCashFlowResponse>(endpoint);
   }
 
   static async getTopMerchantsByDateRange(

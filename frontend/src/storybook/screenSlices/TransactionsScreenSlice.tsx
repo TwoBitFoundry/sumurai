@@ -82,8 +82,8 @@ export function TransactionsScreenSlice(props: {
     <div data-testid="transactions-page">
       <PageLayout
         badge="Transactions"
-        title="Review every dollar across accounts"
-        subtitle="Search and filter transactions across all connected accounts."
+        title="Transactions, fully accounted"
+        subtitle="Every transaction on the books. Search and filter your complete history."
         error={
           props.state === 'error' ? (props.errorMessage ?? 'Failed to load transactions.') : null
         }

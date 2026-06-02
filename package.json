@@ -13,7 +13,7 @@
     "rust:lint": "bun run rust:fmt && bun run rust:clippy",
     "rust:typecheck": "cargo check --workspace --locked --all-targets",
     "rust:test": "cargo test -p sumurai-backend --locked",
-    "rust:test:ci": "RUST_BACKTRACE=1 cargo test -p sumurai-backend -p sumurai-cli --locked",
+    "rust:test:ci": "RUST_BACKTRACE=1 cargo test -p sumurai-backend -p sumurai-cli --locked && cargo test -p sumurai-backend --locked --features dev-seed seed_password",
     "backend:ci": "bun run rust:fmt && bun run rust:typecheck && bun run rust:clippy && bun run rust:test:ci",
     "frontend:typecheck": "bun --cwd=frontend run typecheck",
     "frontend:lint": "bun --cwd=frontend run lint",

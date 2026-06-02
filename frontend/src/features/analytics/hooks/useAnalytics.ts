@@ -2,7 +2,7 @@
  * Loads analytics aggregates for dashboard charts.
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { AnalyticsService } from '../../../services/AnalyticsService';
@@ -48,6 +48,7 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
   const query = useQuery<AnalyticsQueryData, Error>({
     queryKey: ['analytics', range, cacheKey],
     enabled: !accountsLoading,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
         return {
@@ -76,8 +77,12 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
     },
   });
 
+  const loading =
+    (accountsLoading && query.data === undefined) ||
+    (!accountsLoading && query.fetchStatus === 'fetching' && query.data === undefined);
+
   return {
-    loading: accountsLoading || query.isPending,
+    loading,
     refreshing: query.isFetching && !query.isPending && !accountsLoading,
     error: query.error?.message ?? null,
     spendingTotal: query.data?.spendingTotal ?? 0,

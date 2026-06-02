@@ -48,12 +48,12 @@ export function RegisterScreen({
     setBannerError(null);
 
     if (!isEmailValid) {
-      setBannerError('Please enter a valid email address.');
+      setBannerError('Enter a valid email.');
       return;
     }
 
     if (!isNameValid) {
-      setBannerError('Please enter your name.');
+      setBannerError('Enter your name.');
       return;
     }
 
@@ -93,22 +93,22 @@ export function RegisterScreen({
 
   const submitLabel =
     resolvedPhase === 'awaitingCeremony'
-      ? 'Approve passkey on your device…'
+      ? 'Confirm the passkey summons on your device.'
       : resolvedPhase === 'submitting'
-        ? 'Creating account…'
-        : 'Create account';
+        ? 'Enrolling...'
+        : 'Join';
 
   return (
     <>
       <AuthFormLayout>
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
-            <Badge size="md">JOIN TODAY</Badge>
+            <Badge size="md">Begin the path</Badge>
             <h2 className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}>
               Sign up for Sumurai
             </h2>
             <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-              Enter your details, then enroll a passkey to finish creating your account.
+              Enter your details, then seal a passkey to finish creating your account.
             </p>
           </div>
 
@@ -133,7 +133,7 @@ export function RegisterScreen({
               />
               {email && !isEmailValid ? (
                 <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.danger)}>
-                  Please enter a valid email address.
+                  Enter a valid email.
                 </p>
               ) : null}
             </div>
@@ -163,7 +163,7 @@ export function RegisterScreen({
           </form>
 
           <div className={cn(authLayout.footerLink)}>
-            <p className="mb-3">Already have an account?</p>
+            <p className="mb-3">Already joined?</p>
             <Button
               type="button"
               onClick={onNavigateToLogin}

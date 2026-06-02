@@ -1,9 +1,7 @@
 import { TrendingUp } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
-import type { TooltipProps } from 'recharts';
-import { Area, AreaChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts';
-import type { DotItemDotProps } from 'recharts/types/util/types';
+import { useCallback, useMemo, useState } from 'react';
+
 import { cn, EmptyState, Pill } from '@/ui/primitives';
 import {
   dashboardCategoryCard,
@@ -17,6 +15,8 @@ import BalancesOverview from '../components/BalancesOverview';
 import { useTheme } from '../context/ThemeContext';
 import { DashboardCalculator } from '../domain/DashboardCalculator';
 import { categoriesToDonut } from '../features/analytics/adapters/chartData';
+import { BudgetVsActualChart } from '../features/analytics/components/BudgetVsActualChart';
+import { CashFlowChart } from '../features/analytics/components/CashFlowChart';
 import {
   ChartGlassTooltip,
   chartTooltipRechartsProps,
@@ -25,26 +25,20 @@ import DashboardChartCard from '../features/analytics/components/DashboardChartC
 import { SpendingByCategoryChart } from '../features/analytics/components/SpendingByCategoryChart';
 import { TopMerchantsList } from '../features/analytics/components/TopMerchantsList';
 import { useAnalytics } from '../features/analytics/hooks/useAnalytics';
+import { useCashFlow } from '../features/analytics/hooks/useCashFlow';
 import { useChartContainerSize } from '../features/analytics/hooks/useChartContainerSize';
 import { useDebouncedChartRecalc } from '../features/analytics/hooks/useDebouncedChartRecalc';
-import { useNetWorthSeries } from '../features/analytics/hooks/useNetWorthSeries';
+import { useBudgets } from '../features/budgets/hooks/useBudgets';
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import { PageLayout } from '../layouts/PageLayout';
 import type { DateRangeKey as DateRange } from '../utils/dateRanges';
 import { fmtUSD } from '../utils/format';
 
 const dashboardLoadingCard = [
-  `min-h-[220px] ${uiRadiusRecipes.standard} border animate-pulse`,
+  `min-h-[28px] ${uiRadiusRecipes.standard} border animate-pulse`,
   ...semanticBorders.subtle,
   ...semanticSurfaces.mutedChip,
 ] as const;
-
-const netTooltipFormatter: TooltipProps<number, string>['formatter'] = (value) => {
-  const numericValue = Array.isArray(value) ? Number(value[0]) : Number(value);
-  return fmtUSD(Number.isFinite(numericValue) ? numericValue : 0);
-};
-
-let lastSpendingByCategoryAnimationKey = '';
 
 const DashboardPage: React.FC<{
   dateRange: DateRange;
@@ -61,56 +55,51 @@ const DashboardPage: React.FC<{
     () => categoriesToDonut(analytics.categories, accentIndexByName),
     [accentIndexByName, analytics.categories]
   );
-  const netWorth = useNetWorthSeries(dateRange);
-  const netSeries = netWorth.series;
-  const debouncedNetSeries = useDebouncedChartRecalc(netSeries);
-  const netLoading = netWorth.loading;
-  const netRefreshing = netWorth.refreshing;
-  const netError = netWorth.error;
-  const spendingByCategoryAnimationKey = `${dateRange}-${analytics.cacheKey}`;
-  const shouldAnimateSpendingByCategory =
-    spendingByCategoryAnimationKey !== lastSpendingByCategoryAnimationKey;
+  const cashFlow = useCashFlow(6, dateRange);
+  const cashFlowSeries = cashFlow.series;
+  const debouncedCashFlowSeries = useDebouncedChartRecalc(cashFlowSeries);
+  const cashFlowLoading = cashFlow.loading;
+  const cashFlowRefreshing = cashFlow.refreshing;
+  const cashFlowError = cashFlow.error;
 
-  useEffect(() => {
-    lastSpendingByCategoryAnimationKey = spendingByCategoryAnimationKey;
-  }, [spendingByCategoryAnimationKey]);
+  const budgets = useBudgets();
+  const totalBudget = useMemo(
+    () => budgets.budgets.reduce((sum, b) => sum + Number(b.amount || 0), 0),
+    [budgets.budgets]
+  );
+  const budgetVsActualData = useMemo(
+    () =>
+      cashFlowSeries.map((point) => ({
+        month: point.month,
+        expenses: point.expenses,
+      })),
+    [cashFlowSeries]
+  );
+  const debouncedBudgetVsActualData = useDebouncedChartRecalc(budgetVsActualData);
 
   const monthSpend = analytics.spendingTotal;
-  const handleCategoryHover = (name: string | null) => {
+  const handleCategoryHover = useCallback((name: string | null) => {
     setHoveredCategory(name);
-  };
+  }, []);
 
-  const netDotRenderer = useMemo<((props: DotItemDotProps) => React.ReactNode) | undefined>(() => {
-    const n = debouncedNetSeries?.length || 0;
-    const fill = colors.chart.dotFill;
-    const stroke = colors.semantic.cash;
-    if (!n) return undefined;
-    const selected = DashboardCalculator.calculateNetDotIndices(debouncedNetSeries);
-    return ({ index, cx, cy }: DotItemDotProps) => {
-      if (index == null || cx == null || cy == null) return null;
-      if (!selected.has(index)) return null;
-      return (
-        <circle cx={cx} cy={cy} r={3} stroke={stroke} strokeWidth={1} fill={fill} />
-      ) as React.ReactElement<SVGCircleElement>;
-    };
-  }, [debouncedNetSeries, colors.chart.dotFill, colors.semantic.cash]);
-
-  const netYAxisDomain = useMemo(
-    () => DashboardCalculator.calculateNetYAxisDomain(debouncedNetSeries),
-    [debouncedNetSeries]
-  );
   const {
     ref: netChartRef,
     width: netChartWidth,
     height: netChartHeight,
   } = useChartContainerSize();
 
+  const {
+    ref: budgetChartRef,
+    width: budgetChartWidth,
+    height: budgetChartHeight,
+  } = useChartContainerSize();
+
   return (
     <div data-testid="dashboard-page">
       <PageLayout
         badge="Dashboard"
-        title="Balances Overview"
-        subtitle="View balances, spending, top merchants, and net worth across linked accounts."
+        title="Survey your Warchest"
+        subtitle="Total clarity on what you hold across ally accounts."
         stats={<BalancesOverview />}
       >
         <div
@@ -120,122 +109,119 @@ const DashboardPage: React.FC<{
             'min-w-0',
             'max-w-full',
             'grid-cols-1',
-            'md:grid-cols-2',
-            'lg:grid-cols-3',
+            'lg:grid-cols-2',
+            'auto-rows-[minmax(390px,auto)]',
             'gap-4',
             'md:gap-6',
             'items-stretch'
           )}
         >
           <DashboardChartCard
-            className="min-w-0"
-            title="Spending Over Time"
-            description="Breakdown by category"
-            refreshingLabel="Refreshing analytics"
+            className={cn('min-w-0', 'col-span-1')}
+            title="Spending over time"
+            refreshingLabel="Reading the field..."
             isRefreshing={!analyticsLoading && analyticsRefreshing}
           >
             {analyticsLoading && (
               <div className={cn('mb-2', uiTypographyRecipes.caption, uiTextRecipes.muted)}>
-                Loading analytics...
+                Fetching analytics
               </div>
             )}
-            <div
-              className={cn(
-                'grid',
-                'flex-1',
-                'min-h-0',
-                'gap-4',
-                'grid-cols-1',
-                'md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]',
-                'lg:grid-cols-1',
-                'items-center'
-              )}
-            >
-              <SpendingByCategoryChart
-                data={byCat}
-                total={monthSpend}
-                hoveredCategory={hoveredCategory}
-                setHoveredCategory={setHoveredCategory}
-                animated={shouldAnimateSpendingByCategory}
-              />
-              <div className={cn('min-w-0', 'w-full')}>
-                {(() => {
-                  const categories = byCat;
-                  if (!categories || categories.length === 0) return null;
-                  const categorySum = categories.reduce(
-                    (sum, c) => sum + (Number.isFinite(c.value) ? c.value : 0),
-                    0
-                  );
-                  const top = categories.slice(0, 4);
-                  return (
-                    <div>
-                      <div
-                        className={cn(
-                          uiTypographyRecipes.label,
-                          uiTextRecipes.label,
-                          'mb-2',
-                          'font-medium'
-                        )}
-                      >
-                        Top Categories
-                      </div>
-                      <div className={cn('grid', 'grid-cols-2', 'gap-2')}>
-                        {top.map((cat) => {
-                          const percentage =
-                            categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0';
-                          const isHovered = hoveredCategory === cat.name;
-                          return (
-                            <button
-                              key={`topcard-${cat.name}`}
-                              type="button"
-                              className={cn('p-2', dashboardCategoryCard.shell)}
-                              style={
-                                isHovered ? { borderColor: colors.chart.primary[0] } : undefined
-                              }
-                              onMouseEnter={() => handleCategoryHover(cat.name)}
-                              onMouseLeave={() => handleCategoryHover(null)}
-                              onClick={() => handleCategoryHover(cat.name)}
-                            >
-                              <div className={cn('mb-1')}>
-                                <Pill
-                                  categoryName={cat.categoryKey}
-                                  accentIndexByName={accentIndexByName}
-                                  className={cn('max-w-full')}
-                                >
-                                  {cat.name}
-                                </Pill>
-                              </div>
-                              <div className={cn('flex', 'items-baseline', 'justify-between')}>
-                                <div
-                                  className={cn(
-                                    uiTypographyRecipes.bodyStrong,
-                                    uiTextRecipes.primary
-                                  )}
-                                >
-                                  {fmtUSD(cat.value)}
-                                </div>
-                                <div
-                                  className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}
-                                >
-                                  {percentage}%
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })()}
+            {byCat.length === 0 ? (
+              <div className={cn('flex-1', 'min-h-0', 'flex', 'items-center', 'justify-center')}>
+                <SpendingByCategoryChart
+                  data={byCat}
+                  total={monthSpend}
+                  hoveredCategory={hoveredCategory}
+                  setHoveredCategory={setHoveredCategory}
+                />
               </div>
-            </div>
+            ) : (
+              <div
+                className={cn(
+                  'grid',
+                  'grid-cols-[repeat(auto-fit,minmax(180px,1fr))]',
+                  'flex-1',
+                  'min-h-0',
+                  'gap-4',
+                  'overflow-hidden'
+                )}
+              >
+                <div className={cn('min-w-0', 'min-h-0', 'flex', 'items-center', 'justify-center')}>
+                  <SpendingByCategoryChart
+                    data={byCat}
+                    total={monthSpend}
+                    hoveredCategory={hoveredCategory}
+                    setHoveredCategory={setHoveredCategory}
+                  />
+                </div>
+                <div
+                  className={cn(
+                    'flex-1',
+                    'min-w-0',
+                    'self-center',
+                    'flex',
+                    'flex-col',
+                    'gap-[length:var(--spacing-compact-gap)]'
+                  )}
+                >
+                  {(() => {
+                    const categorySum = byCat.reduce(
+                      (sum, c) => sum + (Number.isFinite(c.value) ? c.value : 0),
+                      0
+                    );
+                    const top = byCat.slice(0, 5);
+                    return top.map((cat) => {
+                      const percentage =
+                        categorySum > 0 ? ((cat.value / categorySum) * 100).toFixed(1) : '0.0';
+                      const isHovered = hoveredCategory === cat.name;
+                      return (
+                        <button
+                          key={`topcard-${cat.name}`}
+                          type="button"
+                          className={cn('p-2', dashboardCategoryCard.shell)}
+                          style={isHovered ? { borderColor: colors.chart.primary[0] } : undefined}
+                          onMouseEnter={() => handleCategoryHover(cat.name)}
+                          onMouseLeave={() => handleCategoryHover(null)}
+                          onClick={() => handleCategoryHover(cat.name)}
+                        >
+                          <div className={cn('flex', 'items-center', 'justify-between', 'gap-2')}>
+                            <Pill
+                              categoryName={cat.categoryKey}
+                              accentIndexByName={accentIndexByName}
+                              className={cn('min-w-0', 'truncate')}
+                            >
+                              {cat.name}
+                            </Pill>
+                            <div className={cn('flex', 'items-baseline', 'gap-2', 'shrink-0')}>
+                              <span
+                                className={cn(
+                                  uiTypographyRecipes.bodyStrong,
+                                  uiTextRecipes.primary
+                                )}
+                              >
+                                {fmtUSD(cat.value)}
+                              </span>
+                              <span
+                                className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}
+                              >
+                                {percentage}%
+                              </span>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            )}
           </DashboardChartCard>
 
           <DashboardChartCard
-            className="min-w-0"
-            title="Top Merchants Over Time"
-            description="Highest spending locations"
-            refreshingLabel="Refreshing analytics"
+            className={cn('min-w-0')}
+            title="Top merchants over time"
+            refreshingLabel="Reading the field..."
             isRefreshing={!analyticsLoading && analyticsRefreshing}
             bodyClassName={cn('overflow-hidden')}
           >
@@ -248,32 +234,31 @@ const DashboardPage: React.FC<{
           </DashboardChartCard>
 
           <DashboardChartCard
-            className="min-w-0"
-            title="Net Worth Over Time"
-            description="Historical asset growth"
-            refreshingLabel="Refreshing net worth"
-            isRefreshing={!netLoading && netRefreshing}
+            className={cn('min-w-0')}
+            title="Wealth flow"
+            refreshingLabel="Tracing the flow..."
+            isRefreshing={!cashFlowLoading && cashFlowRefreshing}
           >
-            {netLoading ? (
+            {cashFlowLoading ? (
               <div className={cn('flex-1', 'min-h-0', dashboardLoadingCard)} />
-            ) : netError ? (
+            ) : cashFlowError ? (
               <div
                 className={cn(
                   'flex-1',
                   'min-h-0',
-                  'min-h-[220px]',
+                  'min-h-[28px]',
                   uiTypographyRecipes.body,
                   uiTextRecipes.danger
                 )}
               >
-                {netError}
+                {cashFlowError}
               </div>
-            ) : netSeries.length === 0 ? (
+            ) : cashFlowSeries.length === 0 ? (
               <div
                 className={cn(
                   'flex-1',
                   'min-h-0',
-                  'min-h-[220px]',
+                  'min-h-[28px]',
                   'flex',
                   'items-center',
                   'justify-center'
@@ -281,100 +266,56 @@ const DashboardPage: React.FC<{
               >
                 <EmptyState
                   icon={TrendingUp}
-                  title="No net worth data"
-                  description="No data available for this date range"
+                  title="The ledger lies still."
+                  description="No transactions for this period"
                 />
               </div>
             ) : (
               <div ref={netChartRef} className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}>
                 {netChartWidth > 0 && netChartHeight > 0 ? (
-                  <AreaChart
+                  <CashFlowChart
+                    data={debouncedCashFlowSeries}
                     width={netChartWidth}
                     height={netChartHeight}
-                    accessibilityLayer={false}
-                    data={debouncedNetSeries}
-                    margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient id="netGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={colors.semantic.cash} stopOpacity={0.4} />
-                        <stop offset="95%" stopColor={colors.semantic.cash} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={colors.chart.grid} />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fill: colors.chart.axis, fontSize: 12 }}
-                      axisLine={false}
-                      tickLine={false}
-                      interval="preserveStartEnd"
-                      minTickGap={24}
-                      tickFormatter={(value: string) => {
-                        try {
-                          if (!value) return '';
-                          const first = debouncedNetSeries[0]?.date;
-                          const last = debouncedNetSeries[debouncedNetSeries.length - 1]?.date;
-                          const d = new Date(value);
-                          const spanDays =
-                            first && last
-                              ? Math.max(
-                                  1,
-                                  Math.round(
-                                    (new Date(last).getTime() - new Date(first).getTime()) /
-                                      86400000
-                                  )
-                                )
-                              : 0;
-                          if (!Number.isFinite(d.getTime())) return value;
-                          if (spanDays && spanDays <= 92) {
-                            return d.toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                            });
-                          }
-                          const mm = d.toLocaleString('en-US', { month: 'short' });
-                          const yy = d.toLocaleString('en-US', { year: '2-digit' });
-                          return `${mm} ’${yy}`;
-                        } catch {
-                          return value;
-                        }
-                      }}
-                    />
-                    <YAxis
-                      tick={{ fill: colors.chart.axis, fontSize: 12 }}
-                      axisLine={false}
-                      tickLine={false}
-                      domain={netYAxisDomain ?? ['auto', 'auto']}
-                      tickFormatter={(v) => {
-                        const n = Math.abs(Number(v));
-                        const sign = Number(v) < 0 ? '-' : '';
-                        if (n >= 1e9) return `${sign}$${(n / 1e9).toFixed(0)}b`;
-                        if (n >= 1e6) return `${sign}$${(n / 1e6).toFixed(0)}m`;
-                        if (n >= 1e3) return `${sign}$${(n / 1e3).toFixed(0)}k`;
-                        return `${sign}$${Number(n).toFixed(0)}`;
-                      }}
-                    />
-                    <Tooltip
-                      cursor={false}
-                      content={(tooltipProps) => (
-                        <ChartGlassTooltip
-                          {...tooltipProps}
-                          formatter={netTooltipFormatter}
-                          valueClassName={uiTextRecipes.success}
-                        />
-                      )}
-                      {...chartTooltipRechartsProps}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      stroke={colors.semantic.cash}
-                      strokeWidth={2}
-                      fillOpacity={1}
-                      fill="url(#netGradient)"
-                      dot={netDotRenderer}
-                    />
-                  </AreaChart>
+                  />
+                ) : null}
+              </div>
+            )}
+          </DashboardChartCard>
+
+          <DashboardChartCard
+            className={cn('min-w-0')}
+            title="Budget Allowance x Reality"
+            refreshingLabel="Reviewing allowances..."
+            isRefreshing={budgets.transactionsLoading}
+          >
+            {budgets.isLoading ? (
+              <div className={cn('flex-1', 'min-h-0', dashboardLoadingCard)} />
+            ) : totalBudget === 0 ? (
+              <div className={cn('flex-1', 'min-h-0', 'flex', 'items-center', 'justify-center')}>
+                <EmptyState
+                  icon={TrendingUp}
+                  title="No budgets set"
+                  description="Establish your first allowance to see your progress."
+                />
+              </div>
+            ) : debouncedBudgetVsActualData.length === 0 ? (
+              <div className={cn('flex-1', 'min-h-0', 'flex', 'items-center', 'justify-center')}>
+                <EmptyState
+                  icon={TrendingUp}
+                  title="No spending for this period."
+                  description="The picture sharpens with each transaction."
+                />
+              </div>
+            ) : (
+              <div ref={budgetChartRef} className={cn('flex-1', 'min-h-0', 'w-full', 'min-w-0')}>
+                {budgetChartWidth > 0 && budgetChartHeight > 0 ? (
+                  <BudgetVsActualChart
+                    data={debouncedBudgetVsActualData}
+                    totalBudget={totalBudget}
+                    width={budgetChartWidth}
+                    height={budgetChartHeight}
+                  />
                 ) : null}
               </div>
             )}

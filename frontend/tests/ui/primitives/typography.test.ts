@@ -76,6 +76,9 @@ describe('primitive typography recipes', () => {
     expect(appTitleBarRecipes.contextPillInset.join(' ')).toContain('md:py-2');
     expect(appTitleBarRecipes.contextPillTab.join(' ')).toContain('rounded-lg');
     expect(appTitleBarRecipes.floatingChromeGutter.join(' ')).toContain('md:px-6');
+    expect(appTitleBarRecipes.floatingChromeGutter.join(' ')).toContain(
+      'max-w-[var(--spacing-content-max)]'
+    );
     expect(appTitleBarRecipes.pillContainerSize.join(' ')).toContain('h-12');
     expect(uiTypographyRecipes.bodyStrong).toContain('font-body-strong');
   });
