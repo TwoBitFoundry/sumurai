@@ -38,6 +38,21 @@ fn given_comma_separated_app_origin_when_from_env_provider_then_loads_all_origin
 }
 
 #[test]
+fn given_trailing_slash_app_origin_when_from_env_provider_then_normalizes_origin() {
+    let mut env = MockEnvironment::new();
+    env.set("TELLER_ENV", "development");
+    env.set("AUTH_COOKIE_SAME_SITE", "Strict");
+    env.set("APP_ORIGIN", "https://sumurai.ngrok.app/");
+
+    let config = Config::from_env_provider(&env).unwrap();
+
+    assert_eq!(
+        config.app_origins(),
+        &["https://sumurai.ngrok.app".to_string()]
+    );
+}
+
+#[test]
 fn given_minimal_env_when_from_env_provider_then_loads_successfully() {
     let mut env = MockEnvironment::new();
     env.set("TELLER_ENV", "development");

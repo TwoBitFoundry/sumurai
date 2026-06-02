@@ -125,12 +125,32 @@ fn parse_app_origins(env: &dyn EnvironmentProvider) -> Result<Vec<String>> {
         return Err(anyhow!("APP_ORIGIN must contain at least one origin"));
     }
 
-    for origin in &origins {
-        url::Url::parse(origin)
-            .map_err(|error| anyhow!("Invalid origin '{}': {}", origin, error))?;
+    origins
+        .iter()
+        .map(|origin| normalize_origin(origin))
+        .collect()
+}
+
+fn normalize_origin(origin: &str) -> Result<String> {
+    let mut url = url::Url::parse(origin)
+        .map_err(|error| anyhow!("Invalid origin '{}': {}", origin, error))?;
+
+    if url.scheme() != "http" && url.scheme() != "https" {
+        return Err(anyhow!(
+            "Invalid origin '{}': scheme must be http or https",
+            origin
+        ));
     }
 
-    Ok(origins)
+    if url.host().is_none() {
+        return Err(anyhow!("Invalid origin '{}': missing host", origin));
+    }
+
+    url.set_path("");
+    url.set_query(None);
+    url.set_fragment(None);
+
+    Ok(url.origin().ascii_serialization())
 }
 
 fn parse_same_site(value: String) -> Result<AuthCookieSameSite> {
