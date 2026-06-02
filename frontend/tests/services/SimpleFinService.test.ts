@@ -1,5 +1,5 @@
 import { jest } from 'bun:test';
-import { ApiClient, ApiError } from '@/services/ApiClient';
+import { ApiClient, ApiError, RateLimitError } from '@/services/ApiClient';
 import { SimpleFinService } from '@/services/SimpleFinService';
 import type { PlaidDisconnectResponse, ProviderStatusResponse } from '@/types/api';
 
@@ -293,6 +293,74 @@ describe('SimpleFinService', () => {
         connection_id: 'conn-123',
         client_date: '2025-06-15',
         client_timezone: 'America/Chicago',
+      });
+    });
+  });
+
+  describe('syncBridge', () => {
+    it('returns structured bridge results from a single sync request', async () => {
+      postSpy.mockResolvedValue({
+        transactions: [],
+        metadata: {
+          transaction_count: 4,
+          account_count: 2,
+          sync_timestamp: '2025-06-15T10:00:00Z',
+          start_date: '2025-06-01',
+          end_date: '2025-06-15',
+          connection_updated: true,
+        },
+        simplefin_institution_results: [
+          {
+            institution_name: 'Bank A',
+            org_conn_id: 'org-a',
+            status: 'synced',
+            transaction_count: 4,
+          },
+        ],
+        bridge_warnings: ['Bridge warning'],
+      } as any);
+
+      const result = await SimpleFinService.syncBridge('conn-123');
+
+      expect(ApiClient.post).toHaveBeenCalledWith('/providers/sync-transactions', {
+        connection_id: 'conn-123',
+        client_date: '2025-06-15',
+        client_timezone: 'America/Chicago',
+      });
+      expect(result).toEqual({
+        rateLimited: false,
+        transactions: [],
+        metadata: {
+          transaction_count: 4,
+          account_count: 2,
+          sync_timestamp: '2025-06-15T10:00:00Z',
+          start_date: '2025-06-01',
+          end_date: '2025-06-15',
+          connection_updated: true,
+        },
+        simplefin_institution_results: [
+          {
+            institution_name: 'Bank A',
+            org_conn_id: 'org-a',
+            status: 'synced',
+            transaction_count: 4,
+          },
+        ],
+        bridge_warnings: ['Bridge warning'],
+      });
+    });
+
+    it('returns structured rate limit results when the bridge is throttled', async () => {
+      postSpy.mockRejectedValue(new RateLimitError('Too many requests', 7200));
+
+      const result = await SimpleFinService.syncBridge('conn-123');
+
+      expect(result).toEqual({
+        rateLimited: true,
+        retryAfterSeconds: 7200,
+        transactions: [],
+        simplefin_institution_results: [],
+        bridge_warnings: [],
       });
     });
   });

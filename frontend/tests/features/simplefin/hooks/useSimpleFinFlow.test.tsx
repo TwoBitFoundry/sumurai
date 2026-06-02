@@ -22,6 +22,7 @@ jest.mock('@/services/SimpleFinService', () => ({
     connectAndSyncAll: jest.fn(),
     getStatus: jest.fn(),
     syncTransactions: jest.fn(),
+    syncBridge: jest.fn(),
     disconnect: jest.fn(),
   },
 }));
@@ -39,6 +40,12 @@ describe('useSimpleFinFlow', () => {
     jest.clearAllMocks();
     simpleFinServiceMock.getStatus.mockResolvedValue([]);
     simpleFinServiceMock.syncTransactions.mockResolvedValue({ transactions: [], metadata: {} });
+    simpleFinServiceMock.syncBridge.mockResolvedValue({
+      rateLimited: false,
+      transactions: [],
+      simplefin_institution_results: [],
+      bridge_warnings: [],
+    });
   });
 
   it('connect calls service then syncs connections and repopulates state', async () => {
@@ -172,5 +179,43 @@ describe('useSimpleFinFlow', () => {
     });
 
     expect(result.current.plaidLinkMount).toBeNull();
+  });
+
+  it('syncAll uses a single bridge sync request', async () => {
+    simpleFinServiceMock.getStatus.mockResolvedValue([
+      {
+        is_connected: true,
+        last_sync_at: null,
+        institution_name: 'Bank A',
+        connection_id: 'conn-1',
+        transaction_count: 0,
+        account_count: 1,
+        sync_in_progress: false,
+      },
+      {
+        is_connected: true,
+        last_sync_at: null,
+        institution_name: 'Bank B',
+        connection_id: 'conn-2',
+        transaction_count: 0,
+        account_count: 1,
+        sync_in_progress: false,
+      },
+    ]);
+
+    const { result } = renderHook(() => useSimpleFinFlow({ enabled: true, isOnline: true }), {
+      wrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.connections).toHaveLength(2);
+    });
+
+    await act(async () => {
+      await result.current.syncAll();
+    });
+
+    expect(simpleFinServiceMock.syncBridge).toHaveBeenCalledTimes(1);
+    expect(simpleFinServiceMock.syncBridge).toHaveBeenCalledWith('conn-1');
   });
 });

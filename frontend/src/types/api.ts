@@ -121,6 +121,8 @@ export interface PlaidSyncResponse {
     end_date: string;
     connection_updated: boolean;
   };
+  simplefin_institution_results?: SimpleFinInstitutionSyncResult[];
+  bridge_warnings?: string[];
 }
 
 export interface SyncTransactionsRequest {
@@ -150,6 +152,29 @@ export interface SimpleFinInstitutionAuthRequired {
   institution_name: string;
   org_conn_id?: string | null;
   message: string;
+}
+
+export type SimpleFinInstitutionSyncStatus =
+  | 'synced'
+  | 'auth_required'
+  | 'skipped_hidden'
+  | 'no_accounts';
+
+export interface SimpleFinInstitutionSyncResult {
+  institution_name: string;
+  org_conn_id?: string | null;
+  status: SimpleFinInstitutionSyncStatus;
+  transaction_count?: number | null;
+  message?: string | null;
+}
+
+export interface SimpleFinBridgeSyncResponse {
+  rateLimited: boolean;
+  retryAfterSeconds?: number;
+  transactions: Transaction[];
+  metadata?: PlaidSyncResponse['metadata'];
+  simplefin_institution_results: SimpleFinInstitutionSyncResult[];
+  bridge_warnings: string[];
 }
 
 export interface ProviderStatusResponse {

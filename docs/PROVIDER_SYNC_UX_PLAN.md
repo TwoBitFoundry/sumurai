@@ -145,11 +145,19 @@ sequenceDiagram
 
 **Acceptance criteria:**
 
-- [ ] One SimpleFIN sync request triggers one `GET /accounts` in backend logs regardless of institution count.
-- [ ] 200 response includes per-institution rows with correct status and optional txn count.
-- [ ] Bridge auth errors appear as `auth_required` with institution name and message.
-- [ ] `useSimpleFinFlow.syncAll` no longer loops per connection id.
-- [ ] OpenAPI and `api.ts` stay aligned.
+- [x] One SimpleFIN sync request triggers one `GET /accounts` in backend logs regardless of institution count.
+- [x] 200 response includes per-institution rows with correct status and optional txn count.
+- [x] Bridge auth errors appear as `auth_required` with institution name and message.
+- [x] `useSimpleFinFlow.syncAll` no longer loops per connection id.
+- [x] OpenAPI and `api.ts` stay aligned.
+
+**TDD log**
+
+- `cargo test -p sumurai-backend --locked simplefin_service_tests -- --nocapture`
+- `cargo test -p sumurai-backend --locked openapi_tests -- --nocapture`
+- `cargo test -p sumurai-backend --locked regenerate_openapi_artifacts -- --ignored --nocapture`
+- `npm --prefix frontend test -- tests/services/SimpleFinService.test.ts tests/features/simplefin/hooks/useSimpleFinFlow.test.tsx`
+- `cargo test -p sumurai-backend --locked`
 
 ---
 
@@ -211,7 +219,7 @@ sequenceDiagram
 ## Next actions (student agent)
 
 1. Read [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) caching/auth sections and [`.agents/skills/sumurai-backend-architecture/SKILL.md`](../.agents/skills/sumurai-backend-architecture/SKILL.md) before backend edits.
-2. Phase 1 is complete; implement **Phase 2** (SimpleFIN API shape) then **Phase 3** (shared sync-all modal + AccountsPage orchestrator).
+2. Phase 2 is complete; implement **Phase 3** (shared sync-all modal + AccountsPage orchestrator).
 3. Run Phase 4 validation for all three providers.
 4. Do not collapse Plaid/Teller into one backend call; do not loop SimpleFIN per org connection; do not add a new sync route; do not use per-provider quota counters; **do not use UTC for daily quota boundaries or user-facing retry copy**.
 

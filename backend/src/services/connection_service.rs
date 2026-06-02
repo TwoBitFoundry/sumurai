@@ -1059,6 +1059,8 @@ impl ConnectionService {
                 end_date: sync_end_date.to_string(),
                 connection_updated: true,
             },
+            simplefin_institution_results: None,
+            bridge_warnings: None,
         })
     }
 
@@ -1127,6 +1129,8 @@ impl ConnectionService {
                     end_date: sync_end_date.to_string(),
                     connection_updated: false,
                 },
+                simplefin_institution_results: None,
+                bridge_warnings: None,
             });
         }
 
@@ -1154,6 +1158,9 @@ impl ConnectionService {
                     "SimpleFIN balances snapshot unavailable"
                 ))
             })?;
+
+        let (simplefin_institution_results, bridge_warnings) =
+            crate::services::simplefin_connection_service::SimpleFinConnectionService::build_simplefin_institution_sync_results(&snapshot, &hidden_orgs);
 
         for org in &snapshot.connections {
             if crate::services::simplefin_org_service::org_is_hidden(&hidden_orgs, org) {
@@ -1403,6 +1410,8 @@ impl ConnectionService {
                 end_date: sync_end_date.to_string(),
                 connection_updated: true,
             },
+            simplefin_institution_results: Some(simplefin_institution_results),
+            bridge_warnings: (!bridge_warnings.is_empty()).then_some(bridge_warnings),
         })
     }
 
@@ -1636,6 +1645,8 @@ impl ConnectionService {
         Ok(SyncTransactionsResponse {
             transactions: synced_transactions,
             metadata,
+            simplefin_institution_results: None,
+            bridge_warnings: None,
         })
     }
 

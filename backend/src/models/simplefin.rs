@@ -112,7 +112,7 @@ impl SimpleFinAccountsResponse {
     }
 }
 
-fn message_requires_auth_refresh(message: &str) -> bool {
+pub(crate) fn message_requires_auth_refresh(message: &str) -> bool {
     let lower = message.to_ascii_lowercase();
     lower.contains("auth required") || lower.contains("may need attention")
 }
@@ -143,6 +143,27 @@ pub struct SimpleFinInstitutionAuthRequired {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub org_conn_id: Option<String>,
     pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum SimpleFinInstitutionSyncStatus {
+    Synced,
+    AuthRequired,
+    SkippedHidden,
+    NoAccounts,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+pub struct SimpleFinInstitutionSyncResult {
+    pub institution_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub org_conn_id: Option<String>,
+    pub status: SimpleFinInstitutionSyncStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transaction_count: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]

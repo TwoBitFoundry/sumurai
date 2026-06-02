@@ -6,6 +6,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::models::import::CsvColumnMapping;
+use crate::models::simplefin::SimpleFinInstitutionSyncResult;
 use crate::utils::merchant_name::normalize_merchant_display_case;
 use csv::StringRecord;
 use sha2::{Digest, Sha256};
@@ -302,6 +303,10 @@ impl<T> VecOrOne<T> {
 pub struct SyncTransactionsResponse {
     pub transactions: Vec<Transaction>,
     pub metadata: SyncMetadata,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub simplefin_institution_results: Option<Vec<SimpleFinInstitutionSyncResult>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bridge_warnings: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone)]

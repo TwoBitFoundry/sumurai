@@ -4309,6 +4309,49 @@
           }
         }
       },
+      "SimpleFinInstitutionSyncResult": {
+        "type": "object",
+        "required": [
+          "institution_name",
+          "status"
+        ],
+        "properties": {
+          "institution_name": {
+            "type": "string"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "org_conn_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/SimpleFinInstitutionSyncStatus"
+          },
+          "transaction_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "SimpleFinInstitutionSyncStatus": {
+        "type": "string",
+        "enum": [
+          "synced",
+          "auth_required",
+          "skipped_hidden",
+          "no_accounts"
+        ]
+      },
       "SimpleFinRestoreIgnoredInstitutionRequest": {
         "type": "object",
         "required": [
@@ -4417,8 +4460,26 @@
           "metadata"
         ],
         "properties": {
+          "bridge_warnings": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
           "metadata": {
             "$ref": "#/components/schemas/SyncMetadata"
+          },
+          "simplefin_institution_results": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SimpleFinInstitutionSyncResult"
+            }
           },
           "transactions": {
             "type": "array",

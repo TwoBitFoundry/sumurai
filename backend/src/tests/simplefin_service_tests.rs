@@ -5,7 +5,7 @@ use crate::models::provider_connect::ProviderConnectRequest;
 use crate::models::simplefin::SimpleFinTransaction;
 use crate::models::simplefin::{
     SimpleFinAccount, SimpleFinAccountsResponse, SimpleFinApiErrorEntry, SimpleFinConnectRequest,
-    SimpleFinConnection,
+    SimpleFinConnection, SimpleFinInstitutionSyncStatus,
 };
 use crate::models::transaction::Transaction;
 use crate::providers::simplefin_provider::{MockSimpleFinHttpClient, SimpleFinProvider};
@@ -358,6 +358,85 @@ async fn given_one_org_auth_error_when_connect_simplefin_then_links_other_instit
     assert!(saved.contains(&simplefin_org_item_id(&user_id, "org-1")));
     assert!(!saved.contains(&simplefin_org_item_id(&user_id, "org-2")));
     assert!(saved.contains(&simplefin_org_item_id(&user_id, "org-3")));
+}
+
+#[tokio::test]
+async fn given_three_org_snapshot_when_sync_simplefin_then_returns_institution_results() {
+    let user_id = Uuid::new_v4();
+    let mut connection =
+        ProviderConnection::new(user_id, &simplefin_org_item_id(&user_id, "org-1"));
+    connection.mark_connected("Bank A");
+    let (connection_service, sync_service, _, _, _, _) =
+        build_simplefin_sync_service(three_org_snapshot(), HashSet::new(), vec![]);
+
+    let result = connection_service
+        .sync_provider_connection(
+            SyncConnectionParams {
+                provider: "simplefin",
+                user_id: &user_id,
+                jwt_id: "jwt_sync",
+            },
+            sync_service.as_ref(),
+            &mut connection,
+            None,
+        )
+        .await
+        .unwrap();
+
+    let results = result
+        .simplefin_institution_results
+        .expect("institution results should be returned");
+    assert_eq!(results.len(), 3);
+    assert_eq!(results[0].status, SimpleFinInstitutionSyncStatus::Synced);
+    assert_eq!(results[1].status, SimpleFinInstitutionSyncStatus::Synced);
+    assert_eq!(results[2].status, SimpleFinInstitutionSyncStatus::Synced);
+    assert!(
+        result.bridge_warnings.is_none()
+            || result
+                .bridge_warnings
+                .as_ref()
+                .is_some_and(|warnings| warnings.is_empty())
+    );
+}
+
+#[tokio::test]
+async fn given_org_auth_error_when_sync_simplefin_then_marks_auth_required() {
+    let user_id = Uuid::new_v4();
+    let mut connection =
+        ProviderConnection::new(user_id, &simplefin_org_item_id(&user_id, "org-1"));
+    connection.mark_connected("Bank A");
+    let (connection_service, sync_service, _, _, _, _) =
+        build_simplefin_sync_service(snapshot_with_org_auth_error(), HashSet::new(), vec![]);
+
+    let result = connection_service
+        .sync_provider_connection(
+            SyncConnectionParams {
+                provider: "simplefin",
+                user_id: &user_id,
+                jwt_id: "jwt_sync",
+            },
+            sync_service.as_ref(),
+            &mut connection,
+            None,
+        )
+        .await
+        .unwrap();
+
+    let results = result
+        .simplefin_institution_results
+        .expect("institution results should be returned");
+    let auth_required = results
+        .iter()
+        .find(|row| row.institution_name == "Bank B")
+        .expect("auth row should be present");
+    assert_eq!(
+        auth_required.status,
+        SimpleFinInstitutionSyncStatus::AuthRequired
+    );
+    assert!(auth_required
+        .message
+        .as_ref()
+        .is_some_and(|message| message.contains("Auth required")));
 }
 
 #[tokio::test]
@@ -924,7 +1003,7 @@ fn build_simplefin_sync_service_with_categorizer_and_accounts(
                 Ok(snapshot_for_accounts.clone())
             } else {
                 Ok(SimpleFinAccountsResponse {
-                    errors: vec![],
+                    errors: snapshot_for_accounts.errors.clone(),
                     connections: snapshot_for_accounts.connections.clone(),
                     accounts: snapshot_for_accounts
                         .accounts
