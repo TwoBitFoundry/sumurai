@@ -167,7 +167,7 @@ describe('TransactionsPage', () => {
       />
     );
 
-    expect(getByRole('button', { name: /auto-categorize/i })).toBeEnabled();
+    expect(getByRole('button', { name: /classify/i })).toBeEnabled();
   });
 
   it('shows the insights loading state independently from the table', () => {
@@ -189,7 +189,7 @@ describe('TransactionsPage', () => {
       />
     );
 
-    expect(getAllByText('Loading...')).toHaveLength(4);
+    expect(getAllByText('Fetching...')).toHaveLength(4);
   });
 
   it('renders the shared toast stack for auto-categorization job state', () => {

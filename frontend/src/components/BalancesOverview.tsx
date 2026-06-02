@@ -1,4 +1,4 @@
-import { CircleDollarSign, RefreshCcw } from 'lucide-react';
+import { CircleDollarSign, Landmark, RefreshCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, XAxis, YAxis } from 'recharts';
 import { useTheme } from '../context/ThemeContext';
@@ -25,7 +25,7 @@ import {
   maxCharsPerInstitutionSlot,
 } from '../features/analytics/utils/wrapInstitutionLabel';
 import { useBalancesOverview } from '../hooks/useBalancesOverview';
-import { Alert, Button, cn } from '../ui/primitives';
+import { Alert, Button, cn, EmptyState } from '../ui/primitives';
 import {
   control,
   surface as semanticSurfaces,
@@ -415,7 +415,20 @@ export function BalancesOverview() {
               </ChartTooltipShell>
             )}
           </ChartTooltipFadeHost>
-          {chartContainerWidth > 0 && (
+          {chartContainerWidth > 0 && chartData.length === 0 && (
+            <div
+              className={cn('w-full', 'min-w-0', 'flex', 'items-center', 'justify-center')}
+              style={{ height: totalChartHeight }}
+              data-testid="balances-chart-empty"
+            >
+              <EmptyState
+                icon={Landmark}
+                title="No balances to survey"
+                description="Link your ally accounts to see your full financial picture."
+              />
+            </div>
+          )}
+          {chartContainerWidth > 0 && chartData.length > 0 && (
             <div
               className={cn('w-full', 'min-w-0')}
               style={{ height: totalChartHeight }}

@@ -6,7 +6,7 @@ describe('Auth screens', () => {
     render(<LoginScreen onNavigateToRegister={jest.fn()} />);
     expect(screen.getByLabelText(/^email$/i)).toBeTruthy();
     expect(screen.queryByLabelText(/password/i)).toBeNull();
-    expect(screen.getByRole('button', { name: /^continue$/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^enter$/i })).toBeTruthy();
   });
 
   it('shows an error when login begin reports unknown email', async () => {
@@ -22,7 +22,7 @@ describe('Auth screens', () => {
     const user = userEvent.setup();
     render(<LoginScreen onNavigateToRegister={jest.fn()} />);
     await user.type(screen.getByLabelText(/^email$/i), 'nobody@example.com');
-    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    await user.click(screen.getByRole('button', { name: /^enter$/i }));
     expect(screen.getByText(/no account found for this email/i)).toBeTruthy();
     expect(screen.queryByLabelText(/^password$/i)).toBeNull();
   });
@@ -46,7 +46,7 @@ describe('Auth screens', () => {
       />
     );
     await user.type(screen.getByLabelText(/^email$/i), 'recovery@example.com');
-    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    await user.click(screen.getByRole('button', { name: /^enter$/i }));
     expect(onRecoveryEnrollmentStarted).toHaveBeenCalledWith({
       email: 'recovery@example.com',
       sessionId: 'recovery-session',
@@ -59,11 +59,8 @@ describe('Auth screens', () => {
     const emailInput = screen.getByLabelText(/^email$/i) as HTMLInputElement;
     expect(emailInput.value).toBe('locked@example.com');
     expect(emailInput).toHaveProperty('readOnly', true);
-    expect(screen.getByRole('button', { name: /^continue$/i })).toHaveProperty('disabled', true);
-    expect(screen.getByRole('button', { name: /create account/i })).toHaveProperty(
-      'disabled',
-      true
-    );
+    expect(screen.getByRole('button', { name: /^enter$/i })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: /join/i })).toHaveProperty('disabled', true);
   });
 
   it('shows password step when login begin reports no passkey but password is available', async () => {
@@ -79,7 +76,7 @@ describe('Auth screens', () => {
     const user = userEvent.setup();
     render(<LoginScreen onNavigateToRegister={jest.fn()} />);
     await user.type(screen.getByLabelText(/^email$/i), 'legacy@example.com');
-    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    await user.click(screen.getByRole('button', { name: /^enter$/i }));
     expect(await screen.findByLabelText(/^password$/i)).toBeTruthy();
     expect(screen.getByRole('button', { name: /sign in with password/i })).toBeTruthy();
   });
@@ -89,7 +86,7 @@ describe('Auth screens', () => {
     expect(screen.getByLabelText(/^email$/i)).toBeTruthy();
     expect(screen.getByLabelText(/^passkey name$/i)).toBeTruthy();
     expect(screen.queryByLabelText(/password/i)).toBeNull();
-    expect(screen.getByRole('button', { name: /^create account$/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^join$/i })).toBeTruthy();
   });
 
   it('keeps auth form layout padding on the md tier', () => {
@@ -120,7 +117,7 @@ describe('Auth screens', () => {
       <LoginScreen onNavigateToRegister={jest.fn()} onEnrollmentRequired={onEnrollmentRequired} />
     );
     await user.type(screen.getByLabelText(/^email$/i), 'legacy@example.com');
-    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    await user.click(screen.getByRole('button', { name: /^enter$/i }));
     await user.type(screen.getByLabelText(/^password$/i), 'Test1234!');
     await user.click(screen.getByRole('button', { name: /sign in with password/i }));
     expect(onEnrollmentRequired).toHaveBeenCalledWith(

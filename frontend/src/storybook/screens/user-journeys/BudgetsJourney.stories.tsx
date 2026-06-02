@@ -92,7 +92,7 @@ export const Journey: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await waitFor(() => {
-      expect(canvas.getByText(/cut through the budgeting fog of war/i)).toBeVisible();
+      expect(canvas.getByText(/command your spending/i)).toBeVisible();
     });
     await waitFor(() => {
       expect(canvas.getByRole('button', { name: /next month/i })).toBeVisible();

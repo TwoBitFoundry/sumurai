@@ -74,7 +74,7 @@ export function Footer() {
           <div className={cn('flex', 'flex-col', 'gap-2', 'items-start')}>
             <img src="/tbf-logo.svg" alt="Two Bit Foundry" className={cn('h-10', 'w-auto')} />
             <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
-              Built in the open—forged with the community
+              Forging better systems for founders
             </p>
           </div>
 

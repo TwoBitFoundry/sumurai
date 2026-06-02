@@ -163,7 +163,9 @@ describe('AccountsPage', () => {
     renderAccountsPage();
 
     expect(screen.getByTestId('accounts-page')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /sworn accounts & allies/i })).toBeVisible();
+    expect(
+      screen.getByRole('heading', { name: /every institution, answering to you/i })
+    ).toBeVisible();
     expect(screen.getByText('Unavailable while offline')).toBeVisible();
     const tellerButton = screen.getAllByRole('button', { name: /^teller$/i })[0];
     expect(tellerButton).toBeDisabled();
@@ -213,7 +215,7 @@ describe('AccountsPage', () => {
     renderAccountsPage();
 
     const heroSection = screen
-      .getByRole('heading', { name: /sworn accounts & allies/i })
+      .getByRole('heading', { name: /every institution, answering to you/i })
       .closest('section');
     expect(heroSection).toBeTruthy();
     expect(
@@ -321,7 +323,7 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    const plaidButton = screen.getByRole('button', { name: /^add account$/i });
+    const plaidButton = screen.getByRole('button', { name: /^add ally account$/i });
     expect(plaidButton.querySelector('img')).toHaveAttribute('src', '/plaid.webp');
   });
 
@@ -541,7 +543,7 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    expect(screen.getByRole('button', { name: /^add account$/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^add ally account$/i })).toBeEnabled();
   });
 
   it('falls back to plaid connect when teller is selected but not configured', () => {
@@ -575,7 +577,7 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    expect(screen.getByRole('button', { name: /^add account$/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^add ally account$/i })).toBeEnabled();
     expect(screen.queryByRole('button', { name: /^teller$/i })).not.toBeInTheDocument();
   });
 
@@ -593,7 +595,7 @@ describe('AccountsPage', () => {
 
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       expect(
-        screen.queryByRole('heading', { name: /sworn accounts & allies/i })
+        screen.queryByRole('heading', { name: /every institution, answering to you/i })
       ).not.toBeInTheDocument();
     });
 
@@ -629,7 +631,7 @@ describe('AccountsPage', () => {
 
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       expect(
-        screen.queryByRole('heading', { name: /sworn accounts & allies/i })
+        screen.queryByRole('heading', { name: /every institution, answering to you/i })
       ).not.toBeInTheDocument();
       for (const button of screen.getAllByRole('button', { name: /^connect$/i })) {
         expect(button).toBeEnabled();
@@ -675,7 +677,9 @@ describe('AccountsPage', () => {
       renderAccountsPage();
 
       expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: /sworn accounts & allies/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: /every institution, answering to you/i })
+      ).toBeInTheDocument();
     });
 
     it('starts Teller connect from the picker click instead of only selecting the provider', async () => {

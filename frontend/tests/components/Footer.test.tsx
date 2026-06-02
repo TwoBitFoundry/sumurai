@@ -14,7 +14,7 @@ describe('Footer', () => {
     expect(bottomRow).toHaveClass('flex-row');
     expect(bottomRow).toHaveClass('items-center');
     expect(bottomRow).toHaveClass('justify-between');
-    expect(getByText('Built in the open—forged with the community')).toBeTruthy();
+    expect(getByText('Forging better systems for founders')).toBeTruthy();
     expect(getByRole('link', { name: 'Contact' })).toBeTruthy();
 
     const actionButtons = getByRole('link', { name: /forge with us/i }).parentElement;

@@ -439,7 +439,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       pushAccountsToast(
         totalCount > 0
           ? `Synced ${totalCount} transaction${totalCount === 1 ? '' : 's'}`
-          : 'All accounts are up to date'
+          : 'All ally accounts are in order'
       );
     } catch (error) {
       console.warn('Failed to sync all banks', error);
@@ -481,7 +481,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         pushAccountsToast(`${bank.name} disconnected successfully`);
       } catch (error) {
         console.warn('Failed to disconnect bank', error);
-        onError?.('Failed to disconnect bank');
+        onError?.('Failed to disconnect institution');
       }
     },
     [banks, onError, providerCatalog, refreshBankData, pushAccountsToast, queryClient.setQueryData]
@@ -534,7 +534,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         console.warn('Failed to restore SimpleFIN institution', error);
         const message = formatUserFacingApiError(
           error,
-          'Failed to restore institution — try SimpleFIN again or refresh the page'
+          'Failed to restore institution. Try again.'
         );
         connectionFlow.setError(message);
         onError?.(message);
@@ -612,7 +612,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         ? formatRelativeTime(summary.latestSync)
         : summary.institutions > 0
           ? 'Just now'
-          : 'Awaiting first sync';
+          : 'Awaiting first ledger.';
   const lastSyncDetail = summary.latestSync
     ? `Refreshed ${formatAbsoluteTime(summary.latestSync)}`
     : '';
@@ -645,7 +645,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           title={!isOnline ? 'Unavailable while offline' : undefined}
           leadingImageSrc={providerLogoSrc}
         >
-          {primaryProvider === 'plaid' ? 'Add account' : providerLabel}
+          {primaryProvider === 'plaid' ? 'Add ally account' : providerLabel}
         </ConnectButton>
       </div>
       {!isOnline && (
@@ -703,9 +703,9 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     <div data-testid="accounts-page">
       {connectionFlow.connectionMount}
       <PageLayout
-        badge={`${providerLabel} Accounts`}
-        title="Sworn accounts & allies"
-        subtitle="Bind your financial houses. Link institutions and keep every balance true."
+        badge={`${providerLabel} Connections`}
+        title="Every institution, answering to you."
+        subtitle="Link your ally accounts. Keep every balance in clear view."
         actions={actions}
         stats={statsGrid}
       >

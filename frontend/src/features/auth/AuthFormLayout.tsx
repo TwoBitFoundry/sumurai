@@ -16,7 +16,7 @@ export function AuthFormLayout({ children }: AuthFormLayoutProps) {
           className={cn(authLayout.brandAsideImage)}
         />
       </div>
-      <GlassCard variant="auth" padding="lg" className={cn(authLayout.card)}>
+      <GlassCard variant="auth" padding="lg" containerClassName={cn(authLayout.card)}>
         {children}
       </GlassCard>
     </div>

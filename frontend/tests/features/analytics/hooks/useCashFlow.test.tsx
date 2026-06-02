@@ -6,6 +6,7 @@ import { AnalyticsService } from '@/services/AnalyticsService';
 import { PlaidService } from '@/services/PlaidService';
 import { ProviderCatalog } from '@/services/ProviderCatalog';
 import type { DateRangeKey } from '@/utils/dateRanges';
+import * as dateRanges from '@/utils/dateRanges';
 
 jest.mock('@/services/AnalyticsService', () => ({
   AnalyticsService: {
@@ -59,9 +60,28 @@ const createDeferred = <T,>() => {
   return { promise, resolve, reject };
 };
 
+const expectSeriesToInclude = (
+  series: Array<{ month: string; income: number; expenses: number; net: number }>,
+  points: Array<{ month: string; income: number; expenses: number; net: number }>
+) => {
+  for (const point of points) {
+    expect(series).toContainEqual(point);
+  }
+};
+
 describe('useCashFlow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(dateRanges, 'computeDateRange').mockImplementation((key) => {
+      switch (key) {
+        case 'current-month':
+          return { start: '2026-04-01', end: '2026-05-31' };
+        case 'past-3-months':
+          return { start: '2026-02-01', end: '2026-05-31' };
+        default:
+          return {};
+      }
+    });
     jest.mocked(AnalyticsService.getCashFlow).mockResolvedValue({
       series: [
         { month: '2026-04', income: 800, expenses: 200, net: 600 },
@@ -104,12 +124,10 @@ describe('useCashFlow', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(result.current.series).toEqual(
-      expect.arrayContaining([
-        { month: '2026-04', income: 800, expenses: 200, net: 600 },
-        { month: '2026-05', income: 900, expenses: 250, net: 650 },
-      ])
-    );
+    expectSeriesToInclude(result.current.series, [
+      { month: '2026-04', income: 800, expenses: 200, net: 600 },
+      { month: '2026-05', income: 900, expenses: 250, net: 650 },
+    ]);
 
     rerender({ range: 'past-3-months' as DateRangeKey });
 
@@ -118,12 +136,10 @@ describe('useCashFlow', () => {
     });
 
     expect(result.current.loading).toBe(false);
-    expect(result.current.series).toEqual(
-      expect.arrayContaining([
-        { month: '2026-04', income: 800, expenses: 200, net: 600 },
-        { month: '2026-05', income: 900, expenses: 250, net: 650 },
-      ])
-    );
+    expectSeriesToInclude(result.current.series, [
+      { month: '2026-04', income: 800, expenses: 200, net: 600 },
+      { month: '2026-05', income: 900, expenses: 250, net: 650 },
+    ]);
 
     await act(async () => {
       deferred.resolve({
@@ -139,13 +155,11 @@ describe('useCashFlow', () => {
       expect(result.current.refreshing).toBe(false);
     });
 
-    expect(result.current.series).toEqual(
-      expect.arrayContaining([
-        { month: '2026-03', income: 700, expenses: 150, net: 550 },
-        { month: '2026-04', income: 800, expenses: 200, net: 600 },
-        { month: '2026-05', income: 900, expenses: 250, net: 650 },
-      ])
-    );
+    expectSeriesToInclude(result.current.series, [
+      { month: '2026-03', income: 700, expenses: 150, net: 550 },
+      { month: '2026-04', income: 800, expenses: 200, net: 600 },
+      { month: '2026-05', income: 900, expenses: 250, net: 650 },
+    ]);
   });
 
   it('keeps prior series visible while the next account filter loads', async () => {
@@ -181,9 +195,9 @@ describe('useCashFlow', () => {
     });
 
     expect(result.current.loading).toBe(false);
-    expect(result.current.series).toEqual(
-      expect.arrayContaining([{ month: '2026-05', income: 900, expenses: 250, net: 650 }])
-    );
+    expectSeriesToInclude(result.current.series, [
+      { month: '2026-05', income: 900, expenses: 250, net: 650 },
+    ]);
 
     await act(async () => {
       deferred.resolve({
@@ -195,8 +209,8 @@ describe('useCashFlow', () => {
       expect(result.current.refreshing).toBe(false);
     });
 
-    expect(result.current.series).toEqual(
-      expect.arrayContaining([{ month: '2026-05', income: 400, expenses: 250, net: 150 }])
-    );
+    expectSeriesToInclude(result.current.series, [
+      { month: '2026-05', income: 400, expenses: 250, net: 150 },
+    ]);
   });
 });

@@ -77,7 +77,7 @@ export const CeremonyCancelledToast: Story = {
     try {
       await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
       await userEvent.type(canvas.getByLabelText(/^passkey name$/i), 'Story User');
-      await userEvent.click(canvas.getByRole('button', { name: /^create account$/i }));
+      await userEvent.click(canvas.getByRole('button', { name: /^join$/i }));
       await waitFor(() => {
         expect(within(document.body).getByText(/passkey setup was cancelled/i)).toBeInTheDocument();
       });
@@ -132,7 +132,7 @@ export const SignUpSuccess: Story = {
     try {
       await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
       await userEvent.type(canvas.getByLabelText(/^passkey name$/i), 'Story User');
-      await userEvent.click(canvas.getByRole('button', { name: /^create account$/i }));
+      await userEvent.click(canvas.getByRole('button', { name: /^join$/i }));
       await waitFor(() => {
         expect(args.onRegisterSuccess).toHaveBeenCalled();
       });

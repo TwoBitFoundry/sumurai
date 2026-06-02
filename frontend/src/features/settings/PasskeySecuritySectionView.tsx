@@ -73,7 +73,7 @@ export function PasskeySecuritySectionView({
         <div className={cn('space-y-1')}>
           <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>Security</h2>
           <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
-            Manage passkeys used to sign in. You must keep at least one passkey enrolled.
+            Manage passkeys used to sign in. You must keep at least one passkey sealed.
           </p>
         </div>
 

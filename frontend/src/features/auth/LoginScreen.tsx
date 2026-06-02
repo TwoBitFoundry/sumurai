@@ -155,7 +155,7 @@ export function LoginScreen({
       }
     } catch (loginError) {
       if (loginError instanceof AuthenticationError) {
-        setBannerError('Invalid email or password.');
+        setBannerError('Credentials unrecognized.');
       } else {
         const presentation = mapPasskeyAuthError(loginError, 'login');
         setBannerError(presentation.bannerMessage);
@@ -173,28 +173,28 @@ export function LoginScreen({
 
   const caption =
     loginStep === 'password'
-      ? 'No passkey is enrolled for this email yet. Sign in with your password to set one up.'
+      ? 'No passkey forged yet. Use your password to establish one.'
       : loginStep === 'passkey'
-        ? 'Approve the passkey prompt on this device.'
-        : 'Present your credentials to continue.';
+        ? 'Confirm the passkey summons on your device.'
+        : 'Confirm your credentials to enter.';
 
   const primaryLabel =
     resolvedPhase === 'awaitingCeremony'
       ? 'Approve passkey on your device…'
       : resolvedPhase === 'submitting'
-        ? 'Signing in…'
+        ? 'Entering...'
         : loginStep === 'password'
           ? 'Sign in with password'
-          : 'Continue';
+          : 'Enter';
 
   return (
     <>
       <AuthFormLayout>
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
-            <Badge size="md">Welcome back</Badge>
+            <Badge size="md">Home, at last</Badge>
             <h2 className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}>
-              Return to the dojo
+              Rejoin the Sumurai path
             </h2>
             <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>{caption}</p>
           </div>
@@ -251,7 +251,7 @@ export function LoginScreen({
                   disabled={isBusy}
                   onClick={resetToEmail}
                 >
-                  Use a different email
+                  Try another email.
                 </Button>
               ) : null}
             </form>
@@ -302,14 +302,14 @@ export function LoginScreen({
                   disabled={isBusy}
                   onClick={resetToEmail}
                 >
-                  Use a different email
+                  Try another email.
                 </Button>
               ) : null}
             </form>
           )}
 
           <div className={cn(authLayout.footerLink)}>
-            <p className="mb-3">Don't have an account?</p>
+            <p className="mb-3">Wish to join?</p>
             <Button
               type="button"
               onClick={onNavigateToRegister}
@@ -317,7 +317,7 @@ export function LoginScreen({
               size="sm"
               disabled={isBusy || isEmailLocked}
             >
-              Create account
+              Join
             </Button>
           </div>
         </div>

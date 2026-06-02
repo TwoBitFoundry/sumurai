@@ -84,15 +84,15 @@ export function EnrollPasskeyScreen({
         <GlassCard variant="auth" padding="lg" className={cn('w-full', uiTextRecipes.primary)}>
           <PasskeyEnrollmentModalForm
             titleId="enroll-passkey-title"
-            title="Set up your passkey"
-            description="Sumurai now uses passkeys instead of passwords. Enroll one to continue using your account."
+            title="Forge your passkey"
+            description="Sumurai is secured by passkeys now. Forge one to continue."
             nameInputId="passkey-name"
             passkeyName={passkeyName}
             onPasskeyNameChange={setPasskeyName}
             bannerError={bannerError}
             isLoading={isLoading}
             onSubmit={handleSubmit}
-            badgeLabel="Security Update"
+            badgeLabel="A matter of security"
             secondaryAction={
               onLogout
                 ? {

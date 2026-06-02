@@ -39,7 +39,7 @@ const ConnectButton = ({
       ) : (
         <Plus className={control.glyph[size]} />
       )}
-      <span>{children ?? 'Add account'}</span>
+      <span>{children ?? 'Add ally account'}</span>
     </Button>
   );
 };

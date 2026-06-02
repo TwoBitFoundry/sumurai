@@ -25,8 +25,8 @@ describe('SettingsPage', () => {
     const { container } = render(<SettingsPage />);
 
     const pageContainer = container.firstElementChild as HTMLElement;
-    const accountSettingsBadge = screen.getByText('ACCOUNT SETTINGS');
-    const appearanceLabel = screen.getByText('Appearance');
+    const accountSettingsBadge = screen.getByText('Settings');
+    const appearanceLabel = screen.getByText('Adjust your appearance');
     const accountSettingsCard = accountSettingsBadge.closest('[class*="space-y-5"]');
     const themeSelector = screen.getByRole('radiogroup', { name: 'Theme' });
 

@@ -66,7 +66,7 @@ describe('shared shell text surfaces', () => {
   it('uses semantic text roles in the footer copy and links', () => {
     render(<Footer />);
 
-    expect(screen.getByText('Built in the open—forged with the community')).toHaveClass(
+    expect(screen.getByText('Forging better systems for founders')).toHaveClass(
       uiTextRecipes.muted
     );
     expect(screen.getByRole('link', { name: 'Contact' })).toHaveClass(uiTextRecipes.accent);
