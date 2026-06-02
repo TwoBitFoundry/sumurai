@@ -28,6 +28,7 @@ services:
       MIGRATION_ARTIFACTS_DIR: /var/lib/sumurai/migration
 
       AUTH_COOKIE_SAME_SITE: Strict
+      APP_ORIGIN: ${APP_ORIGIN:?APP_ORIGIN is required}
 
       OTEL_TRACES_EXPORTER: otlp
       OTEL_EXPORTER_OTLP_ENDPOINT: http://seq/ingest/otlp/v1/traces

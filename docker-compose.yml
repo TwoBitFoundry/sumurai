@@ -28,6 +28,7 @@ services:
       MIGRATION_ARTIFACTS_DIR: /var/lib/sumurai/migration
 
       AUTH_COOKIE_SAME_SITE: Strict
+      APP_ORIGIN: http://localhost:8080
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080},${NGROK_URL:-}
 
       OTEL_TRACES_EXPORTER: none
