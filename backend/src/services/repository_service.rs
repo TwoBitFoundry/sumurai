@@ -3,6 +3,7 @@
 use crate::connection_pool::RepositoryPool;
 use crate::models::{
     account::Account,
+    analytics::MonthlyCashFlowAggregate,
     auth::{User, WebAuthnCredential},
     auto_categorization_job::TransactionCategoryUpdate,
     budget::Budget,
@@ -35,6 +36,13 @@ use sea_orm::{
 };
 use std::{future::Future, pin::Pin};
 use uuid::Uuid;
+
+#[derive(FromQueryResult)]
+struct MonthlyCashFlowRow {
+    month: String,
+    income: rust_decimal::Decimal,
+    expenses: rust_decimal::Decimal,
+}
 
 #[derive(FromQueryResult)]
 pub(crate) struct TransactionWithAccountRow {
@@ -100,6 +108,13 @@ pub trait DatabaseRepository: Send + Sync {
         start_date: chrono::NaiveDate,
         end_date: chrono::NaiveDate,
     ) -> Result<Vec<Transaction>>;
+    async fn get_monthly_cash_flow_aggregates_for_user(
+        &self,
+        user_id: &Uuid,
+        start_date: chrono::NaiveDate,
+        end_date: chrono::NaiveDate,
+        account_ids: Option<&[Uuid]>,
+    ) -> Result<Vec<MonthlyCashFlowAggregate>>;
     async fn get_provider_transaction_ids_for_user(&self, user_id: &Uuid) -> Result<Vec<String>>;
     async fn get_accounts_for_user(&self, user_id: &Uuid) -> Result<Vec<Account>>;
     async fn get_transaction_count_by_account_for_user(
@@ -566,6 +581,52 @@ impl PostgresRepository {
                 JoinType::LeftJoin,
                 transactions::Relation::TransactionCategoryOverrides.def(),
             )
+    }
+
+    fn monthly_cash_flow_statement(
+        user_id: Uuid,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+        account_ids: Option<&[Uuid]>,
+    ) -> Statement {
+        let excluded = EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES
+            .iter()
+            .map(|category| format!("'{}'", category))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let mut sql = format!(
+            r#"
+            SELECT
+                to_char(date, 'YYYY-MM') AS month,
+                COALESCE(SUM(CASE
+                    WHEN amount > 0 AND category_primary <> 'TRANSFER_IN' THEN amount
+                    ELSE 0
+                END), 0) AS income,
+                COALESCE(SUM(CASE
+                    WHEN amount < 0 AND category_primary NOT IN ({excluded}) THEN -amount
+                    ELSE 0
+                END), 0) AS expenses
+            FROM transactions
+            WHERE user_id = $1
+              AND date >= $2
+              AND date <= $3
+            "#
+        );
+        let mut values: Vec<Value> = vec![user_id.into(), start_date.into(), end_date.into()];
+
+        if let Some(account_ids) = account_ids.filter(|account_ids| !account_ids.is_empty()) {
+            let start_index = values.len() + 1;
+            let placeholders = (0..account_ids.len())
+                .map(|offset| format!("${}", start_index + offset))
+                .collect::<Vec<_>>()
+                .join(", ");
+            sql.push_str(&format!(" AND account_id IN ({placeholders})"));
+            values.extend(account_ids.iter().copied().map(Value::from));
+        }
+
+        sql.push_str(" GROUP BY 1 ORDER BY 1");
+
+        Statement::from_sql_and_values(DbBackend::Postgres, sql, values)
     }
 
     fn transaction_with_account_select(
@@ -1529,6 +1590,46 @@ impl DatabaseRepository for PostgresRepository {
             .await?;
 
         Ok(rows.into_iter().map(Into::into).collect())
+    }
+
+    async fn get_monthly_cash_flow_aggregates_for_user(
+        &self,
+        user_id: &Uuid,
+        start_date: chrono::NaiveDate,
+        end_date: chrono::NaiveDate,
+        account_ids: Option<&[Uuid]>,
+    ) -> Result<Vec<MonthlyCashFlowAggregate>> {
+        if matches!(account_ids, Some([])) {
+            return Ok(Vec::new());
+        }
+
+        let user_id = *user_id;
+        let account_ids = account_ids.map(|ids| ids.to_vec());
+        let rows = self
+            .with_tenant(&user_id, move |txn| {
+                Box::pin(async move {
+                    Ok(
+                        MonthlyCashFlowRow::find_by_statement(Self::monthly_cash_flow_statement(
+                            user_id,
+                            start_date,
+                            end_date,
+                            account_ids.as_deref(),
+                        ))
+                        .all(txn)
+                        .await?,
+                    )
+                })
+            })
+            .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| MonthlyCashFlowAggregate {
+                month: row.month,
+                income: row.income,
+                expenses: row.expenses,
+            })
+            .collect())
     }
 
     async fn get_provider_transaction_ids_for_user(&self, user_id: &Uuid) -> Result<Vec<String>> {

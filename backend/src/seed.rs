@@ -5,7 +5,7 @@ use chrono::Utc;
 use std::sync::Arc;
 use uuid::Uuid;
 
-const DEMO_EMAIL: &str = "me@test.com";
+pub const DEMO_EMAIL: &str = "me@test.com";
 const DEMO_PASSWORD: &str = "Test1234!";
 
 pub async fn maybe_seed_demo_user(

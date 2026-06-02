@@ -1098,3 +1098,124 @@ async fn given_other_transactions_when_fetching_eligible_auto_categorize_then_re
         .find(|row| row.id == transaction.id)
         .is_some_and(|row| row.provider_account_id.is_none()));
 }
+
+#[tokio::test]
+async fn given_more_than_one_thousand_transactions_when_get_monthly_cash_flow_aggregates_then_sums_all(
+) {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+    let month_date = NaiveDate::from_ymd_opt(2024, 6, 15).unwrap();
+    let start_date = NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+    let end_date = NaiveDate::from_ymd_opt(2024, 6, 30).unwrap();
+
+    let transactions = (0..1001)
+        .map(|index| {
+            let mut transaction = create_test_transaction(
+                user.id,
+                account.id,
+                format!("cash-flow-{index}"),
+                100,
+                month_date,
+            );
+            transaction.category_primary = "INCOME".to_string();
+            transaction
+        })
+        .collect::<Vec<_>>();
+
+    for chunk in transactions.chunks(500) {
+        repo.upsert_transactions_batch(chunk, &user.id)
+            .await
+            .unwrap();
+    }
+
+    let capped = repo
+        .get_transactions_by_date_range_for_user(&user.id, start_date, end_date)
+        .await
+        .unwrap();
+    assert_eq!(capped.len(), 1000);
+
+    let aggregates = repo
+        .get_monthly_cash_flow_aggregates_for_user(&user.id, start_date, end_date, None)
+        .await
+        .unwrap();
+
+    let june = aggregates
+        .iter()
+        .find(|row| row.month == "2024-06")
+        .expect("expected June aggregate");
+    assert_eq!(june.income, dec!(1001.00));
+    assert_eq!(june.expenses, dec!(0.00));
+}
+
+#[tokio::test]
+async fn given_multiple_accounts_when_get_monthly_cash_flow_aggregates_with_account_filter_then_limits_to_selected_accounts(
+) {
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool);
+    let user = create_test_user(&repo).await;
+    let checking = create_test_account(&repo, user.id).await;
+    let savings = create_test_account(&repo, user.id).await;
+    let month_date = NaiveDate::from_ymd_opt(2024, 7, 10).unwrap();
+    let start_date = NaiveDate::from_ymd_opt(2024, 7, 1).unwrap();
+    let end_date = NaiveDate::from_ymd_opt(2024, 7, 31).unwrap();
+
+    let mut checking_income = create_test_transaction(
+        user.id,
+        checking.id,
+        "checking-income".to_string(),
+        10_000,
+        month_date,
+    );
+    checking_income.category_primary = "INCOME".to_string();
+
+    let mut savings_income = create_test_transaction(
+        user.id,
+        savings.id,
+        "savings-income".to_string(),
+        20_000,
+        month_date,
+    );
+    savings_income.category_primary = "INCOME".to_string();
+
+    repo.upsert_transaction(&checking_income).await.unwrap();
+    repo.upsert_transaction(&savings_income).await.unwrap();
+
+    let include_checking = repo
+        .get_monthly_cash_flow_aggregates_for_user(
+            &user.id,
+            start_date,
+            end_date,
+            Some(&[checking.id]),
+        )
+        .await
+        .unwrap();
+    let checking_only = include_checking
+        .iter()
+        .find(|row| row.month == "2024-07")
+        .expect("expected July aggregate for checking");
+    assert_eq!(checking_only.income, dec!(100.00));
+
+    let all_accounts = repo
+        .get_monthly_cash_flow_aggregates_for_user(&user.id, start_date, end_date, None)
+        .await
+        .unwrap();
+    let combined = all_accounts
+        .iter()
+        .find(|row| row.month == "2024-07")
+        .expect("expected July aggregate for all accounts");
+    assert_eq!(combined.income, dec!(300.00));
+
+    let none_selected = repo
+        .get_monthly_cash_flow_aggregates_for_user(&user.id, start_date, end_date, Some(&[]))
+        .await
+        .unwrap();
+    assert!(none_selected.is_empty());
+}

@@ -148,7 +148,8 @@ export function LoginScreen({
     try {
       const normalizedEmail = email.trim().toLowerCase();
       const response = await AuthService.loginWithPassword(normalizedEmail, password);
-      if (onEnrollmentRequired) {
+      const requiresPasskeyEnrollment = response.requires_passkey_enrollment ?? true;
+      if (requiresPasskeyEnrollment && onEnrollmentRequired) {
         onEnrollmentRequired(response, normalizedEmail);
       } else {
         onLoginSuccess?.(response);

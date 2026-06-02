@@ -110,6 +110,7 @@ describe('Auth screens', () => {
       user_id: 'legacy-user',
       expires_at: '2099-01-01T00:00:00Z',
       onboarding_completed: true,
+      requires_passkey_enrollment: true,
     });
     const onEnrollmentRequired = jest.fn();
     const user = userEvent.setup();
@@ -125,8 +126,49 @@ describe('Auth screens', () => {
         user_id: 'legacy-user',
         expires_at: '2099-01-01T00:00:00Z',
         onboarding_completed: true,
+        requires_passkey_enrollment: true,
       },
       'legacy@example.com'
     );
+  });
+
+  it('completes sign-in without passkey enrollment when password login does not require it', async () => {
+    const { userEvent } = await import('@testing-library/user-event');
+    const { PasskeyService } = await import('@/services/passkeyService');
+    const { AuthService } = await import('@/services/authService');
+    jest.spyOn(PasskeyService, 'beginLogin').mockResolvedValue({
+      session_id: '',
+      challenge: {},
+      account_exists: true,
+      passkey_available: false,
+      password_available: true,
+    });
+    jest.spyOn(AuthService, 'loginWithPassword').mockResolvedValue({
+      user_id: 'seed-user',
+      expires_at: '2099-01-01T00:00:00Z',
+      onboarding_completed: true,
+      requires_passkey_enrollment: false,
+    });
+    const onEnrollmentRequired = jest.fn();
+    const onLoginSuccess = jest.fn();
+    const user = userEvent.setup();
+    render(
+      <LoginScreen
+        onNavigateToRegister={jest.fn()}
+        onEnrollmentRequired={onEnrollmentRequired}
+        onLoginSuccess={onLoginSuccess}
+      />
+    );
+    await user.type(screen.getByLabelText(/^email$/i), 'me@test.com');
+    await user.click(screen.getByRole('button', { name: /^enter$/i }));
+    await user.type(screen.getByLabelText(/^password$/i), 'Test1234!');
+    await user.click(screen.getByRole('button', { name: /sign in with password/i }));
+    expect(onLoginSuccess).toHaveBeenCalledWith({
+      user_id: 'seed-user',
+      expires_at: '2099-01-01T00:00:00Z',
+      onboarding_completed: true,
+      requires_passkey_enrollment: false,
+    });
+    expect(onEnrollmentRequired).not.toHaveBeenCalled();
   });
 });

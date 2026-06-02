@@ -45,6 +45,7 @@ mod tests;
 mod utils;
 #[cfg(test)]
 pub use tests::test_fixtures;
+use utils::seed_password_fallback::seed_user_password_fallback;
 use utils::webauthn_credentials::{
     count_usable_credentials, has_usable_passkey, is_usable_credential, usable_passkeys,
 };
@@ -1049,6 +1050,7 @@ async fn refresh_user_session(
             user_id: claims.user_id(),
             expires_at: auth_token.expires_at.to_rfc3339(),
             onboarding_completed: user.onboarding_completed,
+            requires_passkey_enrollment: false,
         }),
     ))
 }
@@ -2600,7 +2602,8 @@ async fn get_authenticated_monthly_totals(
     path = "/api/analytics/cash-flow",
     description = "Produces a timeline of monthly income, expenses, and net savings for dashboard charts.",
     params(("months" = Option<i32>, Query, description = "Number of months to retrieve (default: 6)"),
-           ("account_ids" = Option<Vec<String>>, Query, description = "Filter by account IDs")),
+           ("account_ids" = Option<Vec<String>>, Query, description = "Include only these account IDs"),
+           ("exclude_account_ids" = Option<Vec<String>>, Query, description = "Exclude these account IDs (ignored when account_ids is set)")),
     responses(
         (status = 200, description = "Monthly cash flow data", body = CashFlowResponse),
         (status = 401, description = "Unauthorized"),
@@ -2633,13 +2636,29 @@ async fn get_authenticated_cash_flow(
     let start_date = chrono::NaiveDate::from_ymd_opt(start_year, start_month, 1).unwrap_or(now);
     let end_date = now;
 
-    let transactions = state
+    let account_ids = authorized_account_ids
+        .as_ref()
+        .map(|ids| ids.iter().copied().collect::<Vec<_>>());
+
+    if matches!(account_ids.as_deref(), Some([])) {
+        return Ok(Json(CashFlowResponse {
+            series: Vec::new(),
+            currency: "USD".to_string(),
+        }));
+    }
+
+    let aggregates = state
         .db_repository
-        .get_transactions_by_date_range_for_user(&user_id, start_date, end_date)
+        .get_monthly_cash_flow_aggregates_for_user(
+            &user_id,
+            start_date,
+            end_date,
+            account_ids.as_deref(),
+        )
         .await
         .map_err(|e| {
             tracing::error!(
-                "Failed to get transactions for user {} in range [{}, {}]: {}",
+                "Failed to get cash flow aggregates for user {} in range [{}, {}]: {}",
                 user_id,
                 start_date,
                 end_date,
@@ -2648,19 +2667,10 @@ async fn get_authenticated_cash_flow(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    let transactions = if let Some(ref allowed_ids) = authorized_account_ids {
-        transactions
-            .into_iter()
-            .filter(|t| allowed_ids.contains(&t.account_id))
-            .collect()
-    } else {
-        transactions
-    };
-
     let currency = "USD".to_string();
     let series = state
         .analytics_service
-        .calculate_cash_flow(&transactions, months);
+        .cash_flow_from_monthly_aggregates(&aggregates, months);
     Ok(Json(CashFlowResponse { series, currency }))
 }
 
@@ -4519,6 +4529,7 @@ async fn finish_passkey_registration(
         user_id: user_id.to_string(),
         expires_at: auth_token.expires_at.to_rfc3339(),
         onboarding_completed: user.onboarding_completed,
+        requires_passkey_enrollment: false,
     })
     .map_err(|e| {
         tracing::error!("Failed to serialize auth response: {}", e);
@@ -4694,7 +4705,7 @@ async fn login_with_password(
             ApiErrorResponse::internal_server_error("Authentication service error")
         })?;
 
-    if has_usable_passkey(&passkeys) {
+    if has_usable_passkey(&passkeys) && !seed_user_password_fallback(&user) {
         return Err(ApiErrorResponse::unauthorized(INVALID_CREDENTIALS));
     }
 
@@ -4754,6 +4765,7 @@ async fn login_with_password(
             user_id: user_id.to_string(),
             expires_at: auth_token.expires_at.to_rfc3339(),
             onboarding_completed: user.onboarding_completed,
+            requires_passkey_enrollment: !seed_user_password_fallback(&user),
         }),
     ))
 }
@@ -4807,6 +4819,16 @@ async fn begin_passkey_login(
             tracing::error!("Failed to list credentials for user {}: {}", user.id, e);
             ApiErrorResponse::internal_server_error("Authentication service error")
         })?;
+
+    if seed_user_password_fallback(&user) {
+        return Ok(Json(auth_models::PasskeyLoginBeginResponse {
+            session_id: String::new(),
+            challenge: serde_json::Value::Null,
+            account_exists: true,
+            passkey_available: false,
+            password_available: true,
+        }));
+    }
 
     let passkeys = usable_passkeys(&creds);
     let password_available = passkeys.is_empty()
@@ -5076,6 +5098,7 @@ async fn finish_passkey_login(
             user_id: user_id.to_string(),
             expires_at: auth_token.expires_at.to_rfc3339(),
             onboarding_completed: user.onboarding_completed,
+            requires_passkey_enrollment: false,
         }),
     ))
 }

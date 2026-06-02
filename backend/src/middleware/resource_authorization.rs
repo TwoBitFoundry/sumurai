@@ -17,6 +17,10 @@ use uuid::Uuid;
 
 pub trait AccountIdsQuery {
     fn account_ids(&self) -> &[String];
+
+    fn exclude_account_ids(&self) -> &[String] {
+        &[]
+    }
 }
 
 pub trait ConnectionIdRequest {
@@ -85,6 +89,45 @@ async fn validate_account_ids(
     Ok(Some(validated_ids.into_iter().collect()))
 }
 
+async fn resolve_authorized_account_ids(
+    state: &AppState,
+    auth_context: &AuthContext,
+    include_account_ids: &[String],
+    exclude_account_ids: &[String],
+) -> Result<Option<HashSet<Uuid>>, Response> {
+    if !include_account_ids.is_empty() {
+        return validate_account_ids(state, auth_context, include_account_ids).await;
+    }
+
+    if exclude_account_ids.is_empty() {
+        return Ok(None);
+    }
+
+    let excluded = validate_account_ids(state, auth_context, exclude_account_ids)
+        .await?
+        .ok_or_else(|| bad_request("Invalid account filter"))?;
+
+    let user_accounts = state
+        .db_repository
+        .get_accounts_for_user(&auth_context.user_id)
+        .await
+        .map_err(|_| {
+            error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "INTERNAL_SERVER_ERROR",
+                "Authorization failed",
+            )
+        })?;
+
+    let remaining = user_accounts
+        .into_iter()
+        .map(|account| account.id)
+        .filter(|account_id| !excluded.contains(account_id))
+        .collect::<HashSet<_>>();
+
+    Ok(Some(remaining))
+}
+
 fn auth_context_from_parts(parts: &Parts) -> Result<AuthContext, StatusCode> {
     parts
         .extensions
@@ -103,17 +146,29 @@ impl AccountIdsQuery for DateRangeQuery {
     fn account_ids(&self) -> &[String] {
         &self.account_ids
     }
+
+    fn exclude_account_ids(&self) -> &[String] {
+        &self.exclude_account_ids
+    }
 }
 
 impl AccountIdsQuery for MonthlyTotalsQuery {
     fn account_ids(&self) -> &[String] {
         &self.account_ids
     }
+
+    fn exclude_account_ids(&self) -> &[String] {
+        &self.exclude_account_ids
+    }
 }
 
 impl AccountIdsQuery for BalancesOverviewQuery {
     fn account_ids(&self) -> &[String] {
         &self.account_ids
+    }
+
+    fn exclude_account_ids(&self) -> &[String] {
+        &self.exclude_account_ids
     }
 }
 
@@ -174,9 +229,13 @@ where
         let Query(query) = Query::<T>::from_request_parts(parts, state)
             .await
             .map_err(|_| bad_request("Invalid query parameters"))?;
-        let account_ids = query.account_ids().to_vec();
-        let authorized_account_ids =
-            validate_account_ids(state, &auth_context, &account_ids).await?;
+        let authorized_account_ids = resolve_authorized_account_ids(
+            state,
+            &auth_context,
+            query.account_ids(),
+            query.exclude_account_ids(),
+        )
+        .await?;
 
         Ok(Self {
             query,

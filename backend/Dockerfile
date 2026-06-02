@@ -48,12 +48,17 @@ RUN mkdir -p backend/src backend/entity/src backend/migration/src cli/src \
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
+ARG CARGO_FEATURES=
 COPY --from=planner /app/recipe.json ./recipe.json
 RUN cargo chef cook --release --locked --recipe-path recipe.json
 COPY rust-toolchain.toml Cargo.toml Cargo.lock ./
 COPY backend/ ./backend/
 COPY cli/ ./cli/
-RUN cargo build --release --locked -p sumurai-backend -p migration -p sumurai-cli
+RUN if [ -n "$CARGO_FEATURES" ]; then \
+      cargo build --release --locked -p sumurai-backend -p migration -p sumurai-cli --features "$CARGO_FEATURES"; \
+    else \
+      cargo build --release --locked -p sumurai-backend -p migration -p sumurai-cli; \
+    fi
 
 FROM debian:trixie-slim AS runtime
 WORKDIR /app

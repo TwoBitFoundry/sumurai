@@ -32,6 +32,8 @@ pub struct DateRangeQueryParams {
     pub end_date: Option<String>,
     #[schema(value_type = Option<Vec<String>>)]
     pub account_ids: Option<Vec<String>>,
+    #[schema(value_type = Option<Vec<String>>)]
+    pub exclude_account_ids: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -40,6 +42,8 @@ pub struct MonthlyTotalsQueryParams {
     pub months: Option<u32>,
     #[schema(value_type = Option<Vec<String>>)]
     pub account_ids: Option<Vec<String>>,
+    #[schema(value_type = Option<Vec<String>>)]
+    pub exclude_account_ids: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]

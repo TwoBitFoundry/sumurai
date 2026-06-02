@@ -141,6 +141,19 @@ describe('AnalyticsService (date-range endpoints)', () => {
     });
   });
 
+  describe('getCashFlow', () => {
+    it('serializes account_ids parameter when provided', async () => {
+      const accountIds = ['acc_1', 'acc_2'];
+      jest.mocked(ApiClient.get).mockResolvedValue({ series: [], currency: 'USD' });
+
+      await AnalyticsService.getCashFlow(6, accountIds);
+
+      expect(ApiClient.get).toHaveBeenCalledWith(
+        '/analytics/cash-flow?months=6&account_ids%5B%5D=acc_1&account_ids%5B%5D=acc_2'
+      );
+    });
+  });
+
   describe('getTopMerchantsByDateRange', () => {
     it('calls backend with date range for top merchants', async () => {
       const start = '2024-01-01';

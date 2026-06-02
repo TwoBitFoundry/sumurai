@@ -64,7 +64,7 @@ services:
     image: redis:7-alpine
     command: redis-server --appendonly yes
     volumes:
-      - redis_data:/data
+      - redis_data_oss:/data
 
   postgres:
     image: postgres:15-alpine
@@ -73,7 +73,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_oss:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres -d accounting" ]
       interval: 5s
@@ -137,8 +137,8 @@ services:
         exec ngrok http https://nginx:443
 
 volumes:
-  redis_data:
-  postgres_data:
+  redis_data_oss:
+  postgres_data_oss:
   migration_artifacts:
   certbot-etc:
   certbot-var:

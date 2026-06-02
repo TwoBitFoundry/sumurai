@@ -198,6 +198,7 @@ describe('useCashFlow', () => {
     expectSeriesToInclude(result.current.series, [
       { month: '2026-05', income: 900, expenses: 250, net: 650 },
     ]);
+    expect(AnalyticsService.getCashFlow).toHaveBeenLastCalledWith(3, ['account1']);
 
     await act(async () => {
       deferred.resolve({

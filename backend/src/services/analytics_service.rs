@@ -1,7 +1,8 @@
 //! Aggregated analytics queries for dashboards.
 
 use crate::models::analytics::{
-    BalanceCategory, CashFlowPoint, CategorySpending, DailySpending, MonthlySpending, TopMerchant,
+    BalanceCategory, CashFlowPoint, CategorySpending, DailySpending, MonthlyCashFlowAggregate,
+    MonthlySpending, TopMerchant,
 };
 use crate::models::transaction::Transaction;
 use crate::services::repository_service::{
@@ -315,13 +316,34 @@ impl AnalyticsService {
             }
         }
 
-        let mut result: Vec<CashFlowPoint> = monthly_flows
+        let aggregates = monthly_flows
             .into_iter()
-            .map(|(month, flow)| CashFlowPoint {
+            .map(|(month, flow)| MonthlyCashFlowAggregate {
                 month,
-                income: Self::round_amount(flow.income),
-                expenses: Self::round_amount(flow.expenses),
-                net: Self::round_amount(flow.income - flow.expenses),
+                income: flow.income,
+                expenses: flow.expenses,
+            })
+            .collect::<Vec<_>>();
+
+        self.cash_flow_from_monthly_aggregates(&aggregates, months)
+    }
+
+    pub fn cash_flow_from_monthly_aggregates(
+        &self,
+        aggregates: &[MonthlyCashFlowAggregate],
+        months: u32,
+    ) -> Vec<CashFlowPoint> {
+        let mut result: Vec<CashFlowPoint> = aggregates
+            .iter()
+            .map(|aggregate| {
+                let income = Self::round_amount(aggregate.income);
+                let expenses = Self::round_amount(aggregate.expenses);
+                CashFlowPoint {
+                    month: aggregate.month.clone(),
+                    income,
+                    expenses,
+                    net: Self::round_amount(income - expenses),
+                }
             })
             .collect();
 
