@@ -192,9 +192,9 @@ export function LoginScreen({
       <AuthFormLayout>
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
-            <Badge size="md">Home, at last</Badge>
+            <Badge size="md">Rejoin the Path</Badge>
             <h2 className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}>
-              Rejoin the Sumurai path
+              Sign in to Sumurai
             </h2>
             <p className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted)}>{caption}</p>
           </div>

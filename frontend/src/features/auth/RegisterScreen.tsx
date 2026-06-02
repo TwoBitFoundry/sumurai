@@ -103,7 +103,7 @@ export function RegisterScreen({
       <AuthFormLayout>
         <div className="space-y-5">
           <div className={cn('space-y-3', 'text-center')}>
-            <Badge size="md">Begin your path</Badge>
+            <Badge size="md">Begin the path</Badge>
             <h2 className={cn(uiTypographyRecipes.pageTitle, uiTextRecipes.primary)}>
               Sign up for Sumurai
             </h2>
