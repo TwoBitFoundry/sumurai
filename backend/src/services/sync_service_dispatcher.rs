@@ -138,7 +138,7 @@ fn provider_sync_error_json_response(
     status: axum::http::StatusCode,
     error: &str,
     message: &str,
-    retry_after_secs: Option<&'static str>,
+    retry_after_secs: Option<String>,
 ) -> axum::response::Response {
     use axum::response::IntoResponse;
 
@@ -162,20 +162,20 @@ pub fn provider_sync_error_to_response(
     use axum::http::StatusCode;
 
     match err {
-        ProviderSyncError::RateLimited(provider_message) => {
+        ProviderSyncError::RateLimited {
+            message,
+            retry_after_secs,
+        } => {
             tracing::info!(
                 "Provider sync rate-limited for user {} and item {}",
                 user_id,
                 item_id
             );
-            let message = provider_message.unwrap_or_else(|| {
-                "Unable to sync at this time. Please try again later.".to_string()
-            });
             provider_sync_error_json_response(
                 StatusCode::TOO_MANY_REQUESTS,
                 "RATE_LIMITED",
                 &message,
-                Some("3600"),
+                Some(retry_after_secs),
             )
         }
         ProviderSyncError::CredentialsMissing => {

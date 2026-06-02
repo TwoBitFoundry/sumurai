@@ -104,17 +104,28 @@ sequenceDiagram
 
 **Acceptance criteria:**
 
-- [ ] Backend compiles: `CacheService::get_counter` / `increment_counter` exist on the trait, Redis impl, and `MockCacheService`, and the rate-limit service builds against them.
-- [ ] 24th sync in the user's **local calendar day** succeeds for **Plaid, Teller, and SimpleFIN**; 25th returns 429 with `retry_after_secs` until **local midnight** regardless of provider.
-- [ ] Quota counter key uses `client_date` from the request, not server UTC date; TTL is seconds-until-local-midnight in `client_timezone` (no `Utc::now()` in bucket or TTL).
-- [ ] Missing or invalid `client_timezone` returns 400 (no UTC fallback); existing integration-test fixtures sending `client_date: None` are updated to supply both fields.
-- [ ] A sync that passes the gate but fails provider-side still consumes its slot (documented, not refunded).
-- [ ] Quota counter is **shared across providers** (Plaid sync then Teller sync both increment the same user key for the same local day).
-- [ ] `CacheService` counter methods exist and are used by rate limit service.
-- [ ] `save_provider_connection` returns existing row id on `item_id` conflict, not the in-memory new UUID.
-- [ ] Re-sync when connection already exists upserts accounts without `fk_accounts_provider_connection` error.
-- [ ] Binary SimpleFIN 1-hour floor key is no longer written ([`connection_service.rs:1420`](../backend/src/services/connection_service.rs)) or checked ([`simplefin_connection_service.rs:153`](../backend/src/services/simplefin_connection_service.rs)).
-- [ ] Unit tests in rate limit service use fixed IANA timezones (not UTC-only); provider sync tests (Plaid/Teller/SimpleFIN) pass.
+- [x] Backend compiles: `CacheService::get_counter` / `increment_counter` exist on the trait, Redis impl, and `MockCacheService`, and the rate-limit service builds against them.
+- [x] 24th sync in the user's **local calendar day** succeeds for **Plaid, Teller, and SimpleFIN**; 25th returns 429 with `retry_after_secs` until **local midnight** regardless of provider.
+- [x] Quota counter key uses `client_date` from the request, not server UTC date; TTL is seconds-until-local-midnight in `client_timezone` (no `Utc::now()` in bucket or TTL).
+- [x] Missing or invalid `client_timezone` returns 400 (no UTC fallback); existing integration-test fixtures sending `client_date: None` are updated to supply both fields.
+- [x] A sync that passes the gate but fails provider-side still consumes its slot (documented, not refunded).
+- [x] Quota counter is **shared across providers** (Plaid sync then Teller sync both increment the same user key for the same local day).
+- [x] `CacheService` counter methods exist and are used by rate limit service.
+- [x] `save_provider_connection` returns existing row id on `item_id` conflict, not the in-memory new UUID.
+- [x] Re-sync when connection already exists upserts accounts without `fk_accounts_provider_connection` error.
+- [x] Binary SimpleFIN 1-hour floor key is no longer written ([`connection_service.rs:1420`](../backend/src/services/connection_service.rs)) or checked ([`simplefin_connection_service.rs:153`](../backend/src/services/simplefin_connection_service.rs)).
+- [x] Unit tests in rate limit service use fixed IANA timezones (not UTC-only); provider sync tests (Plaid/Teller/SimpleFIN) pass.
+
+**TDD log**
+
+- `cargo check -p sumurai-backend --locked`
+- `cargo test -p sumurai-backend --locked provider_sync_rate_limit_tests -- --nocapture`
+- `cargo test -p sumurai-backend --locked simplefin_service_tests -- --nocapture`
+- `cargo test -p sumurai-backend --locked integration_tests -- --nocapture`
+- `cargo test -p sumurai-backend --locked openapi_tests -- --nocapture`
+- `cargo test -p sumurai-backend --locked regenerate_openapi_artifacts -- --ignored --nocapture`
+- `npm --prefix frontend test -- tests/services/PlaidService.test.ts tests/services/SimpleFinService.test.ts tests/services/TellerService.test.ts`
+- `cargo test -p sumurai-backend --locked`
 
 ---
 
@@ -200,10 +211,9 @@ sequenceDiagram
 ## Next actions (student agent)
 
 1. Read [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) caching/auth sections and [`.agents/skills/sumurai-backend-architecture/SKILL.md`](../.agents/skills/sumurai-backend-architecture/SKILL.md) before backend edits.
-2. Implement **Phase 1** first (quota + FK fix unblock reliable SimpleFIN sync data).
-3. Implement **Phase 2** (SimpleFIN API shape) then **Phase 3** (shared sync-all modal + AccountsPage orchestrator).
-4. Run Phase 4 validation for all three providers.
-5. Do not collapse Plaid/Teller into one backend call; do not loop SimpleFIN per org connection; do not add a new sync route; do not use per-provider quota counters; **do not use UTC for daily quota boundaries or user-facing retry copy**.
+2. Phase 1 is complete; implement **Phase 2** (SimpleFIN API shape) then **Phase 3** (shared sync-all modal + AccountsPage orchestrator).
+3. Run Phase 4 validation for all three providers.
+4. Do not collapse Plaid/Teller into one backend call; do not loop SimpleFIN per org connection; do not add a new sync route; do not use per-provider quota counters; **do not use UTC for daily quota boundaries or user-facing retry copy**.
 
 ## Key files
 

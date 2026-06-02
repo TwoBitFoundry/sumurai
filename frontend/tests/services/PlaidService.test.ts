@@ -13,6 +13,7 @@ describe('PlaidService', () => {
   let postSpy: jest.SpiedFunction<typeof ApiClient.post>;
   let getSpy: jest.SpiedFunction<typeof ApiClient.get>;
   let toLocaleDateStringSpy: jest.SpiedFunction<typeof Date.prototype.toLocaleDateString>;
+  let dateTimeFormatSpy: jest.SpiedFunction<typeof Intl.DateTimeFormat>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -21,12 +22,16 @@ describe('PlaidService', () => {
     toLocaleDateStringSpy = jest
       .spyOn(Date.prototype, 'toLocaleDateString')
       .mockReturnValue('2025-06-15');
+    dateTimeFormatSpy = jest.spyOn(Intl, 'DateTimeFormat').mockReturnValue({
+      resolvedOptions: () => ({ timeZone: 'America/Chicago' }),
+    } as any);
   });
 
   afterEach(() => {
     postSpy.mockRestore();
     getSpy.mockRestore();
     toLocaleDateStringSpy.mockRestore();
+    dateTimeFormatSpy.mockRestore();
   });
 
   describe('getLinkToken', () => {
@@ -147,6 +152,7 @@ describe('PlaidService', () => {
 
       expect(ApiClient.post).toHaveBeenCalledWith('/providers/sync-transactions', {
         client_date: '2025-06-15',
+        client_timezone: 'America/Chicago',
       });
       expect(result).toEqual(mockResponse);
     });
@@ -182,6 +188,7 @@ describe('PlaidService', () => {
       expect(ApiClient.post).toHaveBeenCalledWith('/providers/sync-transactions', {
         connection_id: connectionId,
         client_date: '2025-06-15',
+        client_timezone: 'America/Chicago',
       });
       expect(result).toEqual(mockResponse);
     });

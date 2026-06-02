@@ -9,7 +9,6 @@ use crate::services::connection_service::{
 };
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::simplefin_org_service::{conn_id_is_hidden, SimpleFinOrganizationService};
-use crate::services::simplefin_rate_limit_service::SimpleFinRateLimitService;
 use crate::services::sync_service::SyncService;
 use anyhow::Result;
 use chrono::NaiveDate;
@@ -24,7 +23,6 @@ pub struct SimpleFinConnectionService {
     credential_resolvers:
         std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>>,
     org_service: Arc<SimpleFinOrganizationService>,
-    rate_limit_service: Arc<SimpleFinRateLimitService>,
 }
 
 impl SimpleFinConnectionService {
@@ -38,7 +36,6 @@ impl SimpleFinConnectionService {
             Arc<dyn crate::providers::ProviderCredentialResolver>,
         >,
         org_service: Arc<SimpleFinOrganizationService>,
-        rate_limit_service: Arc<SimpleFinRateLimitService>,
     ) -> Self {
         Self {
             db_repository,
@@ -46,7 +43,6 @@ impl SimpleFinConnectionService {
             provider_registry,
             credential_resolvers,
             org_service,
-            rate_limit_service,
         }
     }
 
@@ -149,17 +145,6 @@ impl SimpleFinConnectionService {
         let sync_timestamp = Utc::now();
         let (sync_start_date, sync_end_date) =
             sync_service.calculate_sync_date_range(connection.last_sync_at, reference_date);
-
-        let floor_key = format!("simplefin_sync_floor:{}", params.user_id);
-        if self
-            .cache_service
-            .get_string(&floor_key)
-            .await
-            .map_err(ProviderSyncError::SyncFailure)?
-            .is_some()
-        {
-            return Err(ProviderSyncError::RateLimited(None));
-        }
 
         #[allow(deprecated)]
         let conn_id = crate::services::connection_service::simplefin_conn_id_from_item_id(
@@ -271,7 +256,10 @@ impl SimpleFinConnectionService {
                 if let Some(SimpleFinProviderError::RateLimited(msg)) =
                     e.downcast_ref::<SimpleFinProviderError>()
                 {
-                    ProviderSyncError::RateLimited(Some(msg.clone()))
+                    ProviderSyncError::RateLimited {
+                        message: msg.clone(),
+                        retry_after_secs: "3600".to_string(),
+                    }
                 } else {
                     ProviderSyncError::SyncFailure(e)
                 }
@@ -341,23 +329,21 @@ impl SimpleFinConnectionService {
         connection.sync_cursor = Some(new_cursor);
         connection.last_sync_at = Some(sync_timestamp);
 
-        if let Err(e) = self
+        match self
             .db_repository
             .save_provider_connection(connection)
             .await
         {
-            tracing::warn!(
-                "Failed to update SimpleFIN connection {} for user {}: {}",
-                connection.id,
-                params.user_id,
-                e
-            );
+            Ok(saved_id) => connection.id = saved_id,
+            Err(e) => {
+                tracing::warn!(
+                    "Failed to update SimpleFIN connection {} for user {}: {}",
+                    connection.id,
+                    params.user_id,
+                    e
+                );
+            }
         }
-
-        self.cache_service
-            .set_with_ttl(&floor_key, "1", 3600)
-            .await
-            .map_err(ProviderSyncError::SyncFailure)?;
 
         Ok(SyncTransactionsResponse {
             transactions,

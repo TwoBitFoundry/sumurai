@@ -6,6 +6,7 @@ use crate::services::categorization::categorization_service::Categorizer;
 use crate::services::category_management::service::CategoryManagementService;
 use crate::services::otel_traces_relay::OtlpTracesRelay;
 use crate::services::plaid_service::{PlaidService, RealPlaidClient};
+use crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitService;
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::sync_service::SyncService;
 use crate::services::sync_service_factory::SyncServiceFactory;
@@ -26,6 +27,7 @@ pub struct AppState {
     pub(crate) config: Config,
     pub(crate) db_repository: Arc<dyn DatabaseRepository>,
     pub(crate) cache_service: Arc<dyn CacheService>,
+    pub(crate) provider_sync_rate_limit_service: Arc<ProviderSyncRateLimitService>,
     pub(crate) categorizer: Arc<dyn Categorizer>,
     pub(crate) connection_service: Arc<ConnectionService>,
     pub(crate) auth_service: Arc<AuthService>,
@@ -50,6 +52,7 @@ impl Clone for AppState {
             config: self.config.clone(),
             db_repository: self.db_repository.clone(),
             cache_service: self.cache_service.clone(),
+            provider_sync_rate_limit_service: self.provider_sync_rate_limit_service.clone(),
             categorizer: self.categorizer.clone(),
             connection_service: self.connection_service.clone(),
             auth_service: self.auth_service.clone(),

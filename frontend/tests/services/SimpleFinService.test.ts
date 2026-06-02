@@ -7,6 +7,7 @@ describe('SimpleFinService', () => {
   let postSpy: jest.SpiedFunction<typeof ApiClient.post>;
   let getSpy: jest.SpiedFunction<typeof ApiClient.get>;
   let toLocaleDateStringSpy: jest.SpiedFunction<typeof Date.prototype.toLocaleDateString>;
+  let dateTimeFormatSpy: jest.SpiedFunction<typeof Intl.DateTimeFormat>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -15,12 +16,16 @@ describe('SimpleFinService', () => {
     toLocaleDateStringSpy = jest
       .spyOn(Date.prototype, 'toLocaleDateString')
       .mockReturnValue('2025-06-15');
+    dateTimeFormatSpy = jest.spyOn(Intl, 'DateTimeFormat').mockReturnValue({
+      resolvedOptions: () => ({ timeZone: 'America/Chicago' }),
+    } as any);
   });
 
   afterEach(() => {
     postSpy.mockRestore();
     getSpy.mockRestore();
     toLocaleDateStringSpy.mockRestore();
+    dateTimeFormatSpy.mockRestore();
   });
 
   describe('connect', () => {
@@ -127,6 +132,7 @@ describe('SimpleFinService', () => {
       expect(postSpy).toHaveBeenCalledWith('/providers/sync-transactions', {
         connection_id: 'conn-from-status',
         client_date: '2025-06-15',
+        client_timezone: 'America/Chicago',
       });
       expect(postSpy).toHaveBeenCalledTimes(2);
     });
@@ -272,6 +278,7 @@ describe('SimpleFinService', () => {
       expect(postSpy).toHaveBeenCalledWith('/providers/sync-transactions', {
         connection_id: 'conn-demo',
         client_date: '2025-06-15',
+        client_timezone: 'America/Chicago',
       });
     });
   });
@@ -285,6 +292,7 @@ describe('SimpleFinService', () => {
       expect(ApiClient.post).toHaveBeenCalledWith('/providers/sync-transactions', {
         connection_id: 'conn-123',
         client_date: '2025-06-15',
+        client_timezone: 'America/Chicago',
       });
     });
   });

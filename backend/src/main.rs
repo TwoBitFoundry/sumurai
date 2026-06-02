@@ -133,9 +133,9 @@ use services::{
         telemetry_public_browser_governor_layer,
     },
     AuthService, AuthorizationService, BudgetService, CacheService, CategorizationService,
-    Categorizer, ConnectionService, ExchangeTokenError, LinkTokenError, PlaidService, RedisCache,
-    SimpleFinConnectError, SyncConnectionParams, SyncService, SyncServiceFactory,
-    TellerConnectError,
+    Categorizer, ConnectionService, ExchangeTokenError, LinkTokenError, PlaidService,
+    ProviderSyncRateLimitService, RedisCache, SimpleFinConnectError, SyncConnectionParams,
+    SyncService, SyncServiceFactory, TellerConnectError,
 };
 use services::{AnalyticsService, RealPlaidClient};
 use utils::auth_cookie::{build_auth_cookie, build_clearing_auth_cookie, extract_auth_cookie};
@@ -336,11 +336,8 @@ async fn main() -> anyhow::Result<()> {
         ),
     );
 
-    let simplefin_rate_limit_service = Arc::new(
-        crate::services::simplefin_rate_limit_service::SimpleFinRateLimitService::new(
-            cache_service.clone(),
-        ),
-    );
+    let provider_sync_rate_limit_service =
+        Arc::new(ProviderSyncRateLimitService::new(cache_service.clone()));
 
     let simplefin_connection_service = Arc::new(
         crate::services::simplefin_connection_service::SimpleFinConnectionService::new(
@@ -349,7 +346,6 @@ async fn main() -> anyhow::Result<()> {
             provider_registry.clone(),
             credential_resolvers.clone(),
             simplefin_org_service,
-            simplefin_rate_limit_service,
         ),
     );
 
@@ -423,6 +419,7 @@ async fn main() -> anyhow::Result<()> {
         config,
         db_repository,
         cache_service,
+        provider_sync_rate_limit_service,
         categorizer,
         connection_service,
         auth_service,
@@ -2221,15 +2218,40 @@ async fn sync_authenticated_provider_transactions(
         "Sync transactions requested"
     );
 
-    let reference_date = request_body
-        .client_date
-        .as_deref()
-        .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
-        .transpose()
+    let reference_date = NaiveDate::parse_from_str(&request_body.client_date, "%Y-%m-%d")
         .map_err(|_| StatusCode::BAD_REQUEST.into_response())?;
     let mut connection = connection;
 
     let provider = connection.provider.clone();
+
+    match state
+        .provider_sync_rate_limit_service
+        .try_consume_sync_quota(
+            &user_id,
+            &request_body.client_date,
+            &request_body.client_timezone,
+        )
+        .await
+    {
+        Ok(crate::services::provider_sync_rate_limit_service::SyncQuotaDecision::Allowed { .. }) => {}
+        Ok(crate::services::provider_sync_rate_limit_service::SyncQuotaDecision::Limited {
+            retry_after_secs,
+        }) => {
+            return Err(sync_quota_rate_limited_response(retry_after_secs));
+        }
+        Err(crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitError::InvalidClientDate)
+        | Err(crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitError::InvalidClientTimezone) => {
+            return Err(StatusCode::BAD_REQUEST.into_response());
+        }
+        Err(crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitError::Cache(error)) => {
+            tracing::error!(
+                error = %error,
+                user_id = %user_id,
+                "Sync quota check failed"
+            );
+            return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
+        }
+    }
 
     let sync_params = SyncConnectionParams {
         provider: provider.as_str(),
@@ -2250,7 +2272,7 @@ async fn sync_authenticated_provider_transactions(
         })?;
 
     match dispatcher
-        .sync(sync_params, &mut connection, reference_date)
+        .sync(sync_params, &mut connection, Some(reference_date))
         .await
     {
         Ok(response) => {
@@ -2286,6 +2308,25 @@ async fn sync_authenticated_provider_transactions(
             &connection.item_id,
         )),
     }
+}
+
+fn sync_quota_rate_limited_response(retry_after_secs: u64) -> Response {
+    let payload = ApiErrorResponse::with_code(
+        "TOO_MANY_REQUESTS",
+        "Daily sync limit reached (24 per day). Try again tomorrow.",
+        "RATE_LIMITED",
+    );
+    let body = serde_json::to_vec(&payload).unwrap_or_else(|_| b"{}".to_vec());
+
+    Response::builder()
+        .status(StatusCode::TOO_MANY_REQUESTS)
+        .header(CONTENT_TYPE, "application/json")
+        .header(
+            axum::http::header::RETRY_AFTER,
+            retry_after_secs.to_string(),
+        )
+        .body(axum::body::Body::from(body))
+        .unwrap_or_else(|_| Response::new(axum::body::Body::empty()))
 }
 
 #[utoipa::path(

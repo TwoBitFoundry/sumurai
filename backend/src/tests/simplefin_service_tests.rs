@@ -15,7 +15,7 @@ use crate::providers::{
 };
 use crate::services::cache_service::MockCacheService;
 use crate::services::connection_service::{
-    ConnectionService, ProviderSyncError, SimpleFinConnectError, SyncConnectionParams,
+    ConnectionService, SimpleFinConnectError, SyncConnectionParams,
 };
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::services::sync_service::SyncService;
@@ -242,11 +242,12 @@ fn build_simplefin_connection_service(
     mock_db
         .expect_save_provider_connection()
         .returning(move |connection| {
+            let connection_id = connection.id;
             saved_item_ids_clone
                 .lock()
                 .unwrap()
                 .insert(connection.item_id.clone());
-            Box::pin(async { Ok(()) })
+            Box::pin(async move { Ok(connection_id) })
         });
 
     let upserted_account_ids_clone = Arc::clone(&upserted_account_ids);
@@ -613,7 +614,10 @@ async fn build_simplefin_handler_app(
         .returning(|_| Box::pin(async { Ok(HashSet::new()) }));
     mock_db
         .expect_save_provider_connection()
-        .returning(|_| Box::pin(async { Ok(()) }));
+        .returning(|connection| {
+            let connection_id = connection.id;
+            Box::pin(async move { Ok(connection_id) })
+        });
     mock_db
         .expect_upsert_account()
         .returning(|_| Box::pin(async { Ok(()) }));
@@ -671,6 +675,11 @@ async fn build_simplefin_handler_app(
         cache_service.clone(),
         crate::test_fixtures::noop_categorizer(),
     ));
+    let provider_sync_rate_limit_service = Arc::new(
+        crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitService::new(
+            cache_service.clone(),
+        ),
+    );
 
     let state = AppState {
         plaid_service,
@@ -683,6 +692,7 @@ async fn build_simplefin_handler_app(
         config,
         db_repository,
         cache_service,
+        provider_sync_rate_limit_service,
         categorizer: crate::test_fixtures::noop_categorizer(),
         connection_service,
         auth_service,
@@ -954,11 +964,12 @@ fn build_simplefin_sync_service_with_categorizer_and_accounts(
     mock_db.expect_save_provider_connection().returning({
         let saved_item_ids = Arc::clone(&saved_item_ids);
         move |connection| {
+            let connection_id = connection.id;
             saved_item_ids
                 .lock()
                 .unwrap()
                 .insert(connection.item_id.clone());
-            Box::pin(async { Ok(()) })
+            Box::pin(async move { Ok(connection_id) })
         }
     });
     let upsert_accounts_clone = Arc::clone(&upsert_accounts);
@@ -1184,13 +1195,12 @@ async fn given_simplefin_sync_when_transactions_are_persisted_then_they_stay_oth
 }
 
 #[tokio::test]
-async fn given_sync_floor_when_second_simplefin_sync_within_hour_then_rate_limited() {
+async fn given_simplefin_resync_when_syncing_twice_then_not_rate_limited_by_floor() {
     let user_id = Uuid::new_v4();
     let mut connection =
         ProviderConnection::new(user_id, &simplefin_org_item_id(&user_id, "org-1"));
     connection.mark_connected("Bank A");
 
-    let floor_key = format!("simplefin:sync-floor:{user_id}");
     let (connection_service, sync_service, _, _, _, _) =
         build_simplefin_sync_service(three_org_snapshot(), HashSet::new(), vec![]);
 
@@ -1208,25 +1218,7 @@ async fn given_sync_floor_when_second_simplefin_sync_within_hour_then_rate_limit
         .await
         .unwrap();
 
-    let mut mock_cache = MockCacheService::new();
-    mock_cache
-        .expect_get_string()
-        .with(mockall::predicate::eq(floor_key.clone()))
-        .times(1)
-        .returning(|_| Box::pin(async { Ok(Some("1".to_string())) }));
-
-    let db_repository: Arc<dyn crate::services::repository_service::DatabaseRepository> =
-        Arc::new(MockDatabaseRepository::new());
-    let credential_resolvers = build_credential_resolvers(db_repository.clone());
-    let limited_service = ConnectionService::new(
-        db_repository,
-        Arc::new(mock_cache),
-        Arc::new(ProviderRegistry::new()),
-        noop_categorizer(),
-        credential_resolvers,
-    );
-
-    let result = limited_service
+    let result = connection_service
         .sync_provider_connection(
             SyncConnectionParams {
                 provider: "simplefin",
@@ -1239,7 +1231,7 @@ async fn given_sync_floor_when_second_simplefin_sync_within_hour_then_rate_limit
         )
         .await;
 
-    assert!(matches!(result, Err(ProviderSyncError::RateLimited(_))));
+    assert!(result.is_ok());
 }
 
 #[tokio::test]

@@ -108,6 +108,16 @@ fn create_auth_cookie_cache() -> MockCacheService {
         .returning(|_| Box::pin(async { Ok(None) }));
 
     mock_cache
+        .expect_get_counter()
+        .times(0..)
+        .returning(|_| Box::pin(async { Ok(None) }));
+
+    mock_cache
+        .expect_increment_counter()
+        .times(0..)
+        .returning(|_, _| Box::pin(async { Ok(1i64) }));
+
+    mock_cache
         .expect_is_session_valid()
         .returning(|_| Box::pin(async { Ok(true) }));
 
@@ -188,6 +198,11 @@ async fn build_test_app(
         cache_service.clone(),
         noop_categorizer(),
     ));
+    let provider_sync_rate_limit_service = Arc::new(
+        crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitService::new(
+            cache_service.clone(),
+        ),
+    );
 
     let state = AppState {
         plaid_service: plaid_service_arc,
@@ -200,6 +215,7 @@ async fn build_test_app(
         config: build_test_config(),
         db_repository,
         cache_service,
+        provider_sync_rate_limit_service,
         categorizer: noop_categorizer(),
         connection_service,
         auth_service,

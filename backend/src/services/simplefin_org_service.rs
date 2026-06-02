@@ -67,9 +67,11 @@ impl SimpleFinOrganizationService {
         connection.last_sync_at = None;
         connection.sync_cursor = None;
 
-        self.db_repository
+        let saved_id = self
+            .db_repository
             .save_provider_connection(&connection)
             .await?;
+        connection.id = saved_id;
 
         let mut persisted_accounts = Vec::new();
         let mut transaction_count = 0;

@@ -177,7 +177,7 @@ pub trait DatabaseRepository: Send + Sync {
         item_id: &str,
     ) -> Result<Option<PlaidCredentials>>;
 
-    async fn save_provider_connection(&self, connection: &ProviderConnection) -> Result<()>;
+    async fn save_provider_connection(&self, connection: &ProviderConnection) -> Result<Uuid>;
     async fn get_all_provider_connections_by_user(
         &self,
         user_id: &Uuid,
@@ -1093,7 +1093,7 @@ impl DatabaseRepository for PostgresRepository {
         }
     }
 
-    async fn save_provider_connection(&self, connection: &ProviderConnection) -> Result<()> {
+    async fn save_provider_connection(&self, connection: &ProviderConnection) -> Result<Uuid> {
         let user_id = connection.user_id;
         let connection = connection.clone();
         self.with_tenant(&user_id, move |txn| {
@@ -1136,7 +1136,12 @@ impl DatabaseRepository for PostgresRepository {
                 )
                 .exec(txn)
                 .await?;
-                Ok(())
+                let saved = provider_connections::Entity::find()
+                    .filter(provider_connections::Column::ItemId.eq(connection.item_id.clone()))
+                    .one(txn)
+                    .await?
+                    .ok_or_else(|| anyhow::anyhow!("Provider connection not found after save"))?;
+                Ok(saved.id)
             })
         })
         .await

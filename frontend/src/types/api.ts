@@ -123,6 +123,12 @@ export interface PlaidSyncResponse {
   };
 }
 
+export interface SyncTransactionsRequest {
+  connection_id?: string;
+  client_date: string;
+  client_timezone: string;
+}
+
 export interface ProviderConnectionStatus {
   is_connected: boolean;
   last_sync_at: string | null;

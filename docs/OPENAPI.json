@@ -2952,6 +2952,70 @@
           "user_id": "99999999-8888-7777-6666-555555555555"
         }
       },
+      "CashFlowPoint": {
+        "type": "object",
+        "required": [
+          "month",
+          "income",
+          "expenses",
+          "net"
+        ],
+        "properties": {
+          "expenses": {
+            "type": "string"
+          },
+          "income": {
+            "type": "string"
+          },
+          "month": {
+            "type": "string"
+          },
+          "net": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "expenses": "3500.00",
+          "income": "5000.00",
+          "month": "2024-01",
+          "net": "1500.00"
+        }
+      },
+      "CashFlowResponse": {
+        "type": "object",
+        "required": [
+          "series",
+          "currency"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CashFlowPoint"
+            }
+          }
+        },
+        "example": {
+          "currency": "USD",
+          "series": [
+            {
+              "expenses": "3500.00",
+              "income": "5000.00",
+              "month": "2024-01",
+              "net": "1500.00"
+            },
+            {
+              "expenses": "3600.00",
+              "income": "5200.00",
+              "month": "2024-02",
+              "net": "1600.00"
+            }
+          ]
+        }
+      },
       "CategoryListResponse": {
         "type": "object",
         "required": [
@@ -3202,6 +3266,15 @@
               "null"
             ],
             "example": "2024-12-31"
+          },
+          "exclude_account_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
           },
           "start_date": {
             "type": [
@@ -3584,6 +3657,15 @@
         "type": "object",
         "properties": {
           "account_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "exclude_account_ids": {
             "type": [
               "array",
               "null"
@@ -4306,12 +4388,16 @@
       },
       "SyncTransactionsRequest": {
         "type": "object",
+        "required": [
+          "client_date",
+          "client_timezone"
+        ],
         "properties": {
           "client_date": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": "string"
+          },
+          "client_timezone": {
+            "type": "string"
           },
           "connection_id": {
             "type": [

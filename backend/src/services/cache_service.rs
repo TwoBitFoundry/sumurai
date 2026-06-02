@@ -43,6 +43,8 @@ pub trait CacheService: Send + Sync {
     async fn invalidate_pattern(&self, pattern: &str) -> Result<()>;
     async fn set_with_ttl(&self, key: &str, value: &str, ttl_seconds: u64) -> Result<()>;
     async fn get_string(&self, key: &str) -> Result<Option<String>>;
+    async fn get_counter(&self, key: &str) -> Result<Option<i64>>;
+    async fn increment_counter(&self, key: &str, ttl_seconds: u64) -> Result<i64>;
 
     async fn set_jwt_token(&self, jwt_id: &str, token: &str, ttl_seconds: u64) -> Result<()>;
     async fn get_jwt_token(&self, jwt_id: &str) -> Result<Option<String>>;
@@ -242,6 +244,21 @@ impl RedisCache {
         Ok(result)
     }
 
+    pub async fn get_counter(&self, key: &str) -> Result<Option<i64>> {
+        let mut conn = self.connection_manager.clone();
+        let result: Option<i64> = conn.get(key).await?;
+        Ok(result)
+    }
+
+    pub async fn increment_counter(&self, key: &str, ttl_seconds: u64) -> Result<i64> {
+        let mut conn = self.connection_manager.clone();
+        let count: i64 = conn.incr(key, 1i64).await?;
+        if count == 1 {
+            conn.expire::<_, ()>(key, ttl_seconds as i64).await?;
+        }
+        Ok(count)
+    }
+
     pub async fn set_jwt_token(&self, jwt_id: &str, token: &str, ttl_seconds: u64) -> Result<()> {
         let mut conn = self.connection_manager.clone();
         let key = self.jwt_session_key(jwt_id);
@@ -416,6 +433,14 @@ impl CacheService for RedisCache {
 
     async fn get_string(&self, key: &str) -> Result<Option<String>> {
         self.get_string(key).await
+    }
+
+    async fn get_counter(&self, key: &str) -> Result<Option<i64>> {
+        self.get_counter(key).await
+    }
+
+    async fn increment_counter(&self, key: &str, ttl_seconds: u64) -> Result<i64> {
+        self.increment_counter(key, ttl_seconds).await
     }
 
     async fn set_jwt_token(&self, jwt_id: &str, token: &str, ttl_seconds: u64) -> Result<()> {

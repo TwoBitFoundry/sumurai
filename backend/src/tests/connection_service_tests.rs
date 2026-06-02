@@ -201,7 +201,7 @@ async fn given_plaid_sync_with_many_transactions_when_persisting_then_batches_wr
     mock_db
         .expect_save_provider_connection()
         .times(1)
-        .returning(|_| Box::pin(async { Ok(()) }));
+        .returning(|_| Box::pin(async { Ok(Uuid::new_v4()) }));
 
     mock_cache
         .expect_add_transaction()
