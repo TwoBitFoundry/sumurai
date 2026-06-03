@@ -14,10 +14,8 @@ import {
 import type { SyncAllRow } from '../types/syncAllStatus';
 import { formatSyncAllRowDetail } from '../utils/formatSyncAllRowDetail';
 
-interface SyncAllStatusToastProps {
-  isOpen: boolean;
-  syncingAll: boolean;
-  rows: SyncAllRow[];
+interface SyncInstitutionStatusToastProps {
+  row: SyncAllRow | null;
   onClose: () => void;
 }
 
@@ -45,22 +43,24 @@ const statusTextClass: Record<SyncAllRow['status'], string> = {
 
 const AUTO_DISMISS_MS = 5000;
 
-export function SyncAllStatusToast({ isOpen, syncingAll, rows, onClose }: SyncAllStatusToastProps) {
+export function SyncInstitutionStatusToast({ row, onClose }: SyncInstitutionStatusToastProps) {
   const { breakpoint } = useViewportBreakpoint();
   const [mounted, setMounted] = useState(false);
   const [dismissRemainingMs, setDismissRemainingMs] = useState(AUTO_DISMISS_MS);
-  const hasIssues = rows.some(
-    (row) =>
-      row.status === 'auth_required' || row.status === 'rate_limited' || row.status === 'error'
-  );
-  const showCountdown = !hasIssues && dismissRemainingMs < AUTO_DISMISS_MS;
+  const hasIssues =
+    row != null &&
+    (row.status === 'auth_required' || row.status === 'rate_limited' || row.status === 'error');
+  const canAutoDismiss =
+    row != null &&
+    (row.status === 'synced' || row.status === 'skipped_hidden' || row.status === 'no_accounts');
+  const dismissSecondsRemaining = Math.max(Math.ceil(dismissRemainingMs / 1000), 0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!isOpen || syncingAll || hasIssues) {
+    if (!row || !canAutoDismiss || hasIssues) {
       setDismissRemainingMs(AUTO_DISMISS_MS);
       return;
     }
@@ -75,9 +75,9 @@ export function SyncAllStatusToast({ isOpen, syncingAll, rows, onClose }: SyncAl
       window.clearTimeout(dismissTimer);
       window.clearInterval(countdownTimer);
     };
-  }, [hasIssues, isOpen, syncingAll, onClose]);
+  }, [canAutoDismiss, hasIssues, onClose, row]);
 
-  if (!mounted || !isOpen) {
+  if (!mounted || !row) {
     return null;
   }
 
@@ -86,7 +86,7 @@ export function SyncAllStatusToast({ isOpen, syncingAll, rows, onClose }: SyncAl
       role="status"
       aria-live="polite"
       className={getToastStackLayoutClassName(breakpoint)}
-      data-testid="sync-all-toast"
+      data-testid="sync-institution-toast"
     >
       <GlassCard
         variant={hasIssues ? 'danger' : 'accent'}
@@ -98,87 +98,76 @@ export function SyncAllStatusToast({ isOpen, syncingAll, rows, onClose }: SyncAl
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-1.5">
             <h2 className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>
-              Sync all institutions
+              Sync institution
             </h2>
             <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
-              {syncingAll
-                ? 'Syncing institutions one by one.'
+              {row.status === 'syncing'
+                ? `Syncing ${row.institutionName}…`
                 : hasIssues
-                  ? 'Some institutions need attention before all data is up to date.'
-                  : 'All institutions finished syncing.'}
+                  ? `${row.institutionName} needs attention before it is up to date.`
+                  : `${row.institutionName} finished syncing.`}
             </p>
           </div>
           <Button
             type="button"
-            variant="icon"
-            shape="pill"
+            variant="ghost"
             size="sm"
+            shape="pill"
             onClick={onClose}
-            disabled={syncingAll}
+            disabled={row.status === 'syncing' || row.status === 'pending'}
             aria-label={
-              hasIssues
-                ? 'Dismiss sync results'
-                : showCountdown
-                  ? `Close sync results in ${Math.max(1, Math.ceil(dismissRemainingMs / 1000))}s`
-                  : 'Close sync results'
+              canAutoDismiss && !hasIssues
+                ? `Close sync results in ${dismissSecondsRemaining}s`
+                : 'Close sync results'
             }
-            title={syncingAll ? 'Unavailable while syncing' : undefined}
-            className="shrink-0 gap-1.5 px-3 py-1.5 normal-case"
+            title={row.status === 'syncing' ? 'Unavailable while syncing' : undefined}
+            className={cn('shrink-0', canAutoDismiss && !hasIssues ? 'min-w-[4.5rem]' : 'min-w-0')}
           >
-            <X />
-            {showCountdown && (
-              <span
-                className={cn(
-                  uiTypographyRecipes.captionStrong,
-                  uiTextRecipes.primary,
-                  'lowercase'
-                )}
-              >
-                {Math.max(1, Math.ceil(dismissRemainingMs / 1000))}s
-              </span>
-            )}
+            <span className="flex items-center gap-1.5">
+              <X className="shrink-0" />
+              {canAutoDismiss && !hasIssues ? (
+                <span className={cn(uiTypographyRecipes.caption, 'lowercase', 'tabular-nums')}>
+                  {dismissSecondsRemaining}s
+                </span>
+              ) : null}
+            </span>
           </Button>
         </div>
 
-        <div className="max-h-[42vh] space-y-3 overflow-y-auto pr-1">
-          {rows.map((row) => (
-            <div
-              key={row.id}
-              className={cn(
-                'flex',
-                'items-start',
-                'gap-3',
-                'rounded-2xl',
-                'border',
-                ...uiBorderRecipes.elevatedGlass,
-                'px-3',
-                'py-2.5'
-              )}
-            >
-              <span className={cn('mt-0.5', statusTextClass[row.status])}>
-                {statusIconMap[row.status]}
+        <div
+          className={cn(
+            'flex',
+            'items-start',
+            'gap-3',
+            'rounded-2xl',
+            'border',
+            ...uiBorderRecipes.elevatedGlass,
+            'px-3',
+            'py-2.5'
+          )}
+        >
+          <span className={cn('mt-0.5', statusTextClass[row.status])}>
+            {statusIconMap[row.status]}
+          </span>
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>
+                {row.institutionName}
               </span>
-              <div className="min-w-0 flex-1 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={cn(uiTypographyRecipes.bodyStrong, uiTextRecipes.primary)}>
-                    {row.institutionName}
-                  </span>
-                  <span
-                    className={cn(
-                      uiTypographyRecipes.caption,
-                      statusTextClass[row.status],
-                      'capitalize'
-                    )}
-                  >
-                    {row.status.replace('_', ' ')}
-                  </span>
-                </div>
-                <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.body)}>
-                  {formatSyncAllRowDetail(row)}
-                </div>
-              </div>
+              <span
+                className={cn(
+                  uiTypographyRecipes.caption,
+                  statusTextClass[row.status],
+                  'capitalize'
+                )}
+              >
+                {row.status.replace('_', ' ')}
+              </span>
             </div>
-          ))}
+            <div className={cn(uiTypographyRecipes.caption, uiTextRecipes.body)}>
+              {formatSyncAllRowDetail(row)}
+            </div>
+          </div>
         </div>
       </GlassCard>
     </div>,
@@ -186,4 +175,4 @@ export function SyncAllStatusToast({ isOpen, syncingAll, rows, onClose }: SyncAl
   );
 }
 
-export default SyncAllStatusToast;
+export default SyncInstitutionStatusToast;

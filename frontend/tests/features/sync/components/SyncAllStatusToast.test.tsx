@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
-import { SyncAllStatusToast } from '@/features/sync/components/SyncAllStatusModal';
+import { SyncAllStatusToast } from '@/features/sync/components/SyncAllStatusToast';
 import type { SyncAllRow } from '@/features/sync/types/syncAllStatus';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 
@@ -82,10 +82,7 @@ describe('SyncAllStatusToast', () => {
   it('shows a visible dismiss countdown and auto-closes after five seconds', async () => {
     render(<TestHarness />);
 
-    expect(screen.getByRole('button', { name: 'Close sync results' })).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: /close sync results in 5s/i })
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /close sync results in 5s/i })).toBeInTheDocument();
 
     act(() => {
       jest.advanceTimersByTime(1000);
@@ -104,7 +101,10 @@ describe('SyncAllStatusToast', () => {
   it('stays open on issue rows until dismissed manually', async () => {
     render(<IssueHarness />);
 
-    expect(screen.getByRole('button', { name: 'Dismiss sync results' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Close sync results' })).toBeEnabled();
+    expect(
+      screen.queryByRole('button', { name: /close sync results in/i })
+    ).not.toBeInTheDocument();
 
     act(() => {
       jest.advanceTimersByTime(5000);

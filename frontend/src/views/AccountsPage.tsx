@@ -16,8 +16,10 @@ import { ProviderSelectionPanel } from '../features/plaid/components/ProviderSel
 import { inferBankProvider } from '../features/plaid/utils/inferBankProvider';
 import { SimpleFinIgnoredInstitutionsPanel } from '../features/simplefin/components/SimpleFinIgnoredInstitutionsPanel';
 import { formatSimpleFinAuthRequiredToast } from '../features/simplefin/utils/formatSimpleFinAuthRequiredToast';
-import { SyncAllStatusToast } from '../features/sync/components/SyncAllStatusModal';
+import { SyncAllStatusToast } from '../features/sync/components/SyncAllStatusToast';
+import { SyncInstitutionStatusToast } from '../features/sync/components/SyncInstitutionStatusToast';
 import { useSyncAllOrchestrator } from '../features/sync/hooks/useSyncAllOrchestrator';
+import type { SyncAllRow } from '../features/sync/types/syncAllStatus';
 import { useAccountFilter } from '../hooks/useAccountFilter';
 import { useFinancialConnection } from '../hooks/useFinancialConnection';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
@@ -199,6 +201,10 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   }, [banks, plaidConnections.connections, tellerStatusQuery.data]);
 
   const { pushToast: pushAccountsToast, ...accountsToastStack } = useAccountsToastStack(null);
+  const [syncInstitutionRow, setSyncInstitutionRow] = useState<SyncAllRow | null>(null);
+  const dismissSyncInstitutionToast = useCallback(() => {
+    setSyncInstitutionRow(null);
+  }, []);
   const connectionFlow = useFinancialConnection({
     provider: primaryProvider,
     onError: (message) => {
@@ -379,7 +385,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     }
   }, [pickerConnectingProvider, pickerConnectionFlow, providerCatalog, pushAccountsToast]);
 
-  const dismissTransient = accountsToastStack.dismissTransient;
   const syncBank = useCallback(
     async (bankId: string) => {
       if (!isOnline) {
@@ -391,14 +396,48 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
         return;
       }
 
-      const statusToastId = pushAccountsToast(`Syncing ${bank.name}…`);
+      const startRow: SyncAllRow = {
+        id: bank.id,
+        provider: bank.provider,
+        institutionName: bank.name,
+        connectionId: bank.connectionId,
+        status: 'syncing',
+        detail: null,
+        transactionCount: null,
+        retryAfterSeconds: null,
+      };
+      setSyncInstitutionRow(startRow);
+
+      const countNewTransactions = (transactions: { provider_account_id?: string | null }[]) => {
+        const providerAccountIds = new Set(
+          bank.accounts
+            .map((account) => account.providerAccountId)
+            .filter((id): id is string => Boolean(id))
+        );
+
+        if (providerAccountIds.size === 0) {
+          return transactions.length;
+        }
+
+        return transactions.filter((transaction) => {
+          if (!transaction.provider_account_id) {
+            return false;
+          }
+
+          return providerAccountIds.has(transaction.provider_account_id);
+        }).length;
+      };
+
       try {
         let count = 0;
         if (bank.provider === 'simplefin') {
           const result = await SimpleFinService.syncBridge(bank.connectionId);
           if (result.rateLimited) {
-            dismissTransient(statusToastId);
-            pushAccountsToast('Daily sync limit reached. Try again tomorrow.', 'error');
+            setSyncInstitutionRow({
+              ...startRow,
+              status: 'rate_limited',
+              retryAfterSeconds: result.retryAfterSeconds ?? null,
+            });
             return;
           }
 
@@ -406,22 +445,34 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
             (entry) =>
               entry.org_conn_id === bank.connectionId || entry.institution_name === bank.name
           );
-          if (matchingResult?.status === 'auth_required') {
-            dismissTransient(statusToastId);
-            pushAccountsToast(
-              formatSimpleFinAuthRequiredToast([
-                {
-                  institution_name: bank.name,
-                  org_conn_id: bank.connectionId,
-                  message:
-                    matchingResult.message ?? 'Re-authenticate this institution in SimpleFIN.',
-                },
-              ])
-            );
+          if (!matchingResult) {
+            setSyncInstitutionRow({
+              ...startRow,
+              status: 'error',
+              detail: 'No bridge result was returned for this institution.',
+            });
             return;
           }
 
-          count = result.transactions.length;
+          if (matchingResult.status === 'auth_required') {
+            setSyncInstitutionRow({
+              ...startRow,
+              status: 'auth_required',
+              detail: matchingResult.message ?? 'Re-authenticate this institution in SimpleFIN.',
+            });
+            return;
+          }
+
+          if (matchingResult.status !== 'synced') {
+            setSyncInstitutionRow({
+              ...startRow,
+              status: matchingResult.status,
+              detail: matchingResult.message ?? null,
+            });
+            return;
+          }
+
+          count = countNewTransactions(result.transactions);
         } else if (bank.provider === 'teller') {
           const result = await TellerService.syncTransactions(bank.connectionId);
           count = result.transactions.length;
@@ -430,17 +481,23 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           count = result.transactions.length;
         }
         await refreshBankData(bank.provider);
-        pushAccountsToast(
-          `Synced ${count} new transaction${count === 1 ? '' : 's'} for ${bank.name}`
-        );
+        setSyncInstitutionRow({
+          ...startRow,
+          status: 'synced',
+          detail: `Synced ${count} new transaction${count === 1 ? '' : 's'}`,
+          transactionCount: count,
+        });
       } catch (error) {
         console.warn('Failed to sync bank', error);
-        dismissTransient(statusToastId);
         const message = formatUserFacingApiError(error, `Failed to sync ${bank.name}`);
-        pushAccountsToast(message, 'error');
+        setSyncInstitutionRow({
+          ...startRow,
+          status: 'error',
+          detail: message,
+        });
       }
     },
-    [banks, dismissTransient, isOnline, pushAccountsToast, refreshBankData]
+    [banks, isOnline, refreshBankData]
   );
 
   const disconnect = useCallback(
@@ -709,6 +766,10 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           pinnedToast={accountsToastStack.pinnedToast}
           onDismissTransient={accountsToastStack.dismissTransient}
           onDismissPinned={accountsToastStack.dismissPinned}
+        />
+        <SyncInstitutionStatusToast
+          row={syncInstitutionRow}
+          onClose={dismissSyncInstitutionToast}
         />
         <SyncAllStatusToast
           isOpen={syncAllModalOpen}

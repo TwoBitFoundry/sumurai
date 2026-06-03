@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getToastStackLayoutClassName } from '@/components/toastStack/toastStackLayout';
@@ -6,7 +7,7 @@ import {
   getAutoCategorizationProgressPercent,
 } from '@/features/accounts/utils/autoCategorizationToastMessages';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
-import { Button, GlassCard } from '@/ui/primitives';
+import { GlassCard, IconButton } from '@/ui/primitives';
 import { cn } from '@/ui/primitives/utils';
 import {
   budgetProgress as budgetProgressRecipes,
@@ -90,7 +91,7 @@ function ToastCard({ message, progress, onClose, autoDismiss, dismissKey, type }
       variant={isError ? 'danger' : 'accent'}
       rounded="xl"
       padding="md"
-      className={cn('flex', 'items-start', 'gap-4')}
+      className={cn('relative', 'flex', 'items-start', 'gap-4', 'pr-12')}
       withInnerEffects={false}
     >
       <div className={cn('min-w-0', 'flex-1', progress ? 'space-y-2.5' : undefined)}>
@@ -107,15 +108,16 @@ function ToastCard({ message, progress, onClose, autoDismiss, dismissKey, type }
           <ToastProgressBar processed={progress.processed} total={progress.total} />
         ) : null}
       </div>
-      <Button
+      <IconButton
         type="button"
-        variant="secondary"
+        variant="ghost"
         size="sm"
-        className={cn('shrink-0', 'uppercase', 'tracking-[0.2em]')}
+        className={cn('absolute', 'right-3', 'top-3', 'shrink-0')}
         onClick={onClose}
+        aria-label="Close toast"
       >
-        Close
-      </Button>
+        <X />
+      </IconButton>
     </GlassCard>
   );
 }
