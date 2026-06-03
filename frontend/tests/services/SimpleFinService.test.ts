@@ -13,6 +13,7 @@ describe('SimpleFinService', () => {
     jest.clearAllMocks();
     postSpy = jest.spyOn(ApiClient, 'post');
     getSpy = jest.spyOn(ApiClient, 'get');
+    postSpy.mockResolvedValue({ transactions: [] } as any);
     toLocaleDateStringSpy = jest
       .spyOn(Date.prototype, 'toLocaleDateString')
       .mockReturnValue('2025-06-15');
@@ -96,7 +97,7 @@ describe('SimpleFinService', () => {
           institution_name: 'Bank A',
         } as any)
         .mockResolvedValue({
-          transactions: [],
+          transactions: Array.from({ length: 12 }, (_, index) => ({ id: `txn-${index}` })),
           metadata: {
             transaction_count: 12,
             account_count: 1,
@@ -239,7 +240,7 @@ describe('SimpleFinService', () => {
           institution_name: 'SimpleFIN Demo',
         } as any)
         .mockResolvedValue({
-          transactions: [],
+          transactions: Array.from({ length: 7 }, (_, index) => ({ id: `txn-${index}` })),
           metadata: {
             transaction_count: 7,
             account_count: 2,

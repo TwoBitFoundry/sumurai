@@ -95,7 +95,7 @@ export class SimpleFinService {
       const result = await SimpleFinService.syncTransactions(connectionId);
       return {
         rateLimited: false,
-        transactionCount: result?.metadata?.transaction_count ?? 0,
+        transactionCount: result.transactions.length,
         institutionsRequiringAuth,
       };
     } catch (error) {
@@ -122,7 +122,7 @@ export class SimpleFinService {
       const result = await SimpleFinService.syncTransactions(connectionId);
       return {
         rateLimited: false,
-        transactionCount: result?.metadata?.transaction_count ?? 0,
+        transactionCount: result.transactions.length,
         institutionsRequiringAuth,
       };
     } catch (error) {

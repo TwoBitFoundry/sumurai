@@ -51,4 +51,61 @@ describe('formatSyncAllRowDetail', () => {
 
     nowSpy.mockRestore();
   });
+
+  it('describes synced rows as new transactions', () => {
+    render(
+      <>
+        {formatSyncAllRowDetail({
+          id: 'row-3',
+          provider: 'plaid',
+          institutionName: 'Demo Bank',
+          connectionId: 'conn-3',
+          status: 'synced',
+          detail: null,
+          transactionCount: 2,
+          retryAfterSeconds: null,
+        })}
+      </>
+    );
+
+    expect(screen.getByText('Synced 2 new transactions')).toBeVisible();
+  });
+
+  it('describes zero synced rows explicitly', () => {
+    render(
+      <>
+        {formatSyncAllRowDetail({
+          id: 'row-4',
+          provider: 'teller',
+          institutionName: 'Demo Bank',
+          connectionId: 'conn-4',
+          status: 'synced',
+          detail: null,
+          transactionCount: 0,
+          retryAfterSeconds: null,
+        })}
+      </>
+    );
+
+    expect(screen.getByText('Synced 0 new transactions')).toBeVisible();
+  });
+
+  it('does not invent fallback copy when a row has no detail', () => {
+    const { container } = render(
+      <>
+        {formatSyncAllRowDetail({
+          id: 'row-5',
+          provider: 'plaid',
+          institutionName: 'Demo Bank',
+          connectionId: 'conn-5',
+          status: 'error',
+          detail: null,
+          transactionCount: null,
+          retryAfterSeconds: null,
+        })}
+      </>
+    );
+
+    expect(container).toBeEmptyDOMElement();
+  });
 });

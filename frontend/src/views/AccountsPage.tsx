@@ -13,9 +13,10 @@ import ConnectionsList, {
   type BankConnectionViewModel,
 } from '../features/plaid/components/ConnectionsList';
 import { ProviderSelectionPanel } from '../features/plaid/components/ProviderSelectionPanel';
+import { inferBankProvider } from '../features/plaid/utils/inferBankProvider';
 import { SimpleFinIgnoredInstitutionsPanel } from '../features/simplefin/components/SimpleFinIgnoredInstitutionsPanel';
 import { formatSimpleFinAuthRequiredToast } from '../features/simplefin/utils/formatSimpleFinAuthRequiredToast';
-import { SyncAllStatusModal } from '../features/sync/components/SyncAllStatusModal';
+import { SyncAllStatusToast } from '../features/sync/components/SyncAllStatusModal';
 import { useSyncAllOrchestrator } from '../features/sync/hooks/useSyncAllOrchestrator';
 import { useAccountFilter } from '../hooks/useAccountFilter';
 import { useFinancialConnection } from '../hooks/useFinancialConnection';
@@ -97,12 +98,45 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const isOnline = useOnlineStatus();
   const accountFilter = useAccountFilter();
   const providerCatalog = useProviderCatalog();
+  const primaryProvider = useMemo(() => {
+    const preferred = providerCatalog.userProvider ?? providerCatalog.availableProviders[0];
+    if (!preferred) {
+      return 'simplefin' as const;
+    }
+    return providerCatalog.resolveConnectProvider(preferred);
+  }, [providerCatalog]);
+  const primaryProviderCard = getProviderCardConfig(primaryProvider);
+  const primaryConnectContent = getConnectAccountProviderContent(primaryProvider);
+  const providerLabel = primaryProviderCard.title;
+  const providerLogoSrc = getProviderLogoSrc(primaryProvider);
+
+  const plaidConnections = usePlaidConnections({
+    enabled: isOnline && providerCatalog.canConnectWith('plaid'),
+  });
+  const tellerStatusQuery = useQuery({
+    queryKey: ['teller', 'connections'],
+    queryFn: () => TellerService.getStatus(),
+    enabled: isOnline && providerCatalog.canConnectWith('teller'),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const providerByConnectionId = useMemo(() => {
+    const providers = new Map<string, FinancialProvider>();
+    for (const connection of plaidConnections.connections) {
+      providers.set(connection.connectionId, 'plaid');
+    }
+    for (const status of tellerStatusQuery.data ?? []) {
+      providers.set(status.connection_id, 'teller');
+    }
+    return providers;
+  }, [plaidConnections.connections, tellerStatusQuery.data]);
+
   const banks = useMemo(
     () =>
       Object.entries(accountFilter.accountsByBank).map(([bankName, accounts]) => {
         const connectionId =
           accounts.find((account) => account.connection_id)?.connection_id ?? null;
-        const provider = accounts[0]?.provider ?? 'plaid';
+        const provider = inferBankProvider(connectionId, providerByConnectionId, primaryProvider);
 
         return {
           id: connectionId ?? bankName,
@@ -128,28 +162,12 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
               account.balance_available ??
               undefined,
             transactions: account.transaction_count ?? undefined,
+            providerAccountId: account.provider_account_id ?? null,
           })),
         };
       }),
-    [accountFilter.accountsByBank]
+    [accountFilter.accountsByBank, primaryProvider, providerByConnectionId]
   );
-  const primaryProvider = useMemo(() => {
-    const preferred =
-      providerCatalog.userProvider ??
-      (banks.find((bank) => bank.connectionId != null)?.provider as FinancialProvider | undefined);
-    if (!preferred) {
-      const registered = providerCatalog.availableProviders[0];
-      if (!registered) {
-        return 'simplefin' as const;
-      }
-      return providerCatalog.resolveConnectProvider(registered);
-    }
-    return providerCatalog.resolveConnectProvider(preferred);
-  }, [banks, providerCatalog]);
-  const primaryProviderCard = getProviderCardConfig(primaryProvider);
-  const primaryConnectContent = getConnectAccountProviderContent(primaryProvider);
-  const providerLabel = primaryProviderCard.title;
-  const providerLogoSrc = getProviderLogoSrc(primaryProvider);
 
   const providersForSync = useMemo(() => {
     const providers = new Set<SyncProvider>([primaryProvider]);
@@ -158,16 +176,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     }
     return providers;
   }, [banks, primaryProvider]);
-
-  const plaidConnections = usePlaidConnections({
-    enabled: providersForSync.has('plaid'),
-  });
-  const tellerStatusQuery = useQuery({
-    queryKey: ['teller', 'connections'],
-    queryFn: () => TellerService.getStatus(),
-    enabled: providersForSync.has('teller'),
-    staleTime: 5 * 60 * 1000,
-  });
 
   const banksWithSync = useMemo(() => {
     const syncByConnectionId = new Map<string, string | null>();
@@ -413,18 +421,17 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
             return;
           }
 
-          count = matchingResult?.transaction_count ?? result.metadata?.transaction_count ?? 0;
+          count = result.transactions.length;
         } else if (bank.provider === 'teller') {
-          await TellerService.syncTransactions(bank.connectionId);
+          const result = await TellerService.syncTransactions(bank.connectionId);
+          count = result.transactions.length;
         } else {
           const result = await PlaidService.syncTransactions(bank.connectionId);
-          count = result?.metadata?.transaction_count ?? 0;
+          count = result.transactions.length;
         }
         await refreshBankData(bank.provider);
         pushAccountsToast(
-          count > 0
-            ? `Synced ${count} transaction${count === 1 ? '' : 's'} for ${bank.name}`
-            : `${bank.name} is up to date`
+          `Synced ${count} new transaction${count === 1 ? '' : 's'} for ${bank.name}`
         );
       } catch (error) {
         console.warn('Failed to sync bank', error);
@@ -508,12 +515,10 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           );
         } else if (institutionsRequiringAuth.length > 0) {
           pushAccountsToast(formatSimpleFinAuthRequiredToast(institutionsRequiringAuth));
-        } else if (transactionCount > 0) {
-          pushAccountsToast(
-            `Institution restored — synced ${transactionCount} transaction${transactionCount === 1 ? '' : 's'}`
-          );
         } else {
-          pushAccountsToast('Institution restored — accounts are up to date');
+          pushAccountsToast(
+            `Institution restored — synced ${transactionCount} new transaction${transactionCount === 1 ? '' : 's'}`
+          );
         }
       } catch (error) {
         console.warn('Failed to restore SimpleFIN institution', error);
@@ -622,7 +627,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           title={!isOnline ? 'Unavailable while offline' : undefined}
           leadingImageSrc={providerLogoSrc}
         >
-          {primaryProvider === 'plaid' ? 'Add ally account' : providerLabel}
+          {primaryConnectContent.cta.defaultLabel}
         </ConnectButton>
       </div>
       {!isOnline && (
@@ -705,7 +710,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           onDismissTransient={accountsToastStack.dismissTransient}
           onDismissPinned={accountsToastStack.dismissPinned}
         />
-        <SyncAllStatusModal
+        <SyncAllStatusToast
           isOpen={syncAllModalOpen}
           syncingAll={syncingAll}
           rows={syncAllRows}

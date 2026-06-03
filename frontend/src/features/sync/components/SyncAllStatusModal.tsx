@@ -1,6 +1,11 @@
-import { AlertTriangle, CheckCircle2, Clock3, Loader2, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Clock3, Loader2, X, XCircle } from 'lucide-react';
 import type React from 'react';
-import { Button, cn, GlassCard, Modal } from '@/ui/primitives';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { getToastStackLayoutClassName } from '@/components/toastStack/toastStackLayout';
+import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
+import { Button, GlassCard } from '@/ui/primitives';
+import { cn } from '@/ui/primitives/utils';
 import {
   border as uiBorderRecipes,
   text as uiTextRecipes,
@@ -9,7 +14,7 @@ import {
 import type { SyncAllRow } from '../types/syncAllStatus';
 import { formatSyncAllRowDetail } from '../utils/formatSyncAllRowDetail';
 
-interface SyncAllStatusModalProps {
+interface SyncAllStatusToastProps {
   isOpen: boolean;
   syncingAll: boolean;
   rows: SyncAllRow[];
@@ -38,38 +43,104 @@ const statusTextClass: Record<SyncAllRow['status'], string> = {
   no_accounts: uiTextRecipes.subtle,
 };
 
-export function SyncAllStatusModal({ isOpen, syncingAll, rows, onClose }: SyncAllStatusModalProps) {
+const AUTO_DISMISS_MS = 5000;
+
+export function SyncAllStatusToast({ isOpen, syncingAll, rows, onClose }: SyncAllStatusToastProps) {
+  const { breakpoint } = useViewportBreakpoint();
+  const [mounted, setMounted] = useState(false);
+  const [dismissRemainingMs, setDismissRemainingMs] = useState(AUTO_DISMISS_MS);
   const hasIssues = rows.some(
     (row) =>
       row.status === 'auth_required' || row.status === 'rate_limited' || row.status === 'error'
   );
+  const showCountdown = !hasIssues && dismissRemainingMs < AUTO_DISMISS_MS;
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} labelledBy="sync-all-modal-title" size="lg">
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen || syncingAll || hasIssues) {
+      setDismissRemainingMs(AUTO_DISMISS_MS);
+      return;
+    }
+
+    setDismissRemainingMs(AUTO_DISMISS_MS);
+    const dismissTimer = window.setTimeout(onClose, AUTO_DISMISS_MS);
+    const countdownTimer = window.setInterval(() => {
+      setDismissRemainingMs((current) => Math.max(current - 1000, 0));
+    }, 1000);
+
+    return () => {
+      window.clearTimeout(dismissTimer);
+      window.clearInterval(countdownTimer);
+    };
+  }, [hasIssues, isOpen, syncingAll, onClose]);
+
+  if (!mounted || !isOpen) {
+    return null;
+  }
+
+  return createPortal(
+    <div
+      role="status"
+      aria-live="polite"
+      className={getToastStackLayoutClassName(breakpoint)}
+      data-testid="sync-all-toast"
+    >
       <GlassCard
-        variant="accent"
+        variant={hasIssues ? 'danger' : 'accent'}
         rounded="xl"
-        padding="lg"
+        padding="md"
         withInnerEffects={false}
-        className="space-y-6"
+        className="space-y-4"
       >
-        <div className="space-y-2">
-          <h2
-            id="sync-all-modal-title"
-            className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1.5">
+            <h2 className={cn(uiTypographyRecipes.cardTitle, uiTextRecipes.primary)}>
+              Sync all institutions
+            </h2>
+            <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
+              {syncingAll
+                ? 'Syncing institutions one by one.'
+                : hasIssues
+                  ? 'Some institutions need attention before all data is up to date.'
+                  : 'All institutions finished syncing.'}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="icon"
+            shape="pill"
+            size="sm"
+            onClick={onClose}
+            disabled={syncingAll}
+            aria-label={
+              hasIssues
+                ? 'Dismiss sync results'
+                : showCountdown
+                  ? `Close sync results in ${Math.max(1, Math.ceil(dismissRemainingMs / 1000))}s`
+                  : 'Close sync results'
+            }
+            title={syncingAll ? 'Unavailable while syncing' : undefined}
+            className="shrink-0 gap-1.5 px-3 py-1.5 normal-case"
           >
-            Sync all institutions
-          </h2>
-          <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>
-            {syncingAll
-              ? 'Syncing institutions one by one. Completed rows will update as each request settles.'
-              : hasIssues
-                ? 'Some institutions need attention before all data is up to date.'
-                : 'All institutions finished syncing.'}
-          </p>
+            <X />
+            {showCountdown && (
+              <span
+                className={cn(
+                  uiTypographyRecipes.captionStrong,
+                  uiTextRecipes.primary,
+                  'lowercase'
+                )}
+              >
+                {Math.max(1, Math.ceil(dismissRemainingMs / 1000))}s
+              </span>
+            )}
+          </Button>
         </div>
 
-        <div className="space-y-3">
+        <div className="max-h-[42vh] space-y-3 overflow-y-auto pr-1">
           {rows.map((row) => (
             <div
               key={row.id}
@@ -80,8 +151,8 @@ export function SyncAllStatusModal({ isOpen, syncingAll, rows, onClose }: SyncAl
                 'rounded-2xl',
                 'border',
                 ...uiBorderRecipes.elevatedGlass,
-                'px-4',
-                'py-3'
+                'px-3',
+                'py-2.5'
               )}
             >
               <span className={cn('mt-0.5', statusTextClass[row.status])}>
@@ -109,15 +180,10 @@ export function SyncAllStatusModal({ isOpen, syncingAll, rows, onClose }: SyncAl
             </div>
           ))}
         </div>
-
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={syncingAll}>
-            {hasIssues ? 'Dismiss' : 'Close'}
-          </Button>
-        </div>
       </GlassCard>
-    </Modal>
+    </div>,
+    document.body
   );
 }
 
-export default SyncAllStatusModal;
+export default SyncAllStatusToast;

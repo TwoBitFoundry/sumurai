@@ -43,7 +43,8 @@ const refreshAfterProviderChange = jest.mocked(refreshFinancialDataAfterProvider
 const makeBank = (
   id: string,
   provider: 'plaid' | 'teller' | 'simplefin',
-  connectionId: string
+  connectionId: string,
+  accounts: BankConnectionViewModel['accounts'] = []
 ): BankConnectionViewModel => ({
   id,
   name: `${provider}-${id}`,
@@ -52,7 +53,7 @@ const makeBank = (
   lastSync: null,
   provider,
   connectionId,
-  accounts: [],
+  accounts,
 });
 
 describe('useSyncAllOrchestrator', () => {
@@ -76,7 +77,12 @@ describe('useSyncAllOrchestrator', () => {
   it('maps a SimpleFIN bridge response onto modal rows with a single request', async () => {
     simpleFinSyncBridge.mockResolvedValue({
       rateLimited: false,
-      transactions: [],
+      transactions: [
+        { provider_account_id: 'acct-1' },
+        { provider_account_id: 'acct-1' },
+        { provider_account_id: 'acct-2' },
+        { provider_account_id: 'acct-2' },
+      ],
       simplefin_institution_results: [
         {
           institution_name: 'SimpleFIN Alpha',
@@ -93,14 +99,30 @@ describe('useSyncAllOrchestrator', () => {
         },
       ],
       bridge_warnings: [],
-    });
+    } as any);
 
     const { result } = renderHook(
       () =>
         useSyncAllOrchestrator({
           banks: [
-            makeBank('bank-1', 'simplefin', 'conn-1'),
-            makeBank('bank-2', 'simplefin', 'conn-2'),
+            makeBank('bank-1', 'simplefin', 'conn-1', [
+              {
+                id: 'acct-1',
+                name: 'Checking',
+                mask: '1234',
+                type: 'checking',
+                providerAccountId: 'acct-1',
+              },
+            ]),
+            makeBank('bank-2', 'simplefin', 'conn-2', [
+              {
+                id: 'acct-2',
+                name: 'Savings',
+                mask: '5678',
+                type: 'savings',
+                providerAccountId: 'acct-2',
+              },
+            ]),
           ],
           primaryProvider: 'simplefin',
           isOnline: true,
@@ -123,7 +145,7 @@ describe('useSyncAllOrchestrator', () => {
     expect(result.current.syncAllModalOpen).toBe(true);
     expect(result.current.syncAllRows[0]).toMatchObject({
       status: 'synced',
-      transactionCount: 4,
+      transactionCount: 2,
     });
     expect(result.current.syncAllRows[1]).toMatchObject({
       status: 'auth_required',
@@ -172,8 +194,9 @@ describe('useSyncAllOrchestrator', () => {
     const onError = jest.fn();
     plaidSyncTransactions
       .mockResolvedValueOnce({
+        transactions: [{}, {}, {}],
         metadata: { transaction_count: 3 },
-      })
+      } as any)
       .mockRejectedValueOnce(new RateLimitError('Too many requests', 7200));
 
     const { result } = renderHook(
@@ -215,7 +238,7 @@ describe('useSyncAllOrchestrator', () => {
 
   it('syncs Teller banks sequentially and closes the modal after success', async () => {
     jest.useFakeTimers();
-    tellerSyncTransactions.mockResolvedValue(undefined);
+    tellerSyncTransactions.mockResolvedValue({ transactions: [] } as any);
 
     const { result } = renderHook(
       () =>
@@ -240,7 +263,7 @@ describe('useSyncAllOrchestrator', () => {
     expect(result.current.syncAllModalOpen).toBe(true);
 
     await act(async () => {
-      jest.advanceTimersByTime(1500);
+      jest.advanceTimersByTime(5000);
     });
 
     await waitFor(() => {

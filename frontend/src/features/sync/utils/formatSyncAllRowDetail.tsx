@@ -20,8 +20,8 @@ const formatRateLimitCopy = (retryAfterSeconds: number | null): string => {
 
 export function formatSyncAllRowDetail(row: SyncAllRow): React.ReactNode {
   if (row.status === 'synced') {
-    if (typeof row.transactionCount === 'number' && row.transactionCount > 0) {
-      return `Synced ${row.transactionCount} transaction${row.transactionCount === 1 ? '' : 's'}`;
+    if (typeof row.transactionCount === 'number') {
+      return `Synced ${row.transactionCount} new transaction${row.transactionCount === 1 ? '' : 's'}`;
     }
 
     return 'Synced successfully';
@@ -60,5 +60,5 @@ export function formatSyncAllRowDetail(row: SyncAllRow): React.ReactNode {
     );
   }
 
-  return row.detail ?? 'Try again later.';
+  return row.detail ?? null;
 }

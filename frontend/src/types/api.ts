@@ -34,6 +34,7 @@ export interface Transaction {
   amount: number;
   category: TransactionCategory;
   provider?: FinancialProvider;
+  provider_account_id?: string | null;
   account_name?: string;
   account_type?: string;
   account_mask?: string;

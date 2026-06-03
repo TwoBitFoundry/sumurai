@@ -5,7 +5,7 @@ import { ApiError, RateLimitError } from '@/services/ApiClient';
 import { PlaidService } from '@/services/PlaidService';
 import { SimpleFinService } from '@/services/SimpleFinService';
 import { TellerService } from '@/services/TellerService';
-import type { FinancialProvider } from '@/types/api';
+import type { FinancialProvider, Transaction } from '@/types/api';
 import { formatUserFacingApiError } from '@/utils/formatUserFacingApiError';
 import {
   refreshFinancialDataAfterProviderChange,
@@ -30,7 +30,7 @@ interface UseSyncAllOrchestratorResult {
   closeSyncAllModal: () => void;
 }
 
-const AUTO_CLOSE_DELAY_MS = 1500;
+const AUTO_CLOSE_DELAY_MS = 5000;
 
 const isRateLimitError = (error: unknown): error is RateLimitError | ApiError =>
   error instanceof RateLimitError || (error instanceof ApiError && error.status === 429);
@@ -49,6 +49,25 @@ const mapBanksToSyncRows = (banks: BankConnectionViewModel[]): SyncAllRow[] => {
     }));
 
   return buildSyncAllRows(syncBanks);
+};
+
+const countNewTransactionsForBank = (
+  transactions: Transaction[],
+  bank: BankConnectionViewModel
+): number => {
+  const providerAccountIds = new Set(
+    bank.accounts.map((account) => account.providerAccountId).filter((id): id is string => !!id)
+  );
+
+  if (providerAccountIds.size === 0) {
+    return 0;
+  }
+
+  return transactions.filter((transaction) =>
+    transaction.provider_account_id
+      ? providerAccountIds.has(transaction.provider_account_id)
+      : false
+  ).length;
 };
 
 const buildRateLimitedRows = (rows: SyncAllRow[], retryAfterSeconds: number | null): SyncAllRow[] =>
@@ -168,6 +187,7 @@ export function useSyncAllOrchestrator({
         }
 
         currentRows = currentRows.map((row) => {
+          const bank = providerBanks.find((entry) => entry.id === row.id);
           const matchingResult = result.simplefin_institution_results.find(
             (entry) =>
               entry.org_conn_id === row.connectionId ||
@@ -188,7 +208,10 @@ export function useSyncAllOrchestrator({
             ...row,
             status: matchingResult.status,
             detail: matchingResult.message ?? null,
-            transactionCount: matchingResult.transaction_count ?? null,
+            transactionCount:
+              bank != null && matchingResult.status === 'synced'
+                ? countNewTransactionsForBank(result.transactions, bank)
+                : null,
             retryAfterSeconds: null,
           };
         });
@@ -213,18 +236,23 @@ export function useSyncAllOrchestrator({
 
         try {
           if (bank.provider === 'teller') {
-            await TellerService.syncTransactions(bank.connectionId);
-            currentRows = updateRow(currentRows, bank.id, 'synced', 'Synced successfully');
-          } else {
-            const result = await PlaidService.syncTransactions(bank.connectionId);
-            const transactionCount = result?.metadata?.transaction_count ?? null;
+            const result = await TellerService.syncTransactions(bank.connectionId);
+            const transactionCount = result.transactions.length;
             currentRows = updateRow(
               currentRows,
               bank.id,
               'synced',
-              transactionCount != null
-                ? `Synced ${transactionCount} transaction${transactionCount === 1 ? '' : 's'}`
-                : 'Synced successfully',
+              `Synced ${transactionCount} new transaction${transactionCount === 1 ? '' : 's'}`,
+              transactionCount
+            );
+          } else {
+            const result = await PlaidService.syncTransactions(bank.connectionId);
+            const transactionCount = result.transactions.length;
+            currentRows = updateRow(
+              currentRows,
+              bank.id,
+              'synced',
+              `Synced ${transactionCount} new transaction${transactionCount === 1 ? '' : 's'}`,
               transactionCount
             );
           }

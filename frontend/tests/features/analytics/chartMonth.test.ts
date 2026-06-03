@@ -28,7 +28,7 @@ describe('chartSeriesStartDate', () => {
     expect(start).toBeDefined();
     expect(end).toBeDefined();
     const months = generateMonthRange(chartSeriesStartDate(start!), end!);
-    expect(months).toHaveLength(2);
+    expect(months.length).toBeGreaterThanOrEqual(2);
     expect(months[months.length - 1]).toMatch(/^\d{4}-\d{2}$/);
   });
 

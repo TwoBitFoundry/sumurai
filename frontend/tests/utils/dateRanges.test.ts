@@ -8,12 +8,12 @@ const localYmd = (d: Date) => {
 };
 
 describe('computeDateRange', () => {
-  it('computes current month range', () => {
+  it('computes current month as trailing 30 days', () => {
     const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth();
-    const start = localYmd(new Date(y, m, 1));
-    const end = localYmd(new Date(y, m + 1, 0));
+    const end = localYmd(now);
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - 29);
+    const start = localYmd(startDate);
     const r = computeDateRange('current-month');
     expect(r.start).toBe(start);
     expect(r.end).toBe(end);

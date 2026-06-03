@@ -44,10 +44,12 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
 
   const { start, end } = useMemo(() => computeDateRange(range), [range]);
   const cacheKey = accountIdsCacheKey(allAccountIds, selectedAccountIds, isAllAccountsSelected);
+  const accountsReady =
+    !accountsLoading && (allAccountIds.length === 0 || selectedAccountIds.length > 0);
 
   const query = useQuery<AnalyticsQueryData, Error>({
     queryKey: ['analytics', range, cacheKey],
-    enabled: !accountsLoading,
+    enabled: accountsReady,
     placeholderData: keepPreviousData,
     queryFn: async () => {
       if (allAccountIds.length > 0 && selectedAccountIds.length === 0) {
@@ -78,12 +80,12 @@ export function useAnalytics(range: DateRangeKey): UseAnalyticsResult {
   });
 
   const loading =
-    (accountsLoading && query.data === undefined) ||
-    (!accountsLoading && query.fetchStatus === 'fetching' && query.data === undefined);
+    (!accountsReady && query.data === undefined) ||
+    (accountsReady && query.fetchStatus === 'fetching' && query.data === undefined);
 
   return {
     loading,
-    refreshing: query.isFetching && !query.isPending && !accountsLoading,
+    refreshing: query.isFetching && !query.isPending && accountsReady,
     error: query.error?.message ?? null,
     spendingTotal: query.data?.spendingTotal ?? 0,
     categories: query.data?.categories ?? [],

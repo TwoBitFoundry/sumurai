@@ -12,6 +12,7 @@ export interface BankAccount {
   type: 'checking' | 'savings' | 'credit' | 'loan' | 'other';
   balance?: number;
   transactions?: number;
+  providerAccountId?: string | null;
 }
 
 export interface BankConnectionViewModel {
