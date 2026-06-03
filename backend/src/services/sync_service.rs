@@ -94,6 +94,12 @@ impl SyncService {
 
         let allowed_provider_account_ids: HashSet<String> = accounts
             .iter()
+            .filter(|account| {
+                !account
+                    .provider_conn_id
+                    .as_deref()
+                    .is_some_and(|org_conn_id| hidden_orgs.contains(org_conn_id))
+            })
             .filter_map(|account| account.provider_account_id.clone())
             .collect();
 

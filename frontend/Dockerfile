@@ -29,7 +29,9 @@ COPY frontend/serwist.config.js .
 COPY frontend/scripts ./scripts
 COPY frontend/src ./src
 COPY frontend/public ./public
+COPY DESIGN.md /app/DESIGN.md
 COPY docs /app/docs
+RUN bun run design:generate
 RUN --mount=type=cache,target=/app/frontend/.next/cache bun run build
 
 # ---------- Runtime stage ----------

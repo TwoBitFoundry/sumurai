@@ -16,7 +16,7 @@ use crate::services::simplefin_org_service::{conn_id_is_hidden, SimpleFinOrganiz
 use crate::services::sync_service::SyncService;
 use anyhow::Result;
 use chrono::NaiveDate;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -28,6 +28,13 @@ pub struct SimpleFinConnectionService {
     credential_resolvers:
         std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>>,
     org_service: Arc<SimpleFinOrganizationService>,
+}
+
+fn simplefin_org_conn_id_from_item_id(item_id: &str, user_id: &Uuid) -> Option<String> {
+    item_id
+        .strip_prefix(&format!("simplefin_{}_", user_id))
+        .or_else(|| item_id.strip_prefix("simplefin_"))
+        .map(str::to_string)
 }
 
 impl SimpleFinConnectionService {
@@ -218,21 +225,18 @@ impl SimpleFinConnectionService {
         reference_date: Option<NaiveDate>,
     ) -> Result<SyncTransactionsResponse, ProviderSyncError> {
         use crate::models::transaction::SyncMetadata;
-        use crate::providers::simplefin_provider::SimpleFinProvider;
         use chrono::Utc;
 
         let sync_timestamp = Utc::now();
         let (sync_start_date, sync_end_date) =
             sync_service.calculate_sync_date_range(connection.last_sync_at, reference_date);
 
-        #[allow(deprecated)]
-        let conn_id = crate::services::connection_service::simplefin_conn_id_from_item_id(
-            &connection.item_id,
-            params.user_id,
-        )
-        .ok_or_else(|| {
-            ProviderSyncError::SyncFailure(anyhow::anyhow!("Invalid SimpleFIN connection item_id"))
-        })?;
+        let conn_id = simplefin_org_conn_id_from_item_id(&connection.item_id, params.user_id)
+            .ok_or_else(|| {
+                ProviderSyncError::SyncFailure(anyhow::anyhow!(
+                    "Invalid SimpleFIN connection item_id"
+                ))
+            })?;
 
         let hidden_orgs = self
             .org_service
@@ -282,42 +286,24 @@ impl SimpleFinConnectionService {
                 ))
             })?;
 
+        let mut snapshot_for_reconciliation = snapshot.clone();
+        for account in &mut snapshot_for_reconciliation.accounts {
+            account.transactions.clear();
+        }
+
         let _reconciliation = self
             .org_service
-            .reconcile_snapshot_connections(params.user_id, params.jwt_id, &hidden_orgs, &snapshot)
+            .reconcile_snapshot_connections(
+                params.user_id,
+                params.jwt_id,
+                &hidden_orgs,
+                &snapshot_for_reconciliation,
+            )
             .await
             .map_err(ProviderSyncError::SyncFailure)?;
 
         let (simplefin_institution_results, bridge_warnings) =
             Self::build_simplefin_institution_sync_results(&snapshot, &hidden_orgs);
-
-        let connection_accounts: Vec<crate::models::account::Account> = snapshot
-            .accounts
-            .iter()
-            .filter(|account| {
-                account.org_conn_id().as_deref() == Some(conn_id.as_str())
-                    && !conn_id_is_hidden(
-                        &hidden_orgs,
-                        &conn_id,
-                        connection.institution_id.as_deref(),
-                    )
-            })
-            .map(SimpleFinProvider::map_account)
-            .collect();
-
-        for mut account in connection_accounts {
-            account.user_id = Some(*params.user_id);
-            account.provider_connection_id = Some(connection.id);
-
-            if let Err(e) = self.db_repository.upsert_account(&account).await {
-                tracing::warn!(
-                    "Failed to persist SimpleFIN account {} for user {}: {}",
-                    account.provider_account_id.as_deref().unwrap_or("unknown"),
-                    params.user_id,
-                    e
-                );
-            }
-        }
 
         let db_accounts: Vec<crate::models::account::Account> = self
             .db_repository
@@ -325,14 +311,56 @@ impl SimpleFinConnectionService {
             .await
             .map_err(ProviderSyncError::AccountLookup)?
             .into_iter()
-            .filter(|account| account.provider_connection_id == Some(connection.id))
+            .collect();
+
+        let simplefin_connections = self
+            .db_repository
+            .get_all_provider_connections_by_user(params.user_id)
+            .await
+            .map_err(ProviderSyncError::SyncFailure)?;
+
+        let visible_simplefin_connection_ids: HashSet<Uuid> = simplefin_connections
+            .iter()
+            .filter(|saved_connection| {
+                saved_connection.item_id.starts_with("simplefin_")
+                    && !saved_connection.item_id.starts_with("simplefin_root_")
+            })
+            .filter_map(|saved_connection| {
+                let saved_conn_id =
+                    simplefin_org_conn_id_from_item_id(&saved_connection.item_id, params.user_id)?;
+
+                if conn_id_is_hidden(
+                    &hidden_orgs,
+                    &saved_conn_id,
+                    saved_connection.institution_id.as_deref(),
+                ) {
+                    None
+                } else {
+                    Some(saved_connection.id)
+                }
+            })
+            .collect();
+
+        let simplefin_accounts: Vec<crate::models::account::Account> = db_accounts
+            .iter()
+            .filter(|account| {
+                account.provider_connection_id.is_some_and(|connection_id| {
+                    visible_simplefin_connection_ids.contains(&connection_id)
+                })
+            })
+            .cloned()
+            .collect();
+
+        let visible_provider_account_ids: HashSet<String> = simplefin_accounts
+            .iter()
+            .filter_map(|account| account.provider_account_id.clone())
             .collect();
 
         let (mut transactions, new_cursor, _) = sync_service
             .sync_bank_connection_transactions(
                 &provider_credentials,
                 connection,
-                &db_accounts,
+                &simplefin_accounts,
                 reference_date,
             )
             .await
@@ -349,12 +377,14 @@ impl SimpleFinConnectionService {
                 }
             })?;
 
-        transactions = SyncService::filter_simplefin_transactions_for_connection(
-            transactions,
-            &db_accounts,
-            &conn_id,
-            &hidden_orgs,
-        );
+        transactions.retain(|transaction| {
+            transaction
+                .provider_account_id
+                .as_ref()
+                .is_some_and(|provider_account_id| {
+                    visible_provider_account_ids.contains(provider_account_id)
+                })
+        });
 
         let existing_provider_transaction_ids = self
             .db_repository
@@ -400,6 +430,81 @@ impl SimpleFinConnectionService {
         }
 
         let transactions = valid_transactions;
+        let account_connection_ids: HashMap<Uuid, Uuid> = simplefin_accounts
+            .iter()
+            .filter_map(|account| {
+                account
+                    .provider_connection_id
+                    .map(|connection_id| (account.id, connection_id))
+            })
+            .collect();
+
+        let simplefin_connections = self
+            .db_repository
+            .get_all_provider_connections_by_user(params.user_id)
+            .await
+            .map_err(ProviderSyncError::SyncFailure)?;
+
+        for mut saved_connection in simplefin_connections {
+            if !saved_connection.item_id.starts_with("simplefin_")
+                || saved_connection.item_id.starts_with("simplefin_root_")
+            {
+                continue;
+            }
+
+            let user_scoped_prefix = format!("simplefin_{}_", params.user_id);
+            let saved_conn_id = saved_connection
+                .item_id
+                .strip_prefix(&user_scoped_prefix)
+                .or_else(|| saved_connection.item_id.strip_prefix("simplefin_"))
+                .map(str::to_string)
+                .ok_or_else(|| {
+                    ProviderSyncError::SyncFailure(anyhow::anyhow!(
+                        "Invalid SimpleFIN connection item_id"
+                    ))
+                })?;
+
+            if conn_id_is_hidden(
+                &hidden_orgs,
+                &saved_conn_id,
+                saved_connection.institution_id.as_deref(),
+            ) {
+                continue;
+            }
+
+            let account_count = simplefin_accounts
+                .iter()
+                .filter(|account| account.provider_connection_id == Some(saved_connection.id))
+                .count() as i32;
+            let transaction_count = transactions
+                .iter()
+                .filter(|transaction| {
+                    account_connection_ids
+                        .get(&transaction.account_id)
+                        .is_some_and(|connection_id| *connection_id == saved_connection.id)
+                })
+                .count() as i32;
+
+            saved_connection.update_sync_info(transaction_count, account_count);
+            saved_connection.sync_cursor = Some(new_cursor.clone());
+
+            if saved_connection.id == connection.id {
+                *connection = saved_connection.clone();
+            }
+
+            if let Err(e) = self
+                .db_repository
+                .save_provider_connection(&saved_connection)
+                .await
+            {
+                tracing::warn!(
+                    "Failed to update SimpleFIN connection {} for user {}: {}",
+                    saved_connection.id,
+                    params.user_id,
+                    e
+                );
+            }
+        }
 
         let total_transactions = self
             .db_repository
@@ -407,27 +512,7 @@ impl SimpleFinConnectionService {
             .await
             .map(|count| count as i32)
             .unwrap_or(0);
-        let total_accounts = db_accounts.len() as i32;
-
-        connection.update_sync_info(total_transactions, total_accounts);
-        connection.sync_cursor = Some(new_cursor);
-        connection.last_sync_at = Some(sync_timestamp);
-
-        match self
-            .db_repository
-            .save_provider_connection(connection)
-            .await
-        {
-            Ok(saved_id) => connection.id = saved_id,
-            Err(e) => {
-                tracing::warn!(
-                    "Failed to update SimpleFIN connection {} for user {}: {}",
-                    connection.id,
-                    params.user_id,
-                    e
-                );
-            }
-        }
+        let total_accounts = simplefin_accounts.len() as i32;
 
         Ok(SyncTransactionsResponse {
             transactions,
