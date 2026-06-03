@@ -25,7 +25,10 @@ export function computeDateRange(key?: DateRangeKey): { start?: string; end?: st
 
   switch (key) {
     case 'current-month': {
-      return { start: fmt(firstOfMonth(y, m)), end: fmt(lastOfMonth(y, m)) };
+      const end = now;
+      const start = new Date(now);
+      start.setDate(start.getDate() - 29);
+      return { start: fmt(start), end: fmt(end) };
     }
     case 'past-2-months': {
       const start = firstOfMonth(y, m - 1);

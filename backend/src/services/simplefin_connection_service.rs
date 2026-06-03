@@ -1,5 +1,9 @@
 use crate::models::plaid::{ProviderConnectResponse, ProviderConnection};
 use crate::models::provider_connect::ProviderConnectRequest;
+use crate::models::simplefin::{
+    message_requires_auth_refresh, SimpleFinAccountsResponse, SimpleFinInstitutionSyncResult,
+    SimpleFinInstitutionSyncStatus,
+};
 use crate::models::transaction::SyncTransactionsResponse;
 use crate::providers::simplefin_provider::SimpleFinProviderError;
 use crate::providers::{ProviderCredentials, ProviderRegistry};
@@ -9,10 +13,10 @@ use crate::services::connection_service::{
 };
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::simplefin_org_service::{conn_id_is_hidden, SimpleFinOrganizationService};
-use crate::services::simplefin_rate_limit_service::SimpleFinRateLimitService;
 use crate::services::sync_service::SyncService;
 use anyhow::Result;
 use chrono::NaiveDate;
+use std::collections::HashSet;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -24,7 +28,6 @@ pub struct SimpleFinConnectionService {
     credential_resolvers:
         std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>>,
     org_service: Arc<SimpleFinOrganizationService>,
-    rate_limit_service: Arc<SimpleFinRateLimitService>,
 }
 
 impl SimpleFinConnectionService {
@@ -38,7 +41,6 @@ impl SimpleFinConnectionService {
             Arc<dyn crate::providers::ProviderCredentialResolver>,
         >,
         org_service: Arc<SimpleFinOrganizationService>,
-        rate_limit_service: Arc<SimpleFinRateLimitService>,
     ) -> Self {
         Self {
             db_repository,
@@ -46,8 +48,81 @@ impl SimpleFinConnectionService {
             provider_registry,
             credential_resolvers,
             org_service,
-            rate_limit_service,
         }
+    }
+
+    pub(crate) fn build_simplefin_institution_sync_results(
+        snapshot: &SimpleFinAccountsResponse,
+        hidden_orgs: &HashSet<String>,
+    ) -> (Vec<SimpleFinInstitutionSyncResult>, Vec<String>) {
+        let auth_notices = snapshot.institutions_requiring_auth();
+        let mut results = Vec::new();
+
+        for org in &snapshot.connections {
+            let account_count = snapshot
+                .accounts
+                .iter()
+                .filter(|account| account.org_conn_id().as_deref() == Some(org.conn_id.as_str()))
+                .count() as i32;
+            let transaction_count = snapshot
+                .accounts
+                .iter()
+                .filter(|account| account.org_conn_id().as_deref() == Some(org.conn_id.as_str()))
+                .map(|account| account.transactions.len() as i32)
+                .sum::<i32>();
+
+            if conn_id_is_hidden(hidden_orgs, &org.conn_id, Some(&org.org_id)) {
+                results.push(SimpleFinInstitutionSyncResult {
+                    institution_name: org.name.clone(),
+                    org_conn_id: Some(org.conn_id.clone()),
+                    status: SimpleFinInstitutionSyncStatus::SkippedHidden,
+                    transaction_count: None,
+                    message: Some("Institution is hidden in SimpleFIN".to_string()),
+                });
+                continue;
+            }
+
+            if let Some(notice) = auth_notices.iter().find(|notice| {
+                notice.org_conn_id.as_deref() == Some(org.conn_id.as_str())
+                    || notice.institution_name.eq_ignore_ascii_case(&org.name)
+            }) {
+                results.push(SimpleFinInstitutionSyncResult {
+                    institution_name: org.name.clone(),
+                    org_conn_id: Some(org.conn_id.clone()),
+                    status: SimpleFinInstitutionSyncStatus::AuthRequired,
+                    transaction_count: Some(transaction_count),
+                    message: Some(notice.message.clone()),
+                });
+                continue;
+            }
+
+            if account_count == 0 {
+                results.push(SimpleFinInstitutionSyncResult {
+                    institution_name: org.name.clone(),
+                    org_conn_id: Some(org.conn_id.clone()),
+                    status: SimpleFinInstitutionSyncStatus::NoAccounts,
+                    transaction_count: Some(0),
+                    message: Some("No accounts were returned for this institution".to_string()),
+                });
+                continue;
+            }
+
+            results.push(SimpleFinInstitutionSyncResult {
+                institution_name: org.name.clone(),
+                org_conn_id: Some(org.conn_id.clone()),
+                status: SimpleFinInstitutionSyncStatus::Synced,
+                transaction_count: Some(transaction_count),
+                message: None,
+            });
+        }
+
+        let bridge_warnings = snapshot
+            .error_messages()
+            .into_iter()
+            .filter(|message| !message_requires_auth_refresh(message))
+            .collect();
+
+        (results, bridge_warnings)
     }
 
     pub async fn connect(
@@ -150,17 +225,6 @@ impl SimpleFinConnectionService {
         let (sync_start_date, sync_end_date) =
             sync_service.calculate_sync_date_range(connection.last_sync_at, reference_date);
 
-        let floor_key = format!("simplefin_sync_floor:{}", params.user_id);
-        if self
-            .cache_service
-            .get_string(&floor_key)
-            .await
-            .map_err(ProviderSyncError::SyncFailure)?
-            .is_some()
-        {
-            return Err(ProviderSyncError::RateLimited(None));
-        }
-
         #[allow(deprecated)]
         let conn_id = crate::services::connection_service::simplefin_conn_id_from_item_id(
             &connection.item_id,
@@ -187,6 +251,8 @@ impl SimpleFinConnectionService {
                     end_date: sync_end_date.to_string(),
                     connection_updated: false,
                 },
+                simplefin_institution_results: None,
+                bridge_warnings: None,
             });
         }
 
@@ -221,6 +287,9 @@ impl SimpleFinConnectionService {
             .reconcile_snapshot_connections(params.user_id, params.jwt_id, &hidden_orgs, &snapshot)
             .await
             .map_err(ProviderSyncError::SyncFailure)?;
+
+        let (simplefin_institution_results, bridge_warnings) =
+            Self::build_simplefin_institution_sync_results(&snapshot, &hidden_orgs);
 
         let connection_accounts: Vec<crate::models::account::Account> = snapshot
             .accounts
@@ -271,7 +340,10 @@ impl SimpleFinConnectionService {
                 if let Some(SimpleFinProviderError::RateLimited(msg)) =
                     e.downcast_ref::<SimpleFinProviderError>()
                 {
-                    ProviderSyncError::RateLimited(Some(msg.clone()))
+                    ProviderSyncError::RateLimited {
+                        message: msg.clone(),
+                        retry_after_secs: "3600".to_string(),
+                    }
                 } else {
                     ProviderSyncError::SyncFailure(e)
                 }
@@ -341,23 +413,21 @@ impl SimpleFinConnectionService {
         connection.sync_cursor = Some(new_cursor);
         connection.last_sync_at = Some(sync_timestamp);
 
-        if let Err(e) = self
+        match self
             .db_repository
             .save_provider_connection(connection)
             .await
         {
-            tracing::warn!(
-                "Failed to update SimpleFIN connection {} for user {}: {}",
-                connection.id,
-                params.user_id,
-                e
-            );
+            Ok(saved_id) => connection.id = saved_id,
+            Err(e) => {
+                tracing::warn!(
+                    "Failed to update SimpleFIN connection {} for user {}: {}",
+                    connection.id,
+                    params.user_id,
+                    e
+                );
+            }
         }
-
-        self.cache_service
-            .set_with_ttl(&floor_key, "1", 3600)
-            .await
-            .map_err(ProviderSyncError::SyncFailure)?;
 
         Ok(SyncTransactionsResponse {
             transactions,
@@ -369,6 +439,8 @@ impl SimpleFinConnectionService {
                 end_date: sync_end_date.to_string(),
                 connection_updated: true,
             },
+            simplefin_institution_results: Some(simplefin_institution_results),
+            bridge_warnings: (!bridge_warnings.is_empty()).then_some(bridge_warnings),
         })
     }
 

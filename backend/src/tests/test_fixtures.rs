@@ -328,6 +328,16 @@ impl TestFixtures {
             .returning(|_| Box::pin(async { Ok(None) }));
 
         mock_cache
+            .expect_get_counter()
+            .times(0..)
+            .returning(|_| Box::pin(async { Ok(None) }));
+
+        mock_cache
+            .expect_increment_counter()
+            .times(0..)
+            .returning(|_, _| Box::pin(async { Ok(1i64) }));
+
+        mock_cache
             .expect_set_with_ttl()
             .returning(|_, _, _| Box::pin(async { Ok(()) }));
 
@@ -384,6 +394,11 @@ impl TestFixtures {
             cache_service.clone(),
             noop_categorizer(),
         ));
+        let provider_sync_rate_limit_service = Arc::new(
+            crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitService::new(
+                cache_service.clone(),
+            ),
+        );
 
         let state = AppState {
             plaid_service: plaid_service_arc,
@@ -396,6 +411,7 @@ impl TestFixtures {
             config,
             db_repository,
             cache_service,
+            provider_sync_rate_limit_service,
             categorizer: noop_categorizer(),
             connection_service,
             auth_service,
@@ -466,6 +482,16 @@ impl TestFixtures {
             .returning(|_| Box::pin(async { Ok(None) }));
 
         mock_cache
+            .expect_get_counter()
+            .times(0..)
+            .returning(|_| Box::pin(async { Ok(None) }));
+
+        mock_cache
+            .expect_increment_counter()
+            .times(0..)
+            .returning(|_, _| Box::pin(async { Ok(1i64) }));
+
+        mock_cache
             .expect_set_with_ttl()
             .returning(|_, _, _| Box::pin(async { Ok(()) }));
 
@@ -523,6 +549,11 @@ impl TestFixtures {
             cache_service.clone(),
             noop_categorizer(),
         ));
+        let provider_sync_rate_limit_service = Arc::new(
+            crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitService::new(
+                cache_service.clone(),
+            ),
+        );
 
         let state = AppState {
             plaid_service: plaid_service_arc,
@@ -535,6 +566,7 @@ impl TestFixtures {
             config,
             db_repository,
             cache_service,
+            provider_sync_rate_limit_service,
             categorizer: noop_categorizer(),
             connection_service,
             auth_service,
@@ -627,6 +659,11 @@ impl TestFixtures {
             cache_service.clone(),
             categorizer.clone(),
         ));
+        let provider_sync_rate_limit_service = Arc::new(
+            crate::services::provider_sync_rate_limit_service::ProviderSyncRateLimitService::new(
+                cache_service.clone(),
+            ),
+        );
 
         let state = AppState {
             plaid_service: plaid_service_arc,
@@ -639,6 +676,7 @@ impl TestFixtures {
             config,
             db_repository,
             cache_service,
+            provider_sync_rate_limit_service,
             categorizer,
             connection_service,
             auth_service,

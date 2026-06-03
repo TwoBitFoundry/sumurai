@@ -9,9 +9,10 @@ export interface ProviderAccount {
   balance_ledger: number | null;
   balance_available: number | null;
   mask: string | null;
-  provider: Account['provider'];
+  provider: Account['provider'] | null;
   institution_name: string;
   connection_id: string | null;
+  provider_account_id: string | null;
   transaction_count: number | null;
 }
 

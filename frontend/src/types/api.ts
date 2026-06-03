@@ -34,6 +34,7 @@ export interface Transaction {
   amount: number;
   category: TransactionCategory;
   provider?: FinancialProvider;
+  provider_account_id?: string | null;
   account_name?: string;
   account_type?: string;
   account_mask?: string;
@@ -121,6 +122,14 @@ export interface PlaidSyncResponse {
     end_date: string;
     connection_updated: boolean;
   };
+  simplefin_institution_results?: SimpleFinInstitutionSyncResult[];
+  bridge_warnings?: string[];
+}
+
+export interface SyncTransactionsRequest {
+  connection_id?: string;
+  client_date: string;
+  client_timezone: string;
 }
 
 export interface ProviderConnectionStatus {
@@ -144,6 +153,29 @@ export interface SimpleFinInstitutionAuthRequired {
   institution_name: string;
   org_conn_id?: string | null;
   message: string;
+}
+
+export type SimpleFinInstitutionSyncStatus =
+  | 'synced'
+  | 'auth_required'
+  | 'skipped_hidden'
+  | 'no_accounts';
+
+export interface SimpleFinInstitutionSyncResult {
+  institution_name: string;
+  org_conn_id?: string | null;
+  status: SimpleFinInstitutionSyncStatus;
+  transaction_count?: number | null;
+  message?: string | null;
+}
+
+export interface SimpleFinBridgeSyncResponse {
+  rateLimited: boolean;
+  retryAfterSeconds?: number;
+  transactions: Transaction[];
+  metadata?: PlaidSyncResponse['metadata'];
+  simplefin_institution_results: SimpleFinInstitutionSyncResult[];
+  bridge_warnings: string[];
 }
 
 export interface ProviderStatusResponse {

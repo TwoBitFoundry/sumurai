@@ -75,15 +75,13 @@ export function useSimpleFinFlow(options: UseSimpleFinFlowOptions = {}): UsePlai
       return;
     }
 
-    const ids = connections
-      .map((connection) => connection.connectionId)
-      .filter((id): id is string => Boolean(id));
+    const connectionId = connections.find((connection) => connection.connectionId)?.connectionId;
 
-    if (ids.length === 0) {
+    if (!connectionId) {
       return;
     }
 
-    await Promise.all(ids.map((id) => SimpleFinService.syncTransactions(id)));
+    await SimpleFinService.syncBridge(connectionId);
     await invalidateSimpleFinCache();
   }, [connections, enabled, invalidateSimpleFinCache, isOnline]);
 

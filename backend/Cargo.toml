@@ -52,6 +52,7 @@ tokenizers = { version = "0", default-features = false, features = ["onig"] }
 ndarray = "0.17"
 webauthn-rs = { version = "0.5.5", features = ["danger-allow-state-serialisation"] }
 url = "2.5.8"
+chrono-tz = "0.10.4"
 
 [features]
 default = []

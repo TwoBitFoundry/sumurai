@@ -37,13 +37,14 @@ export function accountToProviderAccount(account: Account): ProviderAccount {
     balance_ledger: account.balance_ledger,
     balance_available: account.balance_available ?? null,
     mask: account.mask,
-    provider: account.provider ?? 'plaid',
+    provider: account.provider ?? null,
     institution_name: account.institution_name ?? 'Unknown Bank',
     connection_id:
       account.connection_id ??
       account.provider_connection_id ??
       account.plaid_connection_id ??
       null,
+    provider_account_id: account.provider_account_id ?? null,
     transaction_count: account.transaction_count ?? null,
   };
 }

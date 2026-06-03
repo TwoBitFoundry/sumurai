@@ -1,5 +1,5 @@
 import { jest } from 'bun:test';
-import { ApiClient, ApiError } from '@/services/ApiClient';
+import { ApiClient, ApiError, RateLimitError } from '@/services/ApiClient';
 import { SimpleFinService } from '@/services/SimpleFinService';
 import type { PlaidDisconnectResponse, ProviderStatusResponse } from '@/types/api';
 
@@ -7,20 +7,26 @@ describe('SimpleFinService', () => {
   let postSpy: jest.SpiedFunction<typeof ApiClient.post>;
   let getSpy: jest.SpiedFunction<typeof ApiClient.get>;
   let toLocaleDateStringSpy: jest.SpiedFunction<typeof Date.prototype.toLocaleDateString>;
+  let dateTimeFormatSpy: jest.SpiedFunction<typeof Intl.DateTimeFormat>;
 
   beforeEach(() => {
     jest.clearAllMocks();
     postSpy = jest.spyOn(ApiClient, 'post');
     getSpy = jest.spyOn(ApiClient, 'get');
+    postSpy.mockResolvedValue({ transactions: [] } as any);
     toLocaleDateStringSpy = jest
       .spyOn(Date.prototype, 'toLocaleDateString')
       .mockReturnValue('2025-06-15');
+    dateTimeFormatSpy = jest.spyOn(Intl, 'DateTimeFormat').mockReturnValue({
+      resolvedOptions: () => ({ timeZone: 'America/Chicago' }),
+    } as any);
   });
 
   afterEach(() => {
     postSpy.mockRestore();
     getSpy.mockRestore();
     toLocaleDateStringSpy.mockRestore();
+    dateTimeFormatSpy.mockRestore();
   });
 
   describe('connect', () => {
@@ -91,7 +97,7 @@ describe('SimpleFinService', () => {
           institution_name: 'Bank A',
         } as any)
         .mockResolvedValue({
-          transactions: [],
+          transactions: Array.from({ length: 12 }, (_, index) => ({ id: `txn-${index}` })),
           metadata: {
             transaction_count: 12,
             account_count: 1,
@@ -127,6 +133,7 @@ describe('SimpleFinService', () => {
       expect(postSpy).toHaveBeenCalledWith('/providers/sync-transactions', {
         connection_id: 'conn-from-status',
         client_date: '2025-06-15',
+        client_timezone: 'America/Chicago',
       });
       expect(postSpy).toHaveBeenCalledTimes(2);
     });
@@ -233,7 +240,7 @@ describe('SimpleFinService', () => {
           institution_name: 'SimpleFIN Demo',
         } as any)
         .mockResolvedValue({
-          transactions: [],
+          transactions: Array.from({ length: 7 }, (_, index) => ({ id: `txn-${index}` })),
           metadata: {
             transaction_count: 7,
             account_count: 2,
@@ -272,6 +279,7 @@ describe('SimpleFinService', () => {
       expect(postSpy).toHaveBeenCalledWith('/providers/sync-transactions', {
         connection_id: 'conn-demo',
         client_date: '2025-06-15',
+        client_timezone: 'America/Chicago',
       });
     });
   });
@@ -285,6 +293,75 @@ describe('SimpleFinService', () => {
       expect(ApiClient.post).toHaveBeenCalledWith('/providers/sync-transactions', {
         connection_id: 'conn-123',
         client_date: '2025-06-15',
+        client_timezone: 'America/Chicago',
+      });
+    });
+  });
+
+  describe('syncBridge', () => {
+    it('returns structured bridge results from a single sync request', async () => {
+      postSpy.mockResolvedValue({
+        transactions: [],
+        metadata: {
+          transaction_count: 4,
+          account_count: 2,
+          sync_timestamp: '2025-06-15T10:00:00Z',
+          start_date: '2025-06-01',
+          end_date: '2025-06-15',
+          connection_updated: true,
+        },
+        simplefin_institution_results: [
+          {
+            institution_name: 'Bank A',
+            org_conn_id: 'org-a',
+            status: 'synced',
+            transaction_count: 4,
+          },
+        ],
+        bridge_warnings: ['Bridge warning'],
+      } as any);
+
+      const result = await SimpleFinService.syncBridge('conn-123');
+
+      expect(ApiClient.post).toHaveBeenCalledWith('/providers/sync-transactions', {
+        connection_id: 'conn-123',
+        client_date: '2025-06-15',
+        client_timezone: 'America/Chicago',
+      });
+      expect(result).toEqual({
+        rateLimited: false,
+        transactions: [],
+        metadata: {
+          transaction_count: 4,
+          account_count: 2,
+          sync_timestamp: '2025-06-15T10:00:00Z',
+          start_date: '2025-06-01',
+          end_date: '2025-06-15',
+          connection_updated: true,
+        },
+        simplefin_institution_results: [
+          {
+            institution_name: 'Bank A',
+            org_conn_id: 'org-a',
+            status: 'synced',
+            transaction_count: 4,
+          },
+        ],
+        bridge_warnings: ['Bridge warning'],
+      });
+    });
+
+    it('returns structured rate limit results when the bridge is throttled', async () => {
+      postSpy.mockRejectedValue(new RateLimitError('Too many requests', 7200));
+
+      const result = await SimpleFinService.syncBridge('conn-123');
+
+      expect(result).toEqual({
+        rateLimited: true,
+        retryAfterSeconds: 7200,
+        transactions: [],
+        simplefin_institution_results: [],
+        bridge_warnings: [],
       });
     });
   });

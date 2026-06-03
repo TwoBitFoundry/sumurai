@@ -13,8 +13,13 @@ import ConnectionsList, {
   type BankConnectionViewModel,
 } from '../features/plaid/components/ConnectionsList';
 import { ProviderSelectionPanel } from '../features/plaid/components/ProviderSelectionPanel';
+import { inferBankProvider } from '../features/plaid/utils/inferBankProvider';
 import { SimpleFinIgnoredInstitutionsPanel } from '../features/simplefin/components/SimpleFinIgnoredInstitutionsPanel';
 import { formatSimpleFinAuthRequiredToast } from '../features/simplefin/utils/formatSimpleFinAuthRequiredToast';
+import { SyncAllStatusToast } from '../features/sync/components/SyncAllStatusToast';
+import { SyncInstitutionStatusToast } from '../features/sync/components/SyncInstitutionStatusToast';
+import { useSyncAllOrchestrator } from '../features/sync/hooks/useSyncAllOrchestrator';
+import type { SyncAllRow } from '../features/sync/types/syncAllStatus';
 import { useAccountFilter } from '../hooks/useAccountFilter';
 import { useFinancialConnection } from '../hooks/useFinancialConnection';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
@@ -95,12 +100,45 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const isOnline = useOnlineStatus();
   const accountFilter = useAccountFilter();
   const providerCatalog = useProviderCatalog();
+  const primaryProvider = useMemo(() => {
+    const preferred = providerCatalog.userProvider ?? providerCatalog.availableProviders[0];
+    if (!preferred) {
+      return 'simplefin' as const;
+    }
+    return providerCatalog.resolveConnectProvider(preferred);
+  }, [providerCatalog]);
+  const primaryProviderCard = getProviderCardConfig(primaryProvider);
+  const primaryConnectContent = getConnectAccountProviderContent(primaryProvider);
+  const providerLabel = primaryProviderCard.title;
+  const providerLogoSrc = getProviderLogoSrc(primaryProvider);
+
+  const plaidConnections = usePlaidConnections({
+    enabled: isOnline && providerCatalog.canConnectWith('plaid'),
+  });
+  const tellerStatusQuery = useQuery({
+    queryKey: ['teller', 'connections'],
+    queryFn: () => TellerService.getStatus(),
+    enabled: isOnline && providerCatalog.canConnectWith('teller'),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const providerByConnectionId = useMemo(() => {
+    const providers = new Map<string, FinancialProvider>();
+    for (const connection of plaidConnections.connections) {
+      providers.set(connection.connectionId, 'plaid');
+    }
+    for (const status of tellerStatusQuery.data ?? []) {
+      providers.set(status.connection_id, 'teller');
+    }
+    return providers;
+  }, [plaidConnections.connections, tellerStatusQuery.data]);
+
   const banks = useMemo(
     () =>
       Object.entries(accountFilter.accountsByBank).map(([bankName, accounts]) => {
         const connectionId =
           accounts.find((account) => account.connection_id)?.connection_id ?? null;
-        const provider = accounts[0]?.provider ?? 'plaid';
+        const provider = inferBankProvider(connectionId, providerByConnectionId, primaryProvider);
 
         return {
           id: connectionId ?? bankName,
@@ -126,28 +164,12 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
               account.balance_available ??
               undefined,
             transactions: account.transaction_count ?? undefined,
+            providerAccountId: account.provider_account_id ?? null,
           })),
         };
       }),
-    [accountFilter.accountsByBank]
+    [accountFilter.accountsByBank, primaryProvider, providerByConnectionId]
   );
-  const primaryProvider = useMemo(() => {
-    const preferred =
-      providerCatalog.userProvider ??
-      (banks.find((bank) => bank.connectionId != null)?.provider as FinancialProvider | undefined);
-    if (!preferred) {
-      const registered = providerCatalog.availableProviders[0];
-      if (!registered) {
-        return 'simplefin' as const;
-      }
-      return providerCatalog.resolveConnectProvider(registered);
-    }
-    return providerCatalog.resolveConnectProvider(preferred);
-  }, [banks, providerCatalog]);
-  const primaryProviderCard = getProviderCardConfig(primaryProvider);
-  const primaryConnectContent = getConnectAccountProviderContent(primaryProvider);
-  const providerLabel = primaryProviderCard.title;
-  const providerLogoSrc = getProviderLogoSrc(primaryProvider);
 
   const providersForSync = useMemo(() => {
     const providers = new Set<SyncProvider>([primaryProvider]);
@@ -156,16 +178,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     }
     return providers;
   }, [banks, primaryProvider]);
-
-  const plaidConnections = usePlaidConnections({
-    enabled: providersForSync.has('plaid'),
-  });
-  const tellerStatusQuery = useQuery({
-    queryKey: ['teller', 'connections'],
-    queryFn: () => TellerService.getStatus(),
-    enabled: providersForSync.has('teller'),
-    staleTime: 5 * 60 * 1000,
-  });
 
   const banksWithSync = useMemo(() => {
     const syncByConnectionId = new Map<string, string | null>();
@@ -189,6 +201,10 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   }, [banks, plaidConnections.connections, tellerStatusQuery.data]);
 
   const { pushToast: pushAccountsToast, ...accountsToastStack } = useAccountsToastStack(null);
+  const [syncInstitutionRow, setSyncInstitutionRow] = useState<SyncAllRow | null>(null);
+  const dismissSyncInstitutionToast = useCallback(() => {
+    setSyncInstitutionRow(null);
+  }, []);
   const connectionFlow = useFinancialConnection({
     provider: primaryProvider,
     onError: (message) => {
@@ -220,23 +236,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     null
   );
   const pickerPrevInProgressRef = useRef(false);
-  const [syncingAll, setSyncingAll] = useState(false);
-  const [syncElapsed, setSyncElapsed] = useState(0);
-  const syncStartRef = useRef<number | null>(null);
   const [restoringIgnoredOrgConnId, setRestoringIgnoredOrgConnId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!syncingAll) {
-      setSyncElapsed(0);
-      syncStartRef.current = null;
-      return;
-    }
-    syncStartRef.current = Date.now();
-    const id = setInterval(() => {
-      setSyncElapsed(Math.floor((Date.now() - (syncStartRef.current ?? Date.now())) / 1000));
-    }, 1000);
-    return () => clearInterval(id);
-  }, [syncingAll]);
   const accountsDataLoading = providerCatalog.loading || accountFilter.loading;
   const hasActiveConnections = banks.some((bank) => bank.connectionId != null);
 
@@ -277,12 +277,19 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     },
     [queryClient]
   );
-  const refreshBankDataForProviders = useCallback(
-    async (providers: SyncProvider[]) => {
-      await refreshFinancialDataAfterProviderChange(queryClient, providers);
-    },
-    [queryClient]
-  );
+  const { syncingAll, syncAllModalOpen, syncAllRows, syncAll, closeSyncAllModal } =
+    useSyncAllOrchestrator({
+      banks: banksWithSync,
+      primaryProvider,
+      isOnline,
+      queryClient,
+      onError: (message) => {
+        if (message) {
+          pushAccountsToast(message, 'error');
+          onError?.(message);
+        }
+      },
+    });
 
   const startProviderPickerConnection = useCallback(
     async (provider: FinancialProvider) => {
@@ -378,7 +385,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     }
   }, [pickerConnectingProvider, pickerConnectionFlow, providerCatalog, pushAccountsToast]);
 
-  const dismissTransient = accountsToastStack.dismissTransient;
   const syncBank = useCallback(
     async (bankId: string) => {
       if (!isOnline) {
@@ -386,70 +392,113 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       }
 
       const bank = banks.find((entry) => entry.id === bankId);
-      if (!bank?.connectionId || primaryProvider === 'simplefin') {
+      if (!bank?.connectionId) {
         return;
       }
 
-      const statusToastId = pushAccountsToast(`Syncing ${bank.name}…`);
+      const startRow: SyncAllRow = {
+        id: bank.id,
+        provider: bank.provider,
+        institutionName: bank.name,
+        connectionId: bank.connectionId,
+        status: 'syncing',
+        detail: null,
+        transactionCount: null,
+        retryAfterSeconds: null,
+      };
+      setSyncInstitutionRow(startRow);
+
+      const countNewTransactions = (transactions: { provider_account_id?: string | null }[]) => {
+        const providerAccountIds = new Set(
+          bank.accounts
+            .map((account) => account.providerAccountId)
+            .filter((id): id is string => Boolean(id))
+        );
+
+        if (providerAccountIds.size === 0) {
+          return transactions.length;
+        }
+
+        return transactions.filter((transaction) => {
+          if (!transaction.provider_account_id) {
+            return false;
+          }
+
+          return providerAccountIds.has(transaction.provider_account_id);
+        }).length;
+      };
+
       try {
         let count = 0;
-        if (bank.provider === 'teller') {
-          await TellerService.syncTransactions(bank.connectionId);
+        if (bank.provider === 'simplefin') {
+          const result = await SimpleFinService.syncBridge(bank.connectionId);
+          if (result.rateLimited) {
+            setSyncInstitutionRow({
+              ...startRow,
+              status: 'rate_limited',
+              retryAfterSeconds: result.retryAfterSeconds ?? null,
+            });
+            return;
+          }
+
+          const matchingResult = result.simplefin_institution_results.find(
+            (entry) =>
+              entry.org_conn_id === bank.connectionId || entry.institution_name === bank.name
+          );
+          if (!matchingResult) {
+            setSyncInstitutionRow({
+              ...startRow,
+              status: 'error',
+              detail: 'No bridge result was returned for this institution.',
+            });
+            return;
+          }
+
+          if (matchingResult.status === 'auth_required') {
+            setSyncInstitutionRow({
+              ...startRow,
+              status: 'auth_required',
+              detail: matchingResult.message ?? 'Re-authenticate this institution in SimpleFIN.',
+            });
+            return;
+          }
+
+          if (matchingResult.status !== 'synced') {
+            setSyncInstitutionRow({
+              ...startRow,
+              status: matchingResult.status,
+              detail: matchingResult.message ?? null,
+            });
+            return;
+          }
+
+          count = countNewTransactions(result.transactions);
+        } else if (bank.provider === 'teller') {
+          const result = await TellerService.syncTransactions(bank.connectionId);
+          count = result.transactions.length;
         } else {
           const result = await PlaidService.syncTransactions(bank.connectionId);
-          count = result?.metadata?.transaction_count ?? 0;
+          count = result.transactions.length;
         }
         await refreshBankData(bank.provider);
-        pushAccountsToast(
-          count > 0
-            ? `Synced ${count} transaction${count === 1 ? '' : 's'} for ${bank.name}`
-            : `${bank.name} is up to date`
-        );
+        setSyncInstitutionRow({
+          ...startRow,
+          status: 'synced',
+          detail: `Synced ${count} new transaction${count === 1 ? '' : 's'}`,
+          transactionCount: count,
+        });
       } catch (error) {
         console.warn('Failed to sync bank', error);
-        dismissTransient(statusToastId);
         const message = formatUserFacingApiError(error, `Failed to sync ${bank.name}`);
-        pushAccountsToast(message, 'error');
+        setSyncInstitutionRow({
+          ...startRow,
+          status: 'error',
+          detail: message,
+        });
       }
     },
-    [banks, isOnline, primaryProvider, refreshBankData, pushAccountsToast, dismissTransient]
+    [banks, isOnline, refreshBankData]
   );
-
-  const syncAll = useCallback(async () => {
-    if (!isOnline) {
-      return;
-    }
-
-    setSyncingAll(true);
-    const statusToastId = pushAccountsToast('Syncing all accounts…');
-    try {
-      const providers = new Set<SyncProvider>();
-      let totalCount = 0;
-      for (const bank of banks) {
-        if (!bank.connectionId) continue;
-        providers.add(bank.provider);
-        if (bank.provider === 'teller') {
-          await TellerService.syncTransactions(bank.connectionId);
-        } else {
-          const result = await PlaidService.syncTransactions(bank.connectionId);
-          totalCount += result?.metadata?.transaction_count ?? 0;
-        }
-      }
-      await refreshBankDataForProviders(Array.from(providers));
-      pushAccountsToast(
-        totalCount > 0
-          ? `Synced ${totalCount} transaction${totalCount === 1 ? '' : 's'}`
-          : 'All ally accounts are in order'
-      );
-    } catch (error) {
-      console.warn('Failed to sync all banks', error);
-      dismissTransient(statusToastId);
-      const message = formatUserFacingApiError(error, 'Failed to sync all accounts');
-      pushAccountsToast(message, 'error');
-    } finally {
-      setSyncingAll(false);
-    }
-  }, [banks, isOnline, refreshBankDataForProviders, pushAccountsToast, dismissTransient]);
 
   const disconnect = useCallback(
     async (bankId: string) => {
@@ -523,12 +572,10 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           );
         } else if (institutionsRequiringAuth.length > 0) {
           pushAccountsToast(formatSimpleFinAuthRequiredToast(institutionsRequiringAuth));
-        } else if (transactionCount > 0) {
-          pushAccountsToast(
-            `Institution restored — synced ${transactionCount} transaction${transactionCount === 1 ? '' : 's'}`
-          );
         } else {
-          pushAccountsToast('Institution restored — accounts are up to date');
+          pushAccountsToast(
+            `Institution restored — synced ${transactionCount} new transaction${transactionCount === 1 ? '' : 's'}`
+          );
         }
       } catch (error) {
         console.warn('Failed to restore SimpleFIN institution', error);
@@ -603,9 +650,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
     !providerCatalog.canConnectWith(primaryProvider);
 
   const lastSyncValue = syncingAll
-    ? syncElapsed > 0
-      ? `Syncing... ${syncElapsed}s`
-      : 'Syncing...'
+    ? 'Syncing...'
     : summary.institutions === 0 && catalogLoading
       ? 'Loading...'
       : summary.latestSync
@@ -630,13 +675,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
             title={!isOnline ? 'Unavailable while offline' : undefined}
           >
             <RefreshCw className={cn(control.glyph.md, syncingAll && 'animate-spin')} />
-            {syncingAll
-              ? syncElapsed > 0
-                ? `Syncing... ${syncElapsed}s`
-                : 'Syncing...'
-              : !isOnline
-                ? 'Offline'
-                : 'Sync all'}
+            {syncingAll ? 'Syncing...' : !isOnline ? 'Offline' : 'Sync all'}
           </Button>
         )}
         <ConnectButton
@@ -645,7 +684,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           title={!isOnline ? 'Unavailable while offline' : undefined}
           leadingImageSrc={providerLogoSrc}
         >
-          {primaryProvider === 'plaid' ? 'Add ally account' : providerLabel}
+          {primaryConnectContent.cta.defaultLabel}
         </ConnectButton>
       </div>
       {!isOnline && (
@@ -720,7 +759,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           connectLogoSrc={providerLogoSrc}
           onImportSuccess={handleImportSuccess}
           emptyState={connectionsEmptyState}
-          syncDisabledForAll={primaryProvider === 'simplefin'}
         />
 
         <ToastStack
@@ -728,6 +766,16 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           pinnedToast={accountsToastStack.pinnedToast}
           onDismissTransient={accountsToastStack.dismissTransient}
           onDismissPinned={accountsToastStack.dismissPinned}
+        />
+        <SyncInstitutionStatusToast
+          row={syncInstitutionRow}
+          onClose={dismissSyncInstitutionToast}
+        />
+        <SyncAllStatusToast
+          isOpen={syncAllModalOpen}
+          syncingAll={syncingAll}
+          rows={syncAllRows}
+          onClose={closeSyncAllModal}
         />
       </PageLayout>
       {pickerConnectingProvider === 'simplefin' ? (

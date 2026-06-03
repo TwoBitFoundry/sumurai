@@ -4,11 +4,12 @@ import type {
   ProviderConnectionStatus,
   ProviderConnectResponse,
   ProviderStatusResponse,
+  SimpleFinBridgeSyncResponse,
   SimpleFinIgnoredInstitution,
   SimpleFinInstitutionAuthRequired,
 } from '../types/api';
 import { buildSyncTransactionsRequest } from '../utils/syncTransactionsRequest';
-import { ApiClient, ApiError } from './ApiClient';
+import { ApiClient, ApiError, RateLimitError } from './ApiClient';
 
 export type SimpleFinConnectSyncResult = {
   rateLimited: boolean;
@@ -94,7 +95,7 @@ export class SimpleFinService {
       const result = await SimpleFinService.syncTransactions(connectionId);
       return {
         rateLimited: false,
-        transactionCount: result?.metadata?.transaction_count ?? 0,
+        transactionCount: result.transactions.length,
         institutionsRequiringAuth,
       };
     } catch (error) {
@@ -121,7 +122,7 @@ export class SimpleFinService {
       const result = await SimpleFinService.syncTransactions(connectionId);
       return {
         rateLimited: false,
-        transactionCount: result?.metadata?.transaction_count ?? 0,
+        transactionCount: result.transactions.length,
         institutionsRequiringAuth,
       };
     } catch (error) {
@@ -138,6 +139,35 @@ export class SimpleFinService {
       '/providers/sync-transactions',
       buildSyncTransactionsRequest(connectionId)
     );
+  }
+
+  static async syncBridge(connectionId?: string): Promise<SimpleFinBridgeSyncResponse> {
+    try {
+      const response = await ApiClient.post<PlaidSyncResponse>(
+        '/providers/sync-transactions',
+        buildSyncTransactionsRequest(connectionId)
+      );
+
+      return {
+        rateLimited: false,
+        transactions: response.transactions,
+        metadata: response.metadata,
+        simplefin_institution_results: response.simplefin_institution_results ?? [],
+        bridge_warnings: response.bridge_warnings ?? [],
+      };
+    } catch (error) {
+      if (error instanceof RateLimitError || (error instanceof ApiError && error.status === 429)) {
+        return {
+          rateLimited: true,
+          retryAfterSeconds: error instanceof RateLimitError ? error.retryAfterSeconds : undefined,
+          transactions: [],
+          simplefin_institution_results: [],
+          bridge_warnings: [],
+        };
+      }
+
+      throw error;
+    }
   }
 
   static async disconnect(connectionId: string): Promise<PlaidDisconnectResponse> {

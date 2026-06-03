@@ -285,7 +285,7 @@ const PLAID_CONNECT_CONTENT: ConnectAccountProviderContent = {
     },
   ],
   cta: {
-    defaultLabel: 'Connect with Plaid',
+    defaultLabel: 'Connect Plaid to an Ally',
     badge: 'Secure',
   },
   securityNote:
@@ -352,7 +352,7 @@ const TELLER_CONNECT_CONTENT: ConnectAccountProviderContent = {
     },
   ],
   cta: {
-    defaultLabel: 'Teller',
+    defaultLabel: 'Connect Teller to an Ally',
     badge: 'mTLS',
   },
   securityNote: '🔒 Industry-grade security standards and connections. Disconnect anytime.',
@@ -421,7 +421,7 @@ const SIMPLEFIN_CONNECT_CONTENT: ConnectAccountProviderContent = {
     },
   ],
   cta: {
-    defaultLabel: 'Connect with SimpleFIN',
+    defaultLabel: 'Connect SimpleFIN to an Ally',
     badge: 'Bridge',
   },
   securityNote: 'Disconnect individual institutions anytime without removing your bridge access.',

@@ -93,18 +93,10 @@ pub enum ProviderSyncError {
     AccountLookup(Error),
     TransactionLookup(Error),
     SyncFailure(Error),
-    RateLimited(Option<String>),
-}
-
-fn simplefin_sync_floor_ttl_seconds() -> u64 {
-    std::env::var("SIMPLEFIN_SYNC_FLOOR_TTL_SECONDS")
-        .ok()
-        .and_then(|value| value.parse().ok())
-        .unwrap_or(3600)
-}
-
-fn simplefin_sync_floor_key(user_id: &Uuid) -> String {
-    format!("simplefin:sync-floor:{user_id}")
+    RateLimited {
+        message: String,
+        retry_after_secs: String,
+    },
 }
 
 fn simplefin_org_item_id(user_id: &Uuid, org_conn_id: &str) -> String {
@@ -692,9 +684,11 @@ impl ConnectionService {
         connection.last_sync_at = None;
         connection.sync_cursor = None;
 
-        self.db_repository
+        let saved_id = self
+            .db_repository
             .save_provider_connection(&connection)
             .await?;
+        connection.id = saved_id;
 
         let mut persisted_accounts = Vec::new();
         for simplefin_account in snapshot_accounts
@@ -1065,6 +1059,8 @@ impl ConnectionService {
                 end_date: sync_end_date.to_string(),
                 connection_updated: true,
             },
+            simplefin_institution_results: None,
+            bridge_warnings: None,
         })
     }
 
@@ -1100,23 +1096,6 @@ impl ConnectionService {
             "SimpleFIN connection sync started"
         );
 
-        let floor_key = simplefin_sync_floor_key(params.user_id);
-        if self
-            .cache_service
-            .get_string(&floor_key)
-            .await
-            .map_err(ProviderSyncError::SyncFailure)?
-            .is_some()
-        {
-            tracing::info!(
-                provider = "simplefin",
-                user_id = %params.user_id,
-                connection_id = %connection.id,
-                "SimpleFIN sync skipped: hourly rate floor active"
-            );
-            return Err(ProviderSyncError::RateLimited(None));
-        }
-
         #[allow(deprecated)]
         let conn_id = simplefin_conn_id_from_item_id(&connection.item_id, params.user_id).ok_or(
             ProviderSyncError::SyncFailure(anyhow::anyhow!("Invalid SimpleFIN connection item_id")),
@@ -1150,6 +1129,8 @@ impl ConnectionService {
                     end_date: sync_end_date.to_string(),
                     connection_updated: false,
                 },
+                simplefin_institution_results: None,
+                bridge_warnings: None,
             });
         }
 
@@ -1177,6 +1158,9 @@ impl ConnectionService {
                     "SimpleFIN balances snapshot unavailable"
                 ))
             })?;
+
+        let (simplefin_institution_results, bridge_warnings) =
+            crate::services::simplefin_connection_service::SimpleFinConnectionService::build_simplefin_institution_sync_results(&snapshot, &hidden_orgs);
 
         for org in &snapshot.connections {
             if crate::services::simplefin_org_service::org_is_hidden(&hidden_orgs, org) {
@@ -1416,11 +1400,6 @@ impl ConnectionService {
             "Transaction sync completed"
         );
 
-        self.cache_service
-            .set_with_ttl(&floor_key, "1", simplefin_sync_floor_ttl_seconds())
-            .await
-            .map_err(ProviderSyncError::SyncFailure)?;
-
         Ok(SyncTransactionsResponse {
             transactions,
             metadata: SyncMetadata {
@@ -1431,6 +1410,8 @@ impl ConnectionService {
                 end_date: sync_end_date.to_string(),
                 connection_updated: true,
             },
+            simplefin_institution_results: Some(simplefin_institution_results),
+            bridge_warnings: (!bridge_warnings.is_empty()).then_some(bridge_warnings),
         })
     }
 
@@ -1664,6 +1645,8 @@ impl ConnectionService {
         Ok(SyncTransactionsResponse {
             transactions: synced_transactions,
             metadata,
+            simplefin_institution_results: None,
+            bridge_warnings: None,
         })
     }
 

@@ -262,6 +262,7 @@ function mapProviderAccounts(
     connection_id?: string | null;
     provider_connection_id?: string | null;
     plaid_connection_id?: string | null;
+    provider_account_id?: string | null;
     transaction_count?: number | null;
   }[]
 ): ProviderAccount[] {
@@ -274,13 +275,14 @@ function mapProviderAccounts(
       balance_ledger: parseBalance(account.balance_ledger),
       balance_available: parseBalance(account.balance_available ?? null),
       mask: account.mask ?? null,
-      provider: account.provider ?? 'plaid',
+      provider: account.provider ?? null,
       institution_name: account.institution_name ?? 'Unknown Bank',
       connection_id:
         account.connection_id ??
         account.provider_connection_id ??
         account.plaid_connection_id ??
         null,
+      provider_account_id: account.provider_account_id ?? null,
       transaction_count: parseTransactionCount(account.transaction_count),
     };
   });

@@ -39,6 +39,39 @@ fn given_provider_connect_when_generating_openapi_then_documents_simplefin_setup
 }
 
 #[test]
+fn given_sync_transactions_request_when_generating_openapi_then_documents_client_timezone() {
+    let spec = serde_json::to_value(init_openapi()).unwrap();
+    let schema = &spec["components"]["schemas"]["SyncTransactionsRequest"];
+
+    assert_eq!(
+        schema["properties"]["client_date"]["type"],
+        serde_json::json!("string")
+    );
+    assert_eq!(
+        schema["properties"]["client_timezone"]["type"],
+        serde_json::json!("string")
+    );
+    let required = schema["required"].as_array().expect("required array");
+    assert!(required.iter().any(|field| field == "client_date"));
+    assert!(required.iter().any(|field| field == "client_timezone"));
+}
+
+#[test]
+fn given_sync_transactions_response_when_generating_openapi_then_documents_simplefin_results() {
+    let spec = serde_json::to_value(init_openapi()).unwrap();
+    let schema = &spec["components"]["schemas"]["SyncTransactionsResponse"];
+    let simplefin_results_type = schema["properties"]["simplefin_institution_results"]["type"]
+        .as_array()
+        .expect("simplefin results type array");
+    let bridge_warnings_type = schema["properties"]["bridge_warnings"]["type"]
+        .as_array()
+        .expect("bridge warnings type array");
+
+    assert!(simplefin_results_type.iter().any(|value| value == "array"));
+    assert!(bridge_warnings_type.iter().any(|value| value == "array"));
+}
+
+#[test]
 fn given_auto_categorize_when_generating_openapi_then_documents_endpoint_and_schemas() {
     let spec = serde_json::to_value(init_openapi()).unwrap();
     let path = &spec["paths"]["/api/transactions/auto-categorize"];

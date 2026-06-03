@@ -389,6 +389,44 @@ describe('useAnalytics', () => {
     });
   });
 
+  it('waits for account selection before fetching analytics', async () => {
+    const totalsDeferred = createDeferred<number>();
+    const categoriesDeferred = createDeferred<any[]>();
+    const merchantsDeferred = createDeferred<any[]>();
+    const monthlyDeferred = createDeferred<any[]>();
+
+    jest.mocked(AnalyticsService.getSpendingTotal).mockReturnValue(totalsDeferred.promise as any);
+    jest
+      .mocked(AnalyticsService.getCategorySpendingByDateRange)
+      .mockReturnValue(categoriesDeferred.promise as any);
+    jest
+      .mocked(AnalyticsService.getTopMerchantsByDateRange)
+      .mockReturnValue(merchantsDeferred.promise as any);
+    jest.mocked(AnalyticsService.getMonthlyTotals).mockReturnValue(monthlyDeferred.promise as any);
+
+    const { result } = renderHook(() => useAnalytics('current-month'), {
+      wrapper: TestWrapper,
+    });
+
+    expect(AnalyticsService.getSpendingTotal).not.toHaveBeenCalled();
+    expect(result.current.loading).toBe(true);
+
+    totalsDeferred.resolve(750);
+    categoriesDeferred.resolve([{ name: 'Food', value: 120 }] as any);
+    merchantsDeferred.resolve([{ name: 'Store', amount: 45 }] as any);
+    monthlyDeferred.resolve([]);
+
+    await waitFor(() => {
+      expect(AnalyticsService.getSpendingTotal).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.spendingTotal).toBe(750);
+  });
+
   it('keeps prior analytics data visible while the next filter selection loads', async () => {
     const totalsDeferred = createDeferred<number>();
     const categoriesDeferred = createDeferred<any[]>();

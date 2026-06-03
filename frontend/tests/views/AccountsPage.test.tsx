@@ -8,7 +8,10 @@ import {
   useFinancialConnection,
 } from '@/hooks/useFinancialConnection';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { usePlaidConnections } from '@/hooks/usePlaidConnections';
 import { useProviderCatalog } from '@/hooks/useProviderCatalog';
+import { PlaidService } from '@/services/PlaidService';
+import { TellerService } from '@/services/TellerService';
 import type { ProviderCatalogue } from '@/types/providerCatalog';
 import { isProviderConnectable } from '@/utils/providerCapabilities';
 import AccountsPage from '@/views/AccountsPage';
@@ -67,6 +70,35 @@ jest.mock('@/hooks/useFinancialConnection', () => ({
 
 jest.mock('@/hooks/useAccountFilter', () => ({
   useAccountFilter: jest.fn(),
+}));
+
+jest.mock('@/hooks/usePlaidConnections', () => ({
+  usePlaidConnections: jest.fn(),
+}));
+
+jest.mock('@/services/PlaidService', () => ({
+  PlaidService: {
+    getAccounts: jest.fn(),
+    getStatus: jest.fn(),
+    syncTransactions: jest.fn(),
+    disconnect: jest.fn(),
+  },
+}));
+
+jest.mock('@/services/TellerService', () => ({
+  TellerService: {
+    getStatus: jest.fn().mockResolvedValue([]),
+    syncTransactions: jest.fn(),
+    disconnect: jest.fn(),
+  },
+}));
+
+jest.mock('@/services/SimpleFinService', () => ({
+  SimpleFinService: {
+    getIgnoredInstitutions: jest.fn().mockResolvedValue([]),
+    restoreInstitution: jest.fn(),
+    syncBridge: jest.fn(),
+  },
 }));
 
 jest.mock('@/features/import/components/ImportModal', () => ({
@@ -137,6 +169,17 @@ describe('AccountsPage', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
     jest.mocked(useOnlineStatus).mockReturnValue(false);
+    jest.mocked(usePlaidConnections).mockReturnValue({
+      connections: [],
+      loading: false,
+      error: null,
+      addConnection: jest.fn(),
+      removeConnection: jest.fn(),
+      updateConnectionSyncInfo: jest.fn(),
+      setConnectionSyncInProgress: jest.fn(),
+      refresh: jest.fn(),
+      getConnection: jest.fn(),
+    });
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
         available_providers: ['plaid', 'teller'],
@@ -167,7 +210,9 @@ describe('AccountsPage', () => {
       screen.getByRole('heading', { name: /every institution, answering to you/i })
     ).toBeVisible();
     expect(screen.getByText('Unavailable while offline')).toBeVisible();
-    const tellerButton = screen.getAllByRole('button', { name: /^teller$/i })[0];
+    const tellerButton = screen.getAllByRole('button', {
+      name: /^connect teller to an ally$/i,
+    })[0];
     expect(tellerButton).toBeDisabled();
     expect(tellerButton.querySelector('img')).toHaveAttribute('src', '/teller.webp');
   });
@@ -323,7 +368,7 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    const plaidButton = screen.getByRole('button', { name: /^add ally account$/i });
+    const plaidButton = screen.getByRole('button', { name: /^connect plaid to an ally$/i });
     expect(plaidButton.querySelector('img')).toHaveAttribute('src', '/plaid.webp');
   });
 
@@ -495,11 +540,117 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    await user.click(screen.getByRole('button', { name: /^simplefin$/i }));
+    await user.click(screen.getByRole('button', { name: /^connect simplefin to an ally$/i }));
 
     expect(
       screen.getByRole('dialog', { name: /connect your simplefin bridge/i })
     ).toBeInTheDocument();
+  });
+
+  it('keeps the SimpleFIN per-bank sync action available', () => {
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid', 'simplefin'],
+        user_provider: 'simplefin',
+      })
+    );
+    jest.mocked(useAccountFilter).mockReturnValue({
+      selectedAccountIds: ['acc_1'],
+      allAccountIds: ['acc_1'],
+      isAllAccountsSelected: true,
+      accountsByBank: {
+        'SimpleFIN Bank': [
+          {
+            id: 'acc_1',
+            name: 'Checking',
+            account_type: 'depository',
+            balance_ledger: 100,
+            balance_available: 100,
+            mask: '1234',
+            provider: 'simplefin',
+            institution_name: 'SimpleFIN Bank',
+            connection_id: 'conn_1',
+            transaction_count: 0,
+          },
+        ],
+      },
+      loading: false,
+      setSelectedAccountIds: jest.fn(),
+      toggleBank: jest.fn(),
+      toggleAccount: jest.fn(),
+      removeAccountsByIds: jest.fn(),
+    });
+
+    renderAccountsPage();
+
+    expect(screen.getByRole('button', { name: /sync now/i })).toBeEnabled();
+  });
+
+  it('shows the checklist-style single sync card for one institution at a time', async () => {
+    const user = userEvent.setup();
+
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useProviderCatalog).mockReturnValue(
+      makeProviderCatalogMock({
+        available_providers: ['plaid'],
+        user_provider: 'plaid',
+      })
+    );
+    jest.mocked(useAccountFilter).mockReturnValue(
+      makeTellerAccountFilter({
+        accountsByBank: {
+          'Demo Bank': [
+            {
+              id: 'acc_plaid_1',
+              name: 'Checking',
+              account_type: 'depository',
+              balance_ledger: 100,
+              balance_available: 100,
+              mask: '1234',
+              provider: 'plaid',
+              institution_name: 'Demo Bank',
+              connection_id: 'conn_plaid',
+              transaction_count: 0,
+            },
+          ],
+        },
+      })
+    );
+    jest.mocked(PlaidService.syncTransactions).mockResolvedValue({
+      transactions: [
+        {
+          id: 'tx_1',
+          date: '2026-06-02',
+          name: 'Coffee Shop',
+          amount: 4.5,
+          category: { primary: 'Food and Drink' },
+          provider_account_id: 'acc_plaid_1',
+        },
+      ],
+      metadata: {
+        transaction_count: 1,
+        account_count: 1,
+        sync_timestamp: '2026-06-02T15:00:00Z',
+        start_date: '2026-06-01',
+        end_date: '2026-06-02',
+        connection_updated: true,
+      },
+      simplefin_institution_results: [],
+      bridge_warnings: [],
+    });
+
+    renderAccountsPage();
+
+    await user.click(screen.getByRole('button', { name: 'Sync now' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sync-institution-toast')).toBeVisible();
+    });
+    const syncToast = screen.getByTestId('sync-institution-toast');
+    expect(within(syncToast).getByRole('heading', { name: 'Sync institution' })).toBeVisible();
+    expect(within(syncToast).getByText('Demo Bank')).toBeVisible();
+    expect(within(syncToast).getByText('Synced 1 new transaction')).toBeVisible();
   });
 
   it('enables plaid connect when provider catalog is unavailable', () => {
@@ -543,7 +694,7 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    expect(screen.getByRole('button', { name: /^add ally account$/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^connect plaid to an ally$/i })).toBeEnabled();
   });
 
   it('falls back to plaid connect when teller is selected but not configured', () => {
@@ -577,8 +728,10 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    expect(screen.getByRole('button', { name: /^add ally account$/i })).toBeEnabled();
-    expect(screen.queryByRole('button', { name: /^teller$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^connect plaid to an ally$/i })).toBeEnabled();
+    expect(
+      screen.queryByRole('button', { name: /^connect teller to an ally$/i })
+    ).not.toBeInTheDocument();
   });
 
   describe('provider picker fallback', () => {

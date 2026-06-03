@@ -28,16 +28,41 @@ export function OnboardingProviderConnectModal({
   onClose,
   onConnected,
 }: OnboardingProviderConnectModalProps) {
+  if (!provider) {
+    return null;
+  }
+
+  return (
+    <OnboardingProviderConnectModalContent
+      provider={provider}
+      isOpen={isOpen}
+      onClose={onClose}
+      onConnected={onConnected}
+    />
+  );
+}
+
+function OnboardingProviderConnectModalContent({
+  provider,
+  isOpen,
+  onClose,
+  onConnected,
+}: {
+  provider: FinancialProvider;
+  isOpen: boolean;
+  onClose: () => void;
+  onConnected: (provider: FinancialProvider) => Promise<void> | void;
+}) {
   const isOnline = useOnlineStatus();
   const completedRef = useRef(false);
   const initiatedRef = useRef(false);
   const prevInProgressRef = useRef(false);
 
   const connectionFlow = useFinancialConnection({
-    provider: provider ?? 'plaid',
+    provider,
     isOnline,
   });
-  const connectContent = provider ? getConnectAccountProviderContent(provider) : null;
+  const connectContent = getConnectAccountProviderContent(provider);
   const isSimpleFin = provider === 'simplefin';
 
   useEffect(() => {
@@ -45,11 +70,11 @@ export function OnboardingProviderConnectModal({
   }, []);
 
   useEffect(() => {
-    if (initiatedRef.current || isSimpleFin || !provider) return;
+    if (initiatedRef.current || isSimpleFin) return;
     initiatedRef.current = true;
     const id = setTimeout(() => void connectionFlow.initiateConnection(), 0);
     return () => clearTimeout(id);
-  }, [connectionFlow.initiateConnection, isSimpleFin, provider]);
+  }, [connectionFlow.initiateConnection, isSimpleFin]);
 
   useEffect(() => {
     if (isSimpleFin) return;
@@ -61,7 +86,7 @@ export function OnboardingProviderConnectModal({
   }, [connectionFlow.connectionInProgress, connectionFlow.isConnected, isSimpleFin, onClose]);
 
   useEffect(() => {
-    if (!provider || completedRef.current) {
+    if (completedRef.current) {
       return;
     }
     if (
@@ -80,7 +105,7 @@ export function OnboardingProviderConnectModal({
     provider,
   ]);
 
-  if (!provider || !connectContent) {
+  if (!connectContent) {
     return null;
   }
 

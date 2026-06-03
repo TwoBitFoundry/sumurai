@@ -1618,7 +1618,8 @@ async fn given_connection_id_when_sync_then_uses_get_provider_connection_by_id()
 
     let sync_request = SyncTransactionsRequest {
         connection_id: Some(connection_id.to_string()),
-        client_date: None,
+        client_date: "2026-06-02".to_string(),
+        client_timezone: "America/Chicago".to_string(),
     };
 
     let request = TestFixtures::create_authenticated_post_request(
@@ -1656,7 +1657,8 @@ async fn given_foreign_connection_id_when_sync_then_returns_404() {
 
     let sync_request = SyncTransactionsRequest {
         connection_id: Some(connection_id.to_string()),
-        client_date: None,
+        client_date: "2026-06-02".to_string(),
+        client_timezone: "America/Chicago".to_string(),
     };
 
     let request = TestFixtures::create_authenticated_post_request(
@@ -1670,6 +1672,78 @@ async fn given_foreign_connection_id_when_sync_then_returns_404() {
 }
 
 #[tokio::test]
+async fn given_invalid_client_timezone_when_sync_then_returns_400() {
+    use crate::models::plaid::SyncTransactionsRequest;
+    use crate::services::repository_service::MockDatabaseRepository;
+    use uuid::Uuid;
+
+    let mut mock_db = MockDatabaseRepository::new();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+    let user_id = user.id;
+
+    let connection_id = Uuid::new_v4();
+    let mut expected_conn = crate::models::plaid::ProviderConnection::new(user_id, "item_123");
+    expected_conn.id = connection_id;
+    expected_conn.provider = "plaid".to_string();
+    expected_conn.mark_connected("Chase");
+
+    mock_db
+        .expect_get_provider_connection_by_id()
+        .with(
+            mockall::predicate::eq(connection_id),
+            mockall::predicate::eq(user_id),
+        )
+        .times(1)
+        .returning(move |_, _| {
+            let conn = expected_conn.clone();
+            Box::pin(async move { Ok(Some(conn)) })
+        });
+
+    mock_db
+        .expect_get_provider_credentials_for_user()
+        .returning(|_, _| Box::pin(async { Ok(None) }));
+
+    mock_db
+        .expect_get_accounts_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_budgets_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_transactions_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    mock_db
+        .expect_get_latest_account_balances_for_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+
+    let app = TestFixtures::create_test_app_with_db(mock_db)
+        .await
+        .unwrap();
+
+    let sync_request = SyncTransactionsRequest {
+        connection_id: Some(connection_id.to_string()),
+        client_date: "2026-06-02".to_string(),
+        client_timezone: "Not/A_Timezone".to_string(),
+    };
+
+    let request = TestFixtures::create_authenticated_post_request(
+        "/api/providers/sync-transactions",
+        &token,
+        sync_request,
+    );
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), 400);
+}
+
+#[tokio::test]
 async fn given_invalid_connection_id_when_sync_then_returns_400() {
     let app = TestFixtures::create_test_app().await.unwrap();
     let (_user, token) = TestFixtures::create_authenticated_user_with_token();
@@ -1679,7 +1753,9 @@ async fn given_invalid_connection_id_when_sync_then_returns_400() {
         .uri("/api/providers/sync-transactions")
         .header("Cookie", format!("auth_token={}", token))
         .header("content-type", "application/json")
-        .body(axum::body::Body::from(r#"{"connection_id":"not-a-uuid"}"#))
+        .body(axum::body::Body::from(
+            r#"{"connection_id":"not-a-uuid","client_date":"2026-06-02","client_timezone":"America/Chicago"}"#,
+        ))
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
