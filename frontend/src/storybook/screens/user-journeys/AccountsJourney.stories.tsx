@@ -252,9 +252,11 @@ export const Journey: Story = {
     await userEvent.click(syncNow);
     await waitFor(
       () => {
-        expect(
-          body.getByText(/synced \d+ transactions for story federal credit union/i)
-        ).toBeVisible();
+        const syncToast = body.getByTestId('sync-institution-toast');
+        expect(syncToast).toBeVisible();
+        expect(within(syncToast).getByRole('heading', { name: 'Sync institution' })).toBeVisible();
+        expect(within(syncToast).getByText('Story Federal Credit Union')).toBeVisible();
+        expect(within(syncToast).getByText(/Synced \d+ new transactions?/i)).toBeVisible();
       },
       { timeout: storyInteractionTimeoutMs }
     );
