@@ -319,7 +319,7 @@ impl SimpleFinConnectionService {
             .await
             .map_err(ProviderSyncError::SyncFailure)?;
 
-        let visible_simplefin_org_conn_ids: HashSet<String> = simplefin_connections
+        let visible_simplefin_connection_ids: HashSet<Uuid> = simplefin_connections
             .iter()
             .filter(|saved_connection| {
                 saved_connection.item_id.starts_with("simplefin_")
@@ -336,7 +336,7 @@ impl SimpleFinConnectionService {
                 ) {
                     None
                 } else {
-                    Some(saved_conn_id)
+                    Some(saved_connection.id)
                 }
             })
             .collect();
@@ -344,10 +344,9 @@ impl SimpleFinConnectionService {
         let simplefin_accounts: Vec<crate::models::account::Account> = db_accounts
             .iter()
             .filter(|account| {
-                account
-                    .provider_conn_id
-                    .as_deref()
-                    .is_some_and(|org_conn_id| visible_simplefin_org_conn_ids.contains(org_conn_id))
+                account.provider_connection_id.is_some_and(|connection_id| {
+                    visible_simplefin_connection_ids.contains(&connection_id)
+                })
             })
             .cloned()
             .collect();

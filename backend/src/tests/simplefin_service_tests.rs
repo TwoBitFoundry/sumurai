@@ -36,6 +36,17 @@ use uuid::Uuid;
 const ACCESS_URL: &str = "https://demo:pass@beta-bridge.simplefin.org/simplefin";
 const SETUP_TOKEN: &str = "dGVzdC1zaW1wbGVmaW4tc2V0dXAtdG9rZW4=";
 
+fn stable_uuid(value: &str) -> Uuid {
+    let mut bytes = [0u8; 16];
+    for (index, byte) in value.as_bytes().iter().enumerate() {
+        let slot = index % 16;
+        bytes[slot] = bytes[slot].wrapping_mul(31).wrapping_add(*byte);
+    }
+    bytes[6] = (bytes[6] & 0x0f) | 0x50;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    Uuid::from_u128(u128::from_be_bytes(bytes))
+}
+
 struct PanicCategorizer;
 
 #[async_trait]
@@ -1047,7 +1058,9 @@ fn build_simplefin_sync_service_with_categorizer_and_accounts(
         let saved_item_ids = Arc::clone(&saved_item_ids);
         let saved_connections = Arc::clone(&saved_connections);
         move |connection| {
-            let connection_id = connection.id;
+            let connection_id = stable_uuid(&connection.item_id);
+            let mut saved_connection = connection.clone();
+            saved_connection.id = connection_id;
             saved_item_ids
                 .lock()
                 .unwrap()
@@ -1055,7 +1068,7 @@ fn build_simplefin_sync_service_with_categorizer_and_accounts(
             saved_connections
                 .lock()
                 .unwrap()
-                .insert(connection.item_id.clone(), connection.clone());
+                .insert(connection.item_id.clone(), saved_connection);
             Box::pin(async move { Ok(connection_id) })
         }
     });
@@ -1238,6 +1251,7 @@ async fn given_simplefin_sync_when_transactions_are_persisted_then_they_stay_oth
             ],
         }],
     };
+    let persisted_connection_id = stable_uuid(&format!("simplefin_{}_{}", user_id, "org-1"));
 
     let (connection_service, sync_service, _, _, upsert_accounts, upsert_transactions) =
         build_simplefin_sync_service_with_categorizer_and_accounts(
@@ -1267,13 +1281,13 @@ async fn given_simplefin_sync_when_transactions_are_persisted_then_they_stay_oth
                 id: mapped_account_id,
                 user_id: Some(user_id),
                 provider_account_id: Some("acct-1".to_string()),
-                provider_connection_id: Some(connection.id),
+                provider_connection_id: Some(persisted_connection_id),
                 name: "Checking A".to_string(),
                 account_type: "depository".to_string(),
                 balance_current: None,
                 mask: None,
                 institution_name: None,
-                provider_conn_id: Some("org-1".to_string()),
+                provider_conn_id: None,
             }],
             Arc::new(PanicCategorizer),
         );
