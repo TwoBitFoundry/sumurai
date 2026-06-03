@@ -28,6 +28,8 @@ describe('bun migration dockerfiles', () => {
     expect(contents).toContain('FROM oven/bun:1-alpine AS builder');
     expect(contents).toContain('COPY frontend/package.json frontend/bun.lock ./');
     expect(contents).toContain('RUN --mount=type=cache,target=/root/.bun/install/cache bun ci');
+    expect(contents).toContain('COPY DESIGN.md /app/DESIGN.md');
+    expect(contents).toContain('bun run design:generate');
     expect(contents).toContain('bun run build');
     expect(contents).not.toMatch(/\bnode:/);
     expect(contents).not.toMatch(/\bnpm /);

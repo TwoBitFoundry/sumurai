@@ -13,11 +13,13 @@ use crate::providers::{FinancialDataProvider, ProviderRegistry};
 use crate::providers::{
     PlaidCredentialResolver, SimpleFinCredentialResolver, TellerCredentialResolver,
 };
-use crate::services::cache_service::MockCacheService;
+use crate::services::cache_service::{CacheService, MockCacheService};
 use crate::services::connection_service::{
     ConnectionService, SimpleFinConnectError, SyncConnectionParams,
 };
 use crate::services::repository_service::MockDatabaseRepository;
+use crate::services::simplefin_connection_service::SimpleFinConnectionService;
+use crate::services::simplefin_org_service::SimpleFinOrganizationService;
 use crate::services::sync_service::SyncService;
 use crate::services::Categorizer;
 use crate::test_fixtures::{noop_categorizer, TestFixtures};
@@ -26,7 +28,7 @@ use async_trait::async_trait;
 use axum::body::to_bytes;
 use base64::Engine;
 use chrono::NaiveDate;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 use tower::ServiceExt;
 use uuid::Uuid;
@@ -1027,6 +1029,7 @@ fn build_simplefin_sync_service_with_categorizer_and_accounts(
     let sync_service = Arc::new(SyncService::new(provider_registry.clone()));
 
     let saved_item_ids = Arc::new(Mutex::new(HashSet::new()));
+    let saved_connections = Arc::new(Mutex::new(HashMap::<String, ProviderConnection>::new()));
     let upsert_accounts = Arc::new(Mutex::new(0usize));
     let upsert_transactions = Arc::new(Mutex::new(0usize));
 
@@ -1042,12 +1045,17 @@ fn build_simplefin_sync_service_with_categorizer_and_accounts(
         });
     mock_db.expect_save_provider_connection().returning({
         let saved_item_ids = Arc::clone(&saved_item_ids);
+        let saved_connections = Arc::clone(&saved_connections);
         move |connection| {
             let connection_id = connection.id;
             saved_item_ids
                 .lock()
                 .unwrap()
                 .insert(connection.item_id.clone());
+            saved_connections
+                .lock()
+                .unwrap()
+                .insert(connection.item_id.clone(), connection.clone());
             Box::pin(async move { Ok(connection_id) })
         }
     });
@@ -1060,6 +1068,20 @@ fn build_simplefin_sync_service_with_categorizer_and_accounts(
         let db_accounts = db_accounts.clone();
         Box::pin(async move { Ok(db_accounts) })
     });
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning({
+            let saved_connections = Arc::clone(&saved_connections);
+            move |_| {
+                let connections = saved_connections
+                    .lock()
+                    .unwrap()
+                    .values()
+                    .cloned()
+                    .collect::<Vec<_>>();
+                Box::pin(async move { Ok(connections) })
+            }
+        });
     mock_db
         .expect_get_provider_transaction_ids_for_user()
         .returning(|_| Box::pin(async { Ok(vec![]) }));
@@ -1104,13 +1126,26 @@ fn build_simplefin_sync_service_with_categorizer_and_accounts(
         Arc::new(mock_db);
     let credential_resolvers = build_credential_resolvers(Arc::clone(&db_repository));
 
+    let cache_service: Arc<dyn CacheService> = Arc::new(mock_cache);
+    let org_service = Arc::new(SimpleFinOrganizationService::new(
+        Arc::clone(&db_repository),
+        Arc::clone(&cache_service),
+    ));
+    let simplefin_connection_service = Arc::new(SimpleFinConnectionService::new(
+        Arc::clone(&db_repository),
+        Arc::clone(&cache_service),
+        Arc::clone(&provider_registry),
+        credential_resolvers.clone(),
+        org_service,
+    ));
     let connection_service = ConnectionService::new(
         db_repository,
-        Arc::new(mock_cache),
+        cache_service,
         provider_registry,
         categorizer,
         credential_resolvers,
-    );
+    )
+    .with_simplefin_connection_service(simplefin_connection_service);
 
     (
         connection_service,
