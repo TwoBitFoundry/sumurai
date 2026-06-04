@@ -200,95 +200,133 @@ pub async fn maybe_seed_demo_simplefin_data(
     }
 
     let seed_date = NaiveDate::from_ymd_opt(2026, 6, 1).unwrap();
-    let amount = Decimal::from_str("10.00").unwrap();
 
-    let raw_txns: &[(&str, Uuid, &str)] = &[
-        ("sumurai_demo_txn_01", checking_id, "SQ *BLUE BOTTLE COFFEE"),
+    let raw_txns: &[(&str, Uuid, &str, &str)] = &[
+        (
+            "sumurai_demo_txn_01",
+            checking_id,
+            "SQ *BLUE BOTTLE COFFEE",
+            "-4.75",
+        ),
         (
             "sumurai_demo_txn_02",
             checking_id,
             "PAYROLL DIRECT DEPOSIT SUMURAI INC",
+            "2500.00",
         ),
-        ("sumurai_demo_txn_03", checking_id, "CHECK # 1042 PAID"),
+        (
+            "sumurai_demo_txn_03",
+            checking_id,
+            "CHECK # 1042 PAID",
+            "-150.00",
+        ),
         (
             "sumurai_demo_txn_04",
             checking_id,
             "ATM WITHDRAWAL 123 MAIN ST",
+            "-60.00",
         ),
         (
             "sumurai_demo_txn_05",
             checking_id,
             "ZELLE PAYMENT TO ALEX SMITH",
+            "-75.00",
         ),
         (
             "sumurai_demo_txn_06",
             checking_id,
             "NETFLIX.COM 866-579-7172 CA",
+            "-15.49",
         ),
         (
             "sumurai_demo_txn_07",
             checking_id,
             "COSTCO WHSE #573 PORTLAND OR 06/01",
+            "-127.83",
         ),
         (
             "sumurai_demo_txn_08",
             checking_id,
             "POS DEBIT STARBUCKS #12345 SEATTLE WA 06/03",
+            "-6.45",
         ),
         (
             "sumurai_demo_txn_09",
             checking_id,
             "WALMART SUPERCENTER 4321 06/04",
+            "-89.23",
         ),
         (
             "sumurai_demo_txn_10",
             checking_id,
             "TARGET STORE #1234 PORTLAND OR",
+            "-43.12",
         ),
-        ("sumurai_demo_txn_11", checking_id, "AMAZON.COM LLC"),
-        ("sumurai_demo_txn_12", checking_id, "AMZN MKTP US*1A2B3C4D"),
+        (
+            "sumurai_demo_txn_11",
+            checking_id,
+            "AMAZON.COM LLC",
+            "-34.99",
+        ),
+        (
+            "sumurai_demo_txn_12",
+            checking_id,
+            "AMZN MKTP US*1A2B3C4D",
+            "-22.50",
+        ),
         (
             "sumurai_demo_txn_13",
             checking_id,
             "SHELL OIL 59401234 DEBIT PURCHASE",
+            "-52.00",
         ),
         (
             "sumurai_demo_txn_14",
             checking_id,
             "UBER* TRIPS HELP.UBER.COM CA",
+            "-18.75",
         ),
         (
             "sumurai_demo_txn_15",
             checking_id,
             "RANDOMCO MERCHANT PORTLAND OR 12345",
+            "-29.99",
         ),
         (
             "sumurai_demo_txn_16",
             credit_id,
             "WHOLEFDS MKT #10452 PORTLAND OR",
+            "-67.43",
         ),
         (
             "sumurai_demo_txn_17",
             savings_id,
             "ONLINE TRANSFER TO CHECKING",
+            "-200.00",
         ),
         (
             "sumurai_demo_txn_18",
             investment_id,
             "DIVIDEND REINVESTMENT VANGUARD",
+            "12.50",
         ),
-        ("sumurai_demo_txn_19", loan_id, "AUTOPAY LOAN PAYMENT"),
+        (
+            "sumurai_demo_txn_19",
+            loan_id,
+            "AUTOPAY LOAN PAYMENT",
+            "-348.00",
+        ),
     ];
 
     let transactions: Vec<Transaction> = raw_txns
         .iter()
-        .map(|(txn_id, account_id, raw_desc)| Transaction {
+        .map(|(txn_id, account_id, raw_desc, amount_str)| Transaction {
             id: Uuid::new_v4(),
             account_id: *account_id,
             user_id: Some(user_id),
             provider_account_id: None,
             provider_transaction_id: Some(txn_id.to_string()),
-            amount,
+            amount: Decimal::from_str(amount_str).unwrap(),
             date: seed_date,
             merchant_name: Some(raw_desc.to_string()),
             category_primary: "OTHER".to_string(),
