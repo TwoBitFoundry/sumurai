@@ -96,6 +96,11 @@ pub trait DatabaseRepository: Send + Sync {
         &self,
         user_id: &Uuid,
     ) -> Result<Vec<TransactionWithAccount>>;
+    async fn get_transactions_for_export(
+        &self,
+        user_id: &Uuid,
+        account_ids: Option<&[Uuid]>,
+    ) -> Result<Vec<TransactionWithAccount>>;
     async fn get_transactions_by_date_range_for_user(
         &self,
         user_id: &Uuid,
@@ -1324,6 +1329,46 @@ impl DatabaseRepository for PostgresRepository {
                         .order_by_desc(transactions::Column::Date)
                         .order_by_desc(transactions::Column::CreatedAt)
                         .limit(1000)
+                        .into_model::<TransactionWithAccountRow>()
+                        .all(txn)
+                        .await?,
+                    )
+                })
+            })
+            .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(Self::map_transaction_with_account_row)
+            .collect())
+    }
+
+    async fn get_transactions_for_export(
+        &self,
+        user_id: &Uuid,
+        account_ids: Option<&[Uuid]>,
+    ) -> Result<Vec<TransactionWithAccount>> {
+        if matches!(account_ids, Some([])) {
+            return Ok(Vec::new());
+        }
+
+        let user_id = *user_id;
+        let account_ids = account_ids.map(|ids| ids.to_vec());
+        let rows = self
+            .with_tenant(&user_id, move |txn| {
+                Box::pin(async move {
+                    Ok(
+                        Self::transaction_with_account_select(Self::apply_transaction_filters(
+                            Self::transactions_with_account_joins(),
+                            &user_id,
+                            None,
+                            account_ids.as_deref(),
+                            None,
+                            None,
+                            None,
+                        ))
+                        .order_by_desc(transactions::Column::Date)
+                        .order_by_desc(transactions::Column::CreatedAt)
                         .into_model::<TransactionWithAccountRow>()
                         .all(txn)
                         .await?,

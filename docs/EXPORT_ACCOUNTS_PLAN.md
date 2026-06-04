@@ -69,10 +69,18 @@ TDD log:
 - Register the path + schemas in [backend/src/openapi/](../backend/src/openapi/) and regenerate [docs/OPENAPI.json](OPENAPI.json).
 
 **Acceptance criteria:**
-- [ ] `GET /api/export?format=csv` and `?format=ofx` return the right content-type and an `attachment` `Content-Disposition`.
-- [ ] `?connection_id=<uuid>` restricts output to that institution's accounts/transactions.
-- [ ] Requests are authenticated and RLS-scoped; a user cannot export another user's data.
-- [ ] OpenAPI schema and `docs/OPENAPI.json` include the new endpoint.
+- [x] `GET /api/export?format=csv` and `?format=ofx` return the right content-type and an `attachment` `Content-Disposition`.
+- [x] `?connection_id=<uuid>` restricts output to that institution's accounts/transactions.
+- [x] Requests are authenticated and RLS-scoped; a user cannot export another user's data.
+- [x] OpenAPI schema and `docs/OPENAPI.json` include the new endpoint.
+
+TDD log:
+- Added `backend/src/tests/export_api_tests.rs` and `backend/src/tests/openapi_tests.rs` first, then implemented the handler, route wrapper, repository export query, and OpenAPI registration.
+- `cargo test -p sumurai-backend --locked export_api_tests`
+- `cargo test -p sumurai-backend --locked openapi_tests`
+- `cargo test -p sumurai-backend --locked export`
+- `cargo check -p sumurai-backend --locked`
+- `cargo clippy -p sumurai-backend -p entity -p sumurai-cli --locked --all-targets --no-deps -- -D warnings`
 
 ---
 

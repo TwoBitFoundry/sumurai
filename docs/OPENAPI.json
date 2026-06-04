@@ -1509,6 +1509,59 @@
         ]
       }
     },
+    "/api/export": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "description": "Downloads the current user's stored accounts and transactions as CSV or OFX.",
+        "operationId": "get_authenticated_export",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Export format",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ExportFormat"
+            }
+          },
+          {
+            "name": "connection_id",
+            "in": "query",
+            "description": "Optional provider connection filter",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Downloaded export file",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
     "/api/plaid/accounts": {
       "get": {
         "tags": [
@@ -2651,6 +2704,12 @@
           "name": {
             "type": "string"
           },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "provider_account_id": {
             "type": [
               "string",
@@ -3479,6 +3538,32 @@
           "institution_id": "ins_123",
           "institution_name": "Demo Bank",
           "item_id": "item-123"
+        }
+      },
+      "ExportFormat": {
+        "type": "string",
+        "enum": [
+          "csv",
+          "ofx"
+        ],
+        "example": "csv"
+      },
+      "ExportQuery": {
+        "type": "object",
+        "required": [
+          "format"
+        ],
+        "properties": {
+          "connection_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "format": {
+            "$ref": "#/components/schemas/ExportFormat"
+          }
         }
       },
       "HealthCheckResponse": {
@@ -4316,6 +4401,12 @@
           "status"
         ],
         "properties": {
+          "connection_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "institution_name": {
             "type": "string"
           },

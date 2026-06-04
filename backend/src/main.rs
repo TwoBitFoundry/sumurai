@@ -62,6 +62,7 @@ use crate::models::{
     analytics::{DateRangeQuery, MonthlyTotalsQuery},
     auth as auth_models,
     budget::{Budget, CreateBudgetRequest, DeleteBudgetResponse, UpdateBudgetRequest},
+    export::{ExportFormat, ExportQuery},
     import::{
         CsvColumnMapping, ImportFileFormat, ImportMultipartRequest, ImportResponse,
         ValidateResponse,
@@ -104,12 +105,38 @@ struct AuthenticatedEnrollmentChallengePayload {
     user_id: Uuid,
     state: serde_json::Value,
 }
+
+#[utoipa::path(
+    get,
+    path = "/api/export",
+    description = "Downloads the current user's stored accounts and transactions as CSV or OFX.",
+    params(
+        ("format" = ExportFormat, Query, description = "Export format"),
+        ("connection_id" = Option<Uuid>, Query, description = "Optional provider connection filter")
+    ),
+    responses(
+        (status = 200, description = "Downloaded export file", body = String),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Transactions"
+)]
+pub async fn get_authenticated_export(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+    Query(query): Query<ExportQuery>,
+) -> Result<axum::response::Response, StatusCode> {
+    build_authenticated_export_response(State(state), auth_context, Query(query)).await
+}
+
 use crate::providers::{
     PlaidCredentialResolver, SimpleFinCredentialResolver, TellerCredentialResolver,
 };
 use crate::utils::encryption_key::parse_encryption_key_hex;
 use auth_middleware::auth_middleware;
 use config::Config;
+use handlers::export::build_authenticated_export_response;
 use middleware::auth_ip_ban::auth_ip_ban_middleware;
 use middleware::passkey_enrollment::{
     passkey_enrollment_middleware, PasskeyEnrollmentMiddlewareState,
@@ -516,6 +543,7 @@ pub fn create_app(state: AppState) -> Router {
             delete(delete_custom_category),
         )
         .nest("/api/transactions/import", transaction_import_routes)
+        .route("/api/export", get(get_authenticated_export))
         .route("/api/transactions", get(get_authenticated_transactions))
         .route(
             "/api/transactions/{id}/category",
