@@ -29,6 +29,7 @@ mod import_handler_categorization_tests;
 mod import_service_tests;
 mod integration_tests;
 mod merchant_name_normalization_tests;
+mod merchant_normalization_tests;
 mod models_tests;
 mod openapi_tests;
 mod otel_traces_relay_tests;

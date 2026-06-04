@@ -9,6 +9,7 @@ pub mod category_management;
 pub mod connection_service;
 pub mod export_service;
 pub mod import_service;
+pub mod merchant_normalization;
 pub mod otel_traces_relay;
 pub mod plaid_service;
 pub mod provider_sync_rate_limit_service;

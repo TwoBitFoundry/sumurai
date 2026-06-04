@@ -72,10 +72,10 @@ add the crates the engine needs.
   generated `normalized_merchant` column untouched.
 
 **Acceptance criteria**
-- [ ] `regex`, `once_cell`, `unicode-normalization` present and at latest; `cargo build` clean.
-- [ ] Migrations apply cleanly on a dev DB (forward-only).
-- [ ] `merchant_aliases` exists, is indexed, and seed rows are present.
-- [ ] `transactions.original_merchant_name` column exists and is nullable.
+- [x] `regex`, `once_cell`, `unicode-normalization` present and at latest; `cargo build` clean.
+- [x] Migrations apply cleanly on a dev DB (forward-only).
+- [x] `merchant_aliases` exists, is indexed, and seed rows are present.
+- [x] `transactions.original_merchant_name` column exists and is nullable.
 
 ---
 
@@ -105,11 +105,11 @@ gotchas and edge cases.
   enriched light path).
 
 **Acceptance criteria**
-- [ ] All 7 user gotchas produce the documented outputs.
-- [ ] Robustness fixtures pass (digit-brands, word-boundary, acronyms, structural, diacritics).
-- [ ] Idempotency holds: every expected output fed back through `normalize` is unchanged.
-- [ ] Never-blank holds: pure-noise input falls back to the raw, not `""`.
-- [ ] `cargo test -p sumurai-backend --locked merchant_normalization` passes; `cargo clippy` clean.
+- [x] All 7 user gotchas produce the documented outputs.
+- [x] Robustness fixtures pass (digit-brands, word-boundary, acronyms, structural, diacritics).
+- [x] Idempotency holds: every expected output fed back through `normalize` is unchanged.
+- [x] Never-blank holds: pure-noise input falls back to the raw, not `""`.
+- [x] `cargo test -p sumurai-backend --locked merchant_normalization` passes; `cargo clippy` clean.
 
 ---
 
