@@ -104,6 +104,16 @@ describe('ApiClient with Injected IHttpClient', () => {
       expect(result).toEqual({});
       expect(mockHttp.delete).toHaveBeenCalledWith('/test', expect.any(Object));
     });
+
+    it('should make GET blob requests successfully', async () => {
+      const blob = new Blob(['exported'], { type: 'text/csv' });
+      mockHttp.getBlob.mockResolvedValueOnce({ blob, filename: 'sumurai-export-20240601.csv' });
+
+      const result = await ApiClient.getBlob('/export?format=csv');
+
+      expect(result).toEqual({ blob, filename: 'sumurai-export-20240601.csv' });
+      expect(mockHttp.getBlob).toHaveBeenCalledWith('/export?format=csv', expect.any(Object));
+    });
   });
 
   describe('Authentication Integration', () => {
@@ -160,6 +170,24 @@ describe('ApiClient with Injected IHttpClient', () => {
 
       await expect(ApiClient.get('/test')).rejects.toThrow(AuthenticationError);
       expect(AuthService.clearToken).toHaveBeenCalledOnce();
+    });
+
+    it('should refresh token for blob requests after a 401 response', async () => {
+      jest.spyOn(AuthService, 'refreshToken').mockResolvedValueOnce({
+        user_id: 'user-123',
+        expires_at: '2025-12-31T00:00:00Z',
+        onboarding_completed: true,
+      });
+
+      const blob = new Blob(['exported'], { type: 'text/csv' });
+      mockHttp.getBlob
+        .mockRejectedValueOnce(new AuthenticationError())
+        .mockResolvedValueOnce({ blob, filename: 'sumurai-export-20240601.csv' });
+
+      const result = await ApiClient.getBlob('/export?format=csv');
+
+      expect(result).toEqual({ blob, filename: 'sumurai-export-20240601.csv' });
+      expect(AuthService.refreshToken).toHaveBeenCalledOnce();
     });
   });
 

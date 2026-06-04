@@ -100,6 +100,13 @@ export class ApiClient {
     return ApiClient.makeRequestWithRetry<T>(endpoint, options, 0);
   }
 
+  private static async makeRequestBlob(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<{ blob: Blob; filename?: string }> {
+    return ApiClient.makeRequestWithRetryBlob(endpoint, options, 0);
+  }
+
   private static async makeRequestWithRetry<T>(
     endpoint: string,
     options: RequestInit,
@@ -181,6 +188,83 @@ export class ApiClient {
     }
   }
 
+  private static async makeRequestWithRetryBlob(
+    endpoint: string,
+    options: RequestInit,
+    attempt: number
+  ): Promise<{ blob: Blob; filename?: string }> {
+    try {
+      const headers: Record<string, string> = {};
+
+      if (options.headers) {
+        if (options.headers instanceof Headers) {
+          options.headers.forEach((value, key) => {
+            headers[key] = value;
+          });
+        } else if (Array.isArray(options.headers)) {
+          options.headers.forEach(([key, value]) => {
+            headers[key] = value;
+          });
+        } else {
+          Object.assign(headers, options.headers);
+        }
+      }
+
+      const optionsWithAuth = {
+        ...options,
+        headers,
+      };
+
+      return await ApiClient.makeRawBlobRequest(endpoint, optionsWithAuth);
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        if (attempt === 0) {
+          return ApiClient.handleAuthenticationErrorBlob(endpoint, options, attempt);
+        }
+        AuthService.clearToken();
+        throw error;
+      }
+
+      if (
+        error instanceof ForbiddenError &&
+        error.code === 'passkey_enrollment_required' &&
+        typeof window !== 'undefined'
+      ) {
+        window.dispatchEvent(new CustomEvent('sumurai:enrollment-required'));
+      }
+
+      if (
+        error instanceof ApiError &&
+        ApiClient.isRetryableStatus(error.status) &&
+        attempt < ApiClient.retryConfig.maxRetries
+      ) {
+        const delay = ApiClient.calculateBackoffDelay(attempt);
+        await ApiClient.delay(delay);
+        return ApiClient.makeRequestWithRetryBlob(endpoint, options, attempt + 1);
+      }
+
+      if (
+        error instanceof Error &&
+        ApiClient.isRetryableError(error) &&
+        attempt < ApiClient.retryConfig.maxRetries
+      ) {
+        const delay = ApiClient.calculateBackoffDelay(attempt);
+        await ApiClient.delay(delay);
+        return ApiClient.makeRequestWithRetryBlob(endpoint, options, attempt + 1);
+      }
+
+      if (error instanceof ApiError || error instanceof AuthenticationError) {
+        throw error;
+      }
+
+      if (error instanceof Error && ApiClient.isRetryableError(error)) {
+        throw new NetworkError(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   private static async makeRawRequest<T>(endpoint: string, options: RequestInit): Promise<T> {
     const method = (options.method || 'GET').toUpperCase();
     const requestOptions = { headers: options.headers as Record<string, string> };
@@ -222,6 +306,32 @@ export class ApiClient {
     }
   }
 
+  private static async makeRawBlobRequest(
+    endpoint: string,
+    options: RequestInit
+  ): Promise<{ blob: Blob; filename?: string }> {
+    const method = (options.method || 'GET').toUpperCase();
+    const requestOptions = { headers: options.headers as Record<string, string> };
+
+    try {
+      const result = await (async () => {
+        switch (method) {
+          case 'GET':
+            return ApiClient.httpClient.getBlob(endpoint, requestOptions);
+          default:
+            throw new Error(`Unsupported HTTP method: ${method}`);
+        }
+      })();
+
+      return result;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw error;
+    }
+  }
+
   private static async handleAuthenticationError<T>(
     endpoint: string,
     options: RequestInit,
@@ -247,8 +357,31 @@ export class ApiClient {
     }
   }
 
+  private static async handleAuthenticationErrorBlob(
+    endpoint: string,
+    options: RequestInit,
+    _attempt: number
+  ): Promise<{ blob: Blob; filename?: string }> {
+    if (endpoint === '/auth/refresh' || endpoint === '/auth/passkey/login/finish') {
+      AuthService.clearToken();
+      throw new AuthenticationError();
+    }
+
+    try {
+      await AuthService.refreshToken();
+      return await ApiClient.makeRawBlobRequest(endpoint, options);
+    } catch {
+      AuthService.clearToken();
+      throw new AuthenticationError();
+    }
+  }
+
   static async get<T>(endpoint: string): Promise<T> {
     return ApiClient.makeRequest<T>(endpoint, { method: 'GET' });
+  }
+
+  static async getBlob(endpoint: string): Promise<{ blob: Blob; filename?: string }> {
+    return ApiClient.makeRequestBlob(endpoint, { method: 'GET' });
   }
 
   static async post<T>(endpoint: string, data?: unknown): Promise<T> {

@@ -28,6 +28,26 @@ const buildUrl = (baseUrl: string, endpoint: string): string => {
 const apiFetchCredentials: RequestCredentials = 'include';
 const apiFetchCache: RequestCache = 'no-store';
 
+const parseFilenameFromContentDisposition = (
+  contentDisposition: string | null
+): string | undefined => {
+  if (!contentDisposition) {
+    return undefined;
+  }
+
+  const quotedMatch = contentDisposition.match(/filename="([^"]+)"/i);
+  if (quotedMatch?.[1]) {
+    return quotedMatch[1];
+  }
+
+  const unquotedMatch = contentDisposition.match(/filename=([^;]+)/i);
+  if (unquotedMatch?.[1]) {
+    return unquotedMatch[1].trim();
+  }
+
+  return undefined;
+};
+
 export class FetchHttpClient implements IHttpClient {
   private readonly baseUrl: string;
 
@@ -41,6 +61,18 @@ export class FetchHttpClient implements IHttpClient {
       const text = await response.text();
       if (text.length === 0) return {} as T;
       return JSON.parse(text) as T;
+    }
+
+    const error = await this.createApiError(response);
+    throw error;
+  }
+
+  private async handleBlobResponse(response: Response): Promise<{ blob: Blob; filename?: string }> {
+    if (response.ok) {
+      return {
+        blob: await response.blob(),
+        filename: parseFilenameFromContentDisposition(response.headers.get('Content-Disposition')),
+      };
     }
 
     const error = await this.createApiError(response);
@@ -134,6 +166,24 @@ export class FetchHttpClient implements IHttpClient {
       cache: apiFetchCache,
     });
     return this.handleResponse<T>(response);
+  }
+
+  async getBlob(
+    endpoint: string,
+    options?: RequestOptions
+  ): Promise<{ blob: Blob; filename?: string }> {
+    const url = buildUrl(this.baseUrl, endpoint);
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    };
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+      credentials: apiFetchCredentials,
+      cache: apiFetchCache,
+    });
+    return this.handleBlobResponse(response);
   }
 
   async post<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {

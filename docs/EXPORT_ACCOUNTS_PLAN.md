@@ -96,9 +96,14 @@ TDD log:
 - Create `frontend/src/hooks/useExport.ts` wrapping `ExportService` with `isExporting`/error state surfaced via the existing toast/notification pattern.
 
 **Acceptance criteria:**
-- [ ] `ApiClient.getBlob` returns the blob + filename and still benefits from auth-refresh/retry.
-- [ ] `ExportService.exportAccounts` builds the correct URL per format/connection and triggers a download.
-- [ ] `useExport` exposes loading + error state and reports success/failure to the user.
+- [x] `ApiClient.getBlob` returns the blob + filename and still benefits from auth-refresh/retry.
+- [x] `ExportService.exportAccounts` builds the correct URL per format/connection and triggers a download.
+- [x] `useExport` exposes loading + error state and reports success/failure to the user.
+
+TDD log:
+- Added `frontend/tests/services/boundaries/FetchHttpClient.test.ts`, `frontend/tests/services/ApiClient.test.ts`, `frontend/tests/services/ExportService.test.ts`, and `frontend/tests/hooks/useExport.test.tsx` first, then implemented `frontend/src/services/boundaries/FetchHttpClient.ts`, `frontend/src/services/ApiClient.ts`, `frontend/src/services/ExportService.ts`, and `frontend/src/hooks/useExport.ts`.
+- `bun --cwd=frontend test tests/services/ApiClient.test.ts tests/services/boundaries/FetchHttpClient.test.ts tests/services/ExportService.test.ts tests/hooks/useExport.test.tsx`
+- `npm --prefix frontend run typecheck`
 
 ---
 
