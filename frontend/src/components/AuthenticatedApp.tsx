@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useState } from 'react';
 import { BottomContextualBar } from '@/components/BottomContextualBar';
 import { DateRangePillSlider } from '@/features/analytics/components/DateRangePillSlider';
 import { BudgetMonthPillSlider } from '@/features/budgets/components/BudgetMonthPillSlider';
@@ -24,7 +24,13 @@ import { ErrorBoundary } from './ErrorBoundary';
 
 export type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
 
-const TAB_ORDER = ['dashboard', 'transactions', 'budgets', 'accounts'] as const;
+const TAB_INDEX = new Map<TabKey, number>([
+  ['dashboard', 0],
+  ['transactions', 1],
+  ['budgets', 2],
+  ['accounts', 3],
+  ['settings', 4],
+]);
 
 interface AuthenticatedAppProps {
   onLogout: () => void;
@@ -34,6 +40,7 @@ interface AuthenticatedAppProps {
 
 export function AuthenticatedApp({ onLogout, initialTab, isOnline }: AuthenticatedAppProps) {
   const [tab, setTab] = useState<TabKey>(initialTab ?? 'dashboard');
+  const [tabTransitionDirection, setTabTransitionDirection] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRangeState] = useState<DateRange>(
     () => getSessionDashboardDateRange() ?? 'current-month'
@@ -44,9 +51,11 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
   };
   const budgetMonth = useBudgetMonth();
   const transactionFilters = useTransactionFilterState();
-  const swipeBlockedRef = useRef(false);
 
   const handleTabChange = (next: TabKey) => {
+    const currentIndex = TAB_INDEX.get(tab) ?? 0;
+    const nextIndex = TAB_INDEX.get(next) ?? currentIndex;
+    setTabTransitionDirection(nextIndex === currentIndex ? 0 : nextIndex > currentIndex ? 1 : -1);
     setTab(next);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
@@ -75,32 +84,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
   return (
     <ErrorBoundary>
       <GradientShell className={cn(uiTextRecipes.primary, 'transition-colors', 'duration-300')}>
-        <motion.div
-          data-testid="page-swipe-container"
-          style={{ touchAction: 'pan-y' }}
-          onPanStart={(e) => {
-            if (!window.matchMedia('(pointer: coarse)').matches) return;
-            let el = e.target as HTMLElement | null;
-            while (el) {
-              if (el.dataset?.noSwipe !== undefined) {
-                swipeBlockedRef.current = true;
-                return;
-              }
-              el = el.parentElement;
-            }
-            swipeBlockedRef.current = false;
-          }}
-          onPanEnd={(_, info) => {
-            if (!window.matchMedia('(pointer: coarse)').matches) return;
-            if (swipeBlockedRef.current) return;
-            if (tab === 'settings') return;
-            const idx = TAB_ORDER.indexOf(tab as (typeof TAB_ORDER)[number]);
-            if (idx === -1) return;
-            if (info.offset.x < -50 && idx < TAB_ORDER.length - 1)
-              handleTabChange(TAB_ORDER[idx + 1]);
-            if (info.offset.x > 50 && idx > 0) handleTabChange(TAB_ORDER[idx - 1]);
-          }}
-        >
+        <motion.div>
           <AppLayout
             currentTab={tab}
             onTabChange={handleTabChange}
@@ -114,13 +98,31 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
               </Alert>
             )}
 
-            {tab === 'dashboard' && (
-              <DashboardPage dateRange={dateRange} setDateRange={setDateRange} />
-            )}
-            {tab === 'transactions' && <TransactionsPage filterControl={transactionFilters} />}
-            {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}
-            {tab === 'accounts' && <AccountsPage onError={setError} />}
-            {tab === 'settings' && <SettingsPage onLogout={onLogout} />}
+            <AnimatePresence initial={false} mode="wait" custom={tabTransitionDirection}>
+              <motion.section
+                key={tab}
+                data-testid="tab-transition-panel"
+                custom={tabTransitionDirection}
+                initial={{
+                  opacity: 0,
+                  x: tabTransitionDirection === 0 ? 0 : tabTransitionDirection > 0 ? 24 : -24,
+                }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{
+                  opacity: 0,
+                  x: tabTransitionDirection === 0 ? 0 : tabTransitionDirection > 0 ? -24 : 24,
+                }}
+                transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+              >
+                {tab === 'dashboard' && (
+                  <DashboardPage dateRange={dateRange} setDateRange={setDateRange} />
+                )}
+                {tab === 'transactions' && <TransactionsPage filterControl={transactionFilters} />}
+                {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}
+                {tab === 'accounts' && <AccountsPage onError={setError} />}
+                {tab === 'settings' && <SettingsPage onLogout={onLogout} />}
+              </motion.section>
+            </AnimatePresence>
           </AppLayout>
         </motion.div>
       </GradientShell>
