@@ -173,9 +173,9 @@ and expose the new field through the API.
 - Extend an existing `TransactionsTable` test to assert the tooltip `title` attribute.
 
 **Acceptance criteria**
-- [ ] Transaction list shows the normalized `merchant_name`.
-- [ ] Hovering a merchant cell shows the raw `original_merchant_name`.
-- [ ] `bun --cwd=frontend test -- TransactionsTable` passes.
+- [x] Transaction list shows the normalized `merchant_name`.
+- [x] Hovering a merchant cell shows the raw `original_merchant_name`.
+- [x] `bun --cwd=frontend test -- TransactionsTable` passes.
 
 ---
 
