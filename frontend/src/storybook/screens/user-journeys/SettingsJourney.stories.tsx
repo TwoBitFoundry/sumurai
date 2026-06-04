@@ -59,7 +59,7 @@ export const Journey: Story = {
     const body = within(canvasElement.ownerDocument.body);
 
     await waitFor(() => {
-      expect(canvas.getByRole('heading', { name: /appearance/i })).toBeVisible();
+      expect(canvas.getByRole('heading', { name: /choose your banners/i })).toBeVisible();
     });
 
     await userEvent.click(canvas.getByRole('radio', { name: /light/i }));

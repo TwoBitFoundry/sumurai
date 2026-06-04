@@ -142,10 +142,6 @@ async fn resolve_authorized_account_ids(
         )
     };
 
-    if !include_account_ids.is_empty() {
-        return validate_account_ids(state, auth_context, include_account_ids).await;
-    }
-
     let mut scoped =
         provider_scoped_account_ids(state.db_repository.as_ref(), &auth_context.user_id)
             .await
@@ -153,6 +149,16 @@ async fn resolve_authorized_account_ids(
 
     if scoped.is_empty() {
         scoped.insert(Uuid::nil());
+    }
+
+    if !include_account_ids.is_empty() {
+        let included = validate_account_ids(state, auth_context, include_account_ids)
+            .await?
+            .ok_or_else(|| bad_request("Invalid account filter"))?;
+        if included.iter().any(|id| !scoped.contains(id)) {
+            return Err(forbidden("Account filter references inactive provider"));
+        }
+        return Ok(Some(included));
     }
 
     if exclude_account_ids.is_empty() {

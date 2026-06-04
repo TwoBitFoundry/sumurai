@@ -32,6 +32,39 @@ export default meta;
 
 type Story = StoryObj<RegisterStoryArgs>;
 
+function buildRegisterStoryFetch(originalFetch: typeof globalThis.fetch) {
+  return (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input.toString();
+    if (url.includes('/auth/logout')) {
+      return new Response(JSON.stringify({ message: 'Logged out' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    if (url.includes('/auth/register')) {
+      return new Response(
+        JSON.stringify({
+          user_id: 'story-user',
+          session_id: 'signup-session',
+          challenge: creationChallenge,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    if (url.includes('/auth/passkey/register/finish')) {
+      return new Response(
+        JSON.stringify({
+          user_id: 'story-user',
+          expires_at: '2026-05-07T18:30:00.000Z',
+          onboarding_completed: false,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    return originalFetch(input, init);
+  }) as unknown as typeof globalThis.fetch;
+}
+
 export const Default: Story = {};
 
 export const DefaultDark: Story = {
@@ -54,26 +87,12 @@ export const CeremonyCancelledToast: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const originalFetch = globalThis.fetch;
-    const mockedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = typeof input === 'string' ? input : input.toString();
-      if (url.includes('/auth/register')) {
-        return new Response(
-          JSON.stringify({
-            user_id: 'story-user',
-            session_id: 'signup-session',
-            challenge: creationChallenge,
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
-      return originalFetch(input, init);
-    }) as unknown as typeof globalThis.fetch;
     const restoreCredentials = pushStoryCredentialsOverride({
       create: async () => {
         throw new Error('The operation was cancelled');
       },
     });
-    globalThis.fetch = mockedFetch;
+    globalThis.fetch = buildRegisterStoryFetch(originalFetch);
     try {
       await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
       await userEvent.type(canvas.getByLabelText(/^passkey name$/i), 'Story User');
@@ -92,30 +111,6 @@ export const SignUpSuccess: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     const originalFetch = globalThis.fetch;
-    const mockedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = typeof input === 'string' ? input : input.toString();
-      if (url.includes('/auth/register')) {
-        return new Response(
-          JSON.stringify({
-            user_id: 'story-user',
-            session_id: 'signup-session',
-            challenge: creationChallenge,
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
-      if (url.includes('/auth/passkey/register/finish')) {
-        return new Response(
-          JSON.stringify({
-            user_id: 'story-user',
-            expires_at: '2026-05-07T18:30:00.000Z',
-            onboarding_completed: false,
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
-      return originalFetch(input, init);
-    }) as unknown as typeof globalThis.fetch;
     const mockCredential = {
       id: 'cred-id',
       rawId: new Uint8Array([1]).buffer,
@@ -128,7 +123,7 @@ export const SignUpSuccess: Story = {
     const restoreCredentials = pushStoryCredentialsOverride({
       create: async () => mockCredential,
     });
-    globalThis.fetch = mockedFetch;
+    globalThis.fetch = buildRegisterStoryFetch(originalFetch);
     try {
       await userEvent.type(canvas.getByLabelText(/^email$/i), 'you@test.com');
       await userEvent.type(canvas.getByLabelText(/^passkey name$/i), 'Story User');

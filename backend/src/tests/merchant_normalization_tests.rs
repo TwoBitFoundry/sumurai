@@ -259,6 +259,17 @@ fn given_check_number_when_normalize_then_check_label() {
 }
 
 #[test]
+fn given_multibyte_name_past_sixty_four_bytes_when_normalize_then_truncates_on_char_boundary() {
+    let raw = format!("Cafe {}", "é".repeat(31));
+
+    let result = normalize(&raw, MerchantSource::Raw, &idx());
+
+    assert!(result.display.is_char_boundary(result.display.len()));
+    assert!(result.display.len() <= 64);
+    assert_eq!(result.display, format!("Cafe {}{}", "É", "é".repeat(28)));
+}
+
+#[test]
 fn given_zelle_payment_when_normalize_then_zelle() {
     let result = normalize("ZELLE PAYMENT TO JOHN", MerchantSource::Raw, &idx());
     assert_eq!(result.display, "Zelle");

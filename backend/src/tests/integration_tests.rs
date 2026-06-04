@@ -174,6 +174,7 @@ async fn given_authenticated_user_when_get_transactions_no_filter_then_returns_a
 #[tokio::test]
 async fn given_authenticated_user_when_get_transactions_with_account_ids_then_returns_filtered_transactions(
 ) {
+    use crate::models::plaid::ProviderConnection;
     use crate::models::transaction::{PaginatedTransactionsResponse, TransactionWithAccount};
     use crate::services::repository_service::MockDatabaseRepository;
     use axum::body::to_bytes;
@@ -182,11 +183,20 @@ async fn given_authenticated_user_when_get_transactions_with_account_ids_then_re
     use uuid::Uuid;
 
     let mut mock_db = MockDatabaseRepository::new();
-    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
 
     let account_id_1 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440001").unwrap();
     let account_id_2 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440002").unwrap();
-    let user_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+    let user_id = user.id;
+    let mut provider_connection = ProviderConnection::new(user_id, "item_1");
+    provider_connection.provider = user.provider.clone();
+    let provider_connection_id = provider_connection.id;
+
+    let user_clone = user.clone();
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let user = user_clone.clone();
+        Box::pin(async move { Ok(Some(user)) })
+    });
 
     mock_db.expect_get_accounts_for_user().returning(move |_| {
         use crate::models::account::Account;
@@ -195,7 +205,7 @@ async fn given_authenticated_user_when_get_transactions_with_account_ids_then_re
                 id: account_id_1,
                 user_id: Some(user_id),
                 provider_account_id: Some("plaid_acc_1".to_string()),
-                provider_connection_id: Some(Uuid::new_v4()),
+                provider_connection_id: Some(provider_connection_id),
                 name: "Test Account 1".to_string(),
                 account_type: "checking".to_string(),
                 balance_current: Some(rust_decimal_macros::dec!(1000.00)),
@@ -207,7 +217,7 @@ async fn given_authenticated_user_when_get_transactions_with_account_ids_then_re
                 id: account_id_2,
                 user_id: Some(user_id),
                 provider_account_id: Some("plaid_acc_2".to_string()),
-                provider_connection_id: Some(Uuid::new_v4()),
+                provider_connection_id: Some(provider_connection_id),
                 name: "Test Account 2".to_string(),
                 account_type: "savings".to_string(),
                 balance_current: Some(rust_decimal_macros::dec!(5000.00)),
@@ -268,7 +278,10 @@ async fn given_authenticated_user_when_get_transactions_with_account_ids_then_re
 
     mock_db
         .expect_get_all_provider_connections_by_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
+        .returning(move |_| {
+            let provider_connection = provider_connection.clone();
+            Box::pin(async move { Ok(vec![provider_connection]) })
+        });
 
     mock_db
         .expect_get_budgets_for_user()
@@ -551,6 +564,7 @@ async fn given_authenticated_user_when_get_transactions_with_invalid_account_ids
 
 #[tokio::test]
 async fn given_authenticated_user_when_get_transaction_insights_then_returns_aggregates() {
+    use crate::models::plaid::ProviderConnection;
     use crate::models::transaction::{LargestTransaction, TransactionsInsightsResponse};
     use crate::services::repository_service::MockDatabaseRepository;
     use axum::body::to_bytes;
@@ -558,11 +572,20 @@ async fn given_authenticated_user_when_get_transaction_insights_then_returns_agg
     use uuid::Uuid;
 
     let mut mock_db = MockDatabaseRepository::new();
-    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
 
     let account_id_1 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440001").unwrap();
     let account_id_2 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440002").unwrap();
-    let user_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+    let user_id = user.id;
+    let mut provider_connection = ProviderConnection::new(user_id, "item_1");
+    provider_connection.provider = user.provider.clone();
+    let provider_connection_id = provider_connection.id;
+
+    let user_clone = user.clone();
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let user = user_clone.clone();
+        Box::pin(async move { Ok(Some(user)) })
+    });
 
     mock_db.expect_get_accounts_for_user().returning(move |_| {
         use crate::models::account::Account;
@@ -571,7 +594,7 @@ async fn given_authenticated_user_when_get_transaction_insights_then_returns_agg
                 id: account_id_1,
                 user_id: Some(user_id),
                 provider_account_id: Some("plaid_acc_1".to_string()),
-                provider_connection_id: Some(Uuid::new_v4()),
+                provider_connection_id: Some(provider_connection_id),
                 name: "Test Account 1".to_string(),
                 account_type: "checking".to_string(),
                 balance_current: Some(rust_decimal_macros::dec!(1000.00)),
@@ -583,7 +606,7 @@ async fn given_authenticated_user_when_get_transaction_insights_then_returns_agg
                 id: account_id_2,
                 user_id: Some(user_id),
                 provider_account_id: Some("plaid_acc_2".to_string()),
-                provider_connection_id: Some(Uuid::new_v4()),
+                provider_connection_id: Some(provider_connection_id),
                 name: "Test Account 2".to_string(),
                 account_type: "savings".to_string(),
                 balance_current: Some(rust_decimal_macros::dec!(5000.00)),
@@ -628,6 +651,13 @@ async fn given_authenticated_user_when_get_transaction_insights_then_returns_agg
             })
         },
     );
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning(move |_| {
+            let provider_connection = provider_connection.clone();
+            Box::pin(async move { Ok(vec![provider_connection]) })
+        });
 
     let app = TestFixtures::create_test_app_with_db(mock_db)
         .await
@@ -808,6 +838,7 @@ async fn given_authenticated_user_when_get_transaction_insights_with_invalid_dat
 #[tokio::test]
 async fn given_authenticated_user_when_get_spending_with_account_ids_then_returns_filtered_spending(
 ) {
+    use crate::models::plaid::ProviderConnection;
     use crate::models::transaction::Transaction;
     use crate::services::repository_service::MockDatabaseRepository;
     use chrono::NaiveDate;
@@ -815,11 +846,20 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
     use uuid::Uuid;
 
     let mut mock_db = MockDatabaseRepository::new();
-    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
 
     let account_id_1 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440001").unwrap();
     let account_id_2 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440002").unwrap();
-    let user_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+    let user_id = user.id;
+    let mut provider_connection = ProviderConnection::new(user_id, "item_1");
+    provider_connection.provider = user.provider.clone();
+    let provider_connection_id = provider_connection.id;
+
+    let user_clone = user.clone();
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let user = user_clone.clone();
+        Box::pin(async move { Ok(Some(user)) })
+    });
 
     mock_db.expect_get_accounts_for_user().returning(move |_| {
         use crate::models::account::Account;
@@ -828,7 +868,7 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
                 id: account_id_1,
                 user_id: Some(user_id),
                 provider_account_id: Some("plaid_acc_1".to_string()),
-                provider_connection_id: Some(Uuid::new_v4()),
+                provider_connection_id: Some(provider_connection_id),
                 name: "Test Account 1".to_string(),
                 account_type: "checking".to_string(),
                 balance_current: Some(rust_decimal_macros::dec!(1000.00)),
@@ -840,7 +880,7 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
                 id: account_id_2,
                 user_id: Some(user_id),
                 provider_account_id: Some("plaid_acc_2".to_string()),
-                provider_connection_id: Some(Uuid::new_v4()),
+                provider_connection_id: Some(provider_connection_id),
                 name: "Test Account 2".to_string(),
                 account_type: "savings".to_string(),
                 balance_current: Some(rust_decimal_macros::dec!(5000.00)),
@@ -896,7 +936,10 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
 
     mock_db
         .expect_get_all_provider_connections_by_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
+        .returning(move |_| {
+            let provider_connection = provider_connection.clone();
+            Box::pin(async move { Ok(vec![provider_connection]) })
+        });
 
     mock_db
         .expect_get_budgets_for_user()
@@ -970,6 +1013,7 @@ async fn given_authenticated_user_when_get_spending_with_foreign_account_ids_the
 #[tokio::test]
 async fn given_authenticated_user_when_get_categories_with_account_ids_then_returns_filtered_categories(
 ) {
+    use crate::models::plaid::ProviderConnection;
     use crate::models::transaction::Transaction;
     use crate::services::repository_service::MockDatabaseRepository;
     use chrono::NaiveDate;
@@ -977,11 +1021,20 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
     use uuid::Uuid;
 
     let mut mock_db = MockDatabaseRepository::new();
-    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
 
     let account_id_1 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440001").unwrap();
     let account_id_2 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440002").unwrap();
-    let user_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+    let user_id = user.id;
+    let mut provider_connection = ProviderConnection::new(user_id, "item_1");
+    provider_connection.provider = user.provider.clone();
+    let provider_connection_id = provider_connection.id;
+
+    let user_clone = user.clone();
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let user = user_clone.clone();
+        Box::pin(async move { Ok(Some(user)) })
+    });
 
     mock_db.expect_get_accounts_for_user().returning(move |_| {
         use crate::models::account::Account;
@@ -990,7 +1043,7 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
                 id: account_id_1,
                 user_id: Some(user_id),
                 provider_account_id: Some("plaid_acc_1".to_string()),
-                provider_connection_id: Some(Uuid::new_v4()),
+                provider_connection_id: Some(provider_connection_id),
                 name: "Test Account 1".to_string(),
                 account_type: "checking".to_string(),
                 balance_current: Some(rust_decimal_macros::dec!(1000.00)),
@@ -1002,7 +1055,7 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
                 id: account_id_2,
                 user_id: Some(user_id),
                 provider_account_id: Some("plaid_acc_2".to_string()),
-                provider_connection_id: Some(Uuid::new_v4()),
+                provider_connection_id: Some(provider_connection_id),
                 name: "Test Account 2".to_string(),
                 account_type: "savings".to_string(),
                 balance_current: Some(rust_decimal_macros::dec!(5000.00)),
@@ -1058,7 +1111,10 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
 
     mock_db
         .expect_get_all_provider_connections_by_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
+        .returning(move |_| {
+            let provider_connection = provider_connection.clone();
+            Box::pin(async move { Ok(vec![provider_connection]) })
+        });
 
     mock_db
         .expect_get_budgets_for_user()
@@ -1265,6 +1321,7 @@ async fn given_authenticated_user_when_get_categories_with_foreign_account_ids_t
 async fn given_authenticated_user_when_get_balances_with_account_ids_then_returns_filtered_balances(
 ) {
     use crate::models::account::Account;
+    use crate::models::plaid::ProviderConnection;
     use crate::services::repository_service::MockDatabaseRepository;
     use uuid::Uuid;
 
@@ -1273,13 +1330,22 @@ async fn given_authenticated_user_when_get_balances_with_account_ids_then_return
 
     let account_id_1 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440001").unwrap();
     let account_id_2 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440002").unwrap();
+    let mut provider_connection = ProviderConnection::new(user.id, "item_1");
+    provider_connection.provider = user.provider.clone();
+    let provider_connection_id = provider_connection.id;
+
+    let user_clone = user.clone();
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let user = user_clone.clone();
+        Box::pin(async move { Ok(Some(user)) })
+    });
 
     let accounts = vec![
         Account {
             id: account_id_1,
             user_id: Some(user.id),
             provider_account_id: Some("acc1".to_string()),
-            provider_connection_id: Some(Uuid::new_v4()),
+            provider_connection_id: Some(provider_connection_id),
             name: "Account 1".to_string(),
             account_type: "checking".to_string(),
             balance_current: Some(rust_decimal_macros::dec!(1000.00)),
@@ -1291,7 +1357,7 @@ async fn given_authenticated_user_when_get_balances_with_account_ids_then_return
             id: account_id_2,
             user_id: Some(user.id),
             provider_account_id: Some("acc2".to_string()),
-            provider_connection_id: Some(Uuid::new_v4()),
+            provider_connection_id: Some(provider_connection_id),
             name: "Account 2".to_string(),
             account_type: "savings".to_string(),
             balance_current: Some(rust_decimal_macros::dec!(5000.00)),
@@ -1312,7 +1378,10 @@ async fn given_authenticated_user_when_get_balances_with_account_ids_then_return
 
     mock_db
         .expect_get_all_provider_connections_by_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
+        .returning(move |_| {
+            let provider_connection = provider_connection.clone();
+            Box::pin(async move { Ok(vec![provider_connection]) })
+        });
 
     mock_db
         .expect_get_budgets_for_user()
@@ -1414,6 +1483,7 @@ async fn given_authenticated_user_when_get_balances_with_foreign_account_ids_the
 
 #[tokio::test]
 async fn given_different_account_filters_when_caching_then_uses_different_cache_keys() {
+    use crate::models::plaid::ProviderConnection;
     use crate::services::repository_service::MockDatabaseRepository;
     use uuid::Uuid;
 
@@ -1422,13 +1492,22 @@ async fn given_different_account_filters_when_caching_then_uses_different_cache_
 
     let account_id_1 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440001").unwrap();
     let account_id_2 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440002").unwrap();
+    let mut provider_connection = ProviderConnection::new(user.id, "item_1");
+    provider_connection.provider = user.provider.clone();
+    let provider_connection_id = provider_connection.id;
+
+    let user_clone = user.clone();
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let user = user_clone.clone();
+        Box::pin(async move { Ok(Some(user)) })
+    });
 
     let accounts = vec![
         crate::models::account::Account {
             id: account_id_1,
             user_id: Some(user.id),
             provider_account_id: Some("acc1".to_string()),
-            provider_connection_id: Some(Uuid::new_v4()),
+            provider_connection_id: Some(provider_connection_id),
             name: "Account 1".to_string(),
             account_type: "checking".to_string(),
             balance_current: Some(rust_decimal_macros::dec!(1000.00)),
@@ -1440,7 +1519,7 @@ async fn given_different_account_filters_when_caching_then_uses_different_cache_
             id: account_id_2,
             user_id: Some(user.id),
             provider_account_id: Some("acc2".to_string()),
-            provider_connection_id: Some(Uuid::new_v4()),
+            provider_connection_id: Some(provider_connection_id),
             name: "Account 2".to_string(),
             account_type: "savings".to_string(),
             balance_current: Some(rust_decimal_macros::dec!(5000.00)),
@@ -1461,7 +1540,10 @@ async fn given_different_account_filters_when_caching_then_uses_different_cache_
 
     mock_db
         .expect_get_all_provider_connections_by_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
+        .returning(move |_| {
+            let provider_connection = provider_connection.clone();
+            Box::pin(async move { Ok(vec![provider_connection]) })
+        });
 
     mock_db
         .expect_get_budgets_for_user()

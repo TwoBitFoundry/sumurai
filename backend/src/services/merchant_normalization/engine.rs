@@ -350,8 +350,21 @@ fn finalize(display: String, original: &str) -> String {
     };
 
     if trimmed.len() > 64 {
-        trimmed[..64].to_string()
+        truncate_to_boundary(trimmed, 64)
     } else {
         trimmed
     }
+}
+
+fn truncate_to_boundary(value: String, max_bytes: usize) -> String {
+    if value.len() <= max_bytes {
+        return value;
+    }
+
+    let mut end = max_bytes;
+    while !value.is_char_boundary(end) {
+        end -= 1;
+    }
+
+    value[..end].to_string()
 }
