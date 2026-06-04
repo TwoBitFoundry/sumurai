@@ -281,7 +281,7 @@ describe('BankCard', () => {
     expect(onSync).toHaveBeenCalledWith('bank-1');
 
     await user.click(local.getByRole('button', { name: 'Export institution data' }));
-    await user.click(local.getByRole('button', { name: 'Export as OFX' }));
+    await user.click(screen.getByRole('button', { name: 'Export as OFX' }));
     expect(onExport).toHaveBeenCalledWith('ofx', 'conn-1');
 
     await user.click(local.getByRole('button', { name: 'Hide accounts' }));
