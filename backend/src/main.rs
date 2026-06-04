@@ -1085,6 +1085,7 @@ async fn refresh_user_session(
         )),
         Json(auth_models::AuthResponse {
             user_id: claims.user_id(),
+            email: user.email.clone(),
             expires_at: auth_token.expires_at.to_rfc3339(),
             onboarding_completed: user.onboarding_completed,
             requires_passkey_enrollment: false,
@@ -4627,6 +4628,7 @@ async fn finish_passkey_registration(
 
     let body = serde_json::to_string(&auth_models::AuthResponse {
         user_id: user_id.to_string(),
+        email: user.email.clone(),
         expires_at: auth_token.expires_at.to_rfc3339(),
         onboarding_completed: user.onboarding_completed,
         requires_passkey_enrollment: false,
@@ -4863,6 +4865,7 @@ async fn login_with_password(
         )),
         Json(auth_models::AuthResponse {
             user_id: user_id.to_string(),
+            email: user.email.clone(),
             expires_at: auth_token.expires_at.to_rfc3339(),
             onboarding_completed: user.onboarding_completed,
             requires_passkey_enrollment: !seed_user_password_fallback(&user),
@@ -5196,6 +5199,7 @@ async fn finish_passkey_login(
         )),
         Json(auth_models::AuthResponse {
             user_id: user_id.to_string(),
+            email: user.email.clone(),
             expires_at: auth_token.expires_at.to_rfc3339(),
             onboarding_completed: user.onboarding_completed,
             requires_passkey_enrollment: false,

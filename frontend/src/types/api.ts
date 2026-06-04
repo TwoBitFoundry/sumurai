@@ -279,6 +279,7 @@ export interface ApiResponse<T> {
 
 export interface AuthResponse {
   user_id: string;
+  email?: string;
   expires_at: string;
   onboarding_completed: boolean;
   requires_passkey_enrollment?: boolean;
@@ -296,6 +297,7 @@ export interface PasswordLoginRequest {
 
 export interface RefreshResponse {
   user_id: string;
+  email?: string;
   expires_at: string;
   onboarding_completed: boolean;
 }

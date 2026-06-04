@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
@@ -23,6 +24,8 @@ interface SettingsPageProps {
 
 export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const { preference, setPreference } = useTheme();
+  const queryClient = useQueryClient();
+  const userEmail = queryClient.getQueryData<string>(['user', 'email']);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [confirmText, setConfirmText] = useState('');
@@ -67,6 +70,15 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
             <div className={cn('space-y-3')}>
               <Badge size="md">Settings</Badge>
             </div>
+
+            {userEmail && (
+              <section className={cn('space-y-3')}>
+                <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+                  Signed in as
+                </h2>
+                <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>{userEmail}</p>
+              </section>
+            )}
 
             <section className={cn('space-y-3')}>
               <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>

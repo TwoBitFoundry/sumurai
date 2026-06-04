@@ -76,6 +76,9 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
         setIsAuthenticated(true);
         setShowOnboarding(!refreshResponse.onboarding_completed);
         setSessionExpiresAt(refreshResponse.expires_at);
+        if (refreshResponse.email) {
+          queryClient.setQueryData(['user', 'email'], refreshResponse.email);
+        }
       } catch (error) {
         if (active) {
           setIsAuthenticated(false);
@@ -101,10 +104,18 @@ function AppContent({ initialTab, initialAuthScreen }: AppContentProps) {
   }, []);
 
   const handleAuthSuccess = useCallback(
-    (authResponse: { user_id: string; expires_at: string; onboarding_completed: boolean }) => {
+    (authResponse: {
+      user_id: string;
+      email?: string;
+      expires_at: string;
+      onboarding_completed: boolean;
+    }) => {
       setIsAuthenticated(true);
       setShowOnboarding(!authResponse.onboarding_completed);
       setSessionExpiresAt(authResponse.expires_at);
+      if (authResponse.email) {
+        queryClient.setQueryData(['user', 'email'], authResponse.email);
+      }
     },
     []
   );

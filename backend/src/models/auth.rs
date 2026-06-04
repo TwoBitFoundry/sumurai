@@ -26,9 +26,10 @@ pub struct RegisterBeginResponse {
 }
 
 #[derive(Serialize, ToSchema)]
-#[schema(example = json!({"user_id": "11111111-2222-3333-4444-555555555555", "expires_at": "2024-01-01T12:00:00Z", "onboarding_completed": false, "requires_passkey_enrollment": true}))]
+#[schema(example = json!({"user_id": "11111111-2222-3333-4444-555555555555", "email": "user@example.com", "expires_at": "2024-01-01T12:00:00Z", "onboarding_completed": false, "requires_passkey_enrollment": true}))]
 pub struct AuthResponse {
     pub user_id: String,
+    pub email: String,
     pub expires_at: String,
     pub onboarding_completed: bool,
     pub requires_passkey_enrollment: bool,
