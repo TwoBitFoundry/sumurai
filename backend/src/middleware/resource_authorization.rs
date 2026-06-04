@@ -146,9 +146,14 @@ async fn resolve_authorized_account_ids(
         return validate_account_ids(state, auth_context, include_account_ids).await;
     }
 
-    let scoped = provider_scoped_account_ids(state.db_repository.as_ref(), &auth_context.user_id)
-        .await
-        .map_err(|_| internal_error())?;
+    let mut scoped =
+        provider_scoped_account_ids(state.db_repository.as_ref(), &auth_context.user_id)
+            .await
+            .map_err(|_| internal_error())?;
+
+    if scoped.is_empty() {
+        scoped.insert(Uuid::nil());
+    }
 
     if exclude_account_ids.is_empty() {
         return Ok(Some(scoped));
