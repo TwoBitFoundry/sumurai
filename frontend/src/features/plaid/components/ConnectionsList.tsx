@@ -31,6 +31,8 @@ interface ConnectionsListProps {
   onConnect: () => void;
   onSync: (id: string) => Promise<void>;
   onDisconnect: (id: string) => Promise<void>;
+  onExport?: (format: 'csv' | 'ofx', connectionId?: string) => Promise<void>;
+  isExporting?: boolean;
   isOnline: boolean;
   onImportSuccess?: (count: number, mask: string) => void;
   providerName?: string;
@@ -44,6 +46,8 @@ const ConnectionsList = ({
   onConnect,
   onSync,
   onDisconnect,
+  onExport = async () => undefined,
+  isExporting = false,
   isOnline,
   onImportSuccess,
   providerName,
@@ -86,6 +90,8 @@ const ConnectionsList = ({
           bank={bank}
           onSync={onSync}
           onDisconnect={onDisconnect}
+          onExport={onExport}
+          isExporting={isExporting}
           isOnline={isOnline}
           onImportSuccess={onImportSuccess}
         />

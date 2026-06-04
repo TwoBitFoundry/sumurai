@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, RefreshCw, Unlink } from 'lucide-react';
+import { ChevronDown, FileDown, RefreshCw, Unlink } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { getSessionBankExpanded, setSessionBankExpanded } from '@/utils/sessionPreferences';
@@ -9,7 +9,7 @@ import {
   accountTypeSortOrder,
 } from '../domain/accountCategories';
 import { getConnectionStatusCaption } from '../domain/connectionStatus';
-import { cn, GlassCard, IconButton } from '../ui/primitives';
+import { cn, GlassCard, IconButton, MenuDropdown, MenuItem } from '../ui/primitives';
 import { appTitleBarRecipes } from '../ui/primitives/AppTitleBar';
 import {
   control,
@@ -40,6 +40,7 @@ interface BankConnection {
   status: 'connected' | 'needs_reauth' | 'error';
   lastSync?: string;
   provider: string;
+  connectionId?: string | null;
   accounts: Account[];
 }
 
@@ -47,6 +48,8 @@ interface BankCardProps {
   bank: BankConnection;
   onSync: (id: string) => Promise<void>;
   onDisconnect: (id: string) => Promise<void>;
+  onExport?: (format: 'csv' | 'ofx', connectionId?: string) => Promise<void>;
+  isExporting?: boolean;
   isOnline: boolean;
   onImportSuccess?: (count: number, mask: string) => void;
 }
@@ -55,6 +58,8 @@ export const BankCard: React.FC<BankCardProps> = ({
   bank,
   onSync,
   onDisconnect,
+  onExport = async () => undefined,
+  isExporting = false,
   isOnline,
   onImportSuccess,
 }) => {
@@ -105,6 +110,10 @@ export const BankCard: React.FC<BankCardProps> = ({
     await onDisconnect(bank.id);
     setDisconnectLoading(false);
     setShowDisconnectModal(false);
+  };
+
+  const handleExport = async (format: 'csv' | 'ofx') => {
+    await onExport(format, bank.connectionId ?? undefined);
   };
 
   const renderGroup = (group: AccountGroupKey, accounts: Account[]) => (
@@ -212,16 +221,53 @@ export const BankCard: React.FC<BankCardProps> = ({
             {bank.name}
           </h3>
         </div>
-        <IconButton
-          type="button"
-          size="md"
-          onClick={handleDisconnectClick}
-          variant="danger"
-          aria-label="Disconnect"
-          className={cn('col-start-3', 'row-start-1', 'shrink-0', 'self-center')}
+        <div
+          className={cn(
+            'col-start-3',
+            'row-start-1',
+            'flex',
+            'items-center',
+            'gap-2',
+            'self-center'
+          )}
         >
-          <Unlink />
-        </IconButton>
+          <MenuDropdown
+            trigger={
+              <IconButton
+                type="button"
+                size="md"
+                variant="ghost"
+                aria-label="Export institution data"
+                title={
+                  isExporting
+                    ? 'Exporting...'
+                    : !isOnline
+                      ? 'Unavailable while offline'
+                      : bank.connectionId == null
+                        ? 'Export unavailable'
+                        : 'Export institution data'
+                }
+                disabled={isExporting || !isOnline || bank.connectionId == null}
+                className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
+              >
+                <FileDown className={cn(isExporting && 'animate-pulse')} />
+              </IconButton>
+            }
+          >
+            <MenuItem onClick={() => void handleExport('csv')}>Export as CSV</MenuItem>
+            <MenuItem onClick={() => void handleExport('ofx')}>Export as OFX</MenuItem>
+          </MenuDropdown>
+          <IconButton
+            type="button"
+            size="md"
+            onClick={handleDisconnectClick}
+            variant="danger"
+            aria-label="Disconnect"
+            className={cn('shrink-0')}
+          >
+            <Unlink />
+          </IconButton>
+        </div>
         {statusCaption ? (
           <p
             className={cn(

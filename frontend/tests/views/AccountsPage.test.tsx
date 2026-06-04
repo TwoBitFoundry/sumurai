@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeProviderCatalogMock } from '@tests/utils/providerCatalogMocks';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
+import { useExport } from '@/hooks/useExport';
 import {
   type UseFinancialConnectionReturn,
   useFinancialConnection,
@@ -70,6 +71,10 @@ jest.mock('@/hooks/useFinancialConnection', () => ({
 
 jest.mock('@/hooks/useAccountFilter', () => ({
   useAccountFilter: jest.fn(),
+}));
+
+jest.mock('@/hooks/useExport', () => ({
+  useExport: jest.fn(),
 }));
 
 jest.mock('@/hooks/usePlaidConnections', () => ({
@@ -169,6 +174,12 @@ describe('AccountsPage', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
     jest.mocked(useOnlineStatus).mockReturnValue(false);
+    jest.mocked(useExport).mockReturnValue({
+      isExporting: false,
+      error: null,
+      toast: null,
+      exportAccounts: jest.fn(),
+    });
     jest.mocked(usePlaidConnections).mockReturnValue({
       connections: [],
       loading: false,
@@ -227,6 +238,62 @@ describe('AccountsPage', () => {
     expect(
       screen.queryByRole('button', { name: /cancel categorization/i })
     ).not.toBeInTheDocument();
+  });
+
+  it('exports all institutions from the header menu', async () => {
+    const user = userEvent.setup();
+    const exportAccounts = jest.fn().mockResolvedValue(undefined);
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
+    jest.mocked(useExport).mockReturnValue({
+      isExporting: false,
+      error: null,
+      toast: null,
+      exportAccounts,
+    });
+
+    renderAccountsPage();
+
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+    await user.click(screen.getByRole('button', { name: 'Export as CSV' }));
+
+    expect(exportAccounts).toHaveBeenCalledWith('csv');
+  });
+
+  it('exports a single institution from the bank card menu', async () => {
+    const user = userEvent.setup();
+    const exportAccounts = jest.fn().mockResolvedValue(undefined);
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
+    jest.mocked(useExport).mockReturnValue({
+      isExporting: false,
+      error: null,
+      toast: null,
+      exportAccounts,
+    });
+
+    renderAccountsPage();
+    await expandInstitutionAccounts(user);
+
+    await user.click(screen.getByRole('button', { name: 'Export institution data' }));
+    await user.click(screen.getByRole('button', { name: 'Export as OFX' }));
+
+    expect(exportAccounts).toHaveBeenCalledWith('ofx', 'conn_1');
+  });
+
+  it('disables export controls while an export is in flight', () => {
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
+    jest.mocked(useExport).mockReturnValue({
+      isExporting: true,
+      error: null,
+      toast: null,
+      exportAccounts: jest.fn(),
+    });
+
+    renderAccountsPage();
+    expect(screen.getByRole('button', { name: 'Exporting...' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Export institution data' })).toBeDisabled();
   });
 
   it('shows Offline on sync when offline with linked institutions', () => {

@@ -117,9 +117,15 @@ TDD log:
 - Reuse existing primitives (`MenuDropdown`/`MenuItem`, `Button`/`IconButton`, `FileDown` icon).
 
 **Acceptance criteria:**
-- [ ] Top-level Export menu renders in the header and exports all institutions.
-- [ ] Each `BankCard` shows an Export menu that exports only that institution.
-- [ ] Loading/disabled state shows while an export is in flight.
+- [x] Top-level Export menu renders in the header and exports all institutions.
+- [x] Each `BankCard` shows an Export menu that exports only that institution.
+- [x] Loading/disabled state shows while an export is in flight.
+
+TDD log:
+- Added `frontend/tests/views/AccountsPage.test.tsx`, `frontend/tests/components/BankCard.test.tsx`, and `frontend/tests/components/sharedResponsiveLayout.test.tsx` coverage first, then wired export menus through `frontend/src/views/AccountsPage.tsx`, `frontend/src/features/plaid/components/ConnectionsList.tsx`, and `frontend/src/components/BankCard.tsx`.
+- `bun --cwd=frontend test tests/components/BankCard.test.tsx tests/views/AccountsPage.test.tsx tests/components/sharedResponsiveLayout.test.tsx`
+- `npm --prefix frontend run typecheck`
+- `bun --cwd=frontend biome check --diagnostic-level=error src/views/AccountsPage.tsx src/components/BankCard.tsx src/features/plaid/components/ConnectionsList.tsx tests/views/AccountsPage.test.tsx tests/components/BankCard.test.tsx tests/components/sharedResponsiveLayout.test.tsx`
 
 ---
 
