@@ -114,14 +114,18 @@ async fn given_authenticated_user_when_get_transactions_no_filter_then_returns_a
     use axum::body::to_bytes;
 
     let mut mock_db = MockDatabaseRepository::new();
-    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let u = user.clone();
+        Box::pin(async move { Ok(Some(u)) })
+    });
 
     mock_db.expect_get_transactions_paginated().returning(
-        move |_, limit, offset, search, account_ids, start_date, end_date, category| {
+        move |_, limit, offset, search, _, start_date, end_date, category| {
             assert_eq!(limit, 50);
             assert_eq!(offset, 0);
             assert!(search.is_none());
-            assert!(account_ids.is_none());
             assert!(start_date.is_none());
             assert!(end_date.is_none());
             assert!(category.is_none());
@@ -130,9 +134,8 @@ async fn given_authenticated_user_when_get_transactions_no_filter_then_returns_a
     );
 
     mock_db.expect_count_transactions().returning(
-        move |_, search, account_ids, start_date, end_date, category| {
+        move |_, search, _, start_date, end_date, category| {
             assert!(search.is_none());
-            assert!(account_ids.is_none());
             assert!(start_date.is_none());
             assert!(end_date.is_none());
             assert!(category.is_none());
@@ -341,15 +344,19 @@ async fn given_authenticated_user_when_get_transactions_page_two_then_returns_ne
     use uuid::Uuid;
 
     let mut mock_db = MockDatabaseRepository::new();
-    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
     let user_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
 
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let u = user.clone();
+        Box::pin(async move { Ok(Some(u)) })
+    });
+
     mock_db.expect_get_transactions_paginated().returning(
-        move |_, limit, offset, search, account_ids, start_date, end_date, category| {
+        move |_, limit, offset, search, _, start_date, end_date, category| {
             assert_eq!(limit, 10);
             assert_eq!(offset, 10);
             assert!(search.is_none());
-            assert!(account_ids.is_none());
             assert!(start_date.is_none());
             assert!(end_date.is_none());
             assert!(category.is_none());
@@ -382,9 +389,8 @@ async fn given_authenticated_user_when_get_transactions_page_two_then_returns_ne
     );
 
     mock_db.expect_count_transactions().returning(
-        move |_, search, account_ids, start_date, end_date, category| {
+        move |_, search, _, start_date, end_date, category| {
             assert!(search.is_none());
-            assert!(account_ids.is_none());
             assert!(start_date.is_none());
             assert!(end_date.is_none());
             assert!(category.is_none());
@@ -435,14 +441,18 @@ async fn given_authenticated_user_when_get_transactions_page_size_over_max_then_
     use axum::body::to_bytes;
 
     let mut mock_db = MockDatabaseRepository::new();
-    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let u = user.clone();
+        Box::pin(async move { Ok(Some(u)) })
+    });
 
     mock_db.expect_get_transactions_paginated().returning(
-        move |_, limit, offset, search, account_ids, start_date, end_date, category| {
+        move |_, limit, offset, search, _, start_date, end_date, category| {
             assert_eq!(limit, 200);
             assert_eq!(offset, 0);
             assert!(search.is_none());
-            assert!(account_ids.is_none());
             assert!(start_date.is_none());
             assert!(end_date.is_none());
             assert!(category.is_none());
@@ -451,9 +461,8 @@ async fn given_authenticated_user_when_get_transactions_page_size_over_max_then_
     );
 
     mock_db.expect_count_transactions().returning(
-        move |_, search, account_ids, start_date, end_date, category| {
+        move |_, search, _, start_date, end_date, category| {
             assert!(search.is_none());
-            assert!(account_ids.is_none());
             assert!(start_date.is_none());
             assert!(end_date.is_none());
             assert!(category.is_none());
@@ -664,12 +673,20 @@ async fn given_authenticated_user_when_get_transaction_insights_with_empty_resul
     use chrono::NaiveDate;
 
     let mut mock_db = MockDatabaseRepository::new();
-    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
+
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let u = user.clone();
+        Box::pin(async move { Ok(Some(u)) })
+    });
+
+    mock_db
+        .expect_get_all_provider_connections_by_user()
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
 
     mock_db.expect_get_transactions_insights().returning(
-        move |_, search, account_ids, start_date, end_date, category| {
+        move |_, search, _, start_date, end_date, category| {
             assert!(search.is_none());
-            assert!(account_ids.is_none());
             assert_eq!(
                 start_date,
                 Some(NaiveDate::from_ymd_opt(2025, 1, 1).unwrap())
@@ -1075,8 +1092,16 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
     use uuid::Uuid;
 
     let mut mock_db = MockDatabaseRepository::new();
-    let (_user, token) = TestFixtures::create_authenticated_user_with_token();
+    let (user, token) = TestFixtures::create_authenticated_user_with_token();
     let user_id = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+    let teller_conn_id = Uuid::new_v4();
+    let account_id_1 = Uuid::new_v4();
+    let account_id_2 = Uuid::new_v4();
+
+    mock_db.expect_get_user_by_id().returning(move |_| {
+        let u = user.clone();
+        Box::pin(async move { Ok(Some(u)) })
+    });
 
     mock_db
         .expect_get_spending_transactions_for_user()
@@ -1084,9 +1109,9 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
             let transactions = vec![
                 Transaction {
                     id: Uuid::new_v4(),
-                    account_id: Uuid::new_v4(),
+                    account_id: account_id_1,
                     user_id: Some(user_id),
-                    provider_account_id: Some("plaid_acc_1".to_string()),
+                    provider_account_id: Some("teller_acc_1".to_string()),
                     provider_transaction_id: Some("txn_001".to_string()),
                     amount: dec!(-50.00),
                     date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
@@ -1101,9 +1126,9 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
                 },
                 Transaction {
                     id: Uuid::new_v4(),
-                    account_id: Uuid::new_v4(),
+                    account_id: account_id_2,
                     user_id: Some(user_id),
-                    provider_account_id: Some("plaid_acc_2".to_string()),
+                    provider_account_id: Some("teller_acc_2".to_string()),
                     provider_transaction_id: Some("txn_002".to_string()),
                     amount: dec!(-100.00),
                     date: NaiveDate::from_ymd_opt(2024, 1, 16).unwrap(),
@@ -1120,13 +1145,47 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
             Box::pin(async { Ok(transactions) })
         });
 
-    mock_db
-        .expect_get_accounts_for_user()
-        .returning(move |_| Box::pin(async { Ok(vec![]) }));
+    mock_db.expect_get_accounts_for_user().returning(move |_| {
+        use crate::models::account::Account;
+        let accounts = vec![
+            Account {
+                id: account_id_1,
+                user_id: Some(user_id),
+                provider_account_id: Some("teller_acc_1".to_string()),
+                provider_connection_id: Some(teller_conn_id),
+                name: "Teller Checking".to_string(),
+                account_type: "depository".to_string(),
+                balance_current: None,
+                mask: None,
+                institution_name: None,
+                provider_conn_id: None,
+            },
+            Account {
+                id: account_id_2,
+                user_id: Some(user_id),
+                provider_account_id: Some("teller_acc_2".to_string()),
+                provider_connection_id: Some(teller_conn_id),
+                name: "Teller Savings".to_string(),
+                account_type: "depository".to_string(),
+                balance_current: None,
+                mask: None,
+                institution_name: None,
+                provider_conn_id: None,
+            },
+        ];
+        Box::pin(async move { Ok(accounts) })
+    });
 
     mock_db
         .expect_get_all_provider_connections_by_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
+        .returning(move |_| {
+            let conn =
+                crate::models::plaid::ProviderConnection::new(Uuid::new_v4(), "teller_item_1");
+            let mut c = conn;
+            c.id = teller_conn_id;
+            c.provider = "teller".to_string();
+            Box::pin(async move { Ok(vec![c]) })
+        });
 
     mock_db
         .expect_get_budgets_for_user()
