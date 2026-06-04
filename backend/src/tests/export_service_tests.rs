@@ -111,6 +111,75 @@ fn given_accounts_and_transactions_when_exporting_csv_then_writes_header_rows_an
 }
 
 #[test]
+fn given_transactions_across_accounts_when_exporting_csv_then_orders_rows_by_date() {
+    let checking_id = Uuid::new_v4();
+    let savings_id = Uuid::new_v4();
+    let accounts = vec![
+        sample_account(AccountFixture {
+            id: checking_id,
+            name: "Demo Checking",
+            account_type: "depository",
+            balance: Some(dec!(1234.56)),
+            mask: Some("1234"),
+            institution_name: Some("Demo Bank"),
+        }),
+        sample_account(AccountFixture {
+            id: savings_id,
+            name: "Demo Savings",
+            account_type: "depository",
+            balance: Some(dec!(500.00)),
+            mask: Some("5678"),
+            institution_name: Some("Demo Bank"),
+        }),
+    ];
+    let transactions = vec![
+        sample_transaction(TransactionFixture {
+            account_id: checking_id,
+            account_name: "Demo Checking",
+            account_type: "depository",
+            account_mask: Some("1234"),
+            amount: dec!(-12.34),
+            date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
+            merchant_name: Some("Older Purchase"),
+            category_primary: "FOOD",
+            provider_transaction_id: Some("txn-older"),
+        }),
+        sample_transaction(TransactionFixture {
+            account_id: savings_id,
+            account_name: "Demo Savings",
+            account_type: "depository",
+            account_mask: Some("5678"),
+            amount: dec!(25.00),
+            date: NaiveDate::from_ymd_opt(2024, 1, 12).unwrap(),
+            merchant_name: Some("Newer Deposit"),
+            category_primary: "INCOME",
+            provider_transaction_id: Some("txn-newer"),
+        }),
+        sample_transaction(TransactionFixture {
+            account_id: checking_id,
+            account_name: "Demo Checking",
+            account_type: "depository",
+            account_mask: Some("1234"),
+            amount: dec!(-8.50),
+            date: NaiveDate::from_ymd_opt(2024, 1, 11).unwrap(),
+            merchant_name: Some("Middle Purchase"),
+            category_primary: "FOOD",
+            provider_transaction_id: Some("txn-middle"),
+        }),
+    ];
+
+    let csv = ExportService::to_csv(&accounts, &transactions);
+
+    assert_eq!(
+        csv,
+        "Date,Institution,Account,Account Type,Mask,Balance,Description,Amount,Category,Pending,Transaction ID\n\
+2024-01-12,Demo Bank,Demo Savings,depository,5678,500,Newer Deposit,25,INCOME,false,txn-newer\n\
+2024-01-11,Demo Bank,Demo Checking,depository,1234,1234.56,Middle Purchase,-8.5,FOOD,false,txn-middle\n\
+2024-01-10,Demo Bank,Demo Checking,depository,1234,1234.56,Older Purchase,-12.34,FOOD,false,txn-older\n"
+    );
+}
+
+#[test]
 fn given_depository_and_credit_accounts_when_exporting_ofx_then_routes_and_escapes_text() {
     let checking_id = Uuid::new_v4();
     let credit_id = Uuid::new_v4();
@@ -182,4 +251,48 @@ fn given_depository_and_credit_accounts_when_exporting_ofx_then_routes_and_escap
         }
         buffer.clear();
     }
+}
+
+#[test]
+fn given_transactions_out_of_order_when_exporting_ofx_then_orders_each_statement_by_date() {
+    let account_id = Uuid::new_v4();
+    let accounts = vec![sample_account(AccountFixture {
+        id: account_id,
+        name: "Demo Checking",
+        account_type: "depository",
+        balance: Some(dec!(1234.56)),
+        mask: Some("1234"),
+        institution_name: Some("Demo Bank"),
+    })];
+    let transactions = vec![
+        sample_transaction(TransactionFixture {
+            account_id,
+            account_name: "Demo Checking",
+            account_type: "depository",
+            account_mask: Some("1234"),
+            amount: dec!(-8.50),
+            date: NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
+            merchant_name: Some("Older Purchase"),
+            category_primary: "FOOD",
+            provider_transaction_id: Some("txn-older"),
+        }),
+        sample_transaction(TransactionFixture {
+            account_id,
+            account_name: "Demo Checking",
+            account_type: "depository",
+            account_mask: Some("1234"),
+            amount: dec!(-12.34),
+            date: NaiveDate::from_ymd_opt(2024, 1, 12).unwrap(),
+            merchant_name: Some("Newer Purchase"),
+            category_primary: "FOOD",
+            provider_transaction_id: Some("txn-newer"),
+        }),
+    ];
+
+    let ofx = ExportService::to_ofx(&accounts, &transactions);
+
+    let newer_index = ofx.find("txn-newer").expect("newer transaction missing");
+    let older_index = ofx.find("txn-older").expect("older transaction missing");
+
+    assert!(newer_index < older_index);
 }

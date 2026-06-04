@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
 
@@ -52,70 +53,27 @@ impl ExportService {
             ])
             .expect("failed to write export header");
 
-        let transaction_accounts: HashSet<_> = transactions
+        let account_by_id: HashMap<_, _> = accounts
             .iter()
-            .map(|transaction| transaction.account_id)
+            .map(|account| (account.id, account))
             .collect();
-
-        for account in accounts {
-            let matching_transactions: Vec<_> = transactions
-                .iter()
-                .filter(|transaction| transaction.account_id == account.id)
-                .collect();
-
-            if matching_transactions.is_empty() {
-                write_csv_row(
-                    &mut writer,
-                    ExportRow {
-                        date: String::new(),
-                        institution: account.institution_name.clone().unwrap_or_default(),
-                        account: account.name.clone(),
-                        account_type: account.account_type.clone(),
-                        mask: account.mask.clone().unwrap_or_default(),
-                        balance: format_balance(account.balance_current),
-                        description: String::new(),
-                        amount: String::new(),
-                        category: String::new(),
-                        pending: String::new(),
-                        transaction_id: String::new(),
-                    },
-                );
-            } else {
-                for transaction in matching_transactions {
-                    write_csv_row(
-                        &mut writer,
-                        ExportRow {
-                            date: transaction.date.to_string(),
-                            institution: account.institution_name.clone().unwrap_or_default(),
-                            account: transaction.account_name.clone(),
-                            account_type: transaction.account_type.clone(),
-                            mask: transaction.account_mask.clone().unwrap_or_default(),
-                            balance: format_balance(account.balance_current),
-                            description: transaction.merchant_name.clone().unwrap_or_default(),
-                            amount: format_amount(transaction.amount),
-                            category: transaction.category_primary.clone(),
-                            pending: transaction.pending.to_string(),
-                            transaction_id: transaction
-                                .provider_transaction_id
-                                .clone()
-                                .unwrap_or_default(),
-                        },
-                    );
-                }
-            }
-        }
-
-        for transaction in transactions {
-            if !transaction_accounts.contains(&transaction.account_id) {
-                write_csv_row(
-                    &mut writer,
+        let mut rows: Vec<(Option<NaiveDate>, ExportRow)> = transactions
+            .iter()
+            .map(|transaction| {
+                let account = account_by_id.get(&transaction.account_id);
+                (
+                    Some(transaction.date),
                     ExportRow {
                         date: transaction.date.to_string(),
-                        institution: String::new(),
+                        institution: account
+                            .and_then(|account| account.institution_name.clone())
+                            .unwrap_or_default(),
                         account: transaction.account_name.clone(),
                         account_type: transaction.account_type.clone(),
                         mask: transaction.account_mask.clone().unwrap_or_default(),
-                        balance: String::new(),
+                        balance: account
+                            .map(|account| format_balance(account.balance_current))
+                            .unwrap_or_default(),
                         description: transaction.merchant_name.clone().unwrap_or_default(),
                         amount: format_amount(transaction.amount),
                         category: transaction.category_primary.clone(),
@@ -125,8 +83,52 @@ impl ExportService {
                             .clone()
                             .unwrap_or_default(),
                     },
-                );
+                )
+            })
+            .collect();
+
+        let transaction_accounts: HashSet<_> = transactions
+            .iter()
+            .map(|transaction| transaction.account_id)
+            .collect();
+
+        rows.extend(
+            accounts
+                .iter()
+                .filter(|account| !transaction_accounts.contains(&account.id))
+                .map(|account| {
+                    (
+                        None,
+                        ExportRow {
+                            date: String::new(),
+                            institution: account.institution_name.clone().unwrap_or_default(),
+                            account: account.name.clone(),
+                            account_type: account.account_type.clone(),
+                            mask: account.mask.clone().unwrap_or_default(),
+                            balance: format_balance(account.balance_current),
+                            description: String::new(),
+                            amount: String::new(),
+                            category: String::new(),
+                            pending: String::new(),
+                            transaction_id: String::new(),
+                        },
+                    )
+                }),
+        );
+
+        rows.sort_by(|(left_date, left_row), (right_date, right_row)| {
+            match (left_date, right_date) {
+                (Some(left), Some(right)) => right
+                    .cmp(left)
+                    .then_with(|| compare_csv_rows(left_row, right_row)),
+                (Some(_), None) => Ordering::Less,
+                (None, Some(_)) => Ordering::Greater,
+                (None, None) => compare_csv_rows(left_row, right_row),
             }
+        });
+
+        for (_, row) in rows {
+            write_csv_row(&mut writer, row);
         }
 
         String::from_utf8(writer.into_inner().expect("failed to finish CSV export"))
@@ -157,11 +159,16 @@ impl ExportService {
 
         let grouped_transactions = group_transactions(transactions);
 
-        for account in accounts {
-            let account_transactions = grouped_transactions
+        let mut ordered_accounts: Vec<_> = accounts.iter().collect();
+        ordered_accounts
+            .sort_by(|left, right| compare_account_activity(left, right, &grouped_transactions));
+
+        for account in ordered_accounts {
+            let mut account_transactions = grouped_transactions
                 .get(&account.id)
                 .cloned()
                 .unwrap_or_default();
+            account_transactions.sort_by_key(|transaction| std::cmp::Reverse(transaction.date));
             let statement_kind = statement_kind(account);
             let statement_root = match statement_kind {
                 StatementKind::Bank => "BANKMSGSRSV1",
@@ -288,6 +295,14 @@ fn format_balance(balance: Option<Decimal>) -> String {
     balance.map(format_amount).unwrap_or_default()
 }
 
+fn compare_csv_rows(left: &ExportRow, right: &ExportRow) -> Ordering {
+    left.institution
+        .cmp(&right.institution)
+        .then_with(|| left.account.cmp(&right.account))
+        .then_with(|| left.description.cmp(&right.description))
+        .then_with(|| left.transaction_id.cmp(&right.transaction_id))
+}
+
 fn group_transactions(
     transactions: &[TransactionWithAccount],
 ) -> HashMap<uuid::Uuid, Vec<&TransactionWithAccount>> {
@@ -299,6 +314,36 @@ fn group_transactions(
             .push(transaction);
     }
     groups
+}
+
+fn compare_account_activity(
+    left: &Account,
+    right: &Account,
+    grouped_transactions: &HashMap<uuid::Uuid, Vec<&TransactionWithAccount>>,
+) -> Ordering {
+    let left_date = grouped_transactions.get(&left.id).and_then(|transactions| {
+        transactions
+            .iter()
+            .map(|transaction| transaction.date)
+            .max()
+    });
+    let right_date = grouped_transactions
+        .get(&right.id)
+        .and_then(|transactions| {
+            transactions
+                .iter()
+                .map(|transaction| transaction.date)
+                .max()
+        });
+
+    match (left_date, right_date) {
+        (Some(left_date), Some(right_date)) => right_date
+            .cmp(&left_date)
+            .then_with(|| left.name.cmp(&right.name)),
+        (Some(_), None) => Ordering::Less,
+        (None, Some(_)) => Ordering::Greater,
+        (None, None) => left.name.cmp(&right.name),
+    }
 }
 
 fn statement_kind(account: &Account) -> StatementKind {
