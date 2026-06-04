@@ -186,7 +186,7 @@ keep mobile unchanged.
 
 **Tasks:**
 
-- Install dep: `bun --cwd frontend add embla-carousel-react`, then upgrade to latest with
+- Install dep: `bun --cwd=frontend add embla-carousel-react`, then upgrade to latest with
   built-in tooling (per global CLAUDE.md).
 - Add `frontend/src/components/DashboardStatsCarousel.tsx`:
   - Props `{ dateRange }`; `const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false })`.
@@ -223,7 +223,7 @@ keep mobile unchanged.
 
 - Backend: `cargo test -p sumurai-backend --locked sankey`; run backend and `curl`
   `/api/analytics/sankey` (authed) to confirm shape and conditional income.
-- Frontend unit: `bun --cwd frontend test -- MoneyFlowSankey` and carousel/adapter tests.
+- Frontend unit: `bun --cwd=frontend test -- MoneyFlowSankey` and carousel/adapter tests.
 - Visual via preview MCP at `http://localhost:8080` (Nginx proxy — **not** `:3001`):
   - Dashboard stats slot shows Sankey by default at desktop width (`preview_snapshot` /
     `preview_screenshot`).

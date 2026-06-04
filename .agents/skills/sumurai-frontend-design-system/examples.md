@@ -124,7 +124,7 @@ Why this is bad:
 ## How to add a new visual role
 
 1. Decide whether an existing primitive variant covers it. If yes, add the variant there.
-2. If not, add the reusable role to `DESIGN.md` and run `bun --cwd frontend run design:guard`.
+2. If not, add the reusable role to `DESIGN.md` and run `bun --cwd=frontend run design:guard`.
 3. Add the shared class recipe to `frontend/src/ui/recipes.ts`, or keep it local to the primitive if it is component-specific.
 4. Add or update a Storybook story for the primitive or feature component.
 5. Update tests only if behavior changed, not just because the styling was refactored.

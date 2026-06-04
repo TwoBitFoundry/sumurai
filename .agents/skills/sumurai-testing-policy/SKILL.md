@@ -40,10 +40,10 @@ Use the commands that match the touched area:
 
 - Backend: `cargo test -p sumurai-backend --locked` (from repository root; or `bun run backend:ci`)
 - Backend type/build sanity: `cargo check --workspace --locked --all-targets`
-- Frontend tests: `bun --cwd frontend test`
-- Storybook browser tests (Vitest project): `bun --cwd frontend run test:storybook`
-- Storybook static build + Playwright iframe smoke: `bun --cwd frontend run test:storybook-runtime` (needs Playwright Chromium; use `bun run frontend:playwright-install` or `bun --cwd frontend run playwright:install-ci` to match CI)
-- Frontend typecheck: `bun --cwd frontend run typecheck`
-- Frontend build: `bun --cwd frontend run build`
+- Frontend tests: `bun --cwd=frontend test`
+- Storybook browser tests (Vitest project): `bun --cwd=frontend run test:storybook`
+- Storybook static build + Playwright iframe smoke: `bun --cwd=frontend run test:storybook-runtime` (needs Playwright Chromium; use `bun run frontend:playwright-install` or `bun --cwd=frontend run playwright:install-ci` to match CI)
+- Frontend typecheck: `bun --cwd=frontend run typecheck`
+- Frontend build: `bun --cwd=frontend run build`
 - Full repo validation (default Husky hook): `bun run precommit`
 - Full CI parity for backend + frontend install job: `bun run backend:ci && bun run frontend:ci`
