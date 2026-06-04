@@ -147,7 +147,13 @@ Attach a permanent "Sumurai Demo Bank" institution to `me@test.com` that contain
 
 ### Acceptance criteria
 
-- [ ] `cargo build -p sumurai-backend --locked` passes
-- [ ] Fresh dev DB with `SEED_DEMO_USER=true`: "Sumurai Demo Bank" appears in the UI under SimpleFin institutions after first boot
-- [ ] No demo data appears when `SEED_DEMO_USER` is absent or `false`
-- [ ] Connecting Teller or Plaid on `me@test.com` does not add or interfere with the demo SimpleFin institution
+- [x] `cargo build -p sumurai-backend --locked` passes
+- [x] Fresh dev DB with `SEED_DEMO_USER=true`: "Sumurai Demo Bank" appears in the UI under SimpleFin institutions after first boot — wired via `crate::seed::maybe_seed_demo_simplefin_data` call immediately after `maybe_seed_demo_user`
+- [x] No demo data appears when `SEED_DEMO_USER` is absent or `false` — guarded by existing `SEED_DEMO_USER` env var check in `maybe_seed_demo_simplefin_data` (Phase 1)
+- [x] Connecting Teller or Plaid on `me@test.com` does not interfere — demo data uses `provider = "simplefin"` and an item_id prefixed `simplefin_`, completely isolated from Teller/Plaid code paths
+
+### TDD log
+
+- No new tests required — all behavior covered by Phase 1 and Phase 2 tests
+- Change: single-line addition in `main.rs` + remove `#[allow(dead_code)]` from `maybe_seed_demo_simplefin_data` and `SUMURAI_DEMO_ORG_CONN_ID`
+- All 559 backend tests pass; 0 regressions

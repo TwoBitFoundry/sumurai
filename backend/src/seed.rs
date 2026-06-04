@@ -60,7 +60,6 @@ pub async fn maybe_seed_demo_user(
     Ok(())
 }
 
-#[allow(dead_code)]
 pub async fn maybe_seed_demo_simplefin_data(
     db: &Arc<dyn DatabaseRepository>,
     _cache_service: &Arc<dyn CacheService>,
