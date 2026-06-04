@@ -656,6 +656,18 @@ impl SimpleFinConnectionService {
         let transaction_count = transactions.len() as i32;
         let account_count = accounts.len() as i32;
 
+        let institution_result = SimpleFinInstitutionSyncResult {
+            institution_name: connection
+                .institution_name
+                .clone()
+                .unwrap_or_else(|| "Sumurai Demo Bank".to_string()),
+            org_conn_id: Some(crate::seed::SUMURAI_DEMO_ORG_CONN_ID.to_string()),
+            connection_id: Some(connection.id.to_string()),
+            status: SimpleFinInstitutionSyncStatus::Synced,
+            transaction_count: Some(transaction_count),
+            message: None,
+        };
+
         Ok(SyncTransactionsResponse {
             transactions,
             metadata: SyncMetadata {
@@ -666,7 +678,7 @@ impl SimpleFinConnectionService {
                 end_date: String::new(),
                 connection_updated: false,
             },
-            simplefin_institution_results: None,
+            simplefin_institution_results: Some(vec![institution_result]),
             bridge_warnings: None,
         })
     }
