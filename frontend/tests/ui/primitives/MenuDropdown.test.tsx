@@ -17,6 +17,9 @@ describe('MenuDropdown', () => {
     const menu = screen.getByRole('menu');
     expect(container).not.toContainElement(menu);
     expect(document.body).toContainElement(menu);
-    expect(within(menu).getByRole('button', { name: 'Export as CSV' })).toBeVisible();
+    const csvItem = within(menu).getByRole('button', { name: 'Export as CSV' });
+    expect(csvItem).toBeVisible();
+    expect(csvItem).toHaveClass('bg-transparent');
+    expect(csvItem).toHaveClass('border-transparent');
   });
 });

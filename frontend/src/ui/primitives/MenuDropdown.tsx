@@ -13,7 +13,6 @@ import {
 import { createPortal } from 'react-dom';
 import {
   floatingChromeGlass,
-  surface as semanticSurfaces,
   text as semanticTextRecipes,
   radius as uiRadiusRecipes,
 } from '@/ui/recipes';
@@ -35,10 +34,19 @@ export const menuDropdownRecipes = {
     'flex w-full items-center gap-2',
     `px-3 py-2 ${uiRadiusRecipes.standard}`,
     `text-left ${semanticTextRecipes.muted}`,
-    'transition-all duration-200 ease-out active:scale-[0.98] disabled:active:scale-100',
-    ...semanticSurfaces.hoverRow,
+    'border',
+    'border-transparent',
+    'bg-transparent',
+    'transition-colors duration-200 ease-out active:scale-[0.98] disabled:active:scale-100',
+    'hover:border-[var(--color-border-hover-accent)]',
+    'active:border-[var(--color-border-hover-accent)]',
+    'hover:bg-transparent',
+    'active:bg-transparent',
     'dark:text-slate-300',
-    'dark:hover:bg-[var(--color-surface-hover-row)]',
+    'dark:hover:border-[var(--color-border-hover-accent)]',
+    'dark:active:border-[var(--color-border-hover-accent)]',
+    'dark:hover:bg-transparent',
+    'dark:active:bg-transparent',
   ],
 } as const;
 
