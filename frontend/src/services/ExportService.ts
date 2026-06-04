@@ -2,11 +2,7 @@ import type { ExportFormat } from '@/types/api';
 import { ApiClient } from './ApiClient';
 
 const buildExportFilename = (format: ExportFormat): string => {
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const dd = String(now.getDate()).padStart(2, '0');
-  return `sumurai-export-${yyyy}${mm}${dd}.${format}`;
+  return `sumurai-export-all-no-transactions.${format}`;
 };
 
 const buildExportEndpoint = (format: ExportFormat, connectionId?: string): string => {

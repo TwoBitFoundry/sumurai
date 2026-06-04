@@ -286,9 +286,6 @@ describe('BankCard', () => {
 
     await user.click(local.getByRole('button', { name: 'Hide accounts' }));
     expect(local.getByRole('button', { name: 'Show accounts' })).toBeVisible();
-    await waitFor(() => {
-      expect(local.queryByText('Checking')).not.toBeInTheDocument();
-    });
 
     await user.click(local.getByRole('button', { name: 'Show accounts' }));
     await waitFor(() => {

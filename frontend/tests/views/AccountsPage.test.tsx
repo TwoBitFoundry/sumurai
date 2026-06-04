@@ -254,7 +254,18 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    await user.click(screen.getByRole('button', { name: 'Export' }));
+    const syncAllButton = screen.getByRole('button', { name: 'Sync all' });
+    const exportAllButton = screen.getByRole('button', { name: 'Export All' });
+    const connectButton = screen.getByRole('button', { name: /^connect teller to an ally$/i });
+
+    expect(
+      syncAllButton.compareDocumentPosition(exportAllButton) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      exportAllButton.compareDocumentPosition(connectButton) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+
+    await user.click(exportAllButton);
     await user.click(screen.getByRole('button', { name: 'Export as CSV' }));
 
     expect(exportAccounts).toHaveBeenCalledWith('csv');

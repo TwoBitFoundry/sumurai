@@ -6,7 +6,6 @@ use axum::{
     },
     response::{IntoResponse, Response},
 };
-use chrono::Utc;
 #[allow(unused_imports)]
 use uuid::Uuid;
 
@@ -42,12 +41,32 @@ pub async fn build_authenticated_export_response(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    let date_range = transactions
+        .iter()
+        .map(|transaction| transaction.date)
+        .min()
+        .zip(
+            transactions
+                .iter()
+                .map(|transaction| transaction.date)
+                .max(),
+        );
+
+    let scope = if query.connection_id.is_some() {
+        accounts
+            .first()
+            .and_then(|account| account.institution_name.as_deref())
+            .unwrap_or("institution")
+    } else {
+        "all"
+    };
+
     let body = match query.format {
         ExportFormat::Csv => ExportService::to_csv(&accounts, &transactions),
         ExportFormat::Ofx => ExportService::to_ofx(&accounts, &transactions),
     };
 
-    let filename = query.format.filename_for_date(Utc::now().date_naive());
+    let filename = query.format.filename_for_scope(scope, date_range);
     let content_disposition =
         HeaderValue::from_str(&format!("attachment; filename=\"{filename}\""))
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;

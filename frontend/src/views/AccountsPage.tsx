@@ -697,14 +697,6 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
             {syncingAll ? 'Syncing...' : !isOnline ? 'Offline' : 'Sync all'}
           </Button>
         )}
-        <ConnectButton
-          onClick={handlePrimaryConnect}
-          disabled={connectDisabled}
-          title={!isOnline ? 'Unavailable while offline' : undefined}
-          leadingImageSrc={providerLogoSrc}
-        >
-          {primaryConnectContent.cta.defaultLabel}
-        </ConnectButton>
         <MenuDropdown
           trigger={
             <Button
@@ -715,20 +707,28 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
               disabled={isExporting || !isOnline}
               title={
                 isExporting
-                  ? 'Export in progress'
+                  ? 'Export all in progress'
                   : !isOnline
                     ? 'Unavailable while offline'
                     : undefined
               }
             >
               <FileDown className={cn(control.glyph.md, isExporting && 'animate-pulse')} />
-              {isExporting ? 'Exporting...' : 'Export'}
+              {isExporting ? 'Exporting...' : 'Export All'}
             </Button>
           }
         >
           <MenuItem onClick={() => void exportAccounts('csv')}>Export as CSV</MenuItem>
           <MenuItem onClick={() => void exportAccounts('ofx')}>Export as OFX</MenuItem>
         </MenuDropdown>
+        <ConnectButton
+          onClick={handlePrimaryConnect}
+          disabled={connectDisabled}
+          title={!isOnline ? 'Unavailable while offline' : undefined}
+          leadingImageSrc={providerLogoSrc}
+        >
+          {primaryConnectContent.cta.defaultLabel}
+        </ConnectButton>
       </div>
       {!isOnline && (
         <span

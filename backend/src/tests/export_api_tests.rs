@@ -1,5 +1,6 @@
 use axum::body::to_bytes;
 use axum::http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
+use chrono::NaiveDate;
 use tower::ServiceExt;
 use uuid::Uuid;
 
@@ -36,6 +37,7 @@ fn sample_transaction(
     account_id: Uuid,
     account_name: &str,
     amount: rust_decimal::Decimal,
+    date: NaiveDate,
     merchant_name: &str,
     category_primary: &str,
     provider_transaction_id: &str,
@@ -47,7 +49,7 @@ fn sample_transaction(
         provider_account_id: Some(format!("provider-{account_id}")),
         provider_transaction_id: Some(provider_transaction_id.to_string()),
         amount,
-        date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+        date,
         merchant_name: Some(merchant_name.to_string()),
         category_primary: category_primary.to_string(),
         category_detailed: category_primary.to_string(),
@@ -61,6 +63,13 @@ fn sample_transaction(
         is_custom: false,
         is_overridden: false,
     }
+}
+
+fn expected_attachment_filename(label: &str, start: &str, end: &str, extension: &str) -> String {
+    format!(
+        "attachment; filename=\"sumurai-export-{}-{}-{}.{}\"",
+        label, start, end, extension
+    )
 }
 
 #[tokio::test]
@@ -81,11 +90,21 @@ async fn given_authenticated_user_when_exporting_csv_then_returns_attachment_and
         account_id,
         "Demo Checking",
         rust_decimal_macros::dec!(-12.34),
+        NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
         "Coffee Shop",
         "FOOD",
         "txn-1",
     );
-    let expected_transactions = vec![transaction.clone()];
+    let second_transaction = sample_transaction(
+        account_id,
+        "Demo Checking",
+        rust_decimal_macros::dec!(-8.50),
+        NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+        "Coffee Shop Two",
+        "FOOD",
+        "txn-2",
+    );
+    let expected_transactions = vec![transaction.clone(), second_transaction.clone()];
 
     mock_db.expect_get_accounts_for_user().returning(move |_| {
         let accounts = vec![account.clone()];
@@ -109,10 +128,16 @@ async fn given_authenticated_user_when_exporting_csv_then_returns_attachment_and
 
     assert_eq!(response.status(), 200);
     assert_eq!(response.headers().get(CONTENT_TYPE).unwrap(), "text/csv");
-    let content_disposition = response.headers().get(CONTENT_DISPOSITION).unwrap();
-    let content_disposition = content_disposition.to_str().unwrap();
-    assert!(content_disposition.starts_with("attachment; filename=\"sumurai-export-"));
-    assert!(content_disposition.ends_with(".csv\""));
+    let content_disposition = response
+        .headers()
+        .get(CONTENT_DISPOSITION)
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert_eq!(
+        content_disposition,
+        expected_attachment_filename("all", "20240110", "20240115", "csv")
+    );
 
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let csv = String::from_utf8(body.to_vec()).unwrap();
@@ -139,9 +164,19 @@ async fn given_authenticated_user_when_exporting_ofx_then_returns_attachment_and
         account_id,
         "Demo Checking",
         rust_decimal_macros::dec!(-12.34),
+        NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
         "Coffee Shop",
         "FOOD",
         "txn-1",
+    );
+    let second_transaction = sample_transaction(
+        account_id,
+        "Demo Checking",
+        rust_decimal_macros::dec!(-8.50),
+        NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+        "Coffee Shop Two",
+        "FOOD",
+        "txn-2",
     );
 
     mock_db.expect_get_accounts_for_user().returning(move |_| {
@@ -153,7 +188,7 @@ async fn given_authenticated_user_when_exporting_ofx_then_returns_attachment_and
         .expect_get_transactions_for_export()
         .returning(move |_, account_ids| {
             assert_eq!(account_ids, Some(&[account_id][..]));
-            let txns = vec![transaction.clone()];
+            let txns = vec![transaction.clone(), second_transaction.clone()];
             Box::pin(async move { Ok(txns) })
         });
 
@@ -169,10 +204,16 @@ async fn given_authenticated_user_when_exporting_ofx_then_returns_attachment_and
         response.headers().get(CONTENT_TYPE).unwrap(),
         "application/x-ofx"
     );
-    let content_disposition = response.headers().get(CONTENT_DISPOSITION).unwrap();
-    let content_disposition = content_disposition.to_str().unwrap();
-    assert!(content_disposition.starts_with("attachment; filename=\"sumurai-export-"));
-    assert!(content_disposition.ends_with(".ofx\""));
+    let content_disposition = response
+        .headers()
+        .get(CONTENT_DISPOSITION)
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert_eq!(
+        content_disposition,
+        expected_attachment_filename("all", "20240110", "20240115", "ofx")
+    );
 
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let ofx = String::from_utf8(body.to_vec()).unwrap();
@@ -205,14 +246,26 @@ async fn given_connection_id_when_exporting_then_limits_results_to_matching_acco
         "5678",
         "Other Bank",
     );
-    let expected_transactions = vec![sample_transaction(
-        matching_account_id,
-        "Demo Checking",
-        rust_decimal_macros::dec!(-12.34),
-        "Coffee Shop",
-        "FOOD",
-        "txn-1",
-    )];
+    let expected_transactions = vec![
+        sample_transaction(
+            matching_account_id,
+            "Demo Checking",
+            rust_decimal_macros::dec!(-12.34),
+            NaiveDate::from_ymd_opt(2024, 1, 10).unwrap(),
+            "Coffee Shop",
+            "FOOD",
+            "txn-1",
+        ),
+        sample_transaction(
+            matching_account_id,
+            "Demo Checking",
+            rust_decimal_macros::dec!(-8.50),
+            NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            "Coffee Shop Two",
+            "FOOD",
+            "txn-2",
+        ),
+    ];
     let expected_accounts = vec![matching_account.clone(), other_account];
 
     mock_db.expect_get_accounts_for_user().returning(move |_| {
@@ -239,6 +292,17 @@ async fn given_connection_id_when_exporting_then_limits_results_to_matching_acco
 
     let response = app.oneshot(request).await.unwrap();
     assert_eq!(response.status(), 200);
+
+    let content_disposition = response
+        .headers()
+        .get(CONTENT_DISPOSITION)
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert_eq!(
+        content_disposition,
+        expected_attachment_filename("demo-bank", "20240110", "20240115", "csv")
+    );
 
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let csv = String::from_utf8(body.to_vec()).unwrap();

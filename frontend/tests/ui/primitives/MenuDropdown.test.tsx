@@ -21,5 +21,6 @@ describe('MenuDropdown', () => {
     expect(csvItem).toBeVisible();
     expect(csvItem).toHaveClass('bg-transparent');
     expect(csvItem).toHaveClass('border-transparent');
+    expect(csvItem).toHaveClass('ring-transparent');
   });
 });

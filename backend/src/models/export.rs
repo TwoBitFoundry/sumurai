@@ -1,4 +1,4 @@
-use chrono::{NaiveDate, Utc};
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -37,16 +37,44 @@ impl ExportFormat {
         }
     }
 
-    pub fn filename_for_date(self, date: NaiveDate) -> String {
+    pub fn filename_for_scope(
+        self,
+        scope: &str,
+        date_range: Option<(NaiveDate, NaiveDate)>,
+    ) -> String {
+        let scope = sanitize_filename_component(scope);
+        let range = match date_range {
+            Some((start, end)) => format!("{}-{}", start.format("%Y%m%d"), end.format("%Y%m%d")),
+            None => String::from("no-transactions"),
+        };
+
         format!(
-            "sumurai-export-{}.{}",
-            date.format("%Y%m%d"),
+            "sumurai-export-{}-{}.{}",
+            scope,
+            range,
             self.file_extension()
         )
     }
+}
 
-    #[allow(dead_code)]
-    pub fn filename(self) -> String {
-        self.filename_for_date(Utc::now().date_naive())
+fn sanitize_filename_component(value: &str) -> String {
+    let mut result = String::new();
+    let mut was_dash = false;
+
+    for ch in value.to_lowercase().chars() {
+        if ch.is_ascii_alphanumeric() {
+            result.push(ch);
+            was_dash = false;
+        } else if !was_dash {
+            result.push('-');
+            was_dash = true;
+        }
+    }
+
+    let trimmed = result.trim_matches('-').to_string();
+    if trimmed.is_empty() {
+        String::from("export")
+    } else {
+        trimmed
     }
 }
