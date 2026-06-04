@@ -153,7 +153,7 @@ describe('BankCard', () => {
     expect(groupIcon?.parentElement?.className).toContain(control.glyph.lg);
   });
 
-  it('vertically centers the bank name and status icon with the action buttons', () => {
+  it('places the status icon and bank name on the first header row', () => {
     render(
       <BankCard
         bank={{
@@ -170,8 +170,29 @@ describe('BankCard', () => {
     );
 
     const heading = screen.getByRole('heading', { name: 'Chase' });
-    expect(heading.parentElement).toHaveClass('items-center');
-    expect(heading.className).not.toContain('pt-[calc');
+    const titleRow = heading.parentElement;
+    expect(titleRow).toHaveClass('items-center');
+    expect(titleRow).toHaveClass('p-3');
+    expect(
+      within(titleRow as HTMLElement).getByRole('status', { name: 'Connected' })
+    ).toBeVisible();
+
+    const actionRow = screen.getByRole('button', { name: 'Show accounts' }).parentElement;
+    expect(actionRow).toHaveClass('items-center');
+    expect(
+      within(actionRow as HTMLElement).getByRole('button', { name: 'Sync now' })
+    ).toBeVisible();
+    expect(
+      within(actionRow as HTMLElement).getByRole('button', { name: 'Export institution data' })
+    ).toBeVisible();
+    expect(
+      within(actionRow as HTMLElement).queryByRole('button', { name: 'Disconnect' })
+    ).not.toBeInTheDocument();
+
+    const disconnectButton = screen.getByRole('button', { name: 'Disconnect' });
+    expect(disconnectButton.parentElement).toHaveClass('row-span-2');
+    expect(disconnectButton.parentElement).toHaveClass('items-center');
+    expect(titleRow).not.toContainElement(disconnectButton);
   });
 
   it('shows connection status before the bank name', () => {

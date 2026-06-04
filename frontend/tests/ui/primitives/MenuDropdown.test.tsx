@@ -21,6 +21,7 @@ describe('MenuDropdown', () => {
     expect(csvItem).toBeVisible();
     expect(csvItem).toHaveClass('bg-transparent');
     expect(csvItem).toHaveClass('border-transparent');
-    expect(csvItem).toHaveClass('ring-transparent');
+    expect(csvItem.className).toContain('hover:border-[var(--color-border-default)]');
+    expect(csvItem.className).toContain('hover:bg-[var(--color-surface-hover-row)]');
   });
 });

@@ -218,7 +218,9 @@ describe('AccountsPage', () => {
 
     expect(screen.getByTestId('accounts-page')).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: /every institution, answering to you/i })
+      screen.getByRole('heading', {
+        name: /bring all your ally institutions under one house, answering to you/i,
+      })
     ).toBeVisible();
     expect(screen.getByText('Unavailable while offline')).toBeVisible();
     const tellerButton = screen.getAllByRole('button', {
@@ -338,7 +340,9 @@ describe('AccountsPage', () => {
     renderAccountsPage();
 
     const heroSection = screen
-      .getByRole('heading', { name: /every institution, answering to you/i })
+      .getByRole('heading', {
+        name: /bring all your ally institutions under one house, answering to you/i,
+      })
       .closest('section');
     expect(heroSection).toBeTruthy();
     expect(
@@ -827,7 +831,9 @@ describe('AccountsPage', () => {
 
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       expect(
-        screen.queryByRole('heading', { name: /every institution, answering to you/i })
+        screen.queryByRole('heading', {
+          name: /bring all your ally institutions under one house, answering to you/i,
+        })
       ).not.toBeInTheDocument();
     });
 
@@ -863,7 +869,9 @@ describe('AccountsPage', () => {
 
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       expect(
-        screen.queryByRole('heading', { name: /every institution, answering to you/i })
+        screen.queryByRole('heading', {
+          name: /bring all your ally institutions under one house, answering to you/i,
+        })
       ).not.toBeInTheDocument();
       for (const button of screen.getAllByRole('button', { name: /^connect$/i })) {
         expect(button).toBeEnabled();
@@ -910,7 +918,9 @@ describe('AccountsPage', () => {
 
       expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
       expect(
-        screen.getByRole('heading', { name: /every institution, answering to you/i })
+        screen.getByRole('heading', {
+          name: /bring all your ally institutions under one house, answering to you/i,
+        })
       ).toBeInTheDocument();
     });
 

@@ -143,22 +143,90 @@ export const BankCard: React.FC<BankCardProps> = ({
       rounded="lg"
       padding="none"
       withInnerEffects={false}
-      containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
+      containerClassName={cn('p-4', 'md:p-5', 'lg:p-5')}
       className={cn('space-y-6')}
     >
       <div
         className={cn(
           'grid',
           'min-w-0',
-          'grid-cols-[auto_minmax(0,1fr)_auto]',
+          'grid-cols-[minmax(0,1fr)_auto]',
           'gap-x-3',
           'gap-y-2',
           statusCaption ? 'grid-rows-[auto_auto_auto]' : 'grid-rows-[auto_auto]'
         )}
       >
         <div
-          className={cn('col-start-1', 'row-start-1', 'flex', 'flex-col', 'items-center', 'gap-1')}
+          className={cn(
+            'col-start-1',
+            'row-start-1',
+            'flex',
+            'min-w-0',
+            'items-center',
+            'gap-2',
+            'p-3'
+          )}
         >
+          <StatusPill status={bank.status} className={cn('shrink-0')} />
+          <h3
+            title={bank.name}
+            className={cn(
+              'min-w-0',
+              'line-clamp-2',
+              'break-words',
+              uiTypographyRecipes.sectionTitle,
+              uiTextRecipes.primary
+            )}
+          >
+            {bank.name}
+          </h3>
+        </div>
+        <div
+          className={cn(
+            'col-start-2',
+            'row-start-1',
+            'row-span-2',
+            'flex',
+            'items-center',
+            'self-center',
+            'pr-3'
+          )}
+        >
+          <IconButton
+            type="button"
+            size="md"
+            onClick={handleDisconnectClick}
+            variant="danger"
+            aria-label="Disconnect"
+            className={cn('shrink-0')}
+          >
+            <Unlink />
+          </IconButton>
+        </div>
+        <div
+          className={cn(
+            'col-start-1',
+            'row-start-2',
+            'flex',
+            'flex-wrap',
+            'items-center',
+            'gap-2',
+            'px-3',
+            'pb-3'
+          )}
+        >
+          <IconButton
+            type="button"
+            size="md"
+            onClick={() => setExpanded((v) => !v)}
+            variant="ghost"
+            aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
+            className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
+          >
+            <ChevronDown
+              className={cn('transition-transform', 'duration-200', expanded && 'rotate-180')}
+            />
+          </IconButton>
           {showSyncButton ? (
             <IconButton
               type="button"
@@ -182,55 +250,6 @@ export const BankCard: React.FC<BankCardProps> = ({
               </div>
             </IconButton>
           ) : null}
-          <IconButton
-            type="button"
-            size="md"
-            onClick={() => setExpanded((v) => !v)}
-            variant="ghost"
-            aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
-            className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
-          >
-            <ChevronDown
-              className={cn('transition-transform', 'duration-200', expanded && 'rotate-180')}
-            />
-          </IconButton>
-        </div>
-        <div
-          className={cn(
-            'col-start-2',
-            'row-start-1',
-            'row-span-2',
-            'flex',
-            'min-w-0',
-            'items-center',
-            'gap-2',
-            'self-center'
-          )}
-        >
-          <StatusPill status={bank.status} className={cn('shrink-0')} />
-          <h3
-            title={bank.name}
-            className={cn(
-              'min-w-0',
-              'line-clamp-2',
-              'break-words',
-              uiTypographyRecipes.sectionTitle,
-              uiTextRecipes.primary
-            )}
-          >
-            {bank.name}
-          </h3>
-        </div>
-        <div
-          className={cn(
-            'col-start-3',
-            'row-start-1',
-            'flex',
-            'items-center',
-            'gap-2',
-            'self-center'
-          )}
-        >
           <MenuDropdown
             trigger={
               <IconButton
@@ -257,21 +276,11 @@ export const BankCard: React.FC<BankCardProps> = ({
             <MenuItem onClick={() => void handleExport('csv')}>Export as CSV</MenuItem>
             <MenuItem onClick={() => void handleExport('ofx')}>Export as OFX</MenuItem>
           </MenuDropdown>
-          <IconButton
-            type="button"
-            size="md"
-            onClick={handleDisconnectClick}
-            variant="danger"
-            aria-label="Disconnect"
-            className={cn('shrink-0')}
-          >
-            <Unlink />
-          </IconButton>
         </div>
         {statusCaption ? (
           <p
             className={cn(
-              'col-span-3',
+              'col-span-2',
               'row-start-3',
               uiTypographyRecipes.caption,
               ...(bank.status === 'needs_reauth'
