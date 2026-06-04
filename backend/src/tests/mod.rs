@@ -48,6 +48,7 @@ mod repository_service_tests;
 mod security_resilience_edge_cases_tests;
 #[cfg(feature = "dev-seed")]
 mod seed_password_fallback_tests;
+mod seed_simplefin_tests;
 mod simplefin_credential_resolver_tests;
 mod simplefin_provider_tests;
 mod simplefin_service_tests;
