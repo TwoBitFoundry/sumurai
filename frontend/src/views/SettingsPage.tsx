@@ -84,7 +84,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
             <section className={cn('space-y-3')}>
               <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
-                Adjust your appearance
+                Choose your banners
               </h2>
               <ThemeModeSelector value={preference} onChange={setPreference} />
             </section>
@@ -94,6 +94,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         </GlassCard>
 
         <GlassCard variant="default" padding="lg" className={cn('space-y-4')}>
+          <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+            Retire from service
+          </h2>
           <Alert
             variant="error"
             title="Account Deletion Zone"
