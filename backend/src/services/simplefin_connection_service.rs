@@ -634,9 +634,6 @@ impl SimpleFinConnectionService {
 
         for txn in &mut transactions {
             txn.merchant_name = txn.original_merchant_name.clone();
-            txn.category_primary = "OTHER".to_string();
-            txn.category_detailed = "OTHER".to_string();
-            txn.category_confidence.clear();
         }
 
         if let Err(e) = self
