@@ -73,6 +73,27 @@ describe('BankCard', () => {
     expect(screen.getByTitle('Unavailable while offline')).toBeDisabled();
   });
 
+  it('hides the sync action for SimpleFIN banks', () => {
+    render(
+      <BankCard
+        bank={{
+          id: 'bank-1',
+          name: 'SimpleFIN Bank',
+          short: 'SF',
+          status: 'connected',
+          provider: 'simplefin',
+          accounts: [],
+        }}
+        onSync={jest.fn()}
+        onDisconnect={jest.fn()}
+        isOnline
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Sync now' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show accounts' })).toBeVisible();
+  });
+
   it('sizes institution card glyphs with the shared control scale', async () => {
     const user = userEvent.setup();
 

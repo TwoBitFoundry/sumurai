@@ -35,7 +35,7 @@ Use this policy when changing Sumurai tokens, theme values, or styling constants
 
 ## Validation
 
-- Run `npm --prefix frontend run design:lint` after token or design document changes.
-- Run `npm --prefix frontend run design:guard` when changing `DESIGN.md` or the generation pipeline.
+- Run `bun --cwd frontend run design:lint` after token or design document changes.
+- Run `bun --cwd frontend run design:guard` when changing `DESIGN.md` or the generation pipeline.
 - Run focused tests under `frontend/tests/ui/tokens/` when token contracts change.
 - For broad visual changes, prefer visual or browser verification in both light and dark modes.

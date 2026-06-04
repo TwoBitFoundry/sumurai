@@ -61,10 +61,15 @@ export function AccountFilterProvider({ children }: AccountFilterProviderProps) 
   const groupAccountsByBank = useCallback((items: ProviderAccount[]): AccountsByBank => {
     return items.reduce<AccountsByBank>((acc, account) => {
       const bankName = account.institution_name || 'Unknown Bank';
-      if (!acc[bankName]) {
-        acc[bankName] = [];
+      const bankKey =
+        account.provider === 'simplefin' && account.connection_id
+          ? `${bankName}::${account.connection_id}`
+          : bankName;
+
+      if (!acc[bankKey]) {
+        acc[bankKey] = [];
       }
-      acc[bankName].push(account);
+      acc[bankKey].push(account);
       return acc;
     }, {});
   }, []);

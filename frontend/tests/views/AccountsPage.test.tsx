@@ -547,7 +547,7 @@ describe('AccountsPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('keeps the SimpleFIN per-bank sync action available', () => {
+  it('hides the SimpleFIN per-bank sync action while keeping sync all available', () => {
     jest.mocked(useOnlineStatus).mockReturnValue(true);
     jest.mocked(useProviderCatalog).mockReturnValue(
       makeProviderCatalogMock({
@@ -584,7 +584,8 @@ describe('AccountsPage', () => {
 
     renderAccountsPage();
 
-    expect(screen.getByRole('button', { name: /sync now/i })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /sync now/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sync all/i })).toBeEnabled();
   });
 
   it('shows the checklist-style single sync card for one institution at a time', async () => {

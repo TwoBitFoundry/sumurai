@@ -159,6 +159,8 @@ pub struct SimpleFinInstitutionSyncResult {
     pub institution_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub org_conn_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub connection_id: Option<String>,
     pub status: SimpleFinInstitutionSyncStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transaction_count: Option<i32>,

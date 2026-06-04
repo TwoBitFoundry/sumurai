@@ -223,6 +223,67 @@ describe('AccountFilterProvider', () => {
         expect(result.current.isAllAccountsSelected).toBe(true);
       });
 
+      it('keeps SimpleFIN connections separate when they share the same institution label', async () => {
+        fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+          const url = typeof input === 'string' ? input : input.toString();
+
+          if (url.includes('/api/providers/accounts')) {
+            return new Response(
+              JSON.stringify([
+                {
+                  id: 'sf_acc_1',
+                  name: 'Checking',
+                  account_type: 'depository',
+                  balance_current: 100,
+                  mask: '1111',
+                  provider_connection_id: 'sf_conn_1',
+                  institution_name: 'SimpleFIN Bank',
+                  provider: 'simplefin',
+                  transaction_count: 3,
+                },
+                {
+                  id: 'sf_acc_2',
+                  name: 'Savings',
+                  account_type: 'depository',
+                  balance_current: 200,
+                  mask: '2222',
+                  provider_connection_id: 'sf_conn_2',
+                  institution_name: 'SimpleFIN Bank',
+                  provider: 'simplefin',
+                  transaction_count: 5,
+                },
+              ]),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+              }
+            );
+          }
+
+          return new Response(JSON.stringify({}), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        });
+
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
+          <AccountFilterTestProvider>{children}</AccountFilterTestProvider>
+        );
+
+        const { result } = renderHook(() => useAccountFilter(), { wrapper });
+
+        await waitFor(() => {
+          expect(Object.keys(result.current.accountsByBank).sort()).toEqual([
+            'SimpleFIN Bank::sf_conn_1',
+            'SimpleFIN Bank::sf_conn_2',
+          ]);
+        });
+
+        expect(result.current.accountsByBank['SimpleFIN Bank::sf_conn_1']).toHaveLength(1);
+        expect(result.current.accountsByBank['SimpleFIN Bank::sf_conn_2']).toHaveLength(1);
+        expect(result.current.allAccountIds.sort()).toEqual(['sf_acc_1', 'sf_acc_2']);
+      });
+
       it('Then it should fetch the accounts endpoint only once on mount', async () => {
         const pendingResponse = new Promise<Response>(() => {});
         fetchMock.mockImplementation(async (input: RequestInfo | URL) => {

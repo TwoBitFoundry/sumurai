@@ -17,13 +17,13 @@ Use these rules when designing Sumurai tests.
 - Keep snapshots limited to stable primitive output where the repo already uses them.
 - Add token tests when changing shared design-token semantics.
 - For rendered UI in a real browser (interactions, a11y-relevant rendering paths, story-driven states), extend or add Storybook stories and cover them with the Storybook Vitest project rather than duplicating the same scenarios only in Bun test when the browser project already owns that boundary.
-- Treat `npm --prefix frontend run test:storybook-runtime` as a smoke gate on the static Storybook artifact; add or adjust those tests only when the failure mode is load-level or routing of the Storybook build, not for per-component assertions.
+- Treat `bun --cwd frontend run test:storybook-runtime` as a smoke gate on the static Storybook artifact; add or adjust those tests only when the failure mode is load-level or routing of the Storybook build, not for per-component assertions.
 
 ## Storybook
 
 - Prefer stories and the Vitest Storybook project for component-level browser behavior; follow existing `*.stories.tsx` patterns and Storybook addon-vitest tagging conventions in this repo.
-- Run `npm --prefix frontend run test:storybook` after changing stories or primitives that participate in browser tests.
-- Run `npm --prefix frontend run test:storybook-runtime` when touching Storybook config, static build output, or Playwright smoke expectations.
+- Run `bun --cwd frontend run test:storybook` after changing stories or primitives that participate in browser tests.
+- Run `bun --cwd frontend run test:storybook-runtime` when touching Storybook config, static build output, or Playwright smoke expectations.
 
 ## Backend
 

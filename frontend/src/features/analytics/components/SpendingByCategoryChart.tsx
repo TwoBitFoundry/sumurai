@@ -61,6 +61,8 @@ const SpendingByCategoryChartFn: React.FC<Props> = ({
         'w-full',
         'h-full',
         'min-w-0',
+        'min-h-[220px]',
+        'md:min-h-0',
         'flex',
         'items-center',
         'justify-center',

@@ -143,7 +143,7 @@ User overrides always win because `effective_category = COALESCE(override, categ
 - [ ] `cargo test -p sumurai-backend --locked subscription_detection` passes.
 - [ ] After a sync/Classify job: `GET /api/transactions?category_primary=SUBSCRIPTION` and `GET /api/subscriptions` return the expected merchants + monthly costs.
 - [ ] At `http://localhost:8080`: Subscriptions tab shows stats + cards; card click deep-links to filtered Transactions; re-categorizing a transaction away removes it from the Subscriptions view (override wins). Capture console/network/screenshot proof.
-- [ ] `npm --prefix frontend test` passes.
+- [ ] `bun --cwd frontend test` passes.
 
 ---
 

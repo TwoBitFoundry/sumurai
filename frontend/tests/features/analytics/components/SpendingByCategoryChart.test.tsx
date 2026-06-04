@@ -50,7 +50,7 @@ describe('SpendingByCategoryChart', () => {
 
   it('renders the pie chart with animation enabled', () => {
     const setHoveredCategory = mock(() => {});
-    render(
+    const { container } = render(
       <SpendingByCategoryChart
         data={[{ name: 'Food', value: 10, color: '#123456' }]}
         total={10}
@@ -59,6 +59,7 @@ describe('SpendingByCategoryChart', () => {
       />
     );
 
+    expect(container.firstElementChild).toHaveClass('min-h-[220px]', 'md:min-h-0');
     expect(screen.getByTestId('PieChart').getAttribute('data-accessibility-layer')).toBe('false');
     expect(screen.getByTestId('Pie').getAttribute('data-animation-duration')).toBe('800');
     expect(screen.getByTestId('Pie').getAttribute('data-is-animation-active')).toBe('true');

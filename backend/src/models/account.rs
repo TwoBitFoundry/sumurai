@@ -10,6 +10,7 @@ use serde_json::json;
 #[schema(example = json!({
     "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
     "user_id": "ffffffff-1111-2222-3333-444444444444",
+    "provider": "simplefin",
     "provider_account_id": "acct-123",
     "provider_connection_id": "99999999-8888-7777-6666-555555555555",
     "name": "Demo Checking",
@@ -48,6 +49,7 @@ pub struct Account {
 pub struct AccountResponse {
     pub id: Uuid,
     pub user_id: Option<Uuid>,
+    pub provider: Option<String>,
     pub provider_account_id: Option<String>,
     pub provider_connection_id: Option<Uuid>,
     pub name: String,

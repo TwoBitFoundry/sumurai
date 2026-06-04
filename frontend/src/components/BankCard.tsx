@@ -71,6 +71,7 @@ export const BankCard: React.FC<BankCardProps> = ({
   const syncStartRef = useRef<number | null>(null);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [disconnectLoading, setDisconnectLoading] = useState(false);
+  const showSyncButton = bank.provider !== 'simplefin';
 
   useEffect(() => {
     if (!loading) {
@@ -149,27 +150,29 @@ export const BankCard: React.FC<BankCardProps> = ({
         <div
           className={cn('col-start-1', 'row-start-1', 'flex', 'flex-col', 'items-center', 'gap-1')}
         >
-          <IconButton
-            type="button"
-            size="md"
-            onClick={handleSync}
-            disabled={loading || !isOnline}
-            variant="ghost"
-            aria-label="Sync now"
-            title={!isOnline ? 'Unavailable while offline' : undefined}
-            className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
-          >
-            <div className={cn('flex', 'flex-col', 'items-center', 'gap-0.5', control.glyph.md)}>
-              <RefreshCw className={cn(loading && 'animate-spin')} />
-              {loading && syncElapsed > 0 && (
-                <span
-                  className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted, 'tabular-nums')}
-                >
-                  {syncElapsed}s
-                </span>
-              )}
-            </div>
-          </IconButton>
+          {showSyncButton ? (
+            <IconButton
+              type="button"
+              size="md"
+              onClick={handleSync}
+              disabled={loading || !isOnline}
+              variant="ghost"
+              aria-label="Sync now"
+              title={!isOnline ? 'Unavailable while offline' : undefined}
+              className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
+            >
+              <div className={cn('flex', 'flex-col', 'items-center', 'gap-0.5', control.glyph.md)}>
+                <RefreshCw className={cn(loading && 'animate-spin')} />
+                {loading && syncElapsed > 0 && (
+                  <span
+                    className={cn(uiTypographyRecipes.caption, uiTextRecipes.muted, 'tabular-nums')}
+                  >
+                    {syncElapsed}s
+                  </span>
+                )}
+              </div>
+            </IconButton>
+          ) : null}
           <IconButton
             type="button"
             size="md"

@@ -249,6 +249,8 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
                 ) : (
                   <div className={cn('space-y-2')}>
                     {Object.entries(accountsByBank).map(([bankName, accounts]) => {
+                      const displayName =
+                        accounts[0]?.institution_name ?? bankName.split('::')[0] ?? bankName;
                       const bankAccountIds = accounts.map((account) => account.id);
                       const allBankAccountsSelected = bankAccountIds.every((id) =>
                         selectedAccountIds.includes(id)
@@ -284,7 +286,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
                                 'active:scale-[0.98]'
                               )}
                               aria-label={
-                                isCollapsed ? `Expand ${bankName}` : `Collapse ${bankName}`
+                                isCollapsed ? `Expand ${displayName}` : `Collapse ${displayName}`
                               }
                             >
                               <ChevronRight
@@ -323,7 +325,7 @@ export function HeaderAccountFilter({ triggerStyle = 'default' }: HeaderAccountF
                                 'cursor-pointer'
                               )}
                             >
-                              {bankName}
+                              {displayName}
                             </label>
                           </div>
 

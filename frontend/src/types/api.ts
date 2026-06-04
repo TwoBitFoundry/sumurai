@@ -164,6 +164,7 @@ export type SimpleFinInstitutionSyncStatus =
 export interface SimpleFinInstitutionSyncResult {
   institution_name: string;
   org_conn_id?: string | null;
+  connection_id?: string | null;
   status: SimpleFinInstitutionSyncStatus;
   transaction_count?: number | null;
   message?: string | null;
