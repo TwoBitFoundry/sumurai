@@ -22,6 +22,8 @@ mod config_tests;
 mod connection_cache_integration_tests;
 mod connection_service_tests;
 mod entity_smoke_tests;
+mod export_model_tests;
+mod export_service_tests;
 mod import_handler_categorization_tests;
 mod import_service_tests;
 mod integration_tests;

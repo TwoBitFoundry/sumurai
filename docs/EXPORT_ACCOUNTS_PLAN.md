@@ -45,10 +45,16 @@ Standards: [OFX](https://docs.fileformat.com/finance/ofx/), [OFX standards](http
 - Register the new module in `models/mod.rs` and `services/mod.rs`.
 
 **Acceptance criteria:**
-- [ ] `quick-xml` is in `Cargo.toml` at its latest version and the project builds.
-- [ ] `ExportService::to_csv` emits the documented header + one row per transaction, plus a summary row for zero-transaction accounts.
-- [ ] `ExportService::to_ofx` emits well-formed OFX 2.x XML routing depository vs credit accounts correctly, with auto-escaped text.
-- [ ] Both functions are pure (operate on passed-in data, no I/O).
+- [x] `quick-xml` is in `Cargo.toml` at its latest version and the project builds.
+- [x] `ExportService::to_csv` emits the documented header + one row per transaction, plus a summary row for zero-transaction accounts.
+- [x] `ExportService::to_ofx` emits well-formed OFX 2.x XML routing depository vs credit accounts correctly, with auto-escaped text.
+- [x] Both functions are pure (operate on passed-in data, no I/O).
+
+TDD log:
+- Added `backend/src/tests/export_service_tests.rs` and `backend/src/tests/export_model_tests.rs` first, then implemented `backend/src/models/export.rs` and `backend/src/services/export_service.rs`.
+- `cargo test -p sumurai-backend --locked export_service_tests`
+- `cargo test -p sumurai-backend --locked export`
+- `cargo check -p sumurai-backend --locked`
 
 ---
 
