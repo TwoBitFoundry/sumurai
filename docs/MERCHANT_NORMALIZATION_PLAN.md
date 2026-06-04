@@ -184,12 +184,12 @@ and expose the new field through the API.
 **Goal:** Prove the feature end-to-end.
 
 **Tasks / Acceptance criteria**
-- [ ] `cargo test -p sumurai-backend --locked merchant_normalization` — all gotcha fixtures pass.
-- [ ] `cargo build` / `cargo clippy` clean.
+- [x] `cargo test -p sumurai-backend --locked merchant_normalization` — all gotcha fixtures pass.
+- [x] `cargo build` / `cargo clippy` clean.
 - [ ] Migrations applied on dev DB; `merchant_aliases` seeded and `original_merchant_name` present.
 - [ ] Sync a connection (or CSV import); `/api/transactions` shows clean `merchant_name` and raw
       `original_merchant_name`.
-- [ ] `bun --cwd=frontend test -- TransactionsTable` passes; tooltip verified at
+- [x] `bun --cwd=frontend test -- TransactionsTable` passes; tooltip verified at
       `http://localhost:8080` (`:3001` bypasses the proxy — do not validate there).
 
 ---
