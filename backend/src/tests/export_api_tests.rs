@@ -62,6 +62,7 @@ fn sample_transaction(
         account_mask: Some("1234".to_string()),
         is_custom: false,
         is_overridden: false,
+        original_merchant_name: None,
     }
 }
 

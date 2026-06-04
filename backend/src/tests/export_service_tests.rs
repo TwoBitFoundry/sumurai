@@ -63,6 +63,7 @@ fn sample_transaction(fixture: TransactionFixture<'_>) -> TransactionWithAccount
         account_mask: fixture.account_mask.map(str::to_string),
         is_custom: false,
         is_overridden: false,
+        original_merchant_name: None,
     }
 }
 

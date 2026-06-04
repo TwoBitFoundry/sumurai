@@ -127,9 +127,9 @@ gotchas and edge cases.
 - Register in `services/mod.rs`; add a repository read for `merchant_aliases`.
 
 **Acceptance criteria**
-- [ ] Service compiles and is exported from `services/mod.rs`.
-- [ ] Alias index is loaded once per batch and cache-backed (TTL respected; cache miss rebuilds).
-- [ ] `normalize_batch` test: `merchant_name` replaced, `original_merchant_name` preserved,
+- [x] Service compiles and is exported from `services/mod.rs`.
+- [x] Alias index is loaded once per batch and cache-backed (TTL respected; cache miss rebuilds).
+- [x] `normalize_batch` test: `merchant_name` replaced, `original_merchant_name` preserved,
       `source`/`confidence` populated.
 
 ---

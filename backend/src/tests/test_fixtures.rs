@@ -167,6 +167,7 @@ impl TestFixtures {
                 payment_channel: Some("in_store".to_string()),
                 pending: false,
                 created_at: Some(Utc::now()),
+                original_merchant_name: None,
             },
             Transaction {
                 id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440011").unwrap(),
@@ -183,6 +184,7 @@ impl TestFixtures {
                 payment_channel: Some("in_store".to_string()),
                 pending: false,
                 created_at: Some(Utc::now()),
+                original_merchant_name: None,
             },
             Transaction {
                 id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440012").unwrap(),
@@ -199,6 +201,7 @@ impl TestFixtures {
                 payment_channel: Some("ach".to_string()),
                 pending: false,
                 created_at: Some(Utc::now()),
+                original_merchant_name: None,
             },
         ]
     }
@@ -226,6 +229,7 @@ impl TestFixtures {
             payment_channel: Some("in_store".to_string()),
             pending: false,
             created_at: Some(Utc::now()),
+            original_merchant_name: None,
         }];
 
         let new_with_duplicate = vec![
@@ -244,6 +248,7 @@ impl TestFixtures {
                 payment_channel: Some("in_store".to_string()),
                 pending: false,
                 created_at: Some(Utc::now()),
+                original_merchant_name: None,
             },
             Transaction {
                 id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440022").unwrap(),
@@ -260,6 +265,7 @@ impl TestFixtures {
                 payment_channel: Some("in_store".to_string()),
                 pending: false,
                 created_at: Some(Utc::now()),
+                original_merchant_name: None,
             },
         ];
 

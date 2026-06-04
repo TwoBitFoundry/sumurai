@@ -955,6 +955,7 @@ fn given_hidden_org_when_filter_simplefin_transactions_then_returns_empty() {
         payment_channel: None,
         pending: false,
         created_at: None,
+        original_merchant_name: None,
     }];
     let mut hidden = HashSet::new();
     hidden.insert("org-hidden".to_string());

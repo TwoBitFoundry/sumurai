@@ -63,10 +63,7 @@ pub static KEEP_MERCHANT_PREFIXES: &[&str] = &[
     "SQ *", "TST*", "TOAST*", "PAYPAL *", "PY *", "SP *", "WPY*", "IZ *", "EB *",
 ];
 
-pub static DD_PREFIX: &str = "DD *";
-pub static DD_PLAIN_PREFIX: &str = "DD ";
-
-pub static DOORDASH_KEYWORDS: &[&str] = &["DOORDASH", "DD DASH", "DD *DOORDASH"];
+pub static DD_STAR_PREFIX: &str = "DD *";
 
 pub static STRUCTURAL_PATTERNS: Lazy<Vec<(&'static str, &'static str)>> = Lazy::new(|| {
     vec![

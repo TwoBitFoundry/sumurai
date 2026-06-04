@@ -246,6 +246,7 @@ async fn given_authenticated_user_when_get_transactions_with_account_ids_then_re
                     account_mask: Some("0001".to_string()),
                     is_custom: false,
                     is_overridden: false,
+                    original_merchant_name: None,
                 }])
             })
         },
@@ -373,6 +374,7 @@ async fn given_authenticated_user_when_get_transactions_page_two_then_returns_ne
                     account_mask: Some("0001".to_string()),
                     is_custom: false,
                     is_overridden: false,
+                    original_merchant_name: None,
                 })
                 .collect();
             Box::pin(async move { Ok(transactions) })
@@ -852,6 +854,7 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
                     payment_channel: Some("in_store".to_string()),
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
+                    original_merchant_name: None,
                 },
                 Transaction {
                     id: Uuid::new_v4(),
@@ -868,6 +871,7 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
                     payment_channel: Some("in_store".to_string()),
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
+                    original_merchant_name: None,
                 },
             ];
             Box::pin(async { Ok(transactions) })
@@ -1012,6 +1016,7 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
                     payment_channel: Some("in_store".to_string()),
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
+                    original_merchant_name: None,
                 },
                 Transaction {
                     id: Uuid::new_v4(),
@@ -1028,6 +1033,7 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
                     payment_channel: Some("in_store".to_string()),
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
+                    original_merchant_name: None,
                 },
             ];
             Box::pin(async { Ok(transactions) })
@@ -1091,6 +1097,7 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
                     payment_channel: Some("in_store".to_string()),
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
+                    original_merchant_name: None,
                 },
                 Transaction {
                     id: Uuid::new_v4(),
@@ -1107,6 +1114,7 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
                     payment_channel: Some("in_store".to_string()),
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
+                    original_merchant_name: None,
                 },
             ];
             Box::pin(async { Ok(transactions) })

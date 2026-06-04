@@ -404,6 +404,7 @@ impl SimpleFinProvider {
             payment_channel: None,
             pending: simplefin_txn.pending,
             created_at: None,
+            original_merchant_name: None,
         })
     }
 }

@@ -92,6 +92,7 @@ fn create_test_transaction(
         payment_channel: Some("in_store".to_string()),
         pending: false,
         created_at: Some(Utc::now()),
+        original_merchant_name: None,
     }
 }
 

@@ -152,22 +152,10 @@ fn apply_aggregator_split(work: String) -> String {
         }
     }
 
-    let dd_upper = DD_PREFIX.to_uppercase();
-    if work.starts_with(&dd_upper) {
-        let rest = work[dd_upper.len()..].trim().to_string();
-        if is_doordash(&rest) {
-            return "DOORDASH".to_string();
-        }
+    if let Some(rest) = work.strip_prefix(DD_STAR_PREFIX) {
+        let rest = rest.trim().to_string();
         if !rest.is_empty() {
             return rest;
-        }
-    }
-
-    let dd_plain = DD_PLAIN_PREFIX.to_uppercase();
-    if work.starts_with(&dd_plain) {
-        let rest = work[dd_plain.len()..].trim().to_string();
-        if is_doordash(&rest) {
-            return "DOORDASH".to_string();
         }
     }
 
@@ -185,12 +173,6 @@ fn apply_aggregator_split(work: String) -> String {
     }
 
     work
-}
-
-fn is_doordash(s: &str) -> bool {
-    DOORDASH_KEYWORDS
-        .iter()
-        .any(|k| word_boundary_contains(s, k))
 }
 
 fn normalize_url(work: &str) -> String {
