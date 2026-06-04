@@ -98,8 +98,8 @@ const DashboardPage: React.FC<{
     <div data-testid="dashboard-page">
       <PageLayout
         badge="Dashboard"
-        title="Survey your Warchest"
-        subtitle="Total clarity on what you hold across ally accounts."
+        title="Appraise the warchest"
+        subtitle="Deepen understanding of holdings across ally accounts."
         stats={<BalancesOverview />}
       >
         <div

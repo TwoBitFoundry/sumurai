@@ -69,7 +69,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           <div className={cn('space-y-5')}>
             <div className={cn('space-y-2')}>
               <span className={pageLayoutRecipes.badge}>Settings</span>
-              <h1 className={pageLayoutRecipes.title}>Your Armory</h1>
+              <h1 className={pageLayoutRecipes.title}>Inspect the armory</h1>
               <p className={pageLayoutRecipes.subtitle}>Take matters into your own hands.</p>
             </div>
 

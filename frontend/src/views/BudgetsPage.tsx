@@ -203,8 +203,8 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
     <div data-testid="budgets-page">
       <PageLayout
         badge="Budgets"
-        title="Command your spending"
-        subtitle="Name your allowances. Honor your commitments. The month moves whether you plan or not."
+        title="Provision the coffers"
+        subtitle="Name allowances. Honor vows. Life is a succession of single moments; the seasons do not pause for an unready mind."
         error={errorMessage}
         stats={heroStats}
       >
