@@ -955,6 +955,7 @@ fn given_hidden_org_when_filter_simplefin_transactions_then_returns_empty() {
         payment_channel: None,
         pending: false,
         created_at: None,
+        original_merchant_name: None,
     }];
     let mut hidden = HashSet::new();
     hidden.insert("org-hidden".to_string());
@@ -1108,6 +1109,9 @@ fn build_simplefin_sync_service_with_categorizer_and_accounts(
     mock_db
         .expect_count_transactions()
         .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
+    mock_db
+        .expect_get_active_merchant_aliases()
+        .returning(|| Box::pin(async { Ok(vec![]) }));
 
     let mut mock_cache = MockCacheService::new();
     mock_cache

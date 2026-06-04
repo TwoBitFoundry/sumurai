@@ -13,6 +13,7 @@ import {
 } from '@/utils/providerCapabilities';
 import { ApiClient } from '../services/ApiClient';
 import type { FinancialProvider } from '../types/api';
+import { invalidateStaleCacheQueries, type SyncProvider } from '../utils/queryInvalidation';
 import type { TellerEnvironment } from './useTellerConnect';
 
 export interface ProviderCatalogGateway {
@@ -78,6 +79,7 @@ export function useProviderCatalog(options: UseProviderCatalogOptions = {}): Pro
             user_provider: result.user_provider,
           };
         });
+        await invalidateStaleCacheQueries(queryClient, [provider as SyncProvider]);
       } catch (err) {
         console.warn('Failed to select provider', err);
         setMutationError('Unable to select provider right now');

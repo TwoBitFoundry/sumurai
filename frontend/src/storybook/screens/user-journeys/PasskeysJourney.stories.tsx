@@ -57,7 +57,7 @@ export const Journey: Story = {
     const body = within(canvasElement.ownerDocument.body);
 
     await waitFor(() => {
-      expect(canvas.getByRole('heading', { name: /security/i })).toBeVisible();
+      expect(canvas.getByRole('heading', { name: /protect your domain/i })).toBeVisible();
       expect(canvas.getByText('MacBook Pro')).toBeVisible();
       expect(canvas.getByText('iPhone')).toBeVisible();
     });
@@ -198,10 +198,11 @@ export const ListLoadFailure: Story = {
   render: () => <PasskeysJourneyScreen handlers={buildPasskeyListFailureHandlers()} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
 
     await waitFor(() => {
-      expect(canvas.getByText(/failed to load passkeys/i)).toBeVisible();
-      expect(canvas.getByRole('heading', { name: /security/i })).toBeVisible();
+      expect(canvas.getByRole('heading', { name: /protect your domain/i })).toBeVisible();
+      expect(body.getByText(/server error\. please try again in a moment\./i)).toBeVisible();
     });
   },
 };

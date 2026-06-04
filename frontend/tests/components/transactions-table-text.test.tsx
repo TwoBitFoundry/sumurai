@@ -167,4 +167,50 @@ describe('TransactionsTable text tokens', () => {
     });
     window.dispatchEvent(new Event('resize'));
   });
+
+  it('merchant cell title shows originalMerchantName when present', () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
+    window.dispatchEvent(new Event('resize'));
+
+    const txWithOriginal: Transaction = {
+      ...baseTx(10),
+      name: 'Costco',
+      originalMerchantName: 'POS COSTCO WHSE #12 TULSA OK 537',
+    };
+
+    render(
+      <TransactionsTable
+        items={[txWithOriginal]}
+        total={1}
+        currentPage={1}
+        totalPages={1}
+        pageSize={1}
+        onPrev={() => {}}
+        onNext={() => {}}
+      />
+    );
+
+    const merchantCell = screen.getByText('Costco').closest('td');
+    expect(merchantCell).toHaveAttribute('title', 'POS COSTCO WHSE #12 TULSA OK 537');
+  });
+
+  it('merchant cell title falls back to name when originalMerchantName is absent', () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
+    window.dispatchEvent(new Event('resize'));
+
+    render(
+      <TransactionsTable
+        items={[baseTx(10)]}
+        total={1}
+        currentPage={1}
+        totalPages={1}
+        pageSize={1}
+        onPrev={() => {}}
+        onNext={() => {}}
+      />
+    );
+
+    const merchantCell = screen.getByText('Coffee').closest('td');
+    expect(merchantCell).toHaveAttribute('title', 'Coffee');
+  });
 });

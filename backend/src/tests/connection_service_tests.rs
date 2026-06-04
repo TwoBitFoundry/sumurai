@@ -89,6 +89,7 @@ fn build_transactions(account_id: Uuid, user_id: Uuid) -> Vec<Transaction> {
             payment_channel: Some("in_store".to_string()),
             pending: false,
             created_at: Some(Utc::now()),
+            original_merchant_name: None,
         })
         .collect()
 }

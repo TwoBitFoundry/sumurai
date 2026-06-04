@@ -6,6 +6,7 @@ use crate::models::{
     plaid::{DisconnectRequest, ProviderConnection, SyncTransactionsRequest},
     transaction::TransactionsQuery,
 };
+use crate::services::repository_service::DatabaseRepository;
 use axum::{
     extract::{FromRequest, FromRequestParts, Json, Path, Query, Request},
     http::{request::Parts, StatusCode},
@@ -63,6 +64,44 @@ fn forbidden(message: &str) -> Response {
     error_response(StatusCode::FORBIDDEN, "FORBIDDEN", message)
 }
 
+pub(crate) async fn provider_scoped_account_ids(
+    db: &dyn DatabaseRepository,
+    user_id: &Uuid,
+) -> anyhow::Result<HashSet<Uuid>> {
+    let user = db
+        .get_user_by_id(user_id)
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("User not found"))?;
+
+    let provider = match user.active_provider() {
+        None => return Ok(HashSet::new()),
+        Some(p) => p.to_string(),
+    };
+
+    let connections = db.get_all_provider_connections_by_user(user_id).await?;
+
+    let provider_connection_ids: HashSet<Uuid> = connections
+        .into_iter()
+        .filter(|c| c.provider == provider)
+        .map(|c| c.id)
+        .collect();
+
+    if provider_connection_ids.is_empty() {
+        return Ok(HashSet::new());
+    }
+
+    let accounts = db.get_accounts_for_user(user_id).await?;
+
+    Ok(accounts
+        .into_iter()
+        .filter(|a| {
+            a.provider_connection_id
+                .is_some_and(|id| provider_connection_ids.contains(&id))
+        })
+        .map(|a| a.id)
+        .collect())
+}
+
 async fn validate_account_ids(
     state: &AppState,
     auth_context: &AuthContext,
@@ -95,37 +134,47 @@ async fn resolve_authorized_account_ids(
     include_account_ids: &[String],
     exclude_account_ids: &[String],
 ) -> Result<Option<HashSet<Uuid>>, Response> {
+    let internal_error = || {
+        error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "INTERNAL_SERVER_ERROR",
+            "Authorization failed",
+        )
+    };
+
+    let mut scoped =
+        provider_scoped_account_ids(state.db_repository.as_ref(), &auth_context.user_id)
+            .await
+            .map_err(|_| internal_error())?;
+
+    if scoped.is_empty() {
+        scoped.insert(Uuid::nil());
+    }
+
     if !include_account_ids.is_empty() {
-        return validate_account_ids(state, auth_context, include_account_ids).await;
+        let included = validate_account_ids(state, auth_context, include_account_ids)
+            .await?
+            .ok_or_else(|| bad_request("Invalid account filter"))?;
+        if included.iter().any(|id| !scoped.contains(id)) {
+            return Err(forbidden("Account filter references inactive provider"));
+        }
+        return Ok(Some(included));
     }
 
     if exclude_account_ids.is_empty() {
-        return Ok(None);
+        return Ok(Some(scoped));
     }
 
     let excluded = validate_account_ids(state, auth_context, exclude_account_ids)
         .await?
         .ok_or_else(|| bad_request("Invalid account filter"))?;
 
-    let user_accounts = state
-        .db_repository
-        .get_accounts_for_user(&auth_context.user_id)
-        .await
-        .map_err(|_| {
-            error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "INTERNAL_SERVER_ERROR",
-                "Authorization failed",
-            )
-        })?;
-
-    let remaining = user_accounts
-        .into_iter()
-        .map(|account| account.id)
-        .filter(|account_id| !excluded.contains(account_id))
-        .collect::<HashSet<_>>();
-
-    Ok(Some(remaining))
+    Ok(Some(
+        scoped
+            .into_iter()
+            .filter(|id| !excluded.contains(id))
+            .collect(),
+    ))
 }
 
 fn auth_context_from_parts(parts: &Parts) -> Result<AuthContext, StatusCode> {

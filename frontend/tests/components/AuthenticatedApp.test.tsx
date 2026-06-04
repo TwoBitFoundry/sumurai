@@ -2,11 +2,13 @@ import { act, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { AuthenticatedApp } from '@/components/AuthenticatedApp';
 
-const pageSwipeHandlers: Record<
+const motionSectionProps: Record<
   string,
   {
-    onPanStart?: (e: { target: EventTarget | null }) => void;
-    onPanEnd?: (e: unknown, info: { offset: { x: number; y: number } }) => void;
+    custom?: number;
+    initial?: { opacity: number; x: number };
+    animate?: { opacity: number; x: number };
+    exit?: { opacity: number; x: number };
   }
 > = {};
 
@@ -14,13 +16,22 @@ jest.mock('framer-motion', () => {
   const R = require('react');
   return {
     motion: {
-      div: ({ onPanStart, onPanEnd, children, 'data-testid': testId, style, ...props }: any) => {
-        if (testId && (onPanStart || onPanEnd)) {
-          pageSwipeHandlers[testId] = { onPanStart, onPanEnd };
+      div: ({ children, 'data-testid': testId, style, ...props }: any) =>
+        R.createElement('div', { 'data-testid': testId, style, ...props }, children),
+      section: ({
+        children,
+        'data-testid': testId,
+        custom,
+        initial,
+        animate,
+        exit,
+        ...props
+      }: any) => {
+        if (testId) {
+          motionSectionProps[testId] = { custom, initial, animate, exit };
         }
-        return R.createElement('div', { 'data-testid': testId, style, ...props }, children);
+        return R.createElement('div', { 'data-testid': testId, ...props }, children);
       },
-      section: ({ children, ...props }: any) => R.createElement('div', props, children),
     },
     AnimatePresence: ({ children }: any) => <>{children}</>,
   };
@@ -89,16 +100,10 @@ jest.mock('@/features/transactions/hooks/useTransactionCategories', () => ({
   }),
 }));
 
-function swipePage(offsetX: number, target: EventTarget | null = null) {
-  act(() => {
-    pageSwipeHandlers['page-swipe-container'].onPanStart?.({ target });
-    pageSwipeHandlers['page-swipe-container'].onPanEnd?.({}, { offset: { x: offsetX, y: 0 } });
-  });
-}
-
 describe('AuthenticatedApp', () => {
   beforeEach(() => {
     appLayoutMock.mockClear();
+    for (const key of Object.keys(motionSectionProps)) delete motionSectionProps[key];
   });
 
   it('renders the date range control in the bottom bar for the dashboard tab', () => {
@@ -133,87 +138,43 @@ describe('AuthenticatedApp', () => {
     expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('transactions');
 
     act(() => {
-      onTabChange('dashboard');
+      appLayoutMock.mock.lastCall[0].onTabChange('dashboard');
     });
     expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('dashboard');
   });
 
-  describe('full-page swipe navigation', () => {
-    beforeEach(() => {
-      Object.defineProperty(window, 'matchMedia', {
-        writable: true,
-        value: jest.fn().mockImplementation((query: string) => ({
-          matches: query === '(pointer: coarse)',
-          media: query,
-          addEventListener: jest.fn(),
-          removeEventListener: jest.fn(),
-          addListener: jest.fn(),
-          removeListener: jest.fn(),
-          dispatchEvent: jest.fn(),
-        })),
-      });
+  it('animates the page body in the direction of tab travel', () => {
+    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
+
+    expect(motionSectionProps['tab-transition-panel']).toMatchObject({
+      custom: 0,
+      initial: { opacity: 0, x: 0 },
+      animate: { opacity: 1, x: 0 },
+      exit: { opacity: 0, x: 0 },
     });
 
-    it('swipe left advances to the next tab', () => {
-      render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
-      swipePage(-100);
-      expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('transactions');
+    const { onTabChange } = appLayoutMock.mock.calls[0][0];
+
+    act(() => {
+      onTabChange('transactions');
     });
 
-    it('swipe right goes to the previous tab', () => {
-      render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="transactions" />);
-      swipePage(100);
-      expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('dashboard');
+    expect(motionSectionProps['tab-transition-panel']).toMatchObject({
+      custom: 1,
+      initial: { opacity: 0, x: 24 },
+      animate: { opacity: 1, x: 0 },
+      exit: { opacity: 0, x: -24 },
     });
 
-    it('swipe left on the last tab does nothing', () => {
-      render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="accounts" />);
-      const before = appLayoutMock.mock.lastCall[0].currentTab;
-      swipePage(-100);
-      expect(appLayoutMock.mock.lastCall[0].currentTab).toBe(before);
+    act(() => {
+      appLayoutMock.mock.lastCall[0].onTabChange('dashboard');
     });
 
-    it('swipe right on the first tab does nothing', () => {
-      render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
-      const before = appLayoutMock.mock.lastCall[0].currentTab;
-      swipePage(100);
-      expect(appLayoutMock.mock.lastCall[0].currentTab).toBe(before);
-    });
-
-    it('swipe below 50px threshold does nothing', () => {
-      render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
-      const before = appLayoutMock.mock.lastCall[0].currentTab;
-      swipePage(-30);
-      expect(appLayoutMock.mock.lastCall[0].currentTab).toBe(before);
-    });
-
-    it('swipe is ignored on the settings tab', () => {
-      render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="settings" />);
-      const before = appLayoutMock.mock.lastCall[0].currentTab;
-      swipePage(-100);
-      expect(appLayoutMock.mock.lastCall[0].currentTab).toBe(before);
-    });
-
-    it('swipe is ignored when panning starts inside a data-no-swipe element', () => {
-      render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
-      const noSwipeEl = document.createElement('div');
-      noSwipeEl.dataset.noSwipe = '';
-      document.body.appendChild(noSwipeEl);
-      swipePage(-100, noSwipeEl);
-      expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('dashboard');
-      document.body.removeChild(noSwipeEl);
-    });
-
-    it('swipe is ignored when panning starts inside a child of a data-no-swipe element', () => {
-      render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="dashboard" />);
-      const noSwipeEl = document.createElement('div');
-      noSwipeEl.dataset.noSwipe = '';
-      const child = document.createElement('span');
-      noSwipeEl.appendChild(child);
-      document.body.appendChild(noSwipeEl);
-      swipePage(-100, child);
-      expect(appLayoutMock.mock.lastCall[0].currentTab).toBe('dashboard');
-      document.body.removeChild(noSwipeEl);
+    expect(motionSectionProps['tab-transition-panel']).toMatchObject({
+      custom: -1,
+      initial: { opacity: 0, x: -24 },
+      animate: { opacity: 1, x: 0 },
+      exit: { opacity: 0, x: 24 },
     });
   });
 });

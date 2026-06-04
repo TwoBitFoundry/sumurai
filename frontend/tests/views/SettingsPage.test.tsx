@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { useTheme } from '@/context/ThemeContext';
 import SettingsPage from '@/views/SettingsPage';
@@ -22,11 +23,16 @@ describe('SettingsPage', () => {
       colors: {} as any,
     } as any);
 
-    const { container } = render(<SettingsPage />);
+    const queryClient = new QueryClient();
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <SettingsPage />
+      </QueryClientProvider>
+    );
 
     const pageContainer = container.firstElementChild as HTMLElement;
     const accountSettingsBadge = screen.getByText('Settings');
-    const appearanceLabel = screen.getByText('Adjust your appearance');
+    const appearanceLabel = screen.getByText('Choose your banners');
     const accountSettingsCard = accountSettingsBadge.closest('[class*="space-y-5"]');
     const themeSelector = screen.getByRole('radiogroup', { name: 'Theme' });
 

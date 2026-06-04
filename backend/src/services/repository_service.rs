@@ -23,9 +23,9 @@ use anyhow::Result;
 use async_trait::async_trait;
 use chrono::NaiveDate;
 use entity::{
-    accounts, budgets, provider_connections, provider_credentials, simplefin_hidden_orgs,
-    simplefin_root_credentials, transaction_category_overrides, transactions,
-    user_custom_categories, users, webauthn_credentials,
+    accounts, budgets, merchant_aliases, provider_connections, provider_credentials,
+    simplefin_hidden_orgs, simplefin_root_credentials, transaction_category_overrides,
+    transactions, user_custom_categories, users, webauthn_credentials,
 };
 use sea_orm::{
     sea_query::{Expr, Func, JoinType, OnConflict, Query, SimpleExpr},
@@ -64,6 +64,7 @@ pub(crate) struct TransactionWithAccountRow {
     pub(crate) account_mask: Option<String>,
     pub(crate) is_overridden: bool,
     pub(crate) is_custom: bool,
+    pub(crate) original_merchant_name: Option<String>,
 }
 
 type TransactionsInsightsRow = (
@@ -334,6 +335,10 @@ pub trait DatabaseRepository: Send + Sync {
         user_id: &Uuid,
         updates: &[TransactionCategoryUpdate],
     ) -> Result<()>;
+
+    async fn get_active_merchant_aliases(
+        &self,
+    ) -> Result<Vec<crate::services::merchant_normalization::types::AliasRow>>;
 }
 
 pub struct PostgresRepository {
@@ -513,6 +518,7 @@ impl PostgresRepository {
             created_at: Set(Some(Self::to_db_time(
                 transaction.created_at.unwrap_or_else(chrono::Utc::now),
             ))),
+            original_merchant_name: Set(transaction.original_merchant_name.clone()),
             ..Default::default()
         }
     }
@@ -530,6 +536,7 @@ impl PostgresRepository {
                 .update_columns([
                     transactions::Column::Amount,
                     transactions::Column::MerchantName,
+                    transactions::Column::OriginalMerchantName,
                     transactions::Column::Pending,
                 ])
                 .to_owned(),
@@ -647,6 +654,7 @@ impl PostgresRepository {
                 transactions::Column::Amount,
                 transactions::Column::Date,
                 transactions::Column::MerchantName,
+                transactions::Column::OriginalMerchantName,
                 transactions::Column::CategoryDetailed,
                 transactions::Column::CategoryConfidence,
                 transactions::Column::PaymentChannel,
@@ -839,6 +847,7 @@ impl PostgresRepository {
             account_mask: row.account_mask,
             is_custom: row.is_custom,
             is_overridden: row.is_overridden,
+            original_merchant_name: row.original_merchant_name,
         }
     }
 
@@ -2577,5 +2586,27 @@ impl DatabaseRepository for PostgresRepository {
             })
         })
         .await
+    }
+
+    async fn get_active_merchant_aliases(
+        &self,
+    ) -> Result<Vec<crate::services::merchant_normalization::types::AliasRow>> {
+        use crate::services::merchant_normalization::types::AliasRow;
+
+        let conn = self.conn();
+        let rows = merchant_aliases::Entity::find()
+            .filter(merchant_aliases::Column::IsActive.eq(true))
+            .all(&conn)
+            .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|r| AliasRow {
+                match_type: r.match_type,
+                match_key: r.match_key,
+                canonical_name: r.canonical_name,
+                priority: r.priority,
+            })
+            .collect())
     }
 }

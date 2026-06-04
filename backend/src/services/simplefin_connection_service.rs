@@ -11,6 +11,7 @@ use crate::services::cache_service::CacheService;
 use crate::services::connection_service::{
     ProviderSyncError, SimpleFinConnectError, SyncConnectionParams,
 };
+use crate::services::merchant_normalization::service::MerchantNormalizationService;
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::simplefin_org_service::{conn_id_is_hidden, SimpleFinOrganizationService};
 use crate::services::sync_service::SyncService;
@@ -28,6 +29,7 @@ pub struct SimpleFinConnectionService {
     credential_resolvers:
         std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>>,
     org_service: Arc<SimpleFinOrganizationService>,
+    merchant_normalization_service: Arc<MerchantNormalizationService>,
 }
 
 fn simplefin_org_conn_id_from_item_id(item_id: &str, user_id: &Uuid) -> Option<String> {
@@ -92,12 +94,17 @@ impl SimpleFinConnectionService {
         >,
         org_service: Arc<SimpleFinOrganizationService>,
     ) -> Self {
+        let merchant_normalization_service = Arc::new(MerchantNormalizationService::new(
+            Arc::clone(&db_repository),
+            Arc::clone(&cache_service),
+        ));
         Self {
             db_repository,
             cache_service,
             provider_registry,
             credential_resolvers,
             org_service,
+            merchant_normalization_service,
         }
     }
 
@@ -307,6 +314,12 @@ impl SimpleFinConnectionService {
             });
         }
 
+        if conn_id == crate::seed::SUMURAI_DEMO_ORG_CONN_ID {
+            return self
+                .sync_demo_institution(params, connection, sync_timestamp)
+                .await;
+        }
+
         let provider_credentials = self
             .load_simplefin_access_url(params.user_id)
             .await
@@ -458,7 +471,7 @@ impl SimpleFinConnectionService {
             txn.category_confidence.clear();
         }
 
-        let valid_transactions: Vec<crate::models::transaction::Transaction> = transactions
+        let mut valid_transactions: Vec<crate::models::transaction::Transaction> = transactions
             .iter()
             .filter_map(|transaction| {
                 if transaction.account_id.is_nil() {
@@ -468,6 +481,14 @@ impl SimpleFinConnectionService {
                 }
             })
             .collect();
+
+        if let Err(e) = self
+            .merchant_normalization_service
+            .normalize_batch(&mut valid_transactions)
+            .await
+        {
+            tracing::warn!("Merchant name normalization failed: {}", e);
+        }
 
         for chunk in valid_transactions.chunks(500) {
             let _ = self
@@ -580,6 +601,85 @@ impl SimpleFinConnectionService {
             },
             simplefin_institution_results: Some(simplefin_institution_results),
             bridge_warnings: (!bridge_warnings.is_empty()).then_some(bridge_warnings),
+        })
+    }
+
+    async fn sync_demo_institution(
+        &self,
+        params: SyncConnectionParams<'_>,
+        connection: &ProviderConnection,
+        sync_timestamp: chrono::DateTime<chrono::Utc>,
+    ) -> Result<SyncTransactionsResponse, ProviderSyncError> {
+        use crate::models::transaction::SyncMetadata;
+
+        let accounts: Vec<crate::models::account::Account> = self
+            .db_repository
+            .get_accounts_for_user(params.user_id)
+            .await
+            .map_err(ProviderSyncError::AccountLookup)?
+            .into_iter()
+            .filter(|a| a.provider_connection_id == Some(connection.id))
+            .collect();
+
+        let account_ids: std::collections::HashSet<Uuid> = accounts.iter().map(|a| a.id).collect();
+
+        let mut transactions: Vec<crate::models::transaction::Transaction> = self
+            .db_repository
+            .get_transactions_for_user(params.user_id)
+            .await
+            .map_err(ProviderSyncError::TransactionLookup)?
+            .into_iter()
+            .filter(|t| account_ids.contains(&t.account_id))
+            .collect();
+
+        for txn in &mut transactions {
+            txn.merchant_name = txn.original_merchant_name.clone();
+        }
+
+        if let Err(e) = self
+            .merchant_normalization_service
+            .normalize_batch(&mut transactions)
+            .await
+        {
+            tracing::warn!("Demo sync normalization failed: {}", e);
+        }
+
+        let _ = self
+            .db_repository
+            .upsert_transactions_batch(&transactions, params.user_id)
+            .await;
+
+        for txn in &transactions {
+            let _ = self.cache_service.add_transaction(params.jwt_id, txn).await;
+        }
+
+        let transaction_count = transactions.len() as i32;
+        let account_count = accounts.len() as i32;
+
+        let institution_result = SimpleFinInstitutionSyncResult {
+            institution_name: connection
+                .institution_name
+                .clone()
+                .unwrap_or_else(|| "Sumurai Demo Bank".to_string()),
+            org_conn_id: Some(crate::seed::SUMURAI_DEMO_ORG_CONN_ID.to_string()),
+            connection_id: Some(connection.id.to_string()),
+            status: SimpleFinInstitutionSyncStatus::Synced,
+            transaction_count: Some(transaction_count),
+            message: None,
+        };
+
+        Ok(SyncTransactionsResponse {
+            transactions,
+            metadata: SyncMetadata {
+                transaction_count,
+                account_count,
+                sync_timestamp: sync_timestamp.to_rfc3339(),
+                start_date: String::new(),
+                end_date: String::new(),
+                connection_updated: false,
+            },
+            simplefin_institution_results: Some(vec![institution_result]),
+            bridge_warnings: None,
         })
     }
 

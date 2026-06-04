@@ -71,6 +71,7 @@ fn make_other_transaction(user_id: Uuid, id: Uuid) -> Transaction {
         payment_channel: None,
         pending: false,
         created_at: None,
+        original_merchant_name: None,
     }
 }
 

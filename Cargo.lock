@@ -2328,9 +2328,11 @@ name = "migration"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "chrono",
  "entity",
  "sea-orm-migration",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -4589,6 +4591,7 @@ dependencies = [
  "mockall",
  "ndarray",
  "ofx-rs",
+ "once_cell",
  "opentelemetry",
  "opentelemetry-otlp",
  "opentelemetry-proto",
@@ -4598,6 +4601,7 @@ dependencies = [
  "quick-xml 0.40.1",
  "rand 0.10.1",
  "redis",
+ "regex",
  "reqwest 0.13.3",
  "rust_decimal",
  "rust_decimal_macros",
@@ -4613,6 +4617,7 @@ dependencies = [
  "tracing",
  "tracing-opentelemetry",
  "tracing-subscriber",
+ "unicode-normalization",
  "url",
  "utoipa",
  "utoipa-scalar",

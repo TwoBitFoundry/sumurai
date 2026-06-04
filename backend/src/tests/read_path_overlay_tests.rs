@@ -64,6 +64,7 @@ async fn setup_test_data(
         payment_channel: None,
         pending: false,
         created_at: None,
+        original_merchant_name: None,
     };
 
     db::query(
@@ -100,6 +101,7 @@ async fn setup_test_data(
         payment_channel: None,
         pending: false,
         created_at: None,
+        original_merchant_name: None,
     };
 
     db::query(

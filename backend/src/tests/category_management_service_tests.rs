@@ -52,6 +52,7 @@ fn make_transaction(
         payment_channel: None,
         pending: false,
         created_at: None,
+        original_merchant_name: None,
     }
 }
 

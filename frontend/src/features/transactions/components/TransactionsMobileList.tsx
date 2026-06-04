@@ -74,6 +74,7 @@ export const TransactionsMobileList: React.FC<Props> = ({
       >
         {visibleItems.map((transaction, index) => {
           const merchant = transaction.name || transaction.merchant || '-';
+          const merchantTooltip = transaction.originalMerchantName || merchant;
           const accountLabel = formatAccountLabel(transaction);
           const metaTitle = accountLabel
             ? `${formatMobileDate(transaction.date)} · ${accountLabel}`
@@ -108,7 +109,7 @@ export const TransactionsMobileList: React.FC<Props> = ({
                     'leading-snug',
                     uiTextRecipes.primary
                   )}
-                  title={merchant}
+                  title={merchantTooltip}
                 >
                   {merchant}
                 </p>

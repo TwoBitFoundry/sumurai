@@ -7,4 +7,6 @@ edition = "2021"
 sea-orm-migration = { version = "1", features = ["runtime-tokio-rustls", "sqlx-postgres", "with-uuid", "with-chrono", "with-rust_decimal", "with-json", "cli"] }
 entity = { path = "../entity" }
 async-trait = "0.1"
+chrono = { version = "0.4", features = ["clock"] }
 tokio = { version = "1", features = ["full"] }
+uuid = { version = "1", features = ["v4"] }

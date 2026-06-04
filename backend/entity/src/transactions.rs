@@ -29,6 +29,7 @@ pub struct Model {
     pub created_at: Option<DateTimeWithTimeZone>,
     pub user_id: Option<Uuid>,
     pub normalized_merchant: Option<String>,
+    pub original_merchant_name: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveColumn)]
@@ -47,6 +48,7 @@ pub enum Column {
     CreatedAt,
     UserId,
     NormalizedMerchant,
+    OriginalMerchantName,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DerivePrimaryKey)]
@@ -86,6 +88,7 @@ impl ColumnTrait for Column {
             Self::CreatedAt => ColumnType::TimestampWithTimeZone.def().null(),
             Self::UserId => ColumnType::Uuid.def().null(),
             Self::NormalizedMerchant => ColumnType::Text.def().null(),
+            Self::OriginalMerchantName => ColumnType::String(StringLen::None).def().null(),
         }
     }
 }

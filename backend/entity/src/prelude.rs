@@ -2,6 +2,7 @@
 
 pub use super::accounts::Entity as Accounts;
 pub use super::budgets::Entity as Budgets;
+pub use super::merchant_aliases::Entity as MerchantAliases;
 pub use super::provider_connections::Entity as ProviderConnections;
 pub use super::provider_credentials::Entity as ProviderCredentials;
 pub use super::simplefin_hidden_orgs::Entity as SimplefinHiddenOrgs;

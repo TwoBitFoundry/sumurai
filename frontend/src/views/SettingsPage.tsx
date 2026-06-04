@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 import { ThemeModeSelector } from '@/components/ThemeModeSelector';
@@ -6,7 +7,7 @@ import { PasskeySecuritySection } from '@/features/settings/PasskeySecuritySecti
 import { pageLayoutRecipes } from '@/layouts/PageLayout';
 import { AuthService } from '@/services/authService';
 import { SettingsService } from '@/services/SettingsService';
-import { Alert, Badge, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
+import { Alert, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { cn } from '@/ui/primitives/utils';
 import {
@@ -23,6 +24,8 @@ interface SettingsPageProps {
 
 export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const { preference, setPreference } = useTheme();
+  const queryClient = useQueryClient();
+  const userEmail = queryClient.getQueryData<string>(['user', 'email']);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [confirmText, setConfirmText] = useState('');
@@ -64,13 +67,24 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       <div className={cn('flex', 'flex-col', 'gap-6')}>
         <GlassCard variant="default" padding="lg">
           <div className={cn('space-y-5')}>
-            <div className={cn('space-y-3')}>
-              <Badge size="md">Settings</Badge>
+            <div className={cn('space-y-2')}>
+              <span className={pageLayoutRecipes.badge}>Settings</span>
+              <h1 className={pageLayoutRecipes.title}>Inspect the armory</h1>
+              <p className={pageLayoutRecipes.subtitle}>Take matters into your own hands.</p>
             </div>
+
+            {userEmail && (
+              <section className={cn('space-y-3')}>
+                <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+                  Designated as
+                </h2>
+                <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>{userEmail}</p>
+              </section>
+            )}
 
             <section className={cn('space-y-3')}>
               <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
-                Adjust your appearance
+                Choose your banners
               </h2>
               <ThemeModeSelector value={preference} onChange={setPreference} />
             </section>
@@ -80,6 +94,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         </GlassCard>
 
         <GlassCard variant="default" padding="lg" className={cn('space-y-4')}>
+          <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+            Retire from service
+          </h2>
           <Alert
             variant="error"
             title="Account Deletion Zone"

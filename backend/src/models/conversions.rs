@@ -55,6 +55,7 @@ impl From<entity::transactions::Model> for Transaction {
             payment_channel: m.payment_channel,
             pending: m.pending.unwrap_or(false),
             created_at: opt_fixed_to_utc(m.created_at),
+            original_merchant_name: m.original_merchant_name,
         }
     }
 }
@@ -220,6 +221,7 @@ mod tests {
             pending: None,
             created_at: None,
             normalized_merchant: None,
+            original_merchant_name: None,
         };
         let txn = Transaction::from(m);
         assert!(!txn.pending);

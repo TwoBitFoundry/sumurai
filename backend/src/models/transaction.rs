@@ -47,6 +47,7 @@ pub struct Transaction {
     pub payment_channel: Option<String>,
     pub pending: bool,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub original_merchant_name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
@@ -90,6 +91,7 @@ pub struct TransactionWithAccount {
     pub account_mask: Option<String>,
     pub is_custom: bool,
     pub is_overridden: bool,
+    pub original_merchant_name: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -368,6 +370,7 @@ impl Transaction {
             payment_channel,
             pending: false,
             created_at: Some(chrono::Utc::now()),
+            original_merchant_name: Some(merchant_name.trim().to_string()),
         }
     }
 
@@ -441,6 +444,7 @@ impl Transaction {
             payment_channel: None,
             pending: false,
             created_at: Some(chrono::Utc::now()),
+            original_merchant_name: Some(description.to_string()),
         })
     }
 
@@ -563,6 +567,7 @@ impl Transaction {
             payment_channel: None,
             pending: teller_txn["status"].as_str() != Some("posted"),
             created_at: Some(chrono::Utc::now()),
+            original_merchant_name: None,
         }
     }
 
@@ -630,6 +635,7 @@ impl Transaction {
             payment_channel: plaid_txn["payment_channel"].as_str().map(String::from),
             pending: plaid_txn["pending"].as_bool().unwrap_or(false),
             created_at: Some(chrono::Utc::now()),
+            original_merchant_name: None,
         }
     }
 

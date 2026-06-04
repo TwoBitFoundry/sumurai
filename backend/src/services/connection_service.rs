@@ -16,6 +16,7 @@ use crate::providers::{
     FinancialDataProvider, InstitutionInfo, ProviderCredentials, ProviderRegistry,
 };
 use crate::services::categorization::categorization_service::Categorizer;
+use crate::services::merchant_normalization::service::MerchantNormalizationService;
 use crate::services::{
     cache_service::CacheService, repository_service::DatabaseRepository, sync_service::SyncService,
 };
@@ -34,6 +35,7 @@ pub struct ConnectionService {
         std::collections::HashMap<String, Arc<dyn crate::providers::ProviderCredentialResolver>>,
     simplefin_connection_service:
         Option<Arc<crate::services::simplefin_connection_service::SimpleFinConnectionService>>,
+    merchant_normalization_service: Arc<MerchantNormalizationService>,
 }
 
 #[derive(Debug)]
@@ -169,12 +171,17 @@ impl ConnectionService {
             Arc<dyn crate::providers::ProviderCredentialResolver>,
         >,
     ) -> Self {
+        let merchant_normalization_service = Arc::new(MerchantNormalizationService::new(
+            db_repository.clone(),
+            cache_service.clone(),
+        ));
         Self {
             db_repository,
             cache_service,
             provider_registry,
             credential_resolvers,
             simplefin_connection_service: None,
+            merchant_normalization_service,
         }
     }
 
@@ -1303,6 +1310,18 @@ impl ConnectionService {
             txn.category_primary = "OTHER".to_string();
             txn.category_detailed = "OTHER".to_string();
             txn.category_confidence.clear();
+        }
+
+        if let Err(e) = self
+            .merchant_normalization_service
+            .normalize_batch(&mut valid_transactions)
+            .await
+        {
+            tracing::warn!(
+                "Merchant normalization failed for user {}: {}",
+                params.user_id,
+                e
+            );
         }
 
         for chunk in valid_transactions.chunks(500) {

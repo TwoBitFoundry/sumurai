@@ -4,6 +4,7 @@ export interface BackendTransaction {
   id: string;
   date: string;
   merchant_name?: string;
+  original_merchant_name?: string;
   amount: number;
   category_primary?: string;
   category_detailed?: string;
@@ -33,6 +34,7 @@ export class TransactionTransformer {
       date: bt.date,
       name: bt.merchant_name || 'Unknown',
       merchant: bt.merchant_name,
+      originalMerchantName: bt.original_merchant_name,
       amount: bt.amount,
       category,
       account_name: bt.account_name,

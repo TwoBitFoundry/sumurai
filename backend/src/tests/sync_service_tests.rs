@@ -119,6 +119,7 @@ fn test_map_transactions_to_accounts_updates_account_ids() {
         payment_channel: Some("in_store".to_string()),
         pending: false,
         created_at: Some(Utc::now()),
+        original_merchant_name: None,
     }];
 
     sync_service.map_transactions_to_accounts(&mut transactions, &account_mapping);

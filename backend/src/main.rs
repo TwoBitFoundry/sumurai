@@ -321,6 +321,7 @@ async fn main() -> anyhow::Result<()> {
     let auth_service = Arc::new(AuthService::new(jwt_secret)?);
 
     seed::maybe_seed_demo_user(&db_repository, &auth_service).await?;
+    crate::seed::maybe_seed_demo_simplefin_data(&db_repository, &cache_service).await?;
 
     let model_dir = CategorizationService::model_dir();
     tracing::info!(
@@ -875,11 +876,22 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
 )]
 async fn register_user(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Json(req): Json<auth_models::RegisterRequest>,
 ) -> Result<Json<auth_models::RegisterBeginResponse>, (StatusCode, Json<ApiErrorResponse>)> {
     if req.password.is_some() {
         return Err(ApiErrorResponse::bad_request(
             "Password registration is no longer supported; enroll a passkey instead",
+        ));
+    }
+
+    let authenticated_user_id = extract_auth_cookie_token(&headers)
+        .and_then(|token| state.auth_service.validate_token(&token).ok())
+        .and_then(|claims| Uuid::parse_str(&claims.sub).ok());
+
+    if authenticated_user_id.is_some() {
+        return Err(ApiErrorResponse::bad_request(
+            "Authenticated passkey enrollment must use /api/auth/passkey/enroll/finish",
         ));
     }
 
@@ -1073,6 +1085,7 @@ async fn refresh_user_session(
         )),
         Json(auth_models::AuthResponse {
             user_id: claims.user_id(),
+            email: user.email.clone(),
             expires_at: auth_token.expires_at.to_rfc3339(),
             onboarding_completed: user.onboarding_completed,
             requires_passkey_enrollment: false,
@@ -4615,6 +4628,7 @@ async fn finish_passkey_registration(
 
     let body = serde_json::to_string(&auth_models::AuthResponse {
         user_id: user_id.to_string(),
+        email: user.email.clone(),
         expires_at: auth_token.expires_at.to_rfc3339(),
         onboarding_completed: user.onboarding_completed,
         requires_passkey_enrollment: false,
@@ -4851,6 +4865,7 @@ async fn login_with_password(
         )),
         Json(auth_models::AuthResponse {
             user_id: user_id.to_string(),
+            email: user.email.clone(),
             expires_at: auth_token.expires_at.to_rfc3339(),
             onboarding_completed: user.onboarding_completed,
             requires_passkey_enrollment: !seed_user_password_fallback(&user),
@@ -5184,6 +5199,7 @@ async fn finish_passkey_login(
         )),
         Json(auth_models::AuthResponse {
             user_id: user_id.to_string(),
+            email: user.email.clone(),
             expires_at: auth_token.expires_at.to_rfc3339(),
             onboarding_completed: user.onboarding_completed,
             requires_passkey_enrollment: false,
