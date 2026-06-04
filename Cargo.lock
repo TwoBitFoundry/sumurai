@@ -2328,9 +2328,11 @@ name = "migration"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "chrono",
  "entity",
  "sea-orm-migration",
  "tokio",
+ "uuid",
 ]
 
 [[package]]

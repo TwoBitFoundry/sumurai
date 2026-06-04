@@ -158,10 +158,16 @@ Do not run `cargo run -p migration` against a legacy SQLx database outside Compo
 
 ### Add a migration
 
-1. Create `backend/migration/src/m<YYYYMMDD>_<name>.rs` implementing `MigrationTrait` (use `SchemaManager` builders; use `execute_unprepared` for RLS policy DDL the builder cannot express).
-2. Register the module in `backend/migration/src/lib.rs` and append it to `Migrator::migrations()`.
-3. Apply via Docker: `docker compose -f docker-compose.dev.yml up -d --build`
-4. Regenerate entities (see below)
+1. Update or add entities in `backend/entity/src/` first (schema source of truth).
+2. Scaffold the migration with SeaORM CLI (registers the module in `backend/migration/src/lib.rs`):
+
+   ```bash
+   sea-orm-cli migrate generate <name> -d backend/migration --local-time
+   ```
+
+3. Implement `up`/`down` with SeaORM builders — prefer `Schema::create_table_from_entity`, `entity::*::Column`, and `ActiveModel` inserts. Reserve `execute_unprepared` for RLS policy DDL the builder cannot express.
+4. Apply via Docker: `docker compose -f docker-compose.dev.yml up -d --build`
+5. Regenerate entities from the migrated database (see below)
 
 Example migration skeleton:
 
