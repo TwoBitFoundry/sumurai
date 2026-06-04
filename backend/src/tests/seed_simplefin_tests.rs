@@ -136,8 +136,18 @@ async fn seeds_connection_five_accounts_and_nineteen_transactions() {
             assert_eq!(transactions.len(), 19);
             Box::pin(async { Ok(()) })
         });
+    mock_db
+        .expect_get_active_merchant_aliases()
+        .returning(|| Box::pin(async { Ok(vec![]) }));
 
-    let mock_cache = MockCacheService::new();
+    let mut mock_cache = MockCacheService::new();
+    mock_cache
+        .expect_get_string()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_cache
+        .expect_set_with_ttl()
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
+
     let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
     let cache: Arc<dyn crate::services::CacheService> = Arc::new(mock_cache);
 
@@ -170,9 +180,13 @@ async fn transaction_original_merchant_names_match_raw_descriptions() {
         .times(1)
         .returning(|transactions, _| {
             for txn in transactions {
-                assert_eq!(
-                    txn.merchant_name, txn.original_merchant_name,
-                    "merchant_name and original_merchant_name must match before normalization"
+                assert!(
+                    txn.original_merchant_name.is_some(),
+                    "original_merchant_name must be set to the raw description"
+                );
+                assert!(
+                    txn.merchant_name.is_some(),
+                    "merchant_name must be set after normalization"
                 );
                 assert!(
                     txn.provider_transaction_id
@@ -184,8 +198,18 @@ async fn transaction_original_merchant_names_match_raw_descriptions() {
             }
             Box::pin(async { Ok(()) })
         });
+    mock_db
+        .expect_get_active_merchant_aliases()
+        .returning(|| Box::pin(async { Ok(vec![]) }));
 
-    let mock_cache = MockCacheService::new();
+    let mut mock_cache = MockCacheService::new();
+    mock_cache
+        .expect_get_string()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_cache
+        .expect_set_with_ttl()
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
+
     let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
     let cache: Arc<dyn crate::services::CacheService> = Arc::new(mock_cache);
 

@@ -2,6 +2,7 @@ use crate::models::account::Account;
 use crate::models::auth::User;
 use crate::models::plaid::ProviderConnection;
 use crate::models::transaction::Transaction;
+use crate::services::merchant_normalization::service::MerchantNormalizationService;
 use crate::services::repository_service::DatabaseRepository;
 use crate::services::{AuthService, CacheService};
 use chrono::{NaiveDate, Utc};
@@ -62,7 +63,7 @@ pub async fn maybe_seed_demo_user(
 
 pub async fn maybe_seed_demo_simplefin_data(
     db: &Arc<dyn DatabaseRepository>,
-    _cache_service: &Arc<dyn CacheService>,
+    cache_service: &Arc<dyn CacheService>,
 ) -> anyhow::Result<()> {
     if !std::env::var("SEED_DEMO_USER")
         .map(|v| v.eq_ignore_ascii_case("true"))
@@ -318,7 +319,7 @@ pub async fn maybe_seed_demo_simplefin_data(
         ),
     ];
 
-    let transactions: Vec<Transaction> = raw_txns
+    let mut transactions: Vec<Transaction> = raw_txns
         .iter()
         .map(|(txn_id, account_id, raw_desc, amount_str)| Transaction {
             id: Uuid::new_v4(),
@@ -338,6 +339,15 @@ pub async fn maybe_seed_demo_simplefin_data(
             original_merchant_name: Some(raw_desc.to_string()),
         })
         .collect();
+
+    let normalization_service =
+        MerchantNormalizationService::new(Arc::clone(db), Arc::clone(cache_service));
+    if let Err(e) = normalization_service
+        .normalize_batch(&mut transactions)
+        .await
+    {
+        tracing::warn!("Demo seed normalization failed: {}", e);
+    }
 
     db.upsert_transactions_batch(&transactions, &user_id)
         .await
