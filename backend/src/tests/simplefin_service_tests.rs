@@ -1109,6 +1109,9 @@ fn build_simplefin_sync_service_with_categorizer_and_accounts(
     mock_db
         .expect_count_transactions()
         .returning(|_, _, _, _, _, _| Box::pin(async { Ok(0) }));
+    mock_db
+        .expect_get_active_merchant_aliases()
+        .returning(|| Box::pin(async { Ok(vec![]) }));
 
     let mut mock_cache = MockCacheService::new();
     mock_cache

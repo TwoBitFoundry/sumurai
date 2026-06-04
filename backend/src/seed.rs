@@ -12,7 +12,6 @@ use uuid::Uuid;
 
 pub const DEMO_EMAIL: &str = "me@test.com";
 const DEMO_PASSWORD: &str = "Test1234!";
-#[allow(dead_code)]
 pub const SUMURAI_DEMO_ORG_CONN_ID: &str = "sumurai_demo";
 
 pub async fn maybe_seed_demo_user(
