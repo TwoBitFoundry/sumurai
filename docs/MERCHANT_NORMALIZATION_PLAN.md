@@ -154,10 +154,10 @@ and expose the new field through the API.
 - Regenerate OpenAPI (`backend/openapi/`, `docs/OPENAPI.json`).
 
 **Acceptance criteria**
-- [ ] Each ingestion constructor sets `original_merchant_name` to the untouched raw source.
-- [ ] Sync and CSV/OFX import both run `normalize_batch` before persistence.
-- [ ] `/api/transactions` returns `original_merchant_name` and a normalized `merchant_name`.
-- [ ] OpenAPI regenerated; `cargo build`/`clippy` clean; backend test suite green.
+- [x] Each ingestion constructor sets `original_merchant_name` to the untouched raw source.
+- [x] Sync and CSV/OFX import both run `normalize_batch` before persistence.
+- [x] `/api/transactions` returns `original_merchant_name` and a normalized `merchant_name`.
+- [x] OpenAPI regenerated; `cargo build`/`clippy` clean; backend test suite green.
 
 ---
 

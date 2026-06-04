@@ -64,6 +64,7 @@ pub(crate) struct TransactionWithAccountRow {
     pub(crate) account_mask: Option<String>,
     pub(crate) is_overridden: bool,
     pub(crate) is_custom: bool,
+    pub(crate) original_merchant_name: Option<String>,
 }
 
 type TransactionsInsightsRow = (
@@ -517,6 +518,7 @@ impl PostgresRepository {
             created_at: Set(Some(Self::to_db_time(
                 transaction.created_at.unwrap_or_else(chrono::Utc::now),
             ))),
+            original_merchant_name: Set(transaction.original_merchant_name.clone()),
             ..Default::default()
         }
     }
@@ -534,6 +536,7 @@ impl PostgresRepository {
                 .update_columns([
                     transactions::Column::Amount,
                     transactions::Column::MerchantName,
+                    transactions::Column::OriginalMerchantName,
                     transactions::Column::Pending,
                 ])
                 .to_owned(),
@@ -651,6 +654,7 @@ impl PostgresRepository {
                 transactions::Column::Amount,
                 transactions::Column::Date,
                 transactions::Column::MerchantName,
+                transactions::Column::OriginalMerchantName,
                 transactions::Column::CategoryDetailed,
                 transactions::Column::CategoryConfidence,
                 transactions::Column::PaymentChannel,
@@ -843,7 +847,7 @@ impl PostgresRepository {
             account_mask: row.account_mask,
             is_custom: row.is_custom,
             is_overridden: row.is_overridden,
-            original_merchant_name: None,
+            original_merchant_name: row.original_merchant_name,
         }
     }
 

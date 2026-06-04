@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use unicode_normalization::UnicodeNormalization;
 
 use crate::utils::merchant_name::normalize_merchant_display_case;

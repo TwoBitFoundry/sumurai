@@ -4740,6 +4740,12 @@
               "null"
             ]
           },
+          "original_merchant_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "payment_channel": {
             "type": [
               "string",
@@ -4853,6 +4859,12 @@
             "type": "boolean"
           },
           "merchant_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "original_merchant_name": {
             "type": [
               "string",
               "null"

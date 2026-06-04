@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -23,8 +21,11 @@ pub enum MerchantSource {
 #[derive(Debug, Clone)]
 pub struct NormalizedMerchant {
     pub display: String,
+    #[allow(dead_code)]
     pub canonical_key: Option<String>,
+    #[allow(dead_code)]
     pub source: MatchSource,
+    #[allow(dead_code)]
     pub confidence: f32,
 }
 

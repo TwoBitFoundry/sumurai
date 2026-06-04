@@ -370,7 +370,7 @@ impl Transaction {
             payment_channel,
             pending: false,
             created_at: Some(chrono::Utc::now()),
-            original_merchant_name: None,
+            original_merchant_name: Some(merchant_name.trim().to_string()),
         }
     }
 
@@ -444,7 +444,7 @@ impl Transaction {
             payment_channel: None,
             pending: false,
             created_at: Some(chrono::Utc::now()),
-            original_merchant_name: None,
+            original_merchant_name: Some(description.to_string()),
         })
     }
 
