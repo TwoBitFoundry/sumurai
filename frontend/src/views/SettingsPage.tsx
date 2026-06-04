@@ -76,7 +76,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
             {userEmail && (
               <section className={cn('space-y-3')}>
                 <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
-                  Signed in as
+                  Designated as
                 </h2>
                 <p className={cn(uiTypographyRecipes.body, uiTextRecipes.body)}>{userEmail}</p>
               </section>
