@@ -876,11 +876,22 @@ async fn error_handling_middleware(request: Request<Body>, next: Next) -> Respon
 )]
 async fn register_user(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Json(req): Json<auth_models::RegisterRequest>,
 ) -> Result<Json<auth_models::RegisterBeginResponse>, (StatusCode, Json<ApiErrorResponse>)> {
     if req.password.is_some() {
         return Err(ApiErrorResponse::bad_request(
             "Password registration is no longer supported; enroll a passkey instead",
+        ));
+    }
+
+    let authenticated_user_id = extract_auth_cookie_token(&headers)
+        .and_then(|token| state.auth_service.validate_token(&token).ok())
+        .and_then(|claims| Uuid::parse_str(&claims.sub).ok());
+
+    if authenticated_user_id.is_some() {
+        return Err(ApiErrorResponse::bad_request(
+            "Authenticated passkey enrollment must use /api/auth/passkey/enroll/finish",
         ));
     }
 

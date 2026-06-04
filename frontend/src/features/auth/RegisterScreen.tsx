@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useMemo, useState } from 'react';
 import { ToastStack } from '@/components/toastStack/ToastStack';
+import { AuthService } from '@/services/authService';
 import { PasskeyService } from '@/services/passkeyService';
 import type { AuthResponse } from '@/types/api';
 import { Alert, Badge, Button, cn, FormLabel, Input } from '@/ui/primitives';
@@ -64,6 +65,11 @@ export function RegisterScreen({
     setUiPhase('submitting');
 
     try {
+      try {
+        await AuthService.logout();
+      } catch {
+        // no active session — continue
+      }
       const begin = await PasskeyService.beginSignUp(email, name.trim());
       setUiPhase('awaitingCeremony');
       const credential = await createPasskeyCredential(
