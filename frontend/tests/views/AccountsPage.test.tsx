@@ -219,7 +219,7 @@ describe('AccountsPage', () => {
     expect(screen.getByTestId('accounts-page')).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {
-        name: /unite ally institutions under one domain\./i,
+        name: /unite ally institutions under one domain/i,
       })
     ).toBeVisible();
     expect(screen.getByText('Unavailable while offline')).toBeVisible();

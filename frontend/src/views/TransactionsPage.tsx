@@ -104,7 +104,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
     <div data-testid="transactions-page">
       <PageLayout
         badge="Transactions"
-        title="Slice and dice transactions across ally accounts"
+        title="Tally the ledgers across allies"
         subtitle="Every movement, accounted for, categorized, and within reach."
         actions={actions}
         error={error}

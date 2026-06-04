@@ -786,7 +786,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       {connectionFlow.connectionMount}
       <PageLayout
         badge={`${providerLabel} Connections`}
-        title="Unite ally institutions under one domain."
+        title="Unite ally institutions under one domain"
         subtitle="Keep every account balance in clear view; reporting on demand."
         actions={actions}
         stats={statsGrid}

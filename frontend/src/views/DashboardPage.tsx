@@ -99,7 +99,7 @@ const DashboardPage: React.FC<{
       <PageLayout
         badge="Dashboard"
         title="Appraise the warchest"
-        subtitle="Deepen understanding of holdings across ally accounts."
+        subtitle="Survey the yields across allies."
         stats={<BalancesOverview />}
       >
         <div
