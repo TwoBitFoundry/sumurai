@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeProviderCatalogMock } from '@tests/utils/providerCatalogMocks';
 import { useAccountFilter } from '@/hooks/useAccountFilter';
+import { useExport } from '@/hooks/useExport';
 import {
   type UseFinancialConnectionReturn,
   useFinancialConnection,
@@ -70,6 +71,10 @@ jest.mock('@/hooks/useFinancialConnection', () => ({
 
 jest.mock('@/hooks/useAccountFilter', () => ({
   useAccountFilter: jest.fn(),
+}));
+
+jest.mock('@/hooks/useExport', () => ({
+  useExport: jest.fn(),
 }));
 
 jest.mock('@/hooks/usePlaidConnections', () => ({
@@ -169,6 +174,12 @@ describe('AccountsPage', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
     jest.mocked(useOnlineStatus).mockReturnValue(false);
+    jest.mocked(useExport).mockReturnValue({
+      isExporting: false,
+      error: null,
+      toast: null,
+      exportAccounts: jest.fn(),
+    });
     jest.mocked(usePlaidConnections).mockReturnValue({
       connections: [],
       loading: false,
@@ -207,7 +218,9 @@ describe('AccountsPage', () => {
 
     expect(screen.getByTestId('accounts-page')).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: /every institution, answering to you/i })
+      screen.getByRole('heading', {
+        name: /bring all your ally institutions under one house, answering to you/i,
+      })
     ).toBeVisible();
     expect(screen.getByText('Unavailable while offline')).toBeVisible();
     const tellerButton = screen.getAllByRole('button', {
@@ -227,6 +240,73 @@ describe('AccountsPage', () => {
     expect(
       screen.queryByRole('button', { name: /cancel categorization/i })
     ).not.toBeInTheDocument();
+  });
+
+  it('exports all institutions from the header menu', async () => {
+    const user = userEvent.setup();
+    const exportAccounts = jest.fn().mockResolvedValue(undefined);
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
+    jest.mocked(useExport).mockReturnValue({
+      isExporting: false,
+      error: null,
+      toast: null,
+      exportAccounts,
+    });
+
+    renderAccountsPage();
+
+    const syncAllButton = screen.getByRole('button', { name: 'Sync all' });
+    const exportAllButton = screen.getByRole('button', { name: 'Export All' });
+    const connectButton = screen.getByRole('button', { name: /^connect teller to an ally$/i });
+
+    expect(
+      syncAllButton.compareDocumentPosition(exportAllButton) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      exportAllButton.compareDocumentPosition(connectButton) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+
+    await user.click(exportAllButton);
+    await user.click(screen.getByRole('button', { name: 'Export as CSV' }));
+
+    expect(exportAccounts).toHaveBeenCalledWith('csv');
+  });
+
+  it('exports a single institution from the bank card menu', async () => {
+    const user = userEvent.setup();
+    const exportAccounts = jest.fn().mockResolvedValue(undefined);
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
+    jest.mocked(useExport).mockReturnValue({
+      isExporting: false,
+      error: null,
+      toast: null,
+      exportAccounts,
+    });
+
+    renderAccountsPage();
+    await expandInstitutionAccounts(user);
+
+    await user.click(screen.getByRole('button', { name: 'Export institution data' }));
+    await user.click(screen.getByRole('button', { name: 'Export as OFX' }));
+
+    expect(exportAccounts).toHaveBeenCalledWith('ofx', 'conn_1');
+  });
+
+  it('disables export controls while an export is in flight', () => {
+    jest.mocked(useOnlineStatus).mockReturnValue(true);
+    jest.mocked(useAccountFilter).mockReturnValue(makeTellerAccountFilter());
+    jest.mocked(useExport).mockReturnValue({
+      isExporting: true,
+      error: null,
+      toast: null,
+      exportAccounts: jest.fn(),
+    });
+
+    renderAccountsPage();
+    expect(screen.getByRole('button', { name: 'Exporting...' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Export institution data' })).toBeDisabled();
   });
 
   it('shows Offline on sync when offline with linked institutions', () => {
@@ -260,7 +340,9 @@ describe('AccountsPage', () => {
     renderAccountsPage();
 
     const heroSection = screen
-      .getByRole('heading', { name: /every institution, answering to you/i })
+      .getByRole('heading', {
+        name: /bring all your ally institutions under one house, answering to you/i,
+      })
       .closest('section');
     expect(heroSection).toBeTruthy();
     expect(
@@ -749,7 +831,9 @@ describe('AccountsPage', () => {
 
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       expect(
-        screen.queryByRole('heading', { name: /every institution, answering to you/i })
+        screen.queryByRole('heading', {
+          name: /bring all your ally institutions under one house, answering to you/i,
+        })
       ).not.toBeInTheDocument();
     });
 
@@ -785,7 +869,9 @@ describe('AccountsPage', () => {
 
       expect(screen.getByTestId('provider-selection-panel')).toBeInTheDocument();
       expect(
-        screen.queryByRole('heading', { name: /every institution, answering to you/i })
+        screen.queryByRole('heading', {
+          name: /bring all your ally institutions under one house, answering to you/i,
+        })
       ).not.toBeInTheDocument();
       for (const button of screen.getAllByRole('button', { name: /^connect$/i })) {
         expect(button).toBeEnabled();
@@ -832,7 +918,9 @@ describe('AccountsPage', () => {
 
       expect(screen.queryByTestId('provider-selection-panel')).not.toBeInTheDocument();
       expect(
-        screen.getByRole('heading', { name: /every institution, answering to you/i })
+        screen.getByRole('heading', {
+          name: /bring all your ally institutions under one house, answering to you/i,
+        })
       ).toBeInTheDocument();
     });
 

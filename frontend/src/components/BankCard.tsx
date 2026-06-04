@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, RefreshCw, Unlink } from 'lucide-react';
+import { ChevronDown, FileDown, RefreshCw, Unlink } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { getSessionBankExpanded, setSessionBankExpanded } from '@/utils/sessionPreferences';
@@ -9,7 +9,7 @@ import {
   accountTypeSortOrder,
 } from '../domain/accountCategories';
 import { getConnectionStatusCaption } from '../domain/connectionStatus';
-import { cn, GlassCard, IconButton } from '../ui/primitives';
+import { cn, GlassCard, IconButton, MenuDropdown, MenuItem } from '../ui/primitives';
 import { appTitleBarRecipes } from '../ui/primitives/AppTitleBar';
 import {
   control,
@@ -40,6 +40,7 @@ interface BankConnection {
   status: 'connected' | 'needs_reauth' | 'error';
   lastSync?: string;
   provider: string;
+  connectionId?: string | null;
   accounts: Account[];
 }
 
@@ -47,6 +48,8 @@ interface BankCardProps {
   bank: BankConnection;
   onSync: (id: string) => Promise<void>;
   onDisconnect: (id: string) => Promise<void>;
+  onExport?: (format: 'csv' | 'ofx', connectionId?: string) => Promise<void>;
+  isExporting?: boolean;
   isOnline: boolean;
   onImportSuccess?: (count: number, mask: string) => void;
 }
@@ -55,6 +58,8 @@ export const BankCard: React.FC<BankCardProps> = ({
   bank,
   onSync,
   onDisconnect,
+  onExport = async () => undefined,
+  isExporting = false,
   isOnline,
   onImportSuccess,
 }) => {
@@ -107,6 +112,10 @@ export const BankCard: React.FC<BankCardProps> = ({
     setShowDisconnectModal(false);
   };
 
+  const handleExport = async (format: 'csv' | 'ofx') => {
+    await onExport(format, bank.connectionId ?? undefined);
+  };
+
   const renderGroup = (group: AccountGroupKey, accounts: Account[]) => (
     <div key={group} className={cn('space-y-3')}>
       <span className={cn(sectionBadgeClass, 'inline-flex items-center gap-2')}>
@@ -134,22 +143,90 @@ export const BankCard: React.FC<BankCardProps> = ({
       rounded="lg"
       padding="none"
       withInnerEffects={false}
-      containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
+      containerClassName={cn('p-4', 'md:p-5', 'lg:p-5')}
       className={cn('space-y-6')}
     >
       <div
         className={cn(
           'grid',
           'min-w-0',
-          'grid-cols-[auto_minmax(0,1fr)_auto]',
+          'grid-cols-[minmax(0,1fr)_auto]',
           'gap-x-3',
           'gap-y-2',
           statusCaption ? 'grid-rows-[auto_auto_auto]' : 'grid-rows-[auto_auto]'
         )}
       >
         <div
-          className={cn('col-start-1', 'row-start-1', 'flex', 'flex-col', 'items-center', 'gap-1')}
+          className={cn(
+            'col-start-1',
+            'row-start-1',
+            'flex',
+            'min-w-0',
+            'items-center',
+            'gap-2',
+            'p-3'
+          )}
         >
+          <StatusPill status={bank.status} className={cn('shrink-0')} />
+          <h3
+            title={bank.name}
+            className={cn(
+              'min-w-0',
+              'line-clamp-2',
+              'break-words',
+              uiTypographyRecipes.sectionTitle,
+              uiTextRecipes.primary
+            )}
+          >
+            {bank.name}
+          </h3>
+        </div>
+        <div
+          className={cn(
+            'col-start-2',
+            'row-start-1',
+            'row-span-2',
+            'flex',
+            'items-center',
+            'self-center',
+            'pr-3'
+          )}
+        >
+          <IconButton
+            type="button"
+            size="md"
+            onClick={handleDisconnectClick}
+            variant="danger"
+            aria-label="Disconnect"
+            className={cn('shrink-0')}
+          >
+            <Unlink />
+          </IconButton>
+        </div>
+        <div
+          className={cn(
+            'col-start-1',
+            'row-start-2',
+            'flex',
+            'flex-wrap',
+            'items-center',
+            'gap-2',
+            'px-3',
+            'pb-3'
+          )}
+        >
+          <IconButton
+            type="button"
+            size="md"
+            onClick={() => setExpanded((v) => !v)}
+            variant="ghost"
+            aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
+            className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
+          >
+            <ChevronDown
+              className={cn('transition-transform', 'duration-200', expanded && 'rotate-180')}
+            />
+          </IconButton>
           {showSyncButton ? (
             <IconButton
               type="button"
@@ -173,59 +250,37 @@ export const BankCard: React.FC<BankCardProps> = ({
               </div>
             </IconButton>
           ) : null}
-          <IconButton
-            type="button"
-            size="md"
-            onClick={() => setExpanded((v) => !v)}
-            variant="ghost"
-            aria-label={expanded ? 'Hide accounts' : 'Show accounts'}
-            className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
+          <MenuDropdown
+            trigger={
+              <IconButton
+                type="button"
+                size="md"
+                variant="ghost"
+                aria-label="Export institution data"
+                title={
+                  isExporting
+                    ? 'Exporting...'
+                    : !isOnline
+                      ? 'Unavailable while offline'
+                      : bank.connectionId == null
+                        ? 'Export unavailable'
+                        : 'Export institution data'
+                }
+                disabled={isExporting || !isOnline || bank.connectionId == null}
+                className={cn(appTitleBarRecipes.settingsIdle, 'shrink-0')}
+              >
+                <FileDown className={cn(isExporting && 'animate-pulse')} />
+              </IconButton>
+            }
           >
-            <ChevronDown
-              className={cn('transition-transform', 'duration-200', expanded && 'rotate-180')}
-            />
-          </IconButton>
+            <MenuItem onClick={() => void handleExport('csv')}>Export as CSV</MenuItem>
+            <MenuItem onClick={() => void handleExport('ofx')}>Export as OFX</MenuItem>
+          </MenuDropdown>
         </div>
-        <div
-          className={cn(
-            'col-start-2',
-            'row-start-1',
-            'row-span-2',
-            'flex',
-            'min-w-0',
-            'items-center',
-            'gap-2',
-            'self-center'
-          )}
-        >
-          <StatusPill status={bank.status} className={cn('shrink-0')} />
-          <h3
-            title={bank.name}
-            className={cn(
-              'min-w-0',
-              'line-clamp-2',
-              'break-words',
-              uiTypographyRecipes.sectionTitle,
-              uiTextRecipes.primary
-            )}
-          >
-            {bank.name}
-          </h3>
-        </div>
-        <IconButton
-          type="button"
-          size="md"
-          onClick={handleDisconnectClick}
-          variant="danger"
-          aria-label="Disconnect"
-          className={cn('col-start-3', 'row-start-1', 'shrink-0', 'self-center')}
-        >
-          <Unlink />
-        </IconButton>
         {statusCaption ? (
           <p
             className={cn(
-              'col-span-3',
+              'col-span-2',
               'row-start-3',
               uiTypographyRecipes.caption,
               ...(bank.status === 'needs_reauth'

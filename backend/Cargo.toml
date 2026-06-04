@@ -53,6 +53,7 @@ ndarray = "0.17"
 webauthn-rs = { version = "0.5.5", features = ["danger-allow-state-serialisation"] }
 url = "2.5.8"
 chrono-tz = "0.10.4"
+quick-xml = "0.40.1"
 
 [features]
 default = []

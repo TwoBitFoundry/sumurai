@@ -70,7 +70,7 @@ describe('BankCard', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Sync now' })).toBeDisabled();
-    expect(screen.getByTitle('Unavailable while offline')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Export institution data' })).toBeDisabled();
   });
 
   it('hides the sync action for SimpleFIN banks', () => {
@@ -92,6 +92,33 @@ describe('BankCard', () => {
 
     expect(screen.queryByRole('button', { name: 'Sync now' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Show accounts' })).toBeVisible();
+  });
+
+  it('renders an export menu in the header and exports the institution', async () => {
+    const user = userEvent.setup();
+    const onExport = jest.fn().mockResolvedValue(undefined);
+
+    renderWithTheme(
+      <BankCard
+        bank={{
+          id: 'bank-1',
+          name: 'Chase',
+          short: 'CH',
+          status: 'connected',
+          connectionId: 'conn-1',
+          accounts: [],
+        }}
+        onSync={jest.fn()}
+        onDisconnect={jest.fn()}
+        onExport={onExport}
+        isOnline
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Export institution data' }));
+    await user.click(screen.getByRole('button', { name: 'Export as CSV' }));
+
+    expect(onExport).toHaveBeenCalledWith('csv', 'conn-1');
   });
 
   it('sizes institution card glyphs with the shared control scale', async () => {
@@ -126,7 +153,7 @@ describe('BankCard', () => {
     expect(groupIcon?.parentElement?.className).toContain(control.glyph.lg);
   });
 
-  it('vertically centers the bank name and status icon with the action buttons', () => {
+  it('places the status icon and bank name on the first header row', () => {
     render(
       <BankCard
         bank={{
@@ -143,8 +170,29 @@ describe('BankCard', () => {
     );
 
     const heading = screen.getByRole('heading', { name: 'Chase' });
-    expect(heading.parentElement).toHaveClass('items-center');
-    expect(heading.className).not.toContain('pt-[calc');
+    const titleRow = heading.parentElement;
+    expect(titleRow).toHaveClass('items-center');
+    expect(titleRow).toHaveClass('p-3');
+    expect(
+      within(titleRow as HTMLElement).getByRole('status', { name: 'Connected' })
+    ).toBeVisible();
+
+    const actionRow = screen.getByRole('button', { name: 'Show accounts' }).parentElement;
+    expect(actionRow).toHaveClass('items-center');
+    expect(
+      within(actionRow as HTMLElement).getByRole('button', { name: 'Sync now' })
+    ).toBeVisible();
+    expect(
+      within(actionRow as HTMLElement).getByRole('button', { name: 'Export institution data' })
+    ).toBeVisible();
+    expect(
+      within(actionRow as HTMLElement).queryByRole('button', { name: 'Disconnect' })
+    ).not.toBeInTheDocument();
+
+    const disconnectButton = screen.getByRole('button', { name: 'Disconnect' });
+    expect(disconnectButton.parentElement).toHaveClass('row-span-2');
+    expect(disconnectButton.parentElement).toHaveClass('items-center');
+    expect(titleRow).not.toContainElement(disconnectButton);
   });
 
   it('shows connection status before the bank name', () => {
@@ -213,6 +261,7 @@ describe('BankCard', () => {
     const user = userEvent.setup();
     const onSync = jest.fn().mockResolvedValue(undefined);
     const onDisconnect = jest.fn().mockResolvedValue(undefined);
+    const onExport = jest.fn().mockResolvedValue(undefined);
 
     const { container } = renderWithTheme(
       <BankCard
@@ -221,6 +270,7 @@ describe('BankCard', () => {
           name: 'Chase',
           short: 'CH',
           status: 'connected',
+          connectionId: 'conn-1',
           accounts: [
             {
               id: 'acc-1',
@@ -233,6 +283,7 @@ describe('BankCard', () => {
         }}
         onSync={onSync}
         onDisconnect={onDisconnect}
+        onExport={onExport}
         isOnline
       />
     );
@@ -250,9 +301,12 @@ describe('BankCard', () => {
     await user.click(local.getByRole('button', { name: 'Sync now' }));
     expect(onSync).toHaveBeenCalledWith('bank-1');
 
+    await user.click(local.getByRole('button', { name: 'Export institution data' }));
+    await user.click(screen.getByRole('button', { name: 'Export as OFX' }));
+    expect(onExport).toHaveBeenCalledWith('ofx', 'conn-1');
+
     await user.click(local.getByRole('button', { name: 'Hide accounts' }));
     expect(local.getByRole('button', { name: 'Show accounts' })).toBeVisible();
-    await waitForElementToBeRemoved(() => local.queryByText('Checking'));
 
     await user.click(local.getByRole('button', { name: 'Show accounts' }));
     await waitFor(() => {

@@ -43,6 +43,32 @@ describe('FetchHttpClient', () => {
     );
   });
 
+  it('returns blobs and parses filenames for download responses', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(new Blob(['hello'], { type: 'text/csv' }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/csv',
+          'Content-Disposition': 'attachment; filename="sumurai-export-20240601.csv"',
+        },
+      })
+    );
+    globalThis.fetch = fetchMock as typeof fetch;
+
+    const client = new FetchHttpClient('http://example.com/api');
+    const result = await client.getBlob('/export?format=csv');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://example.com/api/export?format=csv',
+      expect.objectContaining({
+        method: 'GET',
+        credentials: 'include',
+      })
+    );
+    expect(result.filename).toBe('sumurai-export-20240601.csv');
+    expect(result.blob.type).toBe('text/csv');
+  });
+
   it('maps multipart validation errors to api error subclasses', async () => {
     const fetchMock = jest.fn().mockResolvedValue(
       new Response(JSON.stringify({ message: 'Invalid file' }), {

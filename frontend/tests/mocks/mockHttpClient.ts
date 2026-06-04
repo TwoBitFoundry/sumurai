@@ -14,6 +14,7 @@ export function createMockFunction(): MockFunction {
 export function createMockHttpClient(): MockHttpClient {
   return {
     get: createMockFunction(),
+    getBlob: createMockFunction(),
     post: createMockFunction(),
     postFormData: createMockFunction(),
     put: createMockFunction(),

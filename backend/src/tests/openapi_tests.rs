@@ -154,6 +154,27 @@ fn given_transactions_insights_when_generating_openapi_then_documents_endpoint_a
 }
 
 #[test]
+fn given_export_when_generating_openapi_then_documents_endpoint_and_query_params() {
+    let spec = serde_json::to_value(init_openapi()).unwrap();
+    let path = &spec["paths"]["/api/export"]["get"];
+
+    assert_eq!(path["tags"], serde_json::json!(["Transactions"]));
+    assert_eq!(path["parameters"][0]["name"], serde_json::json!("format"));
+    assert_eq!(
+        path["parameters"][1]["name"],
+        serde_json::json!("connection_id")
+    );
+    assert_eq!(
+        spec["components"]["schemas"]["ExportFormat"]["type"],
+        serde_json::json!("string")
+    );
+    assert_eq!(
+        spec["components"]["schemas"]["ExportQuery"]["type"],
+        serde_json::json!("object")
+    );
+}
+
+#[test]
 #[ignore]
 fn regenerate_openapi_artifacts() {
     let spec = serde_json::to_string_pretty(&init_openapi()).unwrap();

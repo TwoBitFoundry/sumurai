@@ -128,10 +128,13 @@ describe('shared responsive layout surfaces', () => {
           short: 'C',
           status: 'connected',
           lastSync: null,
+          connectionId: 'conn-1',
           accounts: [],
         }}
         onSync={jest.fn(async () => undefined)}
         onDisconnect={jest.fn(async () => undefined)}
+        onExport={jest.fn(async () => undefined)}
+        isExporting={false}
         isOnline
       />
     );

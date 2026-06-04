@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { RefreshCw } from 'lucide-react';
+import { FileDown, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, cn } from '@/ui/primitives';
+import { Button, cn, MenuDropdown, MenuItem } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { control, text as uiTextRecipes, font as uiTypographyRecipes } from '@/ui/recipes';
 import { OnboardingProviderConnectModal } from '../components/onboarding/OnboardingProviderConnectModal';
@@ -21,6 +21,7 @@ import { SyncInstitutionStatusToast } from '../features/sync/components/SyncInst
 import { useSyncAllOrchestrator } from '../features/sync/hooks/useSyncAllOrchestrator';
 import type { SyncAllRow } from '../features/sync/types/syncAllStatus';
 import { useAccountFilter } from '../hooks/useAccountFilter';
+import { useExport } from '../hooks/useExport';
 import { useFinancialConnection } from '../hooks/useFinancialConnection';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { usePlaidConnections } from '../hooks/usePlaidConnections';
@@ -111,6 +112,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const primaryConnectContent = getConnectAccountProviderContent(primaryProvider);
   const providerLabel = primaryProviderCard.title;
   const providerLogoSrc = getProviderLogoSrc(primaryProvider);
+  const { isExporting, error: exportError, toast: exportToast, exportAccounts } = useExport();
 
   const plaidConnections = usePlaidConnections({
     enabled: isOnline && providerCatalog.canConnectWith('plaid'),
@@ -205,6 +207,7 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
   const { pushToast: pushAccountsToast, ...accountsToastStack } = useAccountsToastStack(null);
   const [syncInstitutionRow, setSyncInstitutionRow] = useState<SyncAllRow | null>(null);
+  const exportInFlightRef = useRef(false);
   const dismissSyncInstitutionToast = useCallback(() => {
     setSyncInstitutionRow(null);
   }, []);
@@ -330,6 +333,17 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const openConnectModal = useCallback(() => {
     setPickerConnectingProvider('simplefin');
   }, []);
+
+  useEffect(() => {
+    if (exportInFlightRef.current && !isExporting && exportToast) {
+      pushAccountsToast(exportToast, exportError ? 'error' : 'success');
+      if (exportError) {
+        onError?.(exportError);
+      }
+    }
+
+    exportInFlightRef.current = isExporting;
+  }, [exportError, exportToast, isExporting, onError, pushAccountsToast]);
 
   const handlePrimaryConnect = useCallback(() => {
     if (primaryProvider === 'simplefin') {
@@ -683,6 +697,30 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
             {syncingAll ? 'Syncing...' : !isOnline ? 'Offline' : 'Sync all'}
           </Button>
         )}
+        <MenuDropdown
+          trigger={
+            <Button
+              type="button"
+              variant="ghost"
+              size="md"
+              className={cn(appTitleBarRecipes.settingsIdle, 'normal-case')}
+              disabled={isExporting || !isOnline}
+              title={
+                isExporting
+                  ? 'Export all in progress'
+                  : !isOnline
+                    ? 'Unavailable while offline'
+                    : undefined
+              }
+            >
+              <FileDown className={cn(control.glyph.md, isExporting && 'animate-pulse')} />
+              {isExporting ? 'Exporting...' : 'Export All'}
+            </Button>
+          }
+        >
+          <MenuItem onClick={() => void exportAccounts('csv')}>Export as CSV</MenuItem>
+          <MenuItem onClick={() => void exportAccounts('ofx')}>Export as OFX</MenuItem>
+        </MenuDropdown>
         <ConnectButton
           onClick={handlePrimaryConnect}
           disabled={connectDisabled}
@@ -748,8 +786,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
       {connectionFlow.connectionMount}
       <PageLayout
         badge={`${providerLabel} Connections`}
-        title="Every institution, answering to you."
-        subtitle="Link your ally accounts. Keep every balance in clear view."
+        title="Bring all your ally institutions under one house, answering to you."
+        subtitle="Keep every account balance in clear view."
         actions={actions}
         stats={statsGrid}
       >
@@ -758,6 +796,8 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
           onConnect={handlePrimaryConnect}
           onSync={syncBank}
           onDisconnect={disconnect}
+          onExport={exportAccounts}
+          isExporting={isExporting}
           isOnline={isOnline}
           providerName={`${providerLabel} accounts`}
           connectLabel={primaryConnectContent.cta.defaultLabel}

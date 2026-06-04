@@ -1,33 +1,53 @@
+import { AnimatePresence, motion } from 'framer-motion';
 import type React from 'react';
-import { Children, cloneElement, isValidElement, useState } from 'react';
 import {
-  border as semanticBorders,
-  effect as semanticEffects,
-  surface as semanticSurfaces,
+  Children,
+  cloneElement,
+  isValidElement,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import { createPortal } from 'react-dom';
+import {
+  floatingChromeGlass,
+  focus as focusRecipes,
   text as semanticTextRecipes,
   radius as uiRadiusRecipes,
 } from '@/ui/recipes';
 import { cn } from './utils';
 
+const MENU_POPOVER_GAP_PX = 8;
+
 export const menuDropdownRecipes = {
   content: [
-    'absolute right-0 z-20 mt-3 w-48',
+    'fixed z-50 w-48 max-w-[calc(100vw-1rem)]',
     `overflow-hidden ${uiRadiusRecipes.standard}`,
-    ...semanticBorders.glass,
-    ...semanticSurfaces.solidPanel,
+    ...floatingChromeGlass.backdrop,
+    ...floatingChromeGlass.shell,
     'p-2',
-    ...semanticEffects.glassShadow,
     'backdrop-blur-md',
-    'dark:shadow-[0_28px_70px_-36px_var(--color-effect-glass-shadow)]',
+    'backdrop-saturate-[150%]',
   ],
   item: [
     'flex w-full items-center gap-2',
     `px-3 py-2 ${uiRadiusRecipes.standard}`,
     `text-left ${semanticTextRecipes.muted}`,
+    'border border-transparent',
+    'bg-transparent',
     'transition-all duration-200 ease-out active:scale-[0.98] disabled:active:scale-100',
-    ...semanticSurfaces.hoverRow,
+    'hover:border-[var(--color-border-default)]',
+    'hover:bg-[var(--color-surface-hover-row)]',
+    'active:border-[var(--color-border-default)]',
+    'active:bg-[var(--color-surface-hover-row)]',
+    focusRecipes.visible,
     'dark:text-slate-300',
+    'dark:hover:border-[var(--color-border-divider)]',
     'dark:hover:bg-[var(--color-surface-hover-row)]',
+    'dark:active:border-[var(--color-border-divider)]',
+    'dark:active:bg-[var(--color-surface-hover-row)]',
   ],
 } as const;
 
@@ -61,6 +81,30 @@ export function MenuDropdown({
   contentClassName,
 }: MenuDropdownProps) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState<{ top: number; right: number } | null>(
+    null
+  );
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const updatePosition = useCallback(() => {
+    const triggerElement = triggerRef.current;
+    if (!triggerElement || typeof window === 'undefined') {
+      return;
+    }
+
+    const triggerRect = triggerElement.getBoundingClientRect();
+    setPopoverPosition({
+      top: triggerRect.bottom + MENU_POPOVER_GAP_PX,
+      right: Math.max(MENU_POPOVER_GAP_PX, window.innerWidth - triggerRect.right),
+    });
+  }, []);
+
   const handleTriggerClick = (event: React.MouseEvent) => {
     if (
       isValidElement<{ onClick?: React.MouseEventHandler }>(trigger) &&
@@ -72,9 +116,20 @@ export function MenuDropdown({
   };
 
   const triggerNode = isValidElement<{ onClick?: React.MouseEventHandler }>(trigger) ? (
-    cloneElement(trigger, { onClick: handleTriggerClick })
+    cloneElement(trigger as React.ReactElement<any>, {
+      onClick: handleTriggerClick,
+      ref: triggerRef,
+      'aria-haspopup': 'menu',
+      'aria-expanded': open,
+    })
   ) : (
-    <button type="button" onClick={handleTriggerClick}>
+    <button
+      ref={triggerRef}
+      type="button"
+      onClick={handleTriggerClick}
+      aria-haspopup="menu"
+      aria-expanded={open}
+    >
       {trigger}
     </button>
   );
@@ -92,14 +147,65 @@ export function MenuDropdown({
     });
   });
 
+  useLayoutEffect(() => {
+    if (!open) {
+      setPopoverPosition(null);
+      return;
+    }
+
+    updatePosition();
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) {
+        return;
+      }
+      setOpen(false);
+    };
+
+    const handleScroll = () => {
+      updatePosition();
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleScroll);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [open, updatePosition]);
+
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('relative inline-flex', className)}>
       {triggerNode}
-      {open ? (
-        <div className={cn(menuDropdownRecipes.content, contentClassName)} role="menu">
-          {menuChildren}
-        </div>
-      ) : null}
+      {mounted
+        ? createPortal(
+            <AnimatePresence>
+              {open && popoverPosition ? (
+                <motion.div
+                  ref={menuRef}
+                  role="menu"
+                  aria-label="Action menu"
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.16, ease: [0.22, 0.61, 0.36, 1] }}
+                  style={{
+                    top: popoverPosition.top,
+                    right: popoverPosition.right,
+                  }}
+                  className={cn(menuDropdownRecipes.content, contentClassName)}
+                >
+                  {menuChildren}
+                </motion.div>
+              ) : null}
+            </AnimatePresence>,
+            document.body
+          )
+        : null}
     </div>
   );
 }
