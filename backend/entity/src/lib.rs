@@ -4,6 +4,7 @@ pub mod prelude;
 
 pub mod accounts;
 pub mod budgets;
+pub mod merchant_aliases;
 pub mod provider_connections;
 pub mod provider_credentials;
 pub mod simplefin_hidden_orgs;

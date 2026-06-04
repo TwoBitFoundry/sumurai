@@ -220,6 +220,7 @@ mod tests {
             pending: None,
             created_at: None,
             normalized_merchant: None,
+            original_merchant_name: None,
         };
         let txn = Transaction::from(m);
         assert!(!txn.pending);
