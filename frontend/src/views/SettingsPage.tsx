@@ -7,7 +7,7 @@ import { PasskeySecuritySection } from '@/features/settings/PasskeySecuritySecti
 import { pageLayoutRecipes } from '@/layouts/PageLayout';
 import { AuthService } from '@/services/authService';
 import { SettingsService } from '@/services/SettingsService';
-import { Alert, Badge, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
+import { Alert, Button, FormLabel, GlassCard, Input, Modal } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
 import { cn } from '@/ui/primitives/utils';
 import {
@@ -67,8 +67,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       <div className={cn('flex', 'flex-col', 'gap-6')}>
         <GlassCard variant="default" padding="lg">
           <div className={cn('space-y-5')}>
-            <div className={cn('space-y-3')}>
-              <Badge size="md">Settings</Badge>
+            <div className={cn('space-y-2')}>
+              <span className={pageLayoutRecipes.badge}>Settings</span>
+              <h1 className={pageLayoutRecipes.title}>Your Armory</h1>
+              <p className={pageLayoutRecipes.subtitle}>Take matters into your own hands.</p>
             </div>
 
             {userEmail && (
