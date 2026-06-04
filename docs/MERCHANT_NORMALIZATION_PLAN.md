@@ -175,7 +175,7 @@ and expose the new field through the API.
 **Acceptance criteria**
 - [ ] Transaction list shows the normalized `merchant_name`.
 - [ ] Hovering a merchant cell shows the raw `original_merchant_name`.
-- [ ] `npm --prefix frontend test -- TransactionsTable` passes.
+- [ ] `bun --cwd=frontend test -- TransactionsTable` passes.
 
 ---
 
@@ -189,7 +189,7 @@ and expose the new field through the API.
 - [ ] Migrations applied on dev DB; `merchant_aliases` seeded and `original_merchant_name` present.
 - [ ] Sync a connection (or CSV import); `/api/transactions` shows clean `merchant_name` and raw
       `original_merchant_name`.
-- [ ] `npm --prefix frontend test -- TransactionsTable` passes; tooltip verified at
+- [ ] `bun --cwd=frontend test -- TransactionsTable` passes; tooltip verified at
       `http://localhost:8080` (`:3001` bypasses the proxy — do not validate there).
 
 ---

@@ -1336,6 +1336,18 @@ impl ConnectionService {
 
         let transactions = valid_transactions;
 
+        let simplefin_connections = self
+            .db_repository
+            .get_all_provider_connections_by_user(params.user_id)
+            .await
+            .map_err(ProviderSyncError::SyncFailure)?;
+        let simplefin_institution_results = crate::services::simplefin_connection_service::enrich_simplefin_institution_sync_results(
+            simplefin_institution_results,
+            &simplefin_connections,
+            params.user_id,
+            &hidden_orgs,
+        );
+
         tracing::info!(
             provider = "simplefin",
             connection_id = %connection.id,

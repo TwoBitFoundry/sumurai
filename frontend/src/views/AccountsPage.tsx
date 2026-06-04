@@ -136,14 +136,17 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
   const banks = useMemo(
     () =>
       Object.entries(accountFilter.accountsByBank).map(([bankName, accounts]) => {
+        const displayName = accounts[0]?.institution_name ?? bankName.split('::')[0] ?? bankName;
         const connectionId =
           accounts.find((account) => account.connection_id)?.connection_id ?? null;
-        const provider = inferBankProvider(connectionId, providerByConnectionId, primaryProvider);
+        const provider =
+          accounts.find((account) => account.provider != null)?.provider ??
+          inferBankProvider(connectionId, providerByConnectionId, primaryProvider);
 
         return {
           id: connectionId ?? bankName,
-          name: bankName,
-          short: bankName
+          name: displayName,
+          short: displayName
             .split(' ')
             .map((word) => word[0])
             .join('')
@@ -443,7 +446,9 @@ const AccountsPage = ({ onError }: AccountsPageProps) => {
 
           const matchingResult = result.simplefin_institution_results.find(
             (entry) =>
-              entry.org_conn_id === bank.connectionId || entry.institution_name === bank.name
+              entry.connection_id === bank.connectionId ||
+              entry.org_conn_id === bank.connectionId ||
+              entry.institution_name === bank.name
           );
           if (!matchingResult) {
             setSyncInstitutionRow({

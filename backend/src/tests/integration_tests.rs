@@ -1478,7 +1478,7 @@ async fn given_different_account_filters_when_caching_then_uses_different_cache_
 
 #[tokio::test]
 async fn given_user_with_multiple_banks_when_get_accounts_then_returns_all_accounts() {
-    use crate::models::account::Account;
+    use crate::models::{account::Account, plaid::ProviderConnection};
     use crate::services::repository_service::MockDatabaseRepository;
     use axum::body::to_bytes;
     use rust_decimal_macros::dec;
@@ -1529,7 +1529,19 @@ async fn given_user_with_multiple_banks_when_get_accounts_then_returns_all_accou
 
     mock_db
         .expect_get_all_provider_connections_by_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
+        .returning(move |_| {
+            let mut conn1 = ProviderConnection::new(user_id, "item_1");
+            conn1.id = conn1_id;
+            conn1.provider = "plaid".to_string();
+            conn1.mark_connected("Chase");
+
+            let mut conn2 = ProviderConnection::new(user_id, "item_2");
+            conn2.id = conn2_id;
+            conn2.provider = "simplefin".to_string();
+            conn2.mark_connected("Bank of America");
+
+            Box::pin(async move { Ok(vec![conn1, conn2]) })
+        });
 
     mock_db
         .expect_get_budgets_for_user()
@@ -1555,8 +1567,10 @@ async fn given_user_with_multiple_banks_when_get_accounts_then_returns_all_accou
 
     assert_eq!(account_responses.len(), 2);
     assert_eq!(account_responses[0]["name"], "Chase Checking");
+    assert_eq!(account_responses[0]["provider"], "plaid");
     assert_eq!(account_responses[0]["institution_name"], "Chase");
     assert_eq!(account_responses[1]["name"], "BofA Savings");
+    assert_eq!(account_responses[1]["provider"], "simplefin");
     assert_eq!(account_responses[1]["institution_name"], "Bank of America");
 }
 

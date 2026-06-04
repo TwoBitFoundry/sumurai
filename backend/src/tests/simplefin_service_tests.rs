@@ -1395,6 +1395,42 @@ async fn given_active_simplefin_sync_when_snapshot_contains_new_org_then_materia
     assert!(result.transactions.is_empty());
 }
 
+#[tokio::test]
+async fn given_simplefin_sync_when_returning_institution_results_then_includes_connection_ids() {
+    let user_id = Uuid::new_v4();
+    let mut connection =
+        ProviderConnection::new(user_id, &simplefin_org_item_id(&user_id, "org-1"));
+    connection.mark_connected("Bank A");
+
+    let (connection_service, sync_service, _, _, _, _) =
+        build_simplefin_sync_service(three_org_snapshot(), HashSet::new(), vec![]);
+
+    let result = connection_service
+        .sync_provider_connection(
+            SyncConnectionParams {
+                provider: "simplefin",
+                user_id: &user_id,
+                jwt_id: "jwt_sync",
+            },
+            sync_service.as_ref(),
+            &mut connection,
+            None,
+        )
+        .await
+        .unwrap();
+
+    let results = result.simplefin_institution_results.as_ref().unwrap();
+    let expected_connection_id = stable_uuid(&simplefin_org_item_id(&user_id, "org-1")).to_string();
+    assert_eq!(results.len(), 3);
+    assert!(results
+        .iter()
+        .all(|entry| entry.connection_id.as_deref().is_some()));
+    assert!(results.iter().any(|entry| {
+        entry.institution_name == "Bank A"
+            && entry.connection_id.as_deref() == Some(expected_connection_id.as_str())
+    }));
+}
+
 fn build_disconnect_service(mock_db: MockDatabaseRepository) -> ConnectionService {
     let mut mock_cache = MockCacheService::new();
     mock_cache

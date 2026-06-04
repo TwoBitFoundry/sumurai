@@ -190,6 +190,7 @@ export function useSyncAllOrchestrator({
           const bank = providerBanks.find((entry) => entry.id === row.id);
           const matchingResult = result.simplefin_institution_results.find(
             (entry) =>
+              entry.connection_id === row.connectionId ||
               entry.org_conn_id === row.connectionId ||
               entry.institution_name === row.institutionName
           );

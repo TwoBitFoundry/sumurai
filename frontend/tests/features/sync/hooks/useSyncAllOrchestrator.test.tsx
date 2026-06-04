@@ -154,6 +154,59 @@ describe('useSyncAllOrchestrator', () => {
     expect(refreshAfterProviderChange).toHaveBeenCalledWith(queryClient, ['simplefin']);
   });
 
+  it('matches SimpleFIN rows by connection id when institution names differ', async () => {
+    simpleFinSyncBridge.mockResolvedValue({
+      rateLimited: false,
+      transactions: [{ provider_account_id: 'acct-1' }],
+      simplefin_institution_results: [
+        {
+          institution_name: 'Bridge Label',
+          org_conn_id: 'org-1',
+          connection_id: 'conn-1',
+          status: 'synced',
+          transaction_count: 1,
+          message: 'Synced 1 transaction',
+        },
+      ],
+      bridge_warnings: [],
+    } as any);
+
+    const { result } = renderHook(
+      () =>
+        useSyncAllOrchestrator({
+          banks: [
+            makeBank('bank-1', 'simplefin', 'conn-1', [
+              {
+                id: 'acct-1',
+                name: 'Checking',
+                mask: '1234',
+                type: 'checking',
+                providerAccountId: 'acct-1',
+              },
+            ]),
+          ],
+          primaryProvider: 'simplefin',
+          isOnline: true,
+          queryClient,
+          onError: jest.fn(),
+        }),
+      { wrapper }
+    );
+
+    await act(async () => {
+      await result.current.syncAll();
+    });
+
+    await waitFor(() => {
+      expect(result.current.syncAllRows[0].status).toBe('synced');
+    });
+
+    expect(result.current.syncAllRows[0]).toMatchObject({
+      status: 'synced',
+      transactionCount: 1,
+    });
+  });
+
   it('marks every SimpleFIN row rate-limited when the bridge returns 429', async () => {
     simpleFinSyncBridge.mockResolvedValue({
       rateLimited: true,

@@ -2155,6 +2155,22 @@ async fn get_authenticated_plaid_accounts(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
+    let provider_by_connection_id = state
+        .db_repository
+        .get_all_provider_connections_by_user(&user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to get provider connections for user {}: {}",
+                user_id,
+                e
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .into_iter()
+        .map(|connection| (connection.id, connection.provider))
+        .collect::<std::collections::HashMap<_, _>>();
+
     let account_responses: Vec<AccountResponse> = db_accounts
         .into_iter()
         .map(|account| {
@@ -2162,6 +2178,9 @@ async fn get_authenticated_plaid_accounts(
             AccountResponse {
                 id: account.id,
                 user_id: Some(user_id),
+                provider: account.provider_connection_id.and_then(|connection_id| {
+                    provider_by_connection_id.get(&connection_id).cloned()
+                }),
                 provider_account_id: account.provider_account_id.clone(),
                 provider_connection_id: account.provider_connection_id,
                 name: account.name,
@@ -2176,7 +2195,7 @@ async fn get_authenticated_plaid_accounts(
 
     tracing::info!(
         record_count = account_responses.len(),
-        provider = "plaid",
+        provider = "unified",
         "Data access: accounts"
     );
 

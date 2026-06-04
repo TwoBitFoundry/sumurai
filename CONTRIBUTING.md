@@ -81,7 +81,7 @@ Demo credentials: `me@test.com` / `Test1234!`
 
 ## Frontend Development
 
-From the repo root (preferred):
+`frontend/package.json` is the canonical frontend command surface. From the repo root, use the thin wrappers:
 
 ```bash
 bun run frontend:build
@@ -97,7 +97,7 @@ cd frontend
 bun install
 bun run dev
 bun run build
-bun test
+bun run test
 ```
 
 - `bun run dev` starts the Next.js dev server on `http://localhost:3001`.

@@ -39,8 +39,8 @@ Before token pipeline work, read:
 
 ## Validation
 
-- `npm --prefix frontend run design:lint`
-- `npm --prefix frontend run design:export:dtcg`
-- `npm --prefix frontend run design:export:tailwind`
-- `npm --prefix frontend test -- --runTestsByPath tests/ui/tokens/runtime.test.ts`
-- `npm --prefix frontend run typecheck`
+- `bun --cwd=frontend run design:lint`
+- `bun --cwd=frontend run design:export:dtcg`
+- `bun --cwd=frontend run design:export:tailwind`
+- `bun --cwd=frontend test -- --runTestsByPath tests/ui/tokens/runtime.test.ts`
+- `bun --cwd=frontend run typecheck`

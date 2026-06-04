@@ -37,6 +37,49 @@ fn simplefin_org_conn_id_from_item_id(item_id: &str, user_id: &Uuid) -> Option<S
         .map(str::to_string)
 }
 
+pub(crate) fn enrich_simplefin_institution_sync_results(
+    results: Vec<SimpleFinInstitutionSyncResult>,
+    simplefin_connections: &[ProviderConnection],
+    user_id: &Uuid,
+    hidden_orgs: &HashSet<String>,
+) -> Vec<SimpleFinInstitutionSyncResult> {
+    let connection_ids: HashMap<String, String> = simplefin_connections
+        .iter()
+        .filter(|saved_connection| {
+            saved_connection.item_id.starts_with("simplefin_")
+                && !saved_connection.item_id.starts_with("simplefin_root_")
+        })
+        .filter_map(|saved_connection| {
+            let saved_conn_id =
+                simplefin_org_conn_id_from_item_id(&saved_connection.item_id, user_id)?;
+
+            if conn_id_is_hidden(
+                hidden_orgs,
+                &saved_conn_id,
+                saved_connection.institution_id.as_deref(),
+            ) {
+                None
+            } else {
+                Some((saved_conn_id, saved_connection.id.to_string()))
+            }
+        })
+        .collect();
+
+    results
+        .into_iter()
+        .map(|mut result| {
+            if result.connection_id.is_none() {
+                result.connection_id = result
+                    .org_conn_id
+                    .as_ref()
+                    .and_then(|org_conn_id| connection_ids.get(org_conn_id).cloned());
+            }
+
+            result
+        })
+        .collect()
+}
+
 impl SimpleFinConnectionService {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -82,6 +125,7 @@ impl SimpleFinConnectionService {
                 results.push(SimpleFinInstitutionSyncResult {
                     institution_name: org.name.clone(),
                     org_conn_id: Some(org.conn_id.clone()),
+                    connection_id: None,
                     status: SimpleFinInstitutionSyncStatus::SkippedHidden,
                     transaction_count: None,
                     message: Some("Institution is hidden in SimpleFIN".to_string()),
@@ -96,6 +140,7 @@ impl SimpleFinConnectionService {
                 results.push(SimpleFinInstitutionSyncResult {
                     institution_name: org.name.clone(),
                     org_conn_id: Some(org.conn_id.clone()),
+                    connection_id: None,
                     status: SimpleFinInstitutionSyncStatus::AuthRequired,
                     transaction_count: Some(transaction_count),
                     message: Some(notice.message.clone()),
@@ -107,6 +152,7 @@ impl SimpleFinConnectionService {
                 results.push(SimpleFinInstitutionSyncResult {
                     institution_name: org.name.clone(),
                     org_conn_id: Some(org.conn_id.clone()),
+                    connection_id: None,
                     status: SimpleFinInstitutionSyncStatus::NoAccounts,
                     transaction_count: Some(0),
                     message: Some("No accounts were returned for this institution".to_string()),
@@ -117,6 +163,7 @@ impl SimpleFinConnectionService {
             results.push(SimpleFinInstitutionSyncResult {
                 institution_name: org.name.clone(),
                 org_conn_id: Some(org.conn_id.clone()),
+                connection_id: None,
                 status: SimpleFinInstitutionSyncStatus::Synced,
                 transaction_count: Some(transaction_count),
                 message: None,
@@ -318,6 +365,13 @@ impl SimpleFinConnectionService {
             .get_all_provider_connections_by_user(params.user_id)
             .await
             .map_err(ProviderSyncError::SyncFailure)?;
+
+        let simplefin_institution_results = enrich_simplefin_institution_sync_results(
+            simplefin_institution_results,
+            &simplefin_connections,
+            params.user_id,
+            &hidden_orgs,
+        );
 
         let visible_simplefin_connection_ids: HashSet<Uuid> = simplefin_connections
             .iter()

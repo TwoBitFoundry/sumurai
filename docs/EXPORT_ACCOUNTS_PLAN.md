@@ -114,7 +114,7 @@ Standards: [OFX](https://docs.fileformat.com/finance/ofx/), [OFX standards](http
 
 **Acceptance criteria:**
 - [ ] `cargo test -p sumurai-backend --locked export` passes, including the OFX round-trip.
-- [ ] `npm --prefix frontend test -- ExportService` and the BankCard/AccountsPage export tests pass.
+- [ ] `bun --cwd=frontend test -- ExportService` and the BankCard/AccountsPage export tests pass.
 - [ ] Manual at `http://localhost:8080`: top-level CSV opens correctly in a spreadsheet; OFX is valid (and re-imports); per-institution export contains only that institution; `preview_network` shows the `attachment` response with the correct filename.
 
 ---
