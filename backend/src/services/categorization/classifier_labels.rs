@@ -100,9 +100,10 @@ fn deterministic_label(input: &str) -> Option<&'static str> {
     let is_credit = input.trim_start().starts_with("[credit]");
 
     let merchant_normalized = extract_merchant_normalized(input);
-    if KNOWN_SUBSCRIPTION_MERCHANTS
-        .iter()
-        .any(|m| merchant_normalized.contains(m))
+    if !is_credit
+        && KNOWN_SUBSCRIPTION_MERCHANTS
+            .iter()
+            .any(|m| merchant_normalized.contains(m))
     {
         return Some("Subscription");
     }

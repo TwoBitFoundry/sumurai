@@ -204,6 +204,14 @@ fn given_keyword_matches_when_classifying_then_returns_deterministic_prediction(
 }
 
 #[test]
+fn given_credit_for_known_subscription_merchant_when_classifying_then_returns_income() {
+    let prediction = deterministic_prediction("[credit] SPOTIFY REFUND").unwrap();
+
+    assert_eq!(prediction.primary, "INCOME");
+    assert_eq!(prediction.confidence, Confidence::High);
+}
+
+#[test]
 fn given_no_keyword_match_when_classifying_then_defers_to_model() {
     assert!(deterministic_prediction("[debit] BLUE OAK MARKETPLACE").is_none());
     assert!(deterministic_prediction("[credit] ACME CORP PAY").is_none());

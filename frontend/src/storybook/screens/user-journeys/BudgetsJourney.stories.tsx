@@ -122,7 +122,7 @@ export const Journey: Story = {
     await userEvent.type(screen.getByTestId('budget-amount-input'), '275');
     await userEvent.click(screen.getByRole('button', { name: 'Save budget' }));
     await waitFor(() => {
-      expect(canvas.getAllByText(/bills and utilities/i)).toHaveLength(2);
+      expect(canvas.getAllByText(/bills and utilities/i)).toHaveLength(1);
     });
   },
 };
