@@ -11,6 +11,7 @@ import AccountsPage from '@/views/AccountsPage';
 import BudgetsPage from '@/views/BudgetsPage';
 import DashboardPage from '@/views/DashboardPage';
 import SettingsPage from '@/views/SettingsPage';
+import SubscriptionsPage from '@/views/SubscriptionsPage';
 import TransactionsPage from '@/views/TransactionsPage';
 import { AppLayout } from '../layouts/AppLayout';
 import { GradientShell } from '../ui/primitives';
@@ -22,14 +23,21 @@ import {
 } from '../utils/sessionPreferences';
 import { ErrorBoundary } from './ErrorBoundary';
 
-export type TabKey = 'dashboard' | 'transactions' | 'budgets' | 'accounts' | 'settings';
+export type TabKey =
+  | 'dashboard'
+  | 'transactions'
+  | 'budgets'
+  | 'subscriptions'
+  | 'accounts'
+  | 'settings';
 
 const TAB_INDEX = new Map<TabKey, number>([
   ['dashboard', 0],
   ['transactions', 1],
   ['budgets', 2],
-  ['accounts', 3],
-  ['settings', 4],
+  ['subscriptions', 3],
+  ['accounts', 4],
+  ['settings', 5],
 ]);
 
 interface AuthenticatedAppProps {
@@ -59,6 +67,12 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
     setTab(next);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
+
+  const handleNavigateToTransactions = (category: string, merchant: string) => {
+    transactionFilters.setSelectedCategory(category);
+    transactionFilters.setSearch(merchant);
+    handleTabChange('transactions');
+  };
   const bottomBarContent =
     tab === 'dashboard' ? (
       <BottomContextualBar>
@@ -71,7 +85,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
           onSearch={transactionFilters.setSearch}
         />
       </BottomContextualBar>
-    ) : tab === 'budgets' ? (
+    ) : tab === 'budgets' || tab === 'subscriptions' ? (
       <BottomContextualBar>
         <BudgetMonthPillSlider
           monthLabel={budgetMonth.monthLabel}
@@ -119,6 +133,9 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
                 )}
                 {tab === 'transactions' && <TransactionsPage filterControl={transactionFilters} />}
                 {tab === 'budgets' && <BudgetsPage monthControl={budgetMonth} />}
+                {tab === 'subscriptions' && (
+                  <SubscriptionsPage onNavigateToTransactions={handleNavigateToTransactions} />
+                )}
                 {tab === 'accounts' && <AccountsPage onError={setError} />}
                 {tab === 'settings' && <SettingsPage onLogout={onLogout} />}
               </motion.section>

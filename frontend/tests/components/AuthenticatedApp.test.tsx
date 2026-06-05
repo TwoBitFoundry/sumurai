@@ -84,6 +84,11 @@ jest.mock('@/views/TransactionsPage', () => ({
   default: () => <div>Transactions</div>,
 }));
 
+jest.mock('@/views/SubscriptionsPage', () => ({
+  __esModule: true,
+  default: () => <div>Subscriptions</div>,
+}));
+
 jest.mock('@/features/transactions/hooks/useTransactionFilterState', () => ({
   useTransactionFilterState: () => ({
     search: '',
@@ -118,6 +123,13 @@ describe('AuthenticatedApp', () => {
 
     expect(screen.getByTestId('budget-month-pill-slider')).toBeInTheDocument();
     expect(screen.getByText('Budgets')).toBeInTheDocument();
+  });
+
+  it('renders the budget month control in the bottom bar for the subscriptions tab', () => {
+    render(<AuthenticatedApp onLogout={jest.fn()} isOnline initialTab="subscriptions" />);
+
+    expect(screen.getByTestId('budget-month-pill-slider')).toBeInTheDocument();
+    expect(screen.getByText('Subscriptions')).toBeInTheDocument();
   });
 
   it('renders transaction category filters in the bottom bar for the transactions tab', () => {

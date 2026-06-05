@@ -128,10 +128,10 @@ User overrides always win because `effective_category = COALESCE(override, categ
 - Card click deep-links to the Transactions tab with the category filter set to `SUBSCRIPTION` and merchant search prefilled (via [useTransactionFilterState](../frontend/src/features/transactions/hooks/useTransactionFilterState.ts) + tab switch in `AuthenticatedApp.tsx`).
 
 **Acceptance criteria:**
-- [ ] A "Subscriptions" tab renders next to Budgets with the month-scoped bottom bar.
-- [ ] The view shows hero stats + a merchant card-grid composed from existing primitives, with an empty state.
-- [ ] Clicking a card navigates to Transactions filtered to Subscriptions for that merchant.
-- [ ] Tab routing + card-click deep-link covered by frontend tests.
+- [x] A "Subscriptions" tab renders next to Budgets with the month-scoped bottom bar.
+- [x] The view shows hero stats + a merchant card-grid composed from existing primitives, with an empty state.
+- [x] Clicking a card navigates to Transactions filtered to Subscriptions for that merchant.
+- [x] Tab routing + card-click deep-link covered by frontend tests.
 
 ## Phase 7 — Retire the crude heuristic
 
@@ -157,6 +157,18 @@ User overrides always win because `effective_category = COALESCE(override, categ
 - [ ] `bun --cwd=frontend test` passes.
 
 ---
+
+### TDD log — Phase 6
+
+- `'subscriptions'` added to `TabKey` union in `AppTitleBar.tsx`, `AppLayout.tsx`, `AuthenticatedApp.tsx`; `Repeat2` icon added to `TABS` array after `budgets`.
+- `TAB_INDEX` updated: subscriptions→3, accounts→4, settings→5.
+- `BudgetMonthPillSlider` bottom bar extended to cover `subscriptions` tab.
+- `handleNavigateToTransactions` callback added to `AuthenticatedApp`; sets category filter + merchant search then switches to transactions tab.
+- `SubscriptionsPage.tsx` created with `PageLayout`, 4 `HeroStatCard`s (monthly total, count, largest, annualized), `GlassCard` merchant card grid using `heroStatCardRecipes` + design tokens, `EmptyState` for empty case.
+- Card styling uses `getTagThemeForCategory('SUBSCRIPTION')` + `getHeroAccentTheme` for accent borders and gradients — zero hardcoded colors.
+- `SubscriptionsPage.test.tsx`: empty state, cards render, card-click deep-link (3 tests).
+- `AuthenticatedApp.test.tsx`: subscriptions tab bottom bar test added.
+- `bun test`: 866 passed, 0 failed. `tsc --noEmit`: clean.
 
 ### TDD log — Phase 5
 
