@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { TransactionsMobileList } from '@/features/transactions/components/TransactionsMobileList';
 import { useViewportBreakpoint } from '@/hooks/useViewportBreakpoint';
 import type { Transaction } from '@/types/api';
@@ -96,9 +97,7 @@ describe('TransactionsMobileList', () => {
       />
     );
 
-    const merchant = screen.getByTitle(
-      'International Conglomerate Of Very Long Business Names LLC'
-    );
+    const merchant = screen.getByText('International Conglomerate Of Very Long Business Names LLC');
     expect(merchant.className).toContain('text-ellipsis');
     expect(merchant.className).toContain('overflow-hidden');
   });
@@ -148,5 +147,48 @@ describe('TransactionsMobileList', () => {
 
     expect(screen.queryByText('Legacy Merchant')).not.toBeInTheDocument();
     expect(screen.getByText('-')).toBeInTheDocument();
+  });
+
+  it('shows the raw merchant in a popover when the row merchant differs', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <TransactionsMobileList
+        items={[
+          {
+            ...transaction,
+            name: 'Costco',
+            originalMerchantName: 'POS COSTCO WHSE #12 TULSA OK 537',
+          },
+        ]}
+        currentPage={1}
+        pageSize={8}
+        animationKey="page-1"
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Show raw merchant for Costco' }));
+    expect(screen.getByText('Raw merchant')).toBeInTheDocument();
+    expect(screen.getByText('POS COSTCO WHSE #12 TULSA OK 537')).toBeInTheDocument();
+  });
+
+  it('keeps identical raw merchant rows non-interactive', () => {
+    render(
+      <TransactionsMobileList
+        items={[
+          {
+            ...transaction,
+            originalMerchantName: 'Bank Of All',
+          },
+        ]}
+        currentPage={1}
+        pageSize={8}
+        animationKey="page-1"
+      />
+    );
+
+    expect(
+      screen.queryByRole('button', { name: /Show raw merchant for/i })
+    ).not.toBeInTheDocument();
   });
 });

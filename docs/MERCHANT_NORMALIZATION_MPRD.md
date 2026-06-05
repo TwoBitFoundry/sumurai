@@ -168,10 +168,28 @@ Add a consistent transaction-row interaction that reveals the raw merchant name 
 
 **Acceptance Criteria**
 
-- [ ] Desktop transaction rows show the normalized merchant and open a popover with the raw merchant on click when applicable.
-- [ ] Mobile transaction rows show the normalized merchant and open the same raw-name popover on click when applicable.
-- [ ] Rows without a differing raw merchant remain non-interactive.
-- [ ] Old `title`-based raw merchant behavior is removed from transaction merchant labels.
+- [x] Desktop transaction rows show the normalized merchant and open a popover with the raw merchant on click when applicable.
+- [x] Mobile transaction rows show the normalized merchant and open the same raw-name popover on click when applicable.
+- [x] Rows without a differing raw merchant remain non-interactive.
+- [x] Old `title`-based raw merchant behavior is removed from transaction merchant labels.
+
+**Notes**
+
+- Added a shared transaction merchant label component so desktop and mobile rows use the same normalized-merchant trigger and raw-name popover rules.
+- Merchant labels now stay non-interactive unless the stored raw merchant differs from the normalized display name.
+
+**TDD Log**
+
+- Red:
+  - `bun --cwd=frontend test ./tests/components/transactions-table-text.test.tsx`
+  - `bun --cwd=frontend test ./tests/features/transactions/components/TransactionsMobileList.test.tsx`
+- Green:
+  - `bun --cwd=frontend test ./tests/components/transactions-table-text.test.tsx`
+  - `bun --cwd=frontend test ./tests/features/transactions/components/TransactionsMobileList.test.tsx`
+- Verification:
+  - `bun --cwd=frontend run lint`
+  - `bun --cwd=frontend run build`
+  - `bun --cwd=frontend run typecheck`
 
 ## Validation
 

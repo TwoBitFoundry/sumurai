@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { TransactionsTable } from '@/features/transactions/components/TransactionsTable';
 import type { Transaction } from '@/types/api';
 import { text as uiTextRecipes } from '@/ui/recipes';
@@ -168,9 +169,10 @@ describe('TransactionsTable text tokens', () => {
     window.dispatchEvent(new Event('resize'));
   });
 
-  it('merchant cell title shows originalMerchantName when present', () => {
+  it('shows the raw merchant in a popover when it differs from the normalized merchant', async () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
     window.dispatchEvent(new Event('resize'));
+    const user = userEvent.setup();
 
     const txWithOriginal: Transaction = {
       ...baseTx(10),
@@ -190,11 +192,14 @@ describe('TransactionsTable text tokens', () => {
       />
     );
 
-    const merchantCell = screen.getByText('Costco').closest('td');
-    expect(merchantCell).toHaveAttribute('title', 'POS COSTCO WHSE #12 TULSA OK 537');
+    const trigger = screen.getByRole('button', { name: 'Show raw merchant for Costco' });
+    expect(trigger.closest('td')).not.toHaveAttribute('title');
+    await user.click(trigger);
+    expect(screen.getByText('Raw merchant')).toBeInTheDocument();
+    expect(screen.getByText('POS COSTCO WHSE #12 TULSA OK 537')).toBeInTheDocument();
   });
 
-  it('merchant cell title falls back to name when originalMerchantName is absent', () => {
+  it('renders non-interactive merchant text when no differing raw merchant exists', () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
     window.dispatchEvent(new Event('resize'));
 
@@ -210,8 +215,11 @@ describe('TransactionsTable text tokens', () => {
       />
     );
 
+    expect(
+      screen.queryByRole('button', { name: /Show raw merchant for/i })
+    ).not.toBeInTheDocument();
     const merchantCell = screen.getByText('Coffee').closest('td');
-    expect(merchantCell).toHaveAttribute('title', 'Coffee');
+    expect(merchantCell).not.toHaveAttribute('title');
   });
 
   it('does not render the legacy merchant fallback when the canonical name is empty', () => {
@@ -238,6 +246,6 @@ describe('TransactionsTable text tokens', () => {
 
     expect(screen.queryByText('Legacy Merchant')).not.toBeInTheDocument();
     const merchantCell = screen.getByText('-').closest('td');
-    expect(merchantCell).toHaveAttribute('title', '-');
+    expect(merchantCell).not.toHaveAttribute('title');
   });
 });
