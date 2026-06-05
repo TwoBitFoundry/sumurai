@@ -12,14 +12,6 @@ impl MigrationTrait for Migration {
                 Table::alter()
                     .table(transactions::Entity)
                     .drop_column(transactions::Column::NormalizedMerchant)
-                    .to_owned(),
-            )
-            .await?;
-
-        manager
-            .alter_table(
-                Table::alter()
-                    .table(transactions::Entity)
                     .add_column(
                         ColumnDef::new(transactions::Column::NormalizedMerchant)
                             .text()

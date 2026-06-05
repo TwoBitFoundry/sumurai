@@ -29,6 +29,8 @@ function toBackendTransaction(transaction: Transaction, day: number): BackendTra
     id: transaction.id,
     date: storyDate(day),
     merchant_name: transaction.name,
+    original_merchant_name: transaction.originalMerchantName,
+    normalization_source: transaction.normalizationSource,
     amount: transaction.amount,
     category_primary: transaction.category.primary,
     category_detailed: transaction.category.detailed,

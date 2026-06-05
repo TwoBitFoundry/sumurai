@@ -222,7 +222,7 @@ describe('TransactionsTable text tokens', () => {
     expect(merchantCell).not.toHaveAttribute('title');
   });
 
-  it('does not render the legacy merchant fallback when the canonical name is empty', () => {
+  it('displays placeholder when canonical name is empty and does not promote raw name to primary display', () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
     window.dispatchEvent(new Event('resize'));
 
@@ -232,7 +232,7 @@ describe('TransactionsTable text tokens', () => {
           {
             ...baseTx(10),
             name: '',
-            merchant: 'Legacy Merchant',
+            originalMerchantName: 'Raw Merchant Name',
           },
         ]}
         total={1}
@@ -244,8 +244,7 @@ describe('TransactionsTable text tokens', () => {
       />
     );
 
-    expect(screen.queryByText('Legacy Merchant')).not.toBeInTheDocument();
-    const merchantCell = screen.getByText('-').closest('td');
-    expect(merchantCell).not.toHaveAttribute('title');
+    expect(screen.getByText('-')).toBeInTheDocument();
+    expect(screen.queryByText('Raw Merchant Name')).not.toBeInTheDocument();
   });
 });
