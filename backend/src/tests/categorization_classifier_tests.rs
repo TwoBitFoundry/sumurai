@@ -84,7 +84,7 @@ fn given_broad_classifier_fixtures_when_mapping_then_generalizes_without_merchan
             description: "PreApproved Payment Bill User Payment: Netflix",
             amount: Decimal::new(-1599, 2),
             model_label: "Subscription",
-            expected_primary: "ENTERTAINMENT",
+            expected_primary: "SUBSCRIPTION",
         },
         ClassifierFixture {
             description: "PG&E WEB ONLINE",
@@ -187,7 +187,7 @@ fn given_keyword_matches_when_classifying_then_returns_deterministic_prediction(
         ("[debit] AIRLINE TICKET", "TRAVEL"),
         ("[debit] GAS STATION FUEL", "TRANSPORTATION"),
         ("[debit] SUPERMARKET", "FOOD_AND_DRINK"),
-        ("[debit] STREAMING SUBSCRIPTION", "ENTERTAINMENT"),
+        ("[debit] STREAMING SUBSCRIPTION", "SUBSCRIPTION"),
         ("[debit] WIRE TRANSFER", "TRANSFER_OUT"),
         ("[debit] ONLINE XFER TO SAVINGS", "TRANSFER_OUT"),
         ("[debit] Internet Xfer To Chkg Xxxxx137", "TRANSFER_OUT"),
@@ -201,6 +201,14 @@ fn given_keyword_matches_when_classifying_then_returns_deterministic_prediction(
         assert_eq!(prediction.primary, expected_primary, "{input}");
         assert_eq!(prediction.confidence, Confidence::High);
     }
+}
+
+#[test]
+fn given_credit_for_known_subscription_merchant_when_classifying_then_returns_income() {
+    let prediction = deterministic_prediction("[credit] SPOTIFY REFUND").unwrap();
+
+    assert_eq!(prediction.primary, "INCOME");
+    assert_eq!(prediction.confidence, Confidence::High);
 }
 
 #[test]

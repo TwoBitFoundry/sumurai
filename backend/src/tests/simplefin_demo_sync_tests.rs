@@ -58,6 +58,7 @@ mod tests {
             pending: false,
             created_at: Some(Utc::now()),
             original_merchant_name: Some(raw_desc.to_string()),
+            normalized_merchant: None,
         }
     }
 

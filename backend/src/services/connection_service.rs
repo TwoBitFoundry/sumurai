@@ -992,6 +992,43 @@ impl ConnectionService {
             }
         }
 
+        {
+            let db_clone = Arc::clone(&self.db_repository);
+            let cache_clone = Arc::clone(&self.cache_service);
+            let user_id_owned = *params.user_id;
+            let jwt_id_owned = params.jwt_id.to_string();
+            tokio::spawn(async move {
+                match crate::services::subscription_detection::service::detect_and_assign_for_user(
+                    &*db_clone,
+                    &user_id_owned,
+                )
+                .await
+                {
+                    Ok(count) => {
+                        tracing::debug!(
+                            user_id = %user_id_owned,
+                            count,
+                            "Post-sync subscription detection completed"
+                        );
+                        if count > 0 {
+                            if let Err(e) = cache_clone.clear_transactions(&jwt_id_owned).await {
+                                tracing::warn!(
+                                    user_id = %user_id_owned,
+                                    "Failed to clear transactions cache after post-sync detection: {e}"
+                                );
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            user_id = %user_id_owned,
+                            "Post-sync subscription detection failed: {e}"
+                        );
+                    }
+                }
+            });
+        }
+
         for transaction in &valid_transactions {
             if let Err(e) = self
                 .cache_service
@@ -1593,6 +1630,43 @@ impl ConnectionService {
                     e
                 );
             }
+        }
+
+        {
+            let db_clone = Arc::clone(&self.db_repository);
+            let cache_clone = Arc::clone(&self.cache_service);
+            let user_id_owned = *user_id;
+            let jwt_id_owned = jwt_id.to_string();
+            tokio::spawn(async move {
+                match crate::services::subscription_detection::service::detect_and_assign_for_user(
+                    &*db_clone,
+                    &user_id_owned,
+                )
+                .await
+                {
+                    Ok(count) => {
+                        tracing::debug!(
+                            user_id = %user_id_owned,
+                            count,
+                            "Post-sync subscription detection completed"
+                        );
+                        if count > 0 {
+                            if let Err(e) = cache_clone.clear_transactions(&jwt_id_owned).await {
+                                tracing::warn!(
+                                    user_id = %user_id_owned,
+                                    "Failed to clear transactions cache after post-sync detection: {e}"
+                                );
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            user_id = %user_id_owned,
+                            "Post-sync subscription detection failed: {e}"
+                        );
+                    }
+                }
+            });
         }
 
         for transaction in &synced_transactions {

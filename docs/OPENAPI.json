@@ -1246,6 +1246,45 @@
         ]
       }
     },
+    "/api/budgets/overview": {
+      "get": {
+        "tags": [
+          "Budgets"
+        ],
+        "description": "Returns budgets (cached when available) and live subscription summaries for the authenticated user.",
+        "operationId": "get_authenticated_budgets_overview",
+        "responses": {
+          "200": {
+            "description": "Budgets and subscription overview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetsOverviewResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_cookie": []
+          }
+        ]
+      }
+    },
     "/api/budgets/{id}": {
       "put": {
         "tags": [
@@ -2780,11 +2819,15 @@
         "type": "object",
         "required": [
           "user_id",
+          "email",
           "expires_at",
           "onboarding_completed",
           "requires_passkey_enrollment"
         ],
         "properties": {
+          "email": {
+            "type": "string"
+          },
           "expires_at": {
             "type": "string"
           },
@@ -2799,6 +2842,7 @@
           }
         },
         "example": {
+          "email": "user@example.com",
           "expires_at": "2024-01-01T12:00:00Z",
           "onboarding_completed": false,
           "requires_passkey_enrollment": true,
@@ -3009,6 +3053,27 @@
           "id": "11111111-2222-3333-4444-555555555555",
           "updated_at": "2024-01-15T12:00:00Z",
           "user_id": "99999999-8888-7777-6666-555555555555"
+        }
+      },
+      "BudgetsOverviewResponse": {
+        "type": "object",
+        "required": [
+          "budgets",
+          "subscriptions"
+        ],
+        "properties": {
+          "budgets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Budget"
+            }
+          },
+          "subscriptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionSummary"
+            }
+          }
         }
       },
       "CashFlowPoint": {
@@ -4465,6 +4530,39 @@
           }
         }
       },
+      "SubscriptionSummary": {
+        "type": "object",
+        "required": [
+          "merchant",
+          "normalized_merchant",
+          "monthly_cost",
+          "cadence",
+          "last_charged",
+          "occurrence_count"
+        ],
+        "properties": {
+          "cadence": {
+            "type": "string"
+          },
+          "last_charged": {
+            "type": "string",
+            "format": "date"
+          },
+          "merchant": {
+            "type": "string"
+          },
+          "monthly_cost": {
+            "type": "string"
+          },
+          "normalized_merchant": {
+            "type": "string"
+          },
+          "occurrence_count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "SuccessResponse": {
         "type": "object",
         "required": [
@@ -4740,6 +4838,12 @@
               "null"
             ]
           },
+          "normalized_merchant": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "original_merchant_name": {
             "type": [
               "string",
@@ -4925,8 +5029,6 @@
           "total_count",
           "total_spent",
           "average_amount",
-          "recurring_count",
-          "recurring_merchants",
           "top_categories"
         ],
         "properties": {
@@ -4943,16 +5045,6 @@
                 "$ref": "#/components/schemas/LargestTransaction"
               }
             ]
-          },
-          "recurring_count": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "recurring_merchants": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           },
           "top_categories": {
             "type": "array",
@@ -4975,11 +5067,6 @@
             "amount": 42.75,
             "merchant": "Coffee Collective"
           },
-          "recurring_count": 2,
-          "recurring_merchants": [
-            "Coffee Collective",
-            "Gas Station"
-          ],
           "top_categories": [
             "FOOD_AND_DRINK",
             "TRANSPORTATION"

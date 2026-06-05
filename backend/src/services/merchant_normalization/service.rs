@@ -57,7 +57,7 @@ impl MerchantNormalizationService {
             }
 
             let result = normalize(raw, MerchantSource::Raw, &index);
-            txn.merchant_name = Some(result.display);
+            txn.merchant_name = Some(result.display.clone());
         }
 
         Ok(())

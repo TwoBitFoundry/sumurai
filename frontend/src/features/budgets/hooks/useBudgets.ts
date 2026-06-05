@@ -8,7 +8,12 @@ import { BudgetCalculator } from '../../../domain/BudgetCalculator';
 import { useAccountFilter } from '../../../hooks/useAccountFilter';
 import { BudgetService } from '../../../services/BudgetService';
 import { TransactionService } from '../../../services/TransactionService';
-import type { Budget, Transaction } from '../../../types/api';
+import type {
+  Budget,
+  BudgetsOverviewResponse,
+  SubscriptionSummary,
+  Transaction,
+} from '../../../types/api';
 import { accountIdsCacheKey } from '../../../utils/cacheKeys';
 import { sortCategoryNamesAlphabetically } from '../../../utils/categories';
 import { useCategories } from '../../transactions/hooks/useCategories';
@@ -25,6 +30,7 @@ export interface UseBudgetsResult {
   error: string | null;
   validationError: string | null;
   budgets: Budget[];
+  subscriptions: SubscriptionSummary[];
   computedBudgets: BudgetProgressEntry[];
   load: () => Promise<void>;
   add: (category: string, amount: number) => Promise<void>;
@@ -62,7 +68,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
 
   const budgetsQuery = useQuery({
     queryKey: ['budgets'],
-    queryFn: () => BudgetService.getBudgets(),
+    queryFn: () => BudgetService.getOverview(),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -84,7 +90,8 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
     staleTime: 2 * 60 * 1000,
   });
 
-  const budgets = budgetsQuery.data ?? [];
+  const budgets = budgetsQuery.data?.budgets ?? [];
+  const subscriptions = budgetsQuery.data?.subscriptions ?? [];
   const transactions = txnsQuery.data ?? [];
 
   const loadError = useMemo(() => {
@@ -105,12 +112,15 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
       BudgetService.createBudget(variables),
     onMutate: async (newBudget) => {
       await queryClient.cancelQueries({ queryKey: ['budgets'] });
-      const previous = queryClient.getQueryData<Budget[]>(['budgets']);
+      const previous = queryClient.getQueryData<BudgetsOverviewResponse>(['budgets']);
       const id = generateId();
-      queryClient.setQueryData<Budget[]>(['budgets'], (old) => [
-        ...(old ?? []),
-        { id, category: newBudget.category, amount: newBudget.amount },
-      ]);
+      queryClient.setQueryData<BudgetsOverviewResponse>(['budgets'], (old) => ({
+        budgets: [
+          ...(old?.budgets ?? []),
+          { id, category: newBudget.category, amount: newBudget.amount },
+        ],
+        subscriptions: old?.subscriptions ?? [],
+      }));
       return { previous, tempId: id };
     },
     onError: (_err, _vars, context) => {
@@ -128,10 +138,13 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
       BudgetService.updateBudget(variables.id, { amount: variables.amount }),
     onMutate: async (variables) => {
       await queryClient.cancelQueries({ queryKey: ['budgets'] });
-      const previous = queryClient.getQueryData<Budget[]>(['budgets']);
-      queryClient.setQueryData<Budget[]>(['budgets'], (old) =>
-        (old ?? []).map((b) => (b.id === variables.id ? { ...b, amount: variables.amount } : b))
-      );
+      const previous = queryClient.getQueryData<BudgetsOverviewResponse>(['budgets']);
+      queryClient.setQueryData<BudgetsOverviewResponse>(['budgets'], (old) => ({
+        budgets: (old?.budgets ?? []).map((b) =>
+          b.id === variables.id ? { ...b, amount: variables.amount } : b
+        ),
+        subscriptions: old?.subscriptions ?? [],
+      }));
       return { previous };
     },
     onError: (_err, _vars, context) => {
@@ -148,10 +161,11 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
     mutationFn: (variables: { id: string }) => BudgetService.deleteBudget(variables.id),
     onMutate: async (variables) => {
       await queryClient.cancelQueries({ queryKey: ['budgets'] });
-      const previous = queryClient.getQueryData<Budget[]>(['budgets']);
-      queryClient.setQueryData<Budget[]>(['budgets'], (old) =>
-        (old ?? []).filter((b) => b.id !== variables.id)
-      );
+      const previous = queryClient.getQueryData<BudgetsOverviewResponse>(['budgets']);
+      queryClient.setQueryData<BudgetsOverviewResponse>(['budgets'], (old) => ({
+        budgets: (old?.budgets ?? []).filter((b) => b.id !== variables.id),
+        subscriptions: old?.subscriptions ?? [],
+      }));
       return { previous };
     },
     onError: (_err, _vars, context) => {
@@ -208,7 +222,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
     async (category: string, amount: number) => {
       setValidationError(null);
       setMutationError(null);
-      const list = queryClient.getQueryData<Budget[]>(['budgets']) ?? [];
+      const list = queryClient.getQueryData<BudgetsOverviewResponse>(['budgets'])?.budgets ?? [];
       const exists = list.some(
         (b) => (b.category || '').toLowerCase() === (category || '').toLowerCase()
       );
@@ -274,6 +288,7 @@ export function useBudgets(monthControl?: BudgetMonthControl): UseBudgetsResult 
     error,
     validationError,
     budgets,
+    subscriptions,
     computedBudgets,
     load,
     add,

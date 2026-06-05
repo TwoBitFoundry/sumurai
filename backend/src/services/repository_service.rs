@@ -67,16 +67,7 @@ pub(crate) struct TransactionWithAccountRow {
     pub(crate) original_merchant_name: Option<String>,
 }
 
-type TransactionsInsightsRow = (
-    i64,
-    f64,
-    f64,
-    Option<f64>,
-    Option<String>,
-    i64,
-    Vec<String>,
-    Vec<String>,
-);
+type TransactionsInsightsRow = (i64, f64, f64, Option<f64>, Option<String>, Vec<String>);
 
 pub const EXCLUDED_ANALYTICS_CATEGORY_PRIMARIES: [&str; 4] =
     ["INCOME", "LOAN_PAYMENTS", "TRANSFER_IN", "TRANSFER_OUT"];
@@ -135,6 +126,14 @@ pub trait DatabaseRepository: Send + Sync {
         &self,
         transactions: &[Transaction],
         user_id: &Uuid,
+    ) -> Result<()>;
+
+    async fn upsert_provider_snapshot_bundle(
+        &self,
+        user_id: &Uuid,
+        connection: &ProviderConnection,
+        accounts: &[Account],
+        transactions: &[Transaction],
     ) -> Result<()>;
     #[allow(clippy::too_many_arguments)]
     async fn get_transactions_paginated(
@@ -339,6 +338,17 @@ pub trait DatabaseRepository: Send + Sync {
     async fn get_active_merchant_aliases(
         &self,
     ) -> Result<Vec<crate::services::merchant_normalization::types::AliasRow>>;
+
+    async fn get_transactions_for_subscription_detection(
+        &self,
+        user_id: &Uuid,
+        since: chrono::NaiveDate,
+    ) -> Result<Vec<Transaction>>;
+
+    async fn get_subscription_summary(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Vec<crate::models::subscription::SubscriptionSummary>>;
 }
 
 pub struct PostgresRepository {
@@ -519,8 +529,46 @@ impl PostgresRepository {
                 transaction.created_at.unwrap_or_else(chrono::Utc::now),
             ))),
             original_merchant_name: Set(transaction.original_merchant_name.clone()),
-            ..Default::default()
+            normalized_merchant: sea_orm::ActiveValue::NotSet,
         }
+    }
+
+    fn transaction_upsert_update_columns() -> [transactions::Column; 4] {
+        [
+            transactions::Column::Amount,
+            transactions::Column::MerchantName,
+            transactions::Column::OriginalMerchantName,
+            transactions::Column::Pending,
+        ]
+    }
+
+    fn transaction_insert_on_conflict() -> OnConflict {
+        OnConflict::columns([
+            transactions::Column::AccountId,
+            transactions::Column::ProviderTransactionId,
+        ])
+        .update_columns(Self::transaction_upsert_update_columns())
+        .to_owned()
+    }
+
+    async fn upsert_transactions_batch_on<C: ConnectionTrait>(
+        conn: &C,
+        transactions: &[Transaction],
+    ) -> Result<()> {
+        if transactions.is_empty() {
+            return Ok(());
+        }
+
+        let models: Vec<transactions::ActiveModel> = transactions
+            .iter()
+            .map(Self::transaction_active_model)
+            .collect();
+
+        transactions::Entity::insert_many(models)
+            .on_conflict(Self::transaction_insert_on_conflict())
+            .exec(conn)
+            .await?;
+        Ok(())
     }
 
     async fn upsert_transaction_on<C: ConnectionTrait>(
@@ -528,22 +576,60 @@ impl PostgresRepository {
         transaction: &Transaction,
     ) -> Result<()> {
         transactions::Entity::insert(Self::transaction_active_model(transaction))
-            .on_conflict(
-                OnConflict::columns([
-                    transactions::Column::AccountId,
-                    transactions::Column::ProviderTransactionId,
-                ])
-                .update_columns([
-                    transactions::Column::Amount,
-                    transactions::Column::MerchantName,
-                    transactions::Column::OriginalMerchantName,
-                    transactions::Column::Pending,
-                ])
-                .to_owned(),
-            )
+            .on_conflict(Self::transaction_insert_on_conflict())
             .exec(conn)
             .await?;
         Ok(())
+    }
+
+    async fn save_provider_connection_on<C: ConnectionTrait>(
+        conn: &C,
+        connection: &ProviderConnection,
+    ) -> Result<Uuid> {
+        provider_connections::Entity::insert(provider_connections::ActiveModel {
+            id: Set(connection.id),
+            user_id: Set(Some(connection.user_id)),
+            item_id: Set(connection.item_id.clone()),
+            provider: Set(connection.provider.clone()),
+            is_connected: Set(connection.is_connected),
+            last_sync_at: Set(Self::opt_to_db_time(connection.last_sync_at)),
+            connected_at: Set(Self::opt_to_db_time(connection.connected_at)),
+            disconnected_at: Set(Self::opt_to_db_time(connection.disconnected_at)),
+            institution_id: Set(connection.institution_id.clone()),
+            institution_name: Set(connection.institution_name.clone()),
+            transaction_count: Set(Some(connection.transaction_count)),
+            account_count: Set(Some(connection.account_count)),
+            created_at: Set(Self::opt_to_db_time(connection.created_at)),
+            updated_at: Set(Self::opt_to_db_time(connection.updated_at)),
+            institution_logo_url: Set(connection.institution_logo_url.clone()),
+            sync_cursor: Set(connection.sync_cursor.clone()),
+        })
+        .on_conflict(
+            OnConflict::column(provider_connections::Column::ItemId)
+                .update_columns([
+                    provider_connections::Column::Provider,
+                    provider_connections::Column::IsConnected,
+                    provider_connections::Column::LastSyncAt,
+                    provider_connections::Column::ConnectedAt,
+                    provider_connections::Column::DisconnectedAt,
+                    provider_connections::Column::InstitutionId,
+                    provider_connections::Column::InstitutionName,
+                    provider_connections::Column::TransactionCount,
+                    provider_connections::Column::AccountCount,
+                    provider_connections::Column::UpdatedAt,
+                    provider_connections::Column::InstitutionLogoUrl,
+                    provider_connections::Column::SyncCursor,
+                ])
+                .to_owned(),
+        )
+        .exec(conn)
+        .await?;
+        let saved = provider_connections::Entity::find()
+            .filter(provider_connections::Column::ItemId.eq(connection.item_id.clone()))
+            .one(conn)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("Provider connection not found after save"))?;
+        Ok(saved.id)
     }
 
     async fn upsert_account_on<C: ConnectionTrait>(conn: &C, account: &Account) -> Result<()> {
@@ -857,8 +943,6 @@ impl PostgresRepository {
         let average_amount: f64 = row.try_get("", "average_amount")?;
         let largest_amount: Option<f64> = row.try_get("", "largest_amount")?;
         let largest_merchant: Option<String> = row.try_get("", "largest_merchant")?;
-        let recurring_count: i64 = row.try_get("", "recurring_count")?;
-        let recurring_merchants: Vec<String> = row.try_get("", "recurring_merchants")?;
         let top_categories: Vec<String> = row.try_get("", "top_categories")?;
         Ok(Self::map_transaction_insights_tuple((
             total_count,
@@ -866,8 +950,6 @@ impl PostgresRepository {
             average_amount,
             largest_amount,
             largest_merchant,
-            recurring_count,
-            recurring_merchants,
             top_categories,
         )))
     }
@@ -879,8 +961,6 @@ impl PostgresRepository {
             average_amount,
             largest_amount,
             largest_merchant,
-            recurring_count,
-            recurring_merchants,
             top_categories,
         ): TransactionsInsightsRow,
     ) -> TransactionsInsightsResponse {
@@ -893,8 +973,6 @@ impl PostgresRepository {
             total_spent,
             average_amount,
             largest,
-            recurring_count,
-            recurring_merchants,
             top_categories,
         }
     }
@@ -999,28 +1077,31 @@ impl DatabaseRepository for PostgresRepository {
         }
 
         let user_id = *user_id;
-        let models: Vec<transactions::ActiveModel> = transactions
-            .iter()
-            .map(Self::transaction_active_model)
-            .collect();
+        let transactions = transactions.to_vec();
+        self.with_tenant(&user_id, move |txn| {
+            Box::pin(async move { Self::upsert_transactions_batch_on(txn, &transactions).await })
+        })
+        .await
+    }
 
+    async fn upsert_provider_snapshot_bundle(
+        &self,
+        user_id: &Uuid,
+        connection: &ProviderConnection,
+        accounts: &[Account],
+        transactions: &[Transaction],
+    ) -> Result<()> {
+        let user_id = *user_id;
+        let connection = connection.clone();
+        let accounts = accounts.to_vec();
+        let transactions = transactions.to_vec();
         self.with_tenant(&user_id, move |txn| {
             Box::pin(async move {
-                transactions::Entity::insert_many(models)
-                    .on_conflict(
-                        OnConflict::columns([
-                            transactions::Column::AccountId,
-                            transactions::Column::ProviderTransactionId,
-                        ])
-                        .update_columns([
-                            transactions::Column::Amount,
-                            transactions::Column::MerchantName,
-                            transactions::Column::Pending,
-                        ])
-                        .to_owned(),
-                    )
-                    .exec(txn)
-                    .await?;
+                Self::save_provider_connection_on(txn, &connection).await?;
+                for account in &accounts {
+                    Self::upsert_account_on(txn, account).await?;
+                }
+                Self::upsert_transactions_batch_on(txn, &transactions).await?;
                 Ok(())
             })
         })
@@ -1111,52 +1192,7 @@ impl DatabaseRepository for PostgresRepository {
         let user_id = connection.user_id;
         let connection = connection.clone();
         self.with_tenant(&user_id, move |txn| {
-            Box::pin(async move {
-                provider_connections::Entity::insert(provider_connections::ActiveModel {
-                    id: Set(connection.id),
-                    user_id: Set(Some(connection.user_id)),
-                    item_id: Set(connection.item_id.clone()),
-                    provider: Set(connection.provider.clone()),
-                    is_connected: Set(connection.is_connected),
-                    last_sync_at: Set(Self::opt_to_db_time(connection.last_sync_at)),
-                    connected_at: Set(Self::opt_to_db_time(connection.connected_at)),
-                    disconnected_at: Set(Self::opt_to_db_time(connection.disconnected_at)),
-                    institution_id: Set(connection.institution_id.clone()),
-                    institution_name: Set(connection.institution_name.clone()),
-                    transaction_count: Set(Some(connection.transaction_count)),
-                    account_count: Set(Some(connection.account_count)),
-                    created_at: Set(Self::opt_to_db_time(connection.created_at)),
-                    updated_at: Set(Self::opt_to_db_time(connection.updated_at)),
-                    institution_logo_url: Set(connection.institution_logo_url.clone()),
-                    sync_cursor: Set(connection.sync_cursor.clone()),
-                })
-                .on_conflict(
-                    OnConflict::column(provider_connections::Column::ItemId)
-                        .update_columns([
-                            provider_connections::Column::Provider,
-                            provider_connections::Column::IsConnected,
-                            provider_connections::Column::LastSyncAt,
-                            provider_connections::Column::ConnectedAt,
-                            provider_connections::Column::DisconnectedAt,
-                            provider_connections::Column::InstitutionId,
-                            provider_connections::Column::InstitutionName,
-                            provider_connections::Column::TransactionCount,
-                            provider_connections::Column::AccountCount,
-                            provider_connections::Column::UpdatedAt,
-                            provider_connections::Column::InstitutionLogoUrl,
-                            provider_connections::Column::SyncCursor,
-                        ])
-                        .to_owned(),
-                )
-                .exec(txn)
-                .await?;
-                let saved = provider_connections::Entity::find()
-                    .filter(provider_connections::Column::ItemId.eq(connection.item_id.clone()))
-                    .one(txn)
-                    .await?
-                    .ok_or_else(|| anyhow::anyhow!("Provider connection not found after save"))?;
-                Ok(saved.id)
-            })
+            Box::pin(async move { Self::save_provider_connection_on(txn, &connection).await })
         })
         .await
     }
@@ -1523,22 +1559,6 @@ impl DatabaseRepository for PostgresRepository {
                         ORDER BY ABS(amount) DESC, merchant ASC
                         LIMIT 1
                     ),
-                    merchant_counts AS (
-                        SELECT merchant, COUNT(*) AS c
-                        FROM filtered
-                        WHERE merchant IS NOT NULL
-                        GROUP BY merchant
-                        HAVING COUNT(*) >= 3
-                    ),
-                    recurring AS (
-                        SELECT
-                            COUNT(*)::bigint AS recurring_count,
-                            COALESCE(
-                                (ARRAY_AGG(merchant ORDER BY c DESC, merchant))[1:3],
-                                ARRAY[]::text[]
-                            ) AS recurring_merchants
-                        FROM merchant_counts
-                    ),
                     top_categories AS (
                         SELECT COALESCE(ARRAY_AGG(effective_category ORDER BY c DESC, effective_category), ARRAY[]::text[]) AS categories
                         FROM (
@@ -1556,12 +1576,9 @@ impl DatabaseRepository for PostgresRepository {
                         a.average_amount,
                         l.amount AS largest_amount,
                         l.merchant AS largest_merchant,
-                        r.recurring_count,
-                        r.recurring_merchants,
                         tc.categories AS top_categories
                     FROM aggregates a
                     LEFT JOIN largest l ON true
-                    LEFT JOIN recurring r ON true
                     LEFT JOIN top_categories tc ON true
                     "#,
                 );
@@ -2608,5 +2625,115 @@ impl DatabaseRepository for PostgresRepository {
                 priority: r.priority,
             })
             .collect())
+    }
+
+    async fn get_transactions_for_subscription_detection(
+        &self,
+        user_id: &Uuid,
+        since: chrono::NaiveDate,
+    ) -> Result<Vec<Transaction>> {
+        use crate::services::subscription_detection::service::ELIGIBLE_CATEGORIES;
+        let user_id = *user_id;
+        let rows = self
+            .with_tenant(&user_id, move |txn| {
+                Box::pin(async move {
+                    Ok(transactions::Entity::find()
+                        .filter(transactions::Column::UserId.eq(user_id))
+                        .filter(transactions::Column::Amount.lt(0))
+                        .filter(transactions::Column::Date.gte(since))
+                        .filter(
+                            transactions::Column::CategoryPrimary
+                                .is_in(ELIGIBLE_CATEGORIES.iter().copied()),
+                        )
+                        .filter(Self::auto_categorize_filter())
+                        .order_by_asc(transactions::Column::Date)
+                        .all(txn)
+                        .await?)
+                })
+            })
+            .await?;
+
+        Ok(rows.into_iter().map(Into::into).collect())
+    }
+
+    async fn get_subscription_summary(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Vec<crate::models::subscription::SubscriptionSummary>> {
+        use crate::models::subscription::SubscriptionSummary;
+        use crate::services::subscription_detection::cadence::{
+            classify_cadence, normalize_to_monthly_cost, Cadence,
+        };
+        use rust_decimal::Decimal;
+        use std::collections::HashMap;
+
+        let user_id = *user_id;
+        let rows = self
+            .with_tenant(&user_id, move |txn| {
+                Box::pin(async move {
+                    Ok(transactions::Entity::find()
+                        .join(
+                            JoinType::LeftJoin,
+                            transactions::Relation::TransactionCategoryOverrides.def(),
+                        )
+                        .filter(transactions::Column::UserId.eq(user_id))
+                        .filter(Self::effective_category_expr().eq("SUBSCRIPTION"))
+                        .order_by_asc(transactions::Column::Date)
+                        .all(txn)
+                        .await?)
+                })
+            })
+            .await?;
+
+        let mut groups: HashMap<String, Vec<entity::transactions::Model>> = HashMap::new();
+        for row in rows {
+            let key = row
+                .normalized_merchant
+                .clone()
+                .unwrap_or_else(|| row.merchant_name.clone().unwrap_or_default());
+            if key.is_empty() {
+                continue;
+            }
+            groups.entry(key).or_default().push(row);
+        }
+
+        let mut summaries = Vec::new();
+        for (normalized, group) in groups {
+            let dates: Vec<chrono::NaiveDate> = group.iter().map(|r| r.date).collect();
+            let day_gaps: Vec<i64> = dates.windows(2).map(|w| (w[1] - w[0]).num_days()).collect();
+
+            let cadence = classify_cadence(&day_gaps).unwrap_or(Cadence::Monthly);
+
+            let amounts: Vec<f64> = group
+                .iter()
+                .map(|r| r.amount.abs().try_into().unwrap_or(0.0f64))
+                .collect();
+            let representative = amounts.iter().copied().fold(0.0f64, f64::max);
+            let monthly_f64 = normalize_to_monthly_cost(representative, cadence.clone());
+            let monthly_cost = Decimal::try_from(monthly_f64)
+                .unwrap_or(Decimal::try_from(representative).unwrap_or(Decimal::ZERO));
+
+            let last_charged = group
+                .iter()
+                .map(|r| r.date)
+                .max()
+                .unwrap_or_else(|| chrono::Local::now().naive_local().date());
+
+            let merchant = group
+                .iter()
+                .find_map(|r| r.merchant_name.clone())
+                .unwrap_or_else(|| normalized.clone());
+
+            summaries.push(SubscriptionSummary {
+                merchant,
+                normalized_merchant: normalized,
+                monthly_cost,
+                cadence: cadence.as_str().to_string(),
+                last_charged,
+                occurrence_count: group.len() as i64,
+            });
+        }
+
+        Ok(summaries)
     }
 }

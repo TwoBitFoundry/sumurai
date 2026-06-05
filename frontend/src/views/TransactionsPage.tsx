@@ -1,11 +1,4 @@
-import {
-  AlertTriangle,
-  Loader2,
-  ReceiptText,
-  RefreshCcw,
-  TrendingUp,
-  WandSparkles,
-} from 'lucide-react';
+import { AlertTriangle, Loader2, ReceiptText, TrendingUp, WandSparkles } from 'lucide-react';
 import type React from 'react';
 import { Button, cn, GlassCard } from '@/ui/primitives';
 import { appTitleBarRecipes } from '@/ui/primitives/AppTitleBar';
@@ -67,8 +60,6 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
   const totalSpent = insights?.total_spent ?? 0;
   const avgTransaction = insights?.average_amount ?? 0;
   const largestTransaction = insights?.largest ?? null;
-  const recurringCount = insights?.recurring_count ?? 0;
-  const recurringMerchants = insights?.recurring_merchants ?? [];
   const topCategories = insights?.top_categories ?? [];
   const { all: categories, custom } = useCategories();
   const categoryDriver =
@@ -95,7 +86,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
         ) : (
           <WandSparkles className={cn(control.glyph.md)} />
         )}
-        {autoCategorization.isActive ? 'Cancel' : 'Classify'}
+        {autoCategorization.isActive ? 'Cancel' : 'Categorize'}
       </Button>
     </div>
   );
@@ -109,7 +100,7 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
         actions={actions}
         error={error}
         stats={
-          <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-4')}>
+          <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-3')}>
             <HeroStatCard
               index={1}
               title="Total shown"
@@ -146,15 +137,6 @@ const TransactionsPage: React.FC<{ filterControl: TransactionFilterControl }> = 
                       ]
                     : []
               }
-            />
-
-            <HeroStatCard
-              index={4}
-              title="Reoccurring"
-              icon={<RefreshCcw />}
-              value={loadingMessage ?? recurringCount}
-              suffix={loadingMessage ? undefined : recurringCount === 1 ? 'merchant' : 'merchants'}
-              pills={loadingMessage ? [] : recurringMerchants.map((m) => ({ label: m }))}
             />
           </div>
         }

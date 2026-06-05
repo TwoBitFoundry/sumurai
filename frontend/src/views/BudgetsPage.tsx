@@ -1,8 +1,9 @@
-import { Activity, AlertTriangle, CheckCircle2, Clock, Target } from 'lucide-react';
+import { AlertTriangle, CalendarClock, Clock, Repeat2, Target } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { cn, EmptyState, GlassCard } from '@/ui/primitives';
 import HeroStatCard, { type HeroPill } from '../components/widgets/HeroStatCard';
 import { BudgetCalculator } from '../domain/BudgetCalculator';
+import { SubscriptionCalculator } from '../domain/SubscriptionCalculator';
 import AddBudgetPicker, {
   type BudgetFormValue,
 } from '../features/budgets/components/AddBudgetPicker';
@@ -11,11 +12,18 @@ import BudgetSummaryCard from '../features/budgets/components/BudgetSummaryCard'
 import BudgetToolbar from '../features/budgets/components/BudgetToolbar';
 import type { BudgetMonthControl } from '../features/budgets/hooks/useBudgetMonth';
 import { useBudgets } from '../features/budgets/hooks/useBudgets';
+import { SubscriptionsSection } from '../features/subscriptions/components/SubscriptionsSection';
 import { useCategories } from '../features/transactions/hooks/useCategories';
 import { PageLayout } from '../layouts/PageLayout';
+import { text as uiTextRecipes, font as uiTypographyRecipes } from '../ui/recipes';
 import { formatCategoryName } from '../utils/categories';
+import { fmtUSD } from '../utils/format';
 
-export default function BudgetsPage({ monthControl }: { monthControl: BudgetMonthControl }) {
+interface BudgetsPageProps {
+  monthControl: BudgetMonthControl;
+}
+
+export default function BudgetsPage({ monthControl }: BudgetsPageProps) {
   const {
     isLoading,
     transactionsLoading,
@@ -25,7 +33,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
     update,
     remove,
     computedBudgets,
-    categoryOptions,
+    subscriptions,
     availableCategoryOptions,
     month,
   } = useBudgets(monthControl);
@@ -78,21 +86,10 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
     [computedBudgets, month]
   );
 
-  const activeBudgetPills: HeroPill[] = useMemo(() => {
-    if (!stats.activeBudgetCategories?.length) return [];
-    const unique = Array.from(new Set(stats.activeBudgetCategories));
-    return unique
-      .map((category) => ({
-        raw: category,
-        label: formatCategoryName(category),
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label))
-      .map(({ raw, label }) => ({
-        label,
-        type: 'category' as const,
-        categoryName: raw,
-      }));
-  }, [stats.activeBudgetCategories]);
+  const subscriptionHeroStats = useMemo(
+    () => SubscriptionCalculator.computeSubscriptionHeroStats(subscriptions),
+    [subscriptions]
+  );
 
   const overBudgetCategoryPills: HeroPill[] = useMemo(() => {
     if (!stats.overBudgetCategories?.length) return [];
@@ -126,63 +123,35 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
     return [];
   }, [overBudgetCategoryPills, stats.overBudgetCount, computedBudgets.length]);
 
-  const utilization = stats.totalBudgeted > 0 ? stats.totalSpent / stats.totalBudgeted : 0;
-  const utilizationPercent = utilization * 100;
-  const utilizationValue =
-    utilizationPercent > 100
-      ? `${(utilizationPercent / 100).toFixed(1)}x`
-      : `${utilizationPercent.toFixed(0)}%`;
-  const utilizationSuffix = utilizationPercent > 100 ? 'over budget' : 'of budget';
-  const getUtilizationZone = (percent: number) => {
-    if (percent <= 80) return 'Healthy';
-    if (percent <= 100) return 'On Track';
-    if (percent <= 150) return 'Overextended';
-    return 'Critical';
-  };
-  const zone = getUtilizationZone(utilizationPercent);
-  const zoneTone =
-    zone === 'Healthy'
-      ? 'success'
-      : zone === 'On Track'
-        ? 'info'
-        : zone === 'Overextended'
-          ? 'warning'
-          : 'danger';
   const budgetsLoading = isLoading || transactionsLoading;
   const hasBudgets = computedBudgets.length > 0;
+  const monthlyRecurringValue = isLoading ? '—' : fmtUSD(subscriptionHeroStats.monthlyTotal);
+  const annualizedValue = isLoading ? '—' : fmtUSD(subscriptionHeroStats.annualized);
 
   const heroStats = (
     <div className="space-y-3">
       <div className={cn('grid', 'grid-cols-2', 'gap-3', '[&>*]:min-w-0', 'lg:grid-cols-4')}>
         <HeroStatCard
           index={1}
-          title="Active budgets"
-          icon={<CheckCircle2 />}
-          value={`${computedBudgets.length}`}
-          suffix={`out of ${categoryOptions.length}`}
-          pills={activeBudgetPills}
-        />
-        <HeroStatCard
-          index={2}
-          title="Monitor"
-          icon={<Activity />}
-          value={utilizationValue}
-          suffix={utilizationSuffix}
-          pills={[
-            {
-              label: zone,
-              type: 'semantic',
-              tone: zoneTone,
-            },
-          ]}
-        />
-        <HeroStatCard
-          index={3}
           title="Days remaining"
           icon={<Clock />}
           value={stats.daysRemaining}
           suffix={`of ${stats.totalDays}`}
           subtext={`${stats.totalDays} total days`}
+        />
+        <HeroStatCard
+          index={2}
+          title="monthly vows"
+          icon={<Repeat2 />}
+          value={monthlyRecurringValue}
+          suffix="per month"
+        />
+        <HeroStatCard
+          index={3}
+          title="annualized vows"
+          icon={<CalendarClock />}
+          value={annualizedValue}
+          suffix="per year"
         />
         <HeroStatCard
           index={4}
@@ -208,7 +177,7 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
         error={errorMessage}
         stats={heroStats}
       >
-        <div className={cn('w-full', 'min-w-0', 'max-w-full')}>
+        <div className={cn('w-full', 'min-w-0', 'max-w-full', 'space-y-6')}>
           <GlassCard
             variant="accent"
             rounded="lg"
@@ -217,24 +186,53 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
             containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
             className={cn('space-y-6')}
           >
-            <BudgetToolbar
-              loading={budgetsLoading}
-              isPickerOpen={isAdding}
-              addButtonRef={addButtonRef}
-              onAddBudget={toggleAddPicker}
-            />
-            <AddBudgetPicker
-              open={isAdding}
-              anchorRef={addButtonRef}
-              categories={availableCategoryOptions}
-              accentIndexByName={accentIndexByName}
-              value={form}
-              onChange={setForm}
-              onSave={onSaveAdd}
-              onRequestClose={cancel}
-            />
-            {hasBudgets ? (
-              <>
+            <SubscriptionsSection subscriptions={subscriptions} isLoading={isLoading} />
+          </GlassCard>
+          <GlassCard
+            variant="accent"
+            rounded="lg"
+            padding="none"
+            withInnerEffects={false}
+            containerClassName={cn('p-4', 'md:p-8', 'lg:p-8')}
+            className={cn('space-y-6')}
+          >
+            <section className={cn('space-y-4')} data-testid="budgets-section">
+              <div
+                className={cn(
+                  'flex',
+                  'flex-col',
+                  'gap-4',
+                  'sm:flex-row',
+                  'sm:items-start',
+                  'sm:justify-between'
+                )}
+              >
+                <div className={cn('space-y-1')}>
+                  <h2 className={cn(uiTypographyRecipes.sectionTitle, uiTextRecipes.primary)}>
+                    Allowances
+                  </h2>
+                  <p className={cn(uiTypographyRecipes.body, uiTextRecipes.muted)}>
+                    Establish allowances to take command of spending.
+                  </p>
+                </div>
+                <BudgetToolbar
+                  loading={budgetsLoading}
+                  isPickerOpen={isAdding}
+                  addButtonRef={addButtonRef}
+                  onAddBudget={toggleAddPicker}
+                />
+              </div>
+              <AddBudgetPicker
+                open={isAdding}
+                anchorRef={addButtonRef}
+                categories={availableCategoryOptions}
+                accentIndexByName={accentIndexByName}
+                value={form}
+                onChange={setForm}
+                onSave={onSaveAdd}
+                onRequestClose={cancel}
+              />
+              {hasBudgets ? (
                 <BudgetList
                   items={computedBudgets}
                   editingId={editingId}
@@ -243,17 +241,15 @@ export default function BudgetsPage({ monthControl }: { monthControl: BudgetMont
                   onSaveEdit={onSaveEdit}
                   onDelete={onDelete}
                 />
-              </>
-            ) : (
-              <>
+              ) : (
                 <EmptyState
                   icon={Target}
                   title="No budgets yet"
                   description="Establish your first allowance to see your progress."
                   data-testid="budgets-empty-state"
                 />
-              </>
-            )}
+              )}
+            </section>
           </GlassCard>
         </div>
       </PageLayout>

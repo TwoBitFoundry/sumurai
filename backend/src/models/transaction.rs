@@ -48,6 +48,7 @@ pub struct Transaction {
     pub pending: bool,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     pub original_merchant_name: Option<String>,
+    pub normalized_merchant: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
@@ -145,8 +146,6 @@ pub struct LargestTransaction {
         "amount": 42.75,
         "merchant": "Coffee Collective"
     },
-    "recurring_count": 2,
-    "recurring_merchants": ["Coffee Collective", "Gas Station"],
     "top_categories": ["FOOD_AND_DRINK", "TRANSPORTATION"]
 }))]
 pub struct TransactionsInsightsResponse {
@@ -154,8 +153,6 @@ pub struct TransactionsInsightsResponse {
     pub total_spent: f64,
     pub average_amount: f64,
     pub largest: Option<LargestTransaction>,
-    pub recurring_count: i64,
-    pub recurring_merchants: Vec<String>,
     pub top_categories: Vec<String>,
 }
 
@@ -371,6 +368,7 @@ impl Transaction {
             pending: false,
             created_at: Some(chrono::Utc::now()),
             original_merchant_name: Some(merchant_name.trim().to_string()),
+            normalized_merchant: None,
         }
     }
 
@@ -445,6 +443,7 @@ impl Transaction {
             pending: false,
             created_at: Some(chrono::Utc::now()),
             original_merchant_name: Some(description.to_string()),
+            normalized_merchant: None,
         })
     }
 
@@ -568,6 +567,7 @@ impl Transaction {
             pending: teller_txn["status"].as_str() != Some("posted"),
             created_at: Some(chrono::Utc::now()),
             original_merchant_name: None,
+            normalized_merchant: None,
         }
     }
 
@@ -636,6 +636,7 @@ impl Transaction {
             pending: plaid_txn["pending"].as_bool().unwrap_or(false),
             created_at: Some(chrono::Utc::now()),
             original_merchant_name: None,
+            normalized_merchant: None,
         }
     }
 

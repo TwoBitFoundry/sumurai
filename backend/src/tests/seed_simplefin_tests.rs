@@ -1,9 +1,13 @@
 use crate::models::auth::User;
-use crate::models::plaid::ProviderConnection;
+use crate::models::transaction::Transaction;
 use crate::seed;
 use crate::services::cache_service::MockCacheService;
+use crate::services::categorization::classifier_labels::deterministic_prediction;
 use crate::services::repository_service::MockDatabaseRepository;
-use chrono::Utc;
+use crate::services::subscription_detection::exclusions::is_excluded;
+use chrono::NaiveDate;
+use rust_decimal_macros::dec;
+use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -13,32 +17,76 @@ fn demo_user() -> User {
         email: seed::DEMO_EMAIL.to_string(),
         password_hash: None,
         provider: String::new(),
-        created_at: Utc::now(),
-        updated_at: Utc::now(),
+        created_at: chrono::Utc::now(),
+        updated_at: chrono::Utc::now(),
         onboarding_completed: true,
     }
 }
 
-fn demo_connection(user_id: Uuid) -> ProviderConnection {
-    let item_id = format!("simplefin_{}_sumurai_demo", user_id);
-    ProviderConnection {
-        id: Uuid::new_v4(),
-        user_id,
-        item_id,
-        provider: "simplefin".to_string(),
-        is_connected: true,
-        last_sync_at: None,
-        connected_at: Some(Utc::now()),
-        disconnected_at: None,
-        institution_id: Some("sumurai_demo".to_string()),
-        institution_name: Some("Sumurai Demo Bank".to_string()),
-        institution_logo_url: None,
-        sync_cursor: None,
-        transaction_count: 0,
-        account_count: 5,
-        created_at: Some(Utc::now()),
-        updated_at: Some(Utc::now()),
-    }
+fn provider_id(txn: &Transaction) -> &str {
+    txn.provider_transaction_id.as_deref().unwrap_or("")
+}
+
+fn expect_fresh_demo_seed_mocks(mock_db: &mut MockDatabaseRepository, user: &User) {
+    let user_id = user.id;
+    mock_db
+        .expect_get_user_by_email()
+        .with(mockall::predicate::eq(seed::DEMO_EMAIL))
+        .returning({
+            let user = user.clone();
+            move |_| {
+                let u = user.clone();
+                Box::pin(async move { Ok(Some(u)) })
+            }
+        });
+    mock_db
+        .expect_get_provider_transaction_ids_for_user()
+        .with(mockall::predicate::eq(user_id))
+        .returning(|_| Box::pin(async { Ok(vec![]) }));
+    mock_db
+        .expect_get_active_merchant_aliases()
+        .returning(|| Box::pin(async { Ok(vec![]) }));
+}
+
+fn capture_snapshot_bundle(
+    mock_db: &mut MockDatabaseRepository,
+) -> Arc<std::sync::Mutex<Vec<Transaction>>> {
+    let captured = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let captured_clone = Arc::clone(&captured);
+    mock_db
+        .expect_upsert_provider_snapshot_bundle()
+        .times(1)
+        .returning(move |_, _, _, transactions| {
+            *captured_clone.lock().unwrap() = transactions.to_vec();
+            Box::pin(async { Ok(()) })
+        });
+    captured
+}
+
+#[test]
+fn demo_simplefin_seeded_only_when_all_provider_transaction_ids_present() {
+    assert!(!seed::is_demo_simplefin_seeded(&[]));
+    assert!(!seed::is_demo_simplefin_seeded(&[
+        seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[5].to_string()
+    ]));
+    assert!(seed::is_demo_simplefin_seeded(
+        &seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS
+            .iter()
+            .map(|id| (*id).to_string())
+            .collect::<Vec<_>>()
+    ));
+}
+
+#[test]
+fn demo_entity_ids_are_stable_for_the_same_user_and_key() {
+    let user_id = Uuid::new_v4();
+    let first = seed::demo_entity_id(user_id, "account:sumurai_demo_dep_checking");
+    let second = seed::demo_entity_id(user_id, "account:sumurai_demo_dep_checking");
+    assert_eq!(first, second);
+    assert_ne!(
+        first,
+        seed::demo_entity_id(user_id, "account:sumurai_demo_dep_savings")
+    );
 }
 
 #[tokio::test]
@@ -52,7 +100,7 @@ async fn skips_when_demo_user_not_found() {
         .times(1)
         .returning(|_| Box::pin(async { Ok(None) }));
     mock_db
-        .expect_get_all_provider_connections_by_user()
+        .expect_get_provider_transaction_ids_for_user()
         .times(0);
 
     let mock_cache = MockCacheService::new();
@@ -65,12 +113,15 @@ async fn skips_when_demo_user_not_found() {
 }
 
 #[tokio::test]
-async fn skips_when_demo_connection_already_exists() {
+async fn skips_when_demo_transactions_already_seeded() {
     std::env::set_var("SEED_DEMO_USER", "true");
 
     let user = demo_user();
     let user_id = user.id;
-    let existing = demo_connection(user_id);
+    let seeded_ids: Vec<String> = seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS
+        .iter()
+        .map(|id| (*id).to_string())
+        .collect();
 
     let mut mock_db = MockDatabaseRepository::new();
     mock_db
@@ -82,14 +133,14 @@ async fn skips_when_demo_connection_already_exists() {
             Box::pin(async move { Ok(Some(u)) })
         });
     mock_db
-        .expect_get_all_provider_connections_by_user()
+        .expect_get_provider_transaction_ids_for_user()
         .with(mockall::predicate::eq(user_id))
         .times(1)
         .returning(move |_| {
-            let conns = vec![existing.clone()];
-            Box::pin(async move { Ok(conns) })
+            let ids = seeded_ids.clone();
+            Box::pin(async move { Ok(ids) })
         });
-    mock_db.expect_save_provider_connection().times(0);
+    mock_db.expect_upsert_provider_snapshot_bundle().times(0);
 
     let mock_cache = MockCacheService::new();
     let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
@@ -101,46 +152,21 @@ async fn skips_when_demo_connection_already_exists() {
 }
 
 #[tokio::test]
-async fn seeds_connection_five_accounts_and_nineteen_transactions() {
+async fn seeds_atomic_snapshot_with_twenty_six_transactions() {
     std::env::set_var("SEED_DEMO_USER", "true");
 
     let user = demo_user();
-    let user_id = user.id;
-
-    let mut mock_db = MockDatabaseRepository::new();
+    let (mut mock_db, mut mock_cache) = (MockDatabaseRepository::new(), MockCacheService::new());
+    expect_fresh_demo_seed_mocks(&mut mock_db, &user);
     mock_db
-        .expect_get_user_by_email()
-        .with(mockall::predicate::eq(seed::DEMO_EMAIL))
+        .expect_upsert_provider_snapshot_bundle()
         .times(1)
-        .returning(move |_| {
-            let u = user.clone();
-            Box::pin(async move { Ok(Some(u)) })
-        });
-    mock_db
-        .expect_get_all_provider_connections_by_user()
-        .with(mockall::predicate::eq(user_id))
-        .times(1)
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
-    mock_db
-        .expect_save_provider_connection()
-        .times(1)
-        .returning(|_| Box::pin(async { Ok(Uuid::new_v4()) }));
-    mock_db
-        .expect_upsert_account()
-        .times(5)
-        .returning(|_| Box::pin(async { Ok(()) }));
-    mock_db
-        .expect_upsert_transactions_batch()
-        .times(1)
-        .returning(|transactions, _| {
-            assert_eq!(transactions.len(), 19);
+        .returning(|_, _, accounts, transactions| {
+            assert_eq!(accounts.len(), 5);
+            assert_eq!(transactions.len(), 26);
             Box::pin(async { Ok(()) })
         });
-    mock_db
-        .expect_get_active_merchant_aliases()
-        .returning(|| Box::pin(async { Ok(vec![]) }));
 
-    let mut mock_cache = MockCacheService::new();
     mock_cache
         .expect_get_string()
         .returning(|_| Box::pin(async { Ok(None) }));
@@ -161,48 +187,20 @@ async fn transaction_original_merchant_names_match_raw_descriptions() {
     std::env::set_var("SEED_DEMO_USER", "true");
 
     let user = demo_user();
-    let mut mock_db = MockDatabaseRepository::new();
-    mock_db.expect_get_user_by_email().returning(move |_| {
-        let u = user.clone();
-        Box::pin(async move { Ok(Some(u)) })
-    });
+    let (mut mock_db, mut mock_cache) = (MockDatabaseRepository::new(), MockCacheService::new());
+    expect_fresh_demo_seed_mocks(&mut mock_db, &user);
     mock_db
-        .expect_get_all_provider_connections_by_user()
-        .returning(|_| Box::pin(async { Ok(vec![]) }));
-    mock_db
-        .expect_save_provider_connection()
-        .returning(|_| Box::pin(async { Ok(Uuid::new_v4()) }));
-    mock_db
-        .expect_upsert_account()
-        .returning(|_| Box::pin(async { Ok(()) }));
-    mock_db
-        .expect_upsert_transactions_batch()
+        .expect_upsert_provider_snapshot_bundle()
         .times(1)
-        .returning(|transactions, _| {
+        .returning(|_, _, _, transactions| {
             for txn in transactions {
-                assert!(
-                    txn.original_merchant_name.is_some(),
-                    "original_merchant_name must be set to the raw description"
-                );
-                assert!(
-                    txn.merchant_name.is_some(),
-                    "merchant_name must be set after normalization"
-                );
-                assert!(
-                    txn.provider_transaction_id
-                        .as_deref()
-                        .unwrap_or("")
-                        .starts_with("sumurai_demo_txn_"),
-                    "provider_transaction_id must use stable sumurai_demo_txn_ prefix"
-                );
+                assert!(txn.original_merchant_name.is_some());
+                assert!(txn.merchant_name.is_some());
+                assert!(provider_id(txn).starts_with("sumurai_demo_"));
             }
             Box::pin(async { Ok(()) })
         });
-    mock_db
-        .expect_get_active_merchant_aliases()
-        .returning(|| Box::pin(async { Ok(vec![]) }));
 
-    let mut mock_cache = MockCacheService::new();
     mock_cache
         .expect_get_string()
         .returning(|_| Box::pin(async { Ok(None) }));
@@ -216,4 +214,70 @@ async fn transaction_original_merchant_names_match_raw_descriptions() {
     seed::maybe_seed_demo_simplefin_data(&db, &cache)
         .await
         .unwrap();
+}
+
+#[tokio::test]
+async fn phase8_subscription_scenarios_present_in_simplefin_seed_for_demo_user_only() {
+    std::env::set_var("SEED_DEMO_USER", "true");
+
+    let user = demo_user();
+    let (mut mock_db, mut mock_cache) = (MockDatabaseRepository::new(), MockCacheService::new());
+    expect_fresh_demo_seed_mocks(&mut mock_db, &user);
+    let captured = capture_snapshot_bundle(&mut mock_db);
+
+    mock_cache
+        .expect_get_string()
+        .returning(|_| Box::pin(async { Ok(None) }));
+    mock_cache
+        .expect_set_with_ttl()
+        .returning(|_, _, _| Box::pin(async { Ok(()) }));
+
+    let db: Arc<dyn crate::services::repository_service::DatabaseRepository> = Arc::new(mock_db);
+    let cache: Arc<dyn crate::services::CacheService> = Arc::new(mock_cache);
+
+    seed::maybe_seed_demo_simplefin_data(&db, &cache)
+        .await
+        .unwrap();
+
+    let txns = captured.lock().unwrap().clone();
+    let by_provider_id: HashMap<&str, &Transaction> =
+        txns.iter().map(|txn| (provider_id(txn), txn)).collect();
+
+    let netflix = by_provider_id
+        .get(seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[5])
+        .expect("master-list netflix transaction");
+    assert_eq!(netflix.amount, dec!(-15.49));
+    let netflix_pred =
+        deterministic_prediction("[debit] NETFLIX.COM 866-579-7172 CA").expect("netflix classify");
+    assert_eq!(netflix_pred.primary, "SUBSCRIPTION");
+
+    let gym_dates = [
+        NaiveDate::from_ymd_opt(2026, 2, 15).unwrap(),
+        NaiveDate::from_ymd_opt(2026, 3, 15).unwrap(),
+        NaiveDate::from_ymd_opt(2026, 4, 15).unwrap(),
+        NaiveDate::from_ymd_opt(2026, 5, 15).unwrap(),
+    ];
+    for (idx, provider_id) in seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[19..=22]
+        .iter()
+        .enumerate()
+    {
+        let gym = by_provider_id
+            .get(provider_id)
+            .expect("cadence gym transaction");
+        assert_eq!(gym.amount, dec!(-29.99));
+        assert_eq!(gym.date, gym_dates[idx]);
+    }
+    let gym_pred =
+        deterministic_prediction("[debit] PDXFIT GYM PORTLAND OR MONTHLY").expect("gym classify");
+    assert_eq!(gym_pred.primary, "PERSONAL_CARE");
+
+    for provider_id in &seed::DEMO_SIMPLEFIN_PROVIDER_TXN_IDS[23..=25] {
+        let excluded = by_provider_id
+            .get(provider_id)
+            .expect("excluded recurring transaction");
+        assert_eq!(excluded.amount, dec!(-6.45));
+        let raw = excluded.original_merchant_name.as_deref().unwrap_or("");
+        assert!(raw.contains("STARBUCKS"));
+    }
+    assert!(is_excluded("starbucks"));
 }

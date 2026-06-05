@@ -644,8 +644,6 @@ async fn given_authenticated_user_when_get_transaction_insights_then_returns_agg
                         amount: 30.0,
                         merchant: "Coffee Collective".to_string(),
                     }),
-                    recurring_count: 1,
-                    recurring_merchants: vec!["Coffee Collective".to_string()],
                     top_categories: vec!["FOOD_AND_DRINK".to_string()],
                 })
             })
@@ -685,11 +683,6 @@ async fn given_authenticated_user_when_get_transaction_insights_then_returns_agg
             amount: 30.0,
             merchant: "Coffee Collective".to_string(),
         })
-    );
-    assert_eq!(payload.recurring_count, 1);
-    assert_eq!(
-        payload.recurring_merchants,
-        vec!["Coffee Collective".to_string()]
     );
     assert_eq!(payload.top_categories, vec!["FOOD_AND_DRINK".to_string()]);
 }
@@ -732,8 +725,6 @@ async fn given_authenticated_user_when_get_transaction_insights_with_empty_resul
                     total_spent: 0.0,
                     average_amount: 0.0,
                     largest: None::<LargestTransaction>,
-                    recurring_count: 0,
-                    recurring_merchants: vec![],
                     top_categories: vec![],
                 })
             })
@@ -758,8 +749,6 @@ async fn given_authenticated_user_when_get_transaction_insights_with_empty_resul
     assert_eq!(payload.total_spent, 0.0);
     assert_eq!(payload.average_amount, 0.0);
     assert_eq!(payload.largest, None);
-    assert_eq!(payload.recurring_count, 0);
-    assert!(payload.recurring_merchants.is_empty());
     assert!(payload.top_categories.is_empty());
 }
 
@@ -912,6 +901,7 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
+                    normalized_merchant: None,
                 },
                 Transaction {
                     id: Uuid::new_v4(),
@@ -929,6 +919,7 @@ async fn given_authenticated_user_when_get_spending_with_account_ids_then_return
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
+                    normalized_merchant: None,
                 },
             ];
             Box::pin(async { Ok(transactions) })
@@ -1087,6 +1078,7 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
+                    normalized_merchant: None,
                 },
                 Transaction {
                     id: Uuid::new_v4(),
@@ -1104,6 +1096,7 @@ async fn given_authenticated_user_when_get_categories_with_account_ids_then_retu
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
+                    normalized_merchant: None,
                 },
             ];
             Box::pin(async { Ok(transactions) })
@@ -1179,6 +1172,7 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
+                    normalized_merchant: None,
                 },
                 Transaction {
                     id: Uuid::new_v4(),
@@ -1196,6 +1190,7 @@ async fn given_authenticated_user_when_get_top_merchants_then_returns_expected_r
                     pending: false,
                     created_at: Some(chrono::Utc::now()),
                     original_merchant_name: None,
+                    normalized_merchant: None,
                 },
             ];
             Box::pin(async { Ok(transactions) })

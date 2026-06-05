@@ -61,7 +61,10 @@ use crate::models::{
     account::AccountResponse,
     analytics::{DateRangeQuery, MonthlyTotalsQuery},
     auth as auth_models,
-    budget::{Budget, CreateBudgetRequest, DeleteBudgetResponse, UpdateBudgetRequest},
+    budget::{
+        Budget, BudgetsOverviewResponse, CreateBudgetRequest, DeleteBudgetResponse,
+        UpdateBudgetRequest,
+    },
     export::{ExportFormat, ExportQuery},
     import::{
         CsvColumnMapping, ImportFileFormat, ImportMultipartRequest, ImportResponse,
@@ -634,6 +637,10 @@ pub fn create_app(state: AppState) -> Router {
             get(get_authenticated_net_worth_over_time),
         )
         .route("/api/budgets", get(get_authenticated_budgets))
+        .route(
+            "/api/budgets/overview",
+            get(get_authenticated_budgets_overview),
+        )
         .route("/api/budgets", post(create_authenticated_budget))
         .route("/api/budgets/{id}", put(update_authenticated_budget))
         .route("/api/budgets/{id}", delete(delete_authenticated_budget))
@@ -3279,6 +3286,94 @@ async fn get_authenticated_budgets(
                 "Failed to fetch budgets",
             ))
         }
+    }
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/budgets/overview",
+    description = "Returns budgets (cached when available) and live subscription summaries for the authenticated user.",
+    responses(
+        (status = 200, description = "Budgets and subscription overview", body = BudgetsOverviewResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error", body = ApiErrorResponse),
+    ),
+    security(("auth_cookie" = [])),
+    tag = "Budgets"
+)]
+async fn get_authenticated_budgets_overview(
+    State(state): State<AppState>,
+    auth_context: AuthContext,
+) -> Result<Json<BudgetsOverviewResponse>, (StatusCode, Json<ApiErrorResponse>)> {
+    let user_id = auth_context.user_id;
+
+    let cached_budgets =
+        if let Ok(Some(serialized)) = state.cache_service.get_budgets(&auth_context.jwt_id).await {
+            serde_json::from_str::<Vec<Budget>>(&serialized).ok()
+        } else {
+            None
+        };
+
+    if let Some(budgets) = cached_budgets {
+        match state.db_repository.get_subscription_summary(&user_id).await {
+            Ok(subscriptions) => Ok(Json(BudgetsOverviewResponse {
+                budgets,
+                subscriptions,
+            })),
+            Err(e) => {
+                tracing::error!(
+                    "Failed to get subscription summary for user {}: {}",
+                    user_id,
+                    e
+                );
+                Err(ApiErrorResponse::internal_server_error(
+                    "Failed to fetch subscriptions",
+                ))
+            }
+        }
+    } else {
+        let (budgets_result, subscriptions_result) = tokio::join!(
+            state
+                .budget_service
+                .get_budgets_for_user(&*state.db_repository, user_id),
+            state.db_repository.get_subscription_summary(&user_id),
+        );
+
+        let budgets = match budgets_result {
+            Ok(budgets) => budgets,
+            Err(e) => {
+                tracing::error!("Failed to get budgets for user {}: {}", user_id, e);
+                return Err(ApiErrorResponse::internal_server_error(
+                    "Failed to fetch budgets",
+                ));
+            }
+        };
+
+        let subscriptions = match subscriptions_result {
+            Ok(subscriptions) => subscriptions,
+            Err(e) => {
+                tracing::error!(
+                    "Failed to get subscription summary for user {}: {}",
+                    user_id,
+                    e
+                );
+                return Err(ApiErrorResponse::internal_server_error(
+                    "Failed to fetch subscriptions",
+                ));
+            }
+        };
+
+        if let Ok(serialized) = serde_json::to_string(&budgets) {
+            let _ = state
+                .cache_service
+                .set_budgets(&auth_context.jwt_id, &serialized)
+                .await;
+        }
+
+        Ok(Json(BudgetsOverviewResponse {
+            budgets,
+            subscriptions,
+        }))
     }
 }
 

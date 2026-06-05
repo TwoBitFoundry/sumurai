@@ -32,6 +32,7 @@ fn create_test_transaction(
         pending: false,
         created_at: Some(Utc::now()),
         original_merchant_name: None,
+        normalized_merchant: None,
     }
 }
 

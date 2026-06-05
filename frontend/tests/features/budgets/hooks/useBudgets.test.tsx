@@ -35,6 +35,18 @@ const defaultCategoriesMock = {
 let fetchMock: ReturnType<typeof installFetchRoutes>;
 
 const asBudget = (id: string, category: string, amount: number) => ({ id, category, amount });
+const asOverview = (budgets: ReturnType<typeof asBudget>[], subscriptions: unknown[] = []) => ({
+  budgets,
+  subscriptions,
+});
+const makeSubscription = (merchant: string, monthlyCost: string) => ({
+  merchant,
+  normalized_merchant: merchant.toLowerCase(),
+  monthly_cost: monthlyCost,
+  cadence: 'Monthly',
+  last_charged: '2024-03-01',
+  occurrence_count: 3,
+});
 const asTransaction = (id: string, categoryId: string, amount: number, date?: string) => {
   // Use a deterministic date in the middle of current month to avoid timing issues
   const today = new Date();
@@ -97,7 +109,7 @@ describe('useBudgets', () => {
     jest.clearAllMocks();
     useCategoriesMock.mockReturnValue(defaultCategoriesMock);
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': [],
+      'GET /api/budgets/overview': asOverview([]),
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
@@ -110,7 +122,7 @@ describe('useBudgets', () => {
 
   it('includes system and custom categories in categoryOptions without month transactions', async () => {
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': [],
+      'GET /api/budgets/overview': asOverview([]),
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
@@ -136,7 +148,7 @@ describe('useBudgets', () => {
 
   it('excludes categories that already have budgets from availableCategoryOptions', async () => {
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': [asBudget('1', 'FOOD_AND_DRINK', 100)],
+      'GET /api/budgets/overview': asOverview([asBudget('1', 'FOOD_AND_DRINK', 100)]),
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
@@ -152,7 +164,7 @@ describe('useBudgets', () => {
 
   it('fetches budgets and transactions on mount', async () => {
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': [asBudget('1', 'groceries', 100)],
+      'GET /api/budgets/overview': asOverview([asBudget('1', 'groceries', 100)]),
       'GET /api/transactions': [asTransaction('t1', 'groceries', -50)],
       'GET /api/plaid/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
@@ -176,7 +188,7 @@ describe('useBudgets', () => {
     let accountFilterHook: any;
 
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': [asBudget('1', 'groceries', 100)],
+      'GET /api/budgets/overview': asOverview([asBudget('1', 'groceries', 100)]),
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
@@ -217,7 +229,7 @@ describe('useBudgets', () => {
   it('creates budget optimistically', async () => {
     const budgetsStore: ReturnType<typeof asBudget>[] = [];
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': () => budgetsStore,
+      'GET /api/budgets/overview': () => asOverview(budgetsStore),
       'POST /api/budgets': () => {
         const created = asBudget('server-1', 'groceries', 200);
         budgetsStore.push(created);
@@ -245,7 +257,7 @@ describe('useBudgets', () => {
 
   it('handles create budget failure', async () => {
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': [],
+      'GET /api/budgets/overview': asOverview([]),
       'POST /api/budgets': () => new Response('fail', { status: 500 }),
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
@@ -275,9 +287,12 @@ describe('useBudgets', () => {
 
   it('updates budget optimistically', async () => {
     const budgetsStore = [asBudget('1', 'groceries', 100)];
-    const getBudgetsSpy = jest.spyOn(BudgetService, 'getBudgets').mockImplementation(async () => {
-      return [...budgetsStore];
-    });
+    const getOverviewSpy = jest
+      .spyOn(BudgetService, 'getOverview')
+      .mockImplementation(async () => ({
+        budgets: [...budgetsStore],
+        subscriptions: [],
+      }));
     const updateBudgetSpy = jest
       .spyOn(BudgetService, 'updateBudget')
       .mockImplementation(async (_id, budgetData) => {
@@ -303,7 +318,7 @@ describe('useBudgets', () => {
         expect(result.current.budgets[0].amount).toBe(250);
       });
     } finally {
-      getBudgetsSpy.mockRestore();
+      getOverviewSpy.mockRestore();
       updateBudgetSpy.mockRestore();
       getTransactionsSpy.mockRestore();
     }
@@ -312,7 +327,7 @@ describe('useBudgets', () => {
   it('handles update budget failure', async () => {
     const budgetsStore = [asBudget('1', 'groceries', 100)];
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': () => budgetsStore,
+      'GET /api/budgets/overview': () => asOverview(budgetsStore),
       'PUT /api/budgets/1': () => {
         throw Object.assign(new Error('fail'), { status: 500 });
       },
@@ -341,7 +356,7 @@ describe('useBudgets', () => {
   it('deletes budget optimistically', async () => {
     const budgetsStore = [asBudget('1', 'groceries', 100)];
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': () => budgetsStore,
+      'GET /api/budgets/overview': () => asOverview(budgetsStore),
       'DELETE /api/budgets/1': () => {
         budgetsStore.length = 0;
         return new Response(null, { status: 204 });
@@ -373,7 +388,7 @@ describe('useBudgets', () => {
   it('handles delete budget failure', async () => {
     const budgetsStore = [asBudget('1', 'groceries', 100)];
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': () => budgetsStore,
+      'GET /api/budgets/overview': () => asOverview(budgetsStore),
       'DELETE /api/budgets/1': () => {
         throw Object.assign(new Error('fail'), { status: 500 });
       },
@@ -420,7 +435,7 @@ describe('useBudgets', () => {
     }
 
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': [asBudget('1', 'groceries', 100)],
+      'GET /api/budgets/overview': asOverview([asBudget('1', 'groceries', 100)]),
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
@@ -433,7 +448,7 @@ describe('useBudgets', () => {
     });
 
     const budgetFetchCount = fetchMock.mock.calls.filter((c) =>
-      String(c[0]).includes('/api/budgets')
+      String(c[0]).includes('/api/budgets/overview')
     ).length;
 
     unmount();
@@ -447,14 +462,14 @@ describe('useBudgets', () => {
     });
 
     const budgetFetchCountAfter = fetchMock.mock.calls.filter((c) =>
-      String(c[0]).includes('/api/budgets')
+      String(c[0]).includes('/api/budgets/overview')
     ).length;
     expect(budgetFetchCountAfter).toBe(budgetFetchCount);
   });
 
   it('changing month refetches transactions but not budgets while budgets stay fresh', async () => {
     fetchMock = installFetchRoutes({
-      'GET /api/budgets': [asBudget('1', 'groceries', 100)],
+      'GET /api/budgets/overview': asOverview([asBudget('1', 'groceries', 100)]),
       'GET /api/transactions': [],
       'GET /api/plaid/accounts': mockPlaidAccounts,
       'GET /api/providers/status': createConnectedStatus(),
@@ -471,7 +486,7 @@ describe('useBudgets', () => {
     });
 
     const budgetFetchCount = fetchMock.mock.calls.filter((c) =>
-      String(c[0]).includes('/api/budgets')
+      String(c[0]).includes('/api/budgets/overview')
     ).length;
     const transactionFetchCount = fetchMock.mock.calls.filter((c) =>
       String(c[0]).includes('/api/transactions')
@@ -487,8 +502,55 @@ describe('useBudgets', () => {
       ).toBeGreaterThan(transactionFetchCount);
     });
 
-    expect(fetchMock.mock.calls.filter((c) => String(c[0]).includes('/api/budgets')).length).toBe(
-      budgetFetchCount
-    );
+    expect(
+      fetchMock.mock.calls.filter((c) => String(c[0]).includes('/api/budgets/overview')).length
+    ).toBe(budgetFetchCount);
+  });
+
+  it('exposes subscriptions from overview response', async () => {
+    fetchMock = installFetchRoutes({
+      'GET /api/budgets/overview': asOverview([], [makeSubscription('Spotify', '9.99')]),
+      'GET /api/transactions': [],
+      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/status': createConnectedStatus(),
+    });
+
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper });
+
+    await waitFor(() => {
+      expect(result.current.subscriptions).toHaveLength(1);
+      expect(result.current.subscriptions[0].merchant).toBe('Spotify');
+    });
+  });
+
+  it('preserves subscriptions slice during optimistic budget add', async () => {
+    const budgetsStore: ReturnType<typeof asBudget>[] = [];
+    const subscriptions = [makeSubscription('Spotify', '9.99')];
+    fetchMock = installFetchRoutes({
+      'GET /api/budgets/overview': () => asOverview(budgetsStore, subscriptions),
+      'POST /api/budgets': () => {
+        const created = asBudget('server-1', 'groceries', 200);
+        budgetsStore.push(created);
+        return created;
+      },
+      'GET /api/transactions': [],
+      'GET /api/plaid/accounts': mockPlaidAccounts,
+      'GET /api/providers/status': createConnectedStatus(),
+    });
+
+    const { result } = renderHook(() => useBudgets(), { wrapper: TestWrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.subscriptions).toHaveLength(1);
+    });
+
+    await act(async () => {
+      await result.current.add('groceries', 200);
+    });
+
+    expect(result.current.budgets).toHaveLength(1);
+    expect(result.current.subscriptions).toHaveLength(1);
+    expect(result.current.subscriptions[0].merchant).toBe('Spotify');
   });
 });

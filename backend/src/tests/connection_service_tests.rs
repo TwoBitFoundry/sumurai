@@ -90,6 +90,7 @@ fn build_transactions(account_id: Uuid, user_id: Uuid) -> Vec<Transaction> {
             pending: false,
             created_at: Some(Utc::now()),
             original_merchant_name: None,
+            normalized_merchant: None,
         })
         .collect()
 }
@@ -216,8 +217,12 @@ async fn given_plaid_sync_with_many_transactions_when_persisting_then_batches_wr
 
     mock_cache
         .expect_clear_transactions()
-        .times(1)
+        .times(..)
         .returning(|_| Box::pin(async { Ok(()) }));
+    mock_db
+        .expect_get_transactions_for_subscription_detection()
+        .times(..)
+        .returning(|_, _| Box::pin(async { Ok(vec![]) }));
 
     mock_cache
         .expect_clear_budgets()

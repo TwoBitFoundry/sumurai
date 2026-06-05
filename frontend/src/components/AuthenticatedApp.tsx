@@ -59,6 +59,7 @@ export function AuthenticatedApp({ onLogout, initialTab, isOnline }: Authenticat
     setTab(next);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
+
   const bottomBarContent =
     tab === 'dashboard' ? (
       <BottomContextualBar>

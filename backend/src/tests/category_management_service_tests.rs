@@ -6,6 +6,7 @@ use crate::services::category_management::service::{
     CategoryManagementService, CategoryServiceError,
 };
 use crate::services::repository_service::MockDatabaseRepository;
+use crate::utils::merchant_name::normalize_merchant_for_match;
 use chrono::NaiveDate;
 use rust_decimal_macros::dec;
 use uuid::Uuid;
@@ -53,6 +54,7 @@ fn make_transaction(
         pending: false,
         created_at: None,
         original_merchant_name: None,
+        normalized_merchant: merchant_name.map(normalize_merchant_for_match),
     }
 }
 

@@ -3,6 +3,7 @@ use crate::models::transaction::Transaction;
 use crate::models::transaction_category_override::TransactionCategoryOverride;
 use crate::services::repository_service::MockDatabaseRepository;
 use crate::test_fixtures::TestFixtures;
+use crate::utils::merchant_name::normalize_merchant_for_match;
 use axum::http::StatusCode;
 use chrono::{NaiveDate, Utc};
 use rust_decimal_macros::dec;
@@ -42,6 +43,7 @@ fn make_transaction(
         pending: false,
         created_at: None,
         original_merchant_name: None,
+        normalized_merchant: merchant_name.map(normalize_merchant_for_match),
     }
 }
 

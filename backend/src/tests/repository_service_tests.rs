@@ -93,6 +93,7 @@ fn create_test_transaction(
         pending: false,
         created_at: Some(Utc::now()),
         original_merchant_name: None,
+        normalized_merchant: None,
     }
 }
 
@@ -347,6 +348,60 @@ async fn given_many_transactions_when_batch_upserting_then_writes_all_rows_witho
 
     assert_eq!(transaction_count_after_reinsert, 600);
     assert_eq!(distinct_provider_transaction_count, 600);
+}
+
+#[tokio::test]
+async fn given_generated_normalized_merchant_when_batch_upserting_twice_then_updates_without_error()
+{
+    let Some(pool) = connect_pool().await else {
+        return;
+    };
+
+    let repo = open_repository(pool.clone());
+    let user = create_test_user(&repo).await;
+    let account = create_test_account(&repo, user.id).await;
+    let provider_transaction_id = format!("generated_norm_{}", Uuid::new_v4());
+
+    let mut first = create_test_transaction(
+        user.id,
+        account.id,
+        provider_transaction_id.clone(),
+        -1299,
+        NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
+    );
+    first.merchant_name = Some("Netflix.com".to_string());
+    first.original_merchant_name = Some("NETFLIX.COM 866-579-7172 CA".to_string());
+
+    let mut second = first.clone();
+    second.amount = dec!(-15.49);
+
+    repo.upsert_transactions_batch(std::slice::from_ref(&first), &user.id)
+        .await
+        .unwrap();
+    repo.upsert_transactions_batch(std::slice::from_ref(&second), &user.id)
+        .await
+        .unwrap();
+
+    let normalized_merchant: Option<String> = db::query_scalar(
+        "SELECT normalized_merchant FROM transactions WHERE user_id = $1 AND provider_transaction_id = $2",
+    )
+    .bind(user.id)
+    .bind(&provider_transaction_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    let amount: rust_decimal::Decimal = db::query_scalar(
+        "SELECT amount FROM transactions WHERE user_id = $1 AND provider_transaction_id = $2",
+    )
+    .bind(user.id)
+    .bind(&provider_transaction_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    assert_eq!(normalized_merchant.as_deref(), Some("netflixcom"));
+    assert_eq!(amount, dec!(-15.49));
 }
 
 #[tokio::test]
@@ -827,11 +882,6 @@ async fn given_transactions_when_aggregating_insights_then_respects_filters_and_
             merchant: "Coffee Collective".to_string(),
         })
     );
-    assert_eq!(insights.recurring_count, 1);
-    assert_eq!(
-        insights.recurring_merchants,
-        vec!["Coffee Collective".to_string()]
-    );
     assert_eq!(insights.top_categories, vec!["FOOD_AND_DRINK".to_string()]);
 }
 
@@ -924,8 +974,6 @@ async fn given_transactions_when_aggregating_insights_for_empty_set_then_returns
     assert_eq!(insights.total_spent, 0.0);
     assert_eq!(insights.average_amount, 0.0);
     assert_eq!(insights.largest, None);
-    assert_eq!(insights.recurring_count, 0);
-    assert!(insights.recurring_merchants.is_empty());
     assert!(insights.top_categories.is_empty());
 }
 

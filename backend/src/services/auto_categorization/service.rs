@@ -239,6 +239,19 @@ impl AutoCategorizationService {
             }
         }
 
+        let detection_count =
+            match crate::services::subscription_detection::service::detect_and_assign_for_user(
+                &*self.db, user_id,
+            )
+            .await
+            {
+                Ok(count) => count as i64,
+                Err(e) => {
+                    tracing::warn!(user_id = %user_id, "Subscription detection failed: {e}");
+                    0
+                }
+            };
+        state.updated += detection_count;
         state.status = AutoCategorizationJobStatus::Completed;
         state.finished_at = Some(Utc::now());
         self.persist_status(user_id, &state, TERMINAL_JOB_TTL_SECONDS)

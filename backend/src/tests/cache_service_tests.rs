@@ -205,6 +205,7 @@ async fn given_transaction_when_adding_with_jwt_scope_then_passes_jwt_id_to_boun
         pending: false,
         created_at: Some(Utc::now()),
         original_merchant_name: None,
+        normalized_merchant: None,
     };
 
     cache_service
@@ -242,6 +243,7 @@ fn given_cached_transaction_when_serializing_then_includes_timestamp() {
         pending: false,
         created_at: Some(Utc::now()),
         original_merchant_name: None,
+        normalized_merchant: None,
     }];
 
     let cached = CachedTransaction {

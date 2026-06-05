@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 
 use crate::models::predicted_category::{Confidence, PredictedCategory};
+use crate::services::subscription_detection::known_merchants::KNOWN_SUBSCRIPTION_MERCHANTS;
+use crate::utils::merchant_name::normalize_merchant_for_match;
 use rust_decimal::Decimal;
 
 const MEDIUM_CONFIDENCE_FLOOR: f32 = 0.75;
@@ -28,7 +30,7 @@ pub fn pfc_primary_for_classifier_label(label: &str, input: &str) -> Option<&'st
         "Personal Care" => Some("PERSONAL_CARE"),
         "Rent" | "Utilities" => Some("RENT_AND_UTILITIES"),
         "Shopping" => Some("SHOPPING"),
-        "Subscription" => Some("ENTERTAINMENT"),
+        "Subscription" => Some("SUBSCRIPTION"),
         "Transfer" => {
             if input.trim_start().starts_with("[credit]") {
                 Some("TRANSFER_IN")
@@ -84,9 +86,27 @@ pub fn deterministic_prediction(input: &str) -> Option<PredictedCategory> {
     })
 }
 
+fn extract_merchant_normalized(input: &str) -> String {
+    let text = input.trim_start();
+    let merchant = text
+        .trim_start_matches("[debit]")
+        .trim_start_matches("[credit]")
+        .trim();
+    normalize_merchant_for_match(merchant)
+}
+
 fn deterministic_label(input: &str) -> Option<&'static str> {
     let normalized = normalized_text(input);
     let is_credit = input.trim_start().starts_with("[credit]");
+
+    let merchant_normalized = extract_merchant_normalized(input);
+    if !is_credit
+        && KNOWN_SUBSCRIPTION_MERCHANTS
+            .iter()
+            .any(|m| merchant_normalized.contains(m))
+    {
+        return Some("Subscription");
+    }
 
     if has_any(
         &normalized,

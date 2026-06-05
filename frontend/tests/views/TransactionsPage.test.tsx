@@ -126,8 +126,6 @@ describe('TransactionsPage', () => {
         total_spent: 0,
         average_amount: 0,
         largest: null,
-        recurring_count: 0,
-        recurring_merchants: [],
         top_categories: [],
       },
       isLoading: false,
@@ -152,7 +150,7 @@ describe('TransactionsPage', () => {
     ) as HTMLElement | null;
 
     expect(statsGrid).toHaveClass('grid-cols-2');
-    expect(statsGrid).toHaveClass('lg:grid-cols-4');
+    expect(statsGrid).toHaveClass('lg:grid-cols-3');
   });
 
   it('renders the auto-categorize action in the hero actions slot', () => {
@@ -167,7 +165,7 @@ describe('TransactionsPage', () => {
       />
     );
 
-    expect(getByRole('button', { name: /classify/i })).toBeEnabled();
+    expect(getByRole('button', { name: /categorize/i })).toBeEnabled();
   });
 
   it('shows the insights loading state independently from the table', () => {
@@ -189,7 +187,7 @@ describe('TransactionsPage', () => {
       />
     );
 
-    expect(getAllByText('Fetching...')).toHaveLength(4);
+    expect(getAllByText('Fetching...')).toHaveLength(3);
   });
 
   it('renders the shared toast stack for auto-categorization job state', () => {

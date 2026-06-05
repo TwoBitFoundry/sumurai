@@ -17,6 +17,7 @@ pub mod rate_limit_service;
 pub mod repository_service;
 pub mod simplefin_connection_service;
 pub mod simplefin_org_service;
+pub mod subscription_detection;
 pub mod sync_service;
 pub mod sync_service_dispatcher;
 pub mod sync_service_factory;
